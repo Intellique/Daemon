@@ -24,17 +24,115 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 27 Sep 2010 09:05:30 +0200                       *
+*  Last modified: Mon, 27 Sep 2010 15:56:39 +0200                       *
 \***********************************************************************/
 
+// getopt_long
 #include <getopt.h>
+// printf
+#include <stdio.h>
+// strrchr
+#include <string.h>
+
+#include "conf.h"
+#include "config.h"
+
+void showHelp(char * command);
 
 int main(int argc, char ** argv) {
 	static int option_index = 0;
 	static struct option long_options[] = {
+		{"config",		1,	0,	'c'},
+		{"detach",		0,	0,	'd'},
+		{"help",		0,	0,	'h'},
+		{"pid-file",	1,	0,	'p'},
+		{"version",		0,	0,	'V'},
+
 		{0, 0, 0, 0},
 	};
 
+	char * config_file = DEFAULT_CONFIG_FILE;
+	short detach = 0;
+	char * pid_file = DEFAULT_PID_FILE;
+
+	// parse option
+	for (;;) {
+		int c = getopt_long(argc, argv, "c:dhp:V", long_options, &option_index);
+
+		if (c == -1)
+			break;
+
+		switch (c) {
+			case 'c':
+				config_file = optarg;
+				break;
+
+			case 'd':
+				detach = 1;
+				break;
+
+			case 'h':
+				showHelp(*argv);
+				return 0;
+
+			case 'p':
+				pid_file = optarg;
+				break;
+
+			case 'V': {
+					char * ptr = strrchr(*argv, '/');
+					if (ptr)
+						ptr++;
+					else
+						ptr = *argv;
+
+					printf("%s\nVersion: %s, build: %s %s\n", ptr, STORIQARCHIVER_VERSION, __DATE__, __TIME__);
+				}
+				return 0;
+
+			default:
+				showHelp(*argv);
+				return 1;
+		}
+	}
+
+	// check pid file
+	int pid = conf_readPid(pid_file);
+	if (pid >= 0) {
+		int code = conf_checkPid(pid);
+		switch (code) {
+			case -1:
+				printf("Warning: another process used this pid (%d)\n", pid);
+				break;
+
+			case 0:
+				printf("Info: daemon is dead, long life the daemon\n");
+				break;
+
+			case 1:
+				printf("Error: Daemon is alive (pid: %d)\n", pid);
+				return 2;
+		}
+	}
+
+	// create daemon
+	if (detach) {}
+
 	return 0;
+}
+
+void showHelp(char * command) {
+	char * ptr = strrchr(command, '/');
+	if (ptr)
+		ptr++;
+	else
+		ptr = command;
+
+	printf("%s, version: %s, build: %s %s\n", ptr, STORIQARCHIVER_VERSION, __DATE__, __TIME__);
+	printf("    --config,   -c : Read this config file instead of \"%s\"\n", DEFAULT_CONFIG_FILE);
+	printf("    --detach,   -d : Daemonize it\n");
+	printf("    --help,     -h : Show this and exit\n");
+	printf("    --pid-file, -p : Write the pid of daemon into instead of \"%s\"\n", DEFAULT_PID_FILE);
+	printf("    --version,  -V : Show the version of StorIqArchiver then exit\n");
 }
 
