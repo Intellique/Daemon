@@ -1,0 +1,7 @@
+.*.swp
+bin/
+build/
+cscope.out
+depend/
+lib/
+tags
