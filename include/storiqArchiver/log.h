@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 10:24:00 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 13:07:32 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_LOG_H__
@@ -40,6 +40,8 @@ enum Log_level {
 	Log_level_error		= 0x2,
 	Log_level_info		= 0x0,
 	Log_level_warning	= 0x1,
+
+	Log_level_unknown	= 0xF,
 };
 
 
@@ -74,7 +76,26 @@ struct log_moduleSub {
 };
 
 
+/**
+ * \brief convert an enumeration to statically allocated string
+ * \param level : one log level
+ * \return string
+ */
 const char * log_levelToString(enum Log_level level);
+/**
+ * \brief convert a string to an enumeration
+ * \param string : one string level
+ * \return an enumeration
+ */
+enum Log_level log_stringTolevel(const char * string);
+
+/**
+ * \brief get a module
+ * \param module : module's name
+ * \return 0 if failed
+ * \note if the module is not loaded, we try to load it
+ */
+struct log_module * log_getModule(const char * module);
 
 /**
  * \brief try to load a module by his name

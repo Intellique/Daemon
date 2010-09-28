@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 12:16:34 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 13:17:36 +0200                       *
 \***********************************************************************/
 
 // dlerror, dlopen
@@ -33,7 +33,7 @@
 #include <malloc.h>
 // printf, snprintf
 #include <stdio.h>
-// strcmp
+// strcasecmp, strcmp
 #include <string.h>
 // access
 #include <unistd.h>
@@ -53,15 +53,34 @@ static struct log_level {
 	{ Log_level_info,		"Info" },
 	{ Log_level_warning,	"Warning" },
 
-	{ 0, 0 },
+	{ Log_level_unknown,	"Unknown" },
 };
 
 
 const char * log_levelToString(enum Log_level level) {
 	struct log_level * ptr;
-	for (ptr = log_levels; ptr->name; ptr++)
+	for (ptr = log_levels; ptr->level == Log_level_unknown; ptr++)
 		if (ptr->level == level)
 			return ptr->name;
+	return 0;
+}
+
+enum Log_level log_stringTolevel(const char * string) {
+	struct log_level * ptr;
+	for (ptr = log_levels; ptr->level != Log_level_unknown; ptr++)
+		if (!strcasecmp(ptr->name, string))
+			return ptr->level;
+	return Log_level_unknown;
+}
+
+
+struct log_module * log_getModule(const char * module) {
+	unsigned int i;
+	for (i = 0; i < log_nbModules; i++)
+		if (!strcmp(log_modules[i]->moduleName, module))
+			return log_modules[i];
+	if (!log_loadModule(module))
+		return log_getModule(module);
 	return 0;
 }
 
@@ -71,10 +90,9 @@ int log_loadModule(const char * module) {
 
 	// check if module is already loaded
 	unsigned int i;
-	for (i = 0; i < log_nbModules; i++) {
+	for (i = 0; i < log_nbModules; i++)
 		if (!strcmp(log_modules[i]->moduleName, module))
 			return 0;
-	}
 
 	// check if you can load module
 	if (access(path, R_OK | X_OK))

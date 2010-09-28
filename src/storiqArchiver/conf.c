@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 12:09:04 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 13:27:33 +0200                       *
 \***********************************************************************/
 
 // open
@@ -46,6 +46,8 @@
 #include "storiqArchiver/hashtable.h"
 #include "storiqArchiver/log.h"
 #include "util.h"
+
+static void conf_loadLog(struct hashtable * params);
 
 
 int conf_checkPid(int pid) {
@@ -103,6 +105,20 @@ int conf_writePid(const char * pidFile, int pid) {
 }
 
 
+void conf_loadLog(struct hashtable * params) {
+	char * alias = hashtable_value(params, "alias");
+	char * type = hashtable_value(params, "type");
+	enum Log_level verbosity = log_stringTolevel(hashtable_value(params, "verbosity"));
+	char * path = hashtable_value(params, "path");
+
+	if (!alias || !type || verbosity == Log_level_unknown || !path)
+		return;
+
+	struct log_module * mod = log_getModule(type);
+	if (mod)
+		mod->ops->add(mod, alias, verbosity, params);
+}
+
 int conf_readConfig(const char * confFile) {
 	if (access(confFile, R_OK))
 		return -1;
@@ -128,7 +144,8 @@ int conf_readConfig(const char * confFile) {
 			case '\n':
 				ptr++;
 				if (*ptr == '\n') {
-					log_loadModule(hashtable_value(params, "type"));
+					if (section == 1)
+						conf_loadLog(params);
 
 					hashtable_clear(params);
 				}
@@ -156,7 +173,8 @@ int conf_readConfig(const char * confFile) {
 	}
 
 	if (params->nbElements > 0) {
-		log_loadModule(hashtable_value(params, "type"));
+		if (section == 1)
+			conf_loadLog(params);
 	}
 
 	hashtable_free(params);

@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 10:23:47 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 13:11:55 +0200                       *
 \***********************************************************************/
 
 // realloc
@@ -54,11 +54,11 @@ int log_file_add(struct log_module * module, const char * alias, enum Log_level 
 	if (!module || !alias || !params)
 		return 1;
 
-	if (!hashtable_hasKey(params, "value"))
+	if (!hashtable_hasKey(params, "path"))
 		return 1;
 
 	module->subModules = realloc(module->subModules, (module->nbSubModules + 1) * sizeof(struct log_moduleSub));
-	log_file_new(module->subModules + module->nbSubModules, alias, level, hashtable_value(params, "value"));
+	log_file_new(module->subModules + module->nbSubModules, alias, level, hashtable_value(params, "path"));
 	module->nbSubModules++;
 
 	return 0;
