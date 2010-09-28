@@ -24,81 +24,14 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 09:58:25 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 08:53:26 +0200                       *
 \***********************************************************************/
 
-// open
-#include <fcntl.h>
-// malloc
-#include <malloc.h>
-// dprintf
-#include <stdio.h>
-// strdup
-#include <string.h>
-// open
-#include <sys/types.h>
-// open
-#include <sys/stat.h>
-// close
-#include <unistd.h>
+#ifndef __STORIQARCHIVER_UTIL_H__
+#define __STORIQARCHIVER_UTIL_H__
 
-#include "common.h"
+void util_freeKeyValue(void * key, void * value);
+unsigned long long util_hashString(const void * key);
 
-struct log_file_private {
-	char * path;
-	int fd;
-};
-
-static void log_file_subFree(struct log_moduleSub * subModule);
-static void log_file_subWrite(struct log_moduleSub * subModule, enum Log_level level, const char * message);
-
-static struct log_moduleSub_ops log_file_moduleSubOps = {
-	free:	log_file_subFree,
-	write:	log_file_subWrite,
-};
-
-
-void log_file_subFree(struct log_moduleSub * subModule) {
-	struct log_file_private * self = subModule->data;
-
-	if (subModule->alias)
-		free(subModule->alias);
-	subModule->alias = 0;
-	subModule->ops = 0;
-	subModule->data = 0;
-
-	if (self->path)
-		free(self->path);
-	self->path = 0;
-	if (self->fd >= 0)
-		close(self->fd);
-	self->fd = -1;
-
-	free(self);
-}
-
-struct log_moduleSub * log_file_new(struct log_moduleSub * subModule, const char * alias, enum Log_level level, const char * path) {
-	if (!subModule)
-		subModule = malloc(sizeof(struct log_moduleSub));
-
-	subModule->alias = strdup(alias);
-	subModule->level = level;
-	subModule->ops = &log_file_moduleSubOps;
-
-	struct log_file_private * self = malloc(sizeof(struct log_file_private));
-	self->path = strdup(path);
-	self->fd = open(path, O_WRONLY | O_TRUNC | O_CREAT, 0640);
-
-	subModule->data = self;
-	return subModule;
-}
-
-void log_file_subWrite(struct log_moduleSub * subModule, enum Log_level level, const char * message) {
-	struct log_file_private * self = subModule->data;
-
-	if (subModule->level > level)
-		return;
-
-	dprintf(self->fd, "[%s] %s\n", log_levelToString(level), message);
-}
+#endif
 

@@ -24,11 +24,15 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 27 Sep 2010 18:46:05 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 09:04:34 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_LOG_FILE_H__
 #define __STORIQARCHIVER_LOG_FILE_H__
+
+#include "storiqArchiver/log.h"
+
+struct log_moduleSub * log_file_new(struct log_moduleSub * subModule, const char * alias, enum Log_level level, const char * path);
 
 #endif
 

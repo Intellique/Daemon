@@ -24,27 +24,27 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 27 Sep 2010 18:38:15 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 10:24:00 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_LOG_H__
 #define __STORIQARCHIVER_LOG_H__
 
+struct hashtable;
 struct log_module;
 struct log_moduleSub;
 
 
 enum Log_level {
-	Log_level_debug,
-	Log_level_error,
-	Log_level_info,
-	Log_level_warning,
+	Log_level_debug		= 0x3,
+	Log_level_error		= 0x2,
+	Log_level_info		= 0x0,
+	Log_level_warning	= 0x1,
 };
 
 
 struct log_module_ops {
-	void (*free)(struct log_module * module);
-	void (*writeAll)(struct log_module * module, enum Log_level level, const char * message);
+	int (*add)(struct log_module * module, const char * alias, enum Log_level level, struct hashtable * params);
 };
 
 struct log_module {
@@ -68,10 +68,13 @@ struct log_moduleSub_ops {
 
 struct log_moduleSub {
 	char * alias;
+	enum Log_level level;
 	struct log_moduleSub_ops * ops;
 	void * data;
 };
 
+
+const char * log_levelToString(enum Log_level level);
 
 /**
  * \brief try to load a module by his name

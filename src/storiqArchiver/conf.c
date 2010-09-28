@@ -24,14 +24,16 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 27 Sep 2010 16:20:22 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 12:09:04 +0200                       *
 \***********************************************************************/
 
 // open
 #include <fcntl.h>
+// free, malloc
+#include <malloc.h>
 // snprintf, sscanf
 #include <stdio.h>
-// strcmp, strrchr
+// strcmp, strncmp, strrchr
 #include <string.h>
 // open
 #include <sys/stat.h>
@@ -41,6 +43,9 @@
 #include <unistd.h>
 
 #include "conf.h"
+#include "storiqArchiver/hashtable.h"
+#include "storiqArchiver/log.h"
+#include "util.h"
 
 
 int conf_checkPid(int pid) {
@@ -99,6 +104,64 @@ int conf_writePid(const char * pidFile, int pid) {
 
 
 int conf_readConfig(const char * confFile) {
+	if (access(confFile, R_OK))
+		return -1;
+
+	int fd = open(confFile, O_RDONLY);
+
+	struct stat st;
+	fstat(fd, &st);
+
+	char * buffer = malloc(st.st_size);
+	read(fd, buffer, st.st_size);
+	close(fd);
+
+	char * ptr = buffer;
+	short section = 0;
+	struct hashtable * params = hashtable_new2(util_hashString, util_freeKeyValue);
+	while (ptr) {
+		switch (*ptr) {
+			case ';':
+				ptr = strchr(ptr, '\n');
+				continue;
+
+			case '\n':
+				ptr++;
+				if (*ptr == '\n') {
+					log_loadModule(hashtable_value(params, "type"));
+
+					hashtable_clear(params);
+				}
+				continue;
+
+			case '[':
+				if (!strncmp(ptr + 1, "log", 3))
+					section = 1;
+				ptr = strchr(ptr, '\n');
+				continue;
+
+			default:
+				if (section == 0)
+					continue;
+
+				if (strchr(ptr, '=') < strchr(ptr, '\n')) {
+					char key[32];
+					char value[64];
+					int val = sscanf(ptr, "%s = %s", key, value);
+					if (val == 2)
+						hashtable_put(params, strdup(key), strdup(value));
+				}
+				ptr = strchr(ptr, '\n');
+		}
+	}
+
+	if (params->nbElements > 0) {
+		log_loadModule(hashtable_value(params, "type"));
+	}
+
+	hashtable_free(params);
+	free(buffer);
+
 	return 0;
 }
 

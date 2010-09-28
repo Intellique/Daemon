@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 27 Sep 2010 16:28:35 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 11:52:38 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_HASHTABLE_H__
@@ -48,11 +48,12 @@ struct hashtable {
 	void (*releaseKeyValue)(void *, void *);
 };
 
-struct hashtable * hashtable_new(unsigned long long (*computeHash)(const void * key));
-struct hashtable * hashtable_new2(unsigned long long (*computeHash)(const void * key), void (*releaseKeyValue)(void * key, void * value));
+void hashtable_clear(struct hashtable * hashtable);
 void hashtable_free(struct hashtable * hashtable);
 short hashtable_hasKey(struct hashtable * hashtable, const void * key);
 const void ** hashtable_keys(struct hashtable * hashtable);
+struct hashtable * hashtable_new(unsigned long long (*computeHash)(const void * key));
+struct hashtable * hashtable_new2(unsigned long long (*computeHash)(const void * key), void (*releaseKeyValue)(void * key, void * value));
 void hashtable_put(struct hashtable * hashtable, void * key, void * value);
 void * hashtable_remove(struct hashtable * hashtable, const void * key);
 void * hashtable_value(struct hashtable * hashtable, const void * key);

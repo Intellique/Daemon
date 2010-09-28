@@ -24,14 +24,14 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 27 Sep 2010 18:31:04 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 12:16:34 +0200                       *
 \***********************************************************************/
 
-// dlopen
+// dlerror, dlopen
 #include <dlfcn.h>
 // realloc
 #include <malloc.h>
-// snprintf
+// printf, snprintf
 #include <stdio.h>
 // strcmp
 #include <string.h>
@@ -44,6 +44,26 @@
 static struct log_module ** log_modules = 0;
 static unsigned int log_nbModules = 0;
 
+static struct log_level {
+	enum Log_level level;
+	const char * name;
+} log_levels[] = {
+	{ Log_level_debug,		"Debug" },
+	{ Log_level_error,		"Error" },
+	{ Log_level_info,		"Info" },
+	{ Log_level_warning,	"Warning" },
+
+	{ 0, 0 },
+};
+
+
+const char * log_levelToString(enum Log_level level) {
+	struct log_level * ptr;
+	for (ptr = log_levels; ptr->name; ptr++)
+		if (ptr->level == level)
+			return ptr->name;
+	return 0;
+}
 
 int log_loadModule(const char * module) {
 	char path[128];
@@ -63,7 +83,10 @@ int log_loadModule(const char * module) {
 	// load module
 	void * cookie = dlopen(path, RTLD_NOW);
 
-	if (log_nbModules > 0 && !strcmp(log_modules[log_nbModules - 1]->moduleName, module))
+	if (!cookie) {
+		printf("Error while loading %s => %s\n", path, dlerror());
+		return 2;
+	} else if (log_nbModules > 0 && !strcmp(log_modules[log_nbModules - 1]->moduleName, module))
 		log_modules[log_nbModules - 1]->cookie = cookie;
 	else {
 		// module didn't call log_registerModule so we unload it
@@ -79,5 +102,29 @@ void log_registerModule(struct log_module * module) {
 
 	log_modules[log_nbModules] = module;
 	log_nbModules++;
+}
+
+void log_writeAll(enum Log_level level, const char * message) {
+	unsigned int i;
+	for (i = 0; i < log_nbModules; i++) {
+		unsigned int j;
+		for (j = 0; j < log_modules[i]->nbSubModules; j++) {
+			if (log_modules[i]->subModules[j].level >= level)
+				log_modules[i]->subModules[j].ops->write(log_modules[i]->subModules + j, level, message);
+		}
+	}
+}
+
+void log_writeTo(const char * alias, enum Log_level level, const char * message) {
+	unsigned int i;
+	for (i = 0; i < log_nbModules; i++) {
+		unsigned int j;
+		for (j = 0; j < log_modules[i]->nbSubModules; j++) {
+			if (!strcmp(log_modules[i]->subModules[j].alias, alias) && log_modules[i]->subModules[j].level >= level) {
+				log_modules[i]->subModules[j].ops->write(log_modules[i]->subModules + j, level, message);
+				return;
+			}
+		}
+	}
 }
 

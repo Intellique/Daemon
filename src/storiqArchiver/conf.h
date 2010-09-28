@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 27 Sep 2010 16:19:36 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 10:41:54 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CONF_H__
@@ -61,6 +61,9 @@ int conf_writePid(const char * pidFile, int pid);
 
 /**
  * \brief read config file
+ * \param confFile : config file
+ * \return 0 if ok
+ *         -1 if error
  */
 int conf_readConfig(const char * confFile);
 

@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 27 Sep 2010 16:28:35 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 12:01:29 +0200                       *
 \***********************************************************************/
 
 #include <malloc.h>
@@ -59,6 +59,19 @@ void hashtable_free(struct hashtable * hashtable) {
 	if (!hashtable)
 		return;
 
+	hashtable_clear(hashtable);
+	free(hashtable->nodes);
+	hashtable->nodes = 0;
+	hashtable->computeHash = 0;
+
+	free(hashtable);
+}
+
+
+void hashtable_clear(struct hashtable * hashtable) {
+	if (!hashtable)
+		return;
+
 	unsigned int i;
 	for (i = 0; i < hashtable->sizeNode; i++) {
 		struct hashtableNode * ptr = hashtable->nodes[i];
@@ -70,14 +83,9 @@ void hashtable_free(struct hashtable * hashtable) {
 			tmp->key = tmp->value = tmp->next = 0;
 			free(tmp);
 		}
+		hashtable->nodes[i] = 0;
 	}
-	free(hashtable->nodes);
-	hashtable->nodes = 0;
-	hashtable->computeHash = 0;
-
-	free(hashtable);
 }
-
 
 short hashtable_hasKey(struct hashtable * hashtable, const void * key) {
 	if (!hashtable || !key)

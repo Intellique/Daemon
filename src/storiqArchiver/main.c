@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 27 Sep 2010 15:56:39 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 10:56:38 +0200                       *
 \***********************************************************************/
 
 // getopt_long
@@ -117,6 +117,8 @@ int main(int argc, char ** argv) {
 
 	// create daemon
 	if (detach) {}
+
+	conf_readConfig(config_file);
 
 	return 0;
 }

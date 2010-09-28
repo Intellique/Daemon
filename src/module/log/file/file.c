@@ -24,18 +24,20 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 27 Sep 2010 18:15:39 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 10:23:47 +0200                       *
 \***********************************************************************/
 
-#include "storiqArchiver/log.h"
+// realloc
+#include <malloc.h>
 
-static void log_file_free(struct log_module * module);
-static void log_file_writeAll(struct log_module * module, enum Log_level level, const char * message);
+#include "common.h"
+#include "storiqArchiver/hashtable.h"
+
+static int log_file_add(struct log_module * module, const char * alias, enum Log_level level, struct hashtable * params);
 
 
 static struct log_module_ops log_file_moduleOps = {
-	free:		log_file_free,
-	writeAll:	log_file_writeAll,
+	add: log_file_add,
 };
 
 static struct log_module log_file_module = {
@@ -48,12 +50,22 @@ static struct log_module log_file_module = {
 };
 
 
-void log_file_free(struct log_module * module) {}
+int log_file_add(struct log_module * module, const char * alias, enum Log_level level, struct hashtable * params) {
+	if (!module || !alias || !params)
+		return 1;
+
+	if (!hashtable_hasKey(params, "value"))
+		return 1;
+
+	module->subModules = realloc(module->subModules, (module->nbSubModules + 1) * sizeof(struct log_moduleSub));
+	log_file_new(module->subModules + module->nbSubModules, alias, level, hashtable_value(params, "value"));
+	module->nbSubModules++;
+
+	return 0;
+}
 
 __attribute__((constructor))
 static void log_file_init() {
 	log_registerModule(&log_file_module);
 }
-
-void log_file_writeAll(struct log_module * module, enum Log_level level, const char * message) {}
 
