@@ -24,29 +24,30 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 13:11:55 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 18:19:55 +0200                       *
 \***********************************************************************/
 
 // realloc
 #include <malloc.h>
 
+#include <storiqArchiver/hashtable.h>
+
 #include "common.h"
-#include "storiqArchiver/hashtable.h"
 
 static int log_file_add(struct log_module * module, const char * alias, enum Log_level level, struct hashtable * params);
 
 
 static struct log_module_ops log_file_moduleOps = {
-	add: log_file_add,
+	.add = log_file_add,
 };
 
 static struct log_module log_file_module = {
-	moduleName:		"file",
-	ops:			&log_file_moduleOps,
-	data:			0,
-	cookie:			0,
-	subModules:		0,
-	nbSubModules:	0,
+	.moduleName = 	"file",
+	.ops = 			&log_file_moduleOps,
+	.data = 		0,
+	.cookie = 		0,
+	.subModules = 	0,
+	.nbSubModules =	0,
 };
 
 
@@ -54,11 +55,12 @@ int log_file_add(struct log_module * module, const char * alias, enum Log_level 
 	if (!module || !alias || !params)
 		return 1;
 
-	if (!hashtable_hasKey(params, "path"))
+	char * path = hashtable_value(params, "path");
+	if (!path)
 		return 1;
 
 	module->subModules = realloc(module->subModules, (module->nbSubModules + 1) * sizeof(struct log_moduleSub));
-	log_file_new(module->subModules + module->nbSubModules, alias, level, hashtable_value(params, "path"));
+	log_file_new(module->subModules + module->nbSubModules, alias, level, path);
 	module->nbSubModules++;
 
 	return 0;

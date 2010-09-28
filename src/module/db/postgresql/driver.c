@@ -24,17 +24,76 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 17:01:39 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 17:55:31 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_CONFIG_H__
-#define __STORIQARCHIVER_CONFIG_H__
+// free, malloc
+#include <malloc.h>
+// strdup
+#include <string.h>
 
-#define DEFAULT_CONFIG_FILE "/etc/storiq/storiqArchiver.conf"
-#define DEFAULT_PID_FILE "/var/run/storiqArchiver.pid"
+#include <storiqArchiver/database.h>
+#include <storiqArchiver/hashtable.h>
 
-#define DB_DIRNAME "lib/db"
-#define LOG_DIRNAME "lib/log"
+#include "connection.h"
 
-#endif
+static int db_postgresql_setup(struct database * db, struct hashtable * params);
+
+static struct database_ops db_postgresql_ops = {
+	.connect =	0,
+	.ping =		0,
+	.setup =	db_postgresql_setup,
+};
+
+static struct database db_postgresql = {
+	.driverName =	"postgresql",
+	.ops =			&db_postgresql_ops,
+	.data =			0,
+	.cookie =		0,
+};
+
+__attribute__((constructor))
+static void db_postgresql_init() {
+	db_registerDb(&db_postgresql);
+}
+
+void db_postgresql_prFree(struct db_postgresql_private * self) {
+	if (!self)
+		return;
+
+	if (self->user)
+		free(self->user);
+	self->user = 0;
+	if (self->password)
+		free(self->password);
+	self->password = 0;
+	if (self->db)
+		free(self->db);
+	self->db = 0;
+	if (self->host)
+		free(self->host);
+	self->host = 0;
+	if (self->port)
+		free(self->port);
+	self->port = 0;
+}
+
+int db_postgresql_setup(struct database * db, struct hashtable * params) {
+	if (!db)
+		return 1;
+
+	struct db_postgresql_private * self = db->data;
+	if (self)
+		db_postgresql_prFree(self);
+	else
+		self = malloc(sizeof(struct db_postgresql_private));
+
+	self->user = strdup(hashtable_value(params, "user"));
+	self->password = strdup(hashtable_value(params, "password"));
+	self->db = strdup(hashtable_value(params, "db"));
+	self->host = strdup(hashtable_value(params, "host"));
+	self->port = strdup(hashtable_value(params, "port"));
+
+	return 0;
+}
 

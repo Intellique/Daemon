@@ -24,17 +24,69 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 17:01:39 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 17:54:47 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_CONFIG_H__
-#define __STORIQARCHIVER_CONFIG_H__
+#ifndef __STORIQARCHIVER_DATABASE_H__
+#define __STORIQARCHIVER_DATABASE_H__
 
-#define DEFAULT_CONFIG_FILE "/etc/storiq/storiqArchiver.conf"
-#define DEFAULT_PID_FILE "/var/run/storiqArchiver.pid"
+struct hashtable;
+struct database;
+struct database_connection;
 
-#define DB_DIRNAME "lib/db"
-#define LOG_DIRNAME "lib/log"
+struct database_ops {
+	struct database_connection * (*connect)(struct database * db);
+	int (*ping)(struct database * db);
+	int (*setup)(struct database * db, struct hashtable * params);
+};
+
+struct database {
+	char driverName[32];
+	struct database_ops * ops;
+	void * data;
+
+	// reserved for server
+	void * cookie;
+};
+
+struct database_connection_ops {
+	void * foo;
+};
+
+struct database_connection {
+	unsigned int id;
+	struct database * driver;
+	struct database_connection_ops * ops;
+	void * data;
+};
+
+
+/**
+ * \brief get a database driver
+ * \param db : database name
+ * \return 0 if failed
+ * \note if \a db is not loaded then we try to load it
+ */
+struct database * db_getDb(const char * db);
+
+/**
+ * \brief try to load a database driver
+ * \param db : database name
+ * \retrun 0 if ok
+ */
+int db_loadDb(const char * db);
+
+/**
+ * \brief Each db module should call this function only one time
+ * \param db : a statically allocated struct database
+ * \code
+ * __attribute__((constructor))
+ * static void db_myDb_init() {
+ *    db_registerDb(&db_myDb_module);
+ * }
+ * \endcode
+ */
+void db_registerDb(struct database * db);
 
 #endif
 

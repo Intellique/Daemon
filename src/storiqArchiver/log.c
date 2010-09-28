@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 13:17:36 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 16:59:44 +0200                       *
 \***********************************************************************/
 
 // dlerror, dlopen
@@ -38,8 +38,9 @@
 // access
 #include <unistd.h>
 
+#include <storiqArchiver/log.h>
+
 #include "config.h"
-#include "storiqArchiver/log.h"
 
 static struct log_module ** log_modules = 0;
 static unsigned int log_nbModules = 0;
@@ -104,9 +105,9 @@ int log_loadModule(const char * module) {
 	if (!cookie) {
 		printf("Error while loading %s => %s\n", path, dlerror());
 		return 2;
-	} else if (log_nbModules > 0 && !strcmp(log_modules[log_nbModules - 1]->moduleName, module))
+	} else if (log_nbModules > 0 && !strcmp(log_modules[log_nbModules - 1]->moduleName, module)) {
 		log_modules[log_nbModules - 1]->cookie = cookie;
-	else {
+	} else {
 		// module didn't call log_registerModule so we unload it
 		dlclose(cookie);
 		return 2;

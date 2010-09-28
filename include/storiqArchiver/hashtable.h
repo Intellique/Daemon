@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 11:52:38 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 18:06:25 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_HASHTABLE_H__
@@ -42,7 +42,7 @@ struct hashtable {
 	unsigned int nbElements;
 	unsigned int sizeNode;
 
-	unsigned char allowRehash : 1;
+	unsigned char allowRehash;
 
 	unsigned long long (*computeHash)(const void *);
 	void (*releaseKeyValue)(void *, void *);

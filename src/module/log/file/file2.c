@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 09:58:25 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 18:20:14 +0200                       *
 \***********************************************************************/
 
 // open
@@ -53,8 +53,8 @@ static void log_file_subFree(struct log_moduleSub * subModule);
 static void log_file_subWrite(struct log_moduleSub * subModule, enum Log_level level, const char * message);
 
 static struct log_moduleSub_ops log_file_moduleSubOps = {
-	free:	log_file_subFree,
-	write:	log_file_subWrite,
+	.free = 	log_file_subFree,
+	.write = 	log_file_subWrite,
 };
 
 
@@ -87,7 +87,7 @@ struct log_moduleSub * log_file_new(struct log_moduleSub * subModule, const char
 
 	struct log_file_private * self = malloc(sizeof(struct log_file_private));
 	self->path = strdup(path);
-	self->fd = open(path, O_WRONLY | O_TRUNC | O_CREAT, 0640);
+	self->fd = open(path, O_WRONLY | O_APPEND | O_CREAT, 0640);
 
 	subModule->data = self;
 	return subModule;

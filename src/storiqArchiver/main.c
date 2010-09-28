@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 10:56:38 +0200                       *
+*  Last modified: Tue, 28 Sep 2010 15:24:12 +0200                       *
 \***********************************************************************/
 
 // getopt_long
@@ -118,7 +118,11 @@ int main(int argc, char ** argv) {
 	// create daemon
 	if (detach) {}
 
-	conf_readConfig(config_file);
+	// read configuration
+	if (conf_readConfig(config_file)) {
+		printf("Error while parsing '%s'\n", config_file);
+		return 3;
+	}
 
 	return 0;
 }
