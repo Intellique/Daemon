@@ -9,7 +9,7 @@ STORIQ_ARCHIVER_DEP_FILES	:= $(sort $(shell test -d ${STORIQ_ARCHIVER_DEPEND_DIR
 
 STORIQ_ARCHIVER_BIN			:= bin/storiqArchiver
 STORIQ_ARCHIVER_CFLAG		:= -I.
-STORIQ_ARCHIVER_LD			:= -ldl
+STORIQ_ARCHIVER_LD			:= -ldl -rdynamic
 
 STORIQ_ARCHIVER_LIB			:=
 
