@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 18:20:14 +0200                       *
+*  Last modified: Wed, 29 Sep 2010 11:17:36 +0200                       *
 \***********************************************************************/
 
 // open
@@ -95,10 +95,6 @@ struct log_moduleSub * log_file_new(struct log_moduleSub * subModule, const char
 
 void log_file_subWrite(struct log_moduleSub * subModule, enum Log_level level, const char * message) {
 	struct log_file_private * self = subModule->data;
-
-	if (subModule->level > level)
-		return;
-
 	dprintf(self->fd, "[%s] %s\n", log_levelToString(level), message);
 }
 

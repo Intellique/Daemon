@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 13:07:32 +0200                       *
+*  Last modified: Wed, 29 Sep 2010 11:07:25 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_LOG_H__
@@ -36,10 +36,10 @@ struct log_moduleSub;
 
 
 enum Log_level {
-	Log_level_debug		= 0x3,
-	Log_level_error		= 0x2,
-	Log_level_info		= 0x0,
-	Log_level_warning	= 0x1,
+	Log_level_debug		= 0x0,
+	Log_level_error		= 0x3,
+	Log_level_info		= 0x1,
+	Log_level_warning	= 0x2,
 
 	Log_level_unknown	= 0xF,
 };
@@ -118,8 +118,8 @@ int log_loadModule(const char * module);
  */
 void log_registerModule(struct log_module * module);
 
-void log_writeAll(enum Log_level level, const char * message);
-void log_writeTo(const char * alias, enum Log_level level, const char * message);
+void log_writeAll(enum Log_level level, const char * message, ...) __attribute__ ((format (printf, 2, 3)));
+void log_writeTo(const char * alias, enum Log_level level, const char * message, ...) __attribute__ ((format (printf, 3, 4)));
 
 #endif
 

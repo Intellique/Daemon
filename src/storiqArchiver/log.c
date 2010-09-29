@@ -24,13 +24,15 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 16:59:44 +0200                       *
+*  Last modified: Wed, 29 Sep 2010 11:19:30 +0200                       *
 \***********************************************************************/
 
 // dlerror, dlopen
 #include <dlfcn.h>
 // realloc
 #include <malloc.h>
+// va_end, va_start
+#include <stdarg.h>
 // printf, snprintf
 #include <stdio.h>
 // strcasecmp, strcmp
@@ -60,7 +62,7 @@ static struct log_level {
 
 const char * log_levelToString(enum Log_level level) {
 	struct log_level * ptr;
-	for (ptr = log_levels; ptr->level == Log_level_unknown; ptr++)
+	for (ptr = log_levels; ptr->level != Log_level_unknown; ptr++)
 		if (ptr->level == level)
 			return ptr->name;
 	return 0;
@@ -123,27 +125,45 @@ void log_registerModule(struct log_module * module) {
 	log_nbModules++;
 }
 
-void log_writeAll(enum Log_level level, const char * message) {
+void log_writeAll(enum Log_level level, const char * format, ...) {
+	char * message = malloc(256);
+
+	va_list va;
+	va_start(va, format);
+	vsnprintf(message, 256, format, va);
+	va_end(va);
+
 	unsigned int i;
 	for (i = 0; i < log_nbModules; i++) {
 		unsigned int j;
 		for (j = 0; j < log_modules[i]->nbSubModules; j++) {
-			if (log_modules[i]->subModules[j].level >= level)
+			if (log_modules[i]->subModules[j].level <= level)
 				log_modules[i]->subModules[j].ops->write(log_modules[i]->subModules + j, level, message);
 		}
 	}
+
+	free(message);
 }
 
-void log_writeTo(const char * alias, enum Log_level level, const char * message) {
+void log_writeTo(const char * alias, enum Log_level level, const char * format, ...) {
+	char * message = malloc(256);
+
+	va_list va;
+	va_start(va, format);
+	vsnprintf(message, 256, format, va);
+	va_end(va);
+
 	unsigned int i;
 	for (i = 0; i < log_nbModules; i++) {
 		unsigned int j;
 		for (j = 0; j < log_modules[i]->nbSubModules; j++) {
-			if (!strcmp(log_modules[i]->subModules[j].alias, alias) && log_modules[i]->subModules[j].level >= level) {
+			if (!strcmp(log_modules[i]->subModules[j].alias, alias) && log_modules[i]->subModules[j].level <= level) {
 				log_modules[i]->subModules[j].ops->write(log_modules[i]->subModules + j, level, message);
 				return;
 			}
 		}
 	}
+
+	free(message);
 }
 

@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 15:24:12 +0200                       *
+*  Last modified: Wed, 29 Sep 2010 11:08:45 +0200                       *
 \***********************************************************************/
 
 // getopt_long
@@ -33,6 +33,8 @@
 #include <stdio.h>
 // strrchr
 #include <string.h>
+
+#include <storiqArchiver/log.h>
 
 #include "conf.h"
 #include "config.h"
@@ -123,6 +125,8 @@ int main(int argc, char ** argv) {
 		printf("Error while parsing '%s'\n", config_file);
 		return 3;
 	}
+
+	log_writeAll(Log_level_info, "StorIqArchiver, version: %s, build: %s %s", STORIQARCHIVER_VERSION, __DATE__, __TIME__);
 
 	return 0;
 }
