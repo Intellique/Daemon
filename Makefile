@@ -26,8 +26,8 @@ OBJ_FILES	:=
 
 
 # compilation flags
-CFLAGS		:= -std=gnu99 -pipe -O0 -ggdb3 -Wall -Wextra -pedantic -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes -Iinclude -DSTORIQARCHIVER_VERSION=\"${VERSION}\"
-LDFLAGS		:=
+CFLAGS		:= -std=gnu99 -pipe -O0 -ggdb3 -Wall -Wextra -pedantic -pthread -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes -Iinclude -DSTORIQARCHIVER_VERSION=\"${VERSION}\"
+LDFLAGS		:= -pthread
 
 CSCOPE_OPT	:= -b -R -s src -U -I include
 CTAGS_OPT	:= -R src
@@ -43,7 +43,7 @@ include ${SUB_MAKES}
 define BIN_template
 $$($(1)_BIN): $$($(1)_LIB) $$($(1)_OBJ_FILES)
 	@echo " LD       $$@"
-	@${GCC} -o $$@ $$($(1)_OBJ_FILES) $$($(1)_LD)
+	@${GCC} -o $$@ $$($(1)_OBJ_FILES) ${LDFLAGS} $$($(1)_LD)
 	@echo " OBJCOPY  --only-keep-debug $$@ $$@.debug"
 	@objcopy --only-keep-debug $$@ $$@.debug
 	@echo " STRIP    $$@"

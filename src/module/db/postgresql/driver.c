@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 17:55:31 +0200                       *
+*  Last modified: Wed, 29 Sep 2010 10:31:56 +0200                       *
 \***********************************************************************/
 
 // free, malloc
@@ -32,16 +32,20 @@
 // strdup
 #include <string.h>
 
+// PQsetdbLogin
+#include <postgresql/libpq-fe.h>
 #include <storiqArchiver/database.h>
 #include <storiqArchiver/hashtable.h>
 
 #include "connection.h"
 
+static int db_postgresql_ping(struct database * db);
 static int db_postgresql_setup(struct database * db, struct hashtable * params);
+
 
 static struct database_ops db_postgresql_ops = {
 	.connect =	0,
-	.ping =		0,
+	.ping =		db_postgresql_ping,
 	.setup =	db_postgresql_setup,
 };
 
@@ -78,6 +82,19 @@ void db_postgresql_prFree(struct db_postgresql_private * self) {
 	self->port = 0;
 }
 
+int db_postgresql_ping(struct database * db) {
+	if (!db)
+		return -1;
+
+	struct db_postgresql_private * self = db->data;
+
+	PGconn * con = PQsetdbLogin(self->host, self->port, 0, 0, self->db, self->user, self->password);
+	ConnStatusType status = PQstatus(con);
+	PQfinish(con);
+
+	return status == CONNECTION_OK ? 1 : -1;
+}
+
 int db_postgresql_setup(struct database * db, struct hashtable * params) {
 	if (!db)
 		return 1;
@@ -86,13 +103,37 @@ int db_postgresql_setup(struct database * db, struct hashtable * params) {
 	if (self)
 		db_postgresql_prFree(self);
 	else
-		self = malloc(sizeof(struct db_postgresql_private));
+		db->data = self = malloc(sizeof(struct db_postgresql_private));
 
-	self->user = strdup(hashtable_value(params, "user"));
-	self->password = strdup(hashtable_value(params, "password"));
-	self->db = strdup(hashtable_value(params, "db"));
-	self->host = strdup(hashtable_value(params, "host"));
-	self->port = strdup(hashtable_value(params, "port"));
+	char * user = hashtable_value(params, "user");
+	if (user)
+		self->user = strdup(user);
+	else
+		self->user = 0;
+
+	char * password = hashtable_value(params, "password");
+	if (password)
+		self->password = strdup(password);
+	else
+		self->password = 0;
+
+	char * database = hashtable_value(params, "db");
+	if (database)
+		self->db = strdup(database);
+	else
+		self->db = 0;
+
+	char * host = hashtable_value(params, "host");
+	if (host)
+		self->host = strdup(host);
+	else
+		self->host = 0;
+
+	char * port = hashtable_value(params, "port");
+	if (port)
+		self->port = strdup(port);
+	else
+		self->port = 0;
 
 	return 0;
 }

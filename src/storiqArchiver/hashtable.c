@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 12:01:29 +0200                       *
+*  Last modified: Wed, 29 Sep 2010 08:37:37 +0200                       *
 \***********************************************************************/
 
 #include <malloc.h>
@@ -85,6 +85,7 @@ void hashtable_clear(struct hashtable * hashtable) {
 		}
 		hashtable->nodes[i] = 0;
 	}
+	hashtable->nbElements = 0;
 }
 
 short hashtable_hasKey(struct hashtable * hashtable, const void * key) {

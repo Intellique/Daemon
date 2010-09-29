@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 13:27:33 +0200                       *
+*  Last modified: Wed, 29 Sep 2010 08:44:01 +0200                       *
 \***********************************************************************/
 
 // open
@@ -33,7 +33,7 @@
 #include <malloc.h>
 // snprintf, sscanf
 #include <stdio.h>
-// strcmp, strncmp, strrchr
+// strcmp, strlen, strncmp, strrchr
 #include <string.h>
 // open
 #include <sys/stat.h>
@@ -42,11 +42,20 @@
 // access, close, read, readlink, unlink, write
 #include <unistd.h>
 
+#include <storiqArchiver/database.h>
+#include <storiqArchiver/hashtable.h>
+#include <storiqArchiver/log.h>
+
 #include "conf.h"
-#include "storiqArchiver/hashtable.h"
-#include "storiqArchiver/log.h"
 #include "util.h"
 
+enum conf_section {
+	conf_section_db,
+	conf_section_log,
+	conf_section_unknown,
+};
+
+static void conf_loadDb(struct hashtable * params);
 static void conf_loadLog(struct hashtable * params);
 
 
@@ -105,7 +114,25 @@ int conf_writePid(const char * pidFile, int pid) {
 }
 
 
+void conf_loadDb(struct hashtable * params) {
+	if (!params)
+		return;
+
+	char * driver = hashtable_value(params, "driver");
+	if (!driver)
+		return;
+
+	struct database * db = db_getDb(driver);
+	if (db) {
+		db->ops->setup(db, params);
+		db->ops->ping(db);
+	}
+}
+
 void conf_loadLog(struct hashtable * params) {
+	if (!params)
+		return;
+
 	char * alias = hashtable_value(params, "alias");
 	char * type = hashtable_value(params, "type");
 	enum Log_level verbosity = log_stringTolevel(hashtable_value(params, "verbosity"));
@@ -133,7 +160,7 @@ int conf_readConfig(const char * confFile) {
 	close(fd);
 
 	char * ptr = buffer;
-	short section = 0;
+	enum conf_section section = conf_section_unknown;
 	struct hashtable * params = hashtable_new2(util_hashString, util_freeKeyValue);
 	while (ptr) {
 		switch (*ptr) {
@@ -144,21 +171,35 @@ int conf_readConfig(const char * confFile) {
 			case '\n':
 				ptr++;
 				if (*ptr == '\n') {
-					if (section == 1)
-						conf_loadLog(params);
+					switch (section) {
+						case conf_section_db:
+							conf_loadDb(params);
+							break;
+
+						case conf_section_log:
+							conf_loadLog(params);
+							break;
+
+						default:
+							break;
+					}
 
 					hashtable_clear(params);
 				}
 				continue;
 
 			case '[':
-				if (!strncmp(ptr + 1, "log", 3))
-					section = 1;
+				if (strlen(ptr + 1) > 8 && !strncmp(ptr + 1, "database", 8))
+					section = conf_section_db;
+				else if (strlen(ptr + 1) > 3 && !strncmp(ptr + 1, "log", 3))
+					section = conf_section_log;
+				else
+					section = conf_section_unknown;
 				ptr = strchr(ptr, '\n');
 				continue;
 
 			default:
-				if (section == 0)
+				if (section == conf_section_unknown)
 					continue;
 
 				if (strchr(ptr, '=') < strchr(ptr, '\n')) {
@@ -173,8 +214,18 @@ int conf_readConfig(const char * confFile) {
 	}
 
 	if (params->nbElements > 0) {
-		if (section == 1)
-			conf_loadLog(params);
+		switch (section) {
+			case conf_section_db:
+				conf_loadDb(params);
+				break;
+
+			case conf_section_log:
+				conf_loadLog(params);
+				break;
+
+			default:
+				break;
+		}
 	}
 
 	hashtable_free(params);
