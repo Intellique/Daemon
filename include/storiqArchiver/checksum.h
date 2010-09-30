@@ -24,18 +24,37 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 17:01:39 +0200                       *
+*  Last modified: Thu, 30 Sep 2010 11:11:38 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_CONFIG_H__
-#define __STORIQARCHIVER_CONFIG_H__
+#ifndef __STORIQARCHIVER_CHECKSUM_H__
+#define __STORIQARCHIVER_CHECKSUM_H__
 
-#define DEFAULT_CONFIG_FILE "/etc/storiq/storiqArchiver.conf"
-#define DEFAULT_PID_FILE "/var/run/storiqArchiver.pid"
+struct checksum;
 
-#define CHECKSUM_DIRNAME "lib/checksum"
-#define DB_DIRNAME "lib/db"
-#define LOG_DIRNAME "lib/log"
+struct checksum_ops {
+	char * (*finish)(struct checksum * checksum);
+	void (*free)(struct checksum * checksum);
+	int (*update)(struct checksum * checksum, const char * data, unsigned int length);
+};
+
+struct checksum {
+	struct checksum_ops * ops;
+	void * data;
+};
+
+struct checksum_driver {
+	char name[16];
+	struct checksum * (*new_checksum)(struct checksum_driver * driver, struct checksum * checksum);
+	void * data;
+	void * cookie;
+};
+
+
+void checksum_convert2Hex(unsigned char * digest, int length, char * hexDigest);
+struct checksum_driver * checksum_getDriver(const char * driver);
+int checksum_loadDriver(const char * checksum);
+void checksum_registerDriver(struct checksum_driver * driver);
 
 #endif
 

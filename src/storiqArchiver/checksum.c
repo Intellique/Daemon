@@ -24,18 +24,80 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 17:01:39 +0200                       *
+*  Last modified: Thu, 30 Sep 2010 10:55:36 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_CONFIG_H__
-#define __STORIQARCHIVER_CONFIG_H__
+// dlerror, dlopen
+#include <dlfcn.h>
+// realloc
+#include <malloc.h>
+// snprintf
+#include <stdio.h>
+// strcasecmp, strcmp
+#include <string.h>
+// access
+#include <unistd.h>
 
-#define DEFAULT_CONFIG_FILE "/etc/storiq/storiqArchiver.conf"
-#define DEFAULT_PID_FILE "/var/run/storiqArchiver.pid"
+#include <storiqArchiver/checksum.h>
 
-#define CHECKSUM_DIRNAME "lib/checksum"
-#define DB_DIRNAME "lib/db"
-#define LOG_DIRNAME "lib/log"
+#include "config.h"
 
-#endif
+static struct checksum_driver ** checksum_drivers = 0;
+static unsigned int checksum_nbDrivers = 0;
+
+
+void checksum_convert2Hex(unsigned char * digest, int length, char * hexDigest) {
+	int i;
+	for (i = 0; i < length; i++)
+		snprintf(hexDigest + (i << 1), 2, "%02x", digest[i]);
+	hexDigest[i << 1] = '\0';
+}
+
+struct checksum_driver * checksum_getDriver(const char * driver) {
+	unsigned int i;
+	for (i = 0; i < checksum_nbDrivers; i++)
+		if (!strcmp(checksum_drivers[i]->name, driver))
+			return checksum_drivers[i];
+	if (!checksum_loadDriver(driver))
+		return checksum_getDriver(driver);
+	return 0;
+}
+
+int checksum_loadDriver(const char * driver) {
+	char path[128];
+	snprintf(path, 128, "%s/lib%s.so", CHECKSUM_DIRNAME, driver);
+
+	// check if module is already loaded
+	unsigned int i;
+	for (i = 0; i < checksum_nbDrivers; i++)
+		if (!strcmp(checksum_drivers[i]->name, driver))
+			return 0;
+
+	// check if you can load module
+	if (access(path, R_OK | X_OK))
+		return 1;
+
+	// load module
+	void * cookie = dlopen(path, RTLD_NOW);
+
+	if (!cookie) {
+		printf("Error while loading %s => %s\n", path, dlerror());
+		return 2;
+	} else if (checksum_nbDrivers > 0 && !strcmp(checksum_drivers[checksum_nbDrivers - 1]->name, driver)) {
+		checksum_drivers[checksum_nbDrivers - 1]->cookie = cookie;
+	} else {
+		// module didn't call log_registerModule so we unload it
+		dlclose(cookie);
+		return 2;
+	}
+
+	return 0;
+}
+
+void checksum_registerDriver(struct checksum_driver * driver) {
+	checksum_drivers = realloc(checksum_drivers, (checksum_nbDrivers + 1) * sizeof(struct checksum_driver *));
+
+	checksum_drivers[checksum_nbDrivers] = driver;
+	checksum_nbDrivers++;
+}
 
