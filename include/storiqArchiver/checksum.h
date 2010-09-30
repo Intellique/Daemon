@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 30 Sep 2010 12:32:30 +0200                       *
+*  Last modified: Thu, 30 Sep 2010 12:48:39 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
@@ -39,13 +39,13 @@ struct checksum;
  */
 struct checksum_ops {
 	/**
-	 * \brief this function should be used to compute digest
+	 * \brief this function should be used to compute a digest
 	 * \param checksum : a checksum handler
 	 * \return a dynamically allocated string which contains a digest in hexadecimal form
 	 */
 	char * (*finish)(struct checksum * checksum);
 	/**
-	 * \brief this function should release all memory associated which ckecksum
+	 * \brief this function should release all memory associated with ckecksum
 	 * \warning this function SHOULD NOT call :
 	 * \code
 	 * free(checksum);
@@ -89,15 +89,16 @@ struct checksum_driver * checksum_getDriver(const char * driver);
 /**
  * \brief checksum_loadDriver will try to load a checksum driver
  * \param checksum : name of checksum's driver
- * \return 0 if ok
- *         1 if permission error
- *         2 if module didn't call checksum_registerDriver
+ * \return a value which correspond to
+ * \li 0 if ok
+ * \li 1 if permission error
+ * \li 2 if module didn't call checksum_registerDriver
  */
 int checksum_loadDriver(const char * checksum);
 
 /**
  * \brief Each checksum driver should call this function only one time
- * \param driver : a static allocated struct checksum_driver
+ * \param driver : a statically allocated struct checksum_driver
  * \code
  * __attribute__((constructor))
  * static void checksum_mychecksum_init() {

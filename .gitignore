@@ -3,5 +3,6 @@ bin/
 build/
 cscope.out
 depend/
+doc/
 lib/
 tags
