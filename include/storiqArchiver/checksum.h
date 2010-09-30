@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 30 Sep 2010 11:11:38 +0200                       *
+*  Last modified: Thu, 30 Sep 2010 12:32:30 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
@@ -32,8 +32,25 @@
 
 struct checksum;
 
+/**
+ * \struct checksum_ops
+ * \brief this structure contains only pointer functions
+ * \note all functions should point on real function
+ */
 struct checksum_ops {
+	/**
+	 * \brief this function should be used to compute digest
+	 * \param checksum : a checksum handler
+	 * \return a dynamically allocated string which contains a digest in hexadecimal form
+	 */
 	char * (*finish)(struct checksum * checksum);
+	/**
+	 * \brief this function should release all memory associated which ckecksum
+	 * \warning this function SHOULD NOT call :
+	 * \code
+	 * free(checksum);
+	 * \endcode
+	 */
 	void (*free)(struct checksum * checksum);
 	int (*update)(struct checksum * checksum, const char * data, unsigned int length);
 };
@@ -51,9 +68,43 @@ struct checksum_driver {
 };
 
 
+/**
+ * \brief checksum_convert2Hex convert a digest into hexadecimal form
+ * \param digest : a digest
+ * \param length : length of digest in bytes
+ * \param hexDigest : result of convertion
+ * \note this function supposed that hexDigest is already allocated
+ * and his size is, at least, 2 * length + 1
+ */
 void checksum_convert2Hex(unsigned char * digest, int length, char * hexDigest);
+
+/**
+ * \brief get a checksum driver
+ * \param driver : driver's name
+ * \return 0 if failed
+ * \note if this driver is not loaded, we try to load it
+ */
 struct checksum_driver * checksum_getDriver(const char * driver);
+
+/**
+ * \brief checksum_loadDriver will try to load a checksum driver
+ * \param checksum : name of checksum's driver
+ * \return 0 if ok
+ *         1 if permission error
+ *         2 if module didn't call checksum_registerDriver
+ */
 int checksum_loadDriver(const char * checksum);
+
+/**
+ * \brief Each checksum driver should call this function only one time
+ * \param driver : a static allocated struct checksum_driver
+ * \code
+ * __attribute__((constructor))
+ * static void checksum_mychecksum_init() {
+ *    checksum_registerDriver(&checksum_mychecksum_driver);
+ * }
+ * \endcode
+ */
 void checksum_registerDriver(struct checksum_driver * driver);
 
 #endif
