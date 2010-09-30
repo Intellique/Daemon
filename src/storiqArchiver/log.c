@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 29 Sep 2010 11:19:30 +0200                       *
+*  Last modified: Wed, 29 Sep 2010 11:45:21 +0200                       *
 \***********************************************************************/
 
 // dlerror, dlopen

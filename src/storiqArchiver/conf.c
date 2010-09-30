@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 29 Sep 2010 08:44:01 +0200                       *
+*  Last modified: Wed, 29 Sep 2010 12:49:04 +0200                       *
 \***********************************************************************/
 
 // open
@@ -127,6 +127,9 @@ void conf_loadDb(struct hashtable * params) {
 		db->ops->setup(db, params);
 		db->ops->ping(db);
 	}
+
+	if (!db_getDefaultDB())
+		db_setDefaultDB(db);
 }
 
 void conf_loadLog(struct hashtable * params) {

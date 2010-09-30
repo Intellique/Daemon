@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 29 Sep 2010 11:07:25 +0200                       *
+*  Last modified: Wed, 29 Sep 2010 11:26:15 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_LOG_H__
@@ -118,8 +118,8 @@ int log_loadModule(const char * module);
  */
 void log_registerModule(struct log_module * module);
 
-void log_writeAll(enum Log_level level, const char * message, ...) __attribute__ ((format (printf, 2, 3)));
-void log_writeTo(const char * alias, enum Log_level level, const char * message, ...) __attribute__ ((format (printf, 3, 4)));
+void log_writeAll(enum Log_level level, const char * format, ...) __attribute__ ((format (printf, 2, 3)));
+void log_writeTo(const char * alias, enum Log_level level, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
 
 #endif
 
