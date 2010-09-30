@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 30 Sep 2010 16:08:57 +0200                       *
+*  Last modified: Thu, 30 Sep 2010 16:15:39 +0200                       *
 \***********************************************************************/
 
 // fcntl
@@ -52,6 +52,10 @@ void command_free(struct command * command, unsigned int nbCommand) {
 
 	command_wait(command, nbCommand);
 
+	if (command->command)
+		free(command->command);
+	command->command = 0;
+
 	unsigned int i;
 	for (i = 0; i < nbCommand; i++) {
 		unsigned int j;
@@ -68,7 +72,7 @@ void command_init(struct command * command, unsigned int nbCommand) {
 
 	unsigned int i;
 	for (i = 0; i < nbCommand; i++) {
-		command[i].command[0]	= '\n';
+		command[i].command		= 0;
 		command[i].params		= 0;
 		command[i].nbParameters = 0;
 
@@ -87,8 +91,7 @@ void command_new(struct command * com, const char * command, const char ** param
 	if (!com || !command)
 		return;
 
-	strcpy(com->command, command);
-
+	com->command      = strdup(command);
 	com->params       = calloc(nbParams + 2, sizeof(char *));
 	com->nbParameters = nbParams;
 

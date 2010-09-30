@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 30 Sep 2010 15:58:51 +0200                       *
+*  Last modified: Thu, 30 Sep 2010 16:13:53 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_COMMAND_H__
@@ -43,7 +43,7 @@ struct command_fd {
 };
 
 struct command {
-	char command[64];
+	char * command;
 
 	char ** params;
 	unsigned int nbParameters;
