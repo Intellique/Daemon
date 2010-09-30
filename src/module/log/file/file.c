@@ -24,13 +24,13 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 18:19:55 +0200                       *
+*  Last modified: Thu, 30 Sep 2010 09:08:14 +0200                       *
 \***********************************************************************/
 
 // realloc
 #include <malloc.h>
 
-#include <storiqArchiver/hashtable.h>
+#include <storiqArchiver/util/hashtable.h>
 
 #include "common.h"
 

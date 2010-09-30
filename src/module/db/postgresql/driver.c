@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 29 Sep 2010 10:31:56 +0200                       *
+*  Last modified: Thu, 30 Sep 2010 09:08:17 +0200                       *
 \***********************************************************************/
 
 // free, malloc
@@ -35,7 +35,7 @@
 // PQsetdbLogin
 #include <postgresql/libpq-fe.h>
 #include <storiqArchiver/database.h>
-#include <storiqArchiver/hashtable.h>
+#include <storiqArchiver/util/hashtable.h>
 
 #include "connection.h"
 

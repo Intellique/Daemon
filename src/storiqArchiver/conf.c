@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 29 Sep 2010 12:49:04 +0200                       *
+*  Last modified: Thu, 30 Sep 2010 09:06:37 +0200                       *
 \***********************************************************************/
 
 // open
@@ -43,11 +43,11 @@
 #include <unistd.h>
 
 #include <storiqArchiver/database.h>
-#include <storiqArchiver/hashtable.h>
 #include <storiqArchiver/log.h>
+#include <storiqArchiver/util/hashtable.h>
 
 #include "conf.h"
-#include "util.h"
+#include "util/util.h"
 
 enum conf_section {
 	conf_section_db,

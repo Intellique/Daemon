@@ -24,12 +24,12 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 29 Sep 2010 08:37:37 +0200                       *
+*  Last modified: Thu, 30 Sep 2010 09:08:22 +0200                       *
 \***********************************************************************/
 
 #include <malloc.h>
 
-#include "storiqArchiver/hashtable.h"
+#include "storiqArchiver/util/hashtable.h"
 
 void hashtable_put2(struct hashtable * hashtable, unsigned int index, struct hashtableNode * new_node);
 void hashtable_rehash(struct hashtable * hashtable);
