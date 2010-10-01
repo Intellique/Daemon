@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 29 Sep 2010 11:08:45 +0200                       *
+*  Last modified: Fri, 01 Oct 2010 11:37:11 +0200                       *
 \***********************************************************************/
 
 // getopt_long
@@ -42,6 +42,8 @@
 void showHelp(char * command);
 
 int main(int argc, char ** argv) {
+	log_writeAll(Log_level_info, "StorIqArchiver, version: %s, build: %s %s", STORIQARCHIVER_VERSION, __DATE__, __TIME__);
+
 	static int option_index = 0;
 	static struct option long_options[] = {
 		{"config",		1,	0,	'c'},
@@ -67,10 +69,12 @@ int main(int argc, char ** argv) {
 		switch (c) {
 			case 'c':
 				config_file = optarg;
+				log_writeAll(Log_level_debug, "Using configuration file: '%s'", optarg);
 				break;
 
 			case 'd':
 				detach = 1;
+				log_writeAll(Log_level_debug, "Using detach mode (i.e. use fork())");
 				break;
 
 			case 'h':
@@ -79,6 +83,7 @@ int main(int argc, char ** argv) {
 
 			case 'p':
 				pid_file = optarg;
+				log_writeAll(Log_level_debug, "Using pid file: '%s'", optarg);
 				break;
 
 			case 'V': {
@@ -93,10 +98,13 @@ int main(int argc, char ** argv) {
 				return 0;
 
 			default:
+				log_writeAll(Log_level_error, "Parsing option: unknown option '%c'", c);
 				showHelp(*argv);
 				return 1;
 		}
 	}
+
+	log_writeAll(Log_level_info, "Parsing option: ok");
 
 	// check pid file
 	int pid = conf_readPid(pid_file);
@@ -125,8 +133,6 @@ int main(int argc, char ** argv) {
 		printf("Error while parsing '%s'\n", config_file);
 		return 3;
 	}
-
-	log_writeAll(Log_level_info, "StorIqArchiver, version: %s, build: %s %s", STORIQARCHIVER_VERSION, __DATE__, __TIME__);
 
 	return 0;
 }

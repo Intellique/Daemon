@@ -24,23 +24,53 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 29 Sep 2010 11:26:15 +0200                       *
+*  Last modified: Fri, 01 Oct 2010 11:07:52 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_LOG_H__
 #define __STORIQARCHIVER_LOG_H__
 
+// forward declarations
 struct hashtable;
 struct log_module;
 struct log_moduleSub;
 
 
+/**
+ * \brief Enumerate level
+ *
+ * Each level has a priority (i.e. debug < info < warning < error)
+ */
 enum Log_level {
+	/**
+	 * \brief reserved for debugging
+	 */
 	Log_level_debug		= 0x0,
+
+	/**
+	 * \brief should be used to alert errors
+	 */
 	Log_level_error		= 0x3,
+
+	/**
+	 * \brief should be used to inform what the server does.
+	 *
+	 * Example: server starts a new job
+	 */
 	Log_level_info		= 0x1,
+
+	/**
+	 * \brief should be used to alert errors which can be recovered
+	 *
+	 * Example: dns service not available
+	 */
 	Log_level_warning	= 0x2,
 
+	/**
+	 * \brief should not be used
+	 *
+	 * Used only by log_stringTolevel to report an error
+	 */
 	Log_level_unknown	= 0xF,
 };
 
@@ -77,11 +107,12 @@ struct log_moduleSub {
 
 
 /**
- * \brief convert an enumeration to statically allocated string
+ * \brief convert an enumeration to a statically allocated string
  * \param level : one log level
  * \return string
  */
 const char * log_levelToString(enum Log_level level);
+
 /**
  * \brief convert a string to an enumeration
  * \param string : one string level
@@ -100,9 +131,10 @@ struct log_module * log_getModule(const char * module);
 /**
  * \brief try to load a module by his name
  * \param module : name of module
- * \return 0 if ok
- *         1 if permission error
- *         2 if module didn't call log_registerModule
+ * \return a value which correspond to
+ * \li 0 if ok
+ * \li 1 if permission error
+ * \li 2 if module didn't call checksum_registerDriver
  */
 int log_loadModule(const char * module);
 

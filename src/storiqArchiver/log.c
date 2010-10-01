@@ -24,18 +24,18 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 29 Sep 2010 11:45:21 +0200                       *
+*  Last modified: Fri, 01 Oct 2010 12:05:59 +0200                       *
 \***********************************************************************/
 
 // dlerror, dlopen
 #include <dlfcn.h>
-// realloc
+// free, realloc
 #include <malloc.h>
 // va_end, va_start
 #include <stdarg.h>
-// printf, snprintf
+// dprintf, printf, snprintf
 #include <stdio.h>
-// strcasecmp, strcmp
+// strcasecmp, strcmp, strdup
 #include <string.h>
 // access
 #include <unistd.h>
@@ -46,6 +46,16 @@
 
 static struct log_module ** log_modules = 0;
 static unsigned int log_nbModules = 0;
+static struct log_messageUnSent {
+	char * who;
+	enum Log_level level;
+	char * message;
+} * log_messageUnSent = 0;
+static unsigned int log_nbMessageUnSent = 0;
+
+static void log_flushMessage(void);
+static void log_storeMessage(char * who, enum Log_level level, char * message);
+
 
 static struct log_level {
 	enum Log_level level;
@@ -76,6 +86,39 @@ enum Log_level log_stringTolevel(const char * string) {
 	return Log_level_unknown;
 }
 
+
+__attribute__((destructor))
+static void log_exit() {
+	if (log_messageUnSent) {
+		unsigned int mes;
+		for (mes = 0; mes < log_nbMessageUnSent; mes++)
+			dprintf(1, "! [%s] %s !\n", log_levelToString(log_messageUnSent[mes].level), log_messageUnSent[mes].message);
+	}
+}
+
+void log_flushMessage() {
+	unsigned int mes;
+	for (mes = 0; mes < log_nbMessageUnSent; mes++) {
+		unsigned int mod;
+		for (mod = 0; mod < log_nbModules; mod++) {
+			unsigned int submod;
+			for (submod = 0; submod < log_modules[mod]->nbSubModules; submod++) {
+				if (log_messageUnSent[mes].who && strcmp(log_messageUnSent[mes].who, log_modules[mod]->subModules[submod].alias))
+					continue;
+				if (log_modules[mod]->subModules[submod].level <= log_messageUnSent[mes].level)
+					log_modules[mod]->subModules[submod].ops->write(log_modules[mod]->subModules + submod, log_messageUnSent[mes].level, log_messageUnSent[mes].message);
+			}
+		}
+
+		if (log_messageUnSent[mes].who)
+			free(log_messageUnSent[mes].who);
+		log_messageUnSent[mes].who = 0;
+		free(log_messageUnSent[mes].message);
+		log_messageUnSent[mes].message = 0;
+	}
+	free(log_messageUnSent);
+	log_messageUnSent = 0;
+}
 
 struct log_module * log_getModule(const char * module) {
 	unsigned int i;
@@ -125,6 +168,14 @@ void log_registerModule(struct log_module * module) {
 	log_nbModules++;
 }
 
+void log_storeMessage(char * who, enum Log_level level, char * message) {
+	log_messageUnSent = realloc(log_messageUnSent, (log_nbMessageUnSent + 1) * sizeof(struct log_messageUnSent));
+	log_messageUnSent[log_nbMessageUnSent].who = who;
+	log_messageUnSent[log_nbMessageUnSent].level = level;
+	log_messageUnSent[log_nbMessageUnSent].message = message;
+	log_nbMessageUnSent++;
+}
+
 void log_writeAll(enum Log_level level, const char * format, ...) {
 	char * message = malloc(256);
 
@@ -132,6 +183,12 @@ void log_writeAll(enum Log_level level, const char * format, ...) {
 	va_start(va, format);
 	vsnprintf(message, 256, format, va);
 	va_end(va);
+
+	if (log_nbModules == 0) {
+		log_storeMessage(0, level, message);
+		return;
+	} else if (log_messageUnSent)
+		log_flushMessage();
 
 	unsigned int i;
 	for (i = 0; i < log_nbModules; i++) {
@@ -152,6 +209,12 @@ void log_writeTo(const char * alias, enum Log_level level, const char * format, 
 	va_start(va, format);
 	vsnprintf(message, 256, format, va);
 	va_end(va);
+
+	if (log_nbModules == 0) {
+		log_storeMessage(strdup(alias), level, message);
+		return;
+	} else if (log_messageUnSent)
+		log_flushMessage();
 
 	unsigned int i;
 	for (i = 0; i < log_nbModules; i++) {
