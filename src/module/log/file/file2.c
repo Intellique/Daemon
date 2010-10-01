@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 29 Sep 2010 11:17:36 +0200                       *
+*  Last modified: Fri, 01 Oct 2010 15:59:40 +0200                       *
 \***********************************************************************/
 
 // open
@@ -36,9 +36,13 @@
 // strdup
 #include <string.h>
 // open
-#include <sys/types.h>
-// open
 #include <sys/stat.h>
+// gettimeofday
+#include <sys/time.h>
+// open
+#include <sys/types.h>
+// localtime_r, strftime
+#include <time.h>
 // close
 #include <unistd.h>
 
@@ -95,6 +99,15 @@ struct log_moduleSub * log_file_new(struct log_moduleSub * subModule, const char
 
 void log_file_subWrite(struct log_moduleSub * subModule, enum Log_level level, const char * message) {
 	struct log_file_private * self = subModule->data;
-	dprintf(self->fd, "[%s] %s\n", log_levelToString(level), message);
+
+	struct timeval curTime;
+	struct tm curTime2;
+	char buffer[32];
+
+	gettimeofday(&curTime, 0);
+	localtime_r(&(curTime.tv_sec), &curTime2);
+	strftime(buffer, 32, "%F %T", &curTime2);
+
+	dprintf(self->fd, "@%s [%s] %s\n", buffer, log_levelToString(level), message);
 }
 

@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Oct 2010 13:49:27 +0200                       *
+*  Last modified: Fri, 01 Oct 2010 16:12:27 +0200                       *
 \***********************************************************************/
 
 // dlerror, dlopen
@@ -60,7 +60,7 @@ static struct log_messageUnSent {
 static unsigned int log_nbMessageUnSent = 0;
 static pthread_mutex_t log_lock;
 
-static void log_flushMessage(void);
+static int log_flushMessage(void);
 static void log_storeMessage(char * who, enum Log_level level, char * message);
 
 
@@ -103,7 +103,7 @@ static void log_exit() {
 	}
 }
 
-void log_flushMessage() {
+int log_flushMessage() {
 	unsigned int mes, ok = 0;
 	for (mes = 0; mes < log_nbMessageUnSent; mes++) {
 		unsigned int mod;
@@ -131,6 +131,8 @@ void log_flushMessage() {
 		free(log_messageUnSent);
 		log_messageUnSent = 0;
 	}
+
+	return ok;
 }
 
 struct log_module * log_getModule(const char * module) {
@@ -230,12 +232,11 @@ void log_writeAll(enum Log_level level, const char * format, ...) {
 
 	pthread_mutex_lock(&log_lock);
 
-	if (log_nbModules == 0) {
+	if (log_nbModules == 0 || (log_messageUnSent && !log_flushMessage())) {
 		log_storeMessage(0, level, message);
 		pthread_mutex_unlock(&log_lock);
 		return;
-	} else if (log_messageUnSent)
-		log_flushMessage();
+	}
 
 	unsigned int i;
 	for (i = 0; i < log_nbModules; i++) {
@@ -261,12 +262,11 @@ void log_writeTo(const char * alias, enum Log_level level, const char * format, 
 
 	pthread_mutex_lock(&log_lock);
 
-	if (log_nbModules == 0) {
+	if (log_nbModules == 0 || (log_messageUnSent && !log_flushMessage())) {
 		log_storeMessage(strdup(alias), level, message);
 		pthread_mutex_unlock(&log_lock);
 		return;
-	} else if (log_messageUnSent)
-		log_flushMessage();
+	}
 
 	unsigned int i;
 	for (i = 0; i < log_nbModules; i++) {

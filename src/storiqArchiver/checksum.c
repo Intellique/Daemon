@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Oct 2010 15:07:07 +0200                       *
+*  Last modified: Fri, 01 Oct 2010 15:51:42 +0200                       *
 \***********************************************************************/
 
 // dlerror, dlopen
@@ -57,7 +57,7 @@ static pthread_mutex_t checksum_lock;
 void checksum_convert2Hex(unsigned char * digest, int length, char * hexDigest) {
 	int i;
 	for (i = 0; i < length; i++)
-		snprintf(hexDigest + (i << 1), 2, "%02x", digest[i]);
+		snprintf(hexDigest + (i << 1), 3, "%02x", digest[i]);
 	hexDigest[i << 1] = '\0';
 }
 

@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 30 Sep 2010 12:48:39 +0200                       *
+*  Last modified: Fri, 01 Oct 2010 15:43:22 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
@@ -46,24 +46,62 @@ struct checksum_ops {
 	char * (*finish)(struct checksum * checksum);
 	/**
 	 * \brief this function should release all memory associated with ckecksum
+	 * \param checksum : a checksum handler
 	 * \warning this function SHOULD NOT call :
 	 * \code
 	 * free(checksum);
 	 * \endcode
 	 */
 	void (*free)(struct checksum * checksum);
+	/**
+	 * \brief this function is used to read some data or a
+	 * \param checksum : a checksum handler
+	 * \param data : some or full data
+	 * \param length : length of data
+	 * \return < 0 if error
+	 * \note this function can be called one or many times
+	 */
 	int (*update)(struct checksum * checksum, const char * data, unsigned int length);
 };
 
+/**
+ * \struct checksum
+ * \brief this structure is used as an handler to a specific checksum
+ */
 struct checksum {
+	/**
+	 * \brief contains a checksum function
+	 */
 	struct checksum_ops * ops;
+	/**
+	 * \brief private data of one checksum
+	 */
 	void * data;
 };
 
+/**
+ * \struct checksum_driver
+ */
 struct checksum_driver {
+	/**
+	 * \brief name of the driver
+	 */
 	char name[16];
+	/**
+	 * \brief get a new checksum handler
+	 * \param driver : a checksum driver
+	 * \param checksum : an already allocated checksum or NULL
+	 * \note if checksum is NULL, this function allocate enough memory with malloc
+	 */
 	struct checksum * (*new_checksum)(struct checksum_driver * driver, struct checksum * checksum);
+	/**
+	 * \brief private data of driver
+	 */
 	void * data;
+	/**
+	 * \brief private data used by checksum_loadDriver
+	 * \note should not be modified
+	 */
 	void * cookie;
 };
 
