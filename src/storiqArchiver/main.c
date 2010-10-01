@@ -134,6 +134,8 @@ int main(int argc, char ** argv) {
 		return 3;
 	}
 
+	//log_writeAll(Log_level_info, "StorIqArchiver exit");
+
 	return 0;
 }
 
