@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Oct 2010 11:37:11 +0200                       *
+*  Last modified: Fri, 01 Oct 2010 17:20:59 +0200                       *
 \***********************************************************************/
 
 // getopt_long
@@ -38,6 +38,7 @@
 
 #include "conf.h"
 #include "config.h"
+#include "scheduler.h"
 
 void showHelp(char * command);
 
@@ -134,7 +135,9 @@ int main(int argc, char ** argv) {
 		return 3;
 	}
 
-	//log_writeAll(Log_level_info, "StorIqArchiver exit");
+	sched_doLoop();
+
+	log_writeAll(Log_level_info, "StorIqArchiver exit");
 
 	return 0;
 }

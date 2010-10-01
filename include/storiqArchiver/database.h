@@ -30,9 +30,10 @@
 #ifndef __STORIQARCHIVER_DATABASE_H__
 #define __STORIQARCHIVER_DATABASE_H__
 
-struct hashtable;
 struct database;
 struct database_connection;
+struct hashtable;
+struct job;
 
 struct database_ops {
 	struct database_connection * (*connect)(struct database * db);
@@ -50,7 +51,7 @@ struct database {
 };
 
 struct database_connection_ops {
-	void * foo;
+	int (*updateJob)(struct database * db, struct job * job);
 };
 
 struct database_connection {
