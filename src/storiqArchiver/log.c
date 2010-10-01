@@ -24,11 +24,13 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Oct 2010 13:18:18 +0200                       *
+*  Last modified: Fri, 01 Oct 2010 13:49:27 +0200                       *
 \***********************************************************************/
 
 // dlerror, dlopen
 #include <dlfcn.h>
+// strerror
+#include <errno.h>
 // free, realloc
 #include <malloc.h>
 // pthread_mutex_init, pthread_mutex_lock, pthread_mutex_unlock,
@@ -39,7 +41,7 @@
 #include <stdarg.h>
 // dprintf, printf, snprintf
 #include <stdio.h>
-// strcasecmp, strcmp, strdup
+// strcasecmp, strcmp, strdup, strerror
 #include <string.h>
 // access
 #include <unistd.h>
@@ -170,12 +172,14 @@ int log_loadModule(const char * module) {
 	unsigned int i;
 	for (i = 0; i < log_nbModules; i++)
 		if (!strcmp(log_modules[i]->moduleName, module)) {
+			log_writeAll(Log_level_info, "Log: module '%s' already loaded", module);
 			pthread_mutex_unlock(&log_lock);
 			return 0;
 		}
 
 	// check if you can load module
 	if (access(path, R_OK | X_OK)) {
+		log_writeAll(Log_level_error, "Log: error, can load '%s' because %s", path, strerror(errno));
 		pthread_mutex_unlock(&log_lock);
 		return 1;
 	}

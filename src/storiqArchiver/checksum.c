@@ -24,26 +24,34 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 30 Sep 2010 10:55:36 +0200                       *
+*  Last modified: Fri, 01 Oct 2010 15:07:07 +0200                       *
 \***********************************************************************/
 
 // dlerror, dlopen
 #include <dlfcn.h>
+// strerror
+#include <errno.h>
 // realloc
 #include <malloc.h>
+// pthread_mutex_init, pthread_mutex_lock, pthread_mutex_unlock,
+// pthread_mutexattr_destroy, pthread_mutexattr_init, pthread_mutexattr_settype
+#define __USE_UNIX98
+#include <pthread.h>
 // snprintf
 #include <stdio.h>
-// strcasecmp, strcmp
+// strcasecmp, strcmp, strerror
 #include <string.h>
 // access
 #include <unistd.h>
 
 #include <storiqArchiver/checksum.h>
+#include <storiqArchiver/log.h>
 
 #include "config.h"
 
 static struct checksum_driver ** checksum_drivers = 0;
 static unsigned int checksum_nbDrivers = 0;
+static pthread_mutex_t checksum_lock;
 
 
 void checksum_convert2Hex(unsigned char * digest, int length, char * hexDigest) {
@@ -54,44 +62,75 @@ void checksum_convert2Hex(unsigned char * digest, int length, char * hexDigest) 
 }
 
 struct checksum_driver * checksum_getDriver(const char * driver) {
+	pthread_mutex_lock(&checksum_lock);
+
+	struct checksum_driver * dr = 0;
 	unsigned int i;
-	for (i = 0; i < checksum_nbDrivers; i++)
+
+	for (i = 0; i < checksum_nbDrivers && !dr; i++)
 		if (!strcmp(checksum_drivers[i]->name, driver))
-			return checksum_drivers[i];
-	if (!checksum_loadDriver(driver))
-		return checksum_getDriver(driver);
-	return 0;
+			dr = checksum_drivers[i];
+
+	if (!dr && !checksum_loadDriver(driver))
+		dr = checksum_getDriver(driver);
+
+	pthread_mutex_unlock(&checksum_lock);
+
+	return dr;
+}
+
+__attribute__((constructor))
+static void checksum_init() {
+	pthread_mutexattr_t attr;
+	pthread_mutexattr_init(&attr);
+	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+
+	pthread_mutex_init(&checksum_lock, &attr);
+
+	pthread_mutexattr_destroy(&attr);
 }
 
 int checksum_loadDriver(const char * driver) {
 	char path[128];
 	snprintf(path, 128, "%s/lib%s.so", CHECKSUM_DIRNAME, driver);
 
+	pthread_mutex_lock(&checksum_lock);
+
 	// check if module is already loaded
 	unsigned int i;
 	for (i = 0; i < checksum_nbDrivers; i++)
-		if (!strcmp(checksum_drivers[i]->name, driver))
+		if (!strcmp(checksum_drivers[i]->name, driver)) {
+			pthread_mutex_unlock(&checksum_lock);
+			log_writeAll(Log_level_info, "Checksum: driver '%s' already loaded", driver);
 			return 0;
+		}
 
 	// check if you can load module
-	if (access(path, R_OK | X_OK))
+	if (access(path, R_OK | X_OK)) {
+		log_writeAll(Log_level_error, "Checksum: error, can load '%s' because %s", path, strerror(errno));
+		pthread_mutex_unlock(&checksum_lock);
 		return 1;
+	}
 
 	// load module
 	void * cookie = dlopen(path, RTLD_NOW);
 
 	if (!cookie) {
-		printf("Error while loading %s => %s\n", path, dlerror());
+		log_writeAll(Log_level_error, "Checksum: error while loading '%s' because %s", path, dlerror());
+		pthread_mutex_unlock(&checksum_lock);
 		return 2;
 	} else if (checksum_nbDrivers > 0 && !strcmp(checksum_drivers[checksum_nbDrivers - 1]->name, driver)) {
 		checksum_drivers[checksum_nbDrivers - 1]->cookie = cookie;
+		log_writeAll(Log_level_info, "Checksum: driver '%s' loaded", driver);
+		pthread_mutex_unlock(&checksum_lock);
+		return 0;
 	} else {
 		// module didn't call log_registerModule so we unload it
 		dlclose(cookie);
+		log_writeAll(Log_level_warning, "Checksum: driver '%s' miss to call checksum_registerModule", driver);
+		pthread_mutex_unlock(&checksum_lock);
 		return 2;
 	}
-
-	return 0;
 }
 
 void checksum_registerDriver(struct checksum_driver * driver) {
