@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Oct 2010 15:51:42 +0200                       *
+*  Last modified: Fri, 01 Oct 2010 16:29:35 +0200                       *
 \***********************************************************************/
 
 // dlerror, dlopen
@@ -111,6 +111,8 @@ int checksum_loadDriver(const char * driver) {
 		pthread_mutex_unlock(&checksum_lock);
 		return 1;
 	}
+
+	log_writeAll(Log_level_debug, "Checksum: loading '%s' ...", driver);
 
 	// load module
 	void * cookie = dlopen(path, RTLD_NOW);

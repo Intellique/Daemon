@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Oct 2010 16:12:27 +0200                       *
+*  Last modified: Fri, 01 Oct 2010 16:30:52 +0200                       *
 \***********************************************************************/
 
 // dlerror, dlopen
@@ -178,6 +178,8 @@ int log_loadModule(const char * module) {
 			pthread_mutex_unlock(&log_lock);
 			return 0;
 		}
+
+	log_writeAll(Log_level_debug, "Log: loading '%s' ...", module);
 
 	// check if you can load module
 	if (access(path, R_OK | X_OK)) {
