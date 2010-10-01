@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 29 Sep 2010 12:47:51 +0200                       *
+*  Last modified: Fri, 01 Oct 2010 17:01:18 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_DATABASE_H__
@@ -74,7 +74,7 @@ struct database * db_getDb(const char * db);
 /**
  * \brief try to load a database driver
  * \param db : database name
- * \retrun 0 if ok
+ * \return 0 if ok
  */
 int db_loadDb(const char * db);
 

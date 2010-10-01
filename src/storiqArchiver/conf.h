@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 10:41:54 +0200                       *
+*  Last modified: Fri, 01 Oct 2010 16:57:39 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CONF_H__
@@ -33,23 +33,27 @@
 /**
  * \brief conf_checkPid
  * \param pid : pid
- * \return 1 is the daemon is alive or
- *         0 if is dead or
- *         -1 if another process used this pid
+ * \return a value which correspond to
+ * \li 1 is the daemon is alive
+ * \li 0 if the daemon is dead
+ * \li -1 if another process used this pid
  */
 int conf_checkPid(int pid);
+
 /**
  * \brief conf_deletePid
  * \param pidFile : file with pid
  * \return 0 if ok
  */
 int conf_deletePid(const char * pidFile);
+
 /**
  * \brief conf_readPid read pid file
  * \param pidFile : file with pid
  * \return the pid or -1 if not found
  */
 int conf_readPid(const char * pidFile);
+
 /**
  * \brief conf_writePid write pid into file
  * \param pidFile : file with pid

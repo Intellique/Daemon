@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 30 Sep 2010 09:08:17 +0200                       *
+*  Last modified: Fri, 01 Oct 2010 17:06:09 +0200                       *
 \***********************************************************************/
 
 // free, malloc
@@ -35,6 +35,7 @@
 // PQsetdbLogin
 #include <postgresql/libpq-fe.h>
 #include <storiqArchiver/database.h>
+#include <storiqArchiver/log.h>
 #include <storiqArchiver/util/hashtable.h>
 
 #include "connection.h"
@@ -91,6 +92,11 @@ int db_postgresql_ping(struct database * db) {
 	PGconn * con = PQsetdbLogin(self->host, self->port, 0, 0, self->db, self->user, self->password);
 	ConnStatusType status = PQstatus(con);
 	PQfinish(con);
+
+	if (status == CONNECTION_OK)
+		log_writeAll(Log_level_info, "db: Postgresql: ping => Ok");
+	else
+		log_writeAll(Log_level_error, "db: Postgresql: ping => Failed");
 
 	return status == CONNECTION_OK ? 1 : -1;
 }
