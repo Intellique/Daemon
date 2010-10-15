@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 30 Sep 2010 11:11:28 +0200                       *
+*  Last modified: Fri, 15 Oct 2010 18:42:59 +0200                       *
 \***********************************************************************/
 
 // malloc
@@ -60,6 +60,9 @@ static struct checksum_ops checksum_md5_ops = {
 
 char * checksum_md5_finish(struct checksum * checksum) {
 	struct checksum_md5_private * self = checksum->data;
+
+	if (self->finished)
+		return 0;
 
 	unsigned char digest[MD5_DIGEST_LENGTH];
 
@@ -109,6 +112,10 @@ struct checksum * checksum_md5_new_checksum(struct checksum_driver * driver __at
 
 int checksum_md5_update(struct checksum * checksum, const char * data, unsigned int length) {
 	struct checksum_md5_private * self = checksum->data;
+
+	if (self->finished)
+		return -1;
+
 	if (MD5_Update(&self->md5, data, length))
 		return length;
 	return -1;

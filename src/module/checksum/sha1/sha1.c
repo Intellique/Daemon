@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 15 Oct 2010 18:15:55 +0200                       *
+*  Last modified: Fri, 15 Oct 2010 18:43:48 +0200                       *
 \***********************************************************************/
 
 // malloc
@@ -60,6 +60,9 @@ static struct checksum_ops checksum_sha1_ops = {
 
 char * checksum_sha1_finish(struct checksum * checksum) {
 	struct checksum_sha1_private * self = checksum->data;
+
+	if (self->finished)
+		return 0;
 
 	unsigned char digest[SHA_DIGEST_LENGTH];
 
@@ -109,6 +112,10 @@ struct checksum * checksum_sha1_new_checksum(struct checksum_driver * driver __a
 
 int checksum_sha1_update(struct checksum * checksum, const char * data, unsigned int length) {
 	struct checksum_sha1_private * self = checksum->data;
+
+	if (self->finished)
+		return -1;
+
 	if (SHA1_Update(&self->sha1, data, length))
 		return length;
 	return -1;

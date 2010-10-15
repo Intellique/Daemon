@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 15 Oct 2010 18:24:05 +0200                       *
+*  Last modified: Fri, 15 Oct 2010 18:47:50 +0200                       *
 \***********************************************************************/
 
 // malloc
@@ -61,15 +61,18 @@ static struct checksum_ops checksum_sha256_ops = {
 char * checksum_sha256_finish(struct checksum * checksum) {
 	struct checksum_sha256_private * self = checksum->data;
 
-	unsigned char digest[SHA_DIGEST_LENGTH];
+	if (self->finished)
+		return 0;
+
+	unsigned char digest[SHA256_DIGEST_LENGTH];
 
 	short ok = SHA256_Final(digest, &self->sha256);
-	self->finished = 256;
+	self->finished = 1;
 	if (!ok)
 		return 0;
 
-	char * hexDigest = malloc(SHA_DIGEST_LENGTH * 2 + 256);
-	checksum_convert2Hex(digest, SHA_DIGEST_LENGTH, hexDigest);
+	char * hexDigest = malloc(SHA256_DIGEST_LENGTH * 2 + 1);
+	checksum_convert2Hex(digest, SHA256_DIGEST_LENGTH, hexDigest);
 
 	return hexDigest;
 }
@@ -78,7 +81,7 @@ void checksum_sha256_free(struct checksum * checksum) {
 	struct checksum_sha256_private * self = checksum->data;
 
 	if (!self->finished) {
-		unsigned char digest[SHA_DIGEST_LENGTH];
+		unsigned char digest[SHA256_DIGEST_LENGTH];
 		SHA256_Final(digest, &self->sha256);
 		self->finished = 1;
 	}
@@ -109,6 +112,10 @@ struct checksum * checksum_sha256_new_checksum(struct checksum_driver * driver _
 
 int checksum_sha256_update(struct checksum * checksum, const char * data, unsigned int length) {
 	struct checksum_sha256_private * self = checksum->data;
+
+	if (self->finished)
+		return -1;
+
 	if (SHA256_Update(&self->sha256, data, length))
 		return length;
 	return -1;
