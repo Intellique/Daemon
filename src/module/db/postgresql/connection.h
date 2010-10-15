@@ -24,11 +24,14 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 17:05:58 +0200                       *
+*  Last modified: Fri, 15 Oct 2010 17:07:21 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_DB_POSTGRESQL_CONNNECTION_H__
 #define __STORIQARCHIVER_DB_POSTGRESQL_CONNNECTION_H__
+
+#include <postgresql/libpq-fe.h>
+#include <storiqArchiver/database.h>
 
 struct db_postgresql_private {
 	char * user;
@@ -38,6 +41,11 @@ struct db_postgresql_private {
 	char * port;
 };
 
+struct db_postgresql_connetion_private {
+	PGconn * db_con;
+};
+
+int db_postgresql_initConnection(struct database_connection * connection, struct db_postgresql_private * driver_private);
 void db_postgresql_prFree(struct db_postgresql_private * self);
 
 #endif

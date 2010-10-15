@@ -24,28 +24,28 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Oct 2010 17:06:09 +0200                       *
+*  Last modified: Fri, 15 Oct 2010 17:24:42 +0200                       *
 \***********************************************************************/
 
 // free, malloc
 #include <malloc.h>
 // strdup
 #include <string.h>
-
 // PQsetdbLogin
 #include <postgresql/libpq-fe.h>
-#include <storiqArchiver/database.h>
+
 #include <storiqArchiver/log.h>
 #include <storiqArchiver/util/hashtable.h>
 
 #include "connection.h"
 
+static struct database_connection * db_postgresql_connect(struct database * db, struct database_connection * connection);
 static int db_postgresql_ping(struct database * db);
 static int db_postgresql_setup(struct database * db, struct hashtable * params);
 
 
 static struct database_ops db_postgresql_ops = {
-	.connect =	0,
+	.connect =	db_postgresql_connect,
 	.ping =		db_postgresql_ping,
 	.setup =	db_postgresql_setup,
 };
@@ -56,6 +56,28 @@ static struct database db_postgresql = {
 	.data =			0,
 	.cookie =		0,
 };
+
+
+struct database_connection * db_postgresql_connect(struct database * db, struct database_connection * connection) {
+	if (!db)
+		return 0;
+
+	int allocated = 0;
+
+	if (!connection) {
+		allocated = 1;
+		connection = malloc(sizeof(struct database_connection));
+	}
+
+	connection->driver = db;
+
+	int failed = db_postgresql_initConnection(connection, db->data);
+
+	if (failed && allocated)
+		free(connection);
+
+	return connection;
+}
 
 __attribute__((constructor))
 static void db_postgresql_init() {

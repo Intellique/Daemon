@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Oct 2010 16:52:44 +0200                       *
+*  Last modified: Fri, 15 Oct 2010 15:58:30 +0200                       *
 \***********************************************************************/
 
 // dlerror, dlopen
@@ -55,13 +55,30 @@ static pthread_mutex_t checksum_lock;
 
 
 void checksum_convert2Hex(unsigned char * digest, int length, char * hexDigest) {
+	if (!digest || length < 1 || !hexDigest) {
+		if (!digest)
+			log_writeAll(Log_level_debug, "Checksum computed failed because digest is null");
+		if (length < 1)
+			log_writeAll(Log_level_debug, "Checksum computed failed because length is lower than 1 (length=%d)", length);
+		if (!hexDigest)
+			log_writeAll(Log_level_debug, "Checksum computed failed because hexDigest is null");
+		return;
+	}
+
 	int i;
 	for (i = 0; i < length; i++)
 		snprintf(hexDigest + (i << 1), 3, "%02x", digest[i]);
 	hexDigest[i << 1] = '\0';
+
+	log_writeAll(Log_level_debug, "checksum computed => %s", hexDigest);
 }
 
 struct checksum_driver * checksum_getDriver(const char * driver) {
+	if (!driver) {
+		log_writeAll(Log_level_debug, "Checksum get driver failed because driver is null");
+		return 0;
+	}
+
 	pthread_mutex_lock(&checksum_lock);
 
 	struct checksum_driver * dr = 0;
@@ -75,6 +92,8 @@ struct checksum_driver * checksum_getDriver(const char * driver) {
 		dr = checksum_getDriver(driver);
 
 	pthread_mutex_unlock(&checksum_lock);
+
+	log_writeAll(Log_level_debug, "checksum get driver [%s] => %p", driver, (void *) dr);
 
 	return dr;
 }
@@ -91,6 +110,11 @@ static void checksum_init() {
 }
 
 int checksum_loadDriver(const char * driver) {
+	if (!driver) {
+		log_writeAll(Log_level_debug, "Checksum: get driver failed because driver is null");
+		return 3;
+	}
+
 	char path[128];
 	snprintf(path, 128, "%s/lib%s.so", CHECKSUM_DIRNAME, driver);
 

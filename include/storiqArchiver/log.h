@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Oct 2010 11:07:52 +0200                       *
+*  Last modified: Fri, 15 Oct 2010 16:02:25 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_LOG_H__
@@ -134,7 +134,8 @@ struct log_module * log_getModule(const char * module);
  * \return a value which correspond to
  * \li 0 if ok
  * \li 1 if permission error
- * \li 2 if module didn't call checksum_registerDriver
+ * \li 2 if module didn't call log_registerModule
+ * \li 3 if module is null
  */
 int log_loadModule(const char * module);
 

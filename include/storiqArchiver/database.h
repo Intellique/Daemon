@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Oct 2010 17:01:18 +0200                       *
+*  Last modified: Fri, 15 Oct 2010 16:55:24 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_DATABASE_H__
@@ -36,7 +36,7 @@ struct hashtable;
 struct job;
 
 struct database_ops {
-	struct database_connection * (*connect)(struct database * db);
+	struct database_connection * (*connect)(struct database * db, struct database_connection * connection);
 	int (*ping)(struct database * db);
 	int (*setup)(struct database * db, struct hashtable * params);
 };
@@ -51,7 +51,9 @@ struct database {
 };
 
 struct database_connection_ops {
-	int (*updateJob)(struct database * db, struct job * job);
+	int (*close)(struct database_connection * db);
+	int (*free)(struct database_connection * db);
+	int (*updateJob)(struct database_connection * db, struct job * job);
 };
 
 struct database_connection {
@@ -75,7 +77,11 @@ struct database * db_getDb(const char * db);
 /**
  * \brief try to load a database driver
  * \param db : database name
- * \return 0 if ok
+ * \return a value which correspond to
+ * \li 0 if ok
+ * \li 1 if permission error
+ * \li 2 if module didn't call db_registerDb
+ * \li 3 if db is null
  */
 int db_loadDb(const char * db);
 

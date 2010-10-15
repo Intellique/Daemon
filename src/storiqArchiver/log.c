@@ -165,6 +165,11 @@ static void log_init() {
 }
 
 int log_loadModule(const char * module) {
+	if (!module) {
+		log_writeAll(Log_level_debug, "Log: get driver failed because driver is null");
+		return 3;
+	}
+
 	char path[128];
 	snprintf(path, 128, "%s/lib%s.so", LOG_DIRNAME, module);
 

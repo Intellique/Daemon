@@ -24,8 +24,11 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 29 Sep 2010 12:51:05 +0200                       *
+*  Last modified: Fri, 15 Oct 2010 17:55:05 +0200                       *
 \***********************************************************************/
+
+// free
+#include <malloc.h>
 
 #include <storiqArchiver/database.h>
 #include <storiqArchiver/log.h>
@@ -33,12 +36,21 @@
 #include "scheduler.h"
 
 void sched_doLoop() {
-	struct database * db = db_getDefaultDB();
+	log_writeAll(Log_level_info, "Scheduler: starting main loop");
 
+	struct database * db = db_getDefaultDB();
 	if (!db) {
 		log_writeAll(Log_level_error, "Scheduler: there is no default database");
 		return;
 	}
 
+	struct database_connection * connection = db->ops->connect(db, 0);
+	if (!connection) {
+		log_writeAll(Log_level_error, "Scheduler: failed to connect to database");
+		return;
+	}
+
+	connection->ops->free(connection);
+	free(connection);
 }
 

@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Oct 2010 15:43:22 +0200                       *
+*  Last modified: Fri, 15 Oct 2010 15:58:47 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
@@ -131,6 +131,7 @@ struct checksum_driver * checksum_getDriver(const char * driver);
  * \li 0 if ok
  * \li 1 if permission error
  * \li 2 if module didn't call checksum_registerDriver
+ * \li 3 if checksum is null
  */
 int checksum_loadDriver(const char * checksum);
 

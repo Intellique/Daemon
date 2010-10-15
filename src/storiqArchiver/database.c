@@ -58,6 +58,11 @@ struct database * db_getDefaultDB() {
 }
 
 struct database * db_getDb(const char * db) {
+	if (!db) {
+		log_writeAll(Log_level_error, "Db, getDb: db is null");
+		return 0;
+	}
+
 	pthread_mutex_lock(&db_lock);
 
 	unsigned int i;
@@ -87,6 +92,11 @@ static void db_init() {
 }
 
 int db_loadDb(const char * db) {
+	if (!db) {
+		log_writeAll(Log_level_error, "Db, loadDb: db is null");
+		return 3;
+	}
+
 	char path[128];
 	snprintf(path, 128, "%s/lib%s.so", DB_DIRNAME, db);
 

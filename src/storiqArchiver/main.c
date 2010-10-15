@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Oct 2010 17:20:59 +0200                       *
+*  Last modified: Fri, 15 Oct 2010 13:38:21 +0200                       *
 \***********************************************************************/
 
 // getopt_long
@@ -70,12 +70,12 @@ int main(int argc, char ** argv) {
 		switch (c) {
 			case 'c':
 				config_file = optarg;
-				log_writeAll(Log_level_debug, "Using configuration file: '%s'", optarg);
+				log_writeAll(Log_level_info, "Using configuration file: '%s'", optarg);
 				break;
 
 			case 'd':
 				detach = 1;
-				log_writeAll(Log_level_debug, "Using detach mode (i.e. use fork())");
+				log_writeAll(Log_level_info, "Using detach mode (i.e. use fork())");
 				break;
 
 			case 'h':
@@ -84,7 +84,7 @@ int main(int argc, char ** argv) {
 
 			case 'p':
 				pid_file = optarg;
-				log_writeAll(Log_level_debug, "Using pid file: '%s'", optarg);
+				log_writeAll(Log_level_info, "Using pid file: '%s'", optarg);
 				break;
 
 			case 'V': {

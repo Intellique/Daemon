@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Oct 2010 16:57:39 +0200                       *
+*  Last modified: Fri, 15 Oct 2010 12:16:08 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CONF_H__
@@ -43,7 +43,8 @@ int conf_checkPid(int pid);
 /**
  * \brief conf_deletePid
  * \param pidFile : file with pid
- * \return 0 if ok
+ * \return what "unlink" returned
+ * \note see man page unlink(2)
  */
 int conf_deletePid(const char * pidFile);
 
@@ -66,8 +67,9 @@ int conf_writePid(const char * pidFile, int pid);
 /**
  * \brief read config file
  * \param confFile : config file
- * \return 0 if ok
- *         -1 if error
+ * \return a value which correspond to
+ * \li 0 if ok
+ * \li 1 if error
  */
 int conf_readConfig(const char * confFile);
 
