@@ -31,7 +31,7 @@
 #include <malloc.h>
 // strdup
 #include <string.h>
-// PQsetdbLogin
+// PQfinish, PQsetdbLogin, PQstatus
 #include <postgresql/libpq-fe.h>
 
 #include <storiqArchiver/log.h>
@@ -62,7 +62,7 @@ struct database_connection * db_postgresql_connect(struct database * db, struct 
 	if (!db)
 		return 0;
 
-	int allocated = 0;
+	short allocated = 0;
 
 	if (!connection) {
 		allocated = 1;
@@ -73,8 +73,10 @@ struct database_connection * db_postgresql_connect(struct database * db, struct 
 
 	int failed = db_postgresql_initConnection(connection, db->data);
 
-	if (failed && allocated)
+	if (failed && allocated) {
 		free(connection);
+		return 0;
+	}
 
 	return connection;
 }

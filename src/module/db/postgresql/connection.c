@@ -29,6 +29,8 @@
 
 // free, malloc
 #include <malloc.h>
+// PQbackendPID, PQfinish, PQsetdbLogin, PQstatus
+#include <postgresql/libpq-fe.h>
 
 #include "connection.h"
 
