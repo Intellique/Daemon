@@ -24,48 +24,10 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Sat, 16 Oct 2010 22:38:40 +0200                       *
+*  Last modified: Sat, 16 Oct 2010 22:44:54 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_JOB_H__
-#define __STORIQARCHIVER_JOB_H__
+#include <storiqArchiver/job.h>
 
-#include <sys/time.h>
-
-struct job;
-
-enum job_type {
-	job_type_diffSave,
-	job_type_dummy,
-	job_type_incSave,
-	job_type_integrety_check,
-	job_type_list,
-	job_type_restore,
-	job_type_save,
-	job_type_verify,
-};
-
-struct job_ops {
-	int (*doJob)(struct job * j);
-	void (*free)(struct job * j);
-};
-
-struct job {
-	char * name;
-	short enabled;
-	enum job_type type;
-	time_t start;
-	unsigned long interval;
-	unsigned long repetition;
-
-	struct job_ops * ops;
-	void * data;
-};
-
-
-int job_initJob(struct job * job, enum job_type type);
-const char * job_jobToString(enum job_type type);
-enum job_type job_stringToJob(const char * jobname);
-
-#endif
+int job_save_init(struct job * job);
 

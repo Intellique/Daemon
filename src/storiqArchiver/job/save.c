@@ -24,48 +24,44 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Sat, 16 Oct 2010 22:38:40 +0200                       *
+*  Last modified: Sat, 16 Oct 2010 23:13:35 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_JOB_H__
-#define __STORIQARCHIVER_JOB_H__
+#include "common.h"
 
-#include <sys/time.h>
+static int job_save_doJob(struct job * job);
+static void job_save_free(struct job * job);
 
-struct job;
-
-enum job_type {
-	job_type_diffSave,
-	job_type_dummy,
-	job_type_incSave,
-	job_type_integrety_check,
-	job_type_list,
-	job_type_restore,
-	job_type_save,
-	job_type_verify,
-};
-
-struct job_ops {
-	int (*doJob)(struct job * j);
-	void (*free)(struct job * j);
-};
-
-struct job {
-	char * name;
-	short enabled;
-	enum job_type type;
-	time_t start;
-	unsigned long interval;
-	unsigned long repetition;
-
-	struct job_ops * ops;
-	void * data;
+static struct job_ops job_save_ops = {
+	.doJob = job_save_doJob,
+	.free = job_save_free,
 };
 
 
-int job_initJob(struct job * job, enum job_type type);
-const char * job_jobToString(enum job_type type);
-enum job_type job_stringToJob(const char * jobname);
+int job_save_doJob(struct job * job) {
+	if (!job)
+		return -1;
 
-#endif
+	return 0;
+}
+
+void job_save_free(struct job * job) {
+	if (!job)
+		return;
+
+	job->type = job_type_dummy;
+	job->data = 0;
+	job->ops = 0;
+}
+
+int job_save_init(struct job * job) {
+	if (!job)
+		return -1;
+
+	job->type = job_type_save;
+	job->ops = &job_save_ops;
+	job->data = 0;
+
+	return 0;
+}
 

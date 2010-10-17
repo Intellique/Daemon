@@ -24,48 +24,56 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Sat, 16 Oct 2010 22:38:40 +0200                       *
+*  Last modified: Sat, 16 Oct 2010 22:49:26 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_JOB_H__
-#define __STORIQARCHIVER_JOB_H__
+#include <string.h>
 
-#include <sys/time.h>
+#include "common.h"
 
-struct job;
-
-enum job_type {
-	job_type_diffSave,
-	job_type_dummy,
-	job_type_incSave,
-	job_type_integrety_check,
-	job_type_list,
-	job_type_restore,
-	job_type_save,
-	job_type_verify,
-};
-
-struct job_ops {
-	int (*doJob)(struct job * j);
-	void (*free)(struct job * j);
-};
-
-struct job {
-	char * name;
-	short enabled;
+static const struct job_info {
 	enum job_type type;
-	time_t start;
-	unsigned long interval;
-	unsigned long repetition;
+	char * name;
+} job_jobs[] = {
+	{ job_type_diffSave,        "differential save" },
+	{ job_type_dummy,           "dummy job" },
+	{ job_type_incSave,         "incremental save" },
+	{ job_type_integrety_check, "integrety check" },
+	{ job_type_list,            "list" },
+	{ job_type_restore,         "restore" },
+	{ job_type_save,            "save" },
+	{ job_type_verify,          "verify" },
 
-	struct job_ops * ops;
-	void * data;
+	{ job_type_dummy, 0 },
 };
 
 
-int job_initJob(struct job * job, enum job_type type);
-const char * job_jobToString(enum job_type type);
-enum job_type job_stringToJob(const char * jobname);
+int job_initJob(struct job * job, enum job_type type) {
+	if (!job || type == job_type_dummy)
+		return -1;
 
-#endif
+	switch (type) {
+		case job_type_save:
+			return job_save_init(job);
+
+		default:
+			return -1;
+	}
+}
+
+const char * job_jobToString(enum job_type type) {
+	const struct job_info * ptr;
+	for (ptr = job_jobs; ptr->name; ptr++)
+		if (ptr->type == type)
+			return ptr->name;
+	return 0;
+}
+
+enum job_type job_stringToJob(const char * jobname) {
+	const struct job_info * ptr;
+	for (ptr = job_jobs; ptr->name; ptr++)
+		if (!strcasecmp(jobname, ptr->name))
+			return ptr->type;
+	return job_type_dummy;
+}
 
