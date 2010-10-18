@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 15 Oct 2010 15:52:04 +0200                       *
+*  Last modified: Mon, 18 Oct 2010 14:39:02 +0200                       *
 \***********************************************************************/
 
 // strerror
@@ -170,8 +170,8 @@ void conf_loadDb(struct hashtable * params) {
 	struct database * db = db_getDb(driver);
 	if (db) {
 		log_writeAll(Log_level_info, "Conf, loadDb: loading driver (%s) => ok", driver);
-		int setup_ok = db->ops->setup(db, params);
-		int ping_ok = db->ops->ping(db);
+		short setup_ok = !db->ops->setup(db, params);
+		short ping_ok = db->ops->ping(db) > 0;
 		log_writeAll(Log_level_debug, "Conf, loadDb: setup %s, ping %s", setup_ok ? "ok" : "failed", ping_ok ? "ok" : "failed");
 
 		if (!db_getDefaultDB())

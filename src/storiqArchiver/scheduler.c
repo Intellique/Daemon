@@ -24,19 +24,32 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 15 Oct 2010 17:55:05 +0200                       *
+*  Last modified: Mon, 18 Oct 2010 17:03:23 +0200                       *
 \***********************************************************************/
 
-// free
+// free, realloc
 #include <malloc.h>
+// signal
+#include <signal.h>
+// time
+#include <time.h>
+// sleep
+#include <unistd.h>
 
 #include <storiqArchiver/database.h>
+#include <storiqArchiver/job.h>
 #include <storiqArchiver/log.h>
 
 #include "scheduler.h"
 
+static void sched_exit(int signal);
+static short sched_stopRequest = 0;
+
+
 void sched_doLoop() {
 	log_writeAll(Log_level_info, "Scheduler: starting main loop");
+
+	signal(SIGINT, sched_exit);
 
 	struct database * db = db_getDefaultDB();
 	if (!db) {
@@ -44,13 +57,87 @@ void sched_doLoop() {
 		return;
 	}
 
-	struct database_connection * connection = db->ops->connect(db, 0);
-	if (!connection) {
+	static struct database_connection connection;
+	if (!db->ops->connect(db, &connection)) {
 		log_writeAll(Log_level_error, "Scheduler: failed to connect to database");
 		return;
 	}
 
-	connection->ops->free(connection);
-	free(connection);
+	static struct job * jobs = 0;
+	static unsigned int nbJobs = 0;
+
+	static time_t lastUpdate = 0;
+
+	while (!sched_stopRequest) {
+		static short ok_transaction;
+		static time_t update;
+
+		ok_transaction = connection.ops->startTransaction(&connection, 1) >= 0;
+		update = time(0);
+		if (!ok_transaction)
+			log_writeAll(Log_level_error, "Scheduler: error while starting transaction");
+
+		if (nbJobs > 0) {
+			static int nbModifiedJobs;
+			nbModifiedJobs = connection.ops->jobModified(&connection, lastUpdate);
+
+			if (nbModifiedJobs > 0) {
+				log_writeAll(Log_level_debug, "Scheduler: There is modified jobs (%d)", nbModifiedJobs);
+
+				static unsigned int i;
+				static int j;
+				for (i = 0, j = 0; i < nbJobs && j < nbModifiedJobs; i++) {
+					static int ok_update;
+					ok_update = connection.ops->updateJob(&connection, jobs + i);
+					if (ok_update > 0)
+						j++;
+					else if (ok_update < 0)
+						log_writeAll(Log_level_error, "Scheduler: error while updating a job (job name=%s)", jobs[i].name);
+				}
+			} else if (nbModifiedJobs == 0) {
+				log_writeAll(Log_level_debug, "Scheduler: There is no modified jobs");
+			} else {
+				log_writeAll(Log_level_error, "Scheduler: error while fetching modified jobs");
+			}
+		}
+
+		static int nbNewJobs;
+		nbNewJobs = connection.ops->newJobs(&connection, lastUpdate);
+		if (nbNewJobs > 0) {
+			log_writeAll(Log_level_debug, "Scheduler: There is new jobs (%d)", nbNewJobs);
+
+			jobs = realloc(jobs, (nbJobs + nbNewJobs) * sizeof(struct job));
+
+			static int i;
+			for (i = 0; i < nbNewJobs; i++)
+				connection.ops->addJob(&connection, jobs + (nbJobs + i), i);
+			nbJobs += nbNewJobs;
+
+		} else if (nbNewJobs == 0) {
+			log_writeAll(Log_level_debug, "Scheduler: There is no new jobs");
+		} else {
+			log_writeAll(Log_level_error, "Scheduler: error while fetching new jobs");
+		}
+
+		ok_transaction = connection.ops->finishTransaction(&connection) >= 0;
+		if (!ok_transaction)
+			log_writeAll(Log_level_error, "Scheduler: error while finishing transaction");
+
+		static short i;
+		for (i = 0; i < 60 && !sched_stopRequest; i++)
+			sleep(1);
+
+		// TODO: scheduler stop request
+		// if (sched_stopRequest) {}
+
+		lastUpdate = update;
+	}
+
+	connection.ops->free(&connection);
+}
+
+void sched_exit(int signal) {
+	if (signal == SIGINT)
+		sched_stopRequest = 1;
 }
 

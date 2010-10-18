@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Sat, 16 Oct 2010 22:38:40 +0200                       *
+*  Last modified: Mon, 18 Oct 2010 18:08:23 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_JOB_H__
@@ -32,13 +32,14 @@
 
 #include <sys/time.h>
 
+struct database_connection;
 struct job;
 
 enum job_type {
 	job_type_diffSave,
 	job_type_dummy,
 	job_type_incSave,
-	job_type_integrety_check,
+	job_type_integrity_check,
 	job_type_list,
 	job_type_restore,
 	job_type_save,
@@ -51,6 +52,7 @@ struct job_ops {
 };
 
 struct job {
+	long long id;
 	char * name;
 	short enabled;
 	enum job_type type;
@@ -60,6 +62,8 @@ struct job {
 
 	struct job_ops * ops;
 	void * data;
+
+	struct database_connection * connection;
 };
 
 

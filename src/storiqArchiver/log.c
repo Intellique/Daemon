@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Oct 2010 16:30:52 +0200                       *
+*  Last modified: Mon, 18 Oct 2010 13:01:32 +0200                       *
 \***********************************************************************/
 
 // dlerror, dlopen
@@ -39,7 +39,7 @@
 #include <pthread.h>
 // va_end, va_start
 #include <stdarg.h>
-// dprintf, printf, snprintf
+// printf, snprintf
 #include <stdio.h>
 // strcasecmp, strcmp, strdup, strerror
 #include <string.h>
@@ -93,15 +93,6 @@ enum Log_level log_stringTolevel(const char * string) {
 	return Log_level_unknown;
 }
 
-
-__attribute__((destructor))
-static void log_exit() {
-	if (log_messageUnSent) {
-		unsigned int mes;
-		for (mes = 0; mes < log_nbMessageUnSent; mes++)
-			dprintf(1, "! [%s] %s !\n", log_levelToString(log_messageUnSent[mes].level), log_messageUnSent[mes].message);
-	}
-}
 
 int log_flushMessage() {
 	unsigned int mes, ok = 0;

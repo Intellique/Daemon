@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 15 Oct 2010 18:47:50 +0200                       *
+*  Last modified: Mon, 18 Oct 2010 13:00:28 +0200                       *
 \***********************************************************************/
 
 // malloc
@@ -47,7 +47,6 @@ static int checksum_sha256_update(struct checksum * checksum, const char * data,
 static struct checksum_driver checksum_sha256_driver = {
 	.name = "sha256",
 	.new_checksum = checksum_sha256_new_checksum,
-	.data = 0,
 	.cookie = 0,
 };
 
@@ -90,6 +89,7 @@ void checksum_sha256_free(struct checksum * checksum) {
 
 	checksum->data = 0;
 	checksum->ops = 0;
+	checksum->driver = 0;
 }
 
 __attribute__((constructor))
@@ -97,10 +97,11 @@ static void checksum_sha256_init() {
 	checksum_registerDriver(&checksum_sha256_driver);
 }
 
-struct checksum * checksum_sha256_new_checksum(struct checksum_driver * driver __attribute__((unused)), struct checksum * checksum) {
+struct checksum * checksum_sha256_new_checksum(struct checksum_driver * driver, struct checksum * checksum) {
 	if (!checksum)
 		checksum = malloc(sizeof(struct checksum));
 	checksum->ops = &checksum_sha256_ops;
+	checksum->driver = driver;
 
 	struct checksum_sha256_private * self = malloc(sizeof(struct checksum_sha256_private));
 	SHA256_Init(&self->sha256);
@@ -118,6 +119,7 @@ int checksum_sha256_update(struct checksum * checksum, const char * data, unsign
 
 	if (SHA256_Update(&self->sha256, data, length))
 		return length;
+
 	return -1;
 }
 

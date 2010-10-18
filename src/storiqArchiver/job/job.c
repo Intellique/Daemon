@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Sat, 16 Oct 2010 22:49:26 +0200                       *
+*  Last modified: Mon, 18 Oct 2010 18:08:39 +0200                       *
 \***********************************************************************/
 
 #include <string.h>
@@ -38,7 +38,7 @@ static const struct job_info {
 	{ job_type_diffSave,        "differential save" },
 	{ job_type_dummy,           "dummy job" },
 	{ job_type_incSave,         "incremental save" },
-	{ job_type_integrety_check, "integrety check" },
+	{ job_type_integrity_check, "integrity check" },
 	{ job_type_list,            "list" },
 	{ job_type_restore,         "restore" },
 	{ job_type_save,            "save" },

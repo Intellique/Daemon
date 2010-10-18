@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 15 Oct 2010 15:58:47 +0200                       *
+*  Last modified: Mon, 18 Oct 2010 17:21:26 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
@@ -77,6 +77,10 @@ struct checksum {
 	 * \brief private data of one checksum
 	 */
 	void * data;
+	/**
+	 * \brief associated driver
+	 */
+	struct checksum_driver * driver;
 };
 
 /**
@@ -86,7 +90,7 @@ struct checksum_driver {
 	/**
 	 * \brief name of the driver
 	 */
-	char name[16];
+	char * name;
 	/**
 	 * \brief get a new checksum handler
 	 * \param driver : a checksum driver
@@ -94,10 +98,6 @@ struct checksum_driver {
 	 * \note if checksum is NULL, this function allocate enough memory with malloc
 	 */
 	struct checksum * (*new_checksum)(struct checksum_driver * driver, struct checksum * checksum);
-	/**
-	 * \brief private data of driver
-	 */
-	void * data;
 	/**
 	 * \brief private data used by checksum_loadDriver
 	 * \note should not be modified
@@ -112,7 +112,7 @@ struct checksum_driver {
  * \param length : length of digest in bytes
  * \param hexDigest : result of convertion
  * \note this function supposed that hexDigest is already allocated
- * and his size is, at least, 2 * length + 1
+ * and its size is, at least, 2 * length + 1
  */
 void checksum_convert2Hex(unsigned char * digest, int length, char * hexDigest);
 

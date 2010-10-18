@@ -24,17 +24,22 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 17:01:39 +0200                       *
+*  Last modified: Mon, 18 Oct 2010 10:16:52 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CONFIG_H__
 #define __STORIQARCHIVER_CONFIG_H__
 
-#define DEFAULT_CONFIG_FILE "/etc/storiq/storiqArchiver.conf"
-#define DEFAULT_PID_FILE "/var/run/storiqArchiver.pid"
+//#define DEFAULT_CONFIG_FILE "/etc/storiq/storiqArchiver.conf"
+#define DEFAULT_CONFIG_FILE "example-config.conf"
+//#define DEFAULT_PID_FILE "/var/run/storiqArchiver.pid"
+#define DEFAULT_PID_FILE "storiqArchiver.pid"
 
+//#define CHECKSUM_DIRNAME "/usr/lib/storiqArchiver/checksum"
 #define CHECKSUM_DIRNAME "lib/checksum"
+//#define CHECKSUM_DIRNAME "/usr/lib/storiqArchiver/db"
 #define DB_DIRNAME "lib/db"
+//#define CHECKSUM_DIRNAME "/usr/lib/storiqArchiver/log"
 #define LOG_DIRNAME "lib/log"
 
 #endif

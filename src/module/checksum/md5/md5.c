@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 15 Oct 2010 18:42:59 +0200                       *
+*  Last modified: Mon, 18 Oct 2010 12:59:32 +0200                       *
 \***********************************************************************/
 
 // malloc
@@ -47,7 +47,6 @@ static int checksum_md5_update(struct checksum * checksum, const char * data, un
 static struct checksum_driver checksum_md5_driver = {
 	.name = "md5",
 	.new_checksum = checksum_md5_new_checksum,
-	.data = 0,
 	.cookie = 0,
 };
 
@@ -90,6 +89,7 @@ void checksum_md5_free(struct checksum * checksum) {
 
 	checksum->data = 0;
 	checksum->ops = 0;
+	checksum->driver = 0;
 }
 
 __attribute__((constructor))
@@ -97,10 +97,11 @@ static void checksum_md5_init() {
 	checksum_registerDriver(&checksum_md5_driver);
 }
 
-struct checksum * checksum_md5_new_checksum(struct checksum_driver * driver __attribute__((unused)), struct checksum * checksum) {
+struct checksum * checksum_md5_new_checksum(struct checksum_driver * driver, struct checksum * checksum) {
 	if (!checksum)
 		checksum = malloc(sizeof(struct checksum));
 	checksum->ops = &checksum_md5_ops;
+	checksum->driver = driver;
 
 	struct checksum_md5_private * self = malloc(sizeof(struct checksum_md5_private));
 	MD5_Init(&self->md5);
@@ -118,6 +119,7 @@ int checksum_md5_update(struct checksum * checksum, const char * data, unsigned 
 
 	if (MD5_Update(&self->md5, data, length))
 		return length;
+
 	return -1;
 }
 
