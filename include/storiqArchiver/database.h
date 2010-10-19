@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 18 Oct 2010 17:30:15 +0200                       *
+*  Last modified: Tue, 19 Oct 2010 11:11:19 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_DATABASE_H__
@@ -108,7 +108,7 @@ struct database_connection_ops {
 	 * \param job : a job
 	 * \param index : n new job
 	 */
-	struct job * (*addJob)(struct database_connection * db, struct job * job, unsigned int index);
+	struct job * (*addJob)(struct database_connection * db, struct job * job, unsigned int index, time_t since);
 	/**
 	 * \brief checks jobs modified between \a since and \a to
 	 * \param db : a database connection

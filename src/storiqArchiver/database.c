@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Oct 2010 16:35:20 +0200                       *
+*  Last modified: Tue, 19 Oct 2010 10:35:45 +0200                       *
 \***********************************************************************/
 
 // dlerror, dlopen
@@ -59,7 +59,7 @@ struct database * db_getDefaultDB() {
 
 struct database * db_getDb(const char * db) {
 	if (!db) {
-		log_writeAll(Log_level_error, "Db, getDb: db is null");
+		log_writeAll(Log_level_error, "Db: getDb: db is null");
 		return 0;
 	}
 
@@ -93,7 +93,7 @@ static void db_init() {
 
 int db_loadDb(const char * db) {
 	if (!db) {
-		log_writeAll(Log_level_error, "Db, loadDb: db is null");
+		log_writeAll(Log_level_error, "Db: loadDb: db is null");
 		return 3;
 	}
 

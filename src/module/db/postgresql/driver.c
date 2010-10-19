@@ -37,7 +37,7 @@
 #include <storiqArchiver/log.h>
 #include <storiqArchiver/util/hashtable.h>
 
-#include "connection.h"
+#include "common.h"
 
 static struct database_connection * db_postgresql_connect(struct database * db, struct database_connection * connection);
 static int db_postgresql_ping(struct database * db);

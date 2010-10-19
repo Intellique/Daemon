@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 18 Oct 2010 18:08:23 +0200                       *
+*  Last modified: Tue, 19 Oct 2010 12:40:31 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_JOB_H__
@@ -52,7 +52,7 @@ struct job_ops {
 };
 
 struct job {
-	long long id;
+	long id;
 	char * name;
 	short enabled;
 	enum job_type type;

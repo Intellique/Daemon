@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 15 Oct 2010 17:07:21 +0200                       *
+*  Last modified: Tue, 19 Oct 2010 11:27:10 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_DB_POSTGRESQL_CONNNECTION_H__

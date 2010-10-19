@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 18 Oct 2010 17:03:23 +0200                       *
+*  Last modified: Tue, 19 Oct 2010 11:11:56 +0200                       *
 \***********************************************************************/
 
 // free, realloc
@@ -51,7 +51,8 @@ void sched_doLoop() {
 
 	signal(SIGINT, sched_exit);
 
-	struct database * db = db_getDefaultDB();
+	static struct database * db;
+	db = db_getDefaultDB();
 	if (!db) {
 		log_writeAll(Log_level_error, "Scheduler: there is no default database");
 		return;
@@ -63,7 +64,7 @@ void sched_doLoop() {
 		return;
 	}
 
-	static struct job * jobs = 0;
+	static struct job ** jobs = 0;
 	static unsigned int nbJobs = 0;
 
 	static time_t lastUpdate = 0;
@@ -88,11 +89,11 @@ void sched_doLoop() {
 				static int j;
 				for (i = 0, j = 0; i < nbJobs && j < nbModifiedJobs; i++) {
 					static int ok_update;
-					ok_update = connection.ops->updateJob(&connection, jobs + i);
+					ok_update = connection.ops->updateJob(&connection, jobs[i]);
 					if (ok_update > 0)
 						j++;
 					else if (ok_update < 0)
-						log_writeAll(Log_level_error, "Scheduler: error while updating a job (job name=%s)", jobs[i].name);
+						log_writeAll(Log_level_error, "Scheduler: error while updating a job (job name=%s)", jobs[i]->name);
 				}
 			} else if (nbModifiedJobs == 0) {
 				log_writeAll(Log_level_debug, "Scheduler: There is no modified jobs");
@@ -106,11 +107,11 @@ void sched_doLoop() {
 		if (nbNewJobs > 0) {
 			log_writeAll(Log_level_debug, "Scheduler: There is new jobs (%d)", nbNewJobs);
 
-			jobs = realloc(jobs, (nbJobs + nbNewJobs) * sizeof(struct job));
+			jobs = realloc(jobs, (nbJobs + nbNewJobs) * sizeof(struct job *));
 
 			static int i;
 			for (i = 0; i < nbNewJobs; i++)
-				connection.ops->addJob(&connection, jobs + (nbJobs + i), i);
+				jobs[nbJobs + i] = connection.ops->addJob(&connection, 0, i, lastUpdate);
 			nbJobs += nbNewJobs;
 
 		} else if (nbNewJobs == 0) {
@@ -137,7 +138,9 @@ void sched_doLoop() {
 }
 
 void sched_exit(int signal) {
-	if (signal == SIGINT)
+	if (signal == SIGINT) {
+		log_writeAll(Log_level_warning, "Scheduler: catch SIGINT");
 		sched_stopRequest = 1;
+	}
 }
 
