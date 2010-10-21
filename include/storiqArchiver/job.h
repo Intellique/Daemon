@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 19 Oct 2010 12:40:31 +0200                       *
+*  Last modified: Tue, 19 Oct 2010 13:53:47 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_JOB_H__
@@ -54,11 +54,11 @@ struct job_ops {
 struct job {
 	long id;
 	char * name;
-	short enabled;
 	enum job_type type;
 	time_t start;
 	unsigned long interval;
 	unsigned long repetition;
+	time_t modified;
 
 	struct job_ops * ops;
 	void * data;

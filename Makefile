@@ -76,7 +76,7 @@ DEP_DIRS	:= $(patsubst ${BUILD_DIR}/%,${DEPEND_DIR}/%,${OBJ_DIRS})
 .DEFAULT_GOAL	:= all
 .PHONY: all binaries clean cscope ctags distclean lib prepare realclean stat stat-extra TAGS tar
 
-all: binaries cscope tags
+all: binaries tags
 
 binaries: prepare $(sort ${BINS})
 

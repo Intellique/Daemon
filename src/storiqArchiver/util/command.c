@@ -24,20 +24,20 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 30 Sep 2010 16:15:39 +0200                       *
+*  Last modified: Thu, 21 Oct 2010 09:07:01 +0200                       *
 \***********************************************************************/
 
 // fcntl
 #include <fcntl.h>
-// calloc, free
-#include <malloc.h>
+// calloc, free, getenv
+#include <stdlib.h>
 // strcpy, strdup
 #include <string.h>
 // waitpid
 #include <sys/types.h>
 // waitpid
 #include <sys/wait.h>
-// close, dup2, execv, fcntl, fork, pipe
+// access, close, dup2, execv, fcntl, fork, pipe
 #include <unistd.h>
 
 #include <storiqArchiver/util/command.h>
@@ -72,8 +72,8 @@ void command_init(struct command * command, unsigned int nbCommand) {
 
 	unsigned int i;
 	for (i = 0; i < nbCommand; i++) {
-		command[i].command		= 0;
-		command[i].params		= 0;
+		command[i].command = 0;
+		command[i].params = 0;
 		command[i].nbParameters = 0;
 
 		command[i].pid = -1;
@@ -91,8 +91,39 @@ void command_new(struct command * com, const char * command, const char ** param
 	if (!com || !command)
 		return;
 
-	com->command      = strdup(command);
-	com->params       = calloc(nbParams + 2, sizeof(char *));
+	short found = 0;
+	if (access(command, R_OK | X_OK)) {
+		char * path = getenv("PATH");
+		if (path) {
+			char * tok = path = strdup(path);
+
+			char * next;
+			for (next = 0; !found && tok; tok = next) {
+				next = strchr(tok, ':');
+				if (next) {
+					*next = '\0';
+					next++;
+				}
+
+				char path_com[256];
+				strcpy(path_com, tok);
+				if (path_com[strlen(path_com) - 1] != '/')
+					strcat(path_com, "/");
+				strcat(path_com, command);
+
+				if (!access(path_com, R_OK | X_OK)) {
+					com->command = strdup(path_com);
+					found = 1;
+				}
+			}
+
+			free(path);
+		}
+	}
+	if (!found)
+		com->command = strdup(command);
+
+	com->params = calloc(nbParams + 2, sizeof(char *));
 	com->nbParameters = nbParams;
 
 	com->params[0] = strdup(command);
@@ -103,7 +134,7 @@ void command_new(struct command * com, const char * command, const char ** param
 
 	com->pid = -1;
 	for (i = 0; i < 3; i++) {
-		com->fds[i].fd   = i;
+		com->fds[i].fd = i;
 		com->fds[i].type = command_fd_type_default;
 	}
 	com->exitedCode = 0;
@@ -117,8 +148,8 @@ void command_pipe(struct command * command_out, enum command_std out, struct com
 	if (pipe(fd_pipe))
 		return;
 
-	command_setFd(command_in,  command_stdin,	fd_pipe[0]);
-	command_setFd(command_out, out,				fd_pipe[1]);
+	command_setFd(command_in, command_stdin, fd_pipe[0]);
+	command_setFd(command_out, out, fd_pipe[1]);
 }
 
 int command_pipe_from(struct command * command, enum command_std out) {
@@ -149,7 +180,7 @@ void command_redir_err_to_out(struct command * command) {
 	if (!command)
 		return;
 
-	command->fds[2].fd   = 1;
+	command->fds[2].fd = 1;
 	command->fds[2].type = command_fd_type_dup;
 }
 
@@ -157,7 +188,7 @@ void command_redir_out_to_err(struct command * command) {
 	if (!command)
 		return;
 
-	command->fds[1].fd   = 2;
+	command->fds[1].fd = 2;
 	command->fds[1].type = command_fd_type_dup;
 }
 
@@ -168,7 +199,7 @@ void command_setFd(struct command * command, enum command_std fd_command, int ne
 	if (command->fds[fd_command].type == command_fd_type_set)
 		close(command->fds[fd_command].fd);
 
-	command->fds[fd_command].fd   = new_fd;
+	command->fds[fd_command].fd = new_fd;
 	command->fds[fd_command].type = command_fd_type_set;
 
 	command_setCloseExeFlag(new_fd, 1);
@@ -203,18 +234,20 @@ void command_start(struct command * command, unsigned int nbCommand) {
 		} else if (command[i].pid == 0) {
 			unsigned int j;
 			for (j = 0; j < 3; j++) {
-				if (command[i].fds[j].type != command_fd_type_default)
-					close(j);
+				if (command[i].fds[j].type == command_fd_type_default)
+					continue;
+				close(j);
 				if (command[i].fds[j].type == command_fd_type_set) {
 					dup2(command[i].fds[j].fd, j);
 					close(command[i].fds[j].fd);
 				}
-				if (command[i].fds[j].type != command_fd_type_close && command[i].fds[j].type != command_fd_type_dup)
-					command_setCloseExeFlag(j, 0);
 			}
-			for (j = 0; j < 3; j++)
+			for (j = 0; j < 3; j++) {
 				if (command[i].fds[j].type == command_fd_type_dup)
 					dup2(j, command[i].fds[j].fd);
+				if (command[i].fds[j].type != command_fd_type_close)
+					command_setCloseExeFlag(j, 0);
+			}
 
 			execv(command[i].command, command[i].params);
 		}

@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 19 Oct 2010 09:38:44 +0200                       *
+*  Last modified: Wed, 20 Oct 2010 09:08:40 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
@@ -61,10 +61,7 @@ struct checksum;
  * \code
  * // get the driver
  * struct checksum_driver * driver = handler->driver;
- * // release old handler
- * handler->ops->free(handler);
- * free(handler);
- * // get an handler
+ * // get a second handler
  * struct checksum * handler2 = driver->new_checksum(driver, 0);
  * \endcode
  *
@@ -108,7 +105,7 @@ struct checksum;
  *    handler[i].ops->free(handler + i);
  * free(handler);
  *
- * // don't forget to release digest_md5 digest_sha1
+ * // don't forget to release digest_md5 and digest_sha1
  * free(digest_md5);
  * free(digest_sha1);
  * \endcode
@@ -168,6 +165,7 @@ struct checksum {
 
 /**
  * \struct checksum_driver
+ * \brief This structure allows to get new checksum handler
  */
 struct checksum_driver {
 	/**
@@ -205,6 +203,7 @@ void checksum_convert2Hex(unsigned char * digest, int length, char * hexDigest);
  * \param driver : driver's name
  * \return 0 if failed
  * \note if this driver is not loaded, we try to load it
+ * \warning <b>DO NOT RELEASE</b> memory with \a free
  */
 struct checksum_driver * checksum_getDriver(const char * driver);
 
