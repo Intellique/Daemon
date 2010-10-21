@@ -24,12 +24,15 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 30 Sep 2010 16:13:53 +0200                       *
+*  Last modified: Thu, 21 Oct 2010 12:33:35 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_COMMAND_H__
 #define __STORIQARCHIVER_COMMAND_H__
 
+/**
+ * \private
+ */
 enum command_fd_type {
 	command_fd_type_default,
 	command_fd_type_close,
@@ -37,20 +40,39 @@ enum command_fd_type {
 	command_fd_type_dup,
 };
 
+/**
+ * \private
+ */
 struct command_fd {
 	int fd;
 	enum command_fd_type type;
 };
 
+/**
+ * \struct command
+ * \brief This structure contains one command
+ */
 struct command {
+	/**
+	 * \brief Command name
+	 */
 	char * command;
 
+	/**
+	 * \brief parameters
+	 */
 	char ** params;
 	unsigned int nbParameters;
 
+	/**
+	 * \brief Pid of process or -1
+	 */
 	int pid;
 	struct command_fd fds[3];
 
+	/**
+	 * \brief code that process has returned
+	 */
 	int exitedCode;
 };
 

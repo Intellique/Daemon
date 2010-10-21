@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 18 Oct 2010 12:59:32 +0200                       *
+*  Last modified: Thu, 21 Oct 2010 15:45:48 +0200                       *
 \***********************************************************************/
 
 // malloc
@@ -41,7 +41,7 @@ struct checksum_md5_private {
 
 static char * checksum_md5_finish(struct checksum * checksum);
 static void checksum_md5_free(struct checksum * checksum);
-static struct checksum * checksum_md5_new_checksum(struct checksum_driver * driver, struct checksum * checksum);
+static struct checksum * checksum_md5_new_checksum(struct checksum * checksum);
 static int checksum_md5_update(struct checksum * checksum, const char * data, unsigned int length);
 
 static struct checksum_driver checksum_md5_driver = {
@@ -58,6 +58,9 @@ static struct checksum_ops checksum_md5_ops = {
 
 
 char * checksum_md5_finish(struct checksum * checksum) {
+	if (!checksum)
+		return 0;
+
 	struct checksum_md5_private * self = checksum->data;
 
 	if (self->finished)
@@ -77,6 +80,9 @@ char * checksum_md5_finish(struct checksum * checksum) {
 }
 
 void checksum_md5_free(struct checksum * checksum) {
+	if (!checksum)
+		return;
+
 	struct checksum_md5_private * self = checksum->data;
 
 	if (!self->finished) {
@@ -97,11 +103,12 @@ static void checksum_md5_init() {
 	checksum_registerDriver(&checksum_md5_driver);
 }
 
-struct checksum * checksum_md5_new_checksum(struct checksum_driver * driver, struct checksum * checksum) {
+struct checksum * checksum_md5_new_checksum(struct checksum * checksum) {
 	if (!checksum)
 		checksum = malloc(sizeof(struct checksum));
+
 	checksum->ops = &checksum_md5_ops;
-	checksum->driver = driver;
+	checksum->driver = &checksum_md5_driver;
 
 	struct checksum_md5_private * self = malloc(sizeof(struct checksum_md5_private));
 	MD5_Init(&self->md5);
@@ -112,6 +119,9 @@ struct checksum * checksum_md5_new_checksum(struct checksum_driver * driver, str
 }
 
 int checksum_md5_update(struct checksum * checksum, const char * data, unsigned int length) {
+	if (!checksum)
+		return -1;
+
 	struct checksum_md5_private * self = checksum->data;
 
 	if (self->finished)

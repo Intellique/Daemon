@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 18 Oct 2010 17:26:46 +0200                       *
+*  Last modified: Thu, 21 Oct 2010 15:48:12 +0200                       *
 \***********************************************************************/
 
 // malloc
@@ -41,7 +41,7 @@ struct checksum_sha512_private {
 
 static char * checksum_sha512_finish(struct checksum * checksum);
 static void checksum_sha512_free(struct checksum * checksum);
-static struct checksum * checksum_sha512_new_checksum(struct checksum_driver * driver, struct checksum * checksum);
+static struct checksum * checksum_sha512_new_checksum(struct checksum * checksum);
 static int checksum_sha512_update(struct checksum * checksum, const char * data, unsigned int length);
 
 static struct checksum_driver checksum_sha512_driver = {
@@ -58,6 +58,9 @@ static struct checksum_ops checksum_sha512_ops = {
 
 
 char * checksum_sha512_finish(struct checksum * checksum) {
+	if (!checksum)
+		return 0;
+
 	struct checksum_sha512_private * self = checksum->data;
 
 	if (self->finished)
@@ -77,6 +80,9 @@ char * checksum_sha512_finish(struct checksum * checksum) {
 }
 
 void checksum_sha512_free(struct checksum * checksum) {
+	if (!checksum)
+		return;
+
 	struct checksum_sha512_private * self = checksum->data;
 
 	if (!self->finished) {
@@ -97,11 +103,12 @@ static void checksum_sha512_init() {
 	checksum_registerDriver(&checksum_sha512_driver);
 }
 
-struct checksum * checksum_sha512_new_checksum(struct checksum_driver * driver, struct checksum * checksum) {
+struct checksum * checksum_sha512_new_checksum(struct checksum * checksum) {
 	if (!checksum)
 		checksum = malloc(sizeof(struct checksum));
+
 	checksum->ops = &checksum_sha512_ops;
-	checksum->driver = driver;
+	checksum->driver = &checksum_sha512_driver;
 
 	struct checksum_sha512_private * self = malloc(sizeof(struct checksum_sha512_private));
 	SHA512_Init(&self->sha512);
@@ -112,6 +119,9 @@ struct checksum * checksum_sha512_new_checksum(struct checksum_driver * driver, 
 }
 
 int checksum_sha512_update(struct checksum * checksum, const char * data, unsigned int length) {
+	if (!checksum)
+		return -1;
+
 	struct checksum_sha512_private * self = checksum->data;
 
 	if (self->finished)

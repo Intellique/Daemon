@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 20 Oct 2010 09:08:40 +0200                       *
+*  Last modified: Thu, 21 Oct 2010 15:48:50 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
@@ -34,8 +34,8 @@
 struct checksum;
 
 /**
- * \addtogroup Checksum
- * This module is used to compute checksums.
+ * \addtogroup UseChecksum Use checksum module
+ * This page show how to compute checksum with this module
  *
  * \par This example shows how can this module be used :
  * \code
@@ -47,8 +47,8 @@ struct checksum;
  * struct checksum * handler = driver->new_checksum(driver, 0);
  * // handler is not supposed to be NULL
  * handler->ops->update(handler, "Hello, ", 7);
- * handler->ops->update(handler, "world!!!", 8);
- * // compute digest and result should be '9fe77772b085e3533101d59d33a51f19'
+ * handler->ops->update(handler, "world !!!", 9);
+ * // compute digest and result should be 'e7a20f74338897759a77a1497314719f'
  * char * digest = handler->ops->finish(handler);
  * // don't forget to release memory
  * free(digest);
@@ -108,6 +108,115 @@ struct checksum;
  * // don't forget to release digest_md5 and digest_sha1
  * free(digest_md5);
  * free(digest_sha1);
+ * \endcode
+ */
+
+/**
+ * \addtogroup WriteChecksum Write a checksum module
+ * This page show how to write a checksum module
+ *
+ * This example show you how the md5 checksum is implemeted
+ * \code
+ * // malloc
+ * #include <malloc.h>
+ * // MD5_Final, MD5_Init, MD5_Update
+ * #include <openssl/md5.h>
+ *
+ * // checksum_convert2Hex
+ * #include <storiqArchiver/checksum.h>
+ *
+ * // structure used to store private data into handler.data
+ * struct checksum_md5_private {
+ *    MD5_CTX md5;
+ *    short finished;
+ * };
+ *
+ * static char * checksum_md5_finish(struct checksum * checksum);
+ * static void checksum_md5_free(struct checksum * checksum);
+ * static struct checksum * checksum_md5_new_checksum(struct checksum_driver * driver, struct checksum * checksum);
+ * static int checksum_md5_update(struct checksum * checksum, const char * data, unsigned int length);
+ *
+ * static struct checksum_driver checksum_md5_driver = {
+ *    .name = "md5",
+ *    .new_checksum = checksum_md5_new_checksum,
+ *    .cookie = 0,
+ * };
+ *
+ * static struct checksum_ops checksum_md5_ops = {
+ *    .finish = checksum_md5_finish,
+ *    .free = checksum_md5_free,
+ *    .update = checksum_md5_update,
+ * };
+ *
+ *
+ * char * checksum_md5_finish(struct checksum * checksum) {
+ *    struct checksum_md5_private * self = checksum->data;
+ *
+ *    if (self->finished)
+ *       return 0;
+ *
+ *    unsigned char digest[MD5_DIGEST_LENGTH];
+ *
+ *    short ok = MD5_Final(digest, &self->md5);
+ *    self->finished = 1;
+ *    if (!ok)
+ *       return 0;
+ *
+ *    char * hexDigest = malloc(MD5_DIGEST_LENGTH * 2 + 1);
+ *    checksum_convert2Hex(digest, MD5_DIGEST_LENGTH, hexDigest);
+ *
+ *    return hexDigest;
+ * }
+ *
+ * void checksum_md5_free(struct checksum * checksum) {
+ *    struct checksum_md5_private * self = checksum->data;
+ *
+ *    if (!self->finished) {
+ *       unsigned char digest[MD5_DIGEST_LENGTH];
+ *       MD5_Final(digest, &self->md5);
+ *       self->finished = 1;
+ *    }
+ *
+ *    free(self);
+ *
+ *    checksum->data = 0;
+ *    checksum->ops = 0;
+ *    checksum->driver = 0;
+ * }
+ *
+ * // When you load this module, this function is automaticaly called
+ * __attribute__((constructor))
+ * static void checksum_md5_init() {
+ *    checksum_registerDriver(&checksum_md5_driver);
+ * }
+ *
+ * struct checksum * checksum_md5_new_checksum(struct checksum * checksum) {
+ *    // if checksum is NULL, you allocate a new with malloc
+ *    if (!checksum)
+ *       checksum = malloc(sizeof(struct checksum));
+ *
+ *    checksum->ops = &checksum_md5_ops;
+ *    checksum->driver = driver;
+ *
+ *    struct checksum_md5_private * self = malloc(sizeof(struct checksum_md5_private));
+ *    MD5_Init(&self->md5);
+ *    self->finished = 0;
+ *
+ *    checksum->data = self;
+ *    return checksum;
+ * }
+ *
+ * int checksum_md5_update(struct checksum * checksum, const char * data, unsigned int length) {
+ *    struct checksum_md5_private * self = checksum->data;
+ *
+ *    if (self->finished)
+ *       return -1;
+ *
+ *    if (MD5_Update(&self->md5, data, length))
+ *       return length;
+ *
+ *    return -1;
+ * }
  * \endcode
  */
 
@@ -174,12 +283,11 @@ struct checksum_driver {
 	char * name;
 	/**
 	 * \brief get a new checksum handler
-	 * \param driver : a checksum driver
 	 * \param checksum : an allocated checksum or \b NULL
 	 * \return same value of \a checksum if \a checksum if <b>NOT NULL</b> or new value
 	 * \note if \a checksum is \b NULL, this function allocate enough memory with \a malloc
 	 */
-	struct checksum * (*new_checksum)(struct checksum_driver * driver, struct checksum * checksum);
+	struct checksum * (*new_checksum)(struct checksum * checksum);
 	/**
 	 * \brief private data used by checksum_loadDriver
 	 * \note <b>SHOULD NOT be MODIFIED</b>
