@@ -24,25 +24,21 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 22 Oct 2010 17:41:10 +0200                       *
+*  Last modified: Fri, 22 Oct 2010 17:49:03 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_CONFIG_H__
-#define __STORIQARCHIVER_CONFIG_H__
+#include "common.h"
 
-//#define DEFAULT_CONFIG_FILE "/etc/storiq/storiqArchiver.conf"
-#define DEFAULT_CONFIG_FILE "example-config.conf"
-//#define DEFAULT_PID_FILE "/var/run/storiqArchiver.pid"
-#define DEFAULT_PID_FILE "storiqArchiver.pid"
+static struct stream_io_driver io_gzip_driver = {
+	.name = "gzip",
+	.new_streamRead = io_gzip_new_streamRead,
+	.new_streamWrite = io_gzip_new_streamWrite,
+	.cookie = 0,
+};
 
-//#define CHECKSUM_DIRNAME "/usr/lib/storiqArchiver/checksum"
-#define CHECKSUM_DIRNAME "lib/checksum"
-//#define DB_DIRNAME "/usr/lib/storiqArchiver/db"
-#define DB_DIRNAME "lib/db"
-//#define IO_DIRNAME "/usr/lib/storiqArchiver/io"
-#define IO_DIRNAME "lib/io"
-//#define LOG_DIRNAME "/usr/lib/storiqArchiver/log"
-#define LOG_DIRNAME "lib/log"
 
-#endif
+__attribute__((constructor))
+static void io_gzip_init() {
+	io_registerDriver(&io_gzip_driver);
+}
 

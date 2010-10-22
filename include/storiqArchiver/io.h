@@ -24,25 +24,54 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 22 Oct 2010 17:41:10 +0200                       *
+*  Last modified: Fri, 22 Oct 2010 17:47:34 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_CONFIG_H__
-#define __STORIQARCHIVER_CONFIG_H__
+#ifndef __STORIQARCHIVER_IO_H__
+#define __STORIQARCHIVER_IO_H__
 
-//#define DEFAULT_CONFIG_FILE "/etc/storiq/storiqArchiver.conf"
-#define DEFAULT_CONFIG_FILE "example-config.conf"
-//#define DEFAULT_PID_FILE "/var/run/storiqArchiver.pid"
-#define DEFAULT_PID_FILE "storiqArchiver.pid"
+struct stream_read_io;
+struct stream_write_io;
 
-//#define CHECKSUM_DIRNAME "/usr/lib/storiqArchiver/checksum"
-#define CHECKSUM_DIRNAME "lib/checksum"
-//#define DB_DIRNAME "/usr/lib/storiqArchiver/db"
-#define DB_DIRNAME "lib/db"
-//#define IO_DIRNAME "/usr/lib/storiqArchiver/io"
-#define IO_DIRNAME "lib/io"
-//#define LOG_DIRNAME "/usr/lib/storiqArchiver/log"
-#define LOG_DIRNAME "lib/log"
+struct stream_read_io_ops {
+	int (*close)(struct stream_read_io * io);
+	void (*free)(struct stream_read_io * io);
+	int (*read)(struct stream_read_io * io, void * buffer, int length);
+};
+
+struct stream_read_io {
+	struct stream_read_io_ops * ops;
+	void * data;
+};
+
+struct stream_write_io_ops {
+	int (*close)(struct stream_write_io * io);
+	void (*free)(struct stream_write_io * io);
+	void (*flush)(struct stream_write_io * io);
+	int (*write)(struct stream_write_io * io, const void * buffer, int length);
+};
+
+struct stream_write_io {
+	struct stream_write_io_ops * ops;
+	void * data;
+};
+
+struct stream_io_driver {
+	char * name;
+	struct stream_read_io * (*new_streamRead)(struct stream_read_io * self, struct stream_read_io * to);
+	struct stream_write_io * (*new_streamWrite)(struct stream_write_io * self, struct stream_write_io * io);
+	void * cookie;
+};
+
+
+struct stream_read_io * io_read_fd(struct stream_read_io * io, int fd);
+struct stream_read_io * io_read_file(struct stream_read_io * io, const char * filename);
+struct stream_write_io * io_write_fd(struct stream_write_io * io, int fd);
+struct stream_write_io * io_write_file(struct stream_write_io * io, const char * filename, int option);
+
+struct stream_io_driver * io_getDriver(const char * driver);
+int io_loadDriver(const char * driver);
+void io_registerDriver(struct stream_io_driver * driver);
 
 #endif
 

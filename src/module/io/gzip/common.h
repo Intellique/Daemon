@@ -24,25 +24,16 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 22 Oct 2010 17:41:10 +0200                       *
+*  Last modified: Fri, 22 Oct 2010 13:34:56 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_CONFIG_H__
-#define __STORIQARCHIVER_CONFIG_H__
+#ifndef __STORIQARCHIVER_IO_GZIP_COMMON_H__
+#define __STORIQARCHIVER_IO_GZIP_COMMON_H__
 
-//#define DEFAULT_CONFIG_FILE "/etc/storiq/storiqArchiver.conf"
-#define DEFAULT_CONFIG_FILE "example-config.conf"
-//#define DEFAULT_PID_FILE "/var/run/storiqArchiver.pid"
-#define DEFAULT_PID_FILE "storiqArchiver.pid"
+#include <storiqArchiver/io.h>
 
-//#define CHECKSUM_DIRNAME "/usr/lib/storiqArchiver/checksum"
-#define CHECKSUM_DIRNAME "lib/checksum"
-//#define DB_DIRNAME "/usr/lib/storiqArchiver/db"
-#define DB_DIRNAME "lib/db"
-//#define IO_DIRNAME "/usr/lib/storiqArchiver/io"
-#define IO_DIRNAME "lib/io"
-//#define LOG_DIRNAME "/usr/lib/storiqArchiver/log"
-#define LOG_DIRNAME "lib/log"
+struct stream_read_io * io_gzip_new_streamRead(struct stream_read_io * self, struct stream_read_io * to);
+struct stream_write_io * io_gzip_new_streamWrite(struct stream_write_io * self, struct stream_write_io * io);
 
 #endif
 

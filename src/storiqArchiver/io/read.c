@@ -24,25 +24,88 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 22 Oct 2010 17:41:10 +0200                       *
+*  Last modified: Thu, 21 Oct 2010 18:03:06 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_CONFIG_H__
-#define __STORIQARCHIVER_CONFIG_H__
+// open
+#include <fcntl.h>
+// free, malloc
+#include <malloc.h>
+// open
+#include <sys/stat.h>
+// open
+#include <sys/types.h>
+// close, read
+#include <unistd.h>
 
-//#define DEFAULT_CONFIG_FILE "/etc/storiq/storiqArchiver.conf"
-#define DEFAULT_CONFIG_FILE "example-config.conf"
-//#define DEFAULT_PID_FILE "/var/run/storiqArchiver.pid"
-#define DEFAULT_PID_FILE "storiqArchiver.pid"
+#include <storiqArchiver/io.h>
 
-//#define CHECKSUM_DIRNAME "/usr/lib/storiqArchiver/checksum"
-#define CHECKSUM_DIRNAME "lib/checksum"
-//#define DB_DIRNAME "/usr/lib/storiqArchiver/db"
-#define DB_DIRNAME "lib/db"
-//#define IO_DIRNAME "/usr/lib/storiqArchiver/io"
-#define IO_DIRNAME "lib/io"
-//#define LOG_DIRNAME "/usr/lib/storiqArchiver/log"
-#define LOG_DIRNAME "lib/log"
+struct io_read_private {
+	int fd;
+};
 
-#endif
+static int io_read_close(struct stream_read_io * io);
+static void io_read_free(struct stream_read_io * io);
+static int io_read_read(struct stream_read_io * io, void * buffer, int length);
+
+static struct stream_read_io_ops io_read_ops = {
+	.close = io_read_close,
+	.free = io_read_free,
+	.read = io_read_read,
+};
+
+
+int io_read_close(struct stream_read_io * io) {
+	if (!io || !io->data)
+		return -1;
+
+	struct io_read_private * self = io->data;
+	close(self->fd);
+	return 0;
+}
+
+struct stream_read_io * io_read_fd(struct stream_read_io * io, int fd) {
+	if (fd < 0)
+		return 0;
+
+	if (!io)
+		io = malloc(sizeof(struct stream_read_io));
+
+	struct io_read_private * self = malloc(sizeof(struct io_read_private));
+	self->fd = fd;
+
+	io->ops = &io_read_ops;
+	io->data = self;
+
+	return io;
+}
+
+struct stream_read_io * io_read_file(struct stream_read_io * io, const char * filename) {
+	if (!filename)
+		return 0;
+
+	int fd = open(filename, O_RDONLY);
+	if (fd < 0)
+		return 0;
+
+	return io_read_fd(io, fd);
+}
+
+void io_read_free(struct stream_read_io * io) {
+	if (!io)
+		return;
+
+	if (io->data)
+		free(io->data);
+	io->data = 0;
+	io->ops = 0;
+}
+
+int io_read_read(struct stream_read_io * io, void * buffer, int length) {
+	if (!io || !io->data || !buffer || length < 0)
+		return -1;
+
+	struct io_read_private * self = io->data;
+	return read(self->fd, buffer, length);
+}
 

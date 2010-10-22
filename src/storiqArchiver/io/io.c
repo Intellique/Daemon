@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 19 Oct 2010 10:39:23 +0200                       *
+*  Last modified: Fri, 22 Oct 2010 17:47:21 +0200                       *
 \***********************************************************************/
 
 // dlerror, dlopen
@@ -44,87 +44,68 @@
 // access
 #include <unistd.h>
 
-#include <storiqArchiver/checksum.h>
-#include <storiqArchiver/log.h>
-
 #include "config.h"
 
-static struct checksum_driver ** checksum_drivers = 0;
-static unsigned int checksum_nbDrivers = 0;
-static pthread_mutex_t checksum_lock;
+#include <storiqArchiver/io.h>
+#include <storiqArchiver/log.h>
+
+static struct stream_io_driver ** io_drivers = 0;
+static unsigned int io_nbDrivers = 0;
+static pthread_mutex_t io_lock;
 
 
-void checksum_convert2Hex(unsigned char * digest, int length, char * hexDigest) {
-	if (!digest || length < 1 || !hexDigest) {
-		if (!digest)
-			log_writeAll(Log_level_error, "Checksum: error because digest is null");
-		if (length < 1)
-			log_writeAll(Log_level_error, "Checksum: error because length is lower than 1 (length=%d)", length);
-		if (!hexDigest)
-			log_writeAll(Log_level_error, "Checksum: error because hexDigest is null");
-		return;
-	}
-
-	int i;
-	for (i = 0; i < length; i++)
-		snprintf(hexDigest + (i << 1), 3, "%02x", digest[i]);
-	hexDigest[i << 1] = '\0';
-
-	log_writeAll(Log_level_debug, "Checksum: computed => %s", hexDigest);
-}
-
-struct checksum_driver * checksum_getDriver(const char * driver) {
+struct stream_io_driver * io_getDriver(const char * driver) {
 	if (!driver) {
-		log_writeAll(Log_level_error, "Checksum: get driver failed because driver is null");
+		log_writeAll(Log_level_error, "IO: get driver failed because driver is null");
 		return 0;
 	}
 
-	pthread_mutex_lock(&checksum_lock);
+	pthread_mutex_lock(&io_lock);
 
-	struct checksum_driver * dr = 0;
+	struct stream_io_driver * dr = 0;
 	unsigned int i;
 
-	for (i = 0; i < checksum_nbDrivers && !dr; i++)
-		if (!strcmp(checksum_drivers[i]->name, driver))
-			dr = checksum_drivers[i];
+	for (i = 0; i < io_nbDrivers && !dr; i++)
+		if (!strcmp(io_drivers[i]->name, driver))
+			dr = io_drivers[i];
 
-	if (!dr && !checksum_loadDriver(driver))
-		dr = checksum_getDriver(driver);
+	if (!dr && !io_loadDriver(driver))
+		dr = io_getDriver(driver);
 
-	pthread_mutex_unlock(&checksum_lock);
+	pthread_mutex_unlock(&io_lock);
 
-	log_writeAll(Log_level_debug, "Checksum: get driver [%s] => %p", driver, (void *) dr);
+	log_writeAll(Log_level_debug, "IO: get driver [%s] => %p", driver, (void *) dr);
 
 	return dr;
 }
 
 __attribute__((constructor))
-static void checksum_init() {
+static void io_init() {
 	pthread_mutexattr_t attr;
 	pthread_mutexattr_init(&attr);
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
 
-	pthread_mutex_init(&checksum_lock, &attr);
+	pthread_mutex_init(&io_lock, &attr);
 
 	pthread_mutexattr_destroy(&attr);
 }
 
-int checksum_loadDriver(const char * driver) {
+int io_loadDriver(const char * driver) {
 	if (!driver) {
-		log_writeAll(Log_level_error, "Checksum: get driver failed because driver is null");
+		log_writeAll(Log_level_error, "IO: get driver failed because driver is null");
 		return 3;
 	}
 
 	char path[128];
 	snprintf(path, 128, "%s/lib%s.so", IO_DIRNAME, driver);
 
-	pthread_mutex_lock(&checksum_lock);
+	pthread_mutex_lock(&io_lock);
 
 	// check if module is already loaded
 	unsigned int i;
-	for (i = 0; i < checksum_nbDrivers; i++)
-		if (!strcmp(checksum_drivers[i]->name, driver)) {
-			pthread_mutex_unlock(&checksum_lock);
+	for (i = 0; i < io_nbDrivers; i++)
+		if (!strcmp(io_drivers[i]->name, driver)) {
+			pthread_mutex_unlock(&io_lock);
 			log_writeAll(Log_level_info, "Checksum: driver '%s' already loaded", driver);
 			return 0;
 		}
@@ -132,37 +113,37 @@ int checksum_loadDriver(const char * driver) {
 	// check if you can load module
 	if (access(path, R_OK | X_OK)) {
 		log_writeAll(Log_level_error, "Checksum: error, can load '%s' because %s", path, strerror(errno));
-		pthread_mutex_unlock(&checksum_lock);
+		pthread_mutex_unlock(&io_lock);
 		return 1;
 	}
 
-	log_writeAll(Log_level_debug, "Checksum: loading '%s' ...", driver);
+	log_writeAll(Log_level_debug, "IO: loading '%s' ...", driver);
 
 	// load module
 	void * cookie = dlopen(path, RTLD_NOW);
 
 	if (!cookie) {
-		log_writeAll(Log_level_error, "Checksum: error while loading '%s' because %s", path, dlerror());
-		pthread_mutex_unlock(&checksum_lock);
+		log_writeAll(Log_level_error, "IO: error while loading '%s' because %s", path, dlerror());
+		pthread_mutex_unlock(&io_lock);
 		return 2;
-	} else if (checksum_nbDrivers > 0 && !strcmp(checksum_drivers[checksum_nbDrivers - 1]->name, driver)) {
-		checksum_drivers[checksum_nbDrivers - 1]->cookie = cookie;
-		log_writeAll(Log_level_info, "Checksum: driver '%s' loaded", driver);
-		pthread_mutex_unlock(&checksum_lock);
+	} else if (io_nbDrivers > 0 && !strcmp(io_drivers[io_nbDrivers - 1]->name, driver)) {
+		io_drivers[io_nbDrivers - 1]->cookie = cookie;
+		log_writeAll(Log_level_info, "IO: driver '%s' loaded", driver);
+		pthread_mutex_unlock(&io_lock);
 		return 0;
 	} else {
 		// module didn't call log_registerModule so we unload it
 		dlclose(cookie);
-		log_writeAll(Log_level_warning, "Checksum: driver '%s' miss to call checksum_registerModule", driver);
-		pthread_mutex_unlock(&checksum_lock);
+		log_writeAll(Log_level_warning, "IO: driver '%s' miss to call checksum_registerModule", driver);
+		pthread_mutex_unlock(&io_lock);
 		return 2;
 	}
 }
 
-void checksum_registerDriver(struct checksum_driver * driver) {
-	checksum_drivers = realloc(checksum_drivers, (checksum_nbDrivers + 1) * sizeof(struct checksum_driver *));
+void io_registerDriver(struct stream_io_driver * driver) {
+	io_drivers = realloc(io_drivers, (io_nbDrivers + 1) * sizeof(struct io_driver *));
 
-	checksum_drivers[checksum_nbDrivers] = driver;
-	checksum_nbDrivers++;
+	io_drivers[io_nbDrivers] = driver;
+	io_nbDrivers++;
 }
 
