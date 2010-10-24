@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 22 Oct 2010 17:47:34 +0200                       *
+*  Last modified: Fri, 22 Oct 2010 19:15:12 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_IO_H__
@@ -65,9 +65,13 @@ struct stream_io_driver {
 
 
 struct stream_read_io * io_read_fd(struct stream_read_io * io, int fd);
+struct stream_read_io * io_read_fd2(struct stream_read_io * io, int fd, int blockSize);
 struct stream_read_io * io_read_file(struct stream_read_io * io, const char * filename);
+struct stream_read_io * io_read_file2(struct stream_read_io * io, const char * filename, int blockSize);
 struct stream_write_io * io_write_fd(struct stream_write_io * io, int fd);
+struct stream_write_io * io_write_fd2(struct stream_write_io * io, int fd, int blockSize);
 struct stream_write_io * io_write_file(struct stream_write_io * io, const char * filename, int option);
+struct stream_write_io * io_write_file2(struct stream_write_io * io, const char * filename, int option, int blockSize);
 
 struct stream_io_driver * io_getDriver(const char * driver);
 int io_loadDriver(const char * driver);
