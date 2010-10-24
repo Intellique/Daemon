@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 22 Oct 2010 23:31:16 +0200                       *
+*  Last modified: Sun, 24 Oct 2010 21:26:34 +0200                       *
 \***********************************************************************/
 
 // open
@@ -50,18 +50,21 @@ struct io_write_private {
 };
 
 static int io_write_close(struct stream_write_io * io);
+static int io_write_flush(struct stream_write_io * io);
 static void io_write_free(struct stream_write_io * io);
 static int io_write_write(struct stream_write_io * io, const void * buffer, int length);
 static int io_write_write_buffer(struct stream_write_io * io, const void * buffer, int length);
 
 static struct stream_write_io_ops io_write_ops = {
 	.close = io_write_close,
+	.flush = io_write_flush,
 	.free = io_write_free,
 	.write = io_write_write,
 };
 
 static struct stream_write_io_ops io_write_buffer_ops = {
 	.close = io_write_close,
+	.flush = io_write_flush,
 	.free = io_write_free,
 	.write = io_write_write_buffer,
 };
@@ -121,6 +124,14 @@ struct stream_write_io * io_write_file2(struct stream_write_io * io, const char 
 		return 0;
 
 	return io_write_fd2(io, fd, blockSize);
+}
+
+int io_write_flush(struct stream_write_io * io) {
+	if (!io || !io->data)
+		return -1;
+
+	struct io_write_private * self = io->data;
+	return fsync(self->fd);
 }
 
 void io_write_free(struct stream_write_io * io) {

@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 22 Oct 2010 19:15:12 +0200                       *
+*  Last modified: Sun, 24 Oct 2010 21:25:09 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_IO_H__
@@ -46,8 +46,8 @@ struct stream_read_io {
 
 struct stream_write_io_ops {
 	int (*close)(struct stream_write_io * io);
+	int (*flush)(struct stream_write_io * io);
 	void (*free)(struct stream_write_io * io);
-	void (*flush)(struct stream_write_io * io);
 	int (*write)(struct stream_write_io * io, const void * buffer, int length);
 };
 

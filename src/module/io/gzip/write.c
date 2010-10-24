@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 22 Oct 2010 17:30:16 +0200                       *
+*  Last modified: Sun, 24 Oct 2010 21:28:06 +0200                       *
 \***********************************************************************/
 
 // free, malloc
@@ -44,14 +44,14 @@ struct io_gzip_write_private {
 };
 
 static int io_gzip_write_close(struct stream_write_io * io);
+static int io_gzip_write_flush(struct stream_write_io * io);
 static void io_gzip_write_free(struct stream_write_io * io);
-static void io_gzip_write_flush(struct stream_write_io * io);
 static int io_gzip_write_write(struct stream_write_io * io, const void * buffer, int length);
 
 static struct stream_write_io_ops io_gzip_write_ops = {
 	.close = io_gzip_write_close,
-	.free = io_gzip_write_free,
 	.flush = io_gzip_write_flush,
+	.free = io_gzip_write_free,
 	.write = io_gzip_write_write,
 };
 
@@ -86,19 +86,9 @@ int io_gzip_write_close(struct stream_write_io * io) {
 	return self->stream->ops->close(self->stream);
 }
 
-void io_gzip_write_free(struct stream_write_io * io) {
+int io_gzip_write_flush(struct stream_write_io * io) {
 	if (!io || !io->data)
-		return;
-
-	if (io->data)
-		free(io->data);
-	io->data = 0;
-	io->ops = 0;
-}
-
-void io_gzip_write_flush(struct stream_write_io * io) {
-	if (!io || !io->data)
-		return;
+		return -1;
 
 	struct io_gzip_write_private * self = io->data;
 
@@ -110,6 +100,18 @@ void io_gzip_write_flush(struct stream_write_io * io) {
 	deflate(&self->gz_stream, Z_FULL_FLUSH);
 
 	self->stream->ops->write(self->stream, buffer, self->gz_stream.total_out);
+
+	return self->stream->ops->flush(self->stream);
+}
+
+void io_gzip_write_free(struct stream_write_io * io) {
+	if (!io || !io->data)
+		return;
+
+	if (io->data)
+		free(io->data);
+	io->data = 0;
+	io->ops = 0;
 }
 
 struct stream_write_io * io_gzip_new_streamWrite(struct stream_write_io * io, struct stream_write_io * to) {
