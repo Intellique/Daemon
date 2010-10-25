@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Sun, 24 Oct 2010 21:28:06 +0200                       *
+*  Last modified: Sun, 24 Oct 2010 21:49:18 +0200                       *
 \***********************************************************************/
 
 // free, malloc
@@ -93,6 +93,10 @@ int io_gzip_write_flush(struct stream_write_io * io) {
 	struct io_gzip_write_private * self = io->data;
 
 	char buffer[1024];
+
+	self->gz_stream.next_in = 0;
+	self->gz_stream.avail_in = 0;
+
 	self->gz_stream.next_out = (unsigned char *) buffer;
 	self->gz_stream.avail_out = 1024;
 	self->gz_stream.total_out = 0;

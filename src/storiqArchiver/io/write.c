@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Sun, 24 Oct 2010 21:26:34 +0200                       *
+*  Last modified: Mon, 25 Oct 2010 12:52:42 +0200                       *
 \***********************************************************************/
 
 // open
@@ -176,7 +176,8 @@ int io_write_write_buffer(struct stream_write_io * io, const void * buffer, int 
 			int nbWrite = write(self->fd, self->buffer, self->blockSize);
 			if (nbWrite == self->blockSize) {
 				self->bufferUsed = 0;
-				length -= nbTotalWrite;
+				nbTotalWrite = nbWrite;
+				length -= remain;
 				ptr += remain;
 			} else if (nbWrite == 0) {
 				self->bufferUsed = self->blockSize;
