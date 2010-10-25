@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 19 Oct 2010 11:11:19 +0200                       *
+*  Last modified: Mon, 25 Oct 2010 16:23:29 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_DATABASE_H__
@@ -36,6 +36,7 @@ struct database;
 struct database_connection;
 struct hashtable;
 struct job;
+struct library_changer;
 
 struct database_ops {
 	struct database_connection * (*connect)(struct database * db, struct database_connection * connection);
@@ -101,6 +102,9 @@ struct database_connection_ops {
 	 * \li < 0 if error
 	 */
 	int (*startTransaction)(struct database_connection * db, short readOnly);
+
+	struct library_changer * (*getChanger)(struct database_connection * db, struct library_changer * changer, int index);
+	int (*getNbChanger)(struct database_connection * db);
 
 	/**
 	 * \brief add a new job

@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 19 Oct 2010 13:42:12 +0200                       *
+*  Last modified: Mon, 25 Oct 2010 17:00:47 +0200                       *
 \***********************************************************************/
 
 #define _XOPEN_SOURCE 500
@@ -50,6 +50,9 @@ static int db_postgresql_con_free(struct database_connection * connection);
 static int db_postgresql_cancelTransaction(struct database_connection * connection);
 static int db_postgresql_finishTransaction(struct database_connection * connection);
 static int db_postgresql_startTransaction(struct database_connection * connection, short readOnly);
+
+static struct library_changer * db_postgresql_getChanger(struct database_connection * connection, struct library_changer * changer, int index);
+static int db_postgresql_getNbChanger(struct database_connection * connection);
 
 static struct job * db_postgresql_addJob(struct database_connection * connection, struct job * job, unsigned int index, time_t since);
 static int db_postgresql_jobModified(struct database_connection * connection, time_t since);
@@ -218,6 +221,14 @@ int db_postgresql_finishTransaction(struct database_connection * connection) {
 	return status == PGRES_COMMAND_OK ? 0 : -1;
 }
 
+struct library_changer * db_postgresql_getChanger(struct database_connection * connection, struct library_changer * changer, int index) {
+	if (!connection)
+		return -1;
+
+	char * query = malloc(128);
+	snprintf(query, 128, "SELECT COUNT(job_id) FROM jobs WHERE job_modified > (TIMESTAMP 'epoch' + INTERVAL '%ld second');", since);
+}
+
 int db_postgresql_initConnection(struct database_connection * connection, struct db_postgresql_private * driver_private) {
 	if (!connection || !connection->driver)
 		return -1;
@@ -241,7 +252,7 @@ int db_postgresql_initConnection(struct database_connection * connection, struct
 	return 0;
 }
 
-int db_postgresql_jobModified(struct database_connection * connection, time_t since) {
+int db_postgresql_jobModified(struct database_connection * connection, time_t since __attribute__((unused))) {
 	if (!connection)
 		return -1;
 
@@ -294,7 +305,7 @@ int db_postgresql_startTransaction(struct database_connection * connection, shor
 	return status == PGRES_COMMAND_OK ? 0 : -1;
 }
 
-int db_postgresql_updateJob(struct database_connection * connection, struct job * job) {
+int db_postgresql_updateJob(struct database_connection * connection, struct job * job __attribute__((unused))) {
 	if (!connection)
 		return -1;
 
