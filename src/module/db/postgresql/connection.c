@@ -223,10 +223,10 @@ int db_postgresql_finishTransaction(struct database_connection * connection) {
 
 struct library_changer * db_postgresql_getChanger(struct database_connection * connection, struct library_changer * changer, int index) {
 	if (!connection)
-		return -1;
+		return 0;
 
 	char * query = malloc(128);
-	snprintf(query, 128, "SELECT COUNT(job_id) FROM jobs WHERE job_modified > (TIMESTAMP 'epoch' + INTERVAL '%ld second');", since);
+	//snprintf(query, 128, "SELECT COUNT(job_id) FROM jobs WHERE job_modified > (TIMESTAMP 'epoch' + INTERVAL '%ld second');", since);
 }
 
 int db_postgresql_initConnection(struct database_connection * connection, struct db_postgresql_private * driver_private) {
