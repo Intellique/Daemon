@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 25 Oct 2010 16:52:41 +0200                       *
+*  Last modified: Tue, 26 Oct 2010 17:31:24 +0200                       *
 \***********************************************************************/
 
 // calloc
@@ -49,7 +49,7 @@ static int library_nbChangers = 0;
 static struct changer_status {
 	enum library_changer_status status;
 	char * name;
-} library_status[] = {
+} library_changer_status[] = {
 	{ library_changer_error,     "error" },
 	{ library_changer_exporting, "exporting" },
 	{ library_changer_idle,      "idle" },
@@ -64,7 +64,7 @@ static struct changer_status {
 
 const char * library_changer_statusToString(enum library_changer_status status) {
 	struct changer_status * ptr;
-	for (ptr = library_status; ptr->name; ptr++)
+	for (ptr = library_changer_status; ptr->name; ptr++)
 		if (ptr->status == status)
 			return ptr->name;
 	return 0;
@@ -72,7 +72,7 @@ const char * library_changer_statusToString(enum library_changer_status status) 
 
 enum library_changer_status library_changer_stringToStatus(const char * status) {
 	struct changer_status * ptr;
-	for (ptr = library_status; ptr->name; ptr++)
+	for (ptr = library_changer_status; ptr->name; ptr++)
 		if (!strcasecmp(ptr->name, status))
 			return ptr->status;
 	return library_changer_unknown;
@@ -91,14 +91,14 @@ void library_configureChanger() {
 		return;
 	}
 
-	int nbChanger = connection.ops->getNbChanger(&connection);
+	int nbChanger = connection.ops->getNbChanger(&connection, 0);
 	if (nbChanger > 0) {
 		library_changers = calloc(nbChanger, sizeof(struct library_changer));
 		library_nbChangers = nbChanger;
 
 		int i;
 		for (i = 0; i < nbChanger; i++)
-			connection.ops->getChanger(&connection, library_changers + i, i);
+			connection.ops->getChanger(&connection, 0);
 
 		library_changers_th = calloc(nbChanger, sizeof(pthread_t));
 		for (i = 0; i < nbChanger; i++)

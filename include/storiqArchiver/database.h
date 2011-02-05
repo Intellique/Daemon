@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 25 Oct 2010 16:23:29 +0200                       *
+*  Last modified: Tue, 26 Oct 2010 16:36:20 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_DATABASE_H__
@@ -103,8 +103,8 @@ struct database_connection_ops {
 	 */
 	int (*startTransaction)(struct database_connection * db, short readOnly);
 
-	struct library_changer * (*getChanger)(struct database_connection * db, struct library_changer * changer, int index);
-	int (*getNbChanger)(struct database_connection * db);
+	struct library_changer * (*getChanger)(struct database_connection * db, const char * hostName);
+	int (*getNbChanger)(struct database_connection * db, const char * hostName);
 
 	/**
 	 * \brief add a new job

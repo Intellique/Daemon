@@ -24,65 +24,46 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 26 Oct 2010 17:41:05 +0200                       *
+*  Last modified: Tue, 26 Oct 2010 17:46:18 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_LIBRARY_H__
-#define __STORIQARCHIVER_LIBRARY_H__
+// strcasecmp
+#include <string.h>
 
-struct library_drive;
+#include <storiqArchiver/library.h>
 
-enum library_changer_status {
-	library_changer_error,
-	library_changer_exporting,
-	library_changer_idle,
-	library_changer_importing,
-	library_changer_loading,
-	library_changer_unknown,
-	library_changer_unloading,
-};
-
-struct library_changer {
-	long id;
-	char * device;
-	enum library_changer_status status;
-	char * model;
-	char * vendor;
-	int barcode;
-
-	struct library_drive * drives;
-	unsigned int nbDrives;
-};
-
-enum library_drive_status {
-	library_drive_cleaning,
-	library_drive_emptyIdle,
-	library_drive_erasing,
-	library_drive_error,
-	library_drive_loadedIdle,
-	library_drive_loading,
-	library_drive_positioning,
-	library_drive_reading,
-	library_drive_unknown,
-	library_drive_unloading,
-	library_drive_writing,
-};
-
-struct library_drive {
-	long id;
-	char * device;
+static struct drive_status {
 	enum library_drive_status status;
-	struct library_changer * changer;
-	char * model;
-	char * vendor;
+	char * name;
+} library_drive_status[] = {
+	{ library_drive_cleaning,    "cleaning" },
+	{ library_drive_emptyIdle,   "empty-idle" },
+	{ library_drive_erasing,     "erasing" },
+	{ library_drive_error,       "error" },
+	{ library_drive_loadedIdle,  "loaded-idle" },
+	{ library_drive_loading,     "loading" },
+	{ library_drive_positioning, "positioning" },
+	{ library_drive_reading,     "reading" },
+	{ library_drive_unloading,   "unloading" },
+	{ library_drive_writing,     "writing" },
+
+	{ library_drive_unknown, 0 },
 };
 
 
-const char * library_changer_statusToString(enum library_changer_status status);
-enum library_changer_status library_changer_stringToStatus(const char * status);
-void library_configureChanger(void);
-const char * library_drive_statusToString(enum library_drive_status status);
-enum library_drive_status library_drive_stringToStatus(const char * status);
+const char * library_drive_statusToString(enum library_drive_status status) {
+	struct drive_status * ptr;
+	for (ptr = library_drive_status; ptr->name; ptr++)
+		if (ptr->status == status)
+			return ptr->name;
+	return 0;
+}
 
-#endif
+enum library_drive_status library_drive_stringToStatus(const char * status) {
+	struct drive_status * ptr;
+	for (ptr = library_drive_status; ptr->name; ptr++)
+		if (!strcasecmp(ptr->name, status))
+			return ptr->status;
+	return 0;
+}
 
