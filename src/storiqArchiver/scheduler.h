@@ -23,33 +23,14 @@
 *  Boston, MA  02110-1301, USA.                                         *
 *                                                                       *
 *  -------------------------------------------------------------------  *
-*  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 08:53:17 +0200                       *
+*  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Wed, 29 Sep 2010 11:54:55 +0200                       *
 \***********************************************************************/
 
-// free
-#include <malloc.h>
-// strlen
-#include <string.h>
+#ifndef __STORIQARCHIVER_SCHEDULER_H__
+#define __STORIQARCHIVER_SCHEDULER_H__
 
-#include "util.h"
+void sched_doLoop(void);
 
-void util_freeKeyValue(void * key, void * value) {
-	if (key)
-		free(key);
-	if (value)
-		free(value);
-}
-
-/**
- * sdbm function
- */
-unsigned long long util_hashString(const void * key) {
-	const char * cstr = key;
-	unsigned long long int hash = 0;
-	int length = strlen(cstr), i;
-	for (i = 0; i < length; i++)
-		hash = cstr[i] + (hash << 6) + (hash << 16) - hash;
-	return hash;
-}
+#endif
 

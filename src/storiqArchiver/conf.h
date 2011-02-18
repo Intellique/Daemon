@@ -23,51 +23,55 @@
 *  Boston, MA  02110-1301, USA.                                         *
 *                                                                       *
 *  -------------------------------------------------------------------  *
-*  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 30 Sep 2010 09:08:14 +0200                       *
+*  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Fri, 15 Oct 2010 12:16:08 +0200                       *
 \***********************************************************************/
 
-// realloc
-#include <malloc.h>
+#ifndef __STORIQARCHIVER_CONF_H__
+#define __STORIQARCHIVER_CONF_H__
 
-#include <storiqArchiver/util/hashtable.h>
+/**
+ * \brief conf_checkPid
+ * \param pid : pid
+ * \return a value which correspond to
+ * \li 1 is the daemon is alive
+ * \li 0 if the daemon is dead
+ * \li -1 if another process used this pid
+ */
+int conf_checkPid(int pid);
 
-#include "common.h"
+/**
+ * \brief conf_deletePid
+ * \param pidFile : file with pid
+ * \return what "unlink" returned
+ * \note see man page unlink(2)
+ */
+int conf_deletePid(const char * pidFile);
 
-static int log_file_add(struct log_module * module, const char * alias, enum Log_level level, struct hashtable * params);
+/**
+ * \brief conf_readPid read pid file
+ * \param pidFile : file with pid
+ * \return the pid or -1 if not found
+ */
+int conf_readPid(const char * pidFile);
+
+/**
+ * \brief conf_writePid write pid into file
+ * \param pidFile : file with pid
+ * \param pid : pid
+ * \return 0 if ok
+ */
+int conf_writePid(const char * pidFile, int pid);
 
 
-static struct log_module_ops log_file_moduleOps = {
-	.add = log_file_add,
-};
+/**
+ * \brief read config file
+ * \param confFile : config file
+ * \return a value which correspond to
+ * \li 0 if ok
+ * \li 1 if error
+ */
+int conf_readConfig(const char * confFile);
 
-static struct log_module log_file_module = {
-	.moduleName = 	"file",
-	.ops = 			&log_file_moduleOps,
-	.data = 		0,
-	.cookie = 		0,
-	.subModules = 	0,
-	.nbSubModules =	0,
-};
-
-
-int log_file_add(struct log_module * module, const char * alias, enum Log_level level, struct hashtable * params) {
-	if (!module || !alias || !params)
-		return 1;
-
-	char * path = hashtable_value(params, "path");
-	if (!path)
-		return 1;
-
-	module->subModules = realloc(module->subModules, (module->nbSubModules + 1) * sizeof(struct log_moduleSub));
-	log_file_new(module->subModules + module->nbSubModules, alias, level, path);
-	module->nbSubModules++;
-
-	return 0;
-}
-
-__attribute__((constructor))
-static void log_file_init() {
-	log_registerModule(&log_file_module);
-}
+#endif
 

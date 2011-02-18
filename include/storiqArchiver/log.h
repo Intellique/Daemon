@@ -23,8 +23,8 @@
 *  Boston, MA  02110-1301, USA.                                         *
 *                                                                       *
 *  -------------------------------------------------------------------  *
-*  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 15 Oct 2010 16:02:25 +0200                       *
+*  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Sun, 06 Feb 2011 22:59:39 +0100                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_LOG_H__
@@ -32,7 +32,6 @@
 
 // forward declarations
 struct hashtable;
-struct log_module;
 struct log_moduleSub;
 
 
@@ -75,13 +74,9 @@ enum Log_level {
 };
 
 
-struct log_module_ops {
-	int (*add)(struct log_module * module, const char * alias, enum Log_level level, struct hashtable * params);
-};
-
 struct log_module {
 	const char * moduleName;
-	struct log_module_ops * ops;
+	int (*add)(struct log_module * module, const char * alias, enum Log_level level, struct hashtable * params);
 	void * data;
 
 	// used by server only
@@ -93,15 +88,14 @@ struct log_module {
 };
 
 
-struct log_moduleSub_ops {
-	void (*free)(struct log_moduleSub * moduleSub);
-	void (*write)(struct log_moduleSub * moduleSub, enum Log_level level, const char * message);
-};
-
 struct log_moduleSub {
 	char * alias;
 	enum Log_level level;
-	struct log_moduleSub_ops * ops;
+	struct log_moduleSub_ops {
+		void (*free)(struct log_moduleSub * moduleSub);
+		void (*write)(struct log_moduleSub * moduleSub, enum Log_level level, const char * message);
+	} * ops;
+
 	void * data;
 };
 

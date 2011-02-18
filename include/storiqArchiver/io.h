@@ -23,7 +23,7 @@
 *  Boston, MA  02110-1301, USA.                                         *
 *                                                                       *
 *  -------------------------------------------------------------------  *
-*  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
+*  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
 *  Last modified: Sun, 24 Oct 2010 21:25:09 +0200                       *
 \***********************************************************************/
 

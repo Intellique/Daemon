@@ -23,15 +23,16 @@
 *  Boston, MA  02110-1301, USA.                                         *
 *                                                                       *
 *  -------------------------------------------------------------------  *
-*  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 08:53:26 +0200                       *
+*  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Tue, 28 Sep 2010 09:04:34 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_UTIL_H__
-#define __STORIQARCHIVER_UTIL_H__
+#ifndef __STORIQARCHIVER_LOG_FILE_H__
+#define __STORIQARCHIVER_LOG_FILE_H__
 
-void util_freeKeyValue(void * key, void * value);
-unsigned long long util_hashString(const void * key);
+#include "storiqArchiver/log.h"
+
+struct log_moduleSub * log_file_new(struct log_moduleSub * subModule, const char * alias, enum Log_level level, const char * path);
 
 #endif
 

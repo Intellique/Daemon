@@ -23,8 +23,8 @@
 *  Boston, MA  02110-1301, USA.                                         *
 *                                                                       *
 *  -------------------------------------------------------------------  *
-*  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 19 Oct 2010 10:34:55 +0200                       *
+*  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Sun, 06 Feb 2011 22:56:01 +0100                       *
 \***********************************************************************/
 
 // strerror
@@ -201,7 +201,7 @@ void conf_loadLog(struct hashtable * params) {
 	struct log_module * mod = log_getModule(type);
 	if (mod) {
 		log_writeAll(Log_level_info, "Conf: loadLog: using module='%s', alias='%s', verbosity='%s'", type, alias, log_levelToString(verbosity));
-		mod->ops->add(mod, alias, verbosity, params);
+		mod->add(mod, alias, verbosity, params);
 	} else
 		log_writeAll(Log_level_error, "Conf: loadLog: module='%s' not found", type);
 }

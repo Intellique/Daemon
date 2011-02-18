@@ -23,14 +23,47 @@
 *  Boston, MA  02110-1301, USA.                                         *
 *                                                                       *
 *  -------------------------------------------------------------------  *
-*  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 29 Sep 2010 11:54:55 +0200                       *
+*  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Sun, 06 Feb 2011 22:55:27 +0100                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_SCHEDULER_H__
-#define __STORIQARCHIVER_SCHEDULER_H__
+// realloc
+#include <malloc.h>
 
-void sched_doLoop(void);
+#include <storiqArchiver/util/hashtable.h>
 
-#endif
+#include "common.h"
+
+static int log_file_add(struct log_module * module, const char * alias, enum Log_level level, struct hashtable * params);
+
+
+static struct log_module log_file_module = {
+	.moduleName = 	"file",
+	.add =			log_file_add,
+	.data = 		0,
+	.cookie = 		0,
+	.subModules = 	0,
+	.nbSubModules =	0,
+};
+
+
+int log_file_add(struct log_module * module, const char * alias, enum Log_level level, struct hashtable * params) {
+	if (!module || !alias || !params)
+		return 1;
+
+	char * path = hashtable_value(params, "path");
+	if (!path)
+		return 1;
+
+	module->subModules = realloc(module->subModules, (module->nbSubModules + 1) * sizeof(struct log_moduleSub));
+	log_file_new(module->subModules + module->nbSubModules, alias, level, path);
+	module->nbSubModules++;
+
+	return 0;
+}
+
+__attribute__((constructor))
+static void log_file_init() {
+	log_registerModule(&log_file_module);
+}
 

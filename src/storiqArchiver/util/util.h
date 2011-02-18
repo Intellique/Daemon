@@ -23,55 +23,15 @@
 *  Boston, MA  02110-1301, USA.                                         *
 *                                                                       *
 *  -------------------------------------------------------------------  *
-*  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 15 Oct 2010 12:16:08 +0200                       *
+*  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Tue, 28 Sep 2010 08:53:26 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_CONF_H__
-#define __STORIQARCHIVER_CONF_H__
+#ifndef __STORIQARCHIVER_UTIL_H__
+#define __STORIQARCHIVER_UTIL_H__
 
-/**
- * \brief conf_checkPid
- * \param pid : pid
- * \return a value which correspond to
- * \li 1 is the daemon is alive
- * \li 0 if the daemon is dead
- * \li -1 if another process used this pid
- */
-int conf_checkPid(int pid);
-
-/**
- * \brief conf_deletePid
- * \param pidFile : file with pid
- * \return what "unlink" returned
- * \note see man page unlink(2)
- */
-int conf_deletePid(const char * pidFile);
-
-/**
- * \brief conf_readPid read pid file
- * \param pidFile : file with pid
- * \return the pid or -1 if not found
- */
-int conf_readPid(const char * pidFile);
-
-/**
- * \brief conf_writePid write pid into file
- * \param pidFile : file with pid
- * \param pid : pid
- * \return 0 if ok
- */
-int conf_writePid(const char * pidFile, int pid);
-
-
-/**
- * \brief read config file
- * \param confFile : config file
- * \return a value which correspond to
- * \li 0 if ok
- * \li 1 if error
- */
-int conf_readConfig(const char * confFile);
+void util_freeKeyValue(void * key, void * value);
+unsigned long long util_hashString(const void * key);
 
 #endif
 

@@ -1,9 +1,10 @@
 MAKEFLAGS 	+= -rR --no-print-directory
 
 # commands
-GCC			:= ccache gcc
-CSCOPE		:= cscope
+CC			:= ccache ${TARGET}gcc
 CTAGS		:= ctags
+CSCOPE		:= cscope
+GDB			:= gdb
 
 
 # variable
@@ -43,7 +44,7 @@ include ${SUB_MAKES}
 define BIN_template
 $$($(1)_BIN): $$($(1)_LIB) $$($(1)_OBJ_FILES)
 	@echo " LD       $$@"
-	@${GCC} -o $$@ $$($(1)_OBJ_FILES) ${LDFLAGS} $$($(1)_LD)
+	@${CC} -o $$@ $$($(1)_OBJ_FILES) ${LDFLAGS} $$($(1)_LD)
 	@echo " OBJCOPY  --only-keep-debug $$@ $$@.debug"
 	@objcopy --only-keep-debug $$@ $$@.debug
 	@echo " STRIP    $$@"
@@ -55,7 +56,7 @@ $$($(1)_BIN): $$($(1)_LIB) $$($(1)_OBJ_FILES)
 
 $$($(1)_BUILD_DIR)/%.o: $$($(1)_SRC_DIR)/%.c
 	@echo " CC       $$@"
-	@${GCC} -c $${CFLAGS} $$($(1)_CFLAG) -Wp,-MD,$$($(1)_DEPEND_DIR)/$$*.d,-MT,$$@ -o $$@ $$<
+	@${CC} -c $${CFLAGS} $$($(1)_CFLAG) -Wp,-MD,$$($(1)_DEPEND_DIR)/$$*.d,-MT,$$@ -o $$@ $$<
 
 BINS		+= $$($(1)_BIN)
 SRC_FILES	+= $$($(1)_SRC_FILES)
@@ -74,7 +75,7 @@ DEP_DIRS	:= $(patsubst ${BUILD_DIR}/%,${DEPEND_DIR}/%,${OBJ_DIRS})
 
 # phony target
 .DEFAULT_GOAL	:= all
-.PHONY: all binaries clean cscope ctags distclean lib prepare realclean stat stat-extra TAGS tar
+.PHONY: all binaries clean cscope ctags debug distclean lib prepare realclean stat stat-extra TAGS tar
 
 all: binaries tags
 
@@ -82,15 +83,19 @@ binaries: prepare $(sort ${BINS})
 
 check:
 	@echo 'Checking source files...'
-	@${GCC} -fsyntax-only ${CFLAGS} ${SRC_FILES}
+	@${CC} -fsyntax-only ${CFLAGS} ${SRC_FILES}
 
 clean:
-	@echo ' RM       -Rf ${BIN_DIRS} ${BUILD_DIR}'
-	@rm -Rf ${BIN_DIRS} ${BUILD_DIR}
+	@echo ' RM       -Rf $(foreach dir,${BIN_DIRS},$(word 1,$(subst /, ,$(dir)))) ${BUILD_DIR}'
+	@rm -Rf $(foreach dir,${BIN_DIRS},$(word 1,$(subst /, ,$(dir)))) ${BUILD_DIR}
 
 cscope: cscope.out
 
 ctags TAGS: tags
+
+debug: binaries
+	@echo ' GDB'
+	${GDB} bin/storiqArchiver
 
 distclean realclean: clean
 	@echo ' RM       -Rf cscope.out doc ${DEPEND_DIR} tags'
@@ -106,7 +111,7 @@ rebuild: clean all
 
 stat:
 	@wc $(sort ${SRC_FILES} ${HEAD_FILES})
-	@git diff --cached --stat=${COLUMNS}
+	@git diff -M --cached --stat=${COLUMNS}
 
 stat-extra:
 	@c_count -w 48 $(sort ${HEAD_FILES} ${SRC_FILES})

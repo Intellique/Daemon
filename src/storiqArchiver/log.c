@@ -23,8 +23,8 @@
 *  Boston, MA  02110-1301, USA.                                         *
 *                                                                       *
 *  -------------------------------------------------------------------  *
-*  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 18 Oct 2010 13:01:32 +0200                       *
+*  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Fri, 18 Feb 2011 18:48:30 +0100                       *
 \***********************************************************************/
 
 // dlerror, dlopen
@@ -56,8 +56,10 @@ static struct log_messageUnSent {
 	char * who;
 	enum Log_level level;
 	char * message;
+	char sent;
 } * log_messageUnSent = 0;
 static unsigned int log_nbMessageUnSent = 0;
+static unsigned int log_nbMessageUnSentTo = 0;
 static pthread_mutex_t log_lock;
 
 static int log_flushMessage(void);
@@ -105,6 +107,7 @@ int log_flushMessage() {
 					continue;
 				if (log_modules[mod]->subModules[submod].level <= log_messageUnSent[mes].level) {
 					log_modules[mod]->subModules[submod].ops->write(log_modules[mod]->subModules + submod, log_messageUnSent[mes].level, log_messageUnSent[mes].message);
+					log_messageUnSent[mes].sent = 1;
 					ok = 1;
 				}
 			}
@@ -113,14 +116,27 @@ int log_flushMessage() {
 
 	if (ok) {
 		for (mes = 0; mes < log_nbMessageUnSent; mes++) {
-			if (log_messageUnSent[mes].who)
-				free(log_messageUnSent[mes].who);
-			log_messageUnSent[mes].who = 0;
-			free(log_messageUnSent[mes].message);
-			log_messageUnSent[mes].message = 0;
+			if (log_messageUnSent[mes].sent) {
+				if (log_messageUnSent[mes].who) {
+					free(log_messageUnSent[mes].who);
+					log_nbMessageUnSentTo--;
+				}
+				if (log_messageUnSent[mes].message)
+					free(log_messageUnSent[mes].message);
+
+				if (mes + 1 < log_nbMessageUnSent)
+					memmove(log_messageUnSent + mes, log_messageUnSent + mes + 1, (log_nbMessageUnSent - mes - 1) * sizeof(struct log_messageUnSent));
+				log_nbMessageUnSent--, mes--;
+				if (log_nbMessageUnSent > 0)
+					log_messageUnSent = realloc(log_messageUnSent, log_nbMessageUnSent * sizeof(struct log_messageUnSent));
+			}
 		}
-		free(log_messageUnSent);
-		log_messageUnSent = 0;
+
+		if (log_nbMessageUnSent == 0) {
+			free(log_messageUnSent);
+			log_messageUnSent = 0;
+			ok = 2;
+		}
 	}
 
 	return ok;
@@ -217,7 +233,10 @@ void log_storeMessage(char * who, enum Log_level level, char * message) {
 	log_messageUnSent[log_nbMessageUnSent].who = who;
 	log_messageUnSent[log_nbMessageUnSent].level = level;
 	log_messageUnSent[log_nbMessageUnSent].message = message;
+	log_messageUnSent[log_nbMessageUnSent].sent = 0;
 	log_nbMessageUnSent++;
+	if (who)
+		log_nbMessageUnSentTo++;
 }
 
 void log_writeAll(enum Log_level level, const char * format, ...) {
@@ -230,20 +249,25 @@ void log_writeAll(enum Log_level level, const char * format, ...) {
 
 	pthread_mutex_lock(&log_lock);
 
-	if (log_nbModules == 0 || (log_messageUnSent && !log_flushMessage())) {
+	if (log_nbModules == 0 || (log_nbMessageUnSent > log_nbMessageUnSentTo && !log_flushMessage())) {
 		log_storeMessage(0, level, message);
 		pthread_mutex_unlock(&log_lock);
 		return;
 	}
 
-	unsigned int i;
+	unsigned int i, sent = 0;
 	for (i = 0; i < log_nbModules; i++) {
 		unsigned int j;
 		for (j = 0; j < log_modules[i]->nbSubModules; j++) {
-			if (log_modules[i]->subModules[j].level <= level)
+			if (log_modules[i]->subModules[j].level <= level) {
 				log_modules[i]->subModules[j].ops->write(log_modules[i]->subModules + j, level, message);
+				sent = 1;
+			}
 		}
 	}
+
+	if (sent == 0)
+		log_storeMessage(0, level, message);
 
 	pthread_mutex_unlock(&log_lock);
 
@@ -266,16 +290,19 @@ void log_writeTo(const char * alias, enum Log_level level, const char * format, 
 		return;
 	}
 
-	unsigned int i;
+	unsigned int i, sent = 0;
 	for (i = 0; i < log_nbModules; i++) {
 		unsigned int j;
 		for (j = 0; j < log_modules[i]->nbSubModules; j++) {
 			if (!strcmp(log_modules[i]->subModules[j].alias, alias) && log_modules[i]->subModules[j].level <= level) {
 				log_modules[i]->subModules[j].ops->write(log_modules[i]->subModules + j, level, message);
-				return;
+				sent = 1;
 			}
 		}
 	}
+
+	if (sent == 0)
+		log_storeMessage(0, level, message);
 
 	pthread_mutex_unlock(&log_lock);
 

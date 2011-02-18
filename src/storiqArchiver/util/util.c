@@ -23,16 +23,33 @@
 *  Boston, MA  02110-1301, USA.                                         *
 *                                                                       *
 *  -------------------------------------------------------------------  *
-*  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 28 Sep 2010 09:04:34 +0200                       *
+*  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Tue, 28 Sep 2010 08:53:17 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_LOG_FILE_H__
-#define __STORIQARCHIVER_LOG_FILE_H__
+// free
+#include <malloc.h>
+// strlen
+#include <string.h>
 
-#include "storiqArchiver/log.h"
+#include "util.h"
 
-struct log_moduleSub * log_file_new(struct log_moduleSub * subModule, const char * alias, enum Log_level level, const char * path);
+void util_freeKeyValue(void * key, void * value) {
+	if (key)
+		free(key);
+	if (value)
+		free(value);
+}
 
-#endif
+/**
+ * sdbm function
+ */
+unsigned long long util_hashString(const void * key) {
+	const char * cstr = key;
+	unsigned long long int hash = 0;
+	int length = strlen(cstr), i;
+	for (i = 0; i < length; i++)
+		hash = cstr[i] + (hash << 6) + (hash << 16) - hash;
+	return hash;
+}
 
