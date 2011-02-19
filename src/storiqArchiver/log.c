@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 18 Feb 2011 18:48:30 +0100                       *
+*  Last modified: Sat, 19 Feb 2011 12:12:45 +0100                       *
 \***********************************************************************/
 
 // dlerror, dlopen
@@ -222,6 +222,9 @@ int log_loadModule(const char * module) {
 }
 
 void log_registerModule(struct log_module * module) {
+	if (!module)
+		return;
+
 	log_modules = realloc(log_modules, (log_nbModules + 1) * sizeof(struct log_module *));
 
 	log_modules[log_nbModules] = module;
@@ -271,7 +274,8 @@ void log_writeAll(enum Log_level level, const char * format, ...) {
 
 	pthread_mutex_unlock(&log_lock);
 
-	free(message);
+	if (sent)
+		free(message);
 }
 
 void log_writeTo(const char * alias, enum Log_level level, const char * format, ...) {
@@ -306,6 +310,7 @@ void log_writeTo(const char * alias, enum Log_level level, const char * format, 
 
 	pthread_mutex_unlock(&log_lock);
 
-	free(message);
+	if (sent)
+		free(message);
 }
 

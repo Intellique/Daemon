@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Sun, 06 Feb 2011 22:59:39 +0100                       *
+*  Last modified: Sat, 19 Feb 2011 11:26:30 +0100                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_LOG_H__
@@ -129,7 +129,7 @@ struct log_module * log_getModule(const char * module);
  * \li 0 if ok
  * \li 1 if permission error
  * \li 2 if module didn't call log_registerModule
- * \li 3 if module is null
+ * \li 3 if \a module is null
  */
 int log_loadModule(const char * module);
 
