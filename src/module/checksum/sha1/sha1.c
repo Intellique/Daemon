@@ -23,8 +23,8 @@
 *  Boston, MA  02110-1301, USA.                                         *
 *                                                                       *
 *  -------------------------------------------------------------------  *
-*  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 21 Oct 2010 15:47:02 +0200                       *
+*  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Sat, 19 Feb 2011 13:30:53 +0100                       *
 \***********************************************************************/
 
 // malloc
@@ -39,23 +39,44 @@ struct checksum_sha1_private {
 	short finished;
 };
 
+static struct checksum * checksum_sha1_clone(struct checksum * new_checksum, struct checksum * current_checksum);
 static char * checksum_sha1_finish(struct checksum * checksum);
 static void checksum_sha1_free(struct checksum * checksum);
 static struct checksum * checksum_sha1_new_checksum(struct checksum * checksum);
 static int checksum_sha1_update(struct checksum * checksum, const char * data, unsigned int length);
 
 static struct checksum_driver checksum_sha1_driver = {
-	.name = "sha1",
-	.new_checksum = checksum_sha1_new_checksum,
-	.cookie = 0,
+	.name			= "sha1",
+	.new_checksum	= checksum_sha1_new_checksum,
+	.cookie			= 0,
 };
 
 static struct checksum_ops checksum_sha1_ops = {
-	.finish = checksum_sha1_finish,
-	.free = checksum_sha1_free,
-	.update = checksum_sha1_update,
+	.clone	= checksum_sha1_clone,
+	.finish	= checksum_sha1_finish,
+	.free	= checksum_sha1_free,
+	.update	= checksum_sha1_update,
 };
 
+
+struct checksum * checksum_sha1_clone(struct checksum * new_checksum, struct checksum * current_checksum) {
+	if (!current_checksum)
+		return 0;
+
+	struct checksum_sha1_private * current_self = current_checksum->data;
+
+	if (!new_checksum)
+		new_checksum = malloc(sizeof(struct checksum));
+
+	new_checksum->ops = &checksum_sha1_ops;
+	new_checksum->driver = &checksum_sha1_driver;
+
+	struct checksum_sha1_private * new_self = malloc(sizeof(struct checksum_sha1_private));
+	*new_self = *current_self;
+
+	new_checksum->data = new_self;
+	return new_checksum;
+}
 
 char * checksum_sha1_finish(struct checksum * checksum) {
 	if (!checksum)

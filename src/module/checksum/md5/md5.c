@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Sat, 19 Feb 2011 12:53:05 +0100                       *
+*  Last modified: Sat, 19 Feb 2011 13:30:15 +0100                       *
 \***********************************************************************/
 
 // malloc
@@ -46,9 +46,9 @@ static struct checksum * checksum_md5_new_checksum(struct checksum * checksum);
 static int checksum_md5_update(struct checksum * checksum, const char * data, unsigned int length);
 
 static struct checksum_driver checksum_md5_driver = {
-	.name = "md5",
-	.new_checksum = checksum_md5_new_checksum,
-	.cookie = 0,
+	.name			= "md5",
+	.new_checksum	= checksum_md5_new_checksum,
+	.cookie			= 0,
 };
 
 static struct checksum_ops checksum_md5_ops = {
