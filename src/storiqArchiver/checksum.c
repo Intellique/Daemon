@@ -23,8 +23,8 @@
 *  Boston, MA  02110-1301, USA.                                         *
 *                                                                       *
 *  -------------------------------------------------------------------  *
-*  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 19 Oct 2010 10:39:23 +0200                       *
+*  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Sat, 19 Feb 2011 12:33:26 +0100                       *
 \***********************************************************************/
 
 // dlerror, dlopen
@@ -116,7 +116,7 @@ int checksum_loadDriver(const char * driver) {
 	}
 
 	char path[128];
-	snprintf(path, 128, "%s/lib%s.so", IO_DIRNAME, driver);
+	snprintf(path, 128, "%s/lib%s.so", CHECKSUM_DIRNAME, driver);
 
 	pthread_mutex_lock(&checksum_lock);
 

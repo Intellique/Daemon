@@ -23,8 +23,8 @@
 *  Boston, MA  02110-1301, USA.                                         *
 *                                                                       *
 *  -------------------------------------------------------------------  *
-*  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 21 Oct 2010 15:45:48 +0200                       *
+*  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Sat, 19 Feb 2011 12:53:05 +0100                       *
 \***********************************************************************/
 
 // malloc
@@ -39,6 +39,7 @@ struct checksum_md5_private {
 	short finished;
 };
 
+static struct checksum * checksum_md5_clone(struct checksum * new_checksum, struct checksum * current_checksum);
 static char * checksum_md5_finish(struct checksum * checksum);
 static void checksum_md5_free(struct checksum * checksum);
 static struct checksum * checksum_md5_new_checksum(struct checksum * checksum);
@@ -51,11 +52,31 @@ static struct checksum_driver checksum_md5_driver = {
 };
 
 static struct checksum_ops checksum_md5_ops = {
-	.finish = checksum_md5_finish,
-	.free = checksum_md5_free,
-	.update = checksum_md5_update,
+	.clone	= checksum_md5_clone,
+	.finish	= checksum_md5_finish,
+	.free	= checksum_md5_free,
+	.update	= checksum_md5_update,
 };
 
+
+struct checksum * checksum_md5_clone(struct checksum * new_checksum, struct checksum * current_checksum) {
+	if (!current_checksum)
+		return 0;
+
+	struct checksum_md5_private * current_self = current_checksum->data;
+
+	if (!new_checksum)
+		new_checksum = malloc(sizeof(struct checksum));
+
+	new_checksum->ops = &checksum_md5_ops;
+	new_checksum->driver = &checksum_md5_driver;
+
+	struct checksum_md5_private * new_self = malloc(sizeof(struct checksum_md5_private));
+	*new_self = *current_self;
+
+	new_checksum->data = new_self;
+	return new_checksum;
+}
 
 char * checksum_md5_finish(struct checksum * checksum) {
 	if (!checksum)

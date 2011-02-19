@@ -24,14 +24,11 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 21 Oct 2010 15:48:50 +0200                       *
+*  Last modified: Sat, 19 Feb 2011 12:44:32 +0100                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
 #define __STORIQARCHIVER_CHECKSUM_H__
-
-// forward declaration
-struct checksum;
 
 /**
  * \addtogroup UseChecksum Use checksum module
@@ -221,46 +218,49 @@ struct checksum;
  */
 
 /**
- * \struct checksum_ops
- * \brief this structure contains only pointer functions
- * \note all functions \b SHOULD point on <b>real function</b>
- */
-struct checksum_ops {
-	/**
-	 * \brief this function computes a digest
-	 * \param checksum : a checksum handler
-	 * \return a dynamically allocated string which contains a digest in hexadecimal form
-	 */
-	char * (*finish)(struct checksum * checksum);
-	/**
-	 * \brief this function releases all memory associated to ckecksum
-	 * \param checksum : a checksum handler
-	 * \warning this function SHOULD NOT call :
-	 * \code
-	 * free(checksum);
-	 * \endcode
-	 */
-	void (*free)(struct checksum * checksum);
-	/**
-	 * \brief this function reads some data
-	 * \param checksum : a checksum handler
-	 * \param data : some or full data
-	 * \param length : length of data
-	 * \return < 0 if error
-	 * \note this function can be called one or many times
-	 */
-	int (*update)(struct checksum * checksum, const char * data, unsigned int length);
-};
-
-/**
  * \struct checksum
  * \brief this structure is used as an handler to a specific checksum
  */
 struct checksum {
 	/**
-	 * \brief contains a checksum function
+	 * \struct checksum_ops
+	 * \brief this structure contains only pointer functions
+	 * \note all functions \b SHOULD point on <b>real function</b>
 	 */
-	struct checksum_ops * ops;
+	struct checksum_ops {
+		/**
+		 * \brief Create new checksum by cloning a checksum
+		 * \param new_checksum : an allocated checksum or \b NULL
+		 * \param current_checksum : clone this checksum
+		 * \return same value of \a new_checksum if \a new_checksum if <b>NOT NULL</b> or new value or NULL if \a current_checksum is NULL
+		 * \note current_checksum SHOULD NOT BE NULL, if \a new_checksum is \b NULL, this function allocate enough memory with \a malloc
+		 */
+		struct checksum * (*clone)(struct checksum * new_checksum, struct checksum * current_checksum);
+		/**
+		 * \brief this function computes a digest
+		 * \param checksum : a checksum handler
+		 * \return a dynamically allocated string which contains a digest in hexadecimal form
+		 */
+		char * (*finish)(struct checksum * checksum);
+		/**
+		 * \brief this function releases all memory associated to ckecksum
+		 * \param checksum : a checksum handler
+		 * \warning this function SHOULD NOT call :
+		 * \code
+		 * free(checksum);
+		 * \endcode
+		 */
+		void (*free)(struct checksum * checksum);
+		/**
+		 * \brief this function reads some data
+		 * \param checksum : a checksum handler
+		 * \param data : some or full data
+		 * \param length : length of data
+		 * \return < 0 if error
+		 * \note this function can be called one or many times
+		 */
+		int (*update)(struct checksum * checksum, const char * data, unsigned int length);
+	} * ops;
 	/**
 	 * \brief private data of one checksum
 	 */
