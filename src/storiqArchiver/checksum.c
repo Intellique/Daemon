@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Sat, 19 Feb 2011 12:33:26 +0100                       *
+*  Last modified: Mon, 21 Feb 2011 09:02:05 +0100                       *
 \***********************************************************************/
 
 // dlerror, dlopen
@@ -53,6 +53,26 @@ static struct checksum_driver ** checksum_drivers = 0;
 static unsigned int checksum_nbDrivers = 0;
 static pthread_mutex_t checksum_lock;
 
+
+char * checksum_compute(const char * checksum, const char * data, unsigned int length) {
+	if (!checksum || !data || length == 0)
+		return 0;
+
+	struct checksum_driver * driver = checksum_getDriver(checksum);
+	if (!driver)
+		return 0;
+
+	struct checksum chck;
+
+	driver->new_checksum(&chck);
+	chck.ops->update(&chck, data, length);
+
+	char * digest = chck.ops->finish(&chck);
+
+	chck.ops->free(&chck);
+
+	return digest;
+}
 
 void checksum_convert2Hex(unsigned char * digest, int length, char * hexDigest) {
 	if (!digest || length < 1 || !hexDigest) {

@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Sat, 19 Feb 2011 12:44:32 +0100                       *
+*  Last modified: Sat, 19 Feb 2011 13:50:33 +0100                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
@@ -295,6 +295,15 @@ struct checksum_driver {
 	void * cookie;
 };
 
+
+/**
+ * \brief Simple function to compute checksum
+ * \param checksum : name of checksum plugin
+ * \param data : compute with this \a data
+ * \param length : length of \a data
+ * \return dynamically allocated string which contains checksum or NULL if failed
+ */
+char * checksum_compute(const char * checksum, const char * data, unsigned int length);
 
 /**
  * \brief This function converts a digest into hexadecimal form
