@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 21 Feb 2011 10:09:08 +0100                       *
+*  Last modified: Mon, 21 Feb 2011 10:11:42 +0100                       *
 \***********************************************************************/
 
 // malloc
@@ -46,9 +46,9 @@ static struct checksum * checksum_sha512_new_checksum(struct checksum * checksum
 static int checksum_sha512_update(struct checksum * checksum, const char * data, unsigned int length);
 
 static struct checksum_driver checksum_sha512_driver = {
-	.name = "sha512",
-	.new_checksum = checksum_sha512_new_checksum,
-	.cookie = 0,
+	.name			= "sha512",
+	.new_checksum	= checksum_sha512_new_checksum,
+	.cookie			= 0,
 };
 
 static struct checksum_ops checksum_sha512_ops = {
