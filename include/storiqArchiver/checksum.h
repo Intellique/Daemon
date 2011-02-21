@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Sat, 19 Feb 2011 13:50:33 +0100                       *
+*  Last modified: Mon, 21 Feb 2011 10:22:30 +0100                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
@@ -128,23 +128,44 @@
  *    short finished;
  * };
  *
+ * static struct checksum * checksum_md5_clone(struct checksum * new_checksum, struct checksum * current_checksum);
  * static char * checksum_md5_finish(struct checksum * checksum);
  * static void checksum_md5_free(struct checksum * checksum);
  * static struct checksum * checksum_md5_new_checksum(struct checksum_driver * driver, struct checksum * checksum);
  * static int checksum_md5_update(struct checksum * checksum, const char * data, unsigned int length);
  *
  * static struct checksum_driver checksum_md5_driver = {
- *    .name = "md5",
+ *    .name         = "md5",
  *    .new_checksum = checksum_md5_new_checksum,
- *    .cookie = 0,
+ *    .cookie       = 0,
  * };
  *
  * static struct checksum_ops checksum_md5_ops = {
+ *    .clone  = checksum_md5_clone,
  *    .finish = checksum_md5_finish,
- *    .free = checksum_md5_free,
+ *    .free   = checksum_md5_free,
  *    .update = checksum_md5_update,
  * };
  *
+ *
+ * struct checksum * checksum_md5_clone(struct checksum * new_checksum, struct checksum * current_checksum) {
+ *    if (!current_checksum)
+ *       return 0;
+ *
+ *    struct checksum_md5_private * current_self = current_checksum->data;
+ *
+ *    if (!new_checksum)
+ *       new_checksum = malloc(sizeof(struct checksum));
+ *
+ *    new_checksum->ops = &checksum_md5_ops;
+ *    new_checksum->driver = &checksum_md5_driver;
+ *
+ *    struct checksum_md5_private * new_self = malloc(sizeof(struct checksum_md5_private));
+ *    *new_self = *current_self;
+ *
+ *    new_checksum->data = new_self;
+ *    return new_checksum;
+ * }
  *
  * char * checksum_md5_finish(struct checksum * checksum) {
  *    struct checksum_md5_private * self = checksum->data;
