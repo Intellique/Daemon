@@ -23,8 +23,8 @@
 *  Boston, MA  02110-1301, USA.                                         *
 *                                                                       *
 *  -------------------------------------------------------------------  *
-*  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 22 Oct 2010 18:47:22 +0200                       *
+*  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Mon, 21 Feb 2011 23:28:38 +0100                       *
 \***********************************************************************/
 
 // open
@@ -55,15 +55,15 @@ static int io_read_read(struct stream_read_io * io, void * buffer, int length);
 static int io_read_read_buffer(struct stream_read_io * io, void * buffer, int length);
 
 static struct stream_read_io_ops io_read_ops = {
-	.close = io_read_close,
-	.free = io_read_free,
-	.read = io_read_read,
+	.close	= io_read_close,
+	.free	= io_read_free,
+	.read	= io_read_read,
 };
 
 static struct stream_read_io_ops io_read_buffer_ops = {
-	.close = io_read_close,
-	.free = io_read_free,
-	.read = io_read_read_buffer,
+	.close	= io_read_close,
+	.free	= io_read_free,
+	.read	= io_read_read_buffer,
 };
 
 
@@ -73,6 +73,7 @@ int io_read_close(struct stream_read_io * io) {
 
 	struct io_read_private * self = io->data;
 	close(self->fd);
+	self->fd = -1;
 	return 0;
 }
 
@@ -125,6 +126,10 @@ void io_read_free(struct stream_read_io * io) {
 
 	if (io->data) {
 		struct io_read_private * self = io->data;
+
+		if (self->fd >= 0)
+			io_read_close(io);
+
 		if (self->buffer)
 			free(self->buffer);
 		self->buffer = 0;
@@ -148,50 +153,53 @@ int io_read_read_buffer(struct stream_read_io * io, void * buffer, int length) {
 		return -1;
 
 	struct io_read_private * self = io->data;
-	int nbTotalRead = 0;
 
-	while (length > 0) {
-		if (self->bufferUsed > 0) {
-			if (length <= self->bufferUsed) {
-				memcpy(buffer, self->buffer, length);
-				self->bufferUsed -= length;
-				if (self->bufferUsed > 0)
-					memmove(self->buffer, self->buffer + length, self->bufferUsed);
-				nbTotalRead += length;
-				return nbTotalRead;
-			} else {
-				memcpy(buffer, self->buffer, self->bufferUsed);
-				nbTotalRead += self->bufferUsed;
-				length -= self->bufferUsed;
-				self->bufferUsed = 0;
-			}
-		}
-
-		while (length >= self->blockSize) {
-			char * ptr = buffer;
-			int nbRead = read(self->fd, ptr + nbTotalRead, self->blockSize);
-			if (nbRead == 0) {
-				return nbTotalRead;
-			} else if (nbRead > 0) {
-				nbTotalRead += nbRead;
-				length -= nbRead;
-			} else {
-				return nbRead;
-			}
-		}
-
-		if (length == 0)
-			return nbTotalRead;
-
-		int nbRead = read(self->fd, self->buffer, self->blockSize);
-		if (nbRead == 0) {
-			return nbTotalRead;
-		} else if (nbRead > 0) {
-			self->bufferUsed = nbRead;
-		} else {
-			return nbRead;
-		}
+	if (length <= self->bufferUsed) {
+		memcpy(buffer, self->buffer, length);
+		if (length < self->bufferUsed)
+			memmove(self->buffer, self->buffer + length, self->bufferUsed - length);
+		self->bufferUsed -= length;
+		return length;
 	}
+
+	int readSize = length - self->bufferUsed;
+	readSize = self->blockSize + readSize - (readSize % self->blockSize);
+
+	char * buf = malloc(readSize);
+	int nbRead = read(self->fd, buf, readSize);
+
+	if (nbRead < 0) {
+		free(buf);
+		return nbRead;
+	}
+
+	int nbTotalRead = 0;
+	if (self->bufferUsed > 0) {
+		memcpy(buffer, self->buffer, self->bufferUsed);
+		nbTotalRead += self->bufferUsed;
+		length -= self->bufferUsed;
+		self->bufferUsed = 0;
+	}
+
+	if (nbRead == 0) {
+		free(buf);
+		return nbTotalRead;
+	}
+
+	char * cBuffer = buffer;
+	if (length >= nbRead) {
+		memcpy(cBuffer + nbTotalRead, buf, nbRead);
+		nbTotalRead += nbRead;
+		free(buf);
+		return nbRead;
+	}
+
+	memcpy(cBuffer + nbTotalRead, buf, length);
+	nbTotalRead += length;
+
+	self->bufferUsed = nbRead - length;
+	memcpy(self->buffer, buf + length, self->bufferUsed);
+	free(buf);
 
 	return nbTotalRead;
 }

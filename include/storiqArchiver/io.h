@@ -24,35 +24,28 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Sun, 24 Oct 2010 21:25:09 +0200                       *
+*  Last modified: Mon, 21 Feb 2011 16:53:06 +0100                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_IO_H__
 #define __STORIQARCHIVER_IO_H__
 
-struct stream_read_io;
-struct stream_write_io;
-
-struct stream_read_io_ops {
-	int (*close)(struct stream_read_io * io);
-	void (*free)(struct stream_read_io * io);
-	int (*read)(struct stream_read_io * io, void * buffer, int length);
-};
-
 struct stream_read_io {
-	struct stream_read_io_ops * ops;
+	struct stream_read_io_ops {
+		int (*close)(struct stream_read_io * io);
+		void (*free)(struct stream_read_io * io);
+		int (*read)(struct stream_read_io * io, void * buffer, int length);
+	} * ops;
 	void * data;
 };
 
-struct stream_write_io_ops {
-	int (*close)(struct stream_write_io * io);
-	int (*flush)(struct stream_write_io * io);
-	void (*free)(struct stream_write_io * io);
-	int (*write)(struct stream_write_io * io, const void * buffer, int length);
-};
-
 struct stream_write_io {
-	struct stream_write_io_ops * ops;
+	struct stream_write_io_ops {
+		int (*close)(struct stream_write_io * io);
+		int (*flush)(struct stream_write_io * io);
+		void (*free)(struct stream_write_io * io);
+		int (*write)(struct stream_write_io * io, const void * buffer, int length);
+	} * ops;
 	void * data;
 };
 
