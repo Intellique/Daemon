@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 26 Oct 2010 16:36:20 +0200                       *
+*  Last modified: Mon, 21 Feb 2011 13:36:06 +0100                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_DATABASE_H__
@@ -32,123 +32,118 @@
 
 #include <sys/time.h>
 
-struct database;
 struct database_connection;
 struct hashtable;
 struct job;
 struct library_changer;
 
-struct database_ops {
-	struct database_connection * (*connect)(struct database * db, struct database_connection * connection);
-	int (*ping)(struct database * db);
-	int (*setup)(struct database * db, struct hashtable * params);
-};
-
 struct database {
 	char * driverName;
-	struct database_ops * ops;
+	struct database_ops {
+		struct database_connection * (*connect)(struct database * db, struct database_connection * connection);
+		int (*ping)(struct database * db);
+		int (*setup)(struct database * db, struct hashtable * params);
+	} * ops;
 	void * data;
 
 	// reserved for server
 	void * cookie;
 };
 
-struct database_connection_ops {
-	/**
-	 * \brief close \a db connection
-	 * \param db : a database connection
-	 * \return a value which correspond to
-	 * \li 0 if ok
-	 * \li < 0 if error
-	 */
-	int (*close)(struct database_connection * db);
-	/**
-	 * \brief free memory associated with database connection
-	 * \param db : a database connection
-	 * \return a value which correspond to
-	 * \li 0 if ok
-	 * \li < 0 if error
-	 * \warning implementation of this function SHOULD NOT call
-	 * \code
-	 * free(db);
-	 * \endcode
-	 */
-	int (*free)(struct database_connection * db);
-
-	/**
-	 * \brief rool back a transaction
-	 * \param db : a database connection
-	 * \li 0 if ok
-	 * \li 1 if noop
-	 * \li < 0 if error
-	 */
-	int (*cancelTransaction)(struct database_connection * db);
-	/**
-	 * \brief finish a transaction
-	 * \param db : a database connection
-	 * \return a value which correspond to
-	 * \li 0 if ok
-	 * \li 1 if noop
-	 * \li < 0 if error
-	 */
-	int (*finishTransaction)(struct database_connection * db);
-	/**
-	 * \brief starts a transaction
-	 * \param db : a database connection
-	 * \param readOnly : is a read only transaction
-	 * \return a value which correspond to
-	 * \li 0 if ok
-	 * \li 1 if noop
-	 * \li < 0 if error
-	 */
-	int (*startTransaction)(struct database_connection * db, short readOnly);
-
-	struct library_changer * (*getChanger)(struct database_connection * db, const char * hostName);
-	int (*getNbChanger)(struct database_connection * db, const char * hostName);
-
-	/**
-	 * \brief add a new job
-	 * \param db : a database connection
-	 * \param job : a job
-	 * \param index : n new job
-	 */
-	struct job * (*addJob)(struct database_connection * db, struct job * job, unsigned int index, time_t since);
-	/**
-	 * \brief checks jobs modified between \a since and \a to
-	 * \param db : a database connection
-	 * \param since : start time
-	 * \return a value which correspond to
-	 * \li > 0 is the number of modified jobs
-	 * \li 0 if no changes
-	 * \li < 0 if error
-	 */
-	int (*jobModified)(struct database_connection * db, time_t since);
-	/**
-	 * \brief checks new jobs created between \a since and \a to
-	 * \param db : a database connection
-	 * \param since : start time
-	 * \return a value which correspond to
-	 * \li > 0 is the number of created jobs
-	 * \li 0 if there is no new jobs
-	 * \li < 0 if error
-	 */
-	int (*newJobs)(struct database_connection * db, time_t since);
-	/**
-	 * \brief update modified jobs
-	 * \param db : a database connection
-	 * \param job : update this job
-	 * \return a value which correspond to
-	 * \li > 0 if this job has been updated
-	 * \li 0 if no update
-	 * \li < 0 if error
-	 */
-	int (*updateJob)(struct database_connection * db, struct job * job);
-};
-
 struct database_connection {
 	unsigned int id;
 	struct database * driver;
-	struct database_connection_ops * ops;
+	struct database_connection_ops {
+		/**
+		 * \brief close \a db connection
+		 * \param db : a database connection
+		 * \return a value which correspond to
+		 * \li 0 if ok
+		 * \li < 0 if error
+		 */
+		int (*close)(struct database_connection * db);
+		/**
+		 * \brief free memory associated with database connection
+		 * \param db : a database connection
+		 * \return a value which correspond to
+		 * \li 0 if ok
+		 * \li < 0 if error
+		 * \warning implementation of this function SHOULD NOT call
+		 * \code
+		 * free(db);
+		 * \endcode
+		 */
+		int (*free)(struct database_connection * db);
+
+		/**
+		 * \brief rool back a transaction
+		 * \param db : a database connection
+		 * \li 0 if ok
+		 * \li 1 if noop
+		 * \li < 0 if error
+		 */
+		int (*cancelTransaction)(struct database_connection * db);
+		/**
+		 * \brief finish a transaction
+		 * \param db : a database connection
+		 * \return a value which correspond to
+		 * \li 0 if ok
+		 * \li 1 if noop
+		 * \li < 0 if error
+		 */
+		int (*finishTransaction)(struct database_connection * db);
+		/**
+		 * \brief starts a transaction
+		 * \param db : a database connection
+		 * \param readOnly : is a read only transaction
+		 * \return a value which correspond to
+		 * \li 0 if ok
+		 * \li 1 if noop
+		 * \li < 0 if error
+		 */
+		int (*startTransaction)(struct database_connection * db, short readOnly);
+
+		struct library_changer * (*getChanger)(struct database_connection * db, const char * hostName);
+		int (*getNbChanger)(struct database_connection * db, const char * hostName);
+
+		/**
+		 * \brief add a new job
+		 * \param db : a database connection
+		 * \param job : a job
+		 * \param index : n new job
+		 */
+		struct job * (*addJob)(struct database_connection * db, struct job * job, unsigned int index, time_t since);
+		/**
+		 * \brief checks jobs modified between \a since and \a to
+		 * \param db : a database connection
+		 * \param since : start time
+		 * \return a value which correspond to
+		 * \li > 0 is the number of modified jobs
+		 * \li 0 if no changes
+		 * \li < 0 if error
+		 */
+		int (*jobModified)(struct database_connection * db, time_t since);
+		/**
+		 * \brief checks new jobs created between \a since and \a to
+		 * \param db : a database connection
+		 * \param since : start time
+		 * \return a value which correspond to
+		 * \li > 0 is the number of created jobs
+		 * \li 0 if there is no new jobs
+		 * \li < 0 if error
+		 */
+		int (*newJobs)(struct database_connection * db, time_t since);
+		/**
+		 * \brief update modified jobs
+		 * \param db : a database connection
+		 * \param job : update this job
+		 * \return a value which correspond to
+		 * \li > 0 if this job has been updated
+		 * \li 0 if no update
+		 * \li < 0 if error
+		 */
+		int (*updateJob)(struct database_connection * db, struct job * job);
+	} * ops;
 	void * data;
 };
 
