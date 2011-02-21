@@ -23,8 +23,8 @@
 *  Boston, MA  02110-1301, USA.                                         *
 *                                                                       *
 *  -------------------------------------------------------------------  *
-*  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 21 Oct 2010 15:47:32 +0200                       *
+*  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Mon, 21 Feb 2011 10:06:18 +0100                       *
 \***********************************************************************/
 
 // malloc
@@ -39,6 +39,7 @@ struct checksum_sha256_private {
 	short finished;
 };
 
+static struct checksum * checksum_sha256_clone(struct checksum * new_checksum, struct checksum * current_checksum);
 static char * checksum_sha256_finish(struct checksum * checksum);
 static void checksum_sha256_free(struct checksum * checksum);
 static struct checksum * checksum_sha256_new_checksum(struct checksum * checksum);
@@ -51,11 +52,31 @@ static struct checksum_driver checksum_sha256_driver = {
 };
 
 static struct checksum_ops checksum_sha256_ops = {
-	.finish = checksum_sha256_finish,
-	.free = checksum_sha256_free,
-	.update = checksum_sha256_update,
+	.clone	= checksum_sha256_clone,
+	.finish	= checksum_sha256_finish,
+	.free	= checksum_sha256_free,
+	.update	= checksum_sha256_update,
 };
 
+
+struct checksum * checksum_sha256_clone(struct checksum * new_checksum, struct checksum * current_checksum) {
+	if (!current_checksum)
+		return 0;
+
+	struct checksum_sha256_private * current_self = current_checksum->data;
+
+	if (!new_checksum)
+		new_checksum = malloc(sizeof(struct checksum));
+
+	new_checksum->ops = &checksum_sha256_ops;
+	new_checksum->driver = &checksum_sha256_driver;
+
+	struct checksum_sha256_private * new_self = malloc(sizeof(struct checksum_sha256_private));
+	*new_self = *current_self;
+
+	new_checksum->data = new_self;
+	return new_checksum;
+}
 
 char * checksum_sha256_finish(struct checksum * checksum) {
 	if (!checksum)
