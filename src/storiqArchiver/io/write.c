@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 22 Feb 2011 09:21:04 +0100                       *
+*  Last modified: Tue, 22 Feb 2011 22:35:50 +0100                       *
 \***********************************************************************/
 
 // open
@@ -51,6 +51,7 @@ struct io_write_private {
 
 static int io_write_close(struct stream_write_io * io);
 static int io_write_flush(struct stream_write_io * io);
+static int io_write_flush_buffer(struct stream_write_io * io);
 static void io_write_free(struct stream_write_io * io);
 static int io_write_write(struct stream_write_io * io, const void * buffer, int length);
 static int io_write_write_buffer(struct stream_write_io * io, const void * buffer, int length);
@@ -64,7 +65,7 @@ static struct stream_write_io_ops io_write_ops = {
 
 static struct stream_write_io_ops io_write_buffer_ops = {
 	.close	= io_write_close,
-	.flush	= io_write_flush,
+	.flush	= io_write_flush_buffer,
 	.free	= io_write_free,
 	.write	= io_write_write_buffer,
 };
@@ -131,6 +132,22 @@ int io_write_flush(struct stream_write_io * io) {
 		return -1;
 
 	struct io_write_private * self = io->data;
+	return fsync(self->fd);
+}
+
+int io_write_flush_buffer(struct stream_write_io * io) {
+	if (!io || !io->data)
+		return -1;
+
+	struct io_write_private * self = io->data;
+	if (self->bufferUsed > 0) {
+		int nbWrite = write(self->fd, self->buffer, self->bufferUsed);
+		if (nbWrite < 0)
+			return nbWrite;
+
+		// suppose that nbWrite = self->bufferUsed
+		self->bufferUsed = 0;
+	}
 	return fsync(self->fd);
 }
 
