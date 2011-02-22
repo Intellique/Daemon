@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 25 Oct 2010 12:52:42 +0200                       *
+*  Last modified: Tue, 22 Feb 2011 09:21:04 +0100                       *
 \***********************************************************************/
 
 // open
@@ -56,17 +56,17 @@ static int io_write_write(struct stream_write_io * io, const void * buffer, int 
 static int io_write_write_buffer(struct stream_write_io * io, const void * buffer, int length);
 
 static struct stream_write_io_ops io_write_ops = {
-	.close = io_write_close,
-	.flush = io_write_flush,
-	.free = io_write_free,
-	.write = io_write_write,
+	.close	= io_write_close,
+	.flush	= io_write_flush,
+	.free	= io_write_free,
+	.write	= io_write_write,
 };
 
 static struct stream_write_io_ops io_write_buffer_ops = {
-	.close = io_write_close,
-	.flush = io_write_flush,
-	.free = io_write_free,
-	.write = io_write_write_buffer,
+	.close	= io_write_close,
+	.flush	= io_write_flush,
+	.free	= io_write_free,
+	.write	= io_write_write_buffer,
 };
 
 
@@ -163,59 +163,48 @@ int io_write_write_buffer(struct stream_write_io * io, const void * buffer, int 
 
 	struct io_write_private * self = io->data;
 
+	if (self->blockSize >= length - self->bufferUsed) {
+		memcpy(self->buffer + self->bufferUsed, buffer, length);
+		self->bufferUsed += length;
+		return length;
+	}
+
 	const char * ptr = buffer;
-	int nbTotalWrite = 0;
 	if (self->bufferUsed > 0) {
-		if (self->bufferUsed + length < self->blockSize) {
-			memcpy(self->buffer + self->bufferUsed, buffer, length);
-			self->bufferUsed += length;
-			return length;
-		} else {
-			int remain = self->blockSize - self->bufferUsed;
-			memcpy(self->buffer + self->bufferUsed, buffer, remain);
-			int nbWrite = write(self->fd, self->buffer, self->blockSize);
-			if (nbWrite == self->blockSize) {
-				self->bufferUsed = 0;
-				nbTotalWrite = nbWrite;
-				length -= remain;
-				ptr += remain;
-			} else if (nbWrite == 0) {
-				self->bufferUsed = self->blockSize;
-				return remain;
-			} else if (nbWrite < 0) {
-				return nbWrite;
-			} else {
-				memmove(self->buffer, self->buffer + nbWrite, self->blockSize - nbWrite);
-				self->bufferUsed -= nbWrite;
-				return remain;
-			}
-		}
-	}
+		int writeSize = self->bufferUsed + length;
+		writeSize -= writeSize % self->blockSize;
 
-	while (length >= self->blockSize) {
-		int nbWrite = write(self->fd, ptr, self->blockSize);
-		if (nbWrite == self->blockSize) {
-			nbTotalWrite += self->blockSize;
-			length -= self->blockSize;
-			ptr += self->blockSize;
-		} else if (nbWrite == 0) {
-			return nbTotalWrite;
-		} else if (nbWrite < 0) {
+		char * tmp = malloc(writeSize);
+		memcpy(tmp, self->buffer, self->bufferUsed);
+		memcpy(tmp + self->bufferUsed, buffer, writeSize - self->bufferUsed);
+
+		int nbWrite = write(self->fd, tmp, writeSize);
+
+		if (nbWrite < 0) {
+			free(tmp);
 			return nbWrite;
-		} else {
-			self->bufferUsed = self->blockSize - nbWrite;
-			memmove(self->buffer, ptr + nbWrite, self->bufferUsed);
-			nbTotalWrite += nbWrite;
-			return nbTotalWrite;
 		}
-	}
 
-	if (length > 0) {
-		memcpy(self->buffer, ptr, length);
-		self->bufferUsed = length;
-		nbTotalWrite += length;
-	}
+		// suppose that nbWrite = writeSize
+		self->bufferUsed += length - writeSize;
+		if (self->bufferUsed > 0)
+			memcpy(self->buffer, ptr + writeSize, self->bufferUsed);
 
-	return nbTotalWrite;
+		free(tmp);
+		return length;
+	} else {
+		if (length % self->blockSize == 0)
+			return write(self->fd, buffer, length);
+
+		int writeSize = length - (length % self->blockSize);
+		int nbWrite = write(self->fd, buffer, writeSize);
+
+		if (nbWrite < 0)
+			return nbWrite;
+
+		// suppose that nbWrite = writeSize
+		memcpy(self->buffer, ptr + nbWrite, length - nbWrite);
+		return length;
+	}
 }
 
