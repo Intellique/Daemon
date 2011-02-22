@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 22 Feb 2011 22:35:50 +0100                       *
+*  Last modified: Tue, 22 Feb 2011 23:24:07 +0100                       *
 \***********************************************************************/
 
 // open
@@ -47,27 +47,31 @@ struct io_write_private {
 	char * buffer;
 	int bufferUsed;
 	int blockSize;
+	long long int position;
 };
 
 static int io_write_close(struct stream_write_io * io);
 static int io_write_flush(struct stream_write_io * io);
 static int io_write_flush_buffer(struct stream_write_io * io);
 static void io_write_free(struct stream_write_io * io);
+static long long int io_write_position(struct stream_write_io * io);
 static int io_write_write(struct stream_write_io * io, const void * buffer, int length);
 static int io_write_write_buffer(struct stream_write_io * io, const void * buffer, int length);
 
 static struct stream_write_io_ops io_write_ops = {
-	.close	= io_write_close,
-	.flush	= io_write_flush,
-	.free	= io_write_free,
-	.write	= io_write_write,
+	.close		= io_write_close,
+	.flush		= io_write_flush,
+	.free		= io_write_free,
+	.position	= io_write_position,
+	.write		= io_write_write,
 };
 
 static struct stream_write_io_ops io_write_buffer_ops = {
-	.close	= io_write_close,
-	.flush	= io_write_flush_buffer,
-	.free	= io_write_free,
-	.write	= io_write_write_buffer,
+	.close		= io_write_close,
+	.flush		= io_write_flush_buffer,
+	.free		= io_write_free,
+	.position	= io_write_position,
+	.write		= io_write_write_buffer,
 };
 
 
@@ -102,6 +106,7 @@ struct stream_write_io * io_write_fd2(struct stream_write_io * io, int fd, int b
 		self->buffer = malloc(blockSize);
 	self->bufferUsed = 0;
 	self->blockSize = blockSize;
+	self->position = 0;
 
 	if (blockSize > 0)
 		io->ops = &io_write_buffer_ops;
@@ -166,12 +171,23 @@ void io_write_free(struct stream_write_io * io) {
 	io->ops = 0;
 }
 
+long long int io_write_position(struct stream_write_io * io) {
+	if (!io || !io->data)
+		return -1;
+
+	struct io_write_private * self = io->data;
+	return self->position;
+}
+
 int io_write_write(struct stream_write_io * io, const void * buffer, int length) {
 	if (!io || !io->data || !buffer || length < 0)
 		return -1;
 
 	struct io_write_private * self = io->data;
-	return write(self->fd, buffer, length);
+	int nbWrite =  write(self->fd, buffer, length);
+	if (nbWrite > 0)
+		self->position += nbWrite;
+	return nbWrite;
 }
 
 int io_write_write_buffer(struct stream_write_io * io, const void * buffer, int length) {
@@ -183,6 +199,7 @@ int io_write_write_buffer(struct stream_write_io * io, const void * buffer, int 
 	if (self->blockSize >= length - self->bufferUsed) {
 		memcpy(self->buffer + self->bufferUsed, buffer, length);
 		self->bufferUsed += length;
+		self->position += length;
 		return length;
 	}
 
@@ -204,14 +221,19 @@ int io_write_write_buffer(struct stream_write_io * io, const void * buffer, int 
 
 		// suppose that nbWrite = writeSize
 		self->bufferUsed += length - writeSize;
+		self->position += length;
 		if (self->bufferUsed > 0)
 			memcpy(self->buffer, ptr + writeSize, self->bufferUsed);
 
 		free(tmp);
 		return length;
 	} else {
-		if (length % self->blockSize == 0)
-			return write(self->fd, buffer, length);
+		if (length % self->blockSize == 0) {
+			int nbWrite = write(self->fd, buffer, length);
+			if (nbWrite > 0)
+				self->position += nbWrite;
+			return nbWrite;
+		}
 
 		int writeSize = length - (length % self->blockSize);
 		int nbWrite = write(self->fd, buffer, writeSize);
@@ -221,6 +243,8 @@ int io_write_write_buffer(struct stream_write_io * io, const void * buffer, int 
 
 		// suppose that nbWrite = writeSize
 		memcpy(self->buffer, ptr + nbWrite, length - nbWrite);
+		if (nbWrite > 0)
+			self->position += nbWrite;
 		return length;
 	}
 }

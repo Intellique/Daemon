@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 21 Feb 2011 23:28:38 +0100                       *
+*  Last modified: Tue, 22 Feb 2011 23:14:33 +0100                       *
 \***********************************************************************/
 
 // open
@@ -47,23 +47,27 @@ struct io_read_private {
 	char * buffer;
 	int bufferUsed;
 	int blockSize;
+	long long int position;
 };
 
 static int io_read_close(struct stream_read_io * io);
 static void io_read_free(struct stream_read_io * io);
+static long long int io_read_position(struct stream_read_io * io);
 static int io_read_read(struct stream_read_io * io, void * buffer, int length);
 static int io_read_read_buffer(struct stream_read_io * io, void * buffer, int length);
 
 static struct stream_read_io_ops io_read_ops = {
-	.close	= io_read_close,
-	.free	= io_read_free,
-	.read	= io_read_read,
+	.close		= io_read_close,
+	.free		= io_read_free,
+	.position	= io_read_position,
+	.read		= io_read_read,
 };
 
 static struct stream_read_io_ops io_read_buffer_ops = {
-	.close	= io_read_close,
-	.free	= io_read_free,
-	.read	= io_read_read_buffer,
+	.close		= io_read_close,
+	.free		= io_read_free,
+	.position	= io_read_position,
+	.read		= io_read_read_buffer,
 };
 
 
@@ -95,6 +99,7 @@ struct stream_read_io * io_read_fd2(struct stream_read_io * io, int fd, int bloc
 	if (blockSize > 0)
 		self->buffer = malloc(blockSize);
 	self->blockSize = blockSize;
+	self->position = 0;
 
 	if (blockSize > 0)
 		io->ops = &io_read_buffer_ops;
@@ -140,12 +145,23 @@ void io_read_free(struct stream_read_io * io) {
 	io->ops = 0;
 }
 
+long long int io_read_position(struct stream_read_io * io) {
+	if (!io || !io->data)
+		return -1;
+
+	struct io_read_private * self = io->data;
+	return self->position;
+}
+
 int io_read_read(struct stream_read_io * io, void * buffer, int length) {
 	if (!io || !io->data || !buffer || length < 0)
 		return -1;
 
 	struct io_read_private * self = io->data;
-	return read(self->fd, buffer, length);
+	int nbRead = read(self->fd, buffer, length);
+	if (nbRead > 0)
+		self->position += nbRead;
+	return nbRead;
 }
 
 int io_read_read_buffer(struct stream_read_io * io, void * buffer, int length) {
@@ -159,6 +175,7 @@ int io_read_read_buffer(struct stream_read_io * io, void * buffer, int length) {
 		if (length < self->bufferUsed)
 			memmove(self->buffer, self->buffer + length, self->bufferUsed - length);
 		self->bufferUsed -= length;
+		self->position += length;
 		return length;
 	}
 
@@ -183,6 +200,7 @@ int io_read_read_buffer(struct stream_read_io * io, void * buffer, int length) {
 
 	if (nbRead == 0) {
 		free(buf);
+		self->position += nbTotalRead;
 		return nbTotalRead;
 	}
 
@@ -191,6 +209,7 @@ int io_read_read_buffer(struct stream_read_io * io, void * buffer, int length) {
 		memcpy(cBuffer + nbTotalRead, buf, nbRead);
 		nbTotalRead += nbRead;
 		free(buf);
+		self->position += nbTotalRead;
 		return nbRead;
 	}
 
@@ -201,6 +220,7 @@ int io_read_read_buffer(struct stream_read_io * io, void * buffer, int length) {
 	memcpy(self->buffer, buf + length, self->bufferUsed);
 	free(buf);
 
+	self->position += nbTotalRead;
 	return nbTotalRead;
 }
 
