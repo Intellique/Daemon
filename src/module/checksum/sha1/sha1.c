@@ -24,23 +24,25 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Sat, 19 Feb 2011 13:30:53 +0100                       *
+*  Last modified: Wed, 23 Feb 2011 20:43:08 +0100                       *
 \***********************************************************************/
 
 // malloc
 #include <malloc.h>
 // SHA1_Final, SHA1_Init, SHA1_Update
 #include <openssl/sha.h>
+// strdup
+#include <string.h>
 
 #include <storiqArchiver/checksum.h>
 
 struct checksum_sha1_private {
 	SHA_CTX sha1;
-	short finished;
+	char * digest;
 };
 
 static struct checksum * checksum_sha1_clone(struct checksum * new_checksum, struct checksum * current_checksum);
-static char * checksum_sha1_finish(struct checksum * checksum);
+static char * checksum_sha1_digest(struct checksum * checksum);
 static void checksum_sha1_free(struct checksum * checksum);
 static struct checksum * checksum_sha1_new_checksum(struct checksum * checksum);
 static int checksum_sha1_update(struct checksum * checksum, const char * data, unsigned int length);
@@ -53,7 +55,7 @@ static struct checksum_driver checksum_sha1_driver = {
 
 static struct checksum_ops checksum_sha1_ops = {
 	.clone	= checksum_sha1_clone,
-	.finish	= checksum_sha1_finish,
+	.digest	= checksum_sha1_digest,
 	.free	= checksum_sha1_free,
 	.update	= checksum_sha1_update,
 };
@@ -78,26 +80,24 @@ struct checksum * checksum_sha1_clone(struct checksum * new_checksum, struct che
 	return new_checksum;
 }
 
-char * checksum_sha1_finish(struct checksum * checksum) {
+char * checksum_sha1_digest(struct checksum * checksum) {
 	if (!checksum)
 		return 0;
 
 	struct checksum_sha1_private * self = checksum->data;
 
-	if (self->finished)
-		return 0;
+	if (self->digest)
+		return strdup(self->digest);
 
 	unsigned char digest[SHA_DIGEST_LENGTH];
 
-	short ok = SHA1_Final(digest, &self->sha1);
-	self->finished = 1;
-	if (!ok)
+	if (!SHA1_Final(digest, &self->sha1))
 		return 0;
 
-	char * hexDigest = malloc(SHA_DIGEST_LENGTH * 2 + 1);
-	checksum_convert2Hex(digest, SHA_DIGEST_LENGTH, hexDigest);
+	self->digest = malloc(SHA_DIGEST_LENGTH * 2 + 1);
+	checksum_convert2Hex(digest, SHA_DIGEST_LENGTH, self->digest);
 
-	return hexDigest;
+	return strdup(self->digest);
 }
 
 void checksum_sha1_free(struct checksum * checksum) {
@@ -106,13 +106,13 @@ void checksum_sha1_free(struct checksum * checksum) {
 
 	struct checksum_sha1_private * self = checksum->data;
 
-	if (!self->finished) {
-		unsigned char digest[SHA_DIGEST_LENGTH];
-		SHA1_Final(digest, &self->sha1);
-		self->finished = 1;
-	}
+	if (self) {
+		if (self->digest)
+			free(self->digest);
+		self->digest = 0;
 
-	free(self);
+		free(self);
+	}
 
 	checksum->data = 0;
 	checksum->ops = 0;
@@ -133,7 +133,7 @@ struct checksum * checksum_sha1_new_checksum(struct checksum * checksum) {
 
 	struct checksum_sha1_private * self = malloc(sizeof(struct checksum_sha1_private));
 	SHA1_Init(&self->sha1);
-	self->finished = 0;
+	self->digest = 0;
 
 	checksum->data = self;
 	return checksum;
@@ -145,8 +145,9 @@ int checksum_sha1_update(struct checksum * checksum, const char * data, unsigned
 
 	struct checksum_sha1_private * self = checksum->data;
 
-	if (self->finished)
-		return -1;
+	if (self->digest)
+		free(self->digest);
+	self->digest = 0;
 
 	if (SHA1_Update(&self->sha1, data, length))
 		return length;

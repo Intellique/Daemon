@@ -24,23 +24,25 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 21 Feb 2011 10:11:42 +0100                       *
+*  Last modified: Wed, 23 Feb 2011 20:50:21 +0100                       *
 \***********************************************************************/
 
 // malloc
 #include <malloc.h>
 // SHA512_Final, SHA512_Init, SHA512_Update
 #include <openssl/sha.h>
+// strdup
+#include <string.h>
 
 #include <storiqArchiver/checksum.h>
 
 struct checksum_sha512_private {
 	SHA512_CTX sha512;
-	short finished;
+	char * digest;
 };
 
 static struct checksum * checksum_sha512_clone(struct checksum * new_checksum, struct checksum * current_checksum);
-static char * checksum_sha512_finish(struct checksum * checksum);
+static char * checksum_sha512_digest(struct checksum * checksum);
 static void checksum_sha512_free(struct checksum * checksum);
 static struct checksum * checksum_sha512_new_checksum(struct checksum * checksum);
 static int checksum_sha512_update(struct checksum * checksum, const char * data, unsigned int length);
@@ -53,7 +55,7 @@ static struct checksum_driver checksum_sha512_driver = {
 
 static struct checksum_ops checksum_sha512_ops = {
 	.clone	= checksum_sha512_clone,
-	.finish	= checksum_sha512_finish,
+	.digest	= checksum_sha512_digest,
 	.free	= checksum_sha512_free,
 	.update	= checksum_sha512_update,
 };
@@ -78,26 +80,24 @@ struct checksum * checksum_sha512_clone(struct checksum * new_checksum, struct c
 	return new_checksum;
 }
 
-char * checksum_sha512_finish(struct checksum * checksum) {
+char * checksum_sha512_digest(struct checksum * checksum) {
 	if (!checksum)
 		return 0;
 
 	struct checksum_sha512_private * self = checksum->data;
 
-	if (self->finished)
-		return 0;
+	if (self->digest)
+		return strdup(self->digest);
 
 	unsigned char digest[SHA512_DIGEST_LENGTH];
 
-	short ok = SHA512_Final(digest, &self->sha512);
-	self->finished = 1;
-	if (!ok)
+	if (!SHA512_Final(digest, &self->sha512))
 		return 0;
 
-	char * hexDigest = malloc(SHA512_DIGEST_LENGTH * 2 + 1);
-	checksum_convert2Hex(digest, SHA512_DIGEST_LENGTH, hexDigest);
+	self->digest = malloc(SHA512_DIGEST_LENGTH * 2 + 1);
+	checksum_convert2Hex(digest, SHA512_DIGEST_LENGTH, self->digest);
 
-	return hexDigest;
+	return strdup(self->digest);
 }
 
 void checksum_sha512_free(struct checksum * checksum) {
@@ -106,13 +106,13 @@ void checksum_sha512_free(struct checksum * checksum) {
 
 	struct checksum_sha512_private * self = checksum->data;
 
-	if (!self->finished) {
-		unsigned char digest[SHA512_DIGEST_LENGTH];
-		SHA512_Final(digest, &self->sha512);
-		self->finished = 1;
-	}
+	if (self) {
+		if (self->digest)
+			free(self->digest);
+		self->digest = 0;
 
-	free(self);
+		free(self);
+	}
 
 	checksum->data = 0;
 	checksum->ops = 0;
@@ -133,7 +133,7 @@ struct checksum * checksum_sha512_new_checksum(struct checksum * checksum) {
 
 	struct checksum_sha512_private * self = malloc(sizeof(struct checksum_sha512_private));
 	SHA512_Init(&self->sha512);
-	self->finished = 0;
+	self->digest = 0;
 
 	checksum->data = self;
 	return checksum;
@@ -145,8 +145,9 @@ int checksum_sha512_update(struct checksum * checksum, const char * data, unsign
 
 	struct checksum_sha512_private * self = checksum->data;
 
-	if (self->finished)
-		return -1;
+	if (self->digest)
+		free(self->digest);
+	self->digest = 0;
 
 	if (SHA512_Update(&self->sha512, data, length))
 		return length;

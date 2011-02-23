@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 21 Feb 2011 10:22:30 +0100                       *
+*  Last modified: Wed, 23 Feb 2011 20:32:11 +0100                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
@@ -258,11 +258,11 @@ struct checksum {
 		 */
 		struct checksum * (*clone)(struct checksum * new_checksum, struct checksum * current_checksum);
 		/**
-		 * \brief this function computes a digest
+		 * \brief get the lastest digest value
 		 * \param checksum : a checksum handler
 		 * \return a dynamically allocated string which contains a digest in hexadecimal form
 		 */
-		char * (*finish)(struct checksum * checksum);
+		char * (*digest)(struct checksum * checksum);
 		/**
 		 * \brief this function releases all memory associated to ckecksum
 		 * \param checksum : a checksum handler

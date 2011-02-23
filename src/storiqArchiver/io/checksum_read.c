@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 23 Feb 2011 18:09:45 +0100                       *
+*  Last modified: Wed, 23 Feb 2011 20:33:51 +0100                       *
 \***********************************************************************/
 
 // calloc, free, malloc
@@ -67,7 +67,7 @@ struct hashtable * io_checksum_completeDigest(struct stream_read_io * io) {
 
 		struct checksum digest;
 		self->checksums[i].ops->clone(&digest, self->checksums + i);
-		char * result = digest.ops->finish(&digest);
+		char * result = digest.ops->digest(&digest);
 
 		hashtable_put(digests, hash, result);
 	}

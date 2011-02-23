@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 21 Feb 2011 09:02:05 +0100                       *
+*  Last modified: Wed, 23 Feb 2011 20:33:15 +0100                       *
 \***********************************************************************/
 
 // dlerror, dlopen
@@ -67,7 +67,7 @@ char * checksum_compute(const char * checksum, const char * data, unsigned int l
 	driver->new_checksum(&chck);
 	chck.ops->update(&chck, data, length);
 
-	char * digest = chck.ops->finish(&chck);
+	char * digest = chck.ops->digest(&chck);
 
 	chck.ops->free(&chck);
 
