@@ -24,14 +24,19 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 23 Feb 2011 10:53:40 +0100                       *
+*  Last modified: Wed, 23 Feb 2011 18:09:45 +0100                       *
 \***********************************************************************/
 
 // calloc, free, malloc
 #include <malloc.h>
+// strdup
+#include <string.h>
 
 #include <storiqArchiver/checksum.h>
 #include <storiqArchiver/io.h>
+#include <storiqArchiver/util/hashtable.h>
+
+#include "../util/util.h"
 
 struct io_checksum_private {
 	struct stream_read_io * to;
@@ -51,6 +56,24 @@ static struct stream_read_io_ops io_checksum_ops = {
 	.read		= io_checksum_read_read,
 };
 
+
+struct hashtable * io_checksum_completeDigest(struct stream_read_io * io) {
+	struct io_checksum_private * self = io->data;
+	struct hashtable * digests = hashtable_new2(util_hashString, util_freeKeyValue);
+
+	unsigned int i;
+	for (i = 0; i < self->nbChecksums; i++) {
+		char * hash = strdup(self->checksums[i].driver->name);
+
+		struct checksum digest;
+		self->checksums[i].ops->clone(&digest, self->checksums + i);
+		char * result = digest.ops->finish(&digest);
+
+		hashtable_put(digests, hash, result);
+	}
+
+	return digests;
+}
 
 int io_checksum_read_close(struct stream_read_io * io) {
 	struct io_checksum_private * self = io->data;
