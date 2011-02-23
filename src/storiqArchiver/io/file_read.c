@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 22 Feb 2011 23:14:33 +0100                       *
+*  Last modified: Wed, 23 Feb 2011 09:40:21 +0100                       *
 \***********************************************************************/
 
 // open
@@ -42,7 +42,7 @@
 
 #include <storiqArchiver/io.h>
 
-struct io_read_private {
+struct io_file_read_private {
 	int fd;
 	char * buffer;
 	int bufferUsed;
@@ -50,49 +50,49 @@ struct io_read_private {
 	long long int position;
 };
 
-static int io_read_close(struct stream_read_io * io);
-static void io_read_free(struct stream_read_io * io);
-static long long int io_read_position(struct stream_read_io * io);
-static int io_read_read(struct stream_read_io * io, void * buffer, int length);
-static int io_read_read_buffer(struct stream_read_io * io, void * buffer, int length);
+static int io_file_read_close(struct stream_read_io * io);
+static void io_file_read_free(struct stream_read_io * io);
+static long long int io_file_read_position(struct stream_read_io * io);
+static int io_file_read_read(struct stream_read_io * io, void * buffer, int length);
+static int io_file_read_read_buffer(struct stream_read_io * io, void * buffer, int length);
 
-static struct stream_read_io_ops io_read_ops = {
-	.close		= io_read_close,
-	.free		= io_read_free,
-	.position	= io_read_position,
-	.read		= io_read_read,
+static struct stream_read_io_ops io_file_read_ops = {
+	.close		= io_file_read_close,
+	.free		= io_file_read_free,
+	.position	= io_file_read_position,
+	.read		= io_file_read_read,
 };
 
-static struct stream_read_io_ops io_read_buffer_ops = {
-	.close		= io_read_close,
-	.free		= io_read_free,
-	.position	= io_read_position,
-	.read		= io_read_read_buffer,
+static struct stream_read_io_ops io_file_read_buffer_ops = {
+	.close		= io_file_read_close,
+	.free		= io_file_read_free,
+	.position	= io_file_read_position,
+	.read		= io_file_read_read_buffer,
 };
 
 
-int io_read_close(struct stream_read_io * io) {
+int io_file_read_close(struct stream_read_io * io) {
 	if (!io || !io->data)
 		return -1;
 
-	struct io_read_private * self = io->data;
+	struct io_file_read_private * self = io->data;
 	close(self->fd);
 	self->fd = -1;
 	return 0;
 }
 
-struct stream_read_io * io_read_fd(struct stream_read_io * io, int fd) {
-	return io_read_fd2(io, fd, 0);
+struct stream_read_io * io_file_read_fd(struct stream_read_io * io, int fd) {
+	return io_file_read_fd2(io, fd, 0);
 }
 
-struct stream_read_io * io_read_fd2(struct stream_read_io * io, int fd, int blockSize) {
+struct stream_read_io * io_file_read_fd2(struct stream_read_io * io, int fd, int blockSize) {
 	if (fd < 0 || blockSize < 0)
 		return 0;
 
 	if (!io)
 		io = malloc(sizeof(struct stream_read_io));
 
-	struct io_read_private * self = malloc(sizeof(struct io_read_private));
+	struct io_file_read_private * self = malloc(sizeof(struct io_file_read_private));
 	self->fd = fd;
 	self->buffer = 0;
 	self->bufferUsed = 0;
@@ -102,19 +102,19 @@ struct stream_read_io * io_read_fd2(struct stream_read_io * io, int fd, int bloc
 	self->position = 0;
 
 	if (blockSize > 0)
-		io->ops = &io_read_buffer_ops;
+		io->ops = &io_file_read_buffer_ops;
 	else
-		io->ops = &io_read_ops;
+		io->ops = &io_file_read_ops;
 	io->data = self;
 
 	return io;
 }
 
-struct stream_read_io * io_read_file(struct stream_read_io * io, const char * filename) {
-	return io_read_file2(io, filename, 0);
+struct stream_read_io * io_file_read_file(struct stream_read_io * io, const char * filename) {
+	return io_file_read_file2(io, filename, 0);
 }
 
-struct stream_read_io * io_read_file2(struct stream_read_io * io, const char * filename, int blockSize) {
+struct stream_read_io * io_file_read_file2(struct stream_read_io * io, const char * filename, int blockSize) {
 	if (!filename)
 		return 0;
 
@@ -122,18 +122,18 @@ struct stream_read_io * io_read_file2(struct stream_read_io * io, const char * f
 	if (fd < 0)
 		return 0;
 
-	return io_read_fd2(io, fd, blockSize);
+	return io_file_read_fd2(io, fd, blockSize);
 }
 
-void io_read_free(struct stream_read_io * io) {
+void io_file_read_free(struct stream_read_io * io) {
 	if (!io)
 		return;
 
 	if (io->data) {
-		struct io_read_private * self = io->data;
+		struct io_file_read_private * self = io->data;
 
 		if (self->fd >= 0)
-			io_read_close(io);
+			io_file_read_close(io);
 
 		if (self->buffer)
 			free(self->buffer);
@@ -145,30 +145,30 @@ void io_read_free(struct stream_read_io * io) {
 	io->ops = 0;
 }
 
-long long int io_read_position(struct stream_read_io * io) {
+long long int io_file_read_position(struct stream_read_io * io) {
 	if (!io || !io->data)
 		return -1;
 
-	struct io_read_private * self = io->data;
+	struct io_file_read_private * self = io->data;
 	return self->position;
 }
 
-int io_read_read(struct stream_read_io * io, void * buffer, int length) {
+int io_file_read_read(struct stream_read_io * io, void * buffer, int length) {
 	if (!io || !io->data || !buffer || length < 0)
 		return -1;
 
-	struct io_read_private * self = io->data;
+	struct io_file_read_private * self = io->data;
 	int nbRead = read(self->fd, buffer, length);
 	if (nbRead > 0)
 		self->position += nbRead;
 	return nbRead;
 }
 
-int io_read_read_buffer(struct stream_read_io * io, void * buffer, int length) {
+int io_file_read_read_buffer(struct stream_read_io * io, void * buffer, int length) {
 	if (!io || !io->data || !buffer || length < 0)
 		return -1;
 
-	struct io_read_private * self = io->data;
+	struct io_file_read_private * self = io->data;
 
 	if (length <= self->bufferUsed) {
 		memcpy(buffer, self->buffer, length);

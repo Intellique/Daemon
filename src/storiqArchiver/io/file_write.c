@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 22 Feb 2011 23:24:07 +0100                       *
+*  Last modified: Wed, 23 Feb 2011 09:41:42 +0100                       *
 \***********************************************************************/
 
 // open
@@ -42,7 +42,7 @@
 
 #include <storiqArchiver/io.h>
 
-struct io_write_private {
+struct io_file_write_private {
 	int fd;
 	char * buffer;
 	int bufferUsed;
@@ -50,36 +50,36 @@ struct io_write_private {
 	long long int position;
 };
 
-static int io_write_close(struct stream_write_io * io);
-static int io_write_flush(struct stream_write_io * io);
-static int io_write_flush_buffer(struct stream_write_io * io);
-static void io_write_free(struct stream_write_io * io);
-static long long int io_write_position(struct stream_write_io * io);
-static int io_write_write(struct stream_write_io * io, const void * buffer, int length);
-static int io_write_write_buffer(struct stream_write_io * io, const void * buffer, int length);
+static int io_file_write_close(struct stream_write_io * io);
+static int io_file_write_flush(struct stream_write_io * io);
+static int io_file_write_flush_buffer(struct stream_write_io * io);
+static void io_file_write_free(struct stream_write_io * io);
+static long long int io_file_write_position(struct stream_write_io * io);
+static int io_file_write_write(struct stream_write_io * io, const void * buffer, int length);
+static int io_file_write_write_buffer(struct stream_write_io * io, const void * buffer, int length);
 
-static struct stream_write_io_ops io_write_ops = {
-	.close		= io_write_close,
-	.flush		= io_write_flush,
-	.free		= io_write_free,
-	.position	= io_write_position,
-	.write		= io_write_write,
+static struct stream_write_io_ops io_file_write_ops = {
+	.close		= io_file_write_close,
+	.flush		= io_file_write_flush,
+	.free		= io_file_write_free,
+	.position	= io_file_write_position,
+	.write		= io_file_write_write,
 };
 
-static struct stream_write_io_ops io_write_buffer_ops = {
-	.close		= io_write_close,
-	.flush		= io_write_flush_buffer,
-	.free		= io_write_free,
-	.position	= io_write_position,
-	.write		= io_write_write_buffer,
+static struct stream_write_io_ops io_file_write_buffer_ops = {
+	.close		= io_file_write_close,
+	.flush		= io_file_write_flush_buffer,
+	.free		= io_file_write_free,
+	.position	= io_file_write_position,
+	.write		= io_file_write_write_buffer,
 };
 
 
-int io_write_close(struct stream_write_io * io) {
+int io_file_write_close(struct stream_write_io * io) {
 	if (!io || !io->data)
 		return -1;
 
-	struct io_write_private * self = io->data;
+	struct io_file_write_private * self = io->data;
 	if (self->bufferUsed > 0) {
 		bzero(self->buffer + self->bufferUsed, self->blockSize - self->bufferUsed);
 		write(self->fd, self->buffer, self->blockSize);
@@ -88,18 +88,18 @@ int io_write_close(struct stream_write_io * io) {
 	return 0;
 }
 
-struct stream_write_io * io_write_fd(struct stream_write_io * io, int fd) {
-	return io_write_fd2(io, fd, 0);
+struct stream_write_io * io_file_write_fd(struct stream_write_io * io, int fd) {
+	return io_file_write_fd2(io, fd, 0);
 }
 
-struct stream_write_io * io_write_fd2(struct stream_write_io * io, int fd, int blockSize) {
+struct stream_write_io * io_file_write_fd2(struct stream_write_io * io, int fd, int blockSize) {
 	if (fd < 0 || blockSize < 0)
 		return 0;
 
 	if (!io)
 		io = malloc(sizeof(struct stream_write_io));
 
-	struct io_write_private * self = malloc(sizeof(struct io_write_private));
+	struct io_file_write_private * self = malloc(sizeof(struct io_file_write_private));
 	self->fd = fd;
 	self->buffer = 0;
 	if (blockSize > 0)
@@ -109,19 +109,19 @@ struct stream_write_io * io_write_fd2(struct stream_write_io * io, int fd, int b
 	self->position = 0;
 
 	if (blockSize > 0)
-		io->ops = &io_write_buffer_ops;
+		io->ops = &io_file_write_buffer_ops;
 	else
-		io->ops = &io_write_ops;
+		io->ops = &io_file_write_ops;
 	io->data = self;
 
 	return io;
 }
 
-struct stream_write_io * io_write_file(struct stream_write_io * io, const char * filename, int option) {
-	return io_write_file2(io, filename, option, 0);
+struct stream_write_io * io_file_write_file(struct stream_write_io * io, const char * filename, int option) {
+	return io_file_write_file2(io, filename, option, 0);
 }
 
-struct stream_write_io * io_write_file2(struct stream_write_io * io, const char * filename, int option, int blockSize) {
+struct stream_write_io * io_file_write_file2(struct stream_write_io * io, const char * filename, int option, int blockSize) {
 	if (!filename)
 		return 0;
 
@@ -129,22 +129,22 @@ struct stream_write_io * io_write_file2(struct stream_write_io * io, const char 
 	if (fd < 0)
 		return 0;
 
-	return io_write_fd2(io, fd, blockSize);
+	return io_file_write_fd2(io, fd, blockSize);
 }
 
-int io_write_flush(struct stream_write_io * io) {
+int io_file_write_flush(struct stream_write_io * io) {
 	if (!io || !io->data)
 		return -1;
 
-	struct io_write_private * self = io->data;
+	struct io_file_write_private * self = io->data;
 	return fsync(self->fd);
 }
 
-int io_write_flush_buffer(struct stream_write_io * io) {
+int io_file_write_flush_buffer(struct stream_write_io * io) {
 	if (!io || !io->data)
 		return -1;
 
-	struct io_write_private * self = io->data;
+	struct io_file_write_private * self = io->data;
 	if (self->bufferUsed > 0) {
 		int nbWrite = write(self->fd, self->buffer, self->bufferUsed);
 		if (nbWrite < 0)
@@ -156,11 +156,11 @@ int io_write_flush_buffer(struct stream_write_io * io) {
 	return fsync(self->fd);
 }
 
-void io_write_free(struct stream_write_io * io) {
+void io_file_write_free(struct stream_write_io * io) {
 	if (!io)
 		return;
 
-	struct io_write_private * self = io->data;
+	struct io_file_write_private * self = io->data;
 	if (self->buffer)
 		free(self->buffer);
 	self->buffer = 0;
@@ -171,30 +171,30 @@ void io_write_free(struct stream_write_io * io) {
 	io->ops = 0;
 }
 
-long long int io_write_position(struct stream_write_io * io) {
+long long int io_file_write_position(struct stream_write_io * io) {
 	if (!io || !io->data)
 		return -1;
 
-	struct io_write_private * self = io->data;
+	struct io_file_write_private * self = io->data;
 	return self->position;
 }
 
-int io_write_write(struct stream_write_io * io, const void * buffer, int length) {
+int io_file_write_write(struct stream_write_io * io, const void * buffer, int length) {
 	if (!io || !io->data || !buffer || length < 0)
 		return -1;
 
-	struct io_write_private * self = io->data;
+	struct io_file_write_private * self = io->data;
 	int nbWrite =  write(self->fd, buffer, length);
 	if (nbWrite > 0)
 		self->position += nbWrite;
 	return nbWrite;
 }
 
-int io_write_write_buffer(struct stream_write_io * io, const void * buffer, int length) {
+int io_file_write_write_buffer(struct stream_write_io * io, const void * buffer, int length) {
 	if (!io || !io->data || !buffer || length < 0)
 		return -1;
 
-	struct io_write_private * self = io->data;
+	struct io_file_write_private * self = io->data;
 
 	if (self->blockSize >= length - self->bufferUsed) {
 		memcpy(self->buffer + self->bufferUsed, buffer, length);
