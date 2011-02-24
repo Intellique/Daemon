@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 24 Feb 2011 20:52:34 +0100                       *
+*  Last modified: Thu, 24 Feb 2011 21:23:46 +0100                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_IO_H__
@@ -61,7 +61,8 @@ struct stream_io_driver {
 	void * cookie;
 };
 
-struct hashtable * io_checksum_completeDigest(struct stream_read_io * io);
+struct hashtable * io_checksum_read_completeDigest(struct stream_read_io * io);
+struct hashtable * io_checksum_read_partialDigest(struct stream_read_io * io);
 struct stream_read_io * io_checksum_read_new(struct stream_read_io * io, struct stream_read_io * to, char ** checksums, unsigned int nbChecksums);
 struct stream_read_io * io_file_read_file(struct stream_read_io * io, const char * filename);
 struct stream_read_io * io_file_read_file2(struct stream_read_io * io, const char * filename, int blockSize);

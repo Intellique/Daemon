@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 24 Feb 2011 21:09:43 +0100                       *
+*  Last modified: Thu, 24 Feb 2011 21:25:32 +0100                       *
 \***********************************************************************/
 
 // open
@@ -162,6 +162,9 @@ int io_file_read_read(struct stream_read_io * io, void * buffer, int length) {
 		return -1;
 
 	struct io_file_read_private * self = io->data;
+	if (self->fd < 0)
+		return -1;
+
 	int nbRead = read(self->fd, buffer, length);
 	if (nbRead > 0)
 		self->position += nbRead;
@@ -173,6 +176,8 @@ int io_file_read_read_buffer(struct stream_read_io * io, void * buffer, int leng
 		return -1;
 
 	struct io_file_read_private * self = io->data;
+	if (self->fd < 0)
+		return -1;
 
 	if (length <= self->bufferUsed) {
 		memcpy(buffer, self->buffer, length);

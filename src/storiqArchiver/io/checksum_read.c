@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 24 Feb 2011 21:13:57 +0100                       *
+*  Last modified: Thu, 24 Feb 2011 21:35:17 +0100                       *
 \***********************************************************************/
 
 // calloc, free, malloc
@@ -40,7 +40,8 @@
 
 struct io_checksum_private {
 	struct stream_read_io * to;
-	struct checksum * checksums;
+	struct checksum * completeChecksums;
+	struct checksum * partialChecksums;
 	unsigned int nbChecksums;
 };
 
@@ -59,17 +60,14 @@ static struct stream_read_io_ops io_checksum_ops = {
 };
 
 
-struct hashtable * io_checksum_completeDigest(struct stream_read_io * io) {
+struct hashtable * io_checksum_read_completeDigest(struct stream_read_io * io) {
 	struct io_checksum_private * self = io->data;
 	struct hashtable * digests = hashtable_new2(util_hashString, util_freeKeyValue);
 
 	unsigned int i;
 	for (i = 0; i < self->nbChecksums; i++) {
-		char * hash = strdup(self->checksums[i].driver->name);
-
-		struct checksum digest;
-		self->checksums[i].ops->clone(&digest, self->checksums + i);
-		char * result = digest.ops->digest(&digest);
+		char * hash = strdup(self->completeChecksums[i].driver->name);
+		char * result = self->completeChecksums[i].ops->digest(self->completeChecksums + i);
 
 		hashtable_put(digests, hash, result);
 	}
@@ -90,10 +88,14 @@ void io_checksum_read_free(struct stream_read_io * io) {
 		struct io_checksum_private * self = io->data;
 
 		unsigned int i;
-		for (i = 0; i < self->nbChecksums; i++)
-			self->checksums[i].ops->free(self->checksums + i);
-		free(self->checksums);
-		self->checksums = 0;
+		for (i = 0; i < self->nbChecksums; i++) {
+			self->completeChecksums[i].ops->free(self->completeChecksums + i);
+			self->partialChecksums[i].ops->free(self->partialChecksums + i);
+		}
+		free(self->completeChecksums);
+		free(self->partialChecksums);
+		self->completeChecksums = 0;
+		self->partialChecksums = 0;
 
 		free(self);
 		io->data = 0;
@@ -109,15 +111,32 @@ struct stream_read_io * io_checksum_read_new(struct stream_read_io * io, struct 
 
 	struct io_checksum_private * self = malloc(sizeof(struct io_checksum_private));
 	self->to = to;
-	self->checksums = calloc(nbChecksums, sizeof(struct checksum));
+	self->completeChecksums = calloc(nbChecksums, sizeof(struct checksum));
+	self->partialChecksums = calloc(nbChecksums, sizeof(struct checksum));
 	for (self->nbChecksums = 0; self->nbChecksums < nbChecksums; self->nbChecksums++) {
 		struct checksum_driver * driver = checksum_getDriver(checksums[self->nbChecksums]);
-		driver->new_checksum(self->checksums + self->nbChecksums);
+		driver->new_checksum(self->completeChecksums + self->nbChecksums);
+		driver->new_checksum(self->partialChecksums + self->nbChecksums);
 	}
 
 	io->ops = &io_checksum_ops;
 	io->data = self;
 	return io;
+}
+
+struct hashtable * io_checksum_read_partialDigest(struct stream_read_io * io) {
+	struct io_checksum_private * self = io->data;
+	struct hashtable * digests = hashtable_new2(util_hashString, util_freeKeyValue);
+
+	unsigned int i;
+	for (i = 0; i < self->nbChecksums; i++) {
+		char * hash = strdup(self->partialChecksums[i].driver->name);
+		char * result = self->partialChecksums[i].ops->digest(self->partialChecksums + i);
+
+		hashtable_put(digests, hash, result);
+	}
+
+	return digests;
 }
 
 long long int io_checksum_read_position(struct stream_read_io * io) {
@@ -132,8 +151,10 @@ int io_checksum_read_read(struct stream_read_io * io, void * buffer, int length)
 
 	if (nbRead > 0) {
 		unsigned int i;
-		for (i = 0; i < self->nbChecksums; i++)
-			self->checksums[i].ops->update(self->checksums + i, buffer, length);
+		for (i = 0; i < self->nbChecksums; i++) {
+			self->completeChecksums[i].ops->update(self->completeChecksums + i, buffer, length);
+			self->partialChecksums[i].ops->update(self->partialChecksums + i, buffer, length);
+		}
 	}
 
 	return nbRead;
@@ -141,6 +162,12 @@ int io_checksum_read_read(struct stream_read_io * io, void * buffer, int length)
 
 int io_checksum_read_reopen(struct stream_read_io * io) {
 	struct io_checksum_private * self = io->data;
-	return self->to->ops->reopen(self->to);
+	int fail = self->to->ops->reopen(self->to);
+	if (!fail) {
+		unsigned int i;
+		for (i = 0; i < self->nbChecksums; i++)
+			self->partialChecksums[i].ops->reset(self->partialChecksums + i);
+	}
+	return fail;
 }
 
