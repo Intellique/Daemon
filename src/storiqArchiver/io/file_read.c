@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 23 Feb 2011 09:40:21 +0100                       *
+*  Last modified: Thu, 24 Feb 2011 21:09:43 +0100                       *
 \***********************************************************************/
 
 // open
@@ -43,6 +43,7 @@
 #include <storiqArchiver/io.h>
 
 struct io_file_read_private {
+	char * filename;
 	int fd;
 	char * buffer;
 	int bufferUsed;
@@ -55,12 +56,14 @@ static void io_file_read_free(struct stream_read_io * io);
 static long long int io_file_read_position(struct stream_read_io * io);
 static int io_file_read_read(struct stream_read_io * io, void * buffer, int length);
 static int io_file_read_read_buffer(struct stream_read_io * io, void * buffer, int length);
+static int io_file_read_reopen(struct stream_read_io * io);
 
 static struct stream_read_io_ops io_file_read_ops = {
 	.close		= io_file_read_close,
 	.free		= io_file_read_free,
 	.position	= io_file_read_position,
 	.read		= io_file_read_read,
+	.reopen		= io_file_read_reopen,
 };
 
 static struct stream_read_io_ops io_file_read_buffer_ops = {
@@ -68,6 +71,7 @@ static struct stream_read_io_ops io_file_read_buffer_ops = {
 	.free		= io_file_read_free,
 	.position	= io_file_read_position,
 	.read		= io_file_read_read_buffer,
+	.reopen		= io_file_read_reopen,
 };
 
 
@@ -76,23 +80,31 @@ int io_file_read_close(struct stream_read_io * io) {
 		return -1;
 
 	struct io_file_read_private * self = io->data;
-	close(self->fd);
-	self->fd = -1;
-	return 0;
+	int fail = close(self->fd);
+	if (!fail) {
+		self->fd = -1;
+		self->bufferUsed = 0;
+	}
+	return fail;
 }
 
-struct stream_read_io * io_file_read_fd(struct stream_read_io * io, int fd) {
-	return io_file_read_fd2(io, fd, 0);
+struct stream_read_io * io_file_read_file(struct stream_read_io * io, const char * filename) {
+	return io_file_read_file2(io, filename, 0);
 }
 
-struct stream_read_io * io_file_read_fd2(struct stream_read_io * io, int fd, int blockSize) {
-	if (fd < 0 || blockSize < 0)
+struct stream_read_io * io_file_read_file2(struct stream_read_io * io, const char * filename, int blockSize) {
+	if (!filename || blockSize < 0)
+		return 0;
+
+	int fd = open(filename, O_RDONLY);
+	if (fd < 0)
 		return 0;
 
 	if (!io)
 		io = malloc(sizeof(struct stream_read_io));
 
 	struct io_file_read_private * self = malloc(sizeof(struct io_file_read_private));
+	self->filename = strdup(filename);
 	self->fd = fd;
 	self->buffer = 0;
 	self->bufferUsed = 0;
@@ -110,21 +122,6 @@ struct stream_read_io * io_file_read_fd2(struct stream_read_io * io, int fd, int
 	return io;
 }
 
-struct stream_read_io * io_file_read_file(struct stream_read_io * io, const char * filename) {
-	return io_file_read_file2(io, filename, 0);
-}
-
-struct stream_read_io * io_file_read_file2(struct stream_read_io * io, const char * filename, int blockSize) {
-	if (!filename)
-		return 0;
-
-	int fd = open(filename, O_RDONLY);
-	if (fd < 0)
-		return 0;
-
-	return io_file_read_fd2(io, fd, blockSize);
-}
-
 void io_file_read_free(struct stream_read_io * io) {
 	if (!io)
 		return;
@@ -132,12 +129,19 @@ void io_file_read_free(struct stream_read_io * io) {
 	if (io->data) {
 		struct io_file_read_private * self = io->data;
 
+		if (self->filename)
+			free(self->filename);
+		self->filename = 0;
+
 		if (self->fd >= 0)
-			io_file_read_close(io);
+			close(self->fd);
+		self->fd = -1;
 
 		if (self->buffer)
 			free(self->buffer);
 		self->buffer = 0;
+		self->bufferUsed = 0;
+		self->position = 0;
 
 		free(io->data);
 	}
@@ -222,5 +226,22 @@ int io_file_read_read_buffer(struct stream_read_io * io, void * buffer, int leng
 
 	self->position += nbTotalRead;
 	return nbTotalRead;
+}
+
+int io_file_read_reopen(struct stream_read_io * io) {
+	if (!io || !io->data)
+		return -1;
+
+	struct io_file_read_private * self = io->data;
+	if (self->fd >= 0 && io_file_read_close(io))
+		return -1;
+
+
+	self->fd = open(self->filename, O_RDONLY);
+	if (self->fd >= 0) {
+		self->position = 0;
+	}
+
+	return self->fd >= 0 ? 0 : -1;
 }
 

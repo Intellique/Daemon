@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 23 Feb 2011 20:33:51 +0100                       *
+*  Last modified: Thu, 24 Feb 2011 21:13:57 +0100                       *
 \***********************************************************************/
 
 // calloc, free, malloc
@@ -48,12 +48,14 @@ static int io_checksum_read_close(struct stream_read_io * io);
 static void io_checksum_read_free(struct stream_read_io * io);
 static long long int io_checksum_read_position(struct stream_read_io * io);
 static int io_checksum_read_read(struct stream_read_io * io, void * buffer, int length);
+static int io_checksum_read_reopen(struct stream_read_io * io);
 
 static struct stream_read_io_ops io_checksum_ops = {
 	.close		= io_checksum_read_close,
 	.free		= io_checksum_read_free,
 	.position	= io_checksum_read_position,
 	.read		= io_checksum_read_read,
+	.reopen		= io_checksum_read_reopen,
 };
 
 
@@ -135,5 +137,10 @@ int io_checksum_read_read(struct stream_read_io * io, void * buffer, int length)
 	}
 
 	return nbRead;
+}
+
+int io_checksum_read_reopen(struct stream_read_io * io) {
+	struct io_checksum_private * self = io->data;
+	return self->to->ops->reopen(self->to);
 }
 
