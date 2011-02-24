@@ -46,7 +46,7 @@
  * handler->ops->update(handler, "Hello, ", 7);
  * handler->ops->update(handler, "world !!!", 9);
  * // compute digest and result should be 'e7a20f74338897759a77a1497314719f'
- * char * digest = handler->ops->finish(handler);
+ * char * digest = handler->ops->digest(handler);
  * // don't forget to release memory
  * free(digest);
  * handler->ops->free(handler);
@@ -94,8 +94,8 @@
  * }
  *
  * // now, get the results
- * char * digest_md5 = handler[0].ops->finish(handler);
- * char * digest_sha1 = handler[1].ops->finish(handler + 1);
+ * char * digest_md5 = handler[0].ops->digest(handler);
+ * char * digest_sha1 = handler[1].ops->digest(handler + 1);
  *
  * // release memory
  * for (i = 0; i < 2; i++)
@@ -114,7 +114,7 @@
  *
  * This example show you how the md5 checksum is implemeted
  * \code
- * // malloc
+ * // free, malloc
  * #include <malloc.h>
  * // MD5_Final, MD5_Init, MD5_Update
  * #include <openssl/md5.h>
@@ -125,13 +125,14 @@
  * // structure used to store private data into handler.data
  * struct checksum_md5_private {
  *    MD5_CTX md5;
- *    short finished;
+ *    char * digest;
  * };
  *
  * static struct checksum * checksum_md5_clone(struct checksum * new_checksum, struct checksum * current_checksum);
- * static char * checksum_md5_finish(struct checksum * checksum);
+ * static char * checksum_md5_digest(struct checksum * checksum);
  * static void checksum_md5_free(struct checksum * checksum);
  * static struct checksum * checksum_md5_new_checksum(struct checksum_driver * driver, struct checksum * checksum);
+ * static void checksum_md5_reset(struct checksum * checksum);
  * static int checksum_md5_update(struct checksum * checksum, const char * data, unsigned int length);
  *
  * static struct checksum_driver checksum_md5_driver = {
@@ -142,8 +143,9 @@
  *
  * static struct checksum_ops checksum_md5_ops = {
  *    .clone  = checksum_md5_clone,
- *    .finish = checksum_md5_finish,
+ *    .digest = checksum_md5_digest,
  *    .free   = checksum_md5_free,
+ *    .reset  = checksum_md5_reset,
  *    .update = checksum_md5_update,
  * };
  *
@@ -167,35 +169,36 @@
  *    return new_checksum;
  * }
  *
- * char * checksum_md5_finish(struct checksum * checksum) {
+ * char * checksum_md5_digest(struct checksum * checksum) {
+ *    if (!checksum)
+ *       return 0;
+ *
  *    struct checksum_md5_private * self = checksum->data;
  *
- *    if (self->finished)
- *       return 0;
+ *    if (self->digest)
+ *       return strdup(self->digest);
  *
+ *    MD5_CTX md5 = self->md5;
  *    unsigned char digest[MD5_DIGEST_LENGTH];
- *
- *    short ok = MD5_Final(digest, &self->md5);
- *    self->finished = 1;
- *    if (!ok)
+ *    if (!MD5_Final(digest, &md5))
  *       return 0;
  *
- *    char * hexDigest = malloc(MD5_DIGEST_LENGTH * 2 + 1);
- *    checksum_convert2Hex(digest, MD5_DIGEST_LENGTH, hexDigest);
+ *    self->digest = malloc(MD5_DIGEST_LENGTH * 2 + 1);
+ *    checksum_convert2Hex(digest, MD5_DIGEST_LENGTH, self->digest);
  *
- *    return hexDigest;
+ *    return strdup(self->digest);
  * }
  *
  * void checksum_md5_free(struct checksum * checksum) {
  *    struct checksum_md5_private * self = checksum->data;
  *
- *    if (!self->finished) {
- *       unsigned char digest[MD5_DIGEST_LENGTH];
- *       MD5_Final(digest, &self->md5);
- *       self->finished = 1;
- *    }
+ *    if (self) {
+ *       if (self->digest)
+ *          free(self->digest);
+ *       self->digest = 0;
  *
- *    free(self);
+ *       free(self);
+ *    }
  *
  *    checksum->data = 0;
  *    checksum->ops = 0;
@@ -218,17 +221,35 @@
  *
  *    struct checksum_md5_private * self = malloc(sizeof(struct checksum_md5_private));
  *    MD5_Init(&self->md5);
- *    self->finished = 0;
+ *    self->digest = 0;
  *
  *    checksum->data = self;
  *    return checksum;
  * }
  *
+ * void checksum_md5_reset(struct checksum * checksum) {
+ *    if (!checksum)
+ *       return;
+ *
+ *    struct checksum_md5_private * self = checksum->data;
+ *    if (self) {
+ *       MD5_Init(&self->md5);
+ *
+ *       if (self->digest)
+ *          free(self->digest);
+ *       self->digest = 0;
+ *    }
+ * }
+ *
  * int checksum_md5_update(struct checksum * checksum, const char * data, unsigned int length) {
+ *    if (!checksum)
+ *       return -1;
+ *
  *    struct checksum_md5_private * self = checksum->data;
  *
- *    if (self->finished)
- *       return -1;
+ *    if (self->digest)
+ *       free(self->digest);
+ *    self->digest = 0;
  *
  *    if (MD5_Update(&self->md5, data, length))
  *       return length;
