@@ -1,0 +1,5 @@
+INSERT INTO Job VALUES (DEFAULT, 'test extract', 'restore', 'idle', NOW(), NULL, 0, NOW(), 1, 1);
+
+INSERT INTO SelectedFile VALUES (DEFAULT, '/tmp', TRUE);
+
+INSERT INTO JobToSelectedFile VALUES (4, 4);
