@@ -24,10 +24,10 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Sat, 19 Feb 2011 12:12:45 +0100                       *
+*  Last modified: Thu, 24 Feb 2011 09:06:14 +0100                       *
 \***********************************************************************/
 
-// dlerror, dlopen
+// dlclose, dlerror, dlopen
 #include <dlfcn.h>
 // strerror
 #include <errno.h>
@@ -39,9 +39,9 @@
 #include <pthread.h>
 // va_end, va_start
 #include <stdarg.h>
-// printf, snprintf
+// printf, snprintf, vsnprintf
 #include <stdio.h>
-// strcasecmp, strcmp, strdup, strerror
+// memmove, strcasecmp, strcmp, strdup, strerror
 #include <string.h>
 // access
 #include <unistd.h>

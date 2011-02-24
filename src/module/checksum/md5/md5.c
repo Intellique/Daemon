@@ -24,10 +24,10 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 23 Feb 2011 20:41:51 +0100                       *
+*  Last modified: Wed, 23 Feb 2011 20:57:05 +0100                       *
 \***********************************************************************/
 
-// malloc
+// free, malloc
 #include <malloc.h>
 // MD5_Final, MD5_Init, MD5_Update
 #include <openssl/md5.h>

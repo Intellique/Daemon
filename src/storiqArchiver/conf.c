@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Sun, 06 Feb 2011 22:56:01 +0100                       *
+*  Last modified: Thu, 24 Feb 2011 08:59:23 +0100                       *
 \***********************************************************************/
 
 // strerror
@@ -35,13 +35,13 @@
 #include <malloc.h>
 // snprintf, sscanf
 #include <stdio.h>
-// strcmp, strerror, strlen, strncmp, strrchr
+// strchp, strcmp, strerror, strlen, strncmp, strrchr
 #include <string.h>
-// open
+// fstat, open
 #include <sys/stat.h>
-// open
+// fstat, open
 #include <sys/types.h>
-// access, close, read, readlink, unlink, write
+// access, close, fstat, read, readlink, unlink, write
 #include <unistd.h>
 
 #include <storiqArchiver/database.h>

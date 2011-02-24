@@ -24,9 +24,10 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 30 Sep 2010 09:08:22 +0200                       *
+*  Last modified: Thu, 24 Feb 2011 09:17:33 +0100                       *
 \***********************************************************************/
 
+// calloc, free, malloc
 #include <malloc.h>
 
 #include "storiqArchiver/util/hashtable.h"

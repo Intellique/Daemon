@@ -24,10 +24,10 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 19 Oct 2010 10:35:45 +0200                       *
+*  Last modified: Thu, 24 Feb 2011 09:01:54 +0100                       *
 \***********************************************************************/
 
-// dlerror, dlopen
+// dlclose, dlerror, dlopen
 #include <dlfcn.h>
 // strerror
 #include <errno.h>
@@ -37,6 +37,8 @@
 // pthread_mutexattr_destroy, pthread_mutexattr_init, pthread_mutexattr_settype
 #define __USE_UNIX98
 #include <pthread.h>
+// snprintf
+#include <stdio.h>
 // strcmp
 #include <string.h>
 // access

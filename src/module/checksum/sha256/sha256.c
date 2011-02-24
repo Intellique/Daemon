@@ -24,10 +24,10 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 23 Feb 2011 20:46:53 +0100                       *
+*  Last modified: Wed, 23 Feb 2011 20:58:22 +0100                       *
 \***********************************************************************/
 
-// malloc
+// free, malloc
 #include <malloc.h>
 // SHA256_Final, SHA256_Init, SHA256_Update
 #include <openssl/sha.h>

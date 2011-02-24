@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 23 Feb 2011 09:41:42 +0100                       *
+*  Last modified: Thu, 24 Feb 2011 09:14:14 +0100                       *
 \***********************************************************************/
 
 // open
@@ -37,7 +37,7 @@
 #include <sys/stat.h>
 // open
 #include <sys/types.h>
-// close, write
+// close, fsync, write
 #include <unistd.h>
 
 #include <storiqArchiver/io.h>

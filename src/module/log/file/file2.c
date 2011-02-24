@@ -24,12 +24,12 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Oct 2010 15:59:40 +0200                       *
+*  Last modified: Wed, 23 Feb 2011 21:04:50 +0100                       *
 \***********************************************************************/
 
 // open
 #include <fcntl.h>
-// malloc
+// free, malloc
 #include <malloc.h>
 // dprintf
 #include <stdio.h>

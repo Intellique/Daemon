@@ -24,10 +24,10 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 23 Feb 2011 20:33:15 +0100                       *
+*  Last modified: Wed, 23 Feb 2011 21:08:04 +0100                       *
 \***********************************************************************/
 
-// dlerror, dlopen
+// dlclose, dlerror, dlopen
 #include <dlfcn.h>
 // strerror
 #include <errno.h>
