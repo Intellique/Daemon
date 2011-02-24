@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 23 Feb 2011 20:58:22 +0100                       *
+*  Last modified: Thu, 24 Feb 2011 10:35:36 +0100                       *
 \***********************************************************************/
 
 // free, malloc
@@ -45,6 +45,7 @@ static struct checksum * checksum_sha256_clone(struct checksum * new_checksum, s
 static char * checksum_sha256_digest(struct checksum * checksum);
 static void checksum_sha256_free(struct checksum * checksum);
 static struct checksum * checksum_sha256_new_checksum(struct checksum * checksum);
+static void checksum_sha256_reset(struct checksum * checksum);
 static int checksum_sha256_update(struct checksum * checksum, const char * data, unsigned int length);
 
 static struct checksum_driver checksum_sha256_driver = {
@@ -57,6 +58,7 @@ static struct checksum_ops checksum_sha256_ops = {
 	.clone	= checksum_sha256_clone,
 	.digest	= checksum_sha256_digest,
 	.free	= checksum_sha256_free,
+	.reset	= checksum_sha256_reset,
 	.update	= checksum_sha256_update,
 };
 
@@ -137,6 +139,20 @@ struct checksum * checksum_sha256_new_checksum(struct checksum * checksum) {
 
 	checksum->data = self;
 	return checksum;
+}
+
+void checksum_sha256_reset(struct checksum * checksum) {
+	if (!checksum)
+		return;
+
+	struct checksum_sha256_private * self = checksum->data;
+	if (self) {
+		SHA256_Init(&self->sha256);
+
+		if (self->digest)
+			free(self->digest);
+		self->digest = 0;
+	}
 }
 
 int checksum_sha256_update(struct checksum * checksum, const char * data, unsigned int length) {

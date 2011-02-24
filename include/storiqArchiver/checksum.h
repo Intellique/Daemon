@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 23 Feb 2011 20:32:11 +0100                       *
+*  Last modified: Thu, 24 Feb 2011 10:27:30 +0100                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
@@ -273,6 +273,11 @@ struct checksum {
 		 */
 		void (*free)(struct checksum * checksum);
 		/**
+		 * \brief Reset internal state
+		 * \param checksum : a checksum handler
+		 */
+		void (*reset)(struct checksum * checksum);
+		/**
 		 * \brief this function reads some data
 		 * \param checksum : a checksum handler
 		 * \param data : some or full data
@@ -287,7 +292,7 @@ struct checksum {
 	 */
 	void * data;
 	/**
-	 * \brief associated driver
+	 * \brief driver associated
 	 * \note <b>SHOULD NOT BE NULL</b>
 	 */
 	struct checksum_driver * driver;

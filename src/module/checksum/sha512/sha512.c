@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2010, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 23 Feb 2011 20:58:39 +0100                       *
+*  Last modified: Thu, 24 Feb 2011 10:36:26 +0100                       *
 \***********************************************************************/
 
 // free, malloc
@@ -45,6 +45,7 @@ static struct checksum * checksum_sha512_clone(struct checksum * new_checksum, s
 static char * checksum_sha512_digest(struct checksum * checksum);
 static void checksum_sha512_free(struct checksum * checksum);
 static struct checksum * checksum_sha512_new_checksum(struct checksum * checksum);
+static void checksum_sha512_reset(struct checksum * checksum);
 static int checksum_sha512_update(struct checksum * checksum, const char * data, unsigned int length);
 
 static struct checksum_driver checksum_sha512_driver = {
@@ -57,6 +58,7 @@ static struct checksum_ops checksum_sha512_ops = {
 	.clone	= checksum_sha512_clone,
 	.digest	= checksum_sha512_digest,
 	.free	= checksum_sha512_free,
+	.reset	= checksum_sha512_reset,
 	.update	= checksum_sha512_update,
 };
 
@@ -137,6 +139,20 @@ struct checksum * checksum_sha512_new_checksum(struct checksum * checksum) {
 
 	checksum->data = self;
 	return checksum;
+}
+
+void checksum_sha512_reset(struct checksum * checksum) {
+	if (!checksum)
+		return;
+
+	struct checksum_sha512_private * self = checksum->data;
+	if (self) {
+		SHA512_Init(&self->sha512);
+
+		if (self->digest)
+			free(self->digest);
+		self->digest = 0;
+	}
 }
 
 int checksum_sha512_update(struct checksum * checksum, const char * data, unsigned int length) {

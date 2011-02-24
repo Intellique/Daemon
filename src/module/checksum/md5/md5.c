@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 23 Feb 2011 20:57:05 +0100                       *
+*  Last modified: Thu, 24 Feb 2011 10:32:23 +0100                       *
 \***********************************************************************/
 
 // free, malloc
@@ -45,6 +45,7 @@ static struct checksum * checksum_md5_clone(struct checksum * new_checksum, stru
 static char * checksum_md5_digest(struct checksum * checksum);
 static void checksum_md5_free(struct checksum * checksum);
 static struct checksum * checksum_md5_new_checksum(struct checksum * checksum);
+static void checksum_md5_reset(struct checksum * checksum);
 static int checksum_md5_update(struct checksum * checksum, const char * data, unsigned int length);
 
 static struct checksum_driver checksum_md5_driver = {
@@ -57,6 +58,7 @@ static struct checksum_ops checksum_md5_ops = {
 	.clone	= checksum_md5_clone,
 	.digest	= checksum_md5_digest,
 	.free	= checksum_md5_free,
+	.reset	= checksum_md5_reset,
 	.update	= checksum_md5_update,
 };
 
@@ -137,6 +139,20 @@ struct checksum * checksum_md5_new_checksum(struct checksum * checksum) {
 
 	checksum->data = self;
 	return checksum;
+}
+
+void checksum_md5_reset(struct checksum * checksum) {
+	if (!checksum)
+		return;
+
+	struct checksum_md5_private * self = checksum->data;
+	if (self) {
+		MD5_Init(&self->md5);
+
+		if (self->digest)
+			free(self->digest);
+		self->digest = 0;
+	}
 }
 
 int checksum_md5_update(struct checksum * checksum, const char * data, unsigned int length) {
