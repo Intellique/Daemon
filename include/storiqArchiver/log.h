@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Sat, 19 Feb 2011 11:26:30 +0100                       *
+*  Last modified: Wed, 29 Jun 2011 09:44:40 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_LOG_H__
@@ -32,7 +32,7 @@
 
 // forward declarations
 struct hashtable;
-struct log_moduleSub;
+struct sa_log_module;
 
 
 /**
@@ -40,60 +40,60 @@ struct log_moduleSub;
  *
  * Each level has a priority (i.e. debug < info < warning < error)
  */
-enum Log_level {
+enum sa_log_level {
 	/**
 	 * \brief reserved for debugging
 	 */
-	Log_level_debug		= 0x0,
+	sa_log_level_debug		= 0x0,
 
 	/**
 	 * \brief should be used to alert errors
 	 */
-	Log_level_error		= 0x3,
+	sa_log_level_error		= 0x3,
 
 	/**
 	 * \brief should be used to inform what the server does.
 	 *
 	 * Example: server starts a new job
 	 */
-	Log_level_info		= 0x1,
+	sa_log_level_info		= 0x1,
 
 	/**
 	 * \brief should be used to alert errors which can be recovered
 	 *
 	 * Example: dns service not available
 	 */
-	Log_level_warning	= 0x2,
+	sa_log_level_warning	= 0x2,
 
 	/**
 	 * \brief should not be used
 	 *
-	 * Used only by log_stringTolevel to report an error
+	 * Used only by sa_log_stringTolevel to report an error
 	 */
-	Log_level_unknown	= 0xF,
+	sa_log_level_unknown	= 0xF,
 };
 
 
-struct log_module {
-	const char * moduleName;
-	int (*add)(struct log_module * module, const char * alias, enum Log_level level, struct hashtable * params);
+struct sa_log_driver {
+	const char * name;
+	int (*add)(struct sa_log_driver * driver, const char * alias, enum sa_log_level level, struct hashtable * params);
 	void * data;
 
 	// used by server only
 	// should not be modified
 	void * cookie;
 
-	struct log_moduleSub * subModules;
-	unsigned int nbSubModules;
+	struct sa_log_module * modules;
+	unsigned int nbModules;
 };
 
 
-struct log_moduleSub {
+struct sa_log_module {
 	char * alias;
-	enum Log_level level;
-	struct log_moduleSub_ops {
-		void (*free)(struct log_moduleSub * moduleSub);
-		void (*write)(struct log_moduleSub * moduleSub, enum Log_level level, const char * message);
+	enum sa_log_level level;
+	struct sa_log_module_ops {
+		void (*free)(struct sa_log_module * module);
+		void (*write)(struct sa_log_module * module, enum sa_log_level level, const char * message);
 	} * ops;
 
 	void * data;
@@ -105,48 +105,37 @@ struct log_moduleSub {
  * \param level : one log level
  * \return string
  */
-const char * log_levelToString(enum Log_level level);
+const char * sa_log_level_to_string(enum sa_log_level level);
 
 /**
  * \brief convert a string to an enumeration
  * \param string : one string level
  * \return an enumeration
  */
-enum Log_level log_stringTolevel(const char * string);
+enum sa_log_level sa_log_string_to_level(const char * string);
 
 /**
- * \brief get a module
- * \param module : module's name
+ * \brief get a log driver
+ * \param module : driver's name
  * \return 0 if failed
- * \note if the module is not loaded, we try to load it
+ * \note if the driver is not loaded, we try to load it
  */
-struct log_module * log_getModule(const char * module);
+struct sa_log_driver * sa_log_get_driver(const char * module);
 
 /**
- * \brief try to load a module by his name
- * \param module : name of module
- * \return a value which correspond to
- * \li 0 if ok
- * \li 1 if permission error
- * \li 2 if module didn't call log_registerModule
- * \li 3 if \a module is null
- */
-int log_loadModule(const char * module);
-
-/**
- * \brief Each module log should call this function only one time
- * \param module : a static allocated struct
+ * \brief Each log driver should call this function only one time
+ * \param driver : a static allocated struct
  * \code
  * __attribute__((constructor))
  * static void log_myLog_init() {
- *    log_registerModule(&log_myLog_module);
+ *    log_register_driver(&log_myLog_module);
  * }
  * \endcode
  */
-void log_registerModule(struct log_module * module);
+void sa_log_register_driver(struct sa_log_driver * driver);
 
-void log_writeAll(enum Log_level level, const char * format, ...) __attribute__ ((format (printf, 2, 3)));
-void log_writeTo(const char * alias, enum Log_level level, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
+void sa_log_write_all(enum sa_log_level level, const char * format, ...) __attribute__ ((format (printf, 2, 3)));
+void sa_log_write_to(const char * alias, enum sa_log_level level, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
 
 #endif
 

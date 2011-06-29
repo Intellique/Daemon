@@ -24,8 +24,164 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 24 Feb 2011 09:06:14 +0100                       *
+*  Last modified: Wed, 29 Jun 2011 11:24:53 +0200                       *
 \***********************************************************************/
+
+// va_end, va_start
+#include <stdarg.h>
+// realloc
+#include <stdlib.h>
+// snprintf
+#include <stdio.h>
+// strcasecmp, strcmp
+#include <string.h>
+
+#include <storiqArchiver/log.h>
+
+#include "config.h"
+#include "loader.h"
+
+static int _sa_log_flushMessage(void);
+static void _sa_log_storeMessage(char * who, enum sa_log_level level, char * message);
+
+static struct sa_log_driver ** _sa_log_drivers = 0;
+static unsigned int _sa_log_nb_drivers = 0;
+static struct _sa_log_message_unsent {
+	char * who;
+	enum sa_log_level level;
+	char * message;
+	char sent;
+} * _sa_log_message_unsent = 0;
+static unsigned int _sa_log_nb_message_unsent = 0;
+static unsigned int _sa_log_nb_message_unsent_to = 0;
+
+static struct _sa_log_level {
+	enum sa_log_level level;
+	const char * name;
+} _sa_log_levels[] = {
+	{ sa_log_level_debug,   "Debug" },
+	{ sa_log_level_error,   "Error" },
+	{ sa_log_level_info,    "Info" },
+	{ sa_log_level_warning, "Warning" },
+
+	{ sa_log_level_unknown, "Unknown" },
+};
+
+
+int _sa_log_flushMessage() {
+	unsigned int mes, ok = 0;
+	for (mes = 0; mes < _sa_log_nb_message_unsent; mes++) {
+		unsigned int dr;
+		for (dr = 0; dr < _sa_log_nb_drivers; dr++) {
+			unsigned int mod;
+			for (mod = 0; mod < _sa_log_drivers[dr]->nbModules; mod++) {
+				if (_sa_log_message_unsent[mes].who && strcmp(_sa_log_message_unsent[mes].who, _sa_log_drivers[dr]->modules[mod].alias))
+					continue;
+				if (_sa_log_drivers[dr]->modules[mod].level <= _sa_log_message_unsent[mes].level) {
+					_sa_log_drivers[dr]->modules[mod].ops->write(_sa_log_drivers[dr]->modules + mod, _sa_log_message_unsent[mes].level, _sa_log_message_unsent[mes].message);
+					_sa_log_message_unsent[mes].sent = 1;
+					ok = 1;
+				}
+			}
+		}
+	}
+
+	if (ok) {
+		for (mes = 0; mes < _sa_log_nb_message_unsent; mes++) {
+			if (_sa_log_message_unsent[mes].sent) {
+				if (_sa_log_message_unsent[mes].who) {
+					free(_sa_log_message_unsent[mes].who);
+					_sa_log_nb_message_unsent_to--;
+				}
+				if (_sa_log_message_unsent[mes].message)
+					free(_sa_log_message_unsent[mes].message);
+
+				if (mes + 1 < _sa_log_nb_message_unsent)
+					memmove(_sa_log_message_unsent + mes, _sa_log_message_unsent + mes + 1, (_sa_log_nb_message_unsent - mes - 1) * sizeof(struct _sa_log_message_unsent));
+				_sa_log_nb_message_unsent--, mes--;
+				if (_sa_log_nb_message_unsent > 0)
+					_sa_log_message_unsent = realloc(_sa_log_message_unsent, _sa_log_nb_message_unsent * sizeof(struct _sa_log_message_unsent));
+			}
+		}
+
+		if (_sa_log_nb_message_unsent == 0) {
+			free(_sa_log_message_unsent);
+			_sa_log_message_unsent = 0;
+			ok = 2;
+		}
+	}
+
+	return ok;
+}
+
+struct sa_log_driver * sa_log_get_driver(const char * driver) {
+	unsigned int i;
+	for (i = 0; i < _sa_log_nb_drivers; i++)
+		if (!strcmp(driver, _sa_log_drivers[i]->name))
+			return _sa_log_drivers[i];
+	if (sa_loader_load("log", driver))
+		return 0;
+	for (i = 0; i < _sa_log_nb_drivers; i++)
+		if (!strcmp(driver, _sa_log_drivers[i]->name))
+			return _sa_log_drivers[i];
+	return 0;
+}
+
+const char * sa_log_level_to_string(enum sa_log_level level) {
+	struct _sa_log_level * ptr;
+	for (ptr = _sa_log_levels; ptr->level != sa_log_level_unknown; ptr++)
+		if (ptr->level == level)
+			return ptr->name;
+	return "Unknown";
+}
+
+void sa_log_register_driver(struct sa_log_driver * driver) {
+	if (!driver)
+		return;
+
+	_sa_log_drivers = realloc(_sa_log_drivers, (_sa_log_nb_drivers + 1) * sizeof(struct sa_log_driver *));
+
+	_sa_log_drivers[_sa_log_nb_drivers] = driver;
+	_sa_log_nb_drivers++;
+
+	sa_loader_register_ok();
+}
+
+void _sa_log_storeMessage(char * who, enum sa_log_level level, char * message) {
+	_sa_log_message_unsent = realloc(_sa_log_message_unsent, (_sa_log_nb_message_unsent + 1) * sizeof(struct _sa_log_message_unsent));
+	_sa_log_message_unsent[_sa_log_nb_message_unsent].who = who;
+	_sa_log_message_unsent[_sa_log_nb_message_unsent].level = level;
+	_sa_log_message_unsent[_sa_log_nb_message_unsent].message = message;
+	_sa_log_message_unsent[_sa_log_nb_message_unsent].sent = 0;
+	_sa_log_nb_message_unsent++;
+	if (who)
+		_sa_log_nb_message_unsent_to++;
+}
+
+enum sa_log_level sa_log_string_to_level(const char * string) {
+	struct _sa_log_level * ptr;
+	for (ptr = _sa_log_levels; ptr->level != sa_log_level_unknown; ptr++)
+		if (!strcasecmp(ptr->name, string))
+			return ptr->level;
+	return sa_log_level_unknown;
+}
+
+void sa_log_write_all(enum sa_log_level level, const char * format, ...) {
+	char * message = malloc(256);
+
+	va_list va;
+	va_start(va, format);
+	vsnprintf(message, 256, format, va);
+	va_end(va);
+
+	if (_sa_log_nb_drivers == 0 || (_sa_log_message_unsent && !_sa_log_flushMessage())) {
+		_sa_log_storeMessage(0, level, message);
+		return;
+	}
+}
+
+
+/*
 
 // dlclose, dlerror, dlopen
 #include <dlfcn.h>
@@ -46,37 +202,10 @@
 // access
 #include <unistd.h>
 
-#include <storiqArchiver/log.h>
-
-#include "config.h"
-
 static struct log_module ** log_modules = 0;
 static unsigned int log_nbModules = 0;
-static struct log_messageUnSent {
-	char * who;
-	enum Log_level level;
-	char * message;
-	char sent;
-} * log_messageUnSent = 0;
-static unsigned int log_nbMessageUnSent = 0;
-static unsigned int log_nbMessageUnSentTo = 0;
 static pthread_mutex_t log_lock;
 
-static int log_flushMessage(void);
-static void log_storeMessage(char * who, enum Log_level level, char * message);
-
-
-static struct log_level {
-	enum Log_level level;
-	const char * name;
-} log_levels[] = {
-	{ Log_level_debug,   "Debug" },
-	{ Log_level_error,   "Error" },
-	{ Log_level_info,    "Info" },
-	{ Log_level_warning, "Warning" },
-
-	{ Log_level_unknown, "Unknown" },
-};
 
 
 const char * log_levelToString(enum Log_level level) {
@@ -314,3 +443,4 @@ void log_writeTo(const char * alias, enum Log_level level, const char * format, 
 		free(message);
 }
 
+*/

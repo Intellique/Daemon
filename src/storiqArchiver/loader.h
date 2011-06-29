@@ -24,19 +24,14 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 22 Oct 2010 17:41:10 +0200                       *
+*  Last modified: Wed, 29 Jun 2011 08:29:27 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_CONFIG_H__
-#define __STORIQARCHIVER_CONFIG_H__
+#ifndef __STORIQARCHIVER_LOADER_H__
+#define __STORIQARCHIVER_LOADER_H__
 
-//#define DEFAULT_CONFIG_FILE "/etc/storiq/storiqArchiver.conf"
-#define DEFAULT_CONFIG_FILE "example-config.conf"
-//#define DEFAULT_PID_FILE "/var/run/storiqArchiver.pid"
-#define DEFAULT_PID_FILE "storiqArchiver.pid"
-
-//#define MODULE_PATH "/usr/lib/storiqArchiver"
-#define MODULE_PATH "lib"
+void * sa_loader_load(const char * module, const char * name);
+void sa_loader_register_ok(void);
 
 #endif
 

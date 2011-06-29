@@ -24,19 +24,55 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 22 Oct 2010 17:41:10 +0200                       *
+*  Last modified: Wed, 29 Jun 2011 11:26:18 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_CONFIG_H__
-#define __STORIQARCHIVER_CONFIG_H__
+// dlclose, dlerror, dlopen
+#include <dlfcn.h>
+// glob
+#include <glob.h>
+// snprintf
+#include <stdio.h>
+// access
+#include <unistd.h>
 
-//#define DEFAULT_CONFIG_FILE "/etc/storiq/storiqArchiver.conf"
-#define DEFAULT_CONFIG_FILE "example-config.conf"
-//#define DEFAULT_PID_FILE "/var/run/storiqArchiver.pid"
-#define DEFAULT_PID_FILE "storiqArchiver.pid"
+#include "config.h"
+#include "loader.h"
 
-//#define MODULE_PATH "/usr/lib/storiqArchiver"
-#define MODULE_PATH "lib"
+static void * _sa_loader_load_file(const char * filename);
 
-#endif
+static short _sa_loader_loaded = 0;
+
+
+void * sa_loader_load(const char * module, const char * name) {
+	if (!module || !name)
+		return 0;
+
+	char path[256];
+	snprintf(path, 256, "%s/%s/lib%s.so", MODULE_PATH, module, name);
+
+	return _sa_loader_load_file(path);
+}
+
+void * _sa_loader_load_file(const char * filename) {
+	if (access(filename, R_OK | X_OK)) {
+		return 0;
+	}
+
+	_sa_loader_loaded = 0;
+
+	void * cookie = dlopen(filename, RTLD_NOW);
+	if (!cookie) {
+		return 0;
+	} else if (!_sa_loader_loaded) {
+		dlclose(cookie);
+		return 0;
+	}
+
+	return cookie;
+}
+
+void sa_loader_register_ok() {
+	_sa_loader_loaded = 1;
+}
 
