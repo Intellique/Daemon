@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Sun, 06 Feb 2011 22:55:27 +0100                       *
+*  Last modified: Thu, 30 Jun 2011 08:57:46 +0200                       *
 \***********************************************************************/
 
 // realloc
@@ -34,36 +34,36 @@
 
 #include "common.h"
 
-static int log_file_add(struct log_module * module, const char * alias, enum Log_level level, struct hashtable * params);
+static int _sa_log_file_add(struct sa_log_driver * driver, const char * alias, enum sa_log_level level, struct hashtable * params);
 
 
-static struct log_module log_file_module = {
-	.moduleName = 	"file",
-	.add =			log_file_add,
-	.data = 		0,
-	.cookie = 		0,
-	.subModules = 	0,
-	.nbSubModules =	0,
+static struct sa_log_driver _sa_log_file_driver = {
+	.name      = "file",
+	.add       = _sa_log_file_add,
+	.data      = 0,
+	.cookie    = 0,
+	.modules   = 0,
+	.nbModules = 0,
 };
 
 
-int log_file_add(struct log_module * module, const char * alias, enum Log_level level, struct hashtable * params) {
-	if (!module || !alias || !params)
+int _sa_log_file_add(struct sa_log_driver * driver, const char * alias, enum sa_log_level level, struct hashtable * params) {
+	if (!driver || !alias || !params)
 		return 1;
 
 	char * path = hashtable_value(params, "path");
 	if (!path)
 		return 1;
 
-	module->subModules = realloc(module->subModules, (module->nbSubModules + 1) * sizeof(struct log_moduleSub));
-	log_file_new(module->subModules + module->nbSubModules, alias, level, path);
-	module->nbSubModules++;
+	driver->modules = realloc(driver->modules, (driver->nbModules + 1) * sizeof(struct sa_log_module));
+	_sa_log_file_new(driver->modules + driver->nbModules, alias, level, path);
+	driver->nbModules++;
 
 	return 0;
 }
 
 __attribute__((constructor))
-static void log_file_init() {
-	log_registerModule(&log_file_module);
+static void _sa_log_file_init() {
+	sa_log_register_driver(&_sa_log_file_driver);
 }
 
