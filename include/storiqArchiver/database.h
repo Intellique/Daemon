@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 21 Feb 2011 13:36:06 +0100                       *
+*  Last modified: Thu, 30 Jun 2011 22:35:51 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_DATABASE_H__
@@ -33,7 +33,7 @@
 #include <sys/time.h>
 
 struct database_connection;
-struct hashtable;
+struct sa_hashtable;
 struct job;
 struct library_changer;
 
@@ -42,7 +42,7 @@ struct database {
 	struct database_ops {
 		struct database_connection * (*connect)(struct database * db, struct database_connection * connection);
 		int (*ping)(struct database * db);
-		int (*setup)(struct database * db, struct hashtable * params);
+		int (*setup)(struct database * db, struct sa_hashtable * params);
 	} * ops;
 	void * data;
 

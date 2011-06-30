@@ -24,14 +24,14 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 29 Jun 2011 09:44:40 +0200                       *
+*  Last modified: Thu, 30 Jun 2011 22:36:25 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_LOG_H__
 #define __STORIQARCHIVER_LOG_H__
 
 // forward declarations
-struct hashtable;
+struct sa_hashtable;
 struct sa_log_module;
 
 
@@ -76,7 +76,7 @@ enum sa_log_level {
 
 struct sa_log_driver {
 	const char * name;
-	int (*add)(struct sa_log_driver * driver, const char * alias, enum sa_log_level level, struct hashtable * params);
+	int (*add)(struct sa_log_driver * driver, const char * alias, enum sa_log_level level, struct sa_hashtable * params);
 	void * data;
 
 	// used by server only

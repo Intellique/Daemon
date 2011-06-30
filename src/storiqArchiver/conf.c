@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 30 Jun 2011 22:03:11 +0200                       *
+*  Last modified: Thu, 30 Jun 2011 22:37:39 +0200                       *
 \***********************************************************************/
 
 // strerror
@@ -57,8 +57,8 @@ enum _sa_conf_section {
 	_sa_conf_section_unknown,
 };
 
-static void _sa_conf_load_db(struct hashtable * params);
-static void _sa_conf_load_log(struct hashtable * params);
+static void _sa_conf_load_db(struct sa_hashtable * params);
+static void _sa_conf_load_log(struct sa_hashtable * params);
 
 
 int sa_conf_check_pid(int pid) {
@@ -157,11 +157,11 @@ int sa_conf_write_pid(const char * pidFile, int pid) {
 }
 
 
-void _sa_conf_load_db(struct hashtable * params) {
+void _sa_conf_load_db(struct sa_hashtable * params) {
 	if (!params)
 		return;
 
-	char * driver = hashtable_value(params, "driver");
+	char * driver = sa_hashtable_value(params, "driver");
 	if (!driver) {
 		sa_log_write_all(sa_log_level_error, "conf: loadDB: driver not found");
 		return;
@@ -180,13 +180,13 @@ void _sa_conf_load_db(struct hashtable * params) {
 		sa_log_write_all(sa_log_level_error, "Conf: loadDb: loading driver (%s) => failed", driver);
 }
 
-void _sa_conf_load_log(struct hashtable * params) {
+void _sa_conf_load_log(struct sa_hashtable * params) {
 	if (!params)
 		return;
 
-	char * alias = hashtable_value(params, "alias");
-	char * type = hashtable_value(params, "type");
-	enum sa_log_level verbosity = sa_log_string_to_level(hashtable_value(params, "verbosity"));
+	char * alias = sa_hashtable_value(params, "alias");
+	char * type = sa_hashtable_value(params, "type");
+	enum sa_log_level verbosity = sa_log_string_to_level(sa_hashtable_value(params, "verbosity"));
 
 	if (!alias || !type || verbosity == sa_log_level_unknown) {
 		if (!alias)
@@ -223,7 +223,7 @@ int sa_conf_read_config(const char * confFile) {
 
 	char * ptr = buffer;
 	enum _sa_conf_section section = _sa_conf_section_unknown;
-	struct hashtable * params = hashtable_new2(util_hashString, util_freeKeyValue);
+	struct sa_hashtable * params = sa_hashtable_new2(util_hashString, util_freeKeyValue);
 	while (ptr) {
 		switch (*ptr) {
 			case ';':
@@ -246,7 +246,7 @@ int sa_conf_read_config(const char * confFile) {
 							break;
 					}
 
-					hashtable_clear(params);
+					sa_hashtable_clear(params);
 				}
 				continue;
 
@@ -269,7 +269,7 @@ int sa_conf_read_config(const char * confFile) {
 					char value[64];
 					int val = sscanf(ptr, "%s = %s", key, value);
 					if (val == 2)
-						hashtable_put(params, strdup(key), strdup(value));
+						sa_hashtable_put(params, strdup(key), strdup(value));
 				}
 				ptr = strchr(ptr, '\n');
 		}
@@ -290,7 +290,7 @@ int sa_conf_read_config(const char * confFile) {
 		}
 	}
 
-	hashtable_free(params);
+	sa_hashtable_free(params);
 	free(buffer);
 
 	return 0;
