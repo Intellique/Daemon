@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 30 Jun 2011 08:57:46 +0200                       *
+*  Last modified: Thu, 30 Jun 2011 22:42:45 +0200                       *
 \***********************************************************************/
 
 // realloc
@@ -34,7 +34,7 @@
 
 #include "common.h"
 
-static int _sa_log_file_add(struct sa_log_driver * driver, const char * alias, enum sa_log_level level, struct hashtable * params);
+static int _sa_log_file_add(struct sa_log_driver * driver, const char * alias, enum sa_log_level level, struct sa_hashtable * params);
 
 
 static struct sa_log_driver _sa_log_file_driver = {
@@ -47,11 +47,11 @@ static struct sa_log_driver _sa_log_file_driver = {
 };
 
 
-int _sa_log_file_add(struct sa_log_driver * driver, const char * alias, enum sa_log_level level, struct hashtable * params) {
+int _sa_log_file_add(struct sa_log_driver * driver, const char * alias, enum sa_log_level level, struct sa_hashtable * params) {
 	if (!driver || !alias || !params)
 		return 1;
 
-	char * path = hashtable_value(params, "path");
+	char * path = sa_hashtable_value(params, "path");
 	if (!path)
 		return 1;
 
