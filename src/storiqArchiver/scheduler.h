@@ -24,13 +24,13 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 29 Sep 2010 11:54:55 +0200                       *
+*  Last modified: Thu, 30 Jun 2011 21:27:45 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_SCHEDULER_H__
 #define __STORIQARCHIVER_SCHEDULER_H__
 
-void sched_doLoop(void);
+void sa_sched_doLoop(void);
 
 #endif
 

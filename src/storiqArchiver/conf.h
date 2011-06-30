@@ -24,54 +24,54 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 15 Oct 2010 12:16:08 +0200                       *
+*  Last modified: Thu, 30 Jun 2011 22:23:26 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CONF_H__
 #define __STORIQARCHIVER_CONF_H__
 
 /**
- * \brief conf_checkPid
+ * \brief sa_conf_check_pid
  * \param pid : pid
  * \return a value which correspond to
  * \li 1 is the daemon is alive
  * \li 0 if the daemon is dead
  * \li -1 if another process used this pid
  */
-int conf_checkPid(int pid);
+int sa_conf_check_pid(int pid);
 
 /**
- * \brief conf_deletePid
- * \param pidFile : file with pid
+ * \brief sa_conf_delete_pid
+ * \param pid_file : file with pid
  * \return what "unlink" returned
  * \note see man page unlink(2)
  */
-int conf_deletePid(const char * pidFile);
+int sa_conf_delete_pid(const char * pid_file);
 
 /**
- * \brief conf_readPid read pid file
- * \param pidFile : file with pid
+ * \brief sa_conf_read_pid read pid file
+ * \param pid_file : file with pid
  * \return the pid or -1 if not found
  */
-int conf_readPid(const char * pidFile);
+int sa_conf_read_pid(const char * pid_file);
 
 /**
- * \brief conf_writePid write pid into file
- * \param pidFile : file with pid
+ * \brief sa_conf_write_pid write pid into file
+ * \param pid_file : file with pid
  * \param pid : pid
  * \return 0 if ok
  */
-int conf_writePid(const char * pidFile, int pid);
+int sa_conf_write_pid(const char * pid_file, int pid);
 
 
 /**
- * \brief read config file
- * \param confFile : config file
+ * \brief sa_read config file
+ * \param conf_file : config file
  * \return a value which correspond to
  * \li 0 if ok
  * \li 1 if error
  */
-int conf_readConfig(const char * confFile);
+int sa_conf_read_config(const char * conf_file);
 
 #endif
 

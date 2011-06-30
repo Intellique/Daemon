@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 25 Oct 2010 13:00:00 +0200                       *
+*  Last modified: Thu, 30 Jun 2011 22:24:26 +0200                       *
 \***********************************************************************/
 
 // getopt_long
@@ -40,10 +40,10 @@
 #include "config.h"
 #include "scheduler.h"
 
-void showHelp(char * command);
+static void _sa_showHelp(char * command);
 
 int main(int argc, char ** argv) {
-	log_writeAll(Log_level_info, "StorIqArchiver, version: %s, build: %s %s", STORIQARCHIVER_VERSION, __DATE__, __TIME__);
+	sa_log_write_all(sa_log_level_info, "StorIqArchiver, version: %s, build: %s %s", STORIQARCHIVER_VERSION, __DATE__, __TIME__);
 
 	static int option_index = 0;
 	static struct option long_options[] = {
@@ -70,21 +70,21 @@ int main(int argc, char ** argv) {
 		switch (c) {
 			case 'c':
 				config_file = optarg;
-				log_writeAll(Log_level_info, "Using configuration file: '%s'", optarg);
+				sa_log_write_all(sa_log_level_info, "Using configuration file: '%s'", optarg);
 				break;
 
 			case 'd':
 				detach = 1;
-				log_writeAll(Log_level_info, "Using detach mode (i.e. use fork())");
+				sa_log_write_all(sa_log_level_info, "Using detach mode (i.e. use fork())");
 				break;
 
 			case 'h':
-				showHelp(*argv);
+				_sa_showHelp(*argv);
 				return 0;
 
 			case 'p':
 				pid_file = optarg;
-				log_writeAll(Log_level_info, "Using pid file: '%s'", optarg);
+				sa_log_write_all(sa_log_level_info, "Using pid file: '%s'", optarg);
 				break;
 
 			case 'V': {
@@ -99,18 +99,18 @@ int main(int argc, char ** argv) {
 				return 0;
 
 			default:
-				log_writeAll(Log_level_error, "Parsing option: unknown option '%c'", c);
-				showHelp(*argv);
+				sa_log_write_all(sa_log_level_error, "Parsing option: unknown option '%c'", c);
+				_sa_showHelp(*argv);
 				return 1;
 		}
 	}
 
-	log_writeAll(Log_level_info, "Parsing option: ok");
+	sa_log_write_all(sa_log_level_info, "Parsing option: ok");
 
 	// check pid file
-	int pid = conf_readPid(pid_file);
+	int pid = sa_conf_read_pid(pid_file);
 	if (pid >= 0) {
-		int code = conf_checkPid(pid);
+		int code = sa_conf_check_pid(pid);
 		switch (code) {
 			case -1:
 				printf("Warning: another process used this pid (%d)\n", pid);
@@ -130,19 +130,19 @@ int main(int argc, char ** argv) {
 	if (detach) {}
 
 	// read configuration
-	if (conf_readConfig(config_file)) {
+	if (sa_conf_read_config(config_file)) {
 		printf("Error while parsing '%s'\n", config_file);
 		return 3;
 	}
 
-	sched_doLoop();
+	sa_sched_doLoop();
 
-	log_writeAll(Log_level_info, "StorIqArchiver exit");
+	sa_log_write_all(sa_log_level_info, "StorIqArchiver exit");
 
 	return 0;
 }
 
-void showHelp(char * command) {
+void _sa_showHelp(char * command) {
 	char * ptr = strrchr(command, '/');
 	if (ptr)
 		ptr++;
