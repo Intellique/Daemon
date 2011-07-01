@@ -139,3 +139,6 @@ ifneq (${DEP_FILES},)
 include ${DEP_FILES}
 endif
 
+titi:
+	@echo ${BINS}
+

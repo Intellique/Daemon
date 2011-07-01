@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Jul 2011 14:56:48 +0200                       *
+*  Last modified: Fri, 01 Jul 2011 17:32:46 +0200                       *
 \***********************************************************************/
 
 // strerror
@@ -44,11 +44,11 @@
 // access, close, fstat, read, readlink, unlink, write
 #include <unistd.h>
 
+#include <storiqArchiver/conf.h>
 #include <storiqArchiver/database.h>
 #include <storiqArchiver/log.h>
 #include <storiqArchiver/util/hashtable.h>
 
-#include "conf.h"
 #include "util/util.h"
 
 enum _sa_conf_section {

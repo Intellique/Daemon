@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 30 Jun 2011 22:24:26 +0200                       *
+*  Last modified: Fri, 01 Jul 2011 17:34:12 +0200                       *
 \***********************************************************************/
 
 // getopt_long
@@ -34,9 +34,9 @@
 // strrchr
 #include <string.h>
 
+#include <storiqArchiver/conf.h>
 #include <storiqArchiver/log.h>
 
-#include "conf.h"
 #include "config.h"
 #include "scheduler.h"
 
