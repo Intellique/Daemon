@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 30 Jun 2011 22:37:39 +0200                       *
+*  Last modified: Fri, 01 Jul 2011 14:41:25 +0200                       *
 \***********************************************************************/
 
 // strerror
@@ -167,15 +167,15 @@ void _sa_conf_load_db(struct sa_hashtable * params) {
 		return;
 	}
 
-	struct database * db = db_getDb(driver);
+	struct sa_database * db = sa_db_get_db(driver);
 	if (db) {
 		sa_log_write_all(sa_log_level_info, "Conf: loadDb: loading driver (%s) => ok", driver);
 		short setup_ok = !db->ops->setup(db, params);
 		short ping_ok = db->ops->ping(db) > 0;
 		sa_log_write_all(sa_log_level_debug, "Conf: loadDb: setup %s, ping %s", setup_ok ? "ok" : "failed", ping_ok ? "ok" : "failed");
 
-		if (!db_getDefaultDB())
-			db_setDefaultDB(db);
+		if (!sa_db_get_default_db())
+			sa_db_set_default_dB(db);
 	} else
 		sa_log_write_all(sa_log_level_error, "Conf: loadDb: loading driver (%s) => failed", driver);
 }

@@ -24,9 +24,59 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 24 Feb 2011 09:01:54 +0100                       *
+*  Last modified: Fri, 01 Jul 2011 14:53:14 +0200                       *
 \***********************************************************************/
 
+// realloc
+#include <stdlib.h>
+// strcmp
+#include <string.h>
+
+#include <storiqArchiver/database.h>
+#include <storiqArchiver/log.h>
+
+#include "loader.h"
+
+static struct sa_database ** _sa_db_databases = 0;
+static unsigned int _sa_db_nb_databases = 0;
+static struct sa_database * _sa_db_default_db = 0;
+
+
+struct sa_database * sa_db_get_default_db(void) {
+	return _sa_db_default_db;
+}
+
+struct sa_database * sa_db_get_db(const char * db) {
+	unsigned int i;
+	for (i = 0; i < _sa_db_nb_databases; i++)
+		if (!strcmp(db, _sa_db_databases[i]->name))
+			return _sa_db_databases[i];
+	if (sa_loader_load("db", db))
+		return 0;
+	for (i = 0; i < _sa_db_nb_databases; i++)
+		if (!strcmp(db, _sa_db_databases[i]->name))
+			return _sa_db_databases[i];
+	return 0;
+}
+
+void sa_db_register_db(struct sa_database * db) {
+	if (!db)
+		return;
+
+	_sa_db_databases = realloc(_sa_db_databases, (_sa_db_nb_databases + 1) * sizeof(struct sa_database *));
+	_sa_db_databases[_sa_db_nb_databases] = db;
+	_sa_db_nb_databases++;
+
+	sa_loader_register_ok();
+}
+
+void sa_db_set_default_dB(struct sa_database * db) {
+	if (db)
+		_sa_db_default_db = db;
+}
+
+
+/*
 // dlclose, dlerror, dlopen
 #include <dlfcn.h>
 // strerror
@@ -155,3 +205,4 @@ void db_setDefaultDB(struct database * db) {
 	log_writeAll(Log_level_debug, "Database: set default database to '%s'", db->driverName);
 }
 
+*/

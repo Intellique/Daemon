@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 29 Jun 2011 11:24:53 +0200                       *
+*  Last modified: Fri, 01 Jul 2011 14:51:34 +0200                       *
 \***********************************************************************/
 
 // va_end, va_start
@@ -38,7 +38,6 @@
 
 #include <storiqArchiver/log.h>
 
-#include "config.h"
 #include "loader.h"
 
 static int _sa_log_flushMessage(void);
@@ -140,7 +139,6 @@ void sa_log_register_driver(struct sa_log_driver * driver) {
 		return;
 
 	_sa_log_drivers = realloc(_sa_log_drivers, (_sa_log_nb_drivers + 1) * sizeof(struct sa_log_driver *));
-
 	_sa_log_drivers[_sa_log_nb_drivers] = driver;
 	_sa_log_nb_drivers++;
 

@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 30 Jun 2011 22:35:51 +0200                       *
+*  Last modified: Fri, 01 Jul 2011 14:50:04 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_DATABASE_H__
@@ -32,17 +32,17 @@
 
 #include <sys/time.h>
 
-struct database_connection;
+struct sa_database_connection;
 struct sa_hashtable;
 struct job;
 struct library_changer;
 
-struct database {
-	char * driverName;
-	struct database_ops {
-		struct database_connection * (*connect)(struct database * db, struct database_connection * connection);
-		int (*ping)(struct database * db);
-		int (*setup)(struct database * db, struct sa_hashtable * params);
+struct sa_database {
+	char * name;
+	struct sa_database_ops {
+		struct sa_database_connection * (*connect)(struct sa_database * db, struct sa_database_connection * connection);
+		int (*ping)(struct sa_database * db);
+		int (*setup)(struct sa_database * db, struct sa_hashtable * params);
 	} * ops;
 	void * data;
 
@@ -50,10 +50,10 @@ struct database {
 	void * cookie;
 };
 
-struct database_connection {
+struct sa_database_connection {
 	unsigned int id;
-	struct database * driver;
-	struct database_connection_ops {
+	struct sa_database * driver;
+	struct sa_database_connection_ops {
 		/**
 		 * \brief close \a db connection
 		 * \param db : a database connection
@@ -61,7 +61,7 @@ struct database_connection {
 		 * \li 0 if ok
 		 * \li < 0 if error
 		 */
-		int (*close)(struct database_connection * db);
+		int (*close)(struct sa_database_connection * db);
 		/**
 		 * \brief free memory associated with database connection
 		 * \param db : a database connection
@@ -73,7 +73,7 @@ struct database_connection {
 		 * free(db);
 		 * \endcode
 		 */
-		int (*free)(struct database_connection * db);
+		int (*free)(struct sa_database_connection * db);
 
 		/**
 		 * \brief rool back a transaction
@@ -82,7 +82,7 @@ struct database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*cancelTransaction)(struct database_connection * db);
+		int (*cancelTransaction)(struct sa_database_connection * db);
 		/**
 		 * \brief finish a transaction
 		 * \param db : a database connection
@@ -91,7 +91,7 @@ struct database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*finishTransaction)(struct database_connection * db);
+		int (*finishTransaction)(struct sa_database_connection * db);
 		/**
 		 * \brief starts a transaction
 		 * \param db : a database connection
@@ -101,10 +101,10 @@ struct database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*startTransaction)(struct database_connection * db, short readOnly);
+		int (*startTransaction)(struct sa_database_connection * db, short readOnly);
 
-		struct library_changer * (*getChanger)(struct database_connection * db, const char * hostName);
-		int (*getNbChanger)(struct database_connection * db, const char * hostName);
+		struct library_changer * (*getChanger)(struct sa_database_connection * db, const char * hostName);
+		int (*getNbChanger)(struct sa_database_connection * db, const char * hostName);
 
 		/**
 		 * \brief add a new job
@@ -112,7 +112,7 @@ struct database_connection {
 		 * \param job : a job
 		 * \param index : n new job
 		 */
-		struct job * (*addJob)(struct database_connection * db, struct job * job, unsigned int index, time_t since);
+		struct job * (*addJob)(struct sa_database_connection * db, struct job * job, unsigned int index, time_t since);
 		/**
 		 * \brief checks jobs modified between \a since and \a to
 		 * \param db : a database connection
@@ -122,7 +122,7 @@ struct database_connection {
 		 * \li 0 if no changes
 		 * \li < 0 if error
 		 */
-		int (*jobModified)(struct database_connection * db, time_t since);
+		int (*jobModified)(struct sa_database_connection * db, time_t since);
 		/**
 		 * \brief checks new jobs created between \a since and \a to
 		 * \param db : a database connection
@@ -132,7 +132,7 @@ struct database_connection {
 		 * \li 0 if there is no new jobs
 		 * \li < 0 if error
 		 */
-		int (*newJobs)(struct database_connection * db, time_t since);
+		int (*newJobs)(struct sa_database_connection * db, time_t since);
 		/**
 		 * \brief update modified jobs
 		 * \param db : a database connection
@@ -142,13 +142,13 @@ struct database_connection {
 		 * \li 0 if no update
 		 * \li < 0 if error
 		 */
-		int (*updateJob)(struct database_connection * db, struct job * job);
+		int (*updateJob)(struct sa_database_connection * db, struct job * job);
 	} * ops;
 	void * data;
 };
 
 
-struct database * db_getDefaultDB(void);
+struct sa_database * sa_db_get_default_db(void);
 
 /**
  * \brief get a database driver
@@ -156,18 +156,7 @@ struct database * db_getDefaultDB(void);
  * \return 0 if failed
  * \note if \a db is not loaded then we try to load it
  */
-struct database * db_getDb(const char * db);
-
-/**
- * \brief try to load a database driver
- * \param db : database name
- * \return a value which correspond to
- * \li 0 if ok
- * \li 1 if permission error
- * \li 2 if module didn't call db_registerDb
- * \li 3 if db is null
- */
-int db_loadDb(const char * db);
+struct sa_database * sa_db_get_db(const char * db);
 
 /**
  * \brief Each db module should call this function only one time
@@ -179,9 +168,9 @@ int db_loadDb(const char * db);
  * }
  * \endcode
  */
-void db_registerDb(struct database * db);
+void sa_db_register_db(struct sa_database * db);
 
-void db_setDefaultDB(struct database * db);
+void sa_db_set_default_dB(struct sa_database * db);
 
 #endif
 
