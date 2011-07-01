@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Jul 2011 18:58:27 +0200                       *
+*  Last modified: Fri, 01 Jul 2011 19:01:15 +0200                       *
 \***********************************************************************/
 
 // realloc
@@ -46,7 +46,7 @@ char * sa_checksum_compute(const char * checksum, const char * data, unsigned in
 	if (!checksum || !data || length == 0)
 		return 0;
 
-	struct sa_checksum_driver * driver = checksum_get_driver(checksum);
+	struct sa_checksum_driver * driver = sa_checksum_get_driver(checksum);
 	if (!driver)
 		return 0;
 
@@ -81,7 +81,7 @@ void sa_checksum_convert_to_hex(unsigned char * digest, int length, char * hexDi
 	sa_log_write_all(sa_log_level_debug, "Checksum: computed => %s", hexDigest);
 }
 
-struct sa_checksum_driver * checksum_get_driver(const char * driver) {
+struct sa_checksum_driver * sa_checksum_get_driver(const char * driver) {
 	unsigned int i;
 	for (i = 0; i < _sa_checksum_nb_drivers; i++)
 		if (!strcmp(driver, _sa_checksum_drivers[i]->name))

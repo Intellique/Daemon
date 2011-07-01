@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Jul 2011 18:53:20 +0200                       *
+*  Last modified: Fri, 01 Jul 2011 19:00:56 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
@@ -369,7 +369,7 @@ void sa_checksum_convert_to_hex(unsigned char * digest, int length, char * hexDi
  * \note if this driver is not loaded, we try to load it
  * \warning <b>DO NOT RELEASE</b> memory with \a free
  */
-struct sa_checksum_driver * checksum_get_driver(const char * driver);
+struct sa_checksum_driver * sa_checksum_get_driver(const char * driver);
 
 /**
  * \brief Each checksum driver should call this function only one time

@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 24 Feb 2011 10:34:25 +0100                       *
+*  Last modified: Fri, 01 Jul 2011 19:14:25 +0200                       *
 \***********************************************************************/
 
 // free, malloc
@@ -36,57 +36,57 @@
 
 #include <storiqArchiver/checksum.h>
 
-struct checksum_sha1_private {
+struct _sa_checksum_sha1_private {
 	SHA_CTX sha1;
 	char * digest;
 };
 
-static struct checksum * checksum_sha1_clone(struct checksum * new_checksum, struct checksum * current_checksum);
-static char * checksum_sha1_digest(struct checksum * checksum);
-static void checksum_sha1_free(struct checksum * checksum);
-static struct checksum * checksum_sha1_new_checksum(struct checksum * checksum);
-static void checksum_sha1_reset(struct checksum * checksum);
-static int checksum_sha1_update(struct checksum * checksum, const char * data, unsigned int length);
+static struct sa_checksum * _sa_checksum_sha1_clone(struct sa_checksum * new_checksum, struct sa_checksum * current_checksum);
+static char * _sa_checksum_sha1_digest(struct sa_checksum * checksum);
+static void _sa_checksum_sha1_free(struct sa_checksum * checksum);
+static struct sa_checksum * _sa_checksum_sha1_new_checksum(struct sa_checksum * checksum);
+static void _sa_checksum_sha1_reset(struct sa_checksum * checksum);
+static int _sa_checksum_sha1_update(struct sa_checksum * checksum, const char * data, unsigned int length);
 
-static struct checksum_driver checksum_sha1_driver = {
+static struct sa_checksum_driver _sa_checksum_sha1_driver = {
 	.name			= "sha1",
-	.new_checksum	= checksum_sha1_new_checksum,
+	.new_checksum	= _sa_checksum_sha1_new_checksum,
 	.cookie			= 0,
 };
 
-static struct checksum_ops checksum_sha1_ops = {
-	.clone	= checksum_sha1_clone,
-	.digest	= checksum_sha1_digest,
-	.free	= checksum_sha1_free,
-	.reset	= checksum_sha1_reset,
-	.update	= checksum_sha1_update,
+static struct sa_checksum_ops _sa_checksum_sha1_ops = {
+	.clone	= _sa_checksum_sha1_clone,
+	.digest	= _sa_checksum_sha1_digest,
+	.free	= _sa_checksum_sha1_free,
+	.reset	= _sa_checksum_sha1_reset,
+	.update	= _sa_checksum_sha1_update,
 };
 
 
-struct checksum * checksum_sha1_clone(struct checksum * new_checksum, struct checksum * current_checksum) {
+struct sa_checksum * _sa_checksum_sha1_clone(struct sa_checksum * new_checksum, struct sa_checksum * current_checksum) {
 	if (!current_checksum)
 		return 0;
 
-	struct checksum_sha1_private * current_self = current_checksum->data;
+	struct _sa_checksum_sha1_private * current_self = current_checksum->data;
 
 	if (!new_checksum)
-		new_checksum = malloc(sizeof(struct checksum));
+		new_checksum = malloc(sizeof(struct sa_checksum));
 
-	new_checksum->ops = &checksum_sha1_ops;
-	new_checksum->driver = &checksum_sha1_driver;
+	new_checksum->ops = &_sa_checksum_sha1_ops;
+	new_checksum->driver = &_sa_checksum_sha1_driver;
 
-	struct checksum_sha1_private * new_self = malloc(sizeof(struct checksum_sha1_private));
+	struct _sa_checksum_sha1_private * new_self = malloc(sizeof(struct _sa_checksum_sha1_private));
 	*new_self = *current_self;
 
 	new_checksum->data = new_self;
 	return new_checksum;
 }
 
-char * checksum_sha1_digest(struct checksum * checksum) {
+char * _sa_checksum_sha1_digest(struct sa_checksum * checksum) {
 	if (!checksum)
 		return 0;
 
-	struct checksum_sha1_private * self = checksum->data;
+	struct _sa_checksum_sha1_private * self = checksum->data;
 
 	if (self->digest)
 		return strdup(self->digest);
@@ -97,16 +97,16 @@ char * checksum_sha1_digest(struct checksum * checksum) {
 		return 0;
 
 	self->digest = malloc(SHA_DIGEST_LENGTH * 2 + 1);
-	checksum_convert2Hex(digest, SHA_DIGEST_LENGTH, self->digest);
+	sa_checksum_convert_to_hex(digest, SHA_DIGEST_LENGTH, self->digest);
 
 	return strdup(self->digest);
 }
 
-void checksum_sha1_free(struct checksum * checksum) {
+void _sa_checksum_sha1_free(struct sa_checksum * checksum) {
 	if (!checksum)
 		return;
 
-	struct checksum_sha1_private * self = checksum->data;
+	struct _sa_checksum_sha1_private * self = checksum->data;
 
 	if (self) {
 		if (self->digest)
@@ -122,18 +122,18 @@ void checksum_sha1_free(struct checksum * checksum) {
 }
 
 __attribute__((constructor))
-static void checksum_sha1_init() {
-	checksum_registerDriver(&checksum_sha1_driver);
+static void _sa_checksum_sha1_init() {
+	sa_checksum_register_driver(&_sa_checksum_sha1_driver);
 }
 
-struct checksum * checksum_sha1_new_checksum(struct checksum * checksum) {
+struct sa_checksum * _sa_checksum_sha1_new_checksum(struct sa_checksum * checksum) {
 	if (!checksum)
-		checksum = malloc(sizeof(struct checksum));
+		checksum = malloc(sizeof(struct sa_checksum));
 
-	checksum->ops = &checksum_sha1_ops;
-	checksum->driver = &checksum_sha1_driver;
+	checksum->ops = &_sa_checksum_sha1_ops;
+	checksum->driver = &_sa_checksum_sha1_driver;
 
-	struct checksum_sha1_private * self = malloc(sizeof(struct checksum_sha1_private));
+	struct _sa_checksum_sha1_private * self = malloc(sizeof(struct _sa_checksum_sha1_private));
 	SHA1_Init(&self->sha1);
 	self->digest = 0;
 
@@ -141,11 +141,11 @@ struct checksum * checksum_sha1_new_checksum(struct checksum * checksum) {
 	return checksum;
 }
 
-void checksum_sha1_reset(struct checksum * checksum) {
+void _sa_checksum_sha1_reset(struct sa_checksum * checksum) {
 	if (!checksum)
 		return;
 
-	struct checksum_sha1_private * self = checksum->data;
+	struct _sa_checksum_sha1_private * self = checksum->data;
 	if (self) {
 		SHA1_Init(&self->sha1);
 
@@ -155,11 +155,11 @@ void checksum_sha1_reset(struct checksum * checksum) {
 	}
 }
 
-int checksum_sha1_update(struct checksum * checksum, const char * data, unsigned int length) {
+int _sa_checksum_sha1_update(struct sa_checksum * checksum, const char * data, unsigned int length) {
 	if (!checksum)
 		return -1;
 
-	struct checksum_sha1_private * self = checksum->data;
+	struct _sa_checksum_sha1_private * self = checksum->data;
 
 	if (self->digest)
 		free(self->digest);
