@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 24 Feb 2011 10:27:30 +0100                       *
+*  Last modified: Fri, 01 Jul 2011 18:53:20 +0200                       *
 \***********************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
@@ -263,13 +263,13 @@
  * \struct checksum
  * \brief this structure is used as an handler to a specific checksum
  */
-struct checksum {
+struct sa_checksum {
 	/**
 	 * \struct checksum_ops
 	 * \brief this structure contains only pointer functions
 	 * \note all functions \b SHOULD point on <b>real function</b>
 	 */
-	struct checksum_ops {
+	struct sa_checksum_ops {
 		/**
 		 * \brief Create new checksum by cloning a checksum
 		 * \param new_checksum : an allocated checksum or \b NULL
@@ -277,13 +277,13 @@ struct checksum {
 		 * \return same value of \a new_checksum if \a new_checksum if <b>NOT NULL</b> or new value or NULL if \a current_checksum is NULL
 		 * \note current_checksum SHOULD NOT BE NULL, if \a new_checksum is \b NULL, this function allocate enough memory with \a malloc
 		 */
-		struct checksum * (*clone)(struct checksum * new_checksum, struct checksum * current_checksum);
+		struct sa_checksum * (*clone)(struct sa_checksum * new_checksum, struct sa_checksum * current_checksum);
 		/**
 		 * \brief get the lastest digest value
 		 * \param checksum : a checksum handler
 		 * \return a dynamically allocated string which contains a digest in hexadecimal form
 		 */
-		char * (*digest)(struct checksum * checksum);
+		char * (*digest)(struct sa_checksum * checksum);
 		/**
 		 * \brief this function releases all memory associated to ckecksum
 		 * \param checksum : a checksum handler
@@ -292,12 +292,12 @@ struct checksum {
 		 * free(checksum);
 		 * \endcode
 		 */
-		void (*free)(struct checksum * checksum);
+		void (*free)(struct sa_checksum * checksum);
 		/**
 		 * \brief Reset internal state
 		 * \param checksum : a checksum handler
 		 */
-		void (*reset)(struct checksum * checksum);
+		void (*reset)(struct sa_checksum * checksum);
 		/**
 		 * \brief this function reads some data
 		 * \param checksum : a checksum handler
@@ -306,7 +306,7 @@ struct checksum {
 		 * \return < 0 if error
 		 * \note this function can be called one or many times
 		 */
-		int (*update)(struct checksum * checksum, const char * data, unsigned int length);
+		int (*update)(struct sa_checksum * checksum, const char * data, unsigned int length);
 	} * ops;
 	/**
 	 * \brief private data of one checksum
@@ -316,14 +316,14 @@ struct checksum {
 	 * \brief driver associated
 	 * \note <b>SHOULD NOT BE NULL</b>
 	 */
-	struct checksum_driver * driver;
+	struct sa_checksum_driver * driver;
 };
 
 /**
  * \struct checksum_driver
  * \brief This structure allows to get new checksum handler
  */
-struct checksum_driver {
+struct sa_checksum_driver {
 	/**
 	 * \brief name of the driver
 	 */
@@ -334,7 +334,7 @@ struct checksum_driver {
 	 * \return same value of \a checksum if \a checksum if <b>NOT NULL</b> or new value
 	 * \note if \a checksum is \b NULL, this function allocate enough memory with \a malloc
 	 */
-	struct checksum * (*new_checksum)(struct checksum * checksum);
+	struct sa_checksum * (*new_checksum)(struct sa_checksum * checksum);
 	/**
 	 * \brief private data used by checksum_loadDriver
 	 * \note <b>SHOULD NOT be MODIFIED</b>
@@ -350,7 +350,7 @@ struct checksum_driver {
  * \param length : length of \a data
  * \return dynamically allocated string which contains checksum or NULL if failed
  */
-char * checksum_compute(const char * checksum, const char * data, unsigned int length);
+char * sa_checksum_compute(const char * checksum, const char * data, unsigned int length);
 
 /**
  * \brief This function converts a digest into hexadecimal form
@@ -360,7 +360,7 @@ char * checksum_compute(const char * checksum, const char * data, unsigned int l
  * \note this function supposed that hexDigest is already allocated
  * and its size is, at least, \f$ 2 length + 1 \f$
  */
-void checksum_convert2Hex(unsigned char * digest, int length, char * hexDigest);
+void sa_checksum_convert_to_hex(unsigned char * digest, int length, char * hexDigest);
 
 /**
  * \brief get a checksum driver
@@ -369,18 +369,7 @@ void checksum_convert2Hex(unsigned char * digest, int length, char * hexDigest);
  * \note if this driver is not loaded, we try to load it
  * \warning <b>DO NOT RELEASE</b> memory with \a free
  */
-struct checksum_driver * checksum_getDriver(const char * driver);
-
-/**
- * \brief checksum_loadDriver will try to load a checksum driver
- * \param checksum : name of checksum's driver
- * \return a value which correspond to
- * \li 0 if ok
- * \li 1 if permission error
- * \li 2 if module didn't call checksum_registerDriver
- * \li 3 if checksum is null
- */
-int checksum_loadDriver(const char * checksum);
+struct sa_checksum_driver * checksum_get_driver(const char * driver);
 
 /**
  * \brief Each checksum driver should call this function only one time
@@ -392,7 +381,7 @@ int checksum_loadDriver(const char * checksum);
  * }
  * \endcode
  */
-void checksum_registerDriver(struct checksum_driver * driver);
+void sa_checksum_register_driver(struct sa_checksum_driver * driver);
 
 #endif
 

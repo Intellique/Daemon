@@ -24,9 +24,89 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Wed, 23 Feb 2011 21:08:04 +0100                       *
+*  Last modified: Fri, 01 Jul 2011 18:58:27 +0200                       *
 \***********************************************************************/
 
+// realloc
+#include <stdlib.h>
+// snprintf
+#include <stdio.h>
+// strcmp
+#include <string.h>
+
+#include <storiqArchiver/checksum.h>
+#include <storiqArchiver/log.h>
+
+#include "loader.h"
+
+static struct sa_checksum_driver ** _sa_checksum_drivers = 0;
+static unsigned int _sa_checksum_nb_drivers = 0;
+
+char * sa_checksum_compute(const char * checksum, const char * data, unsigned int length) {
+	if (!checksum || !data || length == 0)
+		return 0;
+
+	struct sa_checksum_driver * driver = checksum_get_driver(checksum);
+	if (!driver)
+		return 0;
+
+	struct sa_checksum chck;
+
+	driver->new_checksum(&chck);
+	chck.ops->update(&chck, data, length);
+
+	char * digest = chck.ops->digest(&chck);
+
+	chck.ops->free(&chck);
+
+	return digest;
+}
+
+void sa_checksum_convert_to_hex(unsigned char * digest, int length, char * hexDigest) {
+	if (!digest || length < 1 || !hexDigest) {
+		if (!digest)
+			sa_log_write_all(sa_log_level_error, "Checksum: error because digest is null");
+		if (length < 1)
+			sa_log_write_all(sa_log_level_error, "Checksum: error because length is lower than 1 (length=%d)", length);
+		if (!hexDigest)
+			sa_log_write_all(sa_log_level_error, "Checksum: error because hexDigest is null");
+		return;
+	}
+
+	int i;
+	for (i = 0; i < length; i++)
+		snprintf(hexDigest + (i << 1), 3, "%02x", digest[i]);
+	hexDigest[i << 1] = '\0';
+
+	sa_log_write_all(sa_log_level_debug, "Checksum: computed => %s", hexDigest);
+}
+
+struct sa_checksum_driver * checksum_get_driver(const char * driver) {
+	unsigned int i;
+	for (i = 0; i < _sa_checksum_nb_drivers; i++)
+		if (!strcmp(driver, _sa_checksum_drivers[i]->name))
+			return _sa_checksum_drivers[i];
+	if (sa_loader_load("checksum", driver))
+		return 0;
+	for (i = 0; i < _sa_checksum_nb_drivers; i++)
+		if (!strcmp(driver, _sa_checksum_drivers[i]->name))
+			return _sa_checksum_drivers[i];
+	return 0;
+}
+
+void sa_checksum_register_driver(struct sa_checksum_driver * driver) {
+	if (!driver)
+		return;
+
+	_sa_checksum_drivers = realloc(_sa_checksum_drivers, (_sa_checksum_nb_drivers + 1) * sizeof(struct sa_checksum_driver *));
+	_sa_checksum_drivers[_sa_checksum_nb_drivers] = driver;
+	_sa_checksum_nb_drivers++;
+
+	sa_loader_register_ok();
+}
+
+
+/*
 // dlclose, dlerror, dlopen
 #include <dlfcn.h>
 // strerror
@@ -185,4 +265,4 @@ void checksum_registerDriver(struct checksum_driver * driver) {
 	checksum_drivers[checksum_nbDrivers] = driver;
 	checksum_nbDrivers++;
 }
-
+*/
