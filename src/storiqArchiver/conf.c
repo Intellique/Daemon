@@ -24,7 +24,7 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 01 Jul 2011 14:41:25 +0200                       *
+*  Last modified: Fri, 01 Jul 2011 14:56:48 +0200                       *
 \***********************************************************************/
 
 // strerror
@@ -223,7 +223,7 @@ int sa_conf_read_config(const char * confFile) {
 
 	char * ptr = buffer;
 	enum _sa_conf_section section = _sa_conf_section_unknown;
-	struct sa_hashtable * params = sa_hashtable_new2(util_hashString, util_freeKeyValue);
+	struct sa_hashtable * params = sa_hashtable_new2(sa_util_hashString, sa_util_freeKeyValue);
 	while (ptr) {
 		switch (*ptr) {
 			case ';':
