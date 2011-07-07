@@ -24,93 +24,15 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 07 Jul 2011 12:19:52 +0200                       *
+*  Last modified: Wed, 06 Jul 2011 19:10:10 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_LIBRARY_H__
-#define __STORIQARCHIVER_LIBRARY_H__
+#ifndef __STORIQARCHIVER_TAPE_H__
+#define __STORIQARCHIVER_TAPE_H__
 
-struct sa_drive;
-struct sa_slot;
-struct sa_tape;
-
-enum sa_changer_status {
-	sa_changer_error,
-	sa_changer_exporting,
-	sa_changer_idle,
-	sa_changer_importing,
-	sa_changer_loading,
-	sa_changer_unknown,
-	sa_changer_unloading,
-};
-
-struct sa_changer {
+struct sa_tape {
 	long id;
-	char * device;
-	enum sa_changer_status status;
-	char * model;
-	char * vendor;
-	int barcode;
-
-	struct sa_drive * drives;
-	unsigned int nb_drives;
-	struct sa_slot * slots;
-	unsigned int nb_slots;
-
-	struct sa_changer_ops {
-		int (*load)(struct sa_changer * ch);
-		int (*transfer)(struct sa_changer * ch);
-		int (*unload)(struct sa_changer * ch);
-	} * ops;
-	void * data;
 };
-
-enum sa_drive_status {
-	sa_drive_cleaning,
-	sa_drive_emptyIdle,
-	sa_drive_erasing,
-	sa_drive_error,
-	sa_drive_loadedIdle,
-	sa_drive_loading,
-	sa_drive_positioning,
-	sa_drive_reading,
-	sa_drive_unknown,
-	sa_drive_unloading,
-	sa_drive_writing,
-};
-
-struct sa_drive {
-	long id;
-	char * device;
-	char * scsiDevice;
-	enum sa_drive_status status;
-	char * model;
-	char * vendor;
-
-	struct sa_changer * changer;
-	struct sa_slot * slot;
-
-	struct sa_drive_ops {
-		int (*eject)(struct sa_drive * drive);
-		int (*rewind)(struct sa_drive * drive);
-		int (*set_file_position)(struct sa_drive * drive, int file_position);
-	} * ops;
-	void * data;
-};
-
-struct sa_slot {
-	long id;
-	struct sa_changer * changer;
-	struct sa_drive * drive;
-	struct sa_tape * tape;
-};
-
-
-const char * sa_changer_statusToString(enum sa_changer_status status);
-enum sa_changer_status sa_changer_stringToStatus(const char * status);
-void sa_configureChanger(void);
-const char * sa_drive_statusToString(enum sa_drive_status status);
-enum sa_drive_status sa_drive_stringToStatus(const char * status);
 
 #endif
 
