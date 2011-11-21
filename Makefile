@@ -27,7 +27,7 @@ OBJ_FILES	:=
 
 
 # compilation flags
-CFLAGS		:= -std=gnu99 -pipe -O0 -ggdb3 -Wall -Wextra -pedantic -pthread -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes -Iinclude -DSTORIQARCHIVER_VERSION=\"${VERSION}\"
+CFLAGS		:= -std=gnu99 -pipe -O0 -ggdb3 -Wall -Wextra -pthread -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes -Iinclude -DSTORIQARCHIVER_VERSION=\"${VERSION}\"
 LDFLAGS		:= -pthread
 
 CSCOPE_OPT	:= -b -R -s src -U -I include

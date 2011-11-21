@@ -27,103 +27,74 @@
 *  Last modified: Thu, 07 Jul 2011 12:19:52 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_LIBRARY_H__
-#define __STORIQARCHIVER_LIBRARY_H__
+#include <string.h>
 
-struct sa_drive;
-struct sa_slot;
-struct sa_tape;
+#include <storiqArchiver/library.h>
 
-enum sa_changer_status {
-	sa_changer_error,
-	sa_changer_exporting,
-	sa_changer_idle,
-	sa_changer_importing,
-	sa_changer_loading,
-	sa_changer_unknown,
-	sa_changer_unloading,
-};
-
-struct sa_changer {
-	long id;
-	char * device;
+static struct sa_changer_status2 {
+	const char * name;
 	enum sa_changer_status status;
-	char * model;
-	char * vendor;
-	int barcode;
+} sa_library_status[] = {
+	{ "error",		sa_changer_error },
+	{ "exporting",	sa_changer_exporting },
+	{ "idle",		sa_changer_idle },
+	{ "importing",	sa_changer_importing },
+	{ "loading",	sa_changer_loading },
+	{ "unknown",	sa_changer_unknown },
+	{ "unloading",	sa_changer_unloading },
 
-	int host;
-	int target;
-	int channel;
-	int bus;
-
-	struct sa_drive * drives;
-	unsigned int nb_drives;
-	struct sa_slot * slots;
-	unsigned int nb_slots;
-
-	struct sa_changer_ops {
-		int (*load)(struct sa_changer * ch);
-		int (*transfer)(struct sa_changer * ch);
-		int (*unload)(struct sa_changer * ch);
-	} * ops;
-	void * data;
+	{ 0, sa_changer_unknown },
 };
 
-enum sa_drive_status {
-	sa_drive_cleaning,
-	sa_drive_emptyIdle,
-	sa_drive_erasing,
-	sa_drive_error,
-	sa_drive_loadedIdle,
-	sa_drive_loading,
-	sa_drive_positioning,
-	sa_drive_reading,
-	sa_drive_unknown,
-	sa_drive_unloading,
-	sa_drive_writing,
-};
-
-struct sa_drive {
-	long id;
-	char * device;
-	char * scsiDevice;
+static struct sa_drive_status2 {
+	const char * name;
 	enum sa_drive_status status;
-	char * model;
-	char * vendor;
+} sa_drive_status[] = {
+	{ "cleaning",		sa_drive_cleaning },
+	{ "empty idle",		sa_drive_emptyIdle },
+	{ "erasing",		sa_drive_erasing },
+	{ "error",			sa_drive_error },
+	{ "loaded idle",	sa_drive_loadedIdle },
+	{ "loading",		sa_drive_loading },
+	{ "positioning",	sa_drive_positioning },
+	{ "reading",		sa_drive_reading },
+	{ "unknown",		sa_drive_unknown },
+	{ "unloading",		sa_drive_unloading },
+	{ "writing",		sa_drive_writing },
 
-	int host;
-	int target;
-	int channel;
-	int bus;
-
-	struct sa_changer * changer;
-	struct sa_slot * slot;
-
-	struct sa_drive_ops {
-		int (*eject)(struct sa_drive * drive);
-		int (*rewind)(struct sa_drive * drive);
-		int (*set_file_position)(struct sa_drive * drive, int file_position);
-	} * ops;
-	void * data;
-};
-
-struct sa_slot {
-	long long id;
-	struct sa_changer * changer;
-	struct sa_drive * drive;
-	struct sa_tape * tape;
-
-	char volume_name[37];
-	char full;
+	{ 0, sa_drive_unknown },
 };
 
 
-const char * sa_changer_statusToString(enum sa_changer_status status);
-enum sa_changer_status sa_changer_stringToStatus(const char * status);
-void sa_configureChanger(void);
-const char * sa_drive_statusToString(enum sa_drive_status status);
-enum sa_drive_status sa_drive_stringToStatus(const char * status);
+const char * sa_changer_statusToString(enum sa_changer_status status) {
+	struct sa_changer_status2 * ptr;
+	for (ptr = sa_library_status; ptr->name; ptr++)
+		if (ptr->status == status)
+			return ptr->name;
+	return 0;
+}
 
-#endif
+enum sa_changer_status sa_changer_stringToStatus(const char * status) {
+	struct sa_changer_status2 * ptr;
+	for (ptr = sa_library_status; ptr->name; ptr++)
+		if (!strcmp(ptr->name, status))
+			return ptr->status;
+	return ptr->status;
+}
+
+const char * sa_drive_statusToString(enum sa_drive_status status) {
+	struct sa_drive_status2 * ptr;
+	for (ptr = sa_drive_status; ptr->name; ptr++)
+		if (ptr->status == status)
+			return ptr->name;
+	return 0;
+}
+
+enum sa_drive_status sa_drive_stringToStatus(const char * status) {
+	struct sa_drive_status2 * ptr;
+	for (ptr = sa_drive_status; ptr->name; ptr++)
+		if (!strcmp(ptr->name, status))
+			return ptr->status;
+	return ptr->status;
+}
 

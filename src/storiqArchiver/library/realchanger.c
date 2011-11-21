@@ -24,106 +24,62 @@
 *                                                                       *
 *  -------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 07 Jul 2011 12:19:52 +0200                       *
+*  Last modified: Thu, 07 Jul 2011 12:51:41 +0200                       *
 \***********************************************************************/
 
-#ifndef __STORIQARCHIVER_LIBRARY_H__
-#define __STORIQARCHIVER_LIBRARY_H__
+#include "scsi.h"
 
-struct sa_drive;
-struct sa_slot;
-struct sa_tape;
+static int sa_realchanger_load(struct sa_changer * ch);
+static int sa_realchanger_transfer(struct sa_changer * ch);
+static int sa_realchanger_unload(struct sa_changer * ch);
 
-enum sa_changer_status {
-	sa_changer_error,
-	sa_changer_exporting,
-	sa_changer_idle,
-	sa_changer_importing,
-	sa_changer_loading,
-	sa_changer_unknown,
-	sa_changer_unloading,
+static int sa_realdrive_eject(struct sa_drive * dr);
+static int sa_realdrive_rewind(struct sa_drive * drive);
+static int sa_realdrive_set_file_position(struct sa_drive * drive, int file_position);
+
+struct sa_changer_ops sa_realchanger_ops = {
+	.load     = sa_realchanger_load,
+	.transfer = sa_realchanger_transfer,
+	.unload   = sa_realchanger_unload,
 };
 
-struct sa_changer {
-	long id;
-	char * device;
-	enum sa_changer_status status;
-	char * model;
-	char * vendor;
-	int barcode;
-
-	int host;
-	int target;
-	int channel;
-	int bus;
-
-	struct sa_drive * drives;
-	unsigned int nb_drives;
-	struct sa_slot * slots;
-	unsigned int nb_slots;
-
-	struct sa_changer_ops {
-		int (*load)(struct sa_changer * ch);
-		int (*transfer)(struct sa_changer * ch);
-		int (*unload)(struct sa_changer * ch);
-	} * ops;
-	void * data;
-};
-
-enum sa_drive_status {
-	sa_drive_cleaning,
-	sa_drive_emptyIdle,
-	sa_drive_erasing,
-	sa_drive_error,
-	sa_drive_loadedIdle,
-	sa_drive_loading,
-	sa_drive_positioning,
-	sa_drive_reading,
-	sa_drive_unknown,
-	sa_drive_unloading,
-	sa_drive_writing,
-};
-
-struct sa_drive {
-	long id;
-	char * device;
-	char * scsiDevice;
-	enum sa_drive_status status;
-	char * model;
-	char * vendor;
-
-	int host;
-	int target;
-	int channel;
-	int bus;
-
-	struct sa_changer * changer;
-	struct sa_slot * slot;
-
-	struct sa_drive_ops {
-		int (*eject)(struct sa_drive * drive);
-		int (*rewind)(struct sa_drive * drive);
-		int (*set_file_position)(struct sa_drive * drive, int file_position);
-	} * ops;
-	void * data;
-};
-
-struct sa_slot {
-	long long id;
-	struct sa_changer * changer;
-	struct sa_drive * drive;
-	struct sa_tape * tape;
-
-	char volume_name[37];
-	char full;
+struct sa_drive_ops sa_realdrive_ops = {
+	.eject             = sa_realdrive_eject,
+	.rewind            = sa_realdrive_rewind,
+	.set_file_position = sa_realdrive_set_file_position,
 };
 
 
-const char * sa_changer_statusToString(enum sa_changer_status status);
-enum sa_changer_status sa_changer_stringToStatus(const char * status);
-void sa_configureChanger(void);
-const char * sa_drive_statusToString(enum sa_drive_status status);
-enum sa_drive_status sa_drive_stringToStatus(const char * status);
+int sa_realchanger_load(struct sa_changer * ch) {
+	return 0;
+}
 
-#endif
+void sa_realchanger_setup(struct sa_changer * changer) {
+	changer->ops = &sa_realchanger_ops;
+
+	unsigned int i;
+	for (i = 0; i < changer->nb_drives; i++)
+		changer->drives[i].ops = &sa_realdrive_ops;
+}
+
+int sa_realchanger_transfer(struct sa_changer * ch) {
+	return 0;
+}
+
+int sa_realchanger_unload(struct sa_changer * ch) {
+	return 0;
+}
+
+
+int sa_realdrive_eject(struct sa_drive * dr) {
+	return 0;
+}
+
+int sa_realdrive_rewind(struct sa_drive * drive) {
+	return 0;
+}
+
+int sa_realdrive_set_file_position(struct sa_drive * drive, int file_position) {
+	return 0;
+}
 

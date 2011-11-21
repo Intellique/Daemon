@@ -47,6 +47,7 @@
 #include <storiqArchiver/library.h>
 
 #include "common.h"
+#include "scsi.h"
 
 static char * sa_changer_read(const char * filename);
 static void sa_changer_setup_realchanger(struct sa_changer * changer);
@@ -104,14 +105,6 @@ void sa_changer_setup() {
 		changers[i].id = -1;
 		changers[i].device = strdup(device);
 		changers[i].status = sa_changer_unknown;
-
-		strcpy(path, gl.gl_pathv[i]);
-		strcat(path, "/model");
-		changers[i].model = sa_changer_read(path);
-
-		strcpy(path, gl.gl_pathv[i]);
-		strcat(path, "/vendor");
-		changers[i].vendor = sa_changer_read(path);
 
 		changers[i].barcode = 0;
 		changers[i].host = host;
@@ -201,13 +194,19 @@ void sa_changer_setup() {
 		}
 	}
 
-    if (nbChangers > 0)
-        sa_changer_setup_realchanger(changers);
+	if (nbChangers > 0)
+		sa_changer_setup_realchanger(changers);
 }
 
 
-
 void sa_changer_setup_realchanger(struct sa_changer * changer) {
-    int fd = open(changer->device, O_RDWR);
+	int fd = open(changer->device, O_RDWR);
+
+	sa_scsi_loaderinfo(fd, changer);
+	sa_scsi_mtx_status_new(fd, changer);
+
+	close(fd);
+
+	sa_realchanger_setup(changer);
 }
 
