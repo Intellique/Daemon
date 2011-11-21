@@ -52,6 +52,11 @@ struct sa_changer {
 	char * vendor;
 	int barcode;
 
+	int host;
+	int target;
+	int channel;
+	int bus;
+
 	struct sa_drive * drives;
 	unsigned int nb_drives;
 	struct sa_slot * slots;
@@ -86,6 +91,11 @@ struct sa_drive {
 	enum sa_drive_status status;
 	char * model;
 	char * vendor;
+
+	int host;
+	int target;
+	int channel;
+	int bus;
 
 	struct sa_changer * changer;
 	struct sa_slot * slot;
