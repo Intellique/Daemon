@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 15:21:17 +0100                         *
+*  Last modified: Mon, 21 Nov 2011 16:32:32 +0100                         *
 \*************************************************************************/
 
 // realloc
@@ -89,13 +89,17 @@ struct sa_checksum_driver * sa_checksum_get_driver(const char * driver) {
 	for (i = 0; i < sa_checksum_nb_drivers; i++)
 		if (!strcmp(driver, sa_checksum_drivers[i]->name))
 			return sa_checksum_drivers[i];
-	if (sa_loader_load("checksum", driver)) {
+	void * cookie = sa_loader_load("checksum", driver);
+	if (!cookie) {
 		sa_log_write_all(sa_log_level_error, "Checksum: Failed to load driver %s", driver);
 		return 0;
 	}
 	for (i = 0; i < sa_checksum_nb_drivers; i++)
-		if (!strcmp(driver, sa_checksum_drivers[i]->name))
-			return sa_checksum_drivers[i];
+		if (!strcmp(driver, sa_checksum_drivers[i]->name)) {
+			struct sa_checksum_driver * driver = sa_checksum_drivers[i];
+			driver->cookie = cookie;
+			return driver;
+		}
 	sa_log_write_all(sa_log_level_error, "Checksum: Driver %s not found", driver);
 	return 0;
 }

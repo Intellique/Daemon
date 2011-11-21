@@ -45,13 +45,9 @@ define BIN_template
 $$($(1)_BIN): $$($(1)_LIB) $$($(1)_OBJ_FILES)
 	@echo " LD       $$@"
 	@${CC} -o $$@ $$($(1)_OBJ_FILES) ${LDFLAGS} $$($(1)_LD)
-	@echo " OBJCOPY  --only-keep-debug $$@ $$@.debug"
 	@objcopy --only-keep-debug $$@ $$@.debug
-	@echo " STRIP    $$@"
 	@strip $$@
-	@echo " OBJCOPY  --add-gnu-debuglink=$$@.debug $$@"
 	@objcopy --add-gnu-debuglink=$$@.debug $$@
-	@echo " CHMOD    -x $$@.debug"
 	@chmod -x $$@.debug
 
 $$($(1)_BUILD_DIR)/%.o: $$($(1)_SRC_DIR)/%.c
