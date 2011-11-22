@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 09:30:52 +0100                         *
+*  Last modified: Tue, 22 Nov 2011 09:56:49 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
@@ -292,11 +292,6 @@ struct sa_checksum {
 		 */
 		void (*free)(struct sa_checksum * checksum);
 		/**
-		 * \brief Reset internal state
-		 * \param[in] checksum : a checksum handler
-		 */
-		void (*reset)(struct sa_checksum * checksum);
-		/**
 		 * \brief this function reads some data
 		 * \param[in] checksum : a checksum handler
 		 * \param[in] data : some or full data
@@ -352,17 +347,6 @@ struct sa_checksum_driver {
  */
 #define STORIQARCHIVER_CHECKSUM_APIVERSION 1
 
-struct sa_checksum_helper {
-	struct sa_checksum_helper_ops {
-		char * (*digest)(struct sa_checksum_helper * checksum);
-		void (*free)(struct sa_checksum_helper * helper);
-		ssize_t (*update)(struct sa_checksum_helper * help, const void * data, ssize_t length);
-	} * ops;
-
-	void * data;
-	char * digest;
-};
-
 
 /**
  * \brief Simple function to compute checksum
@@ -392,7 +376,7 @@ void sa_checksum_convert_to_hex(unsigned char * digest, int length, char * hexDi
  */
 struct sa_checksum_driver * sa_checksum_get_driver(const char * driver);
 
-struct sa_checksum_helper * sa_checksum_get_helper(struct sa_checksum * checksum);
+struct sa_checksum * sa_checksum_get_helper(struct sa_checksum * helper, struct sa_checksum * checksum);
 
 /**
  * \brief Register an checksum driver

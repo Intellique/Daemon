@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 09:30:12 +0100                         *
+*  Last modified: Tue, 22 Nov 2011 09:40:23 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -44,7 +44,6 @@ static char * sa_checksum_md5_digest(struct sa_checksum * checksum);
 static void sa_checksum_md5_free(struct sa_checksum * checksum);
 static struct sa_checksum * sa_checksum_md5_new_checksum(struct sa_checksum * checksum);
 static void sa_checksum_md5_init(void) __attribute__((constructor));
-static void sa_checksum_md5_reset(struct sa_checksum * checksum);
 static ssize_t sa_checksum_md5_update(struct sa_checksum * checksum, const void * data, ssize_t length);
 
 static struct sa_checksum_driver sa_checksum_md5_driver = {
@@ -58,7 +57,6 @@ static struct sa_checksum_ops sa_checksum_md5_ops = {
 	.clone	= sa_checksum_md5_clone,
 	.digest	= sa_checksum_md5_digest,
 	.free	= sa_checksum_md5_free,
-	.reset	= sa_checksum_md5_reset,
 	.update	= sa_checksum_md5_update,
 };
 
@@ -138,20 +136,6 @@ struct sa_checksum * sa_checksum_md5_new_checksum(struct sa_checksum * checksum)
 
 	checksum->data = self;
 	return checksum;
-}
-
-void sa_checksum_md5_reset(struct sa_checksum * checksum) {
-	if (!checksum)
-		return;
-
-	struct sa_checksum_md5_private * self = checksum->data;
-	if (self) {
-		MD5_Init(&self->md5);
-
-		if (self->digest)
-			free(self->digest);
-		self->digest = 0;
-	}
 }
 
 ssize_t sa_checksum_md5_update(struct sa_checksum * checksum, const void * data, ssize_t length) {

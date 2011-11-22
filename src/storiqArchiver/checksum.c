@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 09:29:10 +0100                         *
+*  Last modified: Tue, 22 Nov 2011 10:06:12 +0100                         *
 \*************************************************************************/
 
 // pthread_create
@@ -44,6 +44,7 @@
 struct sa_checksum_helper_private {
 	pthread_t thread;
 	struct sa_checksum * checksum;
+	char * digest;
 
 	int fd_in;
 	int fd_out;
@@ -52,14 +53,16 @@ struct sa_checksum_helper_private {
 	pthread_cond_t wait;
 };
 
-static char * sa_checksum_helper_digest(struct sa_checksum_helper * helper);
-static void sa_checksum_helper_free(struct sa_checksum_helper * helper);
-static ssize_t sa_checksum_helper_update(struct sa_checksum_helper * helper, const void * data, ssize_t length);
+static struct sa_checksum * sa_checksum_helper_clone(struct sa_checksum * new_checksum, struct sa_checksum * current_checksum);
+static char * sa_checksum_helper_digest(struct sa_checksum * helper);
+static void sa_checksum_helper_free(struct sa_checksum * helper);
+static ssize_t sa_checksum_helper_update(struct sa_checksum * helper, const void * data, ssize_t length);
 static void * sa_checksum_helper_work(void * param);
 
 static struct sa_checksum_driver ** sa_checksum_drivers = 0;
 static unsigned int sa_checksum_nb_drivers = 0;
-static struct sa_checksum_helper_ops sa_checksum_helper_ops = {
+static struct sa_checksum_ops sa_checksum_helper_ops = {
+	.clone	= sa_checksum_helper_clone,
 	.digest	= sa_checksum_helper_digest,
 	.free	= sa_checksum_helper_free,
 	.update	= sa_checksum_helper_update,
@@ -129,13 +132,15 @@ struct sa_checksum_driver * sa_checksum_get_driver(const char * driver) {
 	return 0;
 }
 
-struct sa_checksum_helper * sa_checksum_get_helper(struct sa_checksum * checksum) {
-	struct sa_checksum_helper * h = malloc(sizeof(struct sa_checksum_helper));
+struct sa_checksum * sa_checksum_get_helper(struct sa_checksum * h, struct sa_checksum * checksum) {
+	if (!h)
+		h = malloc(sizeof(struct sa_checksum));
 	h->ops = &sa_checksum_helper_ops;
-	h->digest = 0;
+	h->driver = checksum->driver;
 
 	struct sa_checksum_helper_private * hp = h->data = malloc(sizeof(struct sa_checksum_helper_private));
 	hp->checksum = checksum;
+	hp->digest = 0;
 
 	int fds[2];
 	pipe(fds);
@@ -156,7 +161,17 @@ struct sa_checksum_helper * sa_checksum_get_helper(struct sa_checksum * checksum
 	return h;
 }
 
-char * sa_checksum_helper_digest(struct sa_checksum_helper * helper) {
+struct sa_checksum * sa_checksum_helper_clone(struct sa_checksum * new_checksum, struct sa_checksum * current_checksum) {
+	if (!current_checksum)
+		return 0;
+
+	struct sa_checksum_helper_private * hp = current_checksum->data;
+	struct sa_checksum * clone = hp->checksum->ops->clone(0, hp->checksum);
+
+	return sa_checksum_get_helper(new_checksum, clone);
+}
+
+char * sa_checksum_helper_digest(struct sa_checksum * helper) {
 	struct sa_checksum_helper_private * hp = helper->data;
 
 	if (hp->fd_out > -1) {
@@ -169,10 +184,10 @@ char * sa_checksum_helper_digest(struct sa_checksum_helper * helper) {
 		pthread_mutex_unlock(&hp->lock);
 	}
 
-	return helper->digest;
+	return hp->digest;
 }
 
-void sa_checksum_helper_free(struct sa_checksum_helper * helper) {
+void sa_checksum_helper_free(struct sa_checksum * helper) {
 	struct sa_checksum_helper_private * hp = helper->data;
 
 	if (hp->fd_out > -1)
@@ -188,14 +203,14 @@ void sa_checksum_helper_free(struct sa_checksum_helper * helper) {
 	free(helper);
 }
 
-ssize_t sa_checksum_helper_update(struct sa_checksum_helper * helper, const void * data, ssize_t length) {
+ssize_t sa_checksum_helper_update(struct sa_checksum * helper, const void * data, ssize_t length) {
 	struct sa_checksum_helper_private * hp = helper->data;
 
 	return write(hp->fd_out, data, length);
 }
 
 void * sa_checksum_helper_work(void * param) {
-	struct sa_checksum_helper * h = param;
+	struct sa_checksum * h = param;
 	struct sa_checksum_helper_private * hp = h->data;
 
 	ssize_t nb_read;
@@ -208,7 +223,7 @@ void * sa_checksum_helper_work(void * param) {
 
 	pthread_mutex_lock(&hp->lock);
 
-	h->digest = hp->checksum->ops->digest(hp->checksum);
+	hp->digest = hp->checksum->ops->digest(hp->checksum);
 
 	pthread_cond_signal(&hp->wait);
 	pthread_mutex_unlock(&hp->lock);
