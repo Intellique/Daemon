@@ -176,9 +176,8 @@
  * 	if (self->digest)
  * 		return strdup(self->digest);
  *
- * 	MD5_CTX md5 = self->md5;
  * 	unsigned char digest[MD5_DIGEST_LENGTH];
- * 	if (!MD5_Final(digest, &md5))
+ * 	if (!MD5_Final(digest, &self->md5))
  * 		return 0;
  *
  * 	sa_checksum_convert_to_hex(digest, MD5_DIGEST_LENGTH, self->digest);

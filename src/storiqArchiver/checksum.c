@@ -22,10 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 11:40:24 +0100                         *
+*  Last modified: Tue, 22 Nov 2011 11:58:31 +0100                         *
 \*************************************************************************/
 
-// pthread_create
+// pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate,
+// pthread_cond_destroy, pthread_cond_init, pthread_cond_signal,
+// pthread_cond_wait, pthread_create, pthread_mutex_destroy,
+// pthread_mutex_init, pthread_mutex_lock, pthread_mutex_unlock
 #include <pthread.h>
 // free, malloc, realloc
 #include <stdlib.h>
