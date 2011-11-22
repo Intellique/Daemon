@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 11:18:25 +0100                         *
+*  Last modified: Tue, 22 Nov 2011 11:36:47 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -133,11 +133,12 @@ struct sa_checksum * sa_checksum_md5_new_checksum(struct sa_checksum * checksum)
 }
 
 ssize_t sa_checksum_md5_update(struct sa_checksum * checksum, const void * data, ssize_t length) {
-	if (!checksum)
+	if (!checksum || !data || length < 1)
 		return -1;
 
 	struct sa_checksum_md5_private * self = checksum->data;
-	*self->digest = '\0';
+	if (*self->digest != '\0')
+		return -2;
 
 	if (MD5_Update(&self->md5, data, length))
 		return length;

@@ -22,16 +22,16 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 10:06:12 +0100                         *
+*  Last modified: Tue, 22 Nov 2011 11:40:24 +0100                         *
 \*************************************************************************/
 
 // pthread_create
 #include <pthread.h>
-// malloc, realloc
+// free, malloc, realloc
 #include <stdlib.h>
 // snprintf
 #include <stdio.h>
-// strcmp
+// strcmp, strdup
 #include <string.h>
 // pipe, read, write
 #include <unistd.h>
@@ -184,7 +184,7 @@ char * sa_checksum_helper_digest(struct sa_checksum * helper) {
 		pthread_mutex_unlock(&hp->lock);
 	}
 
-	return hp->digest;
+	return strdup(hp->digest);
 }
 
 void sa_checksum_helper_free(struct sa_checksum * helper) {
@@ -195,6 +195,7 @@ void sa_checksum_helper_free(struct sa_checksum * helper) {
 
 	hp->checksum->ops->free(hp->checksum);
 	free(hp->checksum);
+	free(hp->digest);
 
 	pthread_mutex_destroy(&hp->lock);
 	pthread_cond_destroy(&hp->wait);
@@ -204,7 +205,13 @@ void sa_checksum_helper_free(struct sa_checksum * helper) {
 }
 
 ssize_t sa_checksum_helper_update(struct sa_checksum * helper, const void * data, ssize_t length) {
+	if (!helper || !data || length < 1)
+		return 1;
+
 	struct sa_checksum_helper_private * hp = helper->data;
+
+	if (hp->digest)
+		return -2;
 
 	return write(hp->fd_out, data, length);
 }
