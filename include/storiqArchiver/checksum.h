@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 09:56:49 +0100                         *
+*  Last modified: Tue, 22 Nov 2011 10:44:10 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
@@ -376,6 +376,14 @@ void sa_checksum_convert_to_hex(unsigned char * digest, int length, char * hexDi
  */
 struct sa_checksum_driver * sa_checksum_get_driver(const char * driver);
 
+/**
+ * \brief get a thread helper
+ * \param[out] helper : an allocated checksum or \b NULL
+ * \param[in] checksum : clone this checksum
+ * \return same value of \a helper if \a helper if <b>NOT NULL</b> or new value or NULL if \a checksum is NULL
+ * \note checksum SHOULD NOT BE NULL, if \a helper is \b NULL, this function allocate enough memory with \a malloc.
+ * \note checksum will be computed into another thread.
+ */
 struct sa_checksum * sa_checksum_get_helper(struct sa_checksum * helper, struct sa_checksum * checksum);
 
 /**
