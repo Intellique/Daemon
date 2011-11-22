@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:43:07 +0100                         *
+*  Last modified: Tue, 22 Nov 2011 12:32:40 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_CONF_H__
@@ -30,7 +30,7 @@
 
 /**
  * \brief sa_conf_check_pid
- * \param pid : pid
+ * \param[in] pid : pid
  * \return a value which correspond to
  * \li 1 is the daemon is alive
  * \li 0 if the daemon is dead
@@ -40,7 +40,7 @@ int sa_conf_check_pid(int pid);
 
 /**
  * \brief sa_conf_delete_pid
- * \param pid_file : file with pid
+ * \param[in] pid_file : file with pid
  * \return what "unlink" returned
  * \note see man page unlink(2)
  */
@@ -48,15 +48,15 @@ int sa_conf_delete_pid(const char * pid_file);
 
 /**
  * \brief sa_conf_read_pid read pid file
- * \param pid_file : file with pid
+ * \param[in] pid_file : file with pid
  * \return the pid or -1 if not found
  */
 int sa_conf_read_pid(const char * pid_file);
 
 /**
  * \brief sa_conf_write_pid write pid into file
- * \param pid_file : file with pid
- * \param pid : pid
+ * \param[in] pid_file : file with pid
+ * \param[in] pid : pid
  * \return 0 if ok
  */
 int sa_conf_write_pid(const char * pid_file, int pid);
@@ -64,7 +64,7 @@ int sa_conf_write_pid(const char * pid_file, int pid);
 
 /**
  * \brief sa_read config file
- * \param conf_file : config file
+ * \param[in] conf_file : config file
  * \return a value which correspond to
  * \li 0 if ok
  * \li 1 if error

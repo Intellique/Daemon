@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 11:58:31 +0100                         *
+*  Last modified: Tue, 22 Nov 2011 12:44:44 +0100                         *
 \*************************************************************************/
 
 // pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate,
@@ -127,9 +127,9 @@ struct sa_checksum_driver * sa_checksum_get_driver(const char * driver) {
 	}
 	for (i = 0; i < sa_checksum_nb_drivers; i++)
 		if (!strcmp(driver, sa_checksum_drivers[i]->name)) {
-			struct sa_checksum_driver * driver = sa_checksum_drivers[i];
-			driver->cookie = cookie;
-			return driver;
+			struct sa_checksum_driver * dr = sa_checksum_drivers[i];
+			dr->cookie = cookie;
+			return dr;
 		}
 	sa_log_write_all(sa_log_level_error, "Checksum: Driver %s not found", driver);
 	return 0;

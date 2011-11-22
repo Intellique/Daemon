@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:44:01 +0100                         *
+*  Last modified: Tue, 22 Nov 2011 12:41:25 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LOG_H__
@@ -42,26 +42,26 @@ enum sa_log_level {
 	/**
 	 * \brief reserved for debugging
 	 */
-	sa_log_level_debug		= 0x0,
+	sa_log_level_debug		= 0x3,
 
 	/**
 	 * \brief should be used to alert errors
 	 */
-	sa_log_level_error		= 0x3,
+	sa_log_level_error		= 0x0,
 
 	/**
 	 * \brief should be used to inform what the server does.
 	 *
 	 * Example: server starts a new job
 	 */
-	sa_log_level_info		= 0x1,
+	sa_log_level_info		= 0x2,
 
 	/**
 	 * \brief should be used to alert errors which can be recovered
 	 *
 	 * Example: dns service not available
 	 */
-	sa_log_level_warning	= 0x2,
+	sa_log_level_warning	= 0x1,
 
 	/**
 	 * \brief should not be used
@@ -80,10 +80,18 @@ struct sa_log_driver {
 	// used by server only
 	// should not be modified
 	void * cookie;
+	int api_version;
 
 	struct sa_log_module * modules;
 	unsigned int nbModules;
 };
+
+/**
+ * \brief Current api version
+ *
+ * Will increment from new version of struct sa_log_driver or struct sa_log
+ */
+#define STORIQARCHIVER_LOG_APIVERSION 1
 
 
 struct sa_log_module {
