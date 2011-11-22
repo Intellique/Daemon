@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 09:40:23 +0100                         *
+*  Last modified: Tue, 22 Nov 2011 11:18:25 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -36,7 +36,7 @@
 
 struct sa_checksum_md5_private {
 	MD5_CTX md5;
-	char * digest;
+	char digest[MD5_DIGEST_LENGTH * 2 + 1];
 };
 
 static struct sa_checksum * sa_checksum_md5_clone(struct sa_checksum * new_checksum, struct sa_checksum * current_checksum);
@@ -94,7 +94,6 @@ char * sa_checksum_md5_digest(struct sa_checksum * checksum) {
 	if (!MD5_Final(digest, &md5))
 		return 0;
 
-	self->digest = malloc(MD5_DIGEST_LENGTH * 2 + 1);
 	sa_checksum_convert_to_hex(digest, MD5_DIGEST_LENGTH, self->digest);
 
 	return strdup(self->digest);
@@ -106,13 +105,8 @@ void sa_checksum_md5_free(struct sa_checksum * checksum) {
 
 	struct sa_checksum_md5_private * self = checksum->data;
 
-	if (self) {
-		if (self->digest)
-			free(self->digest);
-		self->digest = 0;
-
+	if (self)
 		free(self);
-	}
 
 	checksum->data = 0;
 	checksum->ops = 0;
@@ -132,7 +126,7 @@ struct sa_checksum * sa_checksum_md5_new_checksum(struct sa_checksum * checksum)
 
 	struct sa_checksum_md5_private * self = malloc(sizeof(struct sa_checksum_md5_private));
 	MD5_Init(&self->md5);
-	self->digest = 0;
+	*self->digest = '\0';
 
 	checksum->data = self;
 	return checksum;
@@ -143,10 +137,7 @@ ssize_t sa_checksum_md5_update(struct sa_checksum * checksum, const void * data,
 		return -1;
 
 	struct sa_checksum_md5_private * self = checksum->data;
-
-	if (self->digest)
-		free(self->digest);
-	self->digest = 0;
+	*self->digest = '\0';
 
 	if (MD5_Update(&self->md5, data, length))
 		return length;
