@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 10:44:10 +0100                         *
+*  Last modified: Tue, 22 Nov 2011 11:13:37 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
@@ -36,10 +36,10 @@
  * \code
  * // compute md5 sum of 'Hello, world!!!' string
  * // get the md5 driver
- * struct checksum_driver * driver = checksum_getDriver("md5");
+ * struct sa_checksum_driver * driver = sa_checksum_get_driver("md5");
  * // don't forget to check value of driver
  * // get an md5 handler
- * struct checksum * handler = driver->new_checksum(driver, 0);
+ * struct sa_checksum * handler = driver->new_checksum(0);
  * // handler is not supposed to be NULL
  * handler->ops->update(handler, "Hello, ", 7);
  * handler->ops->update(handler, "world !!!", 9);
@@ -55,17 +55,17 @@
  * \par Get a new handler with an handler
  * \code
  * // get the driver
- * struct checksum_driver * driver = handler->driver;
+ * struct sa_checksum_driver * driver = handler->driver;
  * // get a second handler
- * struct checksum * handler2 = driver->new_checksum(driver, 0);
+ * struct sa_checksum * handler2 = driver->new_checksum(0);
  * \endcode
  *
  * \par Another way to use new_checksum
  * \code
  * // get the sha1 driver
- * struct checksum_driver * driver = checksum_getDriver("sha1");
- * struct checksum handler;
- * driver->new_checksum(driver, &handler);
+ * struct sa_checksum_driver * driver = sa_checksum_get_driver("sha1");
+ * struct sa_checksum handler;
+ * driver->new_checksum(&handler);
  * // ...
  * handler.ops->free(&handler);
  * // Warning: you SHOULD NOT call free(&hanler)
@@ -74,14 +74,14 @@
  * \par Another example
  * \code
  * // get the md5 driver
- * struct checksum_driver * driver_md5 = checksum_getDriver("md5");
+ * struct sa_checksum_driver * driver_md5 = sa_checksum_get_driver("md5");
  * // get the sha1 driver
- * struct checksum_driver * driver_sha1 = checksum_getDriver("sha1");
+ * struct sa_checksum_driver * driver_sha1 = sa_checksum_get_driver("sha1");
  *
  * // an array which contains two handlers
- * struct checksum * handler = calloc(2, sizeof(struct checksum));
- * driver_md5->new_checksum(driver_md5, handler);
- * driver_sha1->new_checksum(driver_sha1, handler + 1);
+ * struct sa_checksum * handler = calloc(2, sizeof(struct checksum));
+ * driver_md5->new_checksum(handler);
+ * driver_sha1->new_checksum(handler + 1);
  *
  * // Supposes that fd is valid file descriptor
  * char buffer[1024];
@@ -116,154 +116,141 @@
  * #include <malloc.h>
  * // MD5_Final, MD5_Init, MD5_Update
  * #include <openssl/md5.h>
- *
- * // checksum_convert2Hex
+ * // strdup
+ * #include <string.h>
+ * 
  * #include <storiqArchiver/checksum.h>
- *
- * // structure used to store private data into handler.data
- * struct checksum_md5_private {
- *    MD5_CTX md5;
- *    char * digest;
+ * 
+ * struct sa_checksum_md5_private {
+ * 	MD5_CTX md5;
+ * 	char * digest;
  * };
- *
- * static struct checksum * checksum_md5_clone(struct checksum * new_checksum, struct checksum * current_checksum);
- * static char * checksum_md5_digest(struct checksum * checksum);
- * static void checksum_md5_free(struct checksum * checksum);
- * static struct checksum * checksum_md5_new_checksum(struct checksum_driver * driver, struct checksum * checksum);
- * static void checksum_md5_reset(struct checksum * checksum);
- * static int checksum_md5_update(struct checksum * checksum, const char * data, unsigned int length);
- *
- * static struct checksum_driver checksum_md5_driver = {
- *    .name         = "md5",
- *    .new_checksum = checksum_md5_new_checksum,
- *    .cookie       = 0,
+ * 
+ * static struct sa_checksum * sa_checksum_md5_clone(struct sa_checksum * new_checksum, struct sa_checksum * current_checksum);
+ * static char * sa_checksum_md5_digest(struct sa_checksum * checksum);
+ * static void sa_checksum_md5_free(struct sa_checksum * checksum);
+ * static struct sa_checksum * sa_checksum_md5_new_checksum(struct sa_checksum * checksum);
+ * static void sa_checksum_md5_init(void) __attribute__((constructor));
+ * static ssize_t sa_checksum_md5_update(struct sa_checksum * checksum, const void * data, ssize_t length);
+ * 
+ * static struct sa_checksum_driver sa_checksum_md5_driver = {
+ * 	.name         = "md5",
+ * 	.new_checksum = sa_checksum_md5_new_checksum,
+ * 	.cookie       = 0,
+ * 	.api_version  = STORIQARCHIVER_CHECKSUM_APIVERSION,
  * };
- *
- * static struct checksum_ops checksum_md5_ops = {
- *    .clone  = checksum_md5_clone,
- *    .digest = checksum_md5_digest,
- *    .free   = checksum_md5_free,
- *    .reset  = checksum_md5_reset,
- *    .update = checksum_md5_update,
+ * 
+ * static struct sa_checksum_ops sa_checksum_md5_ops = {
+ * 	.clone  = sa_checksum_md5_clone,
+ * 	.digest = sa_checksum_md5_digest,
+ * 	.free   = sa_checksum_md5_free,
+ * 	.update = sa_checksum_md5_update,
  * };
- *
- *
- * struct checksum * checksum_md5_clone(struct checksum * new_checksum, struct checksum * current_checksum) {
- *    if (!current_checksum)
- *       return 0;
- *
- *    struct checksum_md5_private * current_self = current_checksum->data;
- *
- *    if (!new_checksum)
- *       new_checksum = malloc(sizeof(struct checksum));
- *
- *    new_checksum->ops = &checksum_md5_ops;
- *    new_checksum->driver = &checksum_md5_driver;
- *
- *    struct checksum_md5_private * new_self = malloc(sizeof(struct checksum_md5_private));
- *    *new_self = *current_self;
- *
- *    new_checksum->data = new_self;
- *    return new_checksum;
+ * 
+ * 
+ * struct sa_checksum * sa_checksum_md5_clone(struct sa_checksum * new_checksum, struct sa_checksum * current_checksum) {
+ * 	if (!current_checksum)
+ * 		return 0;
+ * 
+ * 	struct sa_checksum_md5_private * current_self = current_checksum->data;
+ * 
+ * 	if (!new_checksum)
+ * 		new_checksum = malloc(sizeof(struct sa_checksum));
+ * 
+ * 	new_checksum->ops = &sa_checksum_md5_ops;
+ * 	new_checksum->driver = &sa_checksum_md5_driver;
+ * 
+ * 	struct sa_checksum_md5_private * new_self = malloc(sizeof(struct sa_checksum_md5_private));
+ * 	*new_self = *current_self;
+ * 
+ * 	new_checksum->data = new_self;
+ * 	return new_checksum;
  * }
- *
- * char * checksum_md5_digest(struct checksum * checksum) {
- *    if (!checksum)
- *       return 0;
- *
- *    struct checksum_md5_private * self = checksum->data;
- *
- *    if (self->digest)
- *       return strdup(self->digest);
- *
- *    MD5_CTX md5 = self->md5;
- *    unsigned char digest[MD5_DIGEST_LENGTH];
- *    if (!MD5_Final(digest, &md5))
- *       return 0;
- *
- *    self->digest = malloc(MD5_DIGEST_LENGTH * 2 + 1);
- *    checksum_convert2Hex(digest, MD5_DIGEST_LENGTH, self->digest);
- *
- *    return strdup(self->digest);
+ * 
+ * char * sa_checksum_md5_digest(struct sa_checksum * checksum) {
+ * 	if (!checksum)
+ * 		return 0;
+ * 
+ * 	struct sa_checksum_md5_private * self = checksum->data;
+ * 
+ * 	if (self->digest)
+ * 		return strdup(self->digest);
+ * 
+ * 	MD5_CTX md5 = self->md5;
+ * 	unsigned char digest[MD5_DIGEST_LENGTH];
+ * 	if (!MD5_Final(digest, &md5))
+ * 		return 0;
+ * 
+ * 	self->digest = malloc(MD5_DIGEST_LENGTH * 2 + 1);
+ * 	sa_checksum_convert_to_hex(digest, MD5_DIGEST_LENGTH, self->digest);
+ * 
+ * 	return strdup(self->digest);
  * }
- *
- * void checksum_md5_free(struct checksum * checksum) {
- *    struct checksum_md5_private * self = checksum->data;
- *
- *    if (self) {
- *       if (self->digest)
- *          free(self->digest);
- *       self->digest = 0;
- *
- *       free(self);
- *    }
- *
- *    checksum->data = 0;
- *    checksum->ops = 0;
- *    checksum->driver = 0;
+ * 
+ * void sa_checksum_md5_free(struct sa_checksum * checksum) {
+ * 	if (!checksum)
+ * 		return;
+ * 
+ * 	struct sa_checksum_md5_private * self = checksum->data;
+ * 
+ * 	if (self) {
+ * 		if (self->digest)
+ * 			free(self->digest);
+ * 		self->digest = 0;
+ * 
+ * 		free(self);
+ * 	}
+ * 
+ * 	checksum->data = 0;
+ * 	checksum->ops = 0;
+ * 	checksum->driver = 0;
  * }
- *
- * // When you load this module, this function is automaticaly called
- * __attribute__((constructor))
- * static void checksum_md5_init() {
- *    checksum_registerDriver(&checksum_md5_driver);
+ * 
+ * void sa_checksum_md5_init() {
+ * 	sa_checksum_register_driver(&sa_checksum_md5_driver);
  * }
- *
- * struct checksum * checksum_md5_new_checksum(struct checksum * checksum) {
- *    // if checksum is NULL, you allocate a new with malloc
- *    if (!checksum)
- *       checksum = malloc(sizeof(struct checksum));
- *
- *    checksum->ops = &checksum_md5_ops;
- *    checksum->driver = driver;
- *
- *    struct checksum_md5_private * self = malloc(sizeof(struct checksum_md5_private));
- *    MD5_Init(&self->md5);
- *    self->digest = 0;
- *
- *    checksum->data = self;
- *    return checksum;
+ * 
+ * struct sa_checksum * sa_checksum_md5_new_checksum(struct sa_checksum * checksum) {
+ * 	if (!checksum)
+ * 		checksum = malloc(sizeof(struct sa_checksum));
+ * 
+ * 	checksum->ops = &sa_checksum_md5_ops;
+ * 	checksum->driver = &sa_checksum_md5_driver;
+ * 
+ * 	struct sa_checksum_md5_private * self = malloc(sizeof(struct sa_checksum_md5_private));
+ * 	MD5_Init(&self->md5);
+ * 	self->digest = 0;
+ * 
+ * 	checksum->data = self;
+ * 	return checksum;
  * }
- *
- * void checksum_md5_reset(struct checksum * checksum) {
- *    if (!checksum)
- *       return;
- *
- *    struct checksum_md5_private * self = checksum->data;
- *    if (self) {
- *       MD5_Init(&self->md5);
- *
- *       if (self->digest)
- *          free(self->digest);
- *       self->digest = 0;
- *    }
+ * 
+ * ssize_t sa_checksum_md5_update(struct sa_checksum * checksum, const void * data, ssize_t length) {
+ * 	if (!checksum)
+ * 		return -1;
+ * 
+ * 	struct sa_checksum_md5_private * self = checksum->data;
+ * 
+ * 	if (self->digest)
+ * 		free(self->digest);
+ * 	self->digest = 0;
+ * 
+ * 	if (MD5_Update(&self->md5, data, length))
+ * 		return length;
+ * 
+ * 	return -1;
  * }
- *
- * int checksum_md5_update(struct checksum * checksum, const char * data, unsigned int length) {
- *    if (!checksum)
- *       return -1;
- *
- *    struct checksum_md5_private * self = checksum->data;
- *
- *    if (self->digest)
- *       free(self->digest);
- *    self->digest = 0;
- *
- *    if (MD5_Update(&self->md5, data, length))
- *       return length;
- *
- *    return -1;
- * }
+ * 
  * \endcode
  */
 
 /**
- * \struct checksum
+ * \struct sa_checksum
  * \brief this structure is used as an handler to a specific checksum
  */
 struct sa_checksum {
 	/**
-	 * \struct checksum_ops
+	 * \struct sa_checksum_ops
 	 * \brief this structure contains only pointer functions
 	 * \note all functions \b SHALL point on <b>real function</b>
 	 */
@@ -277,7 +264,7 @@ struct sa_checksum {
 		 */
 		struct sa_checksum * (*clone)(struct sa_checksum * new_checksum, struct sa_checksum * current_checksum);
 		/**
-		 * \brief get the lastest digest value
+		 * \brief compute digest and return it
 		 * \param[in] checksum : a checksum handler
 		 * \return a dynamically allocated string which contains a digest in hexadecimal form
 		 */
@@ -285,7 +272,7 @@ struct sa_checksum {
 		/**
 		 * \brief this function releases all memory associated to ckecksum
 		 * \param[in] checksum : a checksum handler
-		 * \warning this function SHOULD NOT call :
+		 * \warning this function <b>SHALL NOT call</b> :
 		 * \code
 		 * free(checksum);
 		 * \endcode
@@ -297,7 +284,7 @@ struct sa_checksum {
 		 * \param[in] data : some or full data
 		 * \param[in] length : length of data
 		 * \return < 0 if error
-		 * \note this function can be called one or many times
+		 * \note this function can be called one or many times until function digest is called
 		 */
 		ssize_t (*update)(struct sa_checksum * checksum, const void * data, ssize_t length);
 	} * ops;
@@ -313,7 +300,7 @@ struct sa_checksum {
 };
 
 /**
- * \struct checksum_driver
+ * \struct sa_checksum_driver
  * \brief This structure allows to get new checksum handler
  */
 struct sa_checksum_driver {
@@ -329,7 +316,7 @@ struct sa_checksum_driver {
 	 */
 	struct sa_checksum * (*new_checksum)(struct sa_checksum * checksum);
 	/**
-	 * \brief private data used by checksum_loadDriver
+	 * \brief private data used by sa_checksum_get_driver
 	 * \note <b>SHOULD NOT be MODIFIED</b>
 	 */
 	void * cookie;
@@ -372,7 +359,7 @@ void sa_checksum_convert_to_hex(unsigned char * digest, int length, char * hexDi
  * \param[in] driver : driver's name
  * \return 0 if failed
  * \note if this driver is not loaded, we try to load it
- * \warning <b>YOU SHALL NOT RELEASE</b> memory with \a free
+ * \warning the returned value <b>SHALL NOT BE RELEASE</b> with \a free
  */
 struct sa_checksum_driver * sa_checksum_get_driver(const char * driver);
 
