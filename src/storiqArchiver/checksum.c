@@ -22,23 +22,48 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 16:32:32 +0100                         *
+*  Last modified: Tue, 22 Nov 2011 09:29:10 +0100                         *
 \*************************************************************************/
 
-// realloc
+// pthread_create
+#include <pthread.h>
+// malloc, realloc
 #include <stdlib.h>
 // snprintf
 #include <stdio.h>
 // strcmp
 #include <string.h>
+// pipe, read, write
+#include <unistd.h>
 
 #include <storiqArchiver/checksum.h>
 #include <storiqArchiver/log.h>
 
 #include "loader.h"
 
+struct sa_checksum_helper_private {
+	pthread_t thread;
+	struct sa_checksum * checksum;
+
+	int fd_in;
+	int fd_out;
+
+	pthread_mutex_t lock;
+	pthread_cond_t wait;
+};
+
+static char * sa_checksum_helper_digest(struct sa_checksum_helper * helper);
+static void sa_checksum_helper_free(struct sa_checksum_helper * helper);
+static ssize_t sa_checksum_helper_update(struct sa_checksum_helper * helper, const void * data, ssize_t length);
+static void * sa_checksum_helper_work(void * param);
+
 static struct sa_checksum_driver ** sa_checksum_drivers = 0;
 static unsigned int sa_checksum_nb_drivers = 0;
+static struct sa_checksum_helper_ops sa_checksum_helper_ops = {
+	.digest	= sa_checksum_helper_digest,
+	.free	= sa_checksum_helper_free,
+	.update	= sa_checksum_helper_update,
+};
 
 char * sa_checksum_compute(const char * checksum, const char * data, unsigned int length) {
 	if (!checksum || !data || length == 0)
@@ -101,6 +126,93 @@ struct sa_checksum_driver * sa_checksum_get_driver(const char * driver) {
 			return driver;
 		}
 	sa_log_write_all(sa_log_level_error, "Checksum: Driver %s not found", driver);
+	return 0;
+}
+
+struct sa_checksum_helper * sa_checksum_get_helper(struct sa_checksum * checksum) {
+	struct sa_checksum_helper * h = malloc(sizeof(struct sa_checksum_helper));
+	h->ops = &sa_checksum_helper_ops;
+	h->digest = 0;
+
+	struct sa_checksum_helper_private * hp = h->data = malloc(sizeof(struct sa_checksum_helper_private));
+	hp->checksum = checksum;
+
+	int fds[2];
+	pipe(fds);
+	hp->fd_in = fds[0];
+	hp->fd_out = fds[1];
+
+	pthread_mutex_init(&hp->lock, 0);
+	pthread_cond_init(&hp->wait, 0);
+
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+	pthread_create(&hp->thread, &attr, sa_checksum_helper_work, h);
+
+	pthread_attr_destroy(&attr);
+
+	return h;
+}
+
+char * sa_checksum_helper_digest(struct sa_checksum_helper * helper) {
+	struct sa_checksum_helper_private * hp = helper->data;
+
+	if (hp->fd_out > -1) {
+		pthread_mutex_lock(&hp->lock);
+		if (hp->fd_out > -1) {
+			close(hp->fd_out);
+			hp->fd_out = -1;
+			pthread_cond_wait(&hp->wait, &hp->lock);
+		}
+		pthread_mutex_unlock(&hp->lock);
+	}
+
+	return helper->digest;
+}
+
+void sa_checksum_helper_free(struct sa_checksum_helper * helper) {
+	struct sa_checksum_helper_private * hp = helper->data;
+
+	if (hp->fd_out > -1)
+		sa_checksum_helper_digest(helper);
+
+	hp->checksum->ops->free(hp->checksum);
+	free(hp->checksum);
+
+	pthread_mutex_destroy(&hp->lock);
+	pthread_cond_destroy(&hp->wait);
+
+	free(hp);
+	free(helper);
+}
+
+ssize_t sa_checksum_helper_update(struct sa_checksum_helper * helper, const void * data, ssize_t length) {
+	struct sa_checksum_helper_private * hp = helper->data;
+
+	return write(hp->fd_out, data, length);
+}
+
+void * sa_checksum_helper_work(void * param) {
+	struct sa_checksum_helper * h = param;
+	struct sa_checksum_helper_private * hp = h->data;
+
+	ssize_t nb_read;
+	char buffer[4096];
+	while ((nb_read = read(hp->fd_in, buffer, 4096)) > 0)
+		hp->checksum->ops->update(hp->checksum, buffer, nb_read);
+
+	close(hp->fd_in);
+	hp->fd_in = -1;
+
+	pthread_mutex_lock(&hp->lock);
+
+	h->digest = hp->checksum->ops->digest(hp->checksum);
+
+	pthread_cond_signal(&hp->wait);
+	pthread_mutex_unlock(&hp->lock);
+
 	return 0;
 }
 
