@@ -22,14 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:42:54 +0100                         *
+*  Last modified: Wed, 23 Nov 2011 11:27:06 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_UTIL_H__
 #define __STORIQARCHIVER_UTIL_H__
 
-void sa_util_freeKeyValue(void * key, void * value);
-unsigned long long sa_util_hashString(const void * key);
+void sa_util_free_key_value(void * key, void * value);
+unsigned long long sa_util_hash_string(const void * key);
 
 #endif
 
