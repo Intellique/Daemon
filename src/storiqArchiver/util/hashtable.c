@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:42:54 +0100                         *
+*  Last modified: Wed, 23 Nov 2011 11:22:11 +0100                         *
 \*************************************************************************/
 
 // calloc, free, malloc
@@ -30,26 +30,26 @@
 
 #include "storiqArchiver/util/hashtable.h"
 
-void _sa_hashtable_put2(struct sa_hashtable * hashtable, unsigned int index, struct sa_hashtable_node * new_node);
-void _sa_hashtable_rehash(struct sa_hashtable * hashtable);
+void sa_hashtable_put2(struct sa_hashtable * hashtable, unsigned int index, struct sa_hashtable_node * new_node);
+void sa_hashtable_rehash(struct sa_hashtable * hashtable);
 
 
-struct sa_hashtable * sa_hashtable_new(unsigned long long (*computeHash)(const void *)) {
-	return sa_hashtable_new2(computeHash, 0);
+struct sa_hashtable * sa_hashtable_new(unsigned long long (*compute_hash)(const void *)) {
+	return sa_hashtable_new2(compute_hash, 0);
 }
 
-struct sa_hashtable * sa_hashtable_new2(unsigned long long (*computeHash)(const void * key), void (*releaseKeyValue)(void * key, void * value)) {
-	if (!computeHash)
+struct sa_hashtable * sa_hashtable_new2(unsigned long long (*compute_hash)(const void * key), void (*release_key_value)(void * key, void * value)) {
+	if (!compute_hash)
 		return 0;
 
 	struct sa_hashtable * l_hash = malloc(sizeof(struct sa_hashtable));
 
 	l_hash->nodes = calloc(sizeof(struct sa_hashtable_node *), 16);
-	l_hash->nbElements = 0;
-	l_hash->sizeNode = 16;
-	l_hash->allowRehash = 1;
-	l_hash->computeHash = computeHash;
-	l_hash->releaseKeyValue = releaseKeyValue;
+	l_hash->nb_elements = 0;
+	l_hash->size_node = 16;
+	l_hash->allow_rehash = 1;
+	l_hash->compute_hash = compute_hash;
+	l_hash->release_key_value = release_key_value;
 
 	return l_hash;
 }
@@ -61,7 +61,7 @@ void sa_hashtable_free(struct sa_hashtable * hashtable) {
 	sa_hashtable_clear(hashtable);
 	free(hashtable->nodes);
 	hashtable->nodes = 0;
-	hashtable->computeHash = 0;
+	hashtable->compute_hash = 0;
 
 	free(hashtable);
 }
@@ -72,27 +72,27 @@ void sa_hashtable_clear(struct sa_hashtable * hashtable) {
 		return;
 
 	unsigned int i;
-	for (i = 0; i < hashtable->sizeNode; i++) {
+	for (i = 0; i < hashtable->size_node; i++) {
 		struct sa_hashtable_node * ptr = hashtable->nodes[i];
 		while (ptr != 0) {
 			struct sa_hashtable_node * tmp = ptr;
 			ptr = ptr->next;
-			if (hashtable->releaseKeyValue)
-				hashtable->releaseKeyValue(tmp->key, tmp->value);
+			if (hashtable->release_key_value)
+				hashtable->release_key_value(tmp->key, tmp->value);
 			tmp->key = tmp->value = tmp->next = 0;
 			free(tmp);
 		}
 		hashtable->nodes[i] = 0;
 	}
-	hashtable->nbElements = 0;
+	hashtable->nb_elements = 0;
 }
 
-short sa_hashtable_hasKey(struct sa_hashtable * hashtable, const void * key) {
+short sa_hashtable_has_key(struct sa_hashtable * hashtable, const void * key) {
 	if (!hashtable || !key)
 		return 0;
 
-	unsigned long long hash = hashtable->computeHash(key);
-	unsigned int index = hash % hashtable->sizeNode;
+	unsigned long long hash = hashtable->compute_hash(key);
+	unsigned int index = hash % hashtable->size_node;
 
 	const struct sa_hashtable_node * node = hashtable->nodes[index];
 	while (node) {
@@ -108,9 +108,9 @@ const void ** sa_hashtable_keys(struct sa_hashtable * hashtable) {
 	if (!hashtable)
 		return 0;
 
-	const void ** keys = calloc(sizeof(void *), hashtable->nbElements + 1);
+	const void ** keys = calloc(sizeof(void *), hashtable->nb_elements + 1);
 	unsigned int iNode = 0, index = 0;
-	while (iNode < hashtable->sizeNode) {
+	while (iNode < hashtable->size_node) {
 		struct sa_hashtable_node * node = hashtable->nodes[iNode];
 		while (node) {
 			keys[index] = node->key;
@@ -128,8 +128,8 @@ void sa_hashtable_put(struct sa_hashtable * hashtable, void * key, void * value)
 	if (!hashtable || !key || !value)
 		return;
 
-	unsigned long long hash = hashtable->computeHash(key);
-	unsigned int index = hash % hashtable->sizeNode;
+	unsigned long long hash = hashtable->compute_hash(key);
+	unsigned int index = hash % hashtable->size_node;
 
 	struct sa_hashtable_node * new_node = malloc(sizeof(struct sa_hashtable_node));
 	new_node->hash = hash;
@@ -137,31 +137,31 @@ void sa_hashtable_put(struct sa_hashtable * hashtable, void * key, void * value)
 	new_node->value = value;
 	new_node->next = 0;
 
-	_sa_hashtable_put2(hashtable, index, new_node);
-	hashtable->nbElements++;
+	sa_hashtable_put2(hashtable, index, new_node);
+	hashtable->nb_elements++;
 }
 
-void _sa_hashtable_put2(struct sa_hashtable * hashtable, unsigned int index, struct sa_hashtable_node * new_node) {
+void sa_hashtable_put2(struct sa_hashtable * hashtable, unsigned int index, struct sa_hashtable_node * new_node) {
 	struct sa_hashtable_node * node = hashtable->nodes[index];
 	if (node) {
 		if (node->hash == new_node->hash) {
-			if (hashtable->releaseKeyValue && node->key != new_node->key && node->value != new_node->value)
-				hashtable->releaseKeyValue(node->key, node->value);
+			if (hashtable->release_key_value && node->key != new_node->key && node->value != new_node->value)
+				hashtable->release_key_value(node->key, node->value);
 			hashtable->nodes[index] = new_node;
 			new_node->next = node->next;
 			free(node);
-			hashtable->nbElements--;
+			hashtable->nb_elements--;
 		} else {
 			short nbElement = 1;
 			while (node->next) {
 				if (node->next->hash == new_node->hash) {
 					struct sa_hashtable_node * next = node->next;
-					if (hashtable->releaseKeyValue && next->key != new_node->key && next->value != new_node->value)
-						hashtable->releaseKeyValue(next->key, next->value);
+					if (hashtable->release_key_value && next->key != new_node->key && next->value != new_node->value)
+						hashtable->release_key_value(next->key, next->value);
 					new_node->next = next->next;
 					node->next = new_node;
 					free(next);
-					hashtable->nbElements--;
+					hashtable->nb_elements--;
 					return;
 				}
 				node = node->next;
@@ -169,53 +169,53 @@ void _sa_hashtable_put2(struct sa_hashtable * hashtable, unsigned int index, str
 			}
 			node->next = new_node;
 			if (nbElement > 4)
-				_sa_hashtable_rehash(hashtable);
+				sa_hashtable_rehash(hashtable);
 		}
 	} else
 		hashtable->nodes[index] = new_node;
 }
 
-void _sa_hashtable_rehash(struct sa_hashtable * hashtable) {
-	if (!hashtable->allowRehash)
+void sa_hashtable_rehash(struct sa_hashtable * hashtable) {
+	if (!hashtable->allow_rehash)
 		return;
 
-	hashtable->allowRehash = 0;
+	hashtable->allow_rehash = 0;
 
-	unsigned int old_sizeNode = hashtable->sizeNode;
+	unsigned int old_size_node = hashtable->size_node;
 	struct sa_hashtable_node ** old_nodes = hashtable->nodes;
-	hashtable->nodes = calloc(sizeof(struct sa_hashtable_node *), hashtable->sizeNode << 1);
-	hashtable->sizeNode <<= 1;
+	hashtable->nodes = calloc(sizeof(struct sa_hashtable_node *), hashtable->size_node << 1);
+	hashtable->size_node <<= 1;
 
 	unsigned int i;
-	for (i = 0; i < old_sizeNode; i++) {
+	for (i = 0; i < old_size_node; i++) {
 		struct sa_hashtable_node * node = old_nodes[i];
 		while (node) {
 			struct sa_hashtable_node * current_node = node;
 			node = node->next;
 			current_node->next = 0;
 
-			unsigned int index = current_node->hash % hashtable->sizeNode;
-			_sa_hashtable_put2(hashtable, index, current_node);
+			unsigned int index = current_node->hash % hashtable->size_node;
+			sa_hashtable_put2(hashtable, index, current_node);
 		}
 	}
 	free(old_nodes);
 
-	hashtable->allowRehash = 1;
+	hashtable->allow_rehash = 1;
 }
 
 void * sa_hashtable_remove(struct sa_hashtable * hashtable, const void * key) {
 	if (!hashtable || !key)
 		return 0;
 
-	unsigned long long hash = hashtable->computeHash(key);
-	unsigned int index = hash % hashtable->sizeNode;
+	unsigned long long hash = hashtable->compute_hash(key);
+	unsigned int index = hash % hashtable->size_node;
 
 	struct sa_hashtable_node * node = hashtable->nodes[index];
 	if (node && node->hash == hash) {
 		hashtable->nodes[index] = node->next;
 		void * value = node->value;
 		free(node);
-		hashtable->nbElements--;
+		hashtable->nb_elements--;
 		return value;
 	}
 	while (node->next) {
@@ -225,7 +225,7 @@ void * sa_hashtable_remove(struct sa_hashtable * hashtable, const void * key) {
 
 			void * value = current_node->value;
 			free(current_node);
-			hashtable->nbElements--;
+			hashtable->nb_elements--;
 			return value;
 		}
 		node->next = node->next->next;
@@ -238,8 +238,8 @@ void * sa_hashtable_value(struct sa_hashtable * hashtable, const void * key) {
 	if (!hashtable || !key)
 		return 0;
 
-	unsigned long long hash = hashtable->computeHash(key);
-	unsigned int index = hash % hashtable->sizeNode;
+	unsigned long long hash = hashtable->compute_hash(key);
+	unsigned int index = hash % hashtable->size_node;
 
 	struct sa_hashtable_node * node = hashtable->nodes[index];
 	while (node) {
@@ -255,9 +255,9 @@ void ** sa_hashtable_values(struct sa_hashtable * hashtable) {
 	if (!hashtable)
 		return 0;
 
-	void ** values = calloc(sizeof(void *), hashtable->nbElements + 1);
+	void ** values = calloc(sizeof(void *), hashtable->nb_elements + 1);
 	unsigned int iNode = 0, index = 0;
-	while (iNode < hashtable->sizeNode) {
+	while (iNode < hashtable->size_node) {
 		struct sa_hashtable_node * node = hashtable->nodes[iNode];
 		while (node) {
 			values[index] = node->value;

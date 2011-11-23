@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 Nov 2011 11:06:21 +0100                         *
+*  Last modified: Wed, 23 Nov 2011 11:18:30 +0100                         *
 \*************************************************************************/
 
 // strerror
@@ -274,7 +274,7 @@ int sa_conf_read_config(const char * confFile) {
 		}
 	}
 
-	if (params->nbElements > 0) {
+	if (params->nb_elements > 0) {
 		switch (section) {
 			case sa_conf_section_db:
 				sa_conf_load_db(params);

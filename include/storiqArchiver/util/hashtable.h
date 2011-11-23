@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:44:38 +0100                         *
+*  Last modified: Wed, 23 Nov 2011 11:22:05 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_HASHTABLE_H__
@@ -37,21 +37,21 @@ struct sa_hashtable_node {
 
 struct sa_hashtable {
 	struct sa_hashtable_node ** nodes;
-	unsigned int nbElements;
-	unsigned int sizeNode;
+	unsigned int nb_elements;
+	unsigned int size_node;
 
-	unsigned char allowRehash;
+	unsigned char allow_rehash;
 
-	unsigned long long (*computeHash)(const void *);
-	void (*releaseKeyValue)(void *, void *);
+	unsigned long long (*compute_hash)(const void *);
+	void (*release_key_value)(void *, void *);
 };
 
 void sa_hashtable_clear(struct sa_hashtable * hashtable);
 void sa_hashtable_free(struct sa_hashtable * hashtable);
-short sa_hashtable_hasKey(struct sa_hashtable * hashtable, const void * key);
+short sa_hashtable_has_key(struct sa_hashtable * hashtable, const void * key);
 const void ** sa_hashtable_keys(struct sa_hashtable * hashtable);
-struct sa_hashtable * sa_hashtable_new(unsigned long long (*computeHash)(const void * key));
-struct sa_hashtable * sa_hashtable_new2(unsigned long long (*computeHash)(const void * key), void (*releaseKeyValue)(void * key, void * value));
+struct sa_hashtable * sa_hashtable_new(unsigned long long (*compute_hash)(const void * key));
+struct sa_hashtable * sa_hashtable_new2(unsigned long long (*compute_hash)(const void * key), void (*release_key_value)(void * key, void * value));
 void sa_hashtable_put(struct sa_hashtable * hashtable, void * key, void * value);
 void * sa_hashtable_remove(struct sa_hashtable * hashtable, const void * key);
 void * sa_hashtable_value(struct sa_hashtable * hashtable, const void * key);
