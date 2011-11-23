@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 Nov 2011 11:27:18 +0100                         *
+*  Last modified: Wed, 23 Nov 2011 12:59:30 +0100                         *
 \*************************************************************************/
 
 // strerror
@@ -161,21 +161,21 @@ void sa_conf_load_db(struct sa_hashtable * params) {
 
 	char * driver = sa_hashtable_value(params, "driver");
 	if (!driver) {
-		sa_log_write_all(sa_log_level_error, "conf: loadDB: driver not found");
+		sa_log_write_all(sa_log_level_error, "conf: load_db: driver not found");
 		return;
 	}
 
 	struct sa_database * db = sa_db_get_db(driver);
 	if (db) {
-		sa_log_write_all(sa_log_level_info, "Conf: loadDb: loading driver (%s) => ok", driver);
+		sa_log_write_all(sa_log_level_info, "Conf: load_db: loading driver (%s) => ok", driver);
 		short setup_ok = !db->ops->setup(db, params);
 		short ping_ok = db->ops->ping(db) > 0;
-		sa_log_write_all(sa_log_level_debug, "Conf: loadDb: setup %s, ping %s", setup_ok ? "ok" : "failed", ping_ok ? "ok" : "failed");
+		sa_log_write_all(sa_log_level_debug, "Conf: load_db: setup %s, ping %s", setup_ok ? "ok" : "failed", ping_ok ? "ok" : "failed");
 
 		if (!sa_db_get_default_db())
-			sa_db_set_default_dB(db);
+			sa_db_set_default_db(db);
 	} else
-		sa_log_write_all(sa_log_level_error, "Conf: loadDb: loading driver (%s) => failed", driver);
+		sa_log_write_all(sa_log_level_error, "Conf: load_db: loading driver (%s) => failed", driver);
 }
 
 void sa_conf_load_log(struct sa_hashtable * params) {
@@ -188,25 +188,25 @@ void sa_conf_load_log(struct sa_hashtable * params) {
 
 	if (!alias || !type || verbosity == sa_log_level_unknown) {
 		if (!alias)
-			sa_log_write_all(sa_log_level_error, "Conf: loadLog: alias required for log");
+			sa_log_write_all(sa_log_level_error, "Conf: load_log: alias required for log");
 		if (!type)
-			sa_log_write_all(sa_log_level_error, "Conf: loadLog: type required for log");
+			sa_log_write_all(sa_log_level_error, "Conf: load_log: type required for log");
 		if (verbosity == sa_log_level_unknown)
-			sa_log_write_all(sa_log_level_error, "Conf: loadLog: verbosity required for log");
+			sa_log_write_all(sa_log_level_error, "Conf: load_log: verbosity required for log");
 		return;
 	}
 
 	struct sa_log_driver * dr = sa_log_get_driver(type);
 	if (dr) {
-		sa_log_write_all(sa_log_level_info, "Conf: loadLog: using module='%s', alias='%s', verbosity='%s'", type, alias, sa_log_level_to_string(verbosity));
+		sa_log_write_all(sa_log_level_info, "Conf: load_log: using module='%s', alias='%s', verbosity='%s'", type, alias, sa_log_level_to_string(verbosity));
 		dr->add(dr, alias, verbosity, params);
 	} else
-		sa_log_write_all(sa_log_level_error, "Conf: loadLog: module='%s' not found", type);
+		sa_log_write_all(sa_log_level_error, "Conf: load_log: module='%s' not found", type);
 }
 
 int sa_conf_read_config(const char * confFile) {
 	if (access(confFile, R_OK)) {
-		sa_log_write_all(sa_log_level_error, "Conf: readConfig: Can't access to '%s'", confFile);
+		sa_log_write_all(sa_log_level_error, "Conf: read_config: Can't access to '%s'", confFile);
 		return -1;
 	}
 

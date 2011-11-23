@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:45:07 +0100                         *
+*  Last modified: Wed, 23 Nov 2011 13:05:35 +0100                         *
 \*************************************************************************/
 
 // realloc
@@ -35,25 +35,32 @@
 
 #include "loader.h"
 
-static struct sa_database ** _sa_db_databases = 0;
-static unsigned int _sa_db_nb_databases = 0;
-static struct sa_database * _sa_db_default_db = 0;
+static struct sa_database ** sa_db_databases = 0;
+static unsigned int sa_db_nb_databases = 0;
+static struct sa_database * sa_db_default_db = 0;
 
 
-struct sa_database * sa_db_get_default_db(void) {
-	return _sa_db_default_db;
+struct sa_database * sa_db_get_default_db() {
+	return sa_db_default_db;
 }
 
-struct sa_database * sa_db_get_db(const char * db) {
+struct sa_database * sa_db_get_db(const char * driver) {
 	unsigned int i;
-	for (i = 0; i < _sa_db_nb_databases; i++)
-		if (!strcmp(db, _sa_db_databases[i]->name))
-			return _sa_db_databases[i];
-	if (sa_loader_load("db", db))
+	for (i = 0; i < sa_db_nb_databases; i++)
+		if (!strcmp(driver, sa_db_databases[i]->name))
+			return sa_db_databases[i];
+	void * cookie = sa_loader_load("db", driver);
+	if (!cookie) {
+		sa_log_write_all(sa_log_level_error, "Db: Failed to load driver %s", driver);
 		return 0;
-	for (i = 0; i < _sa_db_nb_databases; i++)
-		if (!strcmp(db, _sa_db_databases[i]->name))
-			return _sa_db_databases[i];
+	}
+	for (i = 0; i < sa_db_nb_databases; i++)
+		if (!strcmp(driver, sa_db_databases[i]->name)) {
+			struct sa_database * dr = sa_db_databases[i];
+			dr->cookie = cookie;
+			return dr;
+		}
+	sa_log_write_all(sa_log_level_error, "Db: Driver %s not found", driver);
 	return 0;
 }
 
@@ -61,146 +68,15 @@ void sa_db_register_db(struct sa_database * db) {
 	if (!db)
 		return;
 
-	_sa_db_databases = realloc(_sa_db_databases, (_sa_db_nb_databases + 1) * sizeof(struct sa_database *));
-	_sa_db_databases[_sa_db_nb_databases] = db;
-	_sa_db_nb_databases++;
+	sa_db_databases = realloc(sa_db_databases, (sa_db_nb_databases + 1) * sizeof(struct sa_database *));
+	sa_db_databases[sa_db_nb_databases] = db;
+	sa_db_nb_databases++;
 
 	sa_loader_register_ok();
 }
 
-void sa_db_set_default_dB(struct sa_database * db) {
+void sa_db_set_default_db(struct sa_database * db) {
 	if (db)
-		_sa_db_default_db = db;
+		sa_db_default_db = db;
 }
 
-
-/*
-// dlclose, dlerror, dlopen
-#include <dlfcn.h>
-// strerror
-#include <errno.h>
-// realloc
-#include <malloc.h>
-// pthread_mutex_init, pthread_mutex_lock, pthread_mutex_unlock,
-// pthread_mutexattr_destroy, pthread_mutexattr_init, pthread_mutexattr_settype
-#define __USE_UNIX98
-#include <pthread.h>
-// snprintf
-#include <stdio.h>
-// strcmp
-#include <string.h>
-// access
-#include <unistd.h>
-
-#include <storiqArchiver/database.h>
-#include <storiqArchiver/log.h>
-
-#include "config.h"
-
-static struct database ** db_databases = 0;
-static unsigned int db_nbDatabases = 0;
-static struct database * db_defaultDb = 0;
-static pthread_mutex_t db_lock;
-
-
-struct database * db_getDefaultDB() {
-	return db_defaultDb;
-}
-
-struct database * db_getDb(const char * db) {
-	if (!db) {
-		log_writeAll(Log_level_error, "Db: getDb: db is null");
-		return 0;
-	}
-
-	pthread_mutex_lock(&db_lock);
-
-	unsigned int i;
-	struct database * data = 0;
-
-	for (i = 0; i < db_nbDatabases && !data; i++)
-		if (!strcmp(db_databases[i]->driverName, db))
-			data = db_databases[i];
-
-	if (!data && !db_loadDb(db))
-		data = db_getDb(db);
-
-	pthread_mutex_unlock(&db_lock);
-
-	return data;
-}
-
-__attribute__((constructor))
-static void db_init() {
-	pthread_mutexattr_t attr;
-	pthread_mutexattr_init(&attr);
-	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-
-	pthread_mutex_init(&db_lock, &attr);
-
-	pthread_mutexattr_destroy(&attr);
-}
-
-int db_loadDb(const char * db) {
-	if (!db) {
-		log_writeAll(Log_level_error, "Db: loadDb: db is null");
-		return 3;
-	}
-
-	char path[128];
-	snprintf(path, 128, "%s/lib%s.so", DB_DIRNAME, db);
-
-	pthread_mutex_lock(&db_lock);
-
-	// check if db is already loaded
-	unsigned int i;
-	for (i = 0; i < db_nbDatabases; i++)
-		if (!strcmp(db_databases[i]->driverName, db)) {
-			pthread_mutex_unlock(&db_lock);
-			log_writeAll(Log_level_info, "Database: module '%s' already loaded", db);
-			return 0;
-		}
-
-	// check if you can db
-	if (access(path, R_OK | X_OK)) {
-		pthread_mutex_unlock(&db_lock);
-		log_writeAll(Log_level_error, "Database: error, can load '%s' because %s", path, strerror(errno));
-		return 1;
-	}
-
-	log_writeAll(Log_level_debug, "Database: loading '%s' ...", db);
-
-	// load db
-	void * cookie = dlopen(path, RTLD_NOW);
-
-	if (!cookie) {
-		log_writeAll(Log_level_error, "Database: error while loading '%s' because %s", path, dlerror());
-		pthread_mutex_unlock(&db_lock);
-		return 2;
-	} else if (db_nbDatabases > 0 && !strcmp(db_databases[db_nbDatabases - 1]->driverName, db)) {
-		db_databases[db_nbDatabases - 1]->cookie = cookie;
-		pthread_mutex_unlock(&db_lock);
-		log_writeAll(Log_level_info, "Database: module '%s' loaded", db);
-		return 0;
-	} else {
-		// module didn't call log_registerModule so we unload it
-		dlclose(cookie);
-		pthread_mutex_unlock(&db_lock);
-		log_writeAll(Log_level_warning, "Database: module '%s' miss to call db_registerModule", db);
-		return 2;
-	}
-}
-
-void db_registerDb(struct database * db) {
-	db_databases = realloc(db_databases, (db_nbDatabases + 1) * sizeof(struct database *));
-
-	db_databases[db_nbDatabases] = db;
-	db_nbDatabases++;
-}
-
-void db_setDefaultDB(struct database * db) {
-	db_defaultDb = db;
-	log_writeAll(Log_level_debug, "Database: set default database to '%s'", db->driverName);
-}
-
-*/

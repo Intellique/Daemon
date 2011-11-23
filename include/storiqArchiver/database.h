@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 Nov 2011 11:35:42 +0100                         *
+*  Last modified: Wed, 23 Nov 2011 12:59:11 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_DATABASE_H__
@@ -136,7 +136,7 @@ struct sa_database * sa_db_get_db(const char * db);
  */
 void sa_db_register_db(struct sa_database * db);
 
-void sa_db_set_default_dB(struct sa_database * db);
+void sa_db_set_default_db(struct sa_database * db);
 
 #endif
 
