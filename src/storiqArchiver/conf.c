@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:45:00 +0100                         *
+*  Last modified: Wed, 23 Nov 2011 11:06:21 +0100                         *
 \*************************************************************************/
 
 // strerror
@@ -49,14 +49,14 @@
 
 #include "util/util.h"
 
-enum _sa_conf_section {
-	_sa_conf_section_db,
-	_sa_conf_section_log,
-	_sa_conf_section_unknown,
+enum sa_conf_section {
+	sa_conf_section_db,
+	sa_conf_section_log,
+	sa_conf_section_unknown,
 };
 
-static void _sa_conf_load_db(struct sa_hashtable * params);
-static void _sa_conf_load_log(struct sa_hashtable * params);
+static void sa_conf_load_db(struct sa_hashtable * params);
+static void sa_conf_load_log(struct sa_hashtable * params);
 
 
 int sa_conf_check_pid(int pid) {
@@ -155,7 +155,7 @@ int sa_conf_write_pid(const char * pidFile, int pid) {
 }
 
 
-void _sa_conf_load_db(struct sa_hashtable * params) {
+void sa_conf_load_db(struct sa_hashtable * params) {
 	if (!params)
 		return;
 
@@ -178,7 +178,7 @@ void _sa_conf_load_db(struct sa_hashtable * params) {
 		sa_log_write_all(sa_log_level_error, "Conf: loadDb: loading driver (%s) => failed", driver);
 }
 
-void _sa_conf_load_log(struct sa_hashtable * params) {
+void sa_conf_load_log(struct sa_hashtable * params) {
 	if (!params)
 		return;
 
@@ -220,9 +220,9 @@ int sa_conf_read_config(const char * confFile) {
 	close(fd);
 
 	char * ptr = buffer;
-	enum _sa_conf_section section = _sa_conf_section_unknown;
+	enum sa_conf_section section = sa_conf_section_unknown;
 	struct sa_hashtable * params = sa_hashtable_new2(sa_util_hashString, sa_util_freeKeyValue);
-	while (ptr) {
+	while (*ptr) {
 		switch (*ptr) {
 			case ';':
 				ptr = strchr(ptr, '\n');
@@ -232,34 +232,35 @@ int sa_conf_read_config(const char * confFile) {
 				ptr++;
 				if (*ptr == '\n') {
 					switch (section) {
-						case _sa_conf_section_db:
-							_sa_conf_load_db(params);
+						case sa_conf_section_db:
+							sa_conf_load_db(params);
 							break;
 
-						case _sa_conf_section_log:
-							_sa_conf_load_log(params);
+						case sa_conf_section_log:
+							sa_conf_load_log(params);
 							break;
 
 						default:
 							break;
 					}
 
+					section = sa_conf_section_unknown;
 					sa_hashtable_clear(params);
 				}
 				continue;
 
 			case '[':
 				if (strlen(ptr + 1) > 8 && !strncmp(ptr + 1, "database", 8))
-					section = _sa_conf_section_db;
+					section = sa_conf_section_db;
 				else if (strlen(ptr + 1) > 3 && !strncmp(ptr + 1, "log", 3))
-					section = _sa_conf_section_log;
+					section = sa_conf_section_log;
 				else
-					section = _sa_conf_section_unknown;
+					section = sa_conf_section_unknown;
 				ptr = strchr(ptr, '\n');
 				continue;
 
 			default:
-				if (section == _sa_conf_section_unknown)
+				if (section == sa_conf_section_unknown)
 					continue;
 
 				if (strchr(ptr, '=') < strchr(ptr, '\n')) {
@@ -275,12 +276,12 @@ int sa_conf_read_config(const char * confFile) {
 
 	if (params->nbElements > 0) {
 		switch (section) {
-			case _sa_conf_section_db:
-				_sa_conf_load_db(params);
+			case sa_conf_section_db:
+				sa_conf_load_db(params);
 				break;
 
-			case _sa_conf_section_log:
-				_sa_conf_load_log(params);
+			case sa_conf_section_log:
+				sa_conf_load_log(params);
 				break;
 
 			default:

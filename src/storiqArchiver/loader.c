@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:46:44 +0100                         *
+*  Last modified: Tue, 22 Nov 2011 14:57:59 +0100                         *
 \*************************************************************************/
 
 // dlclose, dlerror, dlopen
@@ -37,9 +37,9 @@
 #include "config.h"
 #include "loader.h"
 
-static void * _sa_loader_load_file(const char * filename);
+static void * sa_loader_load_file(const char * filename);
 
-static short _sa_loader_loaded = 0;
+static short sa_loader_loaded = 0;
 
 
 void * sa_loader_load(const char * module, const char * name) {
@@ -49,20 +49,20 @@ void * sa_loader_load(const char * module, const char * name) {
 	char path[256];
 	snprintf(path, 256, "%s/%s/lib%s.so", MODULE_PATH, module, name);
 
-	return _sa_loader_load_file(path);
+	return sa_loader_load_file(path);
 }
 
-void * _sa_loader_load_file(const char * filename) {
+void * sa_loader_load_file(const char * filename) {
 	if (access(filename, R_OK | X_OK)) {
 		return 0;
 	}
 
-	_sa_loader_loaded = 0;
+	sa_loader_loaded = 0;
 
 	void * cookie = dlopen(filename, RTLD_NOW);
 	if (!cookie) {
 		return 0;
-	} else if (!_sa_loader_loaded) {
+	} else if (!sa_loader_loaded) {
 		dlclose(cookie);
 		return 0;
 	}
@@ -71,6 +71,6 @@ void * _sa_loader_load_file(const char * filename) {
 }
 
 void sa_loader_register_ok() {
-	_sa_loader_loaded = 1;
+	sa_loader_loaded = 1;
 }
 

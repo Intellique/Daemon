@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 12:50:11 +0100                         *
+*  Last modified: Wed, 23 Nov 2011 11:09:15 +0100                         *
 \*************************************************************************/
 
 // va_end, va_start
@@ -71,10 +71,10 @@ int sa_log_flush_message() {
 		unsigned int dr;
 		for (dr = 0; dr < sa_log_nb_drivers; dr++) {
 			unsigned int mod;
-			for (mod = 0; mod < sa_log_drivers[dr]->nbModules; mod++) {
+			for (mod = 0; mod < sa_log_drivers[dr]->nb_modules; mod++) {
 				if (sa_log_message_unsent[mes].who && strcmp(sa_log_message_unsent[mes].who, sa_log_drivers[dr]->modules[mod].alias))
 					continue;
-				if (sa_log_drivers[dr]->modules[mod].level <= sa_log_message_unsent[mes].level) {
+				if (sa_log_drivers[dr]->modules[mod].level >= sa_log_message_unsent[mes].level) {
 					sa_log_drivers[dr]->modules[mod].ops->write(sa_log_drivers[dr]->modules + mod, sa_log_message_unsent[mes].level, sa_log_message_unsent[mes].message);
 					sa_log_message_unsent[mes].sent = 1;
 					ok = 1;
@@ -197,5 +197,22 @@ void sa_log_write_all(enum sa_log_level level, const char * format, ...) {
 		sa_log_store_message(0, level, message);
 		return;
 	}
+
+	unsigned int i, sent = 0;
+	for (i = 0; i < sa_log_nb_drivers; i++) {
+		unsigned int j;
+		for (j = 0; j < sa_log_drivers[i]->nb_modules; j++) {
+			if (sa_log_drivers[i]->modules[j].level >= level) {
+				sa_log_drivers[i]->modules[j].ops->write(sa_log_drivers[i]->modules + j, level, message);
+				sent = 1;
+			}
+		}
+	}
+
+	if (!sent)
+		sa_log_store_message(0, level, message);
+
+	if (sent)
+		free(message);
 }
 

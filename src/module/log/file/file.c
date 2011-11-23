@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 13:05:16 +0100                         *
+*  Last modified: Tue, 22 Nov 2011 18:02:27 +0100                         *
 \*************************************************************************/
 
 // realloc
@@ -37,13 +37,13 @@ static void sa_log_file_init(void) __attribute__((constructor));
 
 
 static struct sa_log_driver sa_log_file_driver = {
-	.name        = "file",
-	.add         = sa_log_file_add,
-	.data        = 0,
-	.cookie      = 0,
-	.api_version = STORIQARCHIVER_LOG_APIVERSION,
-	.modules     = 0,
-	.nbModules   = 0,
+	.name         = "file",
+	.add          = sa_log_file_add,
+	.data         = 0,
+	.cookie       = 0,
+	.api_version  = STORIQARCHIVER_LOG_APIVERSION,
+	.modules      = 0,
+	.nb_modules   = 0,
 };
 
 
@@ -55,9 +55,9 @@ int sa_log_file_add(struct sa_log_driver * driver, const char * alias, enum sa_l
 	if (!path)
 		return 1;
 
-	driver->modules = realloc(driver->modules, (driver->nbModules + 1) * sizeof(struct sa_log_module));
-	sa_log_file_new(driver->modules + driver->nbModules, alias, level, path);
-	driver->nbModules++;
+	driver->modules = realloc(driver->modules, (driver->nb_modules + 1) * sizeof(struct sa_log_module));
+	sa_log_file_new(driver->modules + driver->nb_modules, alias, level, path);
+	driver->nb_modules++;
 
 	return 0;
 }

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:47:18 +0100                         *
+*  Last modified: Tue, 22 Nov 2011 15:07:44 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -38,7 +38,7 @@
 #include "config.h"
 #include "scheduler.h"
 
-static void _sa_showHelp(char * command);
+static void sa_show_help(char * command);
 
 int main(int argc, char ** argv) {
 	sa_log_write_all(sa_log_level_info, "StorIqArchiver, version: %s, build: %s %s", STORIQARCHIVER_VERSION, __DATE__, __TIME__);
@@ -77,7 +77,7 @@ int main(int argc, char ** argv) {
 				break;
 
 			case 'h':
-				_sa_showHelp(*argv);
+				sa_show_help(*argv);
 				return 0;
 
 			case 'p':
@@ -98,7 +98,7 @@ int main(int argc, char ** argv) {
 
 			default:
 				sa_log_write_all(sa_log_level_error, "Parsing option: unknown option '%c'", c);
-				_sa_showHelp(*argv);
+				sa_show_help(*argv);
 				return 1;
 		}
 	}
@@ -140,7 +140,7 @@ int main(int argc, char ** argv) {
 	return 0;
 }
 
-void _sa_showHelp(char * command) {
+void sa_show_help(char * command) {
 	char * ptr = strrchr(command, '/');
 	if (ptr)
 		ptr++;

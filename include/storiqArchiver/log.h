@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 12:41:25 +0100                         *
+*  Last modified: Tue, 22 Nov 2011 18:00:55 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LOG_H__
@@ -83,7 +83,7 @@ struct sa_log_driver {
 	int api_version;
 
 	struct sa_log_module * modules;
-	unsigned int nbModules;
+	unsigned int nb_modules;
 };
 
 /**
