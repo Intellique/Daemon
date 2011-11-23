@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:43:18 +0100                         *
+*  Last modified: Wed, 23 Nov 2011 11:35:42 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_DATABASE_H__
@@ -44,9 +44,18 @@ struct sa_database {
 	} * ops;
 	void * data;
 
-	// reserved for server
+	// used by server only
+	// should not be modified
 	void * cookie;
+	int api_version;
 };
+
+/**
+ * \brief Current api version
+ *
+ * Will increment from new version of struct sa_database or struct sa_database_connection
+ */
+#define STORIQARCHIVER_DATABASE_APIVERSION 1
 
 struct sa_database_connection {
 	unsigned int id;
@@ -80,7 +89,7 @@ struct sa_database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*cancelTransaction)(struct sa_database_connection * db);
+		int (*cancel_transaction)(struct sa_database_connection * db);
 		/**
 		 * \brief finish a transaction
 		 * \param db : a database connection
@@ -89,7 +98,7 @@ struct sa_database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*finishTransaction)(struct sa_database_connection * db);
+		int (*finish_transaction)(struct sa_database_connection * db);
 		/**
 		 * \brief starts a transaction
 		 * \param db : a database connection
@@ -99,48 +108,7 @@ struct sa_database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*startTransaction)(struct sa_database_connection * db, short readOnly);
-
-		struct library_changer * (*getChanger)(struct sa_database_connection * db, const char * hostName);
-		int (*getNbChanger)(struct sa_database_connection * db, const char * hostName);
-
-		/**
-		 * \brief add a new job
-		 * \param db : a database connection
-		 * \param job : a job
-		 * \param index : n new job
-		 */
-		struct job * (*addJob)(struct sa_database_connection * db, struct job * job, unsigned int index, time_t since);
-		/**
-		 * \brief checks jobs modified between \a since and \a to
-		 * \param db : a database connection
-		 * \param since : start time
-		 * \return a value which correspond to
-		 * \li > 0 is the number of modified jobs
-		 * \li 0 if no changes
-		 * \li < 0 if error
-		 */
-		int (*jobModified)(struct sa_database_connection * db, time_t since);
-		/**
-		 * \brief checks new jobs created between \a since and \a to
-		 * \param db : a database connection
-		 * \param since : start time
-		 * \return a value which correspond to
-		 * \li > 0 is the number of created jobs
-		 * \li 0 if there is no new jobs
-		 * \li < 0 if error
-		 */
-		int (*newJobs)(struct sa_database_connection * db, time_t since);
-		/**
-		 * \brief update modified jobs
-		 * \param db : a database connection
-		 * \param job : update this job
-		 * \return a value which correspond to
-		 * \li > 0 if this job has been updated
-		 * \li 0 if no update
-		 * \li < 0 if error
-		 */
-		int (*updateJob)(struct sa_database_connection * db, struct job * job);
+		int (*start_transaction)(struct sa_database_connection * db, short readOnly);
 	} * ops;
 	void * data;
 };

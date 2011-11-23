@@ -22,13 +22,29 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 Nov 2011 11:36:03 +0100                         *
+*  Last modified: Wed, 23 Nov 2011 12:00:46 +0100                         *
 \*************************************************************************/
 
-#ifndef __STORIQARCHIVER_SCHEDULER_H__
-#define __STORIQARCHIVER_SCHEDULER_H__
+#ifndef __STORIQARCHIVER_DB_POSTGRESQL_CONNNECTION_H__
+#define __STORIQARCHIVER_DB_POSTGRESQL_CONNNECTION_H__
 
-void sa_sched_do_loop(void);
+#include <postgresql/libpq-fe.h>
+#include <storiqArchiver/database.h>
+
+struct sa_db_postgresql_private {
+	char * user;
+	char * password;
+	char * db;
+	char * host;
+	char * port;
+};
+
+struct sa_db_postgresql_connetion_private {
+	PGconn * db_con;
+};
+
+int sa_db_postgresql_init_connection(struct sa_database_connection * connection, struct sa_db_postgresql_private * driver_private);
+void sa_db_postgresql_pr_free(struct sa_db_postgresql_private * self);
 
 #endif
 

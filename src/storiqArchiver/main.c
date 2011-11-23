@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 15:07:44 +0100                         *
+*  Last modified: Wed, 23 Nov 2011 11:36:37 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -133,7 +133,7 @@ int main(int argc, char ** argv) {
 		return 3;
 	}
 
-	sa_sched_doLoop();
+	sa_sched_do_loop();
 
 	sa_log_write_all(sa_log_level_info, "StorIqArchiver exit");
 

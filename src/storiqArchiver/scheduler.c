@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:47:27 +0100                         *
+*  Last modified: Wed, 23 Nov 2011 11:36:19 +0100                         *
 \*************************************************************************/
 
 // free, realloc
@@ -44,7 +44,7 @@ static void _sa_sched_exit(int signal);
 static short _sa_sched_stop_request = 0;
 
 
-void sa_sched_doLoop() {
+void sa_sched_do_loop() {
 	sa_log_write_all(sa_log_level_info, "Scheduler: starting main loop");
 
 	signal(SIGINT, _sa_sched_exit);
@@ -62,6 +62,7 @@ void sa_sched_doLoop() {
 		return;
 	}
 
+	/*
 	static struct job ** jobs = 0;
 	static unsigned int nbJobs = 0;
 
@@ -130,7 +131,7 @@ void sa_sched_doLoop() {
 		// if (sched_stopRequest) {}
 
 		lastUpdate = update;
-	}
+	}*/
 
 	connection.ops->free(&connection);
 }
