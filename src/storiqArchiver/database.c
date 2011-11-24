@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 Nov 2011 13:05:35 +0100                         *
+*  Last modified: Thu, 24 Nov 2011 11:34:50 +0100                         *
 \*************************************************************************/
 
 // realloc
@@ -65,17 +65,30 @@ struct sa_database * sa_db_get_db(const char * driver) {
 }
 
 void sa_db_register_db(struct sa_database * db) {
-	if (!db)
+	if (!db) {
+		sa_log_write_all(sa_log_level_error, "Db: Try to register with driver=0");
 		return;
+	}
+
+	if (db->api_version != STORIQARCHIVER_DATABASE_APIVERSION) {
+		sa_log_write_all(sa_log_level_error, "Db: Driver(%s) has not the correct api version (current: %d, expected: %d)", db->name, db->api_version, STORIQARCHIVER_DATABASE_APIVERSION);
+		return;
+	}
 
 	sa_db_databases = realloc(sa_db_databases, (sa_db_nb_databases + 1) * sizeof(struct sa_database *));
 	sa_db_databases[sa_db_nb_databases] = db;
 	sa_db_nb_databases++;
 
 	sa_loader_register_ok();
+
+	sa_log_write_all(sa_log_level_info, "Db: Driver(%s) is now registred", db->name);
 }
 
 void sa_db_set_default_db(struct sa_database * db) {
+	if (sa_db_default_db)
+		sa_log_write_all(sa_log_level_debug, "Db: set new default database from %s to %s", sa_db_default_db->name, db->name);
+	else
+		sa_log_write_all(sa_log_level_debug, "Db: set new default database to %s", db->name);
 	if (db)
 		sa_db_default_db = db;
 }

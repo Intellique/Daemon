@@ -22,13 +22,11 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 Nov 2011 12:59:11 +0100                         *
+*  Last modified: Thu, 24 Nov 2011 11:27:02 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_DATABASE_H__
 #define __STORIQARCHIVER_DATABASE_H__
-
-#include <sys/time.h>
 
 struct sa_database_connection;
 struct sa_hashtable;

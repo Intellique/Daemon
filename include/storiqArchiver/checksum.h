@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 24 Nov 2011 09:40:44 +0100                         *
+*  Last modified: Thu, 24 Nov 2011 10:32:48 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
@@ -339,7 +339,7 @@ struct sa_checksum_driver {
  * \param[in] length : length of \a data
  * \return dynamically allocated string which contains checksum or NULL if failed
  */
-char * sa_checksum_compute(const char * checksum, const char * data, unsigned int length);
+char * sa_checksum_compute(const char * checksum, const char * data, ssize_t length);
 
 /**
  * \brief This function converts a digest into hexadecimal form
@@ -349,7 +349,7 @@ char * sa_checksum_compute(const char * checksum, const char * data, unsigned in
  * \note this function supposed that hexDigest is already allocated
  * and its size is, at least, \f$ 2 length + 1 \f$
  */
-void sa_checksum_convert_to_hex(unsigned char * digest, int length, char * hexDigest);
+void sa_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * hexDigest);
 
 /**
  * \brief get a checksum driver

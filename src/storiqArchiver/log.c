@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 Nov 2011 11:09:15 +0100                         *
+*  Last modified: Thu, 24 Nov 2011 12:02:52 +0100                         *
 \*************************************************************************/
 
 // va_end, va_start
@@ -112,6 +112,11 @@ int sa_log_flush_message() {
 }
 
 struct sa_log_driver * sa_log_get_driver(const char * driver) {
+	if (!driver) {
+		sa_log_write_all(sa_log_level_error, "Log: Driver shall not be null");
+		return 0;
+	}
+
 	unsigned int i;
 	for (i = 0; i < sa_log_nb_drivers; i++)
 		if (!strcmp(driver, sa_log_drivers[i]->name))
@@ -153,7 +158,7 @@ void sa_log_register_driver(struct sa_log_driver * driver) {
 	unsigned int i;
 	for (i = 0; i < sa_log_nb_drivers; i++)
 		if (sa_log_drivers[i] == driver || !strcmp(driver->name, sa_log_drivers[i]->name)) {
-			sa_log_write_all(sa_log_level_error, "Log: Driver(%s) is already registred", driver->name);
+			sa_log_write_all(sa_log_level_info, "Log: Driver(%s) is already registred", driver->name);
 			return;
 		}
 
@@ -178,6 +183,9 @@ void sa_log_store_message(char * who, enum sa_log_level level, char * message) {
 }
 
 enum sa_log_level sa_log_string_to_level(const char * string) {
+	if (!string)
+		return sa_log_level_unknown;
+
 	struct sa_log_level2 * ptr;
 	for (ptr = sa_log_levels; ptr->level != sa_log_level_unknown; ptr++)
 		if (!strcasecmp(ptr->name, string))

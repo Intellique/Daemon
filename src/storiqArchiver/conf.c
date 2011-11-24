@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 Nov 2011 12:59:30 +0100                         *
+*  Last modified: Thu, 24 Nov 2011 11:24:25 +0100                         *
 \*************************************************************************/
 
 // strerror
@@ -69,7 +69,7 @@ int sa_conf_check_pid(int pid) {
 	snprintf(path, 64, "/proc/%d/exe", pid);
 
 	if (access(path, F_OK)) {
-		sa_log_write_all(sa_log_level_debug, "Conf: check_pid: there is no process with pid=%d", pid);
+		sa_log_write_all(sa_log_level_info, "Conf: check_pid: there is no process with pid=%d", pid);
 		return 0;
 	}
 
@@ -85,38 +85,38 @@ int sa_conf_check_pid(int pid) {
 	else
 		ptr = link;
 
-	int ok = strcmp(link, "storiqArchiver");
-	sa_log_write_all(sa_log_level_info, "Conf: check_pid: process 'storiqArchiver' %s", ok ? "not found" : "found");
-	return ok ? -1 : 1;
+	int failed = strcmp(link, "storiqArchiver");
+	sa_log_write_all(failed ? sa_log_level_warning : sa_log_level_info, "Conf: check_pid: process 'storiqArchiver' %s", failed ? "not found" : "found");
+	return failed ? -1 : 1;
 }
 
-int sa_conf_delete_pid(const char * pidFile) {
-	if (!pidFile) {
-		sa_log_write_all(sa_log_level_error, "Conf: delete_pid: pidFile is null");
+int sa_conf_delete_pid(const char * pid_file) {
+	if (!pid_file) {
+		sa_log_write_all(sa_log_level_error, "Conf: delete_pid: pid_file is null");
 		return 1;
 	}
 
-	int ok = unlink(pidFile);
-	if (ok)
+	int failed = unlink(pid_file);
+	if (failed)
 		sa_log_write_all(sa_log_level_error, "Conf: delete_pid: delete pid file => failed");
 	else
 		sa_log_write_all(sa_log_level_debug, "Conf: delete_pid: delete pid file => ok");
-	return ok;
+	return failed;
 }
 
-int sa_conf_read_pid(const char * pidFile) {
-	if (!pidFile) {
-		sa_log_write_all(sa_log_level_error, "Conf: read_pid: pidFile is null");
+int sa_conf_read_pid(const char * pid_file) {
+	if (!pid_file) {
+		sa_log_write_all(sa_log_level_error, "Conf: read_pid: pid_file is null");
 		return -1;
 	}
 
-	if (access(pidFile, R_OK)) {
-		sa_log_write_all(sa_log_level_warning, "Conf: read_pid: read pid failed because we can read '%s'", pidFile);
+	if (access(pid_file, R_OK)) {
+		sa_log_write_all(sa_log_level_info, "Conf: read_pid: read pid failed because cannot access to '%s'", pid_file);
 		return -1;
 	}
 
 	// TODO: do some check
-	int fd = open(pidFile, O_RDONLY);
+	int fd = open(pid_file, O_RDONLY);
 	char buffer[16];
 	read(fd, buffer, 16);
 	close(fd);
@@ -127,31 +127,31 @@ int sa_conf_read_pid(const char * pidFile) {
 		return pid;
 	}
 
-	sa_log_write_all(sa_log_level_warning, "Conf: read_pid: failed to parse pid");
+	sa_log_write_all(sa_log_level_error, "Conf: read_pid: failed to parse pid");
 	return -1;
 }
 
-int sa_conf_write_pid(const char * pidFile, int pid) {
-	if (!pidFile || pid < 1) {
-		if (!pidFile)
-			sa_log_write_all(sa_log_level_debug, "Conf: write_pid: pidFile is null");
+int sa_conf_write_pid(const char * pid_file, int pid) {
+	if (!pid_file || pid < 1) {
+		if (!pid_file)
+			sa_log_write_all(sa_log_level_error, "Conf: write_pid: pid_file is null");
 		if (pid < 1)
-			sa_log_write_all(sa_log_level_debug, "Conf: write_pid: pid should be greater than 0 (pid=%d)", pid);
+			sa_log_write_all(sa_log_level_error, "Conf: write_pid: pid should be greater than 0 (pid=%d)", pid);
 		return 1;
 	}
 
-	int fd = open(pidFile, O_RDONLY | O_TRUNC | O_CREAT, 0644);
-	if (fd < 0)
+	int fd = open(pid_file, O_RDONLY | O_TRUNC | O_CREAT, 0644);
+	if (fd < 0) {
+		sa_log_write_all(sa_log_level_error, "Conf: write_pid: failed to open '%s' => %s", pid_file, strerror(errno));
 		return 1;
+	}
 
-	char buffer[16];
-	int length = 0;
-	snprintf(buffer, 16, "%d\n%n", pid, &length);
-
-	int nbWrite = write(fd, buffer, length);
+	dprintf(fd, "%d\n", pid);
 	close(fd);
 
-	return nbWrite != length;
+	sa_log_write_all(sa_log_level_error, "Conf: write_pid: write ok (pid=%d)", pid);
+
+	return 0;
 }
 
 
@@ -161,21 +161,21 @@ void sa_conf_load_db(struct sa_hashtable * params) {
 
 	char * driver = sa_hashtable_value(params, "driver");
 	if (!driver) {
-		sa_log_write_all(sa_log_level_error, "conf: load_db: driver not found");
+		sa_log_write_all(sa_log_level_error, "conf: load_db: there is no driver in config file");
 		return;
 	}
 
 	struct sa_database * db = sa_db_get_db(driver);
 	if (db) {
-		sa_log_write_all(sa_log_level_info, "Conf: load_db: loading driver (%s) => ok", driver);
+		sa_log_write_all(sa_log_level_info, "Conf: load_db: driver (%s) => ok", driver);
 		short setup_ok = !db->ops->setup(db, params);
 		short ping_ok = db->ops->ping(db) > 0;
-		sa_log_write_all(sa_log_level_debug, "Conf: load_db: setup %s, ping %s", setup_ok ? "ok" : "failed", ping_ok ? "ok" : "failed");
+		sa_log_write_all(setup_ok || ping_ok ? sa_log_level_info : sa_log_level_error, "Conf: load_db: setup %s, ping %s", setup_ok ? "ok" : "failed", ping_ok ? "ok" : "failed");
 
 		if (!sa_db_get_default_db())
 			sa_db_set_default_db(db);
 	} else
-		sa_log_write_all(sa_log_level_error, "Conf: load_db: loading driver (%s) => failed", driver);
+		sa_log_write_all(sa_log_level_error, "Conf: load_db: no driver (%s) found", driver);
 }
 
 void sa_conf_load_log(struct sa_hashtable * params) {

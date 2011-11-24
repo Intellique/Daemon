@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 12:44:44 +0100                         *
+*  Last modified: Thu, 24 Nov 2011 10:49:25 +0100                         *
 \*************************************************************************/
 
 // pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate,
@@ -71,13 +71,21 @@ static struct sa_checksum_ops sa_checksum_helper_ops = {
 	.update	= sa_checksum_helper_update,
 };
 
-char * sa_checksum_compute(const char * checksum, const char * data, unsigned int length) {
-	if (!checksum || !data || length == 0)
+char * sa_checksum_compute(const char * checksum, const char * data, ssize_t length) {
+	if (!checksum || !data || length == 0) {
+		sa_log_write_all(sa_log_level_error, "Checksum: compute error");
+		if (!checksum)
+			sa_log_write_all(sa_log_level_error, "Checksum: because checksum is null");
+		if (!checksum)
+			sa_log_write_all(sa_log_level_error, "Checksum: because data is null");
+		if (length < 1)
+			sa_log_write_all(sa_log_level_error, "Checksum: because length is lower than 1 (length=%zd)", length);
 		return 0;
+	}
 
 	struct sa_checksum_driver * driver = sa_checksum_get_driver(checksum);
 	if (!driver) {
-		sa_log_write_all(sa_log_level_error, "Checksum: Driver %s not found", checksum);
+		sa_log_write_all(sa_log_level_error, "Checksum: Driver '%s' not found", checksum);
 		return 0;
 	}
 
@@ -87,23 +95,22 @@ char * sa_checksum_compute(const char * checksum, const char * data, unsigned in
 	chck.ops->update(&chck, data, length);
 
 	char * digest = chck.ops->digest(&chck);
-
 	chck.ops->free(&chck);
 
-	sa_log_write_all(sa_log_level_debug, "Checksum: compute %s checksum => %s", checksum, digest);
+	sa_log_write_all(sa_log_level_debug, "Checksum: compute %s checksum => '%s'", checksum, digest);
 
 	return digest;
 }
 
-void sa_checksum_convert_to_hex(unsigned char * digest, int length, char * hexDigest) {
+void sa_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * hexDigest) {
 	if (!digest || length < 1 || !hexDigest) {
-		sa_log_write_all(sa_log_level_error, "Checksum: while sa_checksum_convert_to_hex");
+		sa_log_write_all(sa_log_level_error, "Checksum: sa_checksum_convert_to_hex error");
 		if (!digest)
-			sa_log_write_all(sa_log_level_error, "Checksum: error because digest is null");
+			sa_log_write_all(sa_log_level_error, "Checksum: because digest is null");
 		if (length < 1)
-			sa_log_write_all(sa_log_level_error, "Checksum: error because length is lower than 1 (length=%d)", length);
+			sa_log_write_all(sa_log_level_error, "Checksum: because length is lower than 1 (length=%zd)", length);
 		if (!hexDigest)
-			sa_log_write_all(sa_log_level_error, "Checksum: error because hexDigest is null");
+			sa_log_write_all(sa_log_level_error, "Checksum: because hexDigest is null");
 		return;
 	}
 
@@ -112,7 +119,7 @@ void sa_checksum_convert_to_hex(unsigned char * digest, int length, char * hexDi
 		snprintf(hexDigest + (i << 1), 3, "%02x", digest[i]);
 	hexDigest[i << 1] = '\0';
 
-	sa_log_write_all(sa_log_level_debug, "Checksum: computed => %s", hexDigest);
+	sa_log_write_all(sa_log_level_debug, "Checksum: computed => '%s'", hexDigest);
 }
 
 struct sa_checksum_driver * sa_checksum_get_driver(const char * driver) {
@@ -122,7 +129,7 @@ struct sa_checksum_driver * sa_checksum_get_driver(const char * driver) {
 			return sa_checksum_drivers[i];
 	void * cookie = sa_loader_load("checksum", driver);
 	if (!cookie) {
-		sa_log_write_all(sa_log_level_error, "Checksum: Failed to load driver %s", driver);
+		sa_log_write_all(sa_log_level_error, "Checksum: Failed to load driver '%s'", driver);
 		return 0;
 	}
 	for (i = 0; i < sa_checksum_nb_drivers; i++)
@@ -131,11 +138,18 @@ struct sa_checksum_driver * sa_checksum_get_driver(const char * driver) {
 			dr->cookie = cookie;
 			return dr;
 		}
-	sa_log_write_all(sa_log_level_error, "Checksum: Driver %s not found", driver);
+	sa_log_write_all(sa_log_level_error, "Checksum: Driver '%s' not found", driver);
 	return 0;
 }
 
 struct sa_checksum * sa_checksum_get_helper(struct sa_checksum * h, struct sa_checksum * checksum) {
+	if (!checksum) {
+		sa_log_write_all(sa_log_level_error, "Checksum: get_helper require that checksum is not null");
+		return 0;
+	}
+
+	sa_log_write_all(sa_log_level_debug, "Checksum: create new helper for checksum = %p", checksum);
+
 	if (!h)
 		h = malloc(sizeof(struct sa_checksum));
 	h->ops = &sa_checksum_helper_ops;
@@ -223,6 +237,8 @@ void * sa_checksum_helper_work(void * param) {
 	struct sa_checksum * h = param;
 	struct sa_checksum_helper_private * hp = h->data;
 
+	sa_log_write_all(sa_log_level_debug, "Checksum: Starting helper for checksum(%p)", hp->checksum);
+
 	ssize_t nb_read;
 	char buffer[4096];
 	while ((nb_read = read(hp->fd_in, buffer, 4096)) > 0)
@@ -237,6 +253,8 @@ void * sa_checksum_helper_work(void * param) {
 
 	pthread_cond_signal(&hp->wait);
 	pthread_mutex_unlock(&hp->lock);
+
+	sa_log_write_all(sa_log_level_debug, "Checksum: Helper for checksum(%p) terminated", hp->checksum);
 
 	return 0;
 }
@@ -255,7 +273,7 @@ void sa_checksum_register_driver(struct sa_checksum_driver * driver) {
 	unsigned int i;
 	for (i = 0; i < sa_checksum_nb_drivers; i++)
 		if (sa_checksum_drivers[i] == driver || !strcmp(driver->name, sa_checksum_drivers[i]->name)) {
-			sa_log_write_all(sa_log_level_error, "Checksum: Driver(%s) is already registred", driver->name);
+			sa_log_write_all(sa_log_level_warning, "Checksum: Driver(%s) is already registred", driver->name);
 			return;
 		}
 
