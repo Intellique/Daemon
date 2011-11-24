@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 14:57:59 +0100                         *
+*  Last modified: Thu, 24 Nov 2011 12:18:56 +0100                         *
 \*************************************************************************/
 
 // dlclose, dlerror, dlopen
@@ -33,6 +33,8 @@
 #include <stdio.h>
 // access
 #include <unistd.h>
+
+#include <storiqArchiver/log.h>
 
 #include "config.h"
 #include "loader.h"
@@ -61,6 +63,7 @@ void * sa_loader_load_file(const char * filename) {
 
 	void * cookie = dlopen(filename, RTLD_NOW);
 	if (!cookie) {
+		sa_log_write_all(sa_log_level_debug, "Loader: failed to load '%s' because %s", filename, dlerror());
 		return 0;
 	} else if (!sa_loader_loaded) {
 		dlclose(cookie);

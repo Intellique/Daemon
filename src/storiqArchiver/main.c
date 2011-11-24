@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 Nov 2011 11:36:37 +0100                         *
+*  Last modified: Thu, 24 Nov 2011 12:33:53 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -111,15 +111,15 @@ int main(int argc, char ** argv) {
 		int code = sa_conf_check_pid(pid);
 		switch (code) {
 			case -1:
-				printf("Warning: another process used this pid (%d)\n", pid);
+				sa_log_write_all(sa_log_level_error, "Warning: another process used this pid (%d)", pid);
 				break;
 
 			case 0:
-				printf("Info: daemon is dead, long life the daemon\n");
+				sa_log_write_all(sa_log_level_error, "Info: daemon is dead, long life the daemon");
 				break;
 
 			case 1:
-				printf("Error: Daemon is alive (pid: %d)\n", pid);
+				sa_log_write_all(sa_log_level_error, "Error: Daemon is alive (pid: %d)", pid);
 				return 2;
 		}
 	}
@@ -129,7 +129,7 @@ int main(int argc, char ** argv) {
 
 	// read configuration
 	if (sa_conf_read_config(config_file)) {
-		printf("Error while parsing '%s'\n", config_file);
+		sa_log_write_all(sa_log_level_error, "Error while parsing '%s'", config_file);
 		return 3;
 	}
 

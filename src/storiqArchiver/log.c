@@ -22,14 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 24 Nov 2011 12:02:52 +0100                         *
+*  Last modified: Thu, 24 Nov 2011 12:29:11 +0100                         *
 \*************************************************************************/
 
 // va_end, va_start
 #include <stdarg.h>
 // realloc
 #include <stdlib.h>
-// snprintf
+// printf, snprintf
 #include <stdio.h>
 // strcasecmp, strcmp
 #include <string.h>
@@ -38,6 +38,7 @@
 
 #include "loader.h"
 
+static void sa_log_exit(void) __attribute__((destructor));
 static int sa_log_flush_message(void);
 static void sa_log_store_message(char * who, enum sa_log_level level, char * message);
 
@@ -64,6 +65,12 @@ static struct sa_log_level2 {
 	{ sa_log_level_unknown, "Unknown" },
 };
 
+
+void sa_log_exit() {
+	unsigned int mes;
+	for (mes = 0; mes < sa_log_nb_message_unsent; mes++)
+		printf("%c: %s\n", sa_log_level_to_string(sa_log_message_unsent[mes].level)[0], sa_log_message_unsent[mes].message);
+}
 
 int sa_log_flush_message() {
 	unsigned int mes, ok = 0;
