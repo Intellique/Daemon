@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 24 Nov 2011 12:29:11 +0100                         *
+*  Last modified: Thu, 24 Nov 2011 12:50:15 +0100                         *
 \*************************************************************************/
 
 // va_end, va_start
@@ -34,14 +34,14 @@
 // strcasecmp, strcmp
 #include <string.h>
 
-#include <storiqArchiver/log.h>
-
 #include "loader.h"
+#include "log.h"
 
 static void sa_log_exit(void) __attribute__((destructor));
 static int sa_log_flush_message(void);
 static void sa_log_store_message(char * who, enum sa_log_level level, char * message);
 
+static int sa_log_display_at_exit = 1;
 static struct sa_log_driver ** sa_log_drivers = 0;
 static unsigned int sa_log_nb_drivers = 0;
 static struct sa_log_message_unsent {
@@ -66,7 +66,14 @@ static struct sa_log_level2 {
 };
 
 
+void sa_log_disable_display_log() {
+	sa_log_display_at_exit = 0;
+}
+
 void sa_log_exit() {
+	if (!sa_log_display_at_exit)
+		return;
+
 	unsigned int mes;
 	for (mes = 0; mes < sa_log_nb_message_unsent; mes++)
 		printf("%c: %s\n", sa_log_level_to_string(sa_log_message_unsent[mes].level)[0], sa_log_message_unsent[mes].message);

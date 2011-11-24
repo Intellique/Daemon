@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 24 Nov 2011 12:33:53 +0100                         *
+*  Last modified: Thu, 24 Nov 2011 12:50:32 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -33,9 +33,9 @@
 #include <string.h>
 
 #include <storiqArchiver/conf.h>
-#include <storiqArchiver/log.h>
 
 #include "config.h"
+#include "log.h"
 #include "scheduler.h"
 
 static void sa_show_help(char * command);
@@ -146,6 +146,8 @@ void sa_show_help(char * command) {
 		ptr++;
 	else
 		ptr = command;
+
+	sa_log_disable_display_log();
 
 	printf("%s, version: %s, build: %s %s\n", ptr, STORIQARCHIVER_VERSION, __DATE__, __TIME__);
 	printf("    --config,   -c : Read this config file instead of \"%s\"\n", DEFAULT_CONFIG_FILE);
