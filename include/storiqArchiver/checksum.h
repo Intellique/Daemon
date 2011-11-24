@@ -22,11 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 11:36:24 +0100                         *
+*  Last modified: Thu, 24 Nov 2011 09:40:44 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_CHECKSUM_H__
 #define __STORIQARCHIVER_CHECKSUM_H__
+
+// ssize_t
+#include <sys/types.h>
 
 /**
  * \addtogroup UseChecksum Use checksum module
