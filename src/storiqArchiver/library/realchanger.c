@@ -22,12 +22,25 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:45:41 +0100                         *
+*  Last modified: Sun, 27 Nov 2011 16:06:11 +0100                         *
 \*************************************************************************/
+
+// malloc
+#include <stdlib.h>
+
+#include <storiqArchiver/library/ressource.h>
 
 #include "scsi.h"
 
-static int sa_realchanger_load(struct sa_changer * ch);
+struct sa_realchanger_private {
+    int fd;
+};
+
+struct sa_realdrive_private {
+    int fd;
+};
+
+static int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa_slot * to);
 static int sa_realchanger_transfer(struct sa_changer * ch);
 static int sa_realchanger_unload(struct sa_changer * ch);
 
@@ -48,12 +61,30 @@ struct sa_drive_ops sa_realdrive_ops = {
 };
 
 
-int sa_realchanger_load(struct sa_changer * ch) {
+int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa_slot * to) {
+    if (!ch || !from || !to) {
+        return 1;
+    }
+
+    if (to == from)
+        return 0;
+
+    if (from->changer != ch || to->changer != ch)
+        return 1;
+
+    struct sa_realchanger_private * self = ch->data;
+    sa_scsi_mtx_load(self->fd, ch, from, to);
+
 	return 0;
 }
 
-void sa_realchanger_setup(struct sa_changer * changer) {
+void sa_realchanger_setup(struct sa_changer * changer, int fd) {
+    struct sa_realchanger_private * ch = malloc(sizeof(struct sa_realchanger_private));
+    ch->fd = fd;
+
 	changer->ops = &sa_realchanger_ops;
+    changer->data = ch;
+    changer->res = sa_ressource_new();
 
 	unsigned int i;
 	for (i = 0; i < changer->nb_drives; i++)

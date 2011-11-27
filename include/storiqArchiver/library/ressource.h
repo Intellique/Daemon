@@ -22,55 +22,23 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:45:21 +0100                         *
+*  Last modified: Fri, 25 Nov 2011 12:52:04 +0100                         *
 \*************************************************************************/
 
-#include <storiqArchiver/library/changer.h>
-#include <storiqArchiver/library/drive.h>
+#ifndef __STORIQARCHIVER_LIBRARY_RESSOURCE_H__
+#define __STORIQARCHIVER_LIBRARY_RESSOURCE_H__
 
-static int sa_fakechanger_load(struct sa_changer * ch);
-static int sa_fakechanger_transfer(struct sa_changer * ch);
-static int sa_fakechanger_unload(struct sa_changer * ch);
-
-static int sa_fakedrive_eject(struct sa_drive * dr);
-static int sa_fakedrive_rewind(struct sa_drive * drive);
-static int sa_fakedrive_set_file_position(struct sa_drive * drive, int file_position);
-
-struct sa_changer_ops sa_fakechanger_ops = {
-	.load     = sa_fakechanger_load,
-	.transfer = sa_fakechanger_transfer,
-	.unload   = sa_fakechanger_unload,
+struct sa_ressource {
+    struct sa_ressource_ops {
+        int (*free)(struct sa_ressource * res);
+        int (*lock)(struct sa_ressource * res);
+        void (*unlock)(struct sa_ressource * res);
+    } * ops;
+    void * data;
 };
 
-struct sa_drive_ops sa_fakedrive_ops = {
-	.eject             = sa_fakedrive_eject,
-	.rewind            = sa_fakedrive_rewind,
-	.set_file_position = sa_fakedrive_set_file_position,
-};
+int sa_ressource_lock(int nb_res, struct sa_ressource * res1, struct sa_ressource * res2, ...);
+struct sa_ressource * sa_ressource_new(void);
 
-
-int sa_fakechanger_load(struct sa_changer * ch) {
-	return 0;
-}
-
-int sa_fakechanger_transfer(struct sa_changer * ch) {
-	return 0;
-}
-
-int sa_fakechanger_unload(struct sa_changer * ch) {
-	return 0;
-}
-
-
-int sa_fakedrive_eject(struct sa_drive * dr) {
-	return 0;
-}
-
-int sa_fakedrive_rewind(struct sa_drive * drive) {
-	return 0;
-}
-
-int sa_fakedrive_set_file_position(struct sa_drive * drive, int file_position) {
-	return 0;
-}
+#endif
 

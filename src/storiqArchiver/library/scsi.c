@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:46:19 +0100                         *
+*  Last modified: Sun, 27 Nov 2011 15:30:52 +0100                         *
 \*************************************************************************/
 
 #include <sys/types.h>
@@ -32,7 +32,6 @@
 #include <string.h>
 #include <sys/ioctl.h>
 
-#include <storiqArchiver/library.h>
 #include "scsi.h"
 
 typedef struct ElementModeSensePageHeader {
@@ -221,6 +220,41 @@ void sa_scsi_loaderinfo(int fd, struct sa_changer * changer) {
 		changer->barcode = 1;
 }
 
+void sa_scsi_mtx_load(int fd, struct sa_changer * ch, struct sa_slot * from, struct sa_slot * to) {
+	Inquiry_T inq;
+	RequestSense_T sense;
+
+	unsigned char hdr_inq[sizeof(struct sg_header) + sizeof(inq)];
+	unsigned char command[12];
+    command[0] = 0xA5;
+    command[1] = command[8] = command[9] = command[10] = command[11] = 0;
+
+    command[2] = ch->transportAddress >> 8;
+    command[3] = ch->transportAddress;
+
+    command[4] = from->address >> 8;
+    command[5] = from->address;
+
+    command[6] = to->address >> 8;
+    command[7] = to->address;
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = 12;
+	header.cmdp = command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = &inq;
+	header.timeout = 60000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+}
+
 void sa_scsi_mtx_status_new(int fd, struct sa_changer * changer) {
 	RequestSense_T s1;
 	unsigned char b1[136];
@@ -259,13 +293,15 @@ void sa_scsi_mtx_status_new(int fd, struct sa_changer * changer) {
 		slot->changer = changer;
 
 		slot->drive = 0;
-		if (i < changer->nb_drives)
+		if (i < changer->nb_drives) {
 			slot->drive = changer->drives + i;
+            changer->drives[i].slot = slot;
+        }
 
 		slot->tape = 0;
 	}
 
-	unsigned int nb_drives = ((int) sense_page->NumDataTransferHi << 8) + sense_page->NumMediumTransportLo;
+	//unsigned int nb_drives = ((int) sense_page->NumDataTransferHi << 8) + sense_page->NumMediumTransportLo;
 	unsigned int num_bytes = (sizeof(ElementStatusDataHeader_T) + 4 * sizeof(ElementStatusPage_T) + changer->nb_slots * sizeof(TransportElementDescriptor_T));
 
 	int start = ((int) sense_page->StorageStartHi << 8) + sense_page->StorageStartLo;
@@ -273,6 +309,8 @@ void sa_scsi_mtx_status_new(int fd, struct sa_changer * changer) {
 
 	start = ((int) sense_page->DataTransferStartHi << 8) + sense_page->DataTransferStartLo;
 	sa_scsi_mtx_status_update_slot(fd, changer, start, changer->nb_drives, num_bytes, DataTransferElement);
+
+    changer->transportAddress = ((int) sense_page->MediumTransportStartHi << 8) + sense_page->MediumTransportStartLo;
 }
 
 void sa_scsi_mtx_status_update_slot(int fd, struct sa_changer * changer, int start_element, int nb_elements, int num_bytes, enum ElementTypeCode type) {
@@ -281,7 +319,7 @@ void sa_scsi_mtx_status_update_slot(int fd, struct sa_changer * changer, int sta
 		int word2;
 	} idlun;
 	ioctl(fd, SCSI_IOCTL_GET_IDLUN, &idlun);
-	int id = idlun.word1 & 0xFF;
+	//int id = idlun.word1 & 0xFF;
 	int lun = idlun.word1 >> 8 & 0xFF;
 
 	unsigned char command[6] = { 0xB8, };
@@ -334,7 +372,8 @@ void sa_scsi_mtx_status_update_slot(int fd, struct sa_changer * changer, int sta
 			buffer += trans_elt_desc_length;
 			bytes_available -= trans_elt_desc_length;
 
-			int index_slots = trans_elt_desc->ElementAddress[0] << 8 | trans_elt_desc->ElementAddress[1];
+			int address = trans_elt_desc->ElementAddress[0] << 8 | trans_elt_desc->ElementAddress[1];
+			int index_slots = address;
 			switch (type) {
 				case DataTransferElement:
 					index_slots -= start_element;
@@ -351,7 +390,7 @@ void sa_scsi_mtx_status_update_slot(int fd, struct sa_changer * changer, int sta
 
 			sl->full = trans_elt_desc->Full > 0;
 			if (sl->full) {
-				strncpy(sl->volume_name, trans_elt_desc->PrimaryVolumeTag, 36);
+				strncpy(sl->volume_name, (char *) trans_elt_desc->PrimaryVolumeTag, 36);
 				sl->volume_name[36] = '\0';
 
 				int i;
@@ -359,6 +398,7 @@ void sa_scsi_mtx_status_update_slot(int fd, struct sa_changer * changer, int sta
 					sl->volume_name[i] = '\0';
 			} else
 				*sl->volume_name = '\0';
+            sl->address = address;
 
 			nb_found_element--;
 		}
