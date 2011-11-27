@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 Nov 2011 12:47:26 +0100                         *
+*  Last modified: Fri, 25 Nov 2011 12:44:23 +0100                         *
 \*************************************************************************/
 
 #define _XOPEN_SOURCE 500
@@ -39,8 +39,6 @@
 // sleep
 #include <unistd.h>
 
-#include <storiqArchiver/job.h>
-#include <storiqArchiver/library.h>
 #include <storiqArchiver/log.h>
 
 #include "common.h"

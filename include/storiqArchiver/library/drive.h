@@ -22,15 +22,67 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:44:14 +0100                         *
+*  Last modified: Sun, 27 Nov 2011 15:12:07 +0100                         *
 \*************************************************************************/
 
-#ifndef __STORIQARCHIVER_TAPE_H__
-#define __STORIQARCHIVER_TAPE_H__
+#ifndef __STORIQARCHIVER_LIBRARY_DRIVE_H__
+#define __STORIQARCHIVER_LIBRARY_DRIVE_H__
 
-struct sa_tape {
-	long id;
+struct sa_changer;
+struct sa_slot;
+
+enum sa_drive_status {
+	sa_drive_cleaning,
+	sa_drive_emptyIdle,
+	sa_drive_erasing,
+	sa_drive_error,
+	sa_drive_loadedIdle,
+	sa_drive_loading,
+	sa_drive_positioning,
+	sa_drive_reading,
+	sa_drive_unknown,
+	sa_drive_unloading,
+	sa_drive_writing,
 };
+
+struct sa_drive {
+	long id;
+	char * device;
+	char * scsiDevice;
+	enum sa_drive_status status;
+	char * model;
+	char * vendor;
+
+	int host;
+	int target;
+	int channel;
+	int bus;
+
+	struct sa_changer * changer;
+	struct sa_slot * slot;
+
+	struct sa_drive_ops {
+		int (*eject)(struct sa_drive * drive);
+		int (*rewind)(struct sa_drive * drive);
+		int (*set_file_position)(struct sa_drive * drive, int file_position);
+	} * ops;
+	void * data;
+};
+
+struct sa_slot {
+	long long id;
+	struct sa_changer * changer;
+	struct sa_drive * drive;
+	struct sa_tape * tape;
+
+	char volume_name[37];
+	char full;
+    int address;
+};
+
+
+const char * sa_drive_status_to_string(enum sa_drive_status status);
+enum sa_drive_status sa_drive_string_to_status(const char * status);
 
 #endif
 

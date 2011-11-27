@@ -22,12 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:45:30 +0100                         *
+*  Last modified: Fri, 25 Nov 2011 13:40:23 +0100                         *
 \*************************************************************************/
 
 #include <string.h>
 
-#include <storiqArchiver/library.h>
+#include <storiqArchiver/library/changer.h>
+#include <storiqArchiver/library/drive.h>
 
 static struct sa_changer_status2 {
 	const char * name;
@@ -64,7 +65,7 @@ static struct sa_drive_status2 {
 };
 
 
-const char * sa_changer_statusToString(enum sa_changer_status status) {
+const char * sa_changer_status_to_string(enum sa_changer_status status) {
 	struct sa_changer_status2 * ptr;
 	for (ptr = sa_library_status; ptr->name; ptr++)
 		if (ptr->status == status)
@@ -72,7 +73,7 @@ const char * sa_changer_statusToString(enum sa_changer_status status) {
 	return 0;
 }
 
-enum sa_changer_status sa_changer_stringToStatus(const char * status) {
+enum sa_changer_status sa_changer_string_to_status(const char * status) {
 	struct sa_changer_status2 * ptr;
 	for (ptr = sa_library_status; ptr->name; ptr++)
 		if (!strcmp(ptr->name, status))
@@ -80,7 +81,7 @@ enum sa_changer_status sa_changer_stringToStatus(const char * status) {
 	return ptr->status;
 }
 
-const char * sa_drive_statusToString(enum sa_drive_status status) {
+const char * sa_drive_status_to_string(enum sa_drive_status status) {
 	struct sa_drive_status2 * ptr;
 	for (ptr = sa_drive_status; ptr->name; ptr++)
 		if (ptr->status == status)
@@ -88,7 +89,7 @@ const char * sa_drive_statusToString(enum sa_drive_status status) {
 	return 0;
 }
 
-enum sa_drive_status sa_drive_stringToStatus(const char * status) {
+enum sa_drive_status sa_drive_string_to_status(const char * status) {
 	struct sa_drive_status2 * ptr;
 	for (ptr = sa_drive_status; ptr->name; ptr++)
 		if (!strcmp(ptr->name, status))

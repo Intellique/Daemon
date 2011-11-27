@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:46:36 +0100                         *
+*  Last modified: Sun, 27 Nov 2011 11:55:39 +0100                         *
 \*************************************************************************/
 
 // open
@@ -42,7 +42,7 @@
 // readlink
 #include <unistd.h>
 
-#include <storiqArchiver/library.h>
+#include <storiqArchiver/log.h>
 
 #include "common.h"
 #include "scsi.h"
@@ -78,6 +78,8 @@ void sa_changer_setup() {
 
 	changers = calloc(gl.gl_pathc, sizeof(struct sa_changer));
 	nbChangers = gl.gl_pathc;
+
+	sa_log_write_all(sa_log_level_info, "Library: Found %zd librar%s", gl.gl_pathc, gl.gl_pathc != 1 ? "ies" : "y");
 
 	unsigned int i;
 	for (i = 0; i < gl.gl_pathc; i++) {
@@ -119,6 +121,8 @@ void sa_changer_setup() {
 
 	gl.gl_offs = 0;
 	glob("/sys/class/scsi_device/*/device/scsi_tape", GLOB_DOOFFS, 0, &gl);
+
+	sa_log_write_all(sa_log_level_info, "Library: Found %zd drive%c", gl.gl_pathc, gl.gl_pathc != 1 ? 's' : '\0');
 
 	drives = calloc(gl.gl_pathc, sizeof(struct sa_drive));
 	nbDrives = gl.gl_pathc;
@@ -203,8 +207,6 @@ void sa_changer_setup_realchanger(struct sa_changer * changer) {
 	sa_scsi_loaderinfo(fd, changer);
 	sa_scsi_mtx_status_new(fd, changer);
 
-	close(fd);
-
-	sa_realchanger_setup(changer);
+	sa_realchanger_setup(changer, fd);
 }
 
