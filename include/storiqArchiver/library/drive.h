@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 27 Nov 2011 15:12:07 +0100                         *
+*  Last modified: Sun, 27 Nov 2011 20:18:41 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_DRIVE_H__
@@ -77,7 +77,9 @@ struct sa_slot {
 
 	char volume_name[37];
 	char full;
-    int address;
+
+	// for scsi use only
+	int address;
 };
 
 

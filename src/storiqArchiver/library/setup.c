@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 27 Nov 2011 11:55:39 +0100                         *
+*  Last modified: Sun, 27 Nov 2011 18:56:01 +0100                         *
 \*************************************************************************/
 
 // open
@@ -47,6 +47,11 @@
 #include "common.h"
 #include "scsi.h"
 
+static struct sa_changer * changers = 0;
+static unsigned int nb_changers = 0;
+static struct sa_drive * drives = 0;
+static unsigned int nb_drives = 0;
+
 static char * sa_changer_read(const char * filename);
 static void sa_changer_setup_realchanger(struct sa_changer * changer);
 
@@ -67,17 +72,12 @@ char * sa_changer_read(const char * filename) {
 }
 
 void sa_changer_setup() {
-	struct sa_changer * changers = 0;
-	unsigned int nbChangers = 0;
-	struct sa_drive * drives = 0;
-	unsigned int nbDrives = 0;
-
 	glob_t gl;
 	gl.gl_offs = 0;
 	glob("/sys/class/scsi_changer/*/device", GLOB_DOOFFS, 0, &gl);
 
 	changers = calloc(gl.gl_pathc, sizeof(struct sa_changer));
-	nbChangers = gl.gl_pathc;
+	nb_changers = gl.gl_pathc;
 
 	sa_log_write_all(sa_log_level_info, "Library: Found %zd librar%s", gl.gl_pathc, gl.gl_pathc != 1 ? "ies" : "y");
 
@@ -125,7 +125,7 @@ void sa_changer_setup() {
 	sa_log_write_all(sa_log_level_info, "Library: Found %zd drive%c", gl.gl_pathc, gl.gl_pathc != 1 ? 's' : '\0');
 
 	drives = calloc(gl.gl_pathc, sizeof(struct sa_drive));
-	nbDrives = gl.gl_pathc;
+	nb_drives = gl.gl_pathc;
 
 	for (i = 0; i < gl.gl_pathc; i++) {
 		char * ptr = strrchr(gl.gl_pathv[i], '/');
@@ -183,23 +183,22 @@ void sa_changer_setup() {
 	}
 	globfree(&gl);
 
-	for (i = 0; i < nbChangers; i++) {
+	for (i = 0; i < nb_changers; i++) {
 		unsigned j;
-		for (j = 0; j < nbDrives; j++) {
+		for (j = 0; j < nb_drives; j++) {
 			if (changers[i].host == drives[j].host && changers[i].target == drives[j].target) {
+				drives[j].changer = changers + i;
+
 				changers[i].drives = realloc(changers[i].drives, (changers[i].nb_drives + 1) * sizeof(struct sa_drive));
 				changers[i].drives[changers[i].nb_drives] = drives[j];
 				changers[i].nb_drives++;
-
-				drives[j].changer = changers + i;
 			}
 		}
 	}
 
-	if (nbChangers > 0)
+	if (nb_changers > 0)
 		sa_changer_setup_realchanger(changers);
 }
-
 
 void sa_changer_setup_realchanger(struct sa_changer * changer) {
 	int fd = open(changer->device, O_RDWR);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 27 Nov 2011 15:30:52 +0100                         *
+*  Last modified: Sun, 27 Nov 2011 18:44:05 +0100                         *
 \*************************************************************************/
 
 #include <sys/types.h>
@@ -220,7 +220,7 @@ void sa_scsi_loaderinfo(int fd, struct sa_changer * changer) {
 		changer->barcode = 1;
 }
 
-void sa_scsi_mtx_load(int fd, struct sa_changer * ch, struct sa_slot * from, struct sa_slot * to) {
+void sa_scsi_mtx_move(int fd, struct sa_changer * ch, struct sa_slot * from, struct sa_slot * to) {
 	Inquiry_T inq;
 	RequestSense_T sense;
 
@@ -252,7 +252,7 @@ void sa_scsi_mtx_load(int fd, struct sa_changer * ch, struct sa_slot * from, str
 	header.timeout = 60000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
-	int status = ioctl(fd, SG_IO, &header);
+	ioctl(fd, SG_IO, &header);
 }
 
 void sa_scsi_mtx_status_new(int fd, struct sa_changer * changer) {
