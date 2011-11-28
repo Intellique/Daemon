@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 25 Nov 2011 13:40:23 +0100                         *
+*  Last modified: Mon, 28 Nov 2011 15:55:21 +0100                         *
 \*************************************************************************/
 
 #include <string.h>
@@ -50,10 +50,10 @@ static struct sa_drive_status2 {
 	enum sa_drive_status status;
 } sa_drive_status[] = {
 	{ "cleaning",		sa_drive_cleaning },
-	{ "empty idle",		sa_drive_emptyIdle },
+	{ "empty idle",		sa_drive_empty_idle },
 	{ "erasing",		sa_drive_erasing },
 	{ "error",			sa_drive_error },
-	{ "loaded idle",	sa_drive_loadedIdle },
+	{ "loaded idle",	sa_drive_loaded_idle },
 	{ "loading",		sa_drive_loading },
 	{ "positioning",	sa_drive_positioning },
 	{ "reading",		sa_drive_reading },
