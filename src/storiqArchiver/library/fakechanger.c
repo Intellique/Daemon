@@ -22,28 +22,17 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 27 Nov 2011 20:05:48 +0100                         *
+*  Last modified: Mon, 28 Nov 2011 09:33:56 +0100                         *
 \*************************************************************************/
 
 #include <storiqArchiver/library/changer.h>
-#include <storiqArchiver/library/drive.h>
 
 static int sa_fakechanger_load(struct sa_changer * ch);
 static int sa_fakechanger_unload(struct sa_changer * ch);
 
-static int sa_fakedrive_eject(struct sa_drive * dr);
-static int sa_fakedrive_rewind(struct sa_drive * drive);
-static int sa_fakedrive_set_file_position(struct sa_drive * drive, int file_position);
-
 struct sa_changer_ops sa_fakechanger_ops = {
 	.load     = sa_fakechanger_load,
 	.unload   = sa_fakechanger_unload,
-};
-
-struct sa_drive_ops sa_fakedrive_ops = {
-	.eject             = sa_fakedrive_eject,
-	.rewind            = sa_fakedrive_rewind,
-	.set_file_position = sa_fakedrive_set_file_position,
 };
 
 
@@ -52,19 +41,6 @@ int sa_fakechanger_load(struct sa_changer * ch) {
 }
 
 int sa_fakechanger_unload(struct sa_changer * ch) {
-	return 0;
-}
-
-
-int sa_fakedrive_eject(struct sa_drive * dr) {
-	return 0;
-}
-
-int sa_fakedrive_rewind(struct sa_drive * drive) {
-	return 0;
-}
-
-int sa_fakedrive_set_file_position(struct sa_drive * drive, int file_position) {
 	return 0;
 }
 

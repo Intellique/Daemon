@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 27 Nov 2011 18:44:05 +0100                         *
+*  Last modified: Mon, 28 Nov 2011 10:38:21 +0100                         *
 \*************************************************************************/
 
 #include <sys/types.h>
@@ -226,17 +226,17 @@ void sa_scsi_mtx_move(int fd, struct sa_changer * ch, struct sa_slot * from, str
 
 	unsigned char hdr_inq[sizeof(struct sg_header) + sizeof(inq)];
 	unsigned char command[12];
-    command[0] = 0xA5;
-    command[1] = command[8] = command[9] = command[10] = command[11] = 0;
+	command[0] = 0xA5;
+	command[1] = command[8] = command[9] = command[10] = command[11] = 0;
 
-    command[2] = ch->transportAddress >> 8;
-    command[3] = ch->transportAddress;
+	command[2] = ch->transportAddress >> 8;
+	command[3] = ch->transportAddress;
 
-    command[4] = from->address >> 8;
-    command[5] = from->address;
+	command[4] = from->address >> 8;
+	command[5] = from->address;
 
-    command[6] = to->address >> 8;
-    command[7] = to->address;
+	command[6] = to->address >> 8;
+	command[7] = to->address;
 
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
@@ -295,8 +295,8 @@ void sa_scsi_mtx_status_new(int fd, struct sa_changer * changer) {
 		slot->drive = 0;
 		if (i < changer->nb_drives) {
 			slot->drive = changer->drives + i;
-            changer->drives[i].slot = slot;
-        }
+			changer->drives[i].slot = slot;
+		}
 
 		slot->tape = 0;
 	}
@@ -310,7 +310,7 @@ void sa_scsi_mtx_status_new(int fd, struct sa_changer * changer) {
 	start = ((int) sense_page->DataTransferStartHi << 8) + sense_page->DataTransferStartLo;
 	sa_scsi_mtx_status_update_slot(fd, changer, start, changer->nb_drives, num_bytes, DataTransferElement);
 
-    changer->transportAddress = ((int) sense_page->MediumTransportStartHi << 8) + sense_page->MediumTransportStartLo;
+	changer->transportAddress = ((int) sense_page->MediumTransportStartHi << 8) + sense_page->MediumTransportStartLo;
 }
 
 void sa_scsi_mtx_status_update_slot(int fd, struct sa_changer * changer, int start_element, int nb_elements, int num_bytes, enum ElementTypeCode type) {
@@ -398,7 +398,7 @@ void sa_scsi_mtx_status_update_slot(int fd, struct sa_changer * changer, int sta
 					sl->volume_name[i] = '\0';
 			} else
 				*sl->volume_name = '\0';
-            sl->address = address;
+			sl->address = address;
 
 			nb_found_element--;
 		}

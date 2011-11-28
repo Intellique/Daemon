@@ -22,11 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 27 Nov 2011 20:18:41 +0100                         *
+*  Last modified: Mon, 28 Nov 2011 10:30:56 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_DRIVE_H__
 #define __STORIQARCHIVER_LIBRARY_DRIVE_H__
+
+// ssize_t
+#include <sys/types.h>
 
 struct sa_changer;
 struct sa_slot;
@@ -62,11 +65,19 @@ struct sa_drive {
 	struct sa_slot * slot;
 
 	struct sa_drive_ops {
-		int (*eject)(struct sa_drive * drive);
 		int (*rewind)(struct sa_drive * drive);
 		int (*set_file_position)(struct sa_drive * drive, int file_position);
 	} * ops;
 	void * data;
+
+	unsigned char is_bottom_of_tape;
+	unsigned char is_end_of_file;
+	unsigned char is_end_of_tape;
+	unsigned char is_writable;
+	unsigned char is_online;
+	unsigned char is_door_opened;
+
+	ssize_t block_size;
 };
 
 struct sa_slot {
