@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 28 Nov 2011 19:06:30 +0100                         *
+*  Last modified: Mon, 28 Nov 2011 21:12:09 +0100                         *
 \*************************************************************************/
 
 // strcmp
@@ -40,6 +40,17 @@ static const struct sa_tape_format_data_type2 {
 	{ "video",    SA_TAPE_FORMAT_DATA_VIDEO },
 
 	{ 0, SA_TAPE_FORMAT_DATA_UNKNOWN },
+};
+
+static const struct sa_tape_format_mode2 {
+	char * name;
+	enum sa_tape_format_mode mode;
+} sa_tape_format_modes[] = {
+	{ "disk",    SA_TAPE_FORMAT_MODE_DISK },
+	{ "linear",  SA_TAPE_FORMAT_MODE_LINEAR },
+	{ "optical", SA_TAPE_FORMAT_MODE_OPTICAL },
+
+	{ 0, SA_TAPE_FORMAT_MODE_UNKNOWN },
 };
 
 static const struct sa_tape_location2 {
@@ -73,6 +84,14 @@ const char * sa_tape_format_data_to_string(enum sa_tape_format_data_type type) {
 	const struct sa_tape_format_data_type2 * ptr;
 	for (ptr = sa_tape_format_data_types; ptr->name; ptr++)
 		if (ptr->type == type)
+			return ptr->name;
+	return "unknown";
+}
+
+const char * sa_tape_format_mode_to_string(enum sa_tape_format_mode mode) {
+	const struct sa_tape_format_mode2 * ptr;
+	for (ptr = sa_tape_format_modes; ptr->name; ptr++)
+		if (ptr->mode == mode)
 			return ptr->name;
 	return "unknown";
 }
@@ -115,5 +134,13 @@ enum sa_tape_format_data_type sa_tape_string_to_format_data(const char * type) {
 		if (!strcmp(type, ptr->name))
 			return ptr->type;
 	return ptr->type;
+}
+
+enum sa_tape_format_mode sa_tape_string_to_format_mode(const char * mode) {
+	const struct sa_tape_format_mode2 * ptr;
+	for (ptr = sa_tape_format_modes; ptr->name; ptr++)
+		if (!strcmp(mode, ptr->name))
+			return ptr->mode;
+	return ptr->mode;
 }
 

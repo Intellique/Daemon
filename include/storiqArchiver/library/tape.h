@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 28 Nov 2011 19:01:49 +0100                         *
+*  Last modified: Mon, 28 Nov 2011 21:05:30 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_TAPE_H__
@@ -61,6 +61,7 @@ enum sa_tape_format_mode {
     SA_TAPE_FORMAT_MODE_DISK,
     SA_TAPE_FORMAT_MODE_LINEAR,
     SA_TAPE_FORMAT_MODE_OPTICAL,
+    SA_TAPE_FORMAT_MODE_UNKNOWN,
 };
 
 struct sa_pool;
@@ -109,11 +110,13 @@ struct sa_pool {
 
 
 const char * sa_tape_format_data_to_string(enum sa_tape_format_data_type type);
+const char * sa_tape_format_mode_to_string(enum sa_tape_format_mode mode);
 const char * sa_tape_location_to_string(enum sa_tape_location location);
 const char * sa_tape_status_to_string(enum sa_tape_status status);
 enum sa_tape_location sa_tape_string_to_location(const char * location);
 enum sa_tape_status sa_tape_string_to_status(const char * status);
 enum sa_tape_format_data_type sa_tape_string_to_format_data(const char * type);
+enum sa_tape_format_mode sa_tape_string_to_format_mode(const char * mode);
 
 #endif
 
