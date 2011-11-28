@@ -22,20 +22,74 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 27 Nov 2011 18:43:16 +0100                         *
+*  Last modified: Mon, 28 Nov 2011 11:35:18 +0100                         *
 \*************************************************************************/
 
-#ifndef SCSI_H__
-#define SCSI_H__
+// open
+#include <fcntl.h>
+// malloc
+#include <stdlib.h>
+// struct mtget
+#include <sys/mtio.h>
+// open
+#include <sys/stat.h>
+// open
+#include <sys/types.h>
 
-#include <storiqArchiver/library/changer.h>
 #include <storiqArchiver/library/drive.h>
 
-void sa_scsi_loaderinfo(int fd, struct sa_changer * changer);
-void sa_scsi_mtx_move(int fd, struct sa_changer * ch, struct sa_slot * from, struct sa_slot * to);
-void sa_scsi_mtx_status_new(int fd, struct sa_changer * changer);
+#include "common.h"
 
-void sa_realchanger_setup(struct sa_changer * changer, int fd);
+struct sa_drive_generic {
+	int fd_nst;
+};
 
-#endif
+static ssize_t sa_drive_get_block_size(struct sa_drive * drive);
+static int sa_drive_generic_rewind(struct sa_drive * drive);
+static int sa_drive_generic_set_file_position(struct sa_drive * drive, int file_position);
+static void sa_drive_generic_update_status(struct sa_drive * drive);
+
+static struct sa_drive_ops sa_drive_generic_ops = {
+	.rewind            = sa_drive_generic_rewind,
+	.set_file_position = sa_drive_generic_set_file_position,
+};
+
+
+ssize_t sa_drive_get_block_size(struct sa_drive * drive) {
+	return drive->block_size;
+}
+
+int sa_drive_generic_rewind(struct sa_drive * drive) {}
+
+int sa_drive_generic_set_file_position(struct sa_drive * drive, int file_position) {}
+
+void sa_drive_generic_update_status(struct sa_drive * drive) {
+	struct sa_drive_generic * self = drive->data;
+
+	struct mtget status;
+	int failed = ioctl(self->fd_nst, MTIOCGET, &status);
+
+	if (!failed) {
+		drive->is_bottom_of_tape = GMT_BOT(status.mt_gstat) ? 1 : 0;
+		drive->is_end_of_file    = GMT_EOF(status.mt_gstat) ? 1 : 0;
+		drive->is_end_of_tape    = GMT_EOT(status.mt_gstat) ? 1 : 0;
+		drive->is_writable       = GMT_WR_PROT(status.mt_gstat) ? 0 : 1;
+		drive->is_online         = GMT_ONLINE(status.mt_gstat) ? 1 : 0;
+		drive->is_door_opened    = GMT_DR_OPEN(status.mt_gstat) ? 1 : 0;
+
+		drive->block_size = (status.mt_dsreg & MT_ST_BLKSIZE_MASK) >> MT_ST_BLKSIZE_SHIFT;
+	}
+}
+
+void sa_drive_setup(struct sa_drive * drive) {
+	int fd = open(drive->device, O_RDWR);
+
+	struct sa_drive_generic * self = malloc(sizeof(struct sa_drive_generic));
+	self->fd_nst = fd;
+
+	drive->ops = &sa_drive_generic_ops;
+	drive->data = self;
+
+	sa_drive_generic_update_status(drive);
+}
 

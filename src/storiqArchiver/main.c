@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 24 Nov 2011 12:50:32 +0100                         *
+*  Last modified: Sun, 27 Nov 2011 16:42:01 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -103,7 +103,7 @@ int main(int argc, char ** argv) {
 		}
 	}
 
-	sa_log_write_all(sa_log_level_info, "Parsing option: ok");
+	sa_log_write_all(sa_log_level_debug, "Parsing option: ok");
 
 	// check pid file
 	int pid = sa_conf_read_pid(pid_file);

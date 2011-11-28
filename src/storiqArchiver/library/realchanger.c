@@ -22,93 +22,91 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 27 Nov 2011 16:06:11 +0100                         *
+*  Last modified: Mon, 28 Nov 2011 10:13:41 +0100                         *
 \*************************************************************************/
 
 // malloc
 #include <stdlib.h>
+// strncpy
+#include <string.h>
 
+#include <storiqArchiver/log.h>
 #include <storiqArchiver/library/ressource.h>
 
+#include "common.h"
 #include "scsi.h"
 
 struct sa_realchanger_private {
-    int fd;
+	int fd;
 };
 
-struct sa_realdrive_private {
-    int fd;
-};
-
-static int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa_slot * to);
-static int sa_realchanger_transfer(struct sa_changer * ch);
-static int sa_realchanger_unload(struct sa_changer * ch);
-
-static int sa_realdrive_eject(struct sa_drive * dr);
-static int sa_realdrive_rewind(struct sa_drive * drive);
-static int sa_realdrive_set_file_position(struct sa_drive * drive, int file_position);
+static int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa_drive * to);
+static int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct sa_slot * to);
 
 struct sa_changer_ops sa_realchanger_ops = {
 	.load     = sa_realchanger_load,
-	.transfer = sa_realchanger_transfer,
 	.unload   = sa_realchanger_unload,
 };
 
-struct sa_drive_ops sa_realdrive_ops = {
-	.eject             = sa_realdrive_eject,
-	.rewind            = sa_realdrive_rewind,
-	.set_file_position = sa_realdrive_set_file_position,
-};
 
+int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa_drive * to) {
+	if (!ch || !from || !to) {
+		return 1;
+	}
 
-int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa_slot * to) {
-    if (!ch || !from || !to) {
-        return 1;
-    }
+	if (to->slot == from)
+		return 0;
 
-    if (to == from)
-        return 0;
+	if (from->changer != ch || to->changer != ch)
+		return 1;
 
-    if (from->changer != ch || to->changer != ch)
-        return 1;
+	struct sa_realchanger_private * self = ch->data;
+	sa_scsi_mtx_move(self->fd, ch, from, to->slot);
 
-    struct sa_realchanger_private * self = ch->data;
-    sa_scsi_mtx_load(self->fd, ch, from, to);
+	strncpy(to->slot->volume_name, from->volume_name, 37);
+	*from->volume_name = '\0';
+	from->full = 0;
+	to->slot->full = 1;
+
+	sa_log_write_all(sa_log_level_info, "Loading (changer: %s:%s) from slot %ld to drive %ld", ch->vendor, ch->model, from - ch->slots, to - ch->drives);
 
 	return 0;
 }
 
 void sa_realchanger_setup(struct sa_changer * changer, int fd) {
-    struct sa_realchanger_private * ch = malloc(sizeof(struct sa_realchanger_private));
-    ch->fd = fd;
+	struct sa_realchanger_private * ch = malloc(sizeof(struct sa_realchanger_private));
+	ch->fd = fd;
 
 	changer->ops = &sa_realchanger_ops;
-    changer->data = ch;
-    changer->res = sa_ressource_new();
+	changer->data = ch;
+	changer->res = sa_ressource_new();
 
 	unsigned int i;
 	for (i = 0; i < changer->nb_drives; i++)
-		changer->drives[i].ops = &sa_realdrive_ops;
+		sa_drive_setup(changer->drives + i);
 }
 
-int sa_realchanger_transfer(struct sa_changer * ch) {
-	return 0;
-}
+int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct sa_slot * to) {
+	if (!ch || !from || !to) {
+		return 1;
+	}
 
-int sa_realchanger_unload(struct sa_changer * ch) {
-	return 0;
-}
+	if (to == from->slot)
+		return 0;
 
+	if (from->changer != ch || to->changer != ch)
+		return 1;
 
-int sa_realdrive_eject(struct sa_drive * dr) {
-	return 0;
-}
+	struct sa_realchanger_private * self = ch->data;
+	sa_scsi_mtx_move(self->fd, ch, from->slot, to);
 
-int sa_realdrive_rewind(struct sa_drive * drive) {
-	return 0;
-}
+	strncpy(to->volume_name, from->slot->volume_name, 37);
+	*from->slot->volume_name = '\0';
+	from->slot->full = 0;
+	to->full = 1;
 
-int sa_realdrive_set_file_position(struct sa_drive * drive, int file_position) {
+	sa_log_write_all(sa_log_level_info, "Unloading (changer: %s:%s) from drive %ld to slot %ld", ch->vendor, ch->model, from - ch->drives, to - ch->slots);
+
 	return 0;
 }
 
