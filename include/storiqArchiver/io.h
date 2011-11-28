@@ -22,56 +22,34 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:43:27 +0100                         *
+*  Last modified: Mon, 28 Nov 2011 10:54:12 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_IO_H__
 #define __STORIQARCHIVER_IO_H__
 
-struct hashtable;
+// ssize_t
+#include <sys/types.h>
 
-struct stream_read_io {
-	struct stream_read_io_ops {
-		int (*close)(struct stream_read_io * io);
-		void (*free)(struct stream_read_io * io);
-		long long int (*position)(struct stream_read_io * io);
-		int (*read)(struct stream_read_io * io, void * buffer, int length);
-		int (*reopen)(struct stream_read_io * io);
+struct sa_stream_reader {
+	struct sa_stream_reader_ops {
+		int (*close)(struct sa_stream_reader * io);
+		void (*free)(struct sa_stream_reader * io);
+		ssize_t (*position)(struct sa_stream_reader * io);
+		ssize_t (*read)(struct sa_stream_reader * io, void * buffer, ssize_t length);
 	} * ops;
 	void * data;
 };
 
-struct stream_write_io {
-	struct stream_write_io_ops {
-		int (*close)(struct stream_write_io * io);
-		int (*flush)(struct stream_write_io * io);
-		void (*free)(struct stream_write_io * io);
-		long long int (*position)(struct stream_write_io * io);
-		int (*write)(struct stream_write_io * io, const void * buffer, int length);
+struct sa_stream_writer {
+	struct sa_stream_writer_ops {
+		int (*close)(struct sa_stream_writer * io);
+		void (*free)(struct sa_stream_writer * io);
+		ssize_t (*position)(struct sa_stream_writer * io);
+		ssize_t (*write)(struct sa_stream_writer * io);
 	} * ops;
 	void * data;
 };
-
-struct stream_io_driver {
-	char * name;
-	struct stream_read_io * (*new_streamRead)(struct stream_read_io * self, struct stream_read_io * to);
-	struct stream_write_io * (*new_streamWrite)(struct stream_write_io * self, struct stream_write_io * io);
-	void * cookie;
-};
-
-struct hashtable * io_checksum_read_completeDigest(struct stream_read_io * io);
-struct hashtable * io_checksum_read_partialDigest(struct stream_read_io * io);
-struct stream_read_io * io_checksum_read_new(struct stream_read_io * io, struct stream_read_io * to, char ** checksums, unsigned int nbChecksums);
-struct stream_read_io * io_file_read_file(struct stream_read_io * io, const char * filename);
-struct stream_read_io * io_file_read_file2(struct stream_read_io * io, const char * filename, int blockSize);
-struct stream_write_io * io_file_write_fd(struct stream_write_io * io, int fd);
-struct stream_write_io * io_file_write_fd2(struct stream_write_io * io, int fd, int blockSize);
-struct stream_write_io * io_file_write_file(struct stream_write_io * io, const char * filename, int option);
-struct stream_write_io * io_file_write_file2(struct stream_write_io * io, const char * filename, int option, int blockSize);
-
-struct stream_io_driver * io_getDriver(const char * driver);
-int io_loadDriver(const char * driver);
-void io_registerDriver(struct stream_io_driver * driver);
 
 #endif
 

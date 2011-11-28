@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 28 Nov 2011 10:30:56 +0100                         *
+*  Last modified: Mon, 28 Nov 2011 11:36:19 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_DRIVE_H__
@@ -65,6 +65,7 @@ struct sa_drive {
 	struct sa_slot * slot;
 
 	struct sa_drive_ops {
+		ssize_t (*get_block_size)(struct sa_drive * drive);
 		int (*rewind)(struct sa_drive * drive);
 		int (*set_file_position)(struct sa_drive * drive, int file_position);
 	} * ops;
@@ -77,6 +78,8 @@ struct sa_drive {
 	unsigned char is_online;
 	unsigned char is_door_opened;
 
+	// block size defined for this drive
+	// 0 => soft block
 	ssize_t block_size;
 };
 

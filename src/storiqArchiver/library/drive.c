@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 28 Nov 2011 10:31:44 +0100                         *
+*  Last modified: Mon, 28 Nov 2011 11:35:18 +0100                         *
 \*************************************************************************/
 
 // open
@@ -44,6 +44,7 @@ struct sa_drive_generic {
 	int fd_nst;
 };
 
+static ssize_t sa_drive_get_block_size(struct sa_drive * drive);
 static int sa_drive_generic_rewind(struct sa_drive * drive);
 static int sa_drive_generic_set_file_position(struct sa_drive * drive, int file_position);
 static void sa_drive_generic_update_status(struct sa_drive * drive);
@@ -53,6 +54,10 @@ static struct sa_drive_ops sa_drive_generic_ops = {
 	.set_file_position = sa_drive_generic_set_file_position,
 };
 
+
+ssize_t sa_drive_get_block_size(struct sa_drive * drive) {
+	return drive->block_size;
+}
 
 int sa_drive_generic_rewind(struct sa_drive * drive) {}
 
