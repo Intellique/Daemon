@@ -104,6 +104,7 @@ CREATE TABLE TapeFormat (
     lifespan INTEGER NOT NULL CHECK (lifespan > 0),
     capacity BIGINT NOT NULL CHECK (capacity > 0),
     blockSize INTEGER NOT NULL DEFAULT 0 CHECK (blockSize >= 0),
+	densityCode SMALLINT NOT NULL,
     supportPartition BOOLEAN NOT NULL
 );
 
@@ -138,6 +139,7 @@ CREATE TABLE Tape (
 CREATE TABLE DriveFormat (
     id SERIAL PRIMARY KEY,
     name VARCHAR(64) NOT NULL UNIQUE,
+	densityCode SMALLINT NOT NULL,
     cleaningInterval INTEGER NOT NULL CHECK (cleaningInterval > 0)
 );
 
