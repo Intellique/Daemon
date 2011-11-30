@@ -42,6 +42,7 @@
 // readlink
 #include <unistd.h>
 
+#include <storiqArchiver/io.h>
 #include <storiqArchiver/log.h>
 
 #include "common.h"

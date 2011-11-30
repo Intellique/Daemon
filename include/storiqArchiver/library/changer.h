@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 29 Nov 2011 08:26:18 +0100                         *
+*  Last modified: Wed, 30 Nov 2011 21:20:35 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_CHANGER_H__
@@ -84,6 +84,7 @@ struct sa_slot {
 
 	// for scsi use only
 	int address;
+    int src_address;
 };
 
 

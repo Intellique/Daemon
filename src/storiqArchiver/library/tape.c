@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Nov 2011 11:59:21 +0100                         *
+*  Last modified: Wed, 30 Nov 2011 21:05:53 +0100                         *
 \*************************************************************************/
 
 // sscanf
@@ -204,6 +204,9 @@ void sa_tape_detect(struct sa_drive * dr) {
 	struct sa_database * db = sa_db_get_default_db();
 	struct sa_database_connection * con = db->ops->connect(db, 0);
 	con->ops->sync_tape(con, tape);
+	con->ops->close(con);
+	con->ops->free(con);
+	free(con);
 }
 
 struct sa_tape * sa_tape_new(struct sa_drive * dr) {
@@ -240,6 +243,10 @@ struct sa_tape_format * sa_tape_format_get_by_density_code(unsigned char density
 	sa_tape_formats = realloc(sa_tape_formats, (sa_tape_format_nb_formats + 1) * sizeof(struct sa_tape_format));
 	con->ops->get_tape_format(con, sa_tape_formats + sa_tape_format_nb_formats, density_code);
 	sa_tape_format_nb_formats++;
+
+	con->ops->close(con);
+	con->ops->free(con);
+	free(con);
 
 	return sa_tape_formats + sa_tape_format_nb_formats - 1;
 }

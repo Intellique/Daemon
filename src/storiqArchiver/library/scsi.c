@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 28 Nov 2011 10:38:21 +0100                         *
+*  Last modified: Wed, 30 Nov 2011 23:11:27 +0100                         *
 \*************************************************************************/
 
 #include <sys/types.h>
@@ -224,7 +224,6 @@ void sa_scsi_mtx_move(int fd, struct sa_changer * ch, struct sa_slot * from, str
 	Inquiry_T inq;
 	RequestSense_T sense;
 
-	unsigned char hdr_inq[sizeof(struct sg_header) + sizeof(inq)];
 	unsigned char command[12];
 	command[0] = 0xA5;
 	command[1] = command[8] = command[9] = command[10] = command[11] = 0;
@@ -249,7 +248,7 @@ void sa_scsi_mtx_move(int fd, struct sa_changer * ch, struct sa_slot * from, str
 	header.cmdp = command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = &inq;
-	header.timeout = 60000;
+	header.timeout = 1200000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	ioctl(fd, SG_IO, &header);
@@ -373,6 +372,7 @@ void sa_scsi_mtx_status_update_slot(int fd, struct sa_changer * changer, int sta
 			bytes_available -= trans_elt_desc_length;
 
 			int address = trans_elt_desc->ElementAddress[0] << 8 | trans_elt_desc->ElementAddress[1];
+			int src_address = trans_elt_desc->SourceStorageElementAddress[0] << 8 | trans_elt_desc->SourceStorageElementAddress[1];
 			int index_slots = address;
 			switch (type) {
 				case DataTransferElement:
@@ -399,6 +399,7 @@ void sa_scsi_mtx_status_update_slot(int fd, struct sa_changer * changer, int sta
 			} else
 				*sl->volume_name = '\0';
 			sl->address = address;
+			sl->src_address = type == DataTransferElement ? src_address : 0;
 
 			nb_found_element--;
 		}

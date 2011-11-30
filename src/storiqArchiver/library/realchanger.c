@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Nov 2011 10:49:58 +0100                         *
+*  Last modified: Wed, 30 Nov 2011 21:53:22 +0100                         *
 \*************************************************************************/
 
 // malloc
@@ -64,10 +64,13 @@ int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa
 	struct sa_realchanger_private * self = ch->data;
 	sa_scsi_mtx_move(self->fd, ch, from, to->slot);
 
+	to->slot->tape = from->tape;
+	from->tape = 0;
 	strncpy(to->slot->volume_name, from->volume_name, 37);
 	*from->volume_name = '\0';
 	from->full = 0;
 	to->slot->full = 1;
+	to->slot->src_address = from->address;
 
 	sa_log_write_all(sa_log_level_info, "Loading (changer: %s:%s) from slot %ld to drive %ld", ch->vendor, ch->model, from - ch->slots, to - ch->drives);
 
@@ -93,6 +96,34 @@ void sa_realchanger_setup(struct sa_changer * changer, int fd) {
 			sa_tape_detect(dr);
 		}
 	}
+
+	struct sa_drive * dr = changer->drives;
+	if (!dr->is_door_opened) {
+		struct sa_slot * sl = 0;
+		unsigned int i;
+		for (i = changer->nb_drives; !sl && i < changer->nb_slots; i++)
+			if (changer->slots[i].address == dr->slot->src_address)
+				sl = changer->slots + i;
+		for (i = changer->nb_drives; !sl && i < changer->nb_slots; i++)
+			if (!changer->slots[i].full)
+				sl = changer->slots + i;
+		if (sl) {
+			dr->ops->rewind(dr);
+			sa_realchanger_unload(changer, dr, sl);
+		}
+	}
+
+	for (i = changer->nb_drives; i < changer->nb_slots; i++) {
+		struct sa_slot * sl = changer->slots + i;
+		if (sl->full && !sl->tape) {
+			sa_realchanger_load(changer, sl, dr);
+
+			dr->slot->tape = sa_tape_new(dr);
+			sa_tape_detect(dr);
+
+			sa_realchanger_unload(changer, dr, sl);
+		}
+	}
 }
 
 int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct sa_slot * to) {
@@ -109,10 +140,13 @@ int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct
 	struct sa_realchanger_private * self = ch->data;
 	sa_scsi_mtx_move(self->fd, ch, from->slot, to);
 
+	to->tape = from->slot->tape;
+	from->slot->tape = 0;
 	strncpy(to->volume_name, from->slot->volume_name, 37);
 	*from->slot->volume_name = '\0';
 	from->slot->full = 0;
 	to->full = 1;
+	from->slot->src_address = 0;
 
 	sa_log_write_all(sa_log_level_info, "Unloading (changer: %s:%s) from drive %ld to slot %ld", ch->vendor, ch->model, from - ch->drives, to - ch->slots);
 
