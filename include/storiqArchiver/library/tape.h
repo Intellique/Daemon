@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 28 Nov 2011 21:05:30 +0100                         *
+*  Last modified: Wed, 30 Nov 2011 13:50:07 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_TAPE_H__
@@ -64,6 +64,7 @@ enum sa_tape_format_mode {
     SA_TAPE_FORMAT_MODE_UNKNOWN,
 };
 
+struct sa_drive;
 struct sa_pool;
 struct sa_tape_format;
 
@@ -75,10 +76,11 @@ struct sa_tape {
     enum sa_tape_location location;
     time_t first_used;
     time_t use_before;
-    unsigned long load_count;
-    unsigned long read_count;
-    unsigned long write_count;
+    long load_count;
+    long read_count;
+    long write_count;
     ssize_t end_position;
+    ssize_t block_size;
     unsigned int nb_files;
     unsigned char has_partition;
     struct sa_tape_format * format;
@@ -88,15 +90,17 @@ struct sa_tape {
 struct sa_tape_format {
 	long id;
     char name[64];
+	unsigned char density_code;
     enum sa_tape_format_data_type type;
-    unsigned long max_load_count;
-    unsigned long max_read_count;
-    unsigned long max_write_count;
-    unsigned long max_op_count;
-    unsigned long life_span;
+    enum sa_tape_format_mode mode;
+    long max_load_count;
+    long max_read_count;
+    long max_write_count;
+    long max_op_count;
+    long life_span;
     ssize_t capacity;
     ssize_t block_size;
-    unsigned char support_partition;
+    char support_partition;
 };
 
 struct sa_pool {
@@ -117,6 +121,11 @@ enum sa_tape_location sa_tape_string_to_location(const char * location);
 enum sa_tape_status sa_tape_string_to_status(const char * status);
 enum sa_tape_format_data_type sa_tape_string_to_format_data(const char * type);
 enum sa_tape_format_mode sa_tape_string_to_format_mode(const char * mode);
+
+void sa_tape_detect(struct sa_drive * dr);
+struct sa_tape * sa_tape_new(struct sa_drive * dr);
+
+struct sa_tape_format * sa_tape_format_get_by_density_code(unsigned char density_code);
 
 #endif
 

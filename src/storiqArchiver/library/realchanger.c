@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 28 Nov 2011 10:13:41 +0100                         *
+*  Last modified: Wed, 30 Nov 2011 10:49:58 +0100                         *
 \*************************************************************************/
 
 // malloc
@@ -32,6 +32,7 @@
 
 #include <storiqArchiver/log.h>
 #include <storiqArchiver/library/ressource.h>
+#include <storiqArchiver/library/tape.h>
 
 #include "common.h"
 #include "scsi.h"
@@ -84,6 +85,14 @@ void sa_realchanger_setup(struct sa_changer * changer, int fd) {
 	unsigned int i;
 	for (i = 0; i < changer->nb_drives; i++)
 		sa_drive_setup(changer->drives + i);
+
+	for (i = 0; i < changer->nb_drives; i++) {
+		struct sa_drive * dr = changer->drives + i;
+		if (!dr->is_door_opened) {
+			dr->slot->tape = sa_tape_new(dr);
+			sa_tape_detect(dr);
+		}
+	}
 }
 
 int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct sa_slot * to) {

@@ -22,12 +22,22 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 28 Nov 2011 21:12:09 +0100                         *
+*  Last modified: Wed, 30 Nov 2011 11:59:21 +0100                         *
 \*************************************************************************/
 
-// strcmp
+// sscanf
+#include <stdio.h>
+// malloc, realloc
+#include <stdlib.h>
+// strcmp, strcpy
 #include <string.h>
+// time
+#include <time.h>
 
+#include <storiqArchiver/database.h>
+#include <storiqArchiver/io.h>
+#include <storiqArchiver/library/changer.h>
+#include <storiqArchiver/library/drive.h>
 #include <storiqArchiver/library/tape.h>
 
 static const struct sa_tape_format_data_type2 {
@@ -78,6 +88,9 @@ static const struct sa_tape_status2 {
 
 	{ 0, SA_TAPE_STATUS_UNKNOWN },
 };
+
+static struct sa_tape_format * sa_tape_formats = 0;
+static unsigned int sa_tape_format_nb_formats = 0;
 
 
 const char * sa_tape_format_data_to_string(enum sa_tape_format_data_type type) {
@@ -142,5 +155,92 @@ enum sa_tape_format_mode sa_tape_string_to_format_mode(const char * mode) {
 		if (!strcmp(mode, ptr->name))
 			return ptr->mode;
 	return ptr->mode;
+}
+
+
+void sa_tape_detect(struct sa_drive * dr) {
+	struct sa_tape * tape = dr->slot->tape;
+	if (!tape)
+		return;
+
+	dr->ops->rewind(dr);
+
+	char buffer[1024];
+	struct sa_stream_reader * reader = dr->ops->get_reader(dr);
+	ssize_t nb_read = reader->ops->read(reader, buffer, 1024);
+	reader->ops->close(reader);
+	reader->ops->free(reader);
+
+	strcpy(tape->name, dr->slot->volume_name);
+	tape->location = SA_TAPE_LOCATION_ONLINE;
+	tape->first_used = time(0);
+	tape->use_before = tape->first_used + tape->format->life_span;
+
+	if (nb_read == 0) {
+		tape->status = SA_TAPE_STATUS_NEW;
+		tape->load_count = 1;
+		return;
+	}
+
+	tape->block_size = nb_read;
+
+	char name[65];
+	char label[37];
+	ssize_t block_size;
+	char digest[9];
+	if (sscanf(buffer, "StoriqArchiver\nversion: 0.1\nname: %64s\nuuid: %36s\nblocksize: %zd\ncrc32: %8s\n", name, label, &block_size, digest) == 4) {
+		 strcpy(tape->label, label);
+		 strcpy(tape->name, name);
+		 tape->status = SA_TAPE_STATUS_IN_USE;
+		 tape->block_size = block_size;
+	} else {
+		 tape->status = SA_TAPE_STATUS_FOREIGN;
+	}
+
+	dr->ops->eod(dr);
+
+	tape->nb_files = dr->nb_files;
+
+	struct sa_database * db = sa_db_get_default_db();
+	struct sa_database_connection * con = db->ops->connect(db, 0);
+	con->ops->sync_tape(con, tape);
+}
+
+struct sa_tape * sa_tape_new(struct sa_drive * dr) {
+	struct sa_tape * tape = malloc(sizeof(struct sa_tape));
+	tape->id = -1;
+	*tape->label = '\0';
+	*tape->name = '\0';
+	tape->status = SA_TAPE_STATUS_UNKNOWN;
+	tape->location = SA_TAPE_LOCATION_UNKNOWN;
+	tape->first_used = 0;
+	tape->use_before = 0;
+	tape->load_count = 1;
+	tape->read_count = 0;
+	tape->write_count = 0;
+	tape->end_position = 0;
+	tape->nb_files = 0;
+	tape->has_partition = 0;
+	tape->format = sa_tape_format_get_by_density_code(dr->density_code);
+	tape->block_size = tape->format->block_size;
+	tape->pool = 0;
+	return tape;
+}
+
+
+struct sa_tape_format * sa_tape_format_get_by_density_code(unsigned char density_code) {
+	unsigned int i;
+	for (i = 0; i < sa_tape_format_nb_formats; i++)
+		if (sa_tape_formats[i].density_code == density_code)
+			return sa_tape_formats + i;
+
+	struct sa_database * db = sa_db_get_default_db();
+	struct sa_database_connection * con = db->ops->connect(db, 0);
+
+	sa_tape_formats = realloc(sa_tape_formats, (sa_tape_format_nb_formats + 1) * sizeof(struct sa_tape_format));
+	con->ops->get_tape_format(con, sa_tape_formats + sa_tape_format_nb_formats, density_code);
+	sa_tape_format_nb_formats++;
+
+	return sa_tape_formats + sa_tape_format_nb_formats - 1;
 }
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 28 Nov 2011 15:54:34 +0100                         *
+*  Last modified: Wed, 30 Nov 2011 09:58:33 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_DRIVE_H__
@@ -66,6 +66,7 @@ struct sa_drive {
 	struct sa_slot * slot;
 
 	struct sa_drive_ops {
+		int (*eod)(struct sa_drive * drive);
 		ssize_t (*get_block_size)(struct sa_drive * drive);
 		struct sa_stream_reader * (*get_reader)(struct sa_drive * drive);
 		int (*rewind)(struct sa_drive * drive);
@@ -86,19 +87,7 @@ struct sa_drive {
 	// block size defined for this drive
 	// 0 => soft block
 	ssize_t block_size;
-};
-
-struct sa_slot {
-	long long id;
-	struct sa_changer * changer;
-	struct sa_drive * drive;
-	struct sa_tape * tape;
-
-	char volume_name[37];
-	char full;
-
-	// for scsi use only
-	int address;
+	unsigned char density_code;
 };
 
 

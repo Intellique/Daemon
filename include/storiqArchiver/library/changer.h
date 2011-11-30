@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 27 Nov 2011 20:05:07 +0100                         *
+*  Last modified: Tue, 29 Nov 2011 08:26:18 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_CHANGER_H__
@@ -71,6 +71,19 @@ struct sa_changer {
 
     // for scsi use only
     int transportAddress;
+};
+
+struct sa_slot {
+	long long id;
+	struct sa_changer * changer;
+	struct sa_drive * drive;
+	struct sa_tape * tape;
+
+	char volume_name[37];
+	char full;
+
+	// for scsi use only
+	int address;
 };
 
 

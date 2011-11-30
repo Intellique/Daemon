@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 28 Nov 2011 17:28:34 +0100                         *
+*  Last modified: Wed, 30 Nov 2011 10:52:39 +0100                         *
 \*************************************************************************/
 
 // open
@@ -46,6 +46,7 @@ struct sa_drive_generic {
 	int fd_nst;
 };
 
+static int sa_drive_generic_eod(struct sa_drive * drive);
 static ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive);
 static struct sa_stream_reader * sa_drive_generic_get_reader(struct sa_drive * drive);
 static int sa_drive_generic_rewind(struct sa_drive * drive);
@@ -53,12 +54,24 @@ static int sa_drive_generic_set_file_position(struct sa_drive * drive, int file_
 static void sa_drive_generic_update_status(struct sa_drive * drive);
 
 static struct sa_drive_ops sa_drive_generic_ops = {
+	.eod               = sa_drive_generic_eod,
 	.get_block_size    = sa_drive_generic_get_block_size,
 	.get_reader        = sa_drive_generic_get_reader,
 	.rewind            = sa_drive_generic_rewind,
 	.set_file_position = sa_drive_generic_set_file_position,
 };
 
+
+int sa_drive_generic_eod(struct sa_drive * drive) {
+	struct sa_drive_generic * self = drive->data;
+
+	struct mtop eod = { MTEOM, 1 };
+	int failed = ioctl(self->fd_nst, MTIOCTOP, &eod);
+
+	sa_drive_generic_update_status(drive);
+
+	return failed;
+}
 
 ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive) {
 	if (drive->block_size < 1) {
@@ -92,7 +105,7 @@ ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive) {
 struct sa_stream_reader * sa_drive_generic_get_reader(struct sa_drive * drive) {
 	struct sa_drive_generic * self = drive->data;
 
-	if (drive->status != sa_drive_loaded_idle);
+	// if (drive->status != sa_drive_loaded_idle);
 	return sa_drive_reader_new(drive, self->fd_nst);
 }
 
@@ -100,7 +113,11 @@ int sa_drive_generic_rewind(struct sa_drive * drive) {
 	struct sa_drive_generic * self = drive->data;
 
 	struct mtop rewind = { MTREW, 1 };
-	return ioctl(self->fd_nst, MTIOCTOP, &rewind);
+	int failed = ioctl(self->fd_nst, MTIOCTOP, &rewind);
+
+	sa_drive_generic_update_status(drive);
+
+	return failed;
 }
 
 int sa_drive_generic_set_file_position(struct sa_drive * drive, int file_position) {}
@@ -108,8 +125,16 @@ int sa_drive_generic_set_file_position(struct sa_drive * drive, int file_positio
 void sa_drive_generic_update_status(struct sa_drive * drive) {
 	struct sa_drive_generic * self = drive->data;
 
+	struct mtop nop = { MTNOP, 1 };
+	int failed = ioctl(self->fd_nst, MTIOCTOP, &nop);
+
+	if (failed) {
+		close(self->fd_nst);
+		self->fd_nst = open(drive->device, O_RDWR | O_NONBLOCK);
+	}
+
 	struct mtget status;
-	int failed = ioctl(self->fd_nst, MTIOCGET, &status);
+	failed = ioctl(self->fd_nst, MTIOCGET, &status);
 
 	if (failed) {
 		drive->status = sa_drive_error;
@@ -133,11 +158,12 @@ void sa_drive_generic_update_status(struct sa_drive * drive) {
 		drive->is_door_opened    = GMT_DR_OPEN(status.mt_gstat) ? 1 : 0;
 
 		drive->block_size = (status.mt_dsreg & MT_ST_BLKSIZE_MASK) >> MT_ST_BLKSIZE_SHIFT;
+		drive->density_code = (status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT;
 	}
 }
 
 void sa_drive_setup(struct sa_drive * drive) {
-	int fd = open(drive->device, O_RDWR);
+	int fd = open(drive->device, O_RDWR | O_NONBLOCK);
 
 	struct sa_drive_generic * self = malloc(sizeof(struct sa_drive_generic));
 	self->fd_nst = fd;
