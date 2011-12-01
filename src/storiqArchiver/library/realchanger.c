@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 01 Dec 2011 10:01:29 +0100                         *
+*  Last modified: Thu, 01 Dec 2011 11:36:24 +0100                         *
 \*************************************************************************/
 
 // malloc
@@ -127,6 +127,7 @@ void sa_realchanger_setup(struct sa_changer * changer, int fd) {
 			dr->slot->tape = sa_tape_new(dr);
 			sa_tape_detect(dr);
 
+			dr->ops->rewind(dr);
 			sa_realchanger_unload(changer, dr, sl);
 		}
 	}

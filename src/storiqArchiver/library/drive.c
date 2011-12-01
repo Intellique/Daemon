@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 01 Dec 2011 15:24:43 +0100                         *
+*  Last modified: Thu, 01 Dec 2011 15:46:40 +0100                         *
 \*************************************************************************/
 
 // open
@@ -157,7 +157,24 @@ int sa_drive_generic_rewind(struct sa_drive * drive) {
 	return failed;
 }
 
-int sa_drive_generic_set_file_position(struct sa_drive * drive, int file_position) {}
+int sa_drive_generic_set_file_position(struct sa_drive * drive, int file_position) {
+	int failed = sa_drive_generic_rewind(drive);
+
+	if (failed)
+		return failed;
+
+	struct sa_drive_generic * self = drive->data;
+	struct mtop fsr = { MTFSF, file_position };
+	failed = ioctl(self->fd_nst, MTIOCTOP, &fsr);
+
+	if (failed) {
+		sa_drive_generic_on_failed(drive);
+		sa_drive_generic_update_status(drive);
+		failed = ioctl(self->fd_nst, MTIOCTOP, &fsr);
+	}
+
+	return failed;
+}
 
 void sa_drive_generic_update_status(struct sa_drive * drive) {
 	struct sa_drive_generic * self = drive->data;
