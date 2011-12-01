@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 28 Nov 2011 11:36:19 +0100                         *
+*  Last modified: Wed, 30 Nov 2011 09:58:33 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_DRIVE_H__
@@ -33,13 +33,14 @@
 
 struct sa_changer;
 struct sa_slot;
+struct sa_stream_reader;
 
 enum sa_drive_status {
 	sa_drive_cleaning,
-	sa_drive_emptyIdle,
+	sa_drive_empty_idle,
 	sa_drive_erasing,
 	sa_drive_error,
-	sa_drive_loadedIdle,
+	sa_drive_loaded_idle,
 	sa_drive_loading,
 	sa_drive_positioning,
 	sa_drive_reading,
@@ -65,11 +66,16 @@ struct sa_drive {
 	struct sa_slot * slot;
 
 	struct sa_drive_ops {
+		int (*eod)(struct sa_drive * drive);
 		ssize_t (*get_block_size)(struct sa_drive * drive);
+		struct sa_stream_reader * (*get_reader)(struct sa_drive * drive);
 		int (*rewind)(struct sa_drive * drive);
 		int (*set_file_position)(struct sa_drive * drive, int file_position);
 	} * ops;
 	void * data;
+
+	unsigned int nb_files;
+	ssize_t block_number;
 
 	unsigned char is_bottom_of_tape;
 	unsigned char is_end_of_file;
@@ -81,19 +87,7 @@ struct sa_drive {
 	// block size defined for this drive
 	// 0 => soft block
 	ssize_t block_size;
-};
-
-struct sa_slot {
-	long long id;
-	struct sa_changer * changer;
-	struct sa_drive * drive;
-	struct sa_tape * tape;
-
-	char volume_name[37];
-	char full;
-
-	// for scsi use only
-	int address;
+	unsigned char density_code;
 };
 
 

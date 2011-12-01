@@ -22,13 +22,15 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 28 Nov 2011 11:40:32 +0100                         *
+*  Last modified: Mon, 28 Nov 2011 13:09:01 +0100                         *
 \*************************************************************************/
 
 // free, malloc
 #include <stdlib.h>
-// memcpy, memmove
+// bzero, memcpy, memmove
 #include <string.h>
+// struct mtop
+#include <sys/mtio.h>
 // read, write
 #include <unistd.h>
 
@@ -46,6 +48,11 @@ struct sa_drive_io_reader {
 };
 
 struct sa_drive_io_writer {
+	int fd;
+	char * buffer;
+	ssize_t buffer_used;
+	ssize_t block_size;
+	ssize_t position;
 };
 
 static int sa_drive_io_reader_close(struct sa_stream_reader * io);
@@ -56,7 +63,7 @@ static ssize_t sa_drive_io_reader_read(struct sa_stream_reader * io, void * buff
 static int sa_drive_io_writer_close(struct sa_stream_writer * io);
 static void sa_drive_io_writer_free(struct sa_stream_writer * io);
 static ssize_t sa_drive_io_writer_position(struct sa_stream_writer * io);
-static ssize_t sa_drive_io_writer_write(struct sa_stream_writer * io);
+static ssize_t sa_drive_io_writer_write(struct sa_stream_writer * io, void * buffer, ssize_t length);
 
 static struct sa_stream_reader_ops sa_drive_io_reader_ops = {
 	.close    = sa_drive_io_reader_close,
@@ -187,13 +194,113 @@ ssize_t sa_drive_io_reader_read(struct sa_stream_reader * io, void * buffer, ssi
 }
 
 
-int sa_drive_io_writer_close(struct sa_stream_writer * io) {}
+int sa_drive_io_writer_close(struct sa_stream_writer * io) {
+	if (!io || !io->data)
+		return -1;
 
-void sa_drive_io_writer_free(struct sa_stream_writer * io) {}
+	struct sa_drive_io_writer * self = io->data;
+	if (self->buffer_used) {
+		bzero(self->buffer + self->buffer_used, self->block_size - self->buffer_used);
+		
+		ssize_t nb_write = write(self->fd, self->buffer, self->buffer_used);
+		if (nb_write < 0)
+			return -1;
 
-struct sa_stream_writer * sa_drive_writer_new(struct sa_drive * drive, int fd) {}
+		self->position += nb_write;
+		self->buffer_used = 0;
+	}
 
-ssize_t sa_drive_io_writer_position(struct sa_stream_writer * io) {}
+	if (self->fd > -1) {
+		struct mtop eof = { MTWEOF, 1 };
+		int failed = ioctl(self->fd, MTIOCTOP, &eof);
+		if (failed)
+			return -1;
+	}
 
-ssize_t sa_drive_io_writer_write(struct sa_stream_writer * io) {}
+	self->fd = -1;
+	return 0;
+}
+
+void sa_drive_io_writer_free(struct sa_stream_writer * io) {
+	if (!io)
+		return;
+
+	struct sa_drive_io_writer * self = io->data;
+	if (self) {
+		self->fd = -1;
+		free(self->buffer);
+		free(self);
+	}
+	io->data = 0;
+	io->ops = 0;
+}
+
+struct sa_stream_writer * sa_drive_writer_new(struct sa_drive * drive, int fd) {
+	ssize_t block_size = drive->ops->get_block_size(drive);
+
+	struct sa_drive_io_writer * self = malloc(sizeof(struct sa_drive_io_reader));
+	self->fd = fd;
+	self->buffer = malloc(block_size);
+	self->buffer_used = 0;
+	self->block_size = block_size;
+	self->position = 0;
+
+	struct sa_stream_writer * writer = malloc(sizeof(struct sa_stream_writer));
+	writer->ops = &sa_drive_io_writer_ops;
+	writer->data = self;
+
+	return writer;
+}
+
+ssize_t sa_drive_io_writer_position(struct sa_stream_writer * io) {
+	if (!io || !io->data)
+		return -1;
+
+	struct sa_drive_io_writer * self = io->data;
+	return self->position;
+}
+
+ssize_t sa_drive_io_writer_write(struct sa_stream_writer * io, void * buffer, ssize_t length) {
+	if (!io || !buffer || length < 0)
+		return -1;
+
+	struct sa_drive_io_writer * self = io->data;
+
+	ssize_t buffer_available = self->block_size - self->buffer_used;
+	if (buffer_available > length) {
+		memcpy(self->buffer + self->buffer_used, buffer, length);
+
+		self->buffer_used += length;
+		self->position += length;
+		return length;
+	}
+
+	memcpy(self->buffer + self->buffer_used, buffer, buffer_available);
+	
+	ssize_t nb_total_write = write(self->fd, self->buffer, self->block_size);
+	if (nb_total_write < 0)
+		return -1;
+
+	self->buffer_used = 0;
+	self->position += buffer_available;
+
+	char * c_buffer = buffer;
+	while (length - nb_total_write >= self->block_size) {
+		ssize_t nb_write = write(self->fd, c_buffer + nb_total_write, self->block_size);
+		if (nb_write < 0)
+			return -1;
+
+		nb_total_write += nb_write;
+		self->position += nb_write;
+	}
+
+	if (length == nb_total_write)
+		return length;
+
+	self->buffer_used = length - nb_total_write;
+	self->position += self->buffer_used;
+	memcpy(self->buffer, c_buffer + nb_total_write, self->buffer_used);
+
+	return length;
+}
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 27 Nov 2011 20:05:07 +0100                         *
+*  Last modified: Wed, 30 Nov 2011 23:51:27 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_CHANGER_H__
@@ -70,14 +70,27 @@ struct sa_changer {
     struct sa_ressource * res;
 
     // for scsi use only
-    int transportAddress;
+    int transport_address;
+};
+
+struct sa_slot {
+	long long id;
+	struct sa_changer * changer;
+	struct sa_drive * drive;
+	struct sa_tape * tape;
+
+	char volume_name[37];
+	char full;
+
+	// for scsi use only
+	int address;
+    int src_address;
 };
 
 
 const char * sa_changer_status_to_string(enum sa_changer_status status);
 enum sa_changer_status sa_changer_string_to_status(const char * status);
 void sa_changer_setup(void);
-void sa_changer_test(void);
 
 #endif
 

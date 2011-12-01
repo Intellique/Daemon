@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 27 Nov 2011 16:42:01 +0100                         *
+*  Last modified: Mon, 28 Nov 2011 21:46:50 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -43,13 +43,21 @@ static void sa_show_help(char * command);
 int main(int argc, char ** argv) {
 	sa_log_write_all(sa_log_level_info, "StorIqArchiver, version: %s, build: %s %s", STORIQARCHIVER_VERSION, __DATE__, __TIME__);
 
+    enum {
+        OPT_CONFIG   = 'c',
+        OPT_DETACH   = 'd',
+        OPT_HELP     = 'h',
+        OPT_PID_FILE = 'p',
+        OPT_VERSION  = 'V',
+    };
+
 	static int option_index = 0;
 	static struct option long_options[] = {
-		{"config",		1,	0,	'c'},
-		{"detach",		0,	0,	'd'},
-		{"help",		0,	0,	'h'},
-		{"pid-file",	1,	0,	'p'},
-		{"version",		0,	0,	'V'},
+		{ "config",   1, 0, OPT_CONFIG },
+		{ "detach",   0, 0, OPT_DETACH },
+		{ "help",     0, 0, OPT_HELP },
+		{ "pid-file", 1, 0, OPT_PID_FILE },
+		{ "version",  0, 0, OPT_VERSION },
 
 		{0, 0, 0, 0},
 	};
@@ -59,33 +67,31 @@ int main(int argc, char ** argv) {
 	char * pid_file = DEFAULT_PID_FILE;
 
 	// parse option
-	for (;;) {
-		int c = getopt_long(argc, argv, "c:dhp:V", long_options, &option_index);
+    int opt;
+	do {
+		opt = getopt_long(argc, argv, "c:dhp:V", long_options, &option_index);
 
-		if (c == -1)
-			break;
-
-		switch (c) {
-			case 'c':
+		switch (opt) {
+            case OPT_CONFIG:
 				config_file = optarg;
 				sa_log_write_all(sa_log_level_info, "Using configuration file: '%s'", optarg);
 				break;
 
-			case 'd':
+            case OPT_DETACH:
 				detach = 1;
 				sa_log_write_all(sa_log_level_info, "Using detach mode (i.e. use fork())");
 				break;
 
-			case 'h':
+            case OPT_HELP:
 				sa_show_help(*argv);
 				return 0;
 
-			case 'p':
+            case OPT_PID_FILE:
 				pid_file = optarg;
 				sa_log_write_all(sa_log_level_info, "Using pid file: '%s'", optarg);
 				break;
 
-			case 'V': {
+            case OPT_VERSION: {
 					char * ptr = strrchr(*argv, '/');
 					if (ptr)
 						ptr++;
@@ -95,13 +101,8 @@ int main(int argc, char ** argv) {
 					printf("%s\nVersion: %s, build: %s %s\n", ptr, STORIQARCHIVER_VERSION, __DATE__, __TIME__);
 				}
 				return 0;
-
-			default:
-				sa_log_write_all(sa_log_level_error, "Parsing option: unknown option '%c'", c);
-				sa_show_help(*argv);
-				return 1;
 		}
-	}
+	} while (opt > -1);
 
 	sa_log_write_all(sa_log_level_debug, "Parsing option: ok");
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 28 Nov 2011 10:54:12 +0100                         *
+*  Last modified: Mon, 28 Nov 2011 12:49:53 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_IO_H__
@@ -46,7 +46,7 @@ struct sa_stream_writer {
 		int (*close)(struct sa_stream_writer * io);
 		void (*free)(struct sa_stream_writer * io);
 		ssize_t (*position)(struct sa_stream_writer * io);
-		ssize_t (*write)(struct sa_stream_writer * io);
+		ssize_t (*write)(struct sa_stream_writer * io, void * buffer, ssize_t length);
 	} * ops;
 	void * data;
 };
