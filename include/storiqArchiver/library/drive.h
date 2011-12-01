@@ -69,6 +69,7 @@ struct sa_drive {
 		int (*eod)(struct sa_drive * drive);
 		ssize_t (*get_block_size)(struct sa_drive * drive);
 		struct sa_stream_reader * (*get_reader)(struct sa_drive * drive);
+		struct sa_stream_writer * (*get_writer)(struct sa_drive * drive);
 		int (*rewind)(struct sa_drive * drive);
 		int (*set_file_position)(struct sa_drive * drive, int file_position);
 	} * ops;
