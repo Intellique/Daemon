@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Nov 2011 10:52:39 +0100                         *
+*  Last modified: Thu, 01 Dec 2011 15:24:43 +0100                         *
 \*************************************************************************/
 
 // open
@@ -39,6 +39,7 @@
 #include <unistd.h>
 
 #include <storiqArchiver/library/drive.h>
+#include <storiqArchiver/log.h>
 
 #include "common.h"
 
@@ -49,6 +50,7 @@ struct sa_drive_generic {
 static int sa_drive_generic_eod(struct sa_drive * drive);
 static ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive);
 static struct sa_stream_reader * sa_drive_generic_get_reader(struct sa_drive * drive);
+static void sa_drive_generic_on_failed(struct sa_drive * drive);
 static int sa_drive_generic_rewind(struct sa_drive * drive);
 static int sa_drive_generic_set_file_position(struct sa_drive * drive, int file_position);
 static void sa_drive_generic_update_status(struct sa_drive * drive);
@@ -65,8 +67,18 @@ static struct sa_drive_ops sa_drive_generic_ops = {
 int sa_drive_generic_eod(struct sa_drive * drive) {
 	struct sa_drive_generic * self = drive->data;
 
+	sa_log_write_all(sa_log_level_debug, "Drive: do space to end of tape");
+
 	struct mtop eod = { MTEOM, 1 };
 	int failed = ioctl(self->fd_nst, MTIOCTOP, &eod);
+
+	if (failed) {
+		sa_drive_generic_on_failed(drive);
+		sa_drive_generic_update_status(drive);
+		failed = ioctl(self->fd_nst, MTIOCTOP, &eod);
+	}
+
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive: space to end of tape, finish with code = %d", failed);
 
 	sa_drive_generic_update_status(drive);
 
@@ -82,10 +94,11 @@ ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive) {
 
 		struct sa_drive_generic * self = drive->data;
 
+		unsigned int i;
 		ssize_t nb_read;
 		ssize_t block_size = 1 << 15;
 		char * buffer = malloc(block_size);
-		do {
+		for (i = 0; i < 5; i++) {
 			nb_read = read(self->fd_nst, buffer, block_size);
 			sa_drive_generic_rewind(drive);
 
@@ -94,9 +107,13 @@ ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive) {
 				return nb_read;
 			}
 
+			sa_drive_generic_on_failed(drive);
+
 			block_size <<= 1;
 			buffer = realloc(buffer, block_size);
-		} while (nb_read < 1);
+		}
+
+		sa_log_write_all(sa_log_level_error, "Drive: do failed to detect block size");
 	}
 
 	return drive->block_size;
@@ -109,11 +126,31 @@ struct sa_stream_reader * sa_drive_generic_get_reader(struct sa_drive * drive) {
 	return sa_drive_reader_new(drive, self->fd_nst);
 }
 
+void sa_drive_generic_on_failed(struct sa_drive * drive) {
+	struct sa_drive_generic * self = drive->data;
+
+	sa_log_write_all(sa_log_level_debug, "Drive: Try to recover an error");
+	close(self->fd_nst);
+	sleep(20);
+	self->fd_nst = open(drive->device, O_RDWR | O_NONBLOCK);
+}
+
 int sa_drive_generic_rewind(struct sa_drive * drive) {
 	struct sa_drive_generic * self = drive->data;
 
+	sa_log_write_all(sa_log_level_debug, "Drive: do rewind tape");
+
 	struct mtop rewind = { MTREW, 1 };
 	int failed = ioctl(self->fd_nst, MTIOCTOP, &rewind);
+
+	unsigned int i;
+	for (i = 0; i < 3 && failed; i++) {
+		sa_drive_generic_on_failed(drive);
+		sa_drive_generic_update_status(drive);
+		failed = ioctl(self->fd_nst, MTIOCTOP, &rewind);
+	}
+
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive: rewind tape, finish with code = %d", failed);
 
 	sa_drive_generic_update_status(drive);
 
@@ -125,16 +162,13 @@ int sa_drive_generic_set_file_position(struct sa_drive * drive, int file_positio
 void sa_drive_generic_update_status(struct sa_drive * drive) {
 	struct sa_drive_generic * self = drive->data;
 
-	struct mtop nop = { MTNOP, 1 };
-	int failed = ioctl(self->fd_nst, MTIOCTOP, &nop);
+	struct mtget status;
+	int failed = ioctl(self->fd_nst, MTIOCGET, &status);
 
 	if (failed) {
-		close(self->fd_nst);
-		self->fd_nst = open(drive->device, O_RDWR | O_NONBLOCK);
+		sa_drive_generic_on_failed(drive);
+		failed = ioctl(self->fd_nst, MTIOCGET, &status);
 	}
-
-	struct mtget status;
-	failed = ioctl(self->fd_nst, MTIOCGET, &status);
 
 	if (failed) {
 		drive->status = sa_drive_error;
@@ -157,7 +191,7 @@ void sa_drive_generic_update_status(struct sa_drive * drive) {
 		drive->is_online         = GMT_ONLINE(status.mt_gstat) ? 1 : 0;
 		drive->is_door_opened    = GMT_DR_OPEN(status.mt_gstat) ? 1 : 0;
 
-		drive->block_size = (status.mt_dsreg & MT_ST_BLKSIZE_MASK) >> MT_ST_BLKSIZE_SHIFT;
+		drive->block_size   = (status.mt_dsreg & MT_ST_BLKSIZE_MASK) >> MT_ST_BLKSIZE_SHIFT;
 		drive->density_code = (status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT;
 	}
 }

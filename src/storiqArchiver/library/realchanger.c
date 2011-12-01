@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Nov 2011 21:53:22 +0100                         *
+*  Last modified: Thu, 01 Dec 2011 10:01:29 +0100                         *
 \*************************************************************************/
 
 // malloc
@@ -61,23 +61,29 @@ int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa
 	if (from->changer != ch || to->changer != ch)
 		return 1;
 
+	sa_log_write_all(sa_log_level_debug, "Library: start loading (changer: %s:%s) from slot %ld to drive %ld", ch->vendor, ch->model, from - ch->slots, to - ch->drives);
+
 	struct sa_realchanger_private * self = ch->data;
-	sa_scsi_mtx_move(self->fd, ch, from, to->slot);
+	int failed = sa_scsi_mtx_move(self->fd, ch, from, to->slot);
 
-	to->slot->tape = from->tape;
-	from->tape = 0;
-	strncpy(to->slot->volume_name, from->volume_name, 37);
-	*from->volume_name = '\0';
-	from->full = 0;
-	to->slot->full = 1;
-	to->slot->src_address = from->address;
+	if (!failed) {
+		to->slot->tape = from->tape;
+		from->tape = 0;
+		strncpy(to->slot->volume_name, from->volume_name, 37);
+		*from->volume_name = '\0';
+		from->full = 0;
+		to->slot->full = 1;
+		to->slot->src_address = from->address;
+	}
 
-	sa_log_write_all(sa_log_level_info, "Loading (changer: %s:%s) from slot %ld to drive %ld", ch->vendor, ch->model, from - ch->slots, to - ch->drives);
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_info, "Library: loading (changer: %s:%s) from slot %ld to drive %ld finished with code=%d", ch->vendor, ch->model, from - ch->slots, to - ch->drives, failed);
 
-	return 0;
+	return failed;
 }
 
 void sa_realchanger_setup(struct sa_changer * changer, int fd) {
+	sa_log_write_all(sa_log_level_info, "Library: starting setup of library (%s:%s)", changer->vendor, changer->model);
+
 	struct sa_realchanger_private * ch = malloc(sizeof(struct sa_realchanger_private));
 	ch->fd = fd;
 
@@ -124,6 +130,8 @@ void sa_realchanger_setup(struct sa_changer * changer, int fd) {
 			sa_realchanger_unload(changer, dr, sl);
 		}
 	}
+
+	sa_log_write_all(sa_log_level_info, "Library: setup terminated");
 }
 
 int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct sa_slot * to) {
@@ -137,18 +145,22 @@ int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct
 	if (from->changer != ch || to->changer != ch)
 		return 1;
 
+	sa_log_write_all(sa_log_level_debug, "Library: start unloading (changer: %s:%s) from drive %ld to slot %ld", ch->vendor, ch->model, from - ch->drives, to - ch->slots);
+
 	struct sa_realchanger_private * self = ch->data;
-	sa_scsi_mtx_move(self->fd, ch, from->slot, to);
+	int failed = sa_scsi_mtx_move(self->fd, ch, from->slot, to);
 
-	to->tape = from->slot->tape;
-	from->slot->tape = 0;
-	strncpy(to->volume_name, from->slot->volume_name, 37);
-	*from->slot->volume_name = '\0';
-	from->slot->full = 0;
-	to->full = 1;
-	from->slot->src_address = 0;
+	if (!failed) {
+		to->tape = from->slot->tape;
+		from->slot->tape = 0;
+		strncpy(to->volume_name, from->slot->volume_name, 37);
+		*from->slot->volume_name = '\0';
+		from->slot->full = 0;
+		to->full = 1;
+		from->slot->src_address = 0;
+	}
 
-	sa_log_write_all(sa_log_level_info, "Unloading (changer: %s:%s) from drive %ld to slot %ld", ch->vendor, ch->model, from - ch->drives, to - ch->slots);
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_info, "Library: unloading (changer: %s:%s) from drive %ld to slot %ld finished with code=%d", ch->vendor, ch->model, from - ch->drives, to - ch->slots, failed);
 
 	return 0;
 }

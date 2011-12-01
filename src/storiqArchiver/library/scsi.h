@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 27 Nov 2011 18:43:16 +0100                         *
+*  Last modified: Thu, 01 Dec 2011 09:54:57 +0100                         *
 \*************************************************************************/
 
 #ifndef SCSI_H__
@@ -32,7 +32,7 @@
 #include <storiqArchiver/library/drive.h>
 
 void sa_scsi_loaderinfo(int fd, struct sa_changer * changer);
-void sa_scsi_mtx_move(int fd, struct sa_changer * ch, struct sa_slot * from, struct sa_slot * to);
+int sa_scsi_mtx_move(int fd, struct sa_changer * ch, struct sa_slot * from, struct sa_slot * to);
 void sa_scsi_mtx_status_new(int fd, struct sa_changer * changer);
 
 void sa_realchanger_setup(struct sa_changer * changer, int fd);
