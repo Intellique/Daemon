@@ -1,8 +1,3 @@
--- Functions
-CREATE FUNCTION unix_to_timestamp(IN unix NUMERIC) RETURNS timestamp with time zone AS
-$BODY$select timestamp with time zone 'epoch' + $1 * interval '1 s';$BODY$
-LANGUAGE sql IMMUTABLE;
-
 -- Types
 CREATE TYPE ChangerSlotType AS ENUM (
     'default',
@@ -285,17 +280,11 @@ CREATE TABLE Users (
     isAdmin BOOLEAN NOT NULL DEFAULT FALSE
 );
 
-CREATE TABLE UsersToHomeDirToHost (
-    login INTEGER NOT NULL REFERENCES Users(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    homeDir INTEGER NOT NULL REFERENCES HomeDir(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    host INTEGER NOT NULL REFERENCES Host(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    PRIMARY KEY (login, homeDir, host)
-);
-
 CREATE TABLE SelectedFile (
     id SERIAL PRIMARY KEY,
     path VARCHAR(255) NOT NULL,
-    recursive BOOLEAN NOT NULL DEFAULT FALSE
+    recursive BOOLEAN NOT NULL DEFAULT FALSE,
+    host INTEGER NOT NULL REFERENCES Host(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE Job (
