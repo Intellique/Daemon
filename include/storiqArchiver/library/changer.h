@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Nov 2011 23:51:27 +0100                         *
+*  Last modified: Sat, 03 Dec 2011 14:03:10 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_CHANGER_H__
@@ -49,6 +49,7 @@ struct sa_changer {
 	enum sa_changer_status status;
 	char * model;
 	char * vendor;
+    char * revision;
 	int barcode;
 
 	int host;

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 01 Dec 2011 16:59:35 +0100                         *
+*  Last modified: Sat, 03 Dec 2011 15:35:51 +0100                         *
 \*************************************************************************/
 
 // malloc
@@ -30,6 +30,7 @@
 // strncpy
 #include <string.h>
 
+#include <storiqArchiver/database.h>
 #include <storiqArchiver/log.h>
 #include <storiqArchiver/library/ressource.h>
 #include <storiqArchiver/library/tape.h>
@@ -39,10 +40,12 @@
 
 struct sa_realchanger_private {
 	int fd;
+	struct sa_database_connection * db_con;
 };
 
 static int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa_drive * to);
 static int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct sa_slot * to);
+static void sa_realchanger_update_status(struct sa_changer * ch, enum sa_changer_status status);
 
 struct sa_changer_ops sa_realchanger_ops = {
 	.load     = sa_realchanger_load,
@@ -61,8 +64,9 @@ int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa
 	if (from->changer != ch || to->changer != ch)
 		return 1;
 
-	sa_log_write_all(sa_log_level_debug, "Library: start loading (changer: %s:%s) from slot %ld to drive %ld", ch->vendor, ch->model, from - ch->slots, to - ch->drives);
+	sa_log_write_all(sa_log_level_info, "Library: loading (changer: %s:%s) tape from slot n°%ld to drive n°%ld", ch->vendor, ch->model, from - ch->slots, to - ch->drives);
 
+	sa_realchanger_update_status(ch, sa_changer_loading);
 	struct sa_realchanger_private * self = ch->data;
 	int failed = sa_scsi_mtx_move(self->fd, ch, from, to->slot);
 
@@ -74,9 +78,13 @@ int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa
 		from->full = 0;
 		to->slot->full = 1;
 		to->slot->src_address = from->address;
+
+		ch->status = sa_changer_idle;
+	} else {
+		ch->status = sa_changer_error;
 	}
 
-	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_info, "Library: loading (changer: %s:%s) from slot %ld to drive %ld finished with code=%d", ch->vendor, ch->model, from - ch->slots, to - ch->drives, failed);
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Library: loading (changer: %s:%s) from slot n°%ld to drive n°%ld finished with code = %d", ch->vendor, ch->model, from - ch->slots, to - ch->drives, failed);
 
 	return failed;
 }
@@ -86,7 +94,9 @@ void sa_realchanger_setup(struct sa_changer * changer, int fd) {
 
 	struct sa_realchanger_private * ch = malloc(sizeof(struct sa_realchanger_private));
 	ch->fd = fd;
+	ch->db_con = 0;
 
+	changer->status = sa_changer_idle;
 	changer->ops = &sa_realchanger_ops;
 	changer->data = ch;
 	changer->res = sa_ressource_new();
@@ -113,10 +123,8 @@ void sa_realchanger_setup(struct sa_changer * changer, int fd) {
 		for (i = changer->nb_drives; !sl && i < changer->nb_slots; i++)
 			if (!changer->slots[i].full)
 				sl = changer->slots + i;
-		if (sl) {
-			dr->ops->rewind(dr);
+		if (sl)
 			sa_realchanger_unload(changer, dr, sl);
-		}
 	}
 
 	for (i = changer->nb_drives; i < changer->nb_slots; i++) {
@@ -124,12 +132,24 @@ void sa_realchanger_setup(struct sa_changer * changer, int fd) {
 		if (sl->full && !sl->tape) {
 			sa_realchanger_load(changer, sl, dr);
 
+			dr->ops->reset(dr);
 			dr->slot->tape = sa_tape_new(dr);
 			sa_tape_detect(dr);
 
-			dr->ops->rewind(dr);
 			sa_realchanger_unload(changer, dr, sl);
 		}
+	}
+
+	struct sa_database * db = sa_db_get_default_db();
+	if (db) {
+		ch->db_con = db->ops->connect(db, 0);
+		if (ch->db_con) {
+			ch->db_con->ops->sync_changer(ch->db_con, changer);
+		} else {
+			sa_log_write_all(sa_log_level_error, "Library: failed to connect to default database");
+		}
+	} else {
+		sa_log_write_all(sa_log_level_warning, "Library: there is no default database so changer (%s:%s) is not able to synchronize with one database", changer->vendor, changer->model);
 	}
 
 	sa_log_write_all(sa_log_level_info, "Library: setup terminated");
@@ -146,10 +166,15 @@ int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct
 	if (from->changer != ch || to->changer != ch)
 		return 1;
 
-	sa_log_write_all(sa_log_level_debug, "Library: start unloading (changer: %s:%s) from drive %ld to slot %ld", ch->vendor, ch->model, from - ch->drives, to - ch->slots);
+	int failed = from->ops->eject(from);
+	if (failed)
+		return failed;
 
+	sa_log_write_all(sa_log_level_info, "Library: unloading (changer: %s:%s) from drive n°%ld to slot n°%ld", ch->vendor, ch->model, from - ch->drives, to - ch->slots);
+
+	sa_realchanger_update_status(ch, sa_changer_unloading);
 	struct sa_realchanger_private * self = ch->data;
-	int failed = sa_scsi_mtx_move(self->fd, ch, from->slot, to);
+	failed = sa_scsi_mtx_move(self->fd, ch, from->slot, to);
 
 	if (!failed) {
 		to->tape = from->slot->tape;
@@ -159,10 +184,22 @@ int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct
 		from->slot->full = 0;
 		to->full = 1;
 		from->slot->src_address = 0;
+
+		ch->status = sa_changer_idle;
+	} else {
+		ch->status = sa_changer_error;
 	}
 
-	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_info, "Library: unloading (changer: %s:%s) from drive %ld to slot %ld finished with code=%d", ch->vendor, ch->model, from - ch->drives, to - ch->slots, failed);
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Library: unloading (changer: %s:%s) from drive n°%ld to slot n°%ld finished with code = %d", ch->vendor, ch->model, from - ch->drives, to - ch->slots, failed);
 
 	return 0;
+}
+
+void sa_realchanger_update_status(struct sa_changer * ch, enum sa_changer_status status) {
+	struct sa_realchanger_private * self = ch->data;
+	ch->status = status;
+
+	if (self->db_con)
+		self->db_con->ops->sync_changer(self->db_con, ch);
 }
 

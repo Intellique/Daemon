@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Nov 2011 21:05:53 +0100                         *
+*  Last modified: Fri, 02 Dec 2011 15:27:47 +0100                         *
 \*************************************************************************/
 
 // sscanf
@@ -201,12 +201,13 @@ void sa_tape_detect(struct sa_drive * dr) {
 
 	tape->nb_files = dr->nb_files;
 
-	struct sa_database * db = sa_db_get_default_db();
-	struct sa_database_connection * con = db->ops->connect(db, 0);
+	static struct sa_database_connection * con = 0;
+	if (!con) {
+		struct sa_database * db = sa_db_get_default_db();
+		con = db->ops->connect(db, 0);
+	}
+
 	con->ops->sync_tape(con, tape);
-	con->ops->close(con);
-	con->ops->free(con);
-	free(con);
 }
 
 struct sa_tape * sa_tape_new(struct sa_drive * dr) {

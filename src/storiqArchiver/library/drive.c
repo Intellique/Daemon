@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 01 Dec 2011 18:17:25 +0100                         *
+*  Last modified: Sat, 03 Dec 2011 21:53:25 +0100                         *
 \*************************************************************************/
 
 // open
@@ -42,14 +42,17 @@
 // close, read, sleep
 #include <unistd.h>
 
+#include <storiqArchiver/database.h>
 #include <storiqArchiver/io.h>
 #include <storiqArchiver/library/drive.h>
 #include <storiqArchiver/log.h>
 
 #include "common.h"
+#include "scsi.h"
 
 struct sa_drive_generic {
 	int fd_nst;
+	struct sa_database_connection * db_con;
 
 	int used_by_io;
 };
@@ -61,7 +64,8 @@ struct sa_drive_io_reader {
 	ssize_t block_size;
 	ssize_t position;
 
-	struct sa_drive_generic * drive;
+	struct sa_drive * drive;
+	struct sa_drive_generic * drive_private;
 };
 
 struct sa_drive_io_writer {
@@ -71,17 +75,21 @@ struct sa_drive_io_writer {
 	ssize_t block_size;
 	ssize_t position;
 
-	struct sa_drive_generic * drive;
+	struct sa_drive * drive;
+	struct sa_drive_generic * drive_private;
 };
 
+static int sa_drive_generic_eject(struct sa_drive * drive);
 static int sa_drive_generic_eod(struct sa_drive * drive);
 static ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive);
 static struct sa_stream_reader * sa_drive_generic_get_reader(struct sa_drive * drive);
 static struct sa_stream_writer * sa_drive_generic_get_writer(struct sa_drive * drive);
-static void sa_drive_generic_on_failed(struct sa_drive * drive);
+static void sa_drive_generic_on_failed(struct sa_drive * drive, int verbose);
+static void sa_drive_generic_reset(struct sa_drive * drive);
 static int sa_drive_generic_rewind(struct sa_drive * drive);
 static int sa_drive_generic_set_file_position(struct sa_drive * drive, int file_position);
 static void sa_drive_generic_update_status(struct sa_drive * drive);
+static void sa_drive_generic_update_status2(struct sa_drive * drive, enum sa_drive_status status);
 
 static int sa_drive_io_reader_close(struct sa_stream_reader * io);
 static void sa_drive_io_reader_free(struct sa_stream_reader * io);
@@ -98,10 +106,12 @@ static ssize_t sa_drive_io_writer_position(struct sa_stream_writer * io);
 static ssize_t sa_drive_io_writer_write(struct sa_stream_writer * io, void * buffer, ssize_t length);
 
 static struct sa_drive_ops sa_drive_generic_ops = {
+	.eject             = sa_drive_generic_eject,
 	.eod               = sa_drive_generic_eod,
 	.get_block_size    = sa_drive_generic_get_block_size,
 	.get_reader        = sa_drive_generic_get_reader,
 	.get_writer        = sa_drive_generic_get_writer,
+	.reset             = sa_drive_generic_reset,
 	.rewind            = sa_drive_generic_rewind,
 	.set_file_position = sa_drive_generic_set_file_position,
 };
@@ -123,21 +133,40 @@ static struct sa_stream_writer_ops sa_drive_io_writer_ops = {
 };
 
 
+int sa_drive_generic_eject(struct sa_drive * drive) {
+	struct sa_drive_generic * self = drive->data;
+
+	sa_log_write_all(sa_log_level_info, "Drive: rewind tape and put the drive offline");
+
+	sa_drive_generic_update_status2(drive, sa_drive_unloading);
+
+	struct mtop eject = { MTOFFL, 1 };
+	int failed = ioctl(self->fd_nst, MTIOCTOP, &eject);
+
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive: rewind tape and put the drive offline, finish with code = %d", failed);
+
+	sa_drive_generic_update_status(drive);
+
+	return failed;
+}
+
 int sa_drive_generic_eod(struct sa_drive * drive) {
 	struct sa_drive_generic * self = drive->data;
 
-	sa_log_write_all(sa_log_level_debug, "Drive: do space to end of tape");
+	sa_log_write_all(sa_log_level_info, "Drive: goto end of tape");
+
+	sa_drive_generic_update_status2(drive, sa_drive_positioning);
 
 	struct mtop eod = { MTEOM, 1 };
 	int failed = ioctl(self->fd_nst, MTIOCTOP, &eod);
 
 	if (failed) {
-		sa_drive_generic_on_failed(drive);
+		sa_drive_generic_on_failed(drive, 1);
 		sa_drive_generic_update_status(drive);
 		failed = ioctl(self->fd_nst, MTIOCTOP, &eod);
 	}
 
-	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive: space to end of tape, finish with code = %d", failed);
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive: goto end of tape, finish with code = %d", failed);
 
 	sa_drive_generic_update_status(drive);
 
@@ -166,13 +195,13 @@ ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive) {
 				return nb_read;
 			}
 
-			sa_drive_generic_on_failed(drive);
+			sa_drive_generic_on_failed(drive, 1);
 
 			block_size <<= 1;
 			buffer = realloc(buffer, block_size);
 		}
 
-		sa_log_write_all(sa_log_level_error, "Drive: do failed to detect block size");
+		sa_log_write_all(sa_log_level_error, "Drive: failed to detect block size");
 	}
 
 	return drive->block_size;
@@ -182,8 +211,12 @@ struct sa_stream_reader * sa_drive_generic_get_reader(struct sa_drive * drive) {
 	sa_drive_generic_update_status(drive);
 
 	struct sa_drive_generic * self = drive->data;
-	if (drive->is_door_opened || self->used_by_io)
+	if (drive->is_door_opened || self->used_by_io) {
+		sa_log_write_all(sa_log_level_debug, "Drive: drive is not free for reading on it");
 		return 0;
+	}
+
+	sa_drive_generic_update_status2(drive, sa_drive_reading);
 
 	return sa_drive_io_reader_new(drive);
 }
@@ -192,32 +225,44 @@ struct sa_stream_writer * sa_drive_generic_get_writer(struct sa_drive * drive) {
 	sa_drive_generic_update_status(drive);
 
 	struct sa_drive_generic * self = drive->data;
-	if (drive->is_door_opened || self->used_by_io)
+	if (drive->is_door_opened || self->used_by_io) {
+		sa_log_write_all(sa_log_level_debug, "Drive: drive is not free for writing on it");
 		return 0;
+	}
+
+	sa_drive_generic_update_status2(drive, sa_drive_writing);
 
 	return sa_drive_io_writer_new(drive);
 }
 
-void sa_drive_generic_on_failed(struct sa_drive * drive) {
+void sa_drive_generic_on_failed(struct sa_drive * drive, int verbose) {
 	struct sa_drive_generic * self = drive->data;
 
-	sa_log_write_all(sa_log_level_debug, "Drive: Try to recover an error");
+	if (verbose)
+		sa_log_write_all(sa_log_level_debug, "Drive: Try to recover an error");
 	close(self->fd_nst);
 	sleep(20);
 	self->fd_nst = open(drive->device, O_RDWR | O_NONBLOCK);
 }
 
+void sa_drive_generic_reset(struct sa_drive * drive) {
+	sa_drive_generic_on_failed(drive, 0);
+	sa_drive_generic_update_status(drive);
+}
+
 int sa_drive_generic_rewind(struct sa_drive * drive) {
 	struct sa_drive_generic * self = drive->data;
 
-	sa_log_write_all(sa_log_level_debug, "Drive: do rewind tape");
+	sa_log_write_all(sa_log_level_info, "Drive: rewind tape");
+
+	sa_drive_generic_update_status2(drive, sa_drive_rewinding);
 
 	struct mtop rewind = { MTREW, 1 };
 	int failed = ioctl(self->fd_nst, MTIOCTOP, &rewind);
 
 	unsigned int i;
 	for (i = 0; i < 3 && failed; i++) {
-		sa_drive_generic_on_failed(drive);
+		sa_drive_generic_on_failed(drive, 1);
 		sa_drive_generic_update_status(drive);
 		failed = ioctl(self->fd_nst, MTIOCTOP, &rewind);
 	}
@@ -230,20 +275,20 @@ int sa_drive_generic_rewind(struct sa_drive * drive) {
 }
 
 int sa_drive_generic_set_file_position(struct sa_drive * drive, int file_position) {
+	sa_log_write_all(sa_log_level_info, "Drive: positioning tape to position = %d", file_position);
+
 	int failed = sa_drive_generic_rewind(drive);
 
 	if (failed)
 		return failed;
 
+	sa_drive_generic_update_status2(drive, sa_drive_positioning);
+
 	struct sa_drive_generic * self = drive->data;
 	struct mtop fsr = { MTFSF, file_position };
 	failed = ioctl(self->fd_nst, MTIOCTOP, &fsr);
 
-	if (failed) {
-		sa_drive_generic_on_failed(drive);
-		sa_drive_generic_update_status(drive);
-		failed = ioctl(self->fd_nst, MTIOCTOP, &fsr);
-	}
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive: positioning tape to position = %d, finish with code = %d", file_position, failed);
 
 	return failed;
 }
@@ -255,7 +300,7 @@ void sa_drive_generic_update_status(struct sa_drive * drive) {
 	int failed = ioctl(self->fd_nst, MTIOCGET, &status);
 
 	if (failed) {
-		sa_drive_generic_on_failed(drive);
+		sa_drive_generic_on_failed(drive, 1);
 		failed = ioctl(self->fd_nst, MTIOCGET, &status);
 	}
 
@@ -281,8 +326,22 @@ void sa_drive_generic_update_status(struct sa_drive * drive) {
 		drive->is_door_opened    = GMT_DR_OPEN(status.mt_gstat) ? 1 : 0;
 
 		drive->block_size   = (status.mt_dsreg & MT_ST_BLKSIZE_MASK) >> MT_ST_BLKSIZE_SHIFT;
-		drive->density_code = (status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT;
+		unsigned char density_code = (status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT;
+		if (density_code > 0)
+			drive->density_code = density_code;
+
+		sa_drive_generic_update_status2(drive, drive->is_door_opened ? sa_drive_empty_idle : sa_drive_loaded_idle);
+	} else {
+		sa_drive_generic_update_status2(drive, sa_drive_error);
 	}
+}
+
+void sa_drive_generic_update_status2(struct sa_drive * drive, enum sa_drive_status status) {
+	drive->status = status;
+
+	struct sa_drive_generic * self = drive->data;
+	if (drive->id > -1)
+		self->db_con->ops->sync_drive(self->db_con, drive);
 }
 
 void sa_drive_setup(struct sa_drive * drive) {
@@ -292,10 +351,24 @@ void sa_drive_setup(struct sa_drive * drive) {
 	self->fd_nst = fd;
 	self->used_by_io = 0;
 
+	int fd_device = open(drive->scsi_device, O_RDWR | O_NONBLOCK);
+	sa_scsi_tapeinfo(fd_device, drive);
+	close(fd_device);
+
 	drive->ops = &sa_drive_generic_ops;
 	drive->data = self;
+	drive->density_code = 0;
 
 	sa_drive_generic_update_status(drive);
+
+	struct sa_database * db = sa_db_get_default_db();
+	if (db) {
+		self->db_con = db->ops->connect(db, 0);
+		if (!self->db_con)
+			sa_log_write_all(sa_log_level_error, "Drive: failed to connect to default database");
+	} else {
+		sa_log_write_all(sa_log_level_warning, "Drive: there is no default database so drive (%s:%s) is not able to synchronize with one database", drive->vendor, drive->model);
+	}
 }
 
 
@@ -307,7 +380,8 @@ int sa_drive_io_reader_close(struct sa_stream_reader * io) {
 	self->fd = -1;
 	self->buffer_used = 0;
 
-	self->drive->used_by_io = 0;
+	sa_drive_generic_update_status2(self->drive, sa_drive_loaded_idle);
+	self->drive_private->used_by_io = 0;
 
 	return 0;
 }
@@ -341,7 +415,8 @@ struct sa_stream_reader * sa_drive_io_reader_new(struct sa_drive * drive) {
 	self->buffer_used = 0;
 	self->block_size = block_size;
 	self->position = 0;
-	self->drive = dr;
+	self->drive = drive;
+	self->drive_private = dr;
 
 	dr->used_by_io = 1;
 
@@ -449,7 +524,8 @@ int sa_drive_io_writer_close(struct sa_stream_writer * io) {
 	}
 
 	self->fd = -1;
-	self->drive->used_by_io = 0;
+	sa_drive_generic_update_status2(self->drive, sa_drive_loaded_idle);
+	self->drive_private->used_by_io = 0;
 
 	return 0;
 }
@@ -483,7 +559,8 @@ struct sa_stream_writer * sa_drive_io_writer_new(struct sa_drive * drive) {
 	self->buffer_used = 0;
 	self->block_size = block_size;
 	self->position = 0;
-	self->drive = dr;
+	self->drive = drive;
+	self->drive_private = dr;
 
 	dr->used_by_io = 1;
 
