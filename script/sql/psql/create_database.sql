@@ -124,6 +124,7 @@ CREATE TABLE Tape (
     readCount INTEGER NOT NULL DEFAULT 0 CHECK (readCount >= 0),
     writeCount INTEGER NOT NULL DEFAULT 0 CHECK (writeCount >= 0),
     endPos INTEGER NOT NULL DEFAULT 0 CHECK (endPos >= 0),
+    blockSize INTEGER NOT NULL DEFAULT 0 CHECK (blockSize >= 0),
     nbFiles INTEGER NOT NULL DEFAULT 0 CHECK (nbFiles >= 0),
     hasPartition BOOLEAN NOT NULL DEFAULT FALSE,
     tapeFormat INTEGER NOT NULL REFERENCES TapeFormat(id) ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -167,7 +168,6 @@ CREATE TABLE Changer (
 
 CREATE TABLE Drive (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(64) NOT NULL,
     device VARCHAR(64) NOT NULL,
     status DriveStatus NOT NULL,
     changerNum INTEGER NOT NULL CHECK (changerNum >= 0),
@@ -176,6 +176,7 @@ CREATE TABLE Drive (
     model VARCHAR(64) NOT NULL,
     vendor VARCHAR(64) NOT NULL,
     firmwareRev VARCHAR(64) NOT NULL,
+    serialNumber VARCHAR(64) NOT NULL,
     changer INTEGER NOT NULL REFERENCES Changer(id) ON DELETE CASCADE ON UPDATE CASCADE,
     driveFormat INTEGER NOT NULL REFERENCES DriveFormat(id) ON DELETE RESTRICT ON UPDATE CASCADE
 );
