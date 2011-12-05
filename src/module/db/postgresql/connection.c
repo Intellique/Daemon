@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 05 Dec 2011 16:03:13 +0100                         *
+*  Last modified: Mon, 05 Dec 2011 17:52:04 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -60,6 +60,7 @@ static int sa_db_postgresql_start_transaction(struct sa_database_connection * co
 static int sa_db_postgresql_get_tape_format(struct sa_database_connection * db, struct sa_tape_format * tape_format, unsigned char density_code);
 static int sa_db_postgresql_sync_changer(struct sa_database_connection * db, struct sa_changer * changer);
 static int sa_db_postgresql_sync_drive(struct sa_database_connection * db, struct sa_drive * drive);
+static int sa_db_postgresql_sync_slot(struct sa_database_connection * db, struct sa_slot * slot);
 static int sa_db_postgresql_sync_tape(struct sa_database_connection * db, struct sa_tape * tape);
 
 static int sa_db_postgresql_get_bool(PGresult * result, int row, int column, char * value);
@@ -342,6 +343,9 @@ int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, st
 	for (i = 0; i < changer->nb_drives; i++)
 		sa_db_postgresql_sync_drive(connection, changer->drives + i);
 
+	for (i = changer->nb_drives; i < changer->nb_slots; i++)
+		sa_db_postgresql_sync_slot(connection, changer->slots + i);
+
 	return 0;
 }
 
@@ -430,7 +434,93 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 
 	free(changerid);
 
+	sa_db_postgresql_sync_slot(connection, drive->slot);
+
 	return 0;
+}
+
+int sa_db_postgresql_sync_slot(struct sa_database_connection * connection, struct sa_slot * slot) {
+	struct sa_db_postgresql_connetion_private * self = connection->data;
+	sa_db_postgresql_check(self);
+
+	if (slot->tape && sa_db_postgresql_sync_tape(connection, slot->tape))
+		return 1;
+
+	if (slot->id < 0) {
+		char * changer_id = 0, * slot_index = 0;
+		asprintf(&changer_id, "%ld", slot->changer->id);
+		asprintf(&slot_index, "%ld", slot - slot->changer->slots);
+
+		sa_db_postgresql_prepare(self->db_con, "select_slot_by_index_changer", "SELECT id FROM changerslot WHERE index = $1 AND changer = $2 LIMIT 1");
+
+		const char * params[] = { changer_id, slot_index };
+		PGresult * result = PQexecPrepared(self->db_con, "select_slot_by_index_changer", 2, params, 0, 0, 0);
+
+		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
+			sa_db_postgresql_get_long(result, 0, 0, &slot->id);
+
+		PQclear(result);
+		free(slot_index);
+		free(changer_id);
+	}
+
+	if (slot->id > -1) {
+		char * slot_id = 0, * tape_id = 0;
+		asprintf(&slot_id, "%ld", slot->id);
+		if (slot->tape)
+			asprintf(&tape_id, "%ld", slot->tape->id);
+
+		sa_db_postgresql_prepare(self->db_con, "update_slot", "UPDATE changerslot SET tape = $1 WHERE id = $2");
+
+		const char * params[] = { tape_id, slot_id };
+		PGresult * result = PQexecPrepared(self->db_con, "update_slot", 2, params, 0, 0, 0);
+
+		ExecStatusType status = PQresultStatus(result);
+		if (status == PGRES_FATAL_ERROR)
+			sa_db_postgresql_get_error(result);
+
+		PQclear(result);
+		free(slot_id);
+		if (slot->tape)
+			free(tape_id);
+
+		return status != PGRES_COMMAND_OK;
+	} else {
+		char * changer_id = 0, * slot_index = 0, * tape_id = 0;
+		asprintf(&changer_id, "%ld", slot->changer->id);
+		asprintf(&slot_index, "%ld", slot - slot->changer->slots);
+		if (slot->tape)
+			asprintf(&tape_id, "%ld", slot->tape->id);
+
+		sa_db_postgresql_prepare(self->db_con, "insert_slot", "INSERT INTO changerslot VALUES (DEFAULT, $1, $2, $3)");
+
+		const char * params[] = { slot_index, changer_id, tape_id };
+		PGresult * result = PQexecPrepared(self->db_con, "insert_slot", 3, params, 0, 0, 0);
+
+		ExecStatusType status = PQresultStatus(result);
+		if (status == PGRES_FATAL_ERROR)
+			sa_db_postgresql_get_error(result);
+
+		PQclear(result);
+
+		if (status == PGRES_COMMAND_OK) {
+			const char * params2[] = { changer_id, slot_index };
+			result = PQexecPrepared(self->db_con, "select_slot_by_index_changer", 2, params2, 0, 0, 0);
+			status = PQresultStatus(result);
+
+			if (status == PGRES_COMMAND_OK)
+				sa_db_postgresql_get_long(result, 0, 0, &slot->id);
+
+			PQclear(result);
+		}
+
+		if (slot->tape)
+			free(tape_id);
+		free(slot_index);
+		free(changer_id);
+
+		return status != PGRES_COMMAND_OK;
+	}
 }
 
 int sa_db_postgresql_sync_tape(struct sa_database_connection * connection, struct sa_tape * tape) {
