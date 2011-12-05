@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 28 Nov 2011 21:46:50 +0100                         *
+*  Last modified: Thu, 01 Dec 2011 18:28:59 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include <storiqArchiver/conf.h>
+#include <storiqArchiver/library/changer.h>
 
 #include "config.h"
 #include "log.h"
@@ -134,7 +135,9 @@ int main(int argc, char ** argv) {
 		return 3;
 	}
 
-	sa_sched_do_loop();
+    sa_changer_setup();
+
+	// sa_sched_do_loop();
 
 	sa_log_write_all(sa_log_level_info, "StorIqArchiver exit");
 

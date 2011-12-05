@@ -22,14 +22,20 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 01 Dec 2011 11:36:24 +0100                         *
+*  Last modified: Mon, 05 Dec 2011 16:42:51 +0100                         *
 \*************************************************************************/
 
+// pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate,
+//  pthread_create, pthread_join
+#include <pthread.h>
 // malloc
 #include <stdlib.h>
 // strncpy
 #include <string.h>
+// exit
+#include <unistd.h>
 
+#include <storiqArchiver/database.h>
 #include <storiqArchiver/log.h>
 #include <storiqArchiver/library/ressource.h>
 #include <storiqArchiver/library/tape.h>
@@ -39,10 +45,13 @@
 
 struct sa_realchanger_private {
 	int fd;
+	struct sa_database_connection * db_con;
 };
 
 static int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa_drive * to);
+static void * sa_realchanger_setup2(void * drive);
 static int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct sa_slot * to);
+static void sa_realchanger_update_status(struct sa_changer * ch, enum sa_changer_status status);
 
 struct sa_changer_ops sa_realchanger_ops = {
 	.load     = sa_realchanger_load,
@@ -61,8 +70,9 @@ int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa
 	if (from->changer != ch || to->changer != ch)
 		return 1;
 
-	sa_log_write_all(sa_log_level_debug, "Library: start loading (changer: %s:%s) from slot %ld to drive %ld", ch->vendor, ch->model, from - ch->slots, to - ch->drives);
+	sa_log_write_all(sa_log_level_info, "Library: loading (changer: %s:%s) tape from slot n°%ld to drive n°%ld", ch->vendor, ch->model, from - ch->slots, to - ch->drives);
 
+	sa_realchanger_update_status(ch, SA_CHANGER_LOADING);
 	struct sa_realchanger_private * self = ch->data;
 	int failed = sa_scsi_mtx_move(self->fd, ch, from, to->slot);
 
@@ -74,9 +84,13 @@ int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa
 		from->full = 0;
 		to->slot->full = 1;
 		to->slot->src_address = from->address;
+
+		ch->status = SA_CHANGER_IDLE;
+	} else {
+		ch->status = SA_CHANGER_ERROR;
 	}
 
-	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_info, "Library: loading (changer: %s:%s) from slot %ld to drive %ld finished with code=%d", ch->vendor, ch->model, from - ch->slots, to - ch->drives, failed);
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Library: loading (changer: %s:%s) from slot n°%ld to drive n°%ld finished with code = %d", ch->vendor, ch->model, from - ch->slots, to - ch->drives, failed);
 
 	return failed;
 }
@@ -86,53 +100,151 @@ void sa_realchanger_setup(struct sa_changer * changer, int fd) {
 
 	struct sa_realchanger_private * ch = malloc(sizeof(struct sa_realchanger_private));
 	ch->fd = fd;
+	ch->db_con = 0;
 
+	changer->status = SA_CHANGER_IDLE;
 	changer->ops = &sa_realchanger_ops;
 	changer->data = ch;
 	changer->res = sa_ressource_new();
 
 	unsigned int i;
-	for (i = 0; i < changer->nb_drives; i++)
-		sa_drive_setup(changer->drives + i);
-
 	for (i = 0; i < changer->nb_drives; i++) {
 		struct sa_drive * dr = changer->drives + i;
-		if (!dr->is_door_opened) {
-			dr->slot->tape = sa_tape_new(dr);
-			sa_tape_detect(dr);
+		sa_drive_setup(dr);
+
+		if (dr->is_door_opened && dr->slot->full) {
+			struct sa_slot * sl = 0;
+			unsigned int i;
+			for (i = changer->nb_drives; !sl && i < changer->nb_slots; i++) {
+				struct sa_slot * ptrsl = changer->slots + i;
+				if (ptrsl->address == dr->slot->src_address)
+					sl = ptrsl;
+			}
+			for (i = changer->nb_drives; !sl && i < changer->nb_slots; i++) {
+				struct sa_slot * ptrsl = changer->slots + i;
+				if (!ptrsl->full)
+					sl = ptrsl;
+			}
+
+			if (sl) {
+				sa_realchanger_unload(changer, dr, sl);
+			} else {
+				sa_log_write_all(sa_log_level_warning, "Library: your drive n°%ld is offline and there is no place for unloading it", changer->drives - dr);
+				sa_log_write_all(sa_log_level_error, "Library: panic: your library require manual maintenance because there is no free slot for unloading drive");
+				exit(1);
+			}
 		}
 	}
 
-	struct sa_drive * dr = changer->drives;
-	if (!dr->is_door_opened) {
-		struct sa_slot * sl = 0;
-		unsigned int i;
-		for (i = changer->nb_drives; !sl && i < changer->nb_slots; i++)
-			if (changer->slots[i].address == dr->slot->src_address)
-				sl = changer->slots + i;
-		for (i = changer->nb_drives; !sl && i < changer->nb_slots; i++)
-			if (!changer->slots[i].full)
-				sl = changer->slots + i;
-		if (sl) {
-			dr->ops->rewind(dr);
-			sa_realchanger_unload(changer, dr, sl);
-		}
+	// check if there is enough free slot for unload all loaded drive
+	unsigned int nb_full_drive = 0, nb_free_slot = 0;
+	for (i = 0; i < changer->nb_drives; i++)
+		if (changer->slots[i].full)
+			nb_full_drive++;
+	for (i = changer->nb_drives; i < changer->nb_slots; i++)
+		if (!changer->slots[i].full)
+			nb_free_slot++;
+	if (nb_full_drive > nb_free_slot) {
+		sa_log_write_all(sa_log_level_error, "Library: panic: your library require manual maintenance because there is no free slot for unloading drive");
+		exit(1);
 	}
 
-	for (i = changer->nb_drives; i < changer->nb_slots; i++) {
-		struct sa_slot * sl = changer->slots + i;
-		if (sl->full && !sl->tape) {
-			sa_realchanger_load(changer, sl, dr);
+	for (i = changer->nb_drives; i < changer->nb_slots; i++)
+		changer->slots[i].res = sa_ressource_new();
 
-			dr->slot->tape = sa_tape_new(dr);
-			sa_tape_detect(dr);
+	pthread_t * workers = 0;
+	if (changer->nb_drives > 1) {
+		workers = calloc(changer->nb_drives - 1, sizeof(pthread_t));
 
-			dr->ops->rewind(dr);
-			sa_realchanger_unload(changer, dr, sl);
+		pthread_attr_t attr;
+		pthread_attr_init(&attr);
+		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+		for (i = 1; i < changer->nb_drives; i++)
+			pthread_create(workers + (i - 1), &attr, sa_realchanger_setup2, changer->drives + i);
+
+		pthread_attr_destroy(&attr);
+	}
+
+	sa_realchanger_setup2(changer->drives);
+
+	for (i = 1; i < changer->nb_drives; i++)
+		pthread_join(workers[i - 1], 0);
+
+	if (workers)
+		free(workers);
+
+	struct sa_database * db = sa_db_get_default_db();
+	if (db) {
+		ch->db_con = db->ops->connect(db, 0);
+		if (ch->db_con) {
+			ch->db_con->ops->sync_changer(ch->db_con, changer);
+		} else {
+			sa_log_write_all(sa_log_level_error, "Library: failed to connect to default database");
 		}
+	} else {
+		sa_log_write_all(sa_log_level_warning, "Library: there is no default database so changer (%s:%s) is not able to synchronize with one database", changer->vendor, changer->model);
 	}
 
 	sa_log_write_all(sa_log_level_info, "Library: setup terminated");
+}
+
+void * sa_realchanger_setup2(void * drive) {
+	struct sa_drive * dr = drive;
+	struct sa_changer * ch = dr->changer;
+
+	if (!dr->is_door_opened) {
+		dr->slot->tape = sa_tape_new(dr);
+		sa_tape_detect(dr);
+
+		struct sa_slot * sl = 0;
+		unsigned int i;
+		for (i = ch->nb_drives; !sl && i < ch->nb_slots; i++) {
+			struct sa_slot * ptrsl = ch->slots + i;
+			if (ptrsl->address == dr->slot->src_address)
+				if (!ptrsl->res->ops->trylock(ptrsl->res))
+					sl = ptrsl;
+		}
+		for (i = ch->nb_drives; !sl && i < ch->nb_slots; i++) {
+			struct sa_slot * ptrsl = ch->slots + i;
+			if (!ptrsl->full)
+				if (!ptrsl->res->ops->trylock(ptrsl->res))
+					sl = ptrsl;
+		}
+
+		if (!sl)
+			return 0;
+
+		dr->ops->eject(dr);
+		ch->res->ops->lock(ch->res);
+		sa_realchanger_unload(ch, dr, sl);
+		ch->res->ops->unlock(ch->res);
+		sl->res->ops->unlock(sl->res);
+	}
+
+	unsigned int i;
+	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
+		struct sa_slot * sl = ch->slots + i;
+		if (sl->res->ops->trylock(sl->res))
+			continue;
+		if (sl->full && !sl->tape) {
+			ch->res->ops->lock(ch->res);
+			sa_realchanger_load(ch, sl, dr);
+			ch->res->ops->unlock(ch->res);
+
+			dr->ops->reset(dr);
+			dr->slot->tape = sa_tape_new(dr);
+			sa_tape_detect(dr);
+			dr->ops->eject(dr);
+
+			ch->res->ops->lock(ch->res);
+			sa_realchanger_unload(ch, dr, sl);
+			ch->res->ops->unlock(ch->res);
+		}
+		sl->res->ops->unlock(sl->res);
+	}
+
+	return 0;
 }
 
 int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct sa_slot * to) {
@@ -146,8 +258,9 @@ int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct
 	if (from->changer != ch || to->changer != ch)
 		return 1;
 
-	sa_log_write_all(sa_log_level_debug, "Library: start unloading (changer: %s:%s) from drive %ld to slot %ld", ch->vendor, ch->model, from - ch->drives, to - ch->slots);
+	sa_log_write_all(sa_log_level_info, "Library: unloading (changer: %s:%s) from drive n°%ld to slot n°%ld", ch->vendor, ch->model, from - ch->drives, to - ch->slots);
 
+	sa_realchanger_update_status(ch, SA_CHANGER_UNLOADING);
 	struct sa_realchanger_private * self = ch->data;
 	int failed = sa_scsi_mtx_move(self->fd, ch, from->slot, to);
 
@@ -159,10 +272,22 @@ int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct
 		from->slot->full = 0;
 		to->full = 1;
 		from->slot->src_address = 0;
+
+		ch->status = SA_CHANGER_IDLE;
+	} else {
+		ch->status = SA_CHANGER_ERROR;
 	}
 
-	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_info, "Library: unloading (changer: %s:%s) from drive %ld to slot %ld finished with code=%d", ch->vendor, ch->model, from - ch->drives, to - ch->slots, failed);
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Library: unloading (changer: %s:%s) from drive n°%ld to slot n°%ld finished with code = %d", ch->vendor, ch->model, from - ch->drives, to - ch->slots, failed);
 
 	return 0;
+}
+
+void sa_realchanger_update_status(struct sa_changer * ch, enum sa_changer_status status) {
+	struct sa_realchanger_private * self = ch->data;
+	ch->status = status;
+
+	if (self->db_con)
+		self->db_con->ops->sync_changer(self->db_con, ch);
 }
 

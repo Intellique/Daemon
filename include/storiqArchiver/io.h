@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 28 Nov 2011 12:49:53 +0100                         *
+*  Last modified: Thu, 01 Dec 2011 17:31:20 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_IO_H__
@@ -35,6 +35,7 @@ struct sa_stream_reader {
 	struct sa_stream_reader_ops {
 		int (*close)(struct sa_stream_reader * io);
 		void (*free)(struct sa_stream_reader * io);
+		ssize_t (*get_block_size)(struct sa_stream_reader * io);
 		ssize_t (*position)(struct sa_stream_reader * io);
 		ssize_t (*read)(struct sa_stream_reader * io, void * buffer, ssize_t length);
 	} * ops;
@@ -45,6 +46,7 @@ struct sa_stream_writer {
 	struct sa_stream_writer_ops {
 		int (*close)(struct sa_stream_writer * io);
 		void (*free)(struct sa_stream_writer * io);
+		ssize_t (*get_block_size)(struct sa_stream_writer * io);
 		ssize_t (*position)(struct sa_stream_writer * io);
 		ssize_t (*write)(struct sa_stream_writer * io, void * buffer, ssize_t length);
 	} * ops;

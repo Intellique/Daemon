@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 12:03:19 +0100                         *
+*  Last modified: Mon, 05 Dec 2011 21:18:12 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -86,7 +86,7 @@ char * sa_checksum_sha256_digest(struct sa_checksum * checksum) {
 
 	struct sa_checksum_sha256_private * self = checksum->data;
 
-	if (self->digest)
+	if (self->digest[0] != '\0')
 		return strdup(self->digest);
 
 	unsigned char digest[SHA256_DIGEST_LENGTH];

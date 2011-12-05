@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Nov 2011 09:58:33 +0100                         *
+*  Last modified: Mon, 05 Dec 2011 15:34:21 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_DRIVE_H__
@@ -36,26 +36,28 @@ struct sa_slot;
 struct sa_stream_reader;
 
 enum sa_drive_status {
-	sa_drive_cleaning,
-	sa_drive_empty_idle,
-	sa_drive_erasing,
-	sa_drive_error,
-	sa_drive_loaded_idle,
-	sa_drive_loading,
-	sa_drive_positioning,
-	sa_drive_reading,
-	sa_drive_unknown,
-	sa_drive_unloading,
-	sa_drive_writing,
+	SA_DRIVE_CLEANING,
+	SA_DRIVE_EMPTY_IDLE,
+	SA_DRIVE_ERASING,
+	SA_DRIVE_ERROR,
+	SA_DRIVE_LOADED_IDLE,
+	SA_DRIVE_LOADING,
+	SA_DRIVE_POSITIONING,
+	SA_DRIVE_READING,
+	SA_DRIVE_REWINDING,
+	SA_DRIVE_UNKNOWN,
+	SA_DRIVE_UNLOADING,
+	SA_DRIVE_WRITING,
 };
 
 struct sa_drive {
 	long id;
 	char * device;
-	char * scsiDevice;
+	char * scsi_device;
 	enum sa_drive_status status;
 	char * model;
 	char * vendor;
+	char * serial_number;
 
 	int host;
 	int target;
@@ -66,9 +68,12 @@ struct sa_drive {
 	struct sa_slot * slot;
 
 	struct sa_drive_ops {
+		int (*eject)(struct sa_drive * drive);
 		int (*eod)(struct sa_drive * drive);
 		ssize_t (*get_block_size)(struct sa_drive * drive);
 		struct sa_stream_reader * (*get_reader)(struct sa_drive * drive);
+		struct sa_stream_writer * (*get_writer)(struct sa_drive * drive);
+		void (*reset)(struct sa_drive * drive);
 		int (*rewind)(struct sa_drive * drive);
 		int (*set_file_position)(struct sa_drive * drive, int file_position);
 	} * ops;

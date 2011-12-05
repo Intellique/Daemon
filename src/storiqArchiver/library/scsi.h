@@ -34,6 +34,7 @@
 void sa_scsi_loaderinfo(int fd, struct sa_changer * changer);
 int sa_scsi_mtx_move(int fd, struct sa_changer * ch, struct sa_slot * from, struct sa_slot * to);
 void sa_scsi_mtx_status_new(int fd, struct sa_changer * changer);
+void sa_scsi_tapeinfo(int fd, struct sa_drive * drive);
 
 void sa_realchanger_setup(struct sa_changer * changer, int fd);
 

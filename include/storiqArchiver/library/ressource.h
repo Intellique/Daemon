@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 25 Nov 2011 12:52:04 +0100                         *
+*  Last modified: Sun, 04 Dec 2011 17:08:01 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_RESSOURCE_H__
@@ -32,9 +32,11 @@ struct sa_ressource {
     struct sa_ressource_ops {
         int (*free)(struct sa_ressource * res);
         int (*lock)(struct sa_ressource * res);
+        int (*trylock)(struct sa_ressource * res);
         void (*unlock)(struct sa_ressource * res);
     } * ops;
     void * data;
+    int locked;
 };
 
 int sa_ressource_lock(int nb_res, struct sa_ressource * res1, struct sa_ressource * res2, ...);

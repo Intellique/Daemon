@@ -22,14 +22,20 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 01 Dec 2011 09:55:12 +0100                         *
+*  Last modified: Sat, 03 Dec 2011 19:48:05 +0100                         *
 \*************************************************************************/
 
+// ssize_t
 #include <sys/types.h>
+
+// sg_io_hdr_t
 #include <scsi/scsi.h>
 #include <scsi/sg.h>
+// calloc, malloc
 #include <stdlib.h>
+// memset, strdup, strncpy
 #include <string.h>
+// ioctl
 #include <sys/ioctl.h>
 
 #include "scsi.h"
@@ -116,17 +122,17 @@ typedef struct Inquiry {
 	char BQue:1;                          /* Byte 6 bit 7 */
 	char SftRe:1;                         /* Byte 7 Bit 0 */
 	char CmdQue:1;                        /* Byte 7 Bit 1 */
-char :1;                              /* Byte 7 Bit 2 */
-	  char Linked:1;                        /* Byte 7 Bit 3 */
-	  char Sync:1;                          /* Byte 7 Bit 4 */
-	  char WBus16:1;                        /* Byte 7 Bit 5 */
-	  char WBus32:1;                        /* Byte 7 Bit 6 */
-	  char RelAdr:1;                        /* Byte 7 Bit 7 */
-	  unsigned char VendorIdentification[8];      /* Bytes 8-15 */
-	  unsigned char ProductIdentification[16];    /* Bytes 16-31 */
-	  unsigned char ProductRevisionLevel[4];      /* Bytes 32-35 */
-	  unsigned char FullProductRevisionLevel[19]; /* bytes 36-54 */
-	  unsigned char VendorFlags;                  /* byte 55 */
+	char :1;                              /* Byte 7 Bit 2 */
+	char Linked:1;                        /* Byte 7 Bit 3 */
+	char Sync:1;                          /* Byte 7 Bit 4 */
+	char WBus16:1;                        /* Byte 7 Bit 5 */
+	char WBus32:1;                        /* Byte 7 Bit 6 */
+	char RelAdr:1;                        /* Byte 7 Bit 7 */
+	unsigned char VendorIdentification[8];      /* Bytes 8-15 */
+	unsigned char ProductIdentification[16];    /* Bytes 16-31 */
+	unsigned char ProductRevisionLevel[4];      /* Bytes 32-35 */
+	unsigned char FullProductRevisionLevel[19]; /* bytes 36-54 */
+	unsigned char VendorFlags;                  /* byte 55 */
 } Inquiry_T;
 
 typedef struct RequestSense {
@@ -214,6 +220,10 @@ void sa_scsi_loaderinfo(int fd, struct sa_changer * changer) {
 	changer->model[length] = '\0';
 	for (length--; changer->model[length] ==  ' '; length--)
 		changer->model[length] = '\0';
+
+	changer->revision = malloc(5);
+	strncpy(changer->revision, (char *) inq.ProductRevisionLevel, 4);
+	changer->revision[4] = '\0';
 
 	changer->barcode = 0;
 	if (inq.AdditionalLength > 50 && inq.VendorFlags & 1)
@@ -408,5 +418,34 @@ void sa_scsi_mtx_status_update_slot(int fd, struct sa_changer * changer, int sta
 	}
 
 	free(header.dxferp);
+}
+
+void sa_scsi_tapeinfo(int fd, struct sa_drive * drive) {
+	RequestSense_T sense;
+	unsigned char command[6] = { 0x12, 1, 0x80, 0, 30, 0 };
+	char buffer[30];
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = 30;
+	header.cmdp = command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = &buffer;
+	header.timeout = 60000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	if (status)
+		return;
+
+	int length = buffer[3];
+	drive->serial_number = malloc(length + 1);
+	strncpy(drive->serial_number, buffer + 4, length);
+	drive->serial_number[length] = '\0';
 }
 

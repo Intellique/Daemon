@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 27 Nov 2011 18:56:01 +0100                         *
+*  Last modified: Mon, 05 Dec 2011 16:43:17 +0100                         *
 \*************************************************************************/
 
 // open
@@ -105,7 +105,7 @@ void sa_changer_setup() {
 
 		changers[i].id = -1;
 		changers[i].device = strdup(device);
-		changers[i].status = sa_changer_unknown;
+		changers[i].status = SA_CHANGER_UNKNOWN;
 
 		changers[i].barcode = 0;
 		changers[i].host = host;
@@ -146,10 +146,10 @@ void sa_changer_setup() {
 		length = readlink(path, link, 256);
 		link[length] = '\0';
 
-		char scsiDevice[12];
+		char scsi_device[12];
 		ptr = strrchr(link, '/');
-		strcpy(scsiDevice, "/dev");
-		strcat(scsiDevice, ptr);
+		strcpy(scsi_device, "/dev");
+		strcat(scsi_device, ptr);
 
 		strcpy(path, gl.gl_pathv[i]);
 		strcat(path, "/tape");
@@ -163,16 +163,24 @@ void sa_changer_setup() {
 
 		drives[i].id = -1;
 		drives[i].device = strdup(device);
-		drives[i].scsiDevice = strdup(scsiDevice);
-		drives[i].status = sa_drive_unknown;
+		drives[i].scsi_device = strdup(scsi_device);
+		drives[i].status = SA_DRIVE_UNKNOWN;
 
 		strcpy(path, gl.gl_pathv[i]);
 		strcat(path, "/model");
 		drives[i].model = sa_changer_read(path);
+		length = strlen(drives[i].model);
+		for (length--; drives[i].model[length] == ' '; length--)
+			drives[i].model[length] = '\0';
+		drives[i].model = realloc(drives[i].model, strlen(drives[i].model) + 1);
 
 		strcpy(path, gl.gl_pathv[i]);
 		strcat(path, "/vendor");
 		drives[i].vendor = sa_changer_read(path);
+		length = strlen(drives[i].vendor);
+		for (length--; drives[i].vendor[length] == ' '; length--)
+			drives[i].vendor[length] = '\0';
+		drives[i].vendor = realloc(drives[i].vendor, strlen(drives[i].vendor) + 1);
 
 		drives[i].host = host;
 		drives[i].target = target;

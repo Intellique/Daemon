@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 28 Nov 2011 11:23:02 +0100                         *
+*  Last modified: Thu, 01 Dec 2011 16:25:03 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_COMMON_H__
@@ -31,8 +31,6 @@
 struct sa_drive;
 
 void sa_changer_setup(void);
-struct sa_stream_reader * sa_drive_reader_new(struct sa_drive * drive, int fd);
-struct sa_stream_writer * sa_drive_writer_new(struct sa_drive * drive, int fd);
 void sa_drive_setup(struct sa_drive * drive);
 
 #endif

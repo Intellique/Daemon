@@ -22,13 +22,15 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Nov 2011 12:11:23 +0100                         *
+*  Last modified: Sat, 03 Dec 2011 18:47:17 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_DATABASE_H__
 #define __STORIQARCHIVER_DATABASE_H__
 
+struct sa_changer;
 struct sa_database_connection;
+struct sa_drive;
 struct sa_hashtable;
 struct sa_tape;
 struct sa_tape_format;
@@ -109,6 +111,8 @@ struct sa_database_connection {
 		int (*start_transaction)(struct sa_database_connection * db, short readOnly);
 
 		int (*get_tape_format)(struct sa_database_connection * db, struct sa_tape_format * tape_format, unsigned char density_code);
+		int (*sync_changer)(struct sa_database_connection * db, struct sa_changer * changer);
+		int (*sync_drive)(struct sa_database_connection * db, struct sa_drive * drive);
 		int (*sync_tape)(struct sa_database_connection * db, struct sa_tape * tape);
 	} * ops;
 	void * data;
