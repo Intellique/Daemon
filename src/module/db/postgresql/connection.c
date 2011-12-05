@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 05 Dec 2011 17:52:04 +0100                         *
+*  Last modified: Mon, 05 Dec 2011 23:44:33 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -323,7 +323,7 @@ int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, st
 
 		free(result);
 	} else {
-		sa_db_postgresql_prepare(self->db_con, "update_changer", "UPDATE changer SET device = $1, status = $2, firmwarerev = $3, update = NOW() WHERE changer_id = $4");
+		sa_db_postgresql_prepare(self->db_con, "update_changer", "UPDATE changer SET device = $1, status = $2, firmwarerev = $3, update = NOW() WHERE id = $4");
 
 		const char * params2[] = { changer->device, sa_changer_status_to_string(changer->status), changer->revision, hostid };
 		result = PQexecPrepared(self->db_con, "update_changer", 4, params2, 0, 0, 0);
@@ -417,7 +417,7 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 		free(driveformat_id);
 		free(densitycode);
 	} else {
-		sa_db_postgresql_prepare(self->db_con, "update_drive", "UPDATE drive SET device = $1, status = $2 WERE id = 3");
+		sa_db_postgresql_prepare(self->db_con, "update_drive", "UPDATE drive SET device = $1, status = $2 WHERE id = $3");
 
 		char * driveid = 0;
 		asprintf(&driveid, "%ld", drive->id);
@@ -453,7 +453,7 @@ int sa_db_postgresql_sync_slot(struct sa_database_connection * connection, struc
 
 		sa_db_postgresql_prepare(self->db_con, "select_slot_by_index_changer", "SELECT id FROM changerslot WHERE index = $1 AND changer = $2 LIMIT 1");
 
-		const char * params[] = { changer_id, slot_index };
+		const char * params[] = { slot_index, changer_id };
 		PGresult * result = PQexecPrepared(self->db_con, "select_slot_by_index_changer", 2, params, 0, 0, 0);
 
 		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
@@ -776,6 +776,8 @@ void sa_db_postgresql_prepare(PGconn * connection, const char * statement_name, 
 	if (PQresultStatus(prepared) != PGRES_COMMAND_OK) {
 		PGresult * prepare = PQprepare(connection, statement_name, query, 0, 0);
 		ExecStatusType status = PQresultStatus(prepare);
+		if (status == PGRES_FATAL_ERROR)
+			sa_db_postgresql_get_error(prepare);
 		PQclear(prepare);
 
 		sa_log_write_all(status == PGRES_COMMAND_OK ? sa_log_level_debug : sa_log_level_error, "Db: Postgresql: new query registred %s => {%s}, status: %s", statement_name, query, PQresStatus(status));
