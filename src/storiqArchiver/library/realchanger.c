@@ -22,15 +22,18 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 05 Dec 2011 11:15:21 +0100                         *
+*  Last modified: Mon, 05 Dec 2011 13:48:06 +0100                         *
 \*************************************************************************/
 
-//
+// pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate,
+//  pthread_create, pthread_join
 #include <pthread.h>
 // malloc
 #include <stdlib.h>
 // strncpy
 #include <string.h>
+// exit
+#include <unistd.h>
 
 #include <storiqArchiver/database.h>
 #include <storiqArchiver/log.h>
@@ -105,8 +108,46 @@ void sa_realchanger_setup(struct sa_changer * changer, int fd) {
 	changer->res = sa_ressource_new();
 
 	unsigned int i;
+	for (i = 0; i < changer->nb_drives; i++) {
+		struct sa_drive * dr = changer->drives + i;
+		sa_drive_setup(dr);
+
+		if (dr->is_door_opened && dr->slot->full) {
+			struct sa_slot * sl = 0;
+			unsigned int i;
+			for (i = changer->nb_drives; !sl && i < changer->nb_slots; i++) {
+				struct sa_slot * ptrsl = changer->slots + i;
+				if (ptrsl->address == dr->slot->src_address)
+					sl = ptrsl;
+			}
+			for (i = changer->nb_drives; !sl && i < changer->nb_slots; i++) {
+				struct sa_slot * ptrsl = changer->slots + i;
+				if (!ptrsl->full)
+					sl = ptrsl;
+			}
+
+			if (sl) {
+				sa_realchanger_unload(changer, dr, sl);
+			} else {
+				sa_log_write_all(sa_log_level_warning, "Library: your drive n°%ld is offline and there is no place for unloading it", changer->drives - dr);
+				sa_log_write_all(sa_log_level_error, "Library: panic: your library require manual maintenance because there is no free slot for unloading drive");
+				exit(1);
+			}
+		}
+	}
+
+	// check if there is enough free slot for unload all loaded drive
+	unsigned int nb_full_drive = 0, nb_free_slot = 0;
 	for (i = 0; i < changer->nb_drives; i++)
-		sa_drive_setup(changer->drives + i);
+		if (changer->slots[i].full)
+			nb_full_drive++;
+	for (i = changer->nb_drives; i < changer->nb_slots; i++)
+		if (!changer->slots[i].full)
+			nb_free_slot++;
+	if (nb_full_drive > nb_free_slot) {
+		sa_log_write_all(sa_log_level_error, "Library: panic: your library require manual maintenance because there is no free slot for unloading drive");
+		exit(1);
+	}
 
 	for (i = changer->nb_drives; i < changer->nb_slots; i++)
 		changer->slots[i].res = sa_ressource_new();
