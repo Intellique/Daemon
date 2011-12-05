@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 05 Dec 2011 15:38:39 +0100                         *
+*  Last modified: Mon, 05 Dec 2011 21:41:38 +0100                         *
 \*************************************************************************/
 
 // open
@@ -45,6 +45,7 @@
 #include <storiqArchiver/database.h>
 #include <storiqArchiver/io.h>
 #include <storiqArchiver/library/drive.h>
+#include <storiqArchiver/library/tape.h>
 #include <storiqArchiver/log.h>
 
 #include "common.h"
@@ -190,6 +191,9 @@ ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive) {
 			nb_read = read(self->fd_nst, buffer, block_size);
 			sa_drive_generic_rewind(drive);
 
+			if (drive->slot->tape)
+				drive->slot->tape->read_count++;
+
 			if (nb_read > 0) {
 				free(buffer);
 				return nb_read;
@@ -216,6 +220,7 @@ struct sa_stream_reader * sa_drive_generic_get_reader(struct sa_drive * drive) {
 		return 0;
 	}
 
+	drive->slot->tape->read_count++;
 	sa_drive_generic_update_status2(drive, SA_DRIVE_READING);
 
 	return sa_drive_io_reader_new(drive);
@@ -230,6 +235,7 @@ struct sa_stream_writer * sa_drive_generic_get_writer(struct sa_drive * drive) {
 		return 0;
 	}
 
+	drive->slot->tape->write_count++;
 	sa_drive_generic_update_status2(drive, SA_DRIVE_WRITING);
 
 	return sa_drive_io_writer_new(drive);
