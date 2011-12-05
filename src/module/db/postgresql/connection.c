@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 04 Dec 2011 09:20:17 +0100                         *
+*  Last modified: Mon, 05 Dec 2011 16:03:13 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -70,7 +70,8 @@ static int sa_db_postgresql_get_string(PGresult * result, int row, int column, c
 static int sa_db_postgresql_get_string_dup(PGresult * result, int row, int column, char ** value);
 static int sa_db_postgresql_get_time(PGresult * result, int row, int column, time_t * value);
 static void sa_db_postgresql_prepare(PGconn * connection, const char * statement_name, const char * query);
-static const char * sa_db_postgresql_wrapper_status_to_string(enum sa_tape_status status);
+static const char * sa_db_postgresql_wrapper_drive_status_to_string(enum sa_drive_status status);
+static const char * sa_db_postgresql_wrapper_tape_status_to_string(enum sa_tape_status status);
 
 static struct sa_database_connection_ops sa_db_postgresql_con_ops = {
 	.close = sa_db_postgresql_con_close,
@@ -269,9 +270,9 @@ int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, st
 	const char * params1[] = { name.nodename };
 	PGresult * result = PQexecPrepared(self->db_con, "select_host_by_name", 1, params1, 0, 0, 0);
 
-	long host_id = -1;
+	char * hostid = 0;
 	if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
-		sa_db_postgresql_get_long(result, 0, 0, &host_id);
+		sa_db_postgresql_get_string_dup(result, 0, 0, &hostid);
 		PQclear(result);
 	} else {
 		PQclear(result);
@@ -279,14 +280,11 @@ int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, st
 		return -1;
 	}
 
-	char * hostid = 0;
-	asprintf(&hostid, "%ld", host_id);
-
 	if (changer->id < 0) {
-		sa_db_postgresql_prepare(self->db_con, "select_changer_by_model_vendor_host", "SELECT c.id FROM changer c, drive d WHERE c.id = d.changer AND c.model = $1 AND c.vendor = $2 AND c.host = $3 AND d.serialnumber = $4 LIMIT 1");
+		sa_db_postgresql_prepare(self->db_con, "select_changer_by_model_vendor_host_drive", "SELECT c.id FROM changer c, drive d WHERE c.id = d.changer AND c.model = $1 AND c.vendor = $2 AND c.host = $3 AND d.serialnumber = $4 LIMIT 1");
 
 		const char * params2[] = { changer->model, changer->vendor, hostid, changer->drives[0].serial_number };
-		result = PQexecPrepared(self->db_con, "select_changer_by_model_vendor_host", 4, params2, 0, 0, 0);
+		result = PQexecPrepared(self->db_con, "select_changer_by_model_vendor_host_drive", 4, params2, 0, 0, 0);
 
 		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
 			sa_db_postgresql_get_long(result, 0, 0, &changer->id);
@@ -310,6 +308,8 @@ int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, st
 			return -1;
 		}
 		free(result);
+
+		sa_db_postgresql_prepare(self->db_con, "select_changer_by_model_vendor_host", "SELECT id FROM changer WHERE model = $1 AND vendor = $2 AND host = $3 LIMIT 1");
 
 		const char * params3[] = { changer->model, changer->vendor, hostid };
 		result = PQexecPrepared(self->db_con, "select_changer_by_model_vendor_host", 3, params3, 0, 0, 0);
@@ -400,8 +400,8 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 		asprintf(&changer_num, "%ld", drive->changer->drives - drive);
 
 		const char * params2[] = {
-			drive->device, sa_drive_status_to_string(drive->status), changer_num, "0",
-			drive->model, drive->vendor, "", drive->serial_number, changerid, densitycode
+			drive->device, sa_db_postgresql_wrapper_drive_status_to_string(drive->status), changer_num, "0",
+			drive->model, drive->vendor, "", drive->serial_number, changerid, driveformat_id
 		};
 		result = PQexecPrepared(self->db_con, "insert_drive", 10, params2, 0, 0, 0);
 
@@ -418,7 +418,7 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 		char * driveid = 0;
 		asprintf(&driveid, "%ld", drive->id);
 
-		const char * params[] = { drive->device, sa_drive_status_to_string(drive->status), driveid };
+		const char * params[] = { drive->device, sa_db_postgresql_wrapper_drive_status_to_string(drive->status), driveid };
 		PGresult * result = PQexecPrepared(self->db_con, "update_drive", 3, params, 0, 0, 0);
 
 		if (PQresultStatus(result) == PGRES_FATAL_ERROR)
@@ -510,7 +510,7 @@ int sa_db_postgresql_sync_tape(struct sa_database_connection * connection, struc
 		asprintf(&id, "%ld", tape->id);
 
 		const char * params[] = {
-			sa_db_postgresql_wrapper_status_to_string(tape->status),
+			sa_db_postgresql_wrapper_tape_status_to_string(tape->status),
 			sa_tape_location_to_string(tape->location),
 			load, read, write, endpos, nbfiles, blocksize,
 			tape->has_partition ? "true" : "false", id
@@ -555,7 +555,7 @@ int sa_db_postgresql_sync_tape(struct sa_database_connection * connection, struc
 
 		const char * params[] = {
 			*tape->label ? tape->label : 0, tape->name,
-			sa_db_postgresql_wrapper_status_to_string(tape->status),
+			sa_db_postgresql_wrapper_tape_status_to_string(tape->status),
 			sa_tape_location_to_string(tape->location),
 			buffer_first_used, buffer_use_before,
 			load, read, write, endpos, nbfiles, blocksize,
@@ -693,7 +693,20 @@ void sa_db_postgresql_prepare(PGconn * connection, const char * statement_name, 
 	PQclear(prepared);
 }
 
-const char * sa_db_postgresql_wrapper_status_to_string(enum sa_tape_status status) {
+const char * sa_db_postgresql_wrapper_drive_status_to_string(enum sa_drive_status status) {
+	switch (status) {
+		case SA_DRIVE_EMPTY_IDLE:
+			return "empty-idle";
+
+		case SA_DRIVE_LOADED_IDLE:
+			return "loaded-idle";
+
+		default:
+			return sa_drive_status_to_string(status);
+	}
+}
+
+const char * sa_db_postgresql_wrapper_tape_status_to_string(enum sa_tape_status status) {
 	switch (status) {
 		case SA_TAPE_STATUS_IN_USE:
 			return "in_use";
