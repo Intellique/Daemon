@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 05 Dec 2011 15:35:53 +0100                         *
+*  Last modified: Mon, 05 Dec 2011 16:41:44 +0100                         *
 \*************************************************************************/
 
 #include <string.h>
@@ -34,15 +34,15 @@ static struct sa_changer_status2 {
 	const char * name;
 	enum sa_changer_status status;
 } sa_library_status[] = {
-	{ "error",		sa_changer_error },
-	{ "exporting",	sa_changer_exporting },
-	{ "idle",		sa_changer_idle },
-	{ "importing",	sa_changer_importing },
-	{ "loading",	sa_changer_loading },
-	{ "unknown",	sa_changer_unknown },
-	{ "unloading",	sa_changer_unloading },
+	{ "error",		SA_CHANGER_ERROR },
+	{ "exporting",	SA_CHANGER_EXPORTING },
+	{ "idle",		SA_CHANGER_IDLE },
+	{ "importing",	SA_CHANGER_IMPORTING },
+	{ "loading",	SA_CHANGER_LOADING },
+	{ "unknown",	SA_CHANGER_UNKNOWN },
+	{ "unloading",	SA_CHANGER_UNLOADING },
 
-	{ 0, sa_changer_unknown },
+	{ 0, SA_CHANGER_UNKNOWN },
 };
 
 static struct sa_drive_status2 {

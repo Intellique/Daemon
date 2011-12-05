@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 04 Dec 2011 17:14:12 +0100                         *
+*  Last modified: Mon, 05 Dec 2011 16:40:06 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_CHANGER_H__
@@ -34,13 +34,13 @@ struct sa_slot;
 struct sa_tape;
 
 enum sa_changer_status {
-	sa_changer_error,
-	sa_changer_exporting,
-	sa_changer_idle,
-	sa_changer_importing,
-	sa_changer_loading,
-	sa_changer_unknown,
-	sa_changer_unloading,
+	SA_CHANGER_ERROR,
+	SA_CHANGER_EXPORTING,
+	SA_CHANGER_IDLE,
+	SA_CHANGER_IMPORTING,
+	SA_CHANGER_LOADING,
+	SA_CHANGER_UNKNOWN,
+	SA_CHANGER_UNLOADING,
 };
 
 struct sa_changer {
@@ -75,7 +75,7 @@ struct sa_changer {
 };
 
 struct sa_slot {
-	long long id;
+	long id;
 	struct sa_changer * changer;
 	struct sa_drive * drive;
 	struct sa_tape * tape;

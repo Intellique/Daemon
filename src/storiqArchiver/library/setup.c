@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 03 Dec 2011 20:05:51 +0100                         *
+*  Last modified: Mon, 05 Dec 2011 16:43:17 +0100                         *
 \*************************************************************************/
 
 // open
@@ -105,7 +105,7 @@ void sa_changer_setup() {
 
 		changers[i].id = -1;
 		changers[i].device = strdup(device);
-		changers[i].status = sa_changer_unknown;
+		changers[i].status = SA_CHANGER_UNKNOWN;
 
 		changers[i].barcode = 0;
 		changers[i].host = host;
