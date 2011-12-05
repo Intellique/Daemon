@@ -164,7 +164,7 @@ void sa_changer_setup() {
 		drives[i].id = -1;
 		drives[i].device = strdup(device);
 		drives[i].scsi_device = strdup(scsi_device);
-		drives[i].status = sa_drive_unknown;
+		drives[i].status = SA_DRIVE_UNKNOWN;
 
 		strcpy(path, gl.gl_pathv[i]);
 		strcat(path, "/model");

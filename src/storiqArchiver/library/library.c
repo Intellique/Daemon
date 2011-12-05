@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 28 Nov 2011 15:55:21 +0100                         *
+*  Last modified: Mon, 05 Dec 2011 15:35:53 +0100                         *
 \*************************************************************************/
 
 #include <string.h>
@@ -49,19 +49,19 @@ static struct sa_drive_status2 {
 	const char * name;
 	enum sa_drive_status status;
 } sa_drive_status[] = {
-	{ "cleaning",		sa_drive_cleaning },
-	{ "empty idle",		sa_drive_empty_idle },
-	{ "erasing",		sa_drive_erasing },
-	{ "error",			sa_drive_error },
-	{ "loaded idle",	sa_drive_loaded_idle },
-	{ "loading",		sa_drive_loading },
-	{ "positioning",	sa_drive_positioning },
-	{ "reading",		sa_drive_reading },
-	{ "unknown",		sa_drive_unknown },
-	{ "unloading",		sa_drive_unloading },
-	{ "writing",		sa_drive_writing },
+	{ "cleaning",		SA_DRIVE_CLEANING },
+	{ "empty idle",		SA_DRIVE_EMPTY_IDLE },
+	{ "erasing",		SA_DRIVE_ERASING },
+	{ "error",			SA_DRIVE_ERROR },
+	{ "loaded idle",	SA_DRIVE_LOADED_IDLE },
+	{ "loading",		SA_DRIVE_LOADING },
+	{ "positioning",	SA_DRIVE_POSITIONING },
+	{ "reading",		SA_DRIVE_READING },
+	{ "unknown",		SA_DRIVE_UNKNOWN },
+	{ "unloading",		SA_DRIVE_UNLOADING },
+	{ "writing",		SA_DRIVE_WRITING },
 
-	{ 0, sa_drive_unknown },
+	{ 0, SA_DRIVE_UNKNOWN },
 };
 
 

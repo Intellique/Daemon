@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 03 Dec 2011 21:53:25 +0100                         *
+*  Last modified: Mon, 05 Dec 2011 15:38:39 +0100                         *
 \*************************************************************************/
 
 // open
@@ -138,7 +138,7 @@ int sa_drive_generic_eject(struct sa_drive * drive) {
 
 	sa_log_write_all(sa_log_level_info, "Drive: rewind tape and put the drive offline");
 
-	sa_drive_generic_update_status2(drive, sa_drive_unloading);
+	sa_drive_generic_update_status2(drive, SA_DRIVE_UNLOADING);
 
 	struct mtop eject = { MTOFFL, 1 };
 	int failed = ioctl(self->fd_nst, MTIOCTOP, &eject);
@@ -155,7 +155,7 @@ int sa_drive_generic_eod(struct sa_drive * drive) {
 
 	sa_log_write_all(sa_log_level_info, "Drive: goto end of tape");
 
-	sa_drive_generic_update_status2(drive, sa_drive_positioning);
+	sa_drive_generic_update_status2(drive, SA_DRIVE_POSITIONING);
 
 	struct mtop eod = { MTEOM, 1 };
 	int failed = ioctl(self->fd_nst, MTIOCTOP, &eod);
@@ -216,7 +216,7 @@ struct sa_stream_reader * sa_drive_generic_get_reader(struct sa_drive * drive) {
 		return 0;
 	}
 
-	sa_drive_generic_update_status2(drive, sa_drive_reading);
+	sa_drive_generic_update_status2(drive, SA_DRIVE_READING);
 
 	return sa_drive_io_reader_new(drive);
 }
@@ -230,7 +230,7 @@ struct sa_stream_writer * sa_drive_generic_get_writer(struct sa_drive * drive) {
 		return 0;
 	}
 
-	sa_drive_generic_update_status2(drive, sa_drive_writing);
+	sa_drive_generic_update_status2(drive, SA_DRIVE_WRITING);
 
 	return sa_drive_io_writer_new(drive);
 }
@@ -255,7 +255,7 @@ int sa_drive_generic_rewind(struct sa_drive * drive) {
 
 	sa_log_write_all(sa_log_level_info, "Drive: rewind tape");
 
-	sa_drive_generic_update_status2(drive, sa_drive_rewinding);
+	sa_drive_generic_update_status2(drive, SA_DRIVE_REWINDING);
 
 	struct mtop rewind = { MTREW, 1 };
 	int failed = ioctl(self->fd_nst, MTIOCTOP, &rewind);
@@ -282,7 +282,7 @@ int sa_drive_generic_set_file_position(struct sa_drive * drive, int file_positio
 	if (failed)
 		return failed;
 
-	sa_drive_generic_update_status2(drive, sa_drive_positioning);
+	sa_drive_generic_update_status2(drive, SA_DRIVE_POSITIONING);
 
 	struct sa_drive_generic * self = drive->data;
 	struct mtop fsr = { MTFSF, file_position };
@@ -305,7 +305,7 @@ void sa_drive_generic_update_status(struct sa_drive * drive) {
 	}
 
 	if (failed) {
-		drive->status = sa_drive_error;
+		drive->status = SA_DRIVE_ERROR;
 
 		struct mtop reset = { MTRESET, 1 };
 		failed = ioctl(self->fd_nst, MTIOCTOP, &reset);
@@ -330,9 +330,9 @@ void sa_drive_generic_update_status(struct sa_drive * drive) {
 		if (density_code > 0)
 			drive->density_code = density_code;
 
-		sa_drive_generic_update_status2(drive, drive->is_door_opened ? sa_drive_empty_idle : sa_drive_loaded_idle);
+		sa_drive_generic_update_status2(drive, drive->is_door_opened ? SA_DRIVE_EMPTY_IDLE : SA_DRIVE_LOADED_IDLE);
 	} else {
-		sa_drive_generic_update_status2(drive, sa_drive_error);
+		sa_drive_generic_update_status2(drive, SA_DRIVE_ERROR);
 	}
 }
 
@@ -380,7 +380,7 @@ int sa_drive_io_reader_close(struct sa_stream_reader * io) {
 	self->fd = -1;
 	self->buffer_used = 0;
 
-	sa_drive_generic_update_status2(self->drive, sa_drive_loaded_idle);
+	sa_drive_generic_update_status2(self->drive, SA_DRIVE_LOADED_IDLE);
 	self->drive_private->used_by_io = 0;
 
 	return 0;
@@ -524,7 +524,7 @@ int sa_drive_io_writer_close(struct sa_stream_writer * io) {
 	}
 
 	self->fd = -1;
-	sa_drive_generic_update_status2(self->drive, sa_drive_loaded_idle);
+	sa_drive_generic_update_status2(self->drive, SA_DRIVE_LOADED_IDLE);
 	self->drive_private->used_by_io = 0;
 
 	return 0;

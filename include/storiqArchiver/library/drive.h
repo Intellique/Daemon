@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 03 Dec 2011 19:34:00 +0100                         *
+*  Last modified: Mon, 05 Dec 2011 15:34:21 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_DRIVE_H__
@@ -36,18 +36,18 @@ struct sa_slot;
 struct sa_stream_reader;
 
 enum sa_drive_status {
-	sa_drive_cleaning,
-	sa_drive_empty_idle,
-	sa_drive_erasing,
-	sa_drive_error,
-	sa_drive_loaded_idle,
-	sa_drive_loading,
-	sa_drive_positioning,
-	sa_drive_reading,
-	sa_drive_rewinding,
-	sa_drive_unknown,
-	sa_drive_unloading,
-	sa_drive_writing,
+	SA_DRIVE_CLEANING,
+	SA_DRIVE_EMPTY_IDLE,
+	SA_DRIVE_ERASING,
+	SA_DRIVE_ERROR,
+	SA_DRIVE_LOADED_IDLE,
+	SA_DRIVE_LOADING,
+	SA_DRIVE_POSITIONING,
+	SA_DRIVE_READING,
+	SA_DRIVE_REWINDING,
+	SA_DRIVE_UNKNOWN,
+	SA_DRIVE_UNLOADING,
+	SA_DRIVE_WRITING,
 };
 
 struct sa_drive {
