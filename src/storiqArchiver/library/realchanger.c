@@ -22,9 +22,11 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 03 Dec 2011 15:35:51 +0100                         *
+*  Last modified: Mon, 05 Dec 2011 11:15:21 +0100                         *
 \*************************************************************************/
 
+//
+#include <pthread.h>
 // malloc
 #include <stdlib.h>
 // strncpy
@@ -44,6 +46,7 @@ struct sa_realchanger_private {
 };
 
 static int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa_drive * to);
+static void * sa_realchanger_setup2(void * drive);
 static int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct sa_slot * to);
 static void sa_realchanger_update_status(struct sa_changer * ch, enum sa_changer_status status);
 
@@ -105,40 +108,30 @@ void sa_realchanger_setup(struct sa_changer * changer, int fd) {
 	for (i = 0; i < changer->nb_drives; i++)
 		sa_drive_setup(changer->drives + i);
 
-	for (i = 0; i < changer->nb_drives; i++) {
-		struct sa_drive * dr = changer->drives + i;
-		if (!dr->is_door_opened) {
-			dr->slot->tape = sa_tape_new(dr);
-			sa_tape_detect(dr);
-		}
+	for (i = changer->nb_drives; i < changer->nb_slots; i++)
+		changer->slots[i].res = sa_ressource_new();
+
+	pthread_t * workers = 0;
+	if (changer->nb_drives > 1) {
+		workers = calloc(changer->nb_drives - 1, sizeof(pthread_t));
+
+		pthread_attr_t attr;
+		pthread_attr_init(&attr);
+		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+		for (i = 1; i < changer->nb_drives; i++)
+			pthread_create(workers + (i - 1), &attr, sa_realchanger_setup2, changer->drives + i);
+
+		pthread_attr_destroy(&attr);
 	}
 
-	struct sa_drive * dr = changer->drives;
-	if (!dr->is_door_opened) {
-		struct sa_slot * sl = 0;
-		unsigned int i;
-		for (i = changer->nb_drives; !sl && i < changer->nb_slots; i++)
-			if (changer->slots[i].address == dr->slot->src_address)
-				sl = changer->slots + i;
-		for (i = changer->nb_drives; !sl && i < changer->nb_slots; i++)
-			if (!changer->slots[i].full)
-				sl = changer->slots + i;
-		if (sl)
-			sa_realchanger_unload(changer, dr, sl);
-	}
+	sa_realchanger_setup2(changer->drives);
 
-	for (i = changer->nb_drives; i < changer->nb_slots; i++) {
-		struct sa_slot * sl = changer->slots + i;
-		if (sl->full && !sl->tape) {
-			sa_realchanger_load(changer, sl, dr);
+	for (i = 1; i < changer->nb_drives; i++)
+		pthread_join(workers[i - 1], 0);
 
-			dr->ops->reset(dr);
-			dr->slot->tape = sa_tape_new(dr);
-			sa_tape_detect(dr);
-
-			sa_realchanger_unload(changer, dr, sl);
-		}
-	}
+	if (workers)
+		free(workers);
 
 	struct sa_database * db = sa_db_get_default_db();
 	if (db) {
@@ -155,6 +148,64 @@ void sa_realchanger_setup(struct sa_changer * changer, int fd) {
 	sa_log_write_all(sa_log_level_info, "Library: setup terminated");
 }
 
+void * sa_realchanger_setup2(void * drive) {
+	struct sa_drive * dr = drive;
+	struct sa_changer * ch = dr->changer;
+
+	if (!dr->is_door_opened) {
+		dr->slot->tape = sa_tape_new(dr);
+		sa_tape_detect(dr);
+
+		struct sa_slot * sl = 0;
+		unsigned int i;
+		for (i = ch->nb_drives; !sl && i < ch->nb_slots; i++) {
+			struct sa_slot * ptrsl = ch->slots + i;
+			if (ptrsl->address == dr->slot->src_address)
+				if (!ptrsl->res->ops->trylock(ptrsl->res))
+					sl = ptrsl;
+		}
+		for (i = ch->nb_drives; !sl && i < ch->nb_slots; i++) {
+			struct sa_slot * ptrsl = ch->slots + i;
+			if (!ptrsl->full)
+				if (!ptrsl->res->ops->trylock(ptrsl->res))
+					sl = ptrsl;
+		}
+
+		if (!sl)
+			return 0;
+
+		dr->ops->eject(dr);
+		ch->res->ops->lock(ch->res);
+		sa_realchanger_unload(ch, dr, sl);
+		ch->res->ops->unlock(ch->res);
+		sl->res->ops->unlock(sl->res);
+	}
+
+	unsigned int i;
+	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
+		struct sa_slot * sl = ch->slots + i;
+		if (sl->res->ops->trylock(sl->res))
+			continue;
+		if (sl->full && !sl->tape) {
+			ch->res->ops->lock(ch->res);
+			sa_realchanger_load(ch, sl, dr);
+			ch->res->ops->unlock(ch->res);
+
+			dr->ops->reset(dr);
+			dr->slot->tape = sa_tape_new(dr);
+			sa_tape_detect(dr);
+			dr->ops->eject(dr);
+
+			ch->res->ops->lock(ch->res);
+			sa_realchanger_unload(ch, dr, sl);
+			ch->res->ops->unlock(ch->res);
+		}
+		sl->res->ops->unlock(sl->res);
+	}
+
+	return 0;
+}
+
 int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct sa_slot * to) {
 	if (!ch || !from || !to) {
 		return 1;
@@ -166,15 +217,11 @@ int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct
 	if (from->changer != ch || to->changer != ch)
 		return 1;
 
-	int failed = from->ops->eject(from);
-	if (failed)
-		return failed;
-
 	sa_log_write_all(sa_log_level_info, "Library: unloading (changer: %s:%s) from drive n°%ld to slot n°%ld", ch->vendor, ch->model, from - ch->drives, to - ch->slots);
 
 	sa_realchanger_update_status(ch, sa_changer_unloading);
 	struct sa_realchanger_private * self = ch->data;
-	failed = sa_scsi_mtx_move(self->fd, ch, from->slot, to);
+	int failed = sa_scsi_mtx_move(self->fd, ch, from->slot, to);
 
 	if (!failed) {
 		to->tape = from->slot->tape;
