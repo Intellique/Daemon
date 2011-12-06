@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 06 Dec 2011 15:19:27 +0100                         *
+*  Last modified: Tue, 06 Dec 2011 21:40:14 +0100                         *
 \*************************************************************************/
 
 // open
@@ -235,6 +235,11 @@ struct sa_stream_writer * sa_drive_generic_get_writer(struct sa_drive * drive) {
 		return 0;
 	}
 
+	if (!drive->is_writable) {
+		sa_log_write_all(sa_log_level_debug, "Drive: tape is not writable (Write protec enabled)");
+		return 0;
+	}
+
 	drive->slot->tape->write_count++;
 	sa_drive_generic_update_status2(drive, SA_DRIVE_WRITING);
 
@@ -254,16 +259,25 @@ void sa_drive_generic_on_failed(struct sa_drive * drive, int verbose) {
 void sa_drive_generic_reset(struct sa_drive * drive) {
 	struct sa_drive_generic * self = drive->data;
 
+	close(self->fd_nst);
+	sleep(1);
+	self->fd_nst = open(drive->device, O_RDWR | O_NONBLOCK);
+
 	struct mtop nop = { MTNOP, 1 };
 
-	int failed = ioctl(self->fd_nst, MTIOCTOP, &nop);
-	int i;
-	for (i = 0; i < 20 && failed; i++) {
+	int i, failed = 1;
+	for (i = 0; i < 120 && failed; i++) {
+		if (self->fd_nst > -1)
+			failed = ioctl(self->fd_nst, MTIOCTOP, &nop);
+
 		if (failed) {
-			close(self->fd_nst);
-			self->fd_nst = open(drive->device, O_RDWR);
+			if (self->fd_nst > -1)
+				close(self->fd_nst);
+
+			sleep(1);
+
+			self->fd_nst = open(drive->device, O_RDWR | O_NONBLOCK);
 		}
-		failed = ioctl(self->fd_nst, MTIOCTOP, &nop);
 	}
 
 	sa_drive_generic_update_status(drive);

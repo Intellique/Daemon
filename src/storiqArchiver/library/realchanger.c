@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 06 Dec 2011 10:20:52 +0100                         *
+*  Last modified: Tue, 06 Dec 2011 21:43:49 +0100                         *
 \*************************************************************************/
 
 // pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate,
@@ -70,7 +70,7 @@ int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa
 	if (from->changer != ch || to->changer != ch)
 		return 1;
 
-	sa_log_write_all(sa_log_level_info, "Library: loading (changer: %s:%s) tape from slot n°%ld to drive n°%ld", ch->vendor, ch->model, from - ch->slots, to - ch->drives);
+	sa_log_write_all(sa_log_level_info, "Library: loading tape (changer: %s:%s) from slot n°%ld to drive n°%ld", ch->vendor, ch->model, from - ch->slots, to - ch->drives);
 
 	sa_realchanger_update_status(ch, SA_CHANGER_LOADING);
 	struct sa_realchanger_private * self = ch->data;
@@ -93,7 +93,7 @@ int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa
 		sa_realchanger_update_status(ch, SA_CHANGER_ERROR);
 	}
 
-	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Library: loading (changer: %s:%s) from slot n°%ld to drive n°%ld finished with code = %d", ch->vendor, ch->model, from - ch->slots, to - ch->drives, failed);
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Library: loading tape (changer: %s:%s) from slot n°%ld to drive n°%ld finished with code = %d", ch->vendor, ch->model, from - ch->slots, to - ch->drives, failed);
 
 	return failed;
 }
@@ -267,7 +267,7 @@ int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct
 	if (from->changer != ch || to->changer != ch)
 		return 1;
 
-	sa_log_write_all(sa_log_level_info, "Library: unloading (changer: %s:%s) from drive n°%ld to slot n°%ld", ch->vendor, ch->model, from - ch->drives, to - ch->slots);
+	sa_log_write_all(sa_log_level_info, "Library: unloading tape (changer: %s:%s) from drive n°%ld to slot n°%ld", ch->vendor, ch->model, from - ch->drives, to - ch->slots);
 
 	sa_realchanger_update_status(ch, SA_CHANGER_UNLOADING);
 	struct sa_realchanger_private * self = ch->data;
@@ -287,7 +287,7 @@ int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct
 		sa_realchanger_update_status(ch, SA_CHANGER_ERROR);
 	}
 
-	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Library: unloading (changer: %s:%s) from drive n°%ld to slot n°%ld finished with code = %d", ch->vendor, ch->model, from - ch->drives, to - ch->slots, failed);
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Library: unloading tape (changer: %s:%s) from drive n°%ld to slot n°%ld finished with code = %d", ch->vendor, ch->model, from - ch->drives, to - ch->slots, failed);
 
 	return 0;
 }
