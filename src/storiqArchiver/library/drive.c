@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 06 Dec 2011 21:40:14 +0100                         *
+*  Last modified: Tue, 06 Dec 2011 23:24:29 +0100                         *
 \*************************************************************************/
 
 // open
@@ -141,7 +141,7 @@ int sa_drive_generic_eject(struct sa_drive * drive) {
 
 	sa_drive_generic_update_status2(drive, SA_DRIVE_UNLOADING);
 
-	struct mtop eject = { MTOFFL, 1 };
+	static struct mtop eject = { MTOFFL, 1 };
 	int failed = ioctl(self->fd_nst, MTIOCTOP, &eject);
 
 	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive: rewind tape and put the drive offline, finish with code = %d", failed);
@@ -158,7 +158,7 @@ int sa_drive_generic_eod(struct sa_drive * drive) {
 
 	sa_drive_generic_update_status2(drive, SA_DRIVE_POSITIONING);
 
-	struct mtop eod = { MTEOM, 1 };
+	static struct mtop eod = { MTEOM, 1 };
 	int failed = ioctl(self->fd_nst, MTIOCTOP, &eod);
 
 	if (failed) {
@@ -263,7 +263,7 @@ void sa_drive_generic_reset(struct sa_drive * drive) {
 	sleep(1);
 	self->fd_nst = open(drive->device, O_RDWR | O_NONBLOCK);
 
-	struct mtop nop = { MTNOP, 1 };
+	static struct mtop nop = { MTNOP, 1 };
 
 	int i, failed = 1;
 	for (i = 0; i < 120 && failed; i++) {
@@ -290,7 +290,7 @@ int sa_drive_generic_rewind(struct sa_drive * drive) {
 
 	sa_drive_generic_update_status2(drive, SA_DRIVE_REWINDING);
 
-	struct mtop rewind = { MTREW, 1 };
+	static struct mtop rewind = { MTREW, 1 };
 	int failed = ioctl(self->fd_nst, MTIOCTOP, &rewind);
 
 	unsigned int i;
@@ -340,7 +340,7 @@ void sa_drive_generic_update_status(struct sa_drive * drive) {
 	if (failed) {
 		drive->status = SA_DRIVE_ERROR;
 
-		struct mtop reset = { MTRESET, 1 };
+		static struct mtop reset = { MTRESET, 1 };
 		failed = ioctl(self->fd_nst, MTIOCTOP, &reset);
 
 		if (!failed)
