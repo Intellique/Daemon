@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 05 Dec 2011 21:41:38 +0100                         *
+*  Last modified: Tue, 06 Dec 2011 15:19:27 +0100                         *
 \*************************************************************************/
 
 // open
@@ -191,8 +191,7 @@ ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive) {
 			nb_read = read(self->fd_nst, buffer, block_size);
 			sa_drive_generic_rewind(drive);
 
-			if (drive->slot->tape)
-				drive->slot->tape->read_count++;
+			drive->slot->tape->read_count++;
 
 			if (nb_read > 0) {
 				free(buffer);
@@ -205,6 +204,7 @@ ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive) {
 			buffer = realloc(buffer, block_size);
 		}
 
+		free(buffer);
 		sa_log_write_all(sa_log_level_error, "Drive: failed to detect block size");
 	}
 
@@ -252,7 +252,20 @@ void sa_drive_generic_on_failed(struct sa_drive * drive, int verbose) {
 }
 
 void sa_drive_generic_reset(struct sa_drive * drive) {
-	sa_drive_generic_on_failed(drive, 0);
+	struct sa_drive_generic * self = drive->data;
+
+	struct mtop nop = { MTNOP, 1 };
+
+	int failed = ioctl(self->fd_nst, MTIOCTOP, &nop);
+	int i;
+	for (i = 0; i < 20 && failed; i++) {
+		if (failed) {
+			close(self->fd_nst);
+			self->fd_nst = open(drive->device, O_RDWR);
+		}
+		failed = ioctl(self->fd_nst, MTIOCTOP, &nop);
+	}
+
 	sa_drive_generic_update_status(drive);
 }
 

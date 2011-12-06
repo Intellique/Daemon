@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 05 Dec 2011 16:42:51 +0100                         *
+*  Last modified: Tue, 06 Dec 2011 10:20:52 +0100                         *
 \*************************************************************************/
 
 // pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate,
@@ -77,6 +77,9 @@ int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa
 	int failed = sa_scsi_mtx_move(self->fd, ch, from, to->slot);
 
 	if (!failed) {
+		if (from->tape)
+			from->tape->load_count++;
+
 		to->slot->tape = from->tape;
 		from->tape = 0;
 		strncpy(to->slot->volume_name, from->volume_name, 37);
@@ -85,9 +88,9 @@ int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa
 		to->slot->full = 1;
 		to->slot->src_address = from->address;
 
-		ch->status = SA_CHANGER_IDLE;
+		sa_realchanger_update_status(ch, SA_CHANGER_IDLE);
 	} else {
-		ch->status = SA_CHANGER_ERROR;
+		sa_realchanger_update_status(ch, SA_CHANGER_ERROR);
 	}
 
 	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Library: loading (changer: %s:%s) from slot n°%ld to drive n°%ld finished with code = %d", ch->vendor, ch->model, from - ch->slots, to - ch->drives, failed);
@@ -201,15 +204,21 @@ void * sa_realchanger_setup2(void * drive) {
 		unsigned int i;
 		for (i = ch->nb_drives; !sl && i < ch->nb_slots; i++) {
 			struct sa_slot * ptrsl = ch->slots + i;
+			if (ptrsl->res->ops->trylock(ptrsl->res))
+				continue;
 			if (ptrsl->address == dr->slot->src_address)
-				if (!ptrsl->res->ops->trylock(ptrsl->res))
-					sl = ptrsl;
+				sl = ptrsl;
+			else
+				ptrsl->res->ops->unlock(ptrsl->res);
 		}
 		for (i = ch->nb_drives; !sl && i < ch->nb_slots; i++) {
 			struct sa_slot * ptrsl = ch->slots + i;
+			if (ptrsl->res->ops->trylock(ptrsl->res))
+				continue;
 			if (!ptrsl->full)
-				if (!ptrsl->res->ops->trylock(ptrsl->res))
-					sl = ptrsl;
+				sl = ptrsl;
+			else
+				ptrsl->res->ops->unlock(ptrsl->res);
 		}
 
 		if (!sl)
@@ -273,9 +282,9 @@ int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct
 		to->full = 1;
 		from->slot->src_address = 0;
 
-		ch->status = SA_CHANGER_IDLE;
+		sa_realchanger_update_status(ch, SA_CHANGER_IDLE);
 	} else {
-		ch->status = SA_CHANGER_ERROR;
+		sa_realchanger_update_status(ch, SA_CHANGER_ERROR);
 	}
 
 	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Library: unloading (changer: %s:%s) from drive n°%ld to slot n°%ld finished with code = %d", ch->vendor, ch->model, from - ch->drives, to - ch->slots, failed);

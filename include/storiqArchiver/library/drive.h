@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 05 Dec 2011 15:34:21 +0100                         *
+*  Last modified: Tue, 06 Dec 2011 16:25:54 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_DRIVE_H__
@@ -57,6 +57,7 @@ struct sa_drive {
 	enum sa_drive_status status;
 	char * model;
 	char * vendor;
+	char * revision;
 	char * serial_number;
 
 	int host;

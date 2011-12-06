@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 03 Dec 2011 19:48:05 +0100                         *
+*  Last modified: Tue, 06 Dec 2011 16:26:17 +0100                         *
 \*************************************************************************/
 
 // ssize_t
@@ -421,21 +421,23 @@ void sa_scsi_mtx_status_update_slot(int fd, struct sa_changer * changer, int sta
 }
 
 void sa_scsi_tapeinfo(int fd, struct sa_drive * drive) {
+	Inquiry_T inq;
 	RequestSense_T sense;
-	unsigned char command[6] = { 0x12, 1, 0x80, 0, 30, 0 };
-	char buffer[30];
+
+	unsigned char hdr_inq[sizeof(struct sg_header) + sizeof(inq)];
+	unsigned char com1[6] = { 0x12, 0, 0, 0, sizeof(hdr_inq), 0 };
 
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
 
 	header.interface_id = 'S';
-	header.cmd_len = sizeof(command);
+	header.cmd_len = sizeof(com1);
 	header.mx_sb_len = sizeof(sense);
-	header.dxfer_len = 30;
-	header.cmdp = command;
+	header.dxfer_len = sizeof(inq);
+	header.cmdp = com1;
 	header.sbp = (unsigned char *) &sense;
-	header.dxferp = &buffer;
+	header.dxferp = &inq;
 	header.timeout = 60000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
@@ -443,7 +445,47 @@ void sa_scsi_tapeinfo(int fd, struct sa_drive * drive) {
 	if (status)
 		return;
 
-	int length = buffer[3];
+	ssize_t length = sizeof(inq.VendorIdentification);
+	drive->vendor = malloc(length + 1);
+	strncpy(drive->vendor, (char *) inq.VendorIdentification, length);
+	drive->vendor[length] = '\0';
+	for (length--; drive->vendor[length] ==  ' '; length--)
+		drive->vendor[length] = '\0';
+	drive->vendor = realloc(drive->vendor, strlen(drive->vendor) + 1);
+
+	length = sizeof(inq.ProductIdentification);
+	drive->model = malloc(length + 1);
+	strncpy(drive->model, (char *) inq.ProductIdentification, length);
+	drive->model[length] = '\0';
+	for (length--; drive->model[length] ==  ' '; length--)
+		drive->model[length] = '\0';
+	drive->model = realloc(drive->model, strlen(drive->model) + 1);
+
+	drive->revision = malloc(5);
+	strncpy(drive->revision, (char *) inq.ProductRevisionLevel, 4);
+	drive->revision[4] = '\0';
+
+	unsigned char com2[6] = { 0x12, 1, 0x80, 0, 30, 0 };
+	char buffer[30];
+
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(com2);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = 30;
+	header.cmdp = com2;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = &buffer;
+	header.timeout = 60000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	status = ioctl(fd, SG_IO, &header);
+	if (status)
+		return;
+
+	length = buffer[3];
 	drive->serial_number = malloc(length + 1);
 	strncpy(drive->serial_number, buffer + 4, length);
 	drive->serial_number[length] = '\0';

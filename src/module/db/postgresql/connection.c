@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 05 Dec 2011 23:44:33 +0100                         *
+*  Last modified: Tue, 06 Dec 2011 17:49:01 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -71,8 +71,6 @@ static int sa_db_postgresql_get_string(PGresult * result, int row, int column, c
 static int sa_db_postgresql_get_string_dup(PGresult * result, int row, int column, char ** value);
 static int sa_db_postgresql_get_time(PGresult * result, int row, int column, time_t * value);
 static void sa_db_postgresql_prepare(PGconn * connection, const char * statement_name, const char * query);
-static const char * sa_db_postgresql_wrapper_drive_status_to_string(enum sa_drive_status status);
-static const char * sa_db_postgresql_wrapper_tape_status_to_string(enum sa_tape_status status);
 
 static struct sa_database_connection_ops sa_db_postgresql_con_ops = {
 	.close = sa_db_postgresql_con_close,
@@ -404,8 +402,8 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 		asprintf(&changer_num, "%ld", drive->changer->drives - drive);
 
 		const char * params2[] = {
-			drive->device, sa_db_postgresql_wrapper_drive_status_to_string(drive->status), changer_num, "0",
-			drive->model, drive->vendor, "", drive->serial_number, changerid, driveformat_id
+			drive->device, sa_drive_status_to_string(drive->status), changer_num, "0",
+			drive->model, drive->vendor, drive->revision, drive->serial_number, changerid, driveformat_id
 		};
 		result = PQexecPrepared(self->db_con, "insert_drive", 10, params2, 0, 0, 0);
 
@@ -417,13 +415,15 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 		free(driveformat_id);
 		free(densitycode);
 	} else {
-		sa_db_postgresql_prepare(self->db_con, "update_drive", "UPDATE drive SET device = $1, status = $2 WHERE id = $3");
+		sa_db_postgresql_prepare(self->db_con, "update_drive", "UPDATE drive SET device = $1, status = $2, firmwarerev = $3 WHERE id = $4");
 
 		char * driveid = 0;
 		asprintf(&driveid, "%ld", drive->id);
 
-		const char * params[] = { drive->device, sa_db_postgresql_wrapper_drive_status_to_string(drive->status), driveid };
-		PGresult * result = PQexecPrepared(self->db_con, "update_drive", 3, params, 0, 0, 0);
+		const char * params[] = {
+			drive->device, sa_drive_status_to_string(drive->status), drive->revision, driveid
+		};
+		PGresult * result = PQexecPrepared(self->db_con, "update_drive", 4, params, 0, 0, 0);
 
 		if (PQresultStatus(result) == PGRES_FATAL_ERROR)
 			sa_db_postgresql_get_error(result);
@@ -600,7 +600,7 @@ int sa_db_postgresql_sync_tape(struct sa_database_connection * connection, struc
 		asprintf(&id, "%ld", tape->id);
 
 		const char * params[] = {
-			sa_db_postgresql_wrapper_tape_status_to_string(tape->status),
+			sa_tape_status_to_string(tape->status),
 			sa_tape_location_to_string(tape->location),
 			load, read, write, endpos, nbfiles, blocksize,
 			tape->has_partition ? "true" : "false", id
@@ -645,7 +645,7 @@ int sa_db_postgresql_sync_tape(struct sa_database_connection * connection, struc
 
 		const char * params[] = {
 			*tape->label ? tape->label : 0, tape->name,
-			sa_db_postgresql_wrapper_tape_status_to_string(tape->status),
+			sa_tape_status_to_string(tape->status),
 			sa_tape_location_to_string(tape->location),
 			buffer_first_used, buffer_use_before,
 			load, read, write, endpos, nbfiles, blocksize,
@@ -783,31 +783,5 @@ void sa_db_postgresql_prepare(PGconn * connection, const char * statement_name, 
 		sa_log_write_all(status == PGRES_COMMAND_OK ? sa_log_level_debug : sa_log_level_error, "Db: Postgresql: new query registred %s => {%s}, status: %s", statement_name, query, PQresStatus(status));
 	}
 	PQclear(prepared);
-}
-
-const char * sa_db_postgresql_wrapper_drive_status_to_string(enum sa_drive_status status) {
-	switch (status) {
-		case SA_DRIVE_EMPTY_IDLE:
-			return "empty-idle";
-
-		case SA_DRIVE_LOADED_IDLE:
-			return "loaded-idle";
-
-		default:
-			return sa_drive_status_to_string(status);
-	}
-}
-
-const char * sa_db_postgresql_wrapper_tape_status_to_string(enum sa_tape_status status) {
-	switch (status) {
-		case SA_TAPE_STATUS_IN_USE:
-			return "in_use";
-
-		case SA_TAPE_STATUS_NEEDS_REPLACEMENT:
-			return "needs_replacement";
-
-		default:
-			return sa_tape_status_to_string(status);
-	}
 }
 
