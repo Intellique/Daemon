@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 07 Dec 2011 13:36:46 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 13:45:51 +0100                         *
 \*************************************************************************/
 
 // open
@@ -181,7 +181,7 @@ ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive) {
 		sa_drive_generic_update_status(drive);
 
 		if (!drive->is_bottom_of_tape) {
-			if (drive->nb_files > 0)
+			if (drive->file_position > 0)
 				sa_drive_generic_rewind_file(drive);
 			else
 				sa_drive_generic_rewind_tape(drive);
@@ -196,7 +196,7 @@ ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive) {
 		for (i = 0; i < 5; i++) {
 			nb_read = read(self->fd_nst, buffer, block_size);
 
-			if (drive->nb_files > 0)
+			if (drive->file_position > 0)
 				sa_drive_generic_rewind_file(drive);
 			else
 				sa_drive_generic_rewind_tape(drive);
