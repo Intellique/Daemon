@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 07 Dec 2011 16:24:54 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 21:10:57 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -270,7 +270,7 @@ int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, st
 	const char * params1[] = { name.nodename };
 	PGresult * result = PQexecPrepared(self->db_con, "select_host_by_name", 1, params1, 0, 0, 0);
 
-	char * hostid = 0;
+	char * hostid = 0, * changerid = 0;
 	if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 		sa_db_postgresql_get_string_dup(result, 0, 0, &hostid);
 		PQclear(result);
@@ -286,10 +286,12 @@ int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, st
 		const char * params2[] = { changer->model, changer->vendor, hostid, changer->drives[0].serial_number };
 		result = PQexecPrepared(self->db_con, "select_changer_by_model_vendor_host_drive", 4, params2, 0, 0, 0);
 
-		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			sa_db_postgresql_get_long(result, 0, 0, &changer->id);
+			sa_db_postgresql_get_string_dup(result, 0, 0, &changerid);
+		}
 
-		free(result);
+		PQclear(result);
 	}
 
 	if (changer->id < 0) {
@@ -307,7 +309,7 @@ int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, st
 			free(hostid);
 			return -1;
 		}
-		free(result);
+		PQclear(result);
 
 		sa_db_postgresql_prepare(self->db_con, "select_changer_by_model_vendor_host", "SELECT id FROM changer WHERE model = $1 AND vendor = $2 AND host = $3 LIMIT 1");
 
@@ -320,21 +322,23 @@ int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, st
 		if (changer->id < 0)
 			sa_log_write_all(sa_log_level_error, "Db: Postgresql (cid #%ld): An expected probleme occured: failed to retreive changer id after insert it", connection->id);
 
-		free(result);
+		PQclear(result);
 	} else {
 		sa_db_postgresql_prepare(self->db_con, "update_changer", "UPDATE changer SET device = $1, status = $2, firmwarerev = $3, update = NOW() WHERE id = $4");
 
-		const char * params2[] = { changer->device, sa_changer_status_to_string(changer->status), changer->revision, hostid };
+		const char * params2[] = { changer->device, sa_changer_status_to_string(changer->status), changer->revision, changerid };
 		result = PQexecPrepared(self->db_con, "update_changer", 4, params2, 0, 0, 0);
 
 		if (PQresultStatus(result) == PGRES_FATAL_ERROR) {
 			sa_db_postgresql_get_error(result);
-			free(result);
+			free(changerid);
 			free(hostid);
+			PQclear(result);
 			return -2;
 		}
 
-		free(result);
+		free(changerid);
+		PQclear(result);
 	}
 	free(hostid);
 
