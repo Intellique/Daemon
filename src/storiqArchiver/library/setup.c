@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 06 Dec 2011 16:36:06 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 13:33:35 +0100                         *
 \*************************************************************************/
 
 // open
@@ -170,6 +170,7 @@ void sa_changer_setup() {
 		drives[i].slot = 0;
 
 		drives[i].data = 0;
+		drives[i].file_position = 0;
 		drives[i].nb_files = 0;
 		drives[i].block_number = 0;
 

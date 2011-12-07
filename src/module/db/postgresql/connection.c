@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 06 Dec 2011 17:49:01 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 11:16:05 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -49,7 +49,7 @@
 
 #include "common.h"
 
-static void sa_db_postgresql_check(struct sa_db_postgresql_connetion_private * self);
+static void sa_db_postgresql_check(struct sa_database_connection * connection);
 static int sa_db_postgresql_con_close(struct sa_database_connection * connection);
 static int sa_db_postgresql_con_free(struct sa_database_connection * connection);
 
@@ -92,26 +92,27 @@ int sa_db_postgresql_cancel_transaction(struct sa_database_connection * connecti
 		return -1;
 
 	struct sa_db_postgresql_connetion_private * self = connection->data;
-	sa_db_postgresql_check(self);
+	sa_db_postgresql_check(connection);
 
 	PGresult * result = PQexec(self->db_con, "ROLLBACK;");
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status != PGRES_COMMAND_OK)
-		sa_log_write_all(sa_log_level_error, "Db: Postgresql: error while cancelling a transaction (%s)", PQerrorMessage(self->db_con));
+		sa_log_write_all(sa_log_level_error, "Db: Postgresql (cid #%ld): error while cancelling a transaction => %s", connection->id, PQerrorMessage(self->db_con));
 
 	PQclear(result);
 
 	return status == PGRES_COMMAND_OK ? 0 : -1;
 }
 
-void sa_db_postgresql_check(struct sa_db_postgresql_connetion_private * self) {
+void sa_db_postgresql_check(struct sa_database_connection * connection) {
+	struct sa_db_postgresql_connetion_private * self = connection->data;
 	if (PQstatus(self->db_con) != CONNECTION_OK) {
 		int i;
 		for (i = 0; i < 3; i++) {
 			PQreset(self->db_con);
 			if (PQstatus(self->db_con) != CONNECTION_OK) {
-				sa_log_write_all(sa_log_level_error, "Db: Postgresql: Failed to reset database connection");
+				sa_log_write_all(sa_log_level_error, "Db: Postgresql (cid #%ld): Failed to reset database connection", connection->id);
 				sleep(30);
 			} else
 				break;
@@ -163,7 +164,7 @@ int sa_db_postgresql_con_free(struct sa_database_connection * connection) {
 
 int sa_db_postgresql_get_tape_format(struct sa_database_connection * connection, struct sa_tape_format * tape_format, unsigned char density_code) {
 	struct sa_db_postgresql_connetion_private * self = connection->data;
-	sa_db_postgresql_check(self);
+	sa_db_postgresql_check(connection);
 
 	sa_db_postgresql_prepare(self->db_con, "select_tapeformat_by_densitycode", "SELECT * FROM tapeformat WHERE densityCode = $1 LIMIT 1");
 
@@ -202,13 +203,13 @@ int sa_db_postgresql_finish_transaction(struct sa_database_connection * connecti
 		return -1;
 
 	struct sa_db_postgresql_connetion_private * self = connection->data;
-	sa_db_postgresql_check(self);
+	sa_db_postgresql_check(connection);
 
 	PGresult * result = PQexec(self->db_con, "COMMIT;");
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status != PGRES_COMMAND_OK)
-		sa_log_write_all(sa_log_level_error, "Db: Postgresql: error while committing a transaction (%s)", PQerrorMessage(self->db_con));
+		sa_log_write_all(sa_log_level_error, "Db: Postgresql (cid #%ld): error while committing a transaction (%s)", connection->id, PQerrorMessage(self->db_con));
 
 	PQclear(result);
 
@@ -244,13 +245,13 @@ int sa_db_postgresql_start_transaction(struct sa_database_connection * connectio
 		return -1;
 
 	struct sa_db_postgresql_connetion_private * self = connection->data;
-	sa_db_postgresql_check(self);
+	sa_db_postgresql_check(connection);
 
 	PGresult * result = PQexec(self->db_con, readOnly ? "BEGIN READ ONLY;" : "BEGIN;");
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status != PGRES_COMMAND_OK)
-		sa_log_write_all(sa_log_level_error, "Db: Postgresql: error while starting a transaction (%s)", PQerrorMessage(self->db_con));
+		sa_log_write_all(sa_log_level_error, "Db: Postgresql (cid #%ld): error while starting a transaction (%s)", connection->id, PQerrorMessage(self->db_con));
 
 	PQclear(result);
 
@@ -259,7 +260,7 @@ int sa_db_postgresql_start_transaction(struct sa_database_connection * connectio
 
 int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, struct sa_changer * changer) {
 	struct sa_db_postgresql_connetion_private * self = connection->data;
-	sa_db_postgresql_check(self);
+	sa_db_postgresql_check(connection);
 
 	struct utsname name;
 	uname(&name);
@@ -275,7 +276,7 @@ int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, st
 		PQclear(result);
 	} else {
 		PQclear(result);
-		sa_log_write_all(sa_log_level_error, "Db: Postgresql: Host not found into database (%s)", name.nodename);
+		sa_log_write_all(sa_log_level_error, "Db: Postgresql (cid #%ld): Host not found into database (%s)", connection->id, name.nodename);
 		return -1;
 	}
 
@@ -317,7 +318,7 @@ int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, st
 			sa_db_postgresql_get_long(result, 0, 0, &changer->id);
 
 		if (changer->id < 0)
-			sa_log_write_all(sa_log_level_error, "Db: Postgresql: An expected probleme occured: failed to retreive changer id after insert it");
+			sa_log_write_all(sa_log_level_error, "Db: Postgresql (cid #%ld): An expected probleme occured: failed to retreive changer id after insert it", connection->id);
 
 		free(result);
 	} else {
@@ -349,7 +350,7 @@ int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, st
 
 int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, struct sa_drive * drive) {
 	struct sa_db_postgresql_connetion_private * self = connection->data;
-	sa_db_postgresql_check(self);
+	sa_db_postgresql_check(connection);
 
 	char * changerid = 0;
 	asprintf(&changerid, "%ld", drive->changer->id);
@@ -368,7 +369,7 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 
 	if (drive->id < 0 && drive->density_code < 1) {
 		free(changerid);
-		sa_log_write_all(sa_log_level_error, "Db: Postgresql: Unable to complete update database without any tape");
+		sa_log_write_all(sa_log_level_error, "Db: Postgresql (cid #%ld): Unable to complete update database without any tape", connection->id);
 		return 1;
 	} else if (drive->id < 0) {
 		sa_db_postgresql_prepare(self->db_con, "select_driveformat_by_densitycode", "SELECT * FROM driveformat WHERE densitycode = $1 LIMIT 1");
@@ -392,7 +393,7 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 			free(densitycode);
 			free(changerid);
 
-			sa_log_write_all(sa_log_level_error, "Db: Postgresql: Unable to complete update database without any tape");
+			sa_log_write_all(sa_log_level_error, "Db: Postgresql (cid #%ld): Unable to complete update database without any tape", connection->id);
 			return 1;
 		}
 
@@ -441,7 +442,7 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 
 int sa_db_postgresql_sync_slot(struct sa_database_connection * connection, struct sa_slot * slot) {
 	struct sa_db_postgresql_connetion_private * self = connection->data;
-	sa_db_postgresql_check(self);
+	sa_db_postgresql_check(connection);
 
 	if (slot->tape && sa_db_postgresql_sync_tape(connection, slot->tape))
 		return 1;
@@ -525,7 +526,7 @@ int sa_db_postgresql_sync_slot(struct sa_database_connection * connection, struc
 
 int sa_db_postgresql_sync_tape(struct sa_database_connection * connection, struct sa_tape * tape) {
 	struct sa_db_postgresql_connetion_private * self = connection->data;
-	sa_db_postgresql_check(self);
+	sa_db_postgresql_check(connection);
 
 	if (tape->id < 0 && tape->label[0] != '\0') {
 		sa_db_postgresql_prepare(self->db_con, "select_tape_by_label", "SELECT * FROM tape WHERE label = $1 LIMIT 1");
@@ -780,7 +781,7 @@ void sa_db_postgresql_prepare(PGconn * connection, const char * statement_name, 
 			sa_db_postgresql_get_error(prepare);
 		PQclear(prepare);
 
-		sa_log_write_all(status == PGRES_COMMAND_OK ? sa_log_level_debug : sa_log_level_error, "Db: Postgresql: new query registred %s => {%s}, status: %s", statement_name, query, PQresStatus(status));
+		sa_log_write_all(status == PGRES_COMMAND_OK ? sa_log_level_debug : sa_log_level_error, "Db: Postgresql: new query prepared (%s) => {%s}, status: %s", statement_name, query, PQresStatus(status));
 	}
 	PQclear(prepared);
 }

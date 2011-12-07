@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 02 Dec 2011 15:27:47 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 12:59:41 +0100                         *
 \*************************************************************************/
 
 // sscanf
@@ -163,7 +163,7 @@ void sa_tape_detect(struct sa_drive * dr) {
 	if (!tape)
 		return;
 
-	dr->ops->rewind(dr);
+	dr->ops->rewind_tape(dr);
 
 	char buffer[1024];
 	struct sa_stream_reader * reader = dr->ops->get_reader(dr);

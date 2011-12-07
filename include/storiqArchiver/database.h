@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 03 Dec 2011 18:47:17 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 11:07:28 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_DATABASE_H__
@@ -58,7 +58,7 @@ struct sa_database {
 #define STORIQARCHIVER_DATABASE_APIVERSION 1
 
 struct sa_database_connection {
-	unsigned int id;
+	long id;
 	struct sa_database * driver;
 	struct sa_database_connection_ops {
 		/**

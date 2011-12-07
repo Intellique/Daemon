@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 06 Dec 2011 21:43:49 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 13:17:12 +0100                         *
 \*************************************************************************/
 
 // pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate,
@@ -70,7 +70,7 @@ int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa
 	if (from->changer != ch || to->changer != ch)
 		return 1;
 
-	sa_log_write_all(sa_log_level_info, "Library: loading tape (changer: %s:%s) from slot n°%ld to drive n°%ld", ch->vendor, ch->model, from - ch->slots, to - ch->drives);
+	sa_log_write_all(sa_log_level_info, "Library (%s | %s): loading tape from slot #%ld to drive #%ld", ch->vendor, ch->model, from - ch->slots, to - ch->drives);
 
 	sa_realchanger_update_status(ch, SA_CHANGER_LOADING);
 	struct sa_realchanger_private * self = ch->data;
@@ -93,13 +93,13 @@ int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa
 		sa_realchanger_update_status(ch, SA_CHANGER_ERROR);
 	}
 
-	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Library: loading tape (changer: %s:%s) from slot n°%ld to drive n°%ld finished with code = %d", ch->vendor, ch->model, from - ch->slots, to - ch->drives, failed);
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Library (%s | %s): loading tape from slot #%ld to drive #%ld finished with code = %d", ch->vendor, ch->model, from - ch->slots, to - ch->drives, failed);
 
 	return failed;
 }
 
 void sa_realchanger_setup(struct sa_changer * changer, int fd) {
-	sa_log_write_all(sa_log_level_info, "Library: starting setup of library (%s:%s)", changer->vendor, changer->model);
+	sa_log_write_all(sa_log_level_info, "Library (%s | %s): starting setup", changer->vendor, changer->model);
 
 	struct sa_realchanger_private * ch = malloc(sizeof(struct sa_realchanger_private));
 	ch->fd = fd;
@@ -132,8 +132,8 @@ void sa_realchanger_setup(struct sa_changer * changer, int fd) {
 			if (sl) {
 				sa_realchanger_unload(changer, dr, sl);
 			} else {
-				sa_log_write_all(sa_log_level_warning, "Library: your drive n°%ld is offline and there is no place for unloading it", changer->drives - dr);
-				sa_log_write_all(sa_log_level_error, "Library: panic: your library require manual maintenance because there is no free slot for unloading drive");
+				sa_log_write_all(sa_log_level_warning, "Library (%s | %s): your drive #%ld is offline and there is no place for unloading it", changer->vendor, changer->model, changer->drives - dr);
+				sa_log_write_all(sa_log_level_error, "Library (%s | %s): panic: your library require manual maintenance because there is no free slot for unloading drive", changer->vendor, changer->model);
 				exit(1);
 			}
 		}
@@ -148,7 +148,7 @@ void sa_realchanger_setup(struct sa_changer * changer, int fd) {
 		if (!changer->slots[i].full)
 			nb_free_slot++;
 	if (nb_full_drive > nb_free_slot) {
-		sa_log_write_all(sa_log_level_error, "Library: panic: your library require manual maintenance because there is no free slot for unloading drive");
+		sa_log_write_all(sa_log_level_error, "Library (%s | %s): panic: your library require manual maintenance because there is not enough free slot for unloading drive", changer->vendor, changer->model);
 		exit(1);
 	}
 
@@ -183,13 +183,13 @@ void sa_realchanger_setup(struct sa_changer * changer, int fd) {
 		if (ch->db_con) {
 			ch->db_con->ops->sync_changer(ch->db_con, changer);
 		} else {
-			sa_log_write_all(sa_log_level_error, "Library: failed to connect to default database");
+			sa_log_write_all(sa_log_level_info, "Library (%s | %s): failed to connect to default database", changer->vendor, changer->model);
 		}
 	} else {
-		sa_log_write_all(sa_log_level_warning, "Library: there is no default database so changer (%s:%s) is not able to synchronize with one database", changer->vendor, changer->model);
+		sa_log_write_all(sa_log_level_warning, "Library (%s | %s): there is no default database so changer is not able to synchronize with one database", changer->vendor, changer->model);
 	}
 
-	sa_log_write_all(sa_log_level_info, "Library: setup terminated");
+	sa_log_write_all(sa_log_level_info, "Library (%s | %s): setup terminated", changer->vendor, changer->model);
 }
 
 void * sa_realchanger_setup2(void * drive) {
@@ -267,7 +267,7 @@ int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct
 	if (from->changer != ch || to->changer != ch)
 		return 1;
 
-	sa_log_write_all(sa_log_level_info, "Library: unloading tape (changer: %s:%s) from drive n°%ld to slot n°%ld", ch->vendor, ch->model, from - ch->drives, to - ch->slots);
+	sa_log_write_all(sa_log_level_info, "Library (%s | %s): unloading tape from drive #%ld to slot #%ld", ch->vendor, ch->model, from - ch->drives, to - ch->slots);
 
 	sa_realchanger_update_status(ch, SA_CHANGER_UNLOADING);
 	struct sa_realchanger_private * self = ch->data;
@@ -287,7 +287,7 @@ int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct
 		sa_realchanger_update_status(ch, SA_CHANGER_ERROR);
 	}
 
-	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Library: unloading tape (changer: %s:%s) from drive n°%ld to slot n°%ld finished with code = %d", ch->vendor, ch->model, from - ch->drives, to - ch->slots, failed);
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Library (%s | %s): unloading tape from drive #%ld to slot #%ld finished with code = %d", ch->vendor, ch->model, from - ch->drives, to - ch->slots, failed);
 
 	return 0;
 }

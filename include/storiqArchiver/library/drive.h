@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 06 Dec 2011 16:25:54 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 13:32:37 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_DRIVE_H__
@@ -75,11 +75,13 @@ struct sa_drive {
 		struct sa_stream_reader * (*get_reader)(struct sa_drive * drive);
 		struct sa_stream_writer * (*get_writer)(struct sa_drive * drive);
 		void (*reset)(struct sa_drive * drive);
-		int (*rewind)(struct sa_drive * drive);
+		int (*rewind_file)(struct sa_drive * drive);
+		int (*rewind_tape)(struct sa_drive * drive);
 		int (*set_file_position)(struct sa_drive * drive, int file_position);
 	} * ops;
 	void * data;
 
+	unsigned int file_position;
 	unsigned int nb_files;
 	ssize_t block_number;
 
