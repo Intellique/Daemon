@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 07 Dec 2011 21:10:57 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 23:37:54 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -411,7 +411,7 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 		sa_db_postgresql_prepare(self->db_con, "insert_drive", "INSERT INTO drive VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)");
 
 		char * changer_num = 0, * op_duration = 0;
-		asprintf(&changer_num, "%ld", drive->changer->drives - drive);
+		asprintf(&changer_num, "%ld", drive - drive->changer->drives);
 		asprintf(&op_duration, "%ld", drive->operation_duration);
 
 		char last_clean[24];
