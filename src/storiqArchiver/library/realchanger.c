@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 07 Dec 2011 13:54:31 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 17:46:05 +0100                         *
 \*************************************************************************/
 
 // pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate,
@@ -77,8 +77,10 @@ int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa
 	int failed = sa_scsi_mtx_move(self->fd, ch, from, to->slot);
 
 	if (!failed) {
-		if (from->tape)
+		if (from->tape) {
+			from->tape->location = SA_TAPE_LOCATION_ONLINE;
 			from->tape->load_count++;
+		}
 
 		to->slot->tape = from->tape;
 		from->tape = 0;
@@ -281,6 +283,9 @@ int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct
 		from->slot->full = 0;
 		to->full = 1;
 		from->slot->src_address = 0;
+
+		if (to->tape)
+			to->tape->location = SA_TAPE_LOCATION_OFFLINE;
 
 		sa_realchanger_update_status(ch, SA_CHANGER_IDLE);
 	} else {
