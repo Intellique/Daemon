@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 07 Dec 2011 13:54:48 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 15:43:57 +0100                         *
 \*************************************************************************/
 
 // open
@@ -39,6 +39,8 @@
 #include <sys/stat.h>
 // open
 #include <sys/types.h>
+// time
+#include <time.h>
 // readlink
 #include <unistd.h>
 
@@ -182,6 +184,8 @@ void sa_changer_setup() {
 
 		drives[i].block_size = 0;
 		drives[i].density_code = 0;
+		drives[i].operation_duration = 0;
+		drives[i].last_clean = time(0);
 	}
 	globfree(&gl);
 

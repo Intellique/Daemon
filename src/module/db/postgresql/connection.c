@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 07 Dec 2011 11:16:05 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 16:24:54 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -356,13 +356,20 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 	asprintf(&changerid, "%ld", drive->changer->id);
 
 	if (drive->id < 0) {
-		sa_db_postgresql_prepare(self->db_con, "select_drive_by_changer", "SELECT id FROM drive WHERE serialnumber = $1 AND changer = $2 LIMIT 1");
+		sa_db_postgresql_prepare(self->db_con, "select_drive_by_changer", "SELECT id, operationduration, lastclean FROM drive WHERE serialnumber = $1 AND changer = $2 LIMIT 1");
 
 		const char * params[] = { drive->serial_number, changerid };
 		PGresult * result = PQexecPrepared(self->db_con, "select_drive_by_changer", 2, params, 0, 0, 0);
 
-		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			sa_db_postgresql_get_long(result, 0, 0, &drive->id);
+
+			long old_operation_duration;
+			sa_db_postgresql_get_long(result, 0, 1, &old_operation_duration);
+			drive->operation_duration += old_operation_duration;
+
+			sa_db_postgresql_get_time(result, 0, 2, &drive->last_clean);
+		}
 
 		PQclear(result);
 	}
@@ -372,7 +379,7 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 		sa_log_write_all(sa_log_level_error, "Db: Postgresql (cid #%ld): Unable to complete update database without any tape", connection->id);
 		return 1;
 	} else if (drive->id < 0) {
-		sa_db_postgresql_prepare(self->db_con, "select_driveformat_by_densitycode", "SELECT * FROM driveformat WHERE densitycode = $1 LIMIT 1");
+		sa_db_postgresql_prepare(self->db_con, "select_driveformat_by_densitycode", "SELECT id FROM driveformat WHERE densitycode = $1 LIMIT 1");
 
 		char * densitycode = 0;
 		asprintf(&densitycode, "%u", drive->density_code);
@@ -397,39 +404,53 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 			return 1;
 		}
 
-		sa_db_postgresql_prepare(self->db_con, "insert_drive", "INSERT INTO drive VALUES (DEFAULT, $1, $2, $3, $4, NOW(), $5, $6, $7, $8, $9, $10)");
+		sa_db_postgresql_prepare(self->db_con, "insert_drive", "INSERT INTO drive VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)");
 
-		char * changer_num = 0;
+		char * changer_num = 0, * op_duration = 0;
 		asprintf(&changer_num, "%ld", drive->changer->drives - drive);
+		asprintf(&op_duration, "%ld", drive->operation_duration);
+
+		char last_clean[24];
+		struct tm tm_last_clean;
+		localtime_r(&drive->last_clean, &tm_last_clean);
+		strftime(last_clean, 23, "%F %T", &tm_last_clean);
 
 		const char * params2[] = {
-			drive->device, sa_drive_status_to_string(drive->status), changer_num, "0",
+			drive->device, sa_drive_status_to_string(drive->status), changer_num, op_duration, last_clean,
 			drive->model, drive->vendor, drive->revision, drive->serial_number, changerid, driveformat_id
 		};
-		result = PQexecPrepared(self->db_con, "insert_drive", 10, params2, 0, 0, 0);
+		result = PQexecPrepared(self->db_con, "insert_drive", 11, params2, 0, 0, 0);
 
 		if (PQresultStatus(result) == PGRES_FATAL_ERROR)
 			sa_db_postgresql_get_error(result);
 
 		PQclear(result);
+		free(op_duration);
 		free(changer_num);
 		free(driveformat_id);
 		free(densitycode);
 	} else {
-		sa_db_postgresql_prepare(self->db_con, "update_drive", "UPDATE drive SET device = $1, status = $2, firmwarerev = $3 WHERE id = $4");
+		sa_db_postgresql_prepare(self->db_con, "update_drive", "UPDATE drive SET device = $1, status = $2, operationduration = $3, lastclean = $4, firmwarerev = $5 WHERE id = $6");
 
-		char * driveid = 0;
+		char * driveid = 0, * op_duration = 0;
 		asprintf(&driveid, "%ld", drive->id);
+		asprintf(&op_duration, "%ld", drive->operation_duration);
+
+		char last_clean[24];
+		struct tm tm_last_clean;
+		localtime_r(&drive->last_clean, &tm_last_clean);
+		strftime(last_clean, 23, "%F %T", &tm_last_clean);
 
 		const char * params[] = {
-			drive->device, sa_drive_status_to_string(drive->status), drive->revision, driveid
+			drive->device, sa_drive_status_to_string(drive->status), op_duration, last_clean, drive->revision, driveid
 		};
-		PGresult * result = PQexecPrepared(self->db_con, "update_drive", 4, params, 0, 0, 0);
+		PGresult * result = PQexecPrepared(self->db_con, "update_drive", 6, params, 0, 0, 0);
 
 		if (PQresultStatus(result) == PGRES_FATAL_ERROR)
 			sa_db_postgresql_get_error(result);
 
 		PQclear(result);
+		free(op_duration);
 		free(driveid);
 	}
 

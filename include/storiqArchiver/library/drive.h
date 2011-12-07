@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 07 Dec 2011 13:32:37 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 15:42:36 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_DRIVE_H__
@@ -96,6 +96,8 @@ struct sa_drive {
 	// 0 => soft block
 	ssize_t block_size;
 	unsigned char density_code;
+	long operation_duration;
+	time_t last_clean;
 };
 
 

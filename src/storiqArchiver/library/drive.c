@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 07 Dec 2011 13:45:51 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 15:34:59 +0100                         *
 \*************************************************************************/
 
 // open
@@ -39,6 +39,8 @@
 #include <sys/stat.h>
 // open
 #include <sys/types.h>
+// time
+#include <time.h>
 // close, read, sleep
 #include <unistd.h>
 
@@ -56,6 +58,7 @@ struct sa_drive_generic {
 	struct sa_database_connection * db_con;
 
 	int used_by_io;
+	time_t last_start;
 };
 
 struct sa_drive_io_reader {
@@ -86,6 +89,8 @@ static ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive);
 static struct sa_stream_reader * sa_drive_generic_get_reader(struct sa_drive * drive);
 static struct sa_stream_writer * sa_drive_generic_get_writer(struct sa_drive * drive);
 static void sa_drive_generic_on_failed(struct sa_drive * drive, int verbose);
+static void sa_drive_generic_operation_start(struct sa_drive_generic * dr);
+static void sa_drive_generic_operation_stop(struct sa_drive * dr);
 static void sa_drive_generic_reset(struct sa_drive * drive);
 static int sa_drive_generic_rewind_file(struct sa_drive * drive);
 static int sa_drive_generic_rewind_tape(struct sa_drive * drive);
@@ -144,7 +149,9 @@ int sa_drive_generic_eject(struct sa_drive * drive) {
 	sa_drive_generic_update_status2(drive, SA_DRIVE_UNLOADING);
 
 	static struct mtop eject = { MTOFFL, 1 };
+	sa_drive_generic_operation_start(self);
 	int failed = ioctl(self->fd_nst, MTIOCTOP, &eject);
+	sa_drive_generic_operation_stop(drive);
 
 	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive (%s | %s | #%ld): rewind tape and put the drive offline, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, failed);
 
@@ -161,12 +168,16 @@ int sa_drive_generic_eod(struct sa_drive * drive) {
 	sa_drive_generic_update_status2(drive, SA_DRIVE_POSITIONING);
 
 	static struct mtop eod = { MTEOM, 1 };
+	sa_drive_generic_operation_start(self);
 	int failed = ioctl(self->fd_nst, MTIOCTOP, &eod);
+	sa_drive_generic_operation_stop(drive);
 
 	if (failed) {
 		sa_drive_generic_on_failed(drive, 1);
 		sa_drive_generic_update_status(drive);
+		sa_drive_generic_operation_start(self);
 		failed = ioctl(self->fd_nst, MTIOCTOP, &eod);
+		sa_drive_generic_operation_stop(drive);
 	}
 
 	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive (%s | %s | #%ld): goto end of tape, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, failed);
@@ -194,7 +205,9 @@ ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive) {
 		ssize_t block_size = 1 << 16;
 		char * buffer = malloc(block_size);
 		for (i = 0; i < 5; i++) {
+			sa_drive_generic_operation_start(self);
 			nb_read = read(self->fd_nst, buffer, block_size);
+			sa_drive_generic_operation_stop(drive);
 
 			if (drive->file_position > 0)
 				sa_drive_generic_rewind_file(drive);
@@ -266,6 +279,16 @@ void sa_drive_generic_on_failed(struct sa_drive * drive, int verbose) {
 	self->fd_nst = open(drive->device, O_RDWR | O_NONBLOCK);
 }
 
+void sa_drive_generic_operation_start(struct sa_drive_generic * dr) {
+	dr->last_start = time(0);
+}
+
+void sa_drive_generic_operation_stop(struct sa_drive * drive) {
+	struct sa_drive_generic * self = drive->data;
+
+	drive->operation_duration += time(0) - self->last_start;
+}
+
 void sa_drive_generic_reset(struct sa_drive * drive) {
 	struct sa_drive_generic * self = drive->data;
 
@@ -277,8 +300,11 @@ void sa_drive_generic_reset(struct sa_drive * drive) {
 
 	int i, failed = 1;
 	for (i = 0; i < 120 && failed; i++) {
-		if (self->fd_nst > -1)
+		if (self->fd_nst > -1) {
+			sa_drive_generic_operation_start(self);
 			failed = ioctl(self->fd_nst, MTIOCTOP, &nop);
+			sa_drive_generic_operation_stop(drive);
+		}
 
 		if (failed) {
 			if (self->fd_nst > -1)
@@ -302,13 +328,17 @@ int sa_drive_generic_rewind_file(struct sa_drive * drive) {
 	sa_drive_generic_update_status2(drive, SA_DRIVE_REWINDING);
 
 	static struct mtop rewind = { MTBSFM, 1 };
+	sa_drive_generic_operation_start(self);
 	int failed = ioctl(self->fd_nst, MTIOCTOP, &rewind);
+	sa_drive_generic_operation_stop(drive);
 
 	unsigned int i;
 	for (i = 0; i < 3 && failed; i++) {
 		sa_drive_generic_on_failed(drive, 1);
 		sa_drive_generic_update_status(drive);
+		sa_drive_generic_operation_start(self);
 		failed = ioctl(self->fd_nst, MTIOCTOP, &rewind);
+		sa_drive_generic_operation_stop(drive);
 	}
 
 	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive (%s | %s | #%ld): rewind file, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, failed);
@@ -326,13 +356,17 @@ int sa_drive_generic_rewind_tape(struct sa_drive * drive) {
 	sa_drive_generic_update_status2(drive, SA_DRIVE_REWINDING);
 
 	static struct mtop rewind = { MTREW, 1 };
+	sa_drive_generic_operation_start(self);
 	int failed = ioctl(self->fd_nst, MTIOCTOP, &rewind);
+	sa_drive_generic_operation_stop(drive);
 
 	unsigned int i;
 	for (i = 0; i < 3 && failed; i++) {
 		sa_drive_generic_on_failed(drive, 1);
 		sa_drive_generic_update_status(drive);
+		sa_drive_generic_operation_start(self);
 		failed = ioctl(self->fd_nst, MTIOCTOP, &rewind);
+		sa_drive_generic_operation_stop(drive);
 	}
 
 	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive (%s | %s | #%ld): rewind tape, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, failed);
@@ -354,7 +388,9 @@ int sa_drive_generic_set_file_position(struct sa_drive * drive, int file_positio
 
 	struct sa_drive_generic * self = drive->data;
 	struct mtop fsr = { MTFSF, file_position };
+	sa_drive_generic_operation_start(self);
 	failed = ioctl(self->fd_nst, MTIOCTOP, &fsr);
+	sa_drive_generic_operation_stop(drive);
 
 	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive (%s | %s | #%ld): positioning tape to position = %d, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, file_position, failed);
 
@@ -365,22 +401,31 @@ void sa_drive_generic_update_status(struct sa_drive * drive) {
 	struct sa_drive_generic * self = drive->data;
 
 	struct mtget status;
+	sa_drive_generic_operation_start(self);
 	int failed = ioctl(self->fd_nst, MTIOCGET, &status);
+	sa_drive_generic_operation_stop(drive);
 
 	unsigned int i;
 	for (i = 0; i < 5 && failed; i++) {
 		sa_drive_generic_on_failed(drive, 1);
+		sa_drive_generic_operation_start(self);
 		failed = ioctl(self->fd_nst, MTIOCGET, &status);
+		sa_drive_generic_operation_stop(drive);
 	}
 
 	if (failed) {
 		drive->status = SA_DRIVE_ERROR;
 
 		static struct mtop reset = { MTRESET, 1 };
+		sa_drive_generic_operation_start(self);
 		failed = ioctl(self->fd_nst, MTIOCTOP, &reset);
+		sa_drive_generic_operation_stop(drive);
 
-		if (!failed)
+		if (!failed) {
+			sa_drive_generic_operation_start(self);
 			failed = ioctl(self->fd_nst, MTIOCGET, &status);
+			sa_drive_generic_operation_stop(drive);
+		}
 	}
 
 	if (!failed) {
@@ -422,6 +467,7 @@ void sa_drive_setup(struct sa_drive * drive) {
 	struct sa_drive_generic * self = malloc(sizeof(struct sa_drive_generic));
 	self->fd_nst = fd;
 	self->used_by_io = 0;
+	self->last_start = 0;
 
 	int fd_device = open(drive->scsi_device, O_RDWR | O_NONBLOCK);
 	sa_scsi_tapeinfo(fd_device, drive);
