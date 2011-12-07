@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 05 Dec 2011 16:40:06 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 13:52:44 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_CHANGER_H__
@@ -68,7 +68,7 @@ struct sa_changer {
 	} * ops;
 	void * data;
 
-    struct sa_ressource * res;
+    struct sa_ressource * lock;
 
     // for scsi use only
     int transport_address;
@@ -83,7 +83,7 @@ struct sa_slot {
 	char volume_name[37];
 	char full;
 
-	struct sa_ressource * res;
+	struct sa_ressource * lock;
 
 	// for scsi use only
 	int address;

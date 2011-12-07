@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 07 Dec 2011 13:17:12 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 13:54:31 +0100                         *
 \*************************************************************************/
 
 // pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate,
@@ -108,7 +108,7 @@ void sa_realchanger_setup(struct sa_changer * changer, int fd) {
 	changer->status = SA_CHANGER_IDLE;
 	changer->ops = &sa_realchanger_ops;
 	changer->data = ch;
-	changer->res = sa_ressource_new();
+	changer->lock = sa_ressource_new();
 
 	unsigned int i;
 	for (i = 0; i < changer->nb_drives; i++) {
@@ -153,7 +153,7 @@ void sa_realchanger_setup(struct sa_changer * changer, int fd) {
 	}
 
 	for (i = changer->nb_drives; i < changer->nb_slots; i++)
-		changer->slots[i].res = sa_ressource_new();
+		changer->slots[i].lock = sa_ressource_new();
 
 	pthread_t * workers = 0;
 	if (changer->nb_drives > 1) {
@@ -204,53 +204,53 @@ void * sa_realchanger_setup2(void * drive) {
 		unsigned int i;
 		for (i = ch->nb_drives; !sl && i < ch->nb_slots; i++) {
 			struct sa_slot * ptrsl = ch->slots + i;
-			if (ptrsl->res->ops->trylock(ptrsl->res))
+			if (ptrsl->lock->ops->trylock(ptrsl->lock))
 				continue;
 			if (ptrsl->address == dr->slot->src_address)
 				sl = ptrsl;
 			else
-				ptrsl->res->ops->unlock(ptrsl->res);
+				ptrsl->lock->ops->unlock(ptrsl->lock);
 		}
 		for (i = ch->nb_drives; !sl && i < ch->nb_slots; i++) {
 			struct sa_slot * ptrsl = ch->slots + i;
-			if (ptrsl->res->ops->trylock(ptrsl->res))
+			if (ptrsl->lock->ops->trylock(ptrsl->lock))
 				continue;
 			if (!ptrsl->full)
 				sl = ptrsl;
 			else
-				ptrsl->res->ops->unlock(ptrsl->res);
+				ptrsl->lock->ops->unlock(ptrsl->lock);
 		}
 
 		if (!sl)
 			return 0;
 
 		dr->ops->eject(dr);
-		ch->res->ops->lock(ch->res);
+		ch->lock->ops->lock(ch->lock);
 		sa_realchanger_unload(ch, dr, sl);
-		ch->res->ops->unlock(ch->res);
-		sl->res->ops->unlock(sl->res);
+		ch->lock->ops->unlock(ch->lock);
+		sl->lock->ops->unlock(sl->lock);
 	}
 
 	unsigned int i;
 	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
 		struct sa_slot * sl = ch->slots + i;
-		if (sl->res->ops->trylock(sl->res))
+		if (sl->lock->ops->trylock(sl->lock))
 			continue;
 		if (sl->full && !sl->tape) {
-			ch->res->ops->lock(ch->res);
+			ch->lock->ops->lock(ch->lock);
 			sa_realchanger_load(ch, sl, dr);
-			ch->res->ops->unlock(ch->res);
+			ch->lock->ops->unlock(ch->lock);
 
 			dr->ops->reset(dr);
 			dr->slot->tape = sa_tape_new(dr);
 			sa_tape_detect(dr);
 			dr->ops->eject(dr);
 
-			ch->res->ops->lock(ch->res);
+			ch->lock->ops->lock(ch->lock);
 			sa_realchanger_unload(ch, dr, sl);
-			ch->res->ops->unlock(ch->res);
+			ch->lock->ops->unlock(ch->lock);
 		}
-		sl->res->ops->unlock(sl->res);
+		sl->lock->ops->unlock(sl->lock);
 	}
 
 	return 0;

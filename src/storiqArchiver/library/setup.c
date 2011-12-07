@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 07 Dec 2011 13:33:35 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 13:54:48 +0100                         *
 \*************************************************************************/
 
 // open
@@ -106,7 +106,7 @@ void sa_changer_setup() {
 		changers[i].nb_slots = 0;
 
 		changers[i].data = 0;
-		changers[i].res = 0;
+		changers[i].lock = 0;
 		changers[i].transport_address = 0;
 	}
 	globfree(&gl);
