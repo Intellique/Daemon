@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 07 Dec 2011 15:34:59 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 20:31:21 +0100                         *
 \*************************************************************************/
 
 // open
@@ -189,6 +189,11 @@ int sa_drive_generic_eod(struct sa_drive * drive) {
 
 ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive) {
 	if (drive->block_size < 1) {
+		struct sa_tape * tape = drive->slot->tape;
+
+		if (tape->block_size > 0)
+			return tape->block_size;
+
 		sa_drive_generic_update_status(drive);
 
 		if (!drive->is_bottom_of_tape) {
@@ -214,11 +219,11 @@ ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive) {
 			else
 				sa_drive_generic_rewind_tape(drive);
 
-			drive->slot->tape->read_count++;
+			tape->read_count++;
 
 			if (nb_read > 0) {
 				free(buffer);
-				return nb_read;
+				return tape->block_size = nb_read;
 			}
 
 			sa_drive_generic_on_failed(drive, 1);
@@ -228,6 +233,10 @@ ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive) {
 		}
 
 		free(buffer);
+
+		if (tape->format)
+			return tape->block_size = tape->format->block_size;
+
 		sa_log_write_all(sa_log_level_error, "Drive (%s | %s | #%ld): failed to detect block size", drive->vendor, drive->model, drive - drive->changer->drives);
 	}
 

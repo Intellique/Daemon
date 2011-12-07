@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 07 Dec 2011 12:59:41 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 20:27:06 +0100                         *
 \*************************************************************************/
 
 // sscanf
@@ -164,10 +164,11 @@ void sa_tape_detect(struct sa_drive * dr) {
 		return;
 
 	dr->ops->rewind_tape(dr);
+	dr->ops->get_block_size(dr);
 
-	char buffer[1024];
+	char buffer[512];
 	struct sa_stream_reader * reader = dr->ops->get_reader(dr);
-	ssize_t nb_read = reader->ops->read(reader, buffer, 1024);
+	ssize_t nb_read = reader->ops->read(reader, buffer, 512);
 	reader->ops->close(reader);
 	reader->ops->free(reader);
 
@@ -181,8 +182,6 @@ void sa_tape_detect(struct sa_drive * dr) {
 		tape->load_count = 1;
 		return;
 	}
-
-	tape->block_size = nb_read;
 
 	char name[65];
 	char label[37];
@@ -226,7 +225,7 @@ struct sa_tape * sa_tape_new(struct sa_drive * dr) {
 	tape->nb_files = 0;
 	tape->has_partition = 0;
 	tape->format = sa_tape_format_get_by_density_code(dr->density_code);
-	tape->block_size = tape->format->block_size;
+	tape->block_size = 0;
 	tape->pool = 0;
 	return tape;
 }
