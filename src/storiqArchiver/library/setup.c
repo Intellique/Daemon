@@ -22,14 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 05 Dec 2011 16:43:17 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 15:43:57 +0100                         *
 \*************************************************************************/
 
 // open
 #include <fcntl.h>
 // glob
 #include <glob.h>
-// calloc, malloc, realloc
+// calloc, realloc
 #include <stdlib.h>
 // sscanf
 #include <stdio.h>
@@ -39,6 +39,8 @@
 #include <sys/stat.h>
 // open
 #include <sys/types.h>
+// time
+#include <time.h>
 // readlink
 #include <unistd.h>
 
@@ -53,24 +55,8 @@ static unsigned int nb_changers = 0;
 static struct sa_drive * drives = 0;
 static unsigned int nb_drives = 0;
 
-static char * sa_changer_read(const char * filename);
 static void sa_changer_setup_realchanger(struct sa_changer * changer);
 
-
-char * sa_changer_read(const char * filename) {
-	int fd = open(filename, O_RDONLY);
-
-	struct stat st;
-	fstat(fd, &st);
-
-	char * data = malloc(128);
-	ssize_t nbRead = read(fd, data, 128);
-	close(fd);
-
-	data[nbRead - 1] = '\0';
-	data = realloc(data, nbRead);
-	return data;
-}
 
 void sa_changer_setup() {
 	glob_t gl;
@@ -106,8 +92,11 @@ void sa_changer_setup() {
 		changers[i].id = -1;
 		changers[i].device = strdup(device);
 		changers[i].status = SA_CHANGER_UNKNOWN;
-
+		changers[i].model = 0;
+		changers[i].vendor = 0;
+		changers[i].revision = 0;
 		changers[i].barcode = 0;
+
 		changers[i].host = host;
 		changers[i].target = target;
 		changers[i].channel = channel;
@@ -117,6 +106,10 @@ void sa_changer_setup() {
 		changers[i].nb_drives = 0;
 		changers[i].slots = 0;
 		changers[i].nb_slots = 0;
+
+		changers[i].data = 0;
+		changers[i].lock = 0;
+		changers[i].transport_address = 0;
 	}
 	globfree(&gl);
 
@@ -165,22 +158,10 @@ void sa_changer_setup() {
 		drives[i].device = strdup(device);
 		drives[i].scsi_device = strdup(scsi_device);
 		drives[i].status = SA_DRIVE_UNKNOWN;
-
-		strcpy(path, gl.gl_pathv[i]);
-		strcat(path, "/model");
-		drives[i].model = sa_changer_read(path);
-		length = strlen(drives[i].model);
-		for (length--; drives[i].model[length] == ' '; length--)
-			drives[i].model[length] = '\0';
-		drives[i].model = realloc(drives[i].model, strlen(drives[i].model) + 1);
-
-		strcpy(path, gl.gl_pathv[i]);
-		strcat(path, "/vendor");
-		drives[i].vendor = sa_changer_read(path);
-		length = strlen(drives[i].vendor);
-		for (length--; drives[i].vendor[length] == ' '; length--)
-			drives[i].vendor[length] = '\0';
-		drives[i].vendor = realloc(drives[i].vendor, strlen(drives[i].vendor) + 1);
+		drives[i].model = 0;
+		drives[i].vendor = 0;
+		drives[i].revision = 0;
+		drives[i].serial_number = 0;
 
 		drives[i].host = host;
 		drives[i].target = target;
@@ -189,6 +170,22 @@ void sa_changer_setup() {
 
 		drives[i].changer = 0;
 		drives[i].slot = 0;
+
+		drives[i].data = 0;
+		drives[i].file_position = 0;
+		drives[i].nb_files = 0;
+		drives[i].block_number = 0;
+
+		drives[i].is_bottom_of_tape = 0;
+		drives[i].is_end_of_file = 0;
+		drives[i].is_writable = 0;
+		drives[i].is_online = 0;
+		drives[i].is_door_opened = 0;
+
+		drives[i].block_size = 0;
+		drives[i].density_code = 0;
+		drives[i].operation_duration = 0;
+		drives[i].last_clean = time(0);
 	}
 	globfree(&gl);
 

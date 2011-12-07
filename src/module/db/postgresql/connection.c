@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 05 Dec 2011 23:44:33 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 21:10:57 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -49,7 +49,7 @@
 
 #include "common.h"
 
-static void sa_db_postgresql_check(struct sa_db_postgresql_connetion_private * self);
+static void sa_db_postgresql_check(struct sa_database_connection * connection);
 static int sa_db_postgresql_con_close(struct sa_database_connection * connection);
 static int sa_db_postgresql_con_free(struct sa_database_connection * connection);
 
@@ -71,8 +71,6 @@ static int sa_db_postgresql_get_string(PGresult * result, int row, int column, c
 static int sa_db_postgresql_get_string_dup(PGresult * result, int row, int column, char ** value);
 static int sa_db_postgresql_get_time(PGresult * result, int row, int column, time_t * value);
 static void sa_db_postgresql_prepare(PGconn * connection, const char * statement_name, const char * query);
-static const char * sa_db_postgresql_wrapper_drive_status_to_string(enum sa_drive_status status);
-static const char * sa_db_postgresql_wrapper_tape_status_to_string(enum sa_tape_status status);
 
 static struct sa_database_connection_ops sa_db_postgresql_con_ops = {
 	.close = sa_db_postgresql_con_close,
@@ -94,26 +92,27 @@ int sa_db_postgresql_cancel_transaction(struct sa_database_connection * connecti
 		return -1;
 
 	struct sa_db_postgresql_connetion_private * self = connection->data;
-	sa_db_postgresql_check(self);
+	sa_db_postgresql_check(connection);
 
 	PGresult * result = PQexec(self->db_con, "ROLLBACK;");
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status != PGRES_COMMAND_OK)
-		sa_log_write_all(sa_log_level_error, "Db: Postgresql: error while cancelling a transaction (%s)", PQerrorMessage(self->db_con));
+		sa_log_write_all(sa_log_level_error, "Db: Postgresql (cid #%ld): error while cancelling a transaction => %s", connection->id, PQerrorMessage(self->db_con));
 
 	PQclear(result);
 
 	return status == PGRES_COMMAND_OK ? 0 : -1;
 }
 
-void sa_db_postgresql_check(struct sa_db_postgresql_connetion_private * self) {
+void sa_db_postgresql_check(struct sa_database_connection * connection) {
+	struct sa_db_postgresql_connetion_private * self = connection->data;
 	if (PQstatus(self->db_con) != CONNECTION_OK) {
 		int i;
 		for (i = 0; i < 3; i++) {
 			PQreset(self->db_con);
 			if (PQstatus(self->db_con) != CONNECTION_OK) {
-				sa_log_write_all(sa_log_level_error, "Db: Postgresql: Failed to reset database connection");
+				sa_log_write_all(sa_log_level_error, "Db: Postgresql (cid #%ld): Failed to reset database connection", connection->id);
 				sleep(30);
 			} else
 				break;
@@ -165,7 +164,7 @@ int sa_db_postgresql_con_free(struct sa_database_connection * connection) {
 
 int sa_db_postgresql_get_tape_format(struct sa_database_connection * connection, struct sa_tape_format * tape_format, unsigned char density_code) {
 	struct sa_db_postgresql_connetion_private * self = connection->data;
-	sa_db_postgresql_check(self);
+	sa_db_postgresql_check(connection);
 
 	sa_db_postgresql_prepare(self->db_con, "select_tapeformat_by_densitycode", "SELECT * FROM tapeformat WHERE densityCode = $1 LIMIT 1");
 
@@ -204,13 +203,13 @@ int sa_db_postgresql_finish_transaction(struct sa_database_connection * connecti
 		return -1;
 
 	struct sa_db_postgresql_connetion_private * self = connection->data;
-	sa_db_postgresql_check(self);
+	sa_db_postgresql_check(connection);
 
 	PGresult * result = PQexec(self->db_con, "COMMIT;");
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status != PGRES_COMMAND_OK)
-		sa_log_write_all(sa_log_level_error, "Db: Postgresql: error while committing a transaction (%s)", PQerrorMessage(self->db_con));
+		sa_log_write_all(sa_log_level_error, "Db: Postgresql (cid #%ld): error while committing a transaction (%s)", connection->id, PQerrorMessage(self->db_con));
 
 	PQclear(result);
 
@@ -246,13 +245,13 @@ int sa_db_postgresql_start_transaction(struct sa_database_connection * connectio
 		return -1;
 
 	struct sa_db_postgresql_connetion_private * self = connection->data;
-	sa_db_postgresql_check(self);
+	sa_db_postgresql_check(connection);
 
 	PGresult * result = PQexec(self->db_con, readOnly ? "BEGIN READ ONLY;" : "BEGIN;");
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status != PGRES_COMMAND_OK)
-		sa_log_write_all(sa_log_level_error, "Db: Postgresql: error while starting a transaction (%s)", PQerrorMessage(self->db_con));
+		sa_log_write_all(sa_log_level_error, "Db: Postgresql (cid #%ld): error while starting a transaction (%s)", connection->id, PQerrorMessage(self->db_con));
 
 	PQclear(result);
 
@@ -261,7 +260,7 @@ int sa_db_postgresql_start_transaction(struct sa_database_connection * connectio
 
 int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, struct sa_changer * changer) {
 	struct sa_db_postgresql_connetion_private * self = connection->data;
-	sa_db_postgresql_check(self);
+	sa_db_postgresql_check(connection);
 
 	struct utsname name;
 	uname(&name);
@@ -271,13 +270,13 @@ int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, st
 	const char * params1[] = { name.nodename };
 	PGresult * result = PQexecPrepared(self->db_con, "select_host_by_name", 1, params1, 0, 0, 0);
 
-	char * hostid = 0;
+	char * hostid = 0, * changerid = 0;
 	if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 		sa_db_postgresql_get_string_dup(result, 0, 0, &hostid);
 		PQclear(result);
 	} else {
 		PQclear(result);
-		sa_log_write_all(sa_log_level_error, "Db: Postgresql: Host not found into database (%s)", name.nodename);
+		sa_log_write_all(sa_log_level_error, "Db: Postgresql (cid #%ld): Host not found into database (%s)", connection->id, name.nodename);
 		return -1;
 	}
 
@@ -287,10 +286,12 @@ int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, st
 		const char * params2[] = { changer->model, changer->vendor, hostid, changer->drives[0].serial_number };
 		result = PQexecPrepared(self->db_con, "select_changer_by_model_vendor_host_drive", 4, params2, 0, 0, 0);
 
-		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			sa_db_postgresql_get_long(result, 0, 0, &changer->id);
+			sa_db_postgresql_get_string_dup(result, 0, 0, &changerid);
+		}
 
-		free(result);
+		PQclear(result);
 	}
 
 	if (changer->id < 0) {
@@ -308,7 +309,7 @@ int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, st
 			free(hostid);
 			return -1;
 		}
-		free(result);
+		PQclear(result);
 
 		sa_db_postgresql_prepare(self->db_con, "select_changer_by_model_vendor_host", "SELECT id FROM changer WHERE model = $1 AND vendor = $2 AND host = $3 LIMIT 1");
 
@@ -319,23 +320,25 @@ int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, st
 			sa_db_postgresql_get_long(result, 0, 0, &changer->id);
 
 		if (changer->id < 0)
-			sa_log_write_all(sa_log_level_error, "Db: Postgresql: An expected probleme occured: failed to retreive changer id after insert it");
+			sa_log_write_all(sa_log_level_error, "Db: Postgresql (cid #%ld): An expected probleme occured: failed to retreive changer id after insert it", connection->id);
 
-		free(result);
+		PQclear(result);
 	} else {
 		sa_db_postgresql_prepare(self->db_con, "update_changer", "UPDATE changer SET device = $1, status = $2, firmwarerev = $3, update = NOW() WHERE id = $4");
 
-		const char * params2[] = { changer->device, sa_changer_status_to_string(changer->status), changer->revision, hostid };
+		const char * params2[] = { changer->device, sa_changer_status_to_string(changer->status), changer->revision, changerid };
 		result = PQexecPrepared(self->db_con, "update_changer", 4, params2, 0, 0, 0);
 
 		if (PQresultStatus(result) == PGRES_FATAL_ERROR) {
 			sa_db_postgresql_get_error(result);
-			free(result);
+			free(changerid);
 			free(hostid);
+			PQclear(result);
 			return -2;
 		}
 
-		free(result);
+		free(changerid);
+		PQclear(result);
 	}
 	free(hostid);
 
@@ -351,29 +354,36 @@ int sa_db_postgresql_sync_changer(struct sa_database_connection * connection, st
 
 int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, struct sa_drive * drive) {
 	struct sa_db_postgresql_connetion_private * self = connection->data;
-	sa_db_postgresql_check(self);
+	sa_db_postgresql_check(connection);
 
 	char * changerid = 0;
 	asprintf(&changerid, "%ld", drive->changer->id);
 
 	if (drive->id < 0) {
-		sa_db_postgresql_prepare(self->db_con, "select_drive_by_changer", "SELECT id FROM drive WHERE serialnumber = $1 AND changer = $2 LIMIT 1");
+		sa_db_postgresql_prepare(self->db_con, "select_drive_by_changer", "SELECT id, operationduration, lastclean FROM drive WHERE serialnumber = $1 AND changer = $2 LIMIT 1");
 
 		const char * params[] = { drive->serial_number, changerid };
 		PGresult * result = PQexecPrepared(self->db_con, "select_drive_by_changer", 2, params, 0, 0, 0);
 
-		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			sa_db_postgresql_get_long(result, 0, 0, &drive->id);
+
+			long old_operation_duration;
+			sa_db_postgresql_get_long(result, 0, 1, &old_operation_duration);
+			drive->operation_duration += old_operation_duration;
+
+			sa_db_postgresql_get_time(result, 0, 2, &drive->last_clean);
+		}
 
 		PQclear(result);
 	}
 
 	if (drive->id < 0 && drive->density_code < 1) {
 		free(changerid);
-		sa_log_write_all(sa_log_level_error, "Db: Postgresql: Unable to complete update database without any tape");
+		sa_log_write_all(sa_log_level_error, "Db: Postgresql (cid #%ld): Unable to complete update database without any tape", connection->id);
 		return 1;
 	} else if (drive->id < 0) {
-		sa_db_postgresql_prepare(self->db_con, "select_driveformat_by_densitycode", "SELECT * FROM driveformat WHERE densitycode = $1 LIMIT 1");
+		sa_db_postgresql_prepare(self->db_con, "select_driveformat_by_densitycode", "SELECT id FROM driveformat WHERE densitycode = $1 LIMIT 1");
 
 		char * densitycode = 0;
 		asprintf(&densitycode, "%u", drive->density_code);
@@ -394,41 +404,57 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 			free(densitycode);
 			free(changerid);
 
-			sa_log_write_all(sa_log_level_error, "Db: Postgresql: Unable to complete update database without any tape");
+			sa_log_write_all(sa_log_level_error, "Db: Postgresql (cid #%ld): Unable to complete update database without any tape", connection->id);
 			return 1;
 		}
 
-		sa_db_postgresql_prepare(self->db_con, "insert_drive", "INSERT INTO drive VALUES (DEFAULT, $1, $2, $3, $4, NOW(), $5, $6, $7, $8, $9, $10)");
+		sa_db_postgresql_prepare(self->db_con, "insert_drive", "INSERT INTO drive VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)");
 
-		char * changer_num = 0;
+		char * changer_num = 0, * op_duration = 0;
 		asprintf(&changer_num, "%ld", drive->changer->drives - drive);
+		asprintf(&op_duration, "%ld", drive->operation_duration);
+
+		char last_clean[24];
+		struct tm tm_last_clean;
+		localtime_r(&drive->last_clean, &tm_last_clean);
+		strftime(last_clean, 23, "%F %T", &tm_last_clean);
 
 		const char * params2[] = {
-			drive->device, sa_db_postgresql_wrapper_drive_status_to_string(drive->status), changer_num, "0",
-			drive->model, drive->vendor, "", drive->serial_number, changerid, driveformat_id
+			drive->device, sa_drive_status_to_string(drive->status), changer_num, op_duration, last_clean,
+			drive->model, drive->vendor, drive->revision, drive->serial_number, changerid, driveformat_id
 		};
-		result = PQexecPrepared(self->db_con, "insert_drive", 10, params2, 0, 0, 0);
+		result = PQexecPrepared(self->db_con, "insert_drive", 11, params2, 0, 0, 0);
 
 		if (PQresultStatus(result) == PGRES_FATAL_ERROR)
 			sa_db_postgresql_get_error(result);
 
 		PQclear(result);
+		free(op_duration);
 		free(changer_num);
 		free(driveformat_id);
 		free(densitycode);
 	} else {
-		sa_db_postgresql_prepare(self->db_con, "update_drive", "UPDATE drive SET device = $1, status = $2 WHERE id = $3");
+		sa_db_postgresql_prepare(self->db_con, "update_drive", "UPDATE drive SET device = $1, status = $2, operationduration = $3, lastclean = $4, firmwarerev = $5 WHERE id = $6");
 
-		char * driveid = 0;
+		char * driveid = 0, * op_duration = 0;
 		asprintf(&driveid, "%ld", drive->id);
+		asprintf(&op_duration, "%ld", drive->operation_duration);
 
-		const char * params[] = { drive->device, sa_db_postgresql_wrapper_drive_status_to_string(drive->status), driveid };
-		PGresult * result = PQexecPrepared(self->db_con, "update_drive", 3, params, 0, 0, 0);
+		char last_clean[24];
+		struct tm tm_last_clean;
+		localtime_r(&drive->last_clean, &tm_last_clean);
+		strftime(last_clean, 23, "%F %T", &tm_last_clean);
+
+		const char * params[] = {
+			drive->device, sa_drive_status_to_string(drive->status), op_duration, last_clean, drive->revision, driveid
+		};
+		PGresult * result = PQexecPrepared(self->db_con, "update_drive", 6, params, 0, 0, 0);
 
 		if (PQresultStatus(result) == PGRES_FATAL_ERROR)
 			sa_db_postgresql_get_error(result);
 
 		PQclear(result);
+		free(op_duration);
 		free(driveid);
 	}
 
@@ -441,7 +467,7 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 
 int sa_db_postgresql_sync_slot(struct sa_database_connection * connection, struct sa_slot * slot) {
 	struct sa_db_postgresql_connetion_private * self = connection->data;
-	sa_db_postgresql_check(self);
+	sa_db_postgresql_check(connection);
 
 	if (slot->tape && sa_db_postgresql_sync_tape(connection, slot->tape))
 		return 1;
@@ -525,7 +551,7 @@ int sa_db_postgresql_sync_slot(struct sa_database_connection * connection, struc
 
 int sa_db_postgresql_sync_tape(struct sa_database_connection * connection, struct sa_tape * tape) {
 	struct sa_db_postgresql_connetion_private * self = connection->data;
-	sa_db_postgresql_check(self);
+	sa_db_postgresql_check(connection);
 
 	if (tape->id < 0 && tape->label[0] != '\0') {
 		sa_db_postgresql_prepare(self->db_con, "select_tape_by_label", "SELECT * FROM tape WHERE label = $1 LIMIT 1");
@@ -600,7 +626,7 @@ int sa_db_postgresql_sync_tape(struct sa_database_connection * connection, struc
 		asprintf(&id, "%ld", tape->id);
 
 		const char * params[] = {
-			sa_db_postgresql_wrapper_tape_status_to_string(tape->status),
+			sa_tape_status_to_string(tape->status),
 			sa_tape_location_to_string(tape->location),
 			load, read, write, endpos, nbfiles, blocksize,
 			tape->has_partition ? "true" : "false", id
@@ -645,7 +671,7 @@ int sa_db_postgresql_sync_tape(struct sa_database_connection * connection, struc
 
 		const char * params[] = {
 			*tape->label ? tape->label : 0, tape->name,
-			sa_db_postgresql_wrapper_tape_status_to_string(tape->status),
+			sa_tape_status_to_string(tape->status),
 			sa_tape_location_to_string(tape->location),
 			buffer_first_used, buffer_use_before,
 			load, read, write, endpos, nbfiles, blocksize,
@@ -780,34 +806,8 @@ void sa_db_postgresql_prepare(PGconn * connection, const char * statement_name, 
 			sa_db_postgresql_get_error(prepare);
 		PQclear(prepare);
 
-		sa_log_write_all(status == PGRES_COMMAND_OK ? sa_log_level_debug : sa_log_level_error, "Db: Postgresql: new query registred %s => {%s}, status: %s", statement_name, query, PQresStatus(status));
+		sa_log_write_all(status == PGRES_COMMAND_OK ? sa_log_level_debug : sa_log_level_error, "Db: Postgresql: new query prepared (%s) => {%s}, status: %s", statement_name, query, PQresStatus(status));
 	}
 	PQclear(prepared);
-}
-
-const char * sa_db_postgresql_wrapper_drive_status_to_string(enum sa_drive_status status) {
-	switch (status) {
-		case SA_DRIVE_EMPTY_IDLE:
-			return "empty-idle";
-
-		case SA_DRIVE_LOADED_IDLE:
-			return "loaded-idle";
-
-		default:
-			return sa_drive_status_to_string(status);
-	}
-}
-
-const char * sa_db_postgresql_wrapper_tape_status_to_string(enum sa_tape_status status) {
-	switch (status) {
-		case SA_TAPE_STATUS_IN_USE:
-			return "in_use";
-
-		case SA_TAPE_STATUS_NEEDS_REPLACEMENT:
-			return "needs_replacement";
-
-		default:
-			return sa_tape_status_to_string(status);
-	}
 }
 

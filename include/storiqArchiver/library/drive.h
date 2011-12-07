@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 05 Dec 2011 15:34:21 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 15:42:36 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_DRIVE_H__
@@ -57,6 +57,7 @@ struct sa_drive {
 	enum sa_drive_status status;
 	char * model;
 	char * vendor;
+	char * revision;
 	char * serial_number;
 
 	int host;
@@ -74,11 +75,13 @@ struct sa_drive {
 		struct sa_stream_reader * (*get_reader)(struct sa_drive * drive);
 		struct sa_stream_writer * (*get_writer)(struct sa_drive * drive);
 		void (*reset)(struct sa_drive * drive);
-		int (*rewind)(struct sa_drive * drive);
+		int (*rewind_file)(struct sa_drive * drive);
+		int (*rewind_tape)(struct sa_drive * drive);
 		int (*set_file_position)(struct sa_drive * drive, int file_position);
 	} * ops;
 	void * data;
 
+	unsigned int file_position;
 	unsigned int nb_files;
 	ssize_t block_number;
 
@@ -93,6 +96,8 @@ struct sa_drive {
 	// 0 => soft block
 	ssize_t block_size;
 	unsigned char density_code;
+	long operation_duration;
+	time_t last_clean;
 };
 
 
