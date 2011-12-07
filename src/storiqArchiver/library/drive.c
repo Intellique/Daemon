@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 07 Dec 2011 20:31:21 +0100                         *
+*  Last modified: Wed, 07 Dec 2011 22:55:52 +0100                         *
 \*************************************************************************/
 
 // open
@@ -209,24 +209,28 @@ ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive) {
 		ssize_t nb_read;
 		ssize_t block_size = 1 << 16;
 		char * buffer = malloc(block_size);
-		for (i = 0; i < 5; i++) {
+
+		for (i = 0; i < 4; i++) {
 			sa_drive_generic_operation_start(self);
 			nb_read = read(self->fd_nst, buffer, block_size);
 			sa_drive_generic_operation_stop(drive);
+
+			tape->read_count++;
+
+			sa_drive_generic_update_status(drive);
+
+			if (drive->block_number < 0)
+				break;
 
 			if (drive->file_position > 0)
 				sa_drive_generic_rewind_file(drive);
 			else
 				sa_drive_generic_rewind_tape(drive);
 
-			tape->read_count++;
-
 			if (nb_read > 0) {
 				free(buffer);
 				return tape->block_size = nb_read;
 			}
-
-			sa_drive_generic_on_failed(drive, 1);
 
 			block_size <<= 1;
 			buffer = realloc(buffer, block_size);
