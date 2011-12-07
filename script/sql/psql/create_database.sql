@@ -16,10 +16,10 @@ CREATE TYPE ChangerStatus AS ENUM (
 
 CREATE TYPE DriveStatus AS ENUM (
     'cleaning',
-    'empty-idle',
+    'empty idle',
     'erasing',
     'error',
-    'loaded-idle',
+    'loaded idle',
     'loading',
     'positionning',
     'reading',
@@ -29,12 +29,12 @@ CREATE TYPE DriveStatus AS ENUM (
 
 CREATE TYPE FileType AS ENUM (
     'blockDevice',
-    'characterDevice',
+    'character device',
     'directory',
     'fifo',
-    'regularFile',
+    'regular file',
     'socket',
-    'symbolicLink'
+    'symbolic link'
 );
 
 CREATE TYPE JobStatus AS ENUM (
@@ -46,10 +46,10 @@ CREATE TYPE JobStatus AS ENUM (
 );
 
 CREATE TYPE JobType AS ENUM (
-    'diffSave',
+    'diff save',
     'dummy',
-    'incSave',
-    'integrityCheck',
+    'inc save',
+    'integrity check',
     'list',
     'restore',
     'save',
@@ -78,9 +78,9 @@ CREATE TYPE TapeStatus AS ENUM (
     'erasable',
     'error',
     'foreign',
-    'in_use',
+    'in use',
     'locked',
-    'needs_replacement',
+    'needs replacement',
     'new',
     'pooled'
 );
@@ -124,8 +124,8 @@ CREATE TABLE Tape (
     readCount INTEGER NOT NULL DEFAULT 0 CHECK (readCount >= 0),
     writeCount INTEGER NOT NULL DEFAULT 0 CHECK (writeCount >= 0),
     endPos INTEGER NOT NULL DEFAULT 0 CHECK (endPos >= 0),
-    blockSize INTEGER NOT NULL DEFAULT 0 CHECK (blockSize >= 0),
     nbFiles INTEGER NOT NULL DEFAULT 0 CHECK (nbFiles >= 0),
+    blockSize INTEGER NOT NULL DEFAULT 0 CHECK (blockSize >= 0),
     hasPartition BOOLEAN NOT NULL DEFAULT FALSE,
     tapeFormat INTEGER NOT NULL REFERENCES TapeFormat(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     pool INTEGER REFERENCES Pool(id) ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -184,9 +184,9 @@ CREATE TABLE Drive (
 CREATE TABLE ChangerSlot (
     id SERIAL PRIMARY KEY,
     index INTEGER NOT NULL,
-
     changer INTEGER NOT NULL REFERENCES Changer(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    tape INTEGER REFERENCES Tape(id) ON DELETE SET NULL ON UPDATE CASCADE
+    tape INTEGER REFERENCES Tape(id) ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT unique_slot UNIQUE (index,changer)
 );
 
 CREATE TABLE Archive (
@@ -267,15 +267,11 @@ CREATE TABLE ArchiveFileToMeta (
     meta BIGINT NOT NULL REFERENCES Meta(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE TABLE HomeDir (
-    id SERIAL PRIMARY KEY,
-    path VARCHAR(255) NOT NULL
-);
-
 CREATE TABLE Users (
     id SERIAL PRIMARY KEY,
     login VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
+    salt CHAR(16) NOT NULL,
     fullname VARCHAR(255),
     email VARCHAR(255) NOT NULL,
     isAdmin BOOLEAN NOT NULL DEFAULT FALSE
