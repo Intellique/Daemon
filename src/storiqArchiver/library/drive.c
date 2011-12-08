@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 07 Dec 2011 22:55:52 +0100                         *
+*  Last modified: Thu, 08 Dec 2011 15:59:56 +0100                         *
 \*************************************************************************/
 
 // open
@@ -37,10 +37,10 @@
 #include <sys/mtio.h>
 // open
 #include <sys/stat.h>
+// gettimeofday
+#include <sys/time.h>
 // open
 #include <sys/types.h>
-// time
-#include <time.h>
 // close, read, sleep
 #include <unistd.h>
 
@@ -58,7 +58,9 @@ struct sa_drive_generic {
 	struct sa_database_connection * db_con;
 
 	int used_by_io;
-	time_t last_start;
+
+	struct timeval last_start;
+	long double total_spent_time;
 };
 
 struct sa_drive_io_reader {
@@ -293,13 +295,16 @@ void sa_drive_generic_on_failed(struct sa_drive * drive, int verbose) {
 }
 
 void sa_drive_generic_operation_start(struct sa_drive_generic * dr) {
-	dr->last_start = time(0);
+	gettimeofday(&dr->last_start, 0);
 }
 
 void sa_drive_generic_operation_stop(struct sa_drive * drive) {
 	struct sa_drive_generic * self = drive->data;
 
-	drive->operation_duration += time(0) - self->last_start;
+	struct timeval finish;
+	gettimeofday(&finish, 0);
+
+	drive->operation_duration += (finish.tv_sec - self->last_start.tv_sec) + ((double) (finish.tv_usec - self->last_start.tv_usec)) / 1000000;
 }
 
 void sa_drive_generic_reset(struct sa_drive * drive) {
@@ -480,7 +485,7 @@ void sa_drive_setup(struct sa_drive * drive) {
 	struct sa_drive_generic * self = malloc(sizeof(struct sa_drive_generic));
 	self->fd_nst = fd;
 	self->used_by_io = 0;
-	self->last_start = 0;
+	self->total_spent_time = 0;
 
 	int fd_device = open(drive->scsi_device, O_RDWR | O_NONBLOCK);
 	sa_scsi_tapeinfo(fd_device, drive);
@@ -592,7 +597,9 @@ ssize_t sa_drive_io_reader_read(struct sa_stream_reader * io, void * buffer, ssi
 
 	char * c_buffer = buffer;
 	while (length - nb_total_read >= self->block_size) {
+		sa_drive_generic_operation_start(self->drive_private);
 		ssize_t nb_read = read(self->fd, c_buffer + nb_total_read, self->block_size);
+		sa_drive_generic_operation_stop(self->drive);
 
 		if (nb_read > 0) {
 			self->position += nb_read;
@@ -606,7 +613,9 @@ ssize_t sa_drive_io_reader_read(struct sa_stream_reader * io, void * buffer, ssi
 	if (length == nb_total_read)
 		return length;
 
+	sa_drive_generic_operation_start(self->drive_private);
 	ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
+	sa_drive_generic_operation_stop(self->drive);
 	if (nb_read < 0)
 		return -1;
 
@@ -736,7 +745,9 @@ ssize_t sa_drive_io_writer_write(struct sa_stream_writer * io, void * buffer, ss
 
 	char * c_buffer = buffer;
 	while (length - nb_total_write >= self->block_size) {
+		sa_drive_generic_operation_start(self->drive_private);
 		ssize_t nb_write = write(self->fd, c_buffer + nb_total_write, self->block_size);
+		sa_drive_generic_operation_stop(self->drive);
 		if (nb_write < 0)
 			return -1;
 

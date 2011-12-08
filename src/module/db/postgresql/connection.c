@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 07 Dec 2011 23:37:54 +0100                         *
+*  Last modified: Thu, 08 Dec 2011 17:22:23 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -64,6 +64,7 @@ static int sa_db_postgresql_sync_slot(struct sa_database_connection * db, struct
 static int sa_db_postgresql_sync_tape(struct sa_database_connection * db, struct sa_tape * tape);
 
 static int sa_db_postgresql_get_bool(PGresult * result, int row, int column, char * value);
+static int sa_db_postgresql_get_double(PGresult * result, int row, int column, double * value);
 static void sa_db_postgresql_get_error(PGresult * result);
 //static int sa_db_postgresql_get_int(PGresult * result, int row, int column, int * value);
 static int sa_db_postgresql_get_long(PGresult * result, int row, int column, long * value);
@@ -368,8 +369,8 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			sa_db_postgresql_get_long(result, 0, 0, &drive->id);
 
-			long old_operation_duration;
-			sa_db_postgresql_get_long(result, 0, 1, &old_operation_duration);
+			double old_operation_duration;
+			sa_db_postgresql_get_double(result, 0, 1, &old_operation_duration);
 			drive->operation_duration += old_operation_duration;
 
 			sa_db_postgresql_get_time(result, 0, 2, &drive->last_clean);
@@ -412,7 +413,7 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 
 		char * changer_num = 0, * op_duration = 0;
 		asprintf(&changer_num, "%ld", drive - drive->changer->drives);
-		asprintf(&op_duration, "%ld", drive->operation_duration);
+		asprintf(&op_duration, "%.3f", drive->operation_duration);
 
 		char last_clean[24];
 		struct tm tm_last_clean;
@@ -438,7 +439,7 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 
 		char * driveid = 0, * op_duration = 0;
 		asprintf(&driveid, "%ld", drive->id);
-		asprintf(&op_duration, "%ld", drive->operation_duration);
+		asprintf(&op_duration, "%.3f", drive->operation_duration);
 
 		char last_clean[24];
 		struct tm tm_last_clean;
@@ -731,6 +732,16 @@ int sa_db_postgresql_get_bool(PGresult * result, int row, int column, char * val
 		*val = strcmp(value, "t") ? 1 : 0;
 
 	return value != 0;
+}
+
+int sa_db_postgresql_get_double(PGresult * result, int row, int column, double * val) {
+	if (column < 0)
+		return -1;
+
+	char * value = PQgetvalue(result, row, column);
+	if (value && sscanf(value, "%lg", val) == 1)
+		return 0;
+	return -1;
 }
 
 void sa_db_postgresql_get_error(PGresult * result) {
