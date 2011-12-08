@@ -178,7 +178,7 @@ void sa_tape_detect(struct sa_drive * dr) {
 	tape->use_before = tape->first_used + tape->format->life_span;
 	tape->block_size = block_size;
 
-	if (nb_read == 0) {
+	if (nb_read <= 0) {
 		tape->status = SA_TAPE_STATUS_NEW;
 		tape->nb_files = 0;
 		return;
