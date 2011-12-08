@@ -22,9 +22,12 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 24 Nov 2011 12:18:56 +0100                         *
+*  Last modified: Thu, 08 Dec 2011 21:13:26 +0100                         *
 \*************************************************************************/
 
+#define _GNU_SOURCE
+// pthread_mutex_lock, pthread_mutex_unlock,
+#include <pthread.h>
 // dlclose, dlerror, dlopen
 #include <dlfcn.h>
 // glob
@@ -59,17 +62,20 @@ void * sa_loader_load_file(const char * filename) {
 		return 0;
 	}
 
+	static pthread_mutex_t lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+	pthread_mutex_lock(&lock);
+
 	sa_loader_loaded = 0;
 
 	void * cookie = dlopen(filename, RTLD_NOW);
 	if (!cookie) {
 		sa_log_write_all(sa_log_level_debug, "Loader: failed to load '%s' because %s", filename, dlerror());
-		return 0;
 	} else if (!sa_loader_loaded) {
 		dlclose(cookie);
-		return 0;
+		cookie = 0;
 	}
 
+	pthread_mutex_unlock(&lock);
 	return cookie;
 }
 

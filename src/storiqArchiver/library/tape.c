@@ -22,9 +22,11 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 08 Dec 2011 13:27:48 +0100                         *
+*  Last modified: Thu, 08 Dec 2011 18:45:13 +0100                         *
 \*************************************************************************/
 
+// pthread_mutex_lock, pthread_mutex_unlock
+#include <pthread.h>
 // sscanf
 #include <stdio.h>
 // malloc, realloc
@@ -229,6 +231,11 @@ struct sa_tape_format * sa_tape_format_get_by_density_code(unsigned char density
 		if (sa_tape_formats[i].density_code == density_code)
 			return sa_tape_formats + i;
 
+	int old_state;
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
+	static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+	pthread_mutex_lock(&lock);
+
 	struct sa_database * db = sa_db_get_default_db();
 	struct sa_database_connection * con = db->ops->connect(db, 0);
 
@@ -244,6 +251,10 @@ struct sa_tape_format * sa_tape_format_get_by_density_code(unsigned char density
 	con->ops->close(con);
 	con->ops->free(con);
 	free(con);
+
+	pthread_mutex_unlock(&lock);
+	if (old_state == PTHREAD_CANCEL_DISABLE)
+		pthread_setcancelstate(old_state, 0);
 
 	return format;
 }

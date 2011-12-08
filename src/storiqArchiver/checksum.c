@@ -22,13 +22,15 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 24 Nov 2011 10:49:25 +0100                         *
+*  Last modified: Thu, 08 Dec 2011 22:09:14 +0100                         *
 \*************************************************************************/
 
+#define _GNU_SOURCE
 // pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate,
 // pthread_cond_destroy, pthread_cond_init, pthread_cond_signal,
 // pthread_cond_wait, pthread_create, pthread_mutex_destroy,
-// pthread_mutex_init, pthread_mutex_lock, pthread_mutex_unlock
+// pthread_mutex_init, pthread_mutex_lock, pthread_mutex_unlock,
+// pthread_setcancelstate
 #include <pthread.h>
 // free, malloc, realloc
 #include <stdlib.h>
@@ -64,12 +66,14 @@ static void * sa_checksum_helper_work(void * param);
 
 static struct sa_checksum_driver ** sa_checksum_drivers = 0;
 static unsigned int sa_checksum_nb_drivers = 0;
+
 static struct sa_checksum_ops sa_checksum_helper_ops = {
 	.clone	= sa_checksum_helper_clone,
 	.digest	= sa_checksum_helper_digest,
 	.free	= sa_checksum_helper_free,
 	.update	= sa_checksum_helper_update,
 };
+
 
 char * sa_checksum_compute(const char * checksum, const char * data, ssize_t length) {
 	if (!checksum || !data || length == 0) {
@@ -90,7 +94,6 @@ char * sa_checksum_compute(const char * checksum, const char * data, ssize_t len
 	}
 
 	struct sa_checksum chck;
-
 	driver->new_checksum(&chck);
 	chck.ops->update(&chck, data, length);
 
@@ -123,23 +126,44 @@ void sa_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * h
 }
 
 struct sa_checksum_driver * sa_checksum_get_driver(const char * driver) {
+	static pthread_mutex_t lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+
+	int old_state;
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
+	pthread_mutex_lock(&lock);
+
 	unsigned int i;
-	for (i = 0; i < sa_checksum_nb_drivers; i++)
+	struct sa_checksum_driver * dr = 0;
+	for (i = 0; i < sa_checksum_nb_drivers && !dr; i++)
 		if (!strcmp(driver, sa_checksum_drivers[i]->name))
-			return sa_checksum_drivers[i];
-	void * cookie = sa_loader_load("checksum", driver);
-	if (!cookie) {
+			dr = sa_checksum_drivers[i];
+
+	void * cookie = 0;
+	if (!dr)
+		sa_loader_load("checksum", driver);
+
+	if (!dr && !cookie) {
 		sa_log_write_all(sa_log_level_error, "Checksum: Failed to load driver '%s'", driver);
+		pthread_mutex_unlock(&lock);
+		if (old_state == PTHREAD_CANCEL_DISABLE)
+			pthread_setcancelstate(old_state, 0);
 		return 0;
 	}
-	for (i = 0; i < sa_checksum_nb_drivers; i++)
+
+	for (i = 0; i < sa_checksum_nb_drivers && !dr; i++)
 		if (!strcmp(driver, sa_checksum_drivers[i]->name)) {
-			struct sa_checksum_driver * dr = sa_checksum_drivers[i];
+			dr = sa_checksum_drivers[i];
 			dr->cookie = cookie;
-			return dr;
 		}
-	sa_log_write_all(sa_log_level_error, "Checksum: Driver '%s' not found", driver);
-	return 0;
+
+	if (!dr)
+		sa_log_write_all(sa_log_level_error, "Checksum: Driver '%s' not found", driver);
+
+	pthread_mutex_unlock(&lock);
+	if (old_state == PTHREAD_CANCEL_DISABLE)
+		pthread_setcancelstate(old_state, 0);
+
+	return dr;
 }
 
 struct sa_checksum * sa_checksum_get_helper(struct sa_checksum * h, struct sa_checksum * checksum) {

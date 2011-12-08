@@ -22,9 +22,12 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 24 Nov 2011 11:34:50 +0100                         *
+*  Last modified: Thu, 08 Dec 2011 22:12:10 +0100                         *
 \*************************************************************************/
 
+#define _GNU_SOURCE
+// pthread_mutex_lock, pthread_mutex_unlock, pthread_setcancelstate
+#include <pthread.h>
 // realloc
 #include <stdlib.h>
 // strcmp
@@ -45,23 +48,44 @@ struct sa_database * sa_db_get_default_db() {
 }
 
 struct sa_database * sa_db_get_db(const char * driver) {
+	static pthread_mutex_t lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+
+	int old_state;
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
+	pthread_mutex_lock(&lock);
+
 	unsigned int i;
-	for (i = 0; i < sa_db_nb_databases; i++)
+	struct sa_database * dr = 0;
+	for (i = 0; i < sa_db_nb_databases && !dr; i++)
 		if (!strcmp(driver, sa_db_databases[i]->name))
-			return sa_db_databases[i];
-	void * cookie = sa_loader_load("db", driver);
-	if (!cookie) {
+			dr = sa_db_databases[i];
+
+	void * cookie = 0;
+	if (!dr)
+		cookie = sa_loader_load("db", driver);
+
+	if (!dr && !cookie) {
 		sa_log_write_all(sa_log_level_error, "Db: Failed to load driver %s", driver);
+		pthread_mutex_unlock(&lock);
+		if (old_state == PTHREAD_CANCEL_DISABLE)
+			pthread_setcancelstate(old_state, 0);
 		return 0;
 	}
-	for (i = 0; i < sa_db_nb_databases; i++)
+
+	for (i = 0; i < sa_db_nb_databases && !dr; i++)
 		if (!strcmp(driver, sa_db_databases[i]->name)) {
-			struct sa_database * dr = sa_db_databases[i];
+			dr = sa_db_databases[i];
 			dr->cookie = cookie;
-			return dr;
 		}
-	sa_log_write_all(sa_log_level_error, "Db: Driver %s not found", driver);
-	return 0;
+
+	if (!dr)
+		sa_log_write_all(sa_log_level_error, "Db: Driver %s not found", driver);
+
+	pthread_mutex_unlock(&lock);
+	if (old_state == PTHREAD_CANCEL_DISABLE)
+		pthread_setcancelstate(old_state, 0);
+
+	return dr;
 }
 
 void sa_db_register_db(struct sa_database * db) {

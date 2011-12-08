@@ -22,9 +22,12 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 24 Nov 2011 12:50:15 +0100                         *
+*  Last modified: Thu, 08 Dec 2011 22:28:48 +0100                         *
 \*************************************************************************/
 
+#define _GNU_SOURCE
+// pthread_mutex_lock, pthread_mutex_unlock, pthread_setcancelstate
+#include <pthread.h>
 // va_end, va_start
 #include <stdarg.h>
 // realloc
@@ -52,6 +55,7 @@ static struct sa_log_message_unsent {
 } * sa_log_message_unsent = 0;
 static unsigned int sa_log_nb_message_unsent = 0;
 static unsigned int sa_log_nb_message_unsent_to = 0;
+static pthread_mutex_t sa_log_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
 static struct sa_log_level2 {
 	enum sa_log_level level;
@@ -126,28 +130,47 @@ int sa_log_flush_message() {
 }
 
 struct sa_log_driver * sa_log_get_driver(const char * driver) {
+	int old_state;
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
+	pthread_mutex_lock(&sa_log_lock);
+
 	if (!driver) {
 		sa_log_write_all(sa_log_level_error, "Log: Driver shall not be null");
 		return 0;
 	}
 
 	unsigned int i;
-	for (i = 0; i < sa_log_nb_drivers; i++)
+	struct sa_log_driver * dr = 0;
+	for (i = 0; i < sa_log_nb_drivers && !dr; i++)
 		if (!strcmp(driver, sa_log_drivers[i]->name))
-			return sa_log_drivers[i];
-	void * cookie = sa_loader_load("log", driver);
-	if (!cookie) {
+			dr = sa_log_drivers[i];
+
+	void * cookie = 0;
+	if (!dr)
+		cookie =sa_loader_load("log", driver);
+
+	if (!dr && !cookie) {
 		sa_log_write_all(sa_log_level_error, "Log: Failed to load driver %s", driver);
+		pthread_mutex_unlock(&sa_log_lock);
+		if (old_state == PTHREAD_CANCEL_DISABLE)
+			pthread_setcancelstate(old_state, 0);
 		return 0;
 	}
-	for (i = 0; i < sa_log_nb_drivers; i++)
+
+	for (i = 0; i < sa_log_nb_drivers && !dr; i++)
 		if (!strcmp(driver, sa_log_drivers[i]->name)) {
-			struct sa_log_driver * dr = sa_log_drivers[i];
+			dr = sa_log_drivers[i];
 			dr->cookie = cookie;
-			return dr;
 		}
-	sa_log_write_all(sa_log_level_error, "Log: Driver %s not found", driver);
-	return 0;
+
+	if (!dr)
+		sa_log_write_all(sa_log_level_error, "Log: Driver %s not found", driver);
+
+	pthread_mutex_unlock(&sa_log_lock);
+	if (old_state == PTHREAD_CANCEL_DISABLE)
+		pthread_setcancelstate(old_state, 0);
+
+	return dr;
 }
 
 const char * sa_log_level_to_string(enum sa_log_level level) {
@@ -215,8 +238,16 @@ void sa_log_write_all(enum sa_log_level level, const char * format, ...) {
 	vsnprintf(message, 256, format, va);
 	va_end(va);
 
+	int old_state;
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
+	pthread_mutex_lock(&sa_log_lock);
+
 	if (sa_log_nb_drivers == 0 || (sa_log_message_unsent && !sa_log_flush_message())) {
 		sa_log_store_message(0, level, message);
+
+		pthread_mutex_unlock(&sa_log_lock);
+		if (old_state == PTHREAD_CANCEL_DISABLE)
+			pthread_setcancelstate(old_state, 0);
 		return;
 	}
 
@@ -233,6 +264,10 @@ void sa_log_write_all(enum sa_log_level level, const char * format, ...) {
 
 	if (!sent)
 		sa_log_store_message(0, level, message);
+
+	pthread_mutex_unlock(&sa_log_lock);
+	if (old_state == PTHREAD_CANCEL_DISABLE)
+		pthread_setcancelstate(old_state, 0);
 
 	if (sent)
 		free(message);
