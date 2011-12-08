@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 08 Dec 2011 10:15:56 +0100                         *
+*  Last modified: Thu, 08 Dec 2011 13:27:48 +0100                         *
 \*************************************************************************/
 
 // sscanf
@@ -164,7 +164,7 @@ void sa_tape_detect(struct sa_drive * dr) {
 		return;
 
 	dr->ops->rewind_tape(dr);
-	dr->ops->get_block_size(dr);
+	ssize_t block_size = dr->ops->get_block_size(dr);
 
 	char buffer[512];
 	struct sa_stream_reader * reader = dr->ops->get_reader(dr);
@@ -176,16 +176,16 @@ void sa_tape_detect(struct sa_drive * dr) {
 	tape->location = SA_TAPE_LOCATION_ONLINE;
 	tape->first_used = time(0);
 	tape->use_before = tape->first_used + tape->format->life_span;
+	tape->block_size = block_size;
 
 	if (nb_read == 0) {
 		tape->status = SA_TAPE_STATUS_NEW;
-		tape->load_count = 1;
+		tape->nb_files = 0;
 		return;
 	}
 
 	char name[65];
 	char label[37];
-	ssize_t block_size;
 	char digest[9];
 	if (sscanf(buffer, "StoriqArchiver\nversion: 0.1\nname: %64s\nuuid: %36s\nblocksize: %zd\ncrc32: %8s\n", name, label, &block_size, digest) == 4) {
 		 strcpy(tape->label, label);
@@ -232,14 +232,19 @@ struct sa_tape_format * sa_tape_format_get_by_density_code(unsigned char density
 	struct sa_database * db = sa_db_get_default_db();
 	struct sa_database_connection * con = db->ops->connect(db, 0);
 
+	struct sa_tape_format * format = 0;
 	sa_tape_formats = realloc(sa_tape_formats, (sa_tape_format_nb_formats + 1) * sizeof(struct sa_tape_format));
-	con->ops->get_tape_format(con, sa_tape_formats + sa_tape_format_nb_formats, density_code);
-	sa_tape_format_nb_formats++;
+	if (con->ops->get_tape_format(con, sa_tape_formats + sa_tape_format_nb_formats, density_code)) {
+		sa_tape_formats = realloc(sa_tape_formats, sa_tape_format_nb_formats * sizeof(struct sa_tape_format));
+	} else {
+		format = sa_tape_formats + sa_tape_format_nb_formats;
+		sa_tape_format_nb_formats++;
+	}
 
 	con->ops->close(con);
 	con->ops->free(con);
 	free(con);
 
-	return sa_tape_formats + sa_tape_format_nb_formats - 1;
+	return format;
 }
 
