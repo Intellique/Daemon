@@ -68,6 +68,7 @@ static int sa_db_postgresql_get_double(PGresult * result, int row, int column, d
 static void sa_db_postgresql_get_error(PGresult * result);
 //static int sa_db_postgresql_get_int(PGresult * result, int row, int column, int * value);
 static int sa_db_postgresql_get_long(PGresult * result, int row, int column, long * value);
+static int sa_db_postgresql_get_ssize(PGresult * result, int row, int column, ssize_t * value);
 static int sa_db_postgresql_get_string(PGresult * result, int row, int column, char * value);
 static int sa_db_postgresql_get_string_dup(PGresult * result, int row, int column, char ** value);
 static int sa_db_postgresql_get_time(PGresult * result, int row, int column, time_t * value);
@@ -187,8 +188,8 @@ int sa_db_postgresql_get_tape_format(struct sa_database_connection * connection,
 		sa_db_postgresql_get_long(result, 0, 6, &tape_format->max_write_count);
 		sa_db_postgresql_get_long(result, 0, 7, &tape_format->max_op_count);
 		sa_db_postgresql_get_long(result, 0, 8, &tape_format->life_span);
-		sa_db_postgresql_get_long(result, 0, 9, &tape_format->capacity);
-		sa_db_postgresql_get_long(result, 0, 10, &tape_format->block_size);
+		sa_db_postgresql_get_ssize(result, 0, 9, &tape_format->capacity);
+		sa_db_postgresql_get_ssize(result, 0, 10, &tape_format->block_size);
 		sa_db_postgresql_get_bool(result, 0, 11, &tape_format->support_partition);
 
 		PQclear(result);
@@ -412,7 +413,7 @@ int sa_db_postgresql_sync_drive(struct sa_database_connection * connection, stru
 		sa_db_postgresql_prepare(self->db_con, "insert_drive", "INSERT INTO drive VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)");
 
 		char * changer_num = 0, * op_duration = 0;
-		asprintf(&changer_num, "%ld", drive - drive->changer->drives);
+		asprintf(&changer_num, "%td", drive - drive->changer->drives);
 		asprintf(&op_duration, "%.3f", drive->operation_duration);
 
 		char last_clean[24];
@@ -476,7 +477,7 @@ int sa_db_postgresql_sync_slot(struct sa_database_connection * connection, struc
 	if (slot->id < 0) {
 		char * changer_id = 0, * slot_index = 0;
 		asprintf(&changer_id, "%ld", slot->changer->id);
-		asprintf(&slot_index, "%ld", slot - slot->changer->slots);
+		asprintf(&slot_index, "%td", slot - slot->changer->slots);
 
 		sa_db_postgresql_prepare(self->db_con, "select_slot_by_index_changer", "SELECT id FROM changerslot WHERE index = $1 AND changer = $2 LIMIT 1");
 
@@ -515,7 +516,7 @@ int sa_db_postgresql_sync_slot(struct sa_database_connection * connection, struc
 	} else {
 		char * changer_id = 0, * slot_index = 0, * tape_id = 0;
 		asprintf(&changer_id, "%ld", slot->changer->id);
-		asprintf(&slot_index, "%ld", slot - slot->changer->slots);
+		asprintf(&slot_index, "%td", slot - slot->changer->slots);
 		if (slot->tape)
 			asprintf(&tape_id, "%ld", slot->tape->id);
 
@@ -578,7 +579,7 @@ int sa_db_postgresql_sync_tape(struct sa_database_connection * connection, struc
 			sa_db_postgresql_get_long(result, 0, 9, &tape->write_count);
 			tape->write_count += old_value;
 
-			sa_db_postgresql_get_long(result, 0, 12, &tape->block_size);
+			sa_db_postgresql_get_ssize(result, 0, 12, &tape->block_size);
 		}
 
 		PQclear(result);
@@ -608,7 +609,7 @@ int sa_db_postgresql_sync_tape(struct sa_database_connection * connection, struc
 			sa_db_postgresql_get_long(result, 0, 9, &tape->write_count);
 			tape->write_count += old_value;
 
-			sa_db_postgresql_get_long(result, 0, 12, &tape->block_size);
+			sa_db_postgresql_get_ssize(result, 0, 12, &tape->block_size);
 		}
 
 		PQclear(result);
@@ -621,7 +622,7 @@ int sa_db_postgresql_sync_tape(struct sa_database_connection * connection, struc
 		asprintf(&load, "%ld", tape->load_count);
 		asprintf(&read, "%ld", tape->read_count);
 		asprintf(&write, "%ld", tape->write_count);
-		asprintf(&endpos, "%ld", tape->end_position);
+		asprintf(&endpos, "%zd", tape->end_position);
 		asprintf(&nbfiles, "%u", tape->nb_files);
 		asprintf(&blocksize, "%zd", tape->block_size);
 		asprintf(&id, "%ld", tape->id);
@@ -665,7 +666,7 @@ int sa_db_postgresql_sync_tape(struct sa_database_connection * connection, struc
 		asprintf(&load, "%ld", tape->load_count);
 		asprintf(&read, "%ld", tape->read_count);
 		asprintf(&write, "%ld", tape->write_count);
-		asprintf(&endpos, "%ld", tape->end_position);
+		asprintf(&endpos, "%zd", tape->end_position);
 		asprintf(&nbfiles, "%u", tape->nb_files);
 		asprintf(&blocksize, "%zd", tape->block_size);
 		asprintf(&id, "%ld", tape->format->id);
@@ -766,6 +767,16 @@ int sa_db_postgresql_get_long(PGresult * result, int row, int column, long * val
 
 	char * value = PQgetvalue(result, row, column);
 	if (value && sscanf(value, "%ld", val) == 1)
+		return 0;
+	return -1;
+}
+
+int sa_db_postgresql_get_ssize(PGresult * result, int row, int column, ssize_t * val) {
+	if (column < 0)
+		return -1;
+
+	char * value = PQgetvalue(result, row, column);
+	if (value && sscanf(value, "%zd", val) == 1)
 		return 0;
 	return -1;
 }

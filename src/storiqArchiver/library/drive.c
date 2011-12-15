@@ -146,7 +146,7 @@ static struct sa_stream_writer_ops sa_drive_io_writer_ops = {
 int sa_drive_generic_eject(struct sa_drive * drive) {
 	struct sa_drive_generic * self = drive->data;
 
-	sa_log_write_all(sa_log_level_info, "Drive (%s | %s | #%ld): rewind tape and put the drive offline", drive->vendor, drive->model, drive - drive->changer->drives);
+	sa_log_write_all(sa_log_level_info, "Drive (%s | %s | #%td): rewind tape and put the drive offline", drive->vendor, drive->model, drive - drive->changer->drives);
 
 	sa_drive_generic_update_status2(drive, SA_DRIVE_UNLOADING);
 
@@ -155,7 +155,7 @@ int sa_drive_generic_eject(struct sa_drive * drive) {
 	int failed = ioctl(self->fd_nst, MTIOCTOP, &eject);
 	sa_drive_generic_operation_stop(drive);
 
-	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive (%s | %s | #%ld): rewind tape and put the drive offline, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, failed);
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive (%s | %s | #%td): rewind tape and put the drive offline, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, failed);
 
 	sa_drive_generic_update_status(drive);
 
@@ -165,7 +165,7 @@ int sa_drive_generic_eject(struct sa_drive * drive) {
 int sa_drive_generic_eod(struct sa_drive * drive) {
 	struct sa_drive_generic * self = drive->data;
 
-	sa_log_write_all(sa_log_level_info, "Drive (%s | %s | #%ld): goto end of tape", drive->vendor, drive->model, drive - drive->changer->drives);
+	sa_log_write_all(sa_log_level_info, "Drive (%s | %s | #%td): goto end of tape", drive->vendor, drive->model, drive - drive->changer->drives);
 
 	sa_drive_generic_update_status2(drive, SA_DRIVE_POSITIONING);
 
@@ -182,7 +182,7 @@ int sa_drive_generic_eod(struct sa_drive * drive) {
 		sa_drive_generic_operation_stop(drive);
 	}
 
-	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive (%s | %s | #%ld): goto end of tape, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, failed);
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive (%s | %s | #%td): goto end of tape, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, failed);
 
 	sa_drive_generic_update_status(drive);
 
@@ -243,7 +243,7 @@ ssize_t sa_drive_generic_get_block_size(struct sa_drive * drive) {
 		if (tape->format)
 			return tape->block_size = tape->format->block_size;
 
-		sa_log_write_all(sa_log_level_error, "Drive (%s | %s | #%ld): failed to detect block size", drive->vendor, drive->model, drive - drive->changer->drives);
+		sa_log_write_all(sa_log_level_error, "Drive (%s | %s | #%td): failed to detect block size", drive->vendor, drive->model, drive - drive->changer->drives);
 	}
 
 	return drive->block_size;
@@ -254,7 +254,7 @@ struct sa_stream_reader * sa_drive_generic_get_reader(struct sa_drive * drive) {
 
 	struct sa_drive_generic * self = drive->data;
 	if (drive->is_door_opened || self->used_by_io) {
-		sa_log_write_all(sa_log_level_debug, "Drive (%s | %s | #%ld): drive is not free for reading on it", drive->vendor, drive->model, drive - drive->changer->drives);
+		sa_log_write_all(sa_log_level_debug, "Drive (%s | %s | #%td): drive is not free for reading on it", drive->vendor, drive->model, drive - drive->changer->drives);
 		return 0;
 	}
 
@@ -269,12 +269,12 @@ struct sa_stream_writer * sa_drive_generic_get_writer(struct sa_drive * drive) {
 
 	struct sa_drive_generic * self = drive->data;
 	if (drive->is_door_opened || self->used_by_io) {
-		sa_log_write_all(sa_log_level_debug, "Drive (%s | %s | #%ld): drive is not free for writing on it", drive->vendor, drive->model, drive - drive->changer->drives);
+		sa_log_write_all(sa_log_level_debug, "Drive (%s | %s | #%td): drive is not free for writing on it", drive->vendor, drive->model, drive - drive->changer->drives);
 		return 0;
 	}
 
 	if (!drive->is_writable) {
-		sa_log_write_all(sa_log_level_debug, "Drive (%s | %s | #%ld): tape is not writable (Write protec enabled)", drive->vendor, drive->model, drive - drive->changer->drives);
+		sa_log_write_all(sa_log_level_debug, "Drive (%s | %s | #%td): tape is not writable (Write protec enabled)", drive->vendor, drive->model, drive - drive->changer->drives);
 		return 0;
 	}
 
@@ -288,7 +288,7 @@ void sa_drive_generic_on_failed(struct sa_drive * drive, int verbose) {
 	struct sa_drive_generic * self = drive->data;
 
 	if (verbose)
-		sa_log_write_all(sa_log_level_debug, "Drive (%s | %s | #%ld): Try to recover an error", drive->vendor, drive->model, drive - drive->changer->drives);
+		sa_log_write_all(sa_log_level_debug, "Drive (%s | %s | #%td): Try to recover an error", drive->vendor, drive->model, drive - drive->changer->drives);
 	close(self->fd_nst);
 	sleep(20);
 	self->fd_nst = open(drive->device, O_RDWR | O_NONBLOCK);
@@ -341,7 +341,7 @@ void sa_drive_generic_reset(struct sa_drive * drive) {
 int sa_drive_generic_rewind_file(struct sa_drive * drive) {
 	struct sa_drive_generic * self = drive->data;
 
-	sa_log_write_all(sa_log_level_info, "Drive (%s | %s | #%ld): rewind file", drive->vendor, drive->model, drive - drive->changer->drives);
+	sa_log_write_all(sa_log_level_info, "Drive (%s | %s | #%td): rewind file", drive->vendor, drive->model, drive - drive->changer->drives);
 
 	sa_drive_generic_update_status2(drive, SA_DRIVE_REWINDING);
 
@@ -359,7 +359,7 @@ int sa_drive_generic_rewind_file(struct sa_drive * drive) {
 		sa_drive_generic_operation_stop(drive);
 	}
 
-	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive (%s | %s | #%ld): rewind file, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, failed);
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive (%s | %s | #%td): rewind file, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, failed);
 
 	sa_drive_generic_update_status(drive);
 
@@ -369,7 +369,7 @@ int sa_drive_generic_rewind_file(struct sa_drive * drive) {
 int sa_drive_generic_rewind_tape(struct sa_drive * drive) {
 	struct sa_drive_generic * self = drive->data;
 
-	sa_log_write_all(sa_log_level_info, "Drive (%s | %s | #%ld): rewind tape", drive->vendor, drive->model, drive - drive->changer->drives);
+	sa_log_write_all(sa_log_level_info, "Drive (%s | %s | #%td): rewind tape", drive->vendor, drive->model, drive - drive->changer->drives);
 
 	sa_drive_generic_update_status2(drive, SA_DRIVE_REWINDING);
 
@@ -387,7 +387,7 @@ int sa_drive_generic_rewind_tape(struct sa_drive * drive) {
 		sa_drive_generic_operation_stop(drive);
 	}
 
-	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive (%s | %s | #%ld): rewind tape, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, failed);
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive (%s | %s | #%td): rewind tape, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, failed);
 
 	sa_drive_generic_update_status(drive);
 
@@ -395,7 +395,7 @@ int sa_drive_generic_rewind_tape(struct sa_drive * drive) {
 }
 
 int sa_drive_generic_set_file_position(struct sa_drive * drive, int file_position) {
-	sa_log_write_all(sa_log_level_info, "Drive (%s | %s | #%ld): positioning tape to position = %d", drive->vendor, drive->model, drive - drive->changer->drives, file_position);
+	sa_log_write_all(sa_log_level_info, "Drive (%s | %s | #%td): positioning tape to position = %d", drive->vendor, drive->model, drive - drive->changer->drives, file_position);
 
 	int failed = sa_drive_generic_rewind_tape(drive);
 
@@ -410,7 +410,7 @@ int sa_drive_generic_set_file_position(struct sa_drive * drive, int file_positio
 	failed = ioctl(self->fd_nst, MTIOCTOP, &fsr);
 	sa_drive_generic_operation_stop(drive);
 
-	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive (%s | %s | #%ld): positioning tape to position = %d, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, file_position, failed);
+	sa_log_write_all(failed ? sa_log_level_error : sa_log_level_debug, "Drive (%s | %s | #%td): positioning tape to position = %d, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, file_position, failed);
 
 	return failed;
 }
@@ -501,9 +501,9 @@ void sa_drive_setup(struct sa_drive * drive) {
 	if (db) {
 		self->db_con = db->ops->connect(db, 0);
 		if (!self->db_con)
-			sa_log_write_all(sa_log_level_error, "Drive (%s | %s | #%ld): failed to connect to default database", drive->vendor, drive->model, drive - drive->changer->drives);
+			sa_log_write_all(sa_log_level_error, "Drive (%s | %s | #%td): failed to connect to default database", drive->vendor, drive->model, drive - drive->changer->drives);
 	} else {
-		sa_log_write_all(sa_log_level_warning, "Drive (%s | %s | #%ld): there is no default database so drive is not able to synchronize with one database", drive->vendor, drive->model, drive - drive->changer->drives);
+		sa_log_write_all(sa_log_level_warning, "Drive (%s | %s | #%td): there is no default database so drive is not able to synchronize with one database", drive->vendor, drive->model, drive - drive->changer->drives);
 	}
 }
 
