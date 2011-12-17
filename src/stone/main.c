@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:05:29 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:40:54 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -42,7 +42,7 @@
 static void sa_show_help(char * command);
 
 int main(int argc, char ** argv) {
-	st_log_write_all(st_log_level_info, "StorIqArchiver, version: %s, build: %s %s", STONE_VERSION, __DATE__, __TIME__);
+	st_log_write_all(st_log_level_info, "STone, version: %s, build: %s %s", STONE_VERSION, __DATE__, __TIME__);
 
     enum {
         OPT_CONFIG   = 'c',
@@ -141,7 +141,7 @@ int main(int argc, char ** argv) {
 
 	// st_test();
 
-	st_log_write_all(st_log_level_info, "StorIqArchiver exit");
+	st_log_write_all(st_log_level_info, "STone exit");
 
 	return 0;
 }
@@ -160,6 +160,6 @@ void st_show_help(char * command) {
 	printf("    --detach,   -d : Daemonize it\n");
 	printf("    --help,     -h : Show this and exit\n");
 	printf("    --pid-file, -p : Write the pid of daemon into instead of \"%s\"\n", DEFAULT_PID_FILE);
-	printf("    --version,  -V : Show the version of StorIqArchiver then exit\n");
+	printf("    --version,  -V : Show the version of STone then exit\n");
 }
 

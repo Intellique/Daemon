@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:06:40 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:36:55 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_CHECKSUM_H__
@@ -122,7 +122,7 @@
  * // strdup
  * #include <string.h>
  *
- * #include <storiqArchiver/checksum.h>
+ * #include <stone/checksum.h>
  *
  * struct st_checksum_md5_private {
  * 	MD5_CTX md5;

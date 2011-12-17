@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 18:16:00 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:38:54 +0100                         *
 \*************************************************************************/
 
 // strerror
@@ -85,8 +85,8 @@ int st_conf_check_pid(int pid) {
 	else
 		ptr = link;
 
-	int failed = strcmp(link, "storiqArchiver");
-	st_log_write_all(failed ? st_log_level_warning : st_log_level_info, "Conf: check_pid: process 'storiqArchiver' %s", failed ? "not found" : "found");
+	int failed = strcmp(link, "stone");
+	st_log_write_all(failed ? st_log_level_warning : st_log_level_info, "Conf: check_pid: process 'stone' %s", failed ? "not found" : "found");
 	return failed ? -1 : 1;
 }
 

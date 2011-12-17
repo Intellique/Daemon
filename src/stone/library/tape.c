@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:23:50 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:39:38 +0100                         *
 \*************************************************************************/
 
 // pthread_mutex_lock, pthread_mutex_unlock
@@ -189,7 +189,7 @@ void st_tape_detect(struct st_drive * dr) {
 	char name[65];
 	char label[37];
 	char digest[9];
-	if (sscanf(buffer, "StoriqArchiver\nversion: 0.1\nname: %64s\nuuid: %36s\nblocksize: %zd\ncrc32: %8s\n", name, label, &block_size, digest) == 4) {
+	if (sscanf(buffer, "STone\nversion: 0.2\nname: %64s\nuuid: %36s\nblocksize: %zd\ncrc32: %8s\n", name, label, &block_size, digest) == 4) {
 		 strcpy(tape->label, label);
 		 strcpy(tape->name, name);
 		 tape->status = ST_TAPE_STATUS_IN_USE;
