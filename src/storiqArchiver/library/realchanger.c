@@ -22,9 +22,11 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 07 Dec 2011 17:46:05 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 12:57:29 +0100                         *
 \*************************************************************************/
 
+// open
+#include <fcntl.h>
 // pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate,
 //  pthread_create, pthread_join
 #include <pthread.h>
@@ -32,6 +34,10 @@
 #include <stdlib.h>
 // strncpy
 #include <string.h>
+// open
+#include <sys/stat.h>
+// open
+#include <sys/types.h>
 // exit
 #include <unistd.h>
 
@@ -48,16 +54,22 @@ struct sa_realchanger_private {
 	struct sa_database_connection * db_con;
 };
 
+static int sa_realchanger_can_load(void);
 static int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa_drive * to);
 static void * sa_realchanger_setup2(void * drive);
 static int sa_realchanger_unload(struct sa_changer * ch, struct sa_drive * from, struct sa_slot * to);
 static void sa_realchanger_update_status(struct sa_changer * ch, enum sa_changer_status status);
 
-struct sa_changer_ops sa_realchanger_ops = {
+static struct sa_changer_ops sa_realchanger_ops = {
+	.can_load = sa_realchanger_can_load,
 	.load     = sa_realchanger_load,
 	.unload   = sa_realchanger_unload,
 };
 
+
+int sa_realchanger_can_load() {
+	return 1;
+}
 
 int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa_drive * to) {
 	if (!ch || !from || !to) {
@@ -100,8 +112,14 @@ int sa_realchanger_load(struct sa_changer * ch, struct sa_slot * from, struct sa
 	return failed;
 }
 
-void sa_realchanger_setup(struct sa_changer * changer, int fd) {
+void sa_realchanger_setup(struct sa_changer * changer) {
+	int fd = open(changer->device, O_RDWR);
+
+	sa_scsi_loaderinfo(fd, changer);
+
 	sa_log_write_all(sa_log_level_info, "Library (%s | %s): starting setup", changer->vendor, changer->model);
+
+	sa_scsi_mtx_status_new(fd, changer);
 
 	struct sa_realchanger_private * ch = malloc(sizeof(struct sa_realchanger_private));
 	ch->fd = fd;

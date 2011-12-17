@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 07 Dec 2011 13:52:44 +0100                         *
+*  Last modified: Thu, 15 Dec 2011 23:17:57 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LIBRARY_CHANGER_H__
@@ -63,6 +63,7 @@ struct sa_changer {
 	unsigned int nb_slots;
 
 	struct sa_changer_ops {
+		int (*can_load)();
 		int (*load)(struct sa_changer * ch, struct sa_slot * from, struct sa_drive * to);
 		int (*unload)(struct sa_changer * ch, struct sa_drive * from, struct sa_slot * to);
 	} * ops;
