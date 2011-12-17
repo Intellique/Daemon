@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 08 Dec 2011 18:45:13 +0100                         *
+*  Last modified: Thu, 15 Dec 2011 22:00:39 +0100                         *
 \*************************************************************************/
 
 // pthread_mutex_lock, pthread_mutex_unlock
@@ -91,7 +91,7 @@ static const struct sa_tape_status2 {
 	{ 0, SA_TAPE_STATUS_UNKNOWN },
 };
 
-static struct sa_tape_format * sa_tape_formats = 0;
+static struct sa_tape_format ** sa_tape_formats = 0;
 static unsigned int sa_tape_format_nb_formats = 0;
 
 
@@ -226,35 +226,40 @@ struct sa_tape * sa_tape_new(struct sa_drive * dr) {
 
 
 struct sa_tape_format * sa_tape_format_get_by_density_code(unsigned char density_code) {
-	unsigned int i;
-	for (i = 0; i < sa_tape_format_nb_formats; i++)
-		if (sa_tape_formats[i].density_code == density_code)
-			return sa_tape_formats + i;
-
 	int old_state;
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
 	static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_lock(&lock);
 
-	struct sa_database * db = sa_db_get_default_db();
-	struct sa_database_connection * con = db->ops->connect(db, 0);
-
+	unsigned int i;
 	struct sa_tape_format * format = 0;
-	sa_tape_formats = realloc(sa_tape_formats, (sa_tape_format_nb_formats + 1) * sizeof(struct sa_tape_format));
-	if (con->ops->get_tape_format(con, sa_tape_formats + sa_tape_format_nb_formats, density_code)) {
-		sa_tape_formats = realloc(sa_tape_formats, sa_tape_format_nb_formats * sizeof(struct sa_tape_format));
-	} else {
-		format = sa_tape_formats + sa_tape_format_nb_formats;
-		sa_tape_format_nb_formats++;
+	for (i = 0; i < sa_tape_format_nb_formats; i++)
+		if (sa_tape_formats[i]->density_code == density_code)
+			format = sa_tape_formats[i];
+
+	if (!format) {
+		struct sa_database * db = sa_db_get_default_db();
+		struct sa_database_connection * con = db->ops->connect(db, 0);
+		if (con) {
+			sa_tape_formats = realloc(sa_tape_formats, (sa_tape_format_nb_formats + 1) * sizeof(struct sa_tape_format *));
+			sa_tape_formats[sa_tape_format_nb_formats] = malloc(sizeof(struct sa_tape_format));
+
+			if (con->ops->get_tape_format(con, sa_tape_formats[sa_tape_format_nb_formats], density_code)) {
+				free(sa_tape_formats[sa_tape_format_nb_formats]);
+				sa_tape_formats = realloc(sa_tape_formats, sa_tape_format_nb_formats * sizeof(struct sa_tape_format));
+			} else {
+				format = sa_tape_formats[sa_tape_format_nb_formats];
+				sa_tape_format_nb_formats++;
+			}
+
+			con->ops->close(con);
+			con->ops->free(con);
+			free(con);
+		}
 	}
 
-	con->ops->close(con);
-	con->ops->free(con);
-	free(con);
-
 	pthread_mutex_unlock(&lock);
-	if (old_state == PTHREAD_CANCEL_DISABLE)
-		pthread_setcancelstate(old_state, 0);
+	pthread_setcancelstate(old_state, 0);
 
 	return format;
 }

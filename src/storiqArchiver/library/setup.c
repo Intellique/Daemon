@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 07 Dec 2011 15:43:57 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 13:14:26 +0100                         *
 \*************************************************************************/
 
 // open
@@ -50,77 +50,22 @@
 #include "common.h"
 #include "scsi.h"
 
-static struct sa_changer * changers = 0;
-static unsigned int nb_changers = 0;
-static struct sa_drive * drives = 0;
-static unsigned int nb_drives = 0;
-
-static void sa_changer_setup_realchanger(struct sa_changer * changer);
+static struct sa_changer * sa_changers = 0;
+static unsigned int sa_nb_fake_changers = 0;
+static unsigned int sa_nb_real_changers = 0;
 
 
 void sa_changer_setup() {
 	glob_t gl;
 	gl.gl_offs = 0;
-	glob("/sys/class/scsi_changer/*/device", GLOB_DOOFFS, 0, &gl);
-
-	changers = calloc(gl.gl_pathc, sizeof(struct sa_changer));
-	nb_changers = gl.gl_pathc;
-
-	sa_log_write_all(sa_log_level_info, "Library: Found %zd librar%s", gl.gl_pathc, gl.gl_pathc != 1 ? "ies" : "y");
-
-	unsigned int i;
-	for (i = 0; i < gl.gl_pathc; i++) {
-		char link[256];
-		ssize_t length = readlink(gl.gl_pathv[i], link, 256);
-		link[length] = '\0';
-
-		char * ptr = strrchr(link, '/') + 1;
-		int host = 0, target = 0, channel = 0, bus = 0;
-		sscanf(ptr, "%d:%d:%d:%d", &host, &target, &channel, &bus);
-
-		char path[256];
-		strcpy(path, gl.gl_pathv[i]);
-		strcat(path, "/generic");
-		length = readlink(path, link, 256);
-		link[length] = '\0';
-
-		char device[12];
-		ptr = strrchr(link, '/');
-		strcpy(device, "/dev");
-		strcat(device, ptr);
-
-		changers[i].id = -1;
-		changers[i].device = strdup(device);
-		changers[i].status = SA_CHANGER_UNKNOWN;
-		changers[i].model = 0;
-		changers[i].vendor = 0;
-		changers[i].revision = 0;
-		changers[i].barcode = 0;
-
-		changers[i].host = host;
-		changers[i].target = target;
-		changers[i].channel = channel;
-		changers[i].bus = bus;
-
-		changers[i].drives = 0;
-		changers[i].nb_drives = 0;
-		changers[i].slots = 0;
-		changers[i].nb_slots = 0;
-
-		changers[i].data = 0;
-		changers[i].lock = 0;
-		changers[i].transport_address = 0;
-	}
-	globfree(&gl);
-
-	gl.gl_offs = 0;
 	glob("/sys/class/scsi_device/*/device/scsi_tape", GLOB_DOOFFS, 0, &gl);
 
 	sa_log_write_all(sa_log_level_info, "Library: Found %zd drive%c", gl.gl_pathc, gl.gl_pathc != 1 ? 's' : '\0');
 
-	drives = calloc(gl.gl_pathc, sizeof(struct sa_drive));
-	nb_drives = gl.gl_pathc;
+	struct sa_drive * drives = calloc(gl.gl_pathc, sizeof(struct sa_drive));
+	unsigned int nb_drives = gl.gl_pathc;
 
+	unsigned int i;
 	for (i = 0; i < gl.gl_pathc; i++) {
 		char * ptr = strrchr(gl.gl_pathv[i], '/');
 		*ptr = '\0';
@@ -189,29 +134,100 @@ void sa_changer_setup() {
 	}
 	globfree(&gl);
 
-	for (i = 0; i < nb_changers; i++) {
+	gl.gl_offs = 0;
+	glob("/sys/class/scsi_changer/*/device", GLOB_DOOFFS, 0, &gl);
+
+	/**
+	 * In the worst case, we have nb_drives changers,
+	 * so we alloc enough memory for this worst case.
+	 */
+	sa_changers = calloc(nb_drives, sizeof(struct sa_changer));
+	sa_nb_real_changers = gl.gl_pathc;
+
+	sa_log_write_all(sa_log_level_info, "Library: Found %zd librar%s", gl.gl_pathc, gl.gl_pathc != 1 ? "ies" : "y");
+
+	for (i = 0; i < gl.gl_pathc; i++) {
+		char link[256];
+		ssize_t length = readlink(gl.gl_pathv[i], link, 256);
+		link[length] = '\0';
+
+		char * ptr = strrchr(link, '/') + 1;
+		int host = 0, target = 0, channel = 0, bus = 0;
+		sscanf(ptr, "%d:%d:%d:%d", &host, &target, &channel, &bus);
+
+		char path[256];
+		strcpy(path, gl.gl_pathv[i]);
+		strcat(path, "/generic");
+		length = readlink(path, link, 256);
+		link[length] = '\0';
+
+		char device[12];
+		ptr = strrchr(link, '/');
+		strcpy(device, "/dev");
+		strcat(device, ptr);
+
+		sa_changers[i].id = -1;
+		sa_changers[i].device = strdup(device);
+		sa_changers[i].status = SA_CHANGER_UNKNOWN;
+		sa_changers[i].model = 0;
+		sa_changers[i].vendor = 0;
+		sa_changers[i].revision = 0;
+		sa_changers[i].barcode = 0;
+
+		sa_changers[i].host = host;
+		sa_changers[i].target = target;
+		sa_changers[i].channel = channel;
+		sa_changers[i].bus = bus;
+
+		sa_changers[i].drives = 0;
+		sa_changers[i].nb_drives = 0;
+		sa_changers[i].slots = 0;
+		sa_changers[i].nb_slots = 0;
+
+		sa_changers[i].data = 0;
+		sa_changers[i].lock = 0;
+		sa_changers[i].transport_address = 0;
+	}
+	globfree(&gl);
+
+
+	for (i = 0; i < sa_nb_real_changers; i++) {
 		unsigned j;
 		for (j = 0; j < nb_drives; j++) {
-			if (changers[i].host == drives[j].host && changers[i].target == drives[j].target) {
-				drives[j].changer = changers + i;
+			if (sa_changers[i].host == drives[j].host && sa_changers[i].target == drives[j].target) {
+				drives[j].changer = sa_changers + i;
 
-				changers[i].drives = realloc(changers[i].drives, (changers[i].nb_drives + 1) * sizeof(struct sa_drive));
-				changers[i].drives[changers[i].nb_drives] = drives[j];
-				changers[i].nb_drives++;
+				sa_changers[i].drives = realloc(sa_changers[i].drives, (sa_changers[i].nb_drives + 1) * sizeof(struct sa_drive));
+				sa_changers[i].drives[sa_changers[i].nb_drives] = drives[j];
+				sa_changers[i].nb_drives++;
 			}
 		}
 	}
 
-	if (nb_changers > 0)
-		sa_changer_setup_realchanger(changers);
-}
+	for (i = sa_nb_real_changers; i < nb_drives; i++) {
+		unsigned j;
+		for (j = 0; j < nb_drives; j++) {
+			if (!drives[j].changer) {
+				drives[j].changer = sa_changers + i;
 
-void sa_changer_setup_realchanger(struct sa_changer * changer) {
-	int fd = open(changer->device, O_RDWR);
+				sa_changers[i].drives = malloc(sizeof(struct sa_drive));
+				*sa_changers[i].drives = drives[j];
+				sa_changers[i].nb_drives = 1;
 
-	sa_scsi_loaderinfo(fd, changer);
-	sa_scsi_mtx_status_new(fd, changer);
+				sa_nb_fake_changers++;
+			}
+		}
+	}
 
-	sa_realchanger_setup(changer, fd);
+	sa_log_write_all(sa_log_level_info, "Library: Found %u stand-alone drive%c", sa_nb_fake_changers, sa_nb_fake_changers != 1 ? 's' : '\0');
+
+	if (drives)
+		free(drives);
+
+	for (i = 0; i < sa_nb_real_changers; i++)
+		sa_realchanger_setup(sa_changers + i);
+
+	for (i = sa_nb_real_changers; i < sa_nb_fake_changers + sa_nb_real_changers; i++)
+		sa_fakechanger_setup(sa_changers + i);
 }
 

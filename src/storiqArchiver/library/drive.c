@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 08 Dec 2011 15:59:56 +0100                         *
+*  Last modified: Thu, 15 Dec 2011 22:26:05 +0100                         *
 \*************************************************************************/
 
 // open
@@ -657,7 +657,7 @@ int sa_drive_io_writer_close(struct sa_stream_writer * io) {
 	}
 
 	if (self->fd > -1) {
-		struct mtop eof = { MTWEOF, 1 };
+		static struct mtop eof = { MTWEOF, 1 };
 		int failed = ioctl(self->fd, MTIOCTOP, &eof);
 		if (failed)
 			return -1;

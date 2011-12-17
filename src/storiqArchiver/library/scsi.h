@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 01 Dec 2011 09:54:57 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 12:31:42 +0100                         *
 \*************************************************************************/
 
 #ifndef SCSI_H__
@@ -35,8 +35,6 @@ void sa_scsi_loaderinfo(int fd, struct sa_changer * changer);
 int sa_scsi_mtx_move(int fd, struct sa_changer * ch, struct sa_slot * from, struct sa_slot * to);
 void sa_scsi_mtx_status_new(int fd, struct sa_changer * changer);
 void sa_scsi_tapeinfo(int fd, struct sa_drive * drive);
-
-void sa_realchanger_setup(struct sa_changer * changer, int fd);
 
 #endif
 
