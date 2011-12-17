@@ -22,13 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 05 Dec 2011 16:41:44 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:18:52 +0100                         *
 \*************************************************************************/
 
 #include <string.h>
 
-#include <storiqArchiver/library/changer.h>
-#include <storiqArchiver/library/drive.h>
+#include <stone/library/changer.h>
+#include <stone/library/drive.h>
 
 static struct sa_changer_status2 {
 	const char * name;

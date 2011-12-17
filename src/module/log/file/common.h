@@ -22,13 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 13:01:39 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:23:24 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LOG_FILE_H__
 #define __STORIQARCHIVER_LOG_FILE_H__
 
-#include <storiqArchiver/log.h>
+#include <stone/log.h>
 
 struct sa_log_module * sa_log_file_new(struct sa_log_module * module, const char * alias, enum sa_log_level level, const char * path);
 

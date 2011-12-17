@@ -22,14 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 Nov 2011 12:00:46 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:22:59 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_DB_POSTGRESQL_CONNNECTION_H__
 #define __STORIQARCHIVER_DB_POSTGRESQL_CONNNECTION_H__
 
 #include <postgresql/libpq-fe.h>
-#include <storiqArchiver/database.h>
+#include <stone/database.h>
 
 struct sa_db_postgresql_private {
 	char * user;

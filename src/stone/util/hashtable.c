@@ -22,13 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 Nov 2011 11:22:11 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:21:58 +0100                         *
 \*************************************************************************/
 
 // calloc, free, malloc
 #include <malloc.h>
 
-#include "storiqArchiver/util/hashtable.h"
+#include "stone/util/hashtable.h"
 
 void sa_hashtable_put2(struct sa_hashtable * hashtable, unsigned int index, struct sa_hashtable_node * new_node);
 void sa_hashtable_rehash(struct sa_hashtable * hashtable);

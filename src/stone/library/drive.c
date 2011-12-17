@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 15 Dec 2011 22:26:05 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:17:59 +0100                         *
 \*************************************************************************/
 
 // open
@@ -44,11 +44,11 @@
 // close, read, sleep
 #include <unistd.h>
 
-#include <storiqArchiver/database.h>
-#include <storiqArchiver/io.h>
-#include <storiqArchiver/library/drive.h>
-#include <storiqArchiver/library/tape.h>
-#include <storiqArchiver/log.h>
+#include <stone/database.h>
+#include <stone/io.h>
+#include <stone/library/drive.h>
+#include <stone/library/tape.h>
+#include <stone/log.h>
 
 #include "common.h"
 #include "scsi.h"

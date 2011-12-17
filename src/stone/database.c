@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 08 Dec 2011 22:12:10 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:17:49 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -33,8 +33,8 @@
 // strcmp
 #include <string.h>
 
-#include <storiqArchiver/database.h>
-#include <storiqArchiver/log.h>
+#include <stone/database.h>
+#include <stone/log.h>
 
 #include "loader.h"
 

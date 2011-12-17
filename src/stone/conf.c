@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 24 Nov 2011 11:24:25 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:17:13 +0100                         *
 \*************************************************************************/
 
 // strerror
@@ -42,10 +42,10 @@
 // access, close, fstat, read, readlink, unlink, write
 #include <unistd.h>
 
-#include <storiqArchiver/conf.h>
-#include <storiqArchiver/database.h>
-#include <storiqArchiver/log.h>
-#include <storiqArchiver/util/hashtable.h>
+#include <stone/conf.h>
+#include <stone/database.h>
+#include <stone/log.h>
+#include <stone/util/hashtable.h>
 
 #include "util/util.h"
 

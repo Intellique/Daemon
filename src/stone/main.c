@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 01 Dec 2011 18:28:59 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:21:31 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -32,8 +32,8 @@
 // strrchr
 #include <string.h>
 
-#include <storiqArchiver/conf.h>
-#include <storiqArchiver/library/changer.h>
+#include <stone/conf.h>
+#include <stone/library/changer.h>
 
 #include "config.h"
 #include "log.h"
@@ -42,7 +42,7 @@
 static void sa_show_help(char * command);
 
 int main(int argc, char ** argv) {
-	sa_log_write_all(sa_log_level_info, "StorIqArchiver, version: %s, build: %s %s", STORIQARCHIVER_VERSION, __DATE__, __TIME__);
+	sa_log_write_all(sa_log_level_info, "StorIqArchiver, version: %s, build: %s %s", STONE_VERSION, __DATE__, __TIME__);
 
     enum {
         OPT_CONFIG   = 'c',
@@ -99,7 +99,7 @@ int main(int argc, char ** argv) {
 					else
 						ptr = *argv;
 
-					printf("%s\nVersion: %s, build: %s %s\n", ptr, STORIQARCHIVER_VERSION, __DATE__, __TIME__);
+					printf("%s\nVersion: %s, build: %s %s\n", ptr, STONE_VERSION, __DATE__, __TIME__);
 				}
 				return 0;
 		}
@@ -153,7 +153,7 @@ void sa_show_help(char * command) {
 
 	sa_log_disable_display_log();
 
-	printf("%s, version: %s, build: %s %s\n", ptr, STORIQARCHIVER_VERSION, __DATE__, __TIME__);
+	printf("%s, version: %s, build: %s %s\n", ptr, STONE_VERSION, __DATE__, __TIME__);
 	printf("    --config,   -c : Read this config file instead of \"%s\"\n", DEFAULT_CONFIG_FILE);
 	printf("    --detach,   -d : Daemonize it\n");
 	printf("    --help,     -h : Show this and exit\n");

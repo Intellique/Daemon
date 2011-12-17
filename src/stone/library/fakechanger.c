@@ -22,14 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 12:45:10 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:18:21 +0100                         *
 \*************************************************************************/
 
 // malloc
 #include <stdlib.h>
 
-#include <storiqArchiver/library/changer.h>
-#include <storiqArchiver/library/ressource.h>
+#include <stone/library/changer.h>
+#include <stone/library/ressource.h>
 
 #include "common.h"
 

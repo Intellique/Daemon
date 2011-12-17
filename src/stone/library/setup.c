@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 13:14:26 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:19:25 +0100                         *
 \*************************************************************************/
 
 // open
@@ -44,8 +44,8 @@
 // readlink
 #include <unistd.h>
 
-#include <storiqArchiver/io.h>
-#include <storiqArchiver/log.h>
+#include <stone/io.h>
+#include <stone/log.h>
 
 #include "common.h"
 #include "scsi.h"

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 05 Dec 2011 21:17:51 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:22:13 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -32,7 +32,7 @@
 // strdup
 #include <string.h>
 
-#include <storiqArchiver/checksum.h>
+#include <stone/checksum.h>
 
 struct sa_checksum_md5_private {
 	MD5_CTX md5;

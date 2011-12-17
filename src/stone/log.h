@@ -22,13 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 24 Nov 2011 12:49:43 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:19:50 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LOG_P_H__
 #define __STORIQARCHIVER_LOG_P_H__
 
-#include <storiqArchiver/log.h>
+#include <stone/log.h>
 
 void sa_log_disable_display_log(void);
 

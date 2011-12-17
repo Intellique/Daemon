@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 Nov 2011 12:09:13 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:23:07 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -32,8 +32,8 @@
 // PQfinish, PQsetdbLogin, PQstatus
 #include <postgresql/libpq-fe.h>
 
-#include <storiqArchiver/log.h>
-#include <storiqArchiver/util/hashtable.h>
+#include <stone/log.h>
+#include <stone/util/hashtable.h>
 
 #include "common.h"
 

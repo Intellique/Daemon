@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 12:57:29 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:19:02 +0100                         *
 \*************************************************************************/
 
 // open
@@ -41,10 +41,10 @@
 // exit
 #include <unistd.h>
 
-#include <storiqArchiver/database.h>
-#include <storiqArchiver/log.h>
-#include <storiqArchiver/library/ressource.h>
-#include <storiqArchiver/library/tape.h>
+#include <stone/database.h>
+#include <stone/log.h>
+#include <stone/library/ressource.h>
+#include <stone/library/tape.h>
 
 #include "common.h"
 #include "scsi.h"

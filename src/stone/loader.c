@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 08 Dec 2011 21:13:26 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:19:43 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -37,7 +37,7 @@
 // access
 #include <unistd.h>
 
-#include <storiqArchiver/log.h>
+#include <stone/log.h>
 
 #include "config.h"
 #include "loader.h"

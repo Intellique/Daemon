@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 08 Dec 2011 22:09:14 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:17:09 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -41,8 +41,8 @@
 // pipe, read, write
 #include <unistd.h>
 
-#include <storiqArchiver/checksum.h>
-#include <storiqArchiver/log.h>
+#include <stone/checksum.h>
+#include <stone/log.h>
 
 #include "loader.h"
 

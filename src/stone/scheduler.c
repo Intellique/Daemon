@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 Nov 2011 11:36:19 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:21:41 +0100                         *
 \*************************************************************************/
 
 // free, realloc
@@ -34,20 +34,20 @@
 // sleep
 #include <unistd.h>
 
-#include <storiqArchiver/database.h>
-#include <storiqArchiver/job.h>
-#include <storiqArchiver/log.h>
+#include <stone/database.h>
+#include <stone/job.h>
+#include <stone/log.h>
 
 #include "scheduler.h"
 
-static void _sa_sched_exit(int signal);
-static short _sa_sched_stop_request = 0;
+static void sa_sched_exit(int signal);
+static short sa_sched_stop_request = 0;
 
 
 void sa_sched_do_loop() {
 	sa_log_write_all(sa_log_level_info, "Scheduler: starting main loop");
 
-	signal(SIGINT, _sa_sched_exit);
+	signal(SIGINT, sa_sched_exit);
 
 	static struct sa_database * db;
 	db = sa_db_get_default_db();
@@ -68,7 +68,7 @@ void sa_sched_do_loop() {
 
 	static time_t lastUpdate = 0;
 
-	while (!_sa_sched_stop_request) {
+	while (!sa_sched_stop_request) {
 		static short ok_transaction;
 		static time_t update;
 
@@ -124,7 +124,7 @@ void sa_sched_do_loop() {
 			sa_log_write_all(sa_log_level_error, "Scheduler: error while finishing transaction");
 
 		static short i;
-		for (i = 0; i < 60 && !_sa_sched_stop_request; i++)
+		for (i = 0; i < 60 && !sa_sched_stop_request; i++)
 			sleep(1);
 
 		// TODO: scheduler stop request
@@ -136,10 +136,10 @@ void sa_sched_do_loop() {
 	connection.ops->free(&connection);
 }
 
-void _sa_sched_exit(int signal) {
+void sa_sched_exit(int signal) {
 	if (signal == SIGINT) {
 		sa_log_write_all(sa_log_level_warning, "Scheduler: catch SIGINT");
-		_sa_sched_stop_request = 1;
+		sa_sched_stop_request = 1;
 	}
 }
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 08 Dec 2011 17:22:23 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:22:46 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -42,10 +42,10 @@
 // sleep
 #include <unistd.h>
 
-#include <storiqArchiver/library/changer.h>
-#include <storiqArchiver/library/drive.h>
-#include <storiqArchiver/library/tape.h>
-#include <storiqArchiver/log.h>
+#include <stone/library/changer.h>
+#include <stone/library/drive.h>
+#include <stone/library/tape.h>
+#include <stone/log.h>
 
 #include "common.h"
 

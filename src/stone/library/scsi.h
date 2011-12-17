@@ -22,14 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 12:31:42 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:18:11 +0100                         *
 \*************************************************************************/
 
 #ifndef SCSI_H__
 #define SCSI_H__
 
-#include <storiqArchiver/library/changer.h>
-#include <storiqArchiver/library/drive.h>
+#include <stone/library/changer.h>
+#include <stone/library/drive.h>
 
 void sa_scsi_loaderinfo(int fd, struct sa_changer * changer);
 int sa_scsi_mtx_move(int fd, struct sa_changer * ch, struct sa_slot * from, struct sa_slot * to);

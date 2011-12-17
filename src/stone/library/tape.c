@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 15 Dec 2011 22:00:39 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:19:34 +0100                         *
 \*************************************************************************/
 
 // pthread_mutex_lock, pthread_mutex_unlock
@@ -36,11 +36,11 @@
 // time
 #include <time.h>
 
-#include <storiqArchiver/database.h>
-#include <storiqArchiver/io.h>
-#include <storiqArchiver/library/changer.h>
-#include <storiqArchiver/library/drive.h>
-#include <storiqArchiver/library/tape.h>
+#include <stone/database.h>
+#include <stone/io.h>
+#include <stone/library/changer.h>
+#include <stone/library/drive.h>
+#include <stone/library/tape.h>
 
 static const struct sa_tape_format_data_type2 {
 	char * name;

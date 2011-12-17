@@ -22,13 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 Nov 2011 18:02:27 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:23:16 +0100                         *
 \*************************************************************************/
 
 // realloc
 #include <malloc.h>
 
-#include <storiqArchiver/util/hashtable.h>
+#include <stone/util/hashtable.h>
 
 #include "common.h"
 

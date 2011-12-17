@@ -1,16 +1,16 @@
-STORIQ_ARCHIVER_SRC_DIR		:= src/storiqArchiver
-STORIQ_ARCHIVER_BUILD_DIR	:= ${BUILD_DIR}/storiqArchiver
-STORIQ_ARCHIVER_DEPEND_DIR	:= ${DEPEND_DIR}/storiqArchiver
+STONE_SRC_DIR		:= src/stone
+STONE_BUILD_DIR		:= ${BUILD_DIR}/stone
+STONE_DEPEND_DIR	:= ${DEPEND_DIR}/stone
 
-STORIQ_ARCHIVER_SRC_FILES	:= $(sort $(shell test -d ${STORIQ_ARCHIVER_SRC_DIR} && find ${STORIQ_ARCHIVER_SRC_DIR} -name '*.c'))
-STORIQ_ARCHIVER_HEAD_FILES	:= $(sort $(shell test -d ${STORIQ_ARCHIVER_SRC_DIR} && find ${STORIQ_ARCHIVER_SRC_DIR} -name '*.h'))
-STORIQ_ARCHIVER_OBJ_FILES	:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${STORIQ_ARCHIVER_SRC_FILES}))
-STORIQ_ARCHIVER_DEP_FILES	:= $(sort $(shell test -d ${STORIQ_ARCHIVER_DEPEND_DIR} && find ${STORIQ_ARCHIVER_DEPEND_DIR} -name '*.d'))
+STONE_SRC_FILES		:= $(sort $(shell test -d ${STONE_SRC_DIR} && find ${STONE_SRC_DIR} -name '*.c'))
+STONE_HEAD_FILES	:= $(sort $(shell test -d ${STONE_SRC_DIR} && find ${STONE_SRC_DIR} -name '*.h'))
+STONE_OBJ_FILES		:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${STONE_SRC_FILES}))
+STONE_DEP_FILES		:= $(sort $(shell test -d ${STONE_DEPEND_DIR} && find ${STONE_DEPEND_DIR} -name '*.d'))
 
-STORIQ_ARCHIVER_BIN			:= bin/storiqArchiver
-STORIQ_ARCHIVER_CFLAG		:= -I.
-STORIQ_ARCHIVER_LD			:= -ldl -rdynamic -Llib -Wl,-rpath,lib
+STONE_BIN			:= bin/stone
+STONE_CFLAG			:= -I.
+STONE_LD			:= -ldl -rdynamic -Llib -Wl,-rpath,lib
 
-STORIQ_ARCHIVER_LIB			:=
+STONE_LIB			:=
 
-BIN_SYMS					+= STORIQ_ARCHIVER
+BIN_SYMS			+= STONE

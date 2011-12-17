@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 06 Dec 2011 00:03:37 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:22:06 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -32,7 +32,7 @@
 // crc32
 #include <zlib.h>
 
-#include <storiqArchiver/checksum.h>
+#include <stone/checksum.h>
 
 struct sa_checksum_crc32_private {
 	uLong crc32;

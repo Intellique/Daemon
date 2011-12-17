@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 21 Nov 2011 13:43:38 +0100                         *
+*  Last modified: Fri, 09 Dec 2011 10:21:38 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_JOB_H__

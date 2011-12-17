@@ -8,7 +8,7 @@ GDB			:= gdb
 
 
 # variable
-NAME		:= StoriqArchiver
+NAME		:= STone
 DIR_NAME	:= $(lastword $(subst /, , $(realpath .)))
 #VERSION		:= $(shell git describe)
 VERSION		:= 0.0.1
@@ -27,7 +27,7 @@ OBJ_FILES	:=
 
 
 # compilation flags
-CFLAGS		:= -std=gnu99 -pipe -O0 -ggdb3 -Wall -Wextra -pthread -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes -Iinclude -DSTORIQARCHIVER_VERSION=\"${VERSION}\"
+CFLAGS		:= -std=gnu99 -pipe -O0 -ggdb3 -Wall -Wextra -pthread -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes -Iinclude -DSTONE_VERSION=\"${VERSION}\"
 LDFLAGS		:= -pthread
 
 CSCOPE_OPT	:= -b -R -s src -U -I include
@@ -91,7 +91,7 @@ ctags TAGS: tags
 
 debug: binaries
 	@echo ' GDB'
-	${GDB} bin/storiqArchiver
+	${GDB} bin/STone
 
 distclean realclean: clean
 	@echo ' RM       -Rf cscope.out doc ${DEPEND_DIR} tags'
@@ -134,7 +134,4 @@ tags: ${SRC_FILES} ${HEAD_FILES}
 ifneq (${DEP_FILES},)
 include ${DEP_FILES}
 endif
-
-titi:
-	@echo ${BINS}
 
