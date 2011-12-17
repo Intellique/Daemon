@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:33:43 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:03:40 +0100                         *
 \*************************************************************************/
 
 // ssize_t
@@ -179,10 +179,10 @@ typedef struct TransportElementDescriptor {
 	unsigned char Reserved[4];				/* 4 extra bytes? */
 } TransportElementDescriptor_T;
 
-static void sa_scsi_mtx_status_update_slot(int fd, struct sa_changer * changer, int start_element, int nb_elements, int num_bytes, enum ElementTypeCode type);
+static void st_scsi_mtx_status_update_slot(int fd, struct st_changer * changer, int start_element, int nb_elements, int num_bytes, enum ElementTypeCode type);
 
 
-void sa_scsi_loaderinfo(int fd, struct sa_changer * changer) {
+void st_scsi_loaderinfo(int fd, struct st_changer * changer) {
 	Inquiry_T inq;
 	RequestSense_T sense;
 
@@ -230,7 +230,7 @@ void sa_scsi_loaderinfo(int fd, struct sa_changer * changer) {
 		changer->barcode = 1;
 }
 
-int sa_scsi_mtx_move(int fd, struct sa_changer * ch, struct sa_slot * from, struct sa_slot * to) {
+int st_scsi_mtx_move(int fd, struct st_changer * ch, struct st_slot * from, struct st_slot * to) {
 	Inquiry_T inq;
 	RequestSense_T sense;
 
@@ -266,7 +266,7 @@ int sa_scsi_mtx_move(int fd, struct sa_changer * ch, struct sa_slot * from, stru
 	return sense.ErrorCode;
 }
 
-void sa_scsi_mtx_status_new(int fd, struct sa_changer * changer) {
+void st_scsi_mtx_status_new(int fd, struct st_changer * changer) {
 	RequestSense_T s1;
 	unsigned char b1[136];
 	static unsigned char c1[6] = { 0x1A, 0x08, 0x1D, 0, 136, 0 };
@@ -294,11 +294,11 @@ void sa_scsi_mtx_status_new(int fd, struct sa_changer * changer) {
 	changer->nb_slots += changer->nb_drives;
 
 	if (changer->nb_slots > 0)
-		changer->slots = calloc(sizeof(struct sa_slot), changer->nb_slots);
+		changer->slots = calloc(sizeof(struct st_slot), changer->nb_slots);
 
 	unsigned int i;
 	for (i = 0; i < changer->nb_slots; i++) {
-		struct sa_slot * slot = changer->slots + i;
+		struct st_slot * slot = changer->slots + i;
 
 		slot->id = -1;
 		slot->changer = changer;
@@ -316,15 +316,15 @@ void sa_scsi_mtx_status_new(int fd, struct sa_changer * changer) {
 	unsigned int num_bytes = (sizeof(ElementStatusDataHeader_T) + 4 * sizeof(ElementStatusPage_T) + changer->nb_slots * sizeof(TransportElementDescriptor_T));
 
 	int start = ((int) sense_page->StorageStartHi << 8) + sense_page->StorageStartLo;
-	sa_scsi_mtx_status_update_slot(fd, changer, start, changer->nb_slots, num_bytes, StorageElement);
+	st_scsi_mtx_status_update_slot(fd, changer, start, changer->nb_slots, num_bytes, StorageElement);
 
 	start = ((int) sense_page->DataTransferStartHi << 8) + sense_page->DataTransferStartLo;
-	sa_scsi_mtx_status_update_slot(fd, changer, start, changer->nb_drives, num_bytes, DataTransferElement);
+	st_scsi_mtx_status_update_slot(fd, changer, start, changer->nb_drives, num_bytes, DataTransferElement);
 
 	changer->transport_address = ((int) sense_page->MediumTransportStartHi << 8) + sense_page->MediumTransportStartLo;
 }
 
-void sa_scsi_mtx_status_update_slot(int fd, struct sa_changer * changer, int start_element, int nb_elements, int num_bytes, enum ElementTypeCode type) {
+void st_scsi_mtx_status_update_slot(int fd, struct st_changer * changer, int start_element, int nb_elements, int num_bytes, enum ElementTypeCode type) {
 	struct {
 		int word1;
 		int word2;
@@ -398,7 +398,7 @@ void sa_scsi_mtx_status_update_slot(int fd, struct sa_changer * changer, int sta
 				default:
 					break;
 			}
-			struct sa_slot * sl = changer->slots + index_slots;
+			struct st_slot * sl = changer->slots + index_slots;
 
 			sl->full = trans_elt_desc->Full > 0;
 			if (sl->full) {
@@ -420,7 +420,7 @@ void sa_scsi_mtx_status_update_slot(int fd, struct sa_changer * changer, int sta
 	free(header.dxferp);
 }
 
-void sa_scsi_tapeinfo(int fd, struct sa_drive * drive) {
+void st_scsi_tapeinfo(int fd, struct st_drive * drive) {
 	Inquiry_T inq;
 	RequestSense_T sense;
 

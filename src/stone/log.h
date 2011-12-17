@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:35:33 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:05:17 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_LOG_P_H__
@@ -30,7 +30,7 @@
 
 #include <stone/log.h>
 
-void sa_log_disable_display_log(void);
+void st_log_disable_display_log(void);
 
 #endif
 

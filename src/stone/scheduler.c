@@ -40,25 +40,25 @@
 
 #include "scheduler.h"
 
-static void sa_sched_exit(int signal);
-static short sa_sched_stop_request = 0;
+static void st_sched_exit(int signal);
+static short st_sched_stop_request = 0;
 
 
-void sa_sched_do_loop() {
-	sa_log_write_all(sa_log_level_info, "Scheduler: starting main loop");
+void st_sched_do_loop() {
+	st_log_write_all(st_log_level_info, "Scheduler: starting main loop");
 
-	signal(SIGINT, sa_sched_exit);
+	signal(SIGINT, st_sched_exit);
 
-	static struct sa_database * db;
-	db = sa_db_get_default_db();
+	static struct st_database * db;
+	db = st_db_get_default_db();
 	if (!db) {
-		sa_log_write_all(sa_log_level_error, "Scheduler: there is no default database");
+		st_log_write_all(st_log_level_error, "Scheduler: there is no default database");
 		return;
 	}
 
-	static struct sa_database_connection connection;
+	static struct st_database_connection connection;
 	if (!db->ops->connect(db, &connection)) {
-		sa_log_write_all(sa_log_level_error, "Scheduler: failed to connect to database");
+		st_log_write_all(st_log_level_error, "Scheduler: failed to connect to database");
 		return;
 	}
 
@@ -68,21 +68,21 @@ void sa_sched_do_loop() {
 
 	static time_t lastUpdate = 0;
 
-	while (!sa_sched_stop_request) {
+	while (!st_sched_stop_request) {
 		static short ok_transaction;
 		static time_t update;
 
 		ok_transaction = connection.ops->startTransaction(&connection, 1) >= 0;
 		update = time(0);
 		if (!ok_transaction)
-			sa_log_write_all(sa_log_level_error, "Scheduler: error while starting transaction");
+			st_log_write_all(st_log_level_error, "Scheduler: error while starting transaction");
 
 		if (nbJobs > 0) {
 			static int nbModifiedJobs;
 			nbModifiedJobs = connection.ops->jobModified(&connection, lastUpdate);
 
 			if (nbModifiedJobs > 0) {
-				sa_log_write_all(sa_log_level_debug, "Scheduler: There is modified jobs (%d)", nbModifiedJobs);
+				st_log_write_all(st_log_level_debug, "Scheduler: There is modified jobs (%d)", nbModifiedJobs);
 
 				static unsigned int i;
 				static int j;
@@ -92,19 +92,19 @@ void sa_sched_do_loop() {
 					if (ok_update > 0)
 						j++;
 					else if (ok_update < 0)
-						sa_log_write_all(sa_log_level_error, "Scheduler: error while updating a job (job name=%s)", jobs[i]->name);
+						st_log_write_all(st_log_level_error, "Scheduler: error while updating a job (job name=%s)", jobs[i]->name);
 				}
 			} else if (nbModifiedJobs == 0) {
-				sa_log_write_all(sa_log_level_debug, "Scheduler: There is no modified jobs");
+				st_log_write_all(st_log_level_debug, "Scheduler: There is no modified jobs");
 			} else {
-				sa_log_write_all(sa_log_level_error, "Scheduler: error while fetching modified jobs");
+				st_log_write_all(st_log_level_error, "Scheduler: error while fetching modified jobs");
 			}
 		}
 
 		static int nbNewJobs;
 		nbNewJobs = connection.ops->newJobs(&connection, lastUpdate);
 		if (nbNewJobs > 0) {
-			sa_log_write_all(sa_log_level_debug, "Scheduler: There is new jobs (%d)", nbNewJobs);
+			st_log_write_all(st_log_level_debug, "Scheduler: There is new jobs (%d)", nbNewJobs);
 
 			jobs = realloc(jobs, (nbJobs + nbNewJobs) * sizeof(struct job *));
 
@@ -114,17 +114,17 @@ void sa_sched_do_loop() {
 			nbJobs += nbNewJobs;
 
 		} else if (nbNewJobs == 0) {
-			sa_log_write_all(sa_log_level_debug, "Scheduler: There is no new jobs");
+			st_log_write_all(st_log_level_debug, "Scheduler: There is no new jobs");
 		} else {
-			sa_log_write_all(sa_log_level_error, "Scheduler: error while fetching new jobs");
+			st_log_write_all(st_log_level_error, "Scheduler: error while fetching new jobs");
 		}
 
 		ok_transaction = connection.ops->finishTransaction(&connection) >= 0;
 		if (!ok_transaction)
-			sa_log_write_all(sa_log_level_error, "Scheduler: error while finishing transaction");
+			st_log_write_all(st_log_level_error, "Scheduler: error while finishing transaction");
 
 		static short i;
-		for (i = 0; i < 60 && !sa_sched_stop_request; i++)
+		for (i = 0; i < 60 && !st_sched_stop_request; i++)
 			sleep(1);
 
 		// TODO: scheduler stop request
@@ -136,10 +136,10 @@ void sa_sched_do_loop() {
 	connection.ops->free(&connection);
 }
 
-void sa_sched_exit(int signal) {
+void st_sched_exit(int signal) {
 	if (signal == SIGINT) {
-		sa_log_write_all(sa_log_level_warning, "Scheduler: catch SIGINT");
-		sa_sched_stop_request = 1;
+		st_log_write_all(st_log_level_warning, "Scheduler: catch SIGINT");
+		st_sched_stop_request = 1;
 	}
 }
 

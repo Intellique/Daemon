@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:33:26 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:03:15 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -39,25 +39,25 @@
 #include <stone/library/ressource.h>
 
 
-struct sa_ressource_private {
+struct st_ressource_private {
 	pthread_mutex_t lock;
 };
 
-static int sa_ressource_private_free(struct sa_ressource * res);
-static int sa_ressource_private_lock(struct sa_ressource * res);
-static int sa_ressource_private_trylock(struct sa_ressource * res);
-static void sa_ressource_private_unlock(struct sa_ressource * res);
+static int st_ressource_private_free(struct st_ressource * res);
+static int st_ressource_private_lock(struct st_ressource * res);
+static int st_ressource_private_trylock(struct st_ressource * res);
+static void st_ressource_private_unlock(struct st_ressource * res);
 
-struct sa_ressource_ops sa_ressource_private_ops = {
-	.free    = sa_ressource_private_free,
-	.lock    = sa_ressource_private_lock,
-	.trylock = sa_ressource_private_trylock,
-	.unlock  = sa_ressource_private_unlock,
+struct st_ressource_ops st_ressource_private_ops = {
+	.free    = st_ressource_private_free,
+	.lock    = st_ressource_private_lock,
+	.trylock = st_ressource_private_trylock,
+	.unlock  = st_ressource_private_unlock,
 };
 
 
-int sa_ressource_lock(int nb_res, struct sa_ressource * res1, struct sa_ressource * res2, ...) {
-	struct sa_ressource ** res = calloc(nb_res, sizeof(struct sa_ressource *));
+int st_ressource_lock(int nb_res, struct st_ressource * res1, struct st_ressource * res2, ...) {
+	struct st_ressource ** res = calloc(nb_res, sizeof(struct st_ressource *));
 	res[0] = res1;
 	res[1] = res2;
 
@@ -66,7 +66,7 @@ int sa_ressource_lock(int nb_res, struct sa_ressource * res1, struct sa_ressourc
 	va_start(resX, res2);
 
 	for (i = 2; i < nb_res; i++)
-		res[i] = va_arg(resX, struct sa_ressource *);
+		res[i] = va_arg(resX, struct st_ressource *);
 
 	va_end(resX);
 
@@ -84,16 +84,16 @@ int sa_ressource_lock(int nb_res, struct sa_ressource * res1, struct sa_ressourc
 	return failed;
 }
 
-struct sa_ressource * sa_ressource_new() {
+struct st_ressource * st_ressource_new() {
 	pthread_mutexattr_t attr;
 	pthread_mutexattr_init(&attr);
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
 
-	struct sa_ressource_private * self = malloc(sizeof(struct sa_ressource_private));
+	struct st_ressource_private * self = malloc(sizeof(struct st_ressource_private));
 	pthread_mutex_init(&self->lock, &attr);
 
-	struct sa_ressource * res = malloc(sizeof(struct sa_ressource));
-	res->ops = &sa_ressource_private_ops;
+	struct st_ressource * res = malloc(sizeof(struct st_ressource));
+	res->ops = &st_ressource_private_ops;
 	res->data = self;
 	res->locked = 0;
 
@@ -101,8 +101,8 @@ struct sa_ressource * sa_ressource_new() {
 	return res;
 }
 
-int sa_ressource_private_free(struct sa_ressource * res) {
-	struct sa_ressource_private * self = res->data;
+int st_ressource_private_free(struct st_ressource * res) {
+	struct st_ressource_private * self = res->data;
 
 	if (pthread_mutex_trylock(&self->lock) == EBUSY)
 		return 1;
@@ -116,24 +116,24 @@ int sa_ressource_private_free(struct sa_ressource * res) {
 	return 0;
 }
 
-int sa_ressource_private_lock(struct sa_ressource * res) {
-	struct sa_ressource_private * self = res->data;
+int st_ressource_private_lock(struct st_ressource * res) {
+	struct st_ressource_private * self = res->data;
 	int failed = pthread_mutex_lock(&self->lock);
 	if (!failed)
 		res->locked = 1;
 	return failed;
 }
 
-int sa_ressource_private_trylock(struct sa_ressource * res) {
-	struct sa_ressource_private * self = res->data;
+int st_ressource_private_trylock(struct st_ressource * res) {
+	struct st_ressource_private * self = res->data;
 	int failed = pthread_mutex_trylock(&self->lock);
 	if (!failed)
 		res->locked = 1;
 	return failed;
 }
 
-void sa_ressource_private_unlock(struct sa_ressource * res) {
-	struct sa_ressource_private * self = res->data;
+void st_ressource_private_unlock(struct st_ressource * res) {
+	struct st_ressource_private * self = res->data;
 	if (!pthread_mutex_unlock(&self->lock))
 		res->locked = 0;
 }

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:31:27 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 18:16:00 +0100                         *
 \*************************************************************************/
 
 // strerror
@@ -49,19 +49,19 @@
 
 #include "util/util.h"
 
-enum sa_conf_section {
-	sa_conf_section_db,
-	sa_conf_section_log,
-	sa_conf_section_unknown,
+enum st_conf_section {
+	st_conf_section_db,
+	st_conf_section_log,
+	st_conf_section_unknown,
 };
 
-static void sa_conf_load_db(struct sa_hashtable * params);
-static void sa_conf_load_log(struct sa_hashtable * params);
+static void st_conf_load_db(struct st_hashtable * params);
+static void st_conf_load_log(struct st_hashtable * params);
 
 
-int sa_conf_check_pid(int pid) {
+int st_conf_check_pid(int pid) {
 	if (pid < 1) {
-		sa_log_write_all(sa_log_level_error, "Conf: check_pid: pid contains a wrong value (pid=%d)", pid);
+		st_log_write_all(st_log_level_error, "Conf: check_pid: pid contains a wrong value (pid=%d)", pid);
 		return 0;
 	}
 
@@ -69,13 +69,13 @@ int sa_conf_check_pid(int pid) {
 	snprintf(path, 64, "/proc/%d/exe", pid);
 
 	if (access(path, F_OK)) {
-		sa_log_write_all(sa_log_level_info, "Conf: check_pid: there is no process with pid=%d", pid);
+		st_log_write_all(st_log_level_info, "Conf: check_pid: there is no process with pid=%d", pid);
 		return 0;
 	}
 
 	char link[128];
 	if (readlink(path, link, 128) < 0) {
-		sa_log_write_all(sa_log_level_error, "Conf: check_pid: readlink failed (%s) => %s", link, strerror(errno));
+		st_log_write_all(st_log_level_error, "Conf: check_pid: readlink failed (%s) => %s", link, strerror(errno));
 		return 0;
 	}
 
@@ -86,32 +86,32 @@ int sa_conf_check_pid(int pid) {
 		ptr = link;
 
 	int failed = strcmp(link, "storiqArchiver");
-	sa_log_write_all(failed ? sa_log_level_warning : sa_log_level_info, "Conf: check_pid: process 'storiqArchiver' %s", failed ? "not found" : "found");
+	st_log_write_all(failed ? st_log_level_warning : st_log_level_info, "Conf: check_pid: process 'storiqArchiver' %s", failed ? "not found" : "found");
 	return failed ? -1 : 1;
 }
 
-int sa_conf_delete_pid(const char * pid_file) {
+int st_conf_delete_pid(const char * pid_file) {
 	if (!pid_file) {
-		sa_log_write_all(sa_log_level_error, "Conf: delete_pid: pid_file is null");
+		st_log_write_all(st_log_level_error, "Conf: delete_pid: pid_file is null");
 		return 1;
 	}
 
 	int failed = unlink(pid_file);
 	if (failed)
-		sa_log_write_all(sa_log_level_error, "Conf: delete_pid: delete pid file => failed");
+		st_log_write_all(st_log_level_error, "Conf: delete_pid: delete pid file => failed");
 	else
-		sa_log_write_all(sa_log_level_debug, "Conf: delete_pid: delete pid file => ok");
+		st_log_write_all(st_log_level_debug, "Conf: delete_pid: delete pid file => ok");
 	return failed;
 }
 
-int sa_conf_read_pid(const char * pid_file) {
+int st_conf_read_pid(const char * pid_file) {
 	if (!pid_file) {
-		sa_log_write_all(sa_log_level_error, "Conf: read_pid: pid_file is null");
+		st_log_write_all(st_log_level_error, "Conf: read_pid: pid_file is null");
 		return -1;
 	}
 
 	if (access(pid_file, R_OK)) {
-		sa_log_write_all(sa_log_level_info, "Conf: read_pid: read pid failed because cannot access to '%s'", pid_file);
+		st_log_write_all(st_log_level_info, "Conf: read_pid: read pid failed because cannot access to '%s'", pid_file);
 		return -1;
 	}
 
@@ -123,90 +123,90 @@ int sa_conf_read_pid(const char * pid_file) {
 
 	int pid = 0;
 	if (sscanf(buffer, "%d", &pid) == 1) {
-		sa_log_write_all(sa_log_level_info, "Conf: read_pid: pid found (%d)", pid);
+		st_log_write_all(st_log_level_info, "Conf: read_pid: pid found (%d)", pid);
 		return pid;
 	}
 
-	sa_log_write_all(sa_log_level_error, "Conf: read_pid: failed to parse pid");
+	st_log_write_all(st_log_level_error, "Conf: read_pid: failed to parse pid");
 	return -1;
 }
 
-int sa_conf_write_pid(const char * pid_file, int pid) {
+int st_conf_write_pid(const char * pid_file, int pid) {
 	if (!pid_file || pid < 1) {
 		if (!pid_file)
-			sa_log_write_all(sa_log_level_error, "Conf: write_pid: pid_file is null");
+			st_log_write_all(st_log_level_error, "Conf: write_pid: pid_file is null");
 		if (pid < 1)
-			sa_log_write_all(sa_log_level_error, "Conf: write_pid: pid should be greater than 0 (pid=%d)", pid);
+			st_log_write_all(st_log_level_error, "Conf: write_pid: pid should be greater than 0 (pid=%d)", pid);
 		return 1;
 	}
 
 	int fd = open(pid_file, O_RDONLY | O_TRUNC | O_CREAT, 0644);
 	if (fd < 0) {
-		sa_log_write_all(sa_log_level_error, "Conf: write_pid: failed to open '%s' => %s", pid_file, strerror(errno));
+		st_log_write_all(st_log_level_error, "Conf: write_pid: failed to open '%s' => %s", pid_file, strerror(errno));
 		return 1;
 	}
 
 	dprintf(fd, "%d\n", pid);
 	close(fd);
 
-	sa_log_write_all(sa_log_level_error, "Conf: write_pid: write ok (pid=%d)", pid);
+	st_log_write_all(st_log_level_error, "Conf: write_pid: write ok (pid=%d)", pid);
 
 	return 0;
 }
 
 
-void sa_conf_load_db(struct sa_hashtable * params) {
+void st_conf_load_db(struct st_hashtable * params) {
 	if (!params)
 		return;
 
-	char * driver = sa_hashtable_value(params, "driver");
+	char * driver = st_hashtable_value(params, "driver");
 	if (!driver) {
-		sa_log_write_all(sa_log_level_error, "conf: load_db: there is no driver in config file");
+		st_log_write_all(st_log_level_error, "conf: load_db: there is no driver in config file");
 		return;
 	}
 
-	struct sa_database * db = sa_db_get_db(driver);
+	struct st_database * db = st_db_get_db(driver);
 	if (db) {
-		sa_log_write_all(sa_log_level_info, "Conf: load_db: driver (%s) => ok", driver);
+		st_log_write_all(st_log_level_info, "Conf: load_db: driver (%s) => ok", driver);
 		short setup_ok = !db->ops->setup(db, params);
 		short ping_ok = db->ops->ping(db) > 0;
-		sa_log_write_all(setup_ok || ping_ok ? sa_log_level_info : sa_log_level_error, "Conf: load_db: setup %s, ping %s", setup_ok ? "ok" : "failed", ping_ok ? "ok" : "failed");
+		st_log_write_all(setup_ok || ping_ok ? st_log_level_info : st_log_level_error, "Conf: load_db: setup %s, ping %s", setup_ok ? "ok" : "failed", ping_ok ? "ok" : "failed");
 
-		if (!sa_db_get_default_db())
-			sa_db_set_default_db(db);
+		if (!st_db_get_default_db())
+			st_db_set_default_db(db);
 	} else
-		sa_log_write_all(sa_log_level_error, "Conf: load_db: no driver (%s) found", driver);
+		st_log_write_all(st_log_level_error, "Conf: load_db: no driver (%s) found", driver);
 }
 
-void sa_conf_load_log(struct sa_hashtable * params) {
+void st_conf_load_log(struct st_hashtable * params) {
 	if (!params)
 		return;
 
-	char * alias = sa_hashtable_value(params, "alias");
-	char * type = sa_hashtable_value(params, "type");
-	enum sa_log_level verbosity = sa_log_string_to_level(sa_hashtable_value(params, "verbosity"));
+	char * alias = st_hashtable_value(params, "alias");
+	char * type = st_hashtable_value(params, "type");
+	enum st_log_level verbosity = st_log_string_to_level(st_hashtable_value(params, "verbosity"));
 
-	if (!alias || !type || verbosity == sa_log_level_unknown) {
+	if (!alias || !type || verbosity == st_log_level_unknown) {
 		if (!alias)
-			sa_log_write_all(sa_log_level_error, "Conf: load_log: alias required for log");
+			st_log_write_all(st_log_level_error, "Conf: load_log: alias required for log");
 		if (!type)
-			sa_log_write_all(sa_log_level_error, "Conf: load_log: type required for log");
-		if (verbosity == sa_log_level_unknown)
-			sa_log_write_all(sa_log_level_error, "Conf: load_log: verbosity required for log");
+			st_log_write_all(st_log_level_error, "Conf: load_log: type required for log");
+		if (verbosity == st_log_level_unknown)
+			st_log_write_all(st_log_level_error, "Conf: load_log: verbosity required for log");
 		return;
 	}
 
-	struct sa_log_driver * dr = sa_log_get_driver(type);
+	struct st_log_driver * dr = st_log_get_driver(type);
 	if (dr) {
-		sa_log_write_all(sa_log_level_info, "Conf: load_log: using module='%s', alias='%s', verbosity='%s'", type, alias, sa_log_level_to_string(verbosity));
+		st_log_write_all(st_log_level_info, "Conf: load_log: using module='%s', alias='%s', verbosity='%s'", type, alias, st_log_level_to_string(verbosity));
 		dr->add(dr, alias, verbosity, params);
 	} else
-		sa_log_write_all(sa_log_level_error, "Conf: load_log: module='%s' not found", type);
+		st_log_write_all(st_log_level_error, "Conf: load_log: module='%s' not found", type);
 }
 
-int sa_conf_read_config(const char * confFile) {
+int st_conf_read_config(const char * confFile) {
 	if (access(confFile, R_OK)) {
-		sa_log_write_all(sa_log_level_error, "Conf: read_config: Can't access to '%s'", confFile);
+		st_log_write_all(st_log_level_error, "Conf: read_config: Can't access to '%s'", confFile);
 		return -1;
 	}
 
@@ -220,8 +220,8 @@ int sa_conf_read_config(const char * confFile) {
 	close(fd);
 
 	char * ptr = buffer;
-	enum sa_conf_section section = sa_conf_section_unknown;
-	struct sa_hashtable * params = sa_hashtable_new2(sa_util_hash_string, sa_util_free_key_value);
+	enum st_conf_section section = st_conf_section_unknown;
+	struct st_hashtable * params = st_hashtable_new2(st_util_hash_string, st_util_free_key_value);
 	while (*ptr) {
 		switch (*ptr) {
 			case ';':
@@ -232,35 +232,35 @@ int sa_conf_read_config(const char * confFile) {
 				ptr++;
 				if (*ptr == '\n') {
 					switch (section) {
-						case sa_conf_section_db:
-							sa_conf_load_db(params);
+						case st_conf_section_db:
+							st_conf_load_db(params);
 							break;
 
-						case sa_conf_section_log:
-							sa_conf_load_log(params);
+						case st_conf_section_log:
+							st_conf_load_log(params);
 							break;
 
 						default:
 							break;
 					}
 
-					section = sa_conf_section_unknown;
-					sa_hashtable_clear(params);
+					section = st_conf_section_unknown;
+					st_hashtable_clear(params);
 				}
 				continue;
 
 			case '[':
 				if (strlen(ptr + 1) > 8 && !strncmp(ptr + 1, "database", 8))
-					section = sa_conf_section_db;
+					section = st_conf_section_db;
 				else if (strlen(ptr + 1) > 3 && !strncmp(ptr + 1, "log", 3))
-					section = sa_conf_section_log;
+					section = st_conf_section_log;
 				else
-					section = sa_conf_section_unknown;
+					section = st_conf_section_unknown;
 				ptr = strchr(ptr, '\n');
 				continue;
 
 			default:
-				if (section == sa_conf_section_unknown)
+				if (section == st_conf_section_unknown)
 					continue;
 
 				if (strchr(ptr, '=') < strchr(ptr, '\n')) {
@@ -268,7 +268,7 @@ int sa_conf_read_config(const char * confFile) {
 					char value[64];
 					int val = sscanf(ptr, "%s = %s", key, value);
 					if (val == 2)
-						sa_hashtable_put(params, strdup(key), strdup(value));
+						st_hashtable_put(params, strdup(key), strdup(value));
 				}
 				ptr = strchr(ptr, '\n');
 		}
@@ -276,12 +276,12 @@ int sa_conf_read_config(const char * confFile) {
 
 	if (params->nb_elements > 0) {
 		switch (section) {
-			case sa_conf_section_db:
-				sa_conf_load_db(params);
+			case st_conf_section_db:
+				st_conf_load_db(params);
 				break;
 
-			case sa_conf_section_log:
-				sa_conf_load_log(params);
+			case st_conf_section_log:
+				st_conf_load_log(params);
 				break;
 
 			default:
@@ -289,7 +289,7 @@ int sa_conf_read_config(const char * confFile) {
 		}
 	}
 
-	sa_hashtable_free(params);
+	st_hashtable_free(params);
 	free(buffer);
 
 	return 0;

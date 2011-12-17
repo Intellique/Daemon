@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:43:11 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:28:15 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -37,28 +37,28 @@
 
 #include "common.h"
 
-static struct sa_database_connection * sa_db_postgresql_connect(struct sa_database * db, struct sa_database_connection * connection);
-static void sa_db_postgresql_init(void) __attribute__((constructor));
-static int sa_db_postgresql_ping(struct sa_database * db);
-static int sa_db_postgresql_setup(struct sa_database * db, struct sa_hashtable * params);
+static struct st_database_connection * st_db_postgresql_connect(struct st_database * db, struct st_database_connection * connection);
+static void st_db_postgresql_init(void) __attribute__((constructor));
+static int st_db_postgresql_ping(struct st_database * db);
+static int st_db_postgresql_setup(struct st_database * db, struct st_hashtable * params);
 
 
-static struct sa_database_ops sa_db_postgresql_ops = {
-	.connect = sa_db_postgresql_connect,
-	.ping    = sa_db_postgresql_ping,
-	.setup   = sa_db_postgresql_setup,
+static struct st_database_ops st_db_postgresql_ops = {
+	.connect = st_db_postgresql_connect,
+	.ping    = st_db_postgresql_ping,
+	.setup   = st_db_postgresql_setup,
 };
 
-static struct sa_database sa_db_postgresql = {
+static struct st_database st_db_postgresql = {
 	.name        = "postgresql",
-	.ops         = &sa_db_postgresql_ops,
+	.ops         = &st_db_postgresql_ops,
 	.data        = 0,
 	.cookie      = 0,
-	.api_version = STORIQARCHIVER_DATABASE_APIVERSION,
+	.api_version = STONE_DATABASE_APIVERSION,
 };
 
 
-struct sa_database_connection * sa_db_postgresql_connect(struct sa_database * db, struct sa_database_connection * connection) {
+struct st_database_connection * st_db_postgresql_connect(struct st_database * db, struct st_database_connection * connection) {
 	if (!db)
 		return 0;
 
@@ -66,12 +66,12 @@ struct sa_database_connection * sa_db_postgresql_connect(struct sa_database * db
 
 	if (!connection) {
 		allocated = 1;
-		connection = malloc(sizeof(struct sa_database_connection));
+		connection = malloc(sizeof(struct st_database_connection));
 	}
 
 	connection->driver = db;
 
-	int failed = sa_db_postgresql_init_connection(connection, db->data);
+	int failed = st_db_postgresql_init_connection(connection, db->data);
 
 	if (failed && allocated) {
 		free(connection);
@@ -81,11 +81,11 @@ struct sa_database_connection * sa_db_postgresql_connect(struct sa_database * db
 	return connection;
 }
 
-void sa_db_postgresql_init() {
-	sa_db_register_db(&sa_db_postgresql);
+void st_db_postgresql_init() {
+	st_db_register_db(&st_db_postgresql);
 }
 
-void sa_db_postgresql_pr_free(struct sa_db_postgresql_private * self) {
+void st_db_postgresql_pr_free(struct st_db_postgresql_private * self) {
 	if (!self)
 		return;
 
@@ -106,59 +106,59 @@ void sa_db_postgresql_pr_free(struct sa_db_postgresql_private * self) {
 	self->port = 0;
 }
 
-int sa_db_postgresql_ping(struct sa_database * db) {
+int st_db_postgresql_ping(struct st_database * db) {
 	if (!db)
 		return -1;
 
-	struct sa_db_postgresql_private * self = db->data;
+	struct st_db_postgresql_private * self = db->data;
 
 	PGconn * con = PQsetdbLogin(self->host, self->port, 0, 0, self->db, self->user, self->password);
 	ConnStatusType status = PQstatus(con);
 	PQfinish(con);
 
 	if (status == CONNECTION_OK)
-		sa_log_write_all(sa_log_level_info, "db: Postgresql: ping => Ok");
+		st_log_write_all(st_log_level_info, "db: Postgresql: ping => Ok");
 	else
-		sa_log_write_all(sa_log_level_error, "db: Postgresql: ping => Failed");
+		st_log_write_all(st_log_level_error, "db: Postgresql: ping => Failed");
 
 	return status == CONNECTION_OK ? 1 : -1;
 }
 
-int sa_db_postgresql_setup(struct sa_database * db, struct sa_hashtable * params) {
+int st_db_postgresql_setup(struct st_database * db, struct st_hashtable * params) {
 	if (!db)
 		return 1;
 
-	struct sa_db_postgresql_private * self = db->data;
+	struct st_db_postgresql_private * self = db->data;
 	if (self)
-		sa_db_postgresql_pr_free(self);
+		st_db_postgresql_pr_free(self);
 	else
-		db->data = self = malloc(sizeof(struct sa_db_postgresql_private));
+		db->data = self = malloc(sizeof(struct st_db_postgresql_private));
 
-	char * user = sa_hashtable_value(params, "user");
+	char * user = st_hashtable_value(params, "user");
 	if (user)
 		self->user = strdup(user);
 	else
 		self->user = 0;
 
-	char * password = sa_hashtable_value(params, "password");
+	char * password = st_hashtable_value(params, "password");
 	if (password)
 		self->password = strdup(password);
 	else
 		self->password = 0;
 
-	char * database = sa_hashtable_value(params, "db");
+	char * database = st_hashtable_value(params, "db");
 	if (database)
 		self->db = strdup(database);
 	else
 		self->db = 0;
 
-	char * host = sa_hashtable_value(params, "host");
+	char * host = st_hashtable_value(params, "host");
 	if (host)
 		self->host = strdup(host);
 	else
 		self->host = 0;
 
-	char * port = sa_hashtable_value(params, "port");
+	char * port = st_hashtable_value(params, "port");
 	if (port)
 		self->port = strdup(port);
 	else

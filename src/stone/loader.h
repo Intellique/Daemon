@@ -22,14 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:35:12 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:16:53 +0100                         *
 \*************************************************************************/
 
-#ifndef __STORIQARCHIVER_LOADER_H__
-#define __STORIQARCHIVER_LOADER_H__
+#ifndef __STONE_LOADER_H__
+#define __STONE_LOADER_H__
 
-void * sa_loader_load(const char * module, const char * name);
-void sa_loader_register_ok(void);
+void * st_loader_load(const char * module, const char * name);
+void st_loader_register_ok(void);
 
 #endif
 

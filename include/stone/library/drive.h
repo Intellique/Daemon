@@ -22,39 +22,39 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:39:43 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:21:28 +0100                         *
 \*************************************************************************/
 
-#ifndef __STORIQARCHIVER_LIBRARY_DRIVE_H__
-#define __STORIQARCHIVER_LIBRARY_DRIVE_H__
+#ifndef __STONE_LIBRARY_DRIVE_H__
+#define __STONE_LIBRARY_DRIVE_H__
 
 // ssize_t
 #include <sys/types.h>
 
-struct sa_changer;
-struct sa_slot;
-struct sa_stream_reader;
+struct st_changer;
+struct st_slot;
+struct st_stream_reader;
 
-enum sa_drive_status {
-	SA_DRIVE_CLEANING,
-	SA_DRIVE_EMPTY_IDLE,
-	SA_DRIVE_ERASING,
-	SA_DRIVE_ERROR,
-	SA_DRIVE_LOADED_IDLE,
-	SA_DRIVE_LOADING,
-	SA_DRIVE_POSITIONING,
-	SA_DRIVE_READING,
-	SA_DRIVE_REWINDING,
-	SA_DRIVE_UNKNOWN,
-	SA_DRIVE_UNLOADING,
-	SA_DRIVE_WRITING,
+enum st_drive_status {
+	ST_DRIVE_CLEANING,
+	ST_DRIVE_EMPTY_IDLE,
+	ST_DRIVE_ERASING,
+	ST_DRIVE_ERROR,
+	ST_DRIVE_LOADED_IDLE,
+	ST_DRIVE_LOADING,
+	ST_DRIVE_POSITIONING,
+	ST_DRIVE_READING,
+	ST_DRIVE_REWINDING,
+	ST_DRIVE_UNKNOWN,
+	ST_DRIVE_UNLOADING,
+	ST_DRIVE_WRITING,
 };
 
-struct sa_drive {
+struct st_drive {
 	long id;
 	char * device;
 	char * scsi_device;
-	enum sa_drive_status status;
+	enum st_drive_status status;
 	char * model;
 	char * vendor;
 	char * revision;
@@ -65,19 +65,19 @@ struct sa_drive {
 	int channel;
 	int bus;
 
-	struct sa_changer * changer;
-	struct sa_slot * slot;
+	struct st_changer * changer;
+	struct st_slot * slot;
 
-	struct sa_drive_ops {
-		int (*eject)(struct sa_drive * drive);
-		int (*eod)(struct sa_drive * drive);
-		ssize_t (*get_block_size)(struct sa_drive * drive);
-		struct sa_stream_reader * (*get_reader)(struct sa_drive * drive);
-		struct sa_stream_writer * (*get_writer)(struct sa_drive * drive);
-		void (*reset)(struct sa_drive * drive);
-		int (*rewind_file)(struct sa_drive * drive);
-		int (*rewind_tape)(struct sa_drive * drive);
-		int (*set_file_position)(struct sa_drive * drive, int file_position);
+	struct st_drive_ops {
+		int (*eject)(struct st_drive * drive);
+		int (*eod)(struct st_drive * drive);
+		ssize_t (*get_block_size)(struct st_drive * drive);
+		struct st_stream_reader * (*get_reader)(struct st_drive * drive);
+		struct st_stream_writer * (*get_writer)(struct st_drive * drive);
+		void (*reset)(struct st_drive * drive);
+		int (*rewind_file)(struct st_drive * drive);
+		int (*rewind_tape)(struct st_drive * drive);
+		int (*set_file_position)(struct st_drive * drive, int file_position);
 	} * ops;
 	void * data;
 
@@ -101,8 +101,8 @@ struct sa_drive {
 };
 
 
-const char * sa_drive_status_to_string(enum sa_drive_status status);
-enum sa_drive_status sa_drive_string_to_status(const char * status);
+const char * st_drive_status_to_string(enum st_drive_status status);
+enum st_drive_status st_drive_string_to_status(const char * status);
 
 #endif
 

@@ -22,21 +22,21 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 Nov 2011 11:22:05 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:14:14 +0100                         *
 \*************************************************************************/
 
-#ifndef __STORIQARCHIVER_HASHTABLE_H__
-#define __STORIQARCHIVER_HASHTABLE_H__
+#ifndef __STONE_HASHTABLE_H__
+#define __STONE_HASHTABLE_H__
 
-struct sa_hashtable_node {
+struct st_hashtable_node {
 	unsigned long long hash;
 	void * key;
 	void * value;
-	struct sa_hashtable_node * next;
+	struct st_hashtable_node * next;
 };
 
-struct sa_hashtable {
-	struct sa_hashtable_node ** nodes;
+struct st_hashtable {
+	struct st_hashtable_node ** nodes;
 	unsigned int nb_elements;
 	unsigned int size_node;
 
@@ -46,16 +46,16 @@ struct sa_hashtable {
 	void (*release_key_value)(void *, void *);
 };
 
-void sa_hashtable_clear(struct sa_hashtable * hashtable);
-void sa_hashtable_free(struct sa_hashtable * hashtable);
-short sa_hashtable_has_key(struct sa_hashtable * hashtable, const void * key);
-const void ** sa_hashtable_keys(struct sa_hashtable * hashtable);
-struct sa_hashtable * sa_hashtable_new(unsigned long long (*compute_hash)(const void * key));
-struct sa_hashtable * sa_hashtable_new2(unsigned long long (*compute_hash)(const void * key), void (*release_key_value)(void * key, void * value));
-void sa_hashtable_put(struct sa_hashtable * hashtable, void * key, void * value);
-void * sa_hashtable_remove(struct sa_hashtable * hashtable, const void * key);
-void * sa_hashtable_value(struct sa_hashtable * hashtable, const void * key);
-void ** sa_hashtable_values(struct sa_hashtable * hashtable);
+void st_hashtable_clear(struct st_hashtable * hashtable);
+void st_hashtable_free(struct st_hashtable * hashtable);
+short st_hashtable_has_key(struct st_hashtable * hashtable, const void * key);
+const void ** st_hashtable_keys(struct st_hashtable * hashtable);
+struct st_hashtable * st_hashtable_new(unsigned long long (*compute_hash)(const void * key));
+struct st_hashtable * st_hashtable_new2(unsigned long long (*compute_hash)(const void * key), void (*release_key_value)(void * key, void * value));
+void st_hashtable_put(struct st_hashtable * hashtable, void * key, void * value);
+void * st_hashtable_remove(struct st_hashtable * hashtable, const void * key);
+void * st_hashtable_value(struct st_hashtable * hashtable, const void * key);
+void ** st_hashtable_values(struct st_hashtable * hashtable);
 
 #endif
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:35:22 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:15:49 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -40,61 +40,61 @@
 #include "loader.h"
 #include "log.h"
 
-static void sa_log_exit(void) __attribute__((destructor));
-static int sa_log_flush_message(void);
-static void sa_log_store_message(char * who, enum sa_log_level level, char * message);
+static void st_log_exit(void) __attribute__((destructor));
+static int st_log_flush_message(void);
+static void st_log_store_message(char * who, enum st_log_level level, char * message);
 
-static int sa_log_display_at_exit = 1;
-static struct sa_log_driver ** sa_log_drivers = 0;
-static unsigned int sa_log_nb_drivers = 0;
-static struct sa_log_message_unsent {
+static int st_log_display_at_exit = 1;
+static struct st_log_driver ** st_log_drivers = 0;
+static unsigned int st_log_nb_drivers = 0;
+static struct st_log_message_unsent {
 	char * who;
-	enum sa_log_level level;
+	enum st_log_level level;
 	char * message;
 	char sent;
-} * sa_log_message_unsent = 0;
-static unsigned int sa_log_nb_message_unsent = 0;
-static unsigned int sa_log_nb_message_unsent_to = 0;
-static pthread_mutex_t sa_log_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+} * st_log_message_unsent = 0;
+static unsigned int st_log_nb_message_unsent = 0;
+static unsigned int st_log_nb_message_unsent_to = 0;
+static pthread_mutex_t st_log_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
-static struct sa_log_level2 {
-	enum sa_log_level level;
+static struct st_log_level2 {
+	enum st_log_level level;
 	const char * name;
-} sa_log_levels[] = {
-	{ sa_log_level_debug,   "Debug" },
-	{ sa_log_level_error,   "Error" },
-	{ sa_log_level_info,    "Info" },
-	{ sa_log_level_warning, "Warning" },
+} st_log_levels[] = {
+	{ st_log_level_debug,   "Debug" },
+	{ st_log_level_error,   "Error" },
+	{ st_log_level_info,    "Info" },
+	{ st_log_level_warning, "Warning" },
 
-	{ sa_log_level_unknown, "Unknown" },
+	{ st_log_level_unknown, "Unknown" },
 };
 
 
-void sa_log_disable_display_log() {
-	sa_log_display_at_exit = 0;
+void st_log_disable_display_log() {
+	st_log_display_at_exit = 0;
 }
 
-void sa_log_exit() {
-	if (!sa_log_display_at_exit)
+void st_log_exit() {
+	if (!st_log_display_at_exit)
 		return;
 
 	unsigned int mes;
-	for (mes = 0; mes < sa_log_nb_message_unsent; mes++)
-		printf("%c: %s\n", sa_log_level_to_string(sa_log_message_unsent[mes].level)[0], sa_log_message_unsent[mes].message);
+	for (mes = 0; mes < st_log_nb_message_unsent; mes++)
+		printf("%c: %s\n", st_log_level_to_string(st_log_message_unsent[mes].level)[0], st_log_message_unsent[mes].message);
 }
 
-int sa_log_flush_message() {
+int st_log_flush_message() {
 	unsigned int mes, ok = 0;
-	for (mes = 0; mes < sa_log_nb_message_unsent; mes++) {
+	for (mes = 0; mes < st_log_nb_message_unsent; mes++) {
 		unsigned int dr;
-		for (dr = 0; dr < sa_log_nb_drivers; dr++) {
+		for (dr = 0; dr < st_log_nb_drivers; dr++) {
 			unsigned int mod;
-			for (mod = 0; mod < sa_log_drivers[dr]->nb_modules; mod++) {
-				if (sa_log_message_unsent[mes].who && strcmp(sa_log_message_unsent[mes].who, sa_log_drivers[dr]->modules[mod].alias))
+			for (mod = 0; mod < st_log_drivers[dr]->nb_modules; mod++) {
+				if (st_log_message_unsent[mes].who && strcmp(st_log_message_unsent[mes].who, st_log_drivers[dr]->modules[mod].alias))
 					continue;
-				if (sa_log_drivers[dr]->modules[mod].level >= sa_log_message_unsent[mes].level) {
-					sa_log_drivers[dr]->modules[mod].ops->write(sa_log_drivers[dr]->modules + mod, sa_log_message_unsent[mes].level, sa_log_message_unsent[mes].message);
-					sa_log_message_unsent[mes].sent = 1;
+				if (st_log_drivers[dr]->modules[mod].level >= st_log_message_unsent[mes].level) {
+					st_log_drivers[dr]->modules[mod].ops->write(st_log_drivers[dr]->modules + mod, st_log_message_unsent[mes].level, st_log_message_unsent[mes].message);
+					st_log_message_unsent[mes].sent = 1;
 					ok = 1;
 				}
 			}
@@ -102,26 +102,26 @@ int sa_log_flush_message() {
 	}
 
 	if (ok) {
-		for (mes = 0; mes < sa_log_nb_message_unsent; mes++) {
-			if (sa_log_message_unsent[mes].sent) {
-				if (sa_log_message_unsent[mes].who) {
-					free(sa_log_message_unsent[mes].who);
-					sa_log_nb_message_unsent_to--;
+		for (mes = 0; mes < st_log_nb_message_unsent; mes++) {
+			if (st_log_message_unsent[mes].sent) {
+				if (st_log_message_unsent[mes].who) {
+					free(st_log_message_unsent[mes].who);
+					st_log_nb_message_unsent_to--;
 				}
-				if (sa_log_message_unsent[mes].message)
-					free(sa_log_message_unsent[mes].message);
+				if (st_log_message_unsent[mes].message)
+					free(st_log_message_unsent[mes].message);
 
-				if (mes + 1 < sa_log_nb_message_unsent)
-					memmove(sa_log_message_unsent + mes, sa_log_message_unsent + mes + 1, (sa_log_nb_message_unsent - mes - 1) * sizeof(struct sa_log_message_unsent));
-				sa_log_nb_message_unsent--, mes--;
-				if (sa_log_nb_message_unsent > 0)
-					sa_log_message_unsent = realloc(sa_log_message_unsent, sa_log_nb_message_unsent * sizeof(struct sa_log_message_unsent));
+				if (mes + 1 < st_log_nb_message_unsent)
+					memmove(st_log_message_unsent + mes, st_log_message_unsent + mes + 1, (st_log_nb_message_unsent - mes - 1) * sizeof(struct st_log_message_unsent));
+				st_log_nb_message_unsent--, mes--;
+				if (st_log_nb_message_unsent > 0)
+					st_log_message_unsent = realloc(st_log_message_unsent, st_log_nb_message_unsent * sizeof(struct st_log_message_unsent));
 			}
 		}
 
-		if (sa_log_nb_message_unsent == 0) {
-			free(sa_log_message_unsent);
-			sa_log_message_unsent = 0;
+		if (st_log_nb_message_unsent == 0) {
+			free(st_log_message_unsent);
+			st_log_message_unsent = 0;
 			ok = 2;
 		}
 	}
@@ -129,108 +129,108 @@ int sa_log_flush_message() {
 	return ok;
 }
 
-struct sa_log_driver * sa_log_get_driver(const char * driver) {
+struct st_log_driver * st_log_get_driver(const char * driver) {
 	int old_state;
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
-	pthread_mutex_lock(&sa_log_lock);
+	pthread_mutex_lock(&st_log_lock);
 
 	if (!driver) {
-		sa_log_write_all(sa_log_level_error, "Log: Driver shall not be null");
+		st_log_write_all(st_log_level_error, "Log: Driver shall not be null");
 		return 0;
 	}
 
 	unsigned int i;
-	struct sa_log_driver * dr = 0;
-	for (i = 0; i < sa_log_nb_drivers && !dr; i++)
-		if (!strcmp(driver, sa_log_drivers[i]->name))
-			dr = sa_log_drivers[i];
+	struct st_log_driver * dr = 0;
+	for (i = 0; i < st_log_nb_drivers && !dr; i++)
+		if (!strcmp(driver, st_log_drivers[i]->name))
+			dr = st_log_drivers[i];
 
 	void * cookie = 0;
 	if (!dr)
-		cookie =sa_loader_load("log", driver);
+		cookie =st_loader_load("log", driver);
 
 	if (!dr && !cookie) {
-		sa_log_write_all(sa_log_level_error, "Log: Failed to load driver %s", driver);
-		pthread_mutex_unlock(&sa_log_lock);
+		st_log_write_all(st_log_level_error, "Log: Failed to load driver %s", driver);
+		pthread_mutex_unlock(&st_log_lock);
 		if (old_state == PTHREAD_CANCEL_DISABLE)
 			pthread_setcancelstate(old_state, 0);
 		return 0;
 	}
 
-	for (i = 0; i < sa_log_nb_drivers && !dr; i++)
-		if (!strcmp(driver, sa_log_drivers[i]->name)) {
-			dr = sa_log_drivers[i];
+	for (i = 0; i < st_log_nb_drivers && !dr; i++)
+		if (!strcmp(driver, st_log_drivers[i]->name)) {
+			dr = st_log_drivers[i];
 			dr->cookie = cookie;
 		}
 
 	if (!dr)
-		sa_log_write_all(sa_log_level_error, "Log: Driver %s not found", driver);
+		st_log_write_all(st_log_level_error, "Log: Driver %s not found", driver);
 
-	pthread_mutex_unlock(&sa_log_lock);
+	pthread_mutex_unlock(&st_log_lock);
 	if (old_state == PTHREAD_CANCEL_DISABLE)
 		pthread_setcancelstate(old_state, 0);
 
 	return dr;
 }
 
-const char * sa_log_level_to_string(enum sa_log_level level) {
-	struct sa_log_level2 * ptr;
-	for (ptr = sa_log_levels; ptr->level != sa_log_level_unknown; ptr++)
+const char * st_log_level_to_string(enum st_log_level level) {
+	struct st_log_level2 * ptr;
+	for (ptr = st_log_levels; ptr->level != st_log_level_unknown; ptr++)
 		if (ptr->level == level)
 			return ptr->name;
 	return ptr->name;
 }
 
-void sa_log_register_driver(struct sa_log_driver * driver) {
+void st_log_register_driver(struct st_log_driver * driver) {
 	if (!driver) {
-		sa_log_write_all(sa_log_level_error, "Log: Try to register with driver=0");
+		st_log_write_all(st_log_level_error, "Log: Try to register with driver=0");
 		return;
 	}
 
-	if (driver->api_version != STORIQARCHIVER_LOG_APIVERSION) {
-		sa_log_write_all(sa_log_level_error, "Log: Driver(%s) has not the correct api version (current: %d, expected: %d)", driver->name, driver->api_version, STORIQARCHIVER_LOG_APIVERSION);
+	if (driver->api_version != STONE_LOG_APIVERSION) {
+		st_log_write_all(st_log_level_error, "Log: Driver(%s) has not the correct api version (current: %d, expected: %d)", driver->name, driver->api_version, STONE_LOG_APIVERSION);
 		return;
 	}
 
 	unsigned int i;
-	for (i = 0; i < sa_log_nb_drivers; i++)
-		if (sa_log_drivers[i] == driver || !strcmp(driver->name, sa_log_drivers[i]->name)) {
-			sa_log_write_all(sa_log_level_info, "Log: Driver(%s) is already registred", driver->name);
+	for (i = 0; i < st_log_nb_drivers; i++)
+		if (st_log_drivers[i] == driver || !strcmp(driver->name, st_log_drivers[i]->name)) {
+			st_log_write_all(st_log_level_info, "Log: Driver(%s) is already registred", driver->name);
 			return;
 		}
 
-	sa_log_drivers = realloc(sa_log_drivers, (sa_log_nb_drivers + 1) * sizeof(struct sa_log_driver *));
-	sa_log_drivers[sa_log_nb_drivers] = driver;
-	sa_log_nb_drivers++;
+	st_log_drivers = realloc(st_log_drivers, (st_log_nb_drivers + 1) * sizeof(struct st_log_driver *));
+	st_log_drivers[st_log_nb_drivers] = driver;
+	st_log_nb_drivers++;
 
-	sa_loader_register_ok();
+	st_loader_register_ok();
 
-	sa_log_write_all(sa_log_level_info, "Log: Driver(%s) is now registred", driver->name);
+	st_log_write_all(st_log_level_info, "Log: Driver(%s) is now registred", driver->name);
 }
 
-void sa_log_store_message(char * who, enum sa_log_level level, char * message) {
-	sa_log_message_unsent = realloc(sa_log_message_unsent, (sa_log_nb_message_unsent + 1) * sizeof(struct sa_log_message_unsent));
-	sa_log_message_unsent[sa_log_nb_message_unsent].who = who;
-	sa_log_message_unsent[sa_log_nb_message_unsent].level = level;
-	sa_log_message_unsent[sa_log_nb_message_unsent].message = message;
-	sa_log_message_unsent[sa_log_nb_message_unsent].sent = 0;
-	sa_log_nb_message_unsent++;
+void st_log_store_message(char * who, enum st_log_level level, char * message) {
+	st_log_message_unsent = realloc(st_log_message_unsent, (st_log_nb_message_unsent + 1) * sizeof(struct st_log_message_unsent));
+	st_log_message_unsent[st_log_nb_message_unsent].who = who;
+	st_log_message_unsent[st_log_nb_message_unsent].level = level;
+	st_log_message_unsent[st_log_nb_message_unsent].message = message;
+	st_log_message_unsent[st_log_nb_message_unsent].sent = 0;
+	st_log_nb_message_unsent++;
 	if (who)
-		sa_log_nb_message_unsent_to++;
+		st_log_nb_message_unsent_to++;
 }
 
-enum sa_log_level sa_log_string_to_level(const char * string) {
+enum st_log_level st_log_string_to_level(const char * string) {
 	if (!string)
-		return sa_log_level_unknown;
+		return st_log_level_unknown;
 
-	struct sa_log_level2 * ptr;
-	for (ptr = sa_log_levels; ptr->level != sa_log_level_unknown; ptr++)
+	struct st_log_level2 * ptr;
+	for (ptr = st_log_levels; ptr->level != st_log_level_unknown; ptr++)
 		if (!strcasecmp(ptr->name, string))
 			return ptr->level;
-	return sa_log_level_unknown;
+	return st_log_level_unknown;
 }
 
-void sa_log_write_all(enum sa_log_level level, const char * format, ...) {
+void st_log_write_all(enum st_log_level level, const char * format, ...) {
 	char * message = malloc(256);
 
 	va_list va;
@@ -240,32 +240,32 @@ void sa_log_write_all(enum sa_log_level level, const char * format, ...) {
 
 	int old_state;
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
-	pthread_mutex_lock(&sa_log_lock);
+	pthread_mutex_lock(&st_log_lock);
 
-	if (sa_log_nb_drivers == 0 || (sa_log_message_unsent && !sa_log_flush_message())) {
-		sa_log_store_message(0, level, message);
+	if (st_log_nb_drivers == 0 || (st_log_message_unsent && !st_log_flush_message())) {
+		st_log_store_message(0, level, message);
 
-		pthread_mutex_unlock(&sa_log_lock);
+		pthread_mutex_unlock(&st_log_lock);
 		if (old_state == PTHREAD_CANCEL_DISABLE)
 			pthread_setcancelstate(old_state, 0);
 		return;
 	}
 
 	unsigned int i, sent = 0;
-	for (i = 0; i < sa_log_nb_drivers; i++) {
+	for (i = 0; i < st_log_nb_drivers; i++) {
 		unsigned int j;
-		for (j = 0; j < sa_log_drivers[i]->nb_modules; j++) {
-			if (sa_log_drivers[i]->modules[j].level >= level) {
-				sa_log_drivers[i]->modules[j].ops->write(sa_log_drivers[i]->modules + j, level, message);
+		for (j = 0; j < st_log_drivers[i]->nb_modules; j++) {
+			if (st_log_drivers[i]->modules[j].level >= level) {
+				st_log_drivers[i]->modules[j].ops->write(st_log_drivers[i]->modules + j, level, message);
 				sent = 1;
 			}
 		}
 	}
 
 	if (!sent)
-		sa_log_store_message(0, level, message);
+		st_log_store_message(0, level, message);
 
-	pthread_mutex_unlock(&sa_log_lock);
+	pthread_mutex_unlock(&st_log_lock);
 	if (old_state == PTHREAD_CANCEL_DISABLE)
 		pthread_setcancelstate(old_state, 0);
 

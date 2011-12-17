@@ -22,13 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:36:06 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:18:02 +0100                         *
 \*************************************************************************/
 
-#ifndef __STORIQARCHIVER_SCHEDULER_H__
-#define __STORIQARCHIVER_SCHEDULER_H__
+#ifndef __STONE_SCHEDULER_H__
+#define __STONE_SCHEDULER_H__
 
-void sa_sched_do_loop(void);
+void st_sched_do_loop(void);
 
 #endif
 

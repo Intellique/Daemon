@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:43:52 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:29:13 +0100                         *
 \*************************************************************************/
 
 // realloc
@@ -32,37 +32,37 @@
 
 #include "common.h"
 
-static int sa_log_file_add(struct sa_log_driver * driver, const char * alias, enum sa_log_level level, struct sa_hashtable * params);
-static void sa_log_file_init(void) __attribute__((constructor));
+static int st_log_file_add(struct st_log_driver * driver, const char * alias, enum st_log_level level, struct st_hashtable * params);
+static void st_log_file_init(void) __attribute__((constructor));
 
 
-static struct sa_log_driver sa_log_file_driver = {
+static struct st_log_driver st_log_file_driver = {
 	.name         = "file",
-	.add          = sa_log_file_add,
+	.add          = st_log_file_add,
 	.data         = 0,
 	.cookie       = 0,
-	.api_version  = STORIQARCHIVER_LOG_APIVERSION,
+	.api_version  = STONE_LOG_APIVERSION,
 	.modules      = 0,
 	.nb_modules   = 0,
 };
 
 
-int sa_log_file_add(struct sa_log_driver * driver, const char * alias, enum sa_log_level level, struct sa_hashtable * params) {
+int st_log_file_add(struct st_log_driver * driver, const char * alias, enum st_log_level level, struct st_hashtable * params) {
 	if (!driver || !alias || !params)
 		return 1;
 
-	char * path = sa_hashtable_value(params, "path");
+	char * path = st_hashtable_value(params, "path");
 	if (!path)
 		return 1;
 
-	driver->modules = realloc(driver->modules, (driver->nb_modules + 1) * sizeof(struct sa_log_module));
-	sa_log_file_new(driver->modules + driver->nb_modules, alias, level, path);
+	driver->modules = realloc(driver->modules, (driver->nb_modules + 1) * sizeof(struct st_log_module));
+	st_log_file_new(driver->modules + driver->nb_modules, alias, level, path);
 	driver->nb_modules++;
 
 	return 0;
 }
 
-static void sa_log_file_init() {
-	sa_log_register_driver(&sa_log_file_driver);
+static void st_log_file_init() {
+	st_log_register_driver(&st_log_file_driver);
 }
 

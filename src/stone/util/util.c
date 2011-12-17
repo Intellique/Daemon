@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:36:46 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:06:04 +0100                         *
 \*************************************************************************/
 
 // free
@@ -32,7 +32,7 @@
 
 #include "util.h"
 
-void sa_util_free_key_value(void * key, void * value) {
+void st_util_free_key_value(void * key, void * value) {
 	if (key)
 		free(key);
 	if (value)
@@ -42,7 +42,7 @@ void sa_util_free_key_value(void * key, void * value) {
 /**
  * sdbm function
  */
-unsigned long long sa_util_hash_string(const void * key) {
+unsigned long long st_util_hash_string(const void * key) {
 	const char * cstr = key;
 	unsigned long long int hash = 0;
 	int length = strlen(cstr), i;

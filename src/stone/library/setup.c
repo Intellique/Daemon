@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:34:26 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:23:23 +0100                         *
 \*************************************************************************/
 
 // open
@@ -50,19 +50,19 @@
 #include "common.h"
 #include "scsi.h"
 
-static struct sa_changer * sa_changers = 0;
-static unsigned int sa_nb_fake_changers = 0;
-static unsigned int sa_nb_real_changers = 0;
+static struct st_changer * st_changers = 0;
+static unsigned int st_nb_fake_changers = 0;
+static unsigned int st_nb_real_changers = 0;
 
 
-void sa_changer_setup() {
+void st_changer_setup() {
 	glob_t gl;
 	gl.gl_offs = 0;
 	glob("/sys/class/scsi_device/*/device/scsi_tape", GLOB_DOOFFS, 0, &gl);
 
-	sa_log_write_all(sa_log_level_info, "Library: Found %zd drive%c", gl.gl_pathc, gl.gl_pathc != 1 ? 's' : '\0');
+	st_log_write_all(st_log_level_info, "Library: Found %zd drive%c", gl.gl_pathc, gl.gl_pathc != 1 ? 's' : '\0');
 
-	struct sa_drive * drives = calloc(gl.gl_pathc, sizeof(struct sa_drive));
+	struct st_drive * drives = calloc(gl.gl_pathc, sizeof(struct st_drive));
 	unsigned int nb_drives = gl.gl_pathc;
 
 	unsigned int i;
@@ -102,7 +102,7 @@ void sa_changer_setup() {
 		drives[i].id = -1;
 		drives[i].device = strdup(device);
 		drives[i].scsi_device = strdup(scsi_device);
-		drives[i].status = SA_DRIVE_UNKNOWN;
+		drives[i].status = ST_DRIVE_UNKNOWN;
 		drives[i].model = 0;
 		drives[i].vendor = 0;
 		drives[i].revision = 0;
@@ -141,10 +141,10 @@ void sa_changer_setup() {
 	 * In the worst case, we have nb_drives changers,
 	 * so we alloc enough memory for this worst case.
 	 */
-	sa_changers = calloc(nb_drives, sizeof(struct sa_changer));
-	sa_nb_real_changers = gl.gl_pathc;
+	st_changers = calloc(nb_drives, sizeof(struct st_changer));
+	st_nb_real_changers = gl.gl_pathc;
 
-	sa_log_write_all(sa_log_level_info, "Library: Found %zd librar%s", gl.gl_pathc, gl.gl_pathc != 1 ? "ies" : "y");
+	st_log_write_all(st_log_level_info, "Library: Found %zd librar%s", gl.gl_pathc, gl.gl_pathc != 1 ? "ies" : "y");
 
 	for (i = 0; i < gl.gl_pathc; i++) {
 		char link[256];
@@ -166,68 +166,68 @@ void sa_changer_setup() {
 		strcpy(device, "/dev");
 		strcat(device, ptr);
 
-		sa_changers[i].id = -1;
-		sa_changers[i].device = strdup(device);
-		sa_changers[i].status = SA_CHANGER_UNKNOWN;
-		sa_changers[i].model = 0;
-		sa_changers[i].vendor = 0;
-		sa_changers[i].revision = 0;
-		sa_changers[i].barcode = 0;
+		st_changers[i].id = -1;
+		st_changers[i].device = strdup(device);
+		st_changers[i].status = ST_CHANGER_UNKNOWN;
+		st_changers[i].model = 0;
+		st_changers[i].vendor = 0;
+		st_changers[i].revision = 0;
+		st_changers[i].barcode = 0;
 
-		sa_changers[i].host = host;
-		sa_changers[i].target = target;
-		sa_changers[i].channel = channel;
-		sa_changers[i].bus = bus;
+		st_changers[i].host = host;
+		st_changers[i].target = target;
+		st_changers[i].channel = channel;
+		st_changers[i].bus = bus;
 
-		sa_changers[i].drives = 0;
-		sa_changers[i].nb_drives = 0;
-		sa_changers[i].slots = 0;
-		sa_changers[i].nb_slots = 0;
+		st_changers[i].drives = 0;
+		st_changers[i].nb_drives = 0;
+		st_changers[i].slots = 0;
+		st_changers[i].nb_slots = 0;
 
-		sa_changers[i].data = 0;
-		sa_changers[i].lock = 0;
-		sa_changers[i].transport_address = 0;
+		st_changers[i].data = 0;
+		st_changers[i].lock = 0;
+		st_changers[i].transport_address = 0;
 	}
 	globfree(&gl);
 
 
-	for (i = 0; i < sa_nb_real_changers; i++) {
+	for (i = 0; i < st_nb_real_changers; i++) {
 		unsigned j;
 		for (j = 0; j < nb_drives; j++) {
-			if (sa_changers[i].host == drives[j].host && sa_changers[i].target == drives[j].target) {
-				drives[j].changer = sa_changers + i;
+			if (st_changers[i].host == drives[j].host && st_changers[i].target == drives[j].target) {
+				drives[j].changer = st_changers + i;
 
-				sa_changers[i].drives = realloc(sa_changers[i].drives, (sa_changers[i].nb_drives + 1) * sizeof(struct sa_drive));
-				sa_changers[i].drives[sa_changers[i].nb_drives] = drives[j];
-				sa_changers[i].nb_drives++;
+				st_changers[i].drives = realloc(st_changers[i].drives, (st_changers[i].nb_drives + 1) * sizeof(struct st_drive));
+				st_changers[i].drives[st_changers[i].nb_drives] = drives[j];
+				st_changers[i].nb_drives++;
 			}
 		}
 	}
 
-	for (i = sa_nb_real_changers; i < nb_drives; i++) {
+	for (i = st_nb_real_changers; i < nb_drives; i++) {
 		unsigned j;
 		for (j = 0; j < nb_drives; j++) {
 			if (!drives[j].changer) {
-				drives[j].changer = sa_changers + i;
+				drives[j].changer = st_changers + i;
 
-				sa_changers[i].drives = malloc(sizeof(struct sa_drive));
-				*sa_changers[i].drives = drives[j];
-				sa_changers[i].nb_drives = 1;
+				st_changers[i].drives = malloc(sizeof(struct st_drive));
+				*st_changers[i].drives = drives[j];
+				st_changers[i].nb_drives = 1;
 
-				sa_nb_fake_changers++;
+				st_nb_fake_changers++;
 			}
 		}
 	}
 
-	sa_log_write_all(sa_log_level_info, "Library: Found %u stand-alone drive%c", sa_nb_fake_changers, sa_nb_fake_changers != 1 ? 's' : '\0');
+	st_log_write_all(st_log_level_info, "Library: Found %u stand-alone drive%c", st_nb_fake_changers, st_nb_fake_changers != 1 ? 's' : '\0');
 
 	if (drives)
 		free(drives);
 
-	for (i = 0; i < sa_nb_real_changers; i++)
-		sa_realchanger_setup(sa_changers + i);
+	for (i = 0; i < st_nb_real_changers; i++)
+		st_realchanger_setup(st_changers + i);
 
-	for (i = sa_nb_real_changers; i < sa_nb_fake_changers + sa_nb_real_changers; i++)
-		sa_fakechanger_setup(sa_changers + i);
+	for (i = st_nb_real_changers; i < st_nb_fake_changers + st_nb_real_changers; i++)
+		st_fakechanger_setup(st_changers + i);
 }
 

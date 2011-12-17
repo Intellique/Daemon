@@ -22,58 +22,58 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:39:59 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:22:59 +0100                         *
 \*************************************************************************/
 
-#ifndef __STORIQARCHIVER_LIBRARY_TAPE_H__
-#define __STORIQARCHIVER_LIBRARY_TAPE_H__
+#ifndef __STONE_LIBRARY_TAPE_H__
+#define __STONE_LIBRARY_TAPE_H__
 
 // ssize_t, time_t
 #include <sys/types.h>
 
-enum sa_tape_location {
-    SA_TAPE_LOCATION_OFFLINE,
-    SA_TAPE_LOCATION_ONLINE,
-    SA_TAPE_LOCATION_UNKNOWN,
+enum st_tape_location {
+    ST_TAPE_LOCATION_OFFLINE,
+    ST_TAPE_LOCATION_ONLINE,
+    ST_TAPE_LOCATION_UNKNOWN,
 };
 
-enum sa_tape_status {
-    SA_TAPE_STATUS_ERASABLE,
-    SA_TAPE_STATUS_ERROR,
-    SA_TAPE_STATUS_FOREIGN,
-    SA_TAPE_STATUS_IN_USE,
-    SA_TAPE_STATUS_LOCKED,
-    SA_TAPE_STATUS_NEEDS_REPLACEMENT,
-    SA_TAPE_STATUS_NEW,
-    SA_TAPE_STATUS_POOLED,
-    SA_TAPE_STATUS_UNKNOWN,
+enum st_tape_status {
+    ST_TAPE_STATUS_ERASABLE,
+    ST_TAPE_STATUS_ERROR,
+    ST_TAPE_STATUS_FOREIGN,
+    ST_TAPE_STATUS_IN_USE,
+    ST_TAPE_STATUS_LOCKED,
+    ST_TAPE_STATUS_NEEDS_REPLACEMENT,
+    ST_TAPE_STATUS_NEW,
+    ST_TAPE_STATUS_POOLED,
+    ST_TAPE_STATUS_UNKNOWN,
 };
 
-enum sa_tape_format_data_type {
-    SA_TAPE_FORMAT_DATA_AUDIO,
-    SA_TAPE_FORMAT_DATA_CLEANING,
-    SA_TAPE_FORMAT_DATA_DATA,
-    SA_TAPE_FORMAT_DATA_VIDEO,
-    SA_TAPE_FORMAT_DATA_UNKNOWN,
+enum st_tape_format_data_type {
+    ST_TAPE_FORMAT_DATA_AUDIO,
+    ST_TAPE_FORMAT_DATA_CLEANING,
+    ST_TAPE_FORMAT_DATA_DATA,
+    ST_TAPE_FORMAT_DATA_VIDEO,
+    ST_TAPE_FORMAT_DATA_UNKNOWN,
 };
 
-enum sa_tape_format_mode {
-    SA_TAPE_FORMAT_MODE_DISK,
-    SA_TAPE_FORMAT_MODE_LINEAR,
-    SA_TAPE_FORMAT_MODE_OPTICAL,
-    SA_TAPE_FORMAT_MODE_UNKNOWN,
+enum st_tape_format_mode {
+    ST_TAPE_FORMAT_MODE_DISK,
+    ST_TAPE_FORMAT_MODE_LINEAR,
+    ST_TAPE_FORMAT_MODE_OPTICAL,
+    ST_TAPE_FORMAT_MODE_UNKNOWN,
 };
 
-struct sa_drive;
-struct sa_pool;
-struct sa_tape_format;
+struct st_drive;
+struct st_pool;
+struct st_tape_format;
 
-struct sa_tape {
+struct st_tape {
 	long id;
     char label[37];
     char name[64];
-    enum sa_tape_status status;
-    enum sa_tape_location location;
+    enum st_tape_status status;
+    enum st_tape_location location;
     time_t first_used;
     time_t use_before;
     long load_count;
@@ -83,16 +83,16 @@ struct sa_tape {
     ssize_t block_size;
     unsigned int nb_files;
     unsigned char has_partition;
-    struct sa_tape_format * format;
-    struct sa_pool * pool;
+    struct st_tape_format * format;
+    struct st_pool * pool;
 };
 
-struct sa_tape_format {
+struct st_tape_format {
 	long id;
     char name[64];
 	unsigned char density_code;
-    enum sa_tape_format_data_type type;
-    enum sa_tape_format_mode mode;
+    enum st_tape_format_data_type type;
+    enum st_tape_format_mode mode;
     long max_load_count;
     long max_read_count;
     long max_write_count;
@@ -103,29 +103,29 @@ struct sa_tape_format {
     char support_partition;
 };
 
-struct sa_pool {
+struct st_pool {
     long id;
     char name[64];
     unsigned long retention;
     time_t retention_limit;
     unsigned char auto_recycle;
-    struct sa_tape_format * format;
+    struct st_tape_format * format;
 };
 
 
-const char * sa_tape_format_data_to_string(enum sa_tape_format_data_type type);
-const char * sa_tape_format_mode_to_string(enum sa_tape_format_mode mode);
-const char * sa_tape_location_to_string(enum sa_tape_location location);
-const char * sa_tape_status_to_string(enum sa_tape_status status);
-enum sa_tape_location sa_tape_string_to_location(const char * location);
-enum sa_tape_status sa_tape_string_to_status(const char * status);
-enum sa_tape_format_data_type sa_tape_string_to_format_data(const char * type);
-enum sa_tape_format_mode sa_tape_string_to_format_mode(const char * mode);
+const char * st_tape_format_data_to_string(enum st_tape_format_data_type type);
+const char * st_tape_format_mode_to_string(enum st_tape_format_mode mode);
+const char * st_tape_location_to_string(enum st_tape_location location);
+const char * st_tape_status_to_string(enum st_tape_status status);
+enum st_tape_location st_tape_string_to_location(const char * location);
+enum st_tape_status st_tape_string_to_status(const char * status);
+enum st_tape_format_data_type st_tape_string_to_format_data(const char * type);
+enum st_tape_format_mode st_tape_string_to_format_mode(const char * mode);
 
-void sa_tape_detect(struct sa_drive * dr);
-struct sa_tape * sa_tape_new(struct sa_drive * dr);
+void st_tape_detect(struct st_drive * dr);
+struct st_tape * st_tape_new(struct st_drive * dr);
 
-struct sa_tape_format * sa_tape_format_get_by_density_code(unsigned char density_code);
+struct st_tape_format * st_tape_format_get_by_density_code(unsigned char density_code);
 
 #endif
 

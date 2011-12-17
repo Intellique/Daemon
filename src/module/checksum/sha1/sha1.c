@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:41:20 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:26:04 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -34,57 +34,57 @@
 
 #include <stone/checksum.h>
 
-struct sa_checksum_sha1_private {
+struct st_checksum_sha1_private {
 	SHA_CTX sha1;
 	char digest[SHA_DIGEST_LENGTH * 2 + 1];
 };
 
-static struct sa_checksum * sa_checksum_sha1_clone(struct sa_checksum * new_checksum, struct sa_checksum * current_checksum);
-static char * sa_checksum_sha1_digest(struct sa_checksum * checksum);
-static void sa_checksum_sha1_free(struct sa_checksum * checksum);
-static struct sa_checksum * sa_checksum_sha1_new_checksum(struct sa_checksum * checksum);
-static void sa_checksum_sha1_init(void) __attribute__((constructor));
-static ssize_t sa_checksum_sha1_update(struct sa_checksum * checksum, const void * data, ssize_t length);
+static struct st_checksum * st_checksum_sha1_clone(struct st_checksum * new_checksum, struct st_checksum * current_checksum);
+static char * st_checksum_sha1_digest(struct st_checksum * checksum);
+static void st_checksum_sha1_free(struct st_checksum * checksum);
+static struct st_checksum * st_checksum_sha1_new_checksum(struct st_checksum * checksum);
+static void st_checksum_sha1_init(void) __attribute__((constructor));
+static ssize_t st_checksum_sha1_update(struct st_checksum * checksum, const void * data, ssize_t length);
 
-static struct sa_checksum_driver sa_checksum_sha1_driver = {
+static struct st_checksum_driver st_checksum_sha1_driver = {
 	.name			= "sha1",
-	.new_checksum	= sa_checksum_sha1_new_checksum,
+	.new_checksum	= st_checksum_sha1_new_checksum,
 	.cookie			= 0,
-	.api_version    = STORIQARCHIVER_CHECKSUM_APIVERSION,
+	.api_version    = STONE_CHECKSUM_APIVERSION,
 };
 
-static struct sa_checksum_ops sa_checksum_sha1_ops = {
-	.clone	= sa_checksum_sha1_clone,
-	.digest	= sa_checksum_sha1_digest,
-	.free	= sa_checksum_sha1_free,
-	.update	= sa_checksum_sha1_update,
+static struct st_checksum_ops st_checksum_sha1_ops = {
+	.clone	= st_checksum_sha1_clone,
+	.digest	= st_checksum_sha1_digest,
+	.free	= st_checksum_sha1_free,
+	.update	= st_checksum_sha1_update,
 };
 
 
-struct sa_checksum * sa_checksum_sha1_clone(struct sa_checksum * new_checksum, struct sa_checksum * current_checksum) {
+struct st_checksum * st_checksum_sha1_clone(struct st_checksum * new_checksum, struct st_checksum * current_checksum) {
 	if (!current_checksum)
 		return 0;
 
-	struct sa_checksum_sha1_private * current_self = current_checksum->data;
+	struct st_checksum_sha1_private * current_self = current_checksum->data;
 
 	if (!new_checksum)
-		new_checksum = malloc(sizeof(struct sa_checksum));
+		new_checksum = malloc(sizeof(struct st_checksum));
 
-	new_checksum->ops = &sa_checksum_sha1_ops;
-	new_checksum->driver = &sa_checksum_sha1_driver;
+	new_checksum->ops = &st_checksum_sha1_ops;
+	new_checksum->driver = &st_checksum_sha1_driver;
 
-	struct sa_checksum_sha1_private * new_self = malloc(sizeof(struct sa_checksum_sha1_private));
+	struct st_checksum_sha1_private * new_self = malloc(sizeof(struct st_checksum_sha1_private));
 	*new_self = *current_self;
 
 	new_checksum->data = new_self;
 	return new_checksum;
 }
 
-char * sa_checksum_sha1_digest(struct sa_checksum * checksum) {
+char * st_checksum_sha1_digest(struct st_checksum * checksum) {
 	if (!checksum)
 		return 0;
 
-	struct sa_checksum_sha1_private * self = checksum->data;
+	struct st_checksum_sha1_private * self = checksum->data;
 
 	if (self->digest[0] != '\0')
 		return strdup(self->digest);
@@ -93,16 +93,16 @@ char * sa_checksum_sha1_digest(struct sa_checksum * checksum) {
 	if (!SHA1_Final(digest, &self->sha1))
 		return 0;
 
-	sa_checksum_convert_to_hex(digest, SHA_DIGEST_LENGTH, self->digest);
+	st_checksum_convert_to_hex(digest, SHA_DIGEST_LENGTH, self->digest);
 
 	return strdup(self->digest);
 }
 
-void sa_checksum_sha1_free(struct sa_checksum * checksum) {
+void st_checksum_sha1_free(struct st_checksum * checksum) {
 	if (!checksum)
 		return;
 
-	struct sa_checksum_sha1_private * self = checksum->data;
+	struct st_checksum_sha1_private * self = checksum->data;
 
 	if (self)
 		free(self);
@@ -112,18 +112,18 @@ void sa_checksum_sha1_free(struct sa_checksum * checksum) {
 	checksum->driver = 0;
 }
 
-void sa_checksum_sha1_init() {
-	sa_checksum_register_driver(&sa_checksum_sha1_driver);
+void st_checksum_sha1_init() {
+	st_checksum_register_driver(&st_checksum_sha1_driver);
 }
 
-struct sa_checksum * sa_checksum_sha1_new_checksum(struct sa_checksum * checksum) {
+struct st_checksum * st_checksum_sha1_new_checksum(struct st_checksum * checksum) {
 	if (!checksum)
-		checksum = malloc(sizeof(struct sa_checksum));
+		checksum = malloc(sizeof(struct st_checksum));
 
-	checksum->ops = &sa_checksum_sha1_ops;
-	checksum->driver = &sa_checksum_sha1_driver;
+	checksum->ops = &st_checksum_sha1_ops;
+	checksum->driver = &st_checksum_sha1_driver;
 
-	struct sa_checksum_sha1_private * self = malloc(sizeof(struct sa_checksum_sha1_private));
+	struct st_checksum_sha1_private * self = malloc(sizeof(struct st_checksum_sha1_private));
 	SHA1_Init(&self->sha1);
 	*self->digest = '\0';
 
@@ -131,11 +131,11 @@ struct sa_checksum * sa_checksum_sha1_new_checksum(struct sa_checksum * checksum
 	return checksum;
 }
 
-ssize_t sa_checksum_sha1_update(struct sa_checksum * checksum, const void * data, ssize_t length) {
+ssize_t st_checksum_sha1_update(struct st_checksum * checksum, const void * data, ssize_t length) {
 	if (!checksum || !data || length < 1)
 		return -1;
 
-	struct sa_checksum_sha1_private * self = checksum->data;
+	struct st_checksum_sha1_private * self = checksum->data;
 	if (*self->digest != '\0')
 		return -2;
 

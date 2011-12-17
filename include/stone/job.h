@@ -22,11 +22,11 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:39:16 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:08:26 +0100                         *
 \*************************************************************************/
 
-#ifndef __STORIQARCHIVER_JOB_H__
-#define __STORIQARCHIVER_JOB_H__
+#ifndef __STONE_JOB_H__
+#define __STONE_JOB_H__
 
 #include <sys/time.h>
 
@@ -50,18 +50,28 @@ struct job_ops {
 };
 
 struct job {
+	// database
 	long id;
 	char * name;
 	enum job_type type;
 	time_t start;
-	unsigned long interval;
-	unsigned long repetition;
-	time_t modified;
+	void * scheduler_private;
 
-	struct job_ops * ops;
+	// job
+	char * name;
+	struct job_ops {
+		void (*free)(struct job * j);
+		int (*start)(struct job * j);
+		int (*stop)(struct job * j);
+	} * ops;
+
+
+
+
+	long interval;
+	long repetition;
+
 	void * data;
-
-	struct database_connection * connection;
 };
 
 

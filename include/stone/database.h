@@ -22,25 +22,25 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:39:00 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:07:47 +0100                         *
 \*************************************************************************/
 
-#ifndef __STORIQARCHIVER_DATABASE_H__
-#define __STORIQARCHIVER_DATABASE_H__
+#ifndef __STONE_DATABASE_H__
+#define __STONE_DATABASE_H__
 
-struct sa_changer;
-struct sa_database_connection;
-struct sa_drive;
-struct sa_hashtable;
-struct sa_tape;
-struct sa_tape_format;
+struct st_changer;
+struct st_database_connection;
+struct st_drive;
+struct st_hashtable;
+struct st_tape;
+struct st_tape_format;
 
-struct sa_database {
+struct st_database {
 	char * name;
-	struct sa_database_ops {
-		struct sa_database_connection * (*connect)(struct sa_database * db, struct sa_database_connection * connection);
-		int (*ping)(struct sa_database * db);
-		int (*setup)(struct sa_database * db, struct sa_hashtable * params);
+	struct st_database_ops {
+		struct st_database_connection * (*connect)(struct st_database * db, struct st_database_connection * connection);
+		int (*ping)(struct st_database * db);
+		int (*setup)(struct st_database * db, struct st_hashtable * params);
 	} * ops;
 	void * data;
 
@@ -53,14 +53,14 @@ struct sa_database {
 /**
  * \brief Current api version
  *
- * Will increment from new version of struct sa_database or struct sa_database_connection
+ * Will increment from new version of struct st_database or struct st_database_connection
  */
-#define STORIQARCHIVER_DATABASE_APIVERSION 1
+#define STONE_DATABASE_APIVERSION 1
 
-struct sa_database_connection {
+struct st_database_connection {
 	long id;
-	struct sa_database * driver;
-	struct sa_database_connection_ops {
+	struct st_database * driver;
+	struct st_database_connection_ops {
 		/**
 		 * \brief close \a db connection
 		 * \param db : a database connection
@@ -68,7 +68,7 @@ struct sa_database_connection {
 		 * \li 0 if ok
 		 * \li < 0 if error
 		 */
-		int (*close)(struct sa_database_connection * db);
+		int (*close)(struct st_database_connection * db);
 		/**
 		 * \brief free memory associated with database connection
 		 * \param db : a database connection
@@ -80,7 +80,7 @@ struct sa_database_connection {
 		 * free(db);
 		 * \endcode
 		 */
-		int (*free)(struct sa_database_connection * db);
+		int (*free)(struct st_database_connection * db);
 
 		/**
 		 * \brief rool back a transaction
@@ -89,7 +89,7 @@ struct sa_database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*cancel_transaction)(struct sa_database_connection * db);
+		int (*cancel_transaction)(struct st_database_connection * db);
 		/**
 		 * \brief finish a transaction
 		 * \param db : a database connection
@@ -98,7 +98,7 @@ struct sa_database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*finish_transaction)(struct sa_database_connection * db);
+		int (*finish_transaction)(struct st_database_connection * db);
 		/**
 		 * \brief starts a transaction
 		 * \param db : a database connection
@@ -108,18 +108,18 @@ struct sa_database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*start_transaction)(struct sa_database_connection * db, short readOnly);
+		int (*start_transaction)(struct st_database_connection * db, short readOnly);
 
-		int (*get_tape_format)(struct sa_database_connection * db, struct sa_tape_format * tape_format, unsigned char density_code);
-		int (*sync_changer)(struct sa_database_connection * db, struct sa_changer * changer);
-		int (*sync_drive)(struct sa_database_connection * db, struct sa_drive * drive);
-		int (*sync_tape)(struct sa_database_connection * db, struct sa_tape * tape);
+		int (*get_tape_format)(struct st_database_connection * db, struct st_tape_format * tape_format, unsigned char density_code);
+		int (*sync_changer)(struct st_database_connection * db, struct st_changer * changer);
+		int (*sync_drive)(struct st_database_connection * db, struct st_drive * drive);
+		int (*sync_tape)(struct st_database_connection * db, struct st_tape * tape);
 	} * ops;
 	void * data;
 };
 
 
-struct sa_database * sa_db_get_default_db(void);
+struct st_database * st_db_get_default_db(void);
 
 /**
  * \brief get a database driver
@@ -127,7 +127,7 @@ struct sa_database * sa_db_get_default_db(void);
  * \return 0 if failed
  * \note if \a db is not loaded then we try to load it
  */
-struct sa_database * sa_db_get_db(const char * db);
+struct st_database * st_db_get_db(const char * db);
 
 /**
  * \brief Each db module should call this function only one time
@@ -139,9 +139,9 @@ struct sa_database * sa_db_get_db(const char * db);
  * }
  * \endcode
  */
-void sa_db_register_db(struct sa_database * db);
+void st_db_register_db(struct st_database * db);
 
-void sa_db_set_default_db(struct sa_database * db);
+void st_db_set_default_db(struct st_database * db);
 
 #endif
 

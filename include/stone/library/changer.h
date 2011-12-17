@@ -22,31 +22,31 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:39:35 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:19:15 +0100                         *
 \*************************************************************************/
 
-#ifndef __STORIQARCHIVER_LIBRARY_CHANGER_H__
-#define __STORIQARCHIVER_LIBRARY_CHANGER_H__
+#ifndef __STONE_LIBRARY_CHANGER_H__
+#define __STONE_LIBRARY_CHANGER_H__
 
-struct sa_drive;
-struct sa_ressource;
-struct sa_slot;
-struct sa_tape;
+struct st_drive;
+struct st_ressource;
+struct st_slot;
+struct st_tape;
 
-enum sa_changer_status {
-	SA_CHANGER_ERROR,
-	SA_CHANGER_EXPORTING,
-	SA_CHANGER_IDLE,
-	SA_CHANGER_IMPORTING,
-	SA_CHANGER_LOADING,
-	SA_CHANGER_UNKNOWN,
-	SA_CHANGER_UNLOADING,
+enum st_changer_status {
+	ST_CHANGER_ERROR,
+	ST_CHANGER_EXPORTING,
+	ST_CHANGER_IDLE,
+	ST_CHANGER_IMPORTING,
+	ST_CHANGER_LOADING,
+	ST_CHANGER_UNKNOWN,
+	ST_CHANGER_UNLOADING,
 };
 
-struct sa_changer {
+struct st_changer {
 	long id;
 	char * device;
-	enum sa_changer_status status;
+	enum st_changer_status status;
 	char * model;
 	char * vendor;
     char * revision;
@@ -57,34 +57,34 @@ struct sa_changer {
 	int channel;
 	int bus;
 
-	struct sa_drive * drives;
+	struct st_drive * drives;
 	unsigned int nb_drives;
-	struct sa_slot * slots;
+	struct st_slot * slots;
 	unsigned int nb_slots;
 
-	struct sa_changer_ops {
+	struct st_changer_ops {
 		int (*can_load)();
-		int (*load)(struct sa_changer * ch, struct sa_slot * from, struct sa_drive * to);
-		int (*unload)(struct sa_changer * ch, struct sa_drive * from, struct sa_slot * to);
+		int (*load)(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
+		int (*unload)(struct st_changer * ch, struct st_drive * from, struct st_slot * to);
 	} * ops;
 	void * data;
 
-    struct sa_ressource * lock;
+    struct st_ressource * lock;
 
     // for scsi use only
     int transport_address;
 };
 
-struct sa_slot {
+struct st_slot {
 	long id;
-	struct sa_changer * changer;
-	struct sa_drive * drive;
-	struct sa_tape * tape;
+	struct st_changer * changer;
+	struct st_drive * drive;
+	struct st_tape * tape;
 
 	char volume_name[37];
 	char full;
 
-	struct sa_ressource * lock;
+	struct st_ressource * lock;
 
 	// for scsi use only
 	int address;
@@ -92,9 +92,9 @@ struct sa_slot {
 };
 
 
-const char * sa_changer_status_to_string(enum sa_changer_status status);
-enum sa_changer_status sa_changer_string_to_status(const char * status);
-void sa_changer_setup(void);
+const char * st_changer_status_to_string(enum st_changer_status status);
+enum st_changer_status st_changer_string_to_status(const char * status);
+void st_changer_setup(void);
 
 #endif
 

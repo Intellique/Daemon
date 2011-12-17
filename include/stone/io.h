@@ -22,33 +22,33 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:39:08 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:08:09 +0100                         *
 \*************************************************************************/
 
-#ifndef __STORIQARCHIVER_IO_H__
-#define __STORIQARCHIVER_IO_H__
+#ifndef __STONE_IO_H__
+#define __STONE_IO_H__
 
 // ssize_t
 #include <sys/types.h>
 
-struct sa_stream_reader {
-	struct sa_stream_reader_ops {
-		int (*close)(struct sa_stream_reader * io);
-		void (*free)(struct sa_stream_reader * io);
-		ssize_t (*get_block_size)(struct sa_stream_reader * io);
-		ssize_t (*position)(struct sa_stream_reader * io);
-		ssize_t (*read)(struct sa_stream_reader * io, void * buffer, ssize_t length);
+struct st_stream_reader {
+	struct st_stream_reader_ops {
+		int (*close)(struct st_stream_reader * io);
+		void (*free)(struct st_stream_reader * io);
+		ssize_t (*get_block_size)(struct st_stream_reader * io);
+		ssize_t (*position)(struct st_stream_reader * io);
+		ssize_t (*read)(struct st_stream_reader * io, void * buffer, ssize_t length);
 	} * ops;
 	void * data;
 };
 
-struct sa_stream_writer {
-	struct sa_stream_writer_ops {
-		int (*close)(struct sa_stream_writer * io);
-		void (*free)(struct sa_stream_writer * io);
-		ssize_t (*get_block_size)(struct sa_stream_writer * io);
-		ssize_t (*position)(struct sa_stream_writer * io);
-		ssize_t (*write)(struct sa_stream_writer * io, void * buffer, ssize_t length);
+struct st_stream_writer {
+	struct st_stream_writer_ops {
+		int (*close)(struct st_stream_writer * io);
+		void (*free)(struct st_stream_writer * io);
+		ssize_t (*get_block_size)(struct st_stream_writer * io);
+		ssize_t (*position)(struct st_stream_writer * io);
+		ssize_t (*write)(struct st_stream_writer * io, void * buffer, ssize_t length);
 	} * ops;
 	void * data;
 };

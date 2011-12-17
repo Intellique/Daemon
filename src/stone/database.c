@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:31:44 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:15:06 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -38,16 +38,16 @@
 
 #include "loader.h"
 
-static struct sa_database ** sa_db_databases = 0;
-static unsigned int sa_db_nb_databases = 0;
-static struct sa_database * sa_db_default_db = 0;
+static struct st_database ** st_db_databases = 0;
+static unsigned int st_db_nb_databases = 0;
+static struct st_database * st_db_default_db = 0;
 
 
-struct sa_database * sa_db_get_default_db() {
-	return sa_db_default_db;
+struct st_database * st_db_get_default_db() {
+	return st_db_default_db;
 }
 
-struct sa_database * sa_db_get_db(const char * driver) {
+struct st_database * st_db_get_db(const char * driver) {
 	static pthread_mutex_t lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
 	int old_state;
@@ -55,31 +55,31 @@ struct sa_database * sa_db_get_db(const char * driver) {
 	pthread_mutex_lock(&lock);
 
 	unsigned int i;
-	struct sa_database * dr = 0;
-	for (i = 0; i < sa_db_nb_databases && !dr; i++)
-		if (!strcmp(driver, sa_db_databases[i]->name))
-			dr = sa_db_databases[i];
+	struct st_database * dr = 0;
+	for (i = 0; i < st_db_nb_databases && !dr; i++)
+		if (!strcmp(driver, st_db_databases[i]->name))
+			dr = st_db_databases[i];
 
 	void * cookie = 0;
 	if (!dr)
-		cookie = sa_loader_load("db", driver);
+		cookie = st_loader_load("db", driver);
 
 	if (!dr && !cookie) {
-		sa_log_write_all(sa_log_level_error, "Db: Failed to load driver %s", driver);
+		st_log_write_all(st_log_level_error, "Db: Failed to load driver %s", driver);
 		pthread_mutex_unlock(&lock);
 		if (old_state == PTHREAD_CANCEL_DISABLE)
 			pthread_setcancelstate(old_state, 0);
 		return 0;
 	}
 
-	for (i = 0; i < sa_db_nb_databases && !dr; i++)
-		if (!strcmp(driver, sa_db_databases[i]->name)) {
-			dr = sa_db_databases[i];
+	for (i = 0; i < st_db_nb_databases && !dr; i++)
+		if (!strcmp(driver, st_db_databases[i]->name)) {
+			dr = st_db_databases[i];
 			dr->cookie = cookie;
 		}
 
 	if (!dr)
-		sa_log_write_all(sa_log_level_error, "Db: Driver %s not found", driver);
+		st_log_write_all(st_log_level_error, "Db: Driver %s not found", driver);
 
 	pthread_mutex_unlock(&lock);
 	if (old_state == PTHREAD_CANCEL_DISABLE)
@@ -88,32 +88,32 @@ struct sa_database * sa_db_get_db(const char * driver) {
 	return dr;
 }
 
-void sa_db_register_db(struct sa_database * db) {
+void st_db_register_db(struct st_database * db) {
 	if (!db) {
-		sa_log_write_all(sa_log_level_error, "Db: Try to register with driver=0");
+		st_log_write_all(st_log_level_error, "Db: Try to register with driver=0");
 		return;
 	}
 
-	if (db->api_version != STORIQARCHIVER_DATABASE_APIVERSION) {
-		sa_log_write_all(sa_log_level_error, "Db: Driver(%s) has not the correct api version (current: %d, expected: %d)", db->name, db->api_version, STORIQARCHIVER_DATABASE_APIVERSION);
+	if (db->api_version != STONE_DATABASE_APIVERSION) {
+		st_log_write_all(st_log_level_error, "Db: Driver(%s) has not the correct api version (current: %d, expected: %d)", db->name, db->api_version, STONE_DATABASE_APIVERSION);
 		return;
 	}
 
-	sa_db_databases = realloc(sa_db_databases, (sa_db_nb_databases + 1) * sizeof(struct sa_database *));
-	sa_db_databases[sa_db_nb_databases] = db;
-	sa_db_nb_databases++;
+	st_db_databases = realloc(st_db_databases, (st_db_nb_databases + 1) * sizeof(struct st_database *));
+	st_db_databases[st_db_nb_databases] = db;
+	st_db_nb_databases++;
 
-	sa_loader_register_ok();
+	st_loader_register_ok();
 
-	sa_log_write_all(sa_log_level_info, "Db: Driver(%s) is now registred", db->name);
+	st_log_write_all(st_log_level_info, "Db: Driver(%s) is now registred", db->name);
 }
 
-void sa_db_set_default_db(struct sa_database * db) {
-	if (sa_db_default_db)
-		sa_log_write_all(sa_log_level_debug, "Db: set new default database from %s to %s", sa_db_default_db->name, db->name);
+void st_db_set_default_db(struct st_database * db) {
+	if (st_db_default_db)
+		st_log_write_all(st_log_level_debug, "Db: set new default database from %s to %s", st_db_default_db->name, db->name);
 	else
-		sa_log_write_all(sa_log_level_debug, "Db: set new default database to %s", db->name);
+		st_log_write_all(st_log_level_debug, "Db: set new default database to %s", db->name);
 	if (db)
-		sa_db_default_db = db;
+		st_db_default_db = db;
 }
 

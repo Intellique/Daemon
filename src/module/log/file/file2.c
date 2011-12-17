@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:44:00 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:29:03 +0100                         *
 \*************************************************************************/
 
 // open
@@ -46,22 +46,22 @@
 
 #include "common.h"
 
-struct sa_log_file_private {
+struct st_log_file_private {
 	char * path;
 	int fd;
 };
 
-static void sa_log_file_module_free(struct sa_log_module * module);
-static void sa_log_file_module_write(struct sa_log_module * module, enum sa_log_level level, const char * message);
+static void st_log_file_module_free(struct st_log_module * module);
+static void st_log_file_module_write(struct st_log_module * module, enum st_log_level level, const char * message);
 
-static struct sa_log_module_ops sa_log_file_module_ops = {
-	.free  = sa_log_file_module_free,
-	.write = sa_log_file_module_write,
+static struct st_log_module_ops st_log_file_module_ops = {
+	.free  = st_log_file_module_free,
+	.write = st_log_file_module_write,
 };
 
 
-void sa_log_file_module_free(struct sa_log_module * module) {
-	struct sa_log_file_private * self = module->data;
+void st_log_file_module_free(struct st_log_module * module) {
+	struct st_log_file_private * self = module->data;
 
 	if (module->alias)
 		free(module->alias);
@@ -79,15 +79,15 @@ void sa_log_file_module_free(struct sa_log_module * module) {
 	free(self);
 }
 
-struct sa_log_module * sa_log_file_new(struct sa_log_module * module, const char * alias, enum sa_log_level level, const char * path) {
+struct st_log_module * st_log_file_new(struct st_log_module * module, const char * alias, enum st_log_level level, const char * path) {
 	if (!module)
-		module = malloc(sizeof(struct sa_log_module));
+		module = malloc(sizeof(struct st_log_module));
 
 	module->alias = strdup(alias);
 	module->level = level;
-	module->ops = &sa_log_file_module_ops;
+	module->ops = &st_log_file_module_ops;
 
-	struct sa_log_file_private * self = malloc(sizeof(struct sa_log_file_private));
+	struct st_log_file_private * self = malloc(sizeof(struct st_log_file_private));
 	self->path = strdup(path);
 	self->fd = open(path, O_WRONLY | O_APPEND | O_CREAT, 0640);
 
@@ -95,8 +95,8 @@ struct sa_log_module * sa_log_file_new(struct sa_log_module * module, const char
 	return module;
 }
 
-void sa_log_file_module_write(struct sa_log_module * module, enum sa_log_level level, const char * message) {
-	struct sa_log_file_private * self = module->data;
+void st_log_file_module_write(struct st_log_module * module, enum st_log_level level, const char * message) {
+	struct st_log_file_private * self = module->data;
 
 	struct timeval curTime;
 	struct tm curTime2;
@@ -106,6 +106,6 @@ void sa_log_file_module_write(struct sa_log_module * module, enum sa_log_level l
 	localtime_r(&(curTime.tv_sec), &curTime2);
 	strftime(buffer, 32, "%F %T", &curTime2);
 
-	dprintf(self->fd, "@%s %c: %s\n", buffer, sa_log_level_to_string(level)[0], message);
+	dprintf(self->fd, "@%s %c: %s\n", buffer, st_log_level_to_string(level)[0], message);
 }
 

@@ -22,20 +22,20 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:32:02 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:20:00 +0100                         *
 \*************************************************************************/
 
-#ifndef __STORIQARCHIVER_LIBRARY_COMMON_H__
-#define __STORIQARCHIVER_LIBRARY_COMMON_H__
+#ifndef __STONE_LIBRARY_COMMON_H__
+#define __STONE_LIBRARY_COMMON_H__
 
-struct sa_changer;
-struct sa_drive;
+struct st_changer;
+struct st_drive;
 
-void sa_changer_setup(void);
-void sa_drive_setup(struct sa_drive * drive);
+void st_changer_setup(void);
+void st_drive_setup(struct st_drive * drive);
 
-void sa_fakechanger_setup(struct sa_changer * changer);
-void sa_realchanger_setup(struct sa_changer * changer);
+void st_fakechanger_setup(struct st_changer * changer);
+void st_realchanger_setup(struct st_changer * changer);
 
 #endif
 

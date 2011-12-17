@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:35:44 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:05:29 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -42,7 +42,7 @@
 static void sa_show_help(char * command);
 
 int main(int argc, char ** argv) {
-	sa_log_write_all(sa_log_level_info, "StorIqArchiver, version: %s, build: %s %s", STONE_VERSION, __DATE__, __TIME__);
+	st_log_write_all(st_log_level_info, "StorIqArchiver, version: %s, build: %s %s", STONE_VERSION, __DATE__, __TIME__);
 
     enum {
         OPT_CONFIG   = 'c',
@@ -75,21 +75,21 @@ int main(int argc, char ** argv) {
 		switch (opt) {
             case OPT_CONFIG:
 				config_file = optarg;
-				sa_log_write_all(sa_log_level_info, "Using configuration file: '%s'", optarg);
+				st_log_write_all(st_log_level_info, "Using configuration file: '%s'", optarg);
 				break;
 
             case OPT_DETACH:
 				detach = 1;
-				sa_log_write_all(sa_log_level_info, "Using detach mode (i.e. use fork())");
+				st_log_write_all(st_log_level_info, "Using detach mode (i.e. use fork())");
 				break;
 
             case OPT_HELP:
-				sa_show_help(*argv);
+				st_show_help(*argv);
 				return 0;
 
             case OPT_PID_FILE:
 				pid_file = optarg;
-				sa_log_write_all(sa_log_level_info, "Using pid file: '%s'", optarg);
+				st_log_write_all(st_log_level_info, "Using pid file: '%s'", optarg);
 				break;
 
             case OPT_VERSION: {
@@ -105,23 +105,23 @@ int main(int argc, char ** argv) {
 		}
 	} while (opt > -1);
 
-	sa_log_write_all(sa_log_level_debug, "Parsing option: ok");
+	st_log_write_all(st_log_level_debug, "Parsing option: ok");
 
 	// check pid file
-	int pid = sa_conf_read_pid(pid_file);
+	int pid = st_conf_read_pid(pid_file);
 	if (pid >= 0) {
-		int code = sa_conf_check_pid(pid);
+		int code = st_conf_check_pid(pid);
 		switch (code) {
 			case -1:
-				sa_log_write_all(sa_log_level_error, "Warning: another process used this pid (%d)", pid);
+				st_log_write_all(st_log_level_error, "Warning: another process used this pid (%d)", pid);
 				break;
 
 			case 0:
-				sa_log_write_all(sa_log_level_error, "Info: daemon is dead, long life the daemon");
+				st_log_write_all(st_log_level_error, "Info: daemon is dead, long life the daemon");
 				break;
 
 			case 1:
-				sa_log_write_all(sa_log_level_error, "Error: Daemon is alive (pid: %d)", pid);
+				st_log_write_all(st_log_level_error, "Error: Daemon is alive (pid: %d)", pid);
 				return 2;
 		}
 	}
@@ -130,28 +130,30 @@ int main(int argc, char ** argv) {
 	if (detach) {}
 
 	// read configuration
-	if (sa_conf_read_config(config_file)) {
-		sa_log_write_all(sa_log_level_error, "Error while parsing '%s'", config_file);
+	if (st_conf_read_config(config_file)) {
+		st_log_write_all(st_log_level_error, "Error while parsing '%s'", config_file);
 		return 3;
 	}
 
-    sa_changer_setup();
+	st_changer_setup();
 
-	// sa_sched_do_loop();
+	// st_sched_do_loop();
 
-	sa_log_write_all(sa_log_level_info, "StorIqArchiver exit");
+	// st_test();
+
+	st_log_write_all(st_log_level_info, "StorIqArchiver exit");
 
 	return 0;
 }
 
-void sa_show_help(char * command) {
+void st_show_help(char * command) {
 	char * ptr = strrchr(command, '/');
 	if (ptr)
 		ptr++;
 	else
 		ptr = command;
 
-	sa_log_disable_display_log();
+	st_log_disable_display_log();
 
 	printf("%s, version: %s, build: %s %s\n", ptr, STONE_VERSION, __DATE__, __TIME__);
 	printf("    --config,   -c : Read this config file instead of \"%s\"\n", DEFAULT_CONFIG_FILE);
