@@ -1,13 +1,13 @@
 /*************************************************************************\
-*        ______           ____     ___           __   _                   *
-*       / __/ /____  ____/  _/__ _/ _ | ________/ /  (_)  _____ ____      *
-*      _\ \/ __/ _ \/ __// // _ `/ __ |/ __/ __/ _ \/ / |/ / -_) __/      *
-*     /___/\__/\___/_/ /___/\_, /_/ |_/_/  \__/_//_/_/|___/\__/_/         *
-*                            /_/                                          *
-*  ---------------------------------------------------------------------  *
-*  This file is a part of StorIqArchiver                                  *
+*                            __________                                   *
+*                           / __/_  __/__  ___  ___                       *
+*                          _\ \  / / / _ \/ _ \/ -_)                      *
+*                         /___/ /_/  \___/_//_/\__/                       *
 *                                                                         *
-*  StorIqArchiver is free software; you can redistribute it and/or        *
+*  ---------------------------------------------------------------------  *
+*  This file is a part of STone                                           *
+*                                                                         *
+*  STone is free software; you can redistribute it and/or                 *
 *  modify it under the terms of the GNU General Public License            *
 *  as published by the Free Software Foundation; either version 3         *
 *  of the License, or (at your option) any later version.                 *
@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 Nov 2011 11:27:06 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 17:36:54 +0100                         *
 \*************************************************************************/
 
 #ifndef __STORIQARCHIVER_UTIL_H__
