@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:38:54 +0100                         *
+*  Last modified: Sun, 18 Dec 2011 11:02:37 +0100                         *
 \*************************************************************************/
 
 // strerror
@@ -215,9 +215,10 @@ int st_conf_read_config(const char * confFile) {
 	struct stat st;
 	fstat(fd, &st);
 
-	char * buffer = malloc(st.st_size);
+	char * buffer = malloc(st.st_size + 1);
 	read(fd, buffer, st.st_size);
 	close(fd);
+	buffer[st.st_size] = '\0';
 
 	char * ptr = buffer;
 	enum st_conf_section section = st_conf_section_unknown;

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:10:53 +0100                         *
+*  Last modified: Sun, 18 Dec 2011 11:41:26 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -140,7 +140,7 @@ struct st_checksum_driver * st_checksum_get_driver(const char * driver) {
 
 	void * cookie = 0;
 	if (!dr)
-		st_loader_load("checksum", driver);
+		cookie = st_loader_load("checksum", driver);
 
 	if (!dr && !cookie) {
 		st_log_write_all(st_log_level_error, "Checksum: Failed to load driver '%s'", driver);
@@ -235,14 +235,12 @@ void st_checksum_helper_free(struct st_checksum * helper) {
 		st_checksum_helper_digest(helper);
 
 	hp->checksum->ops->free(hp->checksum);
-	free(hp->checksum);
 	free(hp->digest);
 
 	pthread_mutex_destroy(&hp->lock);
 	pthread_cond_destroy(&hp->wait);
 
 	free(hp);
-	free(helper);
 }
 
 ssize_t st_checksum_helper_update(struct st_checksum * helper, const void * data, ssize_t length) {

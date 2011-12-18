@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:25:20 +0100                         *
+*  Last modified: Sun, 18 Dec 2011 11:25:16 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -36,7 +36,7 @@
 
 struct st_checksum_crc32_private {
 	uLong crc32;
-	char digest[5];
+	char digest[9];
 };
 
 static struct st_checksum * st_checksum_crc32_clone(struct st_checksum * new_checksum, struct st_checksum * current_checksum);
