@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 18 Dec 2011 11:41:26 +0100                         *
+*  Last modified: Sun, 18 Dec 2011 13:46:03 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -50,9 +50,17 @@ struct st_checksum_helper_private {
 	pthread_t thread;
 	struct st_checksum * checksum;
 	char * digest;
+	volatile int run;
 
-	int fd_in;
-	int fd_out;
+	struct st_helper_list {
+		void * buffer;
+		ssize_t length;
+
+		struct st_helper_list * next;
+	} * first, * last;
+
+	unsigned long nb_read;
+	unsigned long nb_write;
 
 	pthread_mutex_t lock;
 	pthread_cond_t wait;
@@ -183,10 +191,9 @@ struct st_checksum * st_checksum_get_helper(struct st_checksum * h, struct st_ch
 	hp->checksum = checksum;
 	hp->digest = 0;
 
-	int fds[2];
-	pipe(fds);
-	hp->fd_in = fds[0];
-	hp->fd_out = fds[1];
+	hp->first = hp->last = 0;
+
+	hp->nb_read = hp->nb_write = 0;
 
 	pthread_mutex_init(&hp->lock, 0);
 	pthread_cond_init(&hp->wait, 0);
@@ -215,15 +222,13 @@ struct st_checksum * st_checksum_helper_clone(struct st_checksum * new_checksum,
 char * st_checksum_helper_digest(struct st_checksum * helper) {
 	struct st_checksum_helper_private * hp = helper->data;
 
-	if (hp->fd_out > -1) {
-		pthread_mutex_lock(&hp->lock);
-		if (hp->fd_out > -1) {
-			close(hp->fd_out);
-			hp->fd_out = -1;
-			pthread_cond_wait(&hp->wait, &hp->lock);
-		}
-		pthread_mutex_unlock(&hp->lock);
-	}
+	pthread_mutex_lock(&hp->lock);
+	if (hp->first)
+		pthread_cond_wait(&hp->wait, &hp->lock);
+	hp->run = 0;
+	pthread_cond_signal(&hp->wait);
+	pthread_cond_wait(&hp->wait, &hp->lock);
+	pthread_mutex_unlock(&hp->lock);
 
 	return strdup(hp->digest);
 }
@@ -231,7 +236,7 @@ char * st_checksum_helper_digest(struct st_checksum * helper) {
 void st_checksum_helper_free(struct st_checksum * helper) {
 	struct st_checksum_helper_private * hp = helper->data;
 
-	if (hp->fd_out > -1)
+	if (hp->first)
 		st_checksum_helper_digest(helper);
 
 	hp->checksum->ops->free(hp->checksum);
@@ -252,7 +257,26 @@ ssize_t st_checksum_helper_update(struct st_checksum * helper, const void * data
 	if (hp->digest)
 		return -2;
 
-	return write(hp->fd_out, data, length);
+	struct st_helper_list * elt = malloc(sizeof(struct st_helper_list));
+	elt->buffer = malloc(length);
+	elt->length = length;
+	elt->next = 0;
+	memcpy(elt->buffer, data, length);
+
+	pthread_mutex_lock(&hp->lock);
+	if (!hp->first)
+		hp->first = hp->last = elt;
+	else if (hp->first == hp->last)
+		hp->first->next = hp->last = elt;
+	else
+		hp->last = hp->last->next = elt;
+
+	pthread_cond_signal(&hp->wait);
+	pthread_mutex_unlock(&hp->lock);
+
+	hp->nb_read++;
+
+	return length;
 }
 
 void * st_checksum_helper_work(void * param) {
@@ -261,15 +285,30 @@ void * st_checksum_helper_work(void * param) {
 
 	st_log_write_all(st_log_level_debug, "Checksum: Starting helper for checksum(%p)", hp->checksum);
 
-	ssize_t nb_read;
-	char buffer[4096];
-	while ((nb_read = read(hp->fd_in, buffer, 4096)) > 0)
-		hp->checksum->ops->update(hp->checksum, buffer, nb_read);
+	for (hp->run = 1;;) {
+		pthread_mutex_lock(&hp->lock);
+		if (!hp->first && hp->run) {
+			pthread_cond_signal(&hp->wait);
+			pthread_cond_wait(&hp->wait, &hp->lock);
+		}
 
-	close(hp->fd_in);
-	hp->fd_in = -1;
+		if (!hp->first && !hp->run)
+			break;
 
-	pthread_mutex_lock(&hp->lock);
+		struct st_helper_list * elt = hp->first;
+		hp->first = elt->next;
+		if (!hp->first)
+			hp->last = 0;
+		elt->next = 0;
+		pthread_mutex_unlock(&hp->lock);
+
+		hp->checksum->ops->update(hp->checksum, elt->buffer, elt->length);
+
+		free(elt->buffer);
+		free(elt);
+
+		hp->nb_write++;
+	}
 
 	hp->digest = hp->checksum->ops->digest(hp->checksum);
 
