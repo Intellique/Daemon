@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:03:40 +0100                         *
+*  Last modified: Tue, 20 Dec 2011 22:07:59 +0100                         *
 \*************************************************************************/
 
 // ssize_t
@@ -228,6 +228,31 @@ void st_scsi_loaderinfo(int fd, struct st_changer * changer) {
 	changer->barcode = 0;
 	if (inq.AdditionalLength > 50 && inq.VendorFlags & 1)
 		changer->barcode = 1;
+
+	unsigned char com2[6] = { 0x12, 1, 0x80, 0, 30, 0 };
+	char buffer[30];
+
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(com2);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = 30;
+	header.cmdp = com2;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = &buffer;
+	header.timeout = 60000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	status = ioctl(fd, SG_IO, &header);
+	if (status)
+		return;
+
+	length = buffer[3];
+	changer->serial_number = malloc(length + 1);
+	strncpy(changer->serial_number, buffer + 4, length);
+	changer->serial_number[length] = '\0';
 }
 
 int st_scsi_mtx_move(int fd, struct st_changer * ch, struct st_slot * from, struct st_slot * to) {

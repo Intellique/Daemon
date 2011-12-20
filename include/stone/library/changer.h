@@ -49,7 +49,8 @@ struct st_changer {
 	enum st_changer_status status;
 	char * model;
 	char * vendor;
-    char * revision;
+	char * revision;
+	char * serial_number;
 	int barcode;
 
 	int host;

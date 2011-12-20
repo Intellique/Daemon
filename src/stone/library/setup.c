@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:23:23 +0100                         *
+*  Last modified: Tue, 20 Dec 2011 22:07:18 +0100                         *
 \*************************************************************************/
 
 // open
@@ -172,6 +172,7 @@ void st_changer_setup() {
 		st_changers[i].model = 0;
 		st_changers[i].vendor = 0;
 		st_changers[i].revision = 0;
+		st_changers[i].serial_number = 0;
 		st_changers[i].barcode = 0;
 
 		st_changers[i].host = host;
