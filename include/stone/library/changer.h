@@ -83,6 +83,7 @@ struct st_slot {
 
 	char volume_name[37];
 	char full;
+	char is_import_export_slot;
 
 	struct st_ressource * lock;
 

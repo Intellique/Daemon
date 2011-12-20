@@ -291,6 +291,8 @@ void st_scsi_mtx_status_new(int fd, struct st_changer * changer) {
 	ElementModeSensePage_T * sense_page = (ElementModeSensePage_T *) (b1 + 4 + b1[3]);
 
 	changer->nb_slots = ((int) sense_page->NumStorageHi << 8) + sense_page->NumStorageLo;
+	unsigned int nb_io_slots = ((int) sense_page->NumImportExportHi << 8) + sense_page->NumImportExportLo;
+	changer->nb_slots += nb_io_slots;
 	changer->nb_slots += changer->nb_drives;
 
 	if (changer->nb_slots > 0)
@@ -310,6 +312,8 @@ void st_scsi_mtx_status_new(int fd, struct st_changer * changer) {
 		}
 
 		slot->tape = 0;
+
+		slot->is_import_export_slot = 0;
 	}
 
 	//unsigned int nb_drives = ((int) sense_page->NumDataTransferHi << 8) + sense_page->NumMediumTransportLo;
@@ -320,6 +324,11 @@ void st_scsi_mtx_status_new(int fd, struct st_changer * changer) {
 
 	start = ((int) sense_page->DataTransferStartHi << 8) + sense_page->DataTransferStartLo;
 	st_scsi_mtx_status_update_slot(fd, changer, start, changer->nb_drives, num_bytes, DataTransferElement);
+
+	if (nb_io_slots > 0) {
+		start = ((int) sense_page->ImportExportStartHi << 8) + sense_page->ImportExportStartLo;
+		st_scsi_mtx_status_update_slot(fd, changer, start, nb_io_slots, num_bytes, ImportExportElement);
+	}
 
 	changer->transport_address = ((int) sense_page->MediumTransportStartHi << 8) + sense_page->MediumTransportStartLo;
 }
@@ -391,6 +400,10 @@ void st_scsi_mtx_status_update_slot(int fd, struct st_changer * changer, int sta
 					index_slots -= start_element;
 					break;
 
+				case ImportExportElement:
+					index_slots = changer->nb_slots - nb_found_element;
+					break;
+
 				case StorageElement:
 					index_slots += changer->nb_drives - start_element;
 					break;
@@ -410,6 +423,8 @@ void st_scsi_mtx_status_update_slot(int fd, struct st_changer * changer, int sta
 					sl->volume_name[i] = '\0';
 			} else
 				*sl->volume_name = '\0';
+			if (type == ImportExportElement)
+				sl->is_import_export_slot = 1;
 			sl->address = address;
 			sl->src_address = type == DataTransferElement ? src_address : 0;
 
