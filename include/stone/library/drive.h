@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:21:28 +0100                         *
+*  Last modified: Thu, 22 Dec 2011 21:28:14 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_DRIVE_H__
@@ -95,6 +95,7 @@ struct st_drive {
 	// block size defined for this drive
 	// 0 => soft block
 	ssize_t block_size;
+	unsigned char best_density_code;
 	unsigned char density_code;
 	double operation_duration;
 	time_t last_clean;

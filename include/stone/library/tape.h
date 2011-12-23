@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:22:59 +0100                         *
+*  Last modified: Thu, 22 Dec 2011 20:15:23 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_TAPE_H__
@@ -32,36 +32,36 @@
 #include <sys/types.h>
 
 enum st_tape_location {
-    ST_TAPE_LOCATION_OFFLINE,
-    ST_TAPE_LOCATION_ONLINE,
-    ST_TAPE_LOCATION_UNKNOWN,
+	ST_TAPE_LOCATION_OFFLINE,
+	ST_TAPE_LOCATION_ONLINE,
+	ST_TAPE_LOCATION_UNKNOWN,
 };
 
 enum st_tape_status {
-    ST_TAPE_STATUS_ERASABLE,
-    ST_TAPE_STATUS_ERROR,
-    ST_TAPE_STATUS_FOREIGN,
-    ST_TAPE_STATUS_IN_USE,
-    ST_TAPE_STATUS_LOCKED,
-    ST_TAPE_STATUS_NEEDS_REPLACEMENT,
-    ST_TAPE_STATUS_NEW,
-    ST_TAPE_STATUS_POOLED,
-    ST_TAPE_STATUS_UNKNOWN,
+	ST_TAPE_STATUS_ERASABLE,
+	ST_TAPE_STATUS_ERROR,
+	ST_TAPE_STATUS_FOREIGN,
+	ST_TAPE_STATUS_IN_USE,
+	ST_TAPE_STATUS_LOCKED,
+	ST_TAPE_STATUS_NEEDS_REPLACEMENT,
+	ST_TAPE_STATUS_NEW,
+	ST_TAPE_STATUS_POOLED,
+	ST_TAPE_STATUS_UNKNOWN,
 };
 
 enum st_tape_format_data_type {
-    ST_TAPE_FORMAT_DATA_AUDIO,
-    ST_TAPE_FORMAT_DATA_CLEANING,
-    ST_TAPE_FORMAT_DATA_DATA,
-    ST_TAPE_FORMAT_DATA_VIDEO,
-    ST_TAPE_FORMAT_DATA_UNKNOWN,
+	ST_TAPE_FORMAT_DATA_AUDIO,
+	ST_TAPE_FORMAT_DATA_CLEANING,
+	ST_TAPE_FORMAT_DATA_DATA,
+	ST_TAPE_FORMAT_DATA_VIDEO,
+	ST_TAPE_FORMAT_DATA_UNKNOWN,
 };
 
 enum st_tape_format_mode {
-    ST_TAPE_FORMAT_MODE_DISK,
-    ST_TAPE_FORMAT_MODE_LINEAR,
-    ST_TAPE_FORMAT_MODE_OPTICAL,
-    ST_TAPE_FORMAT_MODE_UNKNOWN,
+	ST_TAPE_FORMAT_MODE_DISK,
+	ST_TAPE_FORMAT_MODE_LINEAR,
+	ST_TAPE_FORMAT_MODE_OPTICAL,
+	ST_TAPE_FORMAT_MODE_UNKNOWN,
 };
 
 struct st_drive;
@@ -70,46 +70,47 @@ struct st_tape_format;
 
 struct st_tape {
 	long id;
-    char label[37];
-    char name[64];
-    enum st_tape_status status;
-    enum st_tape_location location;
-    time_t first_used;
-    time_t use_before;
-    long load_count;
-    long read_count;
-    long write_count;
-    ssize_t end_position;
-    ssize_t block_size;
-    unsigned int nb_files;
-    unsigned char has_partition;
-    struct st_tape_format * format;
-    struct st_pool * pool;
+	char uuid[37];
+	char label[37];
+	char name[256];
+	enum st_tape_status status;
+	enum st_tape_location location;
+	time_t first_used;
+	time_t use_before;
+	long load_count;
+	long read_count;
+	long write_count;
+	ssize_t end_position;
+	ssize_t block_size;
+	unsigned int nb_files;
+	unsigned char has_partition;
+	struct st_tape_format * format;
+	struct st_pool * pool;
 };
 
 struct st_tape_format {
 	long id;
-    char name[64];
+	char name[64];
 	unsigned char density_code;
-    enum st_tape_format_data_type type;
-    enum st_tape_format_mode mode;
-    long max_load_count;
-    long max_read_count;
-    long max_write_count;
-    long max_op_count;
-    long life_span;
-    ssize_t capacity;
-    ssize_t block_size;
-    char support_partition;
+	enum st_tape_format_data_type type;
+	enum st_tape_format_mode mode;
+	long max_load_count;
+	long max_read_count;
+	long max_write_count;
+	long max_op_count;
+	long life_span;
+	ssize_t capacity;
+	ssize_t block_size;
+	char support_partition;
 };
 
 struct st_pool {
-    long id;
-    char name[64];
-    unsigned long retention;
-    time_t retention_limit;
-    unsigned char auto_recycle;
-    struct st_tape_format * format;
+	long id;
+	char name[64];
+	unsigned long retention;
+	time_t retention_limit;
+	unsigned char auto_recycle;
+	struct st_tape_format * format;
 };
 
 

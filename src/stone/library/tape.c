@@ -174,6 +174,8 @@ void st_tape_detect(struct st_drive * dr) {
 	reader->ops->close(reader);
 	reader->ops->free(reader);
 
+	*tape->uuid = '\0';
+	strcpy(tape->label, dr->slot->volume_name);
 	strcpy(tape->name, dr->slot->volume_name);
 	tape->location = ST_TAPE_LOCATION_ONLINE;
 	tape->first_used = time(0);

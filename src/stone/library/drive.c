@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:21:57 +0100                         *
+*  Last modified: Thu, 22 Dec 2011 21:31:38 +0100                         *
 \*************************************************************************/
 
 // open
@@ -461,9 +461,10 @@ void st_drive_generic_update_status(struct st_drive * drive) {
 		drive->is_door_opened    = GMT_DR_OPEN(status.mt_gstat) ? 1 : 0;
 
 		drive->block_size   = (status.mt_dsreg & MT_ST_BLKSIZE_MASK) >> MT_ST_BLKSIZE_SHIFT;
-		unsigned char density_code = (status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT;
-		if (density_code > 0)
-			drive->density_code = density_code;
+		drive->density_code = (status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT;
+
+		if (drive->density_code > drive->best_density_code)
+			drive->best_density_code = drive->density_code;
 
 		st_drive_generic_update_status2(drive, drive->is_door_opened ? ST_DRIVE_EMPTY_IDLE : ST_DRIVE_LOADED_IDLE);
 	} else {
@@ -493,6 +494,7 @@ void st_drive_setup(struct st_drive * drive) {
 
 	drive->ops = &st_drive_generic_ops;
 	drive->data = self;
+	drive->best_density_code = 0;
 	drive->density_code = 0;
 
 	st_drive_generic_update_status(drive);
