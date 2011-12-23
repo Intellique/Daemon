@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:15:49 +0100                         *
+*  Last modified: Fri, 23 Dec 2011 22:51:26 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -42,7 +42,7 @@
 
 static void st_log_exit(void) __attribute__((destructor));
 static int st_log_flush_message(void);
-static void st_log_store_message(char * who, enum st_log_level level, char * message);
+static void st_log_store_message(char * who, enum st_log_level level, enum st_log_type type, char * message);
 
 static int st_log_display_at_exit = 1;
 static struct st_log_driver ** st_log_drivers = 0;
@@ -50,6 +50,7 @@ static unsigned int st_log_nb_drivers = 0;
 static struct st_log_message_unsent {
 	char * who;
 	enum st_log_level level;
+	enum st_log_type type;
 	char * message;
 	char sent;
 } * st_log_message_unsent = 0;
@@ -66,7 +67,27 @@ static struct st_log_level2 {
 	{ st_log_level_info,    "Info" },
 	{ st_log_level_warning, "Warning" },
 
-	{ st_log_level_unknown, "Unknown" },
+	{ st_log_level_unknown, "Unknown level" },
+};
+
+static struct st_log_type2 {
+	enum st_log_type type;
+	const char * name;
+} st_log_types[] = {
+	{ st_log_type_changer,         "Changer" },
+	{ st_log_type_checksum,        "Checksum" },
+	{ st_log_type_daemon,          "Daemon" },
+	{ st_log_type_database,        "Database" },
+	{ st_log_type_drive,           "Drive" },
+	{ st_log_type_job,             "Job" },
+	{ st_log_type_plugin_checksum, "Plugin Checksum" },
+	{ st_log_type_plugin_db,       "Plugin Database" },
+	{ st_log_type_plugin_log,      "Plugin Log" },
+	{ st_log_type_scheduler,       "Scheduler" },
+	{ st_log_type_ui,              "User Interface" },
+	{ st_log_type_user_message,    "User Message" },
+
+	{ st_log_type_unknown, "Unknown type" },
 };
 
 
@@ -93,7 +114,7 @@ int st_log_flush_message() {
 				if (st_log_message_unsent[mes].who && strcmp(st_log_message_unsent[mes].who, st_log_drivers[dr]->modules[mod].alias))
 					continue;
 				if (st_log_drivers[dr]->modules[mod].level >= st_log_message_unsent[mes].level) {
-					st_log_drivers[dr]->modules[mod].ops->write(st_log_drivers[dr]->modules + mod, st_log_message_unsent[mes].level, st_log_message_unsent[mes].message);
+					st_log_drivers[dr]->modules[mod].ops->write(st_log_drivers[dr]->modules + mod, st_log_message_unsent[mes].level, st_log_message_unsent[mes].type, st_log_message_unsent[mes].message);
 					st_log_message_unsent[mes].sent = 1;
 					ok = 1;
 				}
@@ -135,7 +156,7 @@ struct st_log_driver * st_log_get_driver(const char * driver) {
 	pthread_mutex_lock(&st_log_lock);
 
 	if (!driver) {
-		st_log_write_all(st_log_level_error, "Log: Driver shall not be null");
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Driver shall not be null");
 		return 0;
 	}
 
@@ -150,7 +171,7 @@ struct st_log_driver * st_log_get_driver(const char * driver) {
 		cookie =st_loader_load("log", driver);
 
 	if (!dr && !cookie) {
-		st_log_write_all(st_log_level_error, "Log: Failed to load driver %s", driver);
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Failed to load driver %s", driver);
 		pthread_mutex_unlock(&st_log_lock);
 		if (old_state == PTHREAD_CANCEL_DISABLE)
 			pthread_setcancelstate(old_state, 0);
@@ -164,7 +185,7 @@ struct st_log_driver * st_log_get_driver(const char * driver) {
 		}
 
 	if (!dr)
-		st_log_write_all(st_log_level_error, "Log: Driver %s not found", driver);
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Driver %s not found", driver);
 
 	pthread_mutex_unlock(&st_log_lock);
 	if (old_state == PTHREAD_CANCEL_DISABLE)
@@ -183,19 +204,19 @@ const char * st_log_level_to_string(enum st_log_level level) {
 
 void st_log_register_driver(struct st_log_driver * driver) {
 	if (!driver) {
-		st_log_write_all(st_log_level_error, "Log: Try to register with driver=0");
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Try to register with driver=0");
 		return;
 	}
 
 	if (driver->api_version != STONE_LOG_APIVERSION) {
-		st_log_write_all(st_log_level_error, "Log: Driver(%s) has not the correct api version (current: %d, expected: %d)", driver->name, driver->api_version, STONE_LOG_APIVERSION);
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Driver(%s) has not the correct api version (current: %d, expected: %d)", driver->name, driver->api_version, STONE_LOG_APIVERSION);
 		return;
 	}
 
 	unsigned int i;
 	for (i = 0; i < st_log_nb_drivers; i++)
 		if (st_log_drivers[i] == driver || !strcmp(driver->name, st_log_drivers[i]->name)) {
-			st_log_write_all(st_log_level_info, "Log: Driver(%s) is already registred", driver->name);
+			st_log_write_all(st_log_level_info, st_log_type_daemon, "Log: Driver(%s) is already registred", driver->name);
 			return;
 		}
 
@@ -205,13 +226,14 @@ void st_log_register_driver(struct st_log_driver * driver) {
 
 	st_loader_register_ok();
 
-	st_log_write_all(st_log_level_info, "Log: Driver(%s) is now registred", driver->name);
+	st_log_write_all(st_log_level_info, st_log_type_daemon, "Log: Driver(%s) is now registred", driver->name);
 }
 
-void st_log_store_message(char * who, enum st_log_level level, char * message) {
+void st_log_store_message(char * who, enum st_log_level level, enum st_log_type type, char * message) {
 	st_log_message_unsent = realloc(st_log_message_unsent, (st_log_nb_message_unsent + 1) * sizeof(struct st_log_message_unsent));
 	st_log_message_unsent[st_log_nb_message_unsent].who = who;
 	st_log_message_unsent[st_log_nb_message_unsent].level = level;
+	st_log_message_unsent[st_log_nb_message_unsent].type = type;
 	st_log_message_unsent[st_log_nb_message_unsent].message = message;
 	st_log_message_unsent[st_log_nb_message_unsent].sent = 0;
 	st_log_nb_message_unsent++;
@@ -230,7 +252,26 @@ enum st_log_level st_log_string_to_level(const char * string) {
 	return st_log_level_unknown;
 }
 
-void st_log_write_all(enum st_log_level level, const char * format, ...) {
+enum st_log_type st_log_string_to_type(const char * string) {
+	if (!string)
+		return st_log_type_unknown;
+
+	struct st_log_type2 * ptr;
+	for (ptr = st_log_types; ptr->type != st_log_type_unknown; ptr++)
+		if (!strcasecmp(ptr->name, string))
+			return ptr->type;
+	return st_log_type_unknown;
+}
+
+const char * st_log_type_to_string(enum st_log_type type) {
+	struct st_log_type2 * ptr;
+	for (ptr = st_log_types; ptr->type != st_log_type_unknown; ptr++)
+		if (ptr->type == type)
+			return ptr->name;
+	return ptr->name;
+}
+
+void st_log_write_all(enum st_log_level level, enum st_log_type type, const char * format, ...) {
 	char * message = malloc(256);
 
 	va_list va;
@@ -243,7 +284,7 @@ void st_log_write_all(enum st_log_level level, const char * format, ...) {
 	pthread_mutex_lock(&st_log_lock);
 
 	if (st_log_nb_drivers == 0 || (st_log_message_unsent && !st_log_flush_message())) {
-		st_log_store_message(0, level, message);
+		st_log_store_message(0, level, type, message);
 
 		pthread_mutex_unlock(&st_log_lock);
 		if (old_state == PTHREAD_CANCEL_DISABLE)
@@ -256,14 +297,14 @@ void st_log_write_all(enum st_log_level level, const char * format, ...) {
 		unsigned int j;
 		for (j = 0; j < st_log_drivers[i]->nb_modules; j++) {
 			if (st_log_drivers[i]->modules[j].level >= level) {
-				st_log_drivers[i]->modules[j].ops->write(st_log_drivers[i]->modules + j, level, message);
+				st_log_drivers[i]->modules[j].ops->write(st_log_drivers[i]->modules + j, level, type, message);
 				sent = 1;
 			}
 		}
 	}
 
 	if (!sent)
-		st_log_store_message(0, level, message);
+		st_log_store_message(0, level, type, message);
 
 	pthread_mutex_unlock(&st_log_lock);
 	if (old_state == PTHREAD_CANCEL_DISABLE)

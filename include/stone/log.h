@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:10:28 +0100                         *
+*  Last modified: Fri, 23 Dec 2011 22:50:57 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LOG_H__
@@ -71,6 +71,23 @@ enum st_log_level {
 	st_log_level_unknown	= 0xF,
 };
 
+enum st_log_type {
+	st_log_type_changer,
+	st_log_type_checksum,
+	st_log_type_daemon,
+	st_log_type_database,
+	st_log_type_drive,
+	st_log_type_job,
+	st_log_type_plugin_checksum,
+	st_log_type_plugin_db,
+	st_log_type_plugin_log,
+	st_log_type_scheduler,
+	st_log_type_ui,
+	st_log_type_user_message,
+
+	st_log_type_unknown,
+};
+
 
 struct st_log_driver {
 	const char * name;
@@ -80,9 +97,18 @@ struct st_log_driver {
 	// used by server only
 	// should not be modified
 	void * cookie;
-	int api_version;
+	const int api_version;
 
-	struct st_log_module * modules;
+	struct st_log_module {
+		char * alias;
+		enum st_log_level level;
+		struct st_log_module_ops {
+			void (*free)(struct st_log_module * module);
+			void (*write)(struct st_log_module * module, enum st_log_level level, enum st_log_type type, const char * message);
+		} * ops;
+
+		void * data;
+	} * modules;
 	unsigned int nb_modules;
 };
 
@@ -93,32 +119,6 @@ struct st_log_driver {
  */
 #define STONE_LOG_APIVERSION 1
 
-
-struct st_log_module {
-	char * alias;
-	enum st_log_level level;
-	struct st_log_module_ops {
-		void (*free)(struct st_log_module * module);
-		void (*write)(struct st_log_module * module, enum st_log_level level, const char * message);
-	} * ops;
-
-	void * data;
-};
-
-
-/**
- * \brief convert an enumeration to a statically allocated string
- * \param level : one log level
- * \return string
- */
-const char * st_log_level_to_string(enum st_log_level level);
-
-/**
- * \brief convert a string to an enumeration
- * \param string : one string level
- * \return an enumeration
- */
-enum st_log_level st_log_string_to_level(const char * string);
 
 /**
  * \brief get a log driver
@@ -140,8 +140,25 @@ struct st_log_driver * st_log_get_driver(const char * module);
  */
 void st_log_register_driver(struct st_log_driver * driver);
 
-void st_log_write_all(enum st_log_level level, const char * format, ...) __attribute__ ((format (printf, 2, 3)));
-void st_log_write_to(const char * alias, enum st_log_level level, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
+/**
+ * \brief convert an enumeration to a statically allocated string
+ * \param level : one log level
+ * \return string
+ */
+const char * st_log_level_to_string(enum st_log_level level);
+
+/**
+ * \brief convert a string to an enumeration
+ * \param string : one string level
+ * \return an enumeration
+ */
+enum st_log_level st_log_string_to_level(const char * string);
+
+enum st_log_type st_log_string_to_type(const char * string);
+const char * st_log_type_to_string(enum st_log_type type);
+
+void st_log_write_all(enum st_log_level level, enum st_log_type type, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
+void st_log_write_to(const char * alias, enum st_log_type type, enum st_log_level level, const char * format, ...) __attribute__ ((format (printf, 4, 5)));
 
 #endif
 

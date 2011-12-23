@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:29:03 +0100                         *
+*  Last modified: Fri, 23 Dec 2011 22:56:00 +0100                         *
 \*************************************************************************/
 
 // open
@@ -52,7 +52,7 @@ struct st_log_file_private {
 };
 
 static void st_log_file_module_free(struct st_log_module * module);
-static void st_log_file_module_write(struct st_log_module * module, enum st_log_level level, const char * message);
+static void st_log_file_module_write(struct st_log_module * module, enum st_log_level level, enum st_log_type type, const char * message);
 
 static struct st_log_module_ops st_log_file_module_ops = {
 	.free  = st_log_file_module_free,
@@ -95,7 +95,7 @@ struct st_log_module * st_log_file_new(struct st_log_module * module, const char
 	return module;
 }
 
-void st_log_file_module_write(struct st_log_module * module, enum st_log_level level, const char * message) {
+void st_log_file_module_write(struct st_log_module * module, enum st_log_level level, enum st_log_type type, const char * message) {
 	struct st_log_file_private * self = module->data;
 
 	struct timeval curTime;
@@ -106,6 +106,6 @@ void st_log_file_module_write(struct st_log_module * module, enum st_log_level l
 	localtime_r(&(curTime.tv_sec), &curTime2);
 	strftime(buffer, 32, "%F %T", &curTime2);
 
-	dprintf(self->fd, "@%s %c: %s\n", buffer, st_log_level_to_string(level)[0], message);
+	dprintf(self->fd, "@%s [%s | %s]: %s\n", buffer, st_log_level_to_string(level), st_log_type_to_string(type), message);
 }
 

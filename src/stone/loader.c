@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:04:52 +0100                         *
+*  Last modified: Fri, 23 Dec 2011 22:48:25 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -69,7 +69,7 @@ void * st_loader_load_file(const char * filename) {
 
 	void * cookie = dlopen(filename, RTLD_NOW);
 	if (!cookie) {
-		st_log_write_all(st_log_level_debug, "Loader: failed to load '%s' because %s", filename, dlerror());
+		st_log_write_all(st_log_level_debug, st_log_type_daemon, "Loader: failed to load '%s' because %s", filename, dlerror());
 	} else if (!st_loader_loaded) {
 		dlclose(cookie);
 		cookie = 0;

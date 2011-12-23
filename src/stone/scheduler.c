@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 17:35:54 +0100                         *
+*  Last modified: Fri, 23 Dec 2011 22:52:27 +0100                         *
 \*************************************************************************/
 
 // free, realloc
@@ -45,20 +45,20 @@ static short st_sched_stop_request = 0;
 
 
 void st_sched_do_loop() {
-	st_log_write_all(st_log_level_info, "Scheduler: starting main loop");
+	st_log_write_all(st_log_level_info, st_log_type_scheduler, "Scheduler: starting main loop");
 
 	signal(SIGINT, st_sched_exit);
 
 	static struct st_database * db;
 	db = st_db_get_default_db();
 	if (!db) {
-		st_log_write_all(st_log_level_error, "Scheduler: there is no default database");
+		st_log_write_all(st_log_level_error, st_log_type_scheduler, "Scheduler: there is no default database");
 		return;
 	}
 
 	static struct st_database_connection connection;
 	if (!db->ops->connect(db, &connection)) {
-		st_log_write_all(st_log_level_error, "Scheduler: failed to connect to database");
+		st_log_write_all(st_log_level_error, st_log_type_scheduler, "Scheduler: failed to connect to database");
 		return;
 	}
 
@@ -138,7 +138,7 @@ void st_sched_do_loop() {
 
 void st_sched_exit(int signal) {
 	if (signal == SIGINT) {
-		st_log_write_all(st_log_level_warning, "Scheduler: catch SIGINT");
+		st_log_write_all(st_log_level_warning, st_log_type_scheduler, "Scheduler: catch SIGINT");
 		st_sched_stop_request = 1;
 	}
 }

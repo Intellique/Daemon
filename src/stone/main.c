@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:40:54 +0100                         *
+*  Last modified: Fri, 23 Dec 2011 22:50:27 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -39,10 +39,12 @@
 #include "log.h"
 #include "scheduler.h"
 
-static void sa_show_help(char * command);
+void st_test(void);
+
+static void st_show_help(char * command);
 
 int main(int argc, char ** argv) {
-	st_log_write_all(st_log_level_info, "STone, version: %s, build: %s %s", STONE_VERSION, __DATE__, __TIME__);
+	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone, version: %s, build: %s %s", STONE_VERSION, __DATE__, __TIME__);
 
     enum {
         OPT_CONFIG   = 'c',
@@ -75,12 +77,12 @@ int main(int argc, char ** argv) {
 		switch (opt) {
             case OPT_CONFIG:
 				config_file = optarg;
-				st_log_write_all(st_log_level_info, "Using configuration file: '%s'", optarg);
+				st_log_write_all(st_log_level_info, st_log_type_daemon, "Using configuration file: '%s'", optarg);
 				break;
 
             case OPT_DETACH:
 				detach = 1;
-				st_log_write_all(st_log_level_info, "Using detach mode (i.e. use fork())");
+				st_log_write_all(st_log_level_info, st_log_type_daemon, "Using detach mode (i.e. use fork())");
 				break;
 
             case OPT_HELP:
@@ -89,7 +91,7 @@ int main(int argc, char ** argv) {
 
             case OPT_PID_FILE:
 				pid_file = optarg;
-				st_log_write_all(st_log_level_info, "Using pid file: '%s'", optarg);
+				st_log_write_all(st_log_level_info, st_log_type_daemon, "Using pid file: '%s'", optarg);
 				break;
 
             case OPT_VERSION: {
@@ -105,7 +107,7 @@ int main(int argc, char ** argv) {
 		}
 	} while (opt > -1);
 
-	st_log_write_all(st_log_level_debug, "Parsing option: ok");
+	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Parsing option: ok");
 
 	// check pid file
 	int pid = st_conf_read_pid(pid_file);
@@ -113,15 +115,15 @@ int main(int argc, char ** argv) {
 		int code = st_conf_check_pid(pid);
 		switch (code) {
 			case -1:
-				st_log_write_all(st_log_level_error, "Warning: another process used this pid (%d)", pid);
+				st_log_write_all(st_log_level_error, st_log_type_daemon, "Warning: another process used this pid (%d)", pid);
 				break;
 
 			case 0:
-				st_log_write_all(st_log_level_error, "Info: daemon is dead, long life the daemon");
+				st_log_write_all(st_log_level_error, st_log_type_daemon, "Info: daemon is dead, long life the daemon");
 				break;
 
 			case 1:
-				st_log_write_all(st_log_level_error, "Error: Daemon is alive (pid: %d)", pid);
+				st_log_write_all(st_log_level_error, st_log_type_daemon, "Error: Daemon is alive (pid: %d)", pid);
 				return 2;
 		}
 	}
@@ -131,7 +133,7 @@ int main(int argc, char ** argv) {
 
 	// read configuration
 	if (st_conf_read_config(config_file)) {
-		st_log_write_all(st_log_level_error, "Error while parsing '%s'", config_file);
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Error while parsing '%s'", config_file);
 		return 3;
 	}
 
@@ -141,7 +143,7 @@ int main(int argc, char ** argv) {
 
 	// st_test();
 
-	st_log_write_all(st_log_level_info, "STone exit");
+	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone exit");
 
 	return 0;
 }

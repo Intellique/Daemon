@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 20 Dec 2011 22:07:18 +0100                         *
+*  Last modified: Fri, 23 Dec 2011 22:48:03 +0100                         *
 \*************************************************************************/
 
 // open
@@ -60,7 +60,7 @@ void st_changer_setup() {
 	gl.gl_offs = 0;
 	glob("/sys/class/scsi_device/*/device/scsi_tape", GLOB_DOOFFS, 0, &gl);
 
-	st_log_write_all(st_log_level_info, "Library: Found %zd drive%c", gl.gl_pathc, gl.gl_pathc != 1 ? 's' : '\0');
+	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd drive%c", gl.gl_pathc, gl.gl_pathc != 1 ? 's' : '\0');
 
 	struct st_drive * drives = calloc(gl.gl_pathc, sizeof(struct st_drive));
 	unsigned int nb_drives = gl.gl_pathc;
@@ -144,7 +144,7 @@ void st_changer_setup() {
 	st_changers = calloc(nb_drives, sizeof(struct st_changer));
 	st_nb_real_changers = gl.gl_pathc;
 
-	st_log_write_all(st_log_level_info, "Library: Found %zd librar%s", gl.gl_pathc, gl.gl_pathc != 1 ? "ies" : "y");
+	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd librar%s", gl.gl_pathc, gl.gl_pathc != 1 ? "ies" : "y");
 
 	for (i = 0; i < gl.gl_pathc; i++) {
 		char link[256];
@@ -220,7 +220,7 @@ void st_changer_setup() {
 		}
 	}
 
-	st_log_write_all(st_log_level_info, "Library: Found %u stand-alone drive%c", st_nb_fake_changers, st_nb_fake_changers != 1 ? 's' : '\0');
+	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %u stand-alone drive%c", st_nb_fake_changers, st_nb_fake_changers != 1 ? 's' : '\0');
 
 	if (drives)
 		free(drives);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:15:06 +0100                         *
+*  Last modified: Fri, 23 Dec 2011 22:42:52 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -65,7 +65,7 @@ struct st_database * st_db_get_db(const char * driver) {
 		cookie = st_loader_load("db", driver);
 
 	if (!dr && !cookie) {
-		st_log_write_all(st_log_level_error, "Db: Failed to load driver %s", driver);
+		st_log_write_all(st_log_level_error, st_log_type_database, "Db: Failed to load driver %s", driver);
 		pthread_mutex_unlock(&lock);
 		if (old_state == PTHREAD_CANCEL_DISABLE)
 			pthread_setcancelstate(old_state, 0);
@@ -79,7 +79,7 @@ struct st_database * st_db_get_db(const char * driver) {
 		}
 
 	if (!dr)
-		st_log_write_all(st_log_level_error, "Db: Driver %s not found", driver);
+		st_log_write_all(st_log_level_error, st_log_type_database, "Db: Driver %s not found", driver);
 
 	pthread_mutex_unlock(&lock);
 	if (old_state == PTHREAD_CANCEL_DISABLE)
@@ -90,12 +90,12 @@ struct st_database * st_db_get_db(const char * driver) {
 
 void st_db_register_db(struct st_database * db) {
 	if (!db) {
-		st_log_write_all(st_log_level_error, "Db: Try to register with driver=0");
+		st_log_write_all(st_log_level_error, st_log_type_database, "Db: Try to register with driver=0");
 		return;
 	}
 
 	if (db->api_version != STONE_DATABASE_APIVERSION) {
-		st_log_write_all(st_log_level_error, "Db: Driver(%s) has not the correct api version (current: %d, expected: %d)", db->name, db->api_version, STONE_DATABASE_APIVERSION);
+		st_log_write_all(st_log_level_error, st_log_type_database, "Db: Driver(%s) has not the correct api version (current: %d, expected: %d)", db->name, db->api_version, STONE_DATABASE_APIVERSION);
 		return;
 	}
 
@@ -105,14 +105,14 @@ void st_db_register_db(struct st_database * db) {
 
 	st_loader_register_ok();
 
-	st_log_write_all(st_log_level_info, "Db: Driver(%s) is now registred", db->name);
+	st_log_write_all(st_log_level_info, st_log_type_database, "Db: Driver(%s) is now registred", db->name);
 }
 
 void st_db_set_default_db(struct st_database * db) {
 	if (st_db_default_db)
-		st_log_write_all(st_log_level_debug, "Db: set new default database from %s to %s", st_db_default_db->name, db->name);
+		st_log_write_all(st_log_level_debug, st_log_type_database, "Db: set new default database from %s to %s", st_db_default_db->name, db->name);
 	else
-		st_log_write_all(st_log_level_debug, "Db: set new default database to %s", db->name);
+		st_log_write_all(st_log_level_debug, st_log_type_database, "Db: set new default database to %s", db->name);
 	if (db)
 		st_db_default_db = db;
 }
