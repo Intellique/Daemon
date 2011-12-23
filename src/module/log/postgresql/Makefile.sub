@@ -1,0 +1,16 @@
+STONE_LOG_POSTGRESQL_SRC_DIR		:= src/module/log/postgresql
+STONE_LOG_POSTGRESQL_BUILD_DIR	:= ${BUILD_DIR}/module/log/postgresql
+STONE_LOG_POSTGRESQL_DEPEND_DIR	:= ${DEPEND_DIR}/module/log/postgresql
+
+STONE_LOG_POSTGRESQL_SRC_FILES	:= $(sort $(shell test -d ${STONE_LOG_POSTGRESQL_SRC_DIR} && find ${STONE_LOG_POSTGRESQL_SRC_DIR} -name '*.c'))
+STONE_LOG_POSTGRESQL_HEAD_FILES	:= $(sort $(shell test -d ${STONE_LOG_POSTGRESQL_SRC_DIR} && find ${STONE_LOG_POSTGRESQL_SRC_DIR} -name '*.h'))
+STONE_LOG_POSTGRESQL_OBJ_FILES	:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${STONE_LOG_POSTGRESQL_SRC_FILES}))
+STONE_LOG_POSTGRESQL_DEP_FILES	:= $(sort $(shell test -d ${STONE_LOG_POSTGRESQL_DEPEND_DIR} && find ${STONE_LOG_POSTGRESQL_DEPEND_DIR} -name '*.d'))
+
+STONE_LOG_POSTGRESQL_BIN		:= lib/log/libpostgresql.so
+STONE_LOG_POSTGRESQL_CFLAG		:= -fPIC -fvisibility=hidden
+STONE_LOG_POSTGRESQL_LD			:= -shared -lpq
+
+STONE_LOG_POSTGRESQL_LIB		:=
+
+BIN_SYMS						+= STONE_LOG_POSTGRESQL
