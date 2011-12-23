@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Dec 2011 22:54:11 +0100                         *
+*  Last modified: Fri, 23 Dec 2011 23:25:18 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -117,9 +117,9 @@ int st_db_postgresql_ping(struct st_database * db) {
 	PQfinish(con);
 
 	if (status == CONNECTION_OK)
-		st_log_write_all(st_log_level_info, st_log_type_plugin_db, "db: Postgresql: ping => Ok");
+		st_log_write_all(st_log_level_info, st_log_type_plugin_db, "Postgresql: ping => Ok");
 	else
-		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "db: Postgresql: ping => Failed");
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: ping => Failed");
 
 	return status == CONNECTION_OK ? 1 : -1;
 }

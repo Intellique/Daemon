@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Dec 2011 22:46:26 +0100                         *
+*  Last modified: Fri, 23 Dec 2011 23:22:55 +0100                         *
 \*************************************************************************/
 
 // open
@@ -82,7 +82,7 @@ int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st
 	if (from->changer != ch || to->changer != ch)
 		return 1;
 
-	st_log_write_all(st_log_level_info, st_log_type_changer, "Library (%s | %s): loading tape from slot #%td to drive #%td", ch->vendor, ch->model, from - ch->slots, to - ch->drives);
+	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: loading tape from slot #%td to drive #%td", ch->vendor, ch->model, from - ch->slots, to - ch->drives);
 
 	st_realchanger_update_status(ch, ST_CHANGER_LOADING);
 	struct st_realchanger_private * self = ch->data;
@@ -107,7 +107,7 @@ int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st
 		st_realchanger_update_status(ch, ST_CHANGER_ERROR);
 	}
 
-	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "Library (%s | %s): loading tape from slot #%td to drive #%td finished with code = %d", ch->vendor, ch->model, from - ch->slots, to - ch->drives, failed);
+	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "[%s | %s]: loading tape from slot #%td to drive #%td finished with code = %d", ch->vendor, ch->model, from - ch->slots, to - ch->drives, failed);
 
 	return failed;
 }
@@ -117,7 +117,7 @@ void st_realchanger_setup(struct st_changer * changer) {
 
 	st_scsi_loaderinfo(fd, changer);
 
-	st_log_write_all(st_log_level_info, st_log_type_changer, "Library (%s | %s): starting setup", changer->vendor, changer->model);
+	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: starting setup", changer->vendor, changer->model);
 
 	st_scsi_mtx_status_new(fd, changer);
 
@@ -152,8 +152,8 @@ void st_realchanger_setup(struct st_changer * changer) {
 			if (sl) {
 				st_realchanger_unload(changer, dr, sl);
 			} else {
-				st_log_write_all(st_log_level_warning, st_log_type_changer, "Library (%s | %s): your drive #%td is offline and there is no place for unloading it", changer->vendor, changer->model, changer->drives - dr);
-				st_log_write_all(st_log_level_error, st_log_type_changer, "Library (%s | %s): panic: your library require manual maintenance because there is no free slot for unloading drive", changer->vendor, changer->model);
+				st_log_write_all(st_log_level_warning, st_log_type_changer, "[%s | %s]: your drive #%td is offline and there is no place for unloading it", changer->vendor, changer->model, changer->drives - dr);
+				st_log_write_all(st_log_level_error, st_log_type_changer, "[%s | %s]: panic: your library require manual maintenance because there is no free slot for unloading drive", changer->vendor, changer->model);
 				exit(1);
 			}
 		}
@@ -168,7 +168,7 @@ void st_realchanger_setup(struct st_changer * changer) {
 		if (!changer->slots[i].full)
 			nb_free_slot++;
 	if (nb_full_drive > nb_free_slot) {
-		st_log_write_all(st_log_level_error, st_log_type_changer, "Library (%s | %s): panic: your library require manual maintenance because there is not enough free slot for unloading drive", changer->vendor, changer->model);
+		st_log_write_all(st_log_level_error, st_log_type_changer, "[%s | %s]: panic: your library require manual maintenance because there is not enough free slot for unloading drive", changer->vendor, changer->model);
 		exit(1);
 	}
 
@@ -203,13 +203,13 @@ void st_realchanger_setup(struct st_changer * changer) {
 		if (ch->db_con) {
 			ch->db_con->ops->sync_changer(ch->db_con, changer);
 		} else {
-			st_log_write_all(st_log_level_info, st_log_type_changer, "Library (%s | %s): failed to connect to default database", changer->vendor, changer->model);
+			st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: failed to connect to default database", changer->vendor, changer->model);
 		}
 	} else {
-		st_log_write_all(st_log_level_warning, st_log_type_changer, "Library (%s | %s): there is no default database so changer is not able to synchronize with one database", changer->vendor, changer->model);
+		st_log_write_all(st_log_level_warning, st_log_type_changer, "[%s | %s]: there is no default database so changer is not able to synchronize with one database", changer->vendor, changer->model);
 	}
 
-	st_log_write_all(st_log_level_info, st_log_type_changer, "Library (%s | %s): setup terminated", changer->vendor, changer->model);
+	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: setup terminated", changer->vendor, changer->model);
 }
 
 void * st_realchanger_setup2(void * drive) {
@@ -287,7 +287,7 @@ int st_realchanger_unload(struct st_changer * ch, struct st_drive * from, struct
 	if (from->changer != ch || to->changer != ch)
 		return 1;
 
-	st_log_write_all(st_log_level_info, st_log_type_changer, "Library (%s | %s): unloading tape from drive #%td to slot #%td", ch->vendor, ch->model, from - ch->drives, to - ch->slots);
+	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: unloading tape from drive #%td to slot #%td", ch->vendor, ch->model, from - ch->drives, to - ch->slots);
 
 	st_realchanger_update_status(ch, ST_CHANGER_UNLOADING);
 	struct st_realchanger_private * self = ch->data;
@@ -310,7 +310,7 @@ int st_realchanger_unload(struct st_changer * ch, struct st_drive * from, struct
 		st_realchanger_update_status(ch, ST_CHANGER_ERROR);
 	}
 
-	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "Library (%s | %s): unloading tape from drive #%td to slot #%td finished with code = %d", ch->vendor, ch->model, from - ch->drives, to - ch->slots, failed);
+	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading tape from drive #%td to slot #%td finished with code = %d", ch->vendor, ch->model, from - ch->drives, to - ch->slots, failed);
 
 	return 0;
 }

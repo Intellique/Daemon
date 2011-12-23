@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Dec 2011 22:53:48 +0100                         *
+*  Last modified: Fri, 23 Dec 2011 23:24:53 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -101,7 +101,7 @@ int st_db_postgresql_cancel_transaction(struct st_database_connection * connecti
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status != PGRES_COMMAND_OK)
-		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Db: Postgresql (cid #%ld): error while cancelling a transaction => %s", connection->id, PQerrorMessage(self->db_con));
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): error while cancelling a transaction => %s", connection->id, PQerrorMessage(self->db_con));
 
 	PQclear(result);
 
@@ -115,7 +115,7 @@ void st_db_postgresql_check(struct st_database_connection * connection) {
 		for (i = 0; i < 3; i++) {
 			PQreset(self->db_con);
 			if (PQstatus(self->db_con) != CONNECTION_OK) {
-				st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Db: Postgresql (cid #%ld): Failed to reset database connection", connection->id);
+				st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): Failed to reset database connection", connection->id);
 				sleep(30);
 			} else
 				break;
@@ -212,7 +212,7 @@ int st_db_postgresql_finish_transaction(struct st_database_connection * connecti
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status != PGRES_COMMAND_OK)
-		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Db: Postgresql (cid #%ld): error while committing a transaction (%s)", connection->id, PQerrorMessage(self->db_con));
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): error while committing a transaction (%s)", connection->id, PQerrorMessage(self->db_con));
 
 	PQclear(result);
 
@@ -254,7 +254,7 @@ int st_db_postgresql_start_transaction(struct st_database_connection * connectio
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status != PGRES_COMMAND_OK)
-		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Db: Postgresql (cid #%ld): error while starting a transaction (%s)", connection->id, PQerrorMessage(self->db_con));
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): error while starting a transaction (%s)", connection->id, PQerrorMessage(self->db_con));
 
 	PQclear(result);
 
@@ -279,7 +279,7 @@ int st_db_postgresql_sync_changer(struct st_database_connection * connection, st
 		PQclear(result);
 	} else {
 		PQclear(result);
-		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Db: Postgresql (cid #%ld): Host not found into database (%s)", connection->id, name.nodename);
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): Host not found into database (%s)", connection->id, name.nodename);
 		return -1;
 	}
 
@@ -323,7 +323,7 @@ int st_db_postgresql_sync_changer(struct st_database_connection * connection, st
 			st_db_postgresql_get_long(result, 0, 0, &changer->id);
 
 		if (changer->id < 0)
-			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Db: Postgresql (cid #%ld): An expected probleme occured: failed to retreive changer id after insert it", connection->id);
+			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): An expected probleme occured: failed to retreive changer id after insert it", connection->id);
 
 		PQclear(result);
 	} else {
@@ -389,7 +389,7 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 
 	if (drive->id < 0 && drive->best_density_code < 1) {
 		free(changerid);
-		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Db: Postgresql (cid #%ld): Unable to complete update database without any tape", connection->id);
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): Unable to complete update database without any tape", connection->id);
 		return 1;
 	} else if (drive->id < 0) {
 		st_db_postgresql_prepare(self->db_con, "select_driveformat_by_densitycode", "SELECT id FROM driveformat WHERE densitycode = $1 LIMIT 1");
@@ -413,7 +413,7 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 			free(densitycode);
 			free(changerid);
 
-			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Db: Postgresql (cid #%ld): Unable to complete update database without any tape", connection->id);
+			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): Unable to complete update database without any tape", connection->id);
 			return 1;
 		}
 
@@ -464,7 +464,7 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 			free(densitycode);
 			free(changerid);
 
-			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Db: Postgresql (cid #%ld): An unexpected error: Failed to get density code of drive while updating it", connection->id);
+			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): An unexpected error: Failed to get density code of drive while updating it", connection->id);
 			return 1;
 		}
 
@@ -790,7 +790,7 @@ int st_db_postgresql_get_double(PGresult * result, int row, int column, double *
 void st_db_postgresql_get_error(PGresult * result) {
 	char * error = PQresultErrorMessage(result);
 
-	st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Db: Postgresql: error => %s", error);
+	st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: error => %s", error);
 }
 
 /*int st_db_postgresql_get_int(PGresult * result, int row, int column, int * val) {
@@ -880,7 +880,7 @@ void st_db_postgresql_prepare(PGconn * connection, const char * statement_name, 
 			st_db_postgresql_get_error(prepare);
 		PQclear(prepare);
 
-		st_log_write_all(status == PGRES_COMMAND_OK ? st_log_level_debug : st_log_level_error, st_log_type_plugin_db, "Db: Postgresql: new query prepared (%s) => {%s}, status: %s", statement_name, query, PQresStatus(status));
+		st_log_write_all(status == PGRES_COMMAND_OK ? st_log_level_debug : st_log_level_error, st_log_type_plugin_db, "Postgresql: new query prepared (%s) => {%s}, status: %s", statement_name, query, PQresStatus(status));
 	}
 	PQclear(prepared);
 }
