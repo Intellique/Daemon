@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 24 Dec 2011 15:45:10 +0100                         *
+*  Last modified: Sat, 24 Dec 2011 16:01:38 +0100                         *
 \*************************************************************************/
 
 // strerror
@@ -111,7 +111,7 @@ int st_conf_read_pid(const char * pid_file) {
 	}
 
 	if (access(pid_file, R_OK)) {
-		st_log_write_all(st_log_level_info, st_log_type_daemon, "Conf: read_pid: read pid failed because cannot access to '%s'", pid_file);
+		st_log_write_all(st_log_level_warning, st_log_type_daemon, "Conf: read_pid: read pid failed because cannot access to '%s'", pid_file);
 		return -1;
 	}
 
