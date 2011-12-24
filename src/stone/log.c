@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Dec 2011 22:51:26 +0100                         *
+*  Last modified: Sat, 24 Dec 2011 15:44:25 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -41,7 +41,6 @@
 #include "log.h"
 
 static void st_log_exit(void) __attribute__((destructor));
-static int st_log_flush_message(void);
 static void st_log_store_message(char * who, enum st_log_level level, enum st_log_type type, char * message);
 
 static int st_log_display_at_exit = 1;
@@ -283,7 +282,7 @@ void st_log_write_all(enum st_log_level level, enum st_log_type type, const char
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
 	pthread_mutex_lock(&st_log_lock);
 
-	if (st_log_nb_drivers == 0 || (st_log_message_unsent && !st_log_flush_message())) {
+	if (st_log_nb_drivers == 0 || st_log_message_unsent) {
 		st_log_store_message(0, level, type, message);
 
 		pthread_mutex_unlock(&st_log_lock);

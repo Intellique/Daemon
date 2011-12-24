@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Dec 2011 22:40:57 +0100                         *
+*  Last modified: Sat, 24 Dec 2011 15:45:10 +0100                         *
 \*************************************************************************/
 
 // strerror
@@ -44,9 +44,9 @@
 
 #include <stone/conf.h>
 #include <stone/database.h>
-#include <stone/log.h>
 #include <stone/util/hashtable.h>
 
+#include "log.h"
 #include "util/util.h"
 
 enum st_conf_section {
@@ -292,6 +292,8 @@ int st_conf_read_config(const char * confFile) {
 
 	st_hashtable_free(params);
 	free(buffer);
+
+	st_log_flush_message();
 
 	return 0;
 }
