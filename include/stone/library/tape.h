@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 22 Dec 2011 20:15:23 +0100                         *
+*  Last modified: Mon, 26 Dec 2011 11:22:12 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_TAPE_H__
@@ -32,6 +32,7 @@
 #include <sys/types.h>
 
 enum st_tape_location {
+	ST_TAPE_LOCATION_INDRIVE,
 	ST_TAPE_LOCATION_OFFLINE,
 	ST_TAPE_LOCATION_ONLINE,
 	ST_TAPE_LOCATION_UNKNOWN,

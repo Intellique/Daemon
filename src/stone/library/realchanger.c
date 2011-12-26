@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Dec 2011 23:22:55 +0100                         *
+*  Last modified: Mon, 26 Dec 2011 11:27:10 +0100                         *
 \*************************************************************************/
 
 // open
@@ -72,9 +72,8 @@ int st_realchanger_can_load() {
 }
 
 int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st_drive * to) {
-	if (!ch || !from || !to) {
+	if (!ch || !from || !to)
 		return 1;
-	}
 
 	if (to->slot == from)
 		return 0;
@@ -90,7 +89,7 @@ int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st
 
 	if (!failed) {
 		if (from->tape) {
-			from->tape->location = ST_TAPE_LOCATION_ONLINE;
+			from->tape->location = ST_TAPE_LOCATION_INDRIVE;
 			from->tape->load_count++;
 		}
 
@@ -303,7 +302,7 @@ int st_realchanger_unload(struct st_changer * ch, struct st_drive * from, struct
 		from->slot->src_address = 0;
 
 		if (to->tape)
-			to->tape->location = ST_TAPE_LOCATION_OFFLINE;
+			to->tape->location = ST_TAPE_LOCATION_ONLINE;
 
 		st_realchanger_update_status(ch, ST_CHANGER_IDLE);
 	} else {

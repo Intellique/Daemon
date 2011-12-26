@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 25 Dec 2011 11:00:19 +0100                         *
+*  Last modified: Mon, 26 Dec 2011 11:24:22 +0100                         *
 \*************************************************************************/
 
 // pthread_mutex_lock, pthread_mutex_unlock
@@ -70,8 +70,9 @@ static const struct st_tape_location2 {
 	char * name;
 	enum st_tape_location location;
 } st_tape_locations[] = {
-	{ "offline", ST_TAPE_LOCATION_OFFLINE },
-	{ "online",  ST_TAPE_LOCATION_ONLINE },
+	{ "in drive", ST_TAPE_LOCATION_INDRIVE },
+	{ "offline",  ST_TAPE_LOCATION_OFFLINE },
+	{ "online",   ST_TAPE_LOCATION_ONLINE },
 
 	{ 0, ST_TAPE_LOCATION_UNKNOWN },
 };
@@ -178,7 +179,7 @@ void st_tape_detect(struct st_drive * dr) {
 	*tape->uuid = '\0';
 	strcpy(tape->label, dr->slot->volume_name);
 	strcpy(tape->name, dr->slot->volume_name);
-	tape->location = ST_TAPE_LOCATION_ONLINE;
+	tape->location = ST_TAPE_LOCATION_INDRIVE;
 	tape->first_used = time(0);
 	tape->use_before = tape->first_used + tape->format->life_span;
 	tape->block_size = block_size;
