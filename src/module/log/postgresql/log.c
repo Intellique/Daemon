@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 24 Dec 2011 00:28:58 +0100                         *
+*  Last modified: Mon, 26 Dec 2011 12:02:55 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -31,6 +31,8 @@
 #include <string.h>
 // gettimeofday
 #include <sys/time.h>
+// uname
+#include <sys/utsname.h>
 // localtime_r, strftime
 #include <time.h>
 
@@ -38,6 +40,7 @@
 
 struct st_log_postgresql_private {
 	PGconn * connection;
+	char * hostid;
 };
 
 static void st_log_postgresql_module_free(struct st_log_module * module);
@@ -74,13 +77,23 @@ struct st_log_module * st_log_postgresql_new(struct st_log_module * module, cons
 
 	struct st_log_postgresql_private * self = malloc(sizeof(struct st_log_postgresql_private));
 	self->connection = con;
+	self->hostid = 0;
 
 	module->alias = strdup(alias);
 	module->level = level;
 	module->data = self;
 	module->ops = &st_log_postgresql_module_ops;
 
-	PGresult * prepare = PQprepare(con, "insert_log", "INSERT INTO log VALUES (DEFAULT, $1, $2, $3, $4, NULL)", 0, 0);
+	struct utsname name;
+	uname(&name);
+
+	const char * param[] = { name.nodename };
+	PGresult * result = PQexecParams(con, "SELECT id FROM host WHERE name = $1 LIMIT 1", 1, 0, param, 0, 0, 0);
+	if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		self->hostid = strdup(PQgetvalue(result, 0, 0));
+	PQclear(result);
+
+	PGresult * prepare = PQprepare(con, "insert_log", "INSERT INTO log VALUES (DEFAULT, $1, $2, $3, $4, $5, NULL)", 0, 0);
 	PQclear(prepare);
 
 	return module;
@@ -98,10 +111,11 @@ void st_log_postgresql_module_write(struct st_log_module * module, enum st_log_l
 	strftime(buffer, 32, "%F %T", &curTime2);
 
 	const char * param[] = {
-		st_log_postgresql_types[type], st_log_postgresql_levels[level], buffer, message
+		st_log_postgresql_types[type], st_log_postgresql_levels[level],
+		buffer, message, self->hostid,
 	};
 
-	PGresult * result = PQexecPrepared(self->connection, "insert_log", 4, param, 0, 0, 0);
+	PGresult * result = PQexecPrepared(self->connection, "insert_log", 5, param, 0, 0, 0);
 	PQclear(result);
 }
 
