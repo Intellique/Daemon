@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Dec 2011 23:24:53 +0100                         *
+*  Last modified: Mon, 26 Dec 2011 10:58:34 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -658,7 +658,7 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 	}
 
 	if (tape->id > -1) {
-		st_db_postgresql_prepare(self->db_con, "update_tape", "UPDATE tape SET name = $1, status = $2, location = $3, loadcount = $4, readcount = $5, writecount = $6, endpos = $7, nbfiles = $8, blocksize = $9, haspartition = $10 WHERE id = $11");
+		st_db_postgresql_prepare(self->db_con, "update_tape", "UPDATE tape SET uuid = $1, name = $2, status = $3, location = $4, loadcount = $5, readcount = $6, writecount = $7, endpos = $8, nbfiles = $9, blocksize = $10, haspartition = $11 WHERE id = $12");
 
 		char * load, * read, * write, * endpos, * nbfiles, * blocksize, * id;
 		asprintf(&load, "%ld", tape->load_count);
@@ -670,12 +670,12 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 		asprintf(&id, "%ld", tape->id);
 
 		const char * params[] = {
-			tape->name, st_tape_status_to_string(tape->status),
+			*tape->uuid ? tape->uuid : 0, tape->name, st_tape_status_to_string(tape->status),
 			st_tape_location_to_string(tape->location),
 			load, read, write, endpos, nbfiles, blocksize,
 			tape->has_partition ? "true" : "false", id
 		};
-		PGresult * result = PQexecPrepared(self->db_con, "update_tape", 11, params, 0, 0, 0);
+		PGresult * result = PQexecPrepared(self->db_con, "update_tape", 12, params, 0, 0, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:39:38 +0100                         *
+*  Last modified: Sun, 25 Dec 2011 11:00:19 +0100                         *
 \*************************************************************************/
 
 // pthread_mutex_lock, pthread_mutex_unlock
@@ -36,6 +36,7 @@
 // time
 #include <time.h>
 
+#include <stone/checksum.h>
 #include <stone/database.h>
 #include <stone/io.h>
 #include <stone/library/changer.h>
@@ -188,14 +189,67 @@ void st_tape_detect(struct st_drive * dr) {
 		return;
 	}
 
-	char name[65];
-	char label[37];
-	char digest[9];
-	if (sscanf(buffer, "STone\nversion: 0.2\nname: %64s\nuuid: %36s\nblocksize: %zd\ncrc32: %8s\n", name, label, &block_size, digest) == 4) {
-		 strcpy(tape->label, label);
-		 strcpy(tape->name, name);
-		 tape->status = ST_TAPE_STATUS_IN_USE;
-		 tape->block_size = block_size;
+	// STone (v.0.1)
+	// Tape format: version=1
+	// Label: A0000002
+	// Tape id: uuid=f680dd48-dd3e-4715-8ddc-a90d3e708914
+	// Pool: name=Foo, uuid=07117f1a-2b13-11e1-8bcb-80ee73001df6
+	// Block size: 32768
+	// Checksum: crc32=1eb6931d
+	char stone_version[9];
+	int tape_format_version = 0;
+	int nb_parsed = 0;
+	if (sscanf(buffer, "STone (v.%8[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
+		char uuid[37];
+		char name[65];
+		char pool_id[37];
+		char pool_name[65];
+		ssize_t block_size;
+		char checksum_name[12];
+		char checksum_value[64];
+
+		int nb_parsed2 = 0;
+		int ok = 1;
+
+		if (sscanf(buffer + nb_parsed, "Label: %36s\n%n", name, &nb_parsed2) == 1)
+			nb_parsed += nb_parsed2;
+		else
+			ok = 0;
+
+		if (ok && sscanf(buffer + nb_parsed, "Tape id: uuid=%37s\n%n", uuid, &nb_parsed2) == 1)
+			nb_parsed += nb_parsed2;
+		else
+			ok = 0;
+
+		if (ok && sscanf(buffer + nb_parsed, "Pool: name=%65[^,], uuid=%36s\n%n", pool_name, pool_id, &nb_parsed2) == 2)
+			nb_parsed += nb_parsed2;
+		else
+			ok = 0;
+
+		if (ok && sscanf(buffer + nb_parsed, "Block size: %zd\n%n", &block_size, &nb_parsed2) == 1)
+			nb_parsed += nb_parsed2;
+		else
+			ok = 0;
+
+		if (ok)
+			ok = sscanf(buffer + nb_parsed, "Checksum: %11[^=]=%64s\n", checksum_name, checksum_value) == 2;
+
+		if (ok) {
+			char * digest = st_checksum_compute(checksum_name, buffer, nb_parsed);
+			ok = digest && !strcmp(checksum_value, digest);
+
+			if (digest)
+				free(digest);
+		}
+
+		if (ok) {
+			strcpy(tape->uuid, uuid);
+			strcpy(tape->label, name);
+			strcpy(tape->name, name);
+			tape->status = ST_TAPE_STATUS_IN_USE;
+			tape->block_size = block_size;
+		} else
+			tape->status = ST_TAPE_STATUS_FOREIGN;
 	} else {
 		 tape->status = ST_TAPE_STATUS_FOREIGN;
 	}
