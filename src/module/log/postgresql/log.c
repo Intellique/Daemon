@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 26 Dec 2011 12:02:55 +0100                         *
+*  Last modified: Mon, 26 Dec 2011 19:45:16 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -88,7 +88,7 @@ struct st_log_module * st_log_postgresql_new(struct st_log_module * module, cons
 	uname(&name);
 
 	const char * param[] = { name.nodename };
-	PGresult * result = PQexecParams(con, "SELECT id FROM host WHERE name = $1 LIMIT 1", 1, 0, param, 0, 0, 0);
+	PGresult * result = PQexecParams(con, "SELECT id FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1", 1, 0, param, 0, 0, 0);
 	if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
 		self->hostid = strdup(PQgetvalue(result, 0, 0));
 	PQclear(result);

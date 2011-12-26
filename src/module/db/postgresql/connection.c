@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 26 Dec 2011 10:58:34 +0100                         *
+*  Last modified: Mon, 26 Dec 2011 19:45:19 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -268,7 +268,7 @@ int st_db_postgresql_sync_changer(struct st_database_connection * connection, st
 	struct utsname name;
 	uname(&name);
 
-	st_db_postgresql_prepare(self->db_con, "select_host_by_name", "SELECT id FROM host WHERE name = $1 LIMIT 1");
+	st_db_postgresql_prepare(self->db_con, "select_host_by_name", "SELECT id FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1");
 
 	const char * params1[] = { name.nodename };
 	PGresult * result = PQexecPrepared(self->db_con, "select_host_by_name", 1, params1, 0, 0, 0);
