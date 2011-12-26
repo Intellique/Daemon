@@ -1,6 +1,6 @@
-INSERT INTO Host VALUES (DEFAULT, 'localhost', NULL),
-       (DEFAULT, 'd65', '3U test'),
-       (DEFAULT, 'taiko.intellique.com', '5U court');
+INSERT INTO Host VALUES (DEFAULT, 'localhost', NULL, NULL),
+       (DEFAULT, 'd65', NULL, '3U test'),
+       (DEFAULT, 'taiko', 'intellique.com', '5U court');
 
 INSERT INTO TapeFormat VALUES (DEFAULT, 'LTO-5', 'data', 'linear', 4096, 4096, 40960, 40960, 1024, 1610612736, 8192, 88, TRUE),
        (DEFAULT, 'LTO-4', 'data', 'linear', 4096, 4096, 40960, 40960, 1024, 153691136, 8192, 70, FALSE),

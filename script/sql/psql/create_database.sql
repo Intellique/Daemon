@@ -66,12 +66,15 @@ CREATE TYPE LogLevel AS ENUM (
 
 CREATE TYPE LogType AS ENUM (
     'changer',
+    'checksum',
     'daemon',
+    'database',
     'drive',
     'job',
-	'plugin log',
-	'plugin db',
-	'plugin log',
+    'plugin checksum',
+    'plugin db',
+    'plugin log',
+    'scheduler',
     'ui',
     'user message'
 );
@@ -172,8 +175,10 @@ CREATE TABLE DriveFormatSupport (
 
 CREATE TABLE Host (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL UNIQUE,
-    description TEXT
+    name VARCHAR(255) NOT NULL,
+    domaine VARCHAR(255) NULL,
+    description TEXT,
+    UNIQUE (name, domaine)
 );
 
 CREATE TABLE Changer (
@@ -302,7 +307,7 @@ CREATE TABLE Job (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     type JobType NOT NULL,
-	done FLOAT NOT NULL DEFAULT 0,
+    done FLOAT NOT NULL DEFAULT 0,
     status JobStatus NOT NULL,
     nextStart TIMESTAMP(0) NOT NULL,
     interval INTEGER CHECK (interval > 0),
@@ -343,6 +348,7 @@ CREATE TABLE Log (
     level LogLevel NOT NULL,
     time TIMESTAMP(0) NOT NULL,
     message TEXT NOT NULL,
+    host INTEGER NOT NULL REFERENCES Host(id) ON DELETE CASCADE ON UPDATE CASCADE,
     login INTEGER NULL REFERENCES Users(id) ON DELETE SET NULL ON UPDATE CASCADE
 );
 
