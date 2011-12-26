@@ -144,7 +144,7 @@ void st_changer_setup() {
 	st_changers = calloc(nb_drives, sizeof(struct st_changer));
 	st_nb_real_changers = gl.gl_pathc;
 
-	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd librar%s", gl.gl_pathc, gl.gl_pathc != 1 ? "ies" : "y");
+	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd changer%c", gl.gl_pathc, gl.gl_pathc != 1 ? 's' : '\0');
 
 	for (i = 0; i < gl.gl_pathc; i++) {
 		char link[256];
