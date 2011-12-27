@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Dec 2011 22:50:27 +0100                         *
+*  Last modified: Tue, 27 Dec 2011 21:29:56 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -31,6 +31,8 @@
 #include <stdio.h>
 // strrchr
 #include <string.h>
+// daemon
+#include <unistd.h>
 
 #include <stone/conf.h>
 #include <stone/library/changer.h>
@@ -129,12 +131,23 @@ int main(int argc, char ** argv) {
 	}
 
 	// create daemon
-	if (detach) {}
+	if (detach) {
+		if (!daemon(0, 0)) {
+			pid_t pid = getpid();
+			st_conf_write_pid(pid_file, pid);
+		} else {
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: Failed to daemonize");
+			return 3;
+		}
+	} else {
+		pid_t pid = getpid();
+		st_conf_write_pid(pid_file, pid);
+	}
 
 	// read configuration
 	if (st_conf_read_config(config_file)) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Error while parsing '%s'", config_file);
-		return 3;
+		return 4;
 	}
 
 	st_changer_setup();

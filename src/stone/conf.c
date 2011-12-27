@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 24 Dec 2011 16:01:38 +0100                         *
+*  Last modified: Tue, 27 Dec 2011 21:32:26 +0100                         *
 \*************************************************************************/
 
 // strerror
@@ -149,7 +149,7 @@ int st_conf_write_pid(const char * pid_file, int pid) {
 	dprintf(fd, "%d\n", pid);
 	close(fd);
 
-	st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: write_pid: write ok (pid=%d)", pid);
+	st_log_write_all(st_log_level_info, st_log_type_daemon, "Conf: write_pid: write ok (pid=%d)", pid);
 
 	return 0;
 }
