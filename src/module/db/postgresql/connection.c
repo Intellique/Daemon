@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 26 Dec 2011 19:45:19 +0100                         *
+*  Last modified: Tue, 27 Dec 2011 15:37:58 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -57,6 +57,8 @@ static int st_db_postgresql_cancel_transaction(struct st_database_connection * c
 static int st_db_postgresql_finish_transaction(struct st_database_connection * connection);
 static int st_db_postgresql_start_transaction(struct st_database_connection * connection, short read_only);
 
+static int st_db_postgresql_create_pool(struct st_database_connection * db, struct st_pool * pool);
+static int st_db_postgresql_get_pool(struct st_database_connection * db, struct st_pool * pool, const char * uuid);
 static int st_db_postgresql_get_tape_format(struct st_database_connection * db, struct st_tape_format * tape_format, unsigned char density_code);
 static int st_db_postgresql_sync_changer(struct st_database_connection * db, struct st_changer * changer);
 static int st_db_postgresql_sync_drive(struct st_database_connection * db, struct st_drive * drive);
@@ -83,6 +85,8 @@ static struct st_database_connection_ops st_db_postgresql_con_ops = {
 	.finish_transaction = st_db_postgresql_finish_transaction,
 	.start_transaction  = st_db_postgresql_start_transaction,
 
+	.create_pool     = st_db_postgresql_create_pool,
+	.get_pool        = st_db_postgresql_get_pool,
 	.get_tape_format = st_db_postgresql_get_tape_format,
 	.sync_changer    = st_db_postgresql_sync_changer,
 	.sync_drive      = st_db_postgresql_sync_drive,
@@ -163,6 +167,53 @@ int st_db_postgresql_con_free(struct st_database_connection * connection) {
 	free(self);
 
 	return 0;
+}
+
+int st_db_postgresql_create_pool(struct st_database_connection * connection, struct st_pool * pool) {
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	st_db_postgresql_prepare(self->db_con, "insert_pool", "INSERT INTO pool VALUES (DEFAULT, $1, $2, DEFAULT, DEFAULT, DEFAULT, $3)");
+
+	char * tape_format = 0;
+	asprintf(&tape_format, "%ld", pool->format->id);
+
+	const char * param[] = { pool->uuid, pool->name, tape_format, };
+	PGresult * result = PQexecPrepared(self->db_con, "insert_pool", 3, param, 0, 0, 0);
+	if (PQresultStatus(result) == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result);
+	PQclear(result);
+	free(tape_format);
+
+	st_db_postgresql_get_pool(connection, pool, pool->uuid);
+
+	return 0;
+}
+
+int st_db_postgresql_get_pool(struct st_database_connection * connection, struct st_pool * pool, const char * uuid) {
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	st_db_postgresql_prepare(self->db_con, "select_pool_by_id", "SELECT * FROM pool WHERE uuid = $1 LIMIT 1");
+
+	const char * param[] = { uuid };
+	PGresult * result = PQexecPrepared(self->db_con, "select_pool_by_id", 1, param, 0, 0, 0);
+
+	if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		st_db_postgresql_get_long(result, 0, 0, &pool->id);
+		st_db_postgresql_get_string(result, 0, 1, pool->uuid);
+		st_db_postgresql_get_string(result, 0, 2, pool->name);
+		st_db_postgresql_get_long(result, 0, 3, &pool->retention);
+		st_db_postgresql_get_time(result, 0, 4, &pool->retention_limit);
+		st_db_postgresql_get_uchar(result, 0, 5, &pool->auto_recycle);
+		pool->format = 0;
+
+		PQclear(result);
+		return 0;
+	}
+
+	PQclear(result);
+	return 1;
 }
 
 int st_db_postgresql_get_tape_format(struct st_database_connection * connection, struct st_tape_format * tape_format, unsigned char density_code) {
@@ -658,24 +709,26 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 	}
 
 	if (tape->id > -1) {
-		st_db_postgresql_prepare(self->db_con, "update_tape", "UPDATE tape SET uuid = $1, name = $2, status = $3, location = $4, loadcount = $5, readcount = $6, writecount = $7, endpos = $8, nbfiles = $9, blocksize = $10, haspartition = $11 WHERE id = $12");
+		st_db_postgresql_prepare(self->db_con, "update_tape", "UPDATE tape SET uuid = $1, name = $2, status = $3, location = $4, loadcount = $5, readcount = $6, writecount = $7, endpos = $8, nbfiles = $9, blocksize = $10, haspartition = $11, pool = $12 WHERE id = $13");
 
-		char * load, * read, * write, * endpos, * nbfiles, * blocksize, * id;
+		char * load, * read, * write, * endpos, * nbfiles, * blocksize, * pool = 0, * id;
 		asprintf(&load, "%ld", tape->load_count);
 		asprintf(&read, "%ld", tape->read_count);
 		asprintf(&write, "%ld", tape->write_count);
 		asprintf(&endpos, "%zd", tape->end_position);
 		asprintf(&nbfiles, "%u", tape->nb_files);
 		asprintf(&blocksize, "%zd", tape->block_size);
+		if (tape->pool)
+			asprintf(&pool, "%ld", tape->pool->id);
 		asprintf(&id, "%ld", tape->id);
 
 		const char * params[] = {
 			*tape->uuid ? tape->uuid : 0, tape->name, st_tape_status_to_string(tape->status),
 			st_tape_location_to_string(tape->location),
 			load, read, write, endpos, nbfiles, blocksize,
-			tape->has_partition ? "true" : "false", id
+			tape->has_partition ? "true" : "false", pool, id
 		};
-		PGresult * result = PQexecPrepared(self->db_con, "update_tape", 12, params, 0, 0, 0);
+		PGresult * result = PQexecPrepared(self->db_con, "update_tape", 13, params, 0, 0, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -689,6 +742,8 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 		free(nbfiles);
 		free(blocksize);
 		free(id);
+		if (pool)
+			free(pool);
 
 		return status != PGRES_COMMAND_OK;
 	} else {
@@ -704,14 +759,16 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 		localtime_r(&tape->use_before, &tv);
 		strftime(buffer_use_before, 32, "%F %T", &tv);
 
-		char * load, * read, * write, * endpos, * nbfiles, * blocksize, * id;
+		char * load, * read, * write, * endpos, * nbfiles, * blocksize, * tapeformat, * pool = 0;
 		asprintf(&load, "%ld", tape->load_count);
 		asprintf(&read, "%ld", tape->read_count);
 		asprintf(&write, "%ld", tape->write_count);
 		asprintf(&endpos, "%zd", tape->end_position);
 		asprintf(&nbfiles, "%u", tape->nb_files);
 		asprintf(&blocksize, "%zd", tape->block_size);
-		asprintf(&id, "%ld", tape->format->id);
+		asprintf(&tapeformat, "%ld", tape->format->id);
+		if (tape->pool)
+			asprintf(&pool, "%ld", tape->pool->id);
 
 		const char * params[] = {
 			*tape->uuid ? tape->uuid : 0, tape->label, tape->name,
@@ -719,7 +776,7 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 			st_tape_location_to_string(tape->location),
 			buffer_first_used, buffer_use_before,
 			load, read, write, endpos, nbfiles, blocksize,
-			tape->has_partition ? "true" : "false", id, 0
+			tape->has_partition ? "true" : "false", tapeformat, pool
 		};
 		PGresult * result = PQexecPrepared(self->db_con, "insert_tape", 16, params, 0, 0, 0);
 		ExecStatusType status = PQresultStatus(result);
@@ -734,7 +791,9 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 		free(endpos);
 		free(nbfiles);
 		free(blocksize);
-		free(id);
+		free(tapeformat);
+		if (pool)
+			free(pool);
 
 		if (status == PGRES_FATAL_ERROR)
 			return status != PGRES_COMMAND_OK;

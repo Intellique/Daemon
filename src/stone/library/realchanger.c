@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 26 Dec 2011 11:27:10 +0100                         *
+*  Last modified: Tue, 27 Dec 2011 20:50:54 +0100                         *
 \*************************************************************************/
 
 // open
@@ -217,7 +217,6 @@ void * st_realchanger_setup2(void * drive) {
 
 	if (!dr->is_door_opened) {
 		dr->slot->tape = st_tape_new(dr);
-		st_tape_detect(dr);
 
 		struct st_slot * sl = 0;
 		unsigned int i;
@@ -262,7 +261,6 @@ void * st_realchanger_setup2(void * drive) {
 
 			dr->ops->reset(dr);
 			dr->slot->tape = st_tape_new(dr);
-			st_tape_detect(dr);
 			dr->ops->eject(dr);
 
 			ch->lock->ops->lock(ch->lock);
