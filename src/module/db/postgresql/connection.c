@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 27 Dec 2011 15:37:58 +0100                         *
+*  Last modified: Tue, 27 Dec 2011 23:33:37 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -60,6 +60,7 @@ static int st_db_postgresql_start_transaction(struct st_database_connection * co
 static int st_db_postgresql_create_pool(struct st_database_connection * db, struct st_pool * pool);
 static int st_db_postgresql_get_pool(struct st_database_connection * db, struct st_pool * pool, const char * uuid);
 static int st_db_postgresql_get_tape_format(struct st_database_connection * db, struct st_tape_format * tape_format, unsigned char density_code);
+static int st_db_postgresql_is_changer_contain_drive(struct st_database_connection * db, struct st_changer * changer, struct st_drive * drive);
 static int st_db_postgresql_sync_changer(struct st_database_connection * db, struct st_changer * changer);
 static int st_db_postgresql_sync_drive(struct st_database_connection * db, struct st_drive * drive);
 static int st_db_postgresql_sync_slot(struct st_database_connection * db, struct st_slot * slot);
@@ -85,12 +86,13 @@ static struct st_database_connection_ops st_db_postgresql_con_ops = {
 	.finish_transaction = st_db_postgresql_finish_transaction,
 	.start_transaction  = st_db_postgresql_start_transaction,
 
-	.create_pool     = st_db_postgresql_create_pool,
-	.get_pool        = st_db_postgresql_get_pool,
-	.get_tape_format = st_db_postgresql_get_tape_format,
-	.sync_changer    = st_db_postgresql_sync_changer,
-	.sync_drive      = st_db_postgresql_sync_drive,
-	.sync_tape       = st_db_postgresql_sync_tape,
+	.create_pool              = st_db_postgresql_create_pool,
+	.get_pool                 = st_db_postgresql_get_pool,
+	.get_tape_format          = st_db_postgresql_get_tape_format,
+	.is_changer_contain_drive = st_db_postgresql_is_changer_contain_drive,
+	.sync_changer             = st_db_postgresql_sync_changer,
+	.sync_drive               = st_db_postgresql_sync_drive,
+	.sync_tape                = st_db_postgresql_sync_tape,
 };
 
 
@@ -117,7 +119,10 @@ void st_db_postgresql_check(struct st_database_connection * connection) {
 	if (PQstatus(self->db_con) != CONNECTION_OK) {
 		int i;
 		for (i = 0; i < 3; i++) {
+			st_log_write_all(st_log_level_warning, st_log_type_plugin_db, "Postgresql (cid #%ld): Try to reset database connection", connection->id);
+
 			PQreset(self->db_con);
+
 			if (PQstatus(self->db_con) != CONNECTION_OK) {
 				st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): Failed to reset database connection", connection->id);
 				sleep(30);
@@ -190,6 +195,24 @@ int st_db_postgresql_create_pool(struct st_database_connection * connection, str
 	return 0;
 }
 
+int st_db_postgresql_finish_transaction(struct st_database_connection * connection) {
+	if (!connection)
+		return -1;
+
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	PGresult * result = PQexec(self->db_con, "COMMIT;");
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status != PGRES_COMMAND_OK)
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): error while committing a transaction (%s)", connection->id, PQerrorMessage(self->db_con));
+
+	PQclear(result);
+
+	return status == PGRES_COMMAND_OK ? 0 : -1;
+}
+
 int st_db_postgresql_get_pool(struct st_database_connection * connection, struct st_pool * pool, const char * uuid) {
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
@@ -252,24 +275,6 @@ int st_db_postgresql_get_tape_format(struct st_database_connection * connection,
 	return 1;
 }
 
-int st_db_postgresql_finish_transaction(struct st_database_connection * connection) {
-	if (!connection)
-		return -1;
-
-	struct st_db_postgresql_connetion_private * self = connection->data;
-	st_db_postgresql_check(connection);
-
-	PGresult * result = PQexec(self->db_con, "COMMIT;");
-	ExecStatusType status = PQresultStatus(result);
-
-	if (status != PGRES_COMMAND_OK)
-		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): error while committing a transaction (%s)", connection->id, PQerrorMessage(self->db_con));
-
-	PQclear(result);
-
-	return status == PGRES_COMMAND_OK ? 0 : -1;
-}
-
 int st_db_postgresql_init_connection(struct st_database_connection * connection, struct st_db_postgresql_private * driver_private) {
 	if (!connection || !connection->driver)
 		return -1;
@@ -291,6 +296,37 @@ int st_db_postgresql_init_connection(struct st_database_connection * connection,
 	connection->data = self;
 
 	return 0;
+}
+
+int st_db_postgresql_is_changer_contain_drive(struct st_database_connection * connection, struct st_changer * changer, struct st_drive * drive) {
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	st_db_postgresql_prepare(self->db_con, "select_changer_of_drive_by_model_vendor_serialnumber", "SELECT changer FROM drive WHERE model = $1 AND vendor = $2 AND serialnumber = $3 LIMIT 1");
+
+	const char * params[] = { drive->model, drive->vendor, drive->serial_number };
+	PGresult * result = PQexecPrepared(self->db_con, "select_changer_of_drive_by_model_vendor_serialnumber", 3, params, 0, 0, 0);
+
+	char * changerid = 0;
+	if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		st_db_postgresql_get_string_dup(result, 0, 0, &changerid);
+		PQclear(result);
+	} else {
+		PQclear(result);
+		return 0;
+	}
+
+	st_db_postgresql_prepare(self->db_con, "select_changer_by_model_vendor_serialnumber_id", "SELECT id FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND id = $4 LIMIT 1");
+
+	const char * params2[] = { changer->model, changer->vendor, changer->serial_number, changerid };
+	result = PQexecPrepared(self->db_con, "select_changer_by_model_vendor_serialnumber_id", 4, params2, 0, 0, 0);
+
+	int ok = PQntuples(result) == 1;
+
+	PQclear(result);
+	free(changerid);
+
+	return ok;
 }
 
 // TODO: check this function
