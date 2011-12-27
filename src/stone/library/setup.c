@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Dec 2011 22:48:03 +0100                         *
+*  Last modified: Tue, 27 Dec 2011 23:55:28 +0100                         *
 \*************************************************************************/
 
 // open
@@ -44,6 +44,7 @@
 // readlink
 #include <unistd.h>
 
+#include <stone/database.h>
 #include <stone/io.h>
 #include <stone/log.h>
 
@@ -192,6 +193,8 @@ void st_changer_setup() {
 	globfree(&gl);
 
 
+	// link drive to real changer
+	unsigned int nb_changer_without_drive = 0;
 	for (i = 0; i < st_nb_real_changers; i++) {
 		unsigned j;
 		for (j = 0; j < nb_drives; j++) {
@@ -203,8 +206,52 @@ void st_changer_setup() {
 				st_changers[i].nb_drives++;
 			}
 		}
+
+		if (st_changers[i].nb_drives == 0)
+			nb_changer_without_drive++;
 	}
 
+	// try to link drive to real changer with database
+	if (nb_changer_without_drive > 0) {
+		struct st_database * db = st_db_get_default_db();
+		struct st_database_connection * con = db->ops->connect(db, 0);
+
+		for (i = 0; con && i < st_nb_real_changers; i++) {
+			if (st_changers[i].nb_drives > 0)
+				continue;
+
+			unsigned int j, linked = 0;
+			for (j = 0; j < nb_drives; j++) {
+				if (drives[j].changer)
+					continue;
+
+				if (con->ops->is_changer_contain_drive(con, st_changers + i, drives + j)) {
+					drives[j].changer = st_changers + i;
+
+					st_changers[i].drives = realloc(st_changers[i].drives, (st_changers[i].nb_drives + 1) * sizeof(struct st_drive));
+					st_changers[i].drives[st_changers[i].nb_drives] = drives[j];
+					st_changers[i].nb_drives++;
+
+					linked++;
+				}
+			}
+
+			if (linked)
+				nb_changer_without_drive--;
+		}
+
+		if (con) {
+			con->ops->close(con);
+			con->ops->free(con);
+			free(con);
+		}
+	}
+
+	// infor user that there is real changer without drive
+	if (nb_changer_without_drive > 0)
+		st_log_write_all(st_log_level_warning, st_log_type_user_message, "Library: There is %u changer%c without drives", nb_changer_without_drive, nb_changer_without_drive != 1 ? 's' : '\0');
+
+	// link stand-alone drive to fake changer
 	for (i = st_nb_real_changers; i < nb_drives; i++) {
 		unsigned j;
 		for (j = 0; j < nb_drives; j++) {
