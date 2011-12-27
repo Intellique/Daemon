@@ -360,5 +360,7 @@ COMMENT ON TABLE Checksum IS 'Contains only checksum available';
 
 COMMENT ON COLUMN DriveFormat.cleaningInterval IS 'Interval between two cleaning in days';
 
+COMMENT ON COLUMN Pool.retention IS 'Retention interval in days';
+
 COMMENT ON COLUMN Tape.label IS 'Contains an UUID';
 
