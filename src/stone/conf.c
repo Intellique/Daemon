@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 27 Dec 2011 21:32:26 +0100                         *
+*  Last modified: Tue, 27 Dec 2011 21:36:46 +0100                         *
 \*************************************************************************/
 
 // strerror
@@ -140,7 +140,7 @@ int st_conf_write_pid(const char * pid_file, int pid) {
 		return 1;
 	}
 
-	int fd = open(pid_file, O_RDONLY | O_TRUNC | O_CREAT, 0644);
+	int fd = open(pid_file, O_WRONLY | O_TRUNC | O_CREAT, 0644);
 	if (fd < 0) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: write_pid: failed to open '%s' => %s", pid_file, strerror(errno));
 		return 1;
