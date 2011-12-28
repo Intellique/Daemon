@@ -22,15 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 28 Dec 2011 13:59:35 +0100                         *
+*  Last modified: Wed, 28 Dec 2011 15:44:06 +0100                         *
 \*************************************************************************/
 
 // getopt_long
 #include <getopt.h>
 // printf
 #include <stdio.h>
-// strrchr
-#include <string.h>
 // daemon
 #include <unistd.h>
 
@@ -43,7 +41,7 @@
 
 void st_test(void);
 
-static void st_show_help(char * command);
+static void st_show_help(void);
 
 int main(int argc, char ** argv) {
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone, version: %s, build: %s %s", STONE_VERSION, __DATE__, __TIME__);
@@ -88,7 +86,7 @@ int main(int argc, char ** argv) {
 				break;
 
             case OPT_HELP:
-				st_show_help(*argv);
+				st_show_help();
 				return 0;
 
             case OPT_PID_FILE:
@@ -96,15 +94,10 @@ int main(int argc, char ** argv) {
 				st_log_write_all(st_log_level_info, st_log_type_daemon, "Using pid file: '%s'", optarg);
 				break;
 
-            case OPT_VERSION: {
-					char * ptr = strrchr(*argv, '/');
-					if (ptr)
-						ptr++;
-					else
-						ptr = *argv;
+            case OPT_VERSION:
+				st_log_disable_display_log();
 
-					printf("%s\nVersion: %s, build: %s %s\n", ptr, STONE_VERSION, __DATE__, __TIME__);
-				}
+				printf("STone, version: %s, build: %s %s\n", STONE_VERSION, __DATE__, __TIME__);
 				return 0;
 		}
 	} while (opt > -1);
@@ -162,16 +155,10 @@ int main(int argc, char ** argv) {
 	return 0;
 }
 
-void st_show_help(char * command) {
-	char * ptr = strrchr(command, '/');
-	if (ptr)
-		ptr++;
-	else
-		ptr = command;
-
+void st_show_help() {
 	st_log_disable_display_log();
 
-	printf("%s, version: %s, build: %s %s\n", ptr, STONE_VERSION, __DATE__, __TIME__);
+	printf("STone, version: %s, build: %s %s\n", STONE_VERSION, __DATE__, __TIME__);
 	printf("    --config,   -c : Read this config file instead of \"%s\"\n", DEFAULT_CONFIG_FILE);
 	printf("    --detach,   -d : Daemonize it\n");
 	printf("    --help,     -h : Show this and exit\n");
