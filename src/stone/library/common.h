@@ -22,16 +22,17 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:20:00 +0100                         *
+*  Last modified: Wed, 28 Dec 2011 13:59:18 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_COMMON_H__
 #define __STONE_LIBRARY_COMMON_H__
 
+#include <stone/library/changer.h>
+
 struct st_changer;
 struct st_drive;
 
-void st_changer_setup(void);
 void st_drive_setup(struct st_drive * drive);
 
 void st_fakechanger_setup(struct st_changer * changer);

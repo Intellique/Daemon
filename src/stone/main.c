@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 27 Dec 2011 21:29:56 +0100                         *
+*  Last modified: Wed, 28 Dec 2011 13:59:35 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -150,7 +150,8 @@ int main(int argc, char ** argv) {
 		return 4;
 	}
 
-	st_changer_setup();
+	if (st_changer_setup())
+		return 5;
 
 	// st_sched_do_loop();
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 28 Dec 2011 13:28:50 +0100                         *
+*  Last modified: Wed, 28 Dec 2011 13:57:27 +0100                         *
 \*************************************************************************/
 
 // open
@@ -56,10 +56,15 @@ static unsigned int st_nb_fake_changers = 0;
 static unsigned int st_nb_real_changers = 0;
 
 
-void st_changer_setup() {
+int st_changer_setup() {
 	glob_t gl;
 	gl.gl_offs = 0;
 	glob("/sys/class/scsi_device/*/device/scsi_tape", GLOB_DOOFFS, 0, &gl);
+
+	if (gl.gl_pathc == 0) {
+		st_log_write_all(st_log_level_error, st_log_type_user_message, "Panic: There is drive found, exit now !!!");
+		return 1;
+	}
 
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
 
@@ -333,5 +338,7 @@ void st_changer_setup() {
 
 	for (i = st_nb_real_changers; i < st_nb_fake_changers + st_nb_real_changers; i++)
 		st_fakechanger_setup(st_changers + i);
+
+	return 0;
 }
 

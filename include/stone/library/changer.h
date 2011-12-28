@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:19:15 +0100                         *
+*  Last modified: Wed, 28 Dec 2011 13:57:10 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_CHANGER_H__
@@ -96,7 +96,7 @@ struct st_slot {
 
 const char * st_changer_status_to_string(enum st_changer_status status);
 enum st_changer_status st_changer_string_to_status(const char * status);
-void st_changer_setup(void);
+int st_changer_setup(void);
 
 #endif
 
