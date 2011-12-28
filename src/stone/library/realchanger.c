@@ -112,9 +112,9 @@ int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st
 }
 
 void st_realchanger_setup(struct st_changer * changer) {
-	int fd = open(changer->device, O_RDWR);
-
 	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: starting setup", changer->vendor, changer->model);
+
+	int fd = open(changer->device, O_RDWR);
 
 	st_scsi_mtx_status_new(fd, changer);
 

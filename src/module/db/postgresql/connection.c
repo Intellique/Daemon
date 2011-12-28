@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 28 Dec 2011 12:05:51 +0100                         *
+*  Last modified: Wed, 28 Dec 2011 23:37:34 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -385,14 +385,14 @@ int st_db_postgresql_sync_changer(struct st_database_connection * connection, st
 	}
 
 	if (changer->id < 0) {
-		st_db_postgresql_prepare(self->db_con, "insert_changer", "INSERT INTO changer VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, NOW(), $9)");
+		st_db_postgresql_prepare(self->db_con, "insert_changer", "INSERT INTO changer VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8)");
 
 		const char * params2[] = {
-			changer->device, st_changer_status_to_string(changer->status), changer->barcode ? "true" : "false", "false",
+			changer->device, st_changer_status_to_string(changer->status), changer->barcode ? "true" : "false",
 			changer->model, changer->vendor, changer->revision, changer->serial_number, hostid
 		};
 
-		result = PQexecPrepared(self->db_con, "insert_changer", 9, params2, 0, 0, 0);
+		result = PQexecPrepared(self->db_con, "insert_changer", 8, params2, 0, 0, 0);
 		if (PQresultStatus(result) == PGRES_FATAL_ERROR) {
 			st_db_postgresql_get_error(result);
 			free(result);
@@ -414,7 +414,7 @@ int st_db_postgresql_sync_changer(struct st_database_connection * connection, st
 
 		PQclear(result);
 	} else {
-		st_db_postgresql_prepare(self->db_con, "update_changer", "UPDATE changer SET device = $1, status = $2, firmwarerev = $3, update = NOW() WHERE id = $4");
+		st_db_postgresql_prepare(self->db_con, "update_changer", "UPDATE changer SET device = $1, status = $2, firmwarerev = $3 WHERE id = $4");
 
 		const char * params2[] = { changer->device, st_changer_status_to_string(changer->status), changer->revision, changerid };
 		result = PQexecPrepared(self->db_con, "update_changer", 4, params2, 0, 0, 0);

@@ -22,14 +22,20 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:20:17 +0100                         *
+*  Last modified: Wed, 28 Dec 2011 23:31:05 +0100                         *
 \*************************************************************************/
 
 // malloc
 #include <stdlib.h>
+// strdup
+#include <string.h>
 
+#include <stone/database.h>
+#include <stone/log.h>
 #include <stone/library/changer.h>
+#include <stone/library/drive.h>
 #include <stone/library/ressource.h>
+#include <stone/library/tape.h>
 
 #include "common.h"
 
@@ -60,7 +66,19 @@ void st_fakechanger_setup(struct st_changer * changer) {
 	struct st_fakechanger_private * ch = malloc(sizeof(struct st_fakechanger_private));
 	ch->db_con = 0;
 
+	struct st_drive * dr = changer->drives;
+
+	changer->id = -1;
+	changer->device = "";
 	changer->status = ST_CHANGER_IDLE;
+	changer->model = strdup(dr->model);
+	changer->vendor = strdup(dr->vendor);
+	changer->revision = strdup(dr->revision);
+	changer->serial_number = strdup(dr->serial_number);
+	changer->barcode = 0;
+
+	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: starting setup", changer->vendor, changer->model);
+
 	changer->ops = &st_fakechanger_ops;
 	changer->data = ch;
 	changer->lock = st_ressource_new();
@@ -68,18 +86,33 @@ void st_fakechanger_setup(struct st_changer * changer) {
 	changer->slots = malloc(sizeof(struct st_slot));
 	changer->nb_slots = 1;
 
-	struct st_slot * sl = changer->slots = malloc(sizeof(struct st_slot));
+	struct st_slot * sl = dr->slot = changer->slots = malloc(sizeof(struct st_slot));
 	changer->nb_slots = 1;
 
 	sl->id = -1;
 	sl->changer = changer;
-	sl->drive = changer->drives;
+	sl->drive = dr;
 	sl->tape = 0;
 	*sl->volume_name = '\0';
 	sl->full = 0;
 	sl->lock = 0;
 
-	st_drive_setup(changer->drives);
+	st_drive_setup(dr);
+
+	if (!dr->is_door_opened)
+		dr->slot->tape = st_tape_new(dr);
+
+	struct st_database * db = st_db_get_default_db();
+	if (db) {
+		ch->db_con = db->ops->connect(db, 0);
+		if (ch->db_con) {
+			ch->db_con->ops->sync_changer(ch->db_con, changer);
+		} else {
+			st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: failed to connect to default database", changer->vendor, changer->model);
+		}
+	} else {
+		st_log_write_all(st_log_level_warning, st_log_type_changer, "[%s | %s]: there is no default database so changer is not able to synchronize with one database", changer->vendor, changer->model);
+	}
 }
 
 int st_fakechanger_unload(struct st_changer * ch, struct st_drive * from, struct st_slot * to) {
