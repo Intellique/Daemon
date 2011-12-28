@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 28 Dec 2011 08:15:21 +0100                         *
+*  Last modified: Wed, 28 Dec 2011 13:28:50 +0100                         *
 \*************************************************************************/
 
 // open
@@ -193,6 +193,20 @@ void st_changer_setup() {
 	globfree(&gl);
 
 
+	// do loaderinfo
+	for (i = 0; i < st_nb_real_changers; i++) {
+		int fd = open(st_changers[i].device, O_RDWR);
+		st_scsi_loaderinfo(fd, st_changers + i);
+		close(fd);
+	}
+
+	// do tapeinfo
+	for (i = 0; i < nb_drives; i++) {
+		int fd = open(drives[i].scsi_device, O_RDWR);
+		st_scsi_tapeinfo(fd, drives + i);
+		close(fd);
+	}
+
 	// link drive to real changer
 	unsigned int nb_changer_without_drive = 0;
 	for (i = 0; i < st_nb_real_changers; i++) {
@@ -209,20 +223,6 @@ void st_changer_setup() {
 
 		if (st_changers[i].nb_drives == 0)
 			nb_changer_without_drive++;
-	}
-
-	// do loaderinfo
-	for (i = 0; i < st_nb_real_changers; i++) {
-		int fd = open(st_changers[i].device, O_RDWR);
-		st_scsi_loaderinfo(fd, st_changers + i);
-		close(fd);
-	}
-
-	// do tapeinfo
-	for (i = 0; i < nb_drives; i++) {
-		int fd = open(drives[i].scsi_device, O_RDWR);
-		st_scsi_tapeinfo(fd, drives + i);
-		close(fd);
 	}
 
 	// try to link drive to real changer with database
