@@ -189,12 +189,10 @@ CREATE TABLE Changer (
     device VARCHAR(64) NOT NULL,
     status ChangerStatus NOT NULL,
     barcode BOOLEAN NOT NULL,
-    isVirtual BOOLEAN NOT NULL,
     model VARCHAR(64) NOT NULL,
     vendor VARCHAR(64) NOT NULL,
     firmwareRev VARCHAR(64) NOT NULL,
     serialNumber VARCHAR(64) NOT NULL,
-    update TIMESTAMP(0) NOT NULL,
     host INTEGER NOT NULL REFERENCES Host(id) ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
