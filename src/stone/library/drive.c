@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Dec 2011 23:21:25 +0100                         *
+*  Last modified: Wed, 28 Dec 2011 11:26:15 +0100                         *
 \*************************************************************************/
 
 // open
@@ -476,7 +476,7 @@ void st_drive_generic_update_status2(struct st_drive * drive, enum st_drive_stat
 	drive->status = status;
 
 	struct st_drive_generic * self = drive->data;
-	if (drive->id > -1)
+	if (drive->id > -1 && self->db_con)
 		self->db_con->ops->sync_drive(self->db_con, drive);
 }
 
@@ -485,19 +485,14 @@ void st_drive_setup(struct st_drive * drive) {
 
 	struct st_drive_generic * self = malloc(sizeof(struct st_drive_generic));
 	self->fd_nst = fd;
+	self->db_con = 0;
 	self->used_by_io = 0;
 	self->total_spent_time = 0;
-
-	int fd_device = open(drive->scsi_device, O_RDWR | O_NONBLOCK);
-	st_scsi_tapeinfo(fd_device, drive);
-	close(fd_device);
 
 	drive->ops = &st_drive_generic_ops;
 	drive->data = self;
 	drive->best_density_code = 0;
 	drive->density_code = 0;
-
-	st_drive_generic_update_status(drive);
 
 	struct st_database * db = st_db_get_default_db();
 	if (db) {
@@ -507,6 +502,8 @@ void st_drive_setup(struct st_drive * drive) {
 	} else {
 		st_log_write_all(st_log_level_warning, st_log_type_drive, "[%s | %s | #%td]: there is no default database so drive is not able to synchronize with one database", drive->vendor, drive->model, drive - drive->changer->drives);
 	}
+
+	st_drive_generic_update_status(drive);
 }
 
 

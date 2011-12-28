@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 27 Dec 2011 20:50:22 +0100                         *
+*  Last modified: Wed, 28 Dec 2011 12:55:30 +0100                         *
 \*************************************************************************/
 
 // pthread_mutex_lock, pthread_mutex_unlock
@@ -389,6 +389,7 @@ struct st_pool * st_pool_get_pool_by_uuid(char * uuid, char * name, unsigned cha
 
 				if (!con->ops->create_pool(con, tmp)) {
 					pool = st_pools[st_pool_nb_pools];
+					pool->format = format;
 					st_pool_nb_pools++;
 				}
 			}

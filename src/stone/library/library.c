@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:19:43 +0100                         *
+*  Last modified: Wed, 28 Dec 2011 11:57:13 +0100                         *
 \*************************************************************************/
 
 #include <string.h>
@@ -57,6 +57,7 @@ static struct st_drive_status2 {
 	{ "loading",		ST_DRIVE_LOADING },
 	{ "positioning",	ST_DRIVE_POSITIONING },
 	{ "reading",		ST_DRIVE_READING },
+	{ "rewinding",		ST_DRIVE_REWINDING },
 	{ "unknown",		ST_DRIVE_UNKNOWN },
 	{ "unloading",		ST_DRIVE_UNLOADING },
 	{ "writing",		ST_DRIVE_WRITING },
