@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 27 Dec 2011 20:50:54 +0100                         *
+*  Last modified: Wed, 28 Dec 2011 11:47:21 +0100                         *
 \*************************************************************************/
 
 // open
@@ -114,8 +114,6 @@ int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st
 void st_realchanger_setup(struct st_changer * changer) {
 	int fd = open(changer->device, O_RDWR);
 
-	st_scsi_loaderinfo(fd, changer);
-
 	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: starting setup", changer->vendor, changer->model);
 
 	st_scsi_mtx_status_new(fd, changer);
@@ -132,6 +130,7 @@ void st_realchanger_setup(struct st_changer * changer) {
 	unsigned int i;
 	for (i = 0; i < changer->nb_drives; i++) {
 		struct st_drive * dr = changer->drives + i;
+		dr->slot->drive = dr;
 		st_drive_setup(dr);
 
 		if (dr->is_door_opened && dr->slot->full) {

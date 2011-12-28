@@ -24,6 +24,8 @@ CREATE TYPE DriveStatus AS ENUM (
     'loading',
     'positionning',
     'reading',
+    'rewinding',
+    'unknown',
     'unloading',
     'writing'
 );
@@ -106,7 +108,8 @@ CREATE TYPE TapeStatus AS ENUM (
     'locked',
     'needs replacement',
     'new',
-    'pooled'
+    'pooled',
+    'unknown'
 );
 
 
@@ -131,9 +134,9 @@ CREATE TABLE Pool (
     id SERIAL PRIMARY KEY,
     uuid UUID NOT NULL UNIQUE,
     name VARCHAR(64) NOT NULL,
-    retention INTEGER NOT NULL CHECK (retention > 0),
-    retentionLimit TIMESTAMP,
-    autoRecycle BOOLEAN NOT NULL,
+    retention INTEGER NOT NULL DEFAULT 30 CHECK (retention > 0),
+    retentionLimit TIMESTAMP DEFAULT NULL,
+    autoRecycle BOOLEAN NOT NULL DEFAULT FALSE,
     tapeFormat INTEGER NOT NULL REFERENCES TapeFormat(id) ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -151,7 +154,7 @@ CREATE TABLE Tape (
     writeCount INTEGER NOT NULL DEFAULT 0 CHECK (writeCount >= 0),
     endPos INTEGER NOT NULL DEFAULT 0 CHECK (endPos >= 0),
     nbFiles INTEGER NOT NULL DEFAULT 0 CHECK (nbFiles >= 0),
-    blockSize INTEGER NOT NULL DEFAULT 0 CHECK (blockSize > 0),
+    blockSize INTEGER NOT NULL DEFAULT 0 CHECK (blockSize >= 0),
     hasPartition BOOLEAN NOT NULL DEFAULT FALSE,
     tapeFormat INTEGER NOT NULL REFERENCES TapeFormat(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     pool INTEGER REFERENCES Pool(id) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -207,8 +210,8 @@ CREATE TABLE Drive (
     vendor VARCHAR(64) NOT NULL,
     firmwareRev VARCHAR(64) NOT NULL,
     serialNumber VARCHAR(64) NOT NULL,
-    changer INTEGER NOT NULL REFERENCES Changer(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    driveFormat INTEGER NOT NULL REFERENCES DriveFormat(id) ON DELETE RESTRICT ON UPDATE CASCADE
+    changer INTEGER NULL REFERENCES Changer(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    driveFormat INTEGER NULL REFERENCES DriveFormat(id) ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 CREATE TABLE ChangerSlot (

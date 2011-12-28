@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 27 Dec 2011 23:55:28 +0100                         *
+*  Last modified: Wed, 28 Dec 2011 08:15:21 +0100                         *
 \*************************************************************************/
 
 // open
@@ -61,7 +61,7 @@ void st_changer_setup() {
 	gl.gl_offs = 0;
 	glob("/sys/class/scsi_device/*/device/scsi_tape", GLOB_DOOFFS, 0, &gl);
 
-	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd drive%c", gl.gl_pathc, gl.gl_pathc != 1 ? 's' : '\0');
+	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
 
 	struct st_drive * drives = calloc(gl.gl_pathc, sizeof(struct st_drive));
 	unsigned int nb_drives = gl.gl_pathc;
@@ -145,7 +145,7 @@ void st_changer_setup() {
 	st_changers = calloc(nb_drives, sizeof(struct st_changer));
 	st_nb_real_changers = gl.gl_pathc;
 
-	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd changer%c", gl.gl_pathc, gl.gl_pathc != 1 ? 's' : '\0');
+	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd changer%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
 
 	for (i = 0; i < gl.gl_pathc; i++) {
 		char link[256];
@@ -211,6 +211,20 @@ void st_changer_setup() {
 			nb_changer_without_drive++;
 	}
 
+	// do loaderinfo
+	for (i = 0; i < st_nb_real_changers; i++) {
+		int fd = open(st_changers[i].device, O_RDWR);
+		st_scsi_loaderinfo(fd, st_changers + i);
+		close(fd);
+	}
+
+	// do tapeinfo
+	for (i = 0; i < nb_drives; i++) {
+		int fd = open(drives[i].scsi_device, O_RDWR);
+		st_scsi_tapeinfo(fd, drives + i);
+		close(fd);
+	}
+
 	// try to link drive to real changer with database
 	if (nb_changer_without_drive > 0) {
 		struct st_database * db = st_db_get_default_db();
@@ -224,6 +238,9 @@ void st_changer_setup() {
 			for (j = 0; j < nb_drives; j++) {
 				if (drives[j].changer)
 					continue;
+
+				con->ops->sync_changer(con, st_changers + i);
+				con->ops->sync_drive(con, drives + i);
 
 				if (con->ops->is_changer_contain_drive(con, st_changers + i, drives + j)) {
 					drives[j].changer = st_changers + i;
@@ -248,8 +265,47 @@ void st_changer_setup() {
 	}
 
 	// infor user that there is real changer without drive
-	if (nb_changer_without_drive > 0)
-		st_log_write_all(st_log_level_warning, st_log_type_user_message, "Library: There is %u changer%c without drives", nb_changer_without_drive, nb_changer_without_drive != 1 ? 's' : '\0');
+	// and wait until database is up to date
+	if (nb_changer_without_drive > 0) {
+		st_log_write_all(st_log_level_warning, st_log_type_user_message, "Library: There is %u changer%s without drives", nb_changer_without_drive, nb_changer_without_drive != 1 ? "s" : "");
+
+		struct st_database * db = st_db_get_default_db();
+		struct st_database_connection * con = db->ops->connect(db, 0);
+
+		while (nb_changer_without_drive > 0) {
+			sleep(60);
+
+			for (i = 0; i < st_nb_real_changers; i++) {
+				if (st_changers[i].nb_drives > 0)
+					continue;
+
+				unsigned int j, linked = 0;
+				for (j = 0; j < nb_drives; j++) {
+					if (drives[j].changer)
+						continue;
+
+					if (con->ops->is_changer_contain_drive(con, st_changers + i, drives + j)) {
+						drives[j].changer = st_changers + i;
+
+						st_changers[i].drives = realloc(st_changers[i].drives, (st_changers[i].nb_drives + 1) * sizeof(struct st_drive));
+						st_changers[i].drives[st_changers[i].nb_drives] = drives[j];
+						st_changers[i].nb_drives++;
+
+						linked++;
+					}
+				}
+
+				if (linked)
+					nb_changer_without_drive--;
+			}
+		}
+
+		if (con) {
+			con->ops->close(con);
+			con->ops->free(con);
+			free(con);
+		}
+	}
 
 	// link stand-alone drive to fake changer
 	for (i = st_nb_real_changers; i < nb_drives; i++) {
@@ -267,7 +323,7 @@ void st_changer_setup() {
 		}
 	}
 
-	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %u stand-alone drive%c", st_nb_fake_changers, st_nb_fake_changers != 1 ? 's' : '\0');
+	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %u stand-alone drive%s", st_nb_fake_changers, st_nb_fake_changers != 1 ? "s" : "");
 
 	if (drives)
 		free(drives);

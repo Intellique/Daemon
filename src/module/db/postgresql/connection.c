@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 27 Dec 2011 23:33:37 +0100                         *
+*  Last modified: Wed, 28 Dec 2011 12:05:51 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -446,9 +446,6 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
-	char * changerid = 0;
-	asprintf(&changerid, "%ld", drive->changer->id);
-
 	if (drive->id < 0) {
 		st_db_postgresql_prepare(self->db_con, "select_drive_by_model_vendor_serialnumber", "SELECT id, operationduration, lastclean, driveformat FROM drive WHERE model = $1 AND vendor = $2 AND serialnumber = $3 LIMIT 1");
 
@@ -474,11 +471,11 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 		PQclear(result);
 	}
 
-	if (drive->id < 0 && drive->best_density_code < 1) {
-		free(changerid);
-		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): Unable to complete update database without any tape", connection->id);
-		return 1;
-	} else if (drive->id < 0) {
+	char * changerid = 0;
+	if (drive->changer)
+		asprintf(&changerid, "%ld", drive->changer->id);
+
+	if (drive->id < 0) {
 		st_db_postgresql_prepare(self->db_con, "select_driveformat_by_densitycode", "SELECT id FROM driveformat WHERE densitycode = $1 LIMIT 1");
 
 		char * densitycode = 0;
@@ -489,25 +486,17 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 
 		char * driveformat_id = 0;
 		ExecStatusType status = PQresultStatus(result);
-		if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
 			st_db_postgresql_get_string_dup(result, 0, 0, &driveformat_id);
-			PQclear(result);
-		} else {
-			if (status == PGRES_FATAL_ERROR)
-				st_db_postgresql_get_error(result);
-
-			PQclear(result);
-			free(densitycode);
-			free(changerid);
-
-			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): Unable to complete update database without any tape", connection->id);
-			return 1;
-		}
+		PQclear(result);
 
 		st_db_postgresql_prepare(self->db_con, "insert_drive", "INSERT INTO drive VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)");
 
 		char * changer_num = 0, * op_duration = 0;
-		asprintf(&changer_num, "%td", drive - drive->changer->drives);
+		if (drive->changer)
+			asprintf(&changer_num, "%td", drive - drive->changer->drives);
+		else
+			changer_num = strdup("0");
 		asprintf(&op_duration, "%.3f", drive->operation_duration);
 
 		char last_clean[24];
@@ -527,7 +516,8 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 		PQclear(result);
 		free(op_duration);
 		free(changer_num);
-		free(driveformat_id);
+		if (driveformat_id)
+			free(driveformat_id);
 		free(densitycode);
 	} else {
 		st_db_postgresql_prepare(self->db_con, "select_driveformat_by_densitycode", "SELECT id FROM driveformat WHERE densitycode = $1 LIMIT 1");
@@ -540,20 +530,9 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 
 		char * driveformat_id = 0;
 		ExecStatusType status = PQresultStatus(result);
-		if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
 			st_db_postgresql_get_string_dup(result, 0, 0, &driveformat_id);
-			PQclear(result);
-		} else {
-			if (status == PGRES_FATAL_ERROR)
-				st_db_postgresql_get_error(result);
-
-			PQclear(result);
-			free(densitycode);
-			free(changerid);
-
-			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): An unexpected error: Failed to get density code of drive while updating it", connection->id);
-			return 1;
-		}
+		PQclear(result);
 
 		st_db_postgresql_prepare(self->db_con, "update_drive", "UPDATE drive SET device = $1, scsidevice = $2, status = $3, operationduration = $4, lastclean = $5, firmwarerev = $6, driveformat = $7 WHERE id = $8");
 
@@ -578,13 +557,16 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 		PQclear(result);
 		free(op_duration);
 		free(driveid);
-		free(driveformat_id);
+		if (driveformat_id)
+			free(driveformat_id);
 		free(densitycode);
 	}
 
-	free(changerid);
+	if (drive->changer)
+		free(changerid);
 
-	st_db_postgresql_sync_slot(connection, drive->slot);
+	if (drive->slot)
+		st_db_postgresql_sync_slot(connection, drive->slot);
 
 	return 0;
 }
@@ -660,7 +642,7 @@ int st_db_postgresql_sync_slot(struct st_database_connection * connection, struc
 		PQclear(result);
 
 		if (status == PGRES_COMMAND_OK) {
-			const char * params2[] = { changer_id, slot_index };
+			const char * params2[] = { slot_index, changer_id };
 			result = PQexecPrepared(self->db_con, "select_slot_by_index_changer", 2, params2, 0, 0, 0);
 			status = PQresultStatus(result);
 
