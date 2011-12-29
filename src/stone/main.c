@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 28 Dec 2011 15:44:06 +0100                         *
+*  Last modified: Thu, 29 Dec 2011 10:25:23 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -38,8 +38,6 @@
 #include "config.h"
 #include "log.h"
 #include "scheduler.h"
-
-void st_test(void);
 
 static void st_show_help(void);
 
@@ -110,15 +108,15 @@ int main(int argc, char ** argv) {
 		int code = st_conf_check_pid(pid);
 		switch (code) {
 			case -1:
-				st_log_write_all(st_log_level_error, st_log_type_daemon, "Warning: another process used this pid (%d)", pid);
+				st_log_write_all(st_log_level_warning, st_log_type_daemon, "Daemon: another process used this pid (%d)", pid);
 				break;
 
 			case 0:
-				st_log_write_all(st_log_level_error, st_log_type_daemon, "Info: daemon is dead, long life the daemon");
+				st_log_write_all(st_log_level_info, st_log_type_daemon, "Daemon: daemon is dead, long life the daemon");
 				break;
 
 			case 1:
-				st_log_write_all(st_log_level_error, st_log_type_daemon, "Error: Daemon is alive (pid: %d)", pid);
+				st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: daemon is alive (pid: %d)", pid);
 				return 2;
 		}
 	}
@@ -147,8 +145,6 @@ int main(int argc, char ** argv) {
 		return 5;
 
 	// st_sched_do_loop();
-
-	// st_test();
 
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone exit");
 
