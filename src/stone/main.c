@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 10:25:23 +0100                         *
+*  Last modified: Thu, 29 Dec 2011 11:01:17 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -33,6 +33,7 @@
 #include <unistd.h>
 
 #include <stone/conf.h>
+#include <stone/database.h>
 #include <stone/library/changer.h>
 
 #include "config.h"
@@ -141,8 +142,14 @@ int main(int argc, char ** argv) {
 		return 4;
 	}
 
-	if (st_changer_setup())
+	// check if config file contains a database
+	if (!st_db_get_default_db()) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: There is no database into config file '%s'", config_file);
 		return 5;
+	}
+
+	if (st_changer_setup())
+		return 6;
 
 	// st_sched_do_loop();
 
