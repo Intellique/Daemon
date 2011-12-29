@@ -32,6 +32,8 @@
 // pthread_mutex_init, pthread_mutex_lock, pthread_mutex_unlock,
 // pthread_setcancelstate
 #include <pthread.h>
+// sem_init, sem_post, sem_wait
+#include <semaphore.h>
 // free, malloc, realloc
 #include <stdlib.h>
 // snprintf
@@ -46,6 +48,8 @@
 
 #include "loader.h"
 
+#define NB_BUFFERS 32
+
 struct st_checksum_helper_private {
 	pthread_t thread;
 	struct st_checksum * checksum;
@@ -55,15 +59,16 @@ struct st_checksum_helper_private {
 	struct st_helper_list {
 		void * buffer;
 		ssize_t length;
-
-		struct st_helper_list * next;
-	} * first, * last;
+	} buffers[NB_BUFFERS];
+	volatile struct st_helper_list * reader;
+	volatile struct st_helper_list * writer;
 
 	unsigned long nb_read;
 	unsigned long nb_write;
 
 	pthread_mutex_t lock;
 	pthread_cond_t wait;
+	sem_t ressources;
 };
 
 static struct st_checksum * st_checksum_helper_clone(struct st_checksum * new_checksum, struct st_checksum * current_checksum);
@@ -191,12 +196,18 @@ struct st_checksum * st_checksum_get_helper(struct st_checksum * h, struct st_ch
 	hp->checksum = checksum;
 	hp->digest = 0;
 
-	hp->first = hp->last = 0;
+	unsigned int i;
+	for (i = 0; i < NB_BUFFERS; i++) {
+		hp->buffers[i].buffer = 0;
+		hp->buffers[i].length = 0;
+	}
+	hp->reader = hp->writer = hp->buffers;
 
 	hp->nb_read = hp->nb_write = 0;
 
 	pthread_mutex_init(&hp->lock, 0);
 	pthread_cond_init(&hp->wait, 0);
+	sem_init(&hp->ressources, 0, NB_BUFFERS);
 
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
@@ -223,8 +234,6 @@ char * st_checksum_helper_digest(struct st_checksum * helper) {
 	struct st_checksum_helper_private * hp = helper->data;
 
 	pthread_mutex_lock(&hp->lock);
-	if (hp->first)
-		pthread_cond_wait(&hp->wait, &hp->lock);
 	hp->run = 0;
 	pthread_cond_signal(&hp->wait);
 	pthread_cond_wait(&hp->wait, &hp->lock);
@@ -236,45 +245,46 @@ char * st_checksum_helper_digest(struct st_checksum * helper) {
 void st_checksum_helper_free(struct st_checksum * helper) {
 	struct st_checksum_helper_private * hp = helper->data;
 
-	if (hp->first)
-		st_checksum_helper_digest(helper);
+	if (!hp->digest) {
+		char * digest = st_checksum_helper_digest(helper);
+		free(digest);
+	}
 
 	hp->checksum->ops->free(hp->checksum);
 	free(hp->digest);
 
 	pthread_mutex_destroy(&hp->lock);
 	pthread_cond_destroy(&hp->wait);
+	sem_destroy(&hp->ressources);
 
 	free(hp);
 }
 
 ssize_t st_checksum_helper_update(struct st_checksum * helper, const void * data, ssize_t length) {
 	if (!helper || !data || length < 1)
-		return 1;
+		return -1;
 
 	struct st_checksum_helper_private * hp = helper->data;
 
 	if (hp->digest)
 		return -2;
 
-	struct st_helper_list * elt = malloc(sizeof(struct st_helper_list));
-	elt->buffer = malloc(length);
-	elt->length = length;
-	elt->next = 0;
-	memcpy(elt->buffer, data, length);
+	void * buffer = malloc(length);
+	memcpy(buffer, data, length);
+
+	sem_wait(&hp->ressources);
+
+	hp->writer->buffer = buffer;
+	hp->writer->length = length;
 
 	pthread_mutex_lock(&hp->lock);
-	if (!hp->first)
-		hp->first = hp->last = elt;
-	else if (hp->first == hp->last)
-		hp->first->next = hp->last = elt;
-	else
-		hp->last = hp->last->next = elt;
-
-	pthread_cond_signal(&hp->wait);
+	hp->writer++;
+	if (hp->writer - hp->buffers == NB_BUFFERS)
+		hp->writer = hp->buffers;
 	pthread_mutex_unlock(&hp->lock);
+	pthread_cond_signal(&hp->wait);
 
-	hp->nb_read++;
+	hp->nb_write++;
 
 	return length;
 }
@@ -283,31 +293,34 @@ void * st_checksum_helper_work(void * param) {
 	struct st_checksum * h = param;
 	struct st_checksum_helper_private * hp = h->data;
 
-	st_log_write_all(st_log_level_debug, "Checksum: Starting helper for checksum(%p)", hp->checksum);
+	st_log_write_all(st_log_level_debug, st_log_type_checksum, "Starting thread helper for checksum(%p)", hp->checksum);
 
 	for (hp->run = 1;;) {
 		pthread_mutex_lock(&hp->lock);
-		if (!hp->first && hp->run) {
-			pthread_cond_signal(&hp->wait);
-			pthread_cond_wait(&hp->wait, &hp->lock);
-		}
 
-		if (!hp->first && !hp->run)
+		if (!hp->reader->buffer && !hp->run)
+			break;
+		if (!hp->reader->buffer)
+			pthread_cond_wait(&hp->wait, &hp->lock);
+		if (!hp->reader->buffer && !hp->run)
 			break;
 
-		struct st_helper_list * elt = hp->first;
-		hp->first = elt->next;
-		if (!hp->first)
-			hp->last = 0;
-		elt->next = 0;
+		void * buffer = hp->reader->buffer;
+		ssize_t length = hp->reader->length;
+
+		hp->reader->buffer = 0;
+		hp->reader++;
+		if (hp->reader - hp->buffers == NB_BUFFERS)
+			hp->reader = hp->buffers;
 		pthread_mutex_unlock(&hp->lock);
 
-		hp->checksum->ops->update(hp->checksum, elt->buffer, elt->length);
+		sem_post(&hp->ressources);
 
-		free(elt->buffer);
-		free(elt);
+		hp->nb_read++;
 
-		hp->nb_write++;
+		hp->checksum->ops->update(hp->checksum, buffer, length);
+
+		free(buffer);
 	}
 
 	hp->digest = hp->checksum->ops->digest(hp->checksum);
