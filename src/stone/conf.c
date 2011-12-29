@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 27 Dec 2011 21:36:46 +0100                         *
+*  Last modified: Thu, 29 Dec 2011 23:09:46 +0100                         *
 \*************************************************************************/
 
 // strerror
@@ -42,10 +42,10 @@
 // access, close, fstat, read, readlink, unlink, write
 #include <unistd.h>
 
-#include <stone/conf.h>
 #include <stone/database.h>
 #include <stone/util/hashtable.h>
 
+#include "conf.h"
 #include "log.h"
 #include "util/util.h"
 

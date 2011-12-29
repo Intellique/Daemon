@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 11:01:17 +0100                         *
+*  Last modified: Thu, 29 Dec 2011 23:10:25 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -32,10 +32,10 @@
 // daemon
 #include <unistd.h>
 
-#include <stone/conf.h>
 #include <stone/database.h>
 #include <stone/library/changer.h>
 
+#include "conf.h"
 #include "config.h"
 #include "log.h"
 #include "scheduler.h"
