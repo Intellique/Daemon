@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 10:14:07 +0100                         *
+*  Last modified: Thu, 29 Dec 2011 13:07:28 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -695,7 +695,9 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 			}
 
 			PQclear(result);
-		} else if (tape->label[0] != '\0') {
+		}
+
+		if (tape->id < 0 && tape->label[0] != '\0') {
 			st_db_postgresql_prepare(self->db_con, "select_tape_by_label", "SELECT * FROM tape WHERE label = $1 LIMIT 1");
 
 			const char * params[] = { tape->label };
@@ -726,119 +728,121 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 		}
 	}
 
-	if (tape->id > -1 && (tape->uuid[0] != '\0' || tape->label[0] != '\0')) {
-		st_db_postgresql_prepare(self->db_con, "update_tape", "UPDATE tape SET uuid = $1, name = $2, status = $3, location = $4, loadcount = $5, readcount = $6, writecount = $7, endpos = $8, nbfiles = $9, blocksize = $10, haspartition = $11, pool = $12 WHERE id = $13");
+	if (tape->uuid[0] != '\0' || tape->label[0] != '\0') {
+		if (tape->id > -1) {
+			st_db_postgresql_prepare(self->db_con, "update_tape", "UPDATE tape SET uuid = $1, name = $2, status = $3, location = $4, loadcount = $5, readcount = $6, writecount = $7, endpos = $8, nbfiles = $9, blocksize = $10, haspartition = $11, pool = $12 WHERE id = $13");
 
-		char * load, * read, * write, * endpos, * nbfiles, * blocksize, * pool = 0, * id;
-		asprintf(&load, "%ld", tape->load_count);
-		asprintf(&read, "%ld", tape->read_count);
-		asprintf(&write, "%ld", tape->write_count);
-		asprintf(&endpos, "%zd", tape->end_position);
-		asprintf(&nbfiles, "%u", tape->nb_files);
-		asprintf(&blocksize, "%zd", tape->block_size);
-		if (tape->pool)
-			asprintf(&pool, "%ld", tape->pool->id);
-		asprintf(&id, "%ld", tape->id);
+			char * load, * read, * write, * endpos, * nbfiles, * blocksize, * pool = 0, * id;
+			asprintf(&load, "%ld", tape->load_count);
+			asprintf(&read, "%ld", tape->read_count);
+			asprintf(&write, "%ld", tape->write_count);
+			asprintf(&endpos, "%zd", tape->end_position);
+			asprintf(&nbfiles, "%u", tape->nb_files);
+			asprintf(&blocksize, "%zd", tape->block_size);
+			if (tape->pool)
+				asprintf(&pool, "%ld", tape->pool->id);
+			asprintf(&id, "%ld", tape->id);
 
-		const char * params[] = {
-			*tape->uuid ? tape->uuid : 0, tape->name, st_tape_status_to_string(tape->status),
-			st_tape_location_to_string(tape->location),
-			load, read, write, endpos, nbfiles, blocksize,
-			tape->has_partition ? "true" : "false", pool, id
-		};
-		PGresult * result = PQexecPrepared(self->db_con, "update_tape", 13, params, 0, 0, 0);
-		ExecStatusType status = PQresultStatus(result);
+			const char * params[] = {
+				*tape->uuid ? tape->uuid : 0, tape->name, st_tape_status_to_string(tape->status),
+				st_tape_location_to_string(tape->location),
+				load, read, write, endpos, nbfiles, blocksize,
+				tape->has_partition ? "true" : "false", pool, id
+			};
+			PGresult * result = PQexecPrepared(self->db_con, "update_tape", 13, params, 0, 0, 0);
+			ExecStatusType status = PQresultStatus(result);
 
-		if (status == PGRES_FATAL_ERROR)
-			st_db_postgresql_get_error(result);
+			if (status == PGRES_FATAL_ERROR)
+				st_db_postgresql_get_error(result);
 
-		PQclear(result);
-		free(load);
-		free(read);
-		free(write);
-		free(endpos);
-		free(nbfiles);
-		free(blocksize);
-		free(id);
-		if (pool)
-			free(pool);
+			PQclear(result);
+			free(load);
+			free(read);
+			free(write);
+			free(endpos);
+			free(nbfiles);
+			free(blocksize);
+			free(id);
+			if (pool)
+				free(pool);
 
-		return status != PGRES_COMMAND_OK;
-	} else if (tape->id > -1) {
-		st_db_postgresql_prepare(self->db_con, "insert_tape", "INSERT INTO tape VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)");
-
-		char buffer_first_used[32];
-		char buffer_use_before[32];
-
-		struct tm tv;
-		localtime_r(&tape->first_used, &tv);
-		strftime(buffer_first_used, 32, "%F %T", &tv);
-
-		localtime_r(&tape->use_before, &tv);
-		strftime(buffer_use_before, 32, "%F %T", &tv);
-
-		char * load, * read, * write, * endpos, * nbfiles, * blocksize, * tapeformat, * pool = 0;
-		asprintf(&load, "%ld", tape->load_count);
-		asprintf(&read, "%ld", tape->read_count);
-		asprintf(&write, "%ld", tape->write_count);
-		asprintf(&endpos, "%zd", tape->end_position);
-		asprintf(&nbfiles, "%u", tape->nb_files);
-		asprintf(&blocksize, "%zd", tape->block_size);
-		asprintf(&tapeformat, "%ld", tape->format->id);
-		if (tape->pool)
-			asprintf(&pool, "%ld", tape->pool->id);
-
-		const char * params[] = {
-			*tape->uuid ? tape->uuid : 0, tape->label, tape->name,
-			st_tape_status_to_string(tape->status),
-			st_tape_location_to_string(tape->location),
-			buffer_first_used, buffer_use_before,
-			load, read, write, endpos, nbfiles, blocksize,
-			tape->has_partition ? "true" : "false", tapeformat, pool
-		};
-		PGresult * result = PQexecPrepared(self->db_con, "insert_tape", 16, params, 0, 0, 0);
-		ExecStatusType status = PQresultStatus(result);
-
-		if (status == PGRES_FATAL_ERROR)
-			st_db_postgresql_get_error(result);
-
-		PQclear(result);
-		free(load);
-		free(read);
-		free(write);
-		free(endpos);
-		free(nbfiles);
-		free(blocksize);
-		free(tapeformat);
-		if (pool)
-			free(pool);
-
-		if (status == PGRES_FATAL_ERROR)
 			return status != PGRES_COMMAND_OK;
-
-		if (*tape->label) {
-			st_db_postgresql_prepare(self->db_con, "select_tape_id_by_label", "SELECT id FROM tape WHERE label = $1 LIMIT 1");
-
-			const char * params[] = { tape->label };
-			PGresult * result = PQexecPrepared(self->db_con, "select_tape_id_by_label", 1, params, 0, 0, 0);
-
-			if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
-				st_db_postgresql_get_long(result, 0, 0, &tape->id);
-
-			PQclear(result);
 		} else {
-			st_db_postgresql_prepare(self->db_con, "select_tape_id_by_name", "SELECT id FROM tape WHERE name = $1 LIMIT 1");
+			st_db_postgresql_prepare(self->db_con, "insert_tape", "INSERT INTO tape VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)");
 
-			const char * params[] = { tape->name };
-			PGresult * result = PQexecPrepared(self->db_con, "select_tape_by_name", 1, params, 0, 0, 0);
+			char buffer_first_used[32];
+			char buffer_use_before[32];
 
-			if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
-				st_db_postgresql_get_long(result, 0, 0, &tape->id);
+			struct tm tv;
+			localtime_r(&tape->first_used, &tv);
+			strftime(buffer_first_used, 32, "%F %T", &tv);
+
+			localtime_r(&tape->use_before, &tv);
+			strftime(buffer_use_before, 32, "%F %T", &tv);
+
+			char * load, * read, * write, * endpos, * nbfiles, * blocksize, * tapeformat, * pool = 0;
+			asprintf(&load, "%ld", tape->load_count);
+			asprintf(&read, "%ld", tape->read_count);
+			asprintf(&write, "%ld", tape->write_count);
+			asprintf(&endpos, "%zd", tape->end_position);
+			asprintf(&nbfiles, "%u", tape->nb_files);
+			asprintf(&blocksize, "%zd", tape->block_size);
+			asprintf(&tapeformat, "%ld", tape->format->id);
+			if (tape->pool)
+				asprintf(&pool, "%ld", tape->pool->id);
+
+			const char * params[] = {
+				*tape->uuid ? tape->uuid : 0, tape->label, tape->name,
+				st_tape_status_to_string(tape->status),
+				st_tape_location_to_string(tape->location),
+				buffer_first_used, buffer_use_before,
+				load, read, write, endpos, nbfiles, blocksize,
+				tape->has_partition ? "true" : "false", tapeformat, pool
+			};
+			PGresult * result = PQexecPrepared(self->db_con, "insert_tape", 16, params, 0, 0, 0);
+			ExecStatusType status = PQresultStatus(result);
+
+			if (status == PGRES_FATAL_ERROR)
+				st_db_postgresql_get_error(result);
 
 			PQclear(result);
-		}
+			free(load);
+			free(read);
+			free(write);
+			free(endpos);
+			free(nbfiles);
+			free(blocksize);
+			free(tapeformat);
+			if (pool)
+				free(pool);
 
-		return status != PGRES_COMMAND_OK;
+			if (status == PGRES_FATAL_ERROR)
+				return status != PGRES_COMMAND_OK;
+
+			if (*tape->label) {
+				st_db_postgresql_prepare(self->db_con, "select_tape_id_by_label", "SELECT id FROM tape WHERE label = $1 LIMIT 1");
+
+				const char * params[] = { tape->label };
+				PGresult * result = PQexecPrepared(self->db_con, "select_tape_id_by_label", 1, params, 0, 0, 0);
+
+				if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
+					st_db_postgresql_get_long(result, 0, 0, &tape->id);
+
+				PQclear(result);
+			} else {
+				st_db_postgresql_prepare(self->db_con, "select_tape_id_by_name", "SELECT id FROM tape WHERE name = $1 LIMIT 1");
+
+				const char * params[] = { tape->name };
+				PGresult * result = PQexecPrepared(self->db_con, "select_tape_by_name", 1, params, 0, 0, 0);
+
+				if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
+					st_db_postgresql_get_long(result, 0, 0, &tape->id);
+
+				PQclear(result);
+			}
+
+			return status != PGRES_COMMAND_OK;
+		}
 	}
 
 	return 0;
