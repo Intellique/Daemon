@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 13:07:28 +0100                         *
+*  Last modified: Thu, 29 Dec 2011 17:29:45 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -63,6 +63,7 @@ static int st_db_postgresql_get_tape_format(struct st_database_connection * db, 
 static int st_db_postgresql_is_changer_contain_drive(struct st_database_connection * db, struct st_changer * changer, struct st_drive * drive);
 static int st_db_postgresql_sync_changer(struct st_database_connection * db, struct st_changer * changer);
 static int st_db_postgresql_sync_drive(struct st_database_connection * db, struct st_drive * drive);
+static int st_db_postgresql_sync_pool(struct st_database_connection * db, struct st_pool * pool);
 static int st_db_postgresql_sync_slot(struct st_database_connection * db, struct st_slot * slot);
 static int st_db_postgresql_sync_tape(struct st_database_connection * db, struct st_tape * tape);
 
@@ -92,6 +93,7 @@ static struct st_database_connection_ops st_db_postgresql_con_ops = {
 	.is_changer_contain_drive = st_db_postgresql_is_changer_contain_drive,
 	.sync_changer             = st_db_postgresql_sync_changer,
 	.sync_drive               = st_db_postgresql_sync_drive,
+	.sync_pool                = st_db_postgresql_sync_pool,
 	.sync_tape                = st_db_postgresql_sync_tape,
 };
 
@@ -217,10 +219,10 @@ int st_db_postgresql_get_pool(struct st_database_connection * connection, struct
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
-	st_db_postgresql_prepare(self->db_con, "select_pool_by_id", "SELECT * FROM pool WHERE uuid = $1 LIMIT 1");
+	st_db_postgresql_prepare(self->db_con, "select_pool_by_uuid", "SELECT * FROM pool WHERE uuid = $1 LIMIT 1");
 
 	const char * param[] = { uuid };
-	PGresult * result = PQexecPrepared(self->db_con, "select_pool_by_id", 1, param, 0, 0, 0);
+	PGresult * result = PQexecPrepared(self->db_con, "select_pool_by_uuid", 1, param, 0, 0, 0);
 
 	if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 		st_db_postgresql_get_long(result, 0, 0, &pool->id);
@@ -569,6 +571,36 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 		st_db_postgresql_sync_slot(connection, drive->slot);
 
 	return 0;
+}
+
+int st_db_postgresql_sync_pool(struct st_database_connection * connection, struct st_pool * pool) {
+	if (pool->id < 0)
+		return 1;
+
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	st_db_postgresql_prepare(self->db_con, "select_pool_by_id", "SELECT * FROM pool WHERE id = $1 LIMIT 1");
+
+	char * poolid = 0;
+	asprintf(&poolid, "%ld", pool->id);
+
+	const char * param[] = { poolid };
+	PGresult * result = PQexecPrepared(self->db_con, "select_pool_by_id", 1, param, 0, 0, 0);
+
+	if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		st_db_postgresql_get_string(result, 0, 2, pool->name);
+		st_db_postgresql_get_long(result, 0, 3, &pool->retention);
+		st_db_postgresql_get_time(result, 0, 4, &pool->retention_limit);
+		st_db_postgresql_get_uchar(result, 0, 5, &pool->auto_recycle);
+
+		PQclear(result);
+		return 0;
+	}
+
+	PQclear(result);
+	free(poolid);
+	return 1;
 }
 
 int st_db_postgresql_sync_slot(struct st_database_connection * connection, struct st_slot * slot) {

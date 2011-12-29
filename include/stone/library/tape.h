@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 27 Dec 2011 20:50:03 +0100                         *
+*  Last modified: Thu, 29 Dec 2011 17:12:21 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_TAPE_H__
@@ -130,6 +130,7 @@ struct st_tape * st_tape_new(struct st_drive * dr);
 struct st_tape_format * st_tape_format_get_by_density_code(unsigned char density_code);
 
 struct st_pool * st_pool_get_pool_by_uuid(char * uuid, char * name, unsigned char density_code);
+int st_pool_sync(struct st_pool * pool);
 
 #endif
 

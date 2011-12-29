@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 28 Dec 2011 12:55:30 +0100                         *
+*  Last modified: Thu, 29 Dec 2011 17:17:30 +0100                         *
 \*************************************************************************/
 
 // pthread_mutex_lock, pthread_mutex_unlock
@@ -409,5 +409,21 @@ struct st_pool * st_pool_get_pool_by_uuid(char * uuid, char * name, unsigned cha
 	pthread_setcancelstate(old_state, 0);
 
 	return pool;
+}
+
+int st_pool_sync(struct st_pool * pool) {
+	if (!pool)
+		return 0;
+
+	struct st_database * db = st_db_get_default_db();
+	struct st_database_connection * con = db->ops->connect(db, 0);
+
+	int ok = con->ops->sync_pool(con, pool);
+
+	con->ops->close(con);
+	con->ops->free(con);
+	free(con);
+
+	return ok;
 }
 
