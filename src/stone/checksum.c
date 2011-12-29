@@ -22,10 +22,12 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Dec 2011 23:02:12 +0100                         *
+*  Last modified: Thu, 29 Dec 2011 23:38:11 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
+// glob
+#include <glob.h>
 // pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate,
 // pthread_cond_destroy, pthread_cond_init, pthread_cond_signal,
 // pthread_cond_wait, pthread_create, pthread_mutex_destroy,
@@ -43,9 +45,11 @@
 // pipe, read, write
 #include <unistd.h>
 
-#include <stone/checksum.h>
+#include <stone/database.h>
 #include <stone/log.h>
 
+#include "checksum.h"
+#include "config.h"
 #include "loader.h"
 
 #define NB_BUFFERS 32
@@ -358,5 +362,32 @@ void st_checksum_register_driver(struct st_checksum_driver * driver) {
 	st_loader_register_ok();
 
 	st_log_write_all(st_log_level_info, st_log_type_checksum, "Driver(%s) is now registred", driver->name);
+}
+
+void st_checksum_sync_plugins() {
+	char path[256];
+	snprintf(path, 256, "%s/checksum/lib*.so", MODULE_PATH);
+
+	glob_t gl;
+	gl.gl_offs = 0;
+	glob(path, GLOB_DOOFFS, 0, &gl);
+
+	struct st_database * db = st_db_get_default_db();
+	struct st_database_connection * con = db->ops->connect(db, 0);
+
+	unsigned int i;
+	for (i = 0; i < gl.gl_pathc; i++) {
+		char * ptr = strrchr(gl.gl_pathv[i], '/') + 1;
+
+		char plugin[64];
+		sscanf(ptr, "lib%64[^.].so", plugin);
+
+		if (con->ops->sync_plugin_checksum(con, plugin))
+			st_log_write_all(st_log_level_error, st_log_type_checksum, "Failed to synchronize plugin (%s)", plugin);
+	}
+
+	con->ops->close(con);
+	con->ops->free(con);
+	free(con);
 }
 

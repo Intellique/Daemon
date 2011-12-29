@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 20:14:50 +0100                         *
+*  Last modified: Thu, 29 Dec 2011 23:42:15 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -65,6 +65,7 @@ static int st_db_postgresql_get_user(struct st_database_connection * db, struct 
 static int st_db_postgresql_is_changer_contain_drive(struct st_database_connection * db, struct st_changer * changer, struct st_drive * drive);
 static int st_db_postgresql_sync_changer(struct st_database_connection * db, struct st_changer * changer);
 static int st_db_postgresql_sync_drive(struct st_database_connection * db, struct st_drive * drive);
+static int st_db_postgresql_sync_plugin_checksum(struct st_database_connection * db, const char * plugin);
 static int st_db_postgresql_sync_pool(struct st_database_connection * db, struct st_pool * pool);
 static int st_db_postgresql_sync_slot(struct st_database_connection * db, struct st_slot * slot);
 static int st_db_postgresql_sync_tape(struct st_database_connection * db, struct st_tape * tape);
@@ -97,6 +98,7 @@ static struct st_database_connection_ops st_db_postgresql_con_ops = {
 	.is_changer_contain_drive = st_db_postgresql_is_changer_contain_drive,
 	.sync_changer             = st_db_postgresql_sync_changer,
 	.sync_drive               = st_db_postgresql_sync_drive,
+	.sync_plugin_checksum     = st_db_postgresql_sync_plugin_checksum,
 	.sync_pool                = st_db_postgresql_sync_pool,
 	.sync_tape                = st_db_postgresql_sync_tape,
 	.sync_user                = st_db_postgresql_sync_user,
@@ -612,6 +614,31 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 		st_db_postgresql_sync_slot(connection, drive->slot);
 
 	return 0;
+}
+
+int st_db_postgresql_sync_plugin_checksum(struct st_database_connection * connection, const char * plugin) {
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	st_db_postgresql_prepare(self->db_con, "select_checksum_by_name", "SELECT name FROM checksum WHERE name = $1 LIMIT 1");
+
+	const char * params[] = { plugin };
+	PGresult * result = PQexecPrepared(self->db_con, "select_checksum_by_name", 1, params, 0, 0, 0);
+
+	int found = PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1;
+	PQclear(result);
+
+	if (found)
+		return 0;
+
+	st_db_postgresql_prepare(self->db_con, "insert_checksum", "INSERT INTO checksum VALUES (DEFAULT, $1)");
+	result = PQexecPrepared(self->db_con, "insert_checksum", 1, params, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result);
+	PQclear(result);
+
+	return status != PGRES_COMMAND_OK;
 }
 
 int st_db_postgresql_sync_pool(struct st_database_connection * connection, struct st_pool * pool) {

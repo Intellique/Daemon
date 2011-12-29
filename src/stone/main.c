@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 23:10:25 +0100                         *
+*  Last modified: Thu, 29 Dec 2011 23:44:30 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -35,6 +35,7 @@
 #include <stone/database.h>
 #include <stone/library/changer.h>
 
+#include "checksum.h"
 #include "conf.h"
 #include "config.h"
 #include "log.h"
@@ -148,8 +149,11 @@ int main(int argc, char ** argv) {
 		return 5;
 	}
 
-	if (st_changer_setup())
-		return 6;
+	// synchronize checksum plugins
+	st_checksum_sync_plugins();
+
+	//if (st_changer_setup())
+	//	return 6;
 
 	// st_sched_do_loop();
 
