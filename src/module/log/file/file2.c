@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Dec 2011 22:56:00 +0100                         *
+*  Last modified: Thu, 29 Dec 2011 20:48:21 +0100                         *
 \*************************************************************************/
 
 // open
@@ -44,6 +44,8 @@
 // close
 #include <unistd.h>
 
+#include <stone/user.h>
+
 #include "common.h"
 
 struct st_log_file_private {
@@ -52,7 +54,7 @@ struct st_log_file_private {
 };
 
 static void st_log_file_module_free(struct st_log_module * module);
-static void st_log_file_module_write(struct st_log_module * module, enum st_log_level level, enum st_log_type type, const char * message);
+static void st_log_file_module_write(struct st_log_module * module, enum st_log_level level, enum st_log_type type, const char * message, struct st_user * user);
 
 static struct st_log_module_ops st_log_file_module_ops = {
 	.free  = st_log_file_module_free,
@@ -95,17 +97,20 @@ struct st_log_module * st_log_file_new(struct st_log_module * module, const char
 	return module;
 }
 
-void st_log_file_module_write(struct st_log_module * module, enum st_log_level level, enum st_log_type type, const char * message) {
+void st_log_file_module_write(struct st_log_module * module, enum st_log_level level, enum st_log_type type, const char * message, struct st_user * user) {
 	struct st_log_file_private * self = module->data;
 
 	struct timeval curTime;
 	struct tm curTime2;
-	char buffer[32];
+	char strtime[32];
 
 	gettimeofday(&curTime, 0);
 	localtime_r(&(curTime.tv_sec), &curTime2);
-	strftime(buffer, 32, "%F %T", &curTime2);
+	strftime(strtime, 32, "%F %T", &curTime2);
 
-	dprintf(self->fd, "@%s [%s | %s]: %s\n", buffer, st_log_level_to_string(level), st_log_type_to_string(type), message);
+	if (user)
+		dprintf(self->fd, "[L:%s, T:%s, U:%s, @%s]: %s\n", st_log_level_to_string(level), st_log_type_to_string(type), user->login, strtime, message);
+	else
+		dprintf(self->fd, "[L:%s, T:%s, @%s]: %s\n", st_log_level_to_string(level), st_log_type_to_string(type), strtime, message);
 }
 

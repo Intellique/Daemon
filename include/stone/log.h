@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Dec 2011 22:50:57 +0100                         *
+*  Last modified: Thu, 29 Dec 2011 20:42:19 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LOG_H__
@@ -31,6 +31,7 @@
 // forward declarations
 struct st_hashtable;
 struct st_log_module;
+struct st_user;
 
 
 /**
@@ -104,7 +105,7 @@ struct st_log_driver {
 		enum st_log_level level;
 		struct st_log_module_ops {
 			void (*free)(struct st_log_module * module);
-			void (*write)(struct st_log_module * module, enum st_log_level level, enum st_log_type type, const char * message);
+			void (*write)(struct st_log_module * module, enum st_log_level level, enum st_log_type type, const char * message, struct st_user * user);
 		} * ops;
 
 		void * data;
@@ -158,6 +159,7 @@ enum st_log_type st_log_string_to_type(const char * string);
 const char * st_log_type_to_string(enum st_log_type type);
 
 void st_log_write_all(enum st_log_level level, enum st_log_type type, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
+void st_log_write_all2(enum st_log_level level, enum st_log_type type, struct st_user * user, const char * format, ...) __attribute__ ((format (printf, 4, 5)));
 void st_log_write_to(const char * alias, enum st_log_type type, enum st_log_level level, const char * format, ...) __attribute__ ((format (printf, 4, 5)));
 
 #endif

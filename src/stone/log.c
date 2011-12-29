@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 24 Dec 2011 15:44:25 +0100                         *
+*  Last modified: Thu, 29 Dec 2011 20:43:25 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -40,8 +40,10 @@
 #include "loader.h"
 #include "log.h"
 
+#include <stone/user.h>
+
 static void st_log_exit(void) __attribute__((destructor));
-static void st_log_store_message(char * who, enum st_log_level level, enum st_log_type type, char * message);
+static void st_log_store_message(char * who, enum st_log_level level, enum st_log_type type, char * message, struct st_user * user);
 
 static int st_log_display_at_exit = 1;
 static struct st_log_driver ** st_log_drivers = 0;
@@ -51,6 +53,7 @@ static struct st_log_message_unsent {
 	enum st_log_level level;
 	enum st_log_type type;
 	char * message;
+	struct st_user * user;
 	char sent;
 } * st_log_message_unsent = 0;
 static unsigned int st_log_nb_message_unsent = 0;
@@ -113,7 +116,7 @@ int st_log_flush_message() {
 				if (st_log_message_unsent[mes].who && strcmp(st_log_message_unsent[mes].who, st_log_drivers[dr]->modules[mod].alias))
 					continue;
 				if (st_log_drivers[dr]->modules[mod].level >= st_log_message_unsent[mes].level) {
-					st_log_drivers[dr]->modules[mod].ops->write(st_log_drivers[dr]->modules + mod, st_log_message_unsent[mes].level, st_log_message_unsent[mes].type, st_log_message_unsent[mes].message);
+					st_log_drivers[dr]->modules[mod].ops->write(st_log_drivers[dr]->modules + mod, st_log_message_unsent[mes].level, st_log_message_unsent[mes].type, st_log_message_unsent[mes].message, st_log_message_unsent[mes].user);
 					st_log_message_unsent[mes].sent = 1;
 					ok = 1;
 				}
@@ -228,12 +231,13 @@ void st_log_register_driver(struct st_log_driver * driver) {
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "Log: Driver(%s) is now registred", driver->name);
 }
 
-void st_log_store_message(char * who, enum st_log_level level, enum st_log_type type, char * message) {
+void st_log_store_message(char * who, enum st_log_level level, enum st_log_type type, char * message, struct st_user * user) {
 	st_log_message_unsent = realloc(st_log_message_unsent, (st_log_nb_message_unsent + 1) * sizeof(struct st_log_message_unsent));
 	st_log_message_unsent[st_log_nb_message_unsent].who = who;
 	st_log_message_unsent[st_log_nb_message_unsent].level = level;
 	st_log_message_unsent[st_log_nb_message_unsent].type = type;
 	st_log_message_unsent[st_log_nb_message_unsent].message = message;
+	st_log_message_unsent[st_log_nb_message_unsent].user = user;
 	st_log_message_unsent[st_log_nb_message_unsent].sent = 0;
 	st_log_nb_message_unsent++;
 	if (who)
@@ -283,7 +287,7 @@ void st_log_write_all(enum st_log_level level, enum st_log_type type, const char
 	pthread_mutex_lock(&st_log_lock);
 
 	if (st_log_nb_drivers == 0 || st_log_message_unsent) {
-		st_log_store_message(0, level, type, message);
+		st_log_store_message(0, level, type, message, 0);
 
 		pthread_mutex_unlock(&st_log_lock);
 		if (old_state == PTHREAD_CANCEL_DISABLE)
@@ -296,14 +300,57 @@ void st_log_write_all(enum st_log_level level, enum st_log_type type, const char
 		unsigned int j;
 		for (j = 0; j < st_log_drivers[i]->nb_modules; j++) {
 			if (st_log_drivers[i]->modules[j].level >= level) {
-				st_log_drivers[i]->modules[j].ops->write(st_log_drivers[i]->modules + j, level, type, message);
+				st_log_drivers[i]->modules[j].ops->write(st_log_drivers[i]->modules + j, level, type, message, 0);
 				sent = 1;
 			}
 		}
 	}
 
 	if (!sent)
-		st_log_store_message(0, level, type, message);
+		st_log_store_message(0, level, type, message, 0);
+
+	pthread_mutex_unlock(&st_log_lock);
+	if (old_state == PTHREAD_CANCEL_DISABLE)
+		pthread_setcancelstate(old_state, 0);
+
+	if (sent)
+		free(message);
+}
+
+void st_log_write_all2(enum st_log_level level, enum st_log_type type, struct st_user * user, const char * format, ...) {
+	char * message = malloc(256);
+
+	va_list va;
+	va_start(va, format);
+	vsnprintf(message, 256, format, va);
+	va_end(va);
+
+	int old_state;
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
+	pthread_mutex_lock(&st_log_lock);
+
+	if (st_log_nb_drivers == 0 || st_log_message_unsent) {
+		st_log_store_message(0, level, type, message, user);
+
+		pthread_mutex_unlock(&st_log_lock);
+		if (old_state == PTHREAD_CANCEL_DISABLE)
+			pthread_setcancelstate(old_state, 0);
+		return;
+	}
+
+	unsigned int i, sent = 0;
+	for (i = 0; i < st_log_nb_drivers; i++) {
+		unsigned int j;
+		for (j = 0; j < st_log_drivers[i]->nb_modules; j++) {
+			if (st_log_drivers[i]->modules[j].level >= level) {
+				st_log_drivers[i]->modules[j].ops->write(st_log_drivers[i]->modules + j, level, type, message, user);
+				sent = 1;
+			}
+		}
+	}
+
+	if (!sent)
+		st_log_store_message(0, level, type, message, user);
 
 	pthread_mutex_unlock(&st_log_lock);
 	if (old_state == PTHREAD_CANCEL_DISABLE)

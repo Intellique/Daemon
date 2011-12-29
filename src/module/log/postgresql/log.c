@@ -22,11 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 26 Dec 2011 19:45:16 +0100                         *
+*  Last modified: Thu, 29 Dec 2011 21:00:48 +0100                         *
 \*************************************************************************/
 
+#define _GNU_SOURCE
 // free, malloc
 #include <malloc.h>
+// asprintf
+#include <stdio.h>
 // strdup
 #include <string.h>
 // gettimeofday
@@ -36,6 +39,8 @@
 // localtime_r, strftime
 #include <time.h>
 
+#include <stone/user.h>
+
 #include "common.h"
 
 struct st_log_postgresql_private {
@@ -44,7 +49,7 @@ struct st_log_postgresql_private {
 };
 
 static void st_log_postgresql_module_free(struct st_log_module * module);
-static void st_log_postgresql_module_write(struct st_log_module * module, enum st_log_level level, enum st_log_type type, const char * message);
+static void st_log_postgresql_module_write(struct st_log_module * module, enum st_log_level level, enum st_log_type type, const char * message, struct st_user * user);
 
 static struct st_log_module_ops st_log_postgresql_module_ops = {
 	.free  = st_log_postgresql_module_free,
@@ -93,13 +98,13 @@ struct st_log_module * st_log_postgresql_new(struct st_log_module * module, cons
 		self->hostid = strdup(PQgetvalue(result, 0, 0));
 	PQclear(result);
 
-	PGresult * prepare = PQprepare(con, "insert_log", "INSERT INTO log VALUES (DEFAULT, $1, $2, $3, $4, $5, NULL)", 0, 0);
+	PGresult * prepare = PQprepare(con, "insert_log", "INSERT INTO log VALUES (DEFAULT, $1, $2, $3, $4, $5, $6)", 0, 0);
 	PQclear(prepare);
 
 	return module;
 }
 
-void st_log_postgresql_module_write(struct st_log_module * module, enum st_log_level level, enum st_log_type type, const char * message) {
+void st_log_postgresql_module_write(struct st_log_module * module, enum st_log_level level, enum st_log_type type, const char * message, struct st_user * user) {
 	struct st_log_postgresql_private * self = module->data;
 
 	struct timeval curTime;
@@ -110,12 +115,19 @@ void st_log_postgresql_module_write(struct st_log_module * module, enum st_log_l
 	localtime_r(&(curTime.tv_sec), &curTime2);
 	strftime(buffer, 32, "%F %T", &curTime2);
 
+	char * userid = 0;
+	if (user)
+		asprintf(&userid, "%ld", user->id);
+
 	const char * param[] = {
 		st_log_postgresql_types[type], st_log_postgresql_levels[level],
-		buffer, message, self->hostid,
+		buffer, message, self->hostid, userid,
 	};
 
-	PGresult * result = PQexecPrepared(self->connection, "insert_log", 5, param, 0, 0, 0);
+	PGresult * result = PQexecPrepared(self->connection, "insert_log", 6, param, 0, 0, 0);
 	PQclear(result);
+
+	if (userid)
+		free(userid);
 }
 
