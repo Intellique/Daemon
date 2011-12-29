@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 17:11:55 +0100                         *
+*  Last modified: Thu, 29 Dec 2011 18:10:37 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -35,6 +35,7 @@ struct st_hashtable;
 struct st_pool;
 struct st_tape;
 struct st_tape_format;
+struct st_user;
 
 struct st_database {
 	char * name;
@@ -114,11 +115,13 @@ struct st_database_connection {
 		int (*create_pool)(struct st_database_connection * db, struct st_pool * pool);
 		int (*get_pool)(struct st_database_connection * db, struct st_pool * pool, const char * uuid);
 		int (*get_tape_format)(struct st_database_connection * db, struct st_tape_format * tape_format, unsigned char density_code);
+		int (*get_user)(struct st_database_connection * db, struct st_user * user, long user_id, const char * login);
 		int (*is_changer_contain_drive)(struct st_database_connection * db, struct st_changer * changer, struct st_drive * drive);
 		int (*sync_changer)(struct st_database_connection * db, struct st_changer * changer);
 		int (*sync_drive)(struct st_database_connection * db, struct st_drive * drive);
 		int (*sync_pool)(struct st_database_connection * db, struct st_pool * pool);
 		int (*sync_tape)(struct st_database_connection * db, struct st_tape * tape);
+		int (*sync_user)(struct st_database_connection * db, struct st_user * user);
 	} * ops;
 	void * data;
 };

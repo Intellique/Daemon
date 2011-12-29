@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 17:29:45 +0100                         *
+*  Last modified: Thu, 29 Dec 2011 20:14:50 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -46,6 +46,7 @@
 #include <stone/library/drive.h>
 #include <stone/library/tape.h>
 #include <stone/log.h>
+#include <stone/user.h>
 
 #include "common.h"
 
@@ -60,12 +61,14 @@ static int st_db_postgresql_start_transaction(struct st_database_connection * co
 static int st_db_postgresql_create_pool(struct st_database_connection * db, struct st_pool * pool);
 static int st_db_postgresql_get_pool(struct st_database_connection * db, struct st_pool * pool, const char * uuid);
 static int st_db_postgresql_get_tape_format(struct st_database_connection * db, struct st_tape_format * tape_format, unsigned char density_code);
+static int st_db_postgresql_get_user(struct st_database_connection * db, struct st_user * user, long user_id, const char * login);
 static int st_db_postgresql_is_changer_contain_drive(struct st_database_connection * db, struct st_changer * changer, struct st_drive * drive);
 static int st_db_postgresql_sync_changer(struct st_database_connection * db, struct st_changer * changer);
 static int st_db_postgresql_sync_drive(struct st_database_connection * db, struct st_drive * drive);
 static int st_db_postgresql_sync_pool(struct st_database_connection * db, struct st_pool * pool);
 static int st_db_postgresql_sync_slot(struct st_database_connection * db, struct st_slot * slot);
 static int st_db_postgresql_sync_tape(struct st_database_connection * db, struct st_tape * tape);
+static int st_db_postgresql_sync_user(struct st_database_connection * db, struct st_user * user);
 
 static int st_db_postgresql_get_bool(PGresult * result, int row, int column, char * value);
 static int st_db_postgresql_get_double(PGresult * result, int row, int column, double * value);
@@ -90,11 +93,13 @@ static struct st_database_connection_ops st_db_postgresql_con_ops = {
 	.create_pool              = st_db_postgresql_create_pool,
 	.get_pool                 = st_db_postgresql_get_pool,
 	.get_tape_format          = st_db_postgresql_get_tape_format,
+	.get_user                 = st_db_postgresql_get_user,
 	.is_changer_contain_drive = st_db_postgresql_is_changer_contain_drive,
 	.sync_changer             = st_db_postgresql_sync_changer,
 	.sync_drive               = st_db_postgresql_sync_drive,
 	.sync_pool                = st_db_postgresql_sync_pool,
 	.sync_tape                = st_db_postgresql_sync_tape,
+	.sync_user                = st_db_postgresql_sync_user,
 };
 
 
@@ -275,6 +280,42 @@ int st_db_postgresql_get_tape_format(struct st_database_connection * connection,
 
 	PQclear(result);
 	return 1;
+}
+
+int st_db_postgresql_get_user(struct st_database_connection * connection, struct st_user * user, long user_id, const char * login) {
+	if (user_id < 0 && !login)
+		return 1;
+
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	st_db_postgresql_prepare(self->db_con, "select_user_by_id_or_login", "SELECT * FROM users WHERE id = $1 OR login = $2 LIMIT 1");
+
+	char * userid = 0;
+	asprintf(&userid, "%ld", user_id);
+
+	const char * params[] = { userid, login };
+	PGresult * result = PQexecPrepared(self->db_con, "select_user_by_id_or_login", 2, params, 0, 0, 0);
+
+	if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		st_db_postgresql_get_long(result, 0, 0, &user->id);
+		st_db_postgresql_get_string_dup(result, 0, 1, &user->login);
+		st_db_postgresql_get_string_dup(result, 0, 2, &user->password);
+		st_db_postgresql_get_string_dup(result, 0, 3, &user->salt);
+		st_db_postgresql_get_string_dup(result, 0, 4, &user->fullname);
+		st_db_postgresql_get_string_dup(result, 0, 5, &user->email);
+		st_db_postgresql_get_bool(result, 0, 6, &user->is_admin);
+		st_db_postgresql_get_bool(result, 0, 7, &user->can_archive);
+		st_db_postgresql_get_bool(result, 0, 8, &user->can_restore);
+
+		PQclear(result);
+		free(userid);
+		return 0;
+	} else {
+		PQclear(result);
+		free(userid);
+		return 1;
+	}
 }
 
 int st_db_postgresql_init_connection(struct st_database_connection * connection, struct st_db_postgresql_private * driver_private) {
@@ -880,6 +921,52 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 	return 0;
 }
 
+int st_db_postgresql_sync_user(struct st_database_connection * connection, struct st_user * user) {
+	if (!user || user->id < 0)
+		return 1;
+
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	st_db_postgresql_prepare(self->db_con, "select_user_by_id", "SELECT * FROM users WHERE id = $1 LIMIT 1");
+
+	char * userid = 0;
+	asprintf(&userid, "%ld", user->id);
+
+	const char * params[] = { userid };
+	PGresult * result = PQexecPrepared(self->db_con, "select_user_by_id", 1, params, 0, 0, 0);
+
+	if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		if (user->password)
+			free(user->password);
+		st_db_postgresql_get_string_dup(result, 0, 2, &user->password);
+
+		if (user->salt)
+			free(user->salt);
+		st_db_postgresql_get_string_dup(result, 0, 3, &user->salt);
+
+		if (user->fullname)
+			free(user->fullname);
+		st_db_postgresql_get_string_dup(result, 0, 4, &user->fullname);
+
+		if (user->email)
+			free(user->email);
+		st_db_postgresql_get_string_dup(result, 0, 5, &user->email);
+
+		st_db_postgresql_get_bool(result, 0, 6, &user->is_admin);
+		st_db_postgresql_get_bool(result, 0, 7, &user->can_archive);
+		st_db_postgresql_get_bool(result, 0, 8, &user->can_restore);
+
+		PQclear(result);
+		free(userid);
+		return 0;
+	} else {
+		PQclear(result);
+		free(userid);
+		return 1;
+	}
+}
+
 
 int st_db_postgresql_get_bool(PGresult * result, int row, int column, char * val) {
 	if (column < 0)
@@ -887,7 +974,7 @@ int st_db_postgresql_get_bool(PGresult * result, int row, int column, char * val
 
 	char * value = PQgetvalue(result, row, column);
 	if (value)
-		*val = strcmp(value, "t") ? 1 : 0;
+		*val = strcmp(value, "t") ? 0 : 1;
 
 	return value != 0;
 }
