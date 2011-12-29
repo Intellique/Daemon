@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 28 Dec 2011 23:37:34 +0100                         *
+*  Last modified: Thu, 29 Dec 2011 10:14:07 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -599,7 +599,7 @@ int st_db_postgresql_sync_slot(struct st_database_connection * connection, struc
 	if (slot->id > -1) {
 		char * slot_id = 0, * tape_id = 0;
 		asprintf(&slot_id, "%ld", slot->id);
-		if (slot->tape)
+		if (slot->tape && slot->tape->id > -1)
 			asprintf(&tape_id, "%ld", slot->tape->id);
 
 		st_db_postgresql_prepare(self->db_con, "update_slot", "UPDATE changerslot SET tape = $1 WHERE id = $2");
@@ -613,7 +613,7 @@ int st_db_postgresql_sync_slot(struct st_database_connection * connection, struc
 
 		PQclear(result);
 		free(slot_id);
-		if (slot->tape)
+		if (tape_id)
 			free(tape_id);
 
 		return status != PGRES_COMMAND_OK;
@@ -621,7 +621,7 @@ int st_db_postgresql_sync_slot(struct st_database_connection * connection, struc
 		char * changer_id = 0, * slot_index = 0, * tape_id = 0;
 		asprintf(&changer_id, "%ld", slot->changer->id);
 		asprintf(&slot_index, "%td", slot - slot->changer->slots);
-		if (slot->tape)
+		if (slot->tape && slot->tape->id > -1)
 			asprintf(&tape_id, "%ld", slot->tape->id);
 
 		st_db_postgresql_prepare(self->db_con, "insert_slot", "INSERT INTO changerslot VALUES (DEFAULT, $1, $2, $3, $4)");
@@ -652,7 +652,7 @@ int st_db_postgresql_sync_slot(struct st_database_connection * connection, struc
 			PQclear(result);
 		}
 
-		if (slot->tape)
+		if (tape_id)
 			free(tape_id);
 		free(slot_index);
 		free(changer_id);
@@ -665,68 +665,68 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
-	if (tape->id < 0 && tape->uuid[0] != '\0') {
-		st_db_postgresql_prepare(self->db_con, "select_tape_by_uuid", "SELECT * FROM tape WHERE uuid = $1 LIMIT 1");
+	if (tape->id < 0) {
+		if (tape->uuid[0] != '\0') {
+			st_db_postgresql_prepare(self->db_con, "select_tape_by_uuid", "SELECT * FROM tape WHERE uuid = $1 LIMIT 1");
 
-		const char * params[] = { tape->uuid };
-		PGresult * result = PQexecPrepared(self->db_con, "select_tape_by_uuid", 1, params, 0, 0, 0);
+			const char * params[] = { tape->uuid };
+			PGresult * result = PQexecPrepared(self->db_con, "select_tape_by_uuid", 1, params, 0, 0, 0);
 
-		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
-			st_db_postgresql_get_long(result, 0, 0, &tape->id);
-			st_db_postgresql_get_string(result, 0, 2, tape->label);
-			st_db_postgresql_get_string(result, 0, 3, tape->name);
-			st_db_postgresql_get_time(result, 0, 6, &tape->first_used);
-			st_db_postgresql_get_time(result, 0, 7, &tape->use_before);
+			if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+				st_db_postgresql_get_long(result, 0, 0, &tape->id);
+				st_db_postgresql_get_string(result, 0, 2, tape->label);
+				st_db_postgresql_get_string(result, 0, 3, tape->name);
+				st_db_postgresql_get_time(result, 0, 6, &tape->first_used);
+				st_db_postgresql_get_time(result, 0, 7, &tape->use_before);
 
-			long old_value = tape->load_count;
-			st_db_postgresql_get_long(result, 0, 8, &tape->load_count);
-			tape->load_count += old_value;
+				long old_value = tape->load_count;
+				st_db_postgresql_get_long(result, 0, 8, &tape->load_count);
+				tape->load_count += old_value;
 
-			old_value = tape->read_count;
-			st_db_postgresql_get_long(result, 0, 9, &tape->read_count);
-			tape->read_count += old_value;
+				old_value = tape->read_count;
+				st_db_postgresql_get_long(result, 0, 9, &tape->read_count);
+				tape->read_count += old_value;
 
-			old_value = tape->write_count;
-			st_db_postgresql_get_long(result, 0, 10, &tape->write_count);
-			tape->write_count += old_value;
+				old_value = tape->write_count;
+				st_db_postgresql_get_long(result, 0, 10, &tape->write_count);
+				tape->write_count += old_value;
 
-			st_db_postgresql_get_ssize(result, 0, 13, &tape->block_size);
+				st_db_postgresql_get_ssize(result, 0, 13, &tape->block_size);
+			}
+
+			PQclear(result);
+		} else if (tape->label[0] != '\0') {
+			st_db_postgresql_prepare(self->db_con, "select_tape_by_label", "SELECT * FROM tape WHERE label = $1 LIMIT 1");
+
+			const char * params[] = { tape->label };
+			PGresult * result = PQexecPrepared(self->db_con, "select_tape_by_label", 1, params, 0, 0, 0);
+
+			if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+				st_db_postgresql_get_long(result, 0, 0, &tape->id);
+				st_db_postgresql_get_string(result, 0, 3, tape->name);
+				st_db_postgresql_get_time(result, 0, 6, &tape->first_used);
+				st_db_postgresql_get_time(result, 0, 7, &tape->use_before);
+
+				long old_value = tape->load_count;
+				st_db_postgresql_get_long(result, 0, 8, &tape->load_count);
+				tape->load_count += old_value;
+
+				old_value = tape->read_count;
+				st_db_postgresql_get_long(result, 0, 9, &tape->read_count);
+				tape->read_count += old_value;
+
+				old_value = tape->write_count;
+				st_db_postgresql_get_long(result, 0, 10, &tape->write_count);
+				tape->write_count += old_value;
+
+				st_db_postgresql_get_ssize(result, 0, 13, &tape->block_size);
+			}
+
+			PQclear(result);
 		}
-
-		PQclear(result);
 	}
 
-	if (tape->id < 0 && tape->label[0] != '\0') {
-		st_db_postgresql_prepare(self->db_con, "select_tape_by_label", "SELECT * FROM tape WHERE label = $1 LIMIT 1");
-
-		const char * params[] = { tape->label };
-		PGresult * result = PQexecPrepared(self->db_con, "select_tape_by_label", 1, params, 0, 0, 0);
-
-		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
-			st_db_postgresql_get_long(result, 0, 0, &tape->id);
-			st_db_postgresql_get_string(result, 0, 3, tape->name);
-			st_db_postgresql_get_time(result, 0, 6, &tape->first_used);
-			st_db_postgresql_get_time(result, 0, 7, &tape->use_before);
-
-			long old_value = tape->load_count;
-			st_db_postgresql_get_long(result, 0, 8, &tape->load_count);
-			tape->load_count += old_value;
-
-			old_value = tape->read_count;
-			st_db_postgresql_get_long(result, 0, 9, &tape->read_count);
-			tape->read_count += old_value;
-
-			old_value = tape->write_count;
-			st_db_postgresql_get_long(result, 0, 10, &tape->write_count);
-			tape->write_count += old_value;
-
-			st_db_postgresql_get_ssize(result, 0, 13, &tape->block_size);
-		}
-
-		PQclear(result);
-	}
-
-	if (tape->id > -1) {
+	if (tape->id > -1 && (tape->uuid[0] != '\0' || tape->label[0] != '\0')) {
 		st_db_postgresql_prepare(self->db_con, "update_tape", "UPDATE tape SET uuid = $1, name = $2, status = $3, location = $4, loadcount = $5, readcount = $6, writecount = $7, endpos = $8, nbfiles = $9, blocksize = $10, haspartition = $11, pool = $12 WHERE id = $13");
 
 		char * load, * read, * write, * endpos, * nbfiles, * blocksize, * pool = 0, * id;
@@ -764,7 +764,7 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 			free(pool);
 
 		return status != PGRES_COMMAND_OK;
-	} else {
+	} else if (tape->id > -1) {
 		st_db_postgresql_prepare(self->db_con, "insert_tape", "INSERT INTO tape VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)");
 
 		char buffer_first_used[32];
@@ -840,6 +840,8 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 
 		return status != PGRES_COMMAND_OK;
 	}
+
+	return 0;
 }
 
 
