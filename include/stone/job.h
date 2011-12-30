@@ -30,30 +30,19 @@
 
 #include <sys/time.h>
 
-struct database_connection;
-struct job;
-
 enum job_type {
-	job_type_diffSave,
 	job_type_dummy,
-	job_type_incSave,
-	job_type_integrity_check,
-	job_type_list,
 	job_type_restore,
 	job_type_save,
 	job_type_verify,
 };
 
-struct job_ops {
-	int (*doJob)(struct job * j);
-	void (*free)(struct job * j);
-};
 
 struct job {
 	// database
 	long id;
-	char * name;
-	enum job_type type;
+
+	// scheduler
 	time_t start;
 	void * scheduler_private;
 
@@ -75,9 +64,9 @@ struct job {
 };
 
 
-int job_initJob(struct job * job, enum job_type type);
-const char * job_jobToString(enum job_type type);
-enum job_type job_stringToJob(const char * jobname);
+int job_init(struct job * job, enum job_type type);
+const char * job_job_to_string(enum job_type type);
+enum job_type job_string_to_job(const char * jobname);
 
 #endif
 
