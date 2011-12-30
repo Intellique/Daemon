@@ -22,42 +22,31 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 30 Dec 2011 13:42:53 +0100                         *
+*  Last modified: Fri, 30 Dec 2011 11:12:09 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONE_IO_H__
-#define __STONE_IO_H__
+#ifndef __MTAR_TAR_P_H__
+#define __MTAR_TAR_P_H__
 
-// ssize_t
-#include <sys/types.h>
+#include <stone/tar.h>
 
-struct st_stream_reader {
-	struct st_stream_reader_ops {
-		int (*close)(struct st_stream_reader * io);
-		off_t (*forward)(struct st_stream_reader * io, off_t offset);
-		void (*free)(struct st_stream_reader * io);
-		ssize_t (*get_block_size)(struct st_stream_reader * io);
-		int (*last_errno)(struct st_stream_reader * f);
-		ssize_t (*position)(struct st_stream_reader * io);
-		ssize_t (*read)(struct st_stream_reader * io, void * buffer, ssize_t length);
-	} * ops;
-	void * data;
+struct st_tar {
+	char filename[100];
+	char filemode[8];
+	char uid[8];
+	char gid[8];
+	char size[12];
+	char mtime[12];
+	char checksum[8];
+	char flag;
+	char linkname[100];
+	char magic[8];
+	char uname[32];
+	char gname[32];
+	char devmajor[8];
+	char devminor[8];
+	char prefix[167];
 };
-
-struct st_stream_writer {
-	struct st_stream_writer_ops {
-		int (*close)(struct st_stream_writer * io);
-		void (*free)(struct st_stream_writer * io);
-		ssize_t (*get_block_size)(struct st_stream_writer * io);
-		int (*last_errno)(struct st_stream_writer * f);
-		ssize_t (*position)(struct st_stream_writer * io);
-		ssize_t (*write)(struct st_stream_writer * io, const void * buffer, ssize_t length);
-	} * ops;
-	void * data;
-};
-
-struct st_stream_reader * st_checksum_get_steam_reader(const char ** checksums, unsigned int nb_checksums, struct st_stream_reader * reader);
-struct st_stream_writer * st_checksum_get_steam_writer(const char ** checksums, unsigned int nb_checksums, struct st_stream_writer * writer);
 
 #endif
 

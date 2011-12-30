@@ -22,9 +22,11 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 28 Dec 2011 11:26:15 +0100                         *
+*  Last modified: Fri, 30 Dec 2011 16:07:34 +0100                         *
 \*************************************************************************/
 
+// errno
+#include <errno.h>
 // open
 #include <fcntl.h>
 // free, malloc, realloc
@@ -69,6 +71,7 @@ struct st_drive_io_reader {
 	ssize_t buffer_used;
 	ssize_t block_size;
 	ssize_t position;
+	int last_errno;
 
 	struct st_drive * drive;
 	struct st_drive_generic * drive_private;
@@ -80,6 +83,7 @@ struct st_drive_io_writer {
 	ssize_t buffer_used;
 	ssize_t block_size;
 	ssize_t position;
+	int last_errno;
 
 	struct st_drive * drive;
 	struct st_drive_generic * drive_private;
@@ -101,8 +105,10 @@ static void st_drive_generic_update_status(struct st_drive * drive);
 static void st_drive_generic_update_status2(struct st_drive * drive, enum st_drive_status status);
 
 static int st_drive_io_reader_close(struct st_stream_reader * io);
+static off_t st_drive_io_reader_forward(struct st_stream_reader * io, off_t offset);
 static void st_drive_io_reader_free(struct st_stream_reader * io);
 static ssize_t st_drive_io_reader_get_block_size(struct st_stream_reader * io);
+static int st_drive_io_reader_last_errno(struct st_stream_reader * io);
 static struct st_stream_reader * st_drive_io_reader_new(struct st_drive * drive);
 static ssize_t st_drive_io_reader_position(struct st_stream_reader * io);
 static ssize_t st_drive_io_reader_read(struct st_stream_reader * io, void * buffer, ssize_t length);
@@ -110,9 +116,10 @@ static ssize_t st_drive_io_reader_read(struct st_stream_reader * io, void * buff
 static int st_drive_io_writer_close(struct st_stream_writer * io);
 static void st_drive_io_writer_free(struct st_stream_writer * io);
 static ssize_t st_drive_io_writer_get_block_size(struct st_stream_writer * io);
+static int st_drive_io_writer_last_errno(struct st_stream_writer * io);
 static struct st_stream_writer * st_drive_io_writer_new(struct st_drive * drive);
 static ssize_t st_drive_io_writer_position(struct st_stream_writer * io);
-static ssize_t st_drive_io_writer_write(struct st_stream_writer * io, void * buffer, ssize_t length);
+static ssize_t st_drive_io_writer_write(struct st_stream_writer * io, const void * buffer, ssize_t length);
 
 static struct st_drive_ops st_drive_generic_ops = {
 	.eject             = st_drive_generic_eject,
@@ -128,8 +135,10 @@ static struct st_drive_ops st_drive_generic_ops = {
 
 static struct st_stream_reader_ops st_drive_io_reader_ops = {
 	.close          = st_drive_io_reader_close,
+	.forward        = st_drive_io_reader_forward,
 	.free           = st_drive_io_reader_free,
 	.get_block_size = st_drive_io_reader_get_block_size,
+	.last_errno     = st_drive_io_reader_last_errno,
 	.position       = st_drive_io_reader_position,
 	.read           = st_drive_io_reader_read,
 };
@@ -138,6 +147,7 @@ static struct st_stream_writer_ops st_drive_io_writer_ops = {
 	.close          = st_drive_io_writer_close,
 	.free           = st_drive_io_writer_free,
 	.get_block_size = st_drive_io_writer_get_block_size,
+	.last_errno     = st_drive_io_writer_last_errno,
 	.position       = st_drive_io_writer_position,
 	.write          = st_drive_io_writer_write,
 };
@@ -514,11 +524,71 @@ int st_drive_io_reader_close(struct st_stream_reader * io) {
 	struct st_drive_io_reader * self = io->data;
 	self->fd = -1;
 	self->buffer_used = 0;
+	self->last_errno = 0;
 
 	st_drive_generic_update_status2(self->drive, ST_DRIVE_LOADED_IDLE);
 	self->drive_private->used_by_io = 0;
 
 	return 0;
+}
+
+off_t st_drive_io_reader_forward(struct st_stream_reader * io, off_t offset) {
+	if (!io)
+		return -1;
+
+	struct st_drive_io_reader * self = io->data;
+	self->last_errno = 0;
+
+	if (self->fd < 0)
+		return -1;
+
+	if (self->buffer_used > 0) {
+		if (offset >= self->buffer_used) {
+			offset -= self->buffer_used;
+			self->position += self->buffer_used;
+			self->buffer_used = 0;
+		} else {
+			memmove(self->buffer, self->buffer + offset, offset);
+			self->buffer_used -= offset;
+			self->position += offset;
+			offset = 0;
+		}
+
+		if (offset == 0)
+			return self->position;
+	}
+
+	while (offset >= self->block_size) {
+		st_drive_generic_operation_start(self->drive_private);
+		ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
+		st_drive_generic_operation_stop(self->drive);
+
+		if (nb_read > 0) {
+			offset -= nb_read;
+			self->position += nb_read;
+		} else if (nb_read == 0) {
+			return self->position;
+		} else {
+			self->last_errno = errno;
+			return self->position;
+		}
+	}
+
+	if (offset == 0)
+		return self->position;
+
+	st_drive_generic_operation_start(self->drive_private);
+	ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
+	st_drive_generic_operation_stop(self->drive);
+	if (nb_read > 0) {
+		self->buffer_used = self->block_size - offset;
+		self->position += offset;
+		memmove(self->buffer, self->buffer + offset, self->buffer_used);
+	} else if (nb_read < 0) {
+		self->last_errno = errno;
+	}
+
+	return self->position;
 }
 
 void st_drive_io_reader_free(struct st_stream_reader * io) {
@@ -540,6 +610,11 @@ ssize_t st_drive_io_reader_get_block_size(struct st_stream_reader * io) {
 	return self->block_size;
 }
 
+int st_drive_io_reader_last_errno(struct st_stream_reader * io) {
+	struct st_drive_io_reader * self = io->data;
+	return self->last_errno;
+}
+
 struct st_stream_reader * st_drive_io_reader_new(struct st_drive * drive) {
 	ssize_t block_size = drive->ops->get_block_size(drive);
 
@@ -550,6 +625,7 @@ struct st_stream_reader * st_drive_io_reader_new(struct st_drive * drive) {
 	self->buffer_used = 0;
 	self->block_size = block_size;
 	self->position = 0;
+	self->last_errno = 0;
 	self->drive = drive;
 	self->drive_private = dr;
 
@@ -575,6 +651,8 @@ ssize_t st_drive_io_reader_read(struct st_stream_reader * io, void * buffer, ssi
 		return -1;
 
 	struct st_drive_io_reader * self = io->data;
+	self->last_errno = 0;
+
 	if (self->fd < 0)
 		return -1;
 
@@ -603,10 +681,12 @@ ssize_t st_drive_io_reader_read(struct st_stream_reader * io, void * buffer, ssi
 		if (nb_read > 0) {
 			self->position += nb_read;
 			nb_total_read += nb_read;
-		} else if (nb_read == 0)
+		} else if (nb_read == 0) {
 			return nb_total_read;
-		else
+		} else {
+			self->last_errno = errno;
 			return -1;
+		}
 	}
 
 	if (length == nb_total_read)
@@ -615,8 +695,10 @@ ssize_t st_drive_io_reader_read(struct st_stream_reader * io, void * buffer, ssi
 	st_drive_generic_operation_start(self->drive_private);
 	ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
 	st_drive_generic_operation_stop(self->drive);
-	if (nb_read < 0)
+	if (nb_read < 0) {
+		self->last_errno = errno;
 		return -1;
+	}
 
 	if (nb_read > 0) {
 		self->buffer_used = nb_read;
@@ -644,12 +726,19 @@ int st_drive_io_writer_close(struct st_stream_writer * io) {
 		return -1;
 
 	struct st_drive_io_writer * self = io->data;
+	self->last_errno = 0;
+
 	if (self->buffer_used) {
 		bzero(self->buffer + self->buffer_used, self->block_size - self->buffer_used);
 
+		st_drive_generic_operation_start(self->drive_private);
 		ssize_t nb_write = write(self->fd, self->buffer, self->buffer_used);
-		if (nb_write < 0)
+		st_drive_generic_operation_stop(self->drive);
+
+		if (nb_write < 0) {
+			self->last_errno = errno;
 			return -1;
+		}
 
 		self->position += nb_write;
 		self->buffer_used = 0;
@@ -657,9 +746,14 @@ int st_drive_io_writer_close(struct st_stream_writer * io) {
 
 	if (self->fd > -1) {
 		static struct mtop eof = { MTWEOF, 1 };
+		st_drive_generic_operation_start(self->drive_private);
 		int failed = ioctl(self->fd, MTIOCTOP, &eof);
-		if (failed)
+		st_drive_generic_operation_stop(self->drive);
+
+		if (failed) {
+			self->last_errno = errno;
 			return -1;
+		}
 	}
 
 	self->fd = -1;
@@ -688,6 +782,11 @@ ssize_t st_drive_io_writer_get_block_size(struct st_stream_writer * io) {
 	return self->block_size;
 }
 
+int st_drive_io_writer_last_errno(struct st_stream_writer * io) {
+	struct st_drive_io_writer * self = io->data;
+	return self->last_errno;
+}
+
 struct st_stream_writer * st_drive_io_writer_new(struct st_drive * drive) {
 	ssize_t block_size = drive->ops->get_block_size(drive);
 
@@ -698,6 +797,7 @@ struct st_stream_writer * st_drive_io_writer_new(struct st_drive * drive) {
 	self->buffer_used = 0;
 	self->block_size = block_size;
 	self->position = 0;
+	self->last_errno = 0;
 	self->drive = drive;
 	self->drive_private = dr;
 
@@ -718,11 +818,12 @@ ssize_t st_drive_io_writer_position(struct st_stream_writer * io) {
 	return self->position;
 }
 
-ssize_t st_drive_io_writer_write(struct st_stream_writer * io, void * buffer, ssize_t length) {
+ssize_t st_drive_io_writer_write(struct st_stream_writer * io, const void * buffer, ssize_t length) {
 	if (!io || !buffer || length < 0)
 		return -1;
 
 	struct st_drive_io_writer * self = io->data;
+	self->last_errno = 0;
 
 	ssize_t buffer_available = self->block_size - self->buffer_used;
 	if (buffer_available > length) {
@@ -742,13 +843,16 @@ ssize_t st_drive_io_writer_write(struct st_stream_writer * io, void * buffer, ss
 	self->buffer_used = 0;
 	self->position += buffer_available;
 
-	char * c_buffer = buffer;
+	const char * c_buffer = buffer;
 	while (length - nb_total_write >= self->block_size) {
 		st_drive_generic_operation_start(self->drive_private);
 		ssize_t nb_write = write(self->fd, c_buffer + nb_total_write, self->block_size);
 		st_drive_generic_operation_stop(self->drive);
-		if (nb_write < 0)
+
+		if (nb_write < 0) {
+			self->last_errno = errno;
 			return -1;
+		}
 
 		nb_total_write += nb_write;
 		self->position += nb_write;
