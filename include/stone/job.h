@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jan 2012 19:20:53 +0100                         *
+*  Last modified: Mon, 02 Jan 2012 23:21:45 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -66,7 +66,7 @@ struct st_job {
 	float done;
 	struct st_job_ops {
 		void (*free)(struct st_job * j);
-		int (*start)(struct st_job * j);
+		int (*run)(struct st_job * j);
 		int (*stop)(struct st_job * j);
 	} * job_ops;
 	void * data;

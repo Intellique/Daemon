@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jan 2012 20:34:29 +0100                         *
+*  Last modified: Mon, 02 Jan 2012 23:41:27 +0100                         *
 \*************************************************************************/
 
 #include <pthread.h>
@@ -46,6 +46,7 @@
 struct st_sched_job {
 	pthread_t th;
 	struct st_database_connection * status_con;
+	time_t updated;
 };
 
 static void st_sched_exit(int signal);
@@ -86,18 +87,19 @@ void st_sched_do_loop() {
 		unsigned int i;
 		for (i = 0; i < nb_jobs; i++) {
 			struct st_job * j = jobs[i];
-			if (j->id < 0)
+			if (!j)
 				continue;
+
+			if (j->id < 0) {
+				free(j);
+				jobs[i] = 0;
+				continue;
+			}
 
 			connection->ops->refresh_job(connection, j);
 
-			if (j->id < 0) {
-				if (j->sched_status == st_job_status_running)
-					j->job_ops->stop(j);
-
-				j->job_ops->free(j);
-				// free job
-			}
+			if (j->id < 0 && j->sched_status == st_job_status_running)
+				j->job_ops->stop(j);
 		}
 
 		// check for new jobs
@@ -137,7 +139,7 @@ void st_sched_do_loop() {
 			if (!jobs[i]) {
 				if (j < nb_jobs)
 					memmove(jobs + i, jobs + j, (nb_jobs - j) * sizeof(struct st_job *));
-				nb_jobs -= j - i + 1;
+				nb_jobs -= j - i;
 				jobs = realloc(jobs, nb_jobs * sizeof(struct st_job *));
 			}
 		}
@@ -157,7 +159,7 @@ void st_sched_do_loop() {
 				last_max_jobs = j->id;
 		}
 
-		sleep(15 - update % 15);
+		sleep(15 - time(0) % 15);
 	}
 
 	connection->ops->free(connection);
@@ -176,12 +178,15 @@ void st_sched_init_job(struct st_job * j) {
 
 	struct st_sched_job * jp = j->scheduler_private = malloc(sizeof(struct st_sched_job));
 	jp->status_con = connection;
+	jp->updated = time(0);
 
 	j->done = 0;
 	j->db_ops = &st_sched_db_ops;
 }
 
 void st_sched_run_job(struct st_job * j) {
+	st_log_write_all(st_log_level_info, st_log_type_scheduler, "starting job id = %ld", j->id);
+
 	struct st_sched_job * jp = j->scheduler_private;
 
 	pthread_attr_t attr;
@@ -199,9 +204,28 @@ void * st_sched_run_job2(void * arg) {
 	j->sched_status = st_job_status_running;
 	j->repetition--;
 
-	j->job_ops->start(j);
+	int status = j->job_ops->run(j);
 
 	j->sched_status = st_job_status_idle;
+
+	sleep(1);
+
+	st_sched_update_status(j);
+
+	j->job_ops->free(j);
+	j->data = 0;
+
+	struct st_sched_job * jp = j->scheduler_private;
+	jp->status_con->ops->close(jp->status_con);
+	jp->status_con->ops->free(jp->status_con);
+	free(jp);
+
+	j->id = -1;
+	free(j->name);
+	j->name = 0;
+	j->driver = 0;
+
+	st_log_write_all(st_log_level_info, st_log_type_scheduler, "job finished, id = %ld, with exited code = %d", j->id, status);
 
 	return 0;
 }
@@ -209,7 +233,12 @@ void * st_sched_run_job2(void * arg) {
 int st_sched_update_status(struct st_job * j) {
 	struct st_sched_job * jp = j->scheduler_private;
 
+	time_t now = time(0);
+	if (now <= jp->updated)
+		return 0;
+
 	jp->status_con->ops->update_job(jp->status_con, j);
+	jp->updated = now;
 
 	return 0;
 }

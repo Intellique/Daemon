@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:29:13 +0100                         *
+*  Last modified: Mon, 02 Jan 2012 23:16:33 +0100                         *
 \*************************************************************************/
 
 // realloc
@@ -56,8 +56,6 @@ int st_log_postgresql_add(struct st_log_driver * driver, const char * alias, enu
 		return 1;
 
 	char * password = st_hashtable_value(params, "password");
-	if (!password)
-		return 1;
 
 	char * host = st_hashtable_value(params, "host");
 	if (!host)
