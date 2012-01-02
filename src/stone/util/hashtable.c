@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:05:51 +0100                         *
+*  Last modified: Mon, 02 Jan 2012 11:54:23 +0100                         *
 \*************************************************************************/
 
 // calloc, free, malloc
@@ -125,7 +125,7 @@ const void ** st_hashtable_keys(struct st_hashtable * hashtable) {
 }
 
 void st_hashtable_put(struct st_hashtable * hashtable, void * key, void * value) {
-	if (!hashtable || !key || !value)
+	if (!hashtable || !key)
 		return;
 
 	unsigned long long hash = hashtable->compute_hash(key);

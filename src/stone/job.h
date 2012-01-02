@@ -22,33 +22,15 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jan 2012 09:17:54 +0100                         *
+*  Last modified: Fri, 30 Dec 2011 17:27:31 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONE_DB_POSTGRESQL_CONNNECTION_H__
-#define __STONE_DB_POSTGRESQL_CONNNECTION_H__
+#ifndef __STONE_JOB_P_H__
+#define __STONE_JOB_P_H__
 
-#include <postgresql/libpq-fe.h>
+#include <stone/job.h>
 
-#include <stone/database.h>
-#include <stone/util.h>
-#include <stone/util/hashtable.h>
-
-struct st_db_postgresql_private {
-	char * user;
-	char * password;
-	char * db;
-	char * host;
-	char * port;
-};
-
-struct st_db_postgresql_connetion_private {
-	PGconn * db_con;
-	struct st_hashtable * cached;
-};
-
-int st_db_postgresql_init_connection(struct st_database_connection * connection, struct st_db_postgresql_private * driver_private);
-void st_db_postgresql_pr_free(struct st_db_postgresql_private * self);
+void st_job_sync_plugins(void);
 
 #endif
 

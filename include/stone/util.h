@@ -22,33 +22,17 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jan 2012 09:17:54 +0100                         *
+*  Last modified: Mon, 02 Jan 2012 09:13:44 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONE_DB_POSTGRESQL_CONNNECTION_H__
-#define __STONE_DB_POSTGRESQL_CONNNECTION_H__
+#ifndef __STONE_UTIL_H__
+#define __STONE_UTIL_H__
 
-#include <postgresql/libpq-fe.h>
-
-#include <stone/database.h>
-#include <stone/util.h>
-#include <stone/util/hashtable.h>
-
-struct st_db_postgresql_private {
-	char * user;
-	char * password;
-	char * db;
-	char * host;
-	char * port;
-};
-
-struct st_db_postgresql_connetion_private {
-	PGconn * db_con;
-	struct st_hashtable * cached;
-};
-
-int st_db_postgresql_init_connection(struct st_database_connection * connection, struct st_db_postgresql_private * driver_private);
-void st_db_postgresql_pr_free(struct st_db_postgresql_private * self);
+unsigned long long st_util_compute_hash_string(const void * key);
+void st_util_basic_free(void * key, void * value);
+void st_util_string_delete_double_char(char * str, char delete_char);
+char ** st_util_string_justified(const char * str, unsigned int width, unsigned int * nb_lines);
+void st_util_string_trim(char * str, char trim);
 
 #endif
 

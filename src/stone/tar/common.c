@@ -22,33 +22,29 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jan 2012 09:17:54 +0100                         *
+*  Last modified: Fri, 30 Dec 2011 12:34:56 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONE_DB_POSTGRESQL_CONNNECTION_H__
-#define __STONE_DB_POSTGRESQL_CONNNECTION_H__
+// bzero
+#include <string.h>
 
-#include <postgresql/libpq-fe.h>
+#include "common.h"
 
-#include <stone/database.h>
-#include <stone/util.h>
-#include <stone/util/hashtable.h>
+void st_tar_init_header(struct st_tar_header * h) {
+	if (!h)
+		return;
 
-struct st_db_postgresql_private {
-	char * user;
-	char * password;
-	char * db;
-	char * host;
-	char * port;
-};
-
-struct st_db_postgresql_connetion_private {
-	PGconn * db_con;
-	struct st_hashtable * cached;
-};
-
-int st_db_postgresql_init_connection(struct st_database_connection * connection, struct st_db_postgresql_private * driver_private);
-void st_db_postgresql_pr_free(struct st_db_postgresql_private * self);
-
-#endif
+	h->dev = 0;
+	bzero(h->path, 256);
+	h->filename = 0;
+	bzero(h->link, 256);
+	h->size = 0;
+	h->mode = 0;
+	h->mtime = 0;
+	h->uid = 0;
+	bzero(h->uname, 32);
+	h->gid = 0;
+	bzero(h->gname, 32);
+	h->is_label = 0;
+}
 

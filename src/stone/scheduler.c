@@ -22,13 +22,16 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Dec 2011 22:52:27 +0100                         *
+*  Last modified: Mon, 02 Jan 2012 20:34:29 +0100                         *
 \*************************************************************************/
 
+#include <pthread.h>
 // free, realloc
 #include <malloc.h>
 // signal
 #include <signal.h>
+// memmove
+#include <string.h>
 // time
 #include <time.h>
 // sleep
@@ -40,106 +43,174 @@
 
 #include "scheduler.h"
 
+struct st_sched_job {
+	pthread_t th;
+	struct st_database_connection * status_con;
+};
+
 static void st_sched_exit(int signal);
+static void st_sched_init_job(struct st_job * j);
+static void st_sched_run_job(struct st_job * j);
+static void * st_sched_run_job2(void * arg);
+static int st_sched_update_status(struct st_job * j);
+
 static short st_sched_stop_request = 0;
+static struct st_scheduler_ops st_sched_db_ops = {
+	.update_status = st_sched_update_status,
+};
 
 
 void st_sched_do_loop() {
-	st_log_write_all(st_log_level_info, st_log_type_scheduler, "Scheduler: starting main loop");
-
 	signal(SIGINT, st_sched_exit);
 
-	static struct st_database * db;
-	db = st_db_get_default_db();
-	if (!db) {
-		st_log_write_all(st_log_level_error, st_log_type_scheduler, "Scheduler: there is no default database");
-		return;
-	}
-
-	static struct st_database_connection connection;
-	if (!db->ops->connect(db, &connection)) {
+	struct st_database * db = st_db_get_default_db();
+	struct st_database_connection * connection = db->ops->connect(db, 0);
+	if (!connection) {
 		st_log_write_all(st_log_level_error, st_log_type_scheduler, "Scheduler: failed to connect to database");
 		return;
 	}
 
-	/*
-	static struct job ** jobs = 0;
-	static unsigned int nbJobs = 0;
+	st_log_write_all(st_log_level_info, st_log_type_scheduler, "starting main loop");
 
-	static time_t lastUpdate = 0;
+	struct st_job ** jobs = 0;
+	unsigned int nb_jobs = 0;
+	time_t last_update = 0;
+	long last_max_jobs = -1;
 
 	while (!st_sched_stop_request) {
-		static short ok_transaction;
-		static time_t update;
-
-		ok_transaction = connection.ops->startTransaction(&connection, 1) >= 0;
-		update = time(0);
+		short ok_transaction = connection->ops->start_transaction(connection, 1) >= 0;
+		time_t update = time(0);
 		if (!ok_transaction)
-			st_log_write_all(st_log_level_error, "Scheduler: error while starting transaction");
+			st_log_write_all(st_log_level_warning, st_log_type_scheduler, "error while starting transaction");
 
-		if (nbJobs > 0) {
-			static int nbModifiedJobs;
-			nbModifiedJobs = connection.ops->jobModified(&connection, lastUpdate);
+		unsigned int i;
+		for (i = 0; i < nb_jobs; i++) {
+			struct st_job * j = jobs[i];
+			if (j->id < 0)
+				continue;
 
-			if (nbModifiedJobs > 0) {
-				st_log_write_all(st_log_level_debug, "Scheduler: There is modified jobs (%d)", nbModifiedJobs);
+			connection->ops->refresh_job(connection, j);
 
-				static unsigned int i;
-				static int j;
-				for (i = 0, j = 0; i < nbJobs && j < nbModifiedJobs; i++) {
-					static int ok_update;
-					ok_update = connection.ops->updateJob(&connection, jobs[i]);
-					if (ok_update > 0)
-						j++;
-					else if (ok_update < 0)
-						st_log_write_all(st_log_level_error, "Scheduler: error while updating a job (job name=%s)", jobs[i]->name);
-				}
-			} else if (nbModifiedJobs == 0) {
-				st_log_write_all(st_log_level_debug, "Scheduler: There is no modified jobs");
-			} else {
-				st_log_write_all(st_log_level_error, "Scheduler: error while fetching modified jobs");
+			if (j->id < 0) {
+				if (j->sched_status == st_job_status_running)
+					j->job_ops->stop(j);
+
+				j->job_ops->free(j);
+				// free job
 			}
 		}
 
-		static int nbNewJobs;
-		nbNewJobs = connection.ops->newJobs(&connection, lastUpdate);
-		if (nbNewJobs > 0) {
-			st_log_write_all(st_log_level_debug, "Scheduler: There is new jobs (%d)", nbNewJobs);
+		// check for new jobs
+		long new_jobs = 0;
+		int failed = connection->ops->get_nb_new_jobs(connection, &new_jobs, last_update, last_max_jobs);
+		if (failed) {
+			st_log_write_all(st_log_level_warning, st_log_type_scheduler, "failed to get new jobs");
+		} else if (new_jobs > 0) {
+			jobs = realloc(jobs, (nb_jobs + new_jobs) * sizeof(struct st_job *));
+			connection->ops->get_new_jobs(connection, jobs + nb_jobs, new_jobs, last_update, last_max_jobs);
 
-			jobs = realloc(jobs, (nbJobs + nbNewJobs) * sizeof(struct job *));
+			for (i = nb_jobs; i < nb_jobs + new_jobs; i++) {
+				struct st_job * j = jobs[i];
 
-			static int i;
-			for (i = 0; i < nbNewJobs; i++)
-				jobs[nbJobs + i] = connection.ops->addJob(&connection, 0, i, lastUpdate);
-			nbJobs += nbNewJobs;
+				if (!j->driver) {
+					free(j);
+					jobs[i] = 0;
+					continue;
+				}
 
-		} else if (nbNewJobs == 0) {
-			st_log_write_all(st_log_level_debug, "Scheduler: There is no new jobs");
-		} else {
-			st_log_write_all(st_log_level_error, "Scheduler: error while fetching new jobs");
+				j->sched_status = st_job_status_idle;
+				st_sched_init_job(j);
+
+				j->driver->new_job(connection, j);
+			}
+
+			nb_jobs += new_jobs;
 		}
 
-		ok_transaction = connection.ops->finishTransaction(&connection) >= 0;
-		if (!ok_transaction)
-			st_log_write_all(st_log_level_error, "Scheduler: error while finishing transaction");
+		if (ok_transaction)
+			connection->ops->cancel_transaction(connection);
 
-		static short i;
-		for (i = 0; i < 60 && !st_sched_stop_request; i++)
-			sleep(1);
+		// update jobs array
+		for (i = 0; i < nb_jobs; i++) {
+			unsigned int j;
+			for (j = i; !jobs[j] && j < nb_jobs; j++);
+			if (!jobs[i]) {
+				if (j < nb_jobs)
+					memmove(jobs + i, jobs + j, (nb_jobs - j) * sizeof(struct st_job *));
+				nb_jobs -= j - i + 1;
+				jobs = realloc(jobs, nb_jobs * sizeof(struct st_job *));
+			}
+		}
 
-		// TODO: scheduler stop request
-		// if (sched_stopRequest) {}
+		last_update = update;
 
-		lastUpdate = update;
-	}*/
+		// check if there is jobs needed to be started
+		for (i = 0; i < nb_jobs; i++) {
+			struct st_job * j = jobs[i];
 
-	connection.ops->free(&connection);
+			// start job
+			if (st_job_status_idle == j->db_status && j->start < update && st_job_status_idle == j->sched_status && j->repetition > 0) {
+				st_sched_run_job(j);
+			}
+
+			if (j->id > last_max_jobs)
+				last_max_jobs = j->id;
+		}
+
+		sleep(15 - update % 15);
+	}
+
+	connection->ops->free(connection);
 }
 
 void st_sched_exit(int signal) {
 	if (signal == SIGINT) {
-		st_log_write_all(st_log_level_warning, st_log_type_scheduler, "Scheduler: catch SIGINT");
+		st_log_write_all(st_log_level_info, st_log_type_scheduler, "catch SIGINT");
 		st_sched_stop_request = 1;
 	}
+}
+
+void st_sched_init_job(struct st_job * j) {
+	struct st_database * db = st_db_get_default_db();
+	struct st_database_connection * connection = db->ops->connect(db, 0);
+
+	struct st_sched_job * jp = j->scheduler_private = malloc(sizeof(struct st_sched_job));
+	jp->status_con = connection;
+
+	j->done = 0;
+	j->db_ops = &st_sched_db_ops;
+}
+
+void st_sched_run_job(struct st_job * j) {
+	struct st_sched_job * jp = j->scheduler_private;
+
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+	pthread_create(&jp->th, &attr, st_sched_run_job2, j);
+
+	pthread_attr_destroy(&attr);
+}
+
+void * st_sched_run_job2(void * arg) {
+	struct st_job * j = arg;
+
+	j->sched_status = st_job_status_running;
+	j->repetition--;
+
+	j->job_ops->start(j);
+
+	j->sched_status = st_job_status_idle;
+
+	return 0;
+}
+
+int st_sched_update_status(struct st_job * j) {
+	struct st_sched_job * jp = j->scheduler_private;
+
+	jp->status_con->ops->update_job(jp->status_con, j);
+
+	return 0;
 }
 

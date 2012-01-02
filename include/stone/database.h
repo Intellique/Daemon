@@ -22,15 +22,19 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 23:28:48 +0100                         *
+*  Last modified: Mon, 02 Jan 2012 19:24:55 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
 #define __STONE_DATABASE_H__
 
+// time_t
+#include <sys/time.h>
+
 struct st_changer;
 struct st_database_connection;
 struct st_drive;
+struct st_job;
 struct st_hashtable;
 struct st_pool;
 struct st_tape;
@@ -113,16 +117,20 @@ struct st_database_connection {
 		int (*start_transaction)(struct st_database_connection * db, short readOnly);
 
 		int (*create_pool)(struct st_database_connection * db, struct st_pool * pool);
+		int (*get_nb_new_jobs)(struct st_database_connection * db, long * nb_new_jobs, time_t since, long last_max_jobs);
+		int (*get_new_jobs)(struct st_database_connection * db, struct st_job ** jobs, unsigned int nb_jobs, time_t since, long last_max_jobs);
 		int (*get_pool)(struct st_database_connection * db, struct st_pool * pool, const char * uuid);
 		int (*get_tape_format)(struct st_database_connection * db, struct st_tape_format * tape_format, unsigned char density_code);
 		int (*get_user)(struct st_database_connection * db, struct st_user * user, long user_id, const char * login);
 		int (*is_changer_contain_drive)(struct st_database_connection * db, struct st_changer * changer, struct st_drive * drive);
+		int (*refresh_job)(struct st_database_connection * db, struct st_job * job);
 		int (*sync_changer)(struct st_database_connection * db, struct st_changer * changer);
 		int (*sync_drive)(struct st_database_connection * db, struct st_drive * drive);
 		int (*sync_plugin_checksum)(struct st_database_connection * db, const char * plugin);
 		int (*sync_pool)(struct st_database_connection * db, struct st_pool * pool);
 		int (*sync_tape)(struct st_database_connection * db, struct st_tape * tape);
 		int (*sync_user)(struct st_database_connection * db, struct st_user * user);
+		int (*update_job)(struct st_database_connection * db, struct st_job * job);
 	} * ops;
 	void * data;
 };

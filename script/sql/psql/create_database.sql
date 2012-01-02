@@ -48,17 +48,6 @@ CREATE TYPE JobStatus AS ENUM (
     'running'
 );
 
-CREATE TYPE JobType AS ENUM (
-    'diff save',
-    'dummy',
-    'inc save',
-    'integrity check',
-    'list',
-    'restore',
-    'save',
-    'verify'
-);
-
 CREATE TYPE LogLevel AS ENUM (
     'debug',
     'info',
@@ -304,10 +293,15 @@ CREATE TABLE ArchiveVolumeToChecksumResult (
     PRIMARY KEY (archiveVolume, checksumResult)
 );
 
+CREATE TABLE JobType (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE
+);
+
 CREATE TABLE Job (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    type JobType NOT NULL,
+    type INTEGER NOT NULL REFERENCES JobType(id) ON DELETE CASCADE ON UPDATE CASCADE,
     done FLOAT NOT NULL DEFAULT 0,
     status JobStatus NOT NULL,
     nextStart TIMESTAMP(0) NOT NULL,
@@ -316,6 +310,7 @@ CREATE TABLE Job (
     archive BIGINT REFERENCES Archive(id) ON DELETE CASCADE ON UPDATE CASCADE,
     login INTEGER NOT NULL REFERENCES Users(id) ON DELETE CASCADE ON UPDATE CASCADE,
     pool INTEGER NULL REFERENCES Pool(id) ON DELETE SET NULL ON UPDATE CASCADE,
+    host INTEGER NOT NULL REFERENCES Host(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     update TIMESTAMP(0) NOT NULL
 );
 
@@ -333,7 +328,6 @@ CREATE TABLE JobRecord (
     started TIMESTAMP(0) NOT NULL,
     ended TIMESTAMP(0),
     message TEXT,
-    host INTEGER NOT NULL REFERENCES Host(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     CHECK (started <= ended)
 );
 

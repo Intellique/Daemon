@@ -22,51 +22,71 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:08:26 +0100                         *
+*  Last modified: Mon, 02 Jan 2012 19:20:53 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
 #define __STONE_JOB_H__
 
+// time_t
 #include <sys/time.h>
 
-enum job_type {
-	job_type_dummy,
-	job_type_restore,
-	job_type_save,
-	job_type_verify,
+#include "database.h"
+
+struct st_job_driver;
+
+enum st_job_status {
+	st_job_status_disable,
+	st_job_status_error,
+	st_job_status_idle,
+	st_job_status_pause,
+	st_job_status_running,
+
+	st_job_status_unknown,
 };
 
-
-struct job {
+struct st_job {
 	// database
 	long id;
+	char * name;
+	enum st_job_status db_status;
+	time_t updated;
 
 	// scheduler
+	enum st_job_status sched_status;
 	time_t start;
+	long interval;
+	long repetition;
+	struct st_scheduler_ops {
+		int (*update_status)(struct st_job * j);
+	} * db_ops;
 	void * scheduler_private;
 
 	// job
-	char * name;
-	struct job_ops {
-		void (*free)(struct job * j);
-		int (*start)(struct job * j);
-		int (*stop)(struct job * j);
-	} * ops;
-
-
-
-
-	long interval;
-	long repetition;
-
+	float done;
+	struct st_job_ops {
+		void (*free)(struct st_job * j);
+		int (*start)(struct st_job * j);
+		int (*stop)(struct st_job * j);
+	} * job_ops;
 	void * data;
+
+	struct st_job_driver * driver;
 };
 
+struct st_job_driver {
+	char * name;
+	void (*new_job)(struct st_database_connection * db, struct st_job * job);
+	void * cookie;
+	int api_version;
+};
 
-int job_init(struct job * job, enum job_type type);
-const char * job_job_to_string(enum job_type type);
-enum job_type job_string_to_job(const char * jobname);
+#define STONE_JOB_APIVERSION 1
+
+struct st_job_driver * st_job_get_driver(const char * driver);
+void st_job_register_driver(struct st_job_driver * driver);
+const char * st_job_status_to_string(enum st_job_status status);
+enum st_job_status st_job_string_to_status(const char * status);
 
 #endif
 
