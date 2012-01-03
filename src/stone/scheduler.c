@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jan 2012 23:41:27 +0100                         *
+*  Last modified: Tue, 03 Jan 2012 10:17:38 +0100                         *
 \*************************************************************************/
 
 #include <pthread.h>
@@ -49,6 +49,7 @@ struct st_sched_job {
 	time_t updated;
 };
 
+static int st_sched_add_record(struct st_job * j, const char * message);
 static void st_sched_exit(int signal);
 static void st_sched_init_job(struct st_job * j);
 static void st_sched_run_job(struct st_job * j);
@@ -57,9 +58,15 @@ static int st_sched_update_status(struct st_job * j);
 
 static short st_sched_stop_request = 0;
 static struct st_scheduler_ops st_sched_db_ops = {
+	.add_record    = st_sched_add_record,
 	.update_status = st_sched_update_status,
 };
 
+
+int st_sched_add_record(struct st_job * j, const char * message) {
+	struct st_sched_job * jp = j->scheduler_private;
+	return jp->status_con->ops->add_job_record(jp->status_con, j, message);
+}
 
 void st_sched_do_loop() {
 	signal(SIGINT, st_sched_exit);
@@ -203,6 +210,7 @@ void * st_sched_run_job2(void * arg) {
 
 	j->sched_status = st_job_status_running;
 	j->repetition--;
+	j->num_runs++;
 
 	int status = j->job_ops->run(j);
 
@@ -237,9 +245,9 @@ int st_sched_update_status(struct st_job * j) {
 	if (now <= jp->updated)
 		return 0;
 
-	jp->status_con->ops->update_job(jp->status_con, j);
+	int status = jp->status_con->ops->update_job(jp->status_con, j);
 	jp->updated = now;
 
-	return 0;
+	return status;
 }
 

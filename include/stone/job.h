@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jan 2012 23:21:45 +0100                         *
+*  Last modified: Tue, 03 Jan 2012 10:02:07 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -57,7 +57,9 @@ struct st_job {
 	time_t start;
 	long interval;
 	long repetition;
+	long num_runs;
 	struct st_scheduler_ops {
+		int (*add_record)(struct st_job * j, const char * message);
 		int (*update_status)(struct st_job * j);
 	} * db_ops;
 	void * scheduler_private;

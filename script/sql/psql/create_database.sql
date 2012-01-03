@@ -325,10 +325,8 @@ CREATE TABLE JobRecord (
     job BIGINT NOT NULL REFERENCES Job(id) ON DELETE CASCADE ON UPDATE CASCADE,
     status JobStatus NOT NULL CHECK (status != 'disable'),
     numRun INTEGER NOT NULL DEFAULT 1 CHECK (numRun > 0),
-    started TIMESTAMP(0) NOT NULL,
-    ended TIMESTAMP(0),
-    message TEXT,
-    CHECK (started <= ended)
+    timestamp TIMESTAMP(1) NOT NULL,
+    message TEXT
 );
 
 CREATE TABLE JobToSelectedFile (

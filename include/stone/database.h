@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jan 2012 19:24:55 +0100                         *
+*  Last modified: Tue, 03 Jan 2012 10:06:16 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -116,6 +116,7 @@ struct st_database_connection {
 		 */
 		int (*start_transaction)(struct st_database_connection * db, short readOnly);
 
+		int (*add_job_record)(struct st_database_connection * db, struct st_job * job, const char * message);
 		int (*create_pool)(struct st_database_connection * db, struct st_pool * pool);
 		int (*get_nb_new_jobs)(struct st_database_connection * db, long * nb_new_jobs, time_t since, long last_max_jobs);
 		int (*get_new_jobs)(struct st_database_connection * db, struct st_job ** jobs, unsigned int nb_jobs, time_t since, long last_max_jobs);

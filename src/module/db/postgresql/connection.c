@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jan 2012 20:03:21 +0100                         *
+*  Last modified: Tue, 03 Jan 2012 10:13:14 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -59,6 +59,7 @@ static int st_db_postgresql_cancel_transaction(struct st_database_connection * c
 static int st_db_postgresql_finish_transaction(struct st_database_connection * connection);
 static int st_db_postgresql_start_transaction(struct st_database_connection * connection, short read_only);
 
+static int st_db_postgresql_add_job_record(struct st_database_connection * db, struct st_job * job, const char * message);
 static int st_db_postgresql_create_pool(struct st_database_connection * db, struct st_pool * pool);
 static char * st_db_postgresql_get_host(struct st_database_connection * connection);
 static int st_db_postgresql_get_nb_new_jobs(struct st_database_connection * db, long * nb_new_jobs, time_t since, long last_max_jobs);
@@ -97,6 +98,7 @@ static struct st_database_connection_ops st_db_postgresql_con_ops = {
 	.finish_transaction = st_db_postgresql_finish_transaction,
 	.start_transaction  = st_db_postgresql_start_transaction,
 
+	.add_job_record           = st_db_postgresql_add_job_record,
 	.create_pool              = st_db_postgresql_create_pool,
 	.get_nb_new_jobs          = st_db_postgresql_get_nb_new_jobs,
 	.get_new_jobs             = st_db_postgresql_get_new_jobs,
@@ -114,6 +116,28 @@ static struct st_database_connection_ops st_db_postgresql_con_ops = {
 	.update_job               = st_db_postgresql_update_job,
 };
 
+
+int st_db_postgresql_add_job_record(struct st_database_connection * connection, struct st_job * job, const char * message) {
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	st_db_postgresql_prepare(self, "insert_job_record", "INSERT INTO jobrecord VALUES (DEFAULT, $1, $2, $3, NOW(), $4)");
+
+	char * jobid = 0, * numrun = 0;
+	asprintf(&jobid, "%ld", job->id);
+	asprintf(&numrun, "%ld", job->num_runs);
+
+	const char * param[] = { jobid, st_job_status_to_string(job->sched_status), numrun, message };
+	PGresult * result = PQexecPrepared(self->db_con, "insert_job_record", 4, param, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result);
+	PQclear(result);
+	free(numrun);
+	free(jobid);
+
+	return status != PGRES_COMMAND_OK;
+}
 
 int st_db_postgresql_cancel_transaction(struct st_database_connection * connection) {
 	if (!connection)
@@ -303,6 +327,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 		return 1;
 
 	st_db_postgresql_prepare(self, "select_new_jobs", "SELECT j.*, jt.name FROM job j, jobtype jt WHERE j.id > $1 AND j.update > $2 AND j.host = $3 AND j.type = jt.id LIMIT $4");
+	st_db_postgresql_prepare(self, "select_num_runs", "SELECT MAX(numrun) AS max FROM jobrecord WHERE job = $1");
 
 	char csince[24], * lastmaxjobs = 0, * nbjobs = 0;
 	struct tm tm_since;
@@ -325,9 +350,12 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 
 	int i;
 	for (i = 0; i < PQntuples(result); i++) {
+		char * jobid = 0;
+
 		jobs[i] = malloc(sizeof(struct st_job));
 
 		st_db_postgresql_get_long(result, i, 0, &jobs[i]->id);
+		st_db_postgresql_get_string_dup(result, i, 0, &jobid);
 		st_db_postgresql_get_string_dup(result, i, 1, &jobs[i]->name);
 		jobs[i]->db_status = st_job_string_to_status(PQgetvalue(result, i, 4));
 		st_db_postgresql_get_time(result, i, 12, &jobs[i]->updated);
@@ -336,6 +364,15 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 		jobs[i]->interval = 0;
 		st_db_postgresql_get_long(result, i, 6, &jobs[i]->interval);
 		st_db_postgresql_get_long(result, i, 7, &jobs[i]->repetition);
+		jobs[i]->num_runs = 0;
+
+		const char * param2[] = { jobid };
+		PGresult * result2 = PQexecPrepared(self->db_con, "select_num_runs", 1, param2, 0, 0, 0);
+
+		if (PQresultStatus(result2) == PGRES_TUPLES_OK && PQntuples(result2) == 1 && !PQgetisnull(result2, 0, 0))
+			st_db_postgresql_get_long(result2, 0, 0, &jobs[i]->num_runs);
+		PQclear(result2);
+		free(jobid);
 
 		jobs[i]->driver = st_job_get_driver(PQgetvalue(result, i, 13));
 	}
@@ -1172,7 +1209,7 @@ int st_db_postgresql_update_job(struct st_database_connection * connection, stru
 	free(crepetition);
 	free(cdone);
 
-	return status == PGRES_COMMAND_OK;
+	return status != PGRES_COMMAND_OK;
 }
 
 
