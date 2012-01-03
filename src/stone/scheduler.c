@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 03 Jan 2012 10:17:38 +0100                         *
+*  Last modified: Tue, 03 Jan 2012 10:35:51 +0100                         *
 \*************************************************************************/
 
 #include <pthread.h>
@@ -228,12 +228,13 @@ void * st_sched_run_job2(void * arg) {
 	jp->status_con->ops->free(jp->status_con);
 	free(jp);
 
-	j->id = -1;
 	free(j->name);
 	j->name = 0;
 	j->driver = 0;
 
 	st_log_write_all(st_log_level_info, st_log_type_scheduler, "job finished, id = %ld, with exited code = %d", j->id, status);
+
+	j->id = -1;
 
 	return 0;
 }
