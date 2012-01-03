@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 20:43:25 +0100                         *
+*  Last modified: Tue, 03 Jan 2012 10:43:39 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -275,11 +275,11 @@ const char * st_log_type_to_string(enum st_log_type type) {
 }
 
 void st_log_write_all(enum st_log_level level, enum st_log_type type, const char * format, ...) {
-	char * message = malloc(256);
+	char * message = 0;
 
 	va_list va;
 	va_start(va, format);
-	vsnprintf(message, 256, format, va);
+	vasprintf(&message, format, va);
 	va_end(va);
 
 	int old_state;
@@ -318,11 +318,11 @@ void st_log_write_all(enum st_log_level level, enum st_log_type type, const char
 }
 
 void st_log_write_all2(enum st_log_level level, enum st_log_type type, struct st_user * user, const char * format, ...) {
-	char * message = malloc(256);
+	char * message = 0;
 
 	va_list va;
 	va_start(va, format);
-	vsnprintf(message, 256, format, va);
+	vasprintf(&message, format, va);
 	va_end(va);
 
 	int old_state;

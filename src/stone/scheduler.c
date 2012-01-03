@@ -22,14 +22,17 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 03 Jan 2012 10:35:51 +0100                         *
+*  Last modified: Tue, 03 Jan 2012 10:42:02 +0100                         *
 \*************************************************************************/
 
+#define _GNU_SOURCE
 #include <pthread.h>
 // free, realloc
 #include <malloc.h>
 // signal
 #include <signal.h>
+// va_end, va_start
+#include <stdarg.h>
 // memmove
 #include <string.h>
 // time
@@ -49,7 +52,7 @@ struct st_sched_job {
 	time_t updated;
 };
 
-static int st_sched_add_record(struct st_job * j, const char * message);
+static int st_sched_add_record(struct st_job * j, const char * format, ...) __attribute__ ((format (printf, 2, 3)));
 static void st_sched_exit(int signal);
 static void st_sched_init_job(struct st_job * j);
 static void st_sched_run_job(struct st_job * j);
@@ -63,9 +66,18 @@ static struct st_scheduler_ops st_sched_db_ops = {
 };
 
 
-int st_sched_add_record(struct st_job * j, const char * message) {
+int st_sched_add_record(struct st_job * j, const char * format, ...) {
+	char * message = 0;
+
+	va_list va;
+	va_start(va, format);
+	vasprintf(&message, format, va);
+	va_end(va);
+
 	struct st_sched_job * jp = j->scheduler_private;
-	return jp->status_con->ops->add_job_record(jp->status_con, j, message);
+	int status = jp->status_con->ops->add_job_record(jp->status_con, j, message);
+	free(message);
+	return status;
 }
 
 void st_sched_do_loop() {
