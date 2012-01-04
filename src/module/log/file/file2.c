@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 20:48:21 +0100                         *
+*  Last modified: Wed, 04 Jan 2012 17:47:44 +0100                         *
 \*************************************************************************/
 
 // open
@@ -109,8 +109,8 @@ void st_log_file_module_write(struct st_log_module * module, enum st_log_level l
 	strftime(strtime, 32, "%F %T", &curTime2);
 
 	if (user)
-		dprintf(self->fd, "[L:%s, T:%s, U:%s, @%s]: %s\n", st_log_level_to_string(level), st_log_type_to_string(type), user->login, strtime, message);
+		dprintf(self->fd, "[L:%-7s | T:%-15s | U:%s | @%s]: %s\n", st_log_level_to_string(level), st_log_type_to_string(type), user->login, strtime, message);
 	else
-		dprintf(self->fd, "[L:%s, T:%s, @%s]: %s\n", st_log_level_to_string(level), st_log_type_to_string(type), strtime, message);
+		dprintf(self->fd, "[L:%-7s | T:%-15s | @%s]: %s\n", st_log_level_to_string(level), st_log_type_to_string(type), strtime, message);
 }
 
