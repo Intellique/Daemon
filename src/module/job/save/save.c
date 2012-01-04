@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 16:53:12 +0100                         *
+*  Last modified: Wed, 04 Jan 2012 21:37:09 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -107,6 +107,7 @@ void st_job_save_archive_file(struct st_job * job, const char * path) {
 			jp->tar->ops->write(jp->tar, jp->buffer, nb_read);
 		}
 
+		jp->tar->ops->end_of_file(jp->tar);
 		close(fd);
 	} else if (S_ISDIR(st.st_mode)) {
 		if (access(path, R_OK | X_OK)) {
@@ -305,6 +306,10 @@ int st_job_save_run(struct st_job * job) {
 			changer->ops->load(changer, sl, drive);
 		}
 	}
+	changer->lock->ops->unlock(changer->lock);
+
+	drive->ops->reset(drive);
+	drive->ops->eod(drive);
 
 	struct st_stream_writer * tape_writer = drive->ops->get_writer(drive);
 	struct st_stream_writer * checksum_writer = st_checksum_get_steam_writer((const char **) job->checksums, job->nb_checksums, tape_writer);

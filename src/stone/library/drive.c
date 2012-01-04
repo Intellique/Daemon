@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 10:31:39 +0100                         *
+*  Last modified: Wed, 04 Jan 2012 20:44:27 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -839,17 +839,23 @@ ssize_t st_drive_io_writer_write(struct st_stream_writer * io, const void * buff
 
 	memcpy(self->buffer + self->buffer_used, buffer, buffer_available);
 
-	ssize_t nb_total_write = write(self->fd, self->buffer, self->block_size);
-	if (nb_total_write < 0)
-		return -1;
+	st_drive_generic_operation_start(self->drive_private);
+	ssize_t nb_write = write(self->fd, self->buffer, self->block_size);
+	st_drive_generic_operation_stop(self->drive);
 
+	if (nb_write < 0) {
+		self->last_errno = errno;
+		return -1;
+	}
+
+	ssize_t nb_total_write = buffer_available;
 	self->buffer_used = 0;
 	self->position += buffer_available;
 
 	const char * c_buffer = buffer;
 	while (length - nb_total_write >= self->block_size) {
 		st_drive_generic_operation_start(self->drive_private);
-		ssize_t nb_write = write(self->fd, c_buffer + nb_total_write, self->block_size);
+		nb_write = write(self->fd, c_buffer + nb_total_write, self->block_size);
 		st_drive_generic_operation_stop(self->drive);
 
 		if (nb_write < 0) {
