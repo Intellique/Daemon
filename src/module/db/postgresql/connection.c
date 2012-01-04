@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 03 Jan 2012 10:13:14 +0100                         *
+*  Last modified: Wed, 04 Jan 2012 11:19:21 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -328,6 +328,8 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 
 	st_db_postgresql_prepare(self, "select_new_jobs", "SELECT j.*, jt.name FROM job j, jobtype jt WHERE j.id > $1 AND j.update > $2 AND j.host = $3 AND j.type = jt.id LIMIT $4");
 	st_db_postgresql_prepare(self, "select_num_runs", "SELECT MAX(numrun) AS max FROM jobrecord WHERE job = $1");
+	st_db_postgresql_prepare(self, "select_paths", "SELECT path FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1)");
+	st_db_postgresql_prepare(self, "select_checksums", "SELECT name FROM checksum WHERE id IN (SELECT checksum FROM jobtochecksum WHERE job = $1)");
 
 	char csince[24], * lastmaxjobs = 0, * nbjobs = 0;
 	struct tm tm_since;
@@ -350,7 +352,8 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 
 	int i;
 	for (i = 0; i < PQntuples(result); i++) {
-		char * jobid = 0;
+		char * jobid = 0, * poolid = 0;
+		long userid;
 
 		jobs[i] = malloc(sizeof(struct st_job));
 
@@ -364,6 +367,8 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 		jobs[i]->interval = 0;
 		st_db_postgresql_get_long(result, i, 6, &jobs[i]->interval);
 		st_db_postgresql_get_long(result, i, 7, &jobs[i]->repetition);
+		st_db_postgresql_get_long(result, i, 9, &userid);
+		st_db_postgresql_get_string_dup(result, i, 10, &poolid);
 		jobs[i]->num_runs = 0;
 
 		const char * param2[] = { jobid };
@@ -372,9 +377,73 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 		if (PQresultStatus(result2) == PGRES_TUPLES_OK && PQntuples(result2) == 1 && !PQgetisnull(result2, 0, 0))
 			st_db_postgresql_get_long(result2, 0, 0, &jobs[i]->num_runs);
 		PQclear(result2);
-		free(jobid);
+
+		jobs[i]->user = st_user_get(userid, 0);
+
+		if (poolid) {
+			st_db_postgresql_prepare(self, "select_pool_by_id", "SELECT * FROM pool WHERE id = $1 LIMIT 1");
+			st_db_postgresql_prepare(self, "select_tapeformat_by_id", "SELECT * FROM tapeformat WHERE id = $1 LIMIT 1");
+
+			const char * param3[] = { poolid };
+			result2 = PQexecPrepared(self->db_con, "select_pool_by_id", 1, param3, 0, 0, 0);
+
+			char * pool_uuid = 0, * tapeformat = 0;
+			unsigned char densitycode;
+
+			if (PQresultStatus(result2) == PGRES_TUPLES_OK && PQntuples(result2) == 1) {
+				st_db_postgresql_get_string_dup(result2, 0, 1, &pool_uuid);
+				st_db_postgresql_get_string_dup(result2, 0, 6, &tapeformat);
+			}
+			PQclear(result2);
+
+			const char * param4[] = { tapeformat };
+			result2 = PQexecPrepared(self->db_con, "select_tapeformat_by_id", 1, param4, 0, 0, 0);
+			if (PQresultStatus(result2) == PGRES_TUPLES_OK && PQntuples(result2) == 1) {
+				st_db_postgresql_get_uchar(result2, 0, 11, &densitycode);
+
+				jobs[i]->pool = st_pool_get_pool_by_uuid(pool_uuid, 0, densitycode);
+			}
+			PQclear(result2);
+
+			free(tapeformat);
+			free(pool_uuid);
+		}
+
+		result2 = PQexecPrepared(self->db_con, "select_paths", 1, param2, 0, 0, 0);
+		if (PQresultStatus(result2) == PGRES_TUPLES_OK) {
+			jobs[i]->nb_paths = PQntuples(result2);
+			jobs[i]->paths = 0;
+
+			if (jobs[i]->nb_paths > 0) {
+				jobs[i]->paths = calloc(jobs[i]->nb_paths, sizeof(char *));
+
+				unsigned int j;
+				for (j = 0; j < jobs[i]->nb_paths; j++)
+					st_db_postgresql_get_string_dup(result2, j, 0, jobs[i]->paths + j);
+			}
+		}
+		PQclear(result2);
+
+		result2 = PQexecPrepared(self->db_con, "select_checksums", 1, param2, 0, 0, 0);
+		if (PQresultStatus(result2) == PGRES_TUPLES_OK) {
+			jobs[i]->nb_checksums = PQntuples(result2);
+			jobs[i]->checksums = 0;
+
+			if (jobs[i]->nb_checksums > 0) {
+				jobs[i]->checksums = calloc(jobs[i]->nb_checksums, sizeof(char *));
+
+				unsigned int j;
+				for (j = 0; j < jobs[i]->nb_checksums; j++)
+					st_db_postgresql_get_string_dup(result2, j, 0, jobs[i]->checksums + j);
+			}
+		}
+		PQclear(result2);
 
 		jobs[i]->driver = st_job_get_driver(PQgetvalue(result, i, 13));
+
+		if (poolid)
+			free(poolid);
+		free(jobid);
 	}
 
 	PQclear(result);
@@ -1313,8 +1382,11 @@ int st_db_postgresql_get_uchar(PGresult * result, int row, int column, unsigned 
 		return -1;
 
 	char * value = PQgetvalue(result, row, column);
-	if (value && sscanf(value, "%c", val) == 1)
+	unsigned int tmp_val;
+	if (value && sscanf(value, "%u", &tmp_val) == 1) {
+		*val = tmp_val;
 		return 0;
+	}
 	return -1;
 }
 

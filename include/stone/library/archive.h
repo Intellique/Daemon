@@ -22,86 +22,60 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 13:36:55 +0100                         *
+*  Last modified: Wed, 04 Jan 2012 15:40:43 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONE_LIBRARY_CHANGER_H__
-#define __STONE_LIBRARY_CHANGER_H__
+#ifndef __STONE_ARCHIVE_H__
+#define __STONE_ARCHIVE_H__
 
-struct st_drive;
-struct st_pool;
-struct st_ressource;
-struct st_slot;
-struct st_tape;
+// time_t
+#include <sys/time.h>
+// ssize_t
+#include <sys/types.h>
 
-enum st_changer_status {
-	ST_CHANGER_ERROR,
-	ST_CHANGER_EXPORTING,
-	ST_CHANGER_IDLE,
-	ST_CHANGER_IMPORTING,
-	ST_CHANGER_LOADING,
-	ST_CHANGER_UNKNOWN,
-	ST_CHANGER_UNLOADING,
+struct st_archive_volume;
+
+enum st_archive_file_type {
+	st_archive_file_type_block_device,
+	st_archive_file_type_character_device,
+	st_archive_file_type_directory,
+	st_archive_file_type_fifo,
+	st_archive_file_type_regular_file,
+	st_archive_file_type_socket,
+	st_archive_file_type_symbolic_link,
+
+	st_archive_file_type_unknown,
 };
 
-struct st_changer {
+struct st_archive {
 	long id;
-	char * device;
-	enum st_changer_status status;
-	char * model;
-	char * vendor;
-	char * revision;
-	char * serial_number;
-	int barcode;
+	char * name;
+	time_t ctime;
+	time_t endtime;
 
-	int host;
-	int target;
-	int channel;
-	int bus;
-
-	struct st_drive * drives;
-	unsigned int nb_drives;
-	struct st_slot * slots;
-	unsigned int nb_slots;
-
-	struct st_changer_ops {
-		int (*can_load)();
-		struct st_drive * (*get_free_drive)(struct st_changer * ch);
-		struct st_slot * (*get_tape)(struct st_changer * ch, struct st_pool * pool);
-		int (*load)(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
-		int (*unload)(struct st_changer * ch, struct st_drive * from, struct st_slot * to);
-	} * ops;
-	void * data;
-
-	struct st_ressource * lock;
-
-	// for scsi use only
-	int transport_address;
+	struct st_archive_volume * volumes;
+	unsigned int nb_volumes;
 };
 
-struct st_slot {
+struct st_archive_volume {
 	long id;
-	struct st_changer * changer;
-	struct st_drive * drive;
+	long sequence;
+	ssize_t size;
+	time_t ctime;
+	time_t endtime;
+
+	struct st_archive * archive;
 	struct st_tape * tape;
-
-	char volume_name[37];
-	char full;
-	char is_import_export_slot;
-
-	struct st_ressource * lock;
-
-	// for scsi use only
-	int address;
-	int src_address;
+	long tape_position;
 };
 
+struct st_archive_file {
+	long id;
+	char * name;
+};
 
-struct st_changer * st_changer_get_first_changer(void);
-struct st_changer * st_changer_get_next_changer(struct st_changer * changer);
-const char * st_changer_status_to_string(enum st_changer_status status);
-enum st_changer_status st_changer_string_to_status(const char * status);
-int st_changer_setup(void);
+enum st_archive_file_type st_archive_file_string_to_type(const char * type);
+const char * st_archive_file_type_to_string(enum st_archive_file_type type);
 
 #endif
 

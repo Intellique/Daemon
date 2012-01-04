@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 28 Dec 2011 13:57:27 +0100                         *
+*  Last modified: Wed, 04 Jan 2012 10:15:57 +0100                         *
 \*************************************************************************/
 
 // open
@@ -55,6 +55,18 @@ static struct st_changer * st_changers = 0;
 static unsigned int st_nb_fake_changers = 0;
 static unsigned int st_nb_real_changers = 0;
 
+
+struct st_changer * st_changer_get_first_changer() {
+    return st_changers;
+}
+
+struct st_changer * st_changer_get_next_changer(struct st_changer * changer) {
+    unsigned int i, nb_changer = st_nb_real_changers + st_nb_fake_changers - 1;
+    for (i = 0; i < nb_changer; i++)
+        if (changer == st_changers + i)
+            return st_changers + i + 1;
+    return 0;
+}
 
 int st_changer_setup() {
 	glob_t gl;

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 30 Dec 2011 16:07:34 +0100                         *
+*  Last modified: Wed, 04 Jan 2012 10:31:39 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -49,6 +49,7 @@
 #include <stone/database.h>
 #include <stone/io.h>
 #include <stone/library/drive.h>
+#include <stone/library/ressource.h>
 #include <stone/library/tape.h>
 #include <stone/log.h>
 
@@ -503,6 +504,8 @@ void st_drive_setup(struct st_drive * drive) {
 	drive->data = self;
 	drive->best_density_code = 0;
 	drive->density_code = 0;
+
+	drive->lock = st_ressource_new();
 
 	struct st_database * db = st_db_get_default_db();
 	if (db) {

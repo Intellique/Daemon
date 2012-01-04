@@ -22,15 +22,56 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jan 2012 09:19:05 +0100                         *
+*  Last modified: Wed, 04 Jan 2012 12:25:44 +0100                         *
 \*************************************************************************/
 
 // free
 #include <stdlib.h>
+// snprintf
+#include <stdio.h>
 // strlen, strspn, strstr
 #include <string.h>
 
 #include <stone/util.h>
+
+void st_util_convert_size_to_string(ssize_t size, char * str, ssize_t str_len) {
+	unsigned short mult = 0;
+	double tsize = size;
+
+	while (tsize >= 1024 && mult < 4) {
+		tsize /= 1024;
+		mult++;
+	}
+
+	switch (mult) {
+		case 0:
+			snprintf(str, str_len, "%zd Bytes", size);
+			break;
+		case 1:
+			snprintf(str, str_len, "%.1f KBytes", tsize);
+			break;
+		case 2:
+			snprintf(str, str_len, "%.2f MBytes", tsize);
+			break;
+		case 3:
+			snprintf(str, str_len, "%.3f GBytes", tsize);
+			break;
+		default:
+			snprintf(str, str_len, "%.4f TBytes", tsize);
+	}
+
+	if (strchr(str, '.')) {
+		char * ptrEnd = strchr(str, ' ');
+		char * ptrBegin = ptrEnd - 1;
+		while (*ptrBegin == '0')
+			ptrBegin--;
+		if (*ptrBegin == '.')
+			ptrBegin--;
+
+		if (ptrBegin + 1 < ptrEnd)
+			memmove(ptrBegin + 1, ptrEnd, strlen(ptrEnd) + 1);
+	}
+}
 
 /**
  * sdbm function

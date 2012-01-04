@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 03 Jan 2012 10:40:03 +0100                         *
+*  Last modified: Wed, 04 Jan 2012 16:01:47 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -33,7 +33,10 @@
 
 #include "database.h"
 
+struct st_archive;
 struct st_job_driver;
+struct st_pool;
+struct st_user;
 
 enum st_job_status {
 	st_job_status_disable,
@@ -66,6 +69,14 @@ struct st_job {
 
 	// job
 	float done;
+	struct st_archive * archive;
+	struct st_pool * pool;
+	char ** paths;
+	unsigned int nb_paths;
+	char ** checksums;
+	unsigned int nb_checksums;
+	struct st_user * user;
+
 	struct st_job_ops {
 		void (*free)(struct st_job * j);
 		int (*run)(struct st_job * j);

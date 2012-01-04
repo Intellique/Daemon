@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 28 Dec 2011 11:47:21 +0100                         *
+*  Last modified: Wed, 04 Jan 2012 14:04:00 +0100                         *
 \*************************************************************************/
 
 // open
@@ -55,20 +55,78 @@ struct st_realchanger_private {
 };
 
 static int st_realchanger_can_load(void);
+static struct st_drive * st_realchanger_get_free_drive(struct st_changer * ch);
+static struct st_slot * st_realchanger_get_tape(struct st_changer * ch, struct st_pool * pool);
 static int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
 static void * st_realchanger_setup2(void * drive);
 static int st_realchanger_unload(struct st_changer * ch, struct st_drive * from, struct st_slot * to);
 static void st_realchanger_update_status(struct st_changer * ch, enum st_changer_status status);
 
 static struct st_changer_ops st_realchanger_ops = {
-	.can_load = st_realchanger_can_load,
-	.load     = st_realchanger_load,
-	.unload   = st_realchanger_unload,
+	.can_load       = st_realchanger_can_load,
+	.get_free_drive = st_realchanger_get_free_drive,
+	.get_tape       = st_realchanger_get_tape,
+	.load           = st_realchanger_load,
+	.unload         = st_realchanger_unload,
 };
 
 
 int st_realchanger_can_load() {
 	return 1;
+}
+
+struct st_drive * st_realchanger_get_free_drive(struct st_changer * ch) {
+	unsigned int i;
+	for (i = 0; i < ch->nb_drives; i++) {
+		struct st_drive * drive = ch->drives + i;
+
+		if (drive->is_door_opened)
+			return drive;
+	}
+
+	return ch->drives;
+}
+
+struct st_slot * st_realchanger_get_tape(struct st_changer * ch, struct st_pool * pool) {
+	unsigned int i;
+
+	// first, get an already used tape
+	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
+		struct st_slot * sl = ch->slots + i;
+		struct st_tape * tp = sl->tape;
+
+		if (tp && tp->pool == pool && tp->status == ST_TAPE_STATUS_IN_USE)
+			return sl;
+	}
+
+	// then, get a new one
+	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
+		struct st_slot * sl = ch->slots + i;
+		struct st_tape * tp = sl->tape;
+
+		if (tp && tp->status == ST_TAPE_STATUS_NEW)
+			return sl;
+	}
+
+	// finaly, reuse one from same pool
+	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
+		struct st_slot * sl = ch->slots + i;
+		struct st_tape * tp = sl->tape;
+
+		if (tp && tp->pool == pool && tp->status == ST_TAPE_STATUS_ERASABLE)
+			return sl;
+	}
+
+	// reuse one which is not a member of any pool
+	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
+		struct st_slot * sl = ch->slots + i;
+		struct st_tape * tp = sl->tape;
+
+		if (tp && !tp->pool && tp->status == ST_TAPE_STATUS_ERASABLE)
+			return sl;
+	}
+
+	return 0;
 }
 
 int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st_drive * to) {

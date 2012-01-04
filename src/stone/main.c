@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 23:44:30 +0100                         *
+*  Last modified: Wed, 04 Jan 2012 17:01:26 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -41,18 +41,20 @@
 #include "log.h"
 #include "scheduler.h"
 
+void st_test(void);
+
 static void st_show_help(void);
 
 int main(int argc, char ** argv) {
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone, version: %s, build: %s %s", STONE_VERSION, __DATE__, __TIME__);
 
-    enum {
-        OPT_CONFIG   = 'c',
-        OPT_DETACH   = 'd',
-        OPT_HELP     = 'h',
-        OPT_PID_FILE = 'p',
-        OPT_VERSION  = 'V',
-    };
+	enum {
+		OPT_CONFIG   = 'c',
+		OPT_DETACH   = 'd',
+		OPT_HELP     = 'h',
+		OPT_PID_FILE = 'p',
+		OPT_VERSION  = 'V',
+	};
 
 	static int option_index = 0;
 	static struct option long_options[] = {
@@ -70,31 +72,31 @@ int main(int argc, char ** argv) {
 	char * pid_file = DEFAULT_PID_FILE;
 
 	// parse option
-    int opt;
+	int opt;
 	do {
 		opt = getopt_long(argc, argv, "c:dhp:V", long_options, &option_index);
 
 		switch (opt) {
-            case OPT_CONFIG:
+			case OPT_CONFIG:
 				config_file = optarg;
 				st_log_write_all(st_log_level_info, st_log_type_daemon, "Using configuration file: '%s'", optarg);
 				break;
 
-            case OPT_DETACH:
+			case OPT_DETACH:
 				detach = 1;
 				st_log_write_all(st_log_level_info, st_log_type_daemon, "Using detach mode (i.e. use fork())");
 				break;
 
-            case OPT_HELP:
+			case OPT_HELP:
 				st_show_help();
 				return 0;
 
-            case OPT_PID_FILE:
+			case OPT_PID_FILE:
 				pid_file = optarg;
 				st_log_write_all(st_log_level_info, st_log_type_daemon, "Using pid file: '%s'", optarg);
 				break;
 
-            case OPT_VERSION:
+			case OPT_VERSION:
 				st_log_disable_display_log();
 
 				printf("STone, version: %s, build: %s %s\n", STONE_VERSION, __DATE__, __TIME__);
@@ -152,10 +154,12 @@ int main(int argc, char ** argv) {
 	// synchronize checksum plugins
 	st_checksum_sync_plugins();
 
-	//if (st_changer_setup())
-	//	return 6;
+	if (st_changer_setup())
+		return 6;
 
-	// st_sched_do_loop();
+	st_sched_do_loop();
+
+	//st_test();
 
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone exit");
 

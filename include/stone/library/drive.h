@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 22 Dec 2011 21:28:14 +0100                         *
+*  Last modified: Wed, 04 Jan 2012 10:30:22 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_DRIVE_H__
@@ -80,6 +80,8 @@ struct st_drive {
 		int (*set_file_position)(struct st_drive * drive, int file_position);
 	} * ops;
 	void * data;
+
+	struct st_ressource * lock;
 
 	unsigned int file_position;
 	unsigned int nb_files;

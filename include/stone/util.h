@@ -22,12 +22,16 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jan 2012 09:13:44 +0100                         *
+*  Last modified: Wed, 04 Jan 2012 12:26:21 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_UTIL_H__
 #define __STONE_UTIL_H__
 
+// ssize_t
+#include <sys/types.h>
+
+void st_util_convert_size_to_string(ssize_t size, char * str, ssize_t str_len);
 unsigned long long st_util_compute_hash_string(const void * key);
 void st_util_basic_free(void * key, void * value);
 void st_util_string_delete_double_char(char * str, char delete_char);
