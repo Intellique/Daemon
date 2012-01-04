@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 17:17:30 +0100                         *
+*  Last modified: Wed, 04 Jan 2012 17:52:56 +0100                         *
 \*************************************************************************/
 
 // pthread_mutex_lock, pthread_mutex_unlock
@@ -226,7 +226,7 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 		return tape;
 	}
 
-	// STone (v.0.1)
+	// STone (v0.1)
 	// Tape format: version=1
 	// Label: A0000002
 	// Tape id: uuid=f680dd48-dd3e-4715-8ddc-a90d3e708914
@@ -236,7 +236,7 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 	char stone_version[9];
 	int tape_format_version = 0;
 	int nb_parsed = 0;
-	if (sscanf(buffer, "STone (v.%8[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
+	if (sscanf(buffer, "STone (v%8[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
 		char uuid[37];
 		char name[65];
 		char pool_id[37];
