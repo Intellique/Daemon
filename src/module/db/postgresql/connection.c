@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 11:19:21 +0100                         *
+*  Last modified: Thu, 05 Jan 2012 18:52:53 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -43,6 +43,7 @@
 #include <unistd.h>
 
 #include <stone/job.h>
+#include <stone/library/archive.h>
 #include <stone/library/changer.h>
 #include <stone/library/drive.h>
 #include <stone/library/tape.h>
@@ -77,6 +78,9 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * db, struct
 static int st_db_postgresql_sync_tape(struct st_database_connection * db, struct st_tape * tape);
 static int st_db_postgresql_sync_user(struct st_database_connection * db, struct st_user * user);
 static int st_db_postgresql_update_job(struct st_database_connection * db, struct st_job * job);
+
+static int st_db_postgresql_new_archive(struct st_database_connection * db, struct st_archive * archive);
+static int st_db_postgresql_update_archive(struct st_database_connection * db, struct st_archive * archive);
 
 static int st_db_postgresql_get_bool(PGresult * result, int row, int column, char * value);
 static int st_db_postgresql_get_double(PGresult * result, int row, int column, double * value);
@@ -114,6 +118,9 @@ static struct st_database_connection_ops st_db_postgresql_con_ops = {
 	.sync_tape                = st_db_postgresql_sync_tape,
 	.sync_user                = st_db_postgresql_sync_user,
 	.update_job               = st_db_postgresql_update_job,
+
+	.new_archive    = st_db_postgresql_new_archive,
+	.update_archive = st_db_postgresql_update_archive,
 };
 
 
@@ -1278,6 +1285,63 @@ int st_db_postgresql_update_job(struct st_database_connection * connection, stru
 	free(crepetition);
 	free(cdone);
 
+	return status != PGRES_COMMAND_OK;
+}
+
+
+int st_db_postgresql_new_archive(struct st_database_connection * connection, struct st_archive * archive) {
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	st_db_postgresql_prepare(self, "insert_archive", "INSERT INTO archive VALUES (DEFAULT, $1, $2, NULL)");
+	st_db_postgresql_prepare(self, "select_archive", "SELECT id FROM archive WHERE name = $1 AND ctime = $2 LIMIT 1");
+
+	char ctime[32];
+	struct tm local_current;
+	localtime_r(&archive->ctime, &local_current);
+	strftime(ctime, 32, "%F %T", &local_current);
+
+	const char * param[] = { archive->name, ctime };
+	PGresult * result = PQexecPrepared(self->db_con, "insert_archive", 2, param, 0, 0, 0);
+
+	ExecStatusType status = PQresultStatus(result);
+	if (status == PGRES_FATAL_ERROR) {
+		st_db_postgresql_get_error(result);
+		PQclear(result);
+		return 1;
+	}
+
+	result = PQexecPrepared(self->db_con, "select_archive", 2, param, 0, 0, 0);
+	status = PQresultStatus(result);
+	if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		st_db_postgresql_get_long(result, 0, 0, &archive->id);
+
+	PQclear(result);
+	return status != PGRES_TUPLES_OK;
+}
+
+int st_db_postgresql_update_archive(struct st_database_connection * connection, struct st_archive * archive) {
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	st_db_postgresql_prepare(self, "update_archive", "UPDATE archive SET endtime = $1 WHERE id = $2");
+
+	char * archiveid = 0;
+	asprintf(&archiveid, "%ld", archive->id);
+
+	char endtime[32];
+	struct tm local_current;
+	localtime_r(&archive->endtime, &local_current);
+	strftime(endtime, 32, "%F %T", &local_current);
+
+	const char * param[] = { endtime, archiveid };
+	PGresult * result = PQexecPrepared(self->db_con, "update_archive", 2, param, 0, 0, 0);
+
+	ExecStatusType status = PQresultStatus(result);
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result);
+	PQclear(result);
+	free(archiveid);
 	return status != PGRES_COMMAND_OK;
 }
 

@@ -22,12 +22,22 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 15:48:39 +0100                         *
+*  Last modified: Thu, 05 Jan 2012 16:21:58 +0100                         *
 \*************************************************************************/
 
+#define _GNU_SOURCE
+// asprintf
+#include <stdio.h>
+// free, malloc
+#include <stdlib.h>
 // strcmp
 #include <string.h>
+// gettimeofday
+#include <sys/time.h>
+// localtime_r
+#include <time.h>
 
+#include <stone/job.h>
 #include <stone/library/archive.h>
 
 struct st_archive_file_type2 {
@@ -46,6 +56,26 @@ struct st_archive_file_type2 {
 	{ 0, st_archive_file_type_unknown },
 };
 
+
+struct st_archive * st_archive_new(struct st_job * job) {
+	struct timeval current;
+	gettimeofday(&current, 0);
+	struct tm local_current;
+	localtime_r(&current.tv_sec, &local_current);
+	char buffer[32];
+	strftime(buffer, 32, "%F_%T", &local_current);
+
+	struct st_archive * archive = job->archive = malloc(sizeof(struct st_archive));
+	archive->id = -1;
+	asprintf(&archive->name, "%s_%s", job->name, buffer);
+	archive->ctime = current.tv_sec;
+	archive->endtime = 0;
+
+	archive->volumes = 0;
+	archive->nb_volumes = 0;
+
+	return archive;
+}
 
 enum st_archive_file_type st_archive_file_string_to_type(const char * type) {
 	struct st_archive_file_type2 * ptr;

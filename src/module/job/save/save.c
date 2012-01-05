@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Jan 2012 12:29:44 +0100                         *
+*  Last modified: Thu, 05 Jan 2012 17:41:13 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -40,11 +40,14 @@
 #include <sys/stat.h>
 // open, stat
 #include <sys/types.h>
+// time
+#include <time.h>
 // access, close, sleep, stat
 #include <unistd.h>
 
 #include <stone/io.h>
 #include <stone/job.h>
+#include <stone/library/archive.h>
 #include <stone/library/changer.h>
 #include <stone/library/drive.h>
 #include <stone/library/ressource.h>
@@ -61,6 +64,8 @@ struct st_job_save_private {
 
 	ssize_t total_size_done;
 	ssize_t total_size;
+
+	struct st_database_connection * db_con;
 };
 
 static void st_job_save_archive_file(struct st_job * job, const char * path);
@@ -209,6 +214,9 @@ void st_job_save_new_job(struct st_database_connection * db, struct st_job * job
 	self->total_size_done = 0;
 	self->total_size = 0;
 
+	struct st_database * driver = st_db_get_default_db();
+	self->db_con = driver->ops->connect(driver, 0);
+
 	job->data = self;
 	job->job_ops = &st_job_save_ops;
 }
@@ -329,6 +337,16 @@ int st_job_save_run(struct st_job * job) {
 	drive->ops->reset(drive);
 	drive->ops->eod(drive);
 
+	// start new transaction
+	jp->db_con->ops->start_transaction(jp->db_con, 0);
+
+	// archive
+	struct st_archive * archive = job->archive = st_archive_new(job);
+	jp->db_con->ops->new_archive(jp->db_con, archive);
+
+	// volume
+
+
 	struct st_stream_writer * tape_writer = drive->ops->get_writer(drive);
 	struct st_stream_writer * checksum_writer = st_checksum_get_steam_writer((const char **) job->checksums, job->nb_checksums, tape_writer);
 	jp->tar = st_tar_new_out(checksum_writer);
@@ -342,6 +360,13 @@ int st_job_save_run(struct st_job * job) {
 	}
 
 	jp->tar->ops->close(jp->tar);
+
+	// archive
+	archive->endtime = time(0);
+	jp->db_con->ops->update_archive(jp->db_con, archive);
+
+	// commit transaction
+	jp->db_con->ops->finish_transaction(jp->db_con);
 
 	job->db_ops->add_record(job, "Finish archive job (job id: %ld), num runs %ld", job->id, job->num_runs);
 
