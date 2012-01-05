@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 30 Dec 2011 16:22:17 +0100                         *
+*  Last modified: Wed, 04 Jan 2012 22:06:44 +0100                         *
 \*************************************************************************/
 
 // calloc, free, malloc
@@ -210,7 +210,11 @@ ssize_t st_io_checksum_reader_read(struct st_stream_reader * io, void * buffer, 
 
 int st_io_checksum_writer_close(struct st_stream_writer * io) {
 	struct st_io_checksum_writer_private * self = io->data;
-	int failed = self->writer->ops->close(self->writer);
+
+	int failed = 0;
+	if (self->writer)
+		failed = self->writer->ops->close(self->writer);
+
 	if (!failed) {
 		unsigned int i;
 		for (i = 0; i < self->nb_checksums; i++)
@@ -222,8 +226,10 @@ int st_io_checksum_writer_close(struct st_stream_writer * io) {
 void st_io_checksum_writer_free(struct st_stream_writer * io) {
 	struct st_io_checksum_writer_private * self = io->data;
 
-	self->writer->ops->free(self->writer);
-	free(self->writer);
+	if (self->writer) {
+		self->writer->ops->free(self->writer);
+		free(self->writer);
+	}
 
 	unsigned int i;
 	for (i = 0; i < self->nb_checksums; i++) {
@@ -242,22 +248,31 @@ void st_io_checksum_writer_free(struct st_stream_writer * io) {
 
 ssize_t st_io_checksum_writer_get_block_size(struct st_stream_writer * io) {
 	struct st_io_checksum_writer_private * self = io->data;
-	return self->writer->ops->get_block_size(self->writer);
+	if (self->writer)
+		return self->writer->ops->get_block_size(self->writer);
+	return 0;
 }
 
 int st_io_checksum_writer_last_errno(struct st_stream_writer * io) {
 	struct st_io_checksum_writer_private * self = io->data;
-	return self->writer->ops->last_errno(self->writer);
+	if (self->writer)
+		return self->writer->ops->last_errno(self->writer);
+	return 0;
 }
 
 ssize_t st_io_checksum_writer_position(struct st_stream_writer * io) {
 	struct st_io_checksum_writer_private * self = io->data;
-	return self->writer->ops->position(self->writer);
+	if (self->writer)
+		return self->writer->ops->position(self->writer);
+	return 0;
 }
 
 ssize_t st_io_checksum_writer_write(struct st_stream_writer * io, const void * buffer, ssize_t length) {
 	struct st_io_checksum_writer_private * self = io->data;
-	ssize_t nb_write = self->writer->ops->write(self->writer, buffer, length);
+
+	ssize_t nb_write = length;
+	if (self->writer)
+		nb_write = self->writer->ops->write(self->writer, buffer, length);
 
 	if (nb_write < 0)
 		return nb_write;

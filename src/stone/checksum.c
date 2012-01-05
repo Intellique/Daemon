@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 23:38:11 +0100                         *
+*  Last modified: Thu, 05 Jan 2012 10:29:48 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -199,6 +199,7 @@ struct st_checksum * st_checksum_get_helper(struct st_checksum * h, struct st_ch
 	struct st_checksum_helper_private * hp = h->data = malloc(sizeof(struct st_checksum_helper_private));
 	hp->checksum = checksum;
 	hp->digest = 0;
+	hp->run = 1;
 
 	unsigned int i;
 	for (i = 0; i < NB_BUFFERS; i++) {
@@ -285,8 +286,8 @@ ssize_t st_checksum_helper_update(struct st_checksum * helper, const void * data
 	hp->writer++;
 	if (hp->writer - hp->buffers == NB_BUFFERS)
 		hp->writer = hp->buffers;
-	pthread_mutex_unlock(&hp->lock);
 	pthread_cond_signal(&hp->wait);
+	pthread_mutex_unlock(&hp->lock);
 
 	hp->nb_write++;
 
@@ -299,7 +300,7 @@ void * st_checksum_helper_work(void * param) {
 
 	st_log_write_all(st_log_level_debug, st_log_type_checksum, "Starting thread helper for checksum(%p)", hp->checksum);
 
-	for (hp->run = 1;;) {
+	for (;;) {
 		pthread_mutex_lock(&hp->lock);
 
 		if (!hp->reader->buffer && !hp->run)

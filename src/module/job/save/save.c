@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 21:37:09 +0100                         *
+*  Last modified: Wed, 04 Jan 2012 22:19:09 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -101,14 +101,21 @@ void st_job_save_archive_file(struct st_job * job, const char * path) {
 
 	if (S_ISREG(st.st_mode)) {
 		int fd = open(path, O_RDONLY);
+		struct st_stream_writer * file_checksum = st_checksum_get_steam_writer((const char **) job->checksums, job->nb_checksums, 0);
 
 		ssize_t nb_read;
 		while ((nb_read = read(fd, jp->buffer, jp->block_size)) > 0) {
-			jp->tar->ops->write(jp->tar, jp->buffer, nb_read);
+			ssize_t nb_write = jp->tar->ops->write(jp->tar, jp->buffer, nb_read);
+
+			if (nb_write > 0)
+				file_checksum->ops->write(file_checksum, jp->buffer, nb_write);
 		}
 
 		jp->tar->ops->end_of_file(jp->tar);
+		file_checksum->ops->close(file_checksum);
+
 		close(fd);
+		file_checksum->ops->free(file_checksum);
 	} else if (S_ISDIR(st.st_mode)) {
 		if (access(path, R_OK | X_OK)) {
 			job->db_ops->add_record(job, "Error, Can't read directory: %s", path);
@@ -250,7 +257,9 @@ int st_job_save_run(struct st_job * job) {
 		drive->lock->ops->lock(drive->lock);
 		job->sched_status = st_job_status_running;
 	}
+	changer->lock->ops->unlock(changer->lock);
 	job->db_ops->add_record(job, "Got drive: %s %s", drive->vendor, drive->model);
+
 
 	// check tape and pool
 	if (job->pool) {
