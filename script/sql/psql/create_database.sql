@@ -22,7 +22,7 @@ CREATE TYPE DriveStatus AS ENUM (
     'error',
     'loaded idle',
     'loading',
-    'positionning',
+    'positioning',
     'reading',
     'rewinding',
     'unknown',
@@ -31,7 +31,7 @@ CREATE TYPE DriveStatus AS ENUM (
 );
 
 CREATE TYPE FileType AS ENUM (
-    'blockDevice',
+    'block device',
     'character device',
     'directory',
     'fifo',
