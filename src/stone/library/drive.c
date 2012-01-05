@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 20:44:27 +0100                         *
+*  Last modified: Thu, 05 Jan 2012 14:56:45 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -757,6 +757,9 @@ int st_drive_io_writer_close(struct st_stream_writer * io) {
 			self->last_errno = errno;
 			return -1;
 		}
+
+		self->drive->slot->tape->nb_files = self->drive->file_position + 1;
+		st_drive_generic_update_status(self->drive);
 	}
 
 	self->fd = -1;

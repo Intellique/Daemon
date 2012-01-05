@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 17:52:56 +0100                         *
+*  Last modified: Thu, 05 Jan 2012 15:10:22 +0100                         *
 \*************************************************************************/
 
 // pthread_mutex_lock, pthread_mutex_unlock
@@ -290,8 +290,12 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 		} else
 			tape->status = ST_TAPE_STATUS_FOREIGN;
 	} else {
-		 tape->status = ST_TAPE_STATUS_FOREIGN;
+		tape->status = ST_TAPE_STATUS_FOREIGN;
 	}
+
+	// compute how many files are on the tape
+	dr->ops->eod(dr);
+	tape->nb_files = dr->nb_files;
 
 	unsigned int i, found = 0;
 	for (i = 0; i < st_tape_nb_tapes; i++)

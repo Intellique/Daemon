@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 22:19:09 +0100                         *
+*  Last modified: Thu, 05 Jan 2012 12:29:44 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -58,6 +58,8 @@ struct st_job_save_private {
 	struct st_tar_out * tar;
 	char * buffer;
 	ssize_t block_size;
+
+	ssize_t total_size_done;
 	ssize_t total_size;
 };
 
@@ -107,8 +109,13 @@ void st_job_save_archive_file(struct st_job * job, const char * path) {
 		while ((nb_read = read(fd, jp->buffer, jp->block_size)) > 0) {
 			ssize_t nb_write = jp->tar->ops->write(jp->tar, jp->buffer, nb_read);
 
-			if (nb_write > 0)
+			if (nb_write > 0) {
 				file_checksum->ops->write(file_checksum, jp->buffer, nb_write);
+				jp->total_size_done += nb_write;
+			}
+
+			job->done = (float) jp->total_size_done / jp->total_size;
+			job->db_ops->update_status(job);
 		}
 
 		jp->tar->ops->end_of_file(jp->tar);
@@ -198,6 +205,8 @@ void st_job_save_init() {
 void st_job_save_new_job(struct st_database_connection * db, struct st_job * job) {
 	struct st_job_save_private * self = malloc(sizeof(struct st_job_save_private));
 	self->tar = 0;
+
+	self->total_size_done = 0;
 	self->total_size = 0;
 
 	job->data = self;
@@ -327,10 +336,14 @@ int st_job_save_run(struct st_job * job) {
 	jp->block_size = jp->tar->ops->get_block_size(jp->tar);
 	jp->buffer = malloc(jp->block_size);
 
-	for (i = 0; i < job->nb_paths; i++)
+	for (i = 0; i < job->nb_paths; i++) {
+		job->db_ops->add_record(job, "Archive %s", job->paths[i]);
 		st_job_save_archive_file(job, job->paths[i]);
+	}
 
 	jp->tar->ops->close(jp->tar);
+
+	job->db_ops->add_record(job, "Finish archive job (job id: %ld), num runs %ld", job->id, job->num_runs);
 
 	return 0;
 }
