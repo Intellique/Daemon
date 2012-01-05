@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Jan 2012 18:52:53 +0100                         *
+*  Last modified: Thu, 05 Jan 2012 20:26:40 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1293,7 +1293,7 @@ int st_db_postgresql_new_archive(struct st_database_connection * connection, str
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
-	st_db_postgresql_prepare(self, "insert_archive", "INSERT INTO archive VALUES (DEFAULT, $1, $2, NULL)");
+	st_db_postgresql_prepare(self, "insert_archive", "INSERT INTO archive VALUES (DEFAULT, $1, $2, NULL, $3)");
 	st_db_postgresql_prepare(self, "select_archive", "SELECT id FROM archive WHERE name = $1 AND ctime = $2 LIMIT 1");
 
 	char ctime[32];
@@ -1301,13 +1301,17 @@ int st_db_postgresql_new_archive(struct st_database_connection * connection, str
 	localtime_r(&archive->ctime, &local_current);
 	strftime(ctime, 32, "%F %T", &local_current);
 
-	const char * param[] = { archive->name, ctime };
-	PGresult * result = PQexecPrepared(self->db_con, "insert_archive", 2, param, 0, 0, 0);
+	char * loginid = 0;
+	asprintf(&loginid, "%ld", archive->user->id);
+
+	const char * param[] = { archive->name, ctime, loginid };
+	PGresult * result = PQexecPrepared(self->db_con, "insert_archive", 3, param, 0, 0, 0);
 
 	ExecStatusType status = PQresultStatus(result);
 	if (status == PGRES_FATAL_ERROR) {
 		st_db_postgresql_get_error(result);
 		PQclear(result);
+		free(loginid);
 		return 1;
 	}
 
@@ -1317,6 +1321,7 @@ int st_db_postgresql_new_archive(struct st_database_connection * connection, str
 		st_db_postgresql_get_long(result, 0, 0, &archive->id);
 
 	PQclear(result);
+	free(loginid);
 	return status != PGRES_TUPLES_OK;
 }
 

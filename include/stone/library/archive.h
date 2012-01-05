@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Jan 2012 16:19:01 +0100                         *
+*  Last modified: Thu, 05 Jan 2012 19:04:17 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -35,6 +35,7 @@
 
 struct st_archive_volume;
 struct st_job;
+struct st_user;
 
 enum st_archive_file_type {
 	st_archive_file_type_block_device,
@@ -53,6 +54,7 @@ struct st_archive {
 	char * name;
 	time_t ctime;
 	time_t endtime;
+	struct st_user * user;
 
 	struct st_archive_volume * volumes;
 	unsigned int nb_volumes;

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Jan 2012 16:21:58 +0100                         *
+*  Last modified: Thu, 05 Jan 2012 19:04:53 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -70,6 +70,7 @@ struct st_archive * st_archive_new(struct st_job * job) {
 	asprintf(&archive->name, "%s_%s", job->name, buffer);
 	archive->ctime = current.tv_sec;
 	archive->endtime = 0;
+	archive->user = job->user;
 
 	archive->volumes = 0;
 	archive->nb_volumes = 0;
