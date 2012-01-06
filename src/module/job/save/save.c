@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Jan 2012 17:41:13 +0100                         *
+*  Last modified: Fri, 06 Jan 2012 10:29:25 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -343,8 +343,9 @@ int st_job_save_run(struct st_job * job) {
 	// archive
 	struct st_archive * archive = job->archive = st_archive_new(job);
 	jp->db_con->ops->new_archive(jp->db_con, archive);
-
 	// volume
+	struct st_archive_volume * volume = st_archive_volume_new(job, drive);
+	jp->db_con->ops->new_volume(jp->db_con, volume);
 
 
 	struct st_stream_writer * tape_writer = drive->ops->get_writer(drive);
@@ -362,8 +363,12 @@ int st_job_save_run(struct st_job * job) {
 	jp->tar->ops->close(jp->tar);
 
 	// archive
-	archive->endtime = time(0);
+	archive->endtime = volume->endtime = time(0);
 	jp->db_con->ops->update_archive(jp->db_con, archive);
+	// volume
+	volume->size = tape_writer->ops->position(tape_writer);
+	jp->db_con->ops->update_volume(jp->db_con, volume);
+
 
 	// commit transaction
 	jp->db_con->ops->finish_transaction(jp->db_con);

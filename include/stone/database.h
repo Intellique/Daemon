@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Jan 2012 16:24:31 +0100                         *
+*  Last modified: Thu, 05 Jan 2012 21:55:03 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -32,6 +32,7 @@
 #include <sys/time.h>
 
 struct st_archive;
+struct st_archive_volume;
 struct st_changer;
 struct st_database_connection;
 struct st_drive;
@@ -135,7 +136,9 @@ struct st_database_connection {
 		int (*update_job)(struct st_database_connection * db, struct st_job * job);
 
 		int (*new_archive)(struct st_database_connection * db, struct st_archive * archive);
+		int (*new_volume)(struct st_database_connection * db, struct st_archive_volume * volume);
 		int (*update_archive)(struct st_database_connection * db, struct st_archive * archive);
+		int (*update_volume)(struct st_database_connection * db, struct st_archive_volume * volume);
 	} * ops;
 	void * data;
 };

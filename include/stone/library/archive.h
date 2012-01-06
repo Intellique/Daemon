@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Jan 2012 19:04:17 +0100                         *
+*  Last modified: Thu, 05 Jan 2012 21:50:42 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -34,6 +34,7 @@
 #include <sys/types.h>
 
 struct st_archive_volume;
+struct st_drive;
 struct st_job;
 struct st_user;
 
@@ -78,6 +79,7 @@ struct st_archive_file {
 };
 
 struct st_archive * st_archive_new(struct st_job * job);
+struct st_archive_volume * st_archive_volume_new(struct st_job * job, struct st_drive * drive);
 enum st_archive_file_type st_archive_file_string_to_type(const char * type);
 const char * st_archive_file_type_to_string(enum st_archive_file_type type);
 

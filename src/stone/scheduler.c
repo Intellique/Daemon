@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 16:02:10 +0100                         *
+*  Last modified: Fri, 06 Jan 2012 10:27:32 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE

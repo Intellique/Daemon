@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Jan 2012 19:04:53 +0100                         *
+*  Last modified: Thu, 05 Jan 2012 21:52:09 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -39,6 +39,8 @@
 
 #include <stone/job.h>
 #include <stone/library/archive.h>
+#include <stone/library/changer.h>
+#include <stone/library/drive.h>
 
 struct st_archive_file_type2 {
 	char * name;
@@ -76,6 +78,26 @@ struct st_archive * st_archive_new(struct st_job * job) {
 	archive->nb_volumes = 0;
 
 	return archive;
+}
+
+struct st_archive_volume * st_archive_volume_new(struct st_job * job, struct st_drive * drive) {
+	struct st_archive * archive = job->archive;
+	archive->volumes = realloc(archive->volumes, (archive->nb_volumes + 1) * sizeof(struct st_archive_volume));
+	unsigned int index_volume = archive->nb_volumes;
+	archive->nb_volumes++;
+
+	struct st_archive_volume * volume = archive->volumes + index_volume;
+	volume->id = -1;
+	volume->sequence = index_volume;
+	volume->size = 0;
+	volume->ctime = time(0);
+	volume->endtime = 0;
+
+	volume->archive = archive;
+	volume->tape = drive->slot->tape;
+	volume->tape_position = drive->file_position;
+
+	return volume;
 }
 
 enum st_archive_file_type st_archive_file_string_to_type(const char * type) {

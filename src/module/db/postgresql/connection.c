@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Jan 2012 20:26:40 +0100                         *
+*  Last modified: Fri, 06 Jan 2012 10:25:39 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -80,7 +80,9 @@ static int st_db_postgresql_sync_user(struct st_database_connection * db, struct
 static int st_db_postgresql_update_job(struct st_database_connection * db, struct st_job * job);
 
 static int st_db_postgresql_new_archive(struct st_database_connection * db, struct st_archive * archive);
+static int st_db_postgresql_new_volume(struct st_database_connection * db, struct st_archive_volume * volume);
 static int st_db_postgresql_update_archive(struct st_database_connection * db, struct st_archive * archive);
+static int st_db_postgresql_update_volume(struct st_database_connection * db, struct st_archive_volume * volume);
 
 static int st_db_postgresql_get_bool(PGresult * result, int row, int column, char * value);
 static int st_db_postgresql_get_double(PGresult * result, int row, int column, double * value);
@@ -120,7 +122,9 @@ static struct st_database_connection_ops st_db_postgresql_con_ops = {
 	.update_job               = st_db_postgresql_update_job,
 
 	.new_archive    = st_db_postgresql_new_archive,
+	.new_volume     = st_db_postgresql_new_volume,
 	.update_archive = st_db_postgresql_update_archive,
+	.update_volume  = st_db_postgresql_update_volume,
 };
 
 
@@ -665,7 +669,7 @@ int st_db_postgresql_start_transaction(struct st_database_connection * connectio
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
-	PGresult * result = PQexec(self->db_con, readOnly ? "BEGIN ISOLATION LEVEL SERIALIZABLE" : "BEGIN");
+	PGresult * result = PQexec(self->db_con, readOnly ? "BEGIN READ ONLY" : "BEGIN READ WRITE");
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status != PGRES_COMMAND_OK)
@@ -1314,6 +1318,7 @@ int st_db_postgresql_new_archive(struct st_database_connection * connection, str
 		free(loginid);
 		return 1;
 	}
+	PQclear(result);
 
 	result = PQexecPrepared(self->db_con, "select_archive", 2, param, 0, 0, 0);
 	status = PQresultStatus(result);
@@ -1322,6 +1327,53 @@ int st_db_postgresql_new_archive(struct st_database_connection * connection, str
 
 	PQclear(result);
 	free(loginid);
+	return status != PGRES_TUPLES_OK;
+}
+
+int st_db_postgresql_new_volume(struct st_database_connection * connection, struct st_archive_volume * volume) {
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	st_db_postgresql_prepare(self, "insert_archive_volume", "INSERT INTO archivevolume VALUES (DEFAULT, $1, 0, $2, NULL, $3, $4, $5)");
+	st_db_postgresql_prepare(self, "select_archive_volume", "SELECT id FROM archivevolume WHERE sequence = $1 AND ctime = $2 AND archive = $3 AND tape = $4 AND tapeposition = $5 LIMIT 1");
+
+	char * sequence = 0, * archiveid = 0, * tapeid = 0, * tapeposition = 0;
+	asprintf(&sequence, "%ld", volume->sequence);
+	asprintf(&archiveid, "%ld", volume->archive->id);
+	asprintf(&tapeid, "%ld", volume->tape->id);
+	asprintf(&tapeposition, "%ld", volume->tape_position);
+
+	char ctime[32];
+	struct tm local_current;
+	localtime_r(&volume->ctime, &local_current);
+	strftime(ctime, 32, "%F %T", &local_current);
+
+	const char * param[] = { sequence, ctime, archiveid, tapeid, tapeposition };
+	PGresult * result = PQexecPrepared(self->db_con, "insert_archive_volume", 5, param, 0, 0, 0);
+
+	ExecStatusType status = PQresultStatus(result);
+	if (status == PGRES_FATAL_ERROR) {
+		st_db_postgresql_get_error(result);
+		PQclear(result);
+		free(tapeposition);
+		free(tapeid);
+		free(archiveid);
+		free(sequence);
+		return 1;
+	}
+
+	PQclear(result);
+
+	result = PQexecPrepared(self->db_con, "select_archive_volume", 5, param, 0, 0, 0);
+	status = PQresultStatus(result);
+	if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		st_db_postgresql_get_long(result, 0, 0, &volume->id);
+
+	PQclear(result);
+	free(tapeposition);
+	free(tapeid);
+	free(archiveid);
+	free(sequence);
 	return status != PGRES_TUPLES_OK;
 }
 
@@ -1347,6 +1399,33 @@ int st_db_postgresql_update_archive(struct st_database_connection * connection, 
 		st_db_postgresql_get_error(result);
 	PQclear(result);
 	free(archiveid);
+	return status != PGRES_COMMAND_OK;
+}
+
+int st_db_postgresql_update_volume(struct st_database_connection * connection, struct st_archive_volume * volume) {
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	st_db_postgresql_prepare(self, "update_archive_volume", "UPDATE archivevolume SET size = $1, endtime = $2 WHERE id = $3");
+
+	char * volumeid = 0, * size = 0;
+	asprintf(&volumeid, "%ld", volume->id);
+	asprintf(&size, "%zd", volume->size);
+
+	char endtime[32];
+	struct tm local_current;
+	localtime_r(&volume->endtime, &local_current);
+	strftime(endtime, 32, "%F %T", &local_current);
+
+	const char * param[] = { size, endtime, volumeid };
+	PGresult * result = PQexecPrepared(self->db_con, "update_archive_volume", 3, param, 0, 0, 0);
+
+	ExecStatusType status = PQresultStatus(result);
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result);
+	PQclear(result);
+	free(volumeid);
+	free(size);
 	return status != PGRES_COMMAND_OK;
 }
 

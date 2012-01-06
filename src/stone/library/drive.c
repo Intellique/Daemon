@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Jan 2012 14:56:45 +0100                         *
+*  Last modified: Fri, 06 Jan 2012 11:03:26 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -58,7 +58,7 @@
 
 struct st_drive_generic {
 	int fd_nst;
-	struct st_database_connection * db_con;
+	// struct st_database_connection * db_con;
 
 	int used_by_io;
 
@@ -103,7 +103,7 @@ static int st_drive_generic_rewind_file(struct st_drive * drive);
 static int st_drive_generic_rewind_tape(struct st_drive * drive);
 static int st_drive_generic_set_file_position(struct st_drive * drive, int file_position);
 static void st_drive_generic_update_status(struct st_drive * drive);
-static void st_drive_generic_update_status2(struct st_drive * drive, enum st_drive_status status);
+//static void st_drive_generic_update_status2(struct st_drive * drive, enum st_drive_status status);
 
 static int st_drive_io_reader_close(struct st_stream_reader * io);
 static off_t st_drive_io_reader_forward(struct st_stream_reader * io, off_t offset);
@@ -159,7 +159,8 @@ int st_drive_generic_eject(struct st_drive * drive) {
 
 	st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: rewind tape and put the drive offline", drive->vendor, drive->model, drive - drive->changer->drives);
 
-	st_drive_generic_update_status2(drive, ST_DRIVE_UNLOADING);
+	//st_drive_generic_update_status2(drive, ST_DRIVE_UNLOADING);
+	drive->status = ST_DRIVE_UNLOADING;
 
 	static struct mtop eject = { MTOFFL, 1 };
 	st_drive_generic_operation_start(self);
@@ -178,7 +179,8 @@ int st_drive_generic_eod(struct st_drive * drive) {
 
 	st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: goto end of tape", drive->vendor, drive->model, drive - drive->changer->drives);
 
-	st_drive_generic_update_status2(drive, ST_DRIVE_POSITIONING);
+	//st_drive_generic_update_status2(drive, ST_DRIVE_POSITIONING);
+	drive->status = ST_DRIVE_POSITIONING;
 
 	static struct mtop eod = { MTEOM, 1 };
 	st_drive_generic_operation_start(self);
@@ -270,7 +272,8 @@ struct st_stream_reader * st_drive_generic_get_reader(struct st_drive * drive) {
 	}
 
 	drive->slot->tape->read_count++;
-	st_drive_generic_update_status2(drive, ST_DRIVE_READING);
+	// st_drive_generic_update_status2(drive, ST_DRIVE_READING);
+	drive->status = ST_DRIVE_READING;
 
 	return st_drive_io_reader_new(drive);
 }
@@ -290,7 +293,8 @@ struct st_stream_writer * st_drive_generic_get_writer(struct st_drive * drive) {
 	}
 
 	drive->slot->tape->write_count++;
-	st_drive_generic_update_status2(drive, ST_DRIVE_WRITING);
+	//st_drive_generic_update_status2(drive, ST_DRIVE_WRITING);
+	drive->status = ST_DRIVE_WRITING;
 
 	return st_drive_io_writer_new(drive);
 }
@@ -354,7 +358,8 @@ int st_drive_generic_rewind_file(struct st_drive * drive) {
 
 	st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: rewind file", drive->vendor, drive->model, drive - drive->changer->drives);
 
-	st_drive_generic_update_status2(drive, ST_DRIVE_REWINDING);
+	//st_drive_generic_update_status2(drive, ST_DRIVE_REWINDING);
+	drive->status = ST_DRIVE_REWINDING;
 
 	static struct mtop rewind = { MTBSFM, 1 };
 	st_drive_generic_operation_start(self);
@@ -382,7 +387,8 @@ int st_drive_generic_rewind_tape(struct st_drive * drive) {
 
 	st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: rewind tape", drive->vendor, drive->model, drive - drive->changer->drives);
 
-	st_drive_generic_update_status2(drive, ST_DRIVE_REWINDING);
+	// st_drive_generic_update_status2(drive, ST_DRIVE_REWINDING);
+	drive->status = ST_DRIVE_REWINDING;
 
 	static struct mtop rewind = { MTREW, 1 };
 	st_drive_generic_operation_start(self);
@@ -413,7 +419,8 @@ int st_drive_generic_set_file_position(struct st_drive * drive, int file_positio
 	if (failed)
 		return failed;
 
-	st_drive_generic_update_status2(drive, ST_DRIVE_POSITIONING);
+	// st_drive_generic_update_status2(drive, ST_DRIVE_POSITIONING);
+	drive->status = ST_DRIVE_POSITIONING;
 
 	struct st_drive_generic * self = drive->data;
 	struct mtop fsr = { MTFSF, file_position };
@@ -477,26 +484,28 @@ void st_drive_generic_update_status(struct st_drive * drive) {
 		if (drive->density_code > drive->best_density_code)
 			drive->best_density_code = drive->density_code;
 
-		st_drive_generic_update_status2(drive, drive->is_door_opened ? ST_DRIVE_EMPTY_IDLE : ST_DRIVE_LOADED_IDLE);
+		//st_drive_generic_update_status2(drive, drive->is_door_opened ? ST_DRIVE_EMPTY_IDLE : ST_DRIVE_LOADED_IDLE);
+		drive->status = drive->is_door_opened ? ST_DRIVE_EMPTY_IDLE : ST_DRIVE_LOADED_IDLE;
 	} else {
-		st_drive_generic_update_status2(drive, ST_DRIVE_ERROR);
+		//st_drive_generic_update_status2(drive, ST_DRIVE_ERROR);
+		drive->status = ST_DRIVE_ERROR;
 	}
 }
 
-void st_drive_generic_update_status2(struct st_drive * drive, enum st_drive_status status) {
+/*void st_drive_generic_update_status2(struct st_drive * drive, enum st_drive_status status) {
 	drive->status = status;
 
 	struct st_drive_generic * self = drive->data;
 	if (drive->id > -1 && self->db_con)
 		self->db_con->ops->sync_drive(self->db_con, drive);
-}
+}*/
 
 void st_drive_setup(struct st_drive * drive) {
 	int fd = open(drive->device, O_RDWR | O_NONBLOCK);
 
 	struct st_drive_generic * self = malloc(sizeof(struct st_drive_generic));
 	self->fd_nst = fd;
-	self->db_con = 0;
+	//self->db_con = 0;
 	self->used_by_io = 0;
 	self->total_spent_time = 0;
 
@@ -507,14 +516,14 @@ void st_drive_setup(struct st_drive * drive) {
 
 	drive->lock = st_ressource_new();
 
-	struct st_database * db = st_db_get_default_db();
+	/*struct st_database * db = st_db_get_default_db();
 	if (db) {
 		self->db_con = db->ops->connect(db, 0);
 		if (!self->db_con)
 			st_log_write_all(st_log_level_error, st_log_type_drive, "[%s | %s | #%td]: failed to connect to default database", drive->vendor, drive->model, drive - drive->changer->drives);
 	} else {
 		st_log_write_all(st_log_level_warning, st_log_type_drive, "[%s | %s | #%td]: there is no default database so drive is not able to synchronize with one database", drive->vendor, drive->model, drive - drive->changer->drives);
-	}
+	}*/
 
 	st_drive_generic_update_status(drive);
 }
@@ -529,7 +538,8 @@ int st_drive_io_reader_close(struct st_stream_reader * io) {
 	self->buffer_used = 0;
 	self->last_errno = 0;
 
-	st_drive_generic_update_status2(self->drive, ST_DRIVE_LOADED_IDLE);
+	//st_drive_generic_update_status2(self->drive, ST_DRIVE_LOADED_IDLE);
+	self->drive->status = ST_DRIVE_LOADED_IDLE;
 	self->drive_private->used_by_io = 0;
 
 	return 0;
@@ -763,7 +773,8 @@ int st_drive_io_writer_close(struct st_stream_writer * io) {
 	}
 
 	self->fd = -1;
-	st_drive_generic_update_status2(self->drive, ST_DRIVE_LOADED_IDLE);
+	//st_drive_generic_update_status2(self->drive, ST_DRIVE_LOADED_IDLE);
+	self->drive->status = ST_DRIVE_LOADED_IDLE;
 	self->drive_private->used_by_io = 0;
 
 	return 0;
