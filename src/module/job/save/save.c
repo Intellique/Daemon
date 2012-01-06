@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 06 Jan 2012 10:29:25 +0100                         *
+*  Last modified: Fri, 06 Jan 2012 12:46:54 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -338,7 +338,7 @@ int st_job_save_run(struct st_job * job) {
 	drive->ops->eod(drive);
 
 	// start new transaction
-	jp->db_con->ops->start_transaction(jp->db_con, 0);
+	jp->db_con->ops->start_transaction(jp->db_con);
 
 	// archive
 	struct st_archive * archive = job->archive = st_archive_new(job);

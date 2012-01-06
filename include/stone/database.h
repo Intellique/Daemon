@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Jan 2012 21:55:03 +0100                         *
+*  Last modified: Fri, 06 Jan 2012 12:44:49 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -116,7 +116,7 @@ struct st_database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*start_transaction)(struct st_database_connection * db, short readOnly);
+		int (*start_transaction)(struct st_database_connection * db);
 
 		int (*add_job_record)(struct st_database_connection * db, struct st_job * job, const char * message);
 		int (*create_pool)(struct st_database_connection * db, struct st_pool * pool);

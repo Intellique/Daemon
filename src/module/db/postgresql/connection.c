@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 06 Jan 2012 10:25:39 +0100                         *
+*  Last modified: Fri, 06 Jan 2012 20:55:30 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -56,9 +56,11 @@ static void st_db_postgresql_check(struct st_database_connection * connection);
 static int st_db_postgresql_con_close(struct st_database_connection * connection);
 static int st_db_postgresql_con_free(struct st_database_connection * connection);
 
+static int st_db_postgresql_cancel_checkpoint(struct st_database_connection * connection, const char * checkpoint);
 static int st_db_postgresql_cancel_transaction(struct st_database_connection * connection);
+static int st_db_postgresql_create_checkpoint(struct st_database_connection * connection, const char * checkpoint);
 static int st_db_postgresql_finish_transaction(struct st_database_connection * connection);
-static int st_db_postgresql_start_transaction(struct st_database_connection * connection, short read_only);
+static int st_db_postgresql_start_transaction(struct st_database_connection * connection);
 
 static int st_db_postgresql_add_job_record(struct st_database_connection * db, struct st_job * job, const char * message);
 static int st_db_postgresql_create_pool(struct st_database_connection * db, struct st_pool * pool);
@@ -128,6 +130,115 @@ static struct st_database_connection_ops st_db_postgresql_con_ops = {
 };
 
 
+int st_db_postgresql_cancel_checkpoint(struct st_database_connection * connection, const char * checkpoint) {
+	if (!connection)
+		return -1;
+
+	st_log_write_all(st_log_level_debug, st_log_type_plugin_db, "Rollback a transaction from savepoint '%s' (cid #%ld)", checkpoint, connection->id);
+
+	char * query = 0;
+	asprintf(&query, "ROLLBACK TO %s", checkpoint);
+
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	PGresult * result = PQexec(self->db_con, query);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status != PGRES_COMMAND_OK)
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): error while rollbacking a savepoint => %s", connection->id, PQerrorMessage(self->db_con));
+
+	PQclear(result);
+	free(query);
+
+	return status == PGRES_COMMAND_OK ? 0 : -1;
+}
+
+int st_db_postgresql_cancel_transaction(struct st_database_connection * connection) {
+	if (!connection)
+		return -1;
+
+	st_log_write_all(st_log_level_debug, st_log_type_plugin_db, "Rollback a transaction (cid #%ld)", connection->id);
+
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	PGresult * result = PQexec(self->db_con, "ROLLBACK");
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status != PGRES_COMMAND_OK)
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): error while cancelling a transaction => %s", connection->id, PQerrorMessage(self->db_con));
+
+	PQclear(result);
+
+	return status == PGRES_COMMAND_OK ? 0 : -1;
+}
+
+int st_db_postgresql_create_checkpoint(struct st_database_connection * connection, const char * checkpoint) {
+	if (!connection)
+		return -1;
+
+	st_log_write_all(st_log_level_debug, st_log_type_plugin_db, "Create savepoint '%s' (cid #%ld)", checkpoint, connection->id);
+
+	char * query = 0;
+	asprintf(&query, "SAVEPOINT %s", checkpoint);
+
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	PGresult * result = PQexec(self->db_con, query);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status != PGRES_COMMAND_OK)
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): error while creating a savepoint => %s", connection->id, PQerrorMessage(self->db_con));
+
+	PQclear(result);
+	free(query);
+
+	return status == PGRES_COMMAND_OK ? 0 : -1;
+}
+
+int st_db_postgresql_finish_transaction(struct st_database_connection * connection) {
+	if (!connection)
+		return -1;
+
+	st_log_write_all(st_log_level_debug, st_log_type_plugin_db, "Commit a transaction (cid #%ld)", connection->id);
+
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	PGresult * result = PQexec(self->db_con, "COMMIT");
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status != PGRES_COMMAND_OK)
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): error while committing a transaction (%s)", connection->id, PQerrorMessage(self->db_con));
+
+	PQclear(result);
+
+	return status == PGRES_COMMAND_OK ? 0 : -1;
+}
+
+int st_db_postgresql_start_transaction(struct st_database_connection * connection) {
+	if (!connection)
+		return -1;
+
+	st_log_write_all(st_log_level_debug, st_log_type_plugin_db, "Begin a transaction (cid #%ld)", connection->id);
+
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	PGresult * result = PQexec(self->db_con, "BEGIN");
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status != PGRES_COMMAND_OK)
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): error while starting a transaction (%s)", connection->id, PQerrorMessage(self->db_con));
+
+	PQclear(result);
+
+	return status == PGRES_COMMAND_OK ? 0 : -1;
+}
+
+
 int st_db_postgresql_add_job_record(struct st_database_connection * connection, struct st_job * job, const char * message) {
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
@@ -150,24 +261,7 @@ int st_db_postgresql_add_job_record(struct st_database_connection * connection, 
 	return status != PGRES_COMMAND_OK;
 }
 
-int st_db_postgresql_cancel_transaction(struct st_database_connection * connection) {
-	if (!connection)
-		return -1;
-
-	struct st_db_postgresql_connetion_private * self = connection->data;
-	st_db_postgresql_check(connection);
-
-	PGresult * result = PQexec(self->db_con, "ROLLBACK;");
-	ExecStatusType status = PQresultStatus(result);
-
-	if (status != PGRES_COMMAND_OK)
-		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): error while cancelling a transaction => %s", connection->id, PQerrorMessage(self->db_con));
-
-	PQclear(result);
-
-	return status == PGRES_COMMAND_OK ? 0 : -1;
-}
-
+// need to be checked when there is a transaction
 void st_db_postgresql_check(struct st_database_connection * connection) {
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	if (PQstatus(self->db_con) != CONNECTION_OK) {
@@ -249,24 +343,6 @@ int st_db_postgresql_create_pool(struct st_database_connection * connection, str
 	st_db_postgresql_get_pool(connection, pool, pool->uuid);
 
 	return 0;
-}
-
-int st_db_postgresql_finish_transaction(struct st_database_connection * connection) {
-	if (!connection)
-		return -1;
-
-	struct st_db_postgresql_connetion_private * self = connection->data;
-	st_db_postgresql_check(connection);
-
-	PGresult * result = PQexec(self->db_con, "COMMIT;");
-	ExecStatusType status = PQresultStatus(result);
-
-	if (status != PGRES_COMMAND_OK)
-		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): error while committing a transaction (%s)", connection->id, PQerrorMessage(self->db_con));
-
-	PQclear(result);
-
-	return status == PGRES_COMMAND_OK ? 0 : -1;
 }
 
 char * st_db_postgresql_get_host(struct st_database_connection * connection) {
@@ -622,7 +698,7 @@ int st_db_postgresql_refresh_job(struct st_database_connection * connection, str
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
-	st_db_postgresql_prepare(self, "select_job_since_by_id", "SELECT * FROM job WHERE id = $1 AND update >= $2 LIMIT 1");
+	st_db_postgresql_prepare(self, "select_job_since_by_id", "SELECT * FROM job WHERE id = $1 AND update >= $2 FOR SHARE");
 
 	char * jobid = 0;
 	asprintf(&jobid, "%ld", job->id);
@@ -631,6 +707,8 @@ int st_db_postgresql_refresh_job(struct st_database_connection * connection, str
 	struct tm tm_updated;
 	localtime_r(&job->updated, &tm_updated);
 	strftime(updated, 23, "%F %T", &tm_updated);
+
+	st_db_postgresql_start_transaction(connection);
 
 	const char * param[] = { jobid, updated };
 	PGresult * result = PQexecPrepared(self->db_con, "select_job_since_by_id", 2, param, 0, 0, 0);
@@ -646,6 +724,9 @@ int st_db_postgresql_refresh_job(struct st_database_connection * connection, str
 
 		PQclear(result);
 		free(jobid);
+
+		st_db_postgresql_cancel_transaction(connection);
+
 		return 0;
 	}
 	PQclear(result);
@@ -658,47 +739,64 @@ int st_db_postgresql_refresh_job(struct st_database_connection * connection, str
 
 	PQclear(result);
 	free(jobid);
+
+	st_db_postgresql_cancel_transaction(connection);
+
 	return 0;
-}
-
-// TODO: check this function
-int st_db_postgresql_start_transaction(struct st_database_connection * connection, short readOnly) {
-	if (!connection)
-		return -1;
-
-	struct st_db_postgresql_connetion_private * self = connection->data;
-	st_db_postgresql_check(connection);
-
-	PGresult * result = PQexec(self->db_con, readOnly ? "BEGIN READ ONLY" : "BEGIN READ WRITE");
-	ExecStatusType status = PQresultStatus(result);
-
-	if (status != PGRES_COMMAND_OK)
-		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): error while starting a transaction (%s)", connection->id, PQerrorMessage(self->db_con));
-
-	PQclear(result);
-
-	return status == PGRES_COMMAND_OK ? 0 : -1;
 }
 
 int st_db_postgresql_sync_changer(struct st_database_connection * connection, struct st_changer * changer) {
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
+	PGTransactionStatusType transStatus = PQtransactionStatus(self->db_con);
+	if (transStatus == PQTRANS_INERROR)
+		return 2;
+
 	char * hostid = st_db_postgresql_get_host(connection);
+
+	if (transStatus == PQTRANS_IDLE)
+		st_db_postgresql_start_transaction(connection);
 
 	char * changerid = 0;
 	if (changer->id < 0) {
-		st_db_postgresql_prepare(self, "select_changer_by_model_vendor_serialnumber", "SELECT id FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 LIMIT 1");
+		st_db_postgresql_prepare(self, "select_changer_by_model_vendor_serialnumber", "SELECT id FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 FOR UPDATE NOWAIT");
 
 		const char * params2[] = { changer->model, changer->vendor, changer->serial_number };
 		PGresult * result = PQexecPrepared(self->db_con, "select_changer_by_model_vendor_serialnumber", 3, params2, 0, 0, 0);
+		ExecStatusType status = PQresultStatus(result);
 
-		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			st_db_postgresql_get_long(result, 0, 0, &changer->id);
 			st_db_postgresql_get_string_dup(result, 0, 0, &changerid);
 		}
 
 		PQclear(result);
+
+		if (status == PGRES_FATAL_ERROR) {
+			free(hostid);
+			if (transStatus == PQTRANS_IDLE)
+				st_db_postgresql_cancel_transaction(connection);
+			return 3;
+		}
+	} else {
+		st_db_postgresql_prepare(self, "select_changer_by_id", "SELECT id FROM changer WHERE id = $1 FOR UPDATE NOWAIT");
+
+		char * changerid = 0;
+		asprintf(&changerid, "%ld", changer->id);
+
+		const char * params2[] = { changerid };
+		PGresult * result = PQexecPrepared(self->db_con, "select_changer_by_id", 1, params2, 0, 0, 0);
+		ExecStatusType status = PQresultStatus(result);
+		PQclear(result);
+		free(changerid);
+
+		if (status == PGRES_FATAL_ERROR) {
+			free(hostid);
+			if (transStatus == PQTRANS_IDLE)
+				st_db_postgresql_cancel_transaction(connection);
+			return 3;
+		}
 	}
 
 	if (changer->id < 0) {
@@ -714,6 +812,8 @@ int st_db_postgresql_sync_changer(struct st_database_connection * connection, st
 			st_db_postgresql_get_error(result);
 			free(result);
 			free(hostid);
+			if (transStatus == PQTRANS_IDLE)
+				st_db_postgresql_cancel_transaction(connection);
 			return -1;
 		}
 		PQclear(result);
@@ -741,6 +841,8 @@ int st_db_postgresql_sync_changer(struct st_database_connection * connection, st
 			free(changerid);
 			free(hostid);
 			PQclear(result);
+			if (transStatus == PQTRANS_IDLE)
+				st_db_postgresql_cancel_transaction(connection);
 			return -2;
 		}
 
@@ -749,12 +851,27 @@ int st_db_postgresql_sync_changer(struct st_database_connection * connection, st
 	}
 	free(hostid);
 
-	unsigned int i;
-	for (i = 0; i < changer->nb_drives; i++)
-		st_db_postgresql_sync_drive(connection, changer->drives + i);
+	st_db_postgresql_create_checkpoint(connection, "sync_changer_before_drive");
 
-	for (i = changer->nb_drives; i < changer->nb_slots; i++)
-		st_db_postgresql_sync_slot(connection, changer->slots + i);
+	unsigned int i;
+	int status = 0;
+	for (i = 0; i < changer->nb_drives && !status; i++)
+		status = st_db_postgresql_sync_drive(connection, changer->drives + i);
+
+	if (status)
+		st_db_postgresql_cancel_checkpoint(connection, "sync_changer_before_drive");
+
+	status = 0;
+	st_db_postgresql_create_checkpoint(connection, "sync_changer_before_slot");
+
+	for (i = changer->nb_drives; i < changer->nb_slots && !status; i++)
+		status = st_db_postgresql_sync_slot(connection, changer->slots + i);
+
+	if (status)
+		st_db_postgresql_cancel_checkpoint(connection, "sync_changer_before_slot");
+
+	if (transStatus == PQTRANS_IDLE)
+		st_db_postgresql_finish_transaction(connection);
 
 	return 0;
 }
@@ -763,13 +880,20 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
+	PGTransactionStatusType transStatus = PQtransactionStatus(self->db_con);
+	if (transStatus == PQTRANS_INERROR)
+		return 2;
+	else if (transStatus == PQTRANS_IDLE)
+		st_db_postgresql_start_transaction(connection);
+
 	if (drive->id < 0) {
-		st_db_postgresql_prepare(self, "select_drive_by_model_vendor_serialnumber", "SELECT id, operationduration, lastclean, driveformat FROM drive WHERE model = $1 AND vendor = $2 AND serialnumber = $3 LIMIT 1");
+		st_db_postgresql_prepare(self, "select_drive_by_model_vendor_serialnumber", "SELECT id, operationduration, lastclean, driveformat FROM drive WHERE model = $1 AND vendor = $2 AND serialnumber = $3 FOR UPDATE NOWAIT");
 
 		const char * params[] = { drive->model, drive->vendor, drive->serial_number };
 		PGresult * result = PQexecPrepared(self->db_con, "select_drive_by_model_vendor_serialnumber", 3, params, 0, 0, 0);
+		ExecStatusType status = PQresultStatus(result);
 
-		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			st_db_postgresql_get_long(result, 0, 0, &drive->id);
 
 			double old_operation_duration;
@@ -786,6 +910,29 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 		}
 
 		PQclear(result);
+
+		if (status == PGRES_FATAL_ERROR) {
+			if (transStatus == PQTRANS_IDLE)
+				st_db_postgresql_cancel_transaction(connection);
+			return 3;
+		}
+	} else {
+		st_db_postgresql_prepare(self, "select_drive_by_id", "SELECT id FROM drive WHERE id = $1 FOR UPDATE NOWAIT");
+
+		char * driveid = 0;
+		asprintf(&driveid, "%ld", drive->id);
+
+		const char * params[] = { driveid };
+		PGresult * result = PQexecPrepared(self->db_con, "select_drive_by_id", 1, params, 0, 0, 0);
+		ExecStatusType status = PQresultStatus(result);
+		PQclear(result);
+		free(driveid);
+
+		if (status == PGRES_FATAL_ERROR) {
+			if (transStatus == PQTRANS_IDLE)
+				st_db_postgresql_cancel_transaction(connection);
+			return 3;
+		}
 	}
 
 	char * changerid = 0;
@@ -794,6 +941,7 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 
 	if (drive->id < 0) {
 		st_db_postgresql_prepare(self, "select_driveformat_by_densitycode", "SELECT id FROM driveformat WHERE densitycode = $1 LIMIT 1");
+		st_db_postgresql_prepare(self, "insert_drive", "INSERT INTO drive VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)");
 
 		char * densitycode = 0;
 		asprintf(&densitycode, "%u", drive->best_density_code);
@@ -806,8 +954,6 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 		if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
 			st_db_postgresql_get_string_dup(result, 0, 0, &driveformat_id);
 		PQclear(result);
-
-		st_db_postgresql_prepare(self, "insert_drive", "INSERT INTO drive VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)");
 
 		char * changer_num = 0, * op_duration = 0;
 		if (drive->changer)
@@ -826,8 +972,9 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 			drive->model, drive->vendor, drive->revision, drive->serial_number, changerid, driveformat_id
 		};
 		result = PQexecPrepared(self->db_con, "insert_drive", 12, params2, 0, 0, 0);
+		status = PQresultStatus(result);
 
-		if (PQresultStatus(result) == PGRES_FATAL_ERROR)
+		if (status == PGRES_FATAL_ERROR)
 			st_db_postgresql_get_error(result);
 
 		PQclear(result);
@@ -836,8 +983,17 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 		if (driveformat_id)
 			free(driveformat_id);
 		free(densitycode);
+
+		if (status == PGRES_FATAL_ERROR) {
+			if (drive->changer)
+				free(changerid);
+			if (transStatus == PQTRANS_IDLE)
+				st_db_postgresql_cancel_transaction(connection);
+			return 3;
+		}
 	} else {
 		st_db_postgresql_prepare(self, "select_driveformat_by_densitycode", "SELECT id FROM driveformat WHERE densitycode = $1 LIMIT 1");
+		st_db_postgresql_prepare(self, "update_drive", "UPDATE drive SET device = $1, scsidevice = $2, status = $3, operationduration = $4, lastclean = $5, firmwarerev = $6, driveformat = $7 WHERE id = $8");
 
 		char * densitycode = 0;
 		asprintf(&densitycode, "%u", drive->best_density_code);
@@ -850,8 +1006,6 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 		if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
 			st_db_postgresql_get_string_dup(result, 0, 0, &driveformat_id);
 		PQclear(result);
-
-		st_db_postgresql_prepare(self, "update_drive", "UPDATE drive SET device = $1, scsidevice = $2, status = $3, operationduration = $4, lastclean = $5, firmwarerev = $6, driveformat = $7 WHERE id = $8");
 
 		char * driveid = 0, * op_duration = 0;
 		asprintf(&driveid, "%ld", drive->id);
@@ -867,8 +1021,9 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 			op_duration, last_clean, drive->revision, driveformat_id, driveid
 		};
 		result = PQexecPrepared(self->db_con, "update_drive", 8, params, 0, 0, 0);
+		status = PQresultStatus(result);
 
-		if (PQresultStatus(result) == PGRES_FATAL_ERROR)
+		if (status == PGRES_FATAL_ERROR)
 			st_db_postgresql_get_error(result);
 
 		PQclear(result);
@@ -877,13 +1032,26 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 		if (driveformat_id)
 			free(driveformat_id);
 		free(densitycode);
+
+		if (status == PGRES_FATAL_ERROR) {
+			if (drive->changer)
+				free(changerid);
+			if (transStatus == PQTRANS_IDLE)
+				st_db_postgresql_cancel_transaction(connection);
+			return 3;
+		}
 	}
 
 	if (drive->changer)
 		free(changerid);
 
-	if (drive->slot)
-		st_db_postgresql_sync_slot(connection, drive->slot);
+	st_db_postgresql_create_checkpoint(connection, "sync_drive_before_slot");
+
+	if (drive->slot && st_db_postgresql_sync_slot(connection, drive->slot))
+		st_db_postgresql_cancel_checkpoint(connection, "sync_drive_before_slot");
+
+	if (transStatus == PQTRANS_IDLE)
+		st_db_postgresql_finish_transaction(connection);
 
 	return 0;
 }
@@ -955,17 +1123,37 @@ int st_db_postgresql_sync_slot(struct st_database_connection * connection, struc
 		asprintf(&changer_id, "%ld", slot->changer->id);
 		asprintf(&slot_index, "%td", slot - slot->changer->slots);
 
-		st_db_postgresql_prepare(self, "select_slot_by_index_changer", "SELECT id FROM changerslot WHERE index = $1 AND changer = $2 LIMIT 1");
+		st_db_postgresql_prepare(self, "select_slot_by_index_changer", "SELECT id FROM changerslot WHERE index = $1 AND changer = $2 FOR UPDATE NOWAIT");
 
 		const char * params[] = { slot_index, changer_id };
 		PGresult * result = PQexecPrepared(self->db_con, "select_slot_by_index_changer", 2, params, 0, 0, 0);
+		ExecStatusType status = PQresultStatus(result);
 
-		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
 			st_db_postgresql_get_long(result, 0, 0, &slot->id);
+		else if (status == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(result);
 
 		PQclear(result);
 		free(slot_index);
 		free(changer_id);
+
+		if (status == PGRES_FATAL_ERROR)
+			return 2;
+	} else {
+		char * slot_id = 0;
+		asprintf(&slot_id, "%ld", slot->id);
+
+		st_db_postgresql_prepare(self, "select_slot_by_id", "SELECT id FROM changerslot WHERE id = $1 FOR UPDATE NOWAIT");
+
+		const char * params[] = { slot_id };
+		PGresult * result = PQexecPrepared(self->db_con, "select_slot_by_id", 1, params, 0, 0, 0);
+		ExecStatusType status = PQresultStatus(result);
+		PQclear(result);
+		free(slot_id);
+
+		if (status == PGRES_FATAL_ERROR)
+			return 2;
 	}
 
 	if (slot->id > -1) {
@@ -1039,7 +1227,7 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 
 	if (tape->id < 0) {
 		if (tape->uuid[0] != '\0') {
-			st_db_postgresql_prepare(self, "select_tape_by_uuid", "SELECT * FROM tape WHERE uuid = $1 LIMIT 1");
+			st_db_postgresql_prepare(self, "select_tape_by_uuid", "SELECT * FROM tape WHERE uuid = $1 FOR UPDATE NOWAIT");
 
 			const char * params[] = { tape->uuid };
 			PGresult * result = PQexecPrepared(self->db_con, "select_tape_by_uuid", 1, params, 0, 0, 0);
@@ -1070,7 +1258,7 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 		}
 
 		if (tape->id < 0 && tape->label[0] != '\0') {
-			st_db_postgresql_prepare(self, "select_tape_by_label", "SELECT * FROM tape WHERE label = $1 LIMIT 1");
+			st_db_postgresql_prepare(self, "select_tape_by_label", "SELECT * FROM tape WHERE label = $1 FOR UPDATE NOWAIT");
 
 			const char * params[] = { tape->label };
 			PGresult * result = PQexecPrepared(self->db_con, "select_tape_by_label", 1, params, 0, 0, 0);
@@ -1098,6 +1286,20 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 
 			PQclear(result);
 		}
+	} else {
+		st_db_postgresql_prepare(self, "select_tape_by_id", "SELECT id FROM tape WHERE id = $1 FOR UPDATE NOWAIT");
+
+		char * tape_id = 0;
+		asprintf(&tape_id, "%ld", tape->id);
+
+		const char * params[] = { tape_id };
+		PGresult * result = PQexecPrepared(self->db_con, "select_tape_by_id", 1, params, 0, 0, 0);
+		ExecStatusType status = PQresultStatus(result);
+		PQclear(result);
+		free(tape_id);
+
+		if (status == PGRES_FATAL_ERROR)
+			return 2;
 	}
 
 	if (tape->uuid[0] != '\0' || tape->label[0] != '\0') {

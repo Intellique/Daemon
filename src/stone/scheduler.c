@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 06 Jan 2012 10:27:32 +0100                         *
+*  Last modified: Fri, 06 Jan 2012 12:45:12 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -98,11 +98,6 @@ void st_sched_do_loop() {
 	long last_max_jobs = -1;
 
 	while (!st_sched_stop_request) {
-		short ok_transaction = connection->ops->start_transaction(connection, 1) >= 0;
-		time_t update = time(0);
-		if (!ok_transaction)
-			st_log_write_all(st_log_level_warning, st_log_type_scheduler, "error while starting transaction");
-
 		unsigned int i;
 		for (i = 0; i < nb_jobs; i++) {
 			struct st_job * j = jobs[i];
@@ -120,6 +115,11 @@ void st_sched_do_loop() {
 			if (j->id < 0 && j->sched_status == st_job_status_running)
 				j->job_ops->stop(j);
 		}
+
+		time_t update = time(0);
+		short ok_transaction = connection->ops->start_transaction(connection) >= 0;
+		if (!ok_transaction)
+			st_log_write_all(st_log_level_warning, st_log_type_scheduler, "error while starting transaction");
 
 		// check for new jobs
 		long new_jobs = 0;
