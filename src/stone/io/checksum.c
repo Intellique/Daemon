@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 22:06:44 +0100                         *
+*  Last modified: Fri, 06 Jan 2012 22:47:19 +0100                         *
 \*************************************************************************/
 
 // calloc, free, malloc
@@ -82,6 +82,11 @@ static struct st_stream_writer_ops st_io_checksum_writer_ops = {
 	.write          = st_io_checksum_writer_write,
 };
 
+
+char ** st_checksum_get_digest_from_writer(struct st_stream_writer * writer) {
+	struct st_io_checksum_writer_private * self = writer->data;
+	return self->digests;
+}
 
 struct st_stream_reader * st_checksum_get_steam_reader(const char ** checksums, unsigned int nb_checksums, struct st_stream_reader * reader) {
 	struct st_io_checksum_reader_private * self = malloc(sizeof(struct st_io_checksum_reader_private));

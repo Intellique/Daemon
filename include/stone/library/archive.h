@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Jan 2012 21:50:42 +0100                         *
+*  Last modified: Fri, 06 Jan 2012 22:58:29 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -59,6 +59,8 @@ struct st_archive {
 
 	struct st_archive_volume * volumes;
 	unsigned int nb_volumes;
+
+	struct st_job * job;
 };
 
 struct st_archive_volume {
@@ -71,6 +73,9 @@ struct st_archive_volume {
 	struct st_archive * archive;
 	struct st_tape * tape;
 	long tape_position;
+
+	char ** digests;
+	unsigned int nb_checksums;
 };
 
 struct st_archive_file {

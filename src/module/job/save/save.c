@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 06 Jan 2012 12:46:54 +0100                         *
+*  Last modified: Fri, 06 Jan 2012 22:52:00 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -367,6 +367,8 @@ int st_job_save_run(struct st_job * job) {
 	jp->db_con->ops->update_archive(jp->db_con, archive);
 	// volume
 	volume->size = tape_writer->ops->position(tape_writer);
+	volume->digests = st_checksum_get_digest_from_writer(checksum_writer);
+	volume->nb_checksums = job->nb_checksums;
 	jp->db_con->ops->update_volume(jp->db_con, volume);
 
 
