@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 16:01:47 +0100                         *
+*  Last modified: Sat, 07 Jan 2012 21:40:33 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -71,10 +71,14 @@ struct st_job {
 	float done;
 	struct st_archive * archive;
 	struct st_pool * pool;
+
 	char ** paths;
 	unsigned int nb_paths;
+
 	char ** checksums;
+	long * checksum_ids;
 	unsigned int nb_checksums;
+
 	struct st_user * user;
 
 	struct st_job_ops {

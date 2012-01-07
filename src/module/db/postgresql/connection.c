@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 07 Jan 2012 19:02:21 +0100                         *
+*  Last modified: Sat, 07 Jan 2012 22:32:35 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -456,7 +456,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 	st_db_postgresql_prepare(self, "select_new_jobs", "SELECT j.*, jt.name FROM job j, jobtype jt WHERE j.id > $1 AND j.update > $2 AND j.host = $3 AND j.type = jt.id LIMIT $4");
 	st_db_postgresql_prepare(self, "select_num_runs", "SELECT MAX(numrun) AS max FROM jobrecord WHERE job = $1");
 	st_db_postgresql_prepare(self, "select_paths", "SELECT path FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1)");
-	st_db_postgresql_prepare(self, "select_checksums", "SELECT name FROM checksum WHERE id IN (SELECT checksum FROM jobtochecksum WHERE job = $1)");
+	st_db_postgresql_prepare(self, "select_checksums", "SELECT * FROM checksum WHERE id IN (SELECT checksum FROM jobtochecksum WHERE job = $1)");
 
 	char csince[24], * lastmaxjobs = 0, * nbjobs = 0;
 	struct tm tm_since;
@@ -577,11 +577,14 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 			jobs[i]->checksums = 0;
 
 			if (jobs[i]->nb_checksums > 0) {
+				jobs[i]->checksum_ids = calloc(jobs[i]->nb_checksums, sizeof(long));
 				jobs[i]->checksums = calloc(jobs[i]->nb_checksums, sizeof(char *));
 
 				unsigned int j;
-				for (j = 0; j < jobs[i]->nb_checksums; j++)
-					st_db_postgresql_get_string_dup(result2, j, 0, jobs[i]->checksums + j);
+				for (j = 0; j < jobs[i]->nb_checksums; j++) {
+					st_db_postgresql_get_long(result2, j, 0, jobs[i]->checksum_ids + j);
+					st_db_postgresql_get_string_dup(result2, j, 1, jobs[i]->checksums + j);
+				}
 			}
 		}
 		PQclear(result2);
@@ -1800,31 +1803,65 @@ int st_db_postgresql_update_volume(struct st_database_connection * connection, s
 		st_db_postgresql_get_error(result);
 
 	PQclear(result);
-	free(volumeid);
 	free(size);
 
 	if (status != PGRES_COMMAND_OK)
 		return 1;
 
-	st_db_postgresql_prepare(self, "select_checksum_by_name", "SELECT id FROM checksum WHERE name = $1 LIMIT 1");
-	st_db_postgresql_prepare(self, "insert_archive_volume_to_checksum", "INSERT INTO ($1, $2)");
+	st_db_postgresql_prepare(self, "select_checksumresult", "SELECT id FROM checksumresult WHERE checksum = $1 AND result = $2 LIMIT 1");
+	st_db_postgresql_prepare(self, "insert_checksumresult", "INSERT INTO checksumresult VALUES (DEFAULT, $1, $2)");
+	st_db_postgresql_prepare(self, "insert_archive_volume_to_checksum", "INSERT INTO archivevolumetochecksumresult VALUES ($1, $2)");
 
 	unsigned int i;
 	for (i = 0; i < volume->nb_checksums; i++) {
-		char * checksumid = 0;
+		char * checksumid = 0, * checksumresultid = 0;
+		asprintf(&checksumid, "%ld", volume->archive->job->checksum_ids[i]);
 
-		const char * param2[] = { volume->archive->job->checksums[i] };
-		result = PQexecPrepared(self->db_con, "select_checksum_by_name", 1, param2, 0, 0, 0);
-		ExecStatusType status = PQresultStatus(result);
+		const char * param2[] = { checksumid, volume->digests[i] };
+		result = PQexecPrepared(self->db_con, "select_checksumresult", 2, param2, 0, 0, 0);
+		status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR) {
+			st_db_postgresql_get_error(result);
+
+			free(checksumid);
+			return 1;
+		} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+			st_db_postgresql_get_string_dup(result, 0, 0, &checksumresultid);
+
+		PQclear(result);
+
+		if (!checksumresultid) {
+			result = PQexecPrepared(self->db_con, "insert_checksumresult", 2, param2, 0, 0, 0);
+			status = PQresultStatus(result);
+
+			if (status == PGRES_FATAL_ERROR) {
+				st_db_postgresql_get_error(result);
+
+				free(checksumid);
+				return 1;
+			}
+
+			PQclear(result);
+
+			result = PQexecPrepared(self->db_con, "select_checksumresult", 2, param2, 0, 0, 0);
+			if (PQntuples(result) == 1)
+				st_db_postgresql_get_string_dup(result, 0, 0, &checksumresultid);
+		}
+
+		const char * param3[] = { volumeid, checksumresultid };
+		result = PQexecPrepared(self->db_con, "insert_archive_volume_to_checksum", 2, param3, 0, 0, 0);
+		status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
 			st_db_postgresql_get_error(result);
 
-		if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
-			st_db_postgresql_get_string_dup(result, 0, 0, &checksumid);
-
 		PQclear(result);
+		free(checksumresultid);
+		free(checksumid);
 	}
+
+	free(volumeid);
 
 	return 0;
 }
