@@ -22,45 +22,32 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 08 Jan 2012 17:42:12 +0100                         *
+*  Last modified: Sun, 08 Jan 2012 17:46:52 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONE_IO_H__
-#define __STONE_IO_H__
+#define _GNU_SOURCE
+// va_end, va_start
+#include <stdarg.h>
+// free
+#include <stdlib.h>
+// vasprintf
+#include <stdio.h>
 
-// ssize_t
-#include <sys/types.h>
+#include <stone/io.h>
 
-struct st_stream_reader {
-	struct st_stream_reader_ops {
-		int (*close)(struct st_stream_reader * io);
-		off_t (*forward)(struct st_stream_reader * io, off_t offset);
-		void (*free)(struct st_stream_reader * io);
-		ssize_t (*get_block_size)(struct st_stream_reader * io);
-		int (*last_errno)(struct st_stream_reader * f);
-		ssize_t (*position)(struct st_stream_reader * io);
-		ssize_t (*read)(struct st_stream_reader * io, void * buffer, ssize_t length);
-	} * ops;
-	void * data;
-};
 
-struct st_stream_writer {
-	struct st_stream_writer_ops {
-		int (*close)(struct st_stream_writer * io);
-		void (*free)(struct st_stream_writer * io);
-		ssize_t (*get_block_size)(struct st_stream_writer * io);
-		int (*last_errno)(struct st_stream_writer * f);
-		ssize_t (*position)(struct st_stream_writer * io);
-		ssize_t (*write)(struct st_stream_writer * io, const void * buffer, ssize_t length);
-	} * ops;
-	void * data;
-};
+ssize_t st_stream_writer_printf(struct st_stream_writer * writer, const char * format, ...) {
+	char * message = 0;
 
-char ** st_checksum_get_digest_from_writer(struct st_stream_writer * writer);
-struct st_stream_reader * st_checksum_get_steam_reader(const char ** checksums, unsigned int nb_checksums, struct st_stream_reader * reader);
-struct st_stream_writer * st_checksum_get_steam_writer(const char ** checksums, unsigned int nb_checksums, struct st_stream_writer * writer);
-struct st_stream_writer * st_stream_get_tmp_writer(void);
-ssize_t st_stream_writer_printf(struct st_stream_writer * writer, const char * format, ...) __attribute__ ((format (printf, 2, 3)));
+	va_list va;
+	va_start(va, format);
+	ssize_t str_message = vasprintf(&message, format, va);
+	va_end(va);
 
-#endif
+	ssize_t nb_write = writer->ops->write(writer, message, str_message);
+
+	free(message);
+
+	return nb_write;
+}
 
