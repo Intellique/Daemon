@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 06 Jan 2012 22:58:29 +0100                         *
+*  Last modified: Sun, 08 Jan 2012 15:12:52 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -37,6 +37,7 @@ struct st_archive_volume;
 struct st_drive;
 struct st_job;
 struct st_user;
+struct stat;
 
 enum st_archive_file_type {
 	st_archive_file_type_block_device,
@@ -81,9 +82,24 @@ struct st_archive_volume {
 struct st_archive_file {
 	long id;
 	char * name;
+	mode_t perm;
+	enum st_archive_file_type type;
+	uid_t ownerid;
+	char owner[32];
+	gid_t groupid;
+	char group[32];
+	time_t ctime;
+	time_t mtime;
+	ssize_t size;
+
+	char ** digests;
+	unsigned int nb_checksums;
+
+	struct st_archive * archive;
 };
 
 struct st_archive * st_archive_new(struct st_job * job);
+struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * file, const char * filename);
 struct st_archive_volume * st_archive_volume_new(struct st_job * job, struct st_drive * drive);
 enum st_archive_file_type st_archive_file_string_to_type(const char * type);
 const char * st_archive_file_type_to_string(enum st_archive_file_type type);

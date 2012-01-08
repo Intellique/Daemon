@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 30 Dec 2011 13:49:22 +0100                         *
+*  Last modified: Sun, 08 Jan 2012 12:23:32 +0100                         *
 \*************************************************************************/
 
 // getgrgid_r
@@ -57,7 +57,7 @@ struct st_tar_private_out {
 };
 
 
-static int st_tar_out_add_file(struct st_tar_out * f, const char * filename, struct st_tar_header * header);
+static int st_tar_out_add_file(struct st_tar_out * f, const char * filename);
 static int st_tar_out_add_label(struct st_tar_out * f, const char * label);
 static int st_tar_out_add_link(struct st_tar_out * f, const char * src, const char * target, struct st_tar_header * header);
 static int st_tar_out_close(struct st_tar_out * f);
@@ -103,7 +103,7 @@ struct st_tar_out * st_tar_new_out(struct st_stream_writer * io) {
 	return self;
 }
 
-int st_tar_out_add_file(struct st_tar_out * f, const char * filename, struct st_tar_header * h_out) {
+int st_tar_out_add_file(struct st_tar_out * f, const char * filename) {
 	if (access(filename, F_OK)) {
 		//mtar_verbose_printf("Can access to file: %s\n", filename);
 		return 1;
@@ -198,8 +198,6 @@ int st_tar_out_add_file(struct st_tar_out * f, const char * filename, struct st_
 	st_tar_out_gid2name(header->gname, 32, sfile.st_gid);
 
 	st_tar_out_compute_checksum(current_header, current_header->checksum);
-
-	st_tar_out_copy(h_out, header, &sfile);
 
 	format->position = 0;
 	format->size = sfile.st_size;
@@ -323,8 +321,8 @@ void st_tar_out_compute_link(struct st_tar * header, char * link, const char * f
 	memset(header->mtime, '0', 11);
 	header->flag = flag;
 	strcpy(header->magic, "ustar  ");
-	//mtar_file_uid2name(header->uname, 32, sfile->st_uid);
-	//mtar_file_gid2name(header->gname, 32, sfile->st_gid);
+	st_tar_out_uid2name(header->uname, 32, sfile->st_uid);
+	st_tar_out_gid2name(header->gname, 32, sfile->st_gid);
 
 	st_tar_out_compute_checksum(header, header->checksum);
 

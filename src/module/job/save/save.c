@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 06 Jan 2012 22:52:00 +0100                         *
+*  Last modified: Sun, 08 Jan 2012 15:34:27 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -61,6 +61,8 @@ struct st_job_save_private {
 	struct st_tar_out * tar;
 	char * buffer;
 	ssize_t block_size;
+
+	struct st_archive_volume * current_volume;
 
 	ssize_t total_size_done;
 	ssize_t total_size;
@@ -103,8 +105,11 @@ void st_job_save_archive_file(struct st_job * job, const char * path) {
 	if (S_ISSOCK(st.st_mode))
 		return;
 
-	struct st_tar_header header;
-	jp->tar->ops->add_file(jp->tar, path, &header);
+	jp->tar->ops->add_file(jp->tar, path);
+
+	struct st_archive_file * file = st_archive_file_new(job, &st, path);
+	jp->db_con->ops->new_file(jp->db_con, file);
+	jp->db_con->ops->file_link_to_volume(jp->db_con, file, jp->current_volume);
 
 	if (S_ISREG(st.st_mode)) {
 		int fd = open(path, O_RDONLY);
@@ -125,6 +130,10 @@ void st_job_save_archive_file(struct st_job * job, const char * path) {
 
 		jp->tar->ops->end_of_file(jp->tar);
 		file_checksum->ops->close(file_checksum);
+
+		file->digests = st_checksum_get_digest_from_writer(file_checksum);
+		file->nb_checksums = job->nb_checksums;
+		jp->db_con->ops->file_add_checksum(jp->db_con, file);
 
 		close(fd);
 		file_checksum->ops->free(file_checksum);
@@ -344,8 +353,8 @@ int st_job_save_run(struct st_job * job) {
 	struct st_archive * archive = job->archive = st_archive_new(job);
 	jp->db_con->ops->new_archive(jp->db_con, archive);
 	// volume
-	struct st_archive_volume * volume = st_archive_volume_new(job, drive);
-	jp->db_con->ops->new_volume(jp->db_con, volume);
+	jp->current_volume = st_archive_volume_new(job, drive);
+	jp->db_con->ops->new_volume(jp->db_con, jp->current_volume);
 
 
 	struct st_stream_writer * tape_writer = drive->ops->get_writer(drive);
@@ -363,13 +372,13 @@ int st_job_save_run(struct st_job * job) {
 	jp->tar->ops->close(jp->tar);
 
 	// archive
-	archive->endtime = volume->endtime = time(0);
+	archive->endtime = jp->current_volume->endtime = time(0);
 	jp->db_con->ops->update_archive(jp->db_con, archive);
 	// volume
-	volume->size = tape_writer->ops->position(tape_writer);
-	volume->digests = st_checksum_get_digest_from_writer(checksum_writer);
-	volume->nb_checksums = job->nb_checksums;
-	jp->db_con->ops->update_volume(jp->db_con, volume);
+	jp->current_volume->size = tape_writer->ops->position(tape_writer);
+	jp->current_volume->digests = st_checksum_get_digest_from_writer(checksum_writer);
+	jp->current_volume->nb_checksums = job->nb_checksums;
+	jp->db_con->ops->update_volume(jp->db_con, jp->current_volume);
 
 
 	// commit transaction

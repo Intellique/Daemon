@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 12:26:21 +0100                         *
+*  Last modified: Sun, 08 Jan 2012 12:05:12 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_UTIL_H__
@@ -37,6 +37,8 @@ void st_util_basic_free(void * key, void * value);
 void st_util_string_delete_double_char(char * str, char delete_char);
 char ** st_util_string_justified(const char * str, unsigned int width, unsigned int * nb_lines);
 void st_util_string_trim(char * str, char trim);
+void st_util_gid2name(char * name, ssize_t length, gid_t gid);
+void st_util_uid2name(char * name, ssize_t length, uid_t uid);
 
 #endif
 

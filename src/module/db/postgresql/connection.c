@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 07 Jan 2012 22:32:35 +0100                         *
+*  Last modified: Sun, 08 Jan 2012 16:11:32 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -81,7 +81,10 @@ static int st_db_postgresql_sync_tape(struct st_database_connection * db, struct
 static int st_db_postgresql_sync_user(struct st_database_connection * db, struct st_user * user);
 static int st_db_postgresql_update_job(struct st_database_connection * db, struct st_job * job);
 
+static int st_db_postgresql_file_add_checksum(struct st_database_connection * db, struct st_archive_file * file);
+static int st_db_postgresql_file_link_to_volume(struct st_database_connection * db, struct st_archive_file * file, struct st_archive_volume * volume);
 static int st_db_postgresql_new_archive(struct st_database_connection * db, struct st_archive * archive);
+static int st_db_postgresql_new_file(struct st_database_connection * db, struct st_archive_file * file);
 static int st_db_postgresql_new_volume(struct st_database_connection * db, struct st_archive_volume * volume);
 static int st_db_postgresql_update_archive(struct st_database_connection * db, struct st_archive * archive);
 static int st_db_postgresql_update_volume(struct st_database_connection * db, struct st_archive_volume * volume);
@@ -123,10 +126,13 @@ static struct st_database_connection_ops st_db_postgresql_con_ops = {
 	.sync_user                = st_db_postgresql_sync_user,
 	.update_job               = st_db_postgresql_update_job,
 
-	.new_archive    = st_db_postgresql_new_archive,
-	.new_volume     = st_db_postgresql_new_volume,
-	.update_archive = st_db_postgresql_update_archive,
-	.update_volume  = st_db_postgresql_update_volume,
+	.file_add_checksum   = st_db_postgresql_file_add_checksum,
+	.file_link_to_volume = st_db_postgresql_file_link_to_volume,
+	.new_archive         = st_db_postgresql_new_archive,
+	.new_file            = st_db_postgresql_new_file,
+	.new_volume          = st_db_postgresql_new_volume,
+	.update_archive      = st_db_postgresql_update_archive,
+	.update_volume       = st_db_postgresql_update_volume,
 };
 
 
@@ -343,7 +349,7 @@ int st_db_postgresql_create_pool(struct st_database_connection * connection, str
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
-	st_db_postgresql_prepare(self, "insert_pool", "INSERT INTO pool VALUES (DEFAULT, $1, $2, DEFAULT, DEFAULT, DEFAULT, $3)");
+	st_db_postgresql_prepare(self, "insert_pool", "INSERT INTO pool VALUES (DEFAULT, $1, $2, DEFAULT, DEFAULT, DEFAULT, $3) RETURNING id");
 
 	char * tape_format = 0;
 	asprintf(&tape_format, "%ld", pool->format->id);
@@ -354,14 +360,13 @@ int st_db_postgresql_create_pool(struct st_database_connection * connection, str
 
 	if (status == PGRES_FATAL_ERROR)
 		st_db_postgresql_get_error(result);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		st_db_postgresql_get_long(result, 0, 0, &pool->id);
 
 	PQclear(result);
 	free(tape_format);
 
-	if (status == PGRES_FATAL_ERROR)
-		return 1;
-
-	return st_db_postgresql_get_pool(connection, pool, pool->uuid);
+	return status == PGRES_FATAL_ERROR;
 }
 
 char * st_db_postgresql_get_host(struct st_database_connection * connection) {
@@ -900,7 +905,7 @@ int st_db_postgresql_sync_changer(struct st_database_connection * connection, st
 	}
 
 	if (changer->id < 0) {
-		st_db_postgresql_prepare(self, "insert_changer", "INSERT INTO changer VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8)");
+		st_db_postgresql_prepare(self, "insert_changer", "INSERT INTO changer VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8) RETURNING id");
 
 		const char * param2[] = {
 			changer->device, st_changer_status_to_string(changer->status), changer->barcode ? "true" : "false",
@@ -917,22 +922,8 @@ int st_db_postgresql_sync_changer(struct st_database_connection * connection, st
 			if (transStatus == PQTRANS_IDLE)
 				st_db_postgresql_cancel_transaction(connection);
 			return -1;
-		}
-		PQclear(result);
-
-		st_db_postgresql_prepare(self, "select_changer_by_model_vendor_host", "SELECT id FROM changer WHERE model = $1 AND vendor = $2 AND host = $3 LIMIT 1");
-
-		const char * param3[] = { changer->model, changer->vendor, hostid };
-		result = PQexecPrepared(self->db_con, "select_changer_by_model_vendor_host", 3, param3, 0, 0, 0);
-		status = PQresultStatus(result);
-
-		if (status == PGRES_FATAL_ERROR)
-			st_db_postgresql_get_error(result);
-		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
 			st_db_postgresql_get_long(result, 0, 0, &changer->id);
-
-		if (changer->id < 0)
-			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql (cid #%ld): An expected probleme occured: failed to retreive changer id after insert it", connection->id);
 
 		PQclear(result);
 	} else {
@@ -1056,7 +1047,7 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 
 	if (drive->id < 0) {
 		st_db_postgresql_prepare(self, "select_driveformat_by_densitycode", "SELECT id FROM driveformat WHERE densitycode = $1 LIMIT 1");
-		st_db_postgresql_prepare(self, "insert_drive", "INSERT INTO drive VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)");
+		st_db_postgresql_prepare(self, "insert_drive", "INSERT INTO drive VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id");
 
 		char * densitycode = 0, * driveformat_id = 0;
 		asprintf(&densitycode, "%u", drive->best_density_code);
@@ -1092,6 +1083,8 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 
 		if (status == PGRES_FATAL_ERROR)
 			st_db_postgresql_get_error(result);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+			st_db_postgresql_get_long(result, 0, 0, &drive->id);
 
 		PQclear(result);
 		free(op_duration);
@@ -1312,7 +1305,7 @@ int st_db_postgresql_sync_slot(struct st_database_connection * connection, struc
 
 		return status != PGRES_COMMAND_OK;
 	} else {
-		st_db_postgresql_prepare(self, "insert_slot", "INSERT INTO changerslot VALUES (DEFAULT, $1, $2, $3, $4)");
+		st_db_postgresql_prepare(self, "insert_slot", "INSERT INTO changerslot VALUES (DEFAULT, $1, $2, $3, $4) RETURNING id");
 
 		char * changer_id = 0, * slot_index = 0, * tape_id = 0;
 		asprintf(&changer_id, "%ld", slot->changer->id);
@@ -1331,21 +1324,10 @@ int st_db_postgresql_sync_slot(struct st_database_connection * connection, struc
 
 		if (status == PGRES_FATAL_ERROR)
 			st_db_postgresql_get_error(result);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+			st_db_postgresql_get_long(result, 0, 0, &slot->id);
 
 		PQclear(result);
-
-		if (status == PGRES_COMMAND_OK) {
-			const char * param2[] = { slot_index, changer_id };
-			result = PQexecPrepared(self->db_con, "select_slot_by_index_changer", 2, param2, 0, 0, 0);
-			status = PQresultStatus(result);
-
-			if (status == PGRES_FATAL_ERROR)
-				st_db_postgresql_get_error(result);
-			else if (status == PGRES_COMMAND_OK)
-				st_db_postgresql_get_long(result, 0, 0, &slot->id);
-
-			PQclear(result);
-		}
 
 		if (tape_id)
 			free(tape_id);
@@ -1487,7 +1469,7 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 
 			return status != PGRES_COMMAND_OK;
 		} else {
-			st_db_postgresql_prepare(self, "insert_tape", "INSERT INTO tape VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)");
+			st_db_postgresql_prepare(self, "insert_tape", "INSERT INTO tape VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id");
 
 			char buffer_first_used[32];
 			char buffer_use_before[32];
@@ -1523,6 +1505,8 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 
 			if (status == PGRES_FATAL_ERROR)
 				st_db_postgresql_get_error(result);
+			else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+				st_db_postgresql_get_long(result, 0, 0, &tape->id);
 
 			PQclear(result);
 			free(load);
@@ -1535,38 +1519,7 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 			if (pool)
 				free(pool);
 
-			if (status == PGRES_FATAL_ERROR)
-				return status != PGRES_COMMAND_OK;
-
-			if (*tape->label) {
-				st_db_postgresql_prepare(self, "select_tape_id_by_label", "SELECT id FROM tape WHERE label = $1 LIMIT 1");
-
-				const char * param[] = { tape->label };
-				result = PQexecPrepared(self->db_con, "select_tape_id_by_label", 1, param, 0, 0, 0);
-				status = PQresultStatus(result);
-
-				if (status == PGRES_FATAL_ERROR)
-					st_db_postgresql_get_error(result);
-				else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
-					st_db_postgresql_get_long(result, 0, 0, &tape->id);
-
-				PQclear(result);
-			} else {
-				st_db_postgresql_prepare(self, "select_tape_id_by_name", "SELECT id FROM tape WHERE name = $1 LIMIT 1");
-
-				const char * params[] = { tape->name };
-				result = PQexecPrepared(self->db_con, "select_tape_by_name", 1, params, 0, 0, 0);
-				status = PQresultStatus(result);
-
-				if (status == PGRES_FATAL_ERROR)
-					st_db_postgresql_get_error(result);
-				else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
-					st_db_postgresql_get_long(result, 0, 0, &tape->id);
-
-				PQclear(result);
-			}
-
-			return status != PGRES_COMMAND_OK;
+			return status == PGRES_FATAL_ERROR;
 		}
 	}
 
@@ -1649,6 +1602,100 @@ int st_db_postgresql_update_job(struct st_database_connection * connection, stru
 }
 
 
+int st_db_postgresql_file_add_checksum(struct st_database_connection * connection, struct st_archive_file * file) {
+	if (!connection || !file)
+		return -1;
+
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	st_db_postgresql_prepare(self, "select_checksumresult", "SELECT id FROM checksumresult WHERE checksum = $1 AND result = $2 LIMIT 1");
+	st_db_postgresql_prepare(self, "insert_checksumresult", "INSERT INTO checksumresult VALUES (DEFAULT, $1, $2) RETURNING id");
+	st_db_postgresql_prepare(self, "insert_archive_file_to_checksum", "INSERT INTO archivefiletochecksumresult VALUES ($1, $2)");
+
+	unsigned int i;
+	for (i = 0; i < file->nb_checksums; i++) {
+		char * checksumid = 0, * checksumresultid = 0, * fileid = 0;
+		asprintf(&checksumid, "%ld", file->archive->job->checksum_ids[i]);
+
+		const char * param[] = { checksumid, file->digests[i] };
+		PGresult * result = PQexecPrepared(self->db_con, "select_checksumresult", 2, param, 0, 0, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR) {
+			st_db_postgresql_get_error(result);
+
+			PQclear(result);
+			free(checksumid);
+
+			return 1;
+		} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+			st_db_postgresql_get_string_dup(result, 0, 0, &checksumresultid);
+
+		PQclear(result);
+
+		if (!checksumresultid) {
+			result = PQexecPrepared(self->db_con, "insert_checksumresult", 2, param, 0, 0, 0);
+			status = PQresultStatus(result);
+
+			if (status == PGRES_FATAL_ERROR) {
+				st_db_postgresql_get_error(result);
+
+				PQclear(result);
+				free(checksumid);
+
+				return 1;
+			} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+				st_db_postgresql_get_string_dup(result, 0, 0, &checksumresultid);
+
+			PQclear(result);
+		}
+
+		asprintf(&fileid, "%ld", file->id);
+
+		const char * param2[] = { fileid, checksumresultid };
+		result = PQexecPrepared(self->db_con, "insert_archive_file_to_checksum", 2, param2, 0, 0, 0);
+		status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(result);
+
+		PQclear(result);
+		free(fileid);
+		free(checksumresultid);
+		free(checksumid);
+	}
+
+	return 0;
+}
+
+int st_db_postgresql_file_link_to_volume(struct st_database_connection * connection, struct st_archive_file * file, struct st_archive_volume * volume) {
+	if (!connection || !file)
+		return -1;
+
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	st_db_postgresql_prepare(self, "insert_archivefiletoarchivevolume", "INSERT INTO archivefiletoarchivevolume VALUES ($1, $2)");
+
+	char * volumeid = 0, * fileid = 0;
+	asprintf(&volumeid, "%ld", volume->id);
+	asprintf(&fileid, "%ld", file->id);
+
+	const char * param[] = { volumeid, fileid };
+	PGresult * result = PQexecPrepared(self->db_con, "insert_archivefiletoarchivevolume", 2, param, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result);
+
+	PQclear(result);
+	free(volumeid);
+	free(fileid);
+
+	return status == PGRES_FATAL_ERROR;
+}
+
 int st_db_postgresql_new_archive(struct st_database_connection * connection, struct st_archive * archive) {
 	if (!connection || !archive)
 		return -1;
@@ -1656,8 +1703,7 @@ int st_db_postgresql_new_archive(struct st_database_connection * connection, str
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
-	st_db_postgresql_prepare(self, "insert_archive", "INSERT INTO archive VALUES (DEFAULT, $1, $2, NULL, $3)");
-	st_db_postgresql_prepare(self, "select_archive", "SELECT id FROM archive WHERE name = $1 AND ctime = $2 LIMIT 1");
+	st_db_postgresql_prepare(self, "insert_archive", "INSERT INTO archive VALUES (DEFAULT, $1, $2, NULL, $3) RETURNING id");
 
 	char ctime[32];
 	struct tm local_current;
@@ -1676,21 +1722,65 @@ int st_db_postgresql_new_archive(struct st_database_connection * connection, str
 		PQclear(result);
 		free(loginid);
 		return 1;
-	}
-	PQclear(result);
-
-	result = PQexecPrepared(self->db_con, "select_archive", 2, param, 0, 0, 0);
-	status = PQresultStatus(result);
-
-	if (status == PGRES_FATAL_ERROR)
-		st_db_postgresql_get_error(result);
-	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+	} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
 		st_db_postgresql_get_long(result, 0, 0, &archive->id);
 
 	PQclear(result);
 	free(loginid);
 
 	return status != PGRES_TUPLES_OK;
+}
+
+int st_db_postgresql_new_file(struct st_database_connection * connection, struct st_archive_file * file) {
+	if (!connection || !file)
+		return -1;
+
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	st_db_postgresql_prepare(self, "insert_archive_file", "INSERT INTO archivefile VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id");
+
+	char * perm = 0, * ownerid = 0, * groupid = 0, * size = 0;
+	asprintf(&perm, "%o", file->perm & 0x777);
+	asprintf(&ownerid, "%d", file->ownerid);
+	asprintf(&groupid, "%d", file->groupid);
+	asprintf(&size, "%zd", file->size);
+
+	char ctime[32];
+	struct tm local_current;
+	localtime_r(&file->ctime, &local_current);
+	strftime(ctime, 32, "%F %T", &local_current);
+
+	char mtime[32];
+	localtime_r(&file->ctime, &local_current);
+	strftime(mtime, 32, "%F %T", &local_current);
+
+	const char * param[] = {
+		file->name, st_archive_file_type_to_string(file->type),
+		ownerid, file->owner, groupid, file->group, perm,
+		ctime, mtime, size,
+	};
+	PGresult * result = PQexecPrepared(self->db_con, "insert_archive_file", 10, param, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR) {
+		st_db_postgresql_get_error(result);
+
+		PQclear(result);
+
+		free(perm);
+		free(ownerid);
+		free(groupid);
+		free(size);
+
+		return 1;
+	} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		st_db_postgresql_get_long(result, 0, 0, &file->id);
+	}
+
+	PQclear(result);
+
+	return 0;
 }
 
 int st_db_postgresql_new_volume(struct st_database_connection * connection, struct st_archive_volume * volume) {
@@ -1700,8 +1790,7 @@ int st_db_postgresql_new_volume(struct st_database_connection * connection, stru
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
-	st_db_postgresql_prepare(self, "insert_archive_volume", "INSERT INTO archivevolume VALUES (DEFAULT, $1, 0, $2, NULL, $3, $4, $5)");
-	st_db_postgresql_prepare(self, "select_archive_volume", "SELECT id FROM archivevolume WHERE sequence = $1 AND ctime = $2 AND archive = $3 AND tape = $4 AND tapeposition = $5 LIMIT 1");
+	st_db_postgresql_prepare(self, "insert_archive_volume", "INSERT INTO archivevolume VALUES (DEFAULT, $1, 0, $2, NULL, $3, $4, $5) RETURNING id");
 
 	char * sequence = 0, * archiveid = 0, * tapeid = 0, * tapeposition = 0;
 	asprintf(&sequence, "%ld", volume->sequence);
@@ -1728,17 +1817,11 @@ int st_db_postgresql_new_volume(struct st_database_connection * connection, stru
 		free(sequence);
 
 		return 1;
-	}
-
-	PQclear(result);
-
-	result = PQexecPrepared(self->db_con, "select_archive_volume", 5, param, 0, 0, 0);
-	status = PQresultStatus(result);
-
-	if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+	} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
 		st_db_postgresql_get_long(result, 0, 0, &volume->id);
 
 	PQclear(result);
+
 	free(tapeposition);
 	free(tapeid);
 	free(archiveid);
@@ -1809,7 +1892,7 @@ int st_db_postgresql_update_volume(struct st_database_connection * connection, s
 		return 1;
 
 	st_db_postgresql_prepare(self, "select_checksumresult", "SELECT id FROM checksumresult WHERE checksum = $1 AND result = $2 LIMIT 1");
-	st_db_postgresql_prepare(self, "insert_checksumresult", "INSERT INTO checksumresult VALUES (DEFAULT, $1, $2)");
+	st_db_postgresql_prepare(self, "insert_checksumresult", "INSERT INTO checksumresult VALUES (DEFAULT, $1, $2) RETURNING id");
 	st_db_postgresql_prepare(self, "insert_archive_volume_to_checksum", "INSERT INTO archivevolumetochecksumresult VALUES ($1, $2)");
 
 	unsigned int i;
@@ -1824,7 +1907,9 @@ int st_db_postgresql_update_volume(struct st_database_connection * connection, s
 		if (status == PGRES_FATAL_ERROR) {
 			st_db_postgresql_get_error(result);
 
+			PQclear(result);
 			free(checksumid);
+
 			return 1;
 		} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
 			st_db_postgresql_get_string_dup(result, 0, 0, &checksumresultid);
@@ -1840,13 +1925,10 @@ int st_db_postgresql_update_volume(struct st_database_connection * connection, s
 
 				free(checksumid);
 				return 1;
-			}
+			} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+				st_db_postgresql_get_string_dup(result, 0, 0, &checksumresultid);
 
 			PQclear(result);
-
-			result = PQexecPrepared(self->db_con, "select_checksumresult", 2, param2, 0, 0, 0);
-			if (PQntuples(result) == 1)
-				st_db_postgresql_get_string_dup(result, 0, 0, &checksumresultid);
 		}
 
 		const char * param3[] = { volumeid, checksumresultid };

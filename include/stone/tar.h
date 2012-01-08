@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 30 Dec 2011 13:55:18 +0100                         *
+*  Last modified: Sun, 08 Jan 2012 12:16:47 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_TAR_H__
@@ -137,7 +137,7 @@ struct st_tar_in {
 
 struct st_tar_out {
 	struct st_tar_out_ops {
-		int (*add_file)(struct st_tar_out * f, const char * filename, struct st_tar_header * header);
+		int (*add_file)(struct st_tar_out * f, const char * filename);
 		int (*add_label)(struct st_tar_out * f, const char * label);
 		int (*add_link)(struct st_tar_out * f, const char * src, const char * target, struct st_tar_header * header);
 		int (*close)(struct st_tar_out * io);

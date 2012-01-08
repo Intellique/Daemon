@@ -22,15 +22,21 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 12:25:44 +0100                         *
+*  Last modified: Sun, 08 Jan 2012 12:08:42 +0100                         *
 \*************************************************************************/
 
+// getgrgid_r
+#include <grp.h>
+// getpwuid_r
+#include <pwd.h>
 // free
 #include <stdlib.h>
 // snprintf
 #include <stdio.h>
 // strlen, strspn, strstr
 #include <string.h>
+// getgrgid_r
+#include <sys/types.h>
 
 #include <stone/util.h>
 
@@ -204,5 +210,37 @@ void st_util_string_trim(char * str, char trim) {
 
 	if (ptr[1] != '\0')
 		ptr[1] = '\0';
+}
+
+void st_util_gid2name(char * name, ssize_t length, gid_t gid) {
+	char * buffer = malloc(512);
+
+	struct group gr;
+	struct group * tmp_gr;
+
+	if (!getgrgid_r(gid, &gr, buffer, 512, &tmp_gr)) {
+		strncpy(name, gr.gr_name, length);
+		name[length - 1] = '\0';
+	} else {
+		snprintf(name, length, "%d", gid);
+	}
+
+	free(buffer);
+}
+
+void st_util_uid2name(char * name, ssize_t length, uid_t uid) {
+	char * buffer = malloc(512);
+
+	struct passwd pw;
+	struct passwd * tmp_pw;
+
+	if (!getpwuid_r(uid, &pw, buffer, 512, &tmp_pw)) {
+		strncpy(name, pw.pw_name, length);
+		name[length - 1] = '\0';
+	} else {
+		snprintf(name, length, "%d", uid);
+	}
+
+	free(buffer);
 }
 

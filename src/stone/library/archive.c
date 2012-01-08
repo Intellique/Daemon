@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 06 Jan 2012 22:58:10 +0100                         *
+*  Last modified: Sun, 08 Jan 2012 15:13:09 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -32,6 +32,8 @@
 #include <stdlib.h>
 // strcmp
 #include <string.h>
+// struct stat
+#include <sys/stat.h>
 // gettimeofday
 #include <sys/time.h>
 // localtime_r
@@ -41,6 +43,7 @@
 #include <stone/library/archive.h>
 #include <stone/library/changer.h>
 #include <stone/library/drive.h>
+#include <stone/util.h>
 
 struct st_archive_file_type2 {
 	char * name;
@@ -80,6 +83,43 @@ struct st_archive * st_archive_new(struct st_job * job) {
 	archive->job = job;
 
 	return archive;
+}
+
+struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * file, const char * filename) {
+	struct st_archive_file * f = malloc(sizeof(struct st_archive_file));
+	f->id = -1;
+	f->name = strdup(filename);
+	f->perm = file->st_mode & 0777;
+
+	if (S_ISDIR(file->st_mode))
+		f->type = st_archive_file_type_directory;
+	else if (S_ISREG(file->st_mode))
+		f->type = st_archive_file_type_regular_file;
+	else if (S_ISLNK(file->st_mode))
+		f->type = st_archive_file_type_symbolic_link;
+	else if (S_ISCHR(file->st_mode))
+		f->type = st_archive_file_type_character_device;
+	else if (S_ISBLK(file->st_mode))
+		f->type = st_archive_file_type_block_device;
+	else if (S_ISFIFO(file->st_mode))
+		f->type = st_archive_file_type_fifo;
+	else if (S_ISSOCK(file->st_mode))
+		f->type = st_archive_file_type_socket;
+
+	f->ownerid = file->st_uid;
+	st_util_uid2name(f->owner, 32, file->st_uid);
+	f->groupid = file->st_gid;
+	st_util_gid2name(f->group, 32, file->st_gid);
+	f->ctime = file->st_ctime;
+	f->mtime = file->st_mtime;
+	f->size = file->st_size;
+
+	f->digests = 0;
+	f->nb_checksums = 0;
+
+	f->archive = job->archive;
+
+	return f;
 }
 
 struct st_archive_volume * st_archive_volume_new(struct st_job * job, struct st_drive * drive) {
