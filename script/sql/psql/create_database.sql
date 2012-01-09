@@ -233,7 +233,7 @@ CREATE TABLE Archive (
     name VARCHAR(255) NOT NULL,
     ctime TIMESTAMP(0),
     endtime TIMESTAMP(0),
-    login INTEGER NULL REFERENCES Users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+    login INTEGER NOT NULL REFERENCES Users(id) ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT archive_time CHECK (ctime <= endtime)
 );
 
@@ -325,7 +325,7 @@ CREATE TABLE JobRecord (
     job BIGINT NOT NULL REFERENCES Job(id) ON DELETE CASCADE ON UPDATE CASCADE,
     status JobStatus NOT NULL CHECK (status != 'disable'),
     numRun INTEGER NOT NULL DEFAULT 1 CHECK (numRun > 0),
-    timestamp TIMESTAMP(1) NOT NULL,
+    timestamp TIMESTAMP(0) NOT NULL,
     message TEXT
 );
 
