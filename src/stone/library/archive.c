@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 08 Jan 2012 15:13:09 +0100                         *
+*  Last modified: Mon, 09 Jan 2012 20:47:00 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -83,6 +83,18 @@ struct st_archive * st_archive_new(struct st_job * job) {
 	archive->job = job;
 
 	return archive;
+}
+
+void st_archive_file_free(struct st_archive_file * file) {
+	if (!file)
+		return;
+
+	free(file->name);
+	file->digests = 0;
+	file->nb_checksums = 0;
+	file->archive = 0;
+
+	free(file);
 }
 
 struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * file, const char * filename) {

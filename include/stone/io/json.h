@@ -22,88 +22,26 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jan 2012 20:44:36 +0100                         *
+*  Last modified: Mon, 09 Jan 2012 21:26:35 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONE_ARCHIVE_H__
-#define __STONE_ARCHIVE_H__
+#ifndef __STONE_IO_JSON_H__
+#define __STONE_IO_JSON_H__
 
-// time_t
-#include <sys/time.h>
-// ssize_t
-#include <sys/types.h>
+#include <stone/io.h>
 
+struct st_archive;
+struct st_archive_file;
 struct st_archive_volume;
-struct st_drive;
-struct st_job;
-struct st_user;
-struct stat;
+struct st_io_json;
 
-enum st_archive_file_type {
-	st_archive_file_type_block_device,
-	st_archive_file_type_character_device,
-	st_archive_file_type_directory,
-	st_archive_file_type_fifo,
-	st_archive_file_type_regular_file,
-	st_archive_file_type_socket,
-	st_archive_file_type_symbolic_link,
-
-	st_archive_file_type_unknown,
-};
-
-struct st_archive {
-	long id;
-	char * name;
-	time_t ctime;
-	time_t endtime;
-	struct st_user * user;
-
-	struct st_archive_volume * volumes;
-	unsigned int nb_volumes;
-
-	struct st_job * job;
-};
-
-struct st_archive_volume {
-	long id;
-	long sequence;
-	ssize_t size;
-	time_t ctime;
-	time_t endtime;
-
-	struct st_archive * archive;
-	struct st_tape * tape;
-	long tape_position;
-
-	char ** digests;
-	unsigned int nb_checksums;
-};
-
-struct st_archive_file {
-	long id;
-	char * name;
-	mode_t perm;
-	enum st_archive_file_type type;
-	uid_t ownerid;
-	char owner[32];
-	gid_t groupid;
-	char group[32];
-	time_t ctime;
-	time_t mtime;
-	ssize_t size;
-
-	char ** digests;
-	unsigned int nb_checksums;
-
-	struct st_archive * archive;
-};
-
-struct st_archive * st_archive_new(struct st_job * job);
-void st_archive_file_free(struct st_archive_file * file);
-struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * file, const char * filename);
-struct st_archive_volume * st_archive_volume_new(struct st_job * job, struct st_drive * drive);
-enum st_archive_file_type st_archive_file_string_to_type(const char * type);
-const char * st_archive_file_type_to_string(enum st_archive_file_type type);
+void st_io_json_add_file(struct st_io_json * js, struct st_archive_file * file);
+void st_io_json_add_volume(struct st_io_json * js, struct st_archive_volume * volume);
+void st_io_json_free(struct st_io_json * js);
+struct st_io_json * st_io_json_new(struct st_archive * archive);
+void st_io_json_update_archive(struct st_io_json * js, struct st_archive * archive);
+void st_io_json_update_volume(struct st_io_json * js, struct st_archive_volume * volume);
+ssize_t st_io_json_write_to(struct st_io_json * js, struct st_stream_writer * writer);
 
 #endif
 

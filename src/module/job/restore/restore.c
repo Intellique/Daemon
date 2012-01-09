@@ -22,88 +22,56 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jan 2012 20:44:36 +0100                         *
+*  Last modified: Sun, 08 Jan 2012 23:52:11 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONE_ARCHIVE_H__
-#define __STONE_ARCHIVE_H__
+// free, malloc
+#include <stdlib.h>
 
-// time_t
-#include <sys/time.h>
-// ssize_t
-#include <sys/types.h>
+#include <stone/job.h>
 
-struct st_archive_volume;
-struct st_drive;
-struct st_job;
-struct st_user;
-struct stat;
-
-enum st_archive_file_type {
-	st_archive_file_type_block_device,
-	st_archive_file_type_character_device,
-	st_archive_file_type_directory,
-	st_archive_file_type_fifo,
-	st_archive_file_type_regular_file,
-	st_archive_file_type_socket,
-	st_archive_file_type_symbolic_link,
-
-	st_archive_file_type_unknown,
+struct st_job_restore_private {
 };
 
-struct st_archive {
-	long id;
-	char * name;
-	time_t ctime;
-	time_t endtime;
-	struct st_user * user;
+static void st_job_restore_free(struct st_job * job);
+static void st_job_restore_init(void) __attribute__((constructor));
+static void st_job_restore_new_job(struct st_database_connection * db, struct st_job * job);
+static int st_job_restore_run(struct st_job * job);
+static int st_job_restore_stop(struct st_job * job);
 
-	struct st_archive_volume * volumes;
-	unsigned int nb_volumes;
-
-	struct st_job * job;
+struct st_job_ops st_job_restore_ops = {
+	.free = st_job_restore_free,
+	.run  = st_job_restore_run,
+	.stop = st_job_restore_stop,
 };
 
-struct st_archive_volume {
-	long id;
-	long sequence;
-	ssize_t size;
-	time_t ctime;
-	time_t endtime;
-
-	struct st_archive * archive;
-	struct st_tape * tape;
-	long tape_position;
-
-	char ** digests;
-	unsigned int nb_checksums;
+struct st_job_driver st_job_restore_driver = {
+	.name        = "restore",
+	.new_job     = st_job_restore_new_job,
+	.cookie      = 0,
+	.api_version = STONE_JOB_APIVERSION,
 };
 
-struct st_archive_file {
-	long id;
-	char * name;
-	mode_t perm;
-	enum st_archive_file_type type;
-	uid_t ownerid;
-	char owner[32];
-	gid_t groupid;
-	char group[32];
-	time_t ctime;
-	time_t mtime;
-	ssize_t size;
 
-	char ** digests;
-	unsigned int nb_checksums;
+void st_job_restore_free(struct st_job * job) {
+}
 
-	struct st_archive * archive;
-};
+void st_job_restore_init() {
+	st_job_register_driver(&st_job_restore_driver);
+}
 
-struct st_archive * st_archive_new(struct st_job * job);
-void st_archive_file_free(struct st_archive_file * file);
-struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * file, const char * filename);
-struct st_archive_volume * st_archive_volume_new(struct st_job * job, struct st_drive * drive);
-enum st_archive_file_type st_archive_file_string_to_type(const char * type);
-const char * st_archive_file_type_to_string(enum st_archive_file_type type);
+void st_job_restore_new_job(struct st_database_connection * db, struct st_job * job) {
+	struct st_job_restore_private * self = malloc(sizeof(struct st_job_restore_private));
 
-#endif
+	job->data = self;
+	job->job_ops = &st_job_restore_ops;
+}
+
+int st_job_restore_run(struct st_job * job) {
+	return 0;
+}
+
+int st_job_restore_stop(struct st_job * job) {
+	return 0;
+}
 

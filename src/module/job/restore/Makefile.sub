@@ -1,0 +1,16 @@
+STONE_JOB_RESTORE_SRC_DIR		:= src/module/job/restore
+STONE_JOB_RESTORE_BUILD_DIR		:= ${BUILD_DIR}/module/job/restore
+STONE_JOB_RESTORE_DEPEND_DIR	:= ${DEPEND_DIR}/module/job/restore
+
+STONE_JOB_RESTORE_SRC_FILES		:= $(sort $(shell test -d ${STONE_JOB_RESTORE_SRC_DIR} && find ${STONE_JOB_RESTORE_SRC_DIR} -name '*.c'))
+STONE_JOB_RESTORE_HEAD_FILES	:= $(sort $(shell test -d ${STONE_JOB_RESTORE_SRC_DIR} && find ${STONE_JOB_RESTORE_SRC_DIR} -name '*.h'))
+STONE_JOB_RESTORE_OBJ_FILES		:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${STONE_JOB_RESTORE_SRC_FILES}))
+STONE_JOB_RESTORE_DEP_FILES		:= $(sort $(shell test -d ${STONE_JOB_RESTORE_DEPEND_DIR} && find ${STONE_JOB_RESTORE_DEPEND_DIR} -name '*.d'))
+
+STONE_JOB_RESTORE_BIN			:= lib/job/librestore.so
+STONE_JOB_RESTORE_CFLAG			:= -fPIC -fvisibility=hidden
+STONE_JOB_RESTORE_LD			:= -shared
+
+STONE_JOB_RESTORE_LIB			:=
+
+BIN_SYMS						+= STONE_JOB_RESTORE

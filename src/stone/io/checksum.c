@@ -22,14 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 06 Jan 2012 22:47:19 +0100                         *
+*  Last modified: Mon, 09 Jan 2012 21:47:46 +0100                         *
 \*************************************************************************/
 
 // calloc, free, malloc
 #include <stdlib.h>
 
 #include <stone/checksum.h>
-#include <stone/io.h>
+#include <stone/io/checksum.h>
 
 struct st_io_checksum_reader_private {
     struct st_stream_reader * reader;
@@ -45,6 +45,7 @@ struct st_io_checksum_writer_private {
     struct st_checksum * checksums;
     char ** digests;
     unsigned int nb_checksums;
+	short computed;
 };
 
 
@@ -116,6 +117,7 @@ struct st_stream_writer * st_checksum_get_steam_writer(const char ** checksums, 
 	self->checksums = calloc(nb_checksums << 1, sizeof(struct st_checksum));
 	self->digests = calloc(nb_checksums, sizeof(char *));
 	self->nb_checksums = nb_checksums;
+	self->computed = 0;
 
 	unsigned int i;
 	for (i = 0; i < nb_checksums; i++) {
@@ -220,10 +222,11 @@ int st_io_checksum_writer_close(struct st_stream_writer * io) {
 	if (self->writer)
 		failed = self->writer->ops->close(self->writer);
 
-	if (!failed) {
+	if (!failed && !self->computed) {
 		unsigned int i;
 		for (i = 0; i < self->nb_checksums; i++)
 			self->digests[i] = self->checksums[(i << 1) + 1].ops->digest(self->checksums + (i << 1) + 1);
+		self->computed = 1;
 	}
 	return failed;
 }

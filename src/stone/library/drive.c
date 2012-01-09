@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Jan 2012 14:56:45 +0100                         *
+*  Last modified: Mon, 09 Jan 2012 22:33:06 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -525,12 +525,15 @@ int st_drive_io_reader_close(struct st_stream_reader * io) {
 		return -1;
 
 	struct st_drive_io_reader * self = io->data;
-	self->fd = -1;
-	self->buffer_used = 0;
-	self->last_errno = 0;
 
-	st_drive_generic_update_status2(self->drive, ST_DRIVE_LOADED_IDLE);
-	self->drive_private->used_by_io = 0;
+	if (self->fd > -1) {
+		self->fd = -1;
+		self->buffer_used = 0;
+		self->last_errno = 0;
+
+		st_drive_generic_update_status2(self->drive, ST_DRIVE_LOADED_IDLE);
+		self->drive_private->used_by_io = 0;
+	}
 
 	return 0;
 }
@@ -735,7 +738,7 @@ int st_drive_io_writer_close(struct st_stream_writer * io) {
 		bzero(self->buffer + self->buffer_used, self->block_size - self->buffer_used);
 
 		st_drive_generic_operation_start(self->drive_private);
-		ssize_t nb_write = write(self->fd, self->buffer, self->buffer_used);
+		ssize_t nb_write = write(self->fd, self->buffer, self->block_size);
 		st_drive_generic_operation_stop(self->drive);
 
 		if (nb_write < 0) {
@@ -760,11 +763,11 @@ int st_drive_io_writer_close(struct st_stream_writer * io) {
 
 		self->drive->slot->tape->nb_files = self->drive->file_position + 1;
 		st_drive_generic_update_status(self->drive);
-	}
 
-	self->fd = -1;
-	st_drive_generic_update_status2(self->drive, ST_DRIVE_LOADED_IDLE);
-	self->drive_private->used_by_io = 0;
+		self->fd = -1;
+		st_drive_generic_update_status2(self->drive, ST_DRIVE_LOADED_IDLE);
+		self->drive_private->used_by_io = 0;
+	}
 
 	return 0;
 }

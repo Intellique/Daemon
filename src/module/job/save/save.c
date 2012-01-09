@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 08 Jan 2012 15:34:27 +0100                         *
+*  Last modified: Mon, 09 Jan 2012 22:09:58 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -46,6 +46,8 @@
 #include <unistd.h>
 
 #include <stone/io.h>
+#include <stone/io/checksum.h>
+#include <stone/io/json.h>
 #include <stone/job.h>
 #include <stone/library/archive.h>
 #include <stone/library/changer.h>
@@ -66,6 +68,8 @@ struct st_job_save_private {
 
 	ssize_t total_size_done;
 	ssize_t total_size;
+
+	struct st_io_json * json;
 
 	struct st_database_connection * db_con;
 };
@@ -135,6 +139,8 @@ void st_job_save_archive_file(struct st_job * job, const char * path) {
 		file->nb_checksums = job->nb_checksums;
 		jp->db_con->ops->file_add_checksum(jp->db_con, file);
 
+		st_io_json_add_file(jp->json, file);
+
 		close(fd);
 		file_checksum->ops->free(file_checksum);
 	} else if (S_ISDIR(st.st_mode)) {
@@ -142,6 +148,8 @@ void st_job_save_archive_file(struct st_job * job, const char * path) {
 			job->db_ops->add_record(job, "Error, Can't read directory: %s", path);
 			return;
 		}
+
+		st_io_json_add_file(jp->json, file);
 
 		struct dirent ** dl = 0;
 		int nb_files = scandir(path, &dl, st_job_save_compute_filter, 0);
@@ -159,6 +167,8 @@ void st_job_save_archive_file(struct st_job * job, const char * path) {
 
 		free(dl);
 	}
+
+	st_archive_file_free(file);
 }
 
 int st_job_save_compute_filter(const struct dirent * file) {
@@ -222,6 +232,8 @@ void st_job_save_new_job(struct st_database_connection * db, struct st_job * job
 
 	self->total_size_done = 0;
 	self->total_size = 0;
+
+	self->json = 0;
 
 	struct st_database * driver = st_db_get_default_db();
 	self->db_con = driver->ops->connect(driver, 0);
@@ -352,9 +364,11 @@ int st_job_save_run(struct st_job * job) {
 	// archive
 	struct st_archive * archive = job->archive = st_archive_new(job);
 	jp->db_con->ops->new_archive(jp->db_con, archive);
+	jp->json = st_io_json_new(archive);
 	// volume
 	jp->current_volume = st_archive_volume_new(job, drive);
 	jp->db_con->ops->new_volume(jp->db_con, jp->current_volume);
+	st_io_json_add_volume(jp->json, jp->current_volume);
 
 
 	struct st_stream_writer * tape_writer = drive->ops->get_writer(drive);
@@ -374,15 +388,31 @@ int st_job_save_run(struct st_job * job) {
 	// archive
 	archive->endtime = jp->current_volume->endtime = time(0);
 	jp->db_con->ops->update_archive(jp->db_con, archive);
+	st_io_json_update_archive(jp->json, archive);
 	// volume
 	jp->current_volume->size = tape_writer->ops->position(tape_writer);
 	jp->current_volume->digests = st_checksum_get_digest_from_writer(checksum_writer);
 	jp->current_volume->nb_checksums = job->nb_checksums;
 	jp->db_con->ops->update_volume(jp->db_con, jp->current_volume);
+	st_io_json_update_volume(jp->json, jp->current_volume);
 
 
 	// commit transaction
 	jp->db_con->ops->finish_transaction(jp->db_con);
+
+	// release some memory
+	jp->tar->ops->free(jp->tar);
+
+	// write index file
+	job->db_ops->add_record(job, "Writing index file");
+
+	tape_writer = drive->ops->get_writer(drive);
+	st_io_json_write_to(jp->json, tape_writer);
+	tape_writer->ops->close(tape_writer);
+
+	tape_writer->ops->free(tape_writer);
+	free(tape_writer);
+	st_io_json_free(jp->json);
 
 	job->db_ops->add_record(job, "Finish archive job (job id: %ld), num runs %ld", job->id, job->num_runs);
 
