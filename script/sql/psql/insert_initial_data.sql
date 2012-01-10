@@ -1,6 +1,7 @@
 INSERT INTO Host VALUES (DEFAULT, 'localhost', NULL, NULL),
        (DEFAULT, 'd65', NULL, '3U test'),
-       (DEFAULT, 'taiko', 'intellique.com', '5U court');
+       (DEFAULT, 'taiko', 'intellique.com', '5U court'),
+       (DEFAULT, 'kazoo', 'intellique.com', '5U court');
 
 INSERT INTO TapeFormat VALUES (DEFAULT, 'LTO-5', 'data', 'linear', 4096, 4096, 40960, 40960, 1024, 1610612736, 8192, 88, TRUE),
        (DEFAULT, 'LTO-4', 'data', 'linear', 4096, 4096, 40960, 40960, 1024, 153691136, 8192, 70, FALSE),
@@ -31,10 +32,7 @@ INSERT INTO DriveFormatSupport VALUES (1, 1, TRUE, TRUE),
        (5, 6, TRUE, TRUE),
        (6, 6, TRUE, TRUE);
 
-INSERT INTO CheckSum VALUES (DEFAULT, 'MD5'),
-       (DEFAULT, 'SHA1'),
-       (DEFAULT, 'SHA256'),
-       (DEFAULT, 'SHA512');
+INSERT INTO Pool VALUES (DEFAULT, 'b9650cc3-12ec-4a0f-88db-d70f0b269a6b', 'storiq', DEFAULT, NULL, DEFAULT, 5);
 
-INSERT INTO Users VALUES (DEFAULT, 'storiq', '8a6eb1d3b4fecbf8a1d6528a6aecb064e801b1e0', 'cd8c63688e0c2cff', 'storiq', 'storiq@localhost', TRUE, TRUE, TRUE);
+INSERT INTO Users VALUES (DEFAULT, 'storiq', '8a6eb1d3b4fecbf8a1d6528a6aecb064e801b1e0', 'cd8c63688e0c2cff', 'storiq', 'storiq@localhost', TRUE, TRUE, TRUE, 1);
 
