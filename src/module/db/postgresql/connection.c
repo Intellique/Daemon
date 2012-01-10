@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jan 2012 22:03:47 +0100                         *
+*  Last modified: Tue, 10 Jan 2012 22:19:39 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1413,7 +1413,7 @@ int st_db_postgresql_sync_slot(struct st_database_connection * connection, struc
 		if (tape_id)
 			free(tape_id);
 
-		return status != PGRES_COMMAND_OK;
+		return status == PGRES_FATAL_ERROR;
 	} else {
 		st_db_postgresql_prepare(self, "insert_slot", "INSERT INTO changerslot VALUES (DEFAULT, $1, $2, $3, $4) RETURNING id");
 
@@ -1444,7 +1444,7 @@ int st_db_postgresql_sync_slot(struct st_database_connection * connection, struc
 		free(slot_index);
 		free(changer_id);
 
-		return status != PGRES_COMMAND_OK;
+		return status == PGRES_FATAL_ERROR;
 	}
 }
 
@@ -1577,7 +1577,7 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 			if (pool)
 				free(pool);
 
-			return status != PGRES_COMMAND_OK;
+			return status == PGRES_FATAL_ERROR;
 		} else {
 			st_db_postgresql_prepare(self, "insert_tape", "INSERT INTO tape VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id");
 
