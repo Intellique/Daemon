@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jan 2012 11:36:36 +0100                         *
+*  Last modified: Tue, 10 Jan 2012 22:58:29 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -112,6 +112,7 @@ struct st_job_driver * st_job_get_driver(const char * driver);
 void st_job_register_driver(struct st_job_driver * driver);
 const char * st_job_status_to_string(enum st_job_status status);
 enum st_job_status st_job_string_to_status(const char * status);
+void st_job_sync_plugins(void);
 
 #endif
 

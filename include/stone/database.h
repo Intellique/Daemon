@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jan 2012 12:16:35 +0100                         *
+*  Last modified: Tue, 10 Jan 2012 22:57:23 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -132,6 +132,7 @@ struct st_database_connection {
 		int (*sync_changer)(struct st_database_connection * db, struct st_changer * changer);
 		int (*sync_drive)(struct st_database_connection * db, struct st_drive * drive);
 		int (*sync_plugin_checksum)(struct st_database_connection * db, const char * plugin);
+		int (*sync_plugin_job)(struct st_database_connection * db, const char * plugin);
 		int (*sync_pool)(struct st_database_connection * db, struct st_pool * pool);
 		int (*sync_tape)(struct st_database_connection * db, struct st_tape * tape);
 		int (*sync_user)(struct st_database_connection * db, struct st_user * user);

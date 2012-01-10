@@ -22,10 +22,12 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 30 Dec 2011 20:32:08 +0100                         *
+*  Last modified: Tue, 10 Jan 2012 22:58:09 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
+// glob
+#include <glob.h>
 // pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate,
 // pthread_cond_destroy, pthread_cond_init, pthread_cond_signal,
 // pthread_cond_wait, pthread_create, pthread_mutex_destroy,
@@ -34,11 +36,14 @@
 #include <pthread.h>
 // free, malloc, realloc
 #include <stdlib.h>
+// snprintf
+#include <stdio.h>
 // strcmp, strdup
 #include <string.h>
 
 #include <stone/log.h>
 
+#include "config.h"
 #include "job.h"
 #include "loader.h"
 
@@ -141,5 +146,32 @@ enum st_job_status st_job_string_to_status(const char * status) {
 		if (!strcmp(status, st_job_status[i].name))
 			return st_job_status[i].status;
 	return st_job_status[i].status;
+}
+
+void st_job_sync_plugins() {
+	char path[256];
+	snprintf(path, 256, "%s/job/lib*.so", MODULE_PATH);
+
+	glob_t gl;
+	gl.gl_offs = 0;
+	glob(path, GLOB_DOOFFS, 0, &gl);
+
+	struct st_database * db = st_db_get_default_db();
+	struct st_database_connection * con = db->ops->connect(db, 0);
+
+	unsigned int i;
+	for (i = 0; i < gl.gl_pathc; i++) {
+		char * ptr = strrchr(gl.gl_pathv[i], '/') + 1;
+
+		char plugin[64];
+		sscanf(ptr, "lib%64[^.].so", plugin);
+
+		if (con->ops->sync_plugin_job(con, plugin))
+			st_log_write_all(st_log_level_error, st_log_type_job, "Failed to synchronize plugin (%s)", plugin);
+	}
+
+	con->ops->close(con);
+	con->ops->free(con);
+	free(con);
 }
 
