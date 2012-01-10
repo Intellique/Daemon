@@ -93,6 +93,7 @@ static const struct st_tape_status2 {
 	{ 0, ST_TAPE_STATUS_UNKNOWN },
 };
 
+static pthread_mutex_t st_tape_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct st_tape ** st_tape_tapes = 0;
 static unsigned int st_tape_nb_tapes = 0;
 static struct st_tape_format ** st_tape_formats = 0;
@@ -166,11 +167,52 @@ enum st_tape_format_mode st_tape_string_to_format_mode(const char * mode) {
 }
 
 
+struct st_tape * st_tape_get_by_uuid(const char * uuid) {
+	int old_state;
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
+	pthread_mutex_lock(&st_tape_lock);
+
+	struct st_tape * tape = 0;
+	unsigned int i;
+	for (i = 0; i < st_tape_nb_tapes; i++)
+		if (!strcmp(uuid, st_tape_tapes[i]->uuid)) {
+			tape = st_tape_tapes[i];
+			break;
+		}
+
+	if (!tape) {
+		struct st_database * db = st_db_get_default_db();
+		struct st_database_connection * con = db->ops->connect(db, 0);
+		if (con) {
+			tape = malloc(sizeof(struct st_tape));
+			strncpy(tape->uuid, uuid, 36);
+
+			if (con->ops->get_tape(con, tape)) {
+				free(tape->uuid);
+				free(tape);
+				tape = 0;
+			} else {
+				st_tape_tapes = realloc(st_tape_tapes, (st_tape_nb_tapes + 1) * sizeof(struct st_tape *));
+				st_tape_tapes[st_tape_nb_tapes] = tape;
+				st_tape_nb_tapes++;
+			}
+
+			con->ops->close(con);
+			con->ops->free(con);
+			free(con);
+		}
+	}
+
+	pthread_mutex_unlock(&st_tape_lock);
+	pthread_setcancelstate(old_state, 0);
+
+	return tape;
+}
+
 struct st_tape * st_tape_new(struct st_drive * dr) {
 	int old_state;
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
-	static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-	pthread_mutex_lock(&lock);
+	pthread_mutex_lock(&st_tape_lock);
 
 	struct st_tape * tape = dr->slot->tape = malloc(sizeof(struct st_tape));
 	tape->id = -1;
@@ -220,7 +262,7 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 			st_tape_nb_tapes++;
 		}
 
-		pthread_mutex_unlock(&lock);
+		pthread_mutex_unlock(&st_tape_lock);
 		pthread_setcancelstate(old_state, 0);
 
 		return tape;
@@ -312,7 +354,7 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 		st_tape_nb_tapes++;
 	}
 
-	pthread_mutex_unlock(&lock);
+	pthread_mutex_unlock(&st_tape_lock);
 	pthread_setcancelstate(old_state, 0);
 
 	return tape;

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 07 Jan 2012 21:40:33 +0100                         *
+*  Last modified: Tue, 10 Jan 2012 11:36:36 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -36,6 +36,7 @@
 struct st_archive;
 struct st_job_driver;
 struct st_pool;
+struct st_tape;
 struct st_user;
 
 enum st_job_status {
@@ -78,6 +79,13 @@ struct st_job {
 	char ** checksums;
 	long * checksum_ids;
 	unsigned int nb_checksums;
+
+	struct st_job_tape {
+		long sequence;
+		struct st_tape * tape;
+		long tape_position;
+	} * tapes;
+	unsigned int nb_tapes;
 
 	struct st_user * user;
 

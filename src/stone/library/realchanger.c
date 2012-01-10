@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 14:04:00 +0100                         *
+*  Last modified: Tue, 10 Jan 2012 14:54:59 +0100                         *
 \*************************************************************************/
 
 // open
@@ -56,6 +56,7 @@ struct st_realchanger_private {
 
 static int st_realchanger_can_load(void);
 static struct st_drive * st_realchanger_get_free_drive(struct st_changer * ch);
+static struct st_drive * st_realchanger_get_free_drive_with_tape(struct st_changer * ch, struct st_tape * tape);
 static struct st_slot * st_realchanger_get_tape(struct st_changer * ch, struct st_pool * pool);
 static int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
 static void * st_realchanger_setup2(void * drive);
@@ -63,11 +64,12 @@ static int st_realchanger_unload(struct st_changer * ch, struct st_drive * from,
 static void st_realchanger_update_status(struct st_changer * ch, enum st_changer_status status);
 
 static struct st_changer_ops st_realchanger_ops = {
-	.can_load       = st_realchanger_can_load,
-	.get_free_drive = st_realchanger_get_free_drive,
-	.get_tape       = st_realchanger_get_tape,
-	.load           = st_realchanger_load,
-	.unload         = st_realchanger_unload,
+	.can_load                 = st_realchanger_can_load,
+	.get_free_drive           = st_realchanger_get_free_drive,
+	.get_free_drive_with_tape = st_realchanger_get_free_drive_with_tape,
+	.get_tape                 = st_realchanger_get_tape,
+	.load                     = st_realchanger_load,
+	.unload                   = st_realchanger_unload,
 };
 
 
@@ -85,6 +87,18 @@ struct st_drive * st_realchanger_get_free_drive(struct st_changer * ch) {
 	}
 
 	return ch->drives;
+}
+
+struct st_drive * st_realchanger_get_free_drive_with_tape(struct st_changer * ch, struct st_tape * tape) {
+	unsigned int i;
+	for (i = 0; i < ch->nb_drives; i++) {
+		struct st_drive * drive = ch->drives + i;
+
+		if (drive->slot->tape == tape)
+			return drive;
+	}
+
+	return st_realchanger_get_free_drive(ch);
 }
 
 struct st_slot * st_realchanger_get_tape(struct st_changer * ch, struct st_pool * pool) {

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 10:15:57 +0100                         *
+*  Last modified: Mon, 09 Jan 2012 23:10:56 +0100                         *
 \*************************************************************************/
 
 // open
@@ -55,6 +55,26 @@ static struct st_changer * st_changers = 0;
 static unsigned int st_nb_fake_changers = 0;
 static unsigned int st_nb_real_changers = 0;
 
+
+struct st_changer * st_changer_get_by_tape(struct st_tape * tape) {
+	if (!tape)
+		return 0;
+
+    unsigned int i, nb_changer = st_nb_real_changers + st_nb_fake_changers - 1;
+    for (i = 0; i < nb_changer; i++) {
+		struct st_changer * ch = st_changers + i;
+
+		unsigned int j;
+		for (j = 0; j < ch->nb_slots; j++) {
+			struct st_slot * sl = ch->slots + j;
+
+			if (sl->tape == tape)
+				return ch;
+		}
+	}
+
+	return 0;
+}
 
 struct st_changer * st_changer_get_first_changer() {
     return st_changers;

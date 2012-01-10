@@ -22,13 +22,16 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 08 Jan 2012 23:52:11 +0100                         *
+*  Last modified: Tue, 10 Jan 2012 14:57:05 +0100                         *
 \*************************************************************************/
 
 // free, malloc
 #include <stdlib.h>
 
+#include <stone/library/changer.h>
+#include <stone/library/drive.h>
 #include <stone/job.h>
+#include <stone/user.h>
 
 struct st_job_restore_private {
 };
@@ -68,6 +71,28 @@ void st_job_restore_new_job(struct st_database_connection * db, struct st_job * 
 }
 
 int st_job_restore_run(struct st_job * job) {
+	// struct st_job_save_private * jp = job->data;
+
+	job->db_ops->add_record(job, "Start restore job (job id: %ld), num runs %ld", job->id, job->num_runs);
+
+	// check permission
+	struct st_user * user = job->user;
+	if (!user->can_restore) {
+		job->sched_status = st_job_status_error;
+		job->db_ops->add_record(job, "Error: user (%s) is not allowed to create archive", user->fullname);
+		return 1;
+	}
+
+	unsigned int i;
+	for (i = 0; i < job->nb_tapes; i++) {
+		// get changer
+		struct st_changer * changer = st_changer_get_by_tape(job->tapes->tape);
+		job->db_ops->add_record(job, "Got changer: %s %s", changer->vendor, changer->model);
+
+		struct st_drive * drive = changer->ops->get_free_drive_with_tape(changer, job->tapes[i].tape);
+		job->db_ops->add_record(job, "Got drive: %s %s", drive->vendor, drive->model);
+	}
+
 	return 0;
 }
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 13:36:55 +0100                         *
+*  Last modified: Mon, 09 Jan 2012 23:04:28 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_CHANGER_H__
@@ -67,6 +67,7 @@ struct st_changer {
 	struct st_changer_ops {
 		int (*can_load)();
 		struct st_drive * (*get_free_drive)(struct st_changer * ch);
+		struct st_drive * (*get_free_drive_with_tape)(struct st_changer * ch, struct st_tape * tape);
 		struct st_slot * (*get_tape)(struct st_changer * ch, struct st_pool * pool);
 		int (*load)(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
 		int (*unload)(struct st_changer * ch, struct st_drive * from, struct st_slot * to);
@@ -97,6 +98,7 @@ struct st_slot {
 };
 
 
+struct st_changer * st_changer_get_by_tape(struct st_tape * tape);
 struct st_changer * st_changer_get_first_changer(void);
 struct st_changer * st_changer_get_next_changer(struct st_changer * changer);
 const char * st_changer_status_to_string(enum st_changer_status status);

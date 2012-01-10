@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 17:12:21 +0100                         *
+*  Last modified: Tue, 10 Jan 2012 12:27:09 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_TAPE_H__
@@ -83,8 +83,8 @@ struct st_tape {
 	long write_count;
 	ssize_t end_position;
 	ssize_t block_size;
-	unsigned int nb_files;
-	unsigned char has_partition;
+	int nb_files;
+	char has_partition;
 	struct st_tape_format * format;
 	struct st_pool * pool;
 };
@@ -125,6 +125,7 @@ enum st_tape_status st_tape_string_to_status(const char * status);
 enum st_tape_format_data_type st_tape_string_to_format_data(const char * type);
 enum st_tape_format_mode st_tape_string_to_format_mode(const char * mode);
 
+struct st_tape * st_tape_get_by_uuid(const char * uuid);
 struct st_tape * st_tape_new(struct st_drive * dr);
 
 struct st_tape_format * st_tape_format_get_by_density_code(unsigned char density_code);
