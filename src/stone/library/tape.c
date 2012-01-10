@@ -22,15 +22,18 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Jan 2012 15:10:22 +0100                         *
+*  Last modified: Tue, 10 Jan 2012 23:46:17 +0100                         *
 \*************************************************************************/
 
+#define _GNU_SOURCE
 // pthread_mutex_lock, pthread_mutex_unlock
 #include <pthread.h>
 // sscanf
 #include <stdio.h>
 // malloc, realloc
 #include <stdlib.h>
+// sscanf, snprintf
+#include <stdio.h>
 // strcmp, strcpy
 #include <string.h>
 // time
@@ -42,6 +45,7 @@
 #include <stone/library/changer.h>
 #include <stone/library/drive.h>
 #include <stone/library/tape.h>
+#include <stone/log.h>
 
 static const struct st_tape_format_data_type2 {
 	char * name;
@@ -358,6 +362,50 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 	pthread_setcancelstate(old_state, 0);
 
 	return tape;
+}
+
+void st_tape_write_header(struct st_drive * dr) {
+	if (!dr)
+		return;
+
+	struct st_tape * tape = dr->slot->tape;
+	if (!tape) {
+		st_log_write_all(st_log_level_warning, st_log_type_drive, "Try to write a tape header to a drive without tape");
+		return;
+	}
+
+	dr->ops->rewind_tape(dr);
+
+	// STone (v0.1)
+	// Tape format: version=1
+	// Label: A0000002
+	// Tape id: uuid=f680dd48-dd3e-4715-8ddc-a90d3e708914
+	// Pool: name=Foo, uuid=07117f1a-2b13-11e1-8bcb-80ee73001df6
+	// Block size: 32768
+	// Checksum: crc32=1eb6931d
+	char * header = 0;
+	ssize_t sheader = asprintf(&header, "STone (v%s)\nTape format: version=1\nLabel: %s\nTape id: uuid=%s\nPool: name=%s, uuid=%s\nBlock size: %zd\n", STONE_VERSION, tape->label, tape->uuid, tape->pool->name, tape->pool->uuid, tape->block_size);
+
+	char * digest = st_checksum_compute("crc32", header, sheader);
+
+	if (!digest) {
+		free(header);
+		return;
+	}
+
+	ssize_t sdigest = strlen(digest);
+
+	header = realloc(header, sheader + sdigest + 18);
+	snprintf(header + sheader, sdigest + 18, "Checksum: crc32=%s\n", digest);
+
+	struct st_stream_writer * w = dr->ops->get_writer(dr);
+	w->ops->write(w, header, sheader + sdigest + 18);
+	w->ops->close(w);
+	w->ops->free(w);
+
+	free(header);
+
+	st_log_write_all(st_log_level_info, st_log_type_drive, "Write a tape header: succed");
 }
 
 
