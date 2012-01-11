@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jan 2012 23:05:03 +0100                         *
+*  Last modified: Wed, 11 Jan 2012 17:53:11 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -67,9 +67,9 @@ static int st_db_postgresql_create_pool(struct st_database_connection * db, stru
 static char * st_db_postgresql_get_host(struct st_database_connection * connection);
 static int st_db_postgresql_get_nb_new_jobs(struct st_database_connection * db, long * nb_new_jobs, time_t since, long last_max_jobs);
 static int st_db_postgresql_get_new_jobs(struct st_database_connection * db, struct st_job ** jobs, unsigned int nb_jobs, time_t since, long last_max_jobs);
-static int st_db_postgresql_get_pool(struct st_database_connection * db, struct st_pool * pool, const char * uuid);
+static int st_db_postgresql_get_pool(struct st_database_connection * db, struct st_pool * pool, long id, const char * uuid);
 static int st_db_postgresql_get_tape(struct st_database_connection * db, struct st_tape * tape);
-static int st_db_postgresql_get_tape_format(struct st_database_connection * db, struct st_tape_format * tape_format, unsigned char density_code);
+static int st_db_postgresql_get_tape_format(struct st_database_connection * db, struct st_tape_format * tape_format, long id, unsigned char density_code);
 static int st_db_postgresql_get_user(struct st_database_connection * db, struct st_user * user, long user_id, const char * login);
 static int st_db_postgresql_is_changer_contain_drive(struct st_database_connection * db, struct st_changer * changer, struct st_drive * drive);
 static int st_db_postgresql_refresh_job(struct st_database_connection * db, struct st_job * job);
@@ -560,7 +560,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 			else if (status3 == PGRES_TUPLES_OK && PQntuples(result2) == 1) {
 				st_db_postgresql_get_uchar(result2, 0, 11, &densitycode);
 
-				jobs[i]->pool = st_pool_get_pool_by_uuid(pool_uuid, 0, densitycode);
+				jobs[i]->pool = st_pool_get_by_uuid(pool_uuid, 0);
 			}
 			PQclear(result2);
 
@@ -641,18 +641,33 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 	return 0;
 }
 
-int st_db_postgresql_get_pool(struct st_database_connection * connection, struct st_pool * pool, const char * uuid) {
+int st_db_postgresql_get_pool(struct st_database_connection * connection, struct st_pool * pool, long id, const char * uuid) {
 	if (!connection || !pool)
 		return 1;
 
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
-	st_db_postgresql_prepare(self, "select_pool_by_uuid", "SELECT * FROM pool WHERE uuid = $1 LIMIT 1");
+	char * poolid = 0;
 
-	const char * param[] = { uuid };
-	PGresult * result = PQexecPrepared(self->db_con, "select_pool_by_uuid", 1, param, 0, 0, 0);
+	PGresult * result = 0;
+	if (id > -1) {
+		st_db_postgresql_prepare(self, "select_pool_by_id", "SELECT * FROM pool WHERE id = $1 LIMIT 1");
+
+		asprintf(&poolid, "%ld", id);
+
+		const char * param[] = { poolid };
+		result = PQexecPrepared(self->db_con, "select_pool_by_id", 1, param, 0, 0, 0);
+	} else {
+		st_db_postgresql_prepare(self, "select_pool_by_uuid", "SELECT * FROM pool WHERE uuid = $1 LIMIT 1");
+
+		const char * param[] = { uuid };
+		result = PQexecPrepared(self->db_con, "select_pool_by_uuid", 1, param, 0, 0, 0);
+	}
 	ExecStatusType status = PQresultStatus(result);
+
+	if (poolid)
+		free(poolid);
 
 	if (status == PGRES_FATAL_ERROR)
 		st_db_postgresql_get_error(result);
@@ -666,9 +681,14 @@ int st_db_postgresql_get_pool(struct st_database_connection * connection, struct
 		else
 			pool->retention_limit = 0;
 		st_db_postgresql_get_uchar(result, 0, 5, &pool->auto_recycle);
-		pool->format = 0;
-	} else
+
+		long tapeformatid;
+		st_db_postgresql_get_long(result, 0, 6, &tapeformatid);
+		pool->format = st_tape_format_get_by_id(tapeformatid);
+	} else {
 		pool->id = -1;
+		pool->format = 0;
+	}
 
 	PQclear(result);
 
@@ -742,7 +762,7 @@ int st_db_postgresql_get_tape(struct st_database_connection * connection, struct
 			if (status2 == PGRES_FATAL_ERROR)
 				st_db_postgresql_get_error(result2);
 			else if (status2 == PGRES_TUPLES_OK && PQntuples(result2) == 1)
-				 tape->pool = st_pool_get_pool_by_uuid(PQgetvalue(result2, 0, 0), 0, densitycode);
+				 tape->pool = st_pool_get_by_uuid(PQgetvalue(result2, 0, 0), 0);
 		} else
 			tape->pool = 0;
 	}
@@ -752,20 +772,31 @@ int st_db_postgresql_get_tape(struct st_database_connection * connection, struct
 	return status != PGRES_TUPLES_OK;
 }
 
-int st_db_postgresql_get_tape_format(struct st_database_connection * connection, struct st_tape_format * tape_format, unsigned char density_code) {
+int st_db_postgresql_get_tape_format(struct st_database_connection * connection, struct st_tape_format * tape_format, long id, unsigned char density_code) {
 	if (!connection || !tape_format)
 		return 1;
 
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
-	st_db_postgresql_prepare(self, "select_tapeformat_by_densitycode", "SELECT * FROM tapeformat WHERE densityCode = $1 LIMIT 1");
+	char * densitycode = 0, * tapeformatid = 0;
+	PGresult * result = 0;
 
-	char * densitycode = 0;
-	asprintf(&densitycode, "%d", density_code);
+	if (id < -1) {
+		st_db_postgresql_prepare(self, "select_tapeformat_by_id", "SELECT * FROM tapeformat WHERE id = $1 LIMIT 1");
 
-	const char * params[] = { densitycode };
-	PGresult * result = PQexecPrepared(self->db_con, "select_tapeformat_by_densitycode", 1, params, 0, 0, 0);
+		asprintf(&tapeformatid, "%ld", id);
+
+		const char * param[] = { tapeformatid };
+		result = PQexecPrepared(self->db_con, "select_tapeformat_by_id", 1, param, 0, 0, 0);
+	} else {
+		st_db_postgresql_prepare(self, "select_tapeformat_by_densitycode", "SELECT * FROM tapeformat WHERE densityCode = $1 LIMIT 1");
+
+		asprintf(&densitycode, "%d", density_code);
+
+		const char * param[] = { densitycode };
+		result = PQexecPrepared(self->db_con, "select_tapeformat_by_densitycode", 1, param, 0, 0, 0);
+	}
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)
@@ -773,7 +804,6 @@ int st_db_postgresql_get_tape_format(struct st_database_connection * connection,
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 		st_db_postgresql_get_long(result, 0, 0, &tape_format->id);
 		st_db_postgresql_get_string(result, 0, 1, tape_format->name);
-		tape_format->density_code = density_code;
 		tape_format->type = st_tape_string_to_format_data(PQgetvalue(result, 0, 2));
 		tape_format->mode = st_tape_string_to_format_mode(PQgetvalue(result, 0, 3));
 		st_db_postgresql_get_long(result, 0, 4, &tape_format->max_load_count);
@@ -783,13 +813,22 @@ int st_db_postgresql_get_tape_format(struct st_database_connection * connection,
 		st_db_postgresql_get_long(result, 0, 8, &tape_format->life_span);
 		st_db_postgresql_get_ssize(result, 0, 9, &tape_format->capacity);
 		st_db_postgresql_get_ssize(result, 0, 10, &tape_format->block_size);
-		st_db_postgresql_get_bool(result, 0, 11, &tape_format->support_partition);
-	}
+		if (density_code)
+			tape_format->density_code = density_code;
+		else
+			st_db_postgresql_get_uchar(result, 0, 11, &tape_format->density_code);
+		st_db_postgresql_get_bool(result, 0, 12, &tape_format->support_partition);
+	} else
+		tape_format->id = -1;
 
 	PQclear(result);
-	free(densitycode);
 
-	return status != PGRES_TUPLES_OK;
+	if (densitycode)
+		free(densitycode);
+	if (tapeformatid)
+		free(tapeformatid);
+
+	return status != PGRES_TUPLES_OK || tape_format->id == -1;
 }
 
 int st_db_postgresql_get_user(struct st_database_connection * connection, struct st_user * user, long user_id, const char * login) {
@@ -902,7 +941,7 @@ int st_db_postgresql_refresh_job(struct st_database_connection * connection, str
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
-	st_db_postgresql_prepare(self, "select_job_since_by_id", "SELECT * FROM job WHERE id = $1 AND update >= $2 FOR SHARE");
+	st_db_postgresql_prepare(self, "select_job_since_by_id", "SELECT * FROM job WHERE id = $1 AND update >= $2");
 
 	char * jobid = 0;
 	asprintf(&jobid, "%ld", job->id);

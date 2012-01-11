@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jan 2012 23:46:17 +0100                         *
+*  Last modified: Wed, 11 Jan 2012 17:38:39 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -97,11 +97,19 @@ static const struct st_tape_status2 {
 	{ 0, ST_TAPE_STATUS_UNKNOWN },
 };
 
+
+static void st_tape_format_retrieve(struct st_tape_format ** format, long id, unsigned char density_code);
+static void st_pool_retrieve(struct st_pool ** pool, long id, const char * uuid, const char * name);
+
 static pthread_mutex_t st_tape_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct st_tape ** st_tape_tapes = 0;
 static unsigned int st_tape_nb_tapes = 0;
+
+static pthread_mutex_t st_tape_format_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct st_tape_format ** st_tape_formats = 0;
 static unsigned int st_tape_format_nb_formats = 0;
+
+static pthread_mutex_t st_pool_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct st_pool ** st_pools = 0;
 static unsigned int st_pool_nb_pools = 0;
 
@@ -324,7 +332,7 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 			if (digest)
 				free(digest);
 
-			tape->pool = st_pool_get_pool_by_uuid(pool_id, pool_name, dr->density_code);
+			tape->pool = st_pool_get_by_uuid(pool_id, pool_name);
 		}
 
 		if (ok) {
@@ -409,11 +417,30 @@ void st_tape_write_header(struct st_drive * dr) {
 }
 
 
+struct st_tape_format * st_tape_format_get_by_id(long id) {
+	int old_state;
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
+	pthread_mutex_lock(&st_tape_format_lock);
+
+	unsigned int i;
+	struct st_tape_format * format = 0;
+	for (i = 0; i < st_tape_format_nb_formats; i++)
+		if (id == st_tape_formats[i]->id)
+			format = st_tape_formats[i];
+
+	if (!format)
+		st_tape_format_retrieve(&format, id, 0);
+
+	pthread_mutex_unlock(&st_tape_format_lock);
+	pthread_setcancelstate(old_state, 0);
+
+	return format;
+}
+
 struct st_tape_format * st_tape_format_get_by_density_code(unsigned char density_code) {
 	int old_state;
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
-	static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-	pthread_mutex_lock(&lock);
+	pthread_mutex_lock(&st_tape_format_lock);
 
 	unsigned int i;
 	struct st_tape_format * format = 0;
@@ -421,88 +448,112 @@ struct st_tape_format * st_tape_format_get_by_density_code(unsigned char density
 		if (st_tape_formats[i]->density_code == density_code)
 			format = st_tape_formats[i];
 
-	if (!format) {
-		struct st_database * db = st_db_get_default_db();
-		struct st_database_connection * con = db->ops->connect(db, 0);
-		if (con) {
-			st_tape_formats = realloc(st_tape_formats, (st_tape_format_nb_formats + 1) * sizeof(struct st_tape_format *));
-			st_tape_formats[st_tape_format_nb_formats] = malloc(sizeof(struct st_tape_format));
+	if (!format)
+		st_tape_format_retrieve(&format, -1, density_code);
 
-			if (con->ops->get_tape_format(con, st_tape_formats[st_tape_format_nb_formats], density_code)) {
-				free(st_tape_formats[st_tape_format_nb_formats]);
-				st_tape_formats = realloc(st_tape_formats, st_tape_format_nb_formats * sizeof(struct st_tape_format));
-			} else {
-				format = st_tape_formats[st_tape_format_nb_formats];
-				st_tape_format_nb_formats++;
-			}
-
-			con->ops->close(con);
-			con->ops->free(con);
-			free(con);
-		}
-	}
-
-	pthread_mutex_unlock(&lock);
+	pthread_mutex_unlock(&st_tape_format_lock);
 	pthread_setcancelstate(old_state, 0);
 
 	return format;
 }
 
+void st_tape_format_retrieve(struct st_tape_format ** format, long id, unsigned char density_code) {
+	struct st_database * db = st_db_get_default_db();
+	struct st_database_connection * con = db->ops->connect(db, 0);
+	if (con) {
+		st_tape_formats = realloc(st_tape_formats, (st_tape_format_nb_formats + 1) * sizeof(struct st_tape_format *));
+		st_tape_formats[st_tape_format_nb_formats] = malloc(sizeof(struct st_tape_format));
 
-struct st_pool * st_pool_get_pool_by_uuid(char * uuid, char * name, unsigned char density_code) {
+		if (con->ops->get_tape_format(con, st_tape_formats[st_tape_format_nb_formats], id, density_code)) {
+			free(st_tape_formats[st_tape_format_nb_formats]);
+			st_tape_formats = realloc(st_tape_formats, st_tape_format_nb_formats * sizeof(struct st_tape_format));
+		} else {
+			*format = st_tape_formats[st_tape_format_nb_formats];
+			st_tape_format_nb_formats++;
+		}
+
+		con->ops->close(con);
+		con->ops->free(con);
+		free(con);
+	}
+}
+
+
+struct st_pool * st_pool_get_by_id(long id) {
 	int old_state;
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
-	static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-	pthread_mutex_lock(&lock);
+	pthread_mutex_lock(&st_pool_lock);
 
 	unsigned int i;
 	struct st_pool * pool = 0;
 	for (i = 0; i < st_pool_nb_pools; i++)
-		if (!strcmp(uuid, st_pools[i]->uuid))
+		if (id == st_pools[i]->id) {
 			pool = st_pools[i];
-
-	if (!pool) {
-		struct st_database * db = st_db_get_default_db();
-		struct st_database_connection * con = db->ops->connect(db, 0);
-		if (con) {
-			st_pools = realloc(st_pools, (st_pool_nb_pools + 1) * sizeof(struct st_pool *));
-			st_pools[st_pool_nb_pools] = malloc(sizeof(struct st_pool));
-
-			struct st_tape_format * format = st_tape_format_get_by_density_code(density_code);
-
-			if (!con->ops->get_pool(con, st_pools[st_pool_nb_pools], uuid)) {
-				pool = st_pools[st_pool_nb_pools];
-				st_pool_nb_pools++;
-				pool->format = format;
-			} else {
-				struct st_pool * tmp = st_pools[st_pool_nb_pools];
-				tmp->id = -1;
-				strcpy(tmp->uuid, uuid);
-				strcpy(tmp->name, name);
-				tmp->format = format;
-
-				if (!con->ops->create_pool(con, tmp)) {
-					pool = st_pools[st_pool_nb_pools];
-					pool->format = format;
-					st_pool_nb_pools++;
-				}
-			}
-
-			if (!pool) {
-				free(st_pools[st_pool_nb_pools]);
-				st_pools = realloc(st_pools, st_pool_nb_pools * sizeof(struct st_pool *));
-			}
-
-			con->ops->close(con);
-			con->ops->free(con);
-			free(con);
+			break;
 		}
-	}
 
-	pthread_mutex_unlock(&lock);
+	if (!pool)
+		st_pool_retrieve(&pool, id, 0, 0);
+
+	pthread_mutex_unlock(&st_pool_lock);
 	pthread_setcancelstate(old_state, 0);
 
 	return pool;
+}
+
+struct st_pool * st_pool_get_by_uuid(char * uuid, char * name) {
+	int old_state;
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
+	pthread_mutex_lock(&st_pool_lock);
+
+	unsigned int i;
+	struct st_pool * pool = 0;
+	for (i = 0; i < st_pool_nb_pools; i++)
+		if (!strcmp(uuid, st_pools[i]->uuid)) {
+			pool = st_pools[i];
+			break;
+		}
+
+	if (!pool)
+		st_pool_retrieve(&pool, -1, uuid, name);
+
+	pthread_mutex_unlock(&st_pool_lock);
+	pthread_setcancelstate(old_state, 0);
+
+	return pool;
+}
+
+void st_pool_retrieve(struct st_pool ** pool, long id, const char * uuid, const char * name) {
+	struct st_database * db = st_db_get_default_db();
+	struct st_database_connection * con = db->ops->connect(db, 0);
+	if (con) {
+		st_pools = realloc(st_pools, (st_pool_nb_pools + 1) * sizeof(struct st_pool *));
+		st_pools[st_pool_nb_pools] = malloc(sizeof(struct st_pool));
+
+		if (!con->ops->get_pool(con, st_pools[st_pool_nb_pools], id, uuid)) {
+			*pool = st_pools[st_pool_nb_pools];
+			st_pool_nb_pools++;
+		} else {
+			struct st_pool * tmp = st_pools[st_pool_nb_pools];
+			tmp->id = -1;
+			strcpy(tmp->uuid, uuid);
+			strcpy(tmp->name, name);
+
+			if (!con->ops->create_pool(con, tmp)) {
+				*pool = st_pools[st_pool_nb_pools];
+				st_pool_nb_pools++;
+			}
+		}
+
+		if (!pool) {
+			free(st_pools[st_pool_nb_pools]);
+			st_pools = realloc(st_pools, st_pool_nb_pools * sizeof(struct st_pool *));
+		}
+
+		con->ops->close(con);
+		con->ops->free(con);
+		free(con);
+	}
 }
 
 int st_pool_sync(struct st_pool * pool) {

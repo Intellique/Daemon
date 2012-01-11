@@ -298,10 +298,10 @@ int st_job_save_run(struct st_job * job) {
 	changer->lock->ops->unlock(changer->lock);
 	job->db_ops->add_record(job, "Got drive: %s %s", drive->vendor, drive->model);
 
-
 	// check tape and pool
-	if (job->pool) {
-	}
+	struct st_pool * pool = job->pool;
+	if (!pool)
+		pool = job->user->pool;
 
 	// compute total files size
 	unsigned int i;

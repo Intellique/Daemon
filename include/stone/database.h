@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jan 2012 22:57:23 +0100                         *
+*  Last modified: Wed, 11 Jan 2012 16:05:39 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -123,9 +123,9 @@ struct st_database_connection {
 		int (*create_pool)(struct st_database_connection * db, struct st_pool * pool);
 		int (*get_nb_new_jobs)(struct st_database_connection * db, long * nb_new_jobs, time_t since, long last_max_jobs);
 		int (*get_new_jobs)(struct st_database_connection * db, struct st_job ** jobs, unsigned int nb_jobs, time_t since, long last_max_jobs);
-		int (*get_pool)(struct st_database_connection * db, struct st_pool * pool, const char * uuid);
+		int (*get_pool)(struct st_database_connection * db, struct st_pool * pool, long id, const char * uuid);
 		int (*get_tape)(struct st_database_connection * db, struct st_tape * tape);
-		int (*get_tape_format)(struct st_database_connection * db, struct st_tape_format * tape_format, unsigned char density_code);
+		int (*get_tape_format)(struct st_database_connection * db, struct st_tape_format * tape_format, long id, unsigned char density_code);
 		int (*get_user)(struct st_database_connection * db, struct st_user * user, long user_id, const char * login);
 		int (*is_changer_contain_drive)(struct st_database_connection * db, struct st_changer * changer, struct st_drive * drive);
 		int (*refresh_job)(struct st_database_connection * db, struct st_job * job);
