@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 11 Jan 2012 17:53:11 +0100                         *
+*  Last modified: Thu, 12 Jan 2012 16:17:51 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1559,6 +1559,8 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 				st_db_postgresql_get_long(result, 0, 10, &tape->write_count);
 				tape->write_count += old_value;
 
+				if (tape->end_position == 0)
+					st_db_postgresql_get_ssize(result, 0, 12, &tape->end_position);
 				st_db_postgresql_get_ssize(result, 0, 13, &tape->block_size);
 			}
 
@@ -1592,6 +1594,8 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 				st_db_postgresql_get_long(result, 0, 10, &tape->write_count);
 				tape->write_count += old_value;
 
+				if (tape->end_position == 0)
+					st_db_postgresql_get_ssize(result, 0, 12, &tape->end_position);
 				st_db_postgresql_get_ssize(result, 0, 13, &tape->block_size);
 			}
 

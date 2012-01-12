@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jan 2012 22:33:06 +0100                         *
+*  Last modified: Thu, 12 Jan 2012 16:03:50 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -102,6 +102,7 @@ static void st_drive_generic_reset(struct st_drive * drive);
 static int st_drive_generic_rewind_file(struct st_drive * drive);
 static int st_drive_generic_rewind_tape(struct st_drive * drive);
 static int st_drive_generic_set_file_position(struct st_drive * drive, int file_position);
+static void st_drive_generic_update_position(struct st_drive * drive);
 static void st_drive_generic_update_status(struct st_drive * drive);
 static void st_drive_generic_update_status2(struct st_drive * drive, enum st_drive_status status);
 
@@ -195,6 +196,7 @@ int st_drive_generic_eod(struct st_drive * drive) {
 
 	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: goto end of tape, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, failed);
 
+	st_drive_generic_update_position(drive);
 	st_drive_generic_update_status(drive);
 
 	return failed;
@@ -424,6 +426,21 @@ int st_drive_generic_set_file_position(struct st_drive * drive, int file_positio
 	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: positioning tape to position = %d, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, file_position, failed);
 
 	return failed;
+}
+
+void st_drive_generic_update_position(struct st_drive * drive) {
+	struct st_tape * tape = drive->slot->tape;
+	if (!tape)
+		return;
+
+	struct st_drive_generic * self = drive->data;
+	struct mtpos pos = { 0 };
+
+	int failed = ioctl(self->fd_nst, MTIOCPOS, &pos);
+	if (!failed)
+		tape->end_position = pos.mt_blkno;
+
+	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: update tape position: %zd, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, pos.mt_blkno, failed);
 }
 
 void st_drive_generic_update_status(struct st_drive * drive) {
@@ -762,6 +779,7 @@ int st_drive_io_writer_close(struct st_stream_writer * io) {
 		}
 
 		self->drive->slot->tape->nb_files = self->drive->file_position + 1;
+		st_drive_generic_update_position(self->drive);
 		st_drive_generic_update_status(self->drive);
 
 		self->fd = -1;
