@@ -22,98 +22,64 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 12 Jan 2012 18:58:20 +0100                         *
+*  Last modified: Thu, 12 Jan 2012 18:14:05 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONE_JOB_H__
-#define __STONE_JOB_H__
+// free, malloc
+#include <stdlib.h>
 
-// time_t
-#include <sys/time.h>
+#include <stone/job.h>
+#include <stone/library/changer.h>
 
-#include "database.h"
+struct st_job_format_tape_private { };
 
-struct st_archive;
-struct st_job_driver;
-struct st_pool;
-struct st_tape;
-struct st_user;
+static void st_job_format_tape_free(struct st_job * job);
+static void st_job_format_tape_init(void) __attribute__((constructor));
+static void st_job_format_tape_new_job(struct st_database_connection * db, struct st_job * job);
+static int st_job_format_tape_run(struct st_job * job);
+static int st_job_format_tape_stop(struct st_job * job);
 
-enum st_job_status {
-	st_job_status_disable,
-	st_job_status_error,
-	st_job_status_idle,
-	st_job_status_pause,
-	st_job_status_running,
-
-	st_job_status_unknown,
+struct st_job_ops st_job_format_tape_ops = {
+	.free = st_job_format_tape_free,
+	.run  = st_job_format_tape_run,
+	.stop = st_job_format_tape_stop,
 };
 
-struct st_job {
-	// database
-	long id;
-	char * name;
-	enum st_job_status db_status;
-	time_t updated;
-
-	// scheduler
-	enum st_job_status sched_status;
-	time_t start;
-	long interval;
-	long repetition;
-	long num_runs;
-	struct st_scheduler_ops {
-		int (*add_record)(struct st_job * j, const char * format, ...) __attribute__ ((format (printf, 2, 3)));
-		int (*update_status)(struct st_job * j);
-	} * db_ops;
-	void * scheduler_private;
-
-	// job
-	float done;
-	struct st_archive * archive;
-	struct st_pool * pool;
-	struct st_tape * tape;
-
-	char ** paths;
-	unsigned int nb_paths;
-
-	char ** checksums;
-	long * checksum_ids;
-	unsigned int nb_checksums;
-
-	struct st_job_tape {
-		long sequence;
-		struct st_tape * tape;
-		long tape_position;
-	} * tapes;
-	unsigned int nb_tapes;
-
-	struct st_user * user;
-
-	struct st_job_ops {
-		void (*free)(struct st_job * j);
-		int (*run)(struct st_job * j);
-		int (*stop)(struct st_job * j);
-	} * job_ops;
-	void * data;
-
-	struct st_job_driver * driver;
+struct st_job_driver st_job_format_tape_driver = {
+	.name        = "format-tape",
+	.new_job     = st_job_format_tape_new_job,
+	.cookie      = 0,
+	.api_version = STONE_JOB_APIVERSION,
 };
 
-struct st_job_driver {
-	char * name;
-	void (*new_job)(struct st_database_connection * db, struct st_job * job);
-	void * cookie;
-	int api_version;
-};
+void st_job_format_tape_free(struct st_job * job) {
+	free(job->data);
+}
 
-#define STONE_JOB_APIVERSION 1
+void st_job_format_tape_init() {
+	st_job_register_driver(&st_job_format_tape_driver);
+}
 
-struct st_job_driver * st_job_get_driver(const char * driver);
-void st_job_register_driver(struct st_job_driver * driver);
-const char * st_job_status_to_string(enum st_job_status status);
-enum st_job_status st_job_string_to_status(const char * status);
-void st_job_sync_plugins(void);
+void st_job_format_tape_new_job(struct st_database_connection * db, struct st_job * job) {
+	struct st_job_format_tape_private * self = malloc(sizeof(struct st_job_format_tape_private));
 
-#endif
+	job->data = self;
+	job->job_ops = &st_job_format_tape_ops;
+}
+
+int st_job_format_tape_run(struct st_job * job) {
+	struct st_job_format_tape_private * jp = job->data;
+
+	job->db_ops->add_record(job, "Start format tape job (job id: %ld), num runs %ld", job->id, job->num_runs);
+
+	// get changer
+	struct st_changer * changer = st_changer_get_by_tape(0);
+
+	return 0;
+}
+
+int st_job_format_tape_stop(struct st_job * job) {
+	return 0;
+}
+
 

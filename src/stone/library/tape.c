@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 11 Jan 2012 17:38:39 +0100                         *
+*  Last modified: Thu, 12 Jan 2012 23:36:41 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -98,8 +98,10 @@ static const struct st_tape_status2 {
 };
 
 
+static void st_tape_retrieve(struct st_tape ** tape, long id, const char * uuid);
 static void st_tape_format_retrieve(struct st_tape_format ** format, long id, unsigned char density_code);
-static void st_pool_retrieve(struct st_pool ** pool, long id, const char * uuid, const char * name);
+static struct st_pool * st_pool_create(const char * uuid, const char * name, struct st_tape_format * format);
+static void st_pool_retrieve(struct st_pool ** pool, long id, const char * uuid);
 
 static pthread_mutex_t st_tape_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct st_tape ** st_tape_tapes = 0;
@@ -109,7 +111,7 @@ static pthread_mutex_t st_tape_format_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct st_tape_format ** st_tape_formats = 0;
 static unsigned int st_tape_format_nb_formats = 0;
 
-static pthread_mutex_t st_pool_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t st_pool_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 static struct st_pool ** st_pools = 0;
 static unsigned int st_pool_nb_pools = 0;
 
@@ -179,6 +181,28 @@ enum st_tape_format_mode st_tape_string_to_format_mode(const char * mode) {
 }
 
 
+struct st_tape * st_tape_get_by_id(long id) {
+	int old_state;
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
+	pthread_mutex_lock(&st_tape_lock);
+
+	struct st_tape * tape = 0;
+	unsigned int i;
+	for (i = 0; i < st_tape_nb_tapes; i++)
+		if (id == st_tape_tapes[i]->id) {
+			tape = st_tape_tapes[i];
+			break;
+		}
+
+	if (!tape)
+		st_tape_retrieve(&tape, id, 0);
+
+	pthread_mutex_unlock(&st_tape_lock);
+	pthread_setcancelstate(old_state, 0);
+
+	return tape;
+}
+
 struct st_tape * st_tape_get_by_uuid(const char * uuid) {
 	int old_state;
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
@@ -192,28 +216,8 @@ struct st_tape * st_tape_get_by_uuid(const char * uuid) {
 			break;
 		}
 
-	if (!tape) {
-		struct st_database * db = st_db_get_default_db();
-		struct st_database_connection * con = db->ops->connect(db, 0);
-		if (con) {
-			tape = malloc(sizeof(struct st_tape));
-			strncpy(tape->uuid, uuid, 36);
-
-			if (con->ops->get_tape(con, tape)) {
-				free(tape->uuid);
-				free(tape);
-				tape = 0;
-			} else {
-				st_tape_tapes = realloc(st_tape_tapes, (st_tape_nb_tapes + 1) * sizeof(struct st_tape *));
-				st_tape_tapes[st_tape_nb_tapes] = tape;
-				st_tape_nb_tapes++;
-			}
-
-			con->ops->close(con);
-			con->ops->free(con);
-			free(con);
-		}
-	}
+	if (!tape)
+		st_tape_retrieve(&tape, -1, uuid);
 
 	pthread_mutex_unlock(&st_tape_lock);
 	pthread_setcancelstate(old_state, 0);
@@ -332,7 +336,9 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 			if (digest)
 				free(digest);
 
-			tape->pool = st_pool_get_by_uuid(pool_id, pool_name);
+			tape->pool = st_pool_get_by_uuid(pool_id);
+			if (!tape->pool)
+				tape->pool = st_pool_create(pool_id, pool_name, tape->format);
 		}
 
 		if (ok) {
@@ -370,6 +376,27 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 	pthread_setcancelstate(old_state, 0);
 
 	return tape;
+}
+
+void st_tape_retrieve(struct st_tape ** tape, long id, const char * uuid) {
+	struct st_database * db = st_db_get_default_db();
+	struct st_database_connection * con = db->ops->connect(db, 0);
+	if (con) {
+		*tape = malloc(sizeof(struct st_tape));
+
+		if (con->ops->get_tape(con, *tape, id, uuid)) {
+			free(tape);
+			tape = 0;
+		} else {
+			st_tape_tapes = realloc(st_tape_tapes, (st_tape_nb_tapes + 1) * sizeof(struct st_tape *));
+			st_tape_tapes[st_tape_nb_tapes] = *tape;
+			st_tape_nb_tapes++;
+		}
+
+		con->ops->close(con);
+		con->ops->free(con);
+		free(con);
+	}
 }
 
 void st_tape_write_header(struct st_drive * dr) {
@@ -479,6 +506,44 @@ void st_tape_format_retrieve(struct st_tape_format ** format, long id, unsigned 
 }
 
 
+struct st_pool * st_pool_create(const char * uuid, const char * name, struct st_tape_format * format) {
+	int old_state;
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
+	pthread_mutex_lock(&st_pool_lock);
+
+	struct st_pool * pool = st_pool_get_by_uuid(uuid);
+	if (!pool) {
+		struct st_database * db = st_db_get_default_db();
+		struct st_database_connection * con = db->ops->connect(db, 0);
+		if (con) {
+			pool = malloc(sizeof(struct st_pool));
+			strncpy(pool->uuid, uuid, 37);
+			strncpy(pool->name, name, 64);
+			pool->format = format;
+
+			if (con->ops->create_pool(con, pool)) {
+				free(pool);
+				pool = 0;
+			}
+
+			con->ops->close(con);
+			con->ops->free(con);
+			free(con);
+		}
+	}
+
+	if (pool) {
+		st_pools = realloc(st_pools, (st_pool_nb_pools + 1) * sizeof(struct st_pool *));
+		st_pools[st_pool_nb_pools] = pool;
+		st_pool_nb_pools++;
+	}
+
+	pthread_mutex_unlock(&st_pool_lock);
+	pthread_setcancelstate(old_state, 0);
+
+	return pool;
+}
+
 struct st_pool * st_pool_get_by_id(long id) {
 	int old_state;
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
@@ -493,7 +558,7 @@ struct st_pool * st_pool_get_by_id(long id) {
 		}
 
 	if (!pool)
-		st_pool_retrieve(&pool, id, 0, 0);
+		st_pool_retrieve(&pool, id, 0);
 
 	pthread_mutex_unlock(&st_pool_lock);
 	pthread_setcancelstate(old_state, 0);
@@ -501,7 +566,7 @@ struct st_pool * st_pool_get_by_id(long id) {
 	return pool;
 }
 
-struct st_pool * st_pool_get_by_uuid(char * uuid, char * name) {
+struct st_pool * st_pool_get_by_uuid(const char * uuid) {
 	int old_state;
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
 	pthread_mutex_lock(&st_pool_lock);
@@ -515,7 +580,7 @@ struct st_pool * st_pool_get_by_uuid(char * uuid, char * name) {
 		}
 
 	if (!pool)
-		st_pool_retrieve(&pool, -1, uuid, name);
+		st_pool_retrieve(&pool, -1, uuid);
 
 	pthread_mutex_unlock(&st_pool_lock);
 	pthread_setcancelstate(old_state, 0);
@@ -523,31 +588,19 @@ struct st_pool * st_pool_get_by_uuid(char * uuid, char * name) {
 	return pool;
 }
 
-void st_pool_retrieve(struct st_pool ** pool, long id, const char * uuid, const char * name) {
+void st_pool_retrieve(struct st_pool ** pool, long id, const char * uuid) {
 	struct st_database * db = st_db_get_default_db();
 	struct st_database_connection * con = db->ops->connect(db, 0);
 	if (con) {
 		st_pools = realloc(st_pools, (st_pool_nb_pools + 1) * sizeof(struct st_pool *));
 		st_pools[st_pool_nb_pools] = malloc(sizeof(struct st_pool));
 
-		if (!con->ops->get_pool(con, st_pools[st_pool_nb_pools], id, uuid)) {
-			*pool = st_pools[st_pool_nb_pools];
-			st_pool_nb_pools++;
-		} else {
-			struct st_pool * tmp = st_pools[st_pool_nb_pools];
-			tmp->id = -1;
-			strcpy(tmp->uuid, uuid);
-			strcpy(tmp->name, name);
-
-			if (!con->ops->create_pool(con, tmp)) {
-				*pool = st_pools[st_pool_nb_pools];
-				st_pool_nb_pools++;
-			}
-		}
-
-		if (!pool) {
+		if (con->ops->get_pool(con, st_pools[st_pool_nb_pools], id, uuid)) {
 			free(st_pools[st_pool_nb_pools]);
 			st_pools = realloc(st_pools, st_pool_nb_pools * sizeof(struct st_pool *));
+		} else {
+			*pool = st_pools[st_pool_nb_pools];
+			st_pool_nb_pools++;
 		}
 
 		con->ops->close(con);

@@ -1,0 +1,16 @@
+STONE_JOB_FORMATTAPE_SRC_DIR		:= src/module/job/format_tape
+STONE_JOB_FORMATTAPE_BUILD_DIR		:= ${BUILD_DIR}/module/job/format_tape
+STONE_JOB_FORMATTAPE_DEPEND_DIR		:= ${DEPEND_DIR}/module/job/format_tape
+
+STONE_JOB_FORMATTAPE_SRC_FILES		:= $(sort $(shell test -d ${STONE_JOB_FORMATTAPE_SRC_DIR} && find ${STONE_JOB_FORMATTAPE_SRC_DIR} -name '*.c'))
+STONE_JOB_FORMATTAPE_HEAD_FILES		:= $(sort $(shell test -d ${STONE_JOB_FORMATTAPE_SRC_DIR} && find ${STONE_JOB_FORMATTAPE_SRC_DIR} -name '*.h'))
+STONE_JOB_FORMATTAPE_OBJ_FILES		:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${STONE_JOB_FORMATTAPE_SRC_FILES}))
+STONE_JOB_FORMATTAPE_DEP_FILES		:= $(sort $(shell test -d ${STONE_JOB_FORMATTAPE_DEPEND_DIR} && find ${STONE_JOB_FORMATTAPE_DEPEND_DIR} -name '*.d'))
+
+STONE_JOB_FORMATTAPE_BIN			:= lib/job/libformat-tape.so
+STONE_JOB_FORMATTAPE_CFLAG			:= -fPIC -fvisibility=hidden
+STONE_JOB_FORMATTAPE_LD				:= -shared
+
+STONE_JOB_FORMATTAPE_LIB			:=
+
+BIN_SYMS							+= STONE_JOB_FORMATTAPE

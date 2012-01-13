@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 12 Jan 2012 16:17:51 +0100                         *
+*  Last modified: Thu, 12 Jan 2012 23:20:29 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -68,7 +68,7 @@ static char * st_db_postgresql_get_host(struct st_database_connection * connecti
 static int st_db_postgresql_get_nb_new_jobs(struct st_database_connection * db, long * nb_new_jobs, time_t since, long last_max_jobs);
 static int st_db_postgresql_get_new_jobs(struct st_database_connection * db, struct st_job ** jobs, unsigned int nb_jobs, time_t since, long last_max_jobs);
 static int st_db_postgresql_get_pool(struct st_database_connection * db, struct st_pool * pool, long id, const char * uuid);
-static int st_db_postgresql_get_tape(struct st_database_connection * db, struct st_tape * tape);
+static int st_db_postgresql_get_tape(struct st_database_connection * db, struct st_tape * tape, long id, const char * uuid);
 static int st_db_postgresql_get_tape_format(struct st_database_connection * db, struct st_tape_format * tape_format, long id, unsigned char density_code);
 static int st_db_postgresql_get_user(struct st_database_connection * db, struct st_user * user, long user_id, const char * login);
 static int st_db_postgresql_is_changer_contain_drive(struct st_database_connection * db, struct st_changer * changer, struct st_drive * drive);
@@ -500,25 +500,28 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 	for (i = 0; i < nb_tuples; i++) {
 		char * archiveid = 0, * jobid = 0, * poolid = 0;
 		long userid;
+		long tapeid = -1;
 
 		jobs[i] = malloc(sizeof(struct st_job));
 
 		st_db_postgresql_get_long(result, i, 0, &jobs[i]->id);
 		jobid = PQgetvalue(result, i, 0);
 		st_db_postgresql_get_string_dup(result, i, 1, &jobs[i]->name);
-		jobs[i]->db_status = st_job_string_to_status(PQgetvalue(result, i, 4));
-		st_db_postgresql_get_time(result, i, 12, &jobs[i]->updated);
+		jobs[i]->db_status = st_job_string_to_status(PQgetvalue(result, i, 7));
+		st_db_postgresql_get_time(result, i, 8, &jobs[i]->updated);
 
-		st_db_postgresql_get_time(result, i, 5, &jobs[i]->start);
+		st_db_postgresql_get_time(result, i, 3, &jobs[i]->start);
 		jobs[i]->interval = 0;
-		st_db_postgresql_get_long(result, i, 6, &jobs[i]->interval);
-		st_db_postgresql_get_long(result, i, 7, &jobs[i]->repetition);
-		if (!PQgetisnull(result, i, 8))
-			archiveid = PQgetvalue(result, i, 8);
-		st_db_postgresql_get_long(result, i, 9, &userid);
-		if (!PQgetisnull(result, i, 10))
-			poolid = PQgetvalue(result, i, 10);
+		st_db_postgresql_get_long(result, i, 4, &jobs[i]->interval);
+		st_db_postgresql_get_long(result, i, 5, &jobs[i]->repetition);
+		if (!PQgetisnull(result, i, 9))
+			archiveid = PQgetvalue(result, i, 9);
+		st_db_postgresql_get_long(result, i, 11, &userid);
+		if (!PQgetisnull(result, i, 12))
+			poolid = PQgetvalue(result, i, 12);
 		jobs[i]->num_runs = 0;
+		if (!PQgetisnull(result, i, 13))
+			st_db_postgresql_get_long(result, i, 13, &tapeid);
 
 		const char * param2[] = { jobid };
 		PGresult * result2 = PQexecPrepared(self->db_con, "select_num_runs", 1, param2, 0, 0, 0);
@@ -560,7 +563,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 			else if (status3 == PGRES_TUPLES_OK && PQntuples(result2) == 1) {
 				st_db_postgresql_get_uchar(result2, 0, 11, &densitycode);
 
-				jobs[i]->pool = st_pool_get_by_uuid(pool_uuid, 0);
+				jobs[i]->pool = st_pool_get_by_uuid(pool_uuid);
 			}
 			PQclear(result2);
 
@@ -630,6 +633,9 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 			PQclear(result2);
 		}
 
+		if (tapeid > -1)
+			jobs[i]->tape = st_tape_get_by_id(tapeid);
+
 		jobs[i]->driver = st_job_get_driver(PQgetvalue(result, i, 13));
 	}
 
@@ -695,17 +701,31 @@ int st_db_postgresql_get_pool(struct st_database_connection * connection, struct
 	return status != PGRES_TUPLES_OK || pool->id == -1;
 }
 
-int st_db_postgresql_get_tape(struct st_database_connection * connection, struct st_tape * tape) {
+int st_db_postgresql_get_tape(struct st_database_connection * connection, struct st_tape * tape, long id, const char * uuid) {
 	if (!connection || !tape)
 		return 1;
 
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
-	st_db_postgresql_prepare(self, "select_tape_by_uuid", "SELECT * FROM tape WHERE uuid = $1 LIMIT 1");
+	PGresult * result = 0;
+	if (uuid) {
+		st_db_postgresql_prepare(self, "select_tape_by_uuid", "SELECT * FROM tape WHERE uuid = $1 LIMIT 1");
 
-	const char * param[] = { tape->uuid };
-	PGresult * result = PQexecPrepared(self->db_con, "select_tape_by_uuid", 1, param, 0, 0, 0);
+		const char * param[] = { uuid };
+		result = PQexecPrepared(self->db_con, "select_tape_by_uuid", 1, param, 0, 0, 0);
+	} else {
+		st_db_postgresql_prepare(self, "select_tape_by_id", "SELECT * FROM tape WHERE id = $1 LIMIT 1");
+
+		char * tapeid = 0;
+		asprintf(&tapeid, "%ld", id);
+
+		const char * param[] = { tapeid };
+		result = PQexecPrepared(self->db_con, "select_tape_by_id", 1, param, 0, 0, 0);
+
+		free(tapeid);
+	}
+
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)
@@ -721,50 +741,28 @@ int st_db_postgresql_get_tape(struct st_database_connection * connection, struct
 		st_db_postgresql_get_long(result, 0, 8, &tape->load_count);
 		st_db_postgresql_get_long(result, 0, 9, &tape->read_count);
 		st_db_postgresql_get_long(result, 0, 10, &tape->write_count);
+		st_db_postgresql_get_ssize(result, 0, 11, &tape->end_position);
 		st_db_postgresql_get_int(result, 0, 12, &tape->nb_files);
 		st_db_postgresql_get_ssize(result, 0, 13, &tape->block_size);
 		st_db_postgresql_get_bool(result, 0, 14, &tape->has_partition);
 
-		char * tapeformat = PQgetvalue(result, 0, 15);
-		char * pool = PQgetvalue(result, 0, 16);
+		long tapeformatid = -1, poolid = -1;
+		st_db_postgresql_get_long(result, 0, 15, &tapeformatid);
+		st_db_postgresql_get_long(result, 0, 16, &poolid);
 
-		unsigned char densitycode = 0;
-
-		if (tapeformat) {
-			st_db_postgresql_prepare(self, "select_tapeformat_by_id", "SELECT densitycode FROM tapeformat WHERE id = $1 LIMIT 1");
-
-			const char * param2[] = { tapeformat };
-			PGresult * result2 = PQexecPrepared(self->db_con, "select_tapeformat_by_id", 1, param2, 0, 0, 0);
-			ExecStatusType status2 = PQresultStatus(result2);
-
-			if (status2 == PGRES_FATAL_ERROR)
-				st_db_postgresql_get_error(result2);
-			else if (status2 == PGRES_TUPLES_OK && PQntuples(result2))
-				st_db_postgresql_get_uchar(result2, 0, 0, &densitycode);
-
-			if (densitycode > 0)
-				tape->format = st_tape_format_get_by_density_code(densitycode);
-
-			PQclear(result2);
-		} else {
+		if (tapeformatid > -1)
+			tape->format = st_tape_format_get_by_id(tapeformatid);
+		else {
 			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "There is a tape into databse without tapeformat");
-			PQclear(result);
 			return 1;
 		}
 
-		if (pool) {
-			st_db_postgresql_prepare(self, "select_pool_by_uuid", "SELECT * FROM pool WHERE uuid = $1 LIMIT 1");
-
-			const char * param2[] = { pool };
-			PGresult * result2 = PQexecPrepared(self->db_con, "select_pool_by_uuid", 1, param2, 0, 0, 0);
-			ExecStatusType status2 = PQresultStatus(result2);
-
-			if (status2 == PGRES_FATAL_ERROR)
-				st_db_postgresql_get_error(result2);
-			else if (status2 == PGRES_TUPLES_OK && PQntuples(result2) == 1)
-				 tape->pool = st_pool_get_by_uuid(PQgetvalue(result2, 0, 0), 0);
-		} else
-			tape->pool = 0;
+		if (poolid > -1)
+			tape->pool = st_pool_get_by_id(poolid);
+		else {
+			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "There is a tape into databse without pool");
+			return 1;
+		}
 	}
 
 	PQclear(result);
