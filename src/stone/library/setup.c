@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jan 2012 23:10:56 +0100                         *
+*  Last modified: Fri, 13 Jan 2012 12:34:50 +0100                         *
 \*************************************************************************/
 
 // open
@@ -60,8 +60,8 @@ struct st_changer * st_changer_get_by_tape(struct st_tape * tape) {
 	if (!tape)
 		return 0;
 
-    unsigned int i, nb_changer = st_nb_real_changers + st_nb_fake_changers - 1;
-    for (i = 0; i < nb_changer; i++) {
+	unsigned int i, nb_changer = st_nb_real_changers + st_nb_fake_changers;
+	for (i = 0; i < nb_changer; i++) {
 		struct st_changer * ch = st_changers + i;
 
 		unsigned int j;
@@ -77,15 +77,15 @@ struct st_changer * st_changer_get_by_tape(struct st_tape * tape) {
 }
 
 struct st_changer * st_changer_get_first_changer() {
-    return st_changers;
+	return st_changers;
 }
 
 struct st_changer * st_changer_get_next_changer(struct st_changer * changer) {
-    unsigned int i, nb_changer = st_nb_real_changers + st_nb_fake_changers - 1;
-    for (i = 0; i < nb_changer; i++)
-        if (changer == st_changers + i)
-            return st_changers + i + 1;
-    return 0;
+	unsigned int i, nb_changer = st_nb_real_changers + st_nb_fake_changers - 1;
+	for (i = 0; i < nb_changer; i++)
+		if (changer == st_changers + i)
+			return st_changers + i + 1;
+	return 0;
 }
 
 int st_changer_setup() {

@@ -322,7 +322,7 @@ int st_job_save_run(struct st_job * job) {
 	if (!tape) {
 		changer->lock->ops->lock(changer->lock);
 
-		struct st_slot * sl = changer->ops->get_tape(changer, job->pool);
+		struct st_slot * sl = 0; //changer->ops->get_tape(changer, job->pool);
 
 		if (changer->ops->can_load()) {
 			if (!sl && job->pool) {

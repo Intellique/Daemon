@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 12 Jan 2012 18:14:05 +0100                         *
+*  Last modified: Fri, 13 Jan 2012 17:50:48 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -30,6 +30,9 @@
 
 #include <stone/job.h>
 #include <stone/library/changer.h>
+#include <stone/library/drive.h>
+#include <stone/library/ressource.h>
+#include <stone/library/tape.h>
 
 struct st_job_format_tape_private { };
 
@@ -73,7 +76,52 @@ int st_job_format_tape_run(struct st_job * job) {
 	job->db_ops->add_record(job, "Start format tape job (job id: %ld), num runs %ld", job->id, job->num_runs);
 
 	// get changer
-	struct st_changer * changer = st_changer_get_by_tape(0);
+	struct st_changer * changer = st_changer_get_by_tape(job->tape);
+	if (!changer) {
+		job->db_ops->add_record(job, "Tape not found (named: %s)", job->tape->name);
+
+		// TODO:
+	}
+	job->db_ops->add_record(job, "Got changer: %s %s", changer->vendor, changer->model);
+
+	job->done = 0.25;
+	job->db_ops->update_status(job);
+
+	// get drive
+	struct st_drive * drive = changer->ops->get_free_drive_with_tape(changer, job->tape);
+	job->db_ops->add_record(job, "Got drive: %s %s", drive->vendor, drive->model);
+
+	drive->lock->ops->lock(drive->lock);
+
+	job->done = 0.5;
+	job->db_ops->update_status(job);
+
+	if (!drive->slot->tape) {
+		if (changer->ops->can_load()) {
+			changer->lock->ops->lock(changer->lock);
+			struct st_slot * sl = changer->ops->get_tape(changer, job->tape);
+			job->db_ops->add_record(job, "Loading tape (%s)", sl->tape->label);
+			changer->ops->load(changer, sl, drive);
+			changer->lock->ops->unlock(changer->lock);
+			drive->ops->reset(drive);
+		} else {
+			//TODO: alert user that he sould load this tape
+		}
+	}
+
+	// write header
+	job->db_ops->add_record(job, "Formatting new tape");
+	int status = st_tape_write_header(drive, job->pool);
+
+	changer->ops->sync_db(changer);
+
+	if (status) {
+		job->done = 1;
+		job->db_ops->add_record(job, "Job: format tape finished with code = %d (job id: %ld), num runs %ld", status, job->id, job->num_runs);
+	} else
+		job->db_ops->add_record(job, "Job: format tape finished with code = OK (job id: %ld), num runs %ld", job->id, job->num_runs);
+
+	job->db_ops->update_status(job);
 
 	return 0;
 }
@@ -81,5 +129,4 @@ int st_job_format_tape_run(struct st_job * job) {
 int st_job_format_tape_stop(struct st_job * job) {
 	return 0;
 }
-
 

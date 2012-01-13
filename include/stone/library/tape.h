@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 12 Jan 2012 23:17:39 +0100                         *
+*  Last modified: Fri, 13 Jan 2012 15:43:54 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_TAPE_H__
@@ -128,7 +128,7 @@ enum st_tape_format_mode st_tape_string_to_format_mode(const char * mode);
 struct st_tape * st_tape_get_by_id(long id);
 struct st_tape * st_tape_get_by_uuid(const char * uuid);
 struct st_tape * st_tape_new(struct st_drive * dr);
-void st_tape_write_header(struct st_drive * dr);
+int st_tape_write_header(struct st_drive * dr, struct st_pool * pool);
 
 struct st_tape_format * st_tape_format_get_by_id(long id);
 struct st_tape_format * st_tape_format_get_by_density_code(unsigned char density_code);

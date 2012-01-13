@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 12 Jan 2012 23:20:29 +0100                         *
+*  Last modified: Fri, 13 Jan 2012 11:45:04 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -636,7 +636,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 		if (tapeid > -1)
 			jobs[i]->tape = st_tape_get_by_id(tapeid);
 
-		jobs[i]->driver = st_job_get_driver(PQgetvalue(result, i, 13));
+		jobs[i]->driver = st_job_get_driver(PQgetvalue(result, i, 14));
 	}
 
 	PQclear(result);
