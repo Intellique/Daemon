@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 13 Jan 2012 11:45:04 +0100                         *
+*  Last modified: Sat, 14 Jan 2012 14:42:30 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -353,7 +353,7 @@ int st_db_postgresql_create_pool(struct st_database_connection * connection, str
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
-	st_db_postgresql_prepare(self, "insert_pool", "INSERT INTO pool VALUES (DEFAULT, $1, $2, DEFAULT, DEFAULT, DEFAULT, $3) RETURNING *");
+	st_db_postgresql_prepare(self, "insert_pool", "INSERT INTO pool VALUES (DEFAULT, $1, $2, DEFAULT, DEFAULT, DEFAULT, DEFAULT, $3) RETURNING *");
 
 	char * tape_format = 0;
 	asprintf(&tape_format, "%ld", pool->format->id);
@@ -372,6 +372,7 @@ int st_db_postgresql_create_pool(struct st_database_connection * connection, str
 		else
 			pool->retention_limit = 0;
 		st_db_postgresql_get_uchar(result, 0, 5, &pool->auto_recycle);
+		st_db_postgresql_get_uchar(result, 0, 6, &pool->growable);
 	}
 
 	PQclear(result);
@@ -536,8 +537,8 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 		jobs[i]->user = st_user_get(userid, 0);
 
 		if (poolid) {
-			st_db_postgresql_prepare(self, "select_pool_by_id", "SELECT * FROM pool WHERE id = $1 LIMIT 1");
-			st_db_postgresql_prepare(self, "select_tapeformat_by_id", "SELECT * FROM tapeformat WHERE id = $1 LIMIT 1");
+			st_db_postgresql_prepare(self, "select_pool_by_id", "SELECT uuid, tapeformat FROM pool WHERE id = $1 LIMIT 1");
+			st_db_postgresql_prepare(self, "select_tapeformat_by_id", "SELECT densitycode FROM tapeformat WHERE id = $1 LIMIT 1");
 
 			char * pool_uuid = 0, * tapeformat = 0;
 			unsigned char densitycode;
@@ -549,8 +550,8 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 			if (status3 == PGRES_FATAL_ERROR)
 				st_db_postgresql_get_error(result2);
 			else if (status3 == PGRES_TUPLES_OK && PQntuples(result2) == 1) {
-				st_db_postgresql_get_string_dup(result2, 0, 1, &pool_uuid);
-				st_db_postgresql_get_string_dup(result2, 0, 6, &tapeformat);
+				st_db_postgresql_get_string_dup(result2, 0, 0, &pool_uuid);
+				st_db_postgresql_get_string_dup(result2, 0, 1, &tapeformat);
 			}
 			PQclear(result2);
 
@@ -561,7 +562,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 			if (status3 == PGRES_FATAL_ERROR)
 				st_db_postgresql_get_error(result2);
 			else if (status3 == PGRES_TUPLES_OK && PQntuples(result2) == 1) {
-				st_db_postgresql_get_uchar(result2, 0, 11, &densitycode);
+				st_db_postgresql_get_uchar(result2, 0, 0, &densitycode);
 
 				jobs[i]->pool = st_pool_get_by_uuid(pool_uuid);
 			}
@@ -687,9 +688,10 @@ int st_db_postgresql_get_pool(struct st_database_connection * connection, struct
 		else
 			pool->retention_limit = 0;
 		st_db_postgresql_get_uchar(result, 0, 5, &pool->auto_recycle);
+		st_db_postgresql_get_uchar(result, 0, 6, &pool->growable);
 
 		long tapeformatid;
-		st_db_postgresql_get_long(result, 0, 6, &tapeformatid);
+		st_db_postgresql_get_long(result, 0, 7, &tapeformatid);
 		pool->format = st_tape_format_get_by_id(tapeformatid);
 	} else {
 		pool->id = -1;
@@ -857,6 +859,11 @@ int st_db_postgresql_get_user(struct st_database_connection * connection, struct
 		st_db_postgresql_get_bool(result, 0, 6, &user->is_admin);
 		st_db_postgresql_get_bool(result, 0, 7, &user->can_archive);
 		st_db_postgresql_get_bool(result, 0, 8, &user->can_restore);
+
+		long poolid = -1;
+		st_db_postgresql_get_long(result, 0, 9, &poolid);
+		if (poolid > -1)
+			user->pool = st_pool_get_by_id(poolid);
 	}
 
 	PQclear(result);
@@ -1412,6 +1419,7 @@ int st_db_postgresql_sync_pool(struct st_database_connection * connection, struc
 		st_db_postgresql_get_long(result, 0, 3, &pool->retention);
 		st_db_postgresql_get_time(result, 0, 4, &pool->retention_limit);
 		st_db_postgresql_get_uchar(result, 0, 5, &pool->auto_recycle);
+		st_db_postgresql_get_uchar(result, 0, 6, &pool->growable);
 	}
 
 	PQclear(result);

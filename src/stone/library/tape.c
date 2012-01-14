@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 14 Jan 2012 13:20:59 +0100                         *
+*  Last modified: Sat, 14 Jan 2012 14:55:17 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -387,6 +387,7 @@ void st_tape_retrieve(struct st_tape ** tape, long id, const char * uuid) {
 	struct st_database_connection * con = db->ops->connect(db, 0);
 	if (con) {
 		*tape = malloc(sizeof(struct st_tape));
+		bzero(*tape, sizeof(struct st_tape));
 
 		if (con->ops->get_tape(con, *tape, id, uuid)) {
 			free(tape);
@@ -520,6 +521,7 @@ void st_tape_format_retrieve(struct st_tape_format ** format, long id, unsigned 
 	if (con) {
 		st_tape_formats = realloc(st_tape_formats, (st_tape_format_nb_formats + 1) * sizeof(struct st_tape_format *));
 		st_tape_formats[st_tape_format_nb_formats] = malloc(sizeof(struct st_tape_format));
+		bzero(st_tape_formats[st_tape_format_nb_formats], sizeof(struct st_tape_format));
 
 		if (con->ops->get_tape_format(con, st_tape_formats[st_tape_format_nb_formats], id, density_code)) {
 			free(st_tape_formats[st_tape_format_nb_formats]);
@@ -547,6 +549,7 @@ struct st_pool * st_pool_create(const char * uuid, const char * name, struct st_
 		struct st_database_connection * con = db->ops->connect(db, 0);
 		if (con) {
 			pool = malloc(sizeof(struct st_pool));
+			bzero(pool, sizeof(struct st_pool));
 			strncpy(pool->uuid, uuid, 37);
 			strncpy(pool->name, name, 64);
 			pool->format = format;
@@ -624,6 +627,7 @@ void st_pool_retrieve(struct st_pool ** pool, long id, const char * uuid) {
 	if (con) {
 		st_pools = realloc(st_pools, (st_pool_nb_pools + 1) * sizeof(struct st_pool *));
 		st_pools[st_pool_nb_pools] = malloc(sizeof(struct st_pool));
+		bzero(st_pools[st_pool_nb_pools], sizeof(struct st_pool));
 
 		if (con->ops->get_pool(con, st_pools[st_pool_nb_pools], id, uuid)) {
 			free(st_pools[st_pool_nb_pools]);

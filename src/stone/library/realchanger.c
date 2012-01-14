@@ -319,7 +319,7 @@ void * st_realchanger_setup2(void * drive) {
 }
 
 int st_realchanger_sync_db(struct st_changer * ch) {
-    return st_realchanger_update_status(ch, ch->status);
+	return st_realchanger_update_status(ch, ch->status);
 }
 
 int st_realchanger_unload(struct st_changer * ch, struct st_drive * from, struct st_slot * to) {
@@ -365,10 +365,10 @@ int st_realchanger_update_status(struct st_changer * ch, enum st_changer_status 
 	struct st_realchanger_private * self = ch->data;
 	ch->status = status;
 
-    int failed = 0;
+	int failed = 0;
 	if (self->db_con)
 		failed = self->db_con->ops->sync_changer(self->db_con, ch);
 
-    return failed;
+	return failed;
 }
 

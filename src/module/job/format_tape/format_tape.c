@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 14 Jan 2012 13:02:08 +0100                         *
+*  Last modified: Sat, 14 Jan 2012 14:33:08 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -36,6 +36,7 @@
 #include <stone/library/ressource.h>
 #include <stone/library/tape.h>
 #include <stone/log.h>
+#include <stone/user.h>
 
 static void st_job_format_tape_free(struct st_job * job);
 static void st_job_format_tape_init(void) __attribute__((constructor));
@@ -70,6 +71,9 @@ void st_job_format_tape_new_job(struct st_database_connection * db __attribute__
 
 int st_job_format_tape_run(struct st_job * job) {
 	job->db_ops->add_record(job, "Start format tape job (job id: %ld), num runs %ld", job->id, job->num_runs);
+
+	if (!job->pool)
+		job->pool = job->user->pool;
 
 	enum {
 		alert_user,

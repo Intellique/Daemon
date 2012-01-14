@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 14 Jan 2012 13:18:00 +0100                         *
+*  Last modified: Sat, 14 Jan 2012 13:58:50 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -552,6 +552,7 @@ int st_drive_io_reader_close(struct st_stream_reader * io) {
 
 		st_drive_generic_update_status2(self->drive, ST_DRIVE_LOADED_IDLE);
 		self->drive_private->used_by_io = 0;
+		st_log_write_all(st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: drive is close", self->drive->vendor, self->drive->model, self->drive - self->drive->changer->drives);
 	}
 
 	return 0;
@@ -787,6 +788,7 @@ int st_drive_io_writer_close(struct st_stream_writer * io) {
 		self->fd = -1;
 		st_drive_generic_update_status2(self->drive, ST_DRIVE_LOADED_IDLE);
 		self->drive_private->used_by_io = 0;
+		st_log_write_all(st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: drive is close", self->drive->vendor, self->drive->model, self->drive - self->drive->changer->drives);
 	}
 
 	return 0;

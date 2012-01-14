@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 19:44:04 +0100                         *
+*  Last modified: Sat, 14 Jan 2012 14:52:54 +0100                         *
 \*************************************************************************/
 
 // pthread_mutex_lock, pthread_mutex_unlock
@@ -60,6 +60,7 @@ struct st_user * st_user_get(long id, const char * login) {
 		if (con) {
 			st_user_users = realloc(st_user_users, (st_user_nb_users + 1) * sizeof(struct st_user *));
 			st_user_users[st_user_nb_users] = malloc(sizeof(struct st_user));
+			bzero(st_user_users[st_user_nb_users], sizeof(struct st_user));
 
 			if (!con->ops->get_user(con, st_user_users[st_user_nb_users], id, login)) {
 				user = st_user_users[st_user_nb_users];
