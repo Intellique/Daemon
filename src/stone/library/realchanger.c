@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 13 Jan 2012 16:40:50 +0100                         *
+*  Last modified: Sat, 14 Jan 2012 11:33:38 +0100                         *
 \*************************************************************************/
 
 // open
@@ -100,7 +100,7 @@ struct st_drive * st_realchanger_get_free_drive_with_tape(struct st_changer * ch
 			return drive;
 	}
 
-	return st_realchanger_get_free_drive(ch);
+	return 0;
 }
 
 struct st_slot * st_realchanger_get_tape(struct st_changer * ch, struct st_tape * tape) {

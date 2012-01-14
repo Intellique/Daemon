@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 13 Jan 2012 17:31:01 +0100                         *
+*  Last modified: Fri, 13 Jan 2012 21:04:09 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -413,6 +413,7 @@ int st_tape_write_header(struct st_drive * dr, struct st_pool * pool) {
 
 	dr->ops->rewind_tape(dr);
 
+	// check for uuid
 	char uuid[37];
 	if (*tape->uuid) {
 		strncpy(uuid, tape->uuid, 37);
@@ -421,6 +422,10 @@ int st_tape_write_header(struct st_drive * dr, struct st_pool * pool) {
 		uuid_generate(id);
 		uuid_unparse_lower(id, uuid);
 	}
+
+	// check for block size
+	if (tape->block_size == 0)
+		tape->block_size = tape->format->block_size;
 
 	// STone (v0.1)
 	// Tape format: version=1
