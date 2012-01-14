@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 12 Jan 2012 16:03:50 +0100                         *
+*  Last modified: Sat, 14 Jan 2012 13:18:00 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -273,6 +273,7 @@ struct st_stream_reader * st_drive_generic_get_reader(struct st_drive * drive) {
 
 	drive->slot->tape->read_count++;
 	st_drive_generic_update_status2(drive, ST_DRIVE_READING);
+	st_log_write_all(st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: drive is open for reading", drive->vendor, drive->model, drive - drive->changer->drives);
 
 	return st_drive_io_reader_new(drive);
 }
@@ -293,6 +294,7 @@ struct st_stream_writer * st_drive_generic_get_writer(struct st_drive * drive) {
 
 	drive->slot->tape->write_count++;
 	st_drive_generic_update_status2(drive, ST_DRIVE_WRITING);
+	st_log_write_all(st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: drive is open for writing", drive->vendor, drive->model, drive - drive->changer->drives);
 
 	return st_drive_io_writer_new(drive);
 }

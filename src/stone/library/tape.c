@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 13 Jan 2012 21:04:09 +0100                         *
+*  Last modified: Sat, 14 Jan 2012 13:20:59 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -344,6 +344,8 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 		}
 
 		if (ok) {
+			st_log_write_all(st_log_level_debug, st_log_type_drive, "Found STone header in tape with (uuid=%s, label=%s, blocksize=%zd)", uuid, name, block_size);
+
 			strcpy(tape->uuid, uuid);
 			strcpy(tape->label, name);
 			strcpy(tape->name, name);
