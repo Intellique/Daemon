@@ -7,7 +7,7 @@ STONE_CHECKSUM_SHA256_HEAD_FILES	:= $(sort $(shell test -d ${STONE_CHECKSUM_SHA2
 STONE_CHECKSUM_SHA256_OBJ_FILES		:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${STONE_CHECKSUM_SHA256_SRC_FILES}))
 STONE_CHECKSUM_SHA256_DEP_FILES		:= $(sort $(shell test -d ${STONE_CHECKSUM_SHA256_DEPEND_DIR} && find ${STONE_CHECKSUM_SHA256_DEPEND_DIR} -name '*.d'))
 
-STONE_CHECKSUM_SHA256_BIN			:= lib/checksum/libsha256.so
+STONE_CHECKSUM_SHA256_BIN			:= lib/libchecksum-sha256.so
 STONE_CHECKSUM_SHA256_CFLAG			:= -fPIC -fvisibility=hidden
 STONE_CHECKSUM_SHA256_LD			:= -shared -lssl
 

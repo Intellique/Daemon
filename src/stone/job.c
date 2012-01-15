@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jan 2012 22:58:09 +0100                         *
+*  Last modified: Sun, 15 Jan 2012 19:26:28 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -150,7 +150,7 @@ enum st_job_status st_job_string_to_status(const char * status) {
 
 void st_job_sync_plugins() {
 	char path[256];
-	snprintf(path, 256, "%s/job/lib*.so", MODULE_PATH);
+	snprintf(path, 256, "%s/libjob-*.so", MODULE_PATH);
 
 	glob_t gl;
 	gl.gl_offs = 0;
@@ -164,7 +164,7 @@ void st_job_sync_plugins() {
 		char * ptr = strrchr(gl.gl_pathv[i], '/') + 1;
 
 		char plugin[64];
-		sscanf(ptr, "lib%64[^.].so", plugin);
+		sscanf(ptr, "libjob-%64[^.].so", plugin);
 
 		if (con->ops->sync_plugin_job(con, plugin))
 			st_log_write_all(st_log_level_error, st_log_type_job, "Failed to synchronize plugin (%s)", plugin);

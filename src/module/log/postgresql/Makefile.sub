@@ -7,7 +7,7 @@ STONE_LOG_POSTGRESQL_HEAD_FILES	:= $(sort $(shell test -d ${STONE_LOG_POSTGRESQL
 STONE_LOG_POSTGRESQL_OBJ_FILES	:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${STONE_LOG_POSTGRESQL_SRC_FILES}))
 STONE_LOG_POSTGRESQL_DEP_FILES	:= $(sort $(shell test -d ${STONE_LOG_POSTGRESQL_DEPEND_DIR} && find ${STONE_LOG_POSTGRESQL_DEPEND_DIR} -name '*.d'))
 
-STONE_LOG_POSTGRESQL_BIN		:= lib/log/libpostgresql.so
+STONE_LOG_POSTGRESQL_BIN		:= lib/liblog-postgresql.so
 STONE_LOG_POSTGRESQL_CFLAG		:= -fPIC -fvisibility=hidden
 STONE_LOG_POSTGRESQL_LD			:= -shared -lpq
 

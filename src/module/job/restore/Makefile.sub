@@ -7,7 +7,7 @@ STONE_JOB_RESTORE_HEAD_FILES	:= $(sort $(shell test -d ${STONE_JOB_RESTORE_SRC_D
 STONE_JOB_RESTORE_OBJ_FILES		:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${STONE_JOB_RESTORE_SRC_FILES}))
 STONE_JOB_RESTORE_DEP_FILES		:= $(sort $(shell test -d ${STONE_JOB_RESTORE_DEPEND_DIR} && find ${STONE_JOB_RESTORE_DEPEND_DIR} -name '*.d'))
 
-STONE_JOB_RESTORE_BIN			:= lib/job/librestore.so
+STONE_JOB_RESTORE_BIN			:= lib/libjob-restore.so
 STONE_JOB_RESTORE_CFLAG			:= -fPIC -fvisibility=hidden
 STONE_JOB_RESTORE_LD			:= -shared
 

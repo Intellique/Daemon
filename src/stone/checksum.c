@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Jan 2012 10:29:48 +0100                         *
+*  Last modified: Sun, 15 Jan 2012 19:26:26 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -367,7 +367,7 @@ void st_checksum_register_driver(struct st_checksum_driver * driver) {
 
 void st_checksum_sync_plugins() {
 	char path[256];
-	snprintf(path, 256, "%s/checksum/lib*.so", MODULE_PATH);
+	snprintf(path, 256, "%s/libchecksum-*.so", MODULE_PATH);
 
 	glob_t gl;
 	gl.gl_offs = 0;
@@ -381,7 +381,7 @@ void st_checksum_sync_plugins() {
 		char * ptr = strrchr(gl.gl_pathv[i], '/') + 1;
 
 		char plugin[64];
-		sscanf(ptr, "lib%64[^.].so", plugin);
+		sscanf(ptr, "libchecksum-%64[^.].so", plugin);
 
 		if (con->ops->sync_plugin_checksum(con, plugin))
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "Failed to synchronize plugin (%s)", plugin);

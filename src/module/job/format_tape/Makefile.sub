@@ -7,7 +7,7 @@ STONE_JOB_FORMATTAPE_HEAD_FILES		:= $(sort $(shell test -d ${STONE_JOB_FORMATTAP
 STONE_JOB_FORMATTAPE_OBJ_FILES		:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${STONE_JOB_FORMATTAPE_SRC_FILES}))
 STONE_JOB_FORMATTAPE_DEP_FILES		:= $(sort $(shell test -d ${STONE_JOB_FORMATTAPE_DEPEND_DIR} && find ${STONE_JOB_FORMATTAPE_DEPEND_DIR} -name '*.d'))
 
-STONE_JOB_FORMATTAPE_BIN			:= lib/job/libformat-tape.so
+STONE_JOB_FORMATTAPE_BIN			:= lib/libjob-format-tape.so
 STONE_JOB_FORMATTAPE_CFLAG			:= -fPIC -fvisibility=hidden
 STONE_JOB_FORMATTAPE_LD				:= -shared
 
