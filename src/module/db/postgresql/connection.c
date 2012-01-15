@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 14 Jan 2012 17:23:43 +0100                         *
+*  Last modified: Sun, 15 Jan 2012 17:48:22 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -419,8 +419,8 @@ int st_db_postgresql_get_nb_new_jobs(struct st_database_connection * connection,
 	if (!hostid)
 		return 1;
 
-	st_db_postgresql_prepare(self, "select_nb_new_jobs1", "SELECT id FROM job WHERE id > $1 AND update > $2 AND host = $3 FOR SHARE");
-	st_db_postgresql_prepare(self, "select_nb_new_jobs2", "SELECT COUNT(*) AS total FROM job WHERE id > $1 AND update > $2 AND host = $3");
+	st_db_postgresql_prepare(self, "select_nb_new_jobs1", "SELECT id FROM job WHERE id > $1 AND update < $2 AND host = $3 FOR SHARE");
+	st_db_postgresql_prepare(self, "select_nb_new_jobs2", "SELECT COUNT(*) AS total FROM job WHERE id > $1 AND update < $2 AND host = $3");
 
 	char csince[24], * lastmaxjobs = 0;
 	struct tm tm_since;
@@ -469,7 +469,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 	if (!hostid)
 		return 1;
 
-	st_db_postgresql_prepare(self, "select_new_jobs", "SELECT j.*, jt.name FROM job j, jobtype jt WHERE j.id > $1 AND j.update > $2 AND j.host = $3 AND j.type = jt.id LIMIT $4");
+	st_db_postgresql_prepare(self, "select_new_jobs", "SELECT j.*, jt.name FROM job j, jobtype jt WHERE j.id > $1 AND j.update < $2 AND j.host = $3 AND j.type = jt.id LIMIT $4");
 	st_db_postgresql_prepare(self, "select_num_runs", "SELECT MAX(numrun) AS max FROM jobrecord WHERE job = $1");
 	st_db_postgresql_prepare(self, "select_paths", "SELECT path FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1)");
 	st_db_postgresql_prepare(self, "select_checksums", "SELECT * FROM checksum WHERE id IN (SELECT checksum FROM jobtochecksum WHERE job = $1)");
@@ -643,7 +643,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 		status2 = PQresultStatus(result2);
 		if (status2 == PGRES_FATAL_ERROR)
 			st_db_postgresql_get_error(result2);
-		else if (PQresultStatus(result2) == PGRES_TUPLES_OK) {
+		else if (PQresultStatus(result2) == PGRES_TUPLES_OK && PQntuples(result2) == 1) {
 			struct st_job_restore_to * rt = jobs[i]->restore_to = malloc(sizeof(struct st_job_restore_to));
 			bzero(jobs[i]->restore_to, sizeof(struct st_job_restore_to));
 

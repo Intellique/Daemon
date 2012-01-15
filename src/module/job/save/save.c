@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jan 2012 22:09:58 +0100                         *
+*  Last modified: Sun, 15 Jan 2012 18:53:02 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -64,6 +64,13 @@ struct st_job_save_private {
 	char * buffer;
 	ssize_t block_size;
 
+	struct st_job_save_savepoint {
+		struct st_changer * changer;
+		struct st_drive * drive;
+		struct st_slot * slot;
+	} * savepoints;
+	unsigned int nb_savepoints;
+
 	struct st_archive_volume * current_volume;
 
 	ssize_t total_size_done;
@@ -74,6 +81,13 @@ struct st_job_save_private {
 	struct st_database_connection * db_con;
 };
 
+enum st_job_save_state {
+	changer_got_tape,
+	look_for_free_drive,
+	look_in_first_changer,
+	look_in_next_changer,
+};
+
 static void st_job_save_archive_file(struct st_job * job, const char * path);
 static int st_job_save_compute_filter(const struct dirent * file);
 static ssize_t st_job_save_compute_total_size(struct st_job * job, const char * path);
@@ -81,6 +95,8 @@ static void st_job_save_free(struct st_job * job);
 static void st_job_save_init(void) __attribute__((constructor));
 static void st_job_save_new_job(struct st_database_connection * db, struct st_job * job);
 static int st_job_save_run(struct st_job * job);
+static struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_state state);
+static void st_job_save_savepoint_save(struct st_job * job, struct st_changer * changer, struct st_drive * drive, struct st_slot * slot);
 static int st_job_save_stop(struct st_job * job);
 
 struct st_job_ops st_job_save_ops = {
@@ -226,9 +242,16 @@ void st_job_save_init() {
 	st_job_register_driver(&st_job_save_driver);
 }
 
-void st_job_save_new_job(struct st_database_connection * db, struct st_job * job) {
+void st_job_save_new_job(struct st_database_connection * db __attribute__((unused)), struct st_job * job) {
 	struct st_job_save_private * self = malloc(sizeof(struct st_job_save_private));
 	self->tar = 0;
+	self->buffer = 0;
+	self->block_size = 0;
+
+	self->savepoints = 0;
+	self->nb_savepoints = 0;
+
+	self->current_volume = 0;
 
 	self->total_size_done = 0;
 	self->total_size = 0;
@@ -255,53 +278,9 @@ int st_job_save_run(struct st_job * job) {
 		return 1;
 	}
 
-	// get changer
-	struct st_changer * changer = st_changer_get_first_changer();
-	if (!changer) {
-		job->sched_status = st_job_status_error;
-		job->db_ops->add_record(job, "Error: There is no changer");
-		return 2;
-	}
-
-	unsigned short nb_tries = 1;
-	do {
-		if (changer->lock->ops->trylock(changer->lock)) {
-			changer = st_changer_get_next_changer(changer);
-			if (!changer) {
-				job->sched_status = st_job_status_pause;
-				if (nb_tries == 1)
-					job->db_ops->add_record(job, "Waiting for free changer");
-				sleep(60);
-				changer = st_changer_get_first_changer();
-			}
-			job->sched_status = st_job_status_running;
-			nb_tries++;
-			if (nb_tries < 1)
-				nb_tries = 2;
-		} else {
-			break;
-		}
-	} while (nb_tries);
-	job->db_ops->add_record(job, "Got changer: %s %s", changer->vendor, changer->model);
-
-	// get free drive
-	struct st_drive * drive = changer->ops->get_free_drive(changer);
-	if (drive->lock->ops->trylock(drive->lock)) {
-		changer->lock->ops->unlock(changer->lock);
-
-		job->sched_status = st_job_status_pause;
-		job->db_ops->add_record(job, "Waiting for drive: %s %s", drive->vendor, drive->model);
-
-		drive->lock->ops->lock(drive->lock);
-		job->sched_status = st_job_status_running;
-	}
-	changer->lock->ops->unlock(changer->lock);
-	job->db_ops->add_record(job, "Got drive: %s %s", drive->vendor, drive->model);
-
 	// check tape and pool
-	struct st_pool * pool = job->pool;
-	if (!pool)
-		pool = job->user->pool;
+	if (!job->pool)
+		job->pool = job->user->pool;
 
 	// compute total files size
 	unsigned int i;
@@ -317,46 +296,7 @@ int st_job_save_run(struct st_job * job) {
 	st_util_convert_size_to_string(jp->total_size, bufsize, 32);
 	job->db_ops->add_record(job, "Will archive %s", bufsize);
 
-	// select one tape
-	struct st_tape * tape = drive->slot->tape;
-	if (!tape) {
-		changer->lock->ops->lock(changer->lock);
-
-		struct st_slot * sl = 0; //changer->ops->get_tape(changer, job->pool);
-
-		if (changer->ops->can_load()) {
-			if (!sl && job->pool) {
-				st_log_write_all2(st_log_level_warning, st_log_type_user_message, job->user, "Your library doesn't contains candidate tape, please insert a new one or one which is member of pool (%s)", job->pool->name);
-
-				job->sched_status = st_job_status_pause;
-				job->db_ops->add_record(job, "Warning: Waiting for new tape");
-			} else if (!sl) {
-				st_log_write_all2(st_log_level_warning, st_log_type_user_message, job->user, "Your library doesn't contains candidate tape, please insert a new one");
-
-				job->sched_status = st_job_status_pause;
-				job->db_ops->add_record(job, "Warning: Waiting for new tape");
-			}
-
-			while (!sl) {
-				changer->lock->ops->unlock(changer->lock);
-				sleep(60);
-				changer->lock->ops->lock(changer->lock);
-				sl = changer->ops->get_tape(changer, job->pool);
-			}
-
-			job->sched_status = st_job_status_running;
-		} else {
-		}
-
-		if (!sl->drive) {
-			job->db_ops->add_record(job, "Loading tape (%s)", sl->tape->label);
-			changer->ops->load(changer, sl, drive);
-		}
-	}
-	changer->lock->ops->unlock(changer->lock);
-
-	drive->ops->reset(drive);
-	drive->ops->eod(drive);
+	struct st_drive * drive = st_job_save_select_tape(job, look_in_first_changer);
 
 	// start new transaction
 	jp->db_con->ops->start_transaction(jp->db_con);
@@ -419,7 +359,164 @@ int st_job_save_run(struct st_job * job) {
 	return 0;
 }
 
-int st_job_save_stop(struct st_job * job) {
+struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_state state) {
+	struct st_job_save_private * jp = job->data;
+
+	struct st_changer * changer = 0;
+	struct st_drive * drive = 0;
+	struct st_slot * slot = 0;
+
+	short stop = 0;
+	unsigned int i, j;
+	while (!stop) {
+		switch (state) {
+			case changer_got_tape:
+				slot = 0;
+				for (i = 0; i < changer->nb_slots && !slot; i++) {
+					slot = changer->slots + i;
+
+					if (!slot->tape || slot->tape->pool != job->pool) {
+						slot = 0;
+						continue;
+					}
+
+					drive = slot->drive;
+					if (drive) {
+						if (!drive->lock->ops->trylock(drive->lock)) {
+							drive->ops->eod(drive);
+							return drive;
+						} else {
+							st_job_save_savepoint_save(job, changer, drive, slot);
+							slot = 0;
+							continue;
+						}
+					}
+
+					if (!slot->lock->ops->trylock(slot->lock))
+						state = look_for_free_drive;
+					else
+						slot = 0;
+				}
+
+				if (!slot)
+					state = look_in_next_changer;
+
+				break;
+
+			case look_for_free_drive:
+				for (i = 0; i < changer->nb_drives; i++) {
+					drive = changer->drives + i;
+
+					if (!drive->lock->ops->trylock(drive->lock))
+						break;
+
+					drive = 0;
+				}
+
+				if (drive) {
+					changer->lock->ops->lock(changer->lock);
+					changer->ops->load(changer, slot, drive);
+					changer->lock->ops->unlock(changer->lock);
+					slot->lock->ops->unlock(slot->lock);
+
+					drive->ops->reset(drive);
+					drive->ops->eod(drive);
+					return drive;
+				}
+				st_job_save_savepoint_save(job, changer, drive, slot);
+				slot->lock->ops->unlock(slot->lock);
+				state = look_in_next_changer;
+				break;
+
+			case look_in_first_changer:
+				changer = st_changer_get_first_changer();
+				state = changer_got_tape;
+				break;
+
+			case look_in_next_changer:
+				changer = st_changer_get_next_changer(changer);
+				if (changer) {
+					state = changer_got_tape;
+				} else {
+					while (jp->nb_savepoints > 0) {
+						for (i = 0; i < jp->nb_savepoints; i++) {
+							struct st_job_save_savepoint * sp = jp->savepoints + i;
+
+							changer = sp->changer;
+							drive = sp->drive;
+							slot = sp->slot;
+
+							if (drive && !drive->lock->ops->trylock(drive->lock)) {
+								if (!drive->slot->tape || drive->slot->tape->pool != job->pool) {
+									if (i + 1 < jp->nb_savepoints)
+										memmove(jp->savepoints + i, jp->savepoints + i + 1, (jp->nb_savepoints - i - 1) * sizeof(struct st_job_save_savepoint));
+									jp->savepoints = realloc(jp->savepoints, (jp->nb_savepoints - 1) * sizeof(struct st_job_save_savepoint));
+									jp->nb_savepoints--;
+
+									drive->lock->ops->unlock(drive->lock);
+									i--;
+									continue;
+								}
+								drive->ops->eod(drive);
+								return drive;
+							} else if (drive) {
+								continue;
+							} else if (slot && !slot->lock->ops->trylock(slot->lock)) {
+								if (!slot->tape || slot->tape->pool != job->pool) {
+									if (i + 1 < jp->nb_savepoints)
+										memmove(jp->savepoints + i, jp->savepoints + i + 1, (jp->nb_savepoints - i - 1) * sizeof(struct st_job_save_savepoint));
+									jp->savepoints = realloc(jp->savepoints, (jp->nb_savepoints - 1) * sizeof(struct st_job_save_savepoint));
+									jp->nb_savepoints--;
+
+									slot->lock->ops->unlock(slot->lock);
+									i--;
+									continue;
+								}
+
+								// look for free drive
+								for (j = 0; j < changer->nb_drives; j++) {
+									drive = changer->drives + j;
+
+									if (!drive->lock->ops->trylock(drive->lock))
+										break;
+
+									drive = 0;
+								}
+
+								if (drive) {
+									changer->lock->ops->lock(changer->lock);
+									changer->ops->load(changer, slot, drive);
+									changer->lock->ops->unlock(changer->lock);
+									slot->lock->ops->unlock(slot->lock);
+
+									drive->ops->reset(drive);
+									drive->ops->eod(drive);
+									return drive;
+								} else {
+									slot->lock->ops->unlock(slot->lock);
+								}
+							}
+						}
+
+						sleep(15);
+					}
+				}
+				break;
+		}
+	}
+	return 0;
+}
+
+void st_job_save_savepoint_save(struct st_job * job, struct st_changer * changer, struct st_drive * drive, struct st_slot * slot) {
+	struct st_job_save_private * jp = job->data;
+	jp->savepoints = realloc(jp->savepoints, (jp->nb_savepoints + 1) * sizeof(struct st_job_save_savepoint));
+	jp->savepoints[jp->nb_savepoints].changer = changer;
+	jp->savepoints[jp->nb_savepoints].drive = drive;
+	jp->savepoints[jp->nb_savepoints].slot = slot;
+	jp->nb_savepoints++;
+}
+
+int st_job_save_stop(struct st_job * job __attribute__((unused))) {
 	return 0;
 }
 

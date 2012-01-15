@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 14 Jan 2012 11:33:38 +0100                         *
+*  Last modified: Sun, 15 Jan 2012 13:29:29 +0100                         *
 \*************************************************************************/
 
 // open
@@ -58,6 +58,7 @@ static int st_realchanger_can_load(void);
 static struct st_drive * st_realchanger_get_free_drive(struct st_changer * ch);
 static struct st_drive * st_realchanger_get_free_drive_with_tape(struct st_changer * ch, struct st_tape * tape);
 static struct st_slot * st_realchanger_get_tape(struct st_changer * ch, struct st_tape * tape);
+static struct st_slot * st_realchanger_get_tape_in_pool(struct st_changer * ch, struct st_pool * pool);
 static int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
 static void * st_realchanger_setup2(void * drive);
 static int st_realchanger_sync_db(struct st_changer * ch);
@@ -69,6 +70,7 @@ static struct st_changer_ops st_realchanger_ops = {
 	.get_free_drive           = st_realchanger_get_free_drive,
 	.get_free_drive_with_tape = st_realchanger_get_free_drive_with_tape,
 	.get_tape                 = st_realchanger_get_tape,
+	.get_tape_in_pool         = st_realchanger_get_tape_in_pool,
 	.load                     = st_realchanger_load,
 	.sync_db                  = st_realchanger_sync_db,
 	.unload                   = st_realchanger_unload,
@@ -111,6 +113,20 @@ struct st_slot * st_realchanger_get_tape(struct st_changer * ch, struct st_tape 
 		struct st_tape * tp = sl->tape;
 
 		if (tp && tp == tape)
+			return sl;
+	}
+
+	return 0;
+}
+
+struct st_slot * st_realchanger_get_tape_in_pool(struct st_changer * ch, struct st_pool * pool) {
+	unsigned int i;
+
+	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
+		struct st_slot * sl = ch->slots + i;
+		struct st_tape * tp = sl->tape;
+
+		if (tp && tp->pool == pool)
 			return sl;
 	}
 
