@@ -32,7 +32,7 @@ INSERT INTO DriveFormatSupport VALUES (1, 1, TRUE, TRUE),
        (5, 6, TRUE, TRUE),
        (6, 6, TRUE, TRUE);
 
-INSERT INTO Pool VALUES (DEFAULT, 'b9650cc3-12ec-4a0f-88db-d70f0b269a6b', 'storiq', DEFAULT, NULL, DEFAULT, 5);
+INSERT INTO Pool VALUES (DEFAULT, 'b9650cc3-12ec-4a0f-88db-d70f0b269a6b', 'storiq', DEFAULT, NULL, DEFAULT, DEFAULT, 5);
 
 INSERT INTO Users VALUES (DEFAULT, 'storiq', '8a6eb1d3b4fecbf8a1d6528a6aecb064e801b1e0', 'cd8c63688e0c2cff', 'storiq', 'storiq@localhost', TRUE, TRUE, TRUE, 1);
 

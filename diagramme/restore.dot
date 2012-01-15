@@ -1,0 +1,32 @@
+digraph Restore {
+	start [shape=diamond, label="Début"];
+	end [shape=diamond, label="Fin"];
+
+	findTape [shape=box, label="Chercher la bande dans\ntoutes librairies ?"];
+	changerHasFreeDrive [shape=box, label="La librairie a\nun lecteur libre ?"];
+	tapeIsInDrive [shape=box, label="La bande est\ndans un lecteur ?"];
+	driveIsFree [shape=box, label="Le lecteur\nest libre ?"];
+
+	waitForDrive [shape=oval, label="Attendre\nlecteur libre"];
+	// waitForDrive2 [shape=oval, label="Attendre\nlecteur libre"];
+	loadTape [shape=oval, label="Charger bande\ndans lecteur"];
+	restore [shape=oval, label="Restaurer les\nfichiers"];
+	alertUser1 [shape=oval, label="-Alerter l'utilisateur\nde l'absence de\nbande utilisable\n-Attendre"];
+
+	start -> findTape;
+	changerHasFreeDrive -> loadTape [label="oui"];
+	loadTape -> restore;
+	restore -> findTape [label="[s'il a des fichiers\ndans d'autre volume]"];
+	restore -> end [label="[sinon]"];
+	changerHasFreeDrive -> waitForDrive [label="non"];
+	waitForDrive -> tapeIsInDrive;
+	findTape -> alertUser1 [label="non trouvé"];
+	alertUser1 -> findTape;
+	findTape -> tapeIsInDrive [label="trouvé"];
+	tapeIsInDrive -> changerHasFreeDrive [label="non"];
+	tapeIsInDrive -> driveIsFree [label="oui"];
+	driveIsFree -> waitForDrive [label="non"];
+	// waitForDrive2 -> tapeIsInDrive;
+	driveIsFree -> restore [label="oui\n[si bande\nest encore dans\nle lecteur]"];
+	driveIsFree -> changerHasFreeDrive [label="oui [sinon]"];
+}

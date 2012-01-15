@@ -1,0 +1,62 @@
+digraph Save {
+	start [shape=diamond, label="Début"];
+	end [shape=diamond, label="Fin"];
+
+	changerHasTape [shape=box, label="Bande (même pool)\ndans librairie ?"];
+	drivehasTape [shape=box, label="Bande (même pool)\ndans lecteur ?"];
+	driveIsFree [shape=box, label="Lecteur est libre ?"];
+	findFreeDrive [shape=box, label="Librairie a-t-elle\nun lecteur libre ?"];
+	haveAnotherChanger [shape=box, label="A-t-on une\nautre librairie ?"];
+	canFormatTape [shape=box, label="Peut-on formater\nune bande ?"];
+	haveSavePoint [shape=box, label="A-t-on garder\nune solution ?"];
+	haveAnotherTape [shape=box, label="A-t-on une autre\nbande (même pool)\ndans la librairie ?"];
+	haveAnotherChanger2 [shape=box, label="A-t-on une\nautre librairie ?"];
+
+	loadTape [shape=oval, label="Charger bande\ndans lecteur"];
+	firstChanger [shape=oval, label="Regarder dans la\npremière librairie"];
+	alertUser1 [shape=oval, label="-Alerter l'utilisateur\nde l'absence de\nbande utilisable\n-Attendre"];
+	nextChanger [shape=oval, label="Regarder dans la\nlibrairie suivante"];
+	formatTape [shape=oval, label="Formater une\nbande vierge"];
+	findNewTape [shape=oval, label="Cherche une bande vierge\ndans toutes les librairies"];
+	archive [shape=oval, label="Archiver"];
+	computeArchiveTargetSize [shape=oval, label="Calculer l'espace\nutilisé par l'archive"];
+
+	savePoint1 [shape=oval, label="Garder\nsolution n°1"];
+	savePoint2 [shape=oval, label="Garder\nsolution n°2"];
+	restorePoint [shape=oval, label="-Attendre\n-Revenir sur une solution"];
+
+	start -> computeArchiveTargetSize;
+	computeArchiveTargetSize -> firstChanger;
+	firstChanger -> changerHasTape;
+	changerHasTape -> drivehasTape [label="oui"];
+	drivehasTape -> driveIsFree [label="oui"];
+	driveIsFree -> archive [label="oui"];
+	drivehasTape -> findFreeDrive [label="non"];
+	findFreeDrive -> loadTape [label="oui"];
+	loadTape -> archive;
+	driveIsFree -> savePoint1 [label="non"];
+	savePoint1 -> haveAnotherChanger;
+	changerHasTape -> haveAnotherChanger [label="non"];
+	alertUser1 -> firstChanger;
+	canFormatTape -> alertUser1 [label="non"];
+	haveAnotherChanger -> nextChanger [label="oui\n[si on n'a pas\nfait le tour des\nlibrairies]"];
+	nextChanger -> changerHasTape;
+	haveAnotherChanger -> haveSavePoint [label="non"];
+	haveSavePoint -> restorePoint [label="oui"];
+	restorePoint -> driveIsFree [label="[si solution n°1]"];
+	haveAnotherChanger -> haveSavePoint [label="oui\n[sinon]"];
+	formatTape -> archive;
+	findFreeDrive -> savePoint2 [label="non"];
+	savePoint2 -> haveAnotherChanger;
+	restorePoint -> findFreeDrive [label="[si solution n°2]"];
+	findNewTape -> alertUser1 [label="non trouvée"];
+	haveSavePoint -> canFormatTape [label="non"];
+	canFormatTape -> findNewTape [label="oui"];
+	findNewTape -> formatTape [label="trouvée"];
+	archive -> end [label="Fin d'archivage"];
+	archive -> haveAnotherTape [label="[si fin de bande]"];
+	haveAnotherTape -> loadTape [label="oui"];
+	haveAnotherTape -> haveAnotherChanger2 [label="non"];
+	haveAnotherChanger2 -> firstChanger [label="oui"];
+	haveAnotherChanger2 -> canFormatTape [label="non"];
+}
