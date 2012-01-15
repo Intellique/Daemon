@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 14 Jan 2012 14:42:30 +0100                         *
+*  Last modified: Sat, 14 Jan 2012 17:23:43 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -475,6 +475,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 	st_db_postgresql_prepare(self, "select_checksums", "SELECT * FROM checksum WHERE id IN (SELECT checksum FROM jobtochecksum WHERE job = $1)");
 	st_db_postgresql_prepare(self, "select_archive", "SELECT * FROM tape WHERE id IN (SELECT tape FROM archivevolume WHERE archive = $1)");
 	st_db_postgresql_prepare(self, "select_job_tape", "SELECT v.sequence, t.uuid, v.tapeposition FROM archivevolume v, tape t WHERE v.tape = t.id AND v.archive = $1 ORDER BY v.sequence");
+	st_db_postgresql_prepare(self, "select_restore", "SELECT * FROM restoreto WHERE job = $1 LIMIT 1");
 
 	char csince[24], * lastmaxjobs = 0, * nbjobs = 0;
 	struct tm tm_since;
@@ -504,6 +505,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 		long tapeid = -1;
 
 		jobs[i] = malloc(sizeof(struct st_job));
+		bzero(jobs[i], sizeof(struct st_job));
 
 		st_db_postgresql_get_long(result, i, 0, &jobs[i]->id);
 		jobid = PQgetvalue(result, i, 0);
@@ -636,6 +638,19 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 
 		if (tapeid > -1)
 			jobs[i]->tape = st_tape_get_by_id(tapeid);
+
+		result2 = PQexecPrepared(self->db_con, "select_restore", 1, param2, 0, 0, 0);
+		status2 = PQresultStatus(result2);
+		if (status2 == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(result2);
+		else if (PQresultStatus(result2) == PGRES_TUPLES_OK) {
+			struct st_job_restore_to * rt = jobs[i]->restore_to = malloc(sizeof(struct st_job_restore_to));
+			bzero(jobs[i]->restore_to, sizeof(struct st_job_restore_to));
+
+			st_db_postgresql_get_string_dup(result2, 0, 1, &rt->path);
+			st_db_postgresql_get_int(result2, 0, 2, &rt->nb_trunc_path);
+		}
+		PQclear(result2);
 
 		jobs[i]->driver = st_job_get_driver(PQgetvalue(result, i, 14));
 	}

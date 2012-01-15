@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 12 Jan 2012 18:58:20 +0100                         *
+*  Last modified: Sat, 14 Jan 2012 16:58:02 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -87,6 +87,11 @@ struct st_job {
 		long tape_position;
 	} * tapes;
 	unsigned int nb_tapes;
+
+	struct st_job_restore_to {
+		char * path;
+		int nb_trunc_path;
+	} * restore_to;
 
 	struct st_user * user;
 
