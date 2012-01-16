@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 15 Jan 2012 17:48:22 +0100                         *
+*  Last modified: Mon, 16 Jan 2012 15:50:31 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -469,7 +469,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 	if (!hostid)
 		return 1;
 
-	st_db_postgresql_prepare(self, "select_new_jobs", "SELECT j.*, jt.name FROM job j, jobtype jt WHERE j.id > $1 AND j.update < $2 AND j.host = $3 AND j.type = jt.id LIMIT $4");
+	st_db_postgresql_prepare(self, "select_new_jobs", "SELECT j.*, jt.name FROM job j, jobtype jt WHERE j.id > $1 AND j.update < $2 AND j.host = $3 AND j.type = jt.id ORDER BY nextstart LIMIT $4");
 	st_db_postgresql_prepare(self, "select_num_runs", "SELECT MAX(numrun) AS max FROM jobrecord WHERE job = $1");
 	st_db_postgresql_prepare(self, "select_paths", "SELECT path FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1)");
 	st_db_postgresql_prepare(self, "select_checksums", "SELECT * FROM checksum WHERE id IN (SELECT checksum FROM jobtochecksum WHERE job = $1)");

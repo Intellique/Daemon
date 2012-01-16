@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 16 Jan 2012 12:58:25 +0100                         *
+*  Last modified: Mon, 16 Jan 2012 17:34:30 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -125,14 +125,14 @@ int st_job_format_tape_run(struct st_job * job) {
 							stop = 1;
 							break;
 						} else if (drive) {
-							sleep(15);
+							sleep(5);
 							slot = 0;
 							i = -1;
 						} else if (!slot->lock->ops->trylock(slot->lock)) {
 							state = look_for_free_drive;
 							break;
 						} else {
-							sleep(15);
+							sleep(5);
 							slot = 0;
 							i = -1;
 						}
@@ -152,21 +152,66 @@ int st_job_format_tape_run(struct st_job * job) {
 				}
 
 				if (drive) {
-					changer->lock->ops->lock(changer->lock);
-					job->db_ops->add_record(job, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
-					changer->ops->load(changer, slot, drive);
-					changer->lock->ops->unlock(changer->lock);
-					slot->lock->ops->unlock(slot->lock);
-					drive->ops->reset(drive);
-
 					stop = 1;
 				} else {
 					slot->lock->ops->unlock(slot->lock);
-					sleep(15);
+					sleep(5);
 					state = look_for_changer;
 				}
 				break;
 		}
+	}
+
+	if ((drive->slot->tape && drive->slot->tape != job->tape) || !drive->slot->tape)
+		changer->lock->ops->lock(changer->lock);
+
+	if (drive->slot->tape && drive->slot->tape != job->tape) {
+		struct st_slot * slot_to = 0;
+
+		// look for the tape was stored
+		for (i = changer->nb_drives; i < changer->nb_slots; i++) {
+			slot_to = changer->slots + i;
+
+			if (!slot_to->tape && slot_to->address != drive->slot->src_address && !slot_to->lock->ops->trylock(slot_to->lock))
+				break;
+
+			slot_to = 0;
+		}
+
+		// if not found, look for free slot
+		for (i = changer->nb_drives; i < changer->nb_slots && !slot_to; i++) {
+			slot_to = changer->slots + i;
+
+			if (!slot_to->tape && !slot_to->lock->ops->trylock(slot_to->lock))
+				break;
+
+			slot_to = 0;
+		}
+
+		if (slot_to) {
+			drive->ops->eject(drive);
+
+			job->db_ops->add_record(job, "Unloading tape from drive #%td to slot #%td", drive - changer->drives, slot_to - changer->slots);
+			changer->ops->unload(changer, drive, slot_to);
+		} else {
+			job->sched_status = st_job_status_error;
+			job->db_ops->add_record(job, "Fatal error: There is no place for unloading tape (%s)", drive->slot->tape->name);
+
+			// release lock
+			changer->lock->ops->unlock(changer->lock);
+			drive->lock->ops->unlock(drive->lock);
+
+			return 1;
+		}
+	}
+
+	if (!drive->slot->tape) {
+		job->db_ops->add_record(job, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
+		changer->ops->load(changer, slot, drive);
+		slot->lock->ops->unlock(slot->lock);
+		changer->lock->ops->unlock(changer->lock);
+
+		drive->ops->reset(drive);
 	}
 
 	job->db_ops->add_record(job, "Got changer: %s %s", changer->vendor, changer->model);
@@ -187,8 +232,6 @@ int st_job_format_tape_run(struct st_job * job) {
 
 	sleep(1);
 	job->db_ops->update_status(job);
-
-	changer->ops->sync_db(changer);
 
 	if (status)
 		job->db_ops->add_record(job, "Job: format tape finished with code = %d (job id: %ld), num runs %ld", status, job->id, job->num_runs);

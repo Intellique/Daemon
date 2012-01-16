@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 16 Jan 2012 12:17:06 +0100                         *
+*  Last modified: Mon, 16 Jan 2012 15:48:13 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -310,7 +310,6 @@ int st_job_save_run(struct st_job * job) {
 	jp->db_con->ops->new_volume(jp->db_con, jp->current_volume);
 	st_io_json_add_volume(jp->json, jp->current_volume);
 
-
 	struct st_stream_writer * tape_writer = drive->ops->get_writer(drive);
 	struct st_stream_writer * checksum_writer = st_checksum_get_steam_writer((const char **) job->checksums, job->nb_checksums, tape_writer);
 	jp->tar = st_tar_new_out(checksum_writer);
@@ -419,6 +418,7 @@ struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_
 
 				if (drive) {
 					changer->lock->ops->lock(changer->lock);
+					job->db_ops->add_record(job, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
 					changer->ops->load(changer, slot, drive);
 					changer->lock->ops->unlock(changer->lock);
 					slot->lock->ops->unlock(slot->lock);
@@ -439,6 +439,7 @@ struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_
 
 			case look_in_next_changer:
 				changer = st_changer_get_next_changer(changer);
+
 				if (changer) {
 					state = changer_got_tape;
 				} else {
@@ -452,12 +453,13 @@ struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_
 
 							if (drive && !drive->lock->ops->trylock(drive->lock)) {
 								if (!drive->slot->tape || drive->slot->tape->pool != job->pool) {
+									drive->lock->ops->unlock(drive->lock);
+
 									if (i + 1 < jp->nb_savepoints)
 										memmove(jp->savepoints + i, jp->savepoints + i + 1, (jp->nb_savepoints - i - 1) * sizeof(struct st_job_save_savepoint));
 									jp->savepoints = realloc(jp->savepoints, (jp->nb_savepoints - 1) * sizeof(struct st_job_save_savepoint));
 									jp->nb_savepoints--;
 
-									drive->lock->ops->unlock(drive->lock);
 									i--;
 
 									if (jp->nb_savepoints == 0)
@@ -465,18 +467,20 @@ struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_
 
 									continue;
 								}
+
 								drive->ops->eod(drive);
 								return drive;
 							} else if (drive) {
 								continue;
 							} else if (slot && !slot->lock->ops->trylock(slot->lock)) {
 								if (!slot->tape || slot->tape->pool != job->pool) {
+									slot->lock->ops->unlock(slot->lock);
+
 									if (i + 1 < jp->nb_savepoints)
 										memmove(jp->savepoints + i, jp->savepoints + i + 1, (jp->nb_savepoints - i - 1) * sizeof(struct st_job_save_savepoint));
 									jp->savepoints = realloc(jp->savepoints, (jp->nb_savepoints - 1) * sizeof(struct st_job_save_savepoint));
 									jp->nb_savepoints--;
 
-									slot->lock->ops->unlock(slot->lock);
 									i--;
 
 									if (jp->nb_savepoints == 0)
@@ -497,6 +501,7 @@ struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_
 
 								if (drive) {
 									changer->lock->ops->lock(changer->lock);
+									job->db_ops->add_record(job, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
 									changer->ops->load(changer, slot, drive);
 									changer->lock->ops->unlock(changer->lock);
 									slot->lock->ops->unlock(slot->lock);
@@ -510,11 +515,11 @@ struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_
 							}
 						}
 
-						sleep(15);
+						sleep(5);
 					}
 
 					if (jp->nb_savepoints == 0)
-						sleep(15);
+						sleep(5);
 				}
 				break;
 		}
