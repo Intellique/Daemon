@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 14 Jan 2012 14:33:08 +0100                         *
+*  Last modified: Mon, 16 Jan 2012 11:10:12 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -180,6 +180,8 @@ int st_job_format_tape_run(struct st_job * job) {
 	job->db_ops->add_record(job, "Formatting new tape");
 	int status = st_tape_write_header(drive, job->pool);
 	job->done = 1;
+
+	drive->lock->ops->unlock(drive->lock);
 
 	if (status)
 		job->sched_status = st_job_status_error;
