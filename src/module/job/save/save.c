@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 15 Jan 2012 18:53:02 +0100                         *
+*  Last modified: Mon, 16 Jan 2012 12:17:06 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -354,6 +354,8 @@ int st_job_save_run(struct st_job * job) {
 	free(tape_writer);
 	st_io_json_free(jp->json);
 
+	drive->lock->ops->unlock(drive->lock);
+
 	job->db_ops->add_record(job, "Finish archive job (job id: %ld), num runs %ld", job->id, job->num_runs);
 
 	return 0;
@@ -394,8 +396,10 @@ struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_
 
 					if (!slot->lock->ops->trylock(slot->lock))
 						state = look_for_free_drive;
-					else
+					else {
+						st_job_save_savepoint_save(job, changer, drive, slot);
 						slot = 0;
+					}
 				}
 
 				if (!slot)
@@ -455,6 +459,10 @@ struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_
 
 									drive->lock->ops->unlock(drive->lock);
 									i--;
+
+									if (jp->nb_savepoints == 0)
+										state = look_in_first_changer;
+
 									continue;
 								}
 								drive->ops->eod(drive);
@@ -470,6 +478,10 @@ struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_
 
 									slot->lock->ops->unlock(slot->lock);
 									i--;
+
+									if (jp->nb_savepoints == 0)
+										state = look_in_first_changer;
+
 									continue;
 								}
 
@@ -500,6 +512,9 @@ struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_
 
 						sleep(15);
 					}
+
+					if (jp->nb_savepoints == 0)
+						sleep(15);
 				}
 				break;
 		}

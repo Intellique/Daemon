@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 16 Jan 2012 11:10:12 +0100                         *
+*  Last modified: Mon, 16 Jan 2012 12:58:25 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -77,10 +77,8 @@ int st_job_format_tape_run(struct st_job * job) {
 
 	enum {
 		alert_user,
-		drive_is_free,
 		look_for_changer,
 		look_for_free_drive,
-		tape_is_in_drive,
 	} state = look_for_changer;
 
 	struct st_changer * changer = 0;
@@ -108,38 +106,43 @@ int st_job_format_tape_run(struct st_job * job) {
 				state = look_for_changer;
 				break;
 
-			case drive_is_free:
-				if (!drive->lock->ops->trylock(drive->lock))
-					stop = 1;
-				break;
-
 			case look_for_changer:
 				changer = st_changer_get_by_tape(job->tape);
+				drive = 0;
+				slot = 0;
 
 				if (changer) {
-					slot = changer->ops->get_tape(changer, job->tape);
-					drive = slot->drive;
-					state = drive ? drive_is_free : look_for_free_drive;
+					for (i = 0; i < changer->nb_slots && !slot; i++) {
+						slot = changer->slots + i;
+
+						if (slot->tape != job->tape) {
+							slot = 0;
+							continue;
+						}
+
+						drive = slot->drive;
+						if (drive && !drive->lock->ops->trylock(drive->lock)) {
+							stop = 1;
+							break;
+						} else if (drive) {
+							sleep(15);
+							slot = 0;
+							i = -1;
+						} else if (!slot->lock->ops->trylock(slot->lock)) {
+							state = look_for_free_drive;
+							break;
+						} else {
+							sleep(15);
+							slot = 0;
+							i = -1;
+						}
+					}
 				} else {
 					state = alert_user;
 				}
 				break;
 
 			case look_for_free_drive:
-				slot->lock->ops->lock(slot->lock);
-
-				if (slot->tape != job->tape) {
-					// it seem that someone has load tape before
-					slot->lock->ops->unlock(slot->lock);
-
-					changer = 0;
-					drive = 0;
-					slot = 0;
-
-					state = look_for_changer;
-					break;
-				}
-
 				drive = 0;
 				for (i = 0; i < changer->nb_drives && !drive; i++) {
 					drive = changer->drives + i;
@@ -150,6 +153,7 @@ int st_job_format_tape_run(struct st_job * job) {
 
 				if (drive) {
 					changer->lock->ops->lock(changer->lock);
+					job->db_ops->add_record(job, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
 					changer->ops->load(changer, slot, drive);
 					changer->lock->ops->unlock(changer->lock);
 					slot->lock->ops->unlock(slot->lock);
@@ -161,11 +165,6 @@ int st_job_format_tape_run(struct st_job * job) {
 					sleep(15);
 					state = look_for_changer;
 				}
-				break;
-
-			case tape_is_in_drive:
-				if (drive->slot->tape == job->tape)
-					state = drive_is_free;
 				break;
 		}
 	}
