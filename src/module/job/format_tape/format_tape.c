@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 16 Jan 2012 17:34:30 +0100                         *
+*  Last modified: Mon, 16 Jan 2012 17:52:07 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -172,7 +172,7 @@ int st_job_format_tape_run(struct st_job * job) {
 		for (i = changer->nb_drives; i < changer->nb_slots; i++) {
 			slot_to = changer->slots + i;
 
-			if (!slot_to->tape && slot_to->address != drive->slot->src_address && !slot_to->lock->ops->trylock(slot_to->lock))
+			if (!slot_to->tape && slot_to->address == drive->slot->src_address && !slot_to->lock->ops->trylock(slot_to->lock))
 				break;
 
 			slot_to = 0;
