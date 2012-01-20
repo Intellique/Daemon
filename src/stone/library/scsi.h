@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:03:52 +0100                         *
+*  Last modified: Thu, 19 Jan 2012 11:24:05 +0100                         *
 \*************************************************************************/
 
 #ifndef SCSI_H__
@@ -30,10 +30,12 @@
 
 #include <stone/library/changer.h>
 #include <stone/library/drive.h>
+#include <stone/library/tape.h>
 
 void st_scsi_loaderinfo(int fd, struct st_changer * changer);
 int st_scsi_mtx_move(int fd, struct st_changer * ch, struct st_slot * from, struct st_slot * to);
 void st_scsi_mtx_status_new(int fd, struct st_changer * changer);
+int st_scsi_tape_size_available(int fd, struct st_tape * tape);
 void st_scsi_tapeinfo(int fd, struct st_drive * drive);
 
 #endif

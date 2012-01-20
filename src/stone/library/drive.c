@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 14 Jan 2012 13:58:50 +0100                         *
+*  Last modified: Thu, 19 Jan 2012 23:02:30 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -117,6 +117,7 @@ static ssize_t st_drive_io_reader_read(struct st_stream_reader * io, void * buff
 
 static int st_drive_io_writer_close(struct st_stream_writer * io);
 static void st_drive_io_writer_free(struct st_stream_writer * io);
+static ssize_t st_drive_io_writer_get_available_size(struct st_stream_writer * io);
 static ssize_t st_drive_io_writer_get_block_size(struct st_stream_writer * io);
 static int st_drive_io_writer_last_errno(struct st_stream_writer * io);
 static struct st_stream_writer * st_drive_io_writer_new(struct st_drive * drive);
@@ -146,12 +147,13 @@ static struct st_stream_reader_ops st_drive_io_reader_ops = {
 };
 
 static struct st_stream_writer_ops st_drive_io_writer_ops = {
-	.close          = st_drive_io_writer_close,
-	.free           = st_drive_io_writer_free,
-	.get_block_size = st_drive_io_writer_get_block_size,
-	.last_errno     = st_drive_io_writer_last_errno,
-	.position       = st_drive_io_writer_position,
-	.write          = st_drive_io_writer_write,
+	.close              = st_drive_io_writer_close,
+	.free               = st_drive_io_writer_free,
+	.get_available_size = st_drive_io_writer_get_available_size,
+	.get_block_size     = st_drive_io_writer_get_block_size,
+	.last_errno         = st_drive_io_writer_last_errno,
+	.position           = st_drive_io_writer_position,
+	.write              = st_drive_io_writer_write,
 };
 
 
@@ -218,6 +220,8 @@ ssize_t st_drive_generic_get_block_size(struct st_drive * drive) {
 				st_drive_generic_rewind_tape(drive);
 		}
 
+		st_log_write_all(st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: try to find block size previously used", drive->vendor, drive->model, drive - drive->changer->drives);
+
 		struct st_drive_generic * self = drive->data;
 
 		unsigned int i;
@@ -243,6 +247,8 @@ ssize_t st_drive_generic_get_block_size(struct st_drive * drive) {
 				st_drive_generic_rewind_tape(drive);
 
 			if (nb_read > 0) {
+				st_log_write_all(st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: found block size: %zd", drive->vendor, drive->model, drive - drive->changer->drives, nb_read);
+
 				free(buffer);
 				return tape->block_size = nb_read;
 			}
@@ -253,8 +259,10 @@ ssize_t st_drive_generic_get_block_size(struct st_drive * drive) {
 
 		free(buffer);
 
-		if (tape->format)
+		if (tape->format) {
+			st_log_write_all(st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: failed to find block size, using the default block size: %zd", drive->vendor, drive->model, drive - drive->changer->drives, tape->format->block_size);
 			return tape->block_size = tape->format->block_size;
+		}
 
 		st_log_write_all(st_log_level_error, st_log_type_drive, "[%s | %s | #%td]: failed to detect block size", drive->vendor, drive->model, drive - drive->changer->drives);
 	}
@@ -340,6 +348,9 @@ void st_drive_generic_reset(struct st_drive * drive) {
 		}
 
 		if (failed) {
+			if (i == 0)
+				st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: tape drive is not ready, waiting for it", drive->vendor, drive->model, drive - drive->changer->drives);
+
 			if (self->fd_nst > -1)
 				close(self->fd_nst);
 
@@ -351,6 +362,9 @@ void st_drive_generic_reset(struct st_drive * drive) {
 
 	drive->nb_files = 0;
 	st_drive_generic_update_status(drive);
+
+	if (i > 0)
+		st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: tape drive is now ready", drive->vendor, drive->model, drive - drive->changer->drives);
 }
 
 int st_drive_generic_rewind_file(struct st_drive * drive) {
@@ -443,6 +457,15 @@ void st_drive_generic_update_position(struct st_drive * drive) {
 		tape->end_position = pos.mt_blkno;
 
 	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: update tape position: %zd, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, pos.mt_blkno, failed);
+
+	int fd = open(drive->scsi_device, O_RDWR);
+	failed = st_scsi_tape_size_available(fd, tape);
+	close(fd);
+
+	if (!failed)
+		st_log_write_all(st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: there is %zd block%s of %zd bytes available (%zd * %zd = %zd)", drive->vendor, drive->model, drive - drive->changer->drives, tape->available_block, tape->available_block != 1 ? "s" : "", tape->block_size, tape->available_block, tape->block_size, tape->available_block * tape->block_size);
+	else
+		st_log_write_all(st_log_level_warning, st_log_type_drive, "[%s | %s | #%td]: failed to get available size on tape (%s)", drive->vendor, drive->model, drive - drive->changer->drives, tape->label);
 }
 
 void st_drive_generic_update_status(struct st_drive * drive) {
@@ -808,6 +831,20 @@ void st_drive_io_writer_free(struct st_stream_writer * io) {
 	io->ops = 0;
 }
 
+ssize_t st_drive_io_writer_get_available_size(struct st_stream_writer * io) {
+	struct st_drive_io_writer * self = io->data;
+	struct st_tape * tape = self->drive->slot->tape;
+
+	if (!tape)
+		return 0;
+
+	// we reserve 16 blocks at the end of tape
+	if (tape->available_block <= 16)
+		return 0;
+
+	return (tape->available_block - 16) * tape->block_size - self->buffer_used;
+}
+
 ssize_t st_drive_io_writer_get_block_size(struct st_stream_writer * io) {
 	struct st_drive_io_writer * self = io->data;
 	return self->block_size;
@@ -879,6 +916,7 @@ ssize_t st_drive_io_writer_write(struct st_stream_writer * io, const void * buff
 	ssize_t nb_total_write = buffer_available;
 	self->buffer_used = 0;
 	self->position += buffer_available;
+	self->drive->slot->tape->available_block--;
 
 	const char * c_buffer = buffer;
 	while (length - nb_total_write >= self->block_size) {
@@ -893,6 +931,7 @@ ssize_t st_drive_io_writer_write(struct st_stream_writer * io, const void * buff
 
 		nb_total_write += nb_write;
 		self->position += nb_write;
+		self->drive->slot->tape->available_block--;
 	}
 
 	if (length == nb_total_write)

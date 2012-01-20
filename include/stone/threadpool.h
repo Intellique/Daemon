@@ -22,33 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 19 Jan 2012 21:34:40 +0100                         *
+*  Last modified: Tue, 17 Jan 2012 09:02:58 +0100                         *
 \*************************************************************************/
 
-#ifndef __MTAR_TAR_P_H__
-#define __MTAR_TAR_P_H__
+#ifndef __STONE_THREADPOOL_H__
+#define __STONE_THREADPOOL_H__
 
-#include <stone/tar.h>
-
-struct st_tar {
-	char filename[100];
-	char filemode[8];
-	char uid[8];
-	char gid[8];
-	char size[12];
-	char mtime[12];
-	char checksum[8];
-	char flag;
-	char linkname[100];
-	char magic[8];
-	char uname[32];
-	char gname[32];
-	char devmajor[8];
-	char devminor[8];
-	char padding1[24];
-	char position[12];
-	char padding2[131];
-};
+void st_threadpool_run(void (*function)(void * arg), void * arg);
 
 #endif
 

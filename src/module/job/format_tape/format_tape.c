@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 16 Jan 2012 17:52:07 +0100                         *
+*  Last modified: Wed, 18 Jan 2012 13:11:27 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -193,6 +193,7 @@ int st_job_format_tape_run(struct st_job * job) {
 
 			job->db_ops->add_record(job, "Unloading tape from drive #%td to slot #%td", drive - changer->drives, slot_to - changer->slots);
 			changer->ops->unload(changer, drive, slot_to);
+			slot_to->lock->ops->unlock(slot_to->lock);
 		} else {
 			job->sched_status = st_job_status_error;
 			job->db_ops->add_record(job, "Fatal error: There is no place for unloading tape (%s)", drive->slot->tape->name);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 15 Jan 2012 19:26:26 +0100                         *
+*  Last modified: Tue, 17 Jan 2012 10:48:05 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -47,6 +47,7 @@
 
 #include <stone/database.h>
 #include <stone/log.h>
+#include <stone/threadpool.h>
 
 #include "checksum.h"
 #include "config.h"
@@ -55,7 +56,6 @@
 #define NB_BUFFERS 32
 
 struct st_checksum_helper_private {
-	pthread_t thread;
 	struct st_checksum * checksum;
 	char * digest;
 	volatile int run;
@@ -79,7 +79,7 @@ static struct st_checksum * st_checksum_helper_clone(struct st_checksum * new_ch
 static char * st_checksum_helper_digest(struct st_checksum * helper);
 static void st_checksum_helper_free(struct st_checksum * helper);
 static ssize_t st_checksum_helper_update(struct st_checksum * helper, const void * data, ssize_t length);
-static void * st_checksum_helper_work(void * param);
+static void st_checksum_helper_work(void * param);
 
 static struct st_checksum_driver ** st_checksum_drivers = 0;
 static unsigned int st_checksum_nb_drivers = 0;
@@ -214,13 +214,7 @@ struct st_checksum * st_checksum_get_helper(struct st_checksum * h, struct st_ch
 	pthread_cond_init(&hp->wait, 0);
 	sem_init(&hp->ressources, 0, NB_BUFFERS);
 
-	pthread_attr_t attr;
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-
-	pthread_create(&hp->thread, &attr, st_checksum_helper_work, h);
-
-	pthread_attr_destroy(&attr);
+	st_threadpool_run(st_checksum_helper_work, h);
 
 	return h;
 }
@@ -279,10 +273,11 @@ ssize_t st_checksum_helper_update(struct st_checksum * helper, const void * data
 
 	sem_wait(&hp->ressources);
 
+	pthread_mutex_lock(&hp->lock);
+
 	hp->writer->buffer = buffer;
 	hp->writer->length = length;
 
-	pthread_mutex_lock(&hp->lock);
 	hp->writer++;
 	if (hp->writer - hp->buffers == NB_BUFFERS)
 		hp->writer = hp->buffers;
@@ -294,7 +289,7 @@ ssize_t st_checksum_helper_update(struct st_checksum * helper, const void * data
 	return length;
 }
 
-void * st_checksum_helper_work(void * param) {
+void st_checksum_helper_work(void * param) {
 	struct st_checksum * h = param;
 	struct st_checksum_helper_private * hp = h->data;
 
@@ -334,8 +329,6 @@ void * st_checksum_helper_work(void * param) {
 	pthread_mutex_unlock(&hp->lock);
 
 	st_log_write_all(st_log_level_debug, st_log_type_checksum, "Thread helper for checksum(%p) terminated", hp->checksum);
-
-	return 0;
 }
 
 void st_checksum_register_driver(struct st_checksum_driver * driver) {

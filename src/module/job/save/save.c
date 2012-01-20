@@ -22,10 +22,12 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 16 Jan 2012 15:48:13 +0100                         *
+*  Last modified: Fri, 20 Jan 2012 15:39:07 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
+// errno
+#include <errno.h>
 // open
 #include <fcntl.h>
 // scandir
@@ -71,7 +73,14 @@ struct st_job_save_private {
 	} * savepoints;
 	unsigned int nb_savepoints;
 
+	struct st_drive * current_drive;
 	struct st_archive_volume * current_volume;
+
+	struct st_stream_writer * current_tape_writer;
+	struct st_stream_writer * current_checksum_writer;
+
+	struct st_tape ** tapes;
+	unsigned int nb_tapes;
 
 	ssize_t total_size_done;
 	ssize_t total_size;
@@ -86,18 +95,22 @@ enum st_job_save_state {
 	look_for_free_drive,
 	look_in_first_changer,
 	look_in_next_changer,
+	select_new_tape,
 };
 
 static void st_job_save_archive_file(struct st_job * job, const char * path);
+static int st_job_save_change_tape(struct st_job * job);
 static int st_job_save_compute_filter(const struct dirent * file);
 static ssize_t st_job_save_compute_total_size(struct st_job * job, const char * path);
 static void st_job_save_free(struct st_job * job);
 static void st_job_save_init(void) __attribute__((constructor));
+static int st_job_save_manage_error(struct st_job * job, int error);
 static void st_job_save_new_job(struct st_database_connection * db, struct st_job * job);
 static int st_job_save_run(struct st_job * job);
 static struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_state state);
 static void st_job_save_savepoint_save(struct st_job * job, struct st_changer * changer, struct st_drive * drive, struct st_slot * slot);
 static int st_job_save_stop(struct st_job * job);
+static int st_job_save_tape_in_list(struct st_job_save_private * jp, struct st_tape * tape);
 
 struct st_job_ops st_job_save_ops = {
 	.free = st_job_save_free,
@@ -125,7 +138,10 @@ void st_job_save_archive_file(struct st_job * job, const char * path) {
 	if (S_ISSOCK(st.st_mode))
 		return;
 
-	jp->tar->ops->add_file(jp->tar, path);
+	while (jp->tar->ops->add_file(jp->tar, path)) {
+		if (st_job_save_manage_error(job, jp->tar->ops->last_errno(jp->tar)))
+			return;
+	}
 
 	struct st_archive_file * file = st_archive_file_new(job, &st, path);
 	jp->db_con->ops->new_file(jp->db_con, file);
@@ -135,9 +151,27 @@ void st_job_save_archive_file(struct st_job * job, const char * path) {
 		int fd = open(path, O_RDONLY);
 		struct st_stream_writer * file_checksum = st_checksum_get_steam_writer((const char **) job->checksums, job->nb_checksums, 0);
 
-		ssize_t nb_read;
-		while ((nb_read = read(fd, jp->buffer, jp->block_size)) > 0) {
-			ssize_t nb_write = jp->tar->ops->write(jp->tar, jp->buffer, nb_read);
+		for (;;) {
+			ssize_t available_size = jp->tar->ops->get_available_size(jp->tar);
+			while (available_size == 0) {
+				ssize_t position = jp->tar->ops->get_file_position(jp->tar);
+
+				st_job_save_change_tape(job);
+				available_size = jp->tar->ops->get_available_size(jp->tar);
+
+				jp->tar->ops->restart_file(jp->tar, path, position);
+			}
+
+			ssize_t will_read = jp->block_size < available_size ? jp->block_size : available_size;
+			ssize_t nb_read = read(fd, jp->buffer, will_read);
+			if (nb_read < 1)
+				break; // in the future, we will check errors
+
+			ssize_t nb_write;
+			while ((nb_write = jp->tar->ops->write(jp->tar, jp->buffer, nb_read)) < 0) {
+				if (st_job_save_manage_error(job, jp->tar->ops->last_errno(jp->tar)))
+					return;
+			}
 
 			if (nb_write > 0) {
 				file_checksum->ops->write(file_checksum, jp->buffer, nb_write);
@@ -148,7 +182,10 @@ void st_job_save_archive_file(struct st_job * job, const char * path) {
 			job->db_ops->update_status(job);
 		}
 
-		jp->tar->ops->end_of_file(jp->tar);
+		while (jp->tar->ops->end_of_file(jp->tar) < 0) {
+			if (st_job_save_manage_error(job, jp->tar->ops->last_errno(jp->tar)))
+				return;
+		}
 		file_checksum->ops->close(file_checksum);
 
 		file->digests = st_checksum_get_digest_from_writer(file_checksum);
@@ -185,6 +222,89 @@ void st_job_save_archive_file(struct st_job * job, const char * path) {
 	}
 
 	st_archive_file_free(file);
+}
+
+int st_job_save_change_tape(struct st_job * job) {
+	struct st_job_save_private * jp = job->data;
+
+	struct st_drive * dr = jp->current_drive;
+	struct st_changer * ch = dr->changer;
+	struct st_stream_writer * tw = jp->current_tape_writer;
+	struct st_stream_writer * cw = jp->current_checksum_writer;
+
+	jp->tar->ops->close(jp->tar);
+
+	// update volume
+	jp->current_volume->size = tw->ops->position(tw);
+	jp->current_volume->endtime = time(0);
+	jp->current_volume->digests = st_checksum_get_digest_from_writer(cw);
+	jp->current_volume->nb_checksums = job->nb_checksums;
+	jp->db_con->ops->update_volume(jp->db_con, jp->current_volume);
+	st_io_json_update_volume(jp->json, jp->current_volume);
+
+	jp->tar->ops->free(jp->tar);
+	jp->tar = 0;
+
+	// add tape into list to remember to not use it again
+	jp->tapes = realloc(jp->tapes, (jp->nb_tapes + 1) * sizeof(struct st_tape *));
+	jp->tapes[jp->nb_tapes] = dr->slot->tape;
+	jp->nb_tapes++;
+
+	unsigned int i;
+	struct st_slot * sl = 0;
+	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
+		sl = ch->slots + i;
+
+		if (!sl->tape && sl->address == dr->slot->src_address && !sl->lock->ops->trylock(sl->lock))
+			break;
+
+		sl = 0;
+	}
+
+	// if not found, look for free slot
+	for (i = ch->nb_drives; i < ch->nb_slots && !sl; i++) {
+		sl = ch->slots + i;
+
+		if (!sl->tape && !sl->lock->ops->trylock(sl->lock))
+			break;
+
+		sl = 0;
+	}
+
+	if (!sl) {
+		// no slot for unloading tape
+		job->sched_status = st_job_status_error;
+		job->db_ops->add_record(job, "No slot free for unloading tape");
+		return 1;
+	}
+
+	dr->ops->eject(dr);
+
+	ch->lock->ops->lock(ch->lock);
+	job->db_ops->add_record(job, "Unloading tape from drive #%td to slot #%td", dr - ch->drives, sl - ch->slots);
+	ch->ops->unload(ch, dr, sl);
+	ch->lock->ops->unlock(ch->lock);
+	sl->lock->ops->unlock(sl->lock);
+
+	struct st_drive * new_drive = st_job_save_select_tape(job, select_new_tape);
+
+	if (dr != new_drive) {
+		dr->lock->ops->unlock(dr->lock);
+		dr = new_drive;
+	}
+
+	jp->current_volume = st_archive_volume_new(job, dr);
+	jp->db_con->ops->new_volume(jp->db_con, jp->current_volume);
+	st_io_json_add_volume(jp->json, jp->current_volume);
+
+	tw = jp->current_tape_writer = dr->ops->get_writer(dr);
+	cw = jp->current_checksum_writer = st_checksum_get_steam_writer((const char **) job->checksums, job->nb_checksums, tw);
+	jp->tar = st_tar_new_out(cw);
+
+	jp->block_size = jp->tar->ops->get_block_size(jp->tar);
+	jp->buffer = realloc(jp->buffer, jp->block_size);
+
+	return 0;
 }
 
 int st_job_save_compute_filter(const struct dirent * file) {
@@ -242,6 +362,18 @@ void st_job_save_init() {
 	st_job_register_driver(&st_job_save_driver);
 }
 
+int st_job_save_manage_error(struct st_job * job, int error) {
+	switch (error) {
+		case ENOSPC:
+			return st_job_save_change_tape(job);
+
+		default:
+			job->sched_status = st_job_status_error;
+			job->db_ops->add_record(job, "Unmanaged error: %m, job aborted");
+			return 1;
+	}
+}
+
 void st_job_save_new_job(struct st_database_connection * db __attribute__((unused)), struct st_job * job) {
 	struct st_job_save_private * self = malloc(sizeof(struct st_job_save_private));
 	self->tar = 0;
@@ -251,7 +383,11 @@ void st_job_save_new_job(struct st_database_connection * db __attribute__((unuse
 	self->savepoints = 0;
 	self->nb_savepoints = 0;
 
+	self->current_drive = 0;
 	self->current_volume = 0;
+
+	self->tapes = 0;
+	self->nb_tapes = 0;
 
 	self->total_size_done = 0;
 	self->total_size = 0;
@@ -296,7 +432,7 @@ int st_job_save_run(struct st_job * job) {
 	st_util_convert_size_to_string(jp->total_size, bufsize, 32);
 	job->db_ops->add_record(job, "Will archive %s", bufsize);
 
-	struct st_drive * drive = st_job_save_select_tape(job, look_in_first_changer);
+	struct st_drive * drive = jp->current_drive = st_job_save_select_tape(job, look_in_first_changer);
 
 	// start new transaction
 	jp->db_con->ops->start_transaction(jp->db_con);
@@ -310,8 +446,8 @@ int st_job_save_run(struct st_job * job) {
 	jp->db_con->ops->new_volume(jp->db_con, jp->current_volume);
 	st_io_json_add_volume(jp->json, jp->current_volume);
 
-	struct st_stream_writer * tape_writer = drive->ops->get_writer(drive);
-	struct st_stream_writer * checksum_writer = st_checksum_get_steam_writer((const char **) job->checksums, job->nb_checksums, tape_writer);
+	struct st_stream_writer * tape_writer = jp->current_tape_writer = drive->ops->get_writer(drive);
+	struct st_stream_writer * checksum_writer = jp->current_checksum_writer = st_checksum_get_steam_writer((const char **) job->checksums, job->nb_checksums, tape_writer);
 	jp->tar = st_tar_new_out(checksum_writer);
 
 	jp->block_size = jp->tar->ops->get_block_size(jp->tar);
@@ -322,6 +458,11 @@ int st_job_save_run(struct st_job * job) {
 		st_job_save_archive_file(job, job->paths[i]);
 	}
 
+	// because drive has maybe changed
+	drive = jp->current_drive;
+	tape_writer = jp->current_tape_writer;
+	checksum_writer = jp->current_checksum_writer;
+
 	jp->tar->ops->close(jp->tar);
 
 	// archive
@@ -330,11 +471,11 @@ int st_job_save_run(struct st_job * job) {
 	st_io_json_update_archive(jp->json, archive);
 	// volume
 	jp->current_volume->size = tape_writer->ops->position(tape_writer);
+	jp->current_volume->endtime = time(0);
 	jp->current_volume->digests = st_checksum_get_digest_from_writer(checksum_writer);
 	jp->current_volume->nb_checksums = job->nb_checksums;
 	jp->db_con->ops->update_volume(jp->db_con, jp->current_volume);
 	st_io_json_update_volume(jp->json, jp->current_volume);
-
 
 	// commit transaction
 	jp->db_con->ops->finish_transaction(jp->db_con);
@@ -376,26 +517,37 @@ struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_
 				for (i = 0; i < changer->nb_slots && !slot; i++) {
 					slot = changer->slots + i;
 
-					if (!slot->tape || slot->tape->pool != job->pool) {
+					if (!slot->tape || slot->tape->pool != job->pool || st_job_save_tape_in_list(jp, slot->tape) || (drive && slot->drive == drive)) {
 						slot = 0;
 						continue;
 					}
 
-					drive = slot->drive;
-					if (drive) {
-						if (!drive->lock->ops->trylock(drive->lock)) {
-							drive->ops->eod(drive);
-							return drive;
+					if (slot->drive) {
+						if (!slot->drive->lock->ops->trylock(slot->drive->lock)) {
+							slot->drive->ops->eod(slot->drive);
+							return slot->drive;
 						} else {
-							st_job_save_savepoint_save(job, changer, drive, slot);
+							st_job_save_savepoint_save(job, changer, slot->drive, slot);
 							slot = 0;
 							continue;
 						}
 					}
 
-					if (!slot->lock->ops->trylock(slot->lock))
+					if (!slot->lock->ops->trylock(slot->lock)) {
+						if (drive) {
+							changer->lock->ops->lock(changer->lock);
+							job->db_ops->add_record(job, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
+							changer->ops->load(changer, slot, drive);
+							changer->lock->ops->unlock(changer->lock);
+							slot->lock->ops->unlock(slot->lock);
+
+							drive->ops->reset(drive);
+							drive->ops->eod(drive);
+							return drive;
+						}
+
 						state = look_for_free_drive;
-					else {
+					} else {
 						st_job_save_savepoint_save(job, changer, drive, slot);
 						slot = 0;
 					}
@@ -522,6 +674,12 @@ struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_
 						sleep(5);
 				}
 				break;
+
+			case select_new_tape:
+				changer = jp->current_drive->changer;
+				drive = jp->current_drive;
+				state = changer_got_tape;
+				break;
 		}
 	}
 	return 0;
@@ -537,6 +695,14 @@ void st_job_save_savepoint_save(struct st_job * job, struct st_changer * changer
 }
 
 int st_job_save_stop(struct st_job * job __attribute__((unused))) {
+	return 0;
+}
+
+int st_job_save_tape_in_list(struct st_job_save_private * jp, struct st_tape * tape) {
+	unsigned int i;
+	for (i = 0; i < jp->nb_tapes; i++)
+		if (jp->tapes[i] == tape)
+			return 1;
 	return 0;
 }
 

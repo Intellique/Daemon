@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 16 Jan 2012 15:50:31 +0100                         *
+*  Last modified: Tue, 17 Jan 2012 13:07:59 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -994,7 +994,7 @@ int st_db_postgresql_refresh_job(struct st_database_connection * connection, str
 	PQclear(result);
 
 	st_db_postgresql_prepare(self, "select_job_by_id", "SELECT * FROM job WHERE id = $1 LIMIT 1");
-	result = PQexecPrepared(self->db_con, "select_job_since_by_id", 1, param, 0, 0, 0);
+	result = PQexecPrepared(self->db_con, "select_job_by_id", 1, param, 0, 0, 0);
 	status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)

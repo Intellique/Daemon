@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 06 Jan 2012 12:45:12 +0100                         *
+*  Last modified: Thu, 19 Jan 2012 21:47:54 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -178,7 +178,9 @@ void st_sched_do_loop() {
 				last_max_jobs = j->id;
 		}
 
-		sleep(15 - time(0) % 15);
+		struct tm current;
+		localtime_r(&update, &current);
+		sleep(15 - current.tm_sec % 15);
 	}
 
 	connection->ops->free(connection);

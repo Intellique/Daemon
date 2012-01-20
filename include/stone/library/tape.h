@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 14 Jan 2012 13:36:45 +0100                         *
+*  Last modified: Thu, 19 Jan 2012 11:53:28 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_TAPE_H__
@@ -81,8 +81,9 @@ struct st_tape {
 	long load_count;
 	long read_count;
 	long write_count;
-	ssize_t end_position;
+	ssize_t end_position; // in block size, not in bytes
 	ssize_t block_size;
+	ssize_t available_block; // in block size, not in bytes
 	int nb_files;
 	char has_partition;
 	struct st_tape_format * format;

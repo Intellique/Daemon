@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jan 2012 21:47:46 +0100                         *
+*  Last modified: Thu, 19 Jan 2012 11:59:57 +0100                         *
 \*************************************************************************/
 
 // calloc, free, malloc
@@ -59,6 +59,7 @@ static ssize_t st_io_checksum_reader_read(struct st_stream_reader * io, void * b
 
 static int st_io_checksum_writer_close(struct st_stream_writer * io);
 static void st_io_checksum_writer_free(struct st_stream_writer * io);
+static ssize_t st_io_checksum_writer_get_available_size(struct st_stream_writer * io);
 static ssize_t st_io_checksum_writer_get_block_size(struct st_stream_writer * io);
 static int st_io_checksum_writer_last_errno(struct st_stream_writer * io);
 static ssize_t st_io_checksum_writer_position(struct st_stream_writer * io);
@@ -75,12 +76,13 @@ static struct st_stream_reader_ops st_io_checksum_reader_ops = {
 };
 
 static struct st_stream_writer_ops st_io_checksum_writer_ops = {
-	.close          = st_io_checksum_writer_close,
-	.free           = st_io_checksum_writer_free,
-	.get_block_size = st_io_checksum_writer_get_block_size,
-	.last_errno     = st_io_checksum_writer_last_errno,
-	.position       = st_io_checksum_writer_position,
-	.write          = st_io_checksum_writer_write,
+	.close              = st_io_checksum_writer_close,
+	.free               = st_io_checksum_writer_free,
+	.get_available_size = st_io_checksum_writer_get_available_size,
+	.get_block_size     = st_io_checksum_writer_get_block_size,
+	.last_errno         = st_io_checksum_writer_last_errno,
+	.position           = st_io_checksum_writer_position,
+	.write              = st_io_checksum_writer_write,
 };
 
 
@@ -252,6 +254,13 @@ void st_io_checksum_writer_free(struct st_stream_writer * io) {
 
 	io->ops = 0;
 	io->data = 0;
+}
+
+ssize_t st_io_checksum_writer_get_available_size(struct st_stream_writer * io) {
+	struct st_io_checksum_writer_private * self = io->data;
+	if (self->writer)
+		return self->writer->ops->get_available_size(self->writer);
+	return 0;
 }
 
 ssize_t st_io_checksum_writer_get_block_size(struct st_stream_writer * io) {
