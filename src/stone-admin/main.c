@@ -22,22 +22,73 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jan 2012 21:18:59 +0100                         *
+*  Last modified: Mon, 23 Jan 2012 21:16:42 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONE_CONFIG_H__
-#define __STONE_CONFIG_H__
+// getopt_long
+#include <getopt.h>
+// printf
+#include <stdio.h>
 
-//#define DEFAULT_CONFIG_FILE "/etc/storiq/STone.conf"
-#define DEFAULT_CONFIG_FILE "example-config.conf"
-//#define DEFAULT_PID_FILE "/var/run/STone.pid"
-#define DEFAULT_PID_FILE "STone.pid"
+#include "config.h"
 
-//#define MODULE_PATH "/usr/lib/STone"
-#define MODULE_PATH "lib"
+static void st_show_help(void);
 
-#define ADMIN_DEFAULT_HOST "localhost"
-#define ADMIN_DEFAULT_PORT 4862
+int main(int argc, char ** argv) {
+	enum {
+		OPT_HELP     = 'h',
+		OPT_HOST     = 'H',
+		OPT_PORT     = 'p',
+		OPT_VERSION  = 'V',
+	};
 
-#endif
+	static int option_index = 0;
+	static struct option long_options[] = {
+		{ "help",     0, 0, OPT_HELP },
+		{ "host",     1, 0, OPT_HOST },
+		{ "port",     1, 0, OPT_PORT },
+		{ "version",  0, 0, OPT_VERSION },
+
+		{0, 0, 0, 0},
+	};
+
+	char * host = ADMIN_DEFAULT_HOST;
+	unsigned short port = ADMIN_DEFAULT_PORT;
+
+	int opt;
+	do {
+		opt = getopt_long(argc, argv, "hV", long_options, &option_index);
+
+		switch (opt) {
+			case OPT_HELP:
+				st_show_help();
+				return 0;
+
+			case OPT_HOST:
+				host = optarg;
+				break;
+
+			case OPT_PORT:
+				if (sscanf(optarg, "%hu", &port) < 0) {
+					printf("Error while parsing option '-p', '%s' is not an integer\n", optarg);
+					return 1;
+				}
+				break;
+
+			case OPT_VERSION:
+				printf("STone-admin, version: %s, build: %s %s\n", STONE_VERSION, __DATE__, __TIME__);
+				return 0;
+		}
+	} while (opt > -1);
+
+	return 0;
+}
+
+void st_show_help() {
+	printf("STone-admin, version: %s, build: %s %s\n", STONE_VERSION, __DATE__, __TIME__);
+	printf("    --help,     -h : Show this and exit\n");
+	printf("    --host,     -H : connect to this host instead of \"%s\"\n", ADMIN_DEFAULT_HOST);
+	printf("    --port,     -p : connect to this port instead of \"%hu\"\n", ADMIN_DEFAULT_PORT);
+	printf("    --version,  -V : Show the version of STone then exit\n");
+}
 

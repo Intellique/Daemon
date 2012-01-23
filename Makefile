@@ -27,8 +27,8 @@ OBJ_FILES	:=
 
 
 # compilation flags
-CFLAGS		:= -std=gnu99 -pipe -O0 -ggdb3 -Wall -Wextra -pthread -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes -Iinclude -DSTONE_VERSION=\"${VERSION}\"
-LDFLAGS		:= -pthread
+CFLAGS		:= -std=gnu99 -pipe -O0 -ggdb3 -Wall -Wextra -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes -Iinclude -DSTONE_VERSION=\"${VERSION}\"
+LDFLAGS		:=
 
 CSCOPE_OPT	:= -b -R -s src -U -I include
 CTAGS_OPT	:= -R src

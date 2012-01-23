@@ -8,8 +8,8 @@ STONE_CHECKSUM_MD5_OBJ_FILES	:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${STO
 STONE_CHECKSUM_MD5_DEP_FILES	:= $(sort $(shell test -d ${STONE_CHECKSUM_MD5_DEPEND_DIR} && find ${STONE_CHECKSUM_MD5_DEPEND_DIR} -name '*.d'))
 
 STONE_CHECKSUM_MD5_BIN			:= lib/libchecksum-md5.so
-STONE_CHECKSUM_MD5_CFLAG		:= -fPIC -fvisibility=hidden
-STONE_CHECKSUM_MD5_LD			:= -shared -lssl
+STONE_CHECKSUM_MD5_CFLAG		:= -pthread -fPIC -fvisibility=hidden
+STONE_CHECKSUM_MD5_LD			:= -pthread -shared -lssl
 
 STONE_CHECKSUM_MD5_LIB			:=
 

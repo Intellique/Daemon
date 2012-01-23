@@ -8,8 +8,8 @@ STONE_JOB_SAVE_OBJ_FILES	:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${STONE_J
 STONE_JOB_SAVE_DEP_FILES	:= $(sort $(shell test -d ${STONE_JOB_SAVE_DEPEND_DIR} && find ${STONE_JOB_SAVE_DEPEND_DIR} -name '*.d'))
 
 STONE_JOB_SAVE_BIN			:= lib/libjob-save.so
-STONE_JOB_SAVE_CFLAG		:= -fPIC -fvisibility=hidden
-STONE_JOB_SAVE_LD			:= -shared
+STONE_JOB_SAVE_CFLAG		:= -pthread -fPIC -fvisibility=hidden
+STONE_JOB_SAVE_LD			:= -pthread -shared
 
 STONE_JOB_SAVE_LIB			:=
 

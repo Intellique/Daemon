@@ -8,8 +8,8 @@ STONE_LOG_FILE_OBJ_FILES	:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${STONE_L
 STONE_LOG_FILE_DEP_FILES	:= $(sort $(shell test -d ${STONE_LOG_FILE_DEPEND_DIR} && find ${STONE_LOG_FILE_DEPEND_DIR} -name '*.d'))
 
 STONE_LOG_FILE_BIN			:= lib/liblog-file.so
-STONE_LOG_FILE_CFLAG		:= -fPIC -fvisibility=hidden
-STONE_LOG_FILE_LD			:= -shared
+STONE_LOG_FILE_CFLAG		:= -pthread -fPIC -fvisibility=hidden
+STONE_LOG_FILE_LD			:= -pthread -shared
 
 STONE_LOG_FILE_LIB			:=
 

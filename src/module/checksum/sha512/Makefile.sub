@@ -8,8 +8,8 @@ STONE_CHECKSUM_SHA512_OBJ_FILES		:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,$
 STONE_CHECKSUM_SHA512_DEP_FILES		:= $(sort $(shell test -d ${STONE_CHECKSUM_SHA512_DEPEND_DIR} && find ${STONE_CHECKSUM_SHA512_DEPEND_DIR} -name '*.d'))
 
 STONE_CHECKSUM_SHA512_BIN			:= lib/libchecksum-sha512.so
-STONE_CHECKSUM_SHA512_CFLAG			:= -fPIC -fvisibility=hidden
-STONE_CHECKSUM_SHA512_LD			:= -shared -lssl
+STONE_CHECKSUM_SHA512_CFLAG			:= -pthread -fPIC -fvisibility=hidden
+STONE_CHECKSUM_SHA512_LD			:= -pthread -shared -lssl
 
 STONE_CHECKSUM_SHA512_LIB			:=
 

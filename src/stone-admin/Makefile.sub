@@ -1,0 +1,16 @@
+STONEADMIN_SRC_DIR		:= src/stone-admin
+STONEADMIN_BUILD_DIR	:= ${BUILD_DIR}/stone-admin
+STONEADMIN_DEPEND_DIR	:= ${DEPEND_DIR}/stone-admin
+
+STONEADMIN_SRC_FILES	:= $(sort $(shell test -d ${STONEADMIN_SRC_DIR} && find ${STONEADMIN_SRC_DIR} -name '*.c'))
+STONEADMIN_HEAD_FILES	:= $(sort $(shell test -d ${STONEADMIN_SRC_DIR} && find ${STONEADMIN_SRC_DIR} -name '*.h'))
+STONEADMIN_OBJ_FILES	:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${STONEADMIN_SRC_FILES}))
+STONEADMIN_DEP_FILES	:= $(sort $(shell test -d ${STONEADMIN_DEPEND_DIR} && find ${STONEADMIN_DEPEND_DIR} -name '*.d'))
+
+STONEADMIN_BIN			:= bin/stone-admin
+STONEADMIN_CFLAG		:= -I.
+STONEADMIN_LD			:=
+
+STONEADMIN_LIB			:=
+
+BIN_SYMS				+= STONEADMIN

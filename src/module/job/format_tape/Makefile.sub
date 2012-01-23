@@ -8,8 +8,8 @@ STONE_JOB_FORMATTAPE_OBJ_FILES		:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${
 STONE_JOB_FORMATTAPE_DEP_FILES		:= $(sort $(shell test -d ${STONE_JOB_FORMATTAPE_DEPEND_DIR} && find ${STONE_JOB_FORMATTAPE_DEPEND_DIR} -name '*.d'))
 
 STONE_JOB_FORMATTAPE_BIN			:= lib/libjob-format-tape.so
-STONE_JOB_FORMATTAPE_CFLAG			:= -fPIC -fvisibility=hidden
-STONE_JOB_FORMATTAPE_LD				:= -shared
+STONE_JOB_FORMATTAPE_CFLAG			:= -pthread -fPIC -fvisibility=hidden
+STONE_JOB_FORMATTAPE_LD				:= -pthread -shared
 
 STONE_JOB_FORMATTAPE_LIB			:=
 
