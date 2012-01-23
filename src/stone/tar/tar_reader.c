@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jan 2012 10:13:24 +0100                         *
+*  Last modified: Mon, 23 Jan 2012 15:54:21 +0100                         *
 \*************************************************************************/
 
 // sscanf, snprintf
@@ -50,7 +50,7 @@ static int st_tar_in_check_header(struct st_tar * header);
 static int st_tar_in_close(struct st_tar_in * f);
 static dev_t st_tar_in_convert_dev(struct st_tar * header);
 static gid_t st_tar_in_convert_gid(struct st_tar * header);
-static ssize_t st_tar_in_convert_size(struct st_tar * header);
+static ssize_t st_tar_in_convert_size(const char * size);
 static time_t st_tar_in_convert_time(struct st_tar * header);
 static uid_t st_tar_in_convert_uid(struct st_tar * header);
 static void st_tar_in_free(struct st_tar_in * f);
@@ -107,18 +107,18 @@ gid_t st_tar_in_convert_gid(struct st_tar * header) {
 	return result;
 }
 
-ssize_t st_tar_in_convert_size(struct st_tar * header) {
-	if (header->size[0] == (char) 0x80) {
+ssize_t st_tar_in_convert_size(const char * size) {
+	if (size[0] == (char) 0x80) {
 		short i;
 		ssize_t result = 0;
 		for (i = 1; i < 12; i++) {
 			result <<= 8;
-			result |= header->size[i];
+			result |= size[i];
 		}
 		return result;
 	} else {
 		unsigned long long result = 0;
-		sscanf(header->size, "%llo", &result);
+		sscanf(size, "%llo", &result);
 		return result;
 	}
 	return 0;
@@ -154,6 +154,9 @@ ssize_t st_tar_in_get_block_size(struct st_tar_in * in) {
 enum st_tar_header_status st_tar_in_get_header(struct st_tar_in * f, struct st_tar_header * header) {
 	struct st_tar_private_in * self = f->data;
 
+	if (self->io->ops->end_of_file(self->io))
+		return ST_TAR_HEADER_NOT_FOUND;
+
 	char buffer[512];
 	ssize_t nbRead = self->io->ops->read(self->io, buffer, 512);
 
@@ -181,17 +184,21 @@ enum st_tar_header_status st_tar_in_get_header(struct st_tar_in * f, struct st_t
 
 		ssize_t next_read;
 		switch (h->flag) {
+			case 'K':
+				next_read = st_tar_in_convert_size(h->size);
+				nbRead = self->io->ops->read(self->io, buffer, 512 + next_read - next_read % 512);
+				strncpy(header->link, buffer, next_read);
+				continue;
+
 			case 'L':
-				next_read = st_tar_in_convert_size(h);
+				next_read = st_tar_in_convert_size(h->size);
 				nbRead = self->io->ops->read(self->io, buffer, 512 + next_read - next_read % 512);
 				strncpy(header->path, buffer, next_read);
 				continue;
 
-			case 'K':
-				next_read = st_tar_in_convert_size(h);
-				nbRead = self->io->ops->read(self->io, buffer, 512 + next_read - next_read % 512);
-				strncpy(header->link, buffer, next_read);
-				continue;
+			case 'M':
+				header->offset = st_tar_in_convert_size(h->position);
+				break;
 
 			case '1':
 			case '2':
@@ -212,7 +219,7 @@ enum st_tar_header_status st_tar_in_get_header(struct st_tar_in * f, struct st_t
 		if (header->path[0] == 0)
 			strncpy(header->path, h->filename, 256);
 		header->filename = header->path;
-		header->size = st_tar_in_convert_size(h);
+		header->size = st_tar_in_convert_size(h->size);
 		sscanf(h->filemode, "%o", &header->mode);
 		header->mtime = st_tar_in_convert_time(h);
 		header->uid = st_tar_in_convert_uid(h);
@@ -222,6 +229,7 @@ enum st_tar_header_status st_tar_in_get_header(struct st_tar_in * f, struct st_t
 
 		switch (h->flag) {
 			case '0':
+			case 'M':
 				header->mode |= S_IFREG;
 				break;
 

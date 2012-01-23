@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 19 Jan 2012 11:57:34 +0100                         *
+*  Last modified: Mon, 23 Jan 2012 15:49:08 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_IO_H__
@@ -34,6 +34,7 @@
 struct st_stream_reader {
 	struct st_stream_reader_ops {
 		int (*close)(struct st_stream_reader * io);
+		int (*end_of_file)(struct st_stream_reader * io);
 		off_t (*forward)(struct st_stream_reader * io, off_t offset);
 		void (*free)(struct st_stream_reader * io);
 		ssize_t (*get_block_size)(struct st_stream_reader * io);

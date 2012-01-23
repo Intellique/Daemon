@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 21 Jan 2012 13:44:26 +0100                         *
+*  Last modified: Mon, 23 Jan 2012 13:07:53 +0100                         *
 \*************************************************************************/
 
 #include <errno.h>
@@ -353,7 +353,7 @@ void st_tar_out_compute_size(char * csize, ssize_t size) {
 			size >>= 8;
 		}
 	} else {
-		snprintf(csize, 12, "%0*lo", 11, size);
+		snprintf(csize, 12, "%0*zo", 11, size);
 	}
 }
 

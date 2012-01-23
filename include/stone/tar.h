@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 21 Jan 2012 13:43:19 +0100                         *
+*  Last modified: Mon, 23 Jan 2012 13:47:48 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_TAR_H__
@@ -62,6 +62,10 @@ struct st_tar_header {
 	 * \brief Size of file
 	 */
 	ssize_t size;
+	/**
+	 * \brief Offset
+	 */
+	ssize_t offset;
 	/**
 	 * \brief List of permission
 	 */

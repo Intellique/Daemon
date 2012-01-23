@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 30 Dec 2011 12:34:56 +0100                         *
+*  Last modified: Mon, 23 Jan 2012 13:47:56 +0100                         *
 \*************************************************************************/
 
 // bzero
@@ -39,6 +39,7 @@ void st_tar_init_header(struct st_tar_header * h) {
 	h->filename = 0;
 	bzero(h->link, 256);
 	h->size = 0;
+	h->offset = 0;
 	h->mode = 0;
 	h->mtime = 0;
 	h->uid = 0;

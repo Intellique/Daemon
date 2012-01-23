@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jan 2012 11:14:58 +0100                         *
+*  Last modified: Mon, 23 Jan 2012 15:53:12 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -73,6 +73,7 @@ struct st_drive_io_reader {
 	ssize_t block_size;
 	ssize_t position;
 	int last_errno;
+	short end_of_file;
 
 	struct st_drive * drive;
 	struct st_drive_generic * drive_private;
@@ -107,6 +108,7 @@ static void st_drive_generic_update_status(struct st_drive * drive);
 static void st_drive_generic_update_status2(struct st_drive * drive, enum st_drive_status status);
 
 static int st_drive_io_reader_close(struct st_stream_reader * io);
+static int st_drive_io_reader_end_of_file(struct st_stream_reader * io);
 static off_t st_drive_io_reader_forward(struct st_stream_reader * io, off_t offset);
 static void st_drive_io_reader_free(struct st_stream_reader * io);
 static ssize_t st_drive_io_reader_get_block_size(struct st_stream_reader * io);
@@ -138,6 +140,7 @@ static struct st_drive_ops st_drive_generic_ops = {
 
 static struct st_stream_reader_ops st_drive_io_reader_ops = {
 	.close          = st_drive_io_reader_close,
+	.end_of_file    = st_drive_io_reader_end_of_file,
 	.forward        = st_drive_io_reader_forward,
 	.free           = st_drive_io_reader_free,
 	.get_block_size = st_drive_io_reader_get_block_size,
@@ -456,7 +459,7 @@ void st_drive_generic_update_position(struct st_drive * drive) {
 	if (!failed)
 		tape->end_position = pos.mt_blkno;
 
-	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: update tape position: %zd, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, pos.mt_blkno, failed);
+	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: update tape position: %ld, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, pos.mt_blkno, failed);
 
 	int fd = open(drive->scsi_device, O_RDWR);
 	failed = st_scsi_tape_size_available(fd, tape);
@@ -581,6 +584,11 @@ int st_drive_io_reader_close(struct st_stream_reader * io) {
 	return 0;
 }
 
+int st_drive_io_reader_end_of_file(struct st_stream_reader * io) {
+	struct st_drive_io_reader * self = io->data;
+	return self->end_of_file;
+}
+
 off_t st_drive_io_reader_forward(struct st_stream_reader * io, off_t offset) {
 	if (!io)
 		return -1;
@@ -675,6 +683,7 @@ struct st_stream_reader * st_drive_io_reader_new(struct st_drive * drive) {
 	self->block_size = block_size;
 	self->position = 0;
 	self->last_errno = 0;
+	self->end_of_file = 0;
 	self->drive = drive;
 	self->drive_private = dr;
 
@@ -734,6 +743,7 @@ ssize_t st_drive_io_reader_read(struct st_stream_reader * io, void * buffer, ssi
 			self->position += nb_read;
 			nb_total_read += nb_read;
 		} else if (nb_read == 0) {
+			self->end_of_file = 1;
 			return nb_total_read;
 		} else {
 			self->last_errno = errno;
@@ -747,6 +757,7 @@ ssize_t st_drive_io_reader_read(struct st_stream_reader * io, void * buffer, ssi
 	st_drive_generic_operation_start(self->drive_private);
 	ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
 	st_drive_generic_operation_stop(self->drive);
+
 	if (nb_read < 0) {
 		self->last_errno = errno;
 		return -1;
@@ -764,6 +775,9 @@ ssize_t st_drive_io_reader_read(struct st_stream_reader * io, void * buffer, ssi
 		self->position += nb_copy;
 
 		nb_total_read += nb_copy;
+	} else {
+		// end of file
+		self->end_of_file = 1;
 	}
 
 	return nb_total_read;
@@ -837,6 +851,9 @@ ssize_t st_drive_io_writer_get_available_size(struct st_stream_writer * io) {
 
 	if (!tape)
 		return 0;
+
+	// only for test purpose
+	//return 536870912 - self->position;
 
 	// we reserve 16 blocks at the end of tape
 	if (tape->available_block <= 16)

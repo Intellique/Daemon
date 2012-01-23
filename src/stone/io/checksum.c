@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 19 Jan 2012 11:59:57 +0100                         *
+*  Last modified: Mon, 23 Jan 2012 15:50:23 +0100                         *
 \*************************************************************************/
 
 // calloc, free, malloc
@@ -50,6 +50,7 @@ struct st_io_checksum_writer_private {
 
 
 static int st_io_checksum_reader_close(struct st_stream_reader * io);
+static int st_io_checksum_reader_end_of_file(struct st_stream_reader * io);
 static off_t st_io_checksum_reader_forward(struct st_stream_reader * io, off_t offset);
 static void st_io_checksum_reader_free(struct st_stream_reader * io);
 static ssize_t st_io_checksum_reader_get_block_size(struct st_stream_reader * io);
@@ -67,6 +68,7 @@ static ssize_t st_io_checksum_writer_write(struct st_stream_writer * io, const v
 
 static struct st_stream_reader_ops st_io_checksum_reader_ops = {
 	.close          = st_io_checksum_reader_close,
+	.end_of_file    = st_io_checksum_reader_end_of_file,
 	.forward        = st_io_checksum_reader_forward,
 	.free           = st_io_checksum_reader_free,
 	.get_block_size = st_io_checksum_reader_get_block_size,
@@ -146,6 +148,11 @@ int st_io_checksum_reader_close(struct st_stream_reader * io) {
 			self->digests[i] = self->checksums[(i << 1) + 1].ops->digest(self->checksums + (i << 1) + 1);
 	}
 	return failed;
+}
+
+int st_io_checksum_reader_end_of_file(struct st_stream_reader * io) {
+	struct st_io_checksum_reader_private * self = io->data;
+	return self->reader->ops->end_of_file(self->reader);
 }
 
 off_t st_io_checksum_reader_forward(struct st_stream_reader * io, off_t offset) {

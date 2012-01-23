@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 21 Jan 2012 18:04:13 +0100                         *
+*  Last modified: Mon, 23 Jan 2012 17:49:13 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -219,30 +219,116 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 	int status = 0;
 
 	if (header->link[0] != '\0' && !(header->mode & S_IFMT)) {
+		if (!access(path, F_OK)) {
+			status = unlink(path);
+
+			if (status) {
+				switch (errno) {
+					default:
+						job->db_ops->add_record(job, "Error: failed to delete file before restoring hardlink %s because %m", path);
+						return status;
+				}
+			}
+		}
 		status = link(header->link, path);
-		if (status)
-			job->db_ops->add_record(job, "Warning: failed to create an hardlink from %s to %s because %m", path, header->link);
+		if (status) {
+			switch (errno) {
+				default:
+					job->db_ops->add_record(job, "Warning: failed to create an hardlink from %s to %s because %m", path, header->link);
+					break;
+			}
+		}
 	} else if (S_ISFIFO(header->mode)) {
+		if (!access(path, F_OK)) {
+			status = unlink(path);
+			if (status) {
+				switch (errno) {
+					default:
+						job->db_ops->add_record(job, "Error: failed to delete file before restoring fifo named %s because %m", path);
+						return status;
+				}
+			}
+		}
 		status = mknod(path, S_IFIFO, 0);
-		if (status)
-			job->db_ops->add_record(job, "Warning: failed to create a fifo named %s because %m", path);
+		if (status) {
+			switch (errno) {
+				default:
+					job->db_ops->add_record(job, "Warning: failed to create a fifo named %s because %m", path);
+					break;
+			}
+		}
 	} else if (S_ISCHR(header->mode)) {
+		if (!access(path, F_OK)) {
+			status = unlink(path);
+			if (status) {
+				switch (errno) {
+					default:
+						job->db_ops->add_record(job, "Error: failed to delete file before restoring character device (major:%d,minor:%d) named %s because %m", (int) header->dev >> 8, (int) header->dev & 0xFF, path);
+						return status;
+				}
+			}
+		}
 		status = mknod(path, S_IFCHR, header->dev);
-		if (status)
-			job->db_ops->add_record(job, "Warning: failed to create a character device (major:%d,minor:%d) named %s because %m", (int) header->dev >> 8, (int) header->dev & 0xFF, path);
+		if (status) {
+			switch (errno) {
+				default:
+					job->db_ops->add_record(job, "Warning: failed to create a character device (major:%d,minor:%d) named %s because %m", (int) header->dev >> 8, (int) header->dev & 0xFF, path);
+					break;
+			}
+		}
 	} else if (S_ISDIR(header->mode)) {
+		if (!access(path, F_OK))
+			return 0;
 		status = mkdir(path, header->mode);
-		if (status)
-			job->db_ops->add_record(job, "Warning: failed to create a directory named %s because %m", path);
+		if (status) {
+			switch (errno) {
+				default:
+					job->db_ops->add_record(job, "Warning: failed to create a directory named %s because %m", path);
+					break;
+			}
+		}
 	} else if (S_ISBLK(header->mode)) {
+		if (!access(path, F_OK)) {
+			status = unlink(path);
+			if (status) {
+				switch (errno) {
+					default:
+						job->db_ops->add_record(job, "Error: failed to delete file before restoring block device (major:%d,minor:%d) named %s because %m", (int) header->dev >> 8, (int) header->dev & 0xFF, path);
+						return status;
+				}
+			}
+		}
 		status = mknod(path, S_IFBLK, header->dev);
-		if (status)
-			job->db_ops->add_record(job, "Warning: failed to create a block device (major:%d,minor:%d) named %s because %m", (int) header->dev >> 8, (int) header->dev & 0xFF, path);
+		if (status) {
+			switch (errno) {
+				default:
+					job->db_ops->add_record(job, "Warning: failed to create a block device (major:%d,minor:%d) named %s because %m", (int) header->dev >> 8, (int) header->dev & 0xFF, path);
+					break;
+			}
+		}
 	} else if (S_ISREG(header->mode)) {
-		int fd = open(path, O_CREAT | O_TRUNC | O_WRONLY, header->mode);
+		if (!access(path, F_OK) && header->offset == 0) {
+			status = unlink(path);
+			if (status) {
+				switch (errno) {
+					default:
+						job->db_ops->add_record(job, "Error: failed to delete file before restoring regular file named %s because %m", path);
+						return status;
+				}
+			}
+		}
+		int fd = open(path, O_CREAT | O_WRONLY, header->mode);
 		if (fd < 0) {
 			job->db_ops->add_record(job, "Warning: failed to create a file named %s because %m", path);
 			return status;
+		}
+
+		if (header->offset > 0) {
+			if (lseek(fd, header->offset, SEEK_SET) == (off_t) -1) {
+				job->db_ops->add_record(job, "Warning: failed to seek position into file named %s because %m", path);
+				close(fd);
+				return status;
+			}
 		}
 
 		struct st_job_restore_private * jp = job->data;
@@ -266,6 +352,17 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 		close(fd);
 
 	} else if (S_ISLNK(header->mode)) {
+		if (!access(path, F_OK)) {
+			status = unlink(path);
+
+			if (status) {
+				switch (errno) {
+					default:
+						job->db_ops->add_record(job, "Error: failed to delete file before restoring symbolic %s because %m", path);
+						return status;
+				}
+			}
+		}
 		status = symlink(header->link, header->path);
 	}
 
@@ -300,7 +397,7 @@ int st_job_restore_run(struct st_job * job) {
 		drive_is_free,
 		look_for_changer,
 		look_for_free_drive,
-		tape_is_in_changer,
+		next_tape,
 		tape_is_in_drive,
 	} state = look_for_changer;
 
@@ -311,7 +408,7 @@ int st_job_restore_run(struct st_job * job) {
 
 	unsigned i, j;
 	for (i = 0; i < job->nb_tapes; i++)
-		jp->total_size = job->tapes[i].size;
+		jp->total_size += job->tapes[i].size;
 
 	for (i = 0; i < job->nb_tapes && !status; i++) {
 		struct st_job_tape * tape = job->tapes + i;
@@ -340,10 +437,10 @@ int st_job_restore_run(struct st_job * job) {
 					if (!drive->lock->ops->trylock(drive->lock)) {
 						drive->ops->set_file_position(drive, tape->tape_position);
 						status = st_job_restore_restore(job, drive);
-						state = tape_is_in_changer;
+						state = next_tape;
 						stop = 1;
 					} else {
-						state = tape_is_in_changer;
+						state = next_tape;
 						sleep(5);
 					}
 					break;
@@ -392,7 +489,7 @@ int st_job_restore_run(struct st_job * job) {
 
 						drive->ops->set_file_position(drive, tape->tape_position);
 						status = st_job_restore_restore(job, drive);
-						state = tape_is_in_changer;
+						state = next_tape;
 						stop = 1;
 					} else {
 						slot->lock->ops->unlock(slot->lock);
@@ -401,7 +498,12 @@ int st_job_restore_run(struct st_job * job) {
 					}
 					break;
 
-				case tape_is_in_changer:
+				case next_tape:
+					changer = st_changer_get_by_tape(tape->tape);
+					if (!changer) {
+						state = alert_user;
+						break;
+					}
 					slot = changer->ops->get_tape(changer, tape->tape);
 
 					if (slot && slot->drive) {
@@ -417,9 +519,11 @@ int st_job_restore_run(struct st_job * job) {
 							drive = slot->drive;
 							state = drive_is_free;
 						}
+					//} else if (slot && slot->changer != drive->changer) {
+						// we switch changer
 					} else if (slot) {
 						struct st_slot * sl = 0;
-						for (j = changer->nb_drives; !sl && j < changer->nb_slots; i++) {
+						for (j = changer->nb_drives; !sl && j < changer->nb_slots; j++) {
 							struct st_slot * ptrsl = changer->slots + j;
 							if (ptrsl->lock->ops->trylock(ptrsl->lock))
 								continue;
@@ -428,7 +532,7 @@ int st_job_restore_run(struct st_job * job) {
 							else
 								ptrsl->lock->ops->unlock(ptrsl->lock);
 						}
-						for (j = changer->nb_drives; !sl && j < changer->nb_slots; i++) {
+						for (j = changer->nb_drives; !sl && j < changer->nb_slots; j++) {
 							struct st_slot * ptrsl = changer->slots + j;
 							if (ptrsl->lock->ops->trylock(ptrsl->lock))
 								continue;
@@ -443,6 +547,20 @@ int st_job_restore_run(struct st_job * job) {
 						}
 
 						drive->ops->eject(drive);
+
+						changer->lock->ops->lock(changer->lock);
+						changer->ops->unload(changer, drive, sl);
+						sl->lock->ops->unlock(sl->lock);
+						slot->lock->ops->lock(slot->lock);
+						changer->ops->load(changer, slot, drive);
+						changer->lock->ops->unlock(changer->lock);
+						slot->lock->ops->unlock(slot->lock);
+						drive->ops->reset(drive);
+
+						drive->ops->set_file_position(drive, tape->tape_position);
+						status = st_job_restore_restore(job, drive);
+						state = next_tape;
+						stop = 1;
 					} else {
 						drive->lock->ops->unlock(drive->lock);
 						state = look_for_changer;
