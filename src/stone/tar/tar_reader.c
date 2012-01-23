@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 30 Dec 2011 14:45:46 +0100                         *
+*  Last modified: Mon, 23 Jan 2012 10:13:24 +0100                         *
 \*************************************************************************/
 
 // sscanf, snprintf
@@ -41,11 +41,8 @@
 struct st_tar_private_in {
 	struct st_stream_reader * io;
 	off_t position;
-	char * buffer;
-	unsigned int bufferSize;
-	unsigned int bufferUsed;
-	ssize_t filesize;
-	ssize_t skipsize;
+	ssize_t file_size;
+	ssize_t skip_size;
 };
 
 
@@ -60,9 +57,8 @@ static void st_tar_in_free(struct st_tar_in * f);
 static ssize_t st_tar_in_get_block_size(struct st_tar_in * in);
 static enum st_tar_header_status st_tar_in_get_header(struct st_tar_in * f, struct st_tar_header * header);
 static int st_tar_in_last_errno(struct st_tar_in * f);
-static ssize_t st_tar_in_prefetch(struct st_tar_private_in * self, ssize_t length);
+static ssize_t st_tar_in_position(struct st_tar_in * f);
 static ssize_t st_tar_in_read(struct st_tar_in * f, void * data, ssize_t length);
-static ssize_t st_tar_in_read_buffer(struct st_tar_private_in * f, void * data, ssize_t length);
 static int st_tar_in_skip_file(struct st_tar_in * f);
 
 static struct st_tar_in_ops st_tar_in_ops = {
@@ -71,6 +67,7 @@ static struct st_tar_in_ops st_tar_in_ops = {
 	.get_block_size = st_tar_in_get_block_size,
 	.get_header     = st_tar_in_get_header,
 	.last_errno     = st_tar_in_last_errno,
+	.position       = st_tar_in_position,
 	.read           = st_tar_in_read,
 	.skip_file      = st_tar_in_skip_file,
 };
@@ -87,7 +84,7 @@ int st_tar_in_check_header(struct st_tar * header) {
 		sum += ptr[i];
 	snprintf(header->checksum, 7, "%06o", sum);
 
-	return strncmp(checksum, header->checksum, 8);
+	return strncmp(checksum, header->checksum, 7);
 }
 
 int st_tar_in_close(struct st_tar_in * f) {
@@ -145,10 +142,6 @@ void st_tar_in_free(struct st_tar_in * f) {
 	if (self->io)
 		self->io->ops->free(self->io);
 
-	if (self->buffer)
-		free(self->buffer);
-	self->buffer = 0;
-
 	free(f->data);
 	free(f);
 }
@@ -160,7 +153,10 @@ ssize_t st_tar_in_get_block_size(struct st_tar_in * in) {
 
 enum st_tar_header_status st_tar_in_get_header(struct st_tar_in * f, struct st_tar_header * header) {
 	struct st_tar_private_in * self = f->data;
-	ssize_t nbRead = st_tar_in_prefetch(self, 2560);
+
+	char buffer[512];
+	ssize_t nbRead = self->io->ops->read(self->io, buffer, 512);
+
 	if (nbRead == 0)
 		return ST_TAR_HEADER_NOT_FOUND;
 	if (nbRead < 0)
@@ -169,9 +165,7 @@ enum st_tar_header_status st_tar_in_get_header(struct st_tar_in * f, struct st_t
 	st_tar_init_header(header);
 
 	do {
-		char buffer[512];
 		struct st_tar * h = (struct st_tar *) buffer;
-		nbRead = st_tar_in_read_buffer(self, buffer, 512);
 
 		if (h->filename[0] == '\0')
 			return ST_TAR_HEADER_NOT_FOUND;
@@ -189,13 +183,13 @@ enum st_tar_header_status st_tar_in_get_header(struct st_tar_in * f, struct st_t
 		switch (h->flag) {
 			case 'L':
 				next_read = st_tar_in_convert_size(h);
-				nbRead = st_tar_in_read_buffer(self, buffer, 512 + next_read - next_read % 512);
+				nbRead = self->io->ops->read(self->io, buffer, 512 + next_read - next_read % 512);
 				strncpy(header->path, buffer, next_read);
 				continue;
 
 			case 'K':
 				next_read = st_tar_in_convert_size(h);
-				nbRead = st_tar_in_read_buffer(self, buffer, 512 + next_read - next_read % 512);
+				nbRead = self->io->ops->read(self->io, buffer, 512 + next_read - next_read % 512);
 				strncpy(header->link, buffer, next_read);
 				continue;
 
@@ -253,10 +247,10 @@ enum st_tar_header_status st_tar_in_get_header(struct st_tar_in * f, struct st_t
 		}
 	} while (!header->filename);
 
-	self->skipsize = self->filesize = header->size;
+	self->skip_size = self->file_size = header->size;
 
 	if (header->size > 0 && header->size % 512)
-		self->skipsize = 512 + header->size - header->size % 512;
+		self->skip_size = 512 + header->size - header->size % 512;
 
 	return ST_TAR_HEADER_OK;
 }
@@ -266,93 +260,36 @@ int st_tar_in_last_errno(struct st_tar_in * f) {
 	return self->io->ops->last_errno(self->io);
 }
 
-ssize_t st_tar_in_prefetch(struct st_tar_private_in * self, ssize_t length) {
-	if (self->bufferSize < length) {
-		self->buffer = realloc(self->buffer, length);
-		self->bufferSize = length;
-	}
-	if (self->bufferUsed < length) {
-		ssize_t nbRead = self->io->ops->read(self->io, self->buffer + self->bufferUsed, length - self->bufferUsed);
-		if (nbRead < 0)
-			return nbRead;
-		if (nbRead > 0)
-			self->bufferUsed += nbRead;
-	}
-	return self->bufferUsed;
+ssize_t st_tar_in_position(struct st_tar_in * f) {
+	struct st_tar_private_in * self = f->data;
+	return self->io->ops->position(self->io);
 }
 
 ssize_t st_tar_in_read(struct st_tar_in * f, void * data, ssize_t length) {
 	struct st_tar_private_in * self = f->data;
-	if (length > self->filesize)
-		length = self->filesize;
-	ssize_t nbRead = st_tar_in_read_buffer(self, data, length);
+	if (length > self->file_size)
+		length = self->file_size;
+
+	ssize_t nbRead = self->io->ops->read(self->io, data, length);
 	if (nbRead > 0) {
-		self->filesize -= nbRead;
-		self->skipsize -= nbRead;
+		self->file_size -= nbRead;
+		self->skip_size -= nbRead;
 	}
-	if (self->filesize == 0 && self->skipsize > 0)
+	if (self->file_size == 0 && self->skip_size > 0)
 		st_tar_in_skip_file(f);
-	return nbRead;
-}
-
-ssize_t st_tar_in_read_buffer(struct st_tar_private_in * self, void * data, ssize_t length) {
-	ssize_t nbRead = 0;
-	if (self->bufferUsed > 0) {
-		nbRead = length > self->bufferUsed ? self->bufferUsed : length;
-		memcpy(data, self->buffer, nbRead);
-
-		self->bufferUsed -= nbRead;
-		if (self->bufferUsed > 0)
-			memmove(self->buffer, self->buffer + nbRead, self->bufferUsed);
-
-		if (length == nbRead) {
-			self->position += nbRead;
-			return nbRead;
-		}
-	}
-
-	char * pdata = data;
-	ssize_t r = self->io->ops->read(self->io, pdata + nbRead, length - nbRead);
-	if (r < 0) {
-		memcpy(self->buffer, data, nbRead);
-		self->bufferUsed = nbRead;
-		return r;
-	}
-
-	if (self->bufferUsed == 0) {
-		free(self->buffer);
-		self->buffer = 0;
-		self->bufferSize = 0;
-	}
-
-	nbRead += r;
-	self->position += nbRead;
 	return nbRead;
 }
 
 int st_tar_in_skip_file(struct st_tar_in * f) {
 	struct st_tar_private_in * self = f->data;
-	if (self->skipsize == 0)
+	if (self->skip_size == 0)
 		return 0;
-	if (self->bufferUsed > 0) {
-		if (self->skipsize < self->bufferUsed) {
-			memmove(self->buffer, self->buffer + self->skipsize, self->bufferUsed - self->skipsize);
-			self->bufferUsed -= self->skipsize;
-			self->filesize = 0;
-			self->skipsize = 0;
-			return 0;
-		} else {
-			self->filesize -= self->bufferUsed;
-			self->skipsize -= self->bufferUsed;
-			self->bufferUsed = 0;
-		}
-	}
-	if (self->skipsize > 0) {
-		off_t next_pos = self->io->ops->position(self->io) + self->skipsize;
-		off_t new_pos = self->io->ops->forward(self->io, self->skipsize);
+	if (self->skip_size > 0) {
+		off_t next_pos = self->io->ops->position(self->io) + self->skip_size;
+		off_t new_pos = self->io->ops->forward(self->io, self->skip_size);
 		if (new_pos == (off_t) -1)
 			return 1;
-		self->filesize = self->skipsize = 0;
+		self->file_size = self->skip_size = 0;
 		return new_pos != next_pos;
 	}
 	return 0;
@@ -365,11 +302,8 @@ struct st_tar_in * st_tar_new_in(struct st_stream_reader * io) {
 	struct st_tar_private_in * data = malloc(sizeof(struct st_tar_private_in));
 	data->io = io;
 	data->position = 0;
-	data->buffer = 0;
-	data->bufferSize = 0;
-	data->bufferUsed = 0;
-	data->filesize = 0;
-	data->skipsize = 0;
+	data->file_size = 0;
+	data->skip_size = 0;
 
 	struct st_tar_in * self = malloc(sizeof(struct st_tar_in));
 	self->ops = &st_tar_in_ops;

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 14 Jan 2012 16:58:02 +0100                         *
+*  Last modified: Sat, 21 Jan 2012 13:19:26 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -85,6 +85,7 @@ struct st_job {
 		long sequence;
 		struct st_tape * tape;
 		long tape_position;
+		ssize_t size;
 	} * tapes;
 	unsigned int nb_tapes;
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 19 Jan 2012 21:40:42 +0100                         *
+*  Last modified: Sat, 21 Jan 2012 13:43:19 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_TAR_H__
@@ -126,6 +126,7 @@ struct st_tar_in {
 		 * \param[in] f : a tar format
 		 */
 		int (*last_errno)(struct st_tar_in * f);
+		ssize_t (*position)(struct st_tar_in * f);
 		ssize_t (*read)(struct st_tar_in * f, void * data, ssize_t length);
 		int (*skip_file)(struct st_tar_in * f);
 	} * ops;
@@ -147,6 +148,7 @@ struct st_tar_out {
 		int (*end_of_file)(struct st_tar_out * f);
 		void (*free)(struct st_tar_out * f);
 		int (*last_errno)(struct st_tar_out * f);
+		ssize_t (*position)(struct st_tar_out * f);
 		int (*restart_file)(struct st_tar_out * f, const char * filename, ssize_t position);
 		ssize_t (*write)(struct st_tar_out * f, const void * data, ssize_t length);
 	} * ops;

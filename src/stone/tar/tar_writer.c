@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 19 Jan 2012 21:41:55 +0100                         *
+*  Last modified: Sat, 21 Jan 2012 13:44:26 +0100                         *
 \*************************************************************************/
 
 #include <errno.h>
@@ -73,6 +73,7 @@ static ssize_t st_tar_out_get_block_size(struct st_tar_out * f);
 static ssize_t st_tar_out_get_file_position(struct st_tar_out * f);
 static void st_tar_out_gid2name(char * name, ssize_t length, gid_t uid);
 static int st_tar_out_last_errno(struct st_tar_out * f);
+static ssize_t st_tar_out_position(struct st_tar_out * f);
 static int st_tar_out_restart_file(struct st_tar_out * f, const char * filename, ssize_t position);
 static const char * st_tar_out_skip_leading_slash(const char * str);
 static void st_tar_out_uid2name(char * name, ssize_t length, uid_t uid);
@@ -89,6 +90,7 @@ static struct st_tar_out_ops st_tar_out_ops = {
 	.get_file_position  = st_tar_out_get_file_position,
 	.free               = st_tar_out_free,
 	.last_errno         = st_tar_out_last_errno,
+	.position           = st_tar_out_position,
 	.restart_file       = st_tar_out_restart_file,
 	.write              = st_tar_out_write,
 };
@@ -420,6 +422,11 @@ int st_tar_out_last_errno(struct st_tar_out * f) {
 	if (format->last_errno)
 		return format->last_errno;
 	return format->io->ops->last_errno(format->io);
+}
+
+ssize_t st_tar_out_position(struct st_tar_out * f) {
+	struct st_tar_private_out * format = f->data;
+	return format->io->ops->position(format->io);
 }
 
 int st_tar_out_restart_file(struct st_tar_out * f, const char * filename, ssize_t position) {

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 19 Jan 2012 23:02:30 +0100                         *
+*  Last modified: Mon, 23 Jan 2012 11:14:58 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -597,7 +597,7 @@ off_t st_drive_io_reader_forward(struct st_stream_reader * io, off_t offset) {
 			self->position += self->buffer_used;
 			self->buffer_used = 0;
 		} else {
-			memmove(self->buffer, self->buffer + offset, offset);
+			memmove(self->buffer, self->buffer + offset, self->buffer_used - offset);
 			self->buffer_used -= offset;
 			self->position += offset;
 			offset = 0;
@@ -705,6 +705,9 @@ ssize_t st_drive_io_reader_read(struct st_stream_reader * io, void * buffer, ssi
 	if (self->fd < 0)
 		return -1;
 
+	if (length < 1)
+		return 0;
+
 	ssize_t nb_total_read = 0;
 	if (self->buffer_used > 0) {
 		ssize_t nb_copy = self->buffer_used >= length ? length : self->buffer_used;
@@ -759,9 +762,6 @@ ssize_t st_drive_io_reader_read(struct st_stream_reader * io, void * buffer, ssi
 			memmove(self->buffer, self->buffer + nb_copy, self->buffer_used - nb_copy);
 		self->buffer_used -= nb_copy;
 		self->position += nb_copy;
-
-		if (nb_copy == length)
-			return length;
 
 		nb_total_read += nb_copy;
 	}

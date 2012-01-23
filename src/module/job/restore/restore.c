@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 15 Jan 2012 11:54:59 +0100                         *
+*  Last modified: Sat, 21 Jan 2012 18:04:13 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -53,6 +53,9 @@
 struct st_job_restore_private {
 	char * buffer;
 	ssize_t length;
+
+	ssize_t position;
+	ssize_t total_size;
 };
 
 static int st_job_restore_filter(struct st_job * job, struct st_tar_header * header);
@@ -146,6 +149,9 @@ void st_job_restore_new_job(struct st_database_connection * db __attribute__((un
 	self->buffer = 0;
 	self->length = 0;
 
+	self->position = 0;
+	self->total_size = 0;
+
 	job->data = self;
 	job->job_ops = &st_job_restore_ops;
 }
@@ -174,6 +180,9 @@ int st_job_restore_restore(struct st_job * job, struct st_drive * drive) {
 		if (job->restore_to->nb_trunc_path > 0)
 			path = st_job_restore_trunc_filename(path, job->restore_to->nb_trunc_path);
 
+		if (!path)
+			continue;
+
 		ssize_t length = restore_path_length + strlen(path);
 		char * restore_path = malloc(length + 2);
 
@@ -186,7 +195,7 @@ int st_job_restore_restore(struct st_job * job, struct st_drive * drive) {
 			strcpy(restore_path + restore_path_length + 1, path);
 		}
 
-		failed = st_job_restore_restore_file(job, tar, &header, path);
+		failed = st_job_restore_restore_file(job, tar, &header, restore_path);
 
 		free(restore_path);
 
@@ -206,6 +215,7 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 	if (header->is_label)
 		return 0;
 
+	struct st_job_restore_private * jp = job->data;
 	int status = 0;
 
 	if (header->link[0] != '\0' && !(header->mode & S_IFMT)) {
@@ -245,6 +255,9 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 			}
 
 			nb_total_read += nb_read;
+
+			job->done = (float) (jp->position + tar->ops->position(tar)) / jp->total_size;
+			job->db_ops->update_status(job);
 		}
 
 		if (nb_read < 0)
@@ -256,10 +269,15 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 		status = symlink(header->link, header->path);
 	}
 
+	job->done = (float) (jp->position + tar->ops->position(tar)) / jp->total_size;
+	job->db_ops->update_status(job);
+
 	return status;
 }
 
 int st_job_restore_run(struct st_job * job) {
+	struct st_job_restore_private * jp = job->data;
+
 	job->db_ops->add_record(job, "Start restore job (job id: %ld), num runs %ld", job->id, job->num_runs);
 
 	// check permission
@@ -292,7 +310,10 @@ int st_job_restore_run(struct st_job * job) {
 	short has_alert_user = 0;
 
 	unsigned i, j;
-	for (i = 0; i < job->nb_tapes; i++) {
+	for (i = 0; i < job->nb_tapes; i++)
+		jp->total_size = job->tapes[i].size;
+
+	for (i = 0; i < job->nb_tapes && !status; i++) {
 		struct st_job_tape * tape = job->tapes + i;
 
 		short stop = 0;
@@ -304,10 +325,10 @@ int st_job_restore_run(struct st_job * job) {
 
 					if (!has_alert_user) {
 						job->db_ops->add_record(job, "Tape not found (named: %s)", tape->tape->name);
-						st_log_write_all(st_log_level_error, st_log_type_user_message, "Job: format tape (id:%ld) request you to put a tape (named: %s) in your changer or standalone drive", job->id, tape->tape->name);
+						st_log_write_all(st_log_level_error, st_log_type_user_message, "Job: restore (id:%ld) request you to put a tape (named: %s) in your changer or standalone drive", job->id, tape->tape->name);
 					}
 					has_alert_user = 1;
-					sleep(15);
+					sleep(5);
 
 					job->sched_status = st_job_status_running;
 					job->db_ops->update_status(job);
@@ -318,12 +339,12 @@ int st_job_restore_run(struct st_job * job) {
 				case drive_is_free:
 					if (!drive->lock->ops->trylock(drive->lock)) {
 						drive->ops->set_file_position(drive, tape->tape_position);
-						st_job_restore_restore(job, drive);
+						status = st_job_restore_restore(job, drive);
 						state = tape_is_in_changer;
 						stop = 1;
 					} else {
 						state = tape_is_in_changer;
-						sleep(15);
+						sleep(5);
 					}
 					break;
 
@@ -370,12 +391,12 @@ int st_job_restore_run(struct st_job * job) {
 						drive->ops->reset(drive);
 
 						drive->ops->set_file_position(drive, tape->tape_position);
-						st_job_restore_restore(job, drive);
+						status = st_job_restore_restore(job, drive);
 						state = tape_is_in_changer;
 						stop = 1;
 					} else {
 						slot->lock->ops->unlock(slot->lock);
-						sleep(15);
+						sleep(5);
 						state = look_for_changer;
 					}
 					break;
@@ -389,7 +410,7 @@ int st_job_restore_run(struct st_job * job) {
 							drive = slot->drive;
 
 							drive->ops->set_file_position(drive, tape->tape_position);
-							st_job_restore_restore(job, drive);
+							status = st_job_restore_restore(job, drive);
 							stop = 1;
 						} else {
 							drive->lock->ops->unlock(drive->lock);
@@ -436,7 +457,14 @@ int st_job_restore_run(struct st_job * job) {
 		}
 	}
 
-	return 0;
+	drive->lock->ops->unlock(drive->lock);
+
+	if (!status)
+		job->db_ops->add_record(job, "Job restore (id:%ld) finished with status = OK", job->id);
+	else
+		job->db_ops->add_record(job, "Job restore (id:%ld) finished with status = %d", job->id, status);
+
+	return status;
 }
 
 int st_job_restore_stop(struct st_job * job __attribute__((unused))) {
@@ -447,6 +475,9 @@ char * st_job_restore_trunc_filename(char * path, int nb_trunc_path) {
 	while (nb_trunc_path > 0 && path) {
 		path = strchr(path, '/');
 		nb_trunc_path--;
+
+		if (path && *path == '/')
+			path++;
 	}
 
 	return path;

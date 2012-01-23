@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 17 Jan 2012 13:07:59 +0100                         *
+*  Last modified: Sat, 21 Jan 2012 13:21:02 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -474,7 +474,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 	st_db_postgresql_prepare(self, "select_paths", "SELECT path FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1)");
 	st_db_postgresql_prepare(self, "select_checksums", "SELECT * FROM checksum WHERE id IN (SELECT checksum FROM jobtochecksum WHERE job = $1)");
 	st_db_postgresql_prepare(self, "select_archive", "SELECT * FROM tape WHERE id IN (SELECT tape FROM archivevolume WHERE archive = $1)");
-	st_db_postgresql_prepare(self, "select_job_tape", "SELECT v.sequence, t.uuid, v.tapeposition FROM archivevolume v, tape t WHERE v.tape = t.id AND v.archive = $1 ORDER BY v.sequence");
+	st_db_postgresql_prepare(self, "select_job_tape", "SELECT v.sequence, t.uuid, v.tapeposition, v.size FROM archivevolume v, tape t WHERE v.tape = t.id AND v.archive = $1 ORDER BY v.sequence");
 	st_db_postgresql_prepare(self, "select_restore", "SELECT * FROM restoreto WHERE job = $1 LIMIT 1");
 
 	char csince[24], * lastmaxjobs = 0, * nbjobs = 0;
@@ -625,12 +625,14 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 			else if (status2 == PGRES_TUPLES_OK) {
 				int j, nb_tuples2 = PQntuples(result2);
 				jobs[i]->tapes = calloc(nb_tuples2, sizeof(struct st_job_tape));
+				jobs[i]->nb_tapes = nb_tuples2;
 
 				for (j = 0; j < nb_tuples2; j++) {
 					struct st_job_tape * tape = jobs[i]->tapes + j;
 					st_db_postgresql_get_long(result2, j, 0, &tape->sequence);
 					tape->tape = st_tape_get_by_uuid(PQgetvalue(result2, j, 1));
-					st_db_postgresql_get_long(result2, j, 0, &tape->tape_position);
+					st_db_postgresql_get_long(result2, j, 2, &tape->tape_position);
+					st_db_postgresql_get_ssize(result2, j, 3, &tape->size);
 				}
 			}
 			PQclear(result2);
