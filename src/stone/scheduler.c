@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 19 Jan 2012 21:47:54 +0100                         *
+*  Last modified: Mon, 23 Jan 2012 18:18:32 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -43,11 +43,11 @@
 #include <stone/database.h>
 #include <stone/job.h>
 #include <stone/log.h>
+#include <stone/threadpool.h>
 
 #include "scheduler.h"
 
 struct st_sched_job {
-	pthread_t th;
 	struct st_database_connection * status_con;
 	time_t updated;
 };
@@ -56,7 +56,7 @@ static int st_sched_add_record(struct st_job * j, const char * format, ...) __at
 static void st_sched_exit(int signal);
 static void st_sched_init_job(struct st_job * j);
 static void st_sched_run_job(struct st_job * j);
-static void * st_sched_run_job2(void * arg);
+static void st_sched_run_job2(void * arg);
 static int st_sched_update_status(struct st_job * j);
 
 static short st_sched_stop_request = 0;
@@ -209,18 +209,10 @@ void st_sched_init_job(struct st_job * j) {
 void st_sched_run_job(struct st_job * j) {
 	st_log_write_all(st_log_level_info, st_log_type_scheduler, "starting job id = %ld", j->id);
 
-	struct st_sched_job * jp = j->scheduler_private;
-
-	pthread_attr_t attr;
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-
-	pthread_create(&jp->th, &attr, st_sched_run_job2, j);
-
-	pthread_attr_destroy(&attr);
+	st_threadpool_run(st_sched_run_job2, j);
 }
 
-void * st_sched_run_job2(void * arg) {
+void st_sched_run_job2(void * arg) {
 	struct st_job * j = arg;
 
 	j->sched_status = st_job_status_running;
@@ -250,8 +242,6 @@ void * st_sched_run_job2(void * arg) {
 	st_log_write_all(st_log_level_info, st_log_type_scheduler, "job finished, id = %ld, with exited code = %d", j->id, status);
 
 	j->id = -1;
-
-	return 0;
 }
 
 int st_sched_update_status(struct st_job * j) {
