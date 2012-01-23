@@ -22,13 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jan 2012 22:33:56 +0100                         *
+*  Last modified: Mon, 23 Jan 2012 22:38:07 +0100                         *
 \*************************************************************************/
 
 // malloc
 #include <stdlib.h>
 
-#include "socket.h"
+#include <stone/io/socket.h>
 
 struct st_socket_generic_private {
 	int fd;

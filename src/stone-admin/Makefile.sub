@@ -9,8 +9,8 @@ STONEADMIN_DEP_FILES	:= $(sort $(shell test -d ${STONEADMIN_DEPEND_DIR} && find 
 
 STONEADMIN_BIN			:= bin/stone-admin
 STONEADMIN_CFLAG		:= -I.
-STONEADMIN_LD			:=
+STONEADMIN_LD			:= -lstone -Llib
 
-STONEADMIN_LIB			:=
+STONEADMIN_LIB			:= lib/libstone.so
 
 BIN_SYMS				+= STONEADMIN
