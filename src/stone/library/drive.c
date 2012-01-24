@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jan 2012 12:59:44 +0100                         *
+*  Last modified: Tue, 24 Jan 2012 17:19:59 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -336,10 +336,6 @@ void st_drive_generic_operation_stop(struct st_drive * drive) {
 void st_drive_generic_reset(struct st_drive * drive) {
 	struct st_drive_generic * self = drive->data;
 
-	close(self->fd_nst);
-	sleep(1);
-	self->fd_nst = open(drive->device, O_RDWR | O_NONBLOCK);
-
 	static struct mtop nop = { MTNOP, 1 };
 
 	int i, failed = 1;
@@ -351,8 +347,8 @@ void st_drive_generic_reset(struct st_drive * drive) {
 		}
 
 		if (failed) {
-			if (i == 0)
-				st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: tape drive is not ready, waiting for it", drive->vendor, drive->model, drive - drive->changer->drives);
+			if (i == 1)
+				st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: tape drive is not ready, waiting for", drive->vendor, drive->model, drive - drive->changer->drives);
 
 			if (self->fd_nst > -1)
 				close(self->fd_nst);
@@ -366,7 +362,7 @@ void st_drive_generic_reset(struct st_drive * drive) {
 	drive->nb_files = 0;
 	st_drive_generic_update_status(drive);
 
-	if (i > 0)
+	if (i > 1)
 		st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: tape drive is now ready", drive->vendor, drive->model, drive - drive->changer->drives);
 }
 
