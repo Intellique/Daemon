@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 19 Jan 2012 16:27:24 +0100                         *
+*  Last modified: Tue, 24 Jan 2012 16:34:49 +0100                         *
 \*************************************************************************/
 
 // ssize_t
@@ -460,9 +460,46 @@ void st_scsi_mtx_status_update_slot(int fd, struct st_changer * changer, int sta
 	free(header.dxferp);
 }
 
+int st_scsi_tape_postion(int fd, struct st_tape * tape) {
+	RequestSense_T sense;
+	unsigned char buffer[20];
+	bzero(buffer, 20);
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	unsigned char com[10] = { 0x34, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(buffer, 0, 20);
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(com);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = 20;
+	header.cmdp = com;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = buffer;
+	header.timeout = 60000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	if (status)
+		return 1;
+
+	if (buffer[0] & 0x4)
+		return -1;
+
+	tape->end_position = (((unsigned int) buffer[4] << 24) + ((unsigned int) buffer[5] << 16) + ((unsigned int) buffer[6] <<  8) + buffer[7]);
+
+	return 0;
+}
+
 int st_scsi_tape_size_available(int fd, struct st_tape * tape) {
 	RequestSense_T sense;
-	char buffer[2048];
+	unsigned char buffer[2048];
 	bzero(buffer, 2048);
 
 	unsigned char com1[10] = { 0x4D, 0, 0x31, 0, 0, 0, 0, 2048 >> 8 & 0xFF, 2048 & 0xFF, 0 };
@@ -486,39 +523,16 @@ int st_scsi_tape_size_available(int fd, struct st_tape * tape) {
 		return 1;
 
 	tape->available_block = ((unsigned int) buffer[8] << 24) + ((unsigned int) buffer[9] << 16) + ((unsigned int) buffer[10] <<  8) + buffer[11];
-	tape->available_block /= (tape->block_size >> 10);
-
 	// check for buggy tape drive, they report always the same value for available size and total size
-	if (buffer[8] == buffer[16] && buffer[9] == buffer[17] && buffer[10] == buffer[18] && buffer[11] == buffer[19]) {
-		unsigned char com2[10] = { 0x34, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-		memset(&header, 0, sizeof(header));
-		memset(&sense, 0, sizeof(sense));
-		memset(buffer, 0, 20);
-
-		header.interface_id = 'S';
-		header.cmd_len = sizeof(com2);
-		header.mx_sb_len = sizeof(sense);
-		header.dxfer_len = 20;
-		header.cmdp = com2;
-		header.sbp = (unsigned char *) &sense;
-		header.dxferp = buffer;
-		header.timeout = 60000;
-		header.dxfer_direction = SG_DXFER_FROM_DEV;
-
-		status = ioctl(fd, SG_IO, &header);
-		if (status)
-			return 1;
-
-		ssize_t position = 0;
-
-		if (!(buffer[0] & 0x4)) {
-			position = (unsigned int)(((unsigned int)buffer[4] << 24) + ((unsigned int)buffer[5] << 16) + ((unsigned int)buffer[6] <<  8) + buffer[7]);
-
-			// update available only for buggy tape drive
-			if (position > 0)
-				tape->available_block -= position * tape->block_size;
-		}
+	if (buffer[8] == buffer[24] && buffer[9] == buffer[25] && buffer[10] == buffer[26] && buffer[11] == buffer[27] && tape->end_position > 0) {
+		// update available only for buggy tape drive
+		// tape->available_block is in MBytes
+		tape->available_block <<= 10;
+		tape->available_block /= (tape->block_size >> 10);
+		tape->available_block -= tape->end_position;
+	} else {
+		// tape->available_block is in KBytes
+		tape->available_block /= (tape->block_size >> 10);
 	}
 
 	return 0;

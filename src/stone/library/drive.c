@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jan 2012 15:53:12 +0100                         *
+*  Last modified: Tue, 24 Jan 2012 12:59:44 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -455,13 +455,16 @@ void st_drive_generic_update_position(struct st_drive * drive) {
 	struct st_drive_generic * self = drive->data;
 	struct mtpos pos = { 0 };
 
+	int fd = open(drive->scsi_device, O_RDWR);
+
 	int failed = ioctl(self->fd_nst, MTIOCPOS, &pos);
-	if (!failed)
+	if (failed)
+		failed = st_scsi_tape_postion(fd, tape);
+	else
 		tape->end_position = pos.mt_blkno;
 
-	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: update tape position: %ld, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, pos.mt_blkno, failed);
+	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: update tape position: %ld, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, tape->end_position, failed);
 
-	int fd = open(drive->scsi_device, O_RDWR);
 	failed = st_scsi_tape_size_available(fd, tape);
 	close(fd);
 
