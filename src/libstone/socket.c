@@ -22,17 +22,31 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jan 2012 22:38:07 +0100                         *
+*  Last modified: Tue, 24 Jan 2012 09:36:27 +0100                         *
 \*************************************************************************/
 
+// errno
+#include <errno.h>
+#include <netdb.h>
 // malloc
 #include <stdlib.h>
+#include <stdio.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <stone/io/socket.h>
 
 struct st_socket_generic_private {
 	int fd;
 	short connected;
+	int last_errno;
+
+	off_t input_position;
+	off_t output_position;
+
+	short input_closed;
+	short output_closed;
 };
 
 static int st_socket_generic_connect(struct st_io_socket * socket, const char * hostname, unsigned short port);
@@ -56,7 +70,7 @@ static ssize_t st_socket_generic_writer_get_available_size(struct st_stream_writ
 static ssize_t st_socket_generic_writer_get_block_size(struct st_stream_writer * io);
 static int st_socket_generic_writer_last_errno(struct st_stream_writer * io);
 static ssize_t st_socket_generic_writer_position(struct st_stream_writer * io);
-static ssize_t st_socket_generic_writer_write(struct st_stream_writer * io, const char * buffer, ssize_t length);
+static ssize_t st_socket_generic_writer_write(struct st_stream_writer * io, const void * buffer, ssize_t length);
 
 static struct st_io_socket_ops st_socket_generic_ops = {
 	.connect           = st_socket_generic_connect,
@@ -88,83 +102,190 @@ static struct st_stream_writer_ops st_socket_generic_writer_ops = {
 };
 
 
-int st_socket_generic_connect(struct st_io_socket * socket, const char * hostname, unsigned short port) {
+int st_socket_generic_connect(struct st_io_socket * s, const char * hostname, unsigned short port) {
+	if (!s || !hostname)
+		return -1;
+
+	struct st_socket_generic_private * self = s->data;
+	if (self->connected)
+		return -1;
+
+	char sport[6];
+	snprintf(sport, 6, "%hu", port);
+
+	struct addrinfo * addresses;
+	if (getaddrinfo(hostname, sport, 0, &addresses))
+		return -2;
+
+	struct addrinfo * ptr;
+	for (ptr = addresses, self->fd = -1; ptr && self->fd < 0; ptr = ptr->ai_next) {
+		self->fd = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
+
+		if (self->fd < 0)
+			continue;
+
+		if (connect(self->fd, ptr->ai_addr, ptr->ai_addrlen) == -1) {
+			close(self->fd);
+			self->fd = -1;
+		}
+	}
+
+	freeaddrinfo(addresses);
+
+	if (self->fd < 0)
+		return -3;
+
+	self->connected = 1;
 	return 0;
 }
 
 void st_socket_generic_free(struct st_io_socket * socket) {
+	if (!socket)
+		return;
+
+	struct st_socket_generic_private * self = socket->data;
+	if (self->fd > -1)
+		close(self->fd);
+
+	free(self);
+	free(socket);
 }
 
 struct st_stream_writer * st_socket_generic_get_input_stream(struct st_io_socket * socket) {
-	return 0;
+	struct st_socket_generic_private * self = socket->data;
+	if (!self->connected)
+		return 0;
+
+	struct st_stream_writer * sw = malloc(sizeof(struct st_stream_writer));
+	sw->ops = &st_socket_generic_writer_ops;
+	sw->data = self;
+
+	return sw;
 }
 
 struct st_stream_reader * st_socket_generic_get_output_stream(struct st_io_socket * socket) {
-	return 0;
+	struct st_socket_generic_private * self = socket->data;
+	if (!self->connected)
+		return 0;
+
+	struct st_stream_reader * sr = malloc(sizeof(struct st_stream_reader));
+	sr->ops = &st_socket_generic_reader_ops;
+	sr->data = self;
+
+	return sr;
 }
 
 int st_socket_generic_is_connected(struct st_io_socket * socket) {
-	return 0;
+	struct st_socket_generic_private * self = socket->data;
+	return self->connected;
 }
 
 
 int st_socket_generic_reader_close(struct st_stream_reader * io) {
-	return 0;
+	struct st_socket_generic_private * self = io->data;
+	int failed = shutdown(self->fd, SHUT_RD);
+	if (!failed)
+		self->input_closed = 1;
+	return failed;
 }
 
 int st_socket_generic_reader_end_of_file(struct st_stream_reader * io) {
-	return 0;
+	struct st_socket_generic_private * self = io->data;
+	return self->input_closed;
 }
 
 off_t st_socket_generic_reader_forward(struct st_stream_reader * io, off_t offset) {
-	return 0;
+	struct st_socket_generic_private * self = io->data;
+	if (self->input_closed)
+		return self->input_position;
+
+	char buffer[4096];
+	ssize_t nb_total_read = 0;
+	while (nb_total_read < offset) {
+		ssize_t will_read = nb_total_read + 4096 < offset ? 4096 : offset - nb_total_read;
+		ssize_t nb_read = recv(self->fd, buffer, will_read, 0);
+		if (nb_read < 0) {
+			self->last_errno = errno;
+			return -1;
+		}
+
+		self->input_position += nb_read;
+		nb_total_read += nb_read;
+	}
+
+	return self->input_position;
 }
 
 void st_socket_generic_reader_free(struct st_stream_reader * io) {
+	io->ops = 0;
+	io->data = 0;
 }
 
-ssize_t st_socket_generic_reader_get_block_size(struct st_stream_reader * io) {
-	return 0;
+ssize_t st_socket_generic_reader_get_block_size(struct st_stream_reader * io __attribute__((unused))) {
+	return 4096;
 }
 
 int st_socket_generic_reader_last_errno(struct st_stream_reader * io) {
-	return 0;
+	struct st_socket_generic_private * self = io->data;
+	return self->last_errno;
 }
 
 ssize_t st_socket_generic_reader_position(struct st_stream_reader * io) {
-	return 0;
+	struct st_socket_generic_private * self = io->data;
+	return self->input_position;
 }
 
 ssize_t st_socket_generic_reader_read(struct st_stream_reader * io, void * buffer, ssize_t length) {
-	return 0;
+	struct st_socket_generic_private * self = io->data;
+	ssize_t nb_read = recv(self->fd, buffer, length, 0);
+	if (nb_read < 0)
+		self->last_errno = errno;
+	else if (nb_read > 0)
+		self->input_position += nb_read;
+	return nb_read;
 }
 
 
 int st_socket_generic_writer_close(struct st_stream_writer * io) {
-	return 0;
+	struct st_socket_generic_private * self = io->data;
+	int failed = shutdown(self->fd, SHUT_WR);
+	if (!failed)
+		self->output_closed = 1;
+	return failed;
 }
 
 void st_socket_generic_writer_free(struct st_stream_writer * io) {
+	io->ops = 0;
+	io->data = 0;
 }
 
 ssize_t st_socket_generic_writer_get_available_size(struct st_stream_writer * io) {
-	return 0;
+	struct st_socket_generic_private * self = io->data;
+	return self->output_closed ? 0 : 4096;
 }
 
-ssize_t st_socket_generic_writer_get_block_size(struct st_stream_writer * io) {
-	return 0;
+ssize_t st_socket_generic_writer_get_block_size(struct st_stream_writer * io __attribute__((unused))) {
+	return 4096;
 }
 
 int st_socket_generic_writer_last_errno(struct st_stream_writer * io) {
-	return 0;
+	struct st_socket_generic_private * self = io->data;
+	return self->last_errno;
 }
 
 ssize_t st_socket_generic_writer_position(struct st_stream_writer * io) {
-	return 0;
+	struct st_socket_generic_private * self = io->data;
+	return self->output_position;
 }
 
-ssize_t st_socket_generic_writer_write(struct st_stream_writer * io, const char * buffer, ssize_t length) {
-	return 0;
+ssize_t st_socket_generic_writer_write(struct st_stream_writer * io, const void * buffer, ssize_t length) {
+	struct st_socket_generic_private * self = io->data;
+	ssize_t nb_write = send(self->fd, buffer, length, 0);
+	if (nb_write < 0)
+		self->last_errno = errno;
+	else if (nb_write > 0)
+		self->output_position += nb_write;
+	return nb_write;
 }
 
 
@@ -172,6 +293,13 @@ struct st_io_socket * st_io_socket_new() {
 	struct st_socket_generic_private * self = malloc(sizeof(struct st_socket_generic_private));
 	self->fd = -1;
 	self->connected = 0;
+	self->last_errno = 0;
+
+	self->input_closed = 0;
+	self->output_closed = 0;
+
+	self->input_position = 0;
+	self->output_position = 0;
 
 	struct st_io_socket * socket = malloc(sizeof(struct st_io_socket));
 	socket->ops = &st_socket_generic_ops;
