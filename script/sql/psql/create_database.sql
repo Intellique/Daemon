@@ -116,7 +116,8 @@ CREATE TABLE TapeFormat (
     capacity BIGINT NOT NULL CHECK (capacity > 0),
     blockSize INTEGER NOT NULL DEFAULT 0 CHECK (blockSize > 0),
     densityCode SMALLINT NOT NULL,
-    supportPartition BOOLEAN NOT NULL
+    supportPartition BOOLEAN NOT NULL,
+    supportMAM BOOLEAN NOT NULL
 );
 
 CREATE TABLE Pool (
@@ -369,4 +370,8 @@ COMMENT ON COLUMN DriveFormat.cleaningInterval IS 'Interval between two cleaning
 COMMENT ON COLUMN Pool.retention IS 'Retention interval in days';
 
 COMMENT ON COLUMN Tape.label IS 'Contains an UUID';
+
+COMMENT ON COLUMN TapeFormat.blockSize IS 'Default block size';
+COMMENT ON COLUMN TapeFormat.supportPartition IS 'Is the tape can be partitionned';
+COMMENT ON COLUMN TapeFormat.supportMAM IS 'MAM: Medium Axiliary Memory, contains some usefull data';
 
