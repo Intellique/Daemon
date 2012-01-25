@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jan 2012 11:27:02 +0100                         *
+*  Last modified: Wed, 25 Jan 2012 16:21:08 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -477,7 +477,7 @@ void st_drive_generic_update_position(struct st_drive * drive) {
 	else
 		tape->end_position = pos.mt_blkno;
 
-	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: update tape position: %ld, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, tape->end_position, failed);
+	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: update tape position: %zd, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, tape->end_position, failed);
 
 	failed = st_scsi_tape_size_available(fd, tape);
 	close(fd);
