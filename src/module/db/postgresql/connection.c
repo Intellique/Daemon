@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jan 2012 13:44:27 +0100                         *
+*  Last modified: Wed, 25 Jan 2012 19:01:58 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -752,6 +752,7 @@ int st_db_postgresql_get_tape(struct st_database_connection * connection, struct
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 		st_db_postgresql_get_long(result, 0, 0, &tape->id);
 		st_db_postgresql_get_string(result, 0, 2, tape->label);
+		st_db_postgresql_get_string(result, 0, 3, tape->medium_serial_number);
 		st_db_postgresql_get_string(result, 0, 4, tape->name);
 		tape->status = st_tape_string_to_status(PQgetvalue(result, 0, 5));
 		tape->location = st_tape_string_to_location(PQgetvalue(result, 0, 6));
@@ -778,10 +779,6 @@ int st_db_postgresql_get_tape(struct st_database_connection * connection, struct
 
 		if (poolid > -1)
 			tape->pool = st_pool_get_by_id(poolid);
-		else {
-			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "There is a tape into databse without pool");
-			return 1;
-		}
 	}
 
 	PQclear(result);
@@ -1558,7 +1555,7 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 		if (tape->medium_serial_number[0] != '\0') {
 			st_db_postgresql_prepare(self, "select_tape_by_medium_serial_number", "SELECT * FROM tape WHERE mediumserialnumber = $1 FOR UPDATE NOWAIT");
 
-			const char * param[] = { tape->uuid };
+			const char * param[] = { tape->medium_serial_number };
 			PGresult * result = PQexecPrepared(self->db_con, "select_tape_by_medium_serial_number", 1, param, 0, 0, 0);
 			ExecStatusType status = PQresultStatus(result);
 
@@ -1573,8 +1570,10 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 				st_db_postgresql_get_time(result, 0, 8, &tape->use_before);
 
 				long old_value = tape->load_count;
-				st_db_postgresql_get_long(result, 0, 9, &tape->load_count);
-				tape->load_count += old_value;
+				if (!tape->mam_ok) {
+					st_db_postgresql_get_long(result, 0, 9, &tape->load_count);
+					tape->load_count += old_value;
+				}
 
 				old_value = tape->read_count;
 				st_db_postgresql_get_long(result, 0, 10, &tape->read_count);
@@ -1609,8 +1608,10 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 				st_db_postgresql_get_time(result, 0, 8, &tape->use_before);
 
 				long old_value = tape->load_count;
-				st_db_postgresql_get_long(result, 0, 9, &tape->load_count);
-				tape->load_count += old_value;
+				if (!tape->mam_ok) {
+					st_db_postgresql_get_long(result, 0, 9, &tape->load_count);
+					tape->load_count += old_value;
+				}
 
 				old_value = tape->read_count;
 				st_db_postgresql_get_long(result, 0, 10, &tape->read_count);
@@ -1645,8 +1646,10 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 				st_db_postgresql_get_time(result, 0, 8, &tape->use_before);
 
 				long old_value = tape->load_count;
-				st_db_postgresql_get_long(result, 0, 9, &tape->load_count);
-				tape->load_count += old_value;
+				if (!tape->mam_ok) {
+					st_db_postgresql_get_long(result, 0, 9, &tape->load_count);
+					tape->load_count += old_value;
+				}
 
 				old_value = tape->read_count;
 				st_db_postgresql_get_long(result, 0, 10, &tape->read_count);
@@ -1748,8 +1751,8 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 
 			const char * param[] = {
 				*tape->uuid ? tape->uuid : 0,
-				tape->label ? tape->label : 0,
-				tape->medium_serial_number ? tape->medium_serial_number : 0,
+				*tape->label ? tape->label : 0,
+				*tape->medium_serial_number ? tape->medium_serial_number : 0,
 				tape->name, st_tape_status_to_string(tape->status),
 				st_tape_location_to_string(tape->location),
 				buffer_first_used, buffer_use_before,

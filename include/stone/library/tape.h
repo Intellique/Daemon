@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jan 2012 10:34:40 +0100                         *
+*  Last modified: Wed, 25 Jan 2012 18:53:49 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_TAPE_H__
@@ -89,6 +89,7 @@ struct st_tape {
 	char has_partition;
 	struct st_tape_format * format;
 	struct st_pool * pool;
+	char mam_ok; // data read from mam
 };
 
 struct st_tape_format {
