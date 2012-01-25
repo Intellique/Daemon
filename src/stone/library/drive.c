@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jan 2012 17:19:59 +0100                         *
+*  Last modified: Wed, 25 Jan 2012 11:27:02 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -99,6 +99,7 @@ static struct st_stream_writer * st_drive_generic_get_writer(struct st_drive * d
 static void st_drive_generic_on_failed(struct st_drive * drive, int verbose);
 static void st_drive_generic_operation_start(struct st_drive_generic * dr);
 static void st_drive_generic_operation_stop(struct st_drive * dr);
+static int st_drive_generic_read_mam(struct st_drive * drive);
 static void st_drive_generic_reset(struct st_drive * drive);
 static int st_drive_generic_rewind_file(struct st_drive * drive);
 static int st_drive_generic_rewind_tape(struct st_drive * drive);
@@ -132,6 +133,7 @@ static struct st_drive_ops st_drive_generic_ops = {
 	.get_block_size    = st_drive_generic_get_block_size,
 	.get_reader        = st_drive_generic_get_reader,
 	.get_writer        = st_drive_generic_get_writer,
+	.read_mam          = st_drive_generic_read_mam,
 	.reset             = st_drive_generic_reset,
 	.rewind_file       = st_drive_generic_rewind_file,
 	.rewind_tape       = st_drive_generic_rewind_tape,
@@ -331,6 +333,22 @@ void st_drive_generic_operation_stop(struct st_drive * drive) {
 	gettimeofday(&finish, 0);
 
 	drive->operation_duration += (finish.tv_sec - self->last_start.tv_sec) + ((double) (finish.tv_usec - self->last_start.tv_usec)) / 1000000;
+}
+
+int st_drive_generic_read_mam(struct st_drive * drive) {
+	struct st_tape * tape = drive->slot->tape;
+	if (!tape)
+		return -1;
+
+	st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Try to read medium axiliary memory", drive->vendor, drive->model, drive - drive->changer->drives);
+
+	int fd = open(drive->scsi_device, O_RDWR);
+	int failed = st_scsi_tape_read_mam(fd, tape);
+	close(fd);
+
+	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: Finish to read mam, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, failed);
+
+	return failed;
 }
 
 void st_drive_generic_reset(struct st_drive * drive) {

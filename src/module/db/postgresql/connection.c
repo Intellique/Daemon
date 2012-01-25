@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 21 Jan 2012 13:21:02 +0100                         *
+*  Last modified: Wed, 25 Jan 2012 13:44:27 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -752,22 +752,22 @@ int st_db_postgresql_get_tape(struct st_database_connection * connection, struct
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 		st_db_postgresql_get_long(result, 0, 0, &tape->id);
 		st_db_postgresql_get_string(result, 0, 2, tape->label);
-		st_db_postgresql_get_string(result, 0, 3, tape->name);
-		tape->status = st_tape_string_to_status(PQgetvalue(result, 0, 4));
-		tape->location = st_tape_string_to_location(PQgetvalue(result, 0, 5));
-		st_db_postgresql_get_time(result, 0, 6, &tape->first_used);
-		st_db_postgresql_get_time(result, 0, 7, &tape->use_before);
-		st_db_postgresql_get_long(result, 0, 8, &tape->load_count);
-		st_db_postgresql_get_long(result, 0, 9, &tape->read_count);
-		st_db_postgresql_get_long(result, 0, 10, &tape->write_count);
-		st_db_postgresql_get_ssize(result, 0, 11, &tape->end_position);
-		st_db_postgresql_get_int(result, 0, 12, &tape->nb_files);
-		st_db_postgresql_get_ssize(result, 0, 13, &tape->block_size);
-		st_db_postgresql_get_bool(result, 0, 14, &tape->has_partition);
+		st_db_postgresql_get_string(result, 0, 4, tape->name);
+		tape->status = st_tape_string_to_status(PQgetvalue(result, 0, 5));
+		tape->location = st_tape_string_to_location(PQgetvalue(result, 0, 6));
+		st_db_postgresql_get_time(result, 0, 7, &tape->first_used);
+		st_db_postgresql_get_time(result, 0, 8, &tape->use_before);
+		st_db_postgresql_get_long(result, 0, 9, &tape->load_count);
+		st_db_postgresql_get_long(result, 0, 10, &tape->read_count);
+		st_db_postgresql_get_long(result, 0, 11, &tape->write_count);
+		st_db_postgresql_get_ssize(result, 0, 12, &tape->end_position);
+		st_db_postgresql_get_int(result, 0, 13, &tape->nb_files);
+		st_db_postgresql_get_ssize(result, 0, 14, &tape->block_size);
+		st_db_postgresql_get_bool(result, 0, 15, &tape->has_partition);
 
 		long tapeformatid = -1, poolid = -1;
-		st_db_postgresql_get_long(result, 0, 15, &tapeformatid);
-		st_db_postgresql_get_long(result, 0, 16, &poolid);
+		st_db_postgresql_get_long(result, 0, 16, &tapeformatid);
+		st_db_postgresql_get_long(result, 0, 17, &poolid);
 
 		if (tapeformatid > -1)
 			tape->format = st_tape_format_get_by_id(tapeformatid);
@@ -835,6 +835,7 @@ int st_db_postgresql_get_tape_format(struct st_database_connection * connection,
 		else
 			st_db_postgresql_get_uchar(result, 0, 11, &tape_format->density_code);
 		st_db_postgresql_get_bool(result, 0, 12, &tape_format->support_partition);
+		st_db_postgresql_get_bool(result, 0, 13, &tape_format->support_mam);
 	} else
 		tape_format->id = -1;
 
@@ -1554,6 +1555,43 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 	st_db_postgresql_check(connection);
 
 	if (tape->id < 0) {
+		if (tape->medium_serial_number[0] != '\0') {
+			st_db_postgresql_prepare(self, "select_tape_by_medium_serial_number", "SELECT * FROM tape WHERE mediumserialnumber = $1 FOR UPDATE NOWAIT");
+
+			const char * param[] = { tape->uuid };
+			PGresult * result = PQexecPrepared(self->db_con, "select_tape_by_medium_serial_number", 1, param, 0, 0, 0);
+			ExecStatusType status = PQresultStatus(result);
+
+			if (status == PGRES_FATAL_ERROR)
+				st_db_postgresql_get_error(result);
+			else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+				st_db_postgresql_get_long(result, 0, 0, &tape->id);
+				st_db_postgresql_get_string(result, 0, 1, tape->uuid);
+				st_db_postgresql_get_string(result, 0, 2, tape->label);
+				st_db_postgresql_get_string(result, 0, 4, tape->name);
+				st_db_postgresql_get_time(result, 0, 7, &tape->first_used);
+				st_db_postgresql_get_time(result, 0, 8, &tape->use_before);
+
+				long old_value = tape->load_count;
+				st_db_postgresql_get_long(result, 0, 9, &tape->load_count);
+				tape->load_count += old_value;
+
+				old_value = tape->read_count;
+				st_db_postgresql_get_long(result, 0, 10, &tape->read_count);
+				tape->read_count += old_value;
+
+				old_value = tape->write_count;
+				st_db_postgresql_get_long(result, 0, 11, &tape->write_count);
+				tape->write_count += old_value;
+
+				if (tape->end_position == 0)
+					st_db_postgresql_get_ssize(result, 0, 13, &tape->end_position);
+				st_db_postgresql_get_ssize(result, 0, 14, &tape->block_size);
+			}
+
+			PQclear(result);
+		}
+
 		if (tape->uuid[0] != '\0') {
 			st_db_postgresql_prepare(self, "select_tape_by_uuid", "SELECT * FROM tape WHERE uuid = $1 FOR UPDATE NOWAIT");
 
@@ -1566,25 +1604,25 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 			else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 				st_db_postgresql_get_long(result, 0, 0, &tape->id);
 				st_db_postgresql_get_string(result, 0, 2, tape->label);
-				st_db_postgresql_get_string(result, 0, 3, tape->name);
-				st_db_postgresql_get_time(result, 0, 6, &tape->first_used);
-				st_db_postgresql_get_time(result, 0, 7, &tape->use_before);
+				st_db_postgresql_get_string(result, 0, 4, tape->name);
+				st_db_postgresql_get_time(result, 0, 7, &tape->first_used);
+				st_db_postgresql_get_time(result, 0, 8, &tape->use_before);
 
 				long old_value = tape->load_count;
-				st_db_postgresql_get_long(result, 0, 8, &tape->load_count);
+				st_db_postgresql_get_long(result, 0, 9, &tape->load_count);
 				tape->load_count += old_value;
 
 				old_value = tape->read_count;
-				st_db_postgresql_get_long(result, 0, 9, &tape->read_count);
+				st_db_postgresql_get_long(result, 0, 10, &tape->read_count);
 				tape->read_count += old_value;
 
 				old_value = tape->write_count;
-				st_db_postgresql_get_long(result, 0, 10, &tape->write_count);
+				st_db_postgresql_get_long(result, 0, 11, &tape->write_count);
 				tape->write_count += old_value;
 
 				if (tape->end_position == 0)
-					st_db_postgresql_get_ssize(result, 0, 12, &tape->end_position);
-				st_db_postgresql_get_ssize(result, 0, 13, &tape->block_size);
+					st_db_postgresql_get_ssize(result, 0, 13, &tape->end_position);
+				st_db_postgresql_get_ssize(result, 0, 14, &tape->block_size);
 			}
 
 			PQclear(result);
@@ -1601,25 +1639,26 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 				st_db_postgresql_get_error(result);
 			else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 				st_db_postgresql_get_long(result, 0, 0, &tape->id);
-				st_db_postgresql_get_string(result, 0, 3, tape->name);
-				st_db_postgresql_get_time(result, 0, 6, &tape->first_used);
-				st_db_postgresql_get_time(result, 0, 7, &tape->use_before);
+				st_db_postgresql_get_string(result, 0, 2, tape->label);
+				st_db_postgresql_get_string(result, 0, 4, tape->name);
+				st_db_postgresql_get_time(result, 0, 7, &tape->first_used);
+				st_db_postgresql_get_time(result, 0, 8, &tape->use_before);
 
 				long old_value = tape->load_count;
-				st_db_postgresql_get_long(result, 0, 8, &tape->load_count);
+				st_db_postgresql_get_long(result, 0, 9, &tape->load_count);
 				tape->load_count += old_value;
 
 				old_value = tape->read_count;
-				st_db_postgresql_get_long(result, 0, 9, &tape->read_count);
+				st_db_postgresql_get_long(result, 0, 10, &tape->read_count);
 				tape->read_count += old_value;
 
 				old_value = tape->write_count;
-				st_db_postgresql_get_long(result, 0, 10, &tape->write_count);
+				st_db_postgresql_get_long(result, 0, 11, &tape->write_count);
 				tape->write_count += old_value;
 
 				if (tape->end_position == 0)
-					st_db_postgresql_get_ssize(result, 0, 12, &tape->end_position);
-				st_db_postgresql_get_ssize(result, 0, 13, &tape->block_size);
+					st_db_postgresql_get_ssize(result, 0, 13, &tape->end_position);
+				st_db_postgresql_get_ssize(result, 0, 14, &tape->block_size);
 			}
 
 			PQclear(result);
@@ -1644,7 +1683,7 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 			return 2;
 	}
 
-	if (tape->uuid[0] != '\0' || tape->label[0] != '\0') {
+	if (tape->medium_serial_number[0] != '\0' || tape->uuid[0] != '\0' || tape->label[0] != '\0') {
 		if (tape->id > -1) {
 			st_db_postgresql_prepare(self, "update_tape", "UPDATE tape SET uuid = $1, name = $2, status = $3, location = $4, loadcount = $5, readcount = $6, writecount = $7, endpos = $8, nbfiles = $9, blocksize = $10, haspartition = $11, pool = $12 WHERE id = $13");
 
@@ -1684,7 +1723,7 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 
 			return status == PGRES_FATAL_ERROR;
 		} else {
-			st_db_postgresql_prepare(self, "insert_tape", "INSERT INTO tape VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id");
+			st_db_postgresql_prepare(self, "insert_tape", "INSERT INTO tape VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING id");
 
 			char buffer_first_used[32];
 			char buffer_use_before[32];
@@ -1708,14 +1747,16 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 				asprintf(&pool, "%ld", tape->pool->id);
 
 			const char * param[] = {
-				*tape->uuid ? tape->uuid : 0, tape->label, tape->name,
-				st_tape_status_to_string(tape->status),
+				*tape->uuid ? tape->uuid : 0,
+				tape->label ? tape->label : 0,
+				tape->medium_serial_number ? tape->medium_serial_number : 0,
+				tape->name, st_tape_status_to_string(tape->status),
 				st_tape_location_to_string(tape->location),
 				buffer_first_used, buffer_use_before,
 				load, read, write, endpos, nbfiles, blocksize,
 				tape->has_partition ? "true" : "false", tapeformat, pool
 			};
-			PGresult * result = PQexecPrepared(self->db_con, "insert_tape", 16, param, 0, 0, 0);
+			PGresult * result = PQexecPrepared(self->db_con, "insert_tape", 17, param, 0, 0, 0);
 			ExecStatusType status = PQresultStatus(result);
 
 			if (status == PGRES_FATAL_ERROR)

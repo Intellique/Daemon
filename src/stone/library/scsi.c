@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jan 2012 16:34:49 +0100                         *
+*  Last modified: Wed, 25 Jan 2012 15:48:39 +0100                         *
 \*************************************************************************/
 
 // ssize_t
@@ -178,6 +178,41 @@ typedef struct TransportElementDescriptor {
 	unsigned char AlternateVolumeTag[36];   
 	unsigned char Reserved[4];				/* 4 extra bytes? */
 } TransportElementDescriptor_T;
+
+enum Mam_attribute {
+	Mam_remaining_capacity  = 0x0000,
+	Mam_maximum_capacity    = 0x0001,
+	Mam_load_count          = 0x0003,
+	Mam_mam_space_remaining = 0x0004,
+
+	Mam_device_at_last_load           = 0x020A,
+	Mam_device_at_last_load_2         = 0x020B,
+	Mam_device_at_last_load_3         = 0x020C,
+	Mam_device_at_last_load_4         = 0x020D,
+	Mam_total_written_in_medium_life  = 0x0220,
+	Mam_total_read_in_medium_life     = 0x0221,
+	Mam_total_written_in_current_load = 0x0222,
+	Mam_total_read_current_load       = 0x0223,
+
+	Mam_medium_manufacturer      = 0x0400,
+	Mam_medium_serial_number     = 0x0401,
+	Mam_medium_manufacturer_date = 0x0406,
+	Mam_mam_capacity             = 0x0407,
+	Mam_medium_type              = 0x0408,
+	Mam_medium_type_information  = 0x0409,
+
+	Mam_application_vendor           = 0x0800,
+	Mam_application_name             = 0x0801,
+	Mam_application_version          = 0x0802,
+	Mam_user_medium_text_label       = 0x0803,
+	Mam_date_and_time_last_written   = 0x0804,
+	Mam_text_localization_identifier = 0x0805,
+	Mam_barcode                      = 0x0806,
+	Mam_owning_host_textual_name     = 0x0807,
+	Mam_media_pool                   = 0x0808,
+
+	Mam_unique_cardtrige_identity = 0x1000,
+};
 
 static void st_scsi_mtx_status_update_slot(int fd, struct st_changer * changer, int start_element, int nb_elements, int num_bytes, enum ElementTypeCode type);
 
@@ -497,6 +532,80 @@ int st_scsi_tape_postion(int fd, struct st_tape * tape) {
 	return 0;
 }
 
+int st_scsi_tape_read_mam(int fd, struct st_tape * tape) {
+	RequestSense_T sense;
+	unsigned char buffer[1024];
+	unsigned char com[16] = { 0x8C, 0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (1024 >> 8) & 0xFF, 1024 & 0xFF, 0, 0 };
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(com);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(buffer);
+	header.cmdp = com;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = buffer;
+	header.timeout = 2000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	if (status)
+		return status;
+
+	unsigned int data_available = ((buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] << 8) | buffer[3]) - 4;
+	unsigned char * ptr = buffer + 4;
+
+	for (ptr = buffer + 4; ptr < buffer + data_available;) {
+		enum Mam_attribute attr_id = (ptr[0] << 8) | ptr[1];
+		// unsigned char read_only = ptr[2] & 0x80;
+		// unsigned char format = ptr[2] & 0x3;
+		unsigned short attr_length = (ptr[3] << 8) | ptr[4];
+
+		unsigned char * attr = ptr + 5;
+		ptr += 5 + attr_length;
+
+		if (attr_length == 0)
+			continue;
+
+		unsigned int i;
+		char * space;
+		switch (attr_id) {
+			case Mam_remaining_capacity:
+				tape->available_block = 0;
+				for (i = 0; i < attr_length; i++) {
+					tape->available_block <<= 8;
+					tape->available_block += (unsigned char) attr[i];
+				}
+				tape->available_block <<= 10;
+				tape->available_block /= (tape->block_size >> 10);
+				break;
+
+			case Mam_load_count:
+				tape->load_count = 0;
+				for (i = 0; i < attr_length; i++) {
+					tape->load_count <<= 8;
+					tape->load_count += (unsigned char) attr[i];
+				}
+				break;
+
+			case Mam_medium_serial_number:
+				strncpy(tape->medium_serial_number, (char *) attr, 32);
+				space = strchr(tape->medium_serial_number, ' ');
+				if (space)
+					*space = '\0';
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	return 0;
+}
+
 int st_scsi_tape_size_available(int fd, struct st_tape * tape) {
 	RequestSense_T sense;
 	unsigned char buffer[2048];
@@ -521,6 +630,9 @@ int st_scsi_tape_size_available(int fd, struct st_tape * tape) {
 	int status = ioctl(fd, SG_IO, &header);
 	if (status || ((buffer[0] & 0x3F) != 0x31))
 		return 1;
+
+	if (buffer[8] == buffer[24] && buffer[9] == buffer[25] && buffer[10] == buffer[26] && buffer[11] == buffer[27] && tape->end_position > 0)
+		return 0;
 
 	tape->available_block = ((unsigned int) buffer[8] << 24) + ((unsigned int) buffer[9] << 16) + ((unsigned int) buffer[10] <<  8) + buffer[11];
 	// check for buggy tape drive, they report always the same value for available size and total size

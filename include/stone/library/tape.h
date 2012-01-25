@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 19 Jan 2012 11:53:28 +0100                         *
+*  Last modified: Wed, 25 Jan 2012 10:34:40 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_TAPE_H__
@@ -73,6 +73,7 @@ struct st_tape {
 	long id;
 	char uuid[37];
 	char label[37];
+	char medium_serial_number[33];
 	char name[256];
 	enum st_tape_status status;
 	enum st_tape_location location;
@@ -104,6 +105,7 @@ struct st_tape_format {
 	ssize_t capacity;
 	ssize_t block_size;
 	char support_partition;
+	char support_mam;
 };
 
 struct st_pool {

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 14 Jan 2012 14:55:17 +0100                         *
+*  Last modified: Wed, 25 Jan 2012 11:27:57 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -233,9 +233,12 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 	pthread_mutex_lock(&st_tape_lock);
 
 	struct st_tape * tape = dr->slot->tape = malloc(sizeof(struct st_tape));
+	bzero(tape, sizeof(struct st_tape));
+
 	tape->id = -1;
 	*tape->uuid = '\0';
 	strcpy(tape->label, dr->slot->volume_name);
+	*tape->medium_serial_number = '\0';
 	strcpy(tape->name, dr->slot->volume_name);
 	tape->status = ST_TAPE_STATUS_UNKNOWN;
 	tape->location = ST_TAPE_LOCATION_INDRIVE;
@@ -254,6 +257,9 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 	dr->ops->rewind_tape(dr);
 	ssize_t block_size = dr->ops->get_block_size(dr);
 	tape->block_size = block_size;
+
+	if (tape->format->support_mam)
+		dr->ops->read_mam(dr);
 
 	char buffer[512];
 	struct st_stream_reader * reader = dr->ops->get_reader(dr);
