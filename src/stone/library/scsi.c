@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jan 2012 15:48:39 +0100                         *
+*  Last modified: Wed, 25 Jan 2012 18:55:31 +0100                         *
 \*************************************************************************/
 
 // ssize_t
@@ -551,6 +551,8 @@ int st_scsi_tape_read_mam(int fd, struct st_tape * tape) {
 	header.timeout = 2000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
+	tape->mam_ok = 0;
+
 	int status = ioctl(fd, SG_IO, &header);
 	if (status)
 		return status;
@@ -602,6 +604,8 @@ int st_scsi_tape_read_mam(int fd, struct st_tape * tape) {
 				break;
 		}
 	}
+
+	tape->mam_ok = 1;
 
 	return 0;
 }

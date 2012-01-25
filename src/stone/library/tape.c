@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jan 2012 11:27:57 +0100                         *
+*  Last modified: Wed, 25 Jan 2012 18:54:26 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -253,6 +253,7 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 	tape->block_size = 0;
 	tape->use_before = tape->first_used + tape->format->life_span;
 	tape->pool = 0;
+	tape->mam_ok = 0;
 
 	dr->ops->rewind_tape(dr);
 	ssize_t block_size = dr->ops->get_block_size(dr);
@@ -396,7 +397,7 @@ void st_tape_retrieve(struct st_tape ** tape, long id, const char * uuid) {
 		bzero(*tape, sizeof(struct st_tape));
 
 		if (con->ops->get_tape(con, *tape, id, uuid)) {
-			free(tape);
+			free(*tape);
 			tape = 0;
 		} else {
 			st_tape_tapes = realloc(st_tape_tapes, (st_tape_nb_tapes + 1) * sizeof(struct st_tape *));
