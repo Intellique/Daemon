@@ -134,7 +134,8 @@ CREATE TABLE Pool (
 CREATE TABLE Tape (
     id SERIAL PRIMARY KEY,
     uuid UUID NULL UNIQUE,
-    label VARCHAR(64) NOT NULL,
+    label VARCHAR(64),
+    mediumSerialNumber VARCHAR(32) UNIQUE,
     name VARCHAR(255) NULL,
     status TapeStatus NOT NULL,
     location TapeLocation NOT NULL,
