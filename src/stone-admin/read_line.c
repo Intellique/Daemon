@@ -22,29 +22,46 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 26 Jan 2012 11:03:10 +0100                         *
+*  Last modified: Thu, 26 Jan 2012 19:05:52 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONE_SOCKET_H__
-#define __STONE_SOCKET_H__
+#include <readline/readline.h>
+#include <termios.h>
+#include <unistd.h>
 
-#include <stone/io.h>
+#include "read_line.h"
 
-struct st_io_socket {
-	struct st_io_socket_ops {
-		struct st_io_socket * (*accept)(struct st_io_socket * socket);
-		int (*bind)(struct st_io_socket * socket, const char * hostname, unsigned short port);
-		int (*connect)(struct st_io_socket * socket, const char * hostname, unsigned short port);
-		void (*free)(struct st_io_socket * socket);
-		struct st_stream_writer * (*get_input_stream)(struct st_io_socket * socket);
-		struct st_stream_reader * (*get_output_stream)(struct st_io_socket * socket);
-		int (*is_binded)(struct st_io_socket * socket);
-		int (*is_connected)(struct st_io_socket * socket);
-	} * ops;
-	void * data;
-};
+static void stad_rl_init(void) __attribute__((constructor));
 
-struct st_io_socket * st_io_socket_new(void);
 
-#endif
+char * stad_rl_get_line(char * prompt) {
+	return readline(prompt);
+}
+
+char * stad_rl_get_password(char * prompt) {
+	struct termios conf;
+	int failed = tcgetattr(0, &conf);
+	if (failed)
+		return stad_rl_get_line(prompt);
+
+	printf(prompt);
+	fflush(stdout);
+
+	tcflag_t old_value = conf.c_lflag;
+	conf.c_lflag &= ~ECHO;
+
+	failed = tcsetattr(0, TCSANOW, &conf);
+
+	char * line = readline(0);
+
+	conf.c_lflag = old_value;
+	tcsetattr(0, TCSANOW, &conf);
+
+	printf("\n");
+
+	return line;
+}
+
+void stad_rl_init(void) {
+}
 

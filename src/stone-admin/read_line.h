@@ -22,29 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 26 Jan 2012 11:03:10 +0100                         *
+*  Last modified: Thu, 26 Jan 2012 15:31:04 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONE_SOCKET_H__
-#define __STONE_SOCKET_H__
+#ifndef __STONEADMIN_READLINE_H__
+#define __STONEADMIN_READLINE_H__
 
-#include <stone/io.h>
-
-struct st_io_socket {
-	struct st_io_socket_ops {
-		struct st_io_socket * (*accept)(struct st_io_socket * socket);
-		int (*bind)(struct st_io_socket * socket, const char * hostname, unsigned short port);
-		int (*connect)(struct st_io_socket * socket, const char * hostname, unsigned short port);
-		void (*free)(struct st_io_socket * socket);
-		struct st_stream_writer * (*get_input_stream)(struct st_io_socket * socket);
-		struct st_stream_reader * (*get_output_stream)(struct st_io_socket * socket);
-		int (*is_binded)(struct st_io_socket * socket);
-		int (*is_connected)(struct st_io_socket * socket);
-	} * ops;
-	void * data;
-};
-
-struct st_io_socket * st_io_socket_new(void);
+char * stad_rl_get_line(char * prompt);
+char * stad_rl_get_password(char * prompt);
 
 #endif
 

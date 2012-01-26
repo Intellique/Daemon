@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jan 2012 09:36:27 +0100                         *
+*  Last modified: Thu, 26 Jan 2012 10:37:30 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -39,7 +39,12 @@
 
 struct st_socket_generic_private {
 	int fd;
-	short connected;
+	enum st_socket_status {
+		st_socket_status_binded,
+		st_socket_status_connected,
+		st_socket_status_closed,
+		st_socket_status_new,
+	} status;
 	int last_errno;
 
 	off_t input_position;
@@ -49,10 +54,13 @@ struct st_socket_generic_private {
 	short output_closed;
 };
 
+static struct st_io_socket * st_socket_generic_accept(struct st_io_socket * socket);
+static int st_socket_generic_bind(struct st_io_socket * socket, const char * hostname, unsigned short port);
 static int st_socket_generic_connect(struct st_io_socket * socket, const char * hostname, unsigned short port);
 static void st_socket_generic_free(struct st_io_socket * socket);
 static struct st_stream_writer * st_socket_generic_get_input_stream(struct st_io_socket * socket);
 static struct st_stream_reader * st_socket_generic_get_output_stream(struct st_io_socket * socket);
+static int st_socket_generic_is_binded(struct st_io_socket * socket);
 static int st_socket_generic_is_connected(struct st_io_socket * socket);
 
 static int st_socket_generic_reader_close(struct st_stream_reader * io);
@@ -73,10 +81,13 @@ static ssize_t st_socket_generic_writer_position(struct st_stream_writer * io);
 static ssize_t st_socket_generic_writer_write(struct st_stream_writer * io, const void * buffer, ssize_t length);
 
 static struct st_io_socket_ops st_socket_generic_ops = {
+	.accept            = st_socket_generic_accept,
+	.bind              = st_socket_generic_bind,
 	.connect           = st_socket_generic_connect,
 	.free              = st_socket_generic_free,
 	.get_input_stream  = st_socket_generic_get_input_stream,
 	.get_output_stream = st_socket_generic_get_output_stream,
+	.is_binded         = st_socket_generic_is_binded,
 	.is_connected      = st_socket_generic_is_connected,
 };
 
@@ -102,12 +113,79 @@ static struct st_stream_writer_ops st_socket_generic_writer_ops = {
 };
 
 
+struct st_io_socket * st_socket_generic_accept(struct st_io_socket * s) {
+	struct st_socket_generic_private * self = s->data;
+	if (self->status != st_socket_status_binded)
+		return 0;
+
+	struct sockaddr addr;
+	socklen_t addr_length = sizeof(addr);
+	int new_socket = accept(self->fd, &addr, &addr_length);
+
+	if (new_socket < 0)
+		return 0;
+
+	struct st_io_socket * ns = st_io_socket_new();
+	struct st_socket_generic_private * nsp = ns->data;
+	nsp->fd = new_socket;
+	nsp->status = st_socket_status_connected;
+
+	return ns;
+}
+
+int st_socket_generic_bind(struct st_io_socket * s, const char * hostname, unsigned short port) {
+	struct st_socket_generic_private * self = s->data;
+	if (self->status != st_socket_status_new)
+		return -1;
+
+	struct addrinfo hint = {
+		.ai_family    = AF_UNSPEC,
+		.ai_socktype  = SOCK_STREAM,
+		.ai_flags     = AI_PASSIVE,
+		.ai_protocol  = 0,
+		.ai_canonname = 0,
+		.ai_addr      = 0,
+		.ai_next      = 0,
+	};
+
+	char sport[6];
+	snprintf(sport, 6, "%hu", port);
+
+	struct addrinfo * addresses, * ptr;
+	int failed = getaddrinfo(hostname, sport, &hint, &addresses);
+	if (failed)
+		return failed;
+
+	for (ptr = addresses; ptr; ptr = ptr->ai_next) {
+		self->fd = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
+
+		if (self->fd < 0)
+			continue;
+
+		if (bind(self->fd, ptr->ai_addr, ptr->ai_addrlen) == 0)
+			break;
+
+		close(self->fd);
+		self->fd = -1;
+	}
+
+	freeaddrinfo(addresses);
+
+	if (ptr) {
+		self->status = st_socket_status_binded;
+		failed = listen(self->fd, 16);
+		return 0;
+	}
+
+	return -1;
+}
+
 int st_socket_generic_connect(struct st_io_socket * s, const char * hostname, unsigned short port) {
 	if (!s || !hostname)
 		return -1;
 
 	struct st_socket_generic_private * self = s->data;
-	if (self->connected)
+	if (self->status != st_socket_status_new)
 		return -1;
 
 	char sport[6];
@@ -135,7 +213,7 @@ int st_socket_generic_connect(struct st_io_socket * s, const char * hostname, un
 	if (self->fd < 0)
 		return -3;
 
-	self->connected = 1;
+	self->status = st_socket_status_connected;
 	return 0;
 }
 
@@ -153,7 +231,7 @@ void st_socket_generic_free(struct st_io_socket * socket) {
 
 struct st_stream_writer * st_socket_generic_get_input_stream(struct st_io_socket * socket) {
 	struct st_socket_generic_private * self = socket->data;
-	if (!self->connected)
+	if (self->status != st_socket_status_connected)
 		return 0;
 
 	struct st_stream_writer * sw = malloc(sizeof(struct st_stream_writer));
@@ -165,7 +243,7 @@ struct st_stream_writer * st_socket_generic_get_input_stream(struct st_io_socket
 
 struct st_stream_reader * st_socket_generic_get_output_stream(struct st_io_socket * socket) {
 	struct st_socket_generic_private * self = socket->data;
-	if (!self->connected)
+	if (self->status != st_socket_status_connected)
 		return 0;
 
 	struct st_stream_reader * sr = malloc(sizeof(struct st_stream_reader));
@@ -175,9 +253,14 @@ struct st_stream_reader * st_socket_generic_get_output_stream(struct st_io_socke
 	return sr;
 }
 
+int st_socket_generic_is_binded(struct st_io_socket * socket) {
+	struct st_socket_generic_private * self = socket->data;
+	return self->status == st_socket_status_binded;
+}
+
 int st_socket_generic_is_connected(struct st_io_socket * socket) {
 	struct st_socket_generic_private * self = socket->data;
-	return self->connected;
+	return self->status == st_socket_status_connected;
 }
 
 
@@ -292,7 +375,7 @@ ssize_t st_socket_generic_writer_write(struct st_stream_writer * io, const void 
 struct st_io_socket * st_io_socket_new() {
 	struct st_socket_generic_private * self = malloc(sizeof(struct st_socket_generic_private));
 	self->fd = -1;
-	self->connected = 0;
+	self->status = st_socket_status_new;
 	self->last_errno = 0;
 
 	self->input_closed = 0;

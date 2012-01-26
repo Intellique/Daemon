@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jan 2012 21:16:42 +0100                         *
+*  Last modified: Thu, 26 Jan 2012 19:07:09 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -30,7 +30,11 @@
 // printf
 #include <stdio.h>
 
+#include <stone/io/socket.h>
+
+#include "auth.h"
 #include "config.h"
+#include "read_line.h"
 
 static void st_show_help(void);
 
@@ -57,7 +61,7 @@ int main(int argc, char ** argv) {
 
 	int opt;
 	do {
-		opt = getopt_long(argc, argv, "hV", long_options, &option_index);
+		opt = getopt_long(argc, argv, "hH:V", long_options, &option_index);
 
 		switch (opt) {
 			case OPT_HELP:
@@ -80,6 +84,18 @@ int main(int argc, char ** argv) {
 				return 0;
 		}
 	} while (opt > -1);
+
+	struct st_io_socket * socket = st_io_socket_new();
+	int failed = socket->ops->connect(socket, host, port);
+	if (failed) {
+		printf("Failed to connect to host: %s\n", host);
+		return 2;
+	}
+
+	if (stad_auth_do(socket)) {
+		printf("Failed to authentificate\n");
+		return 3;
+	}
 
 	return 0;
 }
