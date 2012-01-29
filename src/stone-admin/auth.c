@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 26 Jan 2012 17:49:50 +0100                         *
+*  Last modified: Fri, 27 Jan 2012 09:36:35 +0100                         *
 \*************************************************************************/
 
 #include <jansson.h>
@@ -48,10 +48,6 @@ int stad_auth_do(struct st_io_socket * socket) {
 		sr->ops->free(sr);
 		return -1; // error while reading data from server
 	}
-	if (nb_read == 0) {
-		sr->ops->free(sr);
-		return -1; // data was expected
-	}
 
 	json_error_t error;
 	json_t * root = json_loadb(buffer, nb_read, 0, &error);
@@ -62,50 +58,98 @@ int stad_auth_do(struct st_io_socket * socket) {
 
 	json_t * daemon_version = json_object_get(root, "daemon version");
 	json_t * daemon_uptime = json_object_get(root, "daemon uptime");
-	json_t * challenge = json_object_get(root, "auth challenge");
-	if (!challenge) {
+	printf("Connected to stone (version: %s, uptime: %s)\n", json_string_value(daemon_version), json_string_value(daemon_uptime));
+
+	json_decref(root);
+
+	char * user = stad_rl_get_line("User: ");
+	if (!user) {
 		sr->ops->free(sr);
 		return -1;
 	}
 
-	printf("Connected to stone (version: %s, uptime: %s)\n", json_string_value(daemon_version), json_string_value(daemon_uptime));
-	char * user = stad_rl_get_line("User: ");
-	if (!user)
-		return -1;
-	char * password = stad_rl_get_password("Password: ");
-	if (!password)
-		return -1;
+	root = json_object();
+	json_object_set_new(root, "user", json_string(user));
 
-	// compute password which will be send to daemon
-	ssize_t digest_length = strlen(json_string_value(challenge));
-	ssize_t password_length = strlen(password);
-
-	char * password2 = malloc(digest_length + password_length + 1);
-	strncpy(password2, password, password_length >> 1);
-	strcpy(password2 + (password_length >> 1), json_string_value(challenge));
-	strcat(password2, password + (password_length >> 1));
-
-	unsigned char * digest = SHA1((unsigned char *) password2, digest_length + password_length, 0);
-	char hexDigest[41];
-
-	int i;
-	for (i = 0; i < 20; i++)
-		snprintf(hexDigest + (i << 1), 3, "%02x", digest[i]);
-	hexDigest[i << 1] = '\0';
-
-	json_t * root2 = json_object();
-	json_object_set_new(root2, "user", json_string(user));
-	json_object_set_new(root2, "password", json_string(hexDigest));
-
-	char * message = json_dumps(root2, 0);
+	char * message = json_dumps(root, 0);
 
 	struct st_stream_writer * sw = socket->ops->get_input_stream(socket);
+	ssize_t nb_write = sw->ops->write(sw, message, strlen(message));
+
+	free(message);
+	json_decref(root);
+
+	if (nb_write < 0) {
+		sr->ops->free(sr);
+		sw->ops->free(sw);
+		return -1;
+	}
+
+	char * password = stad_rl_get_password("Password: ");
+	if (!password) {
+		sr->ops->free(sr);
+		sw->ops->free(sw);
+		return -1;
+	}
+
+	nb_read = sr->ops->read(sr, buffer, 4096);
+	if (nb_read < 0) {
+		sr->ops->free(sr);
+		sw->ops->free(sw);
+		return -1;
+	}
+
+	root = json_loadb(buffer, nb_read, 0, &error);
+	if (!root) {
+		sr->ops->free(sr);
+		sw->ops->free(sw);
+		return -1;
+	}
+
+	json_t * salt = json_object_get(root, "auth salt");
+	json_t * challenge = json_object_get(root, "auth challenge");
+
+	if (!salt || !challenge) {
+		json_decref(root);
+		sr->ops->free(sr);
+		sw->ops->free(sw);
+		return -1;
+	}
+
+	// compute password which will be send to daemon
+	ssize_t password_length = strlen(password);
+
+	char * password2 = malloc(81);
+	strncpy(password2, password, password_length >> 1);
+	strcpy(password2 + (password_length >> 1), json_string_value(salt));
+	strcat(password2, password + (password_length >> 1));
+
+	unsigned char digest[SHA_DIGEST_LENGTH];
+	SHA1((unsigned char *) password2, strlen(password2), digest);
+	int i;
+	for (i = 0; i < 20; i++)
+		snprintf(password2 + (i << 1), 3, "%02x", digest[i]);
+	password2[i << 1] = '\0';
+
+	strcat(password2, json_string_value(challenge));
+	SHA1((unsigned char *) password2, strlen(password2), digest);
+	for (i = 0; i < 20; i++)
+		snprintf(password2 + (i << 1), 3, "%02x", digest[i]);
+	password2[i << 1] = '\0';
+
+	json_decref(root);
+
+	root = json_object();
+	json_object_set_new(root, "user", json_string(user));
+	json_object_set_new(root, "password", json_string(password2));
+	message = json_dumps(root, 0);
+
+	sw = socket->ops->get_input_stream(socket);
 	sw->ops->write(sw, message, strlen(message));
 
 	// free some memory
-	free(message);
-	json_decref(root2);
 	free(password2);
+	free(message);
 	free(password);
 	free(user);
 	json_decref(root);

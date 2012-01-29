@@ -9,8 +9,8 @@ STONE_DEP_FILES		:= $(sort $(shell test -d ${STONE_DEPEND_DIR} && find ${STONE_D
 
 STONE_BIN			:= bin/stone
 STONE_CFLAG			:= -pthread -I.
-STONE_LD			:= -pthread -ldl -ljansson -luuid -rdynamic -Llib -Wl,-rpath,lib
+STONE_LD			:= -pthread -lstone -ldl -ljansson -luuid -rdynamic -Llib -Wl,-rpath,lib
 
-STONE_LIB			:=
+STONE_LIB			:= lib/libstone.so
 
 BIN_SYMS			+= STONE

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jan 2012 23:02:57 +0100                         *
+*  Last modified: Sun, 29 Jan 2012 15:42:09 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -36,6 +36,7 @@
 #include <stone/library/changer.h>
 #include <stone/job.h>
 
+#include "admin.h"
 #include "checksum.h"
 #include "conf.h"
 #include "config.h"
@@ -153,12 +154,15 @@ int main(int argc, char ** argv) {
 	}
 
 	// synchronize checksum plugins
-	st_checksum_sync_plugins();
+	// st_checksum_sync_plugins();
 	// synchronize job plugins
 	st_job_sync_plugins();
 
 	if (st_changer_setup())
 		return 6;
+
+	// start remote admin
+	st_admin_start();
 
 	st_sched_do_loop();
 

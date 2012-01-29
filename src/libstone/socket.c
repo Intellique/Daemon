@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 26 Jan 2012 10:37:30 +0100                         *
+*  Last modified: Fri, 27 Jan 2012 20:39:45 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -139,7 +139,7 @@ int st_socket_generic_bind(struct st_io_socket * s, const char * hostname, unsig
 		return -1;
 
 	struct addrinfo hint = {
-		.ai_family    = AF_UNSPEC,
+		.ai_family    = AF_INET,
 		.ai_socktype  = SOCK_STREAM,
 		.ai_flags     = AI_PASSIVE,
 		.ai_protocol  = 0,
