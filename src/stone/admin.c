@@ -22,12 +22,12 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 29 Jan 2012 10:47:49 +0100                         *
+*  Last modified: Mon, 30 Jan 2012 12:20:57 +0100                         *
 \*************************************************************************/
 
-#include <jansson.h>
-
+#define _GNU_SOURCE
 #include <fcntl.h>
+#include <jansson.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -37,6 +37,7 @@
 
 #include <stone/checksum.h>
 #include <stone/io/socket.h>
+#include <stone/library/changer.h>
 #include <stone/threadpool.h>
 #include <stone/user.h>
 
@@ -238,11 +239,90 @@ void st_admin_work(void * arg) {
 	for (;;) {
 		char buffer[4096];
 		ssize_t nb_read = sr->ops->read(sr, buffer, 4096);
-		if (nb_read < 0)
+		if (nb_read <= 0)
 			break;
 
 		json_error_t error;
-		json_t * query = json_loadb(buffer, nb_read, 0, &error);
+		json_t * query_root = json_loadb(buffer, nb_read, 0, &error);
+		if (!query_root)
+			break;
+
+		json_t * query = json_object_get(query_root, "query");
+		if (!query) {
+			json_decref(query_root);
+			break;
+		}
+
+		const char * squery = json_string_value(query);
+
+		static const struct st_admin_command {
+			const char * name;
+			enum {
+				COM_HELP = 1,
+				COM_LIST_CHANGERS,
+			} command;
+		} commands[] = {
+			{ "h",             COM_HELP },
+			{ "help",          COM_HELP },
+			{ "cl",            COM_LIST_CHANGERS },
+			{ "list changers", COM_LIST_CHANGERS },
+			{ "?",             COM_HELP },
+
+			{ 0, 0 },
+		};
+
+		const struct st_admin_command * com;
+		for (com = commands; com->name; com++)
+			if (!strcmp(squery, com->name))
+				break;
+
+		json_decref(query_root);
+
+		json_t * result = json_object();
+		json_t * lines = json_array();
+		json_object_set_new(result, "response", lines);
+
+		switch (com->command) {
+			case COM_HELP:
+				json_array_append_new(lines, json_string("List of commands:"));
+				json_array_append_new(lines, json_string(" h, ?, help:        Show this"));
+				json_array_append_new(lines, json_string(" cl, list changers: List available changers"));
+
+				json_object_set_new(result, "status", json_integer(200));
+				break;
+
+			case COM_LIST_CHANGERS: {
+					struct st_changer * changer = st_changer_get_first_changer();
+					int i;
+					for (i = 0; changer; i++) {
+						char * line = 0;
+						asprintf(&line, "%d. %s %s; rev: %s, serial: %s", i, changer->vendor, changer->model, changer->revision, changer->serial_number);
+
+						json_array_append_new(lines, json_string(line));
+
+						free(line);
+
+						changer = st_changer_get_next_changer(changer);
+					}
+					json_object_set_new(result, "status", json_integer(200));
+				}
+				break;
+
+			default:
+				json_array_append_new(lines, json_string("Command not found"));
+				json_object_set_new(result, "status", json_integer(404));
+				break;
+		}
+
+		char * message = json_dumps(result, 0);
+
+		ssize_t nb_write = sw->ops->write(sw, message, strlen(message));
+
+		free(message);
+		json_decref(result);
+
+		if (nb_write < 0)
+			break;
 	}
 
 	sr->ops->free(sr);
