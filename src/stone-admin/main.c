@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 30 Jan 2012 11:50:33 +0100                         *
+*  Last modified: Mon, 30 Jan 2012 15:26:02 +0100                         *
 \*************************************************************************/
 
 #include <jansson.h>
@@ -95,9 +95,11 @@ int main(int argc, char ** argv) {
 	}
 
 	if (stad_auth_do(socket)) {
-		printf("Failed to authentificate\n");
+		printf("Access refused\n");
 		return 3;
 	}
+
+	printf("Access granted\n");
 
 	struct st_stream_reader * sr = socket->ops->get_output_stream(socket);
 	struct st_stream_writer * sw = socket->ops->get_input_stream(socket);
@@ -139,7 +141,8 @@ int main(int argc, char ** argv) {
 
 		json_t * result = json_object_get(root, "response");
 		json_t * status = json_object_get(root, "status");
-		if (!result || !status) {
+		json_t * status_code = json_object_get(root, "status code");
+		if (!result || !status || !status_code) {
 			printf("Ops, there is no status nor result in daemon's response, exiting\n");
 			json_decref(root);
 			continue;
@@ -152,7 +155,7 @@ int main(int argc, char ** argv) {
 			printf(">  %s\n", json_string_value(line));
 		}
 
-		printf(">> Status code: %" JSON_INTEGER_FORMAT "\n", json_integer_value(status));
+		printf(">> Status: %" JSON_INTEGER_FORMAT " %s\n", json_integer_value(status_code), json_string_value(status));
 
 		json_decref(root);
 	}
