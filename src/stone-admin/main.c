@@ -22,13 +22,15 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 26 Jan 2012 19:07:09 +0100                         *
+*  Last modified: Mon, 30 Jan 2012 11:50:33 +0100                         *
 \*************************************************************************/
 
+#include <jansson.h>
 // getopt_long
 #include <getopt.h>
 // printf
 #include <stdio.h>
+#include <string.h>
 
 #include <stone/io/socket.h>
 
@@ -96,6 +98,72 @@ int main(int argc, char ** argv) {
 		printf("Failed to authentificate\n");
 		return 3;
 	}
+
+	struct st_stream_reader * sr = socket->ops->get_output_stream(socket);
+	struct st_stream_writer * sw = socket->ops->get_input_stream(socket);
+
+	for (;;) {
+		char * line = stad_rl_get_line("Query: ");
+		if (!line)
+			return 0;
+
+		json_t * root = json_object();
+		json_object_set_new(root, "query", json_string(line));
+
+		char * message = json_dumps(root, 0);
+
+		ssize_t nb_write = sw->ops->write(sw, message, strlen(message));
+
+		free(message);
+		json_decref(root);
+		free(line);
+
+		if (nb_write <= 0) {
+			printf("Ops, failed to send message, exiting\n");
+			break;
+		}
+
+		char buffer[4096];
+		ssize_t nb_read = sr->ops->read(sr, buffer, 4096);
+		if (nb_read <= 0) {
+			printf("Ops, no data received from daemon, exiting\n");
+			break;
+		}
+
+		json_error_t error;
+		root = json_loadb(buffer, nb_read, 0, &error);
+		if (!root) {
+			printf("Ops, daemon sent data but it is not json formatted, exiting\n");
+			break;
+		}
+
+		json_t * result = json_object_get(root, "response");
+		json_t * status = json_object_get(root, "status");
+		if (!result || !status) {
+			printf("Ops, there is no status nor result in daemon's response, exiting\n");
+			json_decref(root);
+			continue;
+		}
+
+		size_t nb_line = json_array_size(result);
+		size_t i_line;
+		for (i_line = 0; i_line < nb_line; i_line++) {
+			json_t * line = json_array_get(result, i_line);
+			printf(">  %s\n", json_string_value(line));
+		}
+
+		printf(">> Status code: %" JSON_INTEGER_FORMAT "\n", json_integer_value(status));
+
+		json_decref(root);
+	}
+
+	sr->ops->close(sr);
+	sw->ops->close(sw);
+
+	sr->ops->free(sr);
+	sw->ops->free(sw);
+
+	socket->ops->free(socket);
 
 	return 0;
 }
