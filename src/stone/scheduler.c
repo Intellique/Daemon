@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jan 2012 18:18:32 +0100                         *
+*  Last modified: Mon, 30 Jan 2012 12:46:17 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -45,6 +45,7 @@
 #include <stone/log.h>
 #include <stone/threadpool.h>
 
+#include "library/common.h"
 #include "scheduler.h"
 
 struct st_sched_job {
@@ -183,6 +184,8 @@ void st_sched_do_loop() {
 				last_max_jobs = j->id;
 		}
 
+		// update status of stone-alone drives
+		st_changer_update_drive_status();
 	}
 
 	connection->ops->free(connection);

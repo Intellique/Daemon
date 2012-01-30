@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 13 Jan 2012 12:34:50 +0100                         *
+*  Last modified: Mon, 30 Jan 2012 13:14:48 +0100                         *
 \*************************************************************************/
 
 // open
@@ -46,6 +46,7 @@
 
 #include <stone/database.h>
 #include <stone/io.h>
+#include <stone/library/ressource.h>
 #include <stone/log.h>
 
 #include "common.h"
@@ -372,5 +373,22 @@ int st_changer_setup() {
 		st_fakechanger_setup(st_changers + i);
 
 	return 0;
+}
+
+void st_changer_update_drive_status() {
+	unsigned int i, nb_changer = st_nb_real_changers + st_nb_fake_changers;
+	for (i = 0; i < nb_changer; i++) {
+		struct st_changer * changer = st_changers + i;
+		if (changer->ops->can_load())
+			continue;
+
+		struct st_drive * drive = changer->drives;
+		if (drive->lock->ops->trylock(drive->lock))
+			continue;
+
+		drive->ops->reset(drive);
+
+		drive->lock->ops->unlock(drive->lock);
+	}
 }
 

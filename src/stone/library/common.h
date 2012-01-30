@@ -33,6 +33,8 @@
 struct st_changer;
 struct st_drive;
 
+void st_changer_update_drive_status(void);
+
 void st_drive_setup(struct st_drive * drive);
 
 void st_fakechanger_setup(struct st_changer * changer);
