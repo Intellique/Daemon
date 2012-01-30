@@ -91,7 +91,7 @@ ctags TAGS: tags
 
 debug: binaries
 	@echo ' GDB'
-	${GDB} bin/STone
+	${GDB} bin/stone
 
 distclean realclean: clean
 	@echo ' RM       -Rf cscope.out doc ${DEPEND_DIR} tags'

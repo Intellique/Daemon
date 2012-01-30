@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 18 Jan 2012 13:11:27 +0100                         *
+*  Last modified: Thu, 26 Jan 2012 09:19:07 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -91,6 +91,7 @@ int st_job_format_tape_run(struct st_job * job) {
 		switch (state) {
 			case alert_user:
 				job->sched_status = st_job_status_pause;
+				sleep(1);
 				job->db_ops->update_status(job);
 
 				if (!has_alert_user) {
@@ -194,6 +195,12 @@ int st_job_format_tape_run(struct st_job * job) {
 			job->db_ops->add_record(job, "Unloading tape from drive #%td to slot #%td", drive - changer->drives, slot_to - changer->slots);
 			changer->ops->unload(changer, drive, slot_to);
 			slot_to->lock->ops->unlock(slot_to->lock);
+		} else if (!changer->ops->can_load()) {
+			drive->ops->eject(drive);
+
+			job->db_ops->add_record(job, "Unloading tape from drive #%td", drive - changer->drives);
+			changer->ops->unload(changer, drive, 0);
+			slot_to->lock->ops->unlock(slot_to->lock);
 		} else {
 			job->sched_status = st_job_status_error;
 			job->db_ops->add_record(job, "Fatal error: There is no place for unloading tape (%s)", drive->slot->tape->name);
@@ -224,13 +231,15 @@ int st_job_format_tape_run(struct st_job * job) {
 	// write header
 	job->db_ops->add_record(job, "Formatting new tape");
 	int status = st_tape_write_header(drive, job->pool);
-	job->done = 1;
 
 	drive->lock->ops->unlock(drive->lock);
+
+	changer->ops->sync_db(changer);
 
 	if (status)
 		job->sched_status = st_job_status_error;
 
+	job->done = 1;
 	sleep(1);
 	job->db_ops->update_status(job);
 

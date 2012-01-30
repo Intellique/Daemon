@@ -98,6 +98,11 @@ void st_sched_do_loop() {
 	long last_max_jobs = -1;
 
 	while (!st_sched_stop_request) {
+		time_t update = time(0);
+		struct tm current;
+		localtime_r(&update, &current);
+		sleep(15 - current.tm_sec % 15);
+
 		unsigned int i;
 		for (i = 0; i < nb_jobs; i++) {
 			struct st_job * j = jobs[i];
@@ -116,7 +121,7 @@ void st_sched_do_loop() {
 				j->job_ops->stop(j);
 		}
 
-		time_t update = time(0);
+		update = time(0);
 		short ok_transaction = connection->ops->start_transaction(connection) >= 0;
 		if (!ok_transaction)
 			st_log_write_all(st_log_level_warning, st_log_type_scheduler, "error while starting transaction");
@@ -178,9 +183,6 @@ void st_sched_do_loop() {
 				last_max_jobs = j->id;
 		}
 
-		struct tm current;
-		localtime_r(&update, &current);
-		sleep(15 - current.tm_sec % 15);
 	}
 
 	connection->ops->free(connection);

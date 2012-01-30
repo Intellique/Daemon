@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 13:53:28 +0100                         *
+*  Last modified: Thu, 26 Jan 2012 09:16:49 +0100                         *
 \*************************************************************************/
 
 // malloc
@@ -44,17 +44,17 @@ struct st_fakechanger_private {
 };
 
 static int st_fakechanger_can_load(void);
-static struct st_drive * st_fakechanger_get_free_drive(struct st_changer * ch);
-static struct st_slot * st_fakechanger_get_tape(struct st_changer * ch, struct st_pool * pool);
+static struct st_slot * st_fakechanger_get_tape(struct st_changer * ch, struct st_tape * tape);
 static int st_fakechanger_load(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
+static int st_fakechanger_sync_db(struct st_changer * ch);
 static int st_fakechanger_unload(struct st_changer * ch, struct st_drive * from, struct st_slot * to);
 
 static struct st_changer_ops st_fakechanger_ops = {
-	.can_load       = st_fakechanger_can_load,
-	.get_free_drive = st_fakechanger_get_free_drive,
-	.get_tape       = st_fakechanger_get_tape,
-	.load           = st_fakechanger_load,
-	.unload         = st_fakechanger_unload,
+	.can_load = st_fakechanger_can_load,
+	.get_tape = st_fakechanger_get_tape,
+	.load     = st_fakechanger_load,
+	.sync_db  = st_fakechanger_sync_db,
+	.unload   = st_fakechanger_unload,
 };
 
 
@@ -62,18 +62,9 @@ int st_fakechanger_can_load() {
 	return 0;
 }
 
-struct st_drive * st_fakechanger_get_free_drive(struct st_changer * ch) {
-	return ch->drives;
-}
-
-struct st_slot * st_fakechanger_get_tape(struct st_changer * ch, struct st_pool * pool) {
+struct st_slot * st_fakechanger_get_tape(struct st_changer * ch, struct st_tape * tape) {
 	struct st_slot * sl = ch->slots;
-	struct st_tape * tp = sl->tape;
-
-	if (tp && tp->pool == pool && (tp->status == ST_TAPE_STATUS_IN_USE || tp->status == ST_TAPE_STATUS_NEW || tp->status == ST_TAPE_STATUS_ERASABLE))
-		return sl;
-
-	return 0;
+	return sl->tape == tape ? sl : 0;
 }
 
 int st_fakechanger_load(struct st_changer * ch, struct st_slot * from, struct st_drive * to) {
@@ -133,7 +124,18 @@ void st_fakechanger_setup(struct st_changer * changer) {
 	}
 }
 
-int st_fakechanger_unload(struct st_changer * ch, struct st_drive * from, struct st_slot * to) {
+int st_fakechanger_sync_db(struct st_changer * changer) {
+	struct st_fakechanger_private * ch = changer->data;
+
+	int failed = 0;
+	if (ch->db_con)
+		failed = ch->db_con->ops->sync_changer(ch->db_con, changer);
+
+	return failed;
+}
+
+int st_fakechanger_unload(struct st_changer * changer, struct st_drive * drive, struct st_slot * to __attribute__((unused))) {
+	st_log_write_all(st_log_level_warning, st_log_type_user_message, "[%s | %s | #%td]: Tape has been unloaded", drive->vendor, drive->model, drive - changer->drives);
 	return 0;
 }
 
