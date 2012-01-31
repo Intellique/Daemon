@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 30 Jan 2012 17:23:05 +0100                         *
+*  Last modified: Mon, 30 Jan 2012 20:46:02 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -268,10 +268,15 @@ void st_admin_com_list_slots(struct st_admin_context * context) {
 
 		char * line;
 		if (slot->tape) {
+			char * tape;
+			asprintf(&tape, "status: %s, location: %s, nb loaded: %ld, block size: %zd, nb block available: %zd, available size: %zd", st_tape_status_to_string(slot->tape->status), st_tape_location_to_string(slot->tape->location), slot->tape->load_count, slot->tape->block_size, slot->tape->available_block, slot->tape->block_size * slot->tape->available_block);
+
 			if (!*slot->tape->label && slot->tape->medium_serial_number)
-				asprintf(&line, "%u. Full: medium serial number %s", i, slot->tape->medium_serial_number);
+				asprintf(&line, "%u. Full: medium serial number %s, %s", i, slot->tape->medium_serial_number, tape);
 			else
-				asprintf(&line, "%u. Full: label: %s", i, slot->tape->label);
+				asprintf(&line, "%u. Full: label: %s, %s", i, slot->tape->label, tape);
+
+			free(tape);
 
 		} else {
 			asprintf(&line, "%u. Empty", i);
