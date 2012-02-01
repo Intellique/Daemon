@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jan 2012 18:55:31 +0100                         *
+*  Last modified: Tue, 31 Jan 2012 11:36:51 +0100                         *
 \*************************************************************************/
 
 // ssize_t
@@ -402,7 +402,7 @@ void st_scsi_mtx_status_update_slot(int fd, struct st_changer * changer, int sta
 	//int id = idlun.word1 & 0xFF;
 	int lun = idlun.word1 >> 8 & 0xFF;
 
-	unsigned char command[6] = { 0xB8, };
+	unsigned char command[12] = { 0xB8, };
 	command[6] = command[10] = command[11] = 0;
 
 	command[1] = (lun << 5) | (changer->barcode ? 0x10 : 0) | type;
@@ -424,7 +424,7 @@ void st_scsi_mtx_status_update_slot(int fd, struct st_changer * changer, int sta
 
 	header.interface_id = 'S';
 	header.cmdp = command;
-	header.cmd_len = 12;
+	header.cmd_len = sizeof(command);
 	char * buffer = header.dxferp = malloc(num_bytes);
 	header.dxfer_len = num_bytes;
 	header.sbp = (unsigned char *) &sense;
@@ -535,7 +535,7 @@ int st_scsi_tape_postion(int fd, struct st_tape * tape) {
 int st_scsi_tape_read_mam(int fd, struct st_tape * tape) {
 	RequestSense_T sense;
 	unsigned char buffer[1024];
-	unsigned char com[16] = { 0x8C, 0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (1024 >> 8) & 0xFF, 1024 & 0xFF, 0, 0 };
+	unsigned char com[16] = { 0x8C, 0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (sizeof(buffer) >> 8) & 0xFF, sizeof(buffer) & 0xFF, 0, 0 };
 
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));

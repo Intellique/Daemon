@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 26 Jan 2012 09:19:07 +0100                         *
+*  Last modified: Wed, 01 Feb 2012 10:45:29 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -70,7 +70,7 @@ void st_job_format_tape_new_job(struct st_database_connection * db __attribute__
 }
 
 int st_job_format_tape_run(struct st_job * job) {
-	job->db_ops->add_record(job, "Start format tape job (job id: %ld), num runs %ld", job->id, job->num_runs);
+	job->db_ops->add_record(job, st_log_level_info, "Start format tape job (job id: %ld), num runs %ld", job->id, job->num_runs);
 
 	if (!job->pool)
 		job->pool = job->user->pool;
@@ -95,8 +95,8 @@ int st_job_format_tape_run(struct st_job * job) {
 				job->db_ops->update_status(job);
 
 				if (!has_alert_user) {
-					job->db_ops->add_record(job, "Tape not found (named: %s)", job->tape->name);
-					st_log_write_all(st_log_level_error, st_log_type_user_message, "Job: format tape (id:%ld) request you to put a tape (named: %s) in your changer or standalone drive", job->id, job->tape->name);
+					job->db_ops->add_record(job, st_log_level_warning, "Tape not found (named: %s)", job->tape->name);
+					st_log_write_all(st_log_level_warning, st_log_type_user_message, "Job: format tape (id:%ld) request you to put a tape (named: %s) in your changer or standalone drive", job->id, job->tape->name);
 				}
 				has_alert_user = 1;
 				sleep(15);
@@ -192,18 +192,18 @@ int st_job_format_tape_run(struct st_job * job) {
 		if (slot_to) {
 			drive->ops->eject(drive);
 
-			job->db_ops->add_record(job, "Unloading tape from drive #%td to slot #%td", drive - changer->drives, slot_to - changer->slots);
+			job->db_ops->add_record(job, st_log_level_info, "Unloading tape from drive #%td to slot #%td", drive - changer->drives, slot_to - changer->slots);
 			changer->ops->unload(changer, drive, slot_to);
 			slot_to->lock->ops->unlock(slot_to->lock);
 		} else if (!changer->ops->can_load()) {
 			drive->ops->eject(drive);
 
-			job->db_ops->add_record(job, "Unloading tape from drive #%td", drive - changer->drives);
+			job->db_ops->add_record(job, st_log_level_info, "Unloading tape from drive #%td", drive - changer->drives);
 			changer->ops->unload(changer, drive, 0);
 			slot_to->lock->ops->unlock(slot_to->lock);
 		} else {
 			job->sched_status = st_job_status_error;
-			job->db_ops->add_record(job, "Fatal error: There is no place for unloading tape (%s)", drive->slot->tape->name);
+			job->db_ops->add_record(job, st_log_level_error, "Fatal error: There is no place for unloading tape (%s)", drive->slot->tape->name);
 
 			// release lock
 			changer->lock->ops->unlock(changer->lock);
@@ -214,7 +214,7 @@ int st_job_format_tape_run(struct st_job * job) {
 	}
 
 	if (!drive->slot->tape) {
-		job->db_ops->add_record(job, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
+		job->db_ops->add_record(job, st_log_level_info, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
 		changer->ops->load(changer, slot, drive);
 		slot->lock->ops->unlock(slot->lock);
 		changer->lock->ops->unlock(changer->lock);
@@ -222,14 +222,14 @@ int st_job_format_tape_run(struct st_job * job) {
 		drive->ops->reset(drive);
 	}
 
-	job->db_ops->add_record(job, "Got changer: %s %s", changer->vendor, changer->model);
-	job->db_ops->add_record(job, "Got drive: %s %s", drive->vendor, drive->model);
+	job->db_ops->add_record(job, st_log_level_info, "Got changer: %s %s", changer->vendor, changer->model);
+	job->db_ops->add_record(job, st_log_level_info, "Got drive: %s %s", drive->vendor, drive->model);
 
 	job->done = 0.5;
 	job->db_ops->update_status(job);
 
 	// write header
-	job->db_ops->add_record(job, "Formatting new tape");
+	job->db_ops->add_record(job, st_log_level_info, "Formatting new tape");
 	int status = st_tape_write_header(drive, job->pool);
 
 	drive->lock->ops->unlock(drive->lock);
@@ -244,9 +244,9 @@ int st_job_format_tape_run(struct st_job * job) {
 	job->db_ops->update_status(job);
 
 	if (status)
-		job->db_ops->add_record(job, "Job: format tape finished with code = %d (job id: %ld), num runs %ld", status, job->id, job->num_runs);
+		job->db_ops->add_record(job, st_log_level_error, "Job: format tape finished with code = %d (job id: %ld), num runs %ld", status, job->id, job->num_runs);
 	else
-		job->db_ops->add_record(job, "Job: format tape finished with code = OK (job id: %ld), num runs %ld", job->id, job->num_runs);
+		job->db_ops->add_record(job, st_log_level_info, "Job: format tape finished with code = OK (job id: %ld), num runs %ld", job->id, job->num_runs);
 
 	return 0;
 }

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 26 Jan 2012 09:16:49 +0100                         *
+*  Last modified: Tue, 31 Jan 2012 11:35:18 +0100                         *
 \*************************************************************************/
 
 // malloc
@@ -135,6 +135,7 @@ int st_fakechanger_sync_db(struct st_changer * changer) {
 }
 
 int st_fakechanger_unload(struct st_changer * changer, struct st_drive * drive, struct st_slot * to __attribute__((unused))) {
+	drive->slot->tape = 0;
 	st_log_write_all(st_log_level_warning, st_log_type_user_message, "[%s | %s | #%td]: Tape has been unloaded", drive->vendor, drive->model, drive - changer->drives);
 	return 0;
 }

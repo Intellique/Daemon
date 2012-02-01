@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 30 Jan 2012 12:46:17 +0100                         *
+*  Last modified: Wed, 01 Feb 2012 10:32:02 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -53,7 +53,7 @@ struct st_sched_job {
 	time_t updated;
 };
 
-static int st_sched_add_record(struct st_job * j, const char * format, ...) __attribute__ ((format (printf, 2, 3)));
+static int st_sched_add_record(struct st_job * j, enum st_log_level level, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
 static void st_sched_exit(int signal);
 static void st_sched_init_job(struct st_job * j);
 static void st_sched_run_job(struct st_job * j);
@@ -67,13 +67,15 @@ static struct st_scheduler_ops st_sched_db_ops = {
 };
 
 
-int st_sched_add_record(struct st_job * j, const char * format, ...) {
+int st_sched_add_record(struct st_job * j, enum st_log_level level, const char * format, ...) {
 	char * message = 0;
 
 	va_list va;
 	va_start(va, format);
 	vasprintf(&message, format, va);
 	va_end(va);
+
+	st_log_write_all2(level, st_log_type_job, j->user, message);
 
 	struct st_sched_job * jp = j->scheduler_private;
 	int status = jp->status_con->ops->add_job_record(jp->status_con, j, message);
