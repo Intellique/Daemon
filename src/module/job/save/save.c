@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 20 Jan 2012 15:39:07 +0100                         *
+*  Last modified: Wed, 01 Feb 2012 12:23:30 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -98,7 +98,7 @@ enum st_job_save_state {
 	select_new_tape,
 };
 
-static void st_job_save_archive_file(struct st_job * job, const char * path);
+static int st_job_save_archive_file(struct st_job * job, const char * path);
 static int st_job_save_change_tape(struct st_job * job);
 static int st_job_save_compute_filter(const struct dirent * file);
 static ssize_t st_job_save_compute_total_size(struct st_job * job, const char * path);
@@ -126,21 +126,21 @@ struct st_job_driver st_job_save_driver = {
 };
 
 
-void st_job_save_archive_file(struct st_job * job, const char * path) {
+int st_job_save_archive_file(struct st_job * job, const char * path) {
 	struct st_job_save_private * jp = job->data;
 
 	struct stat st;
 	if (stat(path, &st)) {
-		job->db_ops->add_record(job, "Error while getting information about: %s", path);
-		return;
+		job->db_ops->add_record(job, st_log_level_error, "Error while getting information about: %s", path);
+		return 1;
 	}
 
 	if (S_ISSOCK(st.st_mode))
-		return;
+		return 0;
 
 	while (jp->tar->ops->add_file(jp->tar, path)) {
 		if (st_job_save_manage_error(job, jp->tar->ops->last_errno(jp->tar)))
-			return;
+			return 2;
 	}
 
 	struct st_archive_file * file = st_archive_file_new(job, &st, path);
@@ -164,13 +164,15 @@ void st_job_save_archive_file(struct st_job * job, const char * path) {
 
 			ssize_t will_read = jp->block_size < available_size ? jp->block_size : available_size;
 			ssize_t nb_read = read(fd, jp->buffer, will_read);
-			if (nb_read < 1)
-				break; // in the future, we will check errors
+			if (nb_read < 1) {
+				job->db_ops->add_record(job, st_log_level_error, "Unexpected error while reading from file '%s' because %m", path);
+				return 3; // in the future, we will check errors
+			}
 
 			ssize_t nb_write;
 			while ((nb_write = jp->tar->ops->write(jp->tar, jp->buffer, nb_read)) < 0) {
 				if (st_job_save_manage_error(job, jp->tar->ops->last_errno(jp->tar)))
-					return;
+					return 4;
 			}
 
 			if (nb_write > 0) {
@@ -184,7 +186,7 @@ void st_job_save_archive_file(struct st_job * job, const char * path) {
 
 		while (jp->tar->ops->end_of_file(jp->tar) < 0) {
 			if (st_job_save_manage_error(job, jp->tar->ops->last_errno(jp->tar)))
-				return;
+				return 5;
 		}
 		file_checksum->ops->close(file_checksum);
 
@@ -198,8 +200,8 @@ void st_job_save_archive_file(struct st_job * job, const char * path) {
 		file_checksum->ops->free(file_checksum);
 	} else if (S_ISDIR(st.st_mode)) {
 		if (access(path, R_OK | X_OK)) {
-			job->db_ops->add_record(job, "Error, Can't read directory: %s", path);
-			return;
+			job->db_ops->add_record(job, st_log_level_error, "Can't read directory: %s", path);
+			return 6;
 		}
 
 		st_io_json_add_file(jp->json, file);
@@ -207,21 +209,28 @@ void st_job_save_archive_file(struct st_job * job, const char * path) {
 		struct dirent ** dl = 0;
 		int nb_files = scandir(path, &dl, st_job_save_compute_filter, 0);
 
-		int i;
+		int i, failed = 0;
 		for (i = 0; i < nb_files; i++) {
-			char * subpath = 0;
-			asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
+			if (!failed) {
+				char * subpath = 0;
+				asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
 
-			st_job_save_archive_file(job, subpath);
+				failed = st_job_save_archive_file(job, subpath);
 
-			free(subpath);
+				free(subpath);
+			}
+
 			free(dl[i]);
 		}
 
 		free(dl);
+
+		return failed;
 	}
 
 	st_archive_file_free(file);
+
+	return 0;
 }
 
 int st_job_save_change_tape(struct st_job * job) {
@@ -274,14 +283,14 @@ int st_job_save_change_tape(struct st_job * job) {
 	if (!sl) {
 		// no slot for unloading tape
 		job->sched_status = st_job_status_error;
-		job->db_ops->add_record(job, "No slot free for unloading tape");
+		job->db_ops->add_record(job, st_log_level_error, "No slot free for unloading tape");
 		return 1;
 	}
 
 	dr->ops->eject(dr);
 
 	ch->lock->ops->lock(ch->lock);
-	job->db_ops->add_record(job, "Unloading tape from drive #%td to slot #%td", dr - ch->drives, sl - ch->slots);
+	job->db_ops->add_record(job, st_log_level_info, "Unloading tape from drive #%td to slot #%td", dr - ch->drives, sl - ch->slots);
 	ch->ops->unload(ch, dr, sl);
 	ch->lock->ops->unlock(ch->lock);
 	sl->lock->ops->unlock(sl->lock);
@@ -317,20 +326,20 @@ ssize_t st_job_save_compute_total_size(struct st_job * job, const char * path) {
 	struct stat st;
 
 	if (stat(path, &st)) {
-		job->db_ops->add_record(job, "Error while getting information about: %s", path);
+		job->db_ops->add_record(job, st_log_level_error, "Error while getting information about: %s", path);
 		return 0;
 	}
 
 	if (S_ISREG(st.st_mode)) {
 		if (access(path, R_OK))
-			job->db_ops->add_record(job, "Error, Can't read file: %s", path);
+			job->db_ops->add_record(job, st_log_level_error, "Can't read file: %s", path);
 		return st.st_size;
 	}
 
 	ssize_t total = 0;
 	if (S_ISDIR(st.st_mode)) {
 		if (access(path, R_OK | X_OK)) {
-			job->db_ops->add_record(job, "Error, Can't read directory: %s", path);
+			job->db_ops->add_record(job, st_log_level_error, "Can't read directory: %s", path);
 			return 0;
 		}
 
@@ -369,7 +378,7 @@ int st_job_save_manage_error(struct st_job * job, int error) {
 
 		default:
 			job->sched_status = st_job_status_error;
-			job->db_ops->add_record(job, "Unmanaged error: %m, job aborted");
+			job->db_ops->add_record(job, st_log_level_error, "Unmanaged error: %m, job aborted");
 			return 1;
 	}
 }
@@ -404,13 +413,13 @@ void st_job_save_new_job(struct st_database_connection * db __attribute__((unuse
 int st_job_save_run(struct st_job * job) {
 	struct st_job_save_private * jp = job->data;
 
-	job->db_ops->add_record(job, "Start archive job (job id: %ld), num runs %ld", job->id, job->num_runs);
+	job->db_ops->add_record(job, st_log_level_info, "Start archive job (job id: %ld), num runs %ld", job->id, job->num_runs);
 
 	// check permission
 	struct st_user * user = job->user;
 	if (!user->can_archive) {
 		job->sched_status = st_job_status_error;
-		job->db_ops->add_record(job, "Error: user (%s) is not allowed to create archive", user->fullname);
+		job->db_ops->add_record(job, st_log_level_error, "User (%s) is not allowed to create archive", user->fullname);
 		return 1;
 	}
 
@@ -424,13 +433,13 @@ int st_job_save_run(struct st_job * job) {
 		jp->total_size += st_job_save_compute_total_size(job, job->paths[i]);
 
 	if (jp->total_size == 0) {
-		job->db_ops->add_record(job, "Error, there is no file to archive or total size of all files is null");
+		job->db_ops->add_record(job, st_log_level_error, "There is no file to archive or total size of all files is null");
 		return 3;
 	}
 
 	char bufsize[32];
 	st_util_convert_size_to_string(jp->total_size, bufsize, 32);
-	job->db_ops->add_record(job, "Will archive %s", bufsize);
+	job->db_ops->add_record(job, st_log_level_info, "Will archive %s", bufsize);
 
 	struct st_drive * drive = jp->current_drive = st_job_save_select_tape(job, look_in_first_changer);
 
@@ -453,9 +462,10 @@ int st_job_save_run(struct st_job * job) {
 	jp->block_size = jp->tar->ops->get_block_size(jp->tar);
 	jp->buffer = malloc(jp->block_size);
 
-	for (i = 0; i < job->nb_paths; i++) {
-		job->db_ops->add_record(job, "Archive %s", job->paths[i]);
-		st_job_save_archive_file(job, job->paths[i]);
+	int failed = 0;
+	for (i = 0; i < job->nb_paths && !failed; i++) {
+		job->db_ops->add_record(job, st_log_level_info, "Archive %s", job->paths[i]);
+		failed = st_job_save_archive_file(job, job->paths[i]);
 	}
 
 	// because drive has maybe changed
@@ -465,38 +475,48 @@ int st_job_save_run(struct st_job * job) {
 
 	jp->tar->ops->close(jp->tar);
 
-	// archive
-	archive->endtime = jp->current_volume->endtime = time(0);
-	jp->db_con->ops->update_archive(jp->db_con, archive);
-	st_io_json_update_archive(jp->json, archive);
-	// volume
-	jp->current_volume->size = tape_writer->ops->position(tape_writer);
-	jp->current_volume->endtime = time(0);
-	jp->current_volume->digests = st_checksum_get_digest_from_writer(checksum_writer);
-	jp->current_volume->nb_checksums = job->nb_checksums;
-	jp->db_con->ops->update_volume(jp->db_con, jp->current_volume);
-	st_io_json_update_volume(jp->json, jp->current_volume);
+	if (!failed) {
+		// archive
+		archive->endtime = jp->current_volume->endtime = time(0);
+		jp->db_con->ops->update_archive(jp->db_con, archive);
+		st_io_json_update_archive(jp->json, archive);
+		// volume
+		jp->current_volume->size = tape_writer->ops->position(tape_writer);
+		jp->current_volume->endtime = time(0);
+		jp->current_volume->digests = st_checksum_get_digest_from_writer(checksum_writer);
+		jp->current_volume->nb_checksums = job->nb_checksums;
+		jp->db_con->ops->update_volume(jp->db_con, jp->current_volume);
+		st_io_json_update_volume(jp->json, jp->current_volume);
 
-	// commit transaction
-	jp->db_con->ops->finish_transaction(jp->db_con);
+		// commit transaction
+		jp->db_con->ops->finish_transaction(jp->db_con);
+	} else {
+		// rollback transaction
+		jp->db_con->ops->cancel_transaction(jp->db_con);
+	}
 
 	// release some memory
 	jp->tar->ops->free(jp->tar);
 
-	// write index file
-	job->db_ops->add_record(job, "Writing index file");
+	if (!failed) {
+		// write index file
+		job->db_ops->add_record(job, st_log_level_info, "Writing index file");
 
-	tape_writer = drive->ops->get_writer(drive);
-	st_io_json_write_to(jp->json, tape_writer);
-	tape_writer->ops->close(tape_writer);
+		tape_writer = drive->ops->get_writer(drive);
+		st_io_json_write_to(jp->json, tape_writer);
+		tape_writer->ops->close(tape_writer);
 
-	tape_writer->ops->free(tape_writer);
-	free(tape_writer);
-	st_io_json_free(jp->json);
+		tape_writer->ops->free(tape_writer);
+		free(tape_writer);
+		st_io_json_free(jp->json);
+	}
 
 	drive->lock->ops->unlock(drive->lock);
 
-	job->db_ops->add_record(job, "Finish archive job (job id: %ld), num runs %ld", job->id, job->num_runs);
+	if (failed)
+		job->db_ops->add_record(job, st_log_level_error, "Finish archive job (job id: %ld), with status = %d, num runs %ld", job->id, failed, job->num_runs);
+	else
+		job->db_ops->add_record(job, st_log_level_info, "Finish archive job (job id: %ld) with status = Ok, num runs %ld", job->id, job->num_runs);
 
 	return 0;
 }
@@ -536,7 +556,7 @@ struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_
 					if (!slot->lock->ops->trylock(slot->lock)) {
 						if (drive) {
 							changer->lock->ops->lock(changer->lock);
-							job->db_ops->add_record(job, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
+							job->db_ops->add_record(job, st_log_level_info, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
 							changer->ops->load(changer, slot, drive);
 							changer->lock->ops->unlock(changer->lock);
 							slot->lock->ops->unlock(slot->lock);
@@ -570,7 +590,7 @@ struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_
 
 				if (drive) {
 					changer->lock->ops->lock(changer->lock);
-					job->db_ops->add_record(job, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
+					job->db_ops->add_record(job, st_log_level_info, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
 					changer->ops->load(changer, slot, drive);
 					changer->lock->ops->unlock(changer->lock);
 					slot->lock->ops->unlock(slot->lock);
@@ -653,7 +673,7 @@ struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_
 
 								if (drive) {
 									changer->lock->ops->lock(changer->lock);
-									job->db_ops->add_record(job, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
+									job->db_ops->add_record(job, st_log_level_info, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
 									changer->ops->load(changer, slot, drive);
 									changer->lock->ops->unlock(changer->lock);
 									slot->lock->ops->unlock(slot->lock);

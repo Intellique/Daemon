@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jan 2012 17:49:13 +0100                         *
+*  Last modified: Wed, 01 Feb 2012 10:51:40 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -225,7 +225,7 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 			if (status) {
 				switch (errno) {
 					default:
-						job->db_ops->add_record(job, "Error: failed to delete file before restoring hardlink %s because %m", path);
+						job->db_ops->add_record(job, st_log_level_error, "Failed to delete file before restoring hardlink %s because %m", path);
 						return status;
 				}
 			}
@@ -234,7 +234,7 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 		if (status) {
 			switch (errno) {
 				default:
-					job->db_ops->add_record(job, "Warning: failed to create an hardlink from %s to %s because %m", path, header->link);
+					job->db_ops->add_record(job, st_log_level_warning, "Failed to create an hardlink from %s to %s because %m", path, header->link);
 					break;
 			}
 		}
@@ -244,7 +244,7 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 			if (status) {
 				switch (errno) {
 					default:
-						job->db_ops->add_record(job, "Error: failed to delete file before restoring fifo named %s because %m", path);
+						job->db_ops->add_record(job, st_log_level_error, "failed to delete file before restoring fifo named %s because %m", path);
 						return status;
 				}
 			}
@@ -253,7 +253,7 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 		if (status) {
 			switch (errno) {
 				default:
-					job->db_ops->add_record(job, "Warning: failed to create a fifo named %s because %m", path);
+					job->db_ops->add_record(job, st_log_level_warning, "Failed to create a fifo named %s because %m", path);
 					break;
 			}
 		}
@@ -263,7 +263,7 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 			if (status) {
 				switch (errno) {
 					default:
-						job->db_ops->add_record(job, "Error: failed to delete file before restoring character device (major:%d,minor:%d) named %s because %m", (int) header->dev >> 8, (int) header->dev & 0xFF, path);
+						job->db_ops->add_record(job, st_log_level_error, "Failed to delete file before restoring character device (major:%d,minor:%d) named %s because %m", (int) header->dev >> 8, (int) header->dev & 0xFF, path);
 						return status;
 				}
 			}
@@ -272,7 +272,7 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 		if (status) {
 			switch (errno) {
 				default:
-					job->db_ops->add_record(job, "Warning: failed to create a character device (major:%d,minor:%d) named %s because %m", (int) header->dev >> 8, (int) header->dev & 0xFF, path);
+					job->db_ops->add_record(job, st_log_level_error, "Failed to create a character device (major:%d,minor:%d) named %s because %m", (int) header->dev >> 8, (int) header->dev & 0xFF, path);
 					break;
 			}
 		}
@@ -283,7 +283,7 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 		if (status) {
 			switch (errno) {
 				default:
-					job->db_ops->add_record(job, "Warning: failed to create a directory named %s because %m", path);
+					job->db_ops->add_record(job, st_log_level_warning, "Failed to create a directory named %s because %m", path);
 					break;
 			}
 		}
@@ -293,7 +293,7 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 			if (status) {
 				switch (errno) {
 					default:
-						job->db_ops->add_record(job, "Error: failed to delete file before restoring block device (major:%d,minor:%d) named %s because %m", (int) header->dev >> 8, (int) header->dev & 0xFF, path);
+						job->db_ops->add_record(job, st_log_level_error, "Failed to delete file before restoring block device (major:%d,minor:%d) named %s because %m", (int) header->dev >> 8, (int) header->dev & 0xFF, path);
 						return status;
 				}
 			}
@@ -302,7 +302,7 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 		if (status) {
 			switch (errno) {
 				default:
-					job->db_ops->add_record(job, "Warning: failed to create a block device (major:%d,minor:%d) named %s because %m", (int) header->dev >> 8, (int) header->dev & 0xFF, path);
+					job->db_ops->add_record(job, st_log_level_warning, "Failed to create a block device (major:%d,minor:%d) named %s because %m", (int) header->dev >> 8, (int) header->dev & 0xFF, path);
 					break;
 			}
 		}
@@ -312,20 +312,20 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 			if (status) {
 				switch (errno) {
 					default:
-						job->db_ops->add_record(job, "Error: failed to delete file before restoring regular file named %s because %m", path);
+						job->db_ops->add_record(job, st_log_level_error, "Failed to delete file before restoring regular file named %s because %m", path);
 						return status;
 				}
 			}
 		}
 		int fd = open(path, O_CREAT | O_WRONLY, header->mode);
 		if (fd < 0) {
-			job->db_ops->add_record(job, "Warning: failed to create a file named %s because %m", path);
+			job->db_ops->add_record(job, st_log_level_warning, "Failed to create a file named %s because %m", path);
 			return status;
 		}
 
 		if (header->offset > 0) {
 			if (lseek(fd, header->offset, SEEK_SET) == (off_t) -1) {
-				job->db_ops->add_record(job, "Warning: failed to seek position into file named %s because %m", path);
+				job->db_ops->add_record(job, st_log_level_warning, "Failed to seek position into file named %s because %m", path);
 				close(fd);
 				return status;
 			}
@@ -337,7 +337,7 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 		while ((nb_read = tar->ops->read(tar, jp->buffer, jp->length)) > 0) {
 			ssize_t nb_write = write(fd, jp->buffer, nb_read);
 			if (nb_write < 0) {
-				job->db_ops->add_record(job, "Warning: an error occured while writing to file named %s because %m", path);
+				job->db_ops->add_record(job, st_log_level_warning, "An error occured while writing to file named %s because %m", path);
 			}
 
 			nb_total_read += nb_read;
@@ -347,7 +347,7 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 		}
 
 		if (nb_read < 0)
-			job->db_ops->add_record(job, "Warning: an error occured while reading from tape because %m");
+			job->db_ops->add_record(job, st_log_level_warning, "An error occured while reading from tape because %m");
 
 		close(fd);
 
@@ -358,7 +358,7 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 			if (status) {
 				switch (errno) {
 					default:
-						job->db_ops->add_record(job, "Error: failed to delete file before restoring symbolic %s because %m", path);
+						job->db_ops->add_record(job, st_log_level_error, "Failed to delete file before restoring symbolic %s because %m", path);
 						return status;
 				}
 			}
@@ -375,20 +375,20 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 int st_job_restore_run(struct st_job * job) {
 	struct st_job_restore_private * jp = job->data;
 
-	job->db_ops->add_record(job, "Start restore job (job id: %ld), num runs %ld", job->id, job->num_runs);
+	job->db_ops->add_record(job, st_log_level_info, "Start restore job (job id: %ld), num runs %ld", job->id, job->num_runs);
 
 	// check permission
 	struct st_user * user = job->user;
 	if (!user->can_restore) {
 		job->sched_status = st_job_status_error;
-		job->db_ops->add_record(job, "Error: user (%s) is not allowed to create archive", user->fullname);
+		job->db_ops->add_record(job, st_log_level_error, "User (%s) is not allowed to create archive", user->fullname);
 		return 1;
 	}
 
 	int status = st_job_restore_mkdir(job->restore_to->path);
 	if (status) {
 		job->sched_status = st_job_status_error;
-		job->db_ops->add_record(job, "Fatal error: failed to create directory (%s)", job->restore_to->path);
+		job->db_ops->add_record(job, st_log_level_error, "Fatal error: failed to create directory (%s)", job->restore_to->path);
 		return status;
 	}
 
@@ -421,7 +421,7 @@ int st_job_restore_run(struct st_job * job) {
 					job->db_ops->update_status(job);
 
 					if (!has_alert_user) {
-						job->db_ops->add_record(job, "Tape not found (named: %s)", tape->tape->name);
+						job->db_ops->add_record(job, st_log_level_warning, "Tape not found (named: %s)", tape->tape->name);
 						st_log_write_all(st_log_level_error, st_log_type_user_message, "Job: restore (id:%ld) request you to put a tape (named: %s) in your changer or standalone drive", job->id, tape->tape->name);
 					}
 					has_alert_user = 1;
@@ -578,9 +578,9 @@ int st_job_restore_run(struct st_job * job) {
 	drive->lock->ops->unlock(drive->lock);
 
 	if (!status)
-		job->db_ops->add_record(job, "Job restore (id:%ld) finished with status = OK", job->id);
+		job->db_ops->add_record(job, st_log_level_info, "Job restore (id:%ld) finished with status = OK", job->id);
 	else
-		job->db_ops->add_record(job, "Job restore (id:%ld) finished with status = %d", job->id, status);
+		job->db_ops->add_record(job, st_log_level_error, "Job restore (id:%ld) finished with status = %d", job->id, status);
 
 	return status;
 }

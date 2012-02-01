@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jan 2012 16:21:08 +0100                         *
+*  Last modified: Tue, 31 Jan 2012 11:36:45 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -357,7 +357,7 @@ void st_drive_generic_reset(struct st_drive * drive) {
 	static struct mtop nop = { MTNOP, 1 };
 
 	int i, failed = 1;
-	for (i = 0; i < 120 && failed; i++) {
+	for (i = 0; i < 600 && failed; i++) {
 		if (self->fd_nst > -1) {
 			st_drive_generic_operation_start(self);
 			failed = ioctl(self->fd_nst, MTIOCTOP, &nop);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 21 Jan 2012 13:19:26 +0100                         *
+*  Last modified: Wed, 01 Feb 2012 10:15:34 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -35,6 +35,7 @@
 
 struct st_archive;
 struct st_job_driver;
+enum st_log_level;
 struct st_pool;
 struct st_tape;
 struct st_user;
@@ -63,7 +64,7 @@ struct st_job {
 	long repetition;
 	long num_runs;
 	struct st_scheduler_ops {
-		int (*add_record)(struct st_job * j, const char * format, ...) __attribute__ ((format (printf, 2, 3)));
+		int (*add_record)(struct st_job * j, enum st_log_level level, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
 		int (*update_status)(struct st_job * j);
 	} * db_ops;
 	void * scheduler_private;
