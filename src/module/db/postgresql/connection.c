@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jan 2012 19:01:58 +0100                         *
+*  Last modified: Mon, 13 Feb 2012 13:24:10 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1962,7 +1962,29 @@ int st_db_postgresql_new_archive(struct st_database_connection * connection, str
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
-	st_db_postgresql_prepare(self, "insert_archive", "INSERT INTO archive VALUES (DEFAULT, $1, $2, NULL, $3) RETURNING id");
+	st_db_postgresql_prepare(self, "get_job_metadata", "SELECT metadata FROM job WHERE id = $1 LIMIT 1");
+	st_db_postgresql_prepare(self, "insert_archive", "INSERT INTO archive VALUES (DEFAULT, $1, $2, NULL, $3, $4) RETURNING id");
+
+	char * jobid;
+	asprintf(&jobid, "%ld", archive->job->id);
+
+	const char * param1[] = { jobid };
+	PGresult * result = PQexecPrepared(self->db_con, "get_job_metadata", 1, param1, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	free(jobid);
+
+	if (status == PGRES_FATAL_ERROR) {
+		st_db_postgresql_get_error(result);
+		PQclear(result);
+		return 1;
+	}
+
+	char * metadata;
+	if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		st_db_postgresql_get_string_dup(result, 0, 0, &metadata);
+
+	PQclear(result);
 
 	char ctime[32];
 	struct tm local_current;
@@ -1972,20 +1994,22 @@ int st_db_postgresql_new_archive(struct st_database_connection * connection, str
 	char * loginid = 0;
 	asprintf(&loginid, "%ld", archive->user->id);
 
-	const char * param[] = { archive->name, ctime, loginid };
-	PGresult * result = PQexecPrepared(self->db_con, "insert_archive", 3, param, 0, 0, 0);
-	ExecStatusType status = PQresultStatus(result);
+	const char * param2[] = { archive->name, ctime, loginid, metadata };
+	result = PQexecPrepared(self->db_con, "insert_archive", 4, param2, 0, 0, 0);
+	status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR) {
 		st_db_postgresql_get_error(result);
 		PQclear(result);
 		free(loginid);
+		free(metadata);
 		return 1;
 	} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
 		st_db_postgresql_get_long(result, 0, 0, &archive->id);
 
 	PQclear(result);
 	free(loginid);
+	free(metadata);
 
 	return status != PGRES_TUPLES_OK;
 }
