@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 13 Feb 2012 13:24:10 +0100                         *
+*  Last modified: Mon, 13 Feb 2012 18:11:46 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -654,7 +654,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 		}
 		PQclear(result2);
 
-		jobs[i]->driver = st_job_get_driver(PQgetvalue(result, i, 14));
+		jobs[i]->driver = st_job_get_driver(PQgetvalue(result, i, 15));
 	}
 
 	PQclear(result);
