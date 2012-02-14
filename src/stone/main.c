@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 29 Jan 2012 15:42:09 +0100                         *
+*  Last modified: Tue, 14 Feb 2012 10:29:07 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -154,7 +154,8 @@ int main(int argc, char ** argv) {
 	}
 
 	// synchronize checksum plugins
-	// st_checksum_sync_plugins();
+	st_checksum_sync_plugins();
+
 	// synchronize job plugins
 	st_job_sync_plugins();
 
