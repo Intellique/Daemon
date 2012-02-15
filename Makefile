@@ -25,6 +25,10 @@ HEAD_FILES	:= $(sort $(shell test -d include && find include -name '*.h'))
 DEP_FILES	:=
 OBJ_FILES	:=
 
+ifndef (${OUTPUTDIR})
+OUTPUTDIR   := output
+endif
+
 
 # compilation flags
 CFLAGS		:= -std=gnu99 -pipe -O0 -ggdb3 -Wall -Wextra -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes -Iinclude -DSTONE_VERSION=\"${VERSION}\"
@@ -79,7 +83,7 @@ binaries: prepare $(sort ${BINS})
 
 check:
 	@echo 'Checking source files...'
-	@${CC} -fsyntax-only ${CFLAGS} ${SRC_FILES}
+	-@${CC} -fsyntax-only ${CFLAGS} ${SRC_FILES}
 
 clean:
 	@echo ' RM       -Rf $(foreach dir,${BIN_DIRS},$(word 1,$(subst /, ,$(dir)))) ${BUILD_DIR}'
@@ -100,6 +104,15 @@ distclean realclean: clean
 doc: Doxyfile ${LIBOBJECT_SRC_FILES} ${HEAD_FILES}
 	@echo ' DOXYGEN'
 	@doxygen
+
+install:
+	@echo ' MKDIR     ${OUTPUTDIR}'
+	@mkdir -p ${OUTPUTDIR}/usr/bin ${OUTPUTDIR}/usr/sbin ${OUTPUTDIR}/usr/lib/stone
+	@echo ' CP'
+	@cp bin/stone ${OUTPUTDIR}/usr/sbin
+	@cp bin/stone-admin ${OUTPUTDIR}/usr/bin
+	@cp lib/lib*.so ${OUTPUTDIR}/usr/lib/stone
+	@mv ${OUTPUTDIR}/usr/lib/stone/libstone.so ${OUTPUTDIR}/usr/lib
 
 prepare: ${BIN_DIRS} ${DEP_DIRS} ${OBJ_DIRS}
 

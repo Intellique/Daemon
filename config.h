@@ -28,13 +28,13 @@
 #ifndef __STONE_CONFIG_H__
 #define __STONE_CONFIG_H__
 
-//#define DEFAULT_CONFIG_FILE "/etc/storiq/STone.conf"
-#define DEFAULT_CONFIG_FILE "example-config.conf"
-//#define DEFAULT_PID_FILE "/var/run/STone.pid"
-#define DEFAULT_PID_FILE "STone.pid"
+#define DEFAULT_CONFIG_FILE "/etc/storiq/stone.conf"
+//#define DEFAULT_CONFIG_FILE "example-config.conf"
+#define DEFAULT_PID_FILE "/var/run/stone.pid"
+//#define DEFAULT_PID_FILE "stone.pid"
 
-//#define MODULE_PATH "/usr/lib/STone"
-#define MODULE_PATH "lib"
+#define MODULE_PATH "/usr/lib/stone"
+//#define MODULE_PATH "lib"
 
 #define ADMIN_DEFAULT_HOST "localhost"
 #define ADMIN_DEFAULT_PORT 4862
