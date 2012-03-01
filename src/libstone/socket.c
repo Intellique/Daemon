@@ -27,12 +27,17 @@
 
 // errno
 #include <errno.h>
+// freeaddrinfo, getaddrinfo
 #include <netdb.h>
-// malloc
+// free, malloc
 #include <stdlib.h>
+// snprintf
 #include <stdio.h>
+// accept, bind, connect, freeaddrinfo, getaddrinfo, listen, recv, send, socket
 #include <sys/socket.h>
+// accept, bind, connect, freeaddrinfo, getaddrinfo, listen, recv, send, shutdown, socket
 #include <sys/types.h>
+// close
 #include <unistd.h>
 
 #include <stone/io/socket.h>

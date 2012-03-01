@@ -1,7 +1,7 @@
 MAKEFLAGS 	+= -rR --no-print-directory
 
 # commands
-CC			:= ccache ${TARGET}gcc
+CC			:= $(shell which ccache) ${TARGET}gcc
 CTAGS		:= ctags
 CSCOPE		:= cscope
 GDB			:= gdb
@@ -19,19 +19,20 @@ BIN_SYMS	:=
 
 BUILD_DIR	:= build
 DEPEND_DIR	:= depend
+INCLUDE_DIR := . include
 
 SRC_FILES	:=
 HEAD_FILES	:= $(sort $(shell test -d include && find include -name '*.h'))
 DEP_FILES	:=
 OBJ_FILES	:=
 
-ifndef (${OUTPUTDIR})
-OUTPUTDIR   := output
+ifndef (${DESTDIR})
+DESTDIR   := output
 endif
 
 
 # compilation flags
-CFLAGS		:= -std=gnu99 -pipe -O0 -ggdb3 -Wall -Wextra -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes -Iinclude -DSTONE_VERSION=\"${VERSION}\"
+CFLAGS		:= -std=gnu99 -pipe -O0 -ggdb3 -Wall -Wextra -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes $(addprefix -I,${INCLUDE_DIR}) -DSTONE_VERSION=\"${VERSION}\"
 LDFLAGS		:=
 
 CSCOPE_OPT	:= -b -R -s src -U -I include
@@ -46,7 +47,7 @@ endif
 include ${SUB_MAKES}
 
 define BIN_template
-$$($(1)_BIN): $$($(1)_LIB) $$($(1)_OBJ_FILES)
+$$($(1)_BIN): $$($(1)_DEPEND_LIB) $$($(1)_OBJ_FILES)
 	@echo " LD       $$@"
 	@${CC} -o $$@ $$($(1)_OBJ_FILES) ${LDFLAGS} $$($(1)_LD)
 	@objcopy --only-keep-debug $$@ $$@.debug
@@ -54,11 +55,21 @@ $$($(1)_BIN): $$($(1)_LIB) $$($(1)_OBJ_FILES)
 	@objcopy --add-gnu-debuglink=$$@.debug $$@
 	@chmod -x $$@.debug
 
+$$($(1)_LIB): $$($(1)_DEPEND_LIB) $$($(1)_OBJ_FILES)
+	@echo " LD       $$@"
+	@${CC} -o $$@.$$($(1)_LIB_VERSION) $$($(1)_OBJ_FILES) -shared -Wl,-soname,$$($(1)_SONAME) ${LDFLAGS} $$($(1)_LD)
+	@objcopy --only-keep-debug $$@.$$($(1)_LIB_VERSION) $$@.$$($(1)_LIB_VERSION).debug
+	@strip $$@.$$($(1)_LIB_VERSION)
+	@objcopy --add-gnu-debuglink=$$@.$$($(1)_LIB_VERSION).debug $$@.$$($(1)_LIB_VERSION)
+	@chmod -x $$@.$$($(1)_LIB_VERSION).debug
+	@ln -sf $$(notdir $$@.$$($(1)_LIB_VERSION)) $$@.$$(basename $$($(1)_LIB_VERSION))
+	@ln -sf $$($(1)_SONAME) $$@
+
 $$($(1)_BUILD_DIR)/%.o: $$($(1)_SRC_DIR)/%.c
 	@echo " CC       $$@"
 	@${CC} -c $${CFLAGS} $$($(1)_CFLAG) -Wp,-MD,$$($(1)_DEPEND_DIR)/$$*.d,-MT,$$@ -o $$@ $$<
 
-BINS		+= $$($(1)_BIN)
+BINS		+= $$($(1)_BIN) $$($(1)_LIB)
 SRC_FILES	+= $$($(1)_SRC_FILES)
 HEAD_FILES	+= $$($(1)_HEAD_FILES)
 DEP_FILES	+= $$($(1)_DEP_FILES)
@@ -106,13 +117,13 @@ doc: Doxyfile ${LIBOBJECT_SRC_FILES} ${HEAD_FILES}
 	@doxygen
 
 install:
-	@echo ' MKDIR     ${OUTPUTDIR}'
-	@mkdir -p ${OUTPUTDIR}/usr/bin ${OUTPUTDIR}/usr/sbin ${OUTPUTDIR}/usr/lib/stone
+	@echo ' MKDIR     ${DESTDIR}'
+	@mkdir -p ${DESTDIR}/usr/bin ${DESTDIR}/usr/sbin ${DESTDIR}/usr/lib/stone
 	@echo ' CP'
-	@cp bin/stone ${OUTPUTDIR}/usr/sbin
-	@cp bin/stone-admin ${OUTPUTDIR}/usr/bin
-	@cp lib/lib*.so ${OUTPUTDIR}/usr/lib/stone
-	@mv ${OUTPUTDIR}/usr/lib/stone/libstone.so ${OUTPUTDIR}/usr/lib
+	@cp bin/stone ${DESTDIR}/usr/sbin
+	@cp bin/stone-admin ${DESTDIR}/usr/bin
+	@cp lib/lib*.so ${DESTDIR}/usr/lib/stone
+	@mv ${DESTDIR}/usr/lib/stone/libstone.so ${DESTDIR}/usr/lib
 
 prepare: ${BIN_DIRS} ${DEP_DIRS} ${OBJ_DIRS}
 
@@ -147,4 +158,3 @@ tags: ${SRC_FILES} ${HEAD_FILES}
 ifneq (${DEP_FILES},)
 include ${DEP_FILES}
 endif
-

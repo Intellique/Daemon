@@ -8,9 +8,8 @@ STONEADMIN_OBJ_FILES	:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${STONEADMIN_
 STONEADMIN_DEP_FILES	:= $(sort $(shell test -d ${STONEADMIN_DEPEND_DIR} && find ${STONEADMIN_DEPEND_DIR} -name '*.d'))
 
 STONEADMIN_BIN			:= bin/stone-admin
-STONEADMIN_CFLAG		:= -I.
-STONEADMIN_LD			:= -lstone -ljansson -lreadline -lssl -Llib -Wl,-rpath,lib
+STONEADMIN_LD			:= -lstone -ljansson -lreadline -lssl -Llib
 
-STONEADMIN_LIB			:= lib/libstone.so
+STONEADMIN__DEPEND_LIB	:= lib/libstone.so
 
 BIN_SYMS				+= STONEADMIN

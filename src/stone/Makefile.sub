@@ -8,9 +8,9 @@ STONE_OBJ_FILES		:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${STONE_SRC_FILES
 STONE_DEP_FILES		:= $(sort $(shell test -d ${STONE_DEPEND_DIR} && find ${STONE_DEPEND_DIR} -name '*.d'))
 
 STONE_BIN			:= bin/stone
-STONE_CFLAG			:= -pthread -I.
-STONE_LD			:= -pthread -lstone -ldl -ljansson -luuid -rdynamic -Llib -Wl,-rpath,lib
+STONE_CFLAG			:= -pthread
+STONE_LD			:= -pthread -lstone -ldl -ljansson -luuid -rdynamic -Llib
 
-STONE_LIB			:= lib/libstone.so
+STONE_DEPEND_LIB	:= lib/libstone.so
 
 BIN_SYMS			+= STONE

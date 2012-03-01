@@ -1,16 +1,18 @@
-LIBSTONE_SRC_DIR	:= src/libstone
-LIBSTONE_BUILD_DIR	:= ${BUILD_DIR}/libstone
-LIBSTONE_DEPEND_DIR	:= ${DEPEND_DIR}/libstone
+LIBSTONE_SRC_DIR	 := src/libstone
+LIBSTONE_BUILD_DIR	 := ${BUILD_DIR}/libstone
+LIBSTONE_DEPEND_DIR	 := ${DEPEND_DIR}/libstone
 
-LIBSTONE_SRC_FILES	:= $(sort $(shell test -d ${LIBSTONE_SRC_DIR} && find ${LIBSTONE_SRC_DIR} -name '*.c'))
-LIBSTONE_HEAD_FILES	:= $(sort $(shell test -d ${LIBSTONE_SRC_DIR} && find ${LIBSTONE_SRC_DIR} -name '*.h'))
-LIBSTONE_OBJ_FILES	:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${LIBSTONE_SRC_FILES}))
-LIBSTONE_DEP_FILES	:= $(sort $(shell test -d ${LIBSTONE_DEPEND_DIR} && find ${LIBSTONE_DEPEND_DIR} -name '*.d'))
+LIBSTONE_SRC_FILES	 := $(sort $(shell test -d ${LIBSTONE_SRC_DIR} && find ${LIBSTONE_SRC_DIR} -name '*.c'))
+LIBSTONE_HEAD_FILES	 := $(sort $(shell test -d ${LIBSTONE_SRC_DIR} && find ${LIBSTONE_SRC_DIR} -name '*.h'))
+LIBSTONE_OBJ_FILES	 := $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${LIBSTONE_SRC_FILES}))
+LIBSTONE_DEP_FILES	 := $(sort $(shell test -d ${LIBSTONE_DEPEND_DIR} && find ${LIBSTONE_DEPEND_DIR} -name '*.d'))
 
-LIBSTONE_BIN		:= lib/libstone.so
-LIBSTONE_CFLAG		:= -I. -fPIC
-LIBSTONE_LD			:= -shared
+LIBSTONE_CFLAG		 := -fPIC
+LIBSTONE_LIB		 := lib/libstone.so
+LIBSTONE_LD			 := -shared
+LIBSTONE_SONAME      := libstone.so.0
+LIBSTONE_LIB_VERSION := 0.1
 
-LIBSTONE_LIB		:=
+LIBSTONE_DEPEND_LIB	 :=
 
-BIN_SYMS			+= LIBSTONE
+BIN_SYMS			 += LIBSTONE
