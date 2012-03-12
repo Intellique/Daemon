@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jan 2012 18:53:49 +0100                         *
+*  Last modified: Mon, 12 Mar 2012 18:46:05 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_TAPE_H__
@@ -113,9 +113,6 @@ struct st_pool {
 	long id;
 	char uuid[37];
 	char name[64];
-	long retention;
-	time_t retention_limit;
-	unsigned char auto_recycle;
 	unsigned char growable;
 	struct st_tape_format * format;
 };

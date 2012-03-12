@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 13 Feb 2012 18:11:46 +0100                         *
+*  Last modified: Mon, 12 Mar 2012 18:50:06 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -353,7 +353,7 @@ int st_db_postgresql_create_pool(struct st_database_connection * connection, str
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
-	st_db_postgresql_prepare(self, "insert_pool", "INSERT INTO pool VALUES (DEFAULT, $1, $2, DEFAULT, DEFAULT, DEFAULT, DEFAULT, $3) RETURNING *");
+	st_db_postgresql_prepare(self, "insert_pool", "INSERT INTO pool VALUES (DEFAULT, $1, $2, DEFAULT, $3, '{}') RETURNING *");
 
 	char * tape_format = 0;
 	asprintf(&tape_format, "%ld", pool->format->id);
@@ -366,13 +366,7 @@ int st_db_postgresql_create_pool(struct st_database_connection * connection, str
 		st_db_postgresql_get_error(result);
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 		st_db_postgresql_get_long(result, 0, 0, &pool->id);
-		st_db_postgresql_get_long(result, 0, 3, &pool->retention);
-		if (!PQgetisnull(result, 0, 4))
-			st_db_postgresql_get_time(result, 0, 4, &pool->retention_limit);
-		else
-			pool->retention_limit = 0;
-		st_db_postgresql_get_uchar(result, 0, 5, &pool->auto_recycle);
-		st_db_postgresql_get_uchar(result, 0, 6, &pool->growable);
+		st_db_postgresql_get_uchar(result, 0, 3, &pool->growable);
 	}
 
 	PQclear(result);
@@ -699,16 +693,10 @@ int st_db_postgresql_get_pool(struct st_database_connection * connection, struct
 		st_db_postgresql_get_long(result, 0, 0, &pool->id);
 		st_db_postgresql_get_string(result, 0, 1, pool->uuid);
 		st_db_postgresql_get_string(result, 0, 2, pool->name);
-		st_db_postgresql_get_long(result, 0, 3, &pool->retention);
-		if (!PQgetisnull(result, 0, 4))
-			st_db_postgresql_get_time(result, 0, 4, &pool->retention_limit);
-		else
-			pool->retention_limit = 0;
-		st_db_postgresql_get_uchar(result, 0, 5, &pool->auto_recycle);
-		st_db_postgresql_get_uchar(result, 0, 6, &pool->growable);
+		st_db_postgresql_get_uchar(result, 0, 3, &pool->growable);
 
 		long tapeformatid;
-		st_db_postgresql_get_long(result, 0, 7, &tapeformatid);
+		st_db_postgresql_get_long(result, 0, 4, &tapeformatid);
 		pool->format = st_tape_format_get_by_id(tapeformatid);
 	} else {
 		pool->id = -1;
@@ -1431,10 +1419,7 @@ int st_db_postgresql_sync_pool(struct st_database_connection * connection, struc
 		st_db_postgresql_get_error(result);
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 		st_db_postgresql_get_string(result, 0, 2, pool->name);
-		st_db_postgresql_get_long(result, 0, 3, &pool->retention);
-		st_db_postgresql_get_time(result, 0, 4, &pool->retention_limit);
-		st_db_postgresql_get_uchar(result, 0, 5, &pool->auto_recycle);
-		st_db_postgresql_get_uchar(result, 0, 6, &pool->growable);
+		st_db_postgresql_get_uchar(result, 0, 3, &pool->growable);
 	}
 
 	PQclear(result);
