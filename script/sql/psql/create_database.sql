@@ -124,9 +124,6 @@ CREATE TABLE Pool (
     id SERIAL PRIMARY KEY,
     uuid UUID NOT NULL UNIQUE,
     name VARCHAR(64) NOT NULL,
-    retention INTEGER NOT NULL DEFAULT 30 CHECK (retention > 0),
-    retentionLimit TIMESTAMP DEFAULT NULL,
-    autoRecycle BOOLEAN NOT NULL DEFAULT FALSE,
     growable BOOLEAN NOT NULL DEFAULT FALSE,
     tapeFormat INTEGER NOT NULL REFERENCES TapeFormat(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     metadata TEXT[] NOT NULL
@@ -234,6 +231,7 @@ CREATE TABLE Users (
 
 	nbConnection INTEGER NOT NULL DEFAULT 0,
 	lastConnection TIMESTAMP(0) NULL,
+    disabled BOOLEAN NOT NULL DEFAULT FALSE,
 
     pool INTEGER NOT NULL REFERENCES Pool(id) ON DELETE RESTRICT ON UPDATE CASCADE,
 	meta hstore NOT NULL
@@ -242,9 +240,10 @@ CREATE TABLE Users (
 CREATE TABLE Archive (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    ctime TIMESTAMP(0),
+    ctime TIMESTAMP(0) NOT NULL,
     endtime TIMESTAMP(0),
-    login INTEGER NOT NULL REFERENCES Users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+    creator INTEGER NOT NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    owner INTEGER NOT NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     metadata hstore NOT NULL,
     CONSTRAINT archive_time CHECK (ctime <= endtime)
 );
@@ -253,6 +252,7 @@ CREATE TABLE ArchiveFile (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     type FileType NOT NULL,
+    mimeType VARCHAR(64) NOT NULL,
     ownerId SMALLINT NOT NULL DEFAULT 0,
     owner VARCHAR(255) NOT NULL,
     groupId SMALLINT NOT NULL DEFAULT 0,
@@ -267,7 +267,7 @@ CREATE TABLE ArchiveVolume (
     id BIGSERIAL PRIMARY KEY,
     sequence INTEGER NOT NULL DEFAULT 0 CHECK (sequence >= 0),
     size BIGINT NOT NULL DEFAULT 0 CHECK (size >= 0),
-    ctime TIMESTAMP(0),
+    ctime TIMESTAMP(0) NOT NULL,
     endtime TIMESTAMP(0),
     archive BIGINT NOT NULL REFERENCES Archive(id) ON DELETE CASCADE ON UPDATE CASCADE,
     tape INTEGER NOT NULL REFERENCES Tape(id) ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -376,8 +376,6 @@ COMMENT ON COLUMN Archive.endtime IS 'End time of archive creation';
 COMMENT ON TABLE Checksum IS 'Contains only checksum available';
 
 COMMENT ON COLUMN DriveFormat.cleaningInterval IS 'Interval between two cleaning in days';
-
-COMMENT ON COLUMN Pool.retention IS 'Retention interval in days';
 
 COMMENT ON COLUMN Tape.label IS 'Contains an UUID';
 
