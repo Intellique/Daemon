@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 17 Jan 2012 10:48:05 +0100                         *
+*  Last modified: Tue, 13 Mar 2012 18:56:10 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -75,7 +75,6 @@ struct st_checksum_helper_private {
 	sem_t ressources;
 };
 
-static struct st_checksum * st_checksum_helper_clone(struct st_checksum * new_checksum, struct st_checksum * current_checksum);
 static char * st_checksum_helper_digest(struct st_checksum * helper);
 static void st_checksum_helper_free(struct st_checksum * helper);
 static ssize_t st_checksum_helper_update(struct st_checksum * helper, const void * data, ssize_t length);
@@ -85,7 +84,6 @@ static struct st_checksum_driver ** st_checksum_drivers = 0;
 static unsigned int st_checksum_nb_drivers = 0;
 
 static struct st_checksum_ops st_checksum_helper_ops = {
-	.clone	= st_checksum_helper_clone,
 	.digest	= st_checksum_helper_digest,
 	.free	= st_checksum_helper_free,
 	.update	= st_checksum_helper_update,
@@ -217,16 +215,6 @@ struct st_checksum * st_checksum_get_helper(struct st_checksum * h, struct st_ch
 	st_threadpool_run(st_checksum_helper_work, h);
 
 	return h;
-}
-
-struct st_checksum * st_checksum_helper_clone(struct st_checksum * new_checksum, struct st_checksum * current_checksum) {
-	if (!current_checksum)
-		return 0;
-
-	struct st_checksum_helper_private * hp = current_checksum->data;
-	struct st_checksum * clone = hp->checksum->ops->clone(0, hp->checksum);
-
-	return st_checksum_get_helper(new_checksum, clone);
 }
 
 char * st_checksum_helper_digest(struct st_checksum * helper) {

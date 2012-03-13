@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 18 Dec 2011 11:25:16 +0100                         *
+*  Last modified: Tue, 13 Mar 2012 18:56:27 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -39,7 +39,6 @@ struct st_checksum_crc32_private {
 	char digest[9];
 };
 
-static struct st_checksum * st_checksum_crc32_clone(struct st_checksum * new_checksum, struct st_checksum * current_checksum);
 static char * st_checksum_crc32_digest(struct st_checksum * checksum);
 static void st_checksum_crc32_free(struct st_checksum * checksum);
 static struct st_checksum * st_checksum_crc32_new_checksum(struct st_checksum * checksum);
@@ -54,31 +53,11 @@ static struct st_checksum_driver st_checksum_crc32_driver = {
 };
 
 static struct st_checksum_ops st_checksum_crc32_ops = {
-	.clone	= st_checksum_crc32_clone,
 	.digest	= st_checksum_crc32_digest,
 	.free	= st_checksum_crc32_free,
 	.update	= st_checksum_crc32_update,
 };
 
-
-struct st_checksum * st_checksum_crc32_clone(struct st_checksum * new_checksum, struct st_checksum * current_checksum) {
-	if (!current_checksum)
-		return 0;
-
-	struct st_checksum_crc32_private * current_self = current_checksum->data;
-
-	if (!new_checksum)
-		new_checksum = malloc(sizeof(struct st_checksum));
-
-	new_checksum->ops = &st_checksum_crc32_ops;
-	new_checksum->driver = &st_checksum_crc32_driver;
-
-	struct st_checksum_crc32_private * new_self = malloc(sizeof(struct st_checksum_crc32_private));
-	*new_self = *current_self;
-
-	new_checksum->data = new_self;
-	return new_checksum;
-}
 
 char * st_checksum_crc32_digest(struct st_checksum * checksum) {
 	if (!checksum)

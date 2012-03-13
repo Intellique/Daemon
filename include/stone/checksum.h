@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:36:55 +0100                         *
+*  Last modified: Tue, 13 Mar 2012 18:55:57 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_CHECKSUM_H__
@@ -249,14 +249,6 @@ struct st_checksum {
 	 * \note all functions \b SHALL point on <b>real function</b>
 	 */
 	struct st_checksum_ops {
-		/**
-		 * \brief Create new checksum by cloning a checksum
-		 * \param[out] new_checksum : an allocated checksum or \b NULL
-		 * \param[in] current_checksum : clone this checksum
-		 * \return same value of \a new_checksum if \a new_checksum if <b>NOT NULL</b> or new value or NULL if \a current_checksum is NULL
-		 * \note current_checksum SHOULD NOT BE NULL, if \a new_checksum is \b NULL, this function allocate enough memory with \a malloc
-		 */
-		struct st_checksum * (*clone)(struct st_checksum * new_checksum, struct st_checksum * current_checksum);
 		/**
 		 * \brief compute digest and return it
 		 * \param[in] checksum : a checksum handler
