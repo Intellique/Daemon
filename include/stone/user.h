@@ -22,11 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 11 Jan 2012 10:39:41 +0100                         *
+*  Last modified: Tue, 13 Mar 2012 18:40:17 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_USER_H__
 #define __STONE_USER_H__
+
+#include <sys/types.h>
 
 struct st_user {
 	long id;
@@ -38,6 +40,9 @@ struct st_user {
 	char is_admin;
 	char can_archive;
 	char can_restore;
+	int nb_connection;
+	time_t last_connection;
+	char disabled;
 	struct st_pool * pool;
 };
 
