@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 15 Mar 2012 14:02:08 +0100                         *
+*  Last modified: Thu, 15 Mar 2012 18:21:03 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -468,7 +468,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 	st_db_postgresql_prepare(self, "select_paths", "SELECT path FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1)");
 	st_db_postgresql_prepare(self, "select_checksums", "SELECT * FROM checksum WHERE id IN (SELECT checksum FROM jobtochecksum WHERE job = $1)");
 	st_db_postgresql_prepare(self, "select_archive", "SELECT * FROM tape WHERE id IN (SELECT tape FROM archivevolume WHERE archive = $1)");
-	st_db_postgresql_prepare(self, "select_job_option", "SELECT * FROM each((SELECT meta FROM job WHERE id = $1 LIMIT 1))");
+	st_db_postgresql_prepare(self, "select_job_option", "SELECT * FROM each((SELECT options FROM job WHERE id = $1 LIMIT 1))");
 	st_db_postgresql_prepare(self, "select_job_tape", "SELECT v.sequence, t.uuid, v.tapeposition, v.size FROM archivevolume v, tape t WHERE v.tape = t.id AND v.archive = $1 ORDER BY v.sequence");
 	st_db_postgresql_prepare(self, "select_restore", "SELECT * FROM restoreto WHERE job = $1 LIMIT 1");
 
@@ -663,7 +663,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 		}
 		PQclear(result2);
 
-		jobs[i]->driver = st_job_get_driver(PQgetvalue(result, i, 15));
+		jobs[i]->driver = st_job_get_driver(PQgetvalue(result, i, 16));
 	}
 
 	PQclear(result);

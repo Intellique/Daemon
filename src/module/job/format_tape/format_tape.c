@@ -22,11 +22,15 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 01 Feb 2012 10:45:29 +0100                         *
+*  Last modified: Thu, 15 Mar 2012 19:24:39 +0100                         *
 \*************************************************************************/
 
+// sscanf
+#include <stdio.h>
 // free, malloc
 #include <stdlib.h>
+// strcmp
+#include <string.h>
 // sleep
 #include <unistd.h>
 
@@ -36,6 +40,7 @@
 #include <stone/library/ressource.h>
 #include <stone/library/tape.h>
 #include <stone/log.h>
+#include <stone/util/hashtable.h>
 #include <stone/user.h>
 
 static void st_job_format_tape_free(struct st_job * job);
@@ -228,8 +233,43 @@ int st_job_format_tape_run(struct st_job * job) {
 	job->done = 0.5;
 	job->db_ops->update_status(job);
 
+	// check blocksize
+	enum update_blocksize {
+		BLOCKSIZE_NOP,
+		BLOCKSIZE_SET,
+		BLOCKSIZE_SET_DEFAULT,
+	} do_update_block_size = BLOCKSIZE_NOP;
+	ssize_t block_size = 0;
+	struct st_tape * tape = job->tape;
+
+	char * blocksize = st_hashtable_value(job->job_option, "blocksize");
+	if (blocksize) {
+		if (sscanf(blocksize, "%zd", &block_size) == 1)
+			do_update_block_size = BLOCKSIZE_SET;
+		else if (!strcmp(blocksize, "default"))
+			do_update_block_size = BLOCKSIZE_SET_DEFAULT;
+	}
+
 	// write header
-	job->db_ops->add_record(job, st_log_level_info, "Formatting new tape");
+	switch (do_update_block_size) {
+		case BLOCKSIZE_NOP:
+			job->db_ops->add_record(job, st_log_level_info, "Formatting new tape");
+			break;
+
+		case BLOCKSIZE_SET:
+			if (tape->block_size != block_size) {
+				job->db_ops->add_record(job, st_log_level_info, "Formatting new tape (using block size: %zd bytes, previous value: %zd bytes)", block_size, tape->block_size);
+				tape->block_size = block_size;
+			} else
+				job->db_ops->add_record(job, st_log_level_info, "Formatting new tape (using block size: %zd bytes)", block_size);
+			break;
+
+		case BLOCKSIZE_SET_DEFAULT:
+			job->db_ops->add_record(job, st_log_level_info, "Formatting new tape (using default block size: %zd bytes)", tape->format->block_size);
+			tape->block_size = tape->format->block_size;
+			break;
+	}
+
 	int status = st_tape_write_header(drive, job->pool);
 
 	drive->lock->ops->unlock(drive->lock);
