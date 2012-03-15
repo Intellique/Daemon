@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 01 Feb 2012 10:15:34 +0100                         *
+*  Last modified: Thu, 15 Mar 2012 12:23:10 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -96,6 +96,8 @@ struct st_job {
 	} * restore_to;
 
 	struct st_user * user;
+
+	struct st_hashtable * job_option;
 
 	struct st_job_ops {
 		void (*free)(struct st_job * j);

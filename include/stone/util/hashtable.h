@@ -22,21 +22,19 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:35:41 +0100                         *
+*  Last modified: Thu, 15 Mar 2012 13:54:17 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_HASHTABLE_H__
 #define __STONE_HASHTABLE_H__
 
-struct st_hashtable_node {
-	unsigned long long hash;
-	void * key;
-	void * value;
-	struct st_hashtable_node * next;
-};
-
 struct st_hashtable {
-	struct st_hashtable_node ** nodes;
+	struct st_hashtable_node {
+		unsigned long long hash;
+		void * key;
+		void * value;
+		struct st_hashtable_node * next;
+	} ** nodes;
 	unsigned int nb_elements;
 	unsigned int size_node;
 

@@ -328,7 +328,8 @@ CREATE TABLE Job (
     pool INTEGER NULL REFERENCES Pool(id) ON DELETE SET NULL ON UPDATE CASCADE,
     tape INTEGER NULL REFERENCES Tape(id) ON DELETE CASCADE ON UPDATE CASCADE,
 
-    metadata hstore NOT NULL
+    metadata hstore NOT NULL,
+    options hstore NOT NULL
 );
 
 CREATE TABLE JobToChecksum (
