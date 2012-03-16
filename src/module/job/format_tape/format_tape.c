@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 15 Mar 2012 19:24:39 +0100                         *
+*  Last modified: Fri, 16 Mar 2012 16:29:58 +0100                         *
 \*************************************************************************/
 
 // sscanf
@@ -244,8 +244,23 @@ int st_job_format_tape_run(struct st_job * job) {
 
 	char * blocksize = st_hashtable_value(job->job_option, "blocksize");
 	if (blocksize) {
-		if (sscanf(blocksize, "%zd", &block_size) == 1)
-			do_update_block_size = BLOCKSIZE_SET;
+		if (sscanf(blocksize, "%zd", &block_size) == 1) {
+			if (block_size > 0) {
+				do_update_block_size = BLOCKSIZE_SET;
+
+				// round block size to power of two
+				ssize_t block_size_tmp = block_size;
+				short p;
+				for (p = 0; block_size > 1; p++, block_size >>= 1);
+				block_size <<= p;
+
+				if (block_size != block_size_tmp)
+					job->db_ops->add_record(job, st_log_level_warning, "Using block size %zd instead of %zd", block_size, block_size_tmp);
+			} else {
+				// ignore block size because bad value
+				job->db_ops->add_record(job, st_log_level_warning, "Wrong value of block size: %zd", block_size);
+			}
+		}
 		else if (!strcmp(blocksize, "default"))
 			do_update_block_size = BLOCKSIZE_SET_DEFAULT;
 	}
