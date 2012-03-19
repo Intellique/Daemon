@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 01 Feb 2012 10:32:02 +0100                         *
+*  Last modified: Mon, 19 Mar 2012 12:30:38 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -56,8 +56,7 @@ struct st_sched_job {
 static int st_sched_add_record(struct st_job * j, enum st_log_level level, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
 static void st_sched_exit(int signal);
 static void st_sched_init_job(struct st_job * j);
-static void st_sched_run_job(struct st_job * j);
-static void st_sched_run_job2(void * arg);
+static void st_sched_run_job(void * arg);
 static int st_sched_update_status(struct st_job * j);
 
 static short st_sched_stop_request = 0;
@@ -124,7 +123,6 @@ void st_sched_do_loop() {
 				j->job_ops->stop(j);
 		}
 
-		update = time(0);
 		short ok_transaction = connection->ops->start_transaction(connection) >= 0;
 		if (!ok_transaction)
 			st_log_write_all(st_log_level_warning, st_log_type_scheduler, "error while starting transaction");
@@ -179,7 +177,7 @@ void st_sched_do_loop() {
 
 			// start job
 			if (st_job_status_idle == j->db_status && j->start < update && st_job_status_idle == j->sched_status && j->repetition > 0) {
-				st_sched_run_job(j);
+				st_threadpool_run(st_sched_run_job, j);
 			}
 
 			if (j->id > last_max_jobs)
@@ -213,14 +211,10 @@ void st_sched_init_job(struct st_job * j) {
 	j->db_ops = &st_sched_db_ops;
 }
 
-void st_sched_run_job(struct st_job * j) {
-	st_log_write_all(st_log_level_info, st_log_type_scheduler, "starting job id = %ld", j->id);
-
-	st_threadpool_run(st_sched_run_job2, j);
-}
-
-void st_sched_run_job2(void * arg) {
+void st_sched_run_job(void * arg) {
 	struct st_job * j = arg;
+
+	st_log_write_all(st_log_level_info, st_log_type_scheduler, "starting job id = %ld", j->id);
 
 	j->sched_status = st_job_status_running;
 	j->repetition--;
