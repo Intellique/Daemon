@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 14 Feb 2012 10:29:07 +0100                         *
+*  Last modified: Mon, 19 Mar 2012 18:09:54 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -170,6 +170,8 @@ int main(int argc, char ** argv) {
 	//st_test();
 
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone exit");
+
+	st_log_stop_logger();
 
 	return 0;
 }

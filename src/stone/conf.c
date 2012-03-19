@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 23:09:46 +0100                         *
+*  Last modified: Mon, 19 Mar 2012 17:55:15 +0100                         *
 \*************************************************************************/
 
 // strerror
@@ -293,7 +293,7 @@ int st_conf_read_config(const char * confFile) {
 	st_hashtable_free(params);
 	free(buffer);
 
-	st_log_flush_message();
+	st_log_start_logger();
 
 	return 0;
 }

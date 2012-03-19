@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 24 Dec 2011 15:44:28 +0100                         *
+*  Last modified: Mon, 19 Mar 2012 18:09:42 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LOG_P_H__
@@ -30,8 +30,9 @@
 
 #include <stone/log.h>
 
-int st_log_flush_message(void);
 void st_log_disable_display_log(void);
+void st_log_start_logger(void);
+void st_log_stop_logger(void);
 
 #endif
 
