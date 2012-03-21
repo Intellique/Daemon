@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 15 Mar 2012 18:21:03 +0100                         *
+*  Last modified: Wed, 21 Mar 2012 10:38:47 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1975,7 +1975,7 @@ int st_db_postgresql_new_archive(struct st_database_connection * connection, str
 	st_db_postgresql_check(connection);
 
 	st_db_postgresql_prepare(self, "get_job_metadata", "SELECT metadata FROM job WHERE id = $1 LIMIT 1");
-	st_db_postgresql_prepare(self, "insert_archive", "INSERT INTO archive VALUES (DEFAULT, $1, $2, NULL, $3, $4) RETURNING id");
+	st_db_postgresql_prepare(self, "insert_archive", "INSERT INTO archive VALUES (DEFAULT, $1, $2, NULL, $3, $3, $4) RETURNING id");
 
 	char * jobid;
 	asprintf(&jobid, "%ld", archive->job->id);
@@ -2033,7 +2033,7 @@ int st_db_postgresql_new_file(struct st_database_connection * connection, struct
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
-	st_db_postgresql_prepare(self, "insert_archive_file", "INSERT INTO archivefile VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id");
+	st_db_postgresql_prepare(self, "insert_archive_file", "INSERT INTO archivefile VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id");
 
 	char * perm = 0, * ownerid = 0, * groupid = 0, * size = 0;
 	asprintf(&perm, "%o", file->perm & 0x777);
@@ -2052,10 +2052,10 @@ int st_db_postgresql_new_file(struct st_database_connection * connection, struct
 
 	const char * param[] = {
 		file->name, st_archive_file_type_to_string(file->type),
-		ownerid, file->owner, groupid, file->group, perm,
+		"", ownerid, file->owner, groupid, file->group, perm,
 		ctime, mtime, size,
 	};
-	PGresult * result = PQexecPrepared(self->db_con, "insert_archive_file", 10, param, 0, 0, 0);
+	PGresult * result = PQexecPrepared(self->db_con, "insert_archive_file", 11, param, 0, 0, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR) {
