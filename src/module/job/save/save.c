@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 01 Feb 2012 12:23:30 +0100                         *
+*  Last modified: Wed, 21 Mar 2012 19:17:55 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -164,7 +164,10 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 
 			ssize_t will_read = jp->block_size < available_size ? jp->block_size : available_size;
 			ssize_t nb_read = read(fd, jp->buffer, will_read);
-			if (nb_read < 1) {
+			if (nb_read == 0)
+				break;
+
+			if (nb_read < 0) {
 				job->db_ops->add_record(job, st_log_level_error, "Unexpected error while reading from file '%s' because %m", path);
 				return 3; // in the future, we will check errors
 			}
