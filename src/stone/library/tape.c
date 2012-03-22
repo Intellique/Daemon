@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jan 2012 18:54:26 +0100                         *
+*  Last modified: Thu, 22 Mar 2012 12:12:05 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -293,13 +293,13 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 		return tape;
 	}
 
-	// STone (v0.1)
-	// Tape format: version=1
-	// Label: A0000002
-	// Tape id: uuid=f680dd48-dd3e-4715-8ddc-a90d3e708914
-	// Pool: name=Foo, uuid=07117f1a-2b13-11e1-8bcb-80ee73001df6
-	// Block size: 32768
-	// Checksum: crc32=1eb6931d
+	// M | STone (v0.1)
+	// M | Tape format: version=1
+	// O | Label: A0000002
+	// M | Tape id: uuid=f680dd48-dd3e-4715-8ddc-a90d3e708914
+	// M | Pool: name=Foo, uuid=07117f1a-2b13-11e1-8bcb-80ee73001df6
+	// M | Block size: 32768
+	// M | Checksum: crc32=1eb6931d
 	char stone_version[9];
 	int tape_format_version = 0;
 	int nb_parsed = 0;
@@ -317,8 +317,6 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 
 		if (sscanf(buffer + nb_parsed, "Label: %36s\n%n", name, &nb_parsed2) == 1)
 			nb_parsed += nb_parsed2;
-		else
-			ok = 0;
 
 		if (ok && sscanf(buffer + nb_parsed, "Tape id: uuid=%37s\n%n", uuid, &nb_parsed2) == 1)
 			nb_parsed += nb_parsed2;
@@ -437,36 +435,51 @@ int st_tape_write_header(struct st_drive * dr, struct st_pool * pool) {
 	if (tape->block_size == 0)
 		tape->block_size = tape->format->block_size;
 
-	// STone (v0.1)
-	// Tape format: version=1
-	// Label: A0000002
-	// Tape id: uuid=f680dd48-dd3e-4715-8ddc-a90d3e708914
-	// Pool: name=Foo, uuid=07117f1a-2b13-11e1-8bcb-80ee73001df6
-	// Block size: 32768
-	// Checksum: crc32=1eb6931d
-	char * header = 0;
-	ssize_t sheader = asprintf(&header, "STone (v%s)\nTape format: version=1\nLabel: %s\nTape id: uuid=%s\nPool: name=%s, uuid=%s\nBlock size: %zd\n", STONE_VERSION, tape->label, uuid, pool->name, pool->uuid, tape->block_size);
+	// M | STone (v0.1)
+	// M | Tape format: version=1
+	// O | Label: A0000002
+	// M | Tape id: uuid=f680dd48-dd3e-4715-8ddc-a90d3e708914
+	// M | Pool: name=Foo, uuid=07117f1a-2b13-11e1-8bcb-80ee73001df6
+	// M | Block size: 32768
+	// M | Checksum: crc32=1eb6931d
 
-	char * digest = st_checksum_compute("crc32", header, sheader);
+	char * hdr = 0, * hdr2 = 0;
+	ssize_t shdr = asprintf(&hdr, "STone (v%s)\nTape format: version=1\n", STONE_VERSION), shdr2;
+	if (*tape->label) {
+		shdr2 = asprintf(&hdr2, "Label: %s\n", tape->label);
+		hdr = realloc(hdr, shdr + shdr2 + 1);
+		strcpy(hdr + shdr, hdr2);
+		shdr += shdr2;
+		free(hdr2);
+		hdr2 = 0;
+	}
+	shdr2 = asprintf(&hdr2, "Tape id: uuid=%s\nPool: name=%s, uuid=%s\nBlock size: %zd\n", uuid, pool->name, pool->uuid, tape->block_size);
+	hdr = realloc(hdr, shdr + shdr2 + 1);
+	strcpy(hdr + shdr, hdr2);
+	shdr += shdr2;
+	free(hdr2);
+	hdr2 = 0;
+
+	char * digest = st_checksum_compute("crc32", hdr, shdr);
 
 	if (!digest) {
-		free(header);
+		free(hdr);
 		return 3;
 	}
 
 	ssize_t sdigest = strlen(digest);
 
-	header = realloc(header, sheader + sdigest + 18);
-	sheader += snprintf(header + sheader, sdigest + 18, "Checksum: crc32=%s\n", digest);
+	hdr = realloc(hdr, shdr + sdigest + 18);
+	shdr += snprintf(hdr + shdr, sdigest + 18, "Checksum: crc32=%s\n", digest);
 
 	struct st_stream_writer * w = dr->ops->get_writer(dr);
-	ssize_t nb_write = w->ops->write(w, header, sheader);
+	ssize_t nb_write = w->ops->write(w, hdr, shdr);
 	int failed = w->ops->close(w);
 	w->ops->free(w);
 
-	free(header);
+	free(hdr);
 
-	if (nb_write == sheader && !failed) {
+	if (nb_write == shdr && !failed) {
 		strncpy(tape->uuid, uuid, 37);
 		tape->status = ST_TAPE_STATUS_IN_USE;
 		tape->pool = pool;
