@@ -36,7 +36,7 @@
 #include <sys/stat.h>
 // gettimeofday
 #include <sys/time.h>
-// localtime_r
+// time
 #include <time.h>
 
 #include <stone/job.h>
@@ -65,14 +65,10 @@ struct st_archive_file_type2 {
 struct st_archive * st_archive_new(struct st_job * job) {
 	struct timeval current;
 	gettimeofday(&current, 0);
-	struct tm local_current;
-	localtime_r(&current.tv_sec, &local_current);
-	char buffer[32];
-	strftime(buffer, 32, "%F_%T", &local_current);
 
 	struct st_archive * archive = job->archive = malloc(sizeof(struct st_archive));
 	archive->id = -1;
-	asprintf(&archive->name, "%s_%s", job->name, buffer);
+	archive->name = strdup(job->name);
 	archive->ctime = current.tv_sec;
 	archive->endtime = 0;
 	archive->user = job->user;
