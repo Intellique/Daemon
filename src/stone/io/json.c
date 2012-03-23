@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jan 2012 21:28:09 +0100                         *
+*  Last modified: Fri, 23 Mar 2012 15:45:20 +0100                         *
 \*************************************************************************/
 
 #include <jansson.h>
@@ -37,6 +37,7 @@
 #include <stone/job.h>
 #include <stone/library/archive.h>
 #include <stone/library/tape.h>
+#include <stone/util/hashtable.h>
 #include <stone/user.h>
 
 #include "config.h"
@@ -93,6 +94,25 @@ void st_io_json_add_file(struct st_io_json * js, struct st_archive_file * file) 
 	json_object_set_new(js->current_file, "checksums", checksums);
 
 	json_array_append(js->current_volume_files, js->current_file);
+}
+
+void st_io_json_add_metadata(struct st_io_json * js, struct st_hashtable * metadatas) {
+	if (!js || !metadatas)
+		return;
+
+	json_t * meta = json_object();
+	const void ** keys = st_hashtable_keys(metadatas);
+
+	unsigned int i;
+	for (i = 0; keys[i]; i++) {
+		const char * key = keys[i];
+		const char * value = st_hashtable_value(metadatas, key);
+		json_object_set_new(meta, key, json_string(value));
+	}
+
+	free(keys);
+
+	json_object_set_new(js->archive, "metadata", meta);
 }
 
 void st_io_json_add_volume(struct st_io_json * js, struct st_archive_volume * volume) {

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 15 Mar 2012 12:23:10 +0100                         *
+*  Last modified: Fri, 23 Mar 2012 14:13:09 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -97,6 +97,7 @@ struct st_job {
 
 	struct st_user * user;
 
+	struct st_hashtable * job_meta;
 	struct st_hashtable * job_option;
 
 	struct st_job_ops {

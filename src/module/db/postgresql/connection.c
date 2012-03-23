@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 21 Mar 2012 10:38:47 +0100                         *
+*  Last modified: Fri, 23 Mar 2012 14:18:49 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -468,6 +468,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 	st_db_postgresql_prepare(self, "select_paths", "SELECT path FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1)");
 	st_db_postgresql_prepare(self, "select_checksums", "SELECT * FROM checksum WHERE id IN (SELECT checksum FROM jobtochecksum WHERE job = $1)");
 	st_db_postgresql_prepare(self, "select_archive", "SELECT * FROM tape WHERE id IN (SELECT tape FROM archivevolume WHERE archive = $1)");
+	st_db_postgresql_prepare(self, "select_job_meta", "SELECT * FROM each((SELECT metadata FROM job WHERE id = $1 LIMIT 1))");
 	st_db_postgresql_prepare(self, "select_job_option", "SELECT * FROM each((SELECT options FROM job WHERE id = $1 LIMIT 1))");
 	st_db_postgresql_prepare(self, "select_job_tape", "SELECT v.sequence, t.uuid, v.tapeposition, v.size FROM archivevolume v, tape t WHERE v.tape = t.id AND v.archive = $1 ORDER BY v.sequence");
 	st_db_postgresql_prepare(self, "select_restore", "SELECT * FROM restoreto WHERE job = $1 LIMIT 1");
@@ -635,6 +636,19 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 
 		if (tapeid > -1)
 			jobs[i]->tape = st_tape_get_by_id(tapeid);
+
+		// get job metadata
+		jobs[i]->job_meta = st_hashtable_new2(st_util_compute_hash_string, st_util_basic_free);
+		result2 = PQexecPrepared(self->db_con, "select_job_meta", 1, param2, 0, 0, 0);
+
+		if (status2 == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(result2);
+		else if (PQresultStatus(result2) == PGRES_TUPLES_OK) {
+			unsigned int j, nb_metadatas = PQntuples(result2);
+			for (j = 0; j < nb_metadatas; j++)
+				st_hashtable_put(jobs[i]->job_meta, strdup(PQgetvalue(result2, j, 0)), strdup(PQgetvalue(result2, j, 1)));
+		}
+		PQclear(result2);
 
 		// get job option
 		jobs[i]->job_option = st_hashtable_new2(st_util_compute_hash_string, st_util_basic_free);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jan 2012 21:26:35 +0100                         *
+*  Last modified: Fri, 23 Mar 2012 15:24:05 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_IO_JSON_H__
@@ -33,9 +33,11 @@
 struct st_archive;
 struct st_archive_file;
 struct st_archive_volume;
+struct st_hashtable;
 struct st_io_json;
 
 void st_io_json_add_file(struct st_io_json * js, struct st_archive_file * file);
+void st_io_json_add_metadata(struct st_io_json * js, struct st_hashtable * metadatas);
 void st_io_json_add_volume(struct st_io_json * js, struct st_archive_volume * volume);
 void st_io_json_free(struct st_io_json * js);
 struct st_io_json * st_io_json_new(struct st_archive * archive);
