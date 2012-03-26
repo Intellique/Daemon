@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 19 Mar 2012 12:30:38 +0100                         *
+*  Last modified: Mon, 26 Mar 2012 13:44:14 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -238,6 +238,46 @@ void st_sched_run_job(void * arg) {
 
 	free(j->name);
 	j->name = 0;
+
+	j->db_ops = 0;
+	j->scheduler_private = 0;
+
+	// j->archive
+	j->pool = 0;
+	j->tape = 0;
+
+	if (j->paths) {
+		unsigned int i;
+		for (i = 0; i < j->nb_paths; i++)
+			free(j->paths[i]);
+		free(j->paths);
+		j->paths = 0;
+	};
+
+	if (j->checksums) {
+		unsigned int i;
+		for (i = 0; i < j->nb_checksums; j++)
+			free(j->checksums[i]);
+		free(j->checksums);
+		free(j->checksum_ids);
+		j->checksums = 0;
+		j->checksum_ids = 0;
+	}
+
+	if (j->nb_tapes > 0) {
+		free(j->tapes);
+		j->tapes = 0;
+		j->nb_tapes = 0;
+	}
+
+	if (j->restore_to) {
+		free(j->restore_to->path);
+		free(j->restore_to);
+		j->restore_to = 0;
+	}
+
+	j->user = 0;
+
 	j->driver = 0;
 
 	st_log_write_all(st_log_level_info, st_log_type_scheduler, "job finished, id = %ld, with exited code = %d", j->id, status);
