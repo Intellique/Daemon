@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 01 Feb 2012 10:51:40 +0100                         *
+*  Last modified: Mon, 26 Mar 2012 19:35:01 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -193,6 +193,13 @@ int st_job_restore_restore(struct st_job * job, struct st_drive * drive) {
 		else {
 			strcpy(restore_path + restore_path_length, "/");
 			strcpy(restore_path + restore_path_length + 1, path);
+		}
+
+		char * pos = strrchr(restore_path, '/');
+		if (pos) {
+			*pos = '\0';
+			st_job_restore_mkdir(restore_path);
+			*pos = '/';
 		}
 
 		failed = st_job_restore_restore_file(job, tar, &header, restore_path);
