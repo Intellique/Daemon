@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jan 2012 13:07:53 +0100                         *
+*  Last modified: Mon, 02 Apr 2012 12:51:24 +0200                         *
 \*************************************************************************/
 
 #include <errno.h>
@@ -133,6 +133,7 @@ int st_tar_out_add_file(struct st_tar_out * f, const char * filename) {
 	struct st_tar * header = malloc(block_size);
 	struct st_tar * current_header = header;
 
+	filename = st_tar_out_skip_leading_slash(filename);
 	int filename_length = strlen(filename);
 	if (S_ISLNK(sfile.st_mode)) {
 		char link[257];
@@ -177,10 +178,10 @@ int st_tar_out_add_file(struct st_tar_out * f, const char * filename) {
 
 	struct st_tar_private_out * format = f->data;
 	bzero(current_header, 512);
-	strncpy(current_header->filename, st_tar_out_skip_leading_slash(filename), 100);
-	snprintf(header->filemode, 8, "%07o", sfile.st_mode & 0777);
-	snprintf(header->uid, 8, "%07o", sfile.st_uid);
-	snprintf(header->gid, 8, "%07o", sfile.st_gid);
+	strncpy(current_header->filename, filename, 100);
+	snprintf(current_header->filemode, 8, "%07o", sfile.st_mode & 0777);
+	snprintf(current_header->uid, 8, "%07o", sfile.st_uid);
+	snprintf(current_header->gid, 8, "%07o", sfile.st_gid);
 	snprintf(current_header->mtime, 12, "%0*o", 11, (unsigned int) sfile.st_mtime);
 
 	if (S_ISREG(sfile.st_mode)) {
@@ -204,8 +205,8 @@ int st_tar_out_add_file(struct st_tar_out * f, const char * filename) {
 	}
 
 	strcpy(current_header->magic, "ustar  ");
-	st_tar_out_uid2name(header->uname, 32, sfile.st_uid);
-	st_tar_out_gid2name(header->gname, 32, sfile.st_gid);
+	st_tar_out_uid2name(current_header->uname, 32, sfile.st_uid);
+	st_tar_out_gid2name(current_header->gname, 32, sfile.st_gid);
 
 	st_tar_out_compute_checksum(current_header, current_header->checksum);
 
