@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 21:00:48 +0100                         *
+*  Last modified: Tue, 03 Apr 2012 15:43:16 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -49,7 +49,7 @@ struct st_log_postgresql_private {
 };
 
 static void st_log_postgresql_module_free(struct st_log_module * module);
-static void st_log_postgresql_module_write(struct st_log_module * module, enum st_log_level level, enum st_log_type type, const char * message, struct st_user * user);
+static void st_log_postgresql_module_write(struct st_log_module * module, struct st_log_message * message);
 
 static struct st_log_module_ops st_log_postgresql_module_ops = {
 	.free  = st_log_postgresql_module_free,
@@ -104,24 +104,22 @@ struct st_log_module * st_log_postgresql_new(struct st_log_module * module, cons
 	return module;
 }
 
-void st_log_postgresql_module_write(struct st_log_module * module, enum st_log_level level, enum st_log_type type, const char * message, struct st_user * user) {
+void st_log_postgresql_module_write(struct st_log_module * module, struct st_log_message * message) {
 	struct st_log_postgresql_private * self = module->data;
 
-	struct timeval curTime;
 	struct tm curTime2;
 	char buffer[32];
 
-	gettimeofday(&curTime, 0);
-	localtime_r(&(curTime.tv_sec), &curTime2);
+	localtime_r(&message->timestamp, &curTime2);
 	strftime(buffer, 32, "%F %T", &curTime2);
 
 	char * userid = 0;
-	if (user)
-		asprintf(&userid, "%ld", user->id);
+	if (message->user)
+		asprintf(&userid, "%ld", message->user->id);
 
 	const char * param[] = {
-		st_log_postgresql_types[type], st_log_postgresql_levels[level],
-		buffer, message, self->hostid, userid,
+		st_log_postgresql_types[message->type], st_log_postgresql_levels[message->level],
+		buffer, message->message, self->hostid, userid,
 	};
 
 	PGresult * result = PQexecPrepared(self->connection, "insert_log", 6, param, 0, 0, 0);

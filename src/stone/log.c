@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 19 Mar 2012 18:11:07 +0100                         *
+*  Last modified: Tue, 03 Apr 2012 16:10:52 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -52,10 +52,7 @@ static int st_log_display_at_exit = 1;
 static struct st_log_driver ** st_log_drivers = 0;
 static unsigned int st_log_nb_drivers = 0;
 static struct st_log_message_unsent {
-	enum st_log_level level;
-	enum st_log_type type;
-	char * message;
-	struct st_user * user;
+	struct st_log_message data;
 	struct st_log_message_unsent * next;
 } * st_log_message_first = 0, * st_log_message_last = 0;
 static pthread_mutex_t st_log_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
@@ -99,12 +96,14 @@ void st_log_disable_display_log() {
 }
 
 void st_log_exit() {
-	if (!st_log_display_at_exit)
-		return;
-
-	struct st_log_message_unsent * mes;
-	for (mes = st_log_message_first; mes; mes = mes->next)
-		printf("%c: %s\n", st_log_level_to_string(mes->level)[0], mes->message);
+	if (st_log_display_at_exit) {
+		struct st_log_message_unsent * mes;
+		for (mes = st_log_message_first; mes; mes = mes->next)
+			printf("%c: %s\n", st_log_level_to_string(mes->data.level)[0], mes->data.message);
+	} else {
+		while (st_log_message_first)
+			sleep(1);
+	}
 }
 
 struct st_log_driver * st_log_get_driver(const char * driver) {
@@ -200,20 +199,22 @@ void st_log_sent_message(void * arg __attribute__((unused))) {
 		pthread_mutex_unlock(&st_log_lock);
 
 		unsigned int i;
+		struct st_log_message * mes = &message->data;
 		for (i = 0; i < st_log_nb_drivers; i++) {
 			unsigned int j;
 			for (j = 0; j < st_log_drivers[i]->nb_modules; j++)
-				if (st_log_drivers[i]->modules[j].level >= message->level)
-					st_log_drivers[i]->modules[j].ops->write(st_log_drivers[i]->modules + j, message->level, message->type, message->message, message->user);
+				if (st_log_drivers[i]->modules[j].level >= mes->level)
+					st_log_drivers[i]->modules[j].ops->write(st_log_drivers[i]->modules + j, mes);
 		}
 
-		free(message->message);
+		free(mes->message);
 		free(message);
 	}
 }
 
 void st_log_start_logger() {
 	st_threadpool_run(st_log_sent_message, 0);
+	st_log_display_at_exit = 0;
 }
 
 void st_log_stop_logger() {
@@ -260,10 +261,12 @@ void st_log_write_all(enum st_log_level level, enum st_log_type type, const char
 	va_end(va);
 
 	struct st_log_message_unsent * mes = malloc(sizeof(struct st_log_message_unsent));
-	mes->level = level;
-	mes->type = type;
-	mes->message = message;
-	mes->user = 0;
+	struct st_log_message * data = &mes->data;
+	data->level = level;
+	data->type = type;
+	data->message = message;
+	data->user = 0;
+	data->timestamp = time(0);
 	mes->next = 0;
 
 	int old_state;
@@ -291,10 +294,12 @@ void st_log_write_all2(enum st_log_level level, enum st_log_type type, struct st
 	va_end(va);
 
 	struct st_log_message_unsent * mes = malloc(sizeof(struct st_log_message_unsent));
-	mes->level = level;
-	mes->type = type;
-	mes->message = message;
-	mes->user = user;
+	struct st_log_message * data = &mes->data;
+	data->level = level;
+	data->type = type;
+	data->message = message;
+	data->user = user;
+	data->timestamp = time(0);
 	mes->next = 0;
 
 	int old_state;

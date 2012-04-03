@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jan 2012 17:47:44 +0100                         *
+*  Last modified: Tue, 03 Apr 2012 15:40:47 +0200                         *
 \*************************************************************************/
 
 // open
@@ -54,7 +54,7 @@ struct st_log_file_private {
 };
 
 static void st_log_file_module_free(struct st_log_module * module);
-static void st_log_file_module_write(struct st_log_module * module, enum st_log_level level, enum st_log_type type, const char * message, struct st_user * user);
+static void st_log_file_module_write(struct st_log_module * module, struct st_log_message * message);
 
 static struct st_log_module_ops st_log_file_module_ops = {
 	.free  = st_log_file_module_free,
@@ -97,20 +97,18 @@ struct st_log_module * st_log_file_new(struct st_log_module * module, const char
 	return module;
 }
 
-void st_log_file_module_write(struct st_log_module * module, enum st_log_level level, enum st_log_type type, const char * message, struct st_user * user) {
+void st_log_file_module_write(struct st_log_module * module, struct st_log_message * message) {
 	struct st_log_file_private * self = module->data;
 
-	struct timeval curTime;
 	struct tm curTime2;
 	char strtime[32];
 
-	gettimeofday(&curTime, 0);
-	localtime_r(&(curTime.tv_sec), &curTime2);
+	localtime_r(&message->timestamp, &curTime2);
 	strftime(strtime, 32, "%F %T", &curTime2);
 
-	if (user)
-		dprintf(self->fd, "[L:%-7s | T:%-15s | U:%s | @%s]: %s\n", st_log_level_to_string(level), st_log_type_to_string(type), user->login, strtime, message);
+	if (message->user)
+		dprintf(self->fd, "[L:%-7s | T:%-15s | U:%s | @%s]: %s\n", st_log_level_to_string(message->level), st_log_type_to_string(message->type), message->user->login, strtime, message->message);
 	else
-		dprintf(self->fd, "[L:%-7s | T:%-15s | @%s]: %s\n", st_log_level_to_string(level), st_log_type_to_string(type), strtime, message);
+		dprintf(self->fd, "[L:%-7s | T:%-15s | @%s]: %s\n", st_log_level_to_string(message->level), st_log_type_to_string(message->type), strtime, message->message);
 }
 

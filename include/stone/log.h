@@ -22,11 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Dec 2011 20:42:19 +0100                         *
+*  Last modified: Tue, 03 Apr 2012 15:20:38 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LOG_H__
 #define __STONE_LOG_H__
+
+// time_t
+#include <sys/time.h>
 
 // forward declarations
 struct st_hashtable;
@@ -90,6 +93,14 @@ enum st_log_type {
 };
 
 
+struct st_log_message {
+	enum st_log_level level;
+	enum st_log_type type;
+	char * message;
+	struct st_user * user;
+	time_t timestamp;
+};
+
 struct st_log_driver {
 	const char * name;
 	int (*add)(struct st_log_driver * driver, const char * alias, enum st_log_level level, struct st_hashtable * params);
@@ -105,7 +116,7 @@ struct st_log_driver {
 		enum st_log_level level;
 		struct st_log_module_ops {
 			void (*free)(struct st_log_module * module);
-			void (*write)(struct st_log_module * module, enum st_log_level level, enum st_log_type type, const char * message, struct st_user * user);
+			void (*write)(struct st_log_module * module, struct st_log_message * message);
 		} * ops;
 
 		void * data;
