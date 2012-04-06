@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Mar 2012 15:25:12 +0100                         *
+*  Last modified: Thu, 05 Apr 2012 19:12:16 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -61,34 +61,7 @@
 #include <stone/user.h>
 #include <stone/util.h>
 
-struct st_job_save_private {
-	struct st_tar_out * tar;
-	char * buffer;
-	ssize_t block_size;
-
-	struct st_job_save_savepoint {
-		struct st_changer * changer;
-		struct st_drive * drive;
-		struct st_slot * slot;
-	} * savepoints;
-	unsigned int nb_savepoints;
-
-	struct st_drive * current_drive;
-	struct st_archive_volume * current_volume;
-
-	struct st_stream_writer * current_tape_writer;
-	struct st_stream_writer * current_checksum_writer;
-
-	struct st_tape ** tapes;
-	unsigned int nb_tapes;
-
-	ssize_t total_size_done;
-	ssize_t total_size;
-
-	struct st_io_json * json;
-
-	struct st_database_connection * db_con;
-};
+#include "common.h"
 
 enum st_job_save_state {
 	changer_got_tape,
@@ -144,8 +117,7 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 	}
 
 	struct st_archive_file * file = st_archive_file_new(job, &st, path);
-	jp->db_con->ops->new_file(jp->db_con, file);
-	jp->db_con->ops->file_link_to_volume(jp->db_con, file, jp->current_volume);
+    st_job_save_add_file(jp, file);
 
 	if (S_ISREG(st.st_mode)) {
 		int fd = open(path, O_RDONLY);
@@ -191,16 +163,9 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 			if (st_job_save_manage_error(job, jp->tar->ops->last_errno(jp->tar)))
 				return 5;
 		}
-		file_checksum->ops->close(file_checksum);
-
-		file->digests = st_checksum_get_digest_from_writer(file_checksum);
-		file->nb_checksums = job->nb_checksums;
-		jp->db_con->ops->file_add_checksum(jp->db_con, file);
-
 		st_io_json_add_file(jp->json, file);
 
 		close(fd);
-		file_checksum->ops->free(file_checksum);
 	} else if (S_ISDIR(st.st_mode)) {
 		if (access(path, R_OK | X_OK)) {
 			job->db_ops->add_record(job, st_log_level_error, "Can't read directory: %s", path);
@@ -230,8 +195,6 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 
 		return failed;
 	}
-
-	st_archive_file_free(file);
 
 	return 0;
 }
