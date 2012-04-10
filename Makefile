@@ -51,7 +51,7 @@ $$($(1)_BIN): $$($(1)_DEPEND_LIB) $$($(1)_OBJ_FILES)
 	@echo " LD       $$@"
 	@${CC} -o $$@ $$($(1)_OBJ_FILES) ${LDFLAGS} $$($(1)_LD)
 	@objcopy --only-keep-debug $$@ $$@.debug
-	@strip $$@
+#	@strip $$@
 	@objcopy --add-gnu-debuglink=$$@.debug $$@
 	@chmod -x $$@.debug
 
@@ -59,7 +59,7 @@ $$($(1)_LIB): $$($(1)_DEPEND_LIB) $$($(1)_OBJ_FILES)
 	@echo " LD       $$@"
 	@${CC} -o $$@.$$($(1)_LIB_VERSION) $$($(1)_OBJ_FILES) -shared -Wl,-soname,$$($(1)_SONAME) ${LDFLAGS} $$($(1)_LD)
 	@objcopy --only-keep-debug $$@.$$($(1)_LIB_VERSION) $$@.$$($(1)_LIB_VERSION).debug
-	@strip $$@.$$($(1)_LIB_VERSION)
+#	@strip $$@.$$($(1)_LIB_VERSION)
 	@objcopy --add-gnu-debuglink=$$@.$$($(1)_LIB_VERSION).debug $$@.$$($(1)_LIB_VERSION)
 	@chmod -x $$@.$$($(1)_LIB_VERSION).debug
 	@ln -sf $$(notdir $$@.$$($(1)_LIB_VERSION)) $$@.$$(basename $$($(1)_LIB_VERSION))
