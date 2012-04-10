@@ -123,6 +123,7 @@ install:
 	@cp bin/stone-admin ${DESTDIR}/usr/bin
 	@cp lib/lib*.so ${DESTDIR}/usr/lib/stone
 	@mv ${DESTDIR}/usr/lib/stone/libstone.so ${DESTDIR}/usr/lib
+	@cp script/stone.conf ${DESTDIR}/etc/storiq
 
 prepare: ${BIN_DIRS} ${DEP_DIRS} ${OBJ_DIRS}
 
