@@ -10,8 +10,7 @@ GDB			:= gdb
 # variable
 NAME		:= STone
 DIR_NAME	:= $(lastword $(subst /, , $(realpath .)))
-#VERSION		:= $(shell git describe)
-VERSION		:= 0.0.1
+VERSION		:= $(shell git describe)
 
 
 BINS		:=
