@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jan 2012 20:44:36 +0100                         *
+*  Last modified: Fri, 06 Apr 2012 17:54:26 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -98,9 +98,11 @@ struct st_archive_file {
 	struct st_archive * archive;
 };
 
-struct st_archive * st_archive_new(struct st_job * job);
 void st_archive_file_free(struct st_archive_file * file);
 struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * file, const char * filename);
+void st_archive_free(struct st_archive * archive);
+struct st_archive * st_archive_new(struct st_job * job);
+void st_archive_volume_free(struct st_archive_volume * volume);
 struct st_archive_volume * st_archive_volume_new(struct st_job * job, struct st_drive * drive);
 enum st_archive_file_type st_archive_file_string_to_type(const char * type);
 const char * st_archive_file_type_to_string(enum st_archive_file_type type);

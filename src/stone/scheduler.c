@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 26 Mar 2012 13:44:14 +0200                         *
+*  Last modified: Fri, 06 Apr 2012 13:29:17 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -44,6 +44,7 @@
 #include <stone/job.h>
 #include <stone/log.h>
 #include <stone/threadpool.h>
+#include <stone/util/hashtable.h>
 
 #include "library/common.h"
 #include "scheduler.h"
@@ -212,77 +213,86 @@ void st_sched_init_job(struct st_job * j) {
 }
 
 void st_sched_run_job(void * arg) {
-	struct st_job * j = arg;
+	struct st_job * job = arg;
 
-	st_log_write_all(st_log_level_info, st_log_type_scheduler, "starting job id = %ld", j->id);
+	st_log_write_all(st_log_level_info, st_log_type_scheduler, "starting job id = %ld", job->id);
 
-	j->sched_status = st_job_status_running;
-	j->repetition--;
-	j->num_runs++;
+	job->sched_status = st_job_status_running;
+	job->repetition--;
+	job->num_runs++;
 
-	int status = j->job_ops->run(j);
+	int status = job->job_ops->run(job);
 
-	j->sched_status = st_job_status_idle;
+	job->sched_status = st_job_status_idle;
 
 	sleep(1);
 
-	st_sched_update_status(j);
+	st_sched_update_status(job);
 
-	j->job_ops->free(j);
-	j->data = 0;
+	job->job_ops->free(job);
+	job->data = 0;
 
-	struct st_sched_job * jp = j->scheduler_private;
+	struct st_sched_job * jp = job->scheduler_private;
 	jp->status_con->ops->close(jp->status_con);
 	jp->status_con->ops->free(jp->status_con);
 	free(jp);
 
-	free(j->name);
-	j->name = 0;
+	free(job->name);
+	job->name = 0;
 
-	j->db_ops = 0;
-	j->scheduler_private = 0;
+	job->db_ops = 0;
+	job->scheduler_private = 0;
 
 	// j->archive
-	j->pool = 0;
-	j->tape = 0;
+	job->pool = 0;
+	job->tape = 0;
 
-	if (j->paths) {
+	if (job->paths) {
 		unsigned int i;
-		for (i = 0; i < j->nb_paths; i++)
-			free(j->paths[i]);
-		free(j->paths);
-		j->paths = 0;
+		for (i = 0; i < job->nb_paths; i++)
+			free(job->paths[i]);
+		free(job->paths);
+		job->paths = 0;
 	};
 
-	if (j->checksums) {
+	if (job->checksums) {
 		unsigned int i;
-		for (i = 0; i < j->nb_checksums; j++)
-			free(j->checksums[i]);
-		free(j->checksums);
-		free(j->checksum_ids);
-		j->checksums = 0;
-		j->checksum_ids = 0;
+		for (i = 0; i < job->nb_checksums; i++)
+			free(job->checksums[i]);
+		free(job->checksums);
+		free(job->checksum_ids);
+		job->checksums = 0;
+		job->checksum_ids = 0;
 	}
 
-	if (j->nb_tapes > 0) {
-		free(j->tapes);
-		j->tapes = 0;
-		j->nb_tapes = 0;
+	if (job->nb_tapes > 0) {
+		free(job->tapes);
+		job->tapes = 0;
+		job->nb_tapes = 0;
 	}
 
-	if (j->restore_to) {
-		free(j->restore_to->path);
-		free(j->restore_to);
-		j->restore_to = 0;
+	if (job->restore_to) {
+		free(job->restore_to->path);
+		free(job->restore_to);
+		job->restore_to = 0;
 	}
 
-	j->user = 0;
+	job->user = 0;
 
-	j->driver = 0;
+	job->driver = 0;
 
-	st_log_write_all(st_log_level_info, st_log_type_scheduler, "job finished, id = %ld, with exited code = %d", j->id, status);
+	if (job->job_meta) {
+		st_hashtable_free(job->job_meta);
+		job->job_meta = 0;
+	}
+	if (job->job_option) {
+		st_hashtable_free(job->job_option);
+		job->job_option = 0;
+	}
 
-	j->id = -1;
+	st_log_write_all(st_log_level_info, st_log_type_scheduler, "job finished, id = %ld, with exited code = %d", job->id, status);
+
+	job->id = -1;
 }
 
 int st_sched_update_status(struct st_job * j) {

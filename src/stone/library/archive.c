@@ -62,25 +62,6 @@ static struct st_archive_file_type2 {
 };
 
 
-struct st_archive * st_archive_new(struct st_job * job) {
-	struct timeval current;
-	gettimeofday(&current, 0);
-
-	struct st_archive * archive = job->archive = malloc(sizeof(struct st_archive));
-	archive->id = -1;
-	archive->name = strdup(job->name);
-	archive->ctime = current.tv_sec;
-	archive->endtime = 0;
-	archive->user = job->user;
-
-	archive->volumes = 0;
-	archive->nb_volumes = 0;
-
-	archive->job = job;
-
-	return archive;
-}
-
 void st_archive_file_free(struct st_archive_file * file) {
 	if (!file)
 		return;
@@ -128,6 +109,51 @@ struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * 
 	f->archive = job->archive;
 
 	return f;
+}
+
+void st_archive_free(struct st_archive * archive) {
+	if (!archive)
+		return;
+
+	if (archive->name)
+		free(archive->name);
+	archive->name = 0;
+	archive->user = 0;
+
+	archive->job = 0;
+}
+
+struct st_archive * st_archive_new(struct st_job * job) {
+	struct timeval current;
+	gettimeofday(&current, 0);
+
+	struct st_archive * archive = job->archive = malloc(sizeof(struct st_archive));
+	archive->id = -1;
+	archive->name = strdup(job->name);
+	archive->ctime = current.tv_sec;
+	archive->endtime = 0;
+	archive->user = job->user;
+
+	archive->volumes = 0;
+	archive->nb_volumes = 0;
+
+	archive->job = job;
+
+	return archive;
+}
+
+void st_archive_volume_free(struct st_archive_volume * volume) {
+	if (!volume)
+		return;
+
+	volume->archive = 0;
+	volume->tape = 0;
+
+	unsigned int i;
+	for (i = 0; i < volume->nb_checksums; i++)
+		free(volume->digests[i]);
+	free(volume->digests[i]);
+	volume->digests[i] = 0;
 }
 
 struct st_archive_volume * st_archive_volume_new(struct st_job * job, struct st_drive * drive) {

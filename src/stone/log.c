@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 03 Apr 2012 16:10:52 +0200                         *
+*  Last modified: Sun, 08 Apr 2012 23:53:10 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -188,27 +188,28 @@ void st_log_register_driver(struct st_log_driver * driver) {
 void st_log_sent_message(void * arg __attribute__((unused))) {
 	for (;;) {
 		pthread_mutex_lock(&st_log_lock);
-
 		if (!st_log_message_first)
 			pthread_cond_wait(&st_log_wait, &st_log_lock);
 		struct st_log_message_unsent * message = st_log_message_first;
-		st_log_message_first = message->next;
-		if (!st_log_message_first)
-			st_log_message_last = 0;
-
+		st_log_message_first = st_log_message_last = 0;
 		pthread_mutex_unlock(&st_log_lock);
 
-		unsigned int i;
-		struct st_log_message * mes = &message->data;
-		for (i = 0; i < st_log_nb_drivers; i++) {
-			unsigned int j;
-			for (j = 0; j < st_log_drivers[i]->nb_modules; j++)
-				if (st_log_drivers[i]->modules[j].level >= mes->level)
-					st_log_drivers[i]->modules[j].ops->write(st_log_drivers[i]->modules + j, mes);
-		}
+		while (message) {
+			unsigned int i;
+			struct st_log_message * mes = &message->data;
+			for (i = 0; i < st_log_nb_drivers; i++) {
+				unsigned int j;
+				for (j = 0; j < st_log_drivers[i]->nb_modules; j++)
+					if (st_log_drivers[i]->modules[j].level >= mes->level)
+						st_log_drivers[i]->modules[j].ops->write(st_log_drivers[i]->modules + j, mes);
+			}
 
-		free(mes->message);
-		free(message);
+			struct st_log_message_unsent * next = message->next;
+			free(mes->message);
+			free(message);
+
+			message = next;
+		}
 	}
 }
 
