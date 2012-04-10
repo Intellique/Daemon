@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Mar 2012 15:25:12 +0100                         *
+*  Last modified: Fri, 06 Apr 2012 15:40:05 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -501,6 +501,8 @@ int st_job_save_run(struct st_job * job) {
 
 	// release some memory
 	jp->tar->ops->free(jp->tar);
+	st_archive_free(job->archive);
+	//job->archive = 0;
 
 	if (!failed) {
 		// write index file
