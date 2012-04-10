@@ -120,7 +120,7 @@ install:
 	@echo ' MKDIR     ${DESTDIR}'
 	@mkdir -p ${DESTDIR}/usr/bin ${DESTDIR}/usr/sbin ${DESTDIR}/usr/lib/stone
 	@echo ' CP'
-	@cp bin/stone ${DESTDIR}/usr/sbin
+	@cp bin/stoned ${DESTDIR}/usr/sbin
 	@cp bin/stone-admin ${DESTDIR}/usr/bin
 	@cp lib/lib*.so ${DESTDIR}/usr/lib/stone
 	@mv ${DESTDIR}/usr/lib/stone/libstone.so ${DESTDIR}/usr/lib
