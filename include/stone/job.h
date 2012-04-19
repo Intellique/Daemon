@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Mar 2012 14:13:09 +0100                         *
+*  Last modified: Thu, 05 Apr 2012 11:18:34 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -30,6 +30,8 @@
 
 // time_t
 #include <sys/time.h>
+// ssize_t
+#include <sys/types.h>
 
 #include "database.h"
 

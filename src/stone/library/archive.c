@@ -45,7 +45,7 @@
 #include <stone/library/drive.h>
 #include <stone/util.h>
 
-struct st_archive_file_type2 {
+static struct st_archive_file_type2 {
 	char * name;
 	enum st_archive_file_type type;
 } st_archive_file_type[] = {
