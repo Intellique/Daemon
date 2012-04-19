@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 22 Mar 2012 12:12:05 +0100                         *
+*  Last modified: Thu, 19 Apr 2012 15:31:04 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -300,10 +300,10 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 	// M | Pool: name=Foo, uuid=07117f1a-2b13-11e1-8bcb-80ee73001df6
 	// M | Block size: 32768
 	// M | Checksum: crc32=1eb6931d
-	char stone_version[9];
+	char stone_version[33];
 	int tape_format_version = 0;
 	int nb_parsed = 0;
-	if (sscanf(buffer, "STone (v%8[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
+	if (sscanf(buffer, "STone (v%32[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
 		char uuid[37];
 		char name[65];
 		char pool_id[37];
@@ -444,7 +444,7 @@ int st_tape_write_header(struct st_drive * dr, struct st_pool * pool) {
 	// M | Checksum: crc32=1eb6931d
 
 	char * hdr = 0, * hdr2 = 0;
-	ssize_t shdr = asprintf(&hdr, "STone (v%s)\nTape format: version=1\n", STONE_VERSION), shdr2;
+	ssize_t shdr = asprintf(&hdr, "STone (%s)\nTape format: version=1\n", STONE_VERSION), shdr2;
 	if (*tape->label) {
 		shdr2 = asprintf(&hdr2, "Label: %s\n", tape->label);
 		hdr = realloc(hdr, shdr + shdr2 + 1);
