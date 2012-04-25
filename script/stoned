@@ -12,33 +12,34 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/stoned
 NAME=stoned
 DESC="stoned daemon"
+PARAMETERS="-d"
 
 test -f $DAEMON || exit 0
 
 case "$1" in
   start)
 	echo -n "Starting $DESC: "
-	start-stop-daemon --start --quiet --user daemon --chuid daemon --exec $DAEMON
+	start-stop-daemon --start --quiet --exec $DAEMON -- $PARAMETERS
 	echo "$NAME."
 	;;
   stop)
 	echo -n "Stopping $DESC: "
-	start-stop-daemon --stop --quiet --user daemon --exec $DAEMON
+	start-stop-daemon --stop --quiet --exec $DAEMON
 	echo "$NAME."
 	;;
   restart|force-reload)
 	echo -n "Restarting $DESC: "
-	start-stop-daemon --stop --quiet --user daemon --exec $DAEMON
+	start-stop-daemon --stop --quiet --exec $DAEMON
 	sleep 1
-	start-stop-daemon --start --quiet --user daemon --chuid daemon --exec $DAEMON
+	start-stop-daemon --start --quiet --exec $DAEMON -- $PARAMETERS
 	echo "$NAME."
 	;;
   restart-if-running)
 	set +e
 	echo -n "Restarting $DESC (if running): "
-	if start-stop-daemon --stop --quiet --user daemon --exec $DAEMON; then
+	if start-stop-daemon --stop --quiet --exec $DAEMON; then
 		sleep 1
-		start-stop-daemon --start --quiet --user daemon --chuid daemon --exec $DAEMON
+		start-stop-daemon --start --quiet --exec $DAEMON -- $PARAMETERS
 	fi
 	echo "$NAME."
 	;;
