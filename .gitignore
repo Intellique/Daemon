@@ -5,7 +5,7 @@ cscope.out
 depend/
 doc/
 lib/
-logs/
+log/
 tags
 test*
 tmp*
