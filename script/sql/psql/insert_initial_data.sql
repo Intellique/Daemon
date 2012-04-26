@@ -32,7 +32,8 @@ INSERT INTO DriveFormatSupport VALUES (1, 1, TRUE, TRUE),
        (5, 6, TRUE, TRUE),
        (6, 6, TRUE, TRUE);
 
-INSERT INTO Pool VALUES (DEFAULT, 'b9650cc3-12ec-4a0f-88db-d70f0b269a6b', 'storiq', DEFAULT, 1, '{}');
+INSERT INTO Pool VALUES (DEFAULT, 'b9650cc3-12ec-4a0f-88db-d70f0b269a6b', 'storiq', DEFAULT, 1, '{}'),
+	   (DEFAULT, 'd9f976d4-e087-4d0a-ab79-96267f6613f0', 'Stone_Db_Backup', DEFAULT, 1, '{}');
 
 INSERT INTO Users VALUES (DEFAULT, 'storiq', '8a6eb1d3b4fecbf8a1d6528a6aecb064e801b1e0', 'cd8c63688e0c2cff', 'storiq', 'storiq@localhost', TRUE, TRUE, TRUE, DEFAULT, NULL, DEFAULT, 1, hstore('step', '0'));
 
