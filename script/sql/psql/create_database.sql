@@ -250,7 +250,7 @@ CREATE TABLE Archive (
 
 CREATE TABLE ArchiveFile (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
+    name TEXT NOT NULL,
     type FileType NOT NULL,
     mimeType VARCHAR(64) NOT NULL,
     ownerId SMALLINT NOT NULL DEFAULT 0,
