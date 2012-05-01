@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 30 Jan 2012 15:26:02 +0100                         *
+*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Tue, 01 May 2012 23:41:49 +0200                         *
 \*************************************************************************/
 
 #include <jansson.h>
@@ -37,6 +37,7 @@
 #include "auth.h"
 #include "config.h"
 #include "read_line.h"
+#include "recv.h"
 
 static void st_show_help(void);
 
@@ -63,7 +64,7 @@ int main(int argc, char ** argv) {
 
 	int opt;
 	do {
-		opt = getopt_long(argc, argv, "hH:V", long_options, &option_index);
+		opt = getopt_long(argc, argv, "hHp:V", long_options, &option_index);
 
 		switch (opt) {
 			case OPT_HELP:
@@ -94,70 +95,54 @@ int main(int argc, char ** argv) {
 		return 2;
 	}
 
-	if (stad_auth_do(socket)) {
-		printf("Access refused\n");
+	if (stad_auth_do(socket))
 		return 3;
-	}
-
-	printf("Access granted\n");
 
 	struct st_stream_reader * sr = socket->ops->get_output_stream(socket);
 	struct st_stream_writer * sw = socket->ops->get_input_stream(socket);
 
-	for (;;) {
-		char * line = stad_rl_get_line("Query: ");
-		if (!line)
-			return 0;
+	failed = 0;
+	while (!failed) {
+		char * prompt = 0;
+		int status = 0;
+		json_t * lines = json_array();
+		json_t * data_recv = 0;
 
-		json_t * root = json_object();
-		json_object_set_new(root, "query", json_string(line));
+		enum stad_query query = stad_recv(sr, &prompt, &status, lines, &data_recv);
 
-		char * message = json_dumps(root, 0);
+		size_t i, nb_elts = json_array_size(lines);
+		for (i = 0; i < nb_elts; i++)
+			printf("%s\n", json_string_value(json_array_get(lines, i)));
 
-		ssize_t nb_write = sw->ops->write(sw, message, strlen(message));
+		json_decref(lines);
 
-		free(message);
-		json_decref(root);
-		free(line);
+		char * line = 0;
+		json_t * data_send = 0;
 
-		if (nb_write <= 0) {
-			printf("Ops, failed to send message, exiting\n");
-			break;
+		switch (query) {
+			case stad_query_getline:
+				line = stad_rl_get_line(prompt);
+				break;
+
+			case stad_query_getpassword:
+				line = stad_rl_get_password(prompt);
+				break;
+
+			default:
+				break;
 		}
 
-		char buffer[4096];
-		ssize_t nb_read = sr->ops->read(sr, buffer, 4096);
-		if (nb_read <= 0) {
-			printf("Ops, no data received from daemon, exiting\n");
-			break;
+		if (line) {
+			data_send = json_object();
+			json_object_set_new(data_send, "line", json_string(line));
+			free(line);
+
+			failed = stad_send(sw, data_send);
+
+			json_decref(data_send);
 		}
 
-		json_error_t error;
-		root = json_loadb(buffer, nb_read, 0, &error);
-		if (!root) {
-			printf("Ops, daemon sent data but it is not json formatted, exiting\n");
-			break;
-		}
-
-		json_t * result = json_object_get(root, "response");
-		json_t * status = json_object_get(root, "status");
-		json_t * status_code = json_object_get(root, "status code");
-		if (!result || !status || !status_code) {
-			printf("Ops, there is no status nor result in daemon's response, exiting\n");
-			json_decref(root);
-			continue;
-		}
-
-		size_t nb_line = json_array_size(result);
-		size_t i_line;
-		for (i_line = 0; i_line < nb_line; i_line++) {
-			json_t * line = json_array_get(result, i_line);
-			printf(">  %s\n", json_string_value(line));
-		}
-
-		printf(">> Status: %" JSON_INTEGER_FORMAT " %s\n", json_integer_value(status_code), json_string_value(status));
-
-		json_decref(root);
+		json_decref(data_recv);
 	}
 
 	sr->ops->close(sr);

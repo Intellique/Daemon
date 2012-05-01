@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 30 Jan 2012 20:46:02 +0100                         *
+*  Last modified: Tue, 01 May 2012 00:14:51 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -50,7 +50,7 @@ struct st_admin_context {
 
 	struct st_changer * changer;
 
-	json_t * result;
+	int status;
 	json_t * lines;
 };
 
@@ -59,61 +59,37 @@ static void st_admin_com_help(struct st_admin_context * context);
 static void st_admin_com_list_changers(struct st_admin_context * context);
 static void st_admin_com_list_slots(struct st_admin_context * context);
 static void st_admin_com_select_changer(struct st_admin_context * context);
+static char * st_admin_get_line(struct st_stream_reader * reader, struct st_stream_writer * writer, char * prompt, int status, json_t * lines, json_t * data);
+static char * st_admin_get_password(struct st_stream_reader * reader, struct st_stream_writer * writer, char * prompt, int status, json_t * lines, json_t * data);
 static void st_admin_init(void) __attribute__((constructor));
 static void st_admin_listen(void * arg);
+static void st_admin_send_status(struct st_stream_writer * writer, int status, json_t * lines, json_t * data);
 static void st_admin_work(void * arg);
 
 static time_t st_admin_boottime = 0;
 
 
 short st_admin_do_authen(struct st_io_socket * socket) {
+	struct st_stream_reader * sr = socket->ops->get_output_stream(socket);
 	struct st_stream_writer * sw = socket->ops->get_input_stream(socket);
 
 	time_t now = time(0);
 	long uptime = now - st_admin_boottime;
-	char suptime[32];
-	snprintf(suptime, 32, "%lds", uptime);
+	char suptime[64];
+	snprintf(suptime, 32, "stoned uptime : %lds", uptime);
 
-	json_t * root = json_object();
-	json_object_set_new(root, "daemon version", json_string(STONE_VERSION));
-	json_object_set_new(root, "daemon uptime", json_string(suptime));
+	json_t * lines = json_array();
+	json_array_append_new(lines, json_string("stoned version: " STONE_VERSION));
+	json_array_append_new(lines, json_string(suptime));
 
-	char * message = json_dumps(root, 0);
-	// sending welcome message
-	ssize_t nb_write = sw->ops->write(sw, message, strlen(message));
-
-	free(message);
-	json_decref(root);
-
-	if (nb_write < 0) {
-		sw->ops->free(sw);
-		return 0;
-	}
-
-	char buffer[4096];
-	// waiting username
-	struct st_stream_reader * sr = socket->ops->get_output_stream(socket);
-	ssize_t nb_read = sr->ops->read(sr, buffer, 4096);
-	if (nb_read < 0) {
+	char * str_user = st_admin_get_line(sr, sw, "User > ", 100, lines, 0);
+	if (!str_user) {
 		sr->ops->free(sr);
 		sw->ops->free(sw);
 		return 0;
 	}
 
-	json_error_t error;
-	root = json_loadb(buffer, nb_read, 0, &error);
-	if (!root) {
-		sr->ops->free(sr);
-		sw->ops->free(sw);
-		return 0;
-	}
-
-	json_t * user = json_object_get(root, "user");
-	struct st_user * usr = 0;
-	if (user)
-		usr = st_user_get(-1, json_string_value(user));
-
-	json_decref(root);
+	struct st_user * usr = st_user_get(-1, str_user);
 
 	struct tm current;
 	localtime_r(&now, &current);
@@ -121,38 +97,24 @@ short st_admin_do_authen(struct st_io_socket * socket) {
 	strftime(challenge, 32, "%F %T %Z", &current);
 	char * digest = st_checksum_compute("sha1", challenge, strlen(challenge));
 
-	root = json_object();
+	json_t * data = json_object();
 	if (usr) {
-		json_object_set_new(root, "auth salt", json_string(usr->salt));
+		json_object_set_new(data, "auth salt", json_string(usr->salt));
 	} else {
 		int fd = open("/dev/urandom", O_RDONLY);
-		unsigned char data[8];
+		unsigned char raw[8];
 		char salt[17];
 
-		read(fd, data, 8);
+		read(fd, raw, 8);
 		close(fd);
 
-		st_checksum_convert_to_hex(data, 8, salt);
+		st_checksum_convert_to_hex(raw, 8, salt);
 
-		json_object_set_new(root, "auth salt", json_string(salt));
+		json_object_set_new(data, "auth salt", json_string(salt));
 	}
-	json_object_set_new(root, "auth challenge", json_string(digest));
+	json_object_set_new(data, "auth challenge", json_string(digest));
 
-	message = json_dumps(root, 0);
-	// send challenge
-	nb_write = sw->ops->write(sw, message, strlen(message));
-
-	free(message);
-	json_decref(root);
-
-	if (nb_write < 0) {
-		free(digest);
-		sr->ops->free(sr);
-		sw->ops->free(sw);
-		return 0;
-	}
-
-	// compute password that stone-admin will send
+	// compute password that stone-admin should send
 	char * challenge_ok = 0;
 	if (usr) {
 		ssize_t length = strlen(usr->password) + strlen(digest);
@@ -168,43 +130,26 @@ short st_admin_do_authen(struct st_io_socket * socket) {
 
 	free(digest);
 
-	nb_read = sr->ops->read(sr, buffer, 4096);
-	if (nb_read < 0) {
+	char * password = st_admin_get_password(sr, sw, "Password > ", 100, 0, data);
+	if (!password) {
 		free(challenge_ok);
 		sr->ops->free(sr);
 		sw->ops->free(sw);
 		return 0;
 	}
-
-	root = json_loadb(buffer, nb_read, 0, &error);
-	if (!root) {
-		free(challenge_ok);
-		sr->ops->free(sr);
-		sw->ops->free(sw);
-		return 0;
-	}
-
-	json_t * jpass = json_object_get(root, "password");
-	char * password = 0;
-	if (jpass)
-		password = strdup(json_string_value(jpass));
-
-	json_decref(root);
-
-	root = json_object();
 
 	short ok = 0;
-	if (!usr || !password) {
-		json_object_set_new(root, "access", json_string("refused"));
-	} else if (password && !strcmp(password, challenge_ok)) {
-		json_object_set_new(root, "access", json_string("granted"));
+	if (usr && !strcmp(password, challenge_ok)) {
+		lines = json_array();
+		json_array_append_new(lines, json_string("access granted"));
+		st_admin_send_status(sw, 200, lines, 0);
+
 		ok = 1;
 	} else {
-		json_object_set_new(root, "access", json_string("refused"));
+		lines = json_array();
+		json_array_append_new(lines, json_string("access refused"));
+		st_admin_send_status(sw, 401, lines, 0);
 	}
-
-	message = json_dumps(root, 0);
-	nb_write = sw->ops->write(sw, message, strlen(message));
 
 	free(password);
 	free(challenge_ok);
@@ -222,8 +167,7 @@ void st_admin_com_help(struct st_admin_context * context) {
 	json_array_append_new(context->lines, json_string(" ls, list slots:     List available slots of selected changer"));
 	json_array_append_new(context->lines, json_string(" sl, select changer: Select changer by number (see command `cl`)"));
 
-	json_object_set_new(context->result, "status code", json_integer(200));
-	json_object_set_new(context->result, "status", json_string("Ok"));
+	context->status = 200;
 }
 
 void st_admin_com_list_changers(struct st_admin_context * context) {
@@ -239,8 +183,7 @@ void st_admin_com_list_changers(struct st_admin_context * context) {
 
 		ch = st_changer_get_next_changer(ch);
 	}
-	json_object_set_new(context->result, "status code", json_integer(200));
-	json_object_set_new(context->result, "status", json_string("Ok"));
+	context->status = 200;
 }
 
 void st_admin_com_list_slots(struct st_admin_context * context) {
@@ -251,8 +194,7 @@ void st_admin_com_list_slots(struct st_admin_context * context) {
 
 		if (!context->changer) {
 			json_array_append_new(context->lines, json_string("No changer available"));
-			json_object_set_new(context->result, "status code", json_integer(410));
-			json_object_set_new(context->result, "status", json_string("Gone"));
+			context->status = 410;
 			return;
 		} else {
 			char * line;
@@ -286,8 +228,7 @@ void st_admin_com_list_slots(struct st_admin_context * context) {
 		free(line);
 	}
 
-	json_object_set_new(context->result, "status code", json_integer(200));
-	json_object_set_new(context->result, "status", json_string("Ok"));
+	context->status = 200;
 }
 
 void st_admin_com_select_changer(struct st_admin_context * context) {
@@ -308,15 +249,10 @@ void st_admin_com_select_changer(struct st_admin_context * context) {
 	for (i = 0; i < index; i++)
 		ch = st_changer_get_next_changer(ch);
 
-	int status;
-	const char * status_string;
-
 	if (ch && ch != context->changer) {
 		if (ch->lock->ops->trylock(ch->lock)) {
 			json_array_append_new(context->lines, json_string("Changer is busy"));
-
-			status = 410;
-			status_string = "Gone";
+			context->status = 410;
 		} else {
 			json_array_append_new(context->lines, json_string("Changer is now selected"));
 
@@ -324,23 +260,129 @@ void st_admin_com_select_changer(struct st_admin_context * context) {
 				context->changer->lock->ops->unlock(context->changer->lock);
 			context->changer = ch;
 
-			status = 200;
-			status_string = "Ok";
+			context->status = 200;
 		}
 	} else if (ch) {
 		json_array_append_new(context->lines, json_string("Changer previously selected"));
 
-		status = 200;
-		status_string = "Ok";
+		context->status = 200;
 	} else if (!ch) {
 		json_array_append_new(context->lines, json_string("Changer not found"));
 
-		status = 404;
-		status_string = "Not found";
+		context->status = 404;
+	}
+}
+
+char * st_admin_get_line(struct st_stream_reader * reader, struct st_stream_writer * writer, char * prompt, int status, json_t * lines, json_t * data) {
+	json_t * root = json_object();
+	json_object_set_new(root, "type", json_string("getline"));
+	json_object_set_new(root, "prompt", json_string(prompt));
+	json_object_set_new(root, "status", json_integer(status));
+	if (lines)
+		json_object_set_new(root, "lines", lines);
+	if (data)
+		json_object_set_new(root, "data", data);
+
+	char * message = json_dumps(root, 0);
+	json_decref(root);
+
+	ssize_t nb_write = writer->ops->write(writer, message, strlen(message));
+	free(message);
+
+	if (nb_write < 0)
+		return 0;
+
+	ssize_t buffer_size = 4096;
+	ssize_t buffer_pos = 0;
+	char * buffer = malloc(buffer_size);
+	for (;;) {
+		ssize_t nb_read = reader->ops->read(reader, buffer + buffer_pos, buffer_size - buffer_pos);
+
+		if (nb_read < 0) {
+			free(buffer);
+			return 0;
+		}
+
+		buffer_pos += nb_read;
+
+		json_error_t error;
+		root = json_loadb(buffer, buffer_pos, 0, &error);
+
+		if (!root && buffer_pos + 512 > buffer_size) {
+			buffer_size <<= 1;
+			buffer = realloc(buffer, buffer_size);
+		}
+
+		if (root) {
+			free(buffer);
+
+			char * str_line = 0;
+			json_t * line = json_object_get(root, "line");
+			if (line)
+				str_line = strdup(json_string_value(line));
+			json_decref(root);
+
+			return str_line;
+		}
 	}
 
-	json_object_set_new(context->result, "status code", json_integer(status));
-	json_object_set_new(context->result, "status", json_string(status_string));
+	return 0;
+}
+
+char * st_admin_get_password(struct st_stream_reader * reader, struct st_stream_writer * writer, char * prompt, int status, json_t * lines, json_t * data) {
+	json_t * root = json_object();
+	json_object_set_new(root, "type", json_string("getpassword"));
+	json_object_set_new(root, "prompt", json_string(prompt));
+	json_object_set_new(root, "status", json_integer(status));
+	if (lines)
+		json_object_set_new(root, "lines", lines);
+	if (data)
+		json_object_set_new(root, "data", data);
+
+	char * message = json_dumps(root, 0);
+	json_decref(root);
+
+	ssize_t nb_write = writer->ops->write(writer, message, strlen(message));
+	free(message);
+
+	if (nb_write < 0)
+		return 0;
+
+	ssize_t buffer_size = 4096;
+	ssize_t buffer_pos = 0;
+	char * buffer = malloc(buffer_size);
+	for (;;) {
+		ssize_t nb_read = reader->ops->read(reader, buffer + buffer_pos, buffer_size - buffer_pos);
+
+		if (nb_read < 0) {
+			free(buffer);
+			return 0;
+		}
+
+		buffer_pos += nb_read;
+
+		json_error_t error;
+		root = json_loadb(buffer, buffer_pos, 0, &error);
+
+		if (!root && buffer_pos + 512 > buffer_size) {
+			buffer_size <<= 1;
+			buffer = realloc(buffer, buffer_size);
+		}
+
+		if (root) {
+			free(buffer);
+
+			char * str_line = 0;
+			json_t * line = json_object_get(root, "line");
+			if (line)
+				str_line = strdup(json_string_value(line));
+			json_decref(root);
+
+			return str_line;
+		}
+	}
+
+	return 0;
 }
 
 void st_admin_init() {
@@ -363,6 +405,22 @@ void st_admin_listen(void * arg __attribute__((unused))) {
 	socket->ops->free(socket);
 }
 
+void st_admin_send_status(struct st_stream_writer * writer, int status, json_t * lines, json_t * data) {
+	json_t * root = json_object();
+	json_object_set_new(root, "type", json_string("status"));
+	json_object_set_new(root, "status", json_integer(status));
+	if (lines)
+		json_object_set_new(root, "lines", lines);
+	if (data)
+		json_object_set_new(root, "data", data);
+
+	char * message = json_dumps(root, 0);
+	json_decref(root);
+
+	writer->ops->write(writer, message, strlen(message));
+	free(message);
+}
+
 void st_admin_start() {
 	st_threadpool_run(st_admin_listen, 0);
 }
@@ -380,27 +438,13 @@ void st_admin_work(void * arg) {
 
 	struct st_admin_context context = {
 		.changer = 0,
-		.result  = 0,
 	};
 
 	for (;;) {
-		char buffer[4096];
-		ssize_t nb_read = sr->ops->read(sr, buffer, 4096);
-		if (nb_read <= 0)
-			break;
+		context.query = st_admin_get_line(sr, sw, "> ", 100, 0, 0);
 
-		json_error_t error;
-		json_t * query_root = json_loadb(buffer, nb_read, 0, &error);
-		if (!query_root)
+		if (!context.query)
 			break;
-
-		json_t * query = json_object_get(query_root, "query");
-		if (!query) {
-			json_decref(query_root);
-			break;
-		}
-
-		context.query = strdup(json_string_value(query));
 
 		static const struct st_admin_command {
 			const char * name;
@@ -429,11 +473,8 @@ void st_admin_work(void * arg) {
 			if (!strncmp(context.query, com->name, strlen(com->name)))
 				break;
 
-		json_decref(query_root);
-
-		context.result = json_object();
+		context.status = 0;
 		context.lines = json_array();
-		json_object_set_new(context.result, "response", context.lines);
 
 		switch (com->command) {
 			case COM_HELP:
@@ -453,22 +494,12 @@ void st_admin_work(void * arg) {
 				break;
 
 			default:
+				context.status = 404;
 				json_array_append_new(context.lines, json_string("Command not found"));
-				json_object_set_new(context.result, "status code", json_integer(404));
-				json_object_set_new(context.result, "status", json_string("Not found"));
 				break;
 		}
 
-		char * message = json_dumps(context.result, 0);
-
-		ssize_t nb_write = sw->ops->write(sw, message, strlen(message));
-
-		free(message);
-		json_decref(context.result);
-		free(context.query);
-
-		if (nb_write < 0)
-			break;
+		st_admin_send_status(sw, context.status, context.lines, 0);
 	}
 
 	if (context.changer)
