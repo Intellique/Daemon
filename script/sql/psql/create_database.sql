@@ -260,7 +260,8 @@ CREATE TABLE ArchiveFile (
     perm SMALLINT NOT NULL CHECK (perm >= 0),
     ctime TIMESTAMP(0) NOT NULL,
     mtime TIMESTAMP(0) NOT NULL,
-    size BIGINT NOT NULL CHECK (size >= 0)
+    size BIGINT NOT NULL CHECK (size >= 0),
+    blockNumber INTEGER CHECK (blockNumber >= 0)
 );
 
 CREATE TABLE ArchiveVolume (
