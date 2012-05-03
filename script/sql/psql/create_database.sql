@@ -261,7 +261,7 @@ CREATE TABLE ArchiveFile (
     ctime TIMESTAMP(0) NOT NULL,
     mtime TIMESTAMP(0) NOT NULL,
     size BIGINT NOT NULL CHECK (size >= 0),
-    blockNumber INTEGER CHECK (blockNumber >= 0)
+    blockNumber BIGINT CHECK (blockNumber >= 0)
 );
 
 CREATE TABLE ArchiveVolume (
