@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 08 Jan 2012 12:08:42 +0100                         *
+*  Last modified: Thu, 03 May 2012 00:33:49 +0200                         *
 \*************************************************************************/
 
 // getgrgid_r
@@ -39,6 +39,50 @@
 #include <sys/types.h>
 
 #include <stone/util.h>
+
+static int st_util_valid_utf8_char(const char * string);
+
+
+void st_util_basic_free(void * key, void * value) {
+	if (key && key == value) {
+		free(key);
+		return;
+	}
+
+	if (key)
+		free(key);
+	if (value)
+		free(value);
+}
+
+int st_util_check_valid_utf8(const char * string) {
+	if (!string)
+		return 0;
+
+	const char * ptr = string;
+	while (*ptr) {
+		int size = st_util_valid_utf8_char(ptr);
+
+		if (!size)
+			return 0;
+
+		ptr += size;
+	}
+
+	return 1;
+}
+
+/**
+ * sdbm function
+ **/
+unsigned long long st_util_compute_hash_string(const void * key) {
+	const char * cstr = key;
+	unsigned long long int hash = 0;
+	int length = strlen(cstr), i;
+	for (i = 0; i < length; i++)
+		hash = cstr[i] + (hash << 6) + (hash << 16) - hash;
+	return hash;
+}
 
 void st_util_convert_size_to_string(ssize_t size, char * str, ssize_t str_len) {
 	unsigned short mult = 0;
@@ -79,28 +123,44 @@ void st_util_convert_size_to_string(ssize_t size, char * str, ssize_t str_len) {
 	}
 }
 
-/**
- * sdbm function
- **/
-unsigned long long st_util_compute_hash_string(const void * key) {
-	const char * cstr = key;
-	unsigned long long int hash = 0;
-	int length = strlen(cstr), i;
-	for (i = 0; i < length; i++)
-		hash = cstr[i] + (hash << 6) + (hash << 16) - hash;
-	return hash;
+void st_util_fix_invalid_utf8(char * string) {
+	if (!string)
+		return;
+
+	char * ptr = string;
+	while (*ptr) {
+		int size = st_util_valid_utf8_char(ptr);
+
+		if (size > 0) {
+			ptr += size;
+			continue;
+		}
+
+		char * ptr_end = ptr + 1;
+		while (st_util_valid_utf8_char(ptr_end) == 0)
+			ptr_end++;
+
+		if (*ptr_end)
+			memmove(ptr, ptr_end, strlen((char *) ptr_end) + 1);
+		else
+			*ptr = '\0';
+	}
 }
 
-void st_util_basic_free(void * key, void * value) {
-	if (key && key == value) {
-		free(key);
-		return;
+void st_util_gid2name(char * name, ssize_t length, gid_t gid) {
+	char * buffer = malloc(512);
+
+	struct group gr;
+	struct group * tmp_gr;
+
+	if (!getgrgid_r(gid, &gr, buffer, 512, &tmp_gr)) {
+		strncpy(name, gr.gr_name, length);
+		name[length - 1] = '\0';
+	} else {
+		snprintf(name, length, "%d", gid);
 	}
 
-	if (key)
-		free(key);
-	if (value)
-		free(value);
+	free(buffer);
 }
 
 void st_util_string_delete_double_char(char * str, char delete_char) {
@@ -212,22 +272,6 @@ void st_util_string_trim(char * str, char trim) {
 		ptr[1] = '\0';
 }
 
-void st_util_gid2name(char * name, ssize_t length, gid_t gid) {
-	char * buffer = malloc(512);
-
-	struct group gr;
-	struct group * tmp_gr;
-
-	if (!getgrgid_r(gid, &gr, buffer, 512, &tmp_gr)) {
-		strncpy(name, gr.gr_name, length);
-		name[length - 1] = '\0';
-	} else {
-		snprintf(name, length, "%d", gid);
-	}
-
-	free(buffer);
-}
-
 void st_util_uid2name(char * name, ssize_t length, uid_t uid) {
 	char * buffer = malloc(512);
 
@@ -242,5 +286,46 @@ void st_util_uid2name(char * name, ssize_t length, uid_t uid) {
 	}
 
 	free(buffer);
+}
+
+int st_util_valid_utf8_char(const char * string) {
+	const unsigned char * ptr = (const unsigned char *) string;
+	if ((*ptr & 0x7F) == *ptr) {
+		return 1;
+	} else if ((*ptr & 0xBF) == *ptr) {
+		return 0;
+	} else if ((*ptr & 0xDF) == *ptr) {
+		ptr++;
+		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
+			return 0;
+
+		return 2;
+	} else if ((*ptr & 0xEF) == *ptr) {
+		ptr++;
+		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
+			return 0;
+
+		ptr++;
+		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
+			return 0;
+
+		return 3;
+	} else if ((*ptr & 0x7F) == *ptr) {
+		ptr++;
+		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
+			return 0;
+
+		ptr++;
+		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
+			return 0;
+
+		ptr++;
+		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
+			return 0;
+
+		return 4;
+	} else {
+		return 0;
+	}
 }
 

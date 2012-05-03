@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 08 Apr 2012 23:53:10 +0200                         *
+*  Last modified: Tue, 17 Apr 2012 19:26:47 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -100,9 +100,6 @@ void st_log_exit() {
 		struct st_log_message_unsent * mes;
 		for (mes = st_log_message_first; mes; mes = mes->next)
 			printf("%c: %s\n", st_log_level_to_string(mes->data.level)[0], mes->data.message);
-	} else {
-		while (st_log_message_first)
-			sleep(1);
 	}
 }
 

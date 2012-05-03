@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 08 Jan 2012 12:05:12 +0100                         *
+*  Last modified: Wed, 02 May 2012 11:09:43 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_UTIL_H__
@@ -31,13 +31,15 @@
 // ssize_t
 #include <sys/types.h>
 
-void st_util_convert_size_to_string(ssize_t size, char * str, ssize_t str_len);
-unsigned long long st_util_compute_hash_string(const void * key);
 void st_util_basic_free(void * key, void * value);
+int st_util_check_valid_utf8(const char * string);
+unsigned long long st_util_compute_hash_string(const void * key);
+void st_util_convert_size_to_string(ssize_t size, char * str, ssize_t str_len);
+void st_util_fix_invalid_utf8(char * string);
+void st_util_gid2name(char * name, ssize_t length, gid_t gid);
 void st_util_string_delete_double_char(char * str, char delete_char);
 char ** st_util_string_justified(const char * str, unsigned int width, unsigned int * nb_lines);
 void st_util_string_trim(char * str, char trim);
-void st_util_gid2name(char * name, ssize_t length, gid_t gid);
 void st_util_uid2name(char * name, ssize_t length, uid_t uid);
 
 #endif

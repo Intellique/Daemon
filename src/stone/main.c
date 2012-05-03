@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 19 Mar 2012 18:09:54 +0100                         *
+*  Last modified: Tue, 17 Apr 2012 19:26:37 +0200                         *
 \*************************************************************************/
 
 // getopt_long
@@ -79,6 +79,9 @@ int main(int argc, char ** argv) {
 		opt = getopt_long(argc, argv, "c:dhp:V", long_options, &option_index);
 
 		switch (opt) {
+			case -1:
+				break;
+
 			case OPT_CONFIG:
 				config_file = optarg;
 				st_log_write_all(st_log_level_info, st_log_type_daemon, "Using configuration file: '%s'", optarg);
@@ -90,6 +93,8 @@ int main(int argc, char ** argv) {
 				break;
 
 			case OPT_HELP:
+				st_log_disable_display_log();
+
 				st_show_help();
 				return 0;
 
@@ -103,6 +108,10 @@ int main(int argc, char ** argv) {
 
 				printf("STone, version: %s, build: %s %s\n", STONE_VERSION, __DATE__, __TIME__);
 				return 0;
+
+			default:
+				st_log_write_all(st_log_level_error, st_log_type_daemon, "Unsupported parameter '%d : %s'", opt, optarg);
+				return 1;
 		}
 	} while (opt > -1);
 
