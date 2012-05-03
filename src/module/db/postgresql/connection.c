@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Mar 2012 14:18:49 +0100                         *
+*  Last modified: Thu, 03 May 2012 21:47:57 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -2047,13 +2047,14 @@ int st_db_postgresql_new_file(struct st_database_connection * connection, struct
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
-	st_db_postgresql_prepare(self, "insert_archive_file", "INSERT INTO archivefile VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id");
+	st_db_postgresql_prepare(self, "insert_archive_file", "INSERT INTO archivefile VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id");
 
-	char * perm = 0, * ownerid = 0, * groupid = 0, * size = 0;
+	char * perm = 0, * ownerid = 0, * groupid = 0, * size = 0, * block_number = 0;
 	asprintf(&perm, "%o", file->perm & 0x777);
 	asprintf(&ownerid, "%d", file->ownerid);
 	asprintf(&groupid, "%d", file->groupid);
 	asprintf(&size, "%zd", file->size);
+	asprintf(&block_number, "%zd", file->position);
 
 	char ctime[32];
 	struct tm local_current;
@@ -2067,20 +2068,21 @@ int st_db_postgresql_new_file(struct st_database_connection * connection, struct
 	const char * param[] = {
 		file->name, st_archive_file_type_to_string(file->type),
 		"", ownerid, file->owner, groupid, file->group, perm,
-		ctime, mtime, size,
+		ctime, mtime, size, block_number,
 	};
-	PGresult * result = PQexecPrepared(self->db_con, "insert_archive_file", 11, param, 0, 0, 0);
+	PGresult * result = PQexecPrepared(self->db_con, "insert_archive_file", 12, param, 0, 0, 0);
 	ExecStatusType status = PQresultStatus(result);
+
+	free(perm);
+	free(ownerid);
+	free(groupid);
+	free(size);
+	free(block_number);
 
 	if (status == PGRES_FATAL_ERROR) {
 		st_db_postgresql_get_error(result);
 
 		PQclear(result);
-
-		free(perm);
-		free(ownerid);
-		free(groupid);
-		free(size);
 
 		return 1;
 	} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {

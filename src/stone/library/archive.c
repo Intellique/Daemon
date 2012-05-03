@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jan 2012 20:47:00 +0100                         *
+*  Last modified: Thu, 03 May 2012 19:37:05 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -74,7 +74,7 @@ void st_archive_file_free(struct st_archive_file * file) {
 	free(file);
 }
 
-struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * file, const char * filename) {
+struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * file, const char * filename, ssize_t position) {
 	struct st_archive_file * f = malloc(sizeof(struct st_archive_file));
 	f->id = -1;
 	f->name = strdup(filename);
@@ -102,6 +102,7 @@ struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * 
 	f->ctime = file->st_ctime;
 	f->mtime = file->st_mtime;
 	f->size = file->st_size;
+	f->position = position;
 
 	f->digests = 0;
 	f->nb_checksums = 0;

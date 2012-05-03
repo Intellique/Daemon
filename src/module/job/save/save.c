@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 06 Apr 2012 15:40:05 +0200                         *
+*  Last modified: Thu, 03 May 2012 19:37:50 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -36,7 +36,7 @@
 #include <stdlib.h>
 // asprintf
 #include <stdio.h>
-// strcmp
+// strcmp, strdup
 #include <string.h>
 // open, stat
 #include <sys/stat.h>
@@ -129,6 +129,17 @@ struct st_job_driver st_job_save_driver = {
 int st_job_save_archive_file(struct st_job * job, const char * path) {
 	struct st_job_save_private * jp = job->data;
 
+	if (!st_util_check_valid_utf8(path)) {
+		char * fixed_path = strdup(path);
+		st_util_fix_invalid_utf8(fixed_path);
+
+		job->db_ops->add_record(job, st_log_level_warning, "Path '%s' contains invalid utf8 characters", fixed_path);
+
+		free(fixed_path);
+
+		return 0;
+	}
+
 	struct stat st;
 	if (stat(path, &st)) {
 		job->db_ops->add_record(job, st_log_level_error, "Error while getting information about: %s", path);
@@ -138,12 +149,16 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 	if (S_ISSOCK(st.st_mode))
 		return 0;
 
+	ssize_t block_number = jp->tar->ops->position(jp->tar) / jp->block_size;
+
 	while (jp->tar->ops->add_file(jp->tar, path)) {
 		if (st_job_save_manage_error(job, jp->tar->ops->last_errno(jp->tar)))
 			return 2;
+
+		block_number = jp->tar->ops->position(jp->tar) / jp->block_size;
 	}
 
-	struct st_archive_file * file = st_archive_file_new(job, &st, path);
+	struct st_archive_file * file = st_archive_file_new(job, &st, path, block_number);
 	jp->db_con->ops->new_file(jp->db_con, file);
 	jp->db_con->ops->file_link_to_volume(jp->db_con, file, jp->current_volume);
 

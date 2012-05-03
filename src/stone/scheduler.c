@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 06 Apr 2012 13:29:17 +0200                         *
+*  Last modified: Thu, 03 May 2012 19:11:26 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -221,9 +221,9 @@ void st_sched_run_job(void * arg) {
 	job->repetition--;
 	job->num_runs++;
 
-	int status = job->job_ops->run(job);
+	sleep(1);
 
-	job->sched_status = st_job_status_idle;
+	int status = job->job_ops->run(job);
 
 	sleep(1);
 

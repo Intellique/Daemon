@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 06 Apr 2012 17:54:26 +0200                         *
+*  Last modified: Thu, 03 May 2012 19:36:40 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -91,6 +91,7 @@ struct st_archive_file {
 	time_t ctime;
 	time_t mtime;
 	ssize_t size;
+	ssize_t position;
 
 	char ** digests;
 	unsigned int nb_checksums;
@@ -99,7 +100,7 @@ struct st_archive_file {
 };
 
 void st_archive_file_free(struct st_archive_file * file);
-struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * file, const char * filename);
+struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * file, const char * filename, ssize_t position);
 void st_archive_free(struct st_archive * archive);
 struct st_archive * st_archive_new(struct st_job * job);
 void st_archive_volume_free(struct st_archive_volume * volume);
