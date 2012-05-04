@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Mar 2012 15:45:20 +0100                         *
+*  Last modified: Fri, 04 May 2012 09:56:05 +0200                         *
 \*************************************************************************/
 
 #include <jansson.h>
@@ -81,6 +81,7 @@ void st_io_json_add_file(struct st_io_json * js, struct st_archive_file * file) 
 	json_object_set_new(js->current_file, "modified time", json_string(mtime));
 
 	json_object_set_new(js->current_file, "size", json_integer(file->size));
+	json_object_set_new(js->current_file, "block number", json_integer(file->position));
 
 	json_t * checksums = json_array();
 	// checksum
