@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 04 May 2012 13:22:28 +0200                         *
+*  Last modified: Fri, 04 May 2012 18:40:19 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -97,15 +97,10 @@ void st_sched_do_loop() {
 
 	struct st_job ** jobs = 0;
 	unsigned int nb_jobs = 0;
-	time_t last_update = 0;
+	time_t update = time(0);
 	long last_max_jobs = -1;
 
 	while (!st_sched_stop_request) {
-		time_t update = time(0);
-		struct tm current;
-		localtime_r(&update, &current);
-		sleep(15 - current.tm_sec % 15);
-
 		unsigned int i;
 		for (i = 0; i < nb_jobs; i++) {
 			struct st_job * j = jobs[i];
@@ -130,12 +125,12 @@ void st_sched_do_loop() {
 
 		// check for new jobs
 		long new_jobs = 0;
-		int failed = connection->ops->get_nb_new_jobs(connection, &new_jobs, last_update, last_max_jobs);
+		int failed = connection->ops->get_nb_new_jobs(connection, &new_jobs, update, last_max_jobs);
 		if (failed) {
 			st_log_write_all(st_log_level_warning, st_log_type_scheduler, "failed to get new jobs");
 		} else if (new_jobs > 0) {
 			jobs = realloc(jobs, (nb_jobs + new_jobs) * sizeof(struct st_job *));
-			connection->ops->get_new_jobs(connection, jobs + nb_jobs, new_jobs, last_update, last_max_jobs);
+			connection->ops->get_new_jobs(connection, jobs + nb_jobs, new_jobs, update, last_max_jobs);
 
 			for (i = nb_jobs; i < nb_jobs + new_jobs; i++) {
 				struct st_job * j = jobs[i];
@@ -170,8 +165,6 @@ void st_sched_do_loop() {
 			}
 		}
 
-		last_update = update;
-
 		// check if there is jobs needed to be started
 		for (i = 0; i < nb_jobs; i++) {
 			struct st_job * j = jobs[i];
@@ -187,6 +180,11 @@ void st_sched_do_loop() {
 
 		// update status of stone-alone drives
 		st_changer_update_drive_status();
+
+		struct tm current;
+		localtime_r(&update, &current);
+		sleep(15 - current.tm_sec % 15);
+
 	}
 
 	connection->ops->free(connection);
@@ -267,10 +265,10 @@ void st_sched_run_job(void * arg) {
 		job->checksum_ids = 0;
 	}
 
-	if (job->nb_tapes > 0) {
-		free(job->tapes);
-		job->tapes = 0;
-		job->nb_tapes = 0;
+	if (job->nb_block_numbers > 0) {
+		free(job->block_numbers);
+		job->block_numbers = 0;
+		job->nb_block_numbers = 0;
 	}
 
 	if (job->restore_to) {

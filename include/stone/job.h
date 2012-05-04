@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Apr 2012 11:18:34 +0200                         *
+*  Last modified: Fri, 04 May 2012 17:15:04 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -84,13 +84,14 @@ struct st_job {
 	long * checksum_ids;
 	unsigned int nb_checksums;
 
-	struct st_job_tape {
+	struct st_job_block_number {
 		long sequence;
 		struct st_tape * tape;
 		long tape_position;
+		ssize_t block_number;
 		ssize_t size;
-	} * tapes;
-	unsigned int nb_tapes;
+	} * block_numbers;
+	unsigned int nb_block_numbers;
 
 	struct st_job_restore_to {
 		char * path;

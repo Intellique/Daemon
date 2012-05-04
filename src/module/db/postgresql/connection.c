@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 03 May 2012 21:47:57 +0200                         *
+*  Last modified: Fri, 04 May 2012 18:43:04 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -470,7 +470,8 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 	st_db_postgresql_prepare(self, "select_archive", "SELECT * FROM tape WHERE id IN (SELECT tape FROM archivevolume WHERE archive = $1)");
 	st_db_postgresql_prepare(self, "select_job_meta", "SELECT * FROM each((SELECT metadata FROM job WHERE id = $1 LIMIT 1))");
 	st_db_postgresql_prepare(self, "select_job_option", "SELECT * FROM each((SELECT options FROM job WHERE id = $1 LIMIT 1))");
-	st_db_postgresql_prepare(self, "select_job_tape", "SELECT v.sequence, t.uuid, v.tapeposition, v.size FROM archivevolume v, tape t WHERE v.tape = t.id AND v.archive = $1 ORDER BY v.sequence");
+	st_db_postgresql_prepare(self, "select_job_tape1", "SELECT av.sequence, t.uuid AS tape, av.tapeposition, af.blocknumber, SUM(CASE WHEN af.type = 'regular file' THEN af.size ELSE 0 END) AS size FROM archivevolume av LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id LEFT JOIN tape t ON av.tape = t.id, (SELECT DISTINCT path, CHAR_LENGTH(path) AS length FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $2)) AS sf WHERE archive = $1 AND SUBSTR(af.name, 0, sf.length + 1) = sf.path GROUP BY av.sequence, t.uuid, av.tapeposition, af.blocknumber ORDER BY sequence, blocknumber");
+	st_db_postgresql_prepare(self, "select_job_tape2", "SELECT av.sequence, t.uuid, av.tapeposition, 0 AS blocknumber, SUM(av.size) AS size FROM archivevolume av LEFT JOIN tape t ON av.tape = t.id WHERE archive = $1 GROUP BY sequence, uuid, tapeposition, blocknumber ORDER BY sequence");
 	st_db_postgresql_prepare(self, "select_restore", "SELECT * FROM restoreto WHERE job = $1 LIMIT 1");
 
 	char csince[24], * lastmaxjobs = 0, * nbjobs = 0;
@@ -612,23 +613,30 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 		PQclear(result2);
 
 		if (archiveid) {
-			const char * param3[] = { archiveid };
-			result2 = PQexecPrepared(self->db_con, "select_job_tape", 1, param3, 0, 0, 0);
+			const char * param3[] = { archiveid, jobid };
+
+			if (jobs[i]->nb_paths > 0)
+				result2 = PQexecPrepared(self->db_con, "select_job_tape1", 2, param3, 0, 0, 0);
+			else
+				result2 = PQexecPrepared(self->db_con, "select_job_tape2", 1, param3, 0, 0, 0);
+
 			status2 = PQresultStatus(result2);
 
 			if (status2 == PGRES_FATAL_ERROR)
 				st_db_postgresql_get_error(result2);
 			else if (status2 == PGRES_TUPLES_OK) {
 				int j, nb_tuples2 = PQntuples(result2);
-				jobs[i]->tapes = calloc(nb_tuples2, sizeof(struct st_job_tape));
-				jobs[i]->nb_tapes = nb_tuples2;
+				jobs[i]->block_numbers = calloc(nb_tuples2, sizeof(struct st_job_block_number));
+				jobs[i]->nb_block_numbers = nb_tuples2;
 
 				for (j = 0; j < nb_tuples2; j++) {
-					struct st_job_tape * tape = jobs[i]->tapes + j;
-					st_db_postgresql_get_long(result2, j, 0, &tape->sequence);
-					tape->tape = st_tape_get_by_uuid(PQgetvalue(result2, j, 1));
-					st_db_postgresql_get_long(result2, j, 2, &tape->tape_position);
-					st_db_postgresql_get_ssize(result2, j, 3, &tape->size);
+					struct st_job_block_number * block_number = jobs[i]->block_numbers + j;
+
+					st_db_postgresql_get_long(result2, j, 0, &block_number->sequence);
+					block_number->tape = st_tape_get_by_uuid(PQgetvalue(result2, j, 1));
+					st_db_postgresql_get_long(result2, j, 2, &block_number->tape_position);
+					st_db_postgresql_get_ssize(result2, j, 3, &block_number->block_number);
+					st_db_postgresql_get_ssize(result2, j, 4, &block_number->size);
 				}
 			}
 			PQclear(result2);
