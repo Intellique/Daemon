@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 03 May 2012 19:11:26 +0200                         *
+*  Last modified: Fri, 04 May 2012 13:22:28 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -225,8 +225,10 @@ void st_sched_run_job(void * arg) {
 
 	int status = job->job_ops->run(job);
 
-	sleep(1);
+	if (job->sched_status == st_job_status_running)
+		job->sched_status = st_job_status_idle;
 
+	sleep(1);
 	st_sched_update_status(job);
 
 	job->job_ops->free(job);
