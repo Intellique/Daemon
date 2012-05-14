@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 31 Jan 2012 11:36:45 +0100                         *
+*  Last modified: Thu, 10 May 2012 17:05:12 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -68,12 +68,15 @@ struct st_drive_generic {
 
 struct st_drive_io_reader {
 	int fd;
+
 	char * buffer;
-	ssize_t buffer_used;
-	ssize_t block_size;
+	unsigned int block_size;
+	char * buffer_pos;
+
 	ssize_t position;
-	int last_errno;
 	short end_of_file;
+
+	int last_errno;
 
 	struct st_drive * drive;
 	struct st_drive_generic * drive_private;
@@ -117,6 +120,7 @@ static int st_drive_io_reader_last_errno(struct st_stream_reader * io);
 static struct st_stream_reader * st_drive_io_reader_new(struct st_drive * drive);
 static ssize_t st_drive_io_reader_position(struct st_stream_reader * io);
 static ssize_t st_drive_io_reader_read(struct st_stream_reader * io, void * buffer, ssize_t length);
+static off_t st_drive_io_reader_set_position(struct st_stream_reader * io, off_t position);
 
 static int st_drive_io_writer_close(struct st_stream_writer * io);
 static void st_drive_io_writer_free(struct st_stream_writer * io);
@@ -149,6 +153,7 @@ static struct st_stream_reader_ops st_drive_io_reader_ops = {
 	.last_errno     = st_drive_io_reader_last_errno,
 	.position       = st_drive_io_reader_position,
 	.read           = st_drive_io_reader_read,
+	.set_position   = st_drive_io_reader_set_position,
 };
 
 static struct st_stream_writer_ops st_drive_io_writer_ops = {
@@ -473,7 +478,7 @@ void st_drive_generic_update_position(struct st_drive * drive) {
 
 	int failed = ioctl(self->fd_nst, MTIOCPOS, &pos);
 	if (failed)
-		failed = st_scsi_tape_postion(fd, tape);
+		failed = st_scsi_tape_position(fd, tape);
 	else
 		tape->end_position = pos.mt_blkno;
 
@@ -590,7 +595,7 @@ int st_drive_io_reader_close(struct st_stream_reader * io) {
 
 	if (self->fd > -1) {
 		self->fd = -1;
-		self->buffer_used = 0;
+		self->buffer_pos = self->buffer + self->block_size;
 		self->last_errno = 0;
 
 		st_drive_generic_update_status2(self->drive, ST_DRIVE_LOADED_IDLE);
@@ -616,50 +621,47 @@ off_t st_drive_io_reader_forward(struct st_stream_reader * io, off_t offset) {
 	if (self->fd < 0)
 		return -1;
 
-	if (self->buffer_used > 0) {
-		if (offset >= self->buffer_used) {
-			offset -= self->buffer_used;
-			self->position += self->buffer_used;
-			self->buffer_used = 0;
-		} else {
-			memmove(self->buffer, self->buffer + offset, self->buffer_used - offset);
-			self->buffer_used -= offset;
-			self->position += offset;
-			offset = 0;
-		}
+	ssize_t nb_total_read = self->block_size - (self->buffer_pos - self->buffer);
+	if (nb_total_read > 0) {
+		ssize_t will_move = nb_total_read > offset ? offset : nb_total_read;
 
-		if (offset == 0)
+		self->buffer_pos += will_move;
+		self->position += will_move;
+
+		if (will_move == offset)
 			return self->position;
 	}
 
-	while (offset >= self->block_size) {
+	if (offset - nb_total_read >= self->block_size) {
+		int nb_records = (offset - nb_total_read) / self->block_size;
+
+		struct mtop forward = { MTFSR, nb_records };
 		st_drive_generic_operation_start(self->drive_private);
-		ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
+		int failed = ioctl(self->fd, MTIOCTOP, &forward);
 		st_drive_generic_operation_stop(self->drive);
 
-		if (nb_read > 0) {
-			offset -= nb_read;
-			self->position += nb_read;
-		} else if (nb_read == 0) {
-			return self->position;
-		} else {
+		if (failed) {
 			self->last_errno = errno;
-			return self->position;
+			return failed;
 		}
+
+		self->position += nb_records * self->block_size;
+		nb_total_read += nb_records * self->block_size;
 	}
 
-	if (offset == 0)
+	if (nb_total_read == offset)
 		return self->position;
 
 	st_drive_generic_operation_start(self->drive_private);
 	ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
 	st_drive_generic_operation_stop(self->drive);
-	if (nb_read > 0) {
-		self->buffer_used = self->block_size - offset;
-		self->position += offset;
-		memmove(self->buffer, self->buffer + offset, self->buffer_used);
-	} else if (nb_read < 0) {
+	if (nb_read < 0) {
 		self->last_errno = errno;
+		return nb_read;
+	} else if (nb_read > 0) {
+		ssize_t will_move = offset - nb_total_read;
+		self->buffer_pos = self->buffer + will_move;
+		self->position += will_move;
 	}
 
 	return self->position;
@@ -694,13 +696,17 @@ struct st_stream_reader * st_drive_io_reader_new(struct st_drive * drive) {
 
 	struct st_drive_generic * dr = drive->data;
 	struct st_drive_io_reader * self = malloc(sizeof(struct st_drive_io_reader));
+
 	self->fd = dr->fd_nst;
+
 	self->buffer = malloc(block_size);
-	self->buffer_used = 0;
 	self->block_size = block_size;
+	self->buffer_pos = self->buffer + block_size;
+
 	self->position = 0;
 	self->last_errno = 0;
 	self->end_of_file = 0;
+
 	self->drive = drive;
 	self->drive_private = dr;
 
@@ -734,20 +740,16 @@ ssize_t st_drive_io_reader_read(struct st_stream_reader * io, void * buffer, ssi
 	if (length < 1)
 		return 0;
 
-	ssize_t nb_total_read = 0;
-	if (self->buffer_used > 0) {
-		ssize_t nb_copy = self->buffer_used >= length ? length : self->buffer_used;
-		memcpy(buffer, self->buffer, nb_copy);
+	ssize_t nb_total_read = self->block_size - (self->buffer_pos - self->buffer);
+	if (nb_total_read > 0) {
+		ssize_t will_copy = nb_total_read > length ? length : nb_total_read;
+		memcpy(buffer, self->buffer_pos, will_copy);
 
-		if (nb_copy < self->buffer_used)
-			memmove(self->buffer, self->buffer + nb_copy, self->buffer_used - nb_copy);
-		self->buffer_used -= nb_copy;
-		self->position += nb_copy;
+		self->buffer_pos += will_copy;
+		self->position += will_copy;
 
-		if (nb_copy == length)
+		if (will_copy == length)
 			return length;
-
-		nb_total_read += nb_copy;
 	}
 
 	char * c_buffer = buffer;
@@ -756,19 +758,19 @@ ssize_t st_drive_io_reader_read(struct st_stream_reader * io, void * buffer, ssi
 		ssize_t nb_read = read(self->fd, c_buffer + nb_total_read, self->block_size);
 		st_drive_generic_operation_stop(self->drive);
 
-		if (nb_read > 0) {
-			self->position += nb_read;
+		if (nb_read < 0) {
+			self->last_errno = errno;
+			return nb_read;
+		} else if (nb_read > 0) {
 			nb_total_read += nb_read;
-		} else if (nb_read == 0) {
+			self->position += nb_read;
+		} else {
 			self->end_of_file = 1;
 			return nb_total_read;
-		} else {
-			self->last_errno = errno;
-			return -1;
 		}
 	}
 
-	if (length == nb_total_read)
+	if (nb_total_read == length)
 		return length;
 
 	st_drive_generic_operation_start(self->drive_private);
@@ -777,27 +779,54 @@ ssize_t st_drive_io_reader_read(struct st_stream_reader * io, void * buffer, ssi
 
 	if (nb_read < 0) {
 		self->last_errno = errno;
+		return nb_read;
+	} else if (nb_read > 0) {
+		ssize_t will_copy = length - nb_total_read;
+		memcpy(c_buffer + nb_total_read, self->buffer, will_copy);
+		self->buffer_pos = self->buffer + will_copy;
+		self->position += will_copy;
+		return length;
+	} else {
+		self->end_of_file = 1;
+		return nb_total_read;
+	}
+}
+
+off_t st_drive_io_reader_set_position(struct st_stream_reader * io, off_t position) {
+	if (!io || !io->data)
+		return -1;
+
+	struct st_drive_io_reader * self = io->data;
+	self->last_errno = 0;
+
+	struct mtget pos;
+	int failed = ioctl(self->fd, MTIOCGET, &pos);
+	if (failed) {
+		self->last_errno = errno;
 		return -1;
 	}
 
-	if (nb_read > 0) {
-		self->buffer_used = nb_read;
-
-		ssize_t nb_copy = length - nb_total_read;
-		memcpy(c_buffer + nb_total_read, self->buffer, nb_copy);
-
-		if (nb_copy < self->buffer_used)
-			memmove(self->buffer, self->buffer + nb_copy, self->buffer_used - nb_copy);
-		self->buffer_used -= nb_copy;
-		self->position += nb_copy;
-
-		nb_total_read += nb_copy;
-	} else {
-		// end of file
-		self->end_of_file = 1;
+	if (pos.mt_blkno < position) {
+		struct mtop forward = { MTFSR, position - pos.mt_blkno };
+		failed = ioctl(self->fd, MTIOCTOP, &forward);
+	} else if (pos.mt_blkno > position) {
+		struct mtop backward = { MTBSR, pos.mt_blkno - position };
+		failed = ioctl(self->fd, MTIOCTOP, &backward);
 	}
 
-	return nb_total_read;
+	if (failed) {
+		self->last_errno = errno;
+		return -1;
+	}
+
+	failed = ioctl(self->fd, MTIOCGET, &pos);
+	if (failed) {
+		self->last_errno = errno;
+		return -1;
+	}
+
+	self->buffer_pos = self->buffer + self->block_size;
+	return self->position = pos.mt_blkno * self->block_size;
 }
 
 

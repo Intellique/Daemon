@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 31 Jan 2012 11:36:51 +0100                         *
+*  Last modified: Wed, 09 May 2012 12:20:55 +0200                         *
 \*************************************************************************/
 
 // ssize_t
@@ -495,7 +495,54 @@ void st_scsi_mtx_status_update_slot(int fd, struct st_changer * changer, int sta
 	free(header.dxferp);
 }
 
-int st_scsi_tape_postion(int fd, struct st_tape * tape) {
+int st_scsi_tape_locate(int fd, off_t position) {
+	RequestSense_T sense;
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	struct {
+		unsigned char op_code;
+		unsigned char immed:1;
+		unsigned char cp:1;
+		unsigned char bt:1;
+		unsigned char reserved0:2;
+		unsigned char obsolete:3;
+		unsigned char reserved1;
+		int block_address; // should be a bigger endian integer
+		unsigned char reserved2;
+		unsigned char partition;
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.op_code = 0x2B,
+		.cp = 0,
+		.bt = 0,
+		.block_address = htobe32(position),
+		.partition = 0,
+	};
+
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = 0;
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = 0;
+	header.timeout = 60000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	if (status)
+		return 1;
+
+	return 0;
+}
+
+int st_scsi_tape_position(int fd, struct st_tape * tape) {
 	RequestSense_T sense;
 	unsigned char buffer[20];
 	bzero(buffer, 20);
@@ -528,6 +575,66 @@ int st_scsi_tape_postion(int fd, struct st_tape * tape) {
 		return -1;
 
 	tape->end_position = (((unsigned int) buffer[4] << 24) + ((unsigned int) buffer[5] << 16) + ((unsigned int) buffer[6] <<  8) + buffer[7]);
+
+	return 0;
+}
+
+int st_scsi_tape_read_position(int fd, off_t * position) {
+	if (!position)
+		return 1;
+
+	struct {
+		unsigned char operation_code;
+		unsigned char service_action:5;
+		unsigned char obsolete:3;
+		unsigned char reserved[5];
+		unsigned short parameter_length;	// must be a bigger endian integer
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x34,
+		.service_action = 0,
+		.parameter_length = 0,
+		.control = 0,
+	};
+
+	struct {
+		unsigned char reserved0:1;
+		unsigned char perr:1;
+		unsigned char block_position_unknown:1;
+		unsigned char reserved1:1;
+		unsigned char byte_count_unknown:1;
+		unsigned char block_count_unknown:1;
+		unsigned char end_of_partition:1;
+		unsigned char begin_of_partition:1;
+		unsigned char partition_number;
+		unsigned char reserved2[2];
+		unsigned int first_block_location;
+		unsigned int last_block_location;
+		unsigned char reserved3;
+		unsigned int number_of_blocks_in_buffer;
+		unsigned int number_of_bytes_in_buffer;
+	} __attribute__((packed)) result;
+
+	RequestSense_T sense;
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result);
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = &result;
+	header.timeout = 60000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	if (status)
+		return 2;
+
+	*position = be32toh(result.first_block_location);
 
 	return 0;
 }
@@ -615,17 +722,40 @@ int st_scsi_tape_size_available(int fd, struct st_tape * tape) {
 	unsigned char buffer[2048];
 	bzero(buffer, 2048);
 
-	unsigned char com1[10] = { 0x4D, 0, 0x31, 0, 0, 0, 0, 2048 >> 8 & 0xFF, 2048 & 0xFF, 0 };
+	struct {
+		unsigned char op_code;
+		unsigned char sp:1;
+		unsigned char ppc:1;
+		unsigned char reserved0:3;
+		unsigned char obsolete:3;
+		unsigned char page_code:5;
+		unsigned char pc:2;
+		unsigned char reserved1[2];
+		unsigned short parameter_pointer;
+		unsigned short allocation_length;
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.op_code = 0x4D,
+		.sp = 0,
+		.ppc = 0,
+		.page_code = 0x11,
+		.pc = 1,
+		.parameter_pointer = 0,
+		.allocation_length = htobe16(2048),
+		.control = 0,
+	};
+
+	// unsigned char com1[10] = { 0x4D, 0, 0x31, 0, 0, 0, 0, 2048 >> 8 & 0xFF, 2048 & 0xFF, 0 };
 
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
 
 	header.interface_id = 'S';
-	header.cmd_len = sizeof(com1);
+	header.cmd_len = sizeof(command);
 	header.mx_sb_len = sizeof(sense);
 	header.dxfer_len = sizeof(buffer);
-	header.cmdp = com1;
+	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = buffer;
 	header.timeout = 60000;

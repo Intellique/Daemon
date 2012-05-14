@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 04 May 2012 17:21:06 +0200                         *
+*  Last modified: Fri, 11 May 2012 12:16:07 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -41,6 +41,7 @@
 #include <unistd.h>
 
 
+#include <stone/io.h>
 #include <stone/library/changer.h>
 #include <stone/library/drive.h>
 #include <stone/library/ressource.h>
@@ -56,15 +57,21 @@ struct st_job_restore_private {
 
 	ssize_t position;
 	ssize_t total_size;
+
+	struct st_changer * changer;
+	struct st_drive * drive;
+	struct st_slot * slot;
 };
 
 static int st_job_restore_filter(struct st_job * job, struct st_tar_header * header);
 static void st_job_restore_free(struct st_job * job);
 static void st_job_restore_init(void) __attribute__((constructor));
+static int st_job_restore_load_tape(struct st_job * job, struct st_tape * tape);
 static int st_job_restore_mkdir(const char * path);
 static void st_job_restore_new_job(struct st_database_connection * db, struct st_job * job);
-static int st_job_restore_restore(struct st_job * job, struct st_drive * drive);
+static int st_job_restore_restore_archive(struct st_job * job);
 static int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, struct st_tar_header * header, const char * path);
+static int st_job_restore_restore_files(struct st_job * job);
 static int st_job_restore_run(struct st_job * job);
 static int st_job_restore_stop(struct st_job * job);
 static char * st_job_restore_trunc_filename(char * path, int nb_trunc_path);
@@ -104,6 +111,153 @@ void st_job_restore_free(struct st_job * job) {
 
 void st_job_restore_init() {
 	st_job_register_driver(&st_job_restore_driver);
+}
+
+int st_job_restore_load_tape(struct st_job * job, struct st_tape * tape) {
+	struct st_job_restore_private * jp = job->data;
+	short has_alert_user = 0;
+	enum {
+		alert_user,
+		drive_is_free,
+		look_for_changer,
+		look_for_free_drive,
+	} state = look_for_changer;
+
+	unsigned int i;
+	for (;;) {
+		switch (state) {
+			case alert_user:
+				job->sched_status = st_job_status_pause;
+				sleep(1);
+				job->db_ops->update_status(job);
+
+				if (!has_alert_user) {
+					job->db_ops->add_record(job, st_log_level_warning, "Tape not found (named: %s)", tape->name);
+					st_log_write_all(st_log_level_error, st_log_type_user_message, "Job: restore (id:%ld) request you to put a tape (named: %s) in your changer or standalone drive", job->id, tape->name);
+				}
+				has_alert_user = 1;
+				sleep(5);
+
+				job->sched_status = st_job_status_running;
+				job->db_ops->update_status(job);
+
+				state = look_for_changer;
+				break;
+
+			case drive_is_free:
+				while (jp->drive->lock->ops->trylock(jp->drive->lock)) {
+					sleep(5);
+
+					if (jp->drive->slot->tape != tape) {
+						state = look_for_changer;
+						break;
+					}
+				}
+
+				if (jp->drive->slot->tape == tape)
+					return 0;
+
+				break;
+
+			case look_for_changer:
+				jp->changer = st_changer_get_by_tape(tape);
+
+				if (jp->changer) {
+					jp->slot = jp->changer->ops->get_tape(jp->changer, tape);
+					jp->drive = jp->slot->drive;
+					state = jp->drive ? drive_is_free : look_for_free_drive;
+				} else {
+					state = alert_user;
+				}
+				break;
+
+			case look_for_free_drive:
+				jp->slot->lock->ops->lock(jp->slot->lock);
+
+				if (jp->slot->tape != tape) {
+					// it seem that someone has load tape before
+					jp->slot->lock->ops->unlock(jp->slot->lock);
+
+					state = look_for_changer;
+					break;
+				}
+
+				// look for only unloaded free drive
+				jp->drive = 0;
+				for (i = 0; i < jp->changer->nb_drives && !jp->drive; i++) {
+					jp->drive = jp->changer->drives + i;
+
+					if (jp->drive->lock->ops->trylock(jp->drive->lock))
+						jp->drive = 0;
+
+					if (jp->drive->slot->tape) {
+						jp->drive->lock->ops->unlock(jp->drive->lock);
+						jp->drive = 0;
+					}
+				}
+
+				// second attempt, look for free drive
+				for (i = 0; i < jp->changer->nb_drives && !jp->drive; i++) {
+					jp->drive = jp->changer->drives + i;
+
+					if (jp->drive->lock->ops->trylock(jp->drive->lock))
+						jp->drive = 0;
+				}
+
+				if (jp->drive) {
+					if (jp->drive->slot->tape) {
+						// find original slot of loaded tape in selected drive
+						struct st_slot * sl = 0;
+						for (i = jp->changer->nb_drives; i < jp->changer->nb_slots; i++) {
+							sl = jp->changer->slots + i;
+
+							if (!sl->tape && sl->address == jp->drive->slot->src_address && !sl->lock->ops->trylock(sl->lock))
+								break;
+
+							sl = 0;
+						}
+
+						// if original slot is not found
+						for (i = jp->changer->nb_drives; !sl && i < jp->changer->nb_slots; i++) {
+							sl = jp->changer->slots + i;
+
+							if (!sl->tape && !sl->lock->ops->trylock(sl->lock))
+								break;
+
+							sl = 0;
+						}
+
+						if (!sl) {
+							// no free slot for unloading tape
+							job->sched_status = st_job_status_error;
+							job->db_ops->add_record(job, st_log_level_error, "No slot free for unloading tape");
+							return 1;
+						}
+
+						jp->drive->ops->eject(jp->drive);
+						jp->changer->lock->ops->lock(jp->changer->lock);
+						jp->changer->ops->unload(jp->changer, jp->drive, jp->slot);
+						jp->changer->lock->ops->unlock(jp->changer->lock);
+						sl->lock->ops->unlock(sl->lock);
+					}
+
+					jp->changer->lock->ops->lock(jp->changer->lock);
+					jp->changer->ops->load(jp->changer, jp->slot, jp->drive);
+					jp->changer->lock->ops->unlock(jp->changer->lock);
+					jp->slot->lock->ops->unlock(jp->slot->lock);
+					jp->drive->ops->reset(jp->drive);
+
+					return 0;
+				} else {
+					jp->slot->lock->ops->unlock(jp->slot->lock);
+					sleep(5);
+					state = look_for_changer;
+				}
+				break;
+		}
+	}
+
+	return 1;
 }
 
 int st_job_restore_mkdir(const char * path) {
@@ -152,70 +306,85 @@ void st_job_restore_new_job(struct st_database_connection * db __attribute__((un
 	self->position = 0;
 	self->total_size = 0;
 
+	self->changer = 0;
+	self->drive = 0;
+	self->slot = 0;
+
 	job->data = self;
 	job->job_ops = &st_job_restore_ops;
 }
 
-int st_job_restore_restore(struct st_job * job, struct st_drive * drive) {
+int st_job_restore_restore_archive(struct st_job * job) {
 	struct st_job_restore_private * jp = job->data;
 
-	struct st_stream_reader * tape_reader = drive->ops->get_reader(drive);
-	struct st_tar_in * tar = st_tar_new_in(tape_reader);
+	unsigned int i;
+	int status = 0;
+	for (i = 0; i < job->nb_block_numbers && !status; i++) {
+		struct st_job_block_number * bn = job->block_numbers + i;
 
-	jp->length = tar->ops->get_block_size(tar);
-	jp->buffer = malloc(jp->length);
-
-	struct st_tar_header header;
-	enum st_tar_header_status status;
-	ssize_t restore_path_length = strlen(job->restore_to->path);
-	int failed = 0;
-
-	while ((status = tar->ops->get_header(tar, &header)) == ST_TAR_HEADER_OK) {
-		if (!st_job_restore_filter(job, &header)) {
-			tar->ops->skip_file(tar);
-			continue;
+		status = st_job_restore_load_tape(job, bn->tape);
+		if (status) {
+			job->db_ops->add_record(job, st_log_level_error, "Failed to load tape: %s", bn->tape->name);
+			return status;
 		}
 
-		char * path = header.path;
-		if (job->restore_to->nb_trunc_path > 0)
-			path = st_job_restore_trunc_filename(path, job->restore_to->nb_trunc_path);
+		jp->drive->ops->set_file_position(jp->drive, bn->tape_position);
 
-		if (!path)
-			continue;
+		struct st_stream_reader * tape_reader = jp->drive->ops->get_reader(jp->drive);
+		struct st_tar_in * tar = st_tar_new_in(tape_reader);
 
-		ssize_t length = restore_path_length + strlen(path);
-		char * restore_path = malloc(length + 2);
+		jp->length = tar->ops->get_block_size(tar);
+		jp->buffer = malloc(jp->length);
 
-		strcpy(restore_path, job->restore_to->path);
+		struct st_tar_header header;
+		enum st_tar_header_status hdr_status;
+		ssize_t restore_path_length = strlen(job->restore_to->path);
+		int failed = 0;
 
-		if (restore_path[restore_path_length - 1] == '/')
-			strcpy(restore_path + restore_path_length, path);
-		else {
-			strcpy(restore_path + restore_path_length, "/");
-			strcpy(restore_path + restore_path_length + 1, path);
+		while ((hdr_status = tar->ops->get_header(tar, &header)) == ST_TAR_HEADER_OK) {
+			char * path = header.path;
+			if (job->restore_to->nb_trunc_path > 0)
+				path = st_job_restore_trunc_filename(path, job->restore_to->nb_trunc_path);
+
+			if (!path)
+				continue;
+
+			ssize_t length = restore_path_length + strlen(path);
+			char * restore_path = malloc(length + 2);
+
+			strcpy(restore_path, job->restore_to->path);
+
+			if (restore_path[restore_path_length - 1] == '/')
+				strcpy(restore_path + restore_path_length, path);
+			else {
+				strcpy(restore_path + restore_path_length, "/");
+				strcpy(restore_path + restore_path_length + 1, path);
+			}
+
+			char * pos = strrchr(restore_path, '/');
+			if (pos) {
+				*pos = '\0';
+				st_job_restore_mkdir(restore_path);
+				*pos = '/';
+			}
+
+			failed = st_job_restore_restore_file(job, tar, &header, restore_path);
+
+			free(restore_path);
+
+			if (failed)
+				break;
 		}
 
-		char * pos = strrchr(restore_path, '/');
-		if (pos) {
-			*pos = '\0';
-			st_job_restore_mkdir(restore_path);
-			*pos = '/';
-		}
+		free(jp->buffer);
 
-		failed = st_job_restore_restore_file(job, tar, &header, restore_path);
+		tar->ops->close(tar);
+		tar->ops->free(tar);
 
-		free(restore_path);
-
-		if (failed)
-			break;
+		status = (hdr_status != ST_TAR_HEADER_NOT_FOUND || failed);
 	}
 
-	free(jp->buffer);
-
-	tar->ops->close(tar);
-	tar->ops->free(tar);
-
-	return status != ST_TAR_HEADER_NOT_FOUND || failed;
+	return status;
 }
 
 int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, struct st_tar_header * header, const char * path) {
@@ -379,6 +548,93 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 	return status;
 }
 
+int st_job_restore_restore_files(struct st_job * job) {
+	struct st_job_restore_private * jp = job->data;
+
+	unsigned int i;
+	int status = 0;
+	ssize_t restore_path_length = strlen(job->restore_to->path);
+
+	for (i = 0; i < job->nb_block_numbers && !status;) {
+		struct st_job_block_number * bn = job->block_numbers + i;
+
+		status = st_job_restore_load_tape(job, bn->tape);
+		if (status) {
+			job->db_ops->add_record(job, st_log_level_error, "Failed to load tape: %s", bn->tape->name);
+			return status;
+		}
+
+		jp->drive->ops->set_file_position(jp->drive, bn->tape_position);
+
+		long current_sequence = bn->sequence;
+		while (bn->sequence == current_sequence) {
+			struct st_stream_reader * tape_reader = jp->drive->ops->get_reader(jp->drive);
+
+			jp->length = tape_reader->ops->get_block_size(tape_reader);
+			jp->buffer = malloc(jp->length);
+
+			if (bn->block_number > 0)
+				tape_reader->ops->set_position(tape_reader, bn->block_number);
+
+			struct st_tar_in * tar = st_tar_new_in(tape_reader);
+			enum st_tar_header_status hdr_status = ST_TAR_HEADER_BAD_CHECKSUM;
+			struct st_tar_header header;
+
+			while ((hdr_status = tar->ops->get_header(tar, &header)) == ST_TAR_HEADER_BAD_CHECKSUM);
+
+			if (hdr_status != ST_TAR_HEADER_OK) { }
+
+			while (!st_job_restore_filter(job, &header) && hdr_status == ST_TAR_HEADER_OK) {
+				tar->ops->skip_file(tar);
+				hdr_status = tar->ops->get_header(tar, &header);
+			}
+
+			while (st_job_restore_filter(job, &header) && hdr_status == ST_TAR_HEADER_OK) {
+				char * path = header.path;
+				if (job->restore_to->nb_trunc_path > 0)
+					path = st_job_restore_trunc_filename(path, job->restore_to->nb_trunc_path);
+
+				if (!path) {
+					tar->ops->skip_file(tar);
+					hdr_status = tar->ops->get_header(tar, &header);
+				}
+
+				ssize_t length = restore_path_length + strlen(path);
+				char * restore_path = malloc(length + 2);
+
+				strcpy(restore_path, job->restore_to->path);
+
+				if (restore_path[restore_path_length - 1] == '/')
+					strcpy(restore_path + restore_path_length, path);
+				else {
+					strcpy(restore_path + restore_path_length, "/");
+					strcpy(restore_path + restore_path_length + 1, path);
+				}
+
+				char * pos = strrchr(restore_path, '/');
+				if (pos) {
+					*pos = '\0';
+					st_job_restore_mkdir(restore_path);
+					*pos = '/';
+				}
+
+				st_job_restore_restore_file(job, tar, &header, path);
+			}
+
+			tar->ops->free(tar);
+			free(jp->buffer);
+
+			i++;
+			if (i >= job->nb_block_numbers)
+				break;
+
+			bn = job->block_numbers + i;
+		}
+	}
+
+	return status;
+}
+
 int st_job_restore_run(struct st_job * job) {
 	struct st_job_restore_private * jp = job->data;
 
@@ -399,190 +655,16 @@ int st_job_restore_run(struct st_job * job) {
 		return status;
 	}
 
-	enum {
-		alert_user,
-		drive_is_free,
-		look_for_changer,
-		look_for_free_drive,
-		next_tape,
-		tape_is_in_drive,
-	} state = look_for_changer;
-
-	struct st_changer * changer = 0;
-	struct st_drive * drive = 0;
-	struct st_slot * slot = 0;
-	short has_alert_user = 0;
-
-	unsigned i, j;
+	unsigned int i;
 	for (i = 0; i < job->nb_block_numbers; i++)
 		jp->total_size += job->block_numbers[i].size;
 
-	for (i = 0; i < job->nb_block_numbers && !status; i++) {
-		struct st_job_block_number * block_number = job->block_numbers + i;
+	if (job->nb_paths > 0)
+		status = st_job_restore_restore_files(job);
+	else
+		status = st_job_restore_restore_archive(job);
 
-		short stop = 0;
-		while (!stop) {
-			switch (state) {
-				case alert_user:
-					job->sched_status = st_job_status_pause;
-					job->db_ops->update_status(job);
-
-					if (!has_alert_user) {
-						job->db_ops->add_record(job, st_log_level_warning, "Tape not found (named: %s)", block_number->tape->name);
-						st_log_write_all(st_log_level_error, st_log_type_user_message, "Job: restore (id:%ld) request you to put a tape (named: %s) in your changer or standalone drive", job->id, block_number->tape->name);
-					}
-					has_alert_user = 1;
-					sleep(5);
-
-					job->sched_status = st_job_status_running;
-					job->db_ops->update_status(job);
-
-					state = look_for_changer;
-					break;
-
-				case drive_is_free:
-					if (!drive->lock->ops->trylock(drive->lock)) {
-						drive->ops->set_file_position(drive, block_number->tape_position);
-						status = st_job_restore_restore(job, drive);
-						state = next_tape;
-						stop = 1;
-					} else {
-						state = next_tape;
-						sleep(5);
-					}
-					break;
-
-				case look_for_changer:
-					changer = st_changer_get_by_tape(block_number->tape);
-
-					if (changer) {
-						slot = changer->ops->get_tape(changer, block_number->tape);
-						drive = slot->drive;
-						state = drive ? drive_is_free : look_for_free_drive;
-					} else {
-						state = alert_user;
-					}
-					break;
-
-				case look_for_free_drive:
-					slot->lock->ops->lock(slot->lock);
-
-					if (slot->tape != block_number->tape) {
-						// it seem that someone has load tape before
-						slot->lock->ops->unlock(slot->lock);
-
-						changer = 0;
-						drive = 0;
-						slot = 0;
-
-						state = look_for_changer;
-						break;
-					}
-
-					drive = 0;
-					for (j = 0; j < changer->nb_drives && !drive; j++) {
-						drive = changer->drives + j;
-
-						if (drive->lock->ops->trylock(drive->lock))
-							drive = 0;
-					}
-
-					if (drive) {
-						changer->lock->ops->lock(changer->lock);
-						changer->ops->load(changer, slot, drive);
-						changer->lock->ops->unlock(changer->lock);
-						slot->lock->ops->unlock(slot->lock);
-						drive->ops->reset(drive);
-
-						drive->ops->set_file_position(drive, block_number->tape_position);
-						status = st_job_restore_restore(job, drive);
-						state = next_tape;
-						stop = 1;
-					} else {
-						slot->lock->ops->unlock(slot->lock);
-						sleep(5);
-						state = look_for_changer;
-					}
-					break;
-
-				case next_tape:
-					changer = st_changer_get_by_tape(block_number->tape);
-					if (!changer) {
-						state = alert_user;
-						break;
-					}
-					slot = changer->ops->get_tape(changer, block_number->tape);
-
-					if (slot && slot->drive) {
-						if (!slot->drive->lock->ops->trylock(slot->drive->lock)) {
-							drive->lock->ops->unlock(drive->lock);
-							drive = slot->drive;
-
-							drive->ops->set_file_position(drive, block_number->tape_position);
-							status = st_job_restore_restore(job, drive);
-							stop = 1;
-						} else {
-							drive->lock->ops->unlock(drive->lock);
-							drive = slot->drive;
-							state = drive_is_free;
-						}
-					//} else if (slot && slot->changer != drive->changer) {
-						// we switch changer
-					} else if (slot) {
-						struct st_slot * sl = 0;
-						for (j = changer->nb_drives; !sl && j < changer->nb_slots; j++) {
-							struct st_slot * ptrsl = changer->slots + j;
-							if (ptrsl->lock->ops->trylock(ptrsl->lock))
-								continue;
-							if (ptrsl->address == drive->slot->src_address)
-								sl = ptrsl;
-							else
-								ptrsl->lock->ops->unlock(ptrsl->lock);
-						}
-						for (j = changer->nb_drives; !sl && j < changer->nb_slots; j++) {
-							struct st_slot * ptrsl = changer->slots + j;
-							if (ptrsl->lock->ops->trylock(ptrsl->lock))
-								continue;
-							if (!ptrsl->full)
-								sl = ptrsl;
-							else
-								ptrsl->lock->ops->unlock(ptrsl->lock);
-						}
-
-						if (!sl) {
-							// panic, no slot for unloading tape
-						}
-
-						drive->ops->eject(drive);
-
-						changer->lock->ops->lock(changer->lock);
-						changer->ops->unload(changer, drive, sl);
-						sl->lock->ops->unlock(sl->lock);
-						slot->lock->ops->lock(slot->lock);
-						changer->ops->load(changer, slot, drive);
-						changer->lock->ops->unlock(changer->lock);
-						slot->lock->ops->unlock(slot->lock);
-						drive->ops->reset(drive);
-
-						drive->ops->set_file_position(drive, block_number->tape_position);
-						status = st_job_restore_restore(job, drive);
-						state = next_tape;
-						stop = 1;
-					} else {
-						drive->lock->ops->unlock(drive->lock);
-						state = look_for_changer;
-					}
-					break;
-
-				case tape_is_in_drive:
-					if (drive->slot->tape == block_number->tape)
-						state = drive_is_free;
-					break;
-			}
-		}
-	}
-
-	drive->lock->ops->unlock(drive->lock);
+	jp->drive->lock->ops->unlock(jp->drive->lock);
 
 	if (!status)
 		job->db_ops->add_record(job, st_log_level_info, "Job restore (id:%ld) finished with status = OK", job->id);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jan 2012 15:49:08 +0100                         *
+*  Last modified: Thu, 10 May 2012 15:51:14 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_IO_H__
@@ -41,6 +41,7 @@ struct st_stream_reader {
 		int (*last_errno)(struct st_stream_reader * f);
 		ssize_t (*position)(struct st_stream_reader * io);
 		ssize_t (*read)(struct st_stream_reader * io, void * buffer, ssize_t length);
+		off_t (*set_position)(struct st_stream_reader * io, off_t position);
 	} * ops;
 	void * data;
 };
