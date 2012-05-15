@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 11 May 2012 12:16:07 +0200                         *
+*  Last modified: Tue, 15 May 2012 20:34:28 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -96,9 +96,12 @@ int st_job_restore_filter(struct st_job * job, struct st_tar_header * header) {
 
 	unsigned int i;
 	for (i = 0; i < job->nb_paths; i++) {
-		ssize_t length = strlen(job->paths[i]);
+		char * path = job->paths[i];
+		if (*header->path != '/')
+			path++;
 
-		if (!strncmp(header->path, job->paths[i], length))
+		ssize_t length = strlen(path);
+		if (!strncmp(header->path, path, length))
 			return 1;
 	}
 
@@ -455,7 +458,7 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 	} else if (S_ISDIR(header->mode)) {
 		if (!access(path, F_OK))
 			return 0;
-		status = mkdir(path, header->mode);
+		status = mkdir(path, header->mode & 0777);
 		if (status) {
 			switch (errno) {
 				default:
@@ -618,13 +621,28 @@ int st_job_restore_restore_files(struct st_job * job) {
 					*pos = '/';
 				}
 
-				st_job_restore_restore_file(job, tar, &header, path);
+				int failed = st_job_restore_restore_file(job, tar, &header, restore_path);
+
+				free(restore_path);
+
+				if (failed)
+					break;
+
+				hdr_status = tar->ops->get_header(tar, &header);
 			}
 
+			long current_sequence = bn->sequence;
+			ssize_t current_block = tar->ops->position(tar) / jp->length;
+
+			tar->ops->close(tar);
 			tar->ops->free(tar);
 			free(jp->buffer);
+			jp->buffer = 0;
 
-			i++;
+			while (i < job->nb_block_numbers && current_sequence == bn->sequence && job->block_numbers[i].block_number <= current_block) {
+				i++;
+			}
+
 			if (i >= job->nb_block_numbers)
 				break;
 
@@ -666,9 +684,10 @@ int st_job_restore_run(struct st_job * job) {
 
 	jp->drive->lock->ops->unlock(jp->drive->lock);
 
-	if (!status)
+	if (!status) {
+		job->done = 1;
 		job->db_ops->add_record(job, st_log_level_info, "Job restore (id:%ld) finished with status = OK", job->id);
-	else
+	} else
 		job->db_ops->add_record(job, st_log_level_error, "Job restore (id:%ld) finished with status = %d", job->id, status);
 
 	return status;

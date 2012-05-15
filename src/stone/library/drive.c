@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 10 May 2012 17:05:12 +0200                         *
+*  Last modified: Tue, 15 May 2012 21:02:16 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -799,6 +799,8 @@ off_t st_drive_io_reader_set_position(struct st_stream_reader * io, off_t positi
 	struct st_drive_io_reader * self = io->data;
 	self->last_errno = 0;
 
+	st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: positioning tape to block = %zd", self->drive->vendor, self->drive->model, self->drive - self->drive->changer->drives, position);
+
 	struct mtget pos;
 	int failed = ioctl(self->fd, MTIOCGET, &pos);
 	if (failed) {
@@ -824,6 +826,8 @@ off_t st_drive_io_reader_set_position(struct st_stream_reader * io, off_t positi
 		self->last_errno = errno;
 		return -1;
 	}
+
+	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: positioning tape to block = %zd, finish with code = %d", self->drive->vendor, self->drive->model, self->drive - self->drive->changer->drives, position, failed);
 
 	self->buffer_pos = self->buffer + self->block_size;
 	return self->position = pos.mt_blkno * self->block_size;
