@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 15 May 2012 20:34:28 +0200                         *
+*  Last modified: Wed, 16 May 2012 12:52:27 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -56,13 +56,18 @@ struct st_job_restore_private {
 	ssize_t length;
 
 	ssize_t position;
+	ssize_t nb_total_read_partial; // used for restoring partial archive
+	ssize_t nb_total_read_total; // used for restoring complete archive
 	ssize_t total_size;
+	void (*compute_progress)(struct st_job * job, struct st_job_restore_private * jp);
 
 	struct st_changer * changer;
 	struct st_drive * drive;
 	struct st_slot * slot;
 };
 
+static void st_job_restore_compute_complete_progress(struct st_job * job, struct st_job_restore_private * jp);
+static void st_job_restore_compute_partial_progress(struct st_job * job, struct st_job_restore_private * jp);
 static int st_job_restore_filter(struct st_job * job, struct st_tar_header * header);
 static void st_job_restore_free(struct st_job * job);
 static void st_job_restore_init(void) __attribute__((constructor));
@@ -89,6 +94,16 @@ struct st_job_driver st_job_restore_driver = {
 	.api_version = STONE_JOB_APIVERSION,
 };
 
+
+void st_job_restore_compute_complete_progress(struct st_job * job, struct st_job_restore_private * jp) {
+	job->done = (float) jp->nb_total_read_total / jp->total_size;
+	job->db_ops->update_status(job);
+}
+
+void st_job_restore_compute_partial_progress(struct st_job * job, struct st_job_restore_private * jp) {
+	job->done = (float) jp->nb_total_read_partial / jp->total_size;
+	job->db_ops->update_status(job);
+}
 
 int st_job_restore_filter(struct st_job * job, struct st_tar_header * header) {
 	if (job->nb_paths == 0)
@@ -307,7 +322,10 @@ void st_job_restore_new_job(struct st_database_connection * db __attribute__((un
 	self->length = 0;
 
 	self->position = 0;
+	self->nb_total_read_partial = 0;
+	self->nb_total_read_total = 0;
 	self->total_size = 0;
+	self->compute_progress = st_job_restore_compute_complete_progress;
 
 	self->changer = 0;
 	self->drive = 0;
@@ -319,6 +337,7 @@ void st_job_restore_new_job(struct st_database_connection * db __attribute__((un
 
 int st_job_restore_restore_archive(struct st_job * job) {
 	struct st_job_restore_private * jp = job->data;
+	jp->compute_progress = st_job_restore_compute_complete_progress;
 
 	unsigned int i;
 	int status = 0;
@@ -521,8 +540,10 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 
 			nb_total_read += nb_read;
 
-			job->done = (float) (jp->position + tar->ops->position(tar)) / jp->total_size;
-			job->db_ops->update_status(job);
+			jp->nb_total_read_partial += nb_read;
+			jp->nb_total_read_total = jp->position + tar->ops->position(tar);
+
+			jp->compute_progress(job, jp);
 		}
 
 		if (nb_read < 0)
@@ -545,14 +566,15 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 		status = symlink(header->link, header->path);
 	}
 
-	job->done = (float) (jp->position + tar->ops->position(tar)) / jp->total_size;
-	job->db_ops->update_status(job);
+	jp->nb_total_read_total = jp->position + tar->ops->position(tar);
+	jp->compute_progress(job, jp);
 
 	return status;
 }
 
 int st_job_restore_restore_files(struct st_job * job) {
 	struct st_job_restore_private * jp = job->data;
+	jp->compute_progress = st_job_restore_compute_partial_progress;
 
 	unsigned int i;
 	int status = 0;
