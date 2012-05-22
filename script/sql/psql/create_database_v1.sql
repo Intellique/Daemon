@@ -126,7 +126,7 @@ CREATE TABLE Pool (
     name VARCHAR(64) NOT NULL,
     growable BOOLEAN NOT NULL DEFAULT FALSE,
     tapeFormat INTEGER NOT NULL REFERENCES TapeFormat(id) ON DELETE RESTRICT ON UPDATE CASCADE,
-    metadata TEXT NOT NULL
+    metadata TEXT[] NOT NULL
 );
 
 CREATE TABLE Tape (
@@ -229,16 +229,12 @@ CREATE TABLE Users (
     canArchive BOOLEAN NOT NULL DEFAULT FALSE,
     canRestore BOOLEAN NOT NULL DEFAULT FALSE,
 
+	nbConnection INTEGER NOT NULL DEFAULT 0,
+	lastConnection TIMESTAMP(0) NULL,
     disabled BOOLEAN NOT NULL DEFAULT FALSE,
 
     pool INTEGER NOT NULL REFERENCES Pool(id) ON DELETE RESTRICT ON UPDATE CASCADE,
-    meta hstore NOT NULL
-);
-
-CREATE TABLE UserLog (
-    id BIGSERIAL PRIMARY KEY,
-    login INTEGER NOT NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    timestamp TIMESTAMP(0) NOT NULL DEFAULT NOW()
+	meta hstore NOT NULL
 );
 
 CREATE TABLE Archive (
@@ -254,7 +250,7 @@ CREATE TABLE Archive (
 
 CREATE TABLE ArchiveFile (
     id BIGSERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
+    name VARCHAR(255) NOT NULL,
     type FileType NOT NULL,
     mimeType VARCHAR(64) NOT NULL,
     ownerId SMALLINT NOT NULL DEFAULT 0,
@@ -264,8 +260,7 @@ CREATE TABLE ArchiveFile (
     perm SMALLINT NOT NULL CHECK (perm >= 0),
     ctime TIMESTAMP(0) NOT NULL,
     mtime TIMESTAMP(0) NOT NULL,
-    size BIGINT NOT NULL CHECK (size >= 0),
-    blockNumber BIGINT CHECK (blockNumber >= 0)
+    size BIGINT NOT NULL CHECK (size >= 0)
 );
 
 CREATE TABLE ArchiveVolume (
@@ -321,7 +316,7 @@ CREATE TABLE Job (
     type INTEGER NOT NULL REFERENCES JobType(id) ON DELETE CASCADE ON UPDATE CASCADE,
 
     nextStart TIMESTAMP(0) NOT NULL DEFAULT NOW(),
-    interval INTERVAL,
+    interval INTEGER CHECK (interval > 0),
     repetition INTEGER NOT NULL DEFAULT 1,
     done FLOAT NOT NULL DEFAULT 0,
     status JobStatus NOT NULL DEFAULT 'idle',
