@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 May 2012 20:32:18 +0200                         *
+*  Last modified: Tue, 22 May 2012 21:18:58 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -184,7 +184,7 @@ void st_sched_do_loop() {
 		struct tm current;
 		update = time(0);
 		localtime_r(&update, &current);
-		sleep(15 - current.tm_sec % 15);
+		sleep(5 - current.tm_sec % 5);
 
 	}
 
@@ -221,6 +221,7 @@ void st_sched_run_job(void * arg) {
 	job->num_runs++;
 
 	sleep(1);
+	st_sched_update_status(job);
 
 	int status = job->job_ops->run(job);
 
