@@ -3,8 +3,8 @@ INSERT INTO Host VALUES (DEFAULT, 'localhost', NULL, NULL),
        (DEFAULT, 'taiko', 'intellique.com', '5U court'),
        (DEFAULT, 'kazoo', 'intellique.com', '5U court');
 
-INSERT INTO TapeFormat VALUES (DEFAULT, 'LTO-5', 'data', 'linear', 4096, 4096, 40960, 40960, 1024, 1676052267008, 8192, 88, TRUE, TRUE),
-       (DEFAULT, 'LTO-4', 'data', 'linear', 4096, 4096, 40960, 40960, 1024, 838026133504, 8192, 70, FALSE, TRUE),
+INSERT INTO TapeFormat VALUES (DEFAULT, 'LTO-5', 'data', 'linear', 4096, 4096, 40960, 40960, 1024, 1676052267008, 32768, 88, TRUE, TRUE),
+       (DEFAULT, 'LTO-4', 'data', 'linear', 4096, 4096, 40960, 40960, 1024, 838026133504, 32768, 70, FALSE, TRUE),
        (DEFAULT, 'LTO-3', 'data', 'linear', 4096, 4096, 40960, 40960, 1024, 419013066752, 8192, 68, FALSE, TRUE),
        (DEFAULT, 'LTO-2', 'data', 'linear', 4096, 4096, 40960, 40960, 1024, 209506533376, 8192, 66, FALSE, TRUE),
        (DEFAULT, 'X23', 'data', 'linear', 4096, 4096, 40960, 40960, 1024, 153691136, 1024, 130, FALSE, FALSE),
