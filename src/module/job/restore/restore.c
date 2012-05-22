@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 16 May 2012 12:52:27 +0200                         *
+*  Last modified: Tue, 22 May 2012 23:21:48 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -605,7 +605,7 @@ int st_job_restore_restore_files(struct st_job * job) {
 			enum st_tar_header_status hdr_status = ST_TAR_HEADER_BAD_CHECKSUM;
 			struct st_tar_header header;
 
-			while ((hdr_status = tar->ops->get_header(tar, &header)) == ST_TAR_HEADER_BAD_CHECKSUM);
+			while ((hdr_status = tar->ops->get_header(tar, &header)) != ST_TAR_HEADER_OK);
 
 			if (hdr_status != ST_TAR_HEADER_OK) { }
 
