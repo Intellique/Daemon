@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 13 Mar 2012 18:40:17 +0100                         *
+*  Last modified: Tue, 22 May 2012 19:01:23 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_USER_H__
@@ -40,8 +40,6 @@ struct st_user {
 	char is_admin;
 	char can_archive;
 	char can_restore;
-	int nb_connection;
-	time_t last_connection;
 	char disabled;
 	struct st_pool * pool;
 };

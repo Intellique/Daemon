@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 15 May 2012 13:57:46 +0200                         *
+*  Last modified: Tue, 22 May 2012 19:01:47 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -924,12 +924,10 @@ int st_db_postgresql_get_user(struct st_database_connection * connection, struct
 		st_db_postgresql_get_bool(result, 0, 6, &user->is_admin);
 		st_db_postgresql_get_bool(result, 0, 7, &user->can_archive);
 		st_db_postgresql_get_bool(result, 0, 8, &user->can_restore);
-		st_db_postgresql_get_int(result, 0, 9, &user->nb_connection);
-		st_db_postgresql_get_time(result, 0, 10, &user->last_connection);
-		st_db_postgresql_get_bool(result, 0, 11, &user->disabled);
+		st_db_postgresql_get_bool(result, 0, 9, &user->disabled);
 
 		long poolid = -1;
-		st_db_postgresql_get_long(result, 0, 12, &poolid);
+		st_db_postgresql_get_long(result, 0, 10, &poolid);
 		if (poolid > -1)
 			user->pool = st_pool_get_by_id(poolid);
 	}
@@ -1905,12 +1903,10 @@ int st_db_postgresql_sync_user(struct st_database_connection * connection, struc
 		st_db_postgresql_get_bool(result, 0, 7, &user->can_archive);
 		st_db_postgresql_get_bool(result, 0, 8, &user->can_restore);
 
-		st_db_postgresql_get_int(result, 0, 9, &user->nb_connection);
-		st_db_postgresql_get_time(result, 0, 10, &user->last_connection);
-		st_db_postgresql_get_bool(result, 0, 11, &user->disabled);
+		st_db_postgresql_get_bool(result, 0, 9, &user->disabled);
 
 		long poolid = -1;
-		st_db_postgresql_get_long(result, 0, 12, &poolid);
+		st_db_postgresql_get_long(result, 0, 10, &poolid);
 		if (poolid > -1 && (!user->pool || poolid != user->pool->id))
 			user->pool = st_pool_get_by_id(poolid);
 	}
