@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jan 2012 22:14:00 +0100                         *
+*  Last modified: Wed, 23 May 2012 02:29:42 +0200                         *
 \*************************************************************************/
 
 // open
@@ -78,7 +78,7 @@ int st_realchanger_can_load() {
 struct st_slot * st_realchanger_get_tape(struct st_changer * ch, struct st_tape * tape) {
 	unsigned int i;
 
-	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
+	for (i = 0; i < ch->nb_slots; i++) {
 		struct st_slot * sl = ch->slots + i;
 		struct st_tape * tp = sl->tape;
 
