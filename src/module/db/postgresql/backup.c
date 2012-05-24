@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 24 May 2012 17:46:58 +0200                         *
+*  Last modified: Thu, 24 May 2012 18:04:05 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -99,6 +99,9 @@ struct st_stream_reader * st_db_postgresql_init_backup(struct st_db_postgresql_p
 	self->status = BACKUP_STATUS_HEADER;
 	self->position = 0;
 
+	PGresult * result = PQexec(self->con, "BEGIN ISOLATION LEVEL SERIALIZABLE READ ONLY");
+	PQclear(result);
+
 	char * query;
 	asprintf(&query, "COPY %s TO STDOUT WITH CSV HEADER", *self->c_table);
 	self->c_result = PQexec(self->con, query);
@@ -114,8 +117,11 @@ struct st_stream_reader * st_db_postgresql_init_backup(struct st_db_postgresql_p
 int st_db_postgresql_stream_backup_close(struct st_stream_reader * io) {
 	struct st_db_postgresql_stream_backup_private * self = io->data;
 
-	if (self->con)
+	if (self->con) {
+		PGresult * result = PQexec(self->con, "ROLLBACK");
+		PQclear(result);
 		PQfinish(self->con);
+	}
 	self->con = 0;
 
 	self->c_table = 0;
