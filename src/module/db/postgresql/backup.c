@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 24 May 2012 16:22:01 +0200                         *
+*  Last modified: Thu, 24 May 2012 17:46:58 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -44,7 +44,15 @@ struct st_db_postgresql_stream_backup_private {
 
 	PGresult * c_result;
 	const char ** c_table;
+	char * c_header;
 	char * c_line;
+
+	enum {
+		BACKUP_STATUS_END,
+		BACKUP_STATUS_FOOTER,
+		BACKUP_STATUS_HEADER,
+		BACKUP_STATUS_LINE,
+	} status;
 
 	ssize_t position;
 };
@@ -86,7 +94,9 @@ struct st_stream_reader * st_db_postgresql_init_backup(struct st_db_postgresql_p
 	self->con = PQsetdbLogin(driver_private->host, driver_private->port, 0, 0, driver_private->db, driver_private->user, driver_private->password);
 	self->c_result = 0;
 	self->c_table = tables;
+	self->c_header = 0;
 	self->c_line = 0;
+	self->status = BACKUP_STATUS_HEADER;
 	self->position = 0;
 
 	char * query;
@@ -109,6 +119,9 @@ int st_db_postgresql_stream_backup_close(struct st_stream_reader * io) {
 	self->con = 0;
 
 	self->c_table = 0;
+	if (self->c_header)
+		free(self->c_header);
+	self->c_header = 0;
 	if (self->c_line)
 		PQfreemem(self->c_line);
 	self->c_line = 0;
@@ -155,55 +168,98 @@ ssize_t st_db_postgresql_stream_backup_read(struct st_stream_reader * io, void *
 
 	struct st_db_postgresql_stream_backup_private * self = io->data;
 
-	if (!*self->c_table)
-		return 0;
-
 	ssize_t nb_total_read = 0;
 	char * c_buffer = buffer;
-	if (self->c_line) {
-		size_t c_length = strlen(self->c_line);
-		memcpy(c_buffer, self->c_line, c_length);
-		PQfreemem(self->c_line);
-		self->c_line = 0;
 
-		self->position += c_length;
-		c_buffer += c_length;
-		nb_total_read += c_length;
-	}
+	ssize_t c_length;
+	int status = 0;
 
-	for (;;) {
-		int status = PQgetCopyData(self->con, &self->c_line, 0);
+	while (status > -2) {
+		switch (self->status) {
+			case BACKUP_STATUS_END:
+				return nb_total_read;
 
-		if (status > 0) {
-			ssize_t c_length = strlen(self->c_line);
-			if (c_length <= length - nb_total_read) {
-				memcpy(c_buffer, self->c_line, c_length);
+			case BACKUP_STATUS_FOOTER:
+				if (1 <= length - nb_total_read)
+					memcpy(c_buffer, "\n", 1);
+				else
+					return nb_total_read;
+
+				self->position++;
+				c_buffer++;
+				nb_total_read++;
+
+				PQclear(self->c_result);
+				self->c_result = 0;
+
+				self->c_table++;
+				if (!*self->c_table) {
+					self->status = BACKUP_STATUS_END;
+					return nb_total_read;
+				}
+
+				char * query;
+				asprintf(&query, "COPY %s TO STDOUT WITH CSV HEADER", *self->c_table);
+
+				self->c_result = PQexec(self->con, query);
+				free(query);
+
+				self->status = BACKUP_STATUS_HEADER;
+
+				break;
+
+			case BACKUP_STATUS_HEADER:
+				status = PQgetCopyData(self->con, &self->c_line, 0);
+
+				if (status < 0)
+					return nb_total_read;
+
+				asprintf(&self->c_header, "%s %s", *self->c_table, self->c_line);
+				PQfreemem(self->c_line);
+				self->c_line = 0;
+
+				c_length = strlen(self->c_header);
+
+				if (c_length <= length - nb_total_read) {
+					memcpy(c_buffer, self->c_header, c_length);
+					free(self->c_header);
+					self->c_header = 0;
+				} else
+					return nb_total_read;
 
 				self->position += c_length;
 				c_buffer += c_length;
 				nb_total_read += c_length;
-			} else
-				return nb_total_read;
-		}
 
-		if (self->c_line) {
-			PQfreemem(self->c_line);
-			self->c_line = 0;
-		}
+				status = PQgetCopyData(self->con, &self->c_line, 0);
 
-		if (status == -1) {
-			PQclear(self->c_result);
-			self->c_result = 0;
+				if (status == -1)
+					self->status = BACKUP_STATUS_FOOTER;
+				else
+					self->status = BACKUP_STATUS_LINE;
 
-			self->c_table++;
-			if (!*self->c_table)
 				break;
 
-			char * query;
-			asprintf(&query, "COPY %s TO STDOUT WITH CSV HEADER", *self->c_table);
+			case BACKUP_STATUS_LINE:
+				c_length = strlen(self->c_line);
 
-			self->c_result = PQexec(self->con, query);
-			free(query);
+				if (c_length <= length - nb_total_read) {
+					memcpy(c_buffer, self->c_line, c_length);
+					PQfreemem(self->c_line);
+					self->c_line = 0;
+				} else
+					return nb_total_read;
+
+				self->position += c_length;
+				c_buffer += c_length;
+				nb_total_read += c_length;
+
+				status = PQgetCopyData(self->con, &self->c_line, 0);
+
+				if (status == -1)
+					self->status = BACKUP_STATUS_FOOTER;
+
+				break;
 		}
 	}
 
