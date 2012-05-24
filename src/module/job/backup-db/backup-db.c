@@ -22,34 +22,54 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 May 2012 16:24:52 +0200                         *
+*  Last modified: Wed, 23 May 2012 15:52:20 +0200                         *
 \*************************************************************************/
 
-#ifndef __STONE_DB_POSTGRESQL_CONNNECTION_H__
-#define __STONE_DB_POSTGRESQL_CONNNECTION_H__
-
-#include <postgresql/libpq-fe.h>
-
 #include <stone/database.h>
-#include <stone/util.h>
-#include <stone/util/hashtable.h>
+#include <stone/io.h>
+#include <stone/job.h>
+#include <stone/log.h>
+#include <stone/user.h>
 
-struct st_db_postgresql_private {
-	char * user;
-	char * password;
-	char * db;
-	char * host;
-	char * port;
+static void st_job_backupdb_free(struct st_job * job);
+static void st_job_backupdb_init(void) __attribute__((constructor));
+static void st_job_backupdb_new_job(struct st_database_connection * db, struct st_job * job);
+static int st_job_backupdb_run(struct st_job * job);
+static int st_job_backupdb_stop(struct st_job * job);
+
+struct st_job_ops st_job_backupdb_ops = {
+	.free = st_job_backupdb_free,
+	.run  = st_job_backupdb_run,
+	.stop = st_job_backupdb_stop,
 };
 
-struct st_db_postgresql_connetion_private {
-	PGconn * db_con;
-	struct st_hashtable * cached;
+
+struct st_job_driver st_job_backupdb_driver = {
+	.name        = "backup-db",
+	.new_job     = st_job_backupdb_new_job,
+	.cookie      = 0,
+	.api_version = STONE_JOB_APIVERSION,
 };
 
-struct st_stream_reader * st_db_postgresql_init_backup(struct st_db_postgresql_private * driver_private);
-int st_db_postgresql_init_connection(struct st_database_connection * connection, struct st_db_postgresql_private * driver_private);
-void st_db_postgresql_pr_free(struct st_db_postgresql_private * self);
+void st_job_backupdb_free(struct st_job * job __attribute__((unused))) {}
 
-#endif
+void st_job_backupdb_init() {
+	st_job_register_driver(&st_job_backupdb_driver);
+}
+
+void st_job_backupdb_new_job(struct st_database_connection * db __attribute__((unused)), struct st_job * job) {
+	job->data = 0;
+	job->job_ops = &st_job_backupdb_ops;
+}
+
+int st_job_backupdb_run(struct st_job * job) {
+	struct st_database * driver = st_db_get_default_db();
+
+	struct st_stream_reader * db_reader = driver->ops->backup_db(driver);
+	return 0;
+}
+
+int st_job_backupdb_stop(struct st_job * job __attribute__((unused))) {
+	return 0;
+}
 

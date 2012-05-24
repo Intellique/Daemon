@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Dec 2011 23:25:18 +0100                         *
+*  Last modified: Wed, 23 May 2012 16:25:24 +0200                         *
 \*************************************************************************/
 
 // free, malloc
@@ -37,6 +37,7 @@
 
 #include "common.h"
 
+static struct st_stream_reader * st_db_postgresql_backup_db(struct st_database * db);
 static struct st_database_connection * st_db_postgresql_connect(struct st_database * db, struct st_database_connection * connection);
 static void st_db_postgresql_init(void) __attribute__((constructor));
 static int st_db_postgresql_ping(struct st_database * db);
@@ -44,9 +45,10 @@ static int st_db_postgresql_setup(struct st_database * db, struct st_hashtable *
 
 
 static struct st_database_ops st_db_postgresql_ops = {
-	.connect = st_db_postgresql_connect,
-	.ping    = st_db_postgresql_ping,
-	.setup   = st_db_postgresql_setup,
+	.backup_db = st_db_postgresql_backup_db,
+	.connect   = st_db_postgresql_connect,
+	.ping      = st_db_postgresql_ping,
+	.setup     = st_db_postgresql_setup,
 };
 
 static struct st_database st_db_postgresql = {
@@ -57,6 +59,10 @@ static struct st_database st_db_postgresql = {
 	.api_version = STONE_DATABASE_APIVERSION,
 };
 
+
+struct st_stream_reader * st_db_postgresql_backup_db(struct st_database * db) {
+	return st_db_postgresql_init_backup(db->data);
+}
 
 struct st_database_connection * st_db_postgresql_connect(struct st_database * db, struct st_database_connection * connection) {
 	if (!db)

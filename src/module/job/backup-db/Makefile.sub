@@ -1,0 +1,16 @@
+STONE_JOB_BACKUPDB_SRC_DIR		:= src/module/job/backup-db
+STONE_JOB_BACKUPDB_BUILD_DIR	:= ${BUILD_DIR}/module/job/backup-db
+STONE_JOB_BACKUPDB_DEPEND_DIR	:= ${DEPEND_DIR}/module/job/backup-db
+
+STONE_JOB_BACKUPDB_SRC_FILES	:= $(sort $(shell test -d ${STONE_JOB_BACKUPDB_SRC_DIR} && find ${STONE_JOB_BACKUPDB_SRC_DIR} -name '*.c'))
+STONE_JOB_BACKUPDB_HEAD_FILES	:= $(sort $(shell test -d ${STONE_JOB_BACKUPDB_SRC_DIR} && find ${STONE_JOB_BACKUPDB_SRC_DIR} -name '*.h'))
+STONE_JOB_BACKUPDB_OBJ_FILES	:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${STONE_JOB_BACKUPDB_SRC_FILES}))
+STONE_JOB_BACKUPDB_DEP_FILES	:= $(sort $(shell test -d ${STONE_JOB_BACKUPDB_DEPEND_DIR} && find ${STONE_JOB_BACKUPDB_DEPEND_DIR} -name '*.d'))
+
+STONE_JOB_BACKUPDB_BIN			:= lib/libjob-backup-db.so
+STONE_JOB_BACKUPDB_CFLAG		:= -pthread -fPIC -fvisibility=hidden
+STONE_JOB_BACKUPDB_LD			:= -pthread -shared
+
+STONE_JOB_BACKUPDB_LIB			:=
+
+BIN_SYMS						+= STONE_JOB_BACKUPDB
