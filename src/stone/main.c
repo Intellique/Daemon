@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 17 Apr 2012 19:26:37 +0200                         *
+*  Last modified: Fri, 25 May 2012 16:00:21 +0200                         *
 \*************************************************************************/
 
 // getopt_long
@@ -32,18 +32,16 @@
 // daemon
 #include <unistd.h>
 
+#include <stone/conf.h>
 #include <stone/database.h>
 #include <stone/library/changer.h>
 #include <stone/job.h>
 
 #include "admin.h"
 #include "checksum.h"
-#include "conf.h"
 #include "config.h"
 #include "log.h"
 #include "scheduler.h"
-
-void st_test(void);
 
 static void st_show_help(void);
 
@@ -69,9 +67,9 @@ int main(int argc, char ** argv) {
 		{0, 0, 0, 0},
 	};
 
-	char * config_file = DEFAULT_CONFIG_FILE;
+	char * config_file = DAEMON_CONFIG_FILE;
 	short detach = 0;
-	char * pid_file = DEFAULT_PID_FILE;
+	char * pid_file = DAEMON_PID_FILE;
 
 	// parse option
 	int opt;
@@ -176,8 +174,6 @@ int main(int argc, char ** argv) {
 
 	st_sched_do_loop();
 
-	//st_test();
-
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone exit");
 
 	st_log_stop_logger();
@@ -189,10 +185,10 @@ void st_show_help() {
 	st_log_disable_display_log();
 
 	printf("STone, version: %s, build: %s %s\n", STONE_VERSION, __DATE__, __TIME__);
-	printf("    --config,   -c : Read this config file instead of \"%s\"\n", DEFAULT_CONFIG_FILE);
+	printf("    --config,   -c : Read this config file instead of \"%s\"\n", DAEMON_CONFIG_FILE);
 	printf("    --detach,   -d : Daemonize it\n");
 	printf("    --help,     -h : Show this and exit\n");
-	printf("    --pid-file, -p : Write the pid of daemon into instead of \"%s\"\n", DEFAULT_PID_FILE);
+	printf("    --pid-file, -p : Write the pid of daemon into instead of \"%s\"\n", DAEMON_PID_FILE);
 	printf("    --version,  -V : Show the version of STone then exit\n");
 }
 

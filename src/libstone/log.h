@@ -22,32 +22,17 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:06:04 +0100                         *
+*  Last modified: Mon, 19 Mar 2012 18:09:42 +0100                         *
 \*************************************************************************/
 
-// free
-#include <malloc.h>
-// strlen
-#include <string.h>
+#ifndef __STONE_LOG_P_H__
+#define __STONE_LOG_P_H__
 
-#include "util.h"
+#include <stone/log.h>
 
-void st_util_free_key_value(void * key, void * value) {
-	if (key)
-		free(key);
-	if (value)
-		free(value);
-}
+void st_log_disable_display_log(void);
+void st_log_start_logger(void);
+void st_log_stop_logger(void);
 
-/**
- * sdbm function
- */
-unsigned long long st_util_hash_string(const void * key) {
-	const char * cstr = key;
-	unsigned long long int hash = 0;
-	int length = strlen(cstr), i;
-	for (i = 0; i < length; i++)
-		hash = cstr[i] + (hash << 6) + (hash << 16) - hash;
-	return hash;
-}
+#endif
 

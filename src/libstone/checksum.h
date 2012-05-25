@@ -22,14 +22,15 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:41:21 +0100                         *
+*  Last modified: Sat, 17 Dec 2011 19:36:55 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONE_UTIL_H__
-#define __STONE_UTIL_H__
+#ifndef __STONE_CHECKSUM_P_H__
+#define __STONE_CHECKSUM_P_H__
 
-void st_util_free_key_value(void * key, void * value);
-unsigned long long st_util_hash_string(const void * key);
+#include <stone/checksum.h>
+
+void st_checksum_sync_plugins(void);
 
 #endif
 

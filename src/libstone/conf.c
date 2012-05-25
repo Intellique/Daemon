@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 19 Mar 2012 17:55:15 +0100                         *
+*  Last modified: Fri, 25 May 2012 15:23:03 +0200                         *
 \*************************************************************************/
 
 // strerror
@@ -42,12 +42,13 @@
 // access, close, fstat, read, readlink, unlink, write
 #include <unistd.h>
 
+#include <stone/conf.h>
 #include <stone/database.h>
+#include <stone/util.h>
 #include <stone/util/hashtable.h>
 
-#include "conf.h"
 #include "log.h"
-#include "util/util.h"
+//#include "util/util.h"
 
 enum st_conf_section {
 	st_conf_section_db,
@@ -222,7 +223,7 @@ int st_conf_read_config(const char * confFile) {
 
 	char * ptr = buffer;
 	enum st_conf_section section = st_conf_section_unknown;
-	struct st_hashtable * params = st_hashtable_new2(st_util_hash_string, st_util_free_key_value);
+	struct st_hashtable * params = st_hashtable_new2(st_util_compute_hash_string, st_util_basic_free);
 	while (*ptr) {
 		switch (*ptr) {
 			case ';':
