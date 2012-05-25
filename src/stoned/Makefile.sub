@@ -9,7 +9,7 @@ STONE_DEP_FILES		:= $(sort $(shell test -d ${STONE_DEPEND_DIR} && find ${STONE_D
 
 STONE_BIN			:= bin/stoned
 STONE_CFLAG			:=
-STONE_LD			:= -lstone -ldl -ljansson -luuid -rdynamic -Llib
+STONE_LD			:= -lstone -ljansson -Llib
 
 STONE_DEPEND_LIB	:= lib/libstone.so
 

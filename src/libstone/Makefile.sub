@@ -9,7 +9,7 @@ LIBSTONE_DEP_FILES	 := $(sort $(shell test -d ${LIBSTONE_DEPEND_DIR} && find ${L
 
 LIBSTONE_CFLAG		 := -fPIC -pthread
 LIBSTONE_LIB		 := lib/libstone.so
-LIBSTONE_LD			 := -shared -pthread
+LIBSTONE_LD			 := -shared -pthread -ldl -luuid
 LIBSTONE_SONAME      := libstone.so.0
 LIBSTONE_LIB_VERSION := 0.1
 
