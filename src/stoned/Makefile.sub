@@ -1,6 +1,6 @@
-STONE_SRC_DIR		:= src/stone
-STONE_BUILD_DIR		:= ${BUILD_DIR}/stone
-STONE_DEPEND_DIR	:= ${DEPEND_DIR}/stone
+STONE_SRC_DIR		:= src/stoned
+STONE_BUILD_DIR		:= ${BUILD_DIR}/stoned
+STONE_DEPEND_DIR	:= ${DEPEND_DIR}/stoned
 
 STONE_SRC_FILES		:= $(sort $(shell test -d ${STONE_SRC_DIR} && find ${STONE_SRC_DIR} -name '*.c'))
 STONE_HEAD_FILES	:= $(sort $(shell test -d ${STONE_SRC_DIR} && find ${STONE_SRC_DIR} -name '*.h'))
@@ -8,8 +8,8 @@ STONE_OBJ_FILES		:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${STONE_SRC_FILES
 STONE_DEP_FILES		:= $(sort $(shell test -d ${STONE_DEPEND_DIR} && find ${STONE_DEPEND_DIR} -name '*.d'))
 
 STONE_BIN			:= bin/stoned
-STONE_CFLAG			:= -pthread
-STONE_LD			:= -pthread -lstone -ldl -ljansson -luuid -rdynamic -Llib
+STONE_CFLAG			:=
+STONE_LD			:= -lstone -ldl -ljansson -luuid -rdynamic -Llib
 
 STONE_DEPEND_LIB	:= lib/libstone.so
 
