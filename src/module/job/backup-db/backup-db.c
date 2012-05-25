@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 25 May 2012 11:13:13 +0200                         *
+*  Last modified: Fri, 25 May 2012 13:03:34 +0200                         *
 \*************************************************************************/
 
 // malloc, realloc
@@ -94,16 +94,24 @@ void st_job_backupdb_init() {
 }
 
 void st_job_backupdb_new_job(struct st_database_connection * db __attribute__((unused)), struct st_job * job) {
-	job->data = 0;
+	struct st_job_backup_private * self = malloc(sizeof(struct st_job_backup_private));
+	self->current_drive = 0;
+	self->savepoints = 0;
+	self->nb_savepoints = 0;
+	self->tapes = 0;
+	self->nb_tapes = 0;
+
 	job->job_ops = &st_job_backupdb_ops;
+	job->data = self;
 }
 
 int st_job_backupdb_run(struct st_job * job) {
 	job->db_ops->add_record(job, st_log_level_info, "Start backup job (job id: %ld), num runs %ld", job->id, job->num_runs);
 
-	if (job->user->is_admin) {
+	if (!job->user->is_admin) {
 		job->sched_status = st_job_status_error;
 		job->db_ops->add_record(job, st_log_level_error, "User (%s) is not allowed to backup database", job->user->fullname);
+		return 1;
 	}
 
 	// check tape and pool
