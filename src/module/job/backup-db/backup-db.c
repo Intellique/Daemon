@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 24 May 2012 18:49:19 +0200                         *
+*  Last modified: Fri, 25 May 2012 11:13:13 +0200                         *
 \*************************************************************************/
 
 // malloc, realloc
@@ -114,6 +114,8 @@ int st_job_backupdb_run(struct st_job * job) {
 	struct st_stream_reader * db_reader = driver->ops->backup_db(driver);
 
 	struct st_drive * drive = st_job_backupdb_select_tape(job, look_in_first_changer);
+	drive->ops->eod(drive);
+
 	struct st_stream_writer * tape_writer = drive->ops->get_writer(drive);
 
 	ssize_t block_size = tape_writer->ops->get_block_size(tape_writer);
