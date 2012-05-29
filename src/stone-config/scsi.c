@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 25 May 2012 21:56:11 +0200                         *
+*  Last modified: Tue, 29 May 2012 12:30:50 +0200                         *
 \*************************************************************************/
 
 // be*toh, htobe*
@@ -51,6 +51,17 @@
 
 #include "scsi.h"
 
+struct scsi_inquiry {
+	unsigned char operation_code;
+	unsigned char enable_vital_product_data:1;
+	unsigned char reserved0:4;
+	unsigned char obsolete:3;
+	unsigned char page_code;
+	unsigned char reserved1;
+	unsigned char allocation_length;
+	unsigned char reserved2;
+} __attribute__((packed));
+
 struct scsi_request_sense {
 	unsigned char error_code:7;						/* Byte 0 Bits 0-6 */
 	char valid:1;									/* Byte 0 Bit 7 */
@@ -75,14 +86,14 @@ struct scsi_request_sense {
 };
 
 
-int st_scsi_loaderinfo(const char * filename, struct st_changer * changer) {
+int stcf_scsi_loaderinfo(const char * filename, struct st_changer * changer) {
 	int fd = open(filename, O_RDWR);
 	if (fd < 0)
 		return 1;
 
 	struct {
-		unsigned char peripheral_device_type:4;
-		unsigned char peripheral_device_qualifier:4;
+		unsigned char peripheral_device_type:5;
+		unsigned char peripheral_device_qualifier:3;
 		unsigned char reserved0:7;
 		unsigned char removable_medium_bit:1;
 		unsigned char version;
@@ -125,15 +136,7 @@ int st_scsi_loaderinfo(const char * filename, struct st_changer * changer) {
 		unsigned char unit_serial_number[12];
 	} __attribute__((packed)) result_inquiry;
 
-	struct {
-		unsigned char operation_code;
-		unsigned char enable_vital_product_data:1;
-		unsigned char reserved0:7;
-		unsigned char page_code;
-		unsigned char reserved1;
-		unsigned char allocation_length;
-		unsigned char reserved2;
-	} __attribute__((packed)) command_inquiry = {
+	struct scsi_inquiry command_inquiry = {
 		.operation_code = 0x12,
 		.enable_vital_product_data = 0,
 		.page_code = 0,
@@ -158,10 +161,10 @@ int st_scsi_loaderinfo(const char * filename, struct st_changer * changer) {
 
 	int status = ioctl(fd, SG_IO, &header);
 
-	close(fd);
-
-	if (status)
+	if (status) {
+		close(fd);
 		return 2;
+	}
 
 	ssize_t length;
 	changer->vendor = malloc(9);
@@ -177,22 +180,195 @@ int st_scsi_loaderinfo(const char * filename, struct st_changer * changer) {
 		changer->model[length] = '\0';
 
 	changer->revision = malloc(5);
-	strncpy(changer->model, result_inquiry.product_revision_level, 4);
+	strncpy(changer->revision, result_inquiry.product_revision_level, 4);
 	changer->revision[4] = '\0';
-	for (length = 15; length >= 0 && changer->revision[length] == ' '; length--)
+	for (length = 3; length >= 0 && changer->revision[length] == ' '; length--)
 		changer->revision[length] = '\0';
 
 	changer->barcode = 0;
 	if (result_inquiry.bar_code)
 		changer->barcode = 1;
 
+
+	struct {
+		unsigned char peripheral_device_type:5;
+		unsigned char peripheral_device_qualifier:3;
+		unsigned char page_code;
+		unsigned char reserved;
+		unsigned char page_length;
+		char unit_serial_number[12];
+	} __attribute__((packed)) result_serial_number;
+
+	struct scsi_inquiry command_serial_number = {
+		.operation_code = 0x12,
+		.enable_vital_product_data = 1,
+		.page_code = 0x80,
+		.allocation_length = sizeof(result_serial_number),
+	};
+
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(&result_serial_number, 0, sizeof(result_serial_number));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command_serial_number);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result_serial_number);
+	header.cmdp = (unsigned char *) &command_serial_number;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &result_serial_number;
+	header.timeout = 60000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	status = ioctl(fd, SG_IO, &header);
+
+	close(fd);
+
+	if (status)
+		return 3;
+
+	changer->serial_number = malloc(13);
+	strncpy(changer->serial_number, result_serial_number.unit_serial_number, 12);
+	changer->serial_number[12] = '\0';
+
 	return 0;
 }
 
-int st_scsi_tapeinfo(const char * filename, struct st_drive * drive) {
+int stcf_scsi_tapeinfo(const char * filename, struct st_drive * drive) {
 	int fd = open(filename, O_RDWR);
 	if (fd < 0)
 		return 1;
+
+	struct {
+		unsigned char peripheral_device_type:5;
+		unsigned char peripheral_device_qualifier:3;
+		unsigned char reserved0:7;
+		unsigned char removable_medium_bit:1;
+		unsigned char version:3;
+		unsigned char ecma_version:3;
+		unsigned char iso_version:2;
+		unsigned char response_data_format:4;
+		unsigned char hi_sup:1;
+		unsigned char norm_aca:1;
+		unsigned char obsolete0:1;
+		unsigned char asynchronous_event_reporting_capability:1;
+		unsigned char additional_length;
+		unsigned char reserved1:7;
+		unsigned char scc_supported:1;
+		unsigned char addr16:1;
+		unsigned char addr32:1;
+		unsigned char obsolete1:1;
+		unsigned char medium_changer:1;
+		unsigned char multi_port:1;
+		unsigned char vs:1;
+		unsigned char enclosure_service:1;
+		unsigned char basic_queuing:1;
+		unsigned char reserved2:1;
+		unsigned char command_queuing:1;
+		unsigned char trans_dis:1;
+		unsigned char linked_command:1;
+		unsigned char synchonous_transfer:1;
+		unsigned char wide_bus_16:1;
+		unsigned char obsolete2:1;
+		unsigned char relative_addressing:1;
+		char vendor_identification[8];
+		char product_identification[16];
+		char product_revision_level[4];
+		unsigned char aut_dis:1;
+		unsigned char performance_limit;
+		unsigned char reserved3[3];
+		unsigned char oem_specific;
+	} __attribute__((packed)) result_inquiry;
+
+	struct scsi_inquiry command_inquiry = {
+		.operation_code = 0x12,
+		.enable_vital_product_data = 0,
+		.page_code = 0,
+		.allocation_length = sizeof(result_inquiry),
+	};
+
+	struct scsi_request_sense sense;
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(&result_inquiry, 0, sizeof(result_inquiry));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command_inquiry);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result_inquiry);
+	header.cmdp = (unsigned char *) &command_inquiry;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &result_inquiry;
+	header.timeout = 60000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+
+	if (status) {
+		close(fd);
+		return 2;
+	}
+
+	ssize_t length;
+	drive->vendor = malloc(9);
+	strncpy(drive->vendor, result_inquiry.vendor_identification, 8);
+	drive->vendor[8] = '\0';
+	for (length = 7; length >= 0 && drive->vendor[length] == ' '; length--)
+		drive->vendor[length] = '\0';
+
+	drive->model = malloc(17);
+	strncpy(drive->model, result_inquiry.product_identification, 16);
+	drive->model[16] = '\0';
+	for (length = 15; length >= 0 && drive->model[length] == ' '; length--)
+		drive->model[length] = '\0';
+
+	drive->revision = malloc(5);
+	strncpy(drive->revision, result_inquiry.product_revision_level, 4);
+	drive->revision[4] = '\0';
+	for (length = 3; length >= 0 && drive->revision[length] == ' '; length--)
+		drive->revision[length] = '\0';
+
+	struct {
+		unsigned char peripheral_device_type:5;
+		unsigned char peripheral_device_qualifier:3;
+		unsigned char page_code;
+		unsigned char reserved;
+		unsigned char page_length;
+		char unit_serial_number[10];
+	} __attribute__((packed)) result_serial_number;
+
+	struct scsi_inquiry command_serial_number = {
+		.operation_code = 0x12,
+		.enable_vital_product_data = 1,
+		.page_code = 0x80,
+		.allocation_length = sizeof(result_serial_number),
+	};
+
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(&result_serial_number, 0, sizeof(result_serial_number));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command_serial_number);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result_serial_number);
+	header.cmdp = (unsigned char *) &command_serial_number;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &result_serial_number;
+	header.timeout = 60000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	status = ioctl(fd, SG_IO, &header);
+
+	close(fd);
+
+	if (status)
+		return 3;
+
+	drive->serial_number = malloc(13);
+	strncpy(drive->serial_number, result_serial_number.unit_serial_number, 12);
+	drive->serial_number[12] = '\0';
 
 	return 0;
 }

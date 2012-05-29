@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 25 May 2012 18:37:55 +0200                         *
+*  Last modified: Tue, 29 May 2012 12:02:21 +0200                         *
 \*************************************************************************/
 
 // glob
@@ -188,11 +188,11 @@ int stcfg_scan() {
 
 	// do loaderinfo
 	for (i = 0; i < nb_real_changers; i++)
-		st_scsi_loaderinfo(changers[i].device, changers + i);
+		stcf_scsi_loaderinfo(changers[i].device, changers + i);
 
 	// do tapeinfo
 	for (i = 0; i < nb_drives; i++)
-		st_scsi_tapeinfo(drives[i].scsi_device, drives + i);
+		stcf_scsi_tapeinfo(drives[i].scsi_device, drives + i);
 
 	// link drive to real changer
 	unsigned int nb_changer_without_drive = 0;
