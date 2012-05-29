@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 25 May 2012 18:22:40 +0200                         *
+*  Last modified: Fri, 25 May 2012 21:56:11 +0200                         *
 \*************************************************************************/
 
 // be*toh, htobe*
@@ -33,6 +33,8 @@
 #include <scsi/scsi.h>
 // sg_io_hdr_t
 #include <scsi/sg.h>
+// malloc
+#include <stdlib.h>
 // memset
 #include <string.h>
 // ioctl
@@ -107,9 +109,9 @@ int st_scsi_loaderinfo(const char * filename, struct st_changer * changer) {
 		unsigned char wide_bus_16:1;
 		unsigned char reserved7:1;
 		unsigned char relative_addressing:1;
-		unsigned char vendor_identification[8];
-		unsigned char product_identification[16];
-		unsigned char product_revision_level[4];
+		char vendor_identification[8];
+		char product_identification[16];
+		char product_revision_level[4];
 		unsigned char full_firmware_revision_level[19];
 		unsigned char bar_code:1;
 		unsigned char reserved8:7;
@@ -121,7 +123,7 @@ int st_scsi_loaderinfo(const char * filename, struct st_changer * changer) {
 		unsigned char version_description[16];
 		unsigned char reserved11[22];
 		unsigned char unit_serial_number[12];
-	} __attribute__((packed)) result;
+	} __attribute__((packed)) result_inquiry;
 
 	struct {
 		unsigned char operation_code;
@@ -131,26 +133,26 @@ int st_scsi_loaderinfo(const char * filename, struct st_changer * changer) {
 		unsigned char reserved1;
 		unsigned char allocation_length;
 		unsigned char reserved2;
-	} __attribute__((packed)) command = {
+	} __attribute__((packed)) command_inquiry = {
 		.operation_code = 0x12,
 		.enable_vital_product_data = 0,
 		.page_code = 0,
-		.allocation_length = sizeof(result),
+		.allocation_length = sizeof(result_inquiry),
 	};
 
 	struct scsi_request_sense sense;
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
-	memset(&result, 0, sizeof(result));
+	memset(&result_inquiry, 0, sizeof(result_inquiry));
 
 	header.interface_id = 'S';
-	header.cmd_len = sizeof(command);
+	header.cmd_len = sizeof(command_inquiry);
 	header.mx_sb_len = sizeof(sense);
-	header.dxfer_len = sizeof(result);
-	header.cmdp = (unsigned char *) &command;
+	header.dxfer_len = sizeof(result_inquiry);
+	header.cmdp = (unsigned char *) &command_inquiry;
 	header.sbp = (unsigned char *) &sense;
-	header.dxferp = (unsigned char *) &result;
+	header.dxferp = (unsigned char *) &result_inquiry;
 	header.timeout = 60000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
@@ -160,6 +162,29 @@ int st_scsi_loaderinfo(const char * filename, struct st_changer * changer) {
 
 	if (status)
 		return 2;
+
+	ssize_t length;
+	changer->vendor = malloc(9);
+	strncpy(changer->vendor, result_inquiry.vendor_identification, 8);
+	changer->vendor[8] = '\0';
+	for (length = 7; length >= 0 && changer->vendor[length] == ' '; length--)
+		changer->vendor[length] = '\0';
+
+	changer->model = malloc(17);
+	strncpy(changer->model, result_inquiry.product_identification, 16);
+	changer->model[16] = '\0';
+	for (length = 15; length >= 0 && changer->model[length] == ' '; length--)
+		changer->model[length] = '\0';
+
+	changer->revision = malloc(5);
+	strncpy(changer->model, result_inquiry.product_revision_level, 4);
+	changer->revision[4] = '\0';
+	for (length = 15; length >= 0 && changer->revision[length] == ' '; length--)
+		changer->revision[length] = '\0';
+
+	changer->barcode = 0;
+	if (result_inquiry.bar_code)
+		changer->barcode = 1;
 
 	return 0;
 }
