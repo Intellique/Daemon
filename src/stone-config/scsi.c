@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 29 May 2012 12:30:50 +0200                         *
+*  Last modified: Tue, 29 May 2012 12:38:42 +0200                         *
 \*************************************************************************/
 
 // be*toh, htobe*
@@ -86,7 +86,7 @@ struct scsi_request_sense {
 };
 
 
-int stcf_scsi_loaderinfo(const char * filename, struct st_changer * changer) {
+int stcfg_scsi_loaderinfo(const char * filename, struct st_changer * changer) {
 	int fd = open(filename, O_RDWR);
 	if (fd < 0)
 		return 1;
@@ -234,7 +234,7 @@ int stcf_scsi_loaderinfo(const char * filename, struct st_changer * changer) {
 	return 0;
 }
 
-int stcf_scsi_tapeinfo(const char * filename, struct st_drive * drive) {
+int stcfg_scsi_tapeinfo(const char * filename, struct st_drive * drive) {
 	int fd = open(filename, O_RDWR);
 	if (fd < 0)
 		return 1;
