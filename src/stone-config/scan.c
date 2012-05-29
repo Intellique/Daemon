@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 29 May 2012 13:32:59 +0200                         *
+*  Last modified: Tue, 29 May 2012 13:56:31 +0200                         *
 \*************************************************************************/
 
 // glob
@@ -38,6 +38,7 @@
 // readlink
 #include <unistd.h>
 
+#include <stone/database.h>
 #include <stone/library/changer.h>
 #include <stone/library/drive.h>
 #include <stone/log.h>
@@ -220,12 +221,14 @@ int stcfg_scan() {
 			if (!drives[j].changer) {
 				drives[j].changer = changers + i;
 
+				changers[i].id = -1;
 				changers[i].device = strdup("");
 				changers[i].status = ST_CHANGER_UNKNOWN;
 				changers[i].model = strdup(drives[j].model);
 				changers[i].vendor = strdup(drives[j].vendor);
 				changers[i].revision = strdup(drives[j].revision);
 				changers[i].serial_number = strdup(drives[j].serial_number);
+				changers[i].barcode = 0;
 
 				changers[i].drives = malloc(sizeof(struct st_drive));
 				*changers[i].drives = drives[j];
@@ -240,6 +243,17 @@ int stcfg_scan() {
 
 	if (drives)
 		free(drives);
+
+	struct st_database * db = st_db_get_default_db();
+	struct st_database_connection * db_con = db->ops->connect(db, 0);
+
+	if (db_con) {
+		for (i = 0; db_con && i < nb_real_changers + nb_fake_changers; i++)
+			db_con->ops->sync_changer(db_con, changers + i);
+
+		db_con->ops->close(db_con);
+		db_con->ops->free(db_con);
+	}
 
 	return 0;
 }
