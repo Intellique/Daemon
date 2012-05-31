@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jan 2012 11:20:42 +0100                         *
+*  Last modified: Thu, 31 May 2012 16:24:17 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_DRIVE_H__
@@ -67,6 +67,7 @@ struct st_drive {
 
 	struct st_changer * changer;
 	struct st_slot * slot;
+	char enabled;
 
 	struct st_drive_ops {
 		int (*eject)(struct st_drive * drive);

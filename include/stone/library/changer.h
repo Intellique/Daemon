@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jan 2012 22:13:57 +0100                         *
+*  Last modified: Thu, 31 May 2012 16:24:12 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_CHANGER_H__
@@ -63,6 +63,7 @@ struct st_changer {
 	unsigned int nb_drives;
 	struct st_slot * slots;
 	unsigned int nb_slots;
+	char enabled;
 
 	struct st_changer_ops {
 		int (*can_load)();

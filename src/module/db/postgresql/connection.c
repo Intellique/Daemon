@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 May 2012 19:01:47 +0200                         *
+*  Last modified: Thu, 31 May 2012 16:34:05 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1086,7 +1086,7 @@ int st_db_postgresql_sync_changer(struct st_database_connection * connection, st
 	char * changerid = 0;
 	if (changer->id < 0) {
 		const char * query = "select_changer_by_model_vendor_serialnumber";
-		st_db_postgresql_prepare(self, query, "SELECT id FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 FOR UPDATE NOWAIT");
+		st_db_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 FOR UPDATE NOWAIT");
 
 		const char * param2[] = { changer->model, changer->vendor, changer->serial_number };
 		PGresult * result = PQexecPrepared(self->db_con, query, 3, param2, 0, 0, 0);
@@ -1097,6 +1097,7 @@ int st_db_postgresql_sync_changer(struct st_database_connection * connection, st
 		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			st_db_postgresql_get_long(result, 0, 0, &changer->id);
 			st_db_postgresql_get_string_dup(result, 0, 0, &changerid);
+			st_db_postgresql_get_bool(result, 0, 1, &changer->enabled);
 		}
 
 		PQclear(result);
@@ -1109,7 +1110,7 @@ int st_db_postgresql_sync_changer(struct st_database_connection * connection, st
 		}
 	} else {
 		const char * query = "select_changer_by_id";
-		st_db_postgresql_prepare(self, query, "SELECT id FROM changer WHERE id = $1 FOR UPDATE NOWAIT");
+		st_db_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE id = $1 FOR UPDATE NOWAIT");
 
 		char * changerid = 0;
 		asprintf(&changerid, "%ld", changer->id);
@@ -1120,6 +1121,8 @@ int st_db_postgresql_sync_changer(struct st_database_connection * connection, st
 
 		if (status == PGRES_FATAL_ERROR)
 			st_db_postgresql_get_error(result, query);
+		else
+			st_db_postgresql_get_bool(result, 0, 1, &changer->enabled);
 
 		PQclear(result);
 		free(changerid);
@@ -1134,14 +1137,14 @@ int st_db_postgresql_sync_changer(struct st_database_connection * connection, st
 
 	if (changer->id < 0) {
 		const char * query = "insert_changer";
-		st_db_postgresql_prepare(self, query, "INSERT INTO changer VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8) RETURNING id");
+		st_db_postgresql_prepare(self, query, "INSERT INTO changer VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id");
 
 		const char * param2[] = {
 			changer->device, st_changer_status_to_string(changer->status), changer->barcode ? "true" : "false",
-			changer->model, changer->vendor, changer->revision, changer->serial_number, hostid
+			changer->model, changer->vendor, changer->revision, changer->serial_number, hostid, changer->enabled ? "true" : "false",
 		};
 
-		PGresult * result = PQexecPrepared(self->db_con, query, 8, param2, 0, 0, 0);
+		PGresult * result = PQexecPrepared(self->db_con, query, 9, param2, 0, 0, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR) {
@@ -1221,7 +1224,7 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 
 	if (drive->id < 0) {
 		const char * query = "select_drive_by_model_vendor_serialnumber";
-		st_db_postgresql_prepare(self, query, "SELECT id, operationduration, lastclean, driveformat FROM drive WHERE model = $1 AND vendor = $2 AND serialnumber = $3 FOR UPDATE NOWAIT");
+		st_db_postgresql_prepare(self, query, "SELECT id, operationduration, lastclean, driveformat, enable FROM drive WHERE model = $1 AND vendor = $2 AND serialnumber = $3 FOR UPDATE NOWAIT");
 
 		const char * param[] = { drive->model, drive->vendor, drive->serial_number };
 		PGresult * result = PQexecPrepared(self->db_con, query, 3, param, 0, 0, 0);
@@ -1243,6 +1246,8 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 
 			if (densitycode > drive->best_density_code)
 				drive->best_density_code = densitycode;
+
+			st_db_postgresql_get_bool(result, 0, 4, &drive->enabled);
 		}
 
 		PQclear(result);
@@ -1254,7 +1259,7 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 		}
 	} else {
 		const char * query = "select_drive_by_id";
-		st_db_postgresql_prepare(self, query, "SELECT id FROM drive WHERE id = $1 FOR UPDATE NOWAIT");
+		st_db_postgresql_prepare(self, query, "SELECT enable FROM drive WHERE id = $1 FOR UPDATE NOWAIT");
 
 		char * driveid = 0;
 		asprintf(&driveid, "%ld", drive->id);
@@ -1263,11 +1268,15 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 		PGresult * result = PQexecPrepared(self->db_con, query, 1, param, 0, 0, 0);
 		ExecStatusType status = PQresultStatus(result);
 
+		if (status == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+			st_db_postgresql_get_bool(result, 0, 0, &drive->enabled);
+
 		PQclear(result);
 		free(driveid);
 
 		if (status == PGRES_FATAL_ERROR) {
-			st_db_postgresql_get_error(result, query);
 			if (transStatus == PQTRANS_IDLE)
 				st_db_postgresql_cancel_transaction(connection);
 			return 3;
@@ -1282,7 +1291,7 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 		const char * query0 = "select_driveformat_by_densitycode";
 		st_db_postgresql_prepare(self, query0, "SELECT id FROM driveformat WHERE densitycode = $1 LIMIT 1");
 		const char * query1 = "insert_drive";
-		st_db_postgresql_prepare(self, query1, "INSERT INTO drive VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id");
+		st_db_postgresql_prepare(self, query1, "INSERT INTO drive VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id");
 
 		char * densitycode = 0, * driveformat_id = 0;
 		asprintf(&densitycode, "%u", drive->best_density_code);
@@ -1311,9 +1320,9 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 
 		const char * param2[] = {
 			drive->device, drive->scsi_device, st_drive_status_to_string(drive->status), changer_num, op_duration, last_clean,
-			drive->model, drive->vendor, drive->revision, drive->serial_number, changerid, driveformat_id
+			drive->model, drive->vendor, drive->revision, drive->serial_number, changerid, driveformat_id, drive->enabled ? "TRUE" : "FALSE",
 		};
-		result = PQexecPrepared(self->db_con, query1, 12, param2, 0, 0, 0);
+		result = PQexecPrepared(self->db_con, query1, 13, param2, 0, 0, 0);
 		status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
