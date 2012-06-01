@@ -22,45 +22,68 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 01 Jun 2012 15:08:17 +0200                         *
+*  Last modified: Fri, 01 Jun 2012 16:18:09 +0200                         *
 \*************************************************************************/
 
+// CU_add_suite, CU_cleanup_registry, CU_cleanup_registry
+#include <CUnit/CUnit.h>
 // glob, globfree
 #include <glob.h>
-// printf, sscanf
+// printf
 #include <stdio.h>
 // calloc, realloc
 #include <stdlib.h>
-// strcat, strchr, strcpy
-#include <string.h>
 // time
 #include <time.h>
-// readlink
+// _exit
 #include <unistd.h>
 
-#include <stone/database.h>
 #include <stone/library/changer.h>
 #include <stone/library/drive.h>
-#include <stone/log.h>
 
-#include "scan.h"
 #include "scsi.h"
+#include "test.h"
 
-int stcfg_scan() {
+static int test_loaderconfig_init(void);
+static void test_loaderconfig_0(void);
+
+static struct {
+	void (*function)(void);
+	char * name;
+} test_functions[] = {
+	{ test_loaderconfig_0, "loader config #0" },
+
+	{ 0, 0 },
+};
+
+
+static struct st_changer * changers = 0;
+static unsigned int nb_fake_changers = 0;
+static unsigned int nb_real_changers = 0;
+static struct st_drive * drives = 0;
+static unsigned int nb_drives = 0;
+
+
+void test_loaderconfig_0() {
+	if (nb_real_changers < 1)
+		return;
+
+	int status = stcfg_scsi_loaderinfo(changers->device, changers);
+	CU_ASSERT_EQUAL(status, 0);
+}
+
+int test_loaderconfig_init() {
 	glob_t gl;
 	gl.gl_offs = 0;
 	glob("/sys/class/scsi_device/*/device/scsi_tape", GLOB_DOOFFS, 0, &gl);
 
 	if (gl.gl_pathc == 0) {
-		st_log_write_all(st_log_level_error, st_log_type_user_message, "Panic: There is drive found, exit now !!!");
-		return 1;
+		globfree(&gl);
+		return 0;
 	}
 
-	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
-    printf("Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
-
-	struct st_drive * drives = calloc(gl.gl_pathc, sizeof(struct st_drive));
-	unsigned int nb_drives = gl.gl_pathc;
+	drives = calloc(gl.gl_pathc, sizeof(struct st_drive));
+	nb_drives = gl.gl_pathc;
 
 	unsigned int i;
 	for (i = 0; i < gl.gl_pathc; i++) {
@@ -134,15 +157,8 @@ int stcfg_scan() {
 	gl.gl_offs = 0;
 	glob("/sys/class/scsi_changer/*/device", GLOB_DOOFFS, 0, &gl);
 
-	/**
-	 * In the worst case, we have nb_drives changers,
-	 * so we alloc enough memory for this worst case.
-	 */
-	struct st_changer * changers = calloc(nb_drives, sizeof(struct st_changer));
-	unsigned int nb_real_changers = gl.gl_pathc;
-
-	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd changer%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
-	printf("Library: Found %zd changer%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+	changers = calloc(nb_drives, sizeof(struct st_changer));
+	nb_real_changers = gl.gl_pathc;
 
 	for (i = 0; i < gl.gl_pathc; i++) {
 		char link[256];
@@ -189,14 +205,6 @@ int stcfg_scan() {
 	}
 	globfree(&gl);
 
-	// do loaderinfo
-	for (i = 0; i < nb_real_changers; i++)
-		stcfg_scsi_loaderinfo(changers[i].device, changers + i);
-
-	// do tapeinfo
-	for (i = 0; i < nb_drives; i++)
-		stcfg_scsi_tapeinfo(drives[i].scsi_device, drives + i);
-
 	// link drive to real changer
 	unsigned int nb_changer_without_drive = 0;
 	for (i = 0; i < nb_real_changers; i++) {
@@ -216,7 +224,7 @@ int stcfg_scan() {
 	}
 
 	// link stand-alone drive to fake changer
-	unsigned int nb_fake_changers = 0;
+	nb_fake_changers = 0;
 	for (i = nb_real_changers; i < nb_drives; i++) {
 		unsigned j;
 		for (j = 0; j < nb_drives; j++) {
@@ -241,38 +249,24 @@ int stcfg_scan() {
 		}
 	}
 
-	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %u stand-alone drive%s", nb_fake_changers, nb_fake_changers != 1 ? "s" : "");
-	printf("Library: Found %u stand-alone drive%s", nb_fake_changers, nb_fake_changers != 1 ? "s" : "");
-
-	if (drives)
-		free(drives);
-
-	struct st_database * db = st_db_get_default_db();
-	if (!db) {
-		printf("Warning, there is no database configured\n");
-		return 1;
-	}
-
-	struct st_database_connection * db_con = db->ops->connect(db, 0);
-
-	if (db_con) {
-		printf("Synchronization with database\n");
-
-		int failed = 0;
-		for (i = 0; db_con && i < nb_real_changers + nb_fake_changers; i++)
-			failed = db_con->ops->sync_changer(db_con, changers + i);
-
-		db_con->ops->close(db_con);
-		db_con->ops->free(db_con);
-
-		if (failed)
-			printf("Synchronization failed with status = %d\n", failed);
-		else
-			printf("Synchronization finished with status = OK\n");
-	} else {
-		printf("Error: Failed to connect to database\n");
-	}
-
 	return 0;
+}
+
+void test_stoneconfig_add_suite() {
+	CU_pSuite suite = CU_add_suite("Stone-config: loader-info", test_loaderconfig_init, 0);
+	if (!suite) {
+		CU_cleanup_registry();
+		printf("Error while adding suite stone-config because %s\n", CU_get_error_msg());
+		_exit(3);
+	}
+
+	int i;
+	for (i = 0; test_functions[i].name; i++) {
+		if (!CU_add_test(suite, test_functions[i].name, test_functions[i].function)) {
+			CU_cleanup_registry();
+			printf("Error while adding test function '%s' stone-config because %s\n", test_functions[i].name, CU_get_error_msg());
+			_exit(3);
+		}
+	}
 }
 
