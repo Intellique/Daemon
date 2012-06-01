@@ -22,12 +22,12 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 29 May 2012 13:56:31 +0200                         *
+*  Last modified: Fri, 01 Jun 2012 10:28:38 +0200                         *
 \*************************************************************************/
 
 // glob
 #include <glob.h>
-// sscanf
+// printf, sscanf
 #include <stdio.h>
 // calloc, realloc
 #include <stdlib.h>
@@ -57,6 +57,7 @@ int stcfg_scan() {
 	}
 
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+    printf("Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
 
 	struct st_drive * drives = calloc(gl.gl_pathc, sizeof(struct st_drive));
 	unsigned int nb_drives = gl.gl_pathc;
@@ -141,6 +142,7 @@ int stcfg_scan() {
 	unsigned int nb_real_changers = gl.gl_pathc;
 
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd changer%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+    printf("Library: Found %zd changer%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
 
 	for (i = 0; i < gl.gl_pathc; i++) {
 		char link[256];
@@ -240,6 +242,7 @@ int stcfg_scan() {
 	}
 
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %u stand-alone drive%s", nb_fake_changers, nb_fake_changers != 1 ? "s" : "");
+    printf("Library: Found %u stand-alone drive%s", nb_fake_changers, nb_fake_changers != 1 ? "s" : "");
 
 	if (drives)
 		free(drives);
@@ -248,12 +251,22 @@ int stcfg_scan() {
 	struct st_database_connection * db_con = db->ops->connect(db, 0);
 
 	if (db_con) {
+        printf("Synchronization with database\n");
+
+        int failed = 0;
 		for (i = 0; db_con && i < nb_real_changers + nb_fake_changers; i++)
-			db_con->ops->sync_changer(db_con, changers + i);
+			failed = db_con->ops->sync_changer(db_con, changers + i);
 
 		db_con->ops->close(db_con);
 		db_con->ops->free(db_con);
-	}
+
+        if (failed)
+            printf("Synchronization failed with status = %d\n", failed);
+        else
+            printf("Synchronization finished with status = OK\n");
+	} else {
+        printf("Error: Failed to connect to database\n");
+    }
 
 	return 0;
 }

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 25 May 2012 18:40:55 +0200                         *
+*  Last modified: Fri, 01 Jun 2012 10:29:04 +0200                         *
 \*************************************************************************/
 
 // getopt_long
@@ -45,26 +45,29 @@ int main(int argc, char ** argv) {
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone config, version: %s, build: %s %s", STONE_VERSION, __DATE__, __TIME__);
 
 	enum {
-		OPT_CONFIG   = 'c',
-		OPT_HELP     = 'h',
-		OPT_VERSION  = 'V',
+		OPT_CONFIG  = 'c',
+		OPT_HELP    = 'h',
+        OPT_VERBOSE = 'v',
+		OPT_VERSION = 'V',
 	};
 
 	static int option_index = 0;
 	static struct option long_options[] = {
-		{ "config",   1, 0, OPT_CONFIG },
-		{ "help",     0, 0, OPT_HELP },
-		{ "version",  0, 0, OPT_VERSION },
+		{ "config",  1, 0, OPT_CONFIG },
+		{ "help",    0, 0, OPT_HELP },
+        { "verbose", 0, 0, OPT_VERBOSE },
+		{ "version", 0, 0, OPT_VERSION },
 
 		{0, 0, 0, 0},
 	};
 
 	char * config_file = DAEMON_CONFIG_FILE;
+    short verbose = 0;
 
 	// parse option
 	int opt;
 	do {
-		opt = getopt_long(argc, argv, "c:hV", long_options, &option_index);
+		opt = getopt_long(argc, argv, "c:hvV", long_options, &option_index);
 
 		switch (opt) {
 			case -1:
@@ -81,6 +84,11 @@ int main(int argc, char ** argv) {
 				st_show_help();
 				return 0;
 
+            case OPT_VERBOSE:
+                if (verbose < 2)
+                    verbose++;
+                break;
+
 			case OPT_VERSION:
 				st_log_disable_display_log();
 
@@ -94,18 +102,25 @@ int main(int argc, char ** argv) {
 	} while (opt > -1);
 
 	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Parsing option: ok");
+    if (verbose > 1)
+        printf("Parsing option ok\n");
 
 	// read configuration
 	if (st_conf_read_config(config_file)) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Error while parsing '%s'", config_file);
+        printf("Error while parsing '%s'", config_file);
 		return 4;
 	}
 
 	// check if config file contains a database
 	if (!st_db_get_default_db()) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: There is no database into config file '%s'", config_file);
+        printf("Fatal error: There is no database into config file '%s'", config_file);
 		return 5;
 	}
+
+    if (verbose > 0)
+        printf("Detect hardware configuration\n");
 
 	stcfg_scan();
 
