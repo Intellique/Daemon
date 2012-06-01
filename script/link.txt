@@ -1,0 +1,2 @@
+src/stone-config/scsi.c -> src/test/stone-config/scsi.c
+src/stone-config/scsi.h -> src/test/stone-config/scsi.h
