@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 01 Jun 2012 17:59:51 +0200                         *
+*  Last modified: Mon, 04 Jun 2012 10:03:41 +0200                         *
 \*************************************************************************/
 
 // CU_basic_run_tests
@@ -40,6 +40,8 @@
 // printf
 #include <stdio.h>
 
+#include "libstone/test.h"
+#include "log.h"
 #include "stone-config/test.h"
 
 int main(int argc, char * argv[]) {
@@ -130,6 +132,9 @@ int main(int argc, char * argv[]) {
 	}
 
 	test_stoneconfig_add_suite();
+    test_libstone_add_suite();
+
+    st_log_disable_display_log();
 
 	switch (interface) {
 		case interface_basic:

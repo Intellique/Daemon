@@ -22,14 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 29 May 2012 12:38:48 +0200                         *
+*  Last modified: Mon, 04 Jun 2012 09:49:42 +0200                         *
 \*************************************************************************/
 
-#ifndef __STONECONFIG_SCSI_H__
-#define __STONECONFIG_SCSI_H__
+#ifndef __TEST_LIBSTONE_CHECKSUM_H__
+#define __TEST_LIBSTONE_CHECKSUM_H__
 
-int stcfg_scsi_loaderinfo(const char * filename, struct st_changer * changer);
-int stcfg_scsi_tapeinfo(const char * filename, struct st_drive * drive);
+void test_libstone_checksum_add_suite(void);
 
 #endif
 

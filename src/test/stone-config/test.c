@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 01 Jun 2012 16:18:09 +0200                         *
+*  Last modified: Mon, 04 Jun 2012 09:42:29 +0200                         *
 \*************************************************************************/
 
 // CU_add_suite, CU_cleanup_registry, CU_cleanup_registry
@@ -44,14 +44,19 @@
 #include "scsi.h"
 #include "test.h"
 
-static int test_loaderconfig_init(void);
-static void test_loaderconfig_0(void);
+static int test_stoneconfig_finished(void);
+static int test_stoneconfig_init(void);
+static void test_stoneconfig_driver_0(void);
+static void test_stoneconfig_loader_0(void);
+static void test_stoneconfig_loader_1(void);
 
 static struct {
 	void (*function)(void);
 	char * name;
 } test_functions[] = {
-	{ test_loaderconfig_0, "loader config #0" },
+	{ test_stoneconfig_loader_0, "loader config #0" },
+	{ test_stoneconfig_loader_1, "loader config #1" },
+    { test_stoneconfig_driver_0, "drive config #0" },
 
 	{ 0, 0 },
 };
@@ -64,15 +69,65 @@ static struct st_drive * drives = 0;
 static unsigned int nb_drives = 0;
 
 
-void test_loaderconfig_0() {
-	if (nb_real_changers < 1)
-		return;
+int test_stoneconfig_finished() {
+    unsigned int i;
+    for (i = 0; i < nb_real_changers + nb_fake_changers; i++) {
+        struct st_changer * ch = changers + i;
 
-	int status = stcfg_scsi_loaderinfo(changers->device, changers);
-	CU_ASSERT_EQUAL(status, 0);
+        if (ch->device)
+            free(ch->device);
+        ch->device = 0;
+        if (ch->model)
+            free(ch->model);
+        ch->model = 0;
+        if (ch->vendor)
+            free(ch->vendor);
+        ch->vendor = 0;
+        if (ch->revision)
+            free(ch->revision);
+        ch->revision = 0;
+        if (ch->serial_number)
+            free(ch->serial_number);
+        ch->serial_number = 0;
+
+        unsigned int j;
+        for (j = 0; j < ch->nb_drives; j++) {
+            struct st_drive * dr = ch->drives + j;
+
+            if (dr->device)
+                free(dr->device);
+            dr->device = 0;
+            if (dr->scsi_device)
+                free(dr->scsi_device);
+            dr->scsi_device = 0;
+            if (dr->model)
+                free(dr->model);
+            dr->model = 0;
+            if (dr->vendor)
+                free(dr->vendor);
+            dr->vendor = 0;
+            if (dr->revision)
+                free(dr->revision);
+            dr->revision = 0;
+            if (dr->serial_number)
+                free(dr->serial_number);
+            dr->serial_number = 0;
+
+            dr->changer = 0;
+        }
+
+        if (ch->drives)
+            free(ch->drives);
+        ch->drives = 0;
+    }
+
+    if (nb_real_changers + nb_fake_changers > 0)
+        free(changers);
+
+    return 0;
 }
 
-int test_loaderconfig_init() {
+int test_stoneconfig_init() {
 	glob_t gl;
 	gl.gl_offs = 0;
 	glob("/sys/class/scsi_device/*/device/scsi_tape", GLOB_DOOFFS, 0, &gl);
@@ -253,7 +308,7 @@ int test_loaderconfig_init() {
 }
 
 void test_stoneconfig_add_suite() {
-	CU_pSuite suite = CU_add_suite("Stone-config: loader-info", test_loaderconfig_init, 0);
+	CU_pSuite suite = CU_add_suite("Stone-config: loader-info", test_stoneconfig_init, test_stoneconfig_finished);
 	if (!suite) {
 		CU_cleanup_registry();
 		printf("Error while adding suite stone-config because %s\n", CU_get_error_msg());
@@ -268,5 +323,31 @@ void test_stoneconfig_add_suite() {
 			_exit(3);
 		}
 	}
+}
+
+
+void test_stoneconfig_driver_0() {
+	if (nb_real_changers < 1 && changers->nb_drives < 1)
+		return;
+
+    struct st_drive * dr = changers->drives;
+    int status = stcfg_scsi_tapeinfo(dr->scsi_device, dr);
+	CU_ASSERT_EQUAL(status, 0);
+}
+
+void test_stoneconfig_loader_0() {
+	if (nb_real_changers < 1)
+		return;
+
+	int status = stcfg_scsi_loaderinfo(changers->device, changers);
+	CU_ASSERT_EQUAL(status, 0);
+}
+
+void test_stoneconfig_loader_1() {
+	if (nb_real_changers < 1)
+		return;
+
+	int status = stcfg_scsi_loaderinfo("/dev/foo", changers);
+	CU_ASSERT_EQUAL(status, 1);
 }
 
