@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 13 Mar 2012 18:56:10 +0100                         *
+*  Last modified: Mon, 04 Jun 2012 11:45:47 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -91,14 +91,14 @@ static struct st_checksum_ops st_checksum_helper_ops = {
 
 
 char * st_checksum_compute(const char * checksum, const char * data, ssize_t length) {
-	if (!checksum || !data || length == 0) {
+	if (!checksum || !data || length < 0) {
 		st_log_write_all(st_log_level_error, st_log_type_checksum, "compute error");
 		if (!checksum)
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "because checksum is null");
 		if (!checksum)
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "because data is null");
-		if (length < 1)
-			st_log_write_all(st_log_level_error, st_log_type_checksum, "because length is lower than 1 (length=%zd)", length);
+		if (length < 0)
+			st_log_write_all(st_log_level_error, st_log_type_checksum, "because length is lower than 0 (length=%zd)", length);
 		return 0;
 	}
 
@@ -110,7 +110,8 @@ char * st_checksum_compute(const char * checksum, const char * data, ssize_t len
 
 	struct st_checksum chck;
 	driver->new_checksum(&chck);
-	chck.ops->update(&chck, data, length);
+    if (length > 0)
+        chck.ops->update(&chck, data, length);
 
 	char * digest = chck.ops->digest(&chck);
 	chck.ops->free(&chck);

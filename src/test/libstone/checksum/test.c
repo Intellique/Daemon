@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Jun 2012 10:00:49 +0200                         *
+*  Last modified: Mon, 04 Jun 2012 11:43:38 +0200                         *
 \*************************************************************************/
 
 #include "test.h"
@@ -39,12 +39,22 @@
 #include <stone/checksum.h>
 
 static void test_libstone_checksum_0(void);
+static void test_libstone_checksum_1(void);
+static void test_libstone_checksum_2(void);
+static void test_libstone_checksum_3(void);
+static void test_libstone_checksum_4(void);
+static void test_libstone_checksum_5(void);
 
 static struct {
 	void (*function)(void);
 	char * name;
 } test_functions[] = {
-    { test_libstone_checksum_0, "libstone: cheksum: md5 #0" },
+    { test_libstone_checksum_0, "libstone: checksum: md5 #0" },
+    { test_libstone_checksum_1, "libstone: checksum: sha1 #0" },
+    { test_libstone_checksum_2, "libstone: checksum: checksum is null" },
+    { test_libstone_checksum_3, "libstone: checksum: data is null" },
+    { test_libstone_checksum_4, "libstone: checksum: length is null" },
+    { test_libstone_checksum_5, "libstone: checksum: length is lower than 0" },
 
 	{ 0, 0 },
 };
@@ -74,5 +84,34 @@ void test_libstone_checksum_0() {
     CU_ASSERT_PTR_NOT_NULL_FATAL(digest);
     CU_ASSERT_STRING_EQUAL(digest, "9fe77772b085e3533101d59d33a51f19");
     free(digest);
+}
+
+void test_libstone_checksum_1() {
+    char * digest = st_checksum_compute("sha1", "Hello, world!!!", 15);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(digest);
+    CU_ASSERT_STRING_EQUAL(digest, "91a93333a234aa14b2386dee4f644579c64c29a1");
+    free(digest);
+}
+
+void test_libstone_checksum_2() {
+    char * digest = st_checksum_compute(0, "Hello, world!!!", 15);
+    CU_ASSERT_PTR_NULL(digest);
+}
+
+void test_libstone_checksum_3() {
+    char * digest = st_checksum_compute("sha256", 0, 15);
+    CU_ASSERT_PTR_NULL(digest);
+}
+
+void test_libstone_checksum_4() {
+    char * digest = st_checksum_compute("sha256", "", 0);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(digest);
+    CU_ASSERT_STRING_EQUAL(digest, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+    free(digest);
+}
+
+void test_libstone_checksum_5() {
+    char * digest = st_checksum_compute("sha256", 0, 15);
+    CU_ASSERT_PTR_NULL(digest);
 }
 
