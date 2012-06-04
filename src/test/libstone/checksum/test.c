@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Jun 2012 11:43:38 +0200                         *
+*  Last modified: Mon, 04 Jun 2012 18:43:30 +0200                         *
 \*************************************************************************/
 
 #include "test.h"
@@ -38,23 +38,39 @@
 
 #include <stone/checksum.h>
 
-static void test_libstone_checksum_0(void);
-static void test_libstone_checksum_1(void);
-static void test_libstone_checksum_2(void);
-static void test_libstone_checksum_3(void);
-static void test_libstone_checksum_4(void);
-static void test_libstone_checksum_5(void);
+static void test_libstone_checksum_compute_0(void);
+static void test_libstone_checksum_compute_1(void);
+static void test_libstone_checksum_compute_2(void);
+static void test_libstone_checksum_compute_3(void);
+static void test_libstone_checksum_compute_4(void);
+static void test_libstone_checksum_compute_5(void);
+
+static void test_libstone_checksum_convert_0(void);
+static void test_libstone_checksum_convert_1(void);
+static void test_libstone_checksum_convert_2(void);
+
+static void test_libstone_checksum_get_driver_0(void);
+static void test_libstone_checksum_get_driver_1(void);
+static void test_libstone_checksum_get_driver_2(void);
 
 static struct {
 	void (*function)(void);
 	char * name;
 } test_functions[] = {
-    { test_libstone_checksum_0, "libstone: checksum: md5 #0" },
-    { test_libstone_checksum_1, "libstone: checksum: sha1 #0" },
-    { test_libstone_checksum_2, "libstone: checksum: checksum is null" },
-    { test_libstone_checksum_3, "libstone: checksum: data is null" },
-    { test_libstone_checksum_4, "libstone: checksum: length is null" },
-    { test_libstone_checksum_5, "libstone: checksum: length is lower than 0" },
+    { test_libstone_checksum_compute_0, "libstone: checksum compute: md5 #0" },
+    { test_libstone_checksum_compute_1, "libstone: checksum compute: sha1 #0" },
+    { test_libstone_checksum_compute_2, "libstone: checksum compute: checksum is null" },
+    { test_libstone_checksum_compute_3, "libstone: checksum compute: data is null" },
+    { test_libstone_checksum_compute_4, "libstone: checksum compute: length is null" },
+    { test_libstone_checksum_compute_5, "libstone: checksum compute: length is lower than 0" },
+
+    { test_libstone_checksum_convert_0, "libstone: checksum convert #0" },
+    { test_libstone_checksum_convert_1, "libstone: checksum convert #1" },
+    { test_libstone_checksum_convert_2, "libstone: checksum convert #2" },
+
+    { test_libstone_checksum_get_driver_0, "libstone: checksum get driver #0" },
+    { test_libstone_checksum_get_driver_1, "libstone: checksum get driver #1" },
+    { test_libstone_checksum_get_driver_2, "libstone: checksum get driver #2" },
 
 	{ 0, 0 },
 };
@@ -79,39 +95,77 @@ void test_libstone_checksum_add_suite() {
 }
 
 
-void test_libstone_checksum_0() {
+void test_libstone_checksum_compute_0() {
     char * digest = st_checksum_compute("md5", "Hello, world!!!", 15);
     CU_ASSERT_PTR_NOT_NULL_FATAL(digest);
     CU_ASSERT_STRING_EQUAL(digest, "9fe77772b085e3533101d59d33a51f19");
     free(digest);
 }
 
-void test_libstone_checksum_1() {
+void test_libstone_checksum_compute_1() {
     char * digest = st_checksum_compute("sha1", "Hello, world!!!", 15);
     CU_ASSERT_PTR_NOT_NULL_FATAL(digest);
     CU_ASSERT_STRING_EQUAL(digest, "91a93333a234aa14b2386dee4f644579c64c29a1");
     free(digest);
 }
 
-void test_libstone_checksum_2() {
+void test_libstone_checksum_compute_2() {
     char * digest = st_checksum_compute(0, "Hello, world!!!", 15);
     CU_ASSERT_PTR_NULL(digest);
 }
 
-void test_libstone_checksum_3() {
+void test_libstone_checksum_compute_3() {
     char * digest = st_checksum_compute("sha256", 0, 15);
     CU_ASSERT_PTR_NULL(digest);
 }
 
-void test_libstone_checksum_4() {
+void test_libstone_checksum_compute_4() {
     char * digest = st_checksum_compute("sha256", "", 0);
     CU_ASSERT_PTR_NOT_NULL_FATAL(digest);
     CU_ASSERT_STRING_EQUAL(digest, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
     free(digest);
 }
 
-void test_libstone_checksum_5() {
+void test_libstone_checksum_compute_5() {
     char * digest = st_checksum_compute("sha256", 0, 15);
     CU_ASSERT_PTR_NULL(digest);
+}
+
+void test_libstone_checksum_convert_0() {
+    unsigned char digest[] = "abc";
+    char hex_digest[7];
+
+    st_checksum_convert_to_hex(digest, 3, hex_digest);
+    CU_ASSERT_STRING_EQUAL(hex_digest, "616263");
+}
+
+void test_libstone_checksum_convert_1() {
+    char hex_digest[7] = "";
+
+    st_checksum_convert_to_hex(0, 3, hex_digest);
+    CU_ASSERT_STRING_EQUAL(hex_digest, "");
+}
+
+void test_libstone_checksum_convert_2() {
+    unsigned char digest[] = "abc";
+    char hex_digest[7] = "";
+
+    st_checksum_convert_to_hex(digest, 0, hex_digest);
+    CU_ASSERT_STRING_EQUAL(hex_digest, "");
+}
+
+void test_libstone_checksum_get_driver_0() {
+    struct st_checksum_driver * driver = st_checksum_get_driver("sha1");
+    CU_ASSERT_PTR_NOT_NULL(driver);
+}
+
+void test_libstone_checksum_get_driver_1() {
+    struct st_checksum_driver * driver = st_checksum_get_driver("foo");
+    CU_ASSERT_PTR_NULL(driver);
+}
+
+void test_libstone_checksum_get_driver_2() {
+    struct st_checksum_driver * driver = st_checksum_get_driver(0);
+    CU_ASSERT_PTR_NULL(driver);
 }
 

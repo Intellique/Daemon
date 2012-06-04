@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Jun 2012 11:45:47 +0200                         *
+*  Last modified: Mon, 04 Jun 2012 18:43:54 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -142,6 +142,9 @@ void st_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * h
 }
 
 struct st_checksum_driver * st_checksum_get_driver(const char * driver) {
+    if (!driver)
+        return 0;
+
 	static pthread_mutex_t lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
 	int old_state;
