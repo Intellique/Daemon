@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 31 May 2012 16:34:05 +0200                         *
+*  Last modified: Mon, 04 Jun 2012 12:23:25 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -68,7 +68,7 @@ static char * st_db_postgresql_get_host(struct st_database_connection * connecti
 static int st_db_postgresql_get_nb_new_jobs(struct st_database_connection * db, long * nb_new_jobs, time_t since, long last_max_jobs);
 static int st_db_postgresql_get_new_jobs(struct st_database_connection * db, struct st_job ** jobs, unsigned int nb_jobs, time_t since, long last_max_jobs);
 static int st_db_postgresql_get_pool(struct st_database_connection * db, struct st_pool * pool, long id, const char * uuid);
-static int st_db_postgresql_get_tape(struct st_database_connection * db, struct st_tape * tape, long id, const char * uuid);
+static int st_db_postgresql_get_tape(struct st_database_connection * db, struct st_tape * tape, long id, const char * uuid, const char * label);
 static int st_db_postgresql_get_tape_format(struct st_database_connection * db, struct st_tape_format * tape_format, long id, unsigned char density_code);
 static int st_db_postgresql_get_user(struct st_database_connection * db, struct st_user * user, long user_id, const char * login);
 static int st_db_postgresql_is_changer_contain_drive(struct st_database_connection * db, struct st_changer * changer, struct st_drive * drive);
@@ -763,7 +763,7 @@ int st_db_postgresql_get_pool(struct st_database_connection * connection, struct
 	return status != PGRES_TUPLES_OK || pool->id == -1;
 }
 
-int st_db_postgresql_get_tape(struct st_database_connection * connection, struct st_tape * tape, long id, const char * uuid) {
+int st_db_postgresql_get_tape(struct st_database_connection * connection, struct st_tape * tape, long id, const char * uuid, const char * label) {
 	if (!connection || !tape)
 		return 1;
 
@@ -777,6 +777,12 @@ int st_db_postgresql_get_tape(struct st_database_connection * connection, struct
 		st_db_postgresql_prepare(self, query, "SELECT * FROM tape WHERE uuid = $1 LIMIT 1");
 
 		const char * param[] = { uuid };
+		result = PQexecPrepared(self->db_con, query, 1, param, 0, 0, 0);
+	} else if (label) {
+		query = "select_tape_by_label";
+		st_db_postgresql_prepare(self, query, "SELECT * FROM tape WHERE label = $1 LIMIT 1");
+
+		const char * param[] = { label };
 		result = PQexecPrepared(self->db_con, query, 1, param, 0, 0, 0);
 	} else {
 		query = "select_tape_by_id";
@@ -843,7 +849,7 @@ int st_db_postgresql_get_tape_format(struct st_database_connection * connection,
 	PGresult * result = 0;
 
 	const char * query;
-	if (id < -1) {
+	if (id > -1) {
 		query = "select_tapeformat_by_id";
 		st_db_postgresql_prepare(self, query, "SELECT * FROM tapeformat WHERE id = $1 LIMIT 1");
 

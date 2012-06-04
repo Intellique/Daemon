@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 May 2012 02:29:42 +0200                         *
+*  Last modified: Mon, 04 Jun 2012 12:50:15 +0200                         *
 \*************************************************************************/
 
 // open
@@ -233,7 +233,9 @@ void * st_realchanger_setup2(void * drive) {
 	struct st_changer * ch = dr->changer;
 
 	if (!dr->is_door_opened) {
-		dr->slot->tape = st_tape_new(dr);
+		dr->slot->tape = st_tape_get_by_label(dr->slot->volume_name);
+		if (!dr->slot->tape)
+			dr->slot->tape = st_tape_new(dr);
 
 		struct st_slot * sl = 0;
 		unsigned int i;
@@ -271,19 +273,30 @@ void * st_realchanger_setup2(void * drive) {
 		struct st_slot * sl = ch->slots + i;
 		if (sl->lock->ops->trylock(sl->lock))
 			continue;
-		if (sl->full && !sl->tape) {
-			ch->lock->ops->lock(ch->lock);
-			st_realchanger_load(ch, sl, dr);
-			ch->lock->ops->unlock(ch->lock);
 
-			dr->ops->reset(dr);
-			dr->slot->tape = st_tape_new(dr);
-			dr->ops->eject(dr);
-
-			ch->lock->ops->lock(ch->lock);
-			st_realchanger_unload(ch, dr, sl);
-			ch->lock->ops->unlock(ch->lock);
+		if (sl->tape || !sl->full) {
+			sl->lock->ops->unlock(sl->lock);
+			continue;
 		}
+
+		sl->tape = st_tape_get_by_label(sl->volume_name);
+		if (sl->tape) {
+			sl->lock->ops->unlock(sl->lock);
+			continue;
+		}
+
+		ch->lock->ops->lock(ch->lock);
+		st_realchanger_load(ch, sl, dr);
+		ch->lock->ops->unlock(ch->lock);
+
+		dr->ops->reset(dr);
+		dr->slot->tape = st_tape_new(dr);
+		dr->ops->eject(dr);
+
+		ch->lock->ops->lock(ch->lock);
+		st_realchanger_unload(ch, dr, sl);
+		ch->lock->ops->unlock(ch->lock);
+
 		sl->lock->ops->unlock(sl->lock);
 	}
 

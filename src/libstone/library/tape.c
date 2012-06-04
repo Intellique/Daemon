@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 19 Apr 2012 15:31:04 +0200                         *
+*  Last modified: Mon, 04 Jun 2012 12:04:10 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -100,7 +100,7 @@ static const struct st_tape_status2 {
 };
 
 
-static void st_tape_retrieve(struct st_tape ** tape, long id, const char * uuid);
+static void st_tape_retrieve(struct st_tape ** tape, long id, const char * uuid, const char * label);
 static void st_tape_format_retrieve(struct st_tape_format ** format, long id, unsigned char density_code);
 static struct st_pool * st_pool_create(const char * uuid, const char * name, struct st_tape_format * format);
 static void st_pool_retrieve(struct st_pool ** pool, long id, const char * uuid);
@@ -197,7 +197,32 @@ struct st_tape * st_tape_get_by_id(long id) {
 		}
 
 	if (!tape)
-		st_tape_retrieve(&tape, id, 0);
+		st_tape_retrieve(&tape, id, 0, 0);
+
+	pthread_mutex_unlock(&st_tape_lock);
+	pthread_setcancelstate(old_state, 0);
+
+	return tape;
+}
+
+struct st_tape * st_tape_get_by_label(const char * label) {
+	if (!label)
+		return 0;
+
+	int old_state;
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
+	pthread_mutex_lock(&st_tape_lock);
+
+	struct st_tape * tape = 0;
+	unsigned int i;
+	for (i = 0; i < st_tape_nb_tapes; i++)
+		if (!strcmp(label, st_tape_tapes[i]->label)) {
+			tape = st_tape_tapes[i];
+			break;
+		}
+
+	if (!tape)
+		st_tape_retrieve(&tape, -1, 0, label);
 
 	pthread_mutex_unlock(&st_tape_lock);
 	pthread_setcancelstate(old_state, 0);
@@ -219,7 +244,7 @@ struct st_tape * st_tape_get_by_uuid(const char * uuid) {
 		}
 
 	if (!tape)
-		st_tape_retrieve(&tape, -1, uuid);
+		st_tape_retrieve(&tape, -1, uuid, 0);
 
 	pthread_mutex_unlock(&st_tape_lock);
 	pthread_setcancelstate(old_state, 0);
@@ -387,14 +412,14 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 	return tape;
 }
 
-void st_tape_retrieve(struct st_tape ** tape, long id, const char * uuid) {
+void st_tape_retrieve(struct st_tape ** tape, long id, const char * uuid, const char * label) {
 	struct st_database * db = st_db_get_default_db();
 	struct st_database_connection * con = db->ops->connect(db, 0);
 	if (con) {
 		*tape = malloc(sizeof(struct st_tape));
 		bzero(*tape, sizeof(struct st_tape));
 
-		if (con->ops->get_tape(con, *tape, id, uuid)) {
+		if (con->ops->get_tape(con, *tape, id, uuid, label)) {
 			free(*tape);
 			tape = 0;
 		} else {
