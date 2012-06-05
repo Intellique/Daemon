@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Apr 2012 12:51:24 +0200                         *
+*  Last modified: Tue, 05 Jun 2012 17:21:00 +0200                         *
 \*************************************************************************/
 
 #include <errno.h>
@@ -56,11 +56,15 @@ struct st_tar_private_out {
 	off_t position;
 	ssize_t size;
 	int last_errno;
+
+	// multi volume
+	void * remain_header;
+	ssize_t remain_size;
 };
 
-static int st_tar_out_add_file(struct st_tar_out * f, const char * filename);
-static int st_tar_out_add_label(struct st_tar_out * f, const char * label);
-static int st_tar_out_add_link(struct st_tar_out * f, const char * src, const char * target, struct st_tar_header * header);
+static enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * filename);
+static enum st_tar_out_status st_tar_out_add_label(struct st_tar_out * f, const char * label);
+static enum st_tar_out_status st_tar_out_add_link(struct st_tar_out * f, const char * src, const char * target, struct st_tar_header * header);
 static int st_tar_out_close(struct st_tar_out * f);
 static void st_tar_out_compute_checksum(const void * header, char * checksum);
 static void st_tar_out_compute_link(struct st_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile);
@@ -73,11 +77,13 @@ static ssize_t st_tar_out_get_block_size(struct st_tar_out * f);
 static ssize_t st_tar_out_get_file_position(struct st_tar_out * f);
 static void st_tar_out_gid2name(char * name, ssize_t length, gid_t uid);
 static int st_tar_out_last_errno(struct st_tar_out * f);
+static void st_tar_out_new_volume(struct st_tar_out * f, struct st_stream_writer * writer);
 static ssize_t st_tar_out_position(struct st_tar_out * f);
 static int st_tar_out_restart_file(struct st_tar_out * f, const char * filename, ssize_t position);
 static const char * st_tar_out_skip_leading_slash(const char * str);
 static void st_tar_out_uid2name(char * name, ssize_t length, uid_t uid);
 static ssize_t st_tar_out_write(struct st_tar_out * f, const void * data, ssize_t length);
+static enum st_tar_out_status st_tar_out_write_header(struct st_tar_private_out * f, void * data, ssize_t length);
 
 static struct st_tar_out_ops st_tar_out_ops = {
 	.add_file           = st_tar_out_add_file,
@@ -90,6 +96,7 @@ static struct st_tar_out_ops st_tar_out_ops = {
 	.get_file_position  = st_tar_out_get_file_position,
 	.free               = st_tar_out_free,
 	.last_errno         = st_tar_out_last_errno,
+	.new_volume         = st_tar_out_new_volume,
 	.position           = st_tar_out_position,
 	.restart_file       = st_tar_out_restart_file,
 	.write              = st_tar_out_write,
@@ -105,6 +112,8 @@ struct st_tar_out * st_tar_new_out(struct st_stream_writer * io) {
 	data->position = 0;
 	data->size = 0;
 	data->last_errno = 0;
+	data->remain_header = 0;
+	data->remain_size = 0;
 
 	struct st_tar_out * self = malloc(sizeof(struct st_tar_out));
 	self->ops  = &st_tar_out_ops;
@@ -113,20 +122,11 @@ struct st_tar_out * st_tar_new_out(struct st_stream_writer * io) {
 	return self;
 }
 
-int st_tar_out_add_file(struct st_tar_out * f, const char * filename) {
-	if (access(filename, F_OK)) {
-		//mtar_verbose_printf("Can access to file: %s\n", filename);
-		return 1;
-	}
-	if (access(filename, R_OK)) {
-		//mtar_verbose_printf("Can read file: %s\n", filename);
-		return 1;
-	}
-
+enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * filename) {
 	struct stat sfile;
 	if (lstat(filename, &sfile)) {
 		//mtar_verbose_printf("An unexpected error occured while getting information about: %s\n", filename);
-		return 1;
+		return ST_TAR_OUT_ERROR;
 	}
 
 	ssize_t block_size = 512;
@@ -213,22 +213,13 @@ int st_tar_out_add_file(struct st_tar_out * f, const char * filename) {
 	format->position = 0;
 	format->size = sfile.st_size;
 
-	if (block_size > format->io->ops->get_available_size(format->io)) {
-		format->last_errno = ENOSPC;
-		return -1;
-	}
-
-	ssize_t nbWrite = format->io->ops->write(format->io, header, block_size);
-
-	free(header);
-
-	return block_size != nbWrite ? -1 : 0;
+	return st_tar_out_write_header(format, header, block_size);
 }
 
-int st_tar_out_add_label(struct st_tar_out * f, const char * label) {
+enum st_tar_out_status st_tar_out_add_label(struct st_tar_out * f, const char * label) {
 	if (!label) {
 		//mtar_verbose_printf("Label should be defined\n");
-		return 1;
+		return ST_TAR_OUT_ERROR;
 	}
 
 	struct st_tar * header = malloc(512);
@@ -243,23 +234,14 @@ int st_tar_out_add_label(struct st_tar_out * f, const char * label) {
 	format->position = 0;
 	format->size = 0;
 
-	ssize_t nbWrite = format->io->ops->write(format->io, header, 512);
-
-	free(header);
-
-	return 512 != nbWrite ? -1 : 0;
+	return st_tar_out_write_header(format, header, 512);
 }
 
-int st_tar_out_add_link(struct st_tar_out * f, const char * src, const char * target, struct st_tar_header * h_out) {
-	if (access(src, F_OK)) {
-		//mtar_verbose_printf("Can access to file: %s\n", src);
-		return 1;
-	}
-
+enum st_tar_out_status st_tar_out_add_link(struct st_tar_out * f, const char * src, const char * target, struct st_tar_header * h_out) {
 	struct stat sfile;
 	if (stat(src, &sfile)) {
 		//mtar_verbose_printf("An unexpected error occured while getting information about: %s\n", src);
-		return 1;
+		return ST_TAR_OUT_ERROR;
 	}
 
 	ssize_t block_size = 512;
@@ -287,11 +269,7 @@ int st_tar_out_add_link(struct st_tar_out * f, const char * src, const char * ta
 	format->position = 0;
 	format->size = 0;
 
-	ssize_t nbWrite = format->io->ops->write(format->io, header, block_size);
-
-	free(header);
-
-	return block_size != nbWrite ? -1 : 0;
+	return st_tar_out_write_header(format, header, block_size);
 }
 
 int st_tar_out_close(struct st_tar_out * f) {
@@ -366,9 +344,9 @@ int st_tar_out_end_of_file(struct st_tar_out * f) {
 		char * buffer = malloc(512);
 		bzero(buffer, 512 - mod);
 
-		ssize_t nbWrite = format->io->ops->write(format->io, buffer, 512 - mod);
+		ssize_t nb_write = format->io->ops->write(format->io, buffer, 512 - mod);
 		free(buffer);
-		if (nbWrite < 0)
+		if (nb_write < 0)
 			return -1;
 	}
 
@@ -425,21 +403,28 @@ int st_tar_out_last_errno(struct st_tar_out * f) {
 	return format->io->ops->last_errno(format->io);
 }
 
+void st_tar_out_new_volume(struct st_tar_out * f, struct st_stream_writer * writer) {
+	struct st_tar_private_out * format = f->data;
+
+	if (format->io)
+		format->io->ops->free(format->io);
+	format->io = writer;
+
+	if (format->remain_size > 0) {
+		writer->ops->write(writer, format->remain_header, format->remain_size);
+
+		free(format->remain_header);
+		format->remain_header = 0;
+		format->remain_size = 0;
+	}
+}
+
 ssize_t st_tar_out_position(struct st_tar_out * f) {
 	struct st_tar_private_out * format = f->data;
 	return format->io->ops->position(format->io);
 }
 
 int st_tar_out_restart_file(struct st_tar_out * f, const char * filename, ssize_t position) {
-	if (access(filename, F_OK)) {
-		//mtar_verbose_printf("Can access to file: %s\n", filename);
-		return 1;
-	}
-	if (access(filename, R_OK)) {
-		//mtar_verbose_printf("Can read file: %s\n", filename);
-		return 1;
-	}
-
 	struct stat sfile;
 	if (lstat(filename, &sfile)) {
 		//mtar_verbose_printf("An unexpected error occured while getting information about: %s\n", filename);
@@ -554,11 +539,52 @@ ssize_t st_tar_out_write(struct st_tar_out * f, const void * data, ssize_t lengt
 	if (format->position + length > format->size)
 		length = format->size - format->position;
 
-	ssize_t nbWrite = format->io->ops->write(format->io, data, length);
+	ssize_t nb_write = format->io->ops->write(format->io, data, length);
 
-	if (nbWrite > 0)
-		format->position += nbWrite;
+	if (nb_write > 0)
+		format->position += nb_write;
 
-	return nbWrite;
+	return nb_write;
+}
+
+enum st_tar_out_status st_tar_out_write_header(struct st_tar_private_out * f, void * data, ssize_t length) {
+	ssize_t available = f->io->ops->get_available_size(f->io);
+
+	ssize_t nb_write = 0;
+
+	if (available > 0)
+		nb_write = f->io->ops->write(f->io, data, length);
+
+	int last_errno = 0;
+	if (nb_write < 0) {
+		last_errno = f->io->ops->last_errno(f->io);
+
+		if (last_errno != ENOSPC)
+			return ST_TAR_OUT_ERROR;
+
+		nb_write = 0;
+	}
+
+	if (nb_write == 0) {
+		f->remain_size = length;
+		f->remain_header = data;
+
+		f->io->ops->close(f->io);
+
+		return ST_TAR_OUT_END_OF_TAPE;
+	} else if (length > nb_write) {
+		f->remain_size = length - nb_write;
+		f->remain_header = malloc(f->remain_size);
+		memcpy(f->remain_header, data, f->remain_size);
+		free(data);
+
+		f->io->ops->close(f->io);
+
+		return ST_TAR_OUT_END_OF_TAPE;
+	}
+
+	free(data);
+
+	return ST_TAR_OUT_OK;
 }
 

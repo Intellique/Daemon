@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jan 2012 13:47:48 +0100                         *
+*  Last modified: Tue, 05 Jun 2012 11:19:57 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_TAR_H__
@@ -52,16 +52,17 @@ struct st_tar_header {
 	/**
 	 * \brief A partial filename as recorded into tar
 	 */
-	char path[256];
+	char * path;
 	char * filename;
 	/**
 	 * \brief Value of hard or symbolic link
 	 */
-	char link[256];
+	char * link;
 	/**
 	 * \brief Size of file
 	 */
 	ssize_t size;
+	ssize_t position;
 	/**
 	 * \brief Offset
 	 */
@@ -104,6 +105,12 @@ enum st_tar_header_status {
 	ST_TAR_HEADER_BAD_CHECKSUM,
 };
 
+enum st_tar_out_status {
+	ST_TAR_OUT_END_OF_TAPE,
+	ST_TAR_OUT_ERROR,
+	ST_TAR_OUT_OK,
+};
+
 /**
  * \brief Used for reading tar
  */
@@ -142,9 +149,9 @@ struct st_tar_in {
 
 struct st_tar_out {
 	struct st_tar_out_ops {
-		int (*add_file)(struct st_tar_out * f, const char * filename);
-		int (*add_label)(struct st_tar_out * f, const char * label);
-		int (*add_link)(struct st_tar_out * f, const char * src, const char * target, struct st_tar_header * header);
+		enum st_tar_out_status (*add_file)(struct st_tar_out * f, const char * filename);
+		enum st_tar_out_status (*add_label)(struct st_tar_out * f, const char * label);
+		enum st_tar_out_status (*add_link)(struct st_tar_out * f, const char * src, const char * target, struct st_tar_header * header);
 		int (*close)(struct st_tar_out * io);
 		ssize_t (*get_available_size)(struct st_tar_out * f);
 		ssize_t (*get_block_size)(struct st_tar_out * f);
@@ -152,6 +159,7 @@ struct st_tar_out {
 		int (*end_of_file)(struct st_tar_out * f);
 		void (*free)(struct st_tar_out * f);
 		int (*last_errno)(struct st_tar_out * f);
+		void (*new_volume)(struct st_tar_out * f, struct st_stream_writer * writer);
 		ssize_t (*position)(struct st_tar_out * f);
 		int (*restart_file)(struct st_tar_out * f, const char * filename, ssize_t position);
 		ssize_t (*write)(struct st_tar_out * f, const void * data, ssize_t length);
@@ -160,6 +168,7 @@ struct st_tar_out {
 };
 
 
+void st_tar_free_header(struct st_tar_header * h);
 void st_tar_init_header(struct st_tar_header * h);
 
 struct st_tar_in * st_tar_new_in(struct st_stream_reader * io);

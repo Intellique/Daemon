@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 03 May 2012 19:37:50 +0200                         *
+*  Last modified: Tue, 05 Jun 2012 18:09:14 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -151,11 +151,24 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 
 	ssize_t block_number = jp->tar->ops->position(jp->tar) / jp->block_size;
 
-	while (jp->tar->ops->add_file(jp->tar, path)) {
-		if (st_job_save_manage_error(job, jp->tar->ops->last_errno(jp->tar)))
-			return 2;
+	enum st_tar_out_status status = jp->tar->ops->add_file(jp->tar, path);
+	int failed;
+	switch (status) {
+		case ST_TAR_OUT_END_OF_TAPE:
+			failed = st_job_save_change_tape(job);
+			if (failed)
+				return failed;
+			break;
 
-		block_number = jp->tar->ops->position(jp->tar) / jp->block_size;
+		case ST_TAR_OUT_ERROR:
+			failed = st_job_save_manage_error(job, jp->tar->ops->last_errno(jp->tar));
+			if (failed)
+				return failed;
+			break;
+
+		case ST_TAR_OUT_OK:
+			block_number = jp->tar->ops->position(jp->tar) / jp->block_size;
+			break;
 	}
 
 	struct st_archive_file * file = st_archive_file_new(job, &st, path, block_number);
@@ -168,7 +181,8 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 
 		for (;;) {
 			ssize_t available_size = jp->tar->ops->get_available_size(jp->tar);
-			while (available_size == 0) {
+
+			if (available_size == 0) {
 				ssize_t position = jp->tar->ops->get_file_position(jp->tar);
 
 				st_job_save_change_tape(job);
@@ -259,8 +273,6 @@ int st_job_save_change_tape(struct st_job * job) {
 	struct st_stream_writer * tw = jp->current_tape_writer;
 	struct st_stream_writer * cw = jp->current_checksum_writer;
 
-	jp->tar->ops->close(jp->tar);
-
 	// update volume
 	jp->current_volume->size = tw->ops->position(tw);
 	jp->current_volume->endtime = time(0);
@@ -268,9 +280,6 @@ int st_job_save_change_tape(struct st_job * job) {
 	jp->current_volume->nb_checksums = job->nb_checksums;
 	jp->db_con->ops->update_volume(jp->db_con, jp->current_volume);
 	st_io_json_update_volume(jp->json, jp->current_volume);
-
-	jp->tar->ops->free(jp->tar);
-	jp->tar = 0;
 
 	// add tape into list to remember to not use it again
 	jp->tapes = realloc(jp->tapes, (jp->nb_tapes + 1) * sizeof(struct st_tape *));
@@ -326,7 +335,7 @@ int st_job_save_change_tape(struct st_job * job) {
 
 	tw = jp->current_tape_writer = dr->ops->get_writer(dr);
 	cw = jp->current_checksum_writer = st_checksum_get_steam_writer((const char **) job->checksums, job->nb_checksums, tw);
-	jp->tar = st_tar_new_out(cw);
+	jp->tar->ops->new_volume(jp->tar, cw);
 
 	jp->block_size = jp->tar->ops->get_block_size(jp->tar);
 	jp->buffer = realloc(jp->buffer, jp->block_size);
