@@ -1,7 +1,8 @@
 INSERT INTO Host VALUES (DEFAULT, 'localhost', NULL, NULL),
        (DEFAULT, 'd65', NULL, '3U test'),
        (DEFAULT, 'taiko', 'intellique.com', '5U court'),
-       (DEFAULT, 'kazoo', 'intellique.com', '5U court');
+       (DEFAULT, 'kazoo', 'intellique.com', '5U court'),
+	   (DEFAULT, 'storiq-stone', 'intellique.com', '2U Test stone');
 
 INSERT INTO TapeFormat VALUES (DEFAULT, 'LTO-5', 'data', 'linear', 4096, 4096, 40960, 40960, 1024, 1676052267008, 32768, 88, TRUE, TRUE),
        (DEFAULT, 'LTO-4', 'data', 'linear', 4096, 4096, 40960, 40960, 1024, 838026133504, 32768, 70, FALSE, TRUE),
