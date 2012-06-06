@@ -1,0 +1,4 @@
+src/libstone/log.h -> test/cunit/log.h
+src/stone-config/scsi.c -> test/cunit/ext/scsi.c
+src/stone-config/scsi.h -> test/cunit/ext/scsi.h
+src/stone-config/scsi.h -> test/cunit/stone-config/scsi.h

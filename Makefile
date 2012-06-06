@@ -10,12 +10,14 @@ GDB			:= gdb
 # variable
 NAME		:= STone
 DIR_NAME	:= $(lastword $(subst /, , $(realpath .)))
-#VERSION		:= $(shell git describe)
-VERSION		:= v1.0.1
+VERSION		:= $(shell git describe)
 
 
 BINS		:=
 BIN_SYMS	:=
+
+TEST_BINS		:=
+TEST_BIN_SYMS	:=
 
 BUILD_DIR	:= build
 DEPEND_DIR	:= depend
@@ -25,6 +27,7 @@ SRC_FILES	:=
 HEAD_FILES	:= $(sort $(shell test -d include && find include -name '*.h'))
 DEP_FILES	:=
 OBJ_FILES	:=
+
 
 ifndef (${DESTDIR})
 DESTDIR   := output
@@ -40,7 +43,7 @@ CTAGS_OPT	:= -R src
 
 
 # sub makefiles
-SUB_MAKES	:= $(sort $(shell test -d src && find src -name Makefile.sub))
+SUB_MAKES	:= $(sort $(shell test -d src -a -d test && find src test -name Makefile.sub))
 ifeq (${SUB_MAKES},)
 $(error "No sub makefiles")
 endif
@@ -78,6 +81,38 @@ endef
 
 $(foreach prog,${BIN_SYMS},$(eval $(call BIN_template,${prog})))
 
+define TEST_template
+$$($(1)_BIN): $$($(1)_DEPEND_LIB) $$($(1)_OBJ_FILES)
+	@echo " LD       $$@"
+	@${CC} -o $$@ $$($(1)_OBJ_FILES) ${LDFLAGS} $$($(1)_LD)
+	@objcopy --only-keep-debug $$@ $$@.debug
+	@strip $$@
+	@objcopy --add-gnu-debuglink=$$@.debug $$@
+	@chmod -x $$@.debug
+
+$$($(1)_LIB): $$($(1)_DEPEND_LIB) $$($(1)_OBJ_FILES)
+	@echo " LD       $$@"
+	@${CC} -o $$@.$$($(1)_LIB_VERSION) $$($(1)_OBJ_FILES) -shared -Wl,-soname,$$($(1)_SONAME) ${LDFLAGS} $$($(1)_LD)
+	@objcopy --only-keep-debug $$@.$$($(1)_LIB_VERSION) $$@.$$($(1)_LIB_VERSION).debug
+	@strip $$@.$$($(1)_LIB_VERSION)
+	@objcopy --add-gnu-debuglink=$$@.$$($(1)_LIB_VERSION).debug $$@.$$($(1)_LIB_VERSION)
+	@chmod -x $$@.$$($(1)_LIB_VERSION).debug
+	@ln -sf $$(notdir $$@.$$($(1)_LIB_VERSION)) $$@.$$(basename $$($(1)_LIB_VERSION))
+	@ln -sf $$($(1)_SONAME) $$@
+
+$$($(1)_BUILD_DIR)/%.o: $$($(1)_SRC_DIR)/%.c
+	@echo " CC       $$@"
+	@${CC} -c $${CFLAGS} $$($(1)_CFLAG) -Wp,-MD,$$($(1)_DEPEND_DIR)/$$*.d,-MT,$$@ -o $$@ $$<
+
+TEST_BINS	+= $$($(1)_BIN) $$($(1)_LIB)
+SRC_FILES	+= $$($(1)_SRC_FILES)
+HEAD_FILES	+= $$($(1)_HEAD_FILES)
+DEP_FILES	+= $$($(1)_DEP_FILES)
+OBJ_FILES	+= $$($(1)_OBJ_FILES)
+endef
+
+$(foreach prog,${TEST_BIN_SYMS},$(eval $(call TEST_template,${prog})))
+
 
 BIN_DIRS	:= $(sort $(dir ${BINS}))
 OBJ_DIRS	:= $(sort $(dir ${OBJ_FILES}))
@@ -86,7 +121,7 @@ DEP_DIRS	:= $(patsubst ${BUILD_DIR}/%,${DEPEND_DIR}/%,${OBJ_DIRS})
 
 # phony target
 .DEFAULT_GOAL	:= all
-.PHONY: all binaries clean cscope ctags debug distclean lib prepare realclean stat stat-extra TAGS tar
+.PHONY: all binaries clean cscope ctags debug distclean lib prepare realclean stat stat-extra TAGS tar test
 
 all: binaries cscope tags
 
@@ -139,6 +174,8 @@ stat-extra:
 	@c_count -w 48 $(sort ${HEAD_FILES} ${SRC_FILES})
 
 tar: ${NAME}.tar.bz2
+
+test: prepare $(sort ${TEST_BINS})
 
 
 # real target

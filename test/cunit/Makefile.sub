@@ -1,0 +1,16 @@
+CUNIT_SRC_DIR		:= test/cunit
+CUNIT_BUILD_DIR		:= ${BUILD_DIR}/cunit
+CUNIT_DEPEND_DIR	:= ${DEPEND_DIR}/cunit
+
+CUNIT_SRC_FILES		:= $(sort $(shell test -d ${CUNIT_SRC_DIR} && find ${CUNIT_SRC_DIR} -name '*.c'))
+CUNIT_HEAD_FILES	:= $(sort $(shell test -d ${CUNIT_SRC_DIR} && find ${CUNIT_SRC_DIR} -name '*.h'))
+CUNIT_OBJ_FILES		:= $(sort $(patsubst test/%.c,${BUILD_DIR}/%.o,${CUNIT_SRC_FILES}))
+CUNIT_DEP_FILES		:= $(sort $(shell test -d ${CUNIT_DEPEND_DIR} && find ${CUNIT_DEPEND_DIR} -name '*.d'))
+
+CUNIT_BIN			:= bin/cunit
+CUNIT_CFLAG			:=
+CUNIT_LD			:= -lstone -ldl -lcunit -Llib
+
+CUNIT_DEPEND_LIB	:= lib/libstone.so
+
+TEST_BIN_SYMS		+= CUNIT

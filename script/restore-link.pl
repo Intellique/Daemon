@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-open( my $fd, '<', 'script/link.txt' ) or die 'no link file';
+open( my $fd, '<', 'test-link.txt' ) or die 'no link file';
 
 while (<$fd>) {
 	chomp;
