@@ -289,7 +289,7 @@ CREATE TABLE ArchiveFileToArchiveVolume (
 
 CREATE TABLE Backup (
 	id BIGSERIAL PRIMARY KEY,
-	timestamp TIMESTAMP	NOT NULL DEFAULT now(),
+	timestamp TIMESTAMP(0) NOT NULL DEFAULT now(),
 	nbTape INTEGER NOT NULL DEFAULT 0 CHECK (nbTape >= 0),
 	nbArchive INTEGER NOT NULL DEFAULT 0 CHECK (nbArchive >= 0)
 );
