@@ -22,14 +22,17 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 09 May 2012 12:20:55 +0200                         *
+*  Last modified: Mon, 11 Jun 2012 23:31:28 +0200                         *
 \*************************************************************************/
 
+// htobe16
+#include <endian.h>
 // ssize_t
 #include <sys/types.h>
 
 // sg_io_hdr_t
 #include <scsi/scsi.h>
+// sg_io_hdr_t
 #include <scsi/sg.h>
 // calloc, malloc
 #include <stdlib.h>
@@ -39,64 +42,6 @@
 #include <sys/ioctl.h>
 
 #include "scsi.h"
-
-typedef struct ElementModeSensePageHeader {
-	unsigned char PageCode;               /* byte 0 */
-	unsigned char ParameterLengthList;    /* byte 1; */
-	unsigned char MediumTransportStartHi; /* byte 2,3 */
-	unsigned char MediumTransportStartLo;
-	unsigned char NumMediumTransportHi;   /* byte 4,5 */
-	unsigned char NumMediumTransportLo;   /* byte 4,5 */
-	unsigned char StorageStartHi;         /* byte 6,7 */
-	unsigned char StorageStartLo;         /* byte 6,7 */
-	unsigned char NumStorageHi;           /* byte 8,9 */
-	unsigned char NumStorageLo;           /* byte 8,9 */
-	unsigned char ImportExportStartHi;    /* byte 10,11 */
-	unsigned char ImportExportStartLo;    /* byte 10,11 */
-	unsigned char NumImportExportHi;      /* byte 12,13 */
-	unsigned char NumImportExportLo;      /* byte 12,13 */
-	unsigned char DataTransferStartHi;    /* byte 14,15 */
-	unsigned char DataTransferStartLo;    /* byte 14,15 */
-	unsigned char NumDataTransferHi;      /* byte 16,17 */
-	unsigned char NumDataTransferLo;      /* byte 16,17 */
-	unsigned char Reserved1;              /* byte 18, 19 */
-	unsigned char Reserved2;              /* byte 18, 19 */
-} ElementModeSensePage_T;
-
-typedef struct ElementStatusDataHeader {
-	unsigned char FirstElementAddressReported[2]; /* Bytes 0-1 */
-	unsigned char NumberOfElementsAvailable[2];	  /* Bytes 2-3 */
-	unsigned char :8;					          /* Byte 4 */
-	unsigned char ByteCountOfReportAvailable[3];  /* Bytes 5-7 */
-} ElementStatusDataHeader_T;
-
-typedef enum ElementTypeCode {
-	AllElementTypes        = 0,
-	MediumTransportElement = 1,
-	StorageElement         = 2,
-	ImportExportElement    = 3,
-	DataTransferElement    = 4,
-} ElementTypeCode_T;
-
-typedef struct ElementStatusPage {
-	ElementTypeCode_T ElementTypeCode:8;			/* Byte 0 */
-	unsigned char :6;					/* Byte 1 Bits 0-5 */
-	unsigned char AVolTag:1;					/* Byte 1 Bit 6 */
-	unsigned char PVolTag:1;					/* Byte 1 Bit 7 */
-	unsigned char ElementDescriptorLength[2];		/* Bytes 2-3 */
-	unsigned char :8;					/* Byte 4 */
-	unsigned char ByteCountOfDescriptorDataAvailable[3];	/* Bytes 5-7 */
-} ElementStatusPage_T;
-
-typedef struct Element2StatusPage {
-	ElementTypeCode_T ElementTypeCode:8;			/* Byte 0 */
-	unsigned char VolBits ; /* byte 1 */
-#define E2_PVOLTAG 0x80
-#define E2_AVOLTAG 0x40
-	unsigned char ElementDescriptorLength[2];		/* Bytes 2-3 */
-	unsigned char :8;					/* Byte 4 */
-	unsigned char ByteCountOfDescriptorDataAvailable[3];	/* Bytes 5-7 */
-} Element2StatusPage_T;
 
 typedef struct Inquiry {
 	unsigned char PeripheralDeviceType:5; /* Byte 0 Bits 0-4 */
@@ -122,17 +67,17 @@ typedef struct Inquiry {
 	char BQue:1;                          /* Byte 6 bit 7 */
 	char SftRe:1;                         /* Byte 7 Bit 0 */
 	char CmdQue:1;                        /* Byte 7 Bit 1 */
-	char :1;                              /* Byte 7 Bit 2 */
-	char Linked:1;                        /* Byte 7 Bit 3 */
-	char Sync:1;                          /* Byte 7 Bit 4 */
-	char WBus16:1;                        /* Byte 7 Bit 5 */
-	char WBus32:1;                        /* Byte 7 Bit 6 */
-	char RelAdr:1;                        /* Byte 7 Bit 7 */
-	unsigned char VendorIdentification[8];      /* Bytes 8-15 */
-	unsigned char ProductIdentification[16];    /* Bytes 16-31 */
-	unsigned char ProductRevisionLevel[4];      /* Bytes 32-35 */
-	unsigned char FullProductRevisionLevel[19]; /* bytes 36-54 */
-	unsigned char VendorFlags;                  /* byte 55 */
+char :1;                              /* Byte 7 Bit 2 */
+	  char Linked:1;                        /* Byte 7 Bit 3 */
+	  char Sync:1;                          /* Byte 7 Bit 4 */
+	  char WBus16:1;                        /* Byte 7 Bit 5 */
+	  char WBus32:1;                        /* Byte 7 Bit 6 */
+	  char RelAdr:1;                        /* Byte 7 Bit 7 */
+	  unsigned char VendorIdentification[8];      /* Bytes 8-15 */
+	  unsigned char ProductIdentification[16];    /* Bytes 16-31 */
+	  unsigned char ProductRevisionLevel[4];      /* Bytes 32-35 */
+	  unsigned char FullProductRevisionLevel[19]; /* bytes 36-54 */
+	  unsigned char VendorFlags;                  /* byte 55 */
 } Inquiry_T;
 
 typedef struct RequestSense {
@@ -158,154 +103,342 @@ typedef struct RequestSense {
 	unsigned char FieldData[2];       	 		/* Byte 16,17 */
 } RequestSense_T;
 
-typedef struct TransportElementDescriptor {
-	unsigned char ElementAddress[2];			/* Bytes 0-1 */
-	unsigned char Full:1;					/* Byte 2 Bit 0 */
-	unsigned char :1;					/* Byte 2 Bit 1 */
-	unsigned char Except:1;					/* Byte 2 Bit 2 */
-	unsigned char :5;					/* Byte 2 Bits 3-7 */
-	unsigned char :8;					/* Byte 3 */
-	unsigned char AdditionalSenseCode;			/* Byte 4 */
-	unsigned char AdditionalSenseCodeQualifier;		/* Byte 5 */
-	unsigned char :8;					/* Byte 6 */
-	unsigned char :8;					/* Byte 7 */
-	unsigned char :8;					/* Byte 8 */
-	unsigned char :6;					/* Byte 9 Bits 0-5 */
-	unsigned char SValid:1;					/* Byte 9 Bit 6 */
-	unsigned char Invert:1;					/* Byte 9 Bit 7 */
-	unsigned char SourceStorageElementAddress[2];		/* Bytes 10-11 */
-	unsigned char PrimaryVolumeTag[36];          /* barcode */
-	unsigned char AlternateVolumeTag[36];   
-	unsigned char Reserved[4];				/* 4 extra bytes? */
-} TransportElementDescriptor_T;
 
-enum Mam_attribute {
-	Mam_remaining_capacity  = 0x0000,
-	Mam_maximum_capacity    = 0x0001,
-	Mam_load_count          = 0x0003,
-	Mam_mam_space_remaining = 0x0004,
+struct scsi_inquiry {
+	unsigned char operation_code;
+	unsigned char enable_vital_product_data:1;
+	unsigned char reserved0:4;
+	unsigned char obsolete:3;
+	unsigned char page_code;
+	unsigned char reserved1;
+	unsigned char allocation_length;
+	unsigned char reserved2;
+} __attribute__((packed));
 
-	Mam_device_at_last_load           = 0x020A,
-	Mam_device_at_last_load_2         = 0x020B,
-	Mam_device_at_last_load_3         = 0x020C,
-	Mam_device_at_last_load_4         = 0x020D,
-	Mam_total_written_in_medium_life  = 0x0220,
-	Mam_total_read_in_medium_life     = 0x0221,
-	Mam_total_written_in_current_load = 0x0222,
-	Mam_total_read_current_load       = 0x0223,
-
-	Mam_medium_manufacturer      = 0x0400,
-	Mam_medium_serial_number     = 0x0401,
-	Mam_medium_manufacturer_date = 0x0406,
-	Mam_mam_capacity             = 0x0407,
-	Mam_medium_type              = 0x0408,
-	Mam_medium_type_information  = 0x0409,
-
-	Mam_application_vendor           = 0x0800,
-	Mam_application_name             = 0x0801,
-	Mam_application_version          = 0x0802,
-	Mam_user_medium_text_label       = 0x0803,
-	Mam_date_and_time_last_written   = 0x0804,
-	Mam_text_localization_identifier = 0x0805,
-	Mam_barcode                      = 0x0806,
-	Mam_owning_host_textual_name     = 0x0807,
-	Mam_media_pool                   = 0x0808,
-
-	Mam_unique_cardtrige_identity = 0x1000,
+enum scsi_loader_element_type {
+    scsi_loader_element_type_all_elements             = 0x0,
+    scsi_loader_element_type_medium_transport_element = 0x1,
+    scsi_loader_element_type_storage_element          = 0x2,
+    scsi_loader_element_type_import_export_element    = 0x3,
+    scsi_loader_element_type_data_transfer            = 0x4,
 };
 
-static void st_scsi_mtx_status_update_slot(int fd, struct st_changer * changer, int start_element, int nb_elements, int num_bytes, enum ElementTypeCode type);
+struct scsi_loader_element_status {
+    enum scsi_loader_element_type type:8;
+    unsigned char reserved0:6;
+    unsigned alternate_volume_tag:1;
+    unsigned primary_volume_tag:1;
+    unsigned short element_descriptor_length;
+    unsigned char reserved1;
+    unsigned int byte_count_of_descriptor_data_available:24;
+} __attribute__((packed));
+
+struct scsi_loader_data_transfer_element {
+    unsigned short element_address;
+    unsigned char full:1;
+    unsigned char reserved0:1;
+    unsigned char execpt:1;
+    unsigned char access:1;
+    unsigned char reserved1:4;
+    unsigned char reserved2;
+    unsigned char additional_sense_code;
+    unsigned char additional_sense_code_qualifier;
+    unsigned char logical_unit_number:3;
+    unsigned char reserved3:1;
+    unsigned char logical_unit_valid:1;
+    unsigned char id_valid:1;
+    unsigned char reserved4:2;
+    unsigned char scsi_bus_address;
+    unsigned char reserved5;
+    unsigned char reserved6:6;
+    unsigned char invert:1;
+    unsigned char source_valid:1;
+    unsigned short source_storage_element_address;
+    char primary_volume_tag_information[36];
+    unsigned char code_set_1:4;
+    unsigned char reserved7:4;
+    unsigned char identifier_type_1:4;
+    unsigned char reserved8:4;
+    unsigned char reserved9;
+    unsigned char identifier_length_1;
+    unsigned char device_identifier_1[34];
+    unsigned char code_set_2:4;
+    unsigned char reserved10:4;
+    unsigned char identifier_type_2:4;
+    unsigned char reserved11:4;
+} __attribute__((packed));
+
+struct scsi_loader_import_export_element {
+    unsigned short element_address;
+    unsigned char full:1;
+    unsigned char import_export:1;
+    unsigned char execpt:1;
+    unsigned char access:1;
+    unsigned char export_enable:1;
+    unsigned char import_enable:1;
+    unsigned char reserved0:2;
+    unsigned char reserved1;
+    unsigned char additional_sense_code;
+    unsigned char additional_sense_code_qualifier;
+    unsigned char reserved2[3];
+    unsigned char reserved3:6;
+    unsigned char invert:1;
+    unsigned char source_valid:1;
+    unsigned short source_storage_element_address;
+    char primary_volume_tag_information[36];
+    unsigned char reserved4[4];
+} __attribute__((packed));
+
+struct scsi_loader_medium_transport_element {
+    unsigned short element_address;
+    unsigned char full:1;
+    unsigned char reserved0:1;
+    unsigned char execpt:1;
+    unsigned char reserved1:5;
+    unsigned char reserved2;
+    unsigned char additional_sense_code;
+    unsigned char additional_sense_code_qualifier;
+    unsigned char reserved3[3];
+    unsigned char reserved4:6;
+    unsigned char invert:1;
+    unsigned char source_valid:1;
+    unsigned short source_storage_element_address;
+    unsigned char primary_volume_tag_information[36];
+    unsigned char reserved5[4];
+} __attribute__((packed));
+
+struct scsi_loader_storage_element {
+    unsigned short element_address;
+    unsigned char full:1;
+    unsigned char reserved0:1;
+    unsigned char execpt:1;
+    unsigned char access:1;
+    unsigned char reserved1:4;
+    unsigned char reserved2;
+    unsigned char additional_sense_code;
+    unsigned char additional_sense_code_qualifier;
+    unsigned char reserved3[3];
+    unsigned char reserved4:6;
+    unsigned char invert:1;
+    unsigned char source_valid:1;
+    unsigned short source_storage_element_address;
+    char primary_volume_tag_information[36];
+    unsigned char reserved5[4];
+} __attribute__((packed));
+
+enum scsi_mam_attribute {
+	scsi_mam_remaining_capacity  = 0x0000,
+	scsi_mam_maximum_capacity    = 0x0001,
+	scsi_mam_load_count          = 0x0003,
+	scsi_mam_mam_space_remaining = 0x0004,
+
+	scsi_mam_device_at_last_load           = 0x020A,
+	scsi_mam_device_at_last_load_2         = 0x020B,
+	scsi_mam_device_at_last_load_3         = 0x020C,
+	scsi_mam_device_at_last_load_4         = 0x020D,
+	scsi_mam_total_written_in_medium_life  = 0x0220,
+	scsi_mam_total_read_in_medium_life     = 0x0221,
+	scsi_mam_total_written_in_current_load = 0x0222,
+	scsi_mam_total_read_current_load       = 0x0223,
+
+	scsi_mam_medium_manufacturer      = 0x0400,
+	scsi_mam_medium_serial_number     = 0x0401,
+	scsi_mam_medium_manufacturer_date = 0x0406,
+	scsi_mam_mam_capacity             = 0x0407,
+	scsi_mam_medium_type              = 0x0408,
+	scsi_mam_medium_type_information  = 0x0409,
+
+	scsi_mam_application_vendor           = 0x0800,
+	scsi_mam_application_name             = 0x0801,
+	scsi_mam_application_version          = 0x0802,
+	scsi_mam_user_medium_text_label       = 0x0803,
+	scsi_mam_date_and_time_last_written   = 0x0804,
+	scsi_mam_text_localization_identifier = 0x0805,
+	scsi_mam_barcode                      = 0x0806,
+	scsi_mam_owning_host_textual_name     = 0x0807,
+	scsi_mam_media_pool                   = 0x0808,
+
+	scsi_mam_unique_cardtrige_identity = 0x1000,
+};
+
+struct scsi_request_sense {
+	unsigned char error_code:7;						/* Byte 0 Bits 0-6 */
+	char valid:1;									/* Byte 0 Bit 7 */
+	unsigned char segment_number;					/* Byte 1 */
+	unsigned char sense_key:4;						/* Byte 2 Bits 0-3 */
+	unsigned char :1;								/* Byte 2 Bit 4 */
+	char ili:1;										/* Byte 2 Bit 5 */
+	char eom:1;										/* Byte 2 Bit 6 */
+	char filemark:1;								/* Byte 2 Bit 7 */
+	unsigned char information[4];					/* Bytes 3-6 */
+	unsigned char additional_sense_length;			/* Byte 7 */
+	unsigned char command_specific_information[4];	/* Bytes 8-11 */
+	unsigned char additional_sense_code;			/* Byte 12 */
+	unsigned char additional_sense_code_qualifier;	/* Byte 13 */
+	unsigned char :8;								/* Byte 14 */
+	unsigned char bit_pointer:3;					/* Byte 15 */
+	char bpv:1;
+	unsigned char :2;
+	char command_data :1;
+	char sksv:1;
+	unsigned char field_data[2];					/* Byte 16,17 */
+};
+
+static void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, struct st_slot * slot_base, int start_element, int nb_elements, enum scsi_loader_element_type type);
 
 
-void st_scsi_loaderinfo(int fd, struct st_changer * changer) {
-	Inquiry_T inq;
-	RequestSense_T sense;
+void st_scsi_loader_info(int fd, struct st_changer * changer) {
+	struct {
+		unsigned char peripheral_device_type:5;
+		unsigned char peripheral_device_qualifier:3;
+		unsigned char reserved0:7;
+		unsigned char removable_medium_bit:1;
+		unsigned char version;
+		unsigned char response_data_format:4;
+		unsigned char hi_sup:1;
+		unsigned char norm_aca:1;
+		unsigned char reserved1:1;
+		unsigned char asynchronous_event_reporting_capability:1;
+		unsigned char additional_length;
+		unsigned char reserved2:7;
+		unsigned char scc_supported:1;
+		unsigned char addr16:1;
+		unsigned char reserved3:2;
+		unsigned char medium_changer:1;
+		unsigned char multi_port:1;
+		unsigned char reserved4:1;
+		unsigned char enclosure_service:1;
+		unsigned char basic_queuing:1;
+		unsigned char reserved5:1;
+		unsigned char command_queuing:1;
+		unsigned char reserved6:1;
+		unsigned char linked_command:1;
+		unsigned char synchonous_transfer:1;
+		unsigned char wide_bus_16:1;
+		unsigned char reserved7:1;
+		unsigned char relative_addressing:1;
+		char vendor_identification[8];
+		char product_identification[16];
+		char product_revision_level[4];
+		unsigned char full_firmware_revision_level[19];
+		unsigned char bar_code:1;
+		unsigned char reserved8:7;
+		unsigned char information_units_supported:1;
+		unsigned char quick_arbitration_supported:1;
+		unsigned char clocking:2;
+		unsigned char reserved9:4;
+		unsigned char reserved10;
+		unsigned char version_description[16];
+		unsigned char reserved11[22];
+		unsigned char unit_serial_number[12];
+	} __attribute__((packed)) result_inquiry;
 
-	unsigned char hdr_inq[sizeof(struct sg_header) + sizeof(inq)];
-	unsigned char command[6] = { 0x12, 0, 0, 0, sizeof(hdr_inq), 0 };
+	struct scsi_inquiry command_inquiry = {
+		.operation_code = 0x12,
+		.enable_vital_product_data = 0,
+		.page_code = 0,
+		.allocation_length = sizeof(result_inquiry),
+	};
 
+	struct scsi_request_sense sense;
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
+	memset(&result_inquiry, 0, sizeof(result_inquiry));
 
 	header.interface_id = 'S';
-	header.cmd_len = sizeof(command);
+	header.cmd_len = sizeof(command_inquiry);
 	header.mx_sb_len = sizeof(sense);
-	header.dxfer_len = sizeof(inq);
-	header.cmdp = command;
+	header.dxfer_len = sizeof(result_inquiry);
+	header.cmdp = (unsigned char *) &command_inquiry;
 	header.sbp = (unsigned char *) &sense;
-	header.dxferp = &inq;
+	header.dxferp = (unsigned char *) &result_inquiry;
 	header.timeout = 60000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
-	int status = ioctl(fd, SG_IO, &header);
-	if (status)
+	if (ioctl(fd, SG_IO, &header))
 		return;
 
-	ssize_t length = sizeof(inq.VendorIdentification);
-	changer->vendor = malloc(length + 1);
-	strncpy(changer->vendor, (char *) inq.VendorIdentification, length);
-	changer->vendor[length] = '\0';
-	for (length--; changer->vendor[length] ==  ' '; length--)
+	ssize_t length;
+	changer->vendor = malloc(9);
+	strncpy(changer->vendor, result_inquiry.vendor_identification, 8);
+	changer->vendor[8] = '\0';
+	for (length = 7; length >= 0 && changer->vendor[length] == ' '; length--)
 		changer->vendor[length] = '\0';
 
-	length = sizeof(inq.ProductIdentification);
-	changer->model = malloc(length + 1);
-	strncpy(changer->model, (char *) inq.ProductIdentification, length);
-	changer->model[length] = '\0';
-	for (length--; changer->model[length] ==  ' '; length--)
+	changer->model = malloc(17);
+	strncpy(changer->model, result_inquiry.product_identification, 16);
+	changer->model[16] = '\0';
+	for (length = 15; length >= 0 && changer->model[length] == ' '; length--)
 		changer->model[length] = '\0';
 
 	changer->revision = malloc(5);
-	strncpy(changer->revision, (char *) inq.ProductRevisionLevel, 4);
+	strncpy(changer->revision, result_inquiry.product_revision_level, 4);
 	changer->revision[4] = '\0';
+	for (length = 3; length >= 0 && changer->revision[length] == ' '; length--)
+		changer->revision[length] = '\0';
 
 	changer->barcode = 0;
-	if (inq.AdditionalLength > 50 && inq.VendorFlags & 1)
+	if (result_inquiry.bar_code)
 		changer->barcode = 1;
 
-	unsigned char com2[6] = { 0x12, 1, 0x80, 0, 30, 0 };
-	char buffer[30];
+
+	struct {
+		unsigned char peripheral_device_type:5;
+		unsigned char peripheral_device_qualifier:3;
+		unsigned char page_code;
+		unsigned char reserved;
+		unsigned char page_length;
+		char unit_serial_number[12];
+	} __attribute__((packed)) result_serial_number;
+
+	struct scsi_inquiry command_serial_number = {
+		.operation_code = 0x12,
+		.enable_vital_product_data = 1,
+		.page_code = 0x80,
+		.allocation_length = sizeof(result_serial_number),
+	};
 
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
+	memset(&result_serial_number, 0, sizeof(result_serial_number));
 
 	header.interface_id = 'S';
-	header.cmd_len = sizeof(com2);
+	header.cmd_len = sizeof(command_serial_number);
 	header.mx_sb_len = sizeof(sense);
-	header.dxfer_len = 30;
-	header.cmdp = com2;
+	header.dxfer_len = sizeof(result_serial_number);
+	header.cmdp = (unsigned char *) &command_serial_number;
 	header.sbp = (unsigned char *) &sense;
-	header.dxferp = &buffer;
+	header.dxferp = (unsigned char *) &result_serial_number;
 	header.timeout = 60000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
-	status = ioctl(fd, SG_IO, &header);
-	if (status)
+	if (ioctl(fd, SG_IO, &header))
 		return;
 
-	length = buffer[3];
-	changer->serial_number = malloc(length + 1);
-	strncpy(changer->serial_number, buffer + 4, length);
-	changer->serial_number[length] = '\0';
+	changer->serial_number = malloc(13);
+	strncpy(changer->serial_number, result_serial_number.unit_serial_number, 12);
+	changer->serial_number[12] = '\0';
 }
 
-int st_scsi_mtx_move(int fd, struct st_changer * ch, struct st_slot * from, struct st_slot * to) {
-	Inquiry_T inq;
-	RequestSense_T sense;
-
-	unsigned char command[12];
-	command[0] = 0xA5;
-	command[1] = command[8] = command[9] = command[10] = command[11] = 0;
-
-	command[2] = ch->transport_address >> 8;
-	command[3] = ch->transport_address;
-
-	command[4] = from->address >> 8;
-	command[5] = from->address;
-
-	command[6] = to->address >> 8;
-	command[7] = to->address;
+int st_scsi_loader_medium_removal(int fd, int allow) {
+	struct scsi_request_sense sense;
+	struct {
+		unsigned char operation_code;
+		unsigned char reserved0[3];
+		enum {
+			medium_removal_allow = 0x00,
+			medium_removal_prevent = 0x01,
+		} prevent:2;
+		unsigned char reserved1:6;
+		unsigned char reserved2;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x1E,
+		.reserved0 = { 0, 0, 0 },
+		.prevent = allow ? medium_removal_allow : medium_removal_prevent,
+		.reserved1 = 0,
+		.reserved2 = 0,
+	};
 
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
@@ -314,45 +447,177 @@ int st_scsi_mtx_move(int fd, struct st_changer * ch, struct st_slot * from, stru
 	header.interface_id = 'S';
 	header.cmd_len = sizeof(command);
 	header.mx_sb_len = sizeof(sense);
-	header.dxfer_len = 12;
-	header.cmdp = command;
+	header.dxfer_len = 0;
+	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
-	header.dxferp = &inq;
+	header.dxferp = 0;
+	header.timeout = 1200000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int failed = ioctl(fd, SG_IO, &header);
+
+	return failed;
+}
+
+int st_scsi_loader_move(int fd, struct st_changer * ch, struct st_slot * from, struct st_slot * to) {
+	struct scsi_request_sense sense;
+	struct {
+		unsigned char operation_code;
+		unsigned char reserved0;
+		unsigned short transport_element_address;
+		unsigned short source_address;
+		unsigned short destination_address;
+		unsigned char reserved1[2];
+		unsigned char invert:1;
+		unsigned char reserved2:7;
+		unsigned char reserved3;
+	} __attribute__((packed)) command = {
+		.operation_code = 0xA5,
+		.reserved0 = 0,
+		.transport_element_address = htobe16(ch->transport_address),
+		.source_address = htobe16(from->address),
+		.destination_address = htobe16(to->address),
+		.reserved1 = { 0, 0 },
+		.invert = 0,
+		.reserved2 = 0,
+		.reserved3 = 0,
+	};
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = 0;
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = 0;
 	header.timeout = 1200000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	ioctl(fd, SG_IO, &header);
 
-	return sense.ErrorCode;
+	return sense.sense_key;
 }
 
-void st_scsi_mtx_status_new(int fd, struct st_changer * changer) {
-	RequestSense_T s1;
-	unsigned char b1[136];
-	static unsigned char c1[6] = { 0x1A, 0x08, 0x1D, 0, 136, 0 };
+int st_scsi_loader_ready(int fd) {
+	struct scsi_request_sense sense;
+	struct {
+		unsigned char operation_code;
+		unsigned char reserved[5];
+	} __attribute__((packed)) command = {
+		.operation_code = 0x00,
+		.reserved = { 0, 0, 0, 0, 0 },
+	};
 
-	sg_io_hdr_t h1;
-	memset(&h1, 0, sizeof(h1));
-	memset(&s1, 0, sizeof(s1));
-	memset(b1, 0, sizeof(b1));
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
 
-	h1.interface_id = 'S';
-	h1.cmd_len = sizeof(c1);
-	h1.mx_sb_len = sizeof(s1);
-	h1.dxfer_len = sizeof(b1);
-	h1.cmdp = c1;
-	h1.sbp = (unsigned char *) &s1;
-	h1.dxferp = b1;
-	h1.timeout = 60000;
-	h1.dxfer_direction = SG_DXFER_FROM_DEV;
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = 0;
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = 0;
+	header.timeout = 1200000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
-	ioctl(fd, SG_IO, &h1);
+	ioctl(fd, SG_IO, &header);
 
-	ElementModeSensePage_T * sense_page = (ElementModeSensePage_T *) (b1 + 4 + b1[3]);
+	return sense.sense_key;
+}
 
-	changer->nb_slots = ((int) sense_page->NumStorageHi << 8) + sense_page->NumStorageLo;
-	unsigned int nb_io_slots = ((int) sense_page->NumImportExportHi << 8) + sense_page->NumImportExportLo;
-	changer->nb_slots += nb_io_slots;
+void st_scsi_loader_status_new(int fd, struct st_changer * changer) {
+	struct scsi_request_sense sense;
+	struct {
+		unsigned char mode_data_length;
+		unsigned char reserved0[3];
+
+		unsigned char page_code:6;
+		unsigned char reserved1:1;
+		unsigned char page_saved:1;
+		unsigned char parameter_length;
+		unsigned short medium_transport_element_address;
+		unsigned short number_of_medium_transport_elements;
+		unsigned short first_storage_element_address;
+		unsigned short number_of_storage_elements;
+		unsigned short first_import_export_element_address;
+		unsigned short number_of_import_export_elements;
+		unsigned short first_data_transfer_element_address;
+		unsigned short number_of_data_transfer_elements;
+		unsigned char reserved2[2];
+	} __attribute__((packed)) result;
+	struct {
+		unsigned char operation_code;
+		unsigned char reserved0:3;
+		unsigned char disable_block_descriptors:1;
+		unsigned char reserved1:4;
+		enum {
+			page_code_element_address_assignement_page = 0x1D,
+			page_code_transport_geometry_descriptor_page = 0x1E,
+			page_code_device_capabilities_page = 0x1F,
+			page_code_unique_properties_page = 0x21,
+			page_code_lcd_mode_page = 0x22,
+			page_code_cleaning_configuration_page = 0x25,
+			page_code_operating_mode_page = 0x26,
+			page_code_all_pages = 0x3F,
+		} code_page:6;
+		enum {
+			page_control_current_value = 0x00,
+			page_control_changeable_value = 0x01,
+			page_control_default_value = 0x02,
+			page_control_saved_value = 0x03,
+		} page_control:2;
+		unsigned char reserved2;
+		unsigned char allocation_length;
+		unsigned char reserved3;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x1A,
+		.reserved0 = 0,
+		.disable_block_descriptors = 0,
+		.reserved1 = 0,
+		.code_page = page_code_element_address_assignement_page,
+		.page_control = page_control_current_value,
+		.reserved2 = 0,
+		.allocation_length = sizeof(result),
+		.reserved3 = 0,
+	};
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result);
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &result;
+	header.timeout = 1200000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int failed = ioctl(fd, SG_IO, &header);
+	if (failed)
+		return;
+
+	result.medium_transport_element_address = be16toh(result.medium_transport_element_address);
+	result.number_of_medium_transport_elements = be16toh(result.number_of_medium_transport_elements);
+	result.first_storage_element_address = be16toh(result.first_storage_element_address);
+	result.number_of_storage_elements = be16toh(result.number_of_storage_elements);
+	result.first_import_export_element_address = be16toh(result.first_import_export_element_address);
+	result.number_of_import_export_elements = be16toh(result.number_of_import_export_elements);
+	result.first_data_transfer_element_address = be16toh(result.first_data_transfer_element_address);
+	result.number_of_data_transfer_elements = be16toh(result.number_of_data_transfer_elements);
+
+	changer->nb_slots = result.number_of_storage_elements;
+	unsigned short nb_io_slots = result.number_of_import_export_elements;
+	if (nb_io_slots > 0)
+		changer->nb_slots += nb_io_slots;
 	changer->nb_slots += changer->nb_drives;
 
 	if (changer->nb_slots > 0)
@@ -376,124 +641,184 @@ void st_scsi_mtx_status_new(int fd, struct st_changer * changer) {
 		slot->is_import_export_slot = 0;
 	}
 
-	//unsigned int nb_drives = ((int) sense_page->NumDataTransferHi << 8) + sense_page->NumMediumTransportLo;
-	unsigned int num_bytes = (sizeof(ElementStatusDataHeader_T) + 4 * sizeof(ElementStatusPage_T) + changer->nb_slots * sizeof(TransportElementDescriptor_T));
+    st_scsi_loader_status_update_slot(fd, changer, changer->slots + changer->nb_drives, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element);
+    st_scsi_loader_status_update_slot(fd, changer, changer->slots, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer);
+    if (result.number_of_import_export_elements > 0)
+        st_scsi_loader_status_update_slot(fd, changer, changer->slots + result.number_of_medium_transport_elements + result.number_of_storage_elements, result.first_import_export_element_address, result.number_of_import_export_elements, scsi_loader_element_type_import_export_element);
 
-	int start = ((int) sense_page->StorageStartHi << 8) + sense_page->StorageStartLo;
-	st_scsi_mtx_status_update_slot(fd, changer, start, changer->nb_slots, num_bytes, StorageElement);
-
-	start = ((int) sense_page->DataTransferStartHi << 8) + sense_page->DataTransferStartLo;
-	st_scsi_mtx_status_update_slot(fd, changer, start, changer->nb_drives, num_bytes, DataTransferElement);
-
-	if (nb_io_slots > 0) {
-		start = ((int) sense_page->ImportExportStartHi << 8) + sense_page->ImportExportStartLo;
-		st_scsi_mtx_status_update_slot(fd, changer, start, nb_io_slots, num_bytes, ImportExportElement);
-	}
-
-	changer->transport_address = ((int) sense_page->MediumTransportStartHi << 8) + sense_page->MediumTransportStartLo;
+    changer->transport_address = result.medium_transport_element_address;
 }
 
-void st_scsi_mtx_status_update_slot(int fd, struct st_changer * changer, int start_element, int nb_elements, int num_bytes, enum ElementTypeCode type) {
+void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, struct st_slot * slot_base, int start_element, int nb_elements, enum scsi_loader_element_type type) {
+	size_t size_needed = 16;
+	switch (type) {
+		case scsi_loader_element_type_all_elements:
+		case scsi_loader_element_type_data_transfer:
+			size_needed += nb_elements * sizeof(struct scsi_loader_data_transfer_element);
+			break;
+
+		case scsi_loader_element_type_import_export_element:
+		case scsi_loader_element_type_medium_transport_element:
+		case scsi_loader_element_type_storage_element:
+			size_needed += nb_elements * sizeof(struct scsi_loader_import_export_element);
+	}
+
+	struct scsi_request_sense sense;
 	struct {
-		int word1;
-		int word2;
-	} idlun;
-	ioctl(fd, SCSI_IOCTL_GET_IDLUN, &idlun);
-	//int id = idlun.word1 & 0xFF;
-	int lun = idlun.word1 >> 8 & 0xFF;
-
-	unsigned char command[12] = { 0xB8, };
-	command[6] = command[10] = command[11] = 0;
-
-	command[1] = (lun << 5) | (changer->barcode ? 0x10 : 0) | type;
-
-	command[2] = start_element >> 8;
-	command[3] = start_element & 0xFF;
-
-	command[4] = nb_elements >> 8;
-	command[5] = nb_elements & 0xFF;
-
-	command[7] = num_bytes >> 16;
-	command[8] = num_bytes >> 8;
-	command[9] = num_bytes & 0xFF;
+		unsigned short first_element_address;
+		unsigned short number_of_elements;
+		unsigned char reserved;
+		unsigned int byte_count_of_report:24;
+	} __attribute__((packed)) * result = malloc(size_needed);
+	struct {
+		unsigned char operation_code;
+		enum scsi_loader_element_type type:4;
+		unsigned char volume_tag:1;
+		unsigned char reserved0:3;
+		unsigned short starting_element_address;
+		unsigned short number_of_elements;
+		unsigned char device_id:1;
+		unsigned char current_data:1;
+		unsigned char reserved1:6;
+		unsigned char allocation_length[3];
+		unsigned char reserved2;
+		unsigned char reserved3:7;
+		unsigned char serial_number_request:1;
+	} __attribute__((packed)) command = {
+		.operation_code = 0xB8,
+		.type = type,
+		.volume_tag = changer->barcode ? 1 : 0,
+		.reserved0 = 0,
+		.starting_element_address = htobe16(start_element),
+		.number_of_elements = htobe16(nb_elements),
+		.device_id = 0,
+		.current_data = 0,
+		.reserved1 = 0,
+		.allocation_length = { size_needed >> 16, size_needed >> 8, size_needed & 0xFF, },
+		.reserved2 = 0,
+		.reserved3 = 0,
+		.serial_number_request = 0,
+	};
 
 	sg_io_hdr_t header;
-	RequestSense_T sense;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
+	memset(result, 0, size_needed);
 
 	header.interface_id = 'S';
-	header.cmdp = command;
 	header.cmd_len = sizeof(command);
-	char * buffer = header.dxferp = malloc(num_bytes);
-	header.dxfer_len = num_bytes;
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = size_needed;
+	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
-	header.mx_sb_len = sizeof(RequestSense_T);
-	header.timeout = 60000;
+	header.dxferp = (unsigned char *) result;
+	header.timeout = 1200000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
-	ioctl(fd, SG_IO, &header);
-
-	ElementStatusDataHeader_T * elt_status_data_hdr = (ElementStatusDataHeader_T *) buffer;
-	buffer += sizeof(ElementStatusDataHeader_T);
-	int nb_found_element = elt_status_data_hdr->NumberOfElementsAvailable[0] << 8 | elt_status_data_hdr->NumberOfElementsAvailable[1];
-
-	while (nb_found_element > 0) {
-		Element2StatusPage_T * status = (Element2StatusPage_T *) buffer;
-		buffer += sizeof(ElementStatusPage_T);
-		int trans_elt_desc_length = status->ElementDescriptorLength[0] << 8 | status->ElementDescriptorLength[1];
-
-		int bytes_available = status->ByteCountOfDescriptorDataAvailable[0] << 16 | status->ByteCountOfDescriptorDataAvailable[1] << 8 | status->ByteCountOfDescriptorDataAvailable[2];
-		if (bytes_available <= 0)
-			nb_found_element--;
-
-		while (bytes_available > 0) {
-			TransportElementDescriptor_T * trans_elt_desc = (TransportElementDescriptor_T *) buffer;
-			buffer += trans_elt_desc_length;
-			bytes_available -= trans_elt_desc_length;
-
-			int address = trans_elt_desc->ElementAddress[0] << 8 | trans_elt_desc->ElementAddress[1];
-			int src_address = trans_elt_desc->SourceStorageElementAddress[0] << 8 | trans_elt_desc->SourceStorageElementAddress[1];
-			int index_slots = address;
-			switch (type) {
-				case DataTransferElement:
-					index_slots -= start_element;
-					break;
-
-				case ImportExportElement:
-					index_slots = changer->nb_slots - nb_found_element;
-					break;
-
-				case StorageElement:
-					index_slots += changer->nb_drives - start_element;
-					break;
-
-				default:
-					break;
-			}
-			struct st_slot * sl = changer->slots + index_slots;
-
-			sl->full = trans_elt_desc->Full > 0;
-			if (sl->full) {
-				strncpy(sl->volume_name, (char *) trans_elt_desc->PrimaryVolumeTag, 36);
-				sl->volume_name[36] = '\0';
-
-				int i;
-				for (i = 35; i >= 0 && sl->volume_name[i] == ' '; i--)
-					sl->volume_name[i] = '\0';
-			} else
-				*sl->volume_name = '\0';
-			if (type == ImportExportElement)
-				sl->is_import_export_slot = 1;
-			sl->address = address;
-			sl->src_address = type == DataTransferElement ? src_address : 0;
-
-			nb_found_element--;
-		}
+	int failed = ioctl(fd, SG_IO, &header);
+	if (failed) {
+		free(result);
+		return;
 	}
 
-	free(header.dxferp);
+	result->number_of_elements = be16toh(result->number_of_elements);
+
+	unsigned char * ptr = (unsigned char *) (result + 1);
+	unsigned short i;
+
+	struct scsi_loader_element_status * element_header = (struct scsi_loader_element_status *) (ptr);
+	element_header->element_descriptor_length = be16toh(element_header->element_descriptor_length);
+	element_header->byte_count_of_descriptor_data_available = be32toh(element_header->byte_count_of_descriptor_data_available);
+	ptr += sizeof(struct scsi_loader_element_status);
+
+	for (i = 0; i < result->number_of_elements; i++) {
+		struct st_slot * slot;
+		switch (element_header->type) {
+			case scsi_loader_element_type_all_elements:
+				break;
+
+			case scsi_loader_element_type_data_transfer: {
+					struct scsi_loader_data_transfer_element * data_transfer_element = (struct scsi_loader_data_transfer_element *) ptr;
+					data_transfer_element->element_address = be16toh(data_transfer_element->element_address);
+					data_transfer_element->source_storage_element_address = be16toh(data_transfer_element->source_storage_element_address);
+
+					slot = slot_base + i;
+					slot->full = data_transfer_element->full;
+					if (slot->full) {
+						strncpy(slot->volume_name, data_transfer_element->primary_volume_tag_information, 36);
+						slot->volume_name[36] = '\0';
+
+						int j;
+						for (j = 35; j >= 0 && slot->volume_name[j] == ' '; j--)
+							slot->volume_name[j] = '\0';
+					} else
+						*slot->volume_name = '\0';
+					slot->is_import_export_slot = 1;
+					slot->address = data_transfer_element->element_address;
+					slot->src_address = 0;
+				}
+				break;
+
+			case scsi_loader_element_type_import_export_element: {
+					struct scsi_loader_import_export_element * import_export_element = (struct scsi_loader_import_export_element *) ptr;
+					import_export_element->element_address = be16toh(import_export_element->element_address);
+					import_export_element->source_storage_element_address = be16toh(import_export_element->source_storage_element_address);
+
+					slot = slot_base + i;
+					slot->full = import_export_element->full;
+					if (slot->full) {
+						strncpy(slot->volume_name, import_export_element->primary_volume_tag_information, 36);
+						slot->volume_name[36] = '\0';
+
+						int j;
+						for (j = 35; j >= 0 && slot->volume_name[j] == ' '; j--)
+							slot->volume_name[j] = '\0';
+					} else
+						*slot->volume_name = '\0';
+					slot->is_import_export_slot = 1;
+					slot->address = import_export_element->element_address;
+					slot->src_address = 0;
+				}
+				break;
+
+			case scsi_loader_element_type_medium_transport_element: {
+					struct scsi_loader_medium_transport_element * transport_element = (struct scsi_loader_medium_transport_element *) ptr;
+					transport_element->element_address = be16toh(transport_element->element_address);
+					transport_element->source_storage_element_address = be16toh(transport_element->source_storage_element_address);
+				}
+				break;
+
+			case scsi_loader_element_type_storage_element: {
+					struct scsi_loader_storage_element * storage_element = (struct scsi_loader_storage_element *) ptr;
+					storage_element->element_address = be16toh(storage_element->element_address);
+					storage_element->source_storage_element_address = be16toh(storage_element->source_storage_element_address);
+
+					slot = slot_base + i;
+					slot->full = storage_element->full;
+
+					if (slot->full) {
+						strncpy(slot->volume_name, storage_element->primary_volume_tag_information, 36);
+						slot->volume_name[36] = '\0';
+
+						int j;
+						for (j = 35; j >= 0 && slot->volume_name[j] == ' '; j--)
+							slot->volume_name[j] = '\0';
+					} else
+						*slot->volume_name = '\0';
+					slot->is_import_export_slot = 0;
+					slot->address = storage_element->element_address;
+					slot->src_address = 0;
+				}
+				break;
+		}
+
+		ptr += element_header->element_descriptor_length;
+	}
+
+	free(result);
 }
+
+
 
 int st_scsi_tape_locate(int fd, off_t position) {
 	RequestSense_T sense;
@@ -668,7 +993,7 @@ int st_scsi_tape_read_mam(int fd, struct st_tape * tape) {
 	unsigned char * ptr = buffer + 4;
 
 	for (ptr = buffer + 4; ptr < buffer + data_available;) {
-		enum Mam_attribute attr_id = (ptr[0] << 8) | ptr[1];
+		enum scsi_mam_attribute attr_id = (ptr[0] << 8) | ptr[1];
 		// unsigned char read_only = ptr[2] & 0x80;
 		// unsigned char format = ptr[2] & 0x3;
 		unsigned short attr_length = (ptr[3] << 8) | ptr[4];
@@ -682,7 +1007,7 @@ int st_scsi_tape_read_mam(int fd, struct st_tape * tape) {
 		unsigned int i;
 		char * space;
 		switch (attr_id) {
-			case Mam_remaining_capacity:
+			case scsi_mam_remaining_capacity:
 				tape->available_block = 0;
 				for (i = 0; i < attr_length; i++) {
 					tape->available_block <<= 8;
@@ -692,7 +1017,7 @@ int st_scsi_tape_read_mam(int fd, struct st_tape * tape) {
 				tape->available_block /= (tape->block_size >> 10);
 				break;
 
-			case Mam_load_count:
+			case scsi_mam_load_count:
 				tape->load_count = 0;
 				for (i = 0; i < attr_length; i++) {
 					tape->load_count <<= 8;
@@ -700,7 +1025,7 @@ int st_scsi_tape_read_mam(int fd, struct st_tape * tape) {
 				}
 				break;
 
-			case Mam_medium_serial_number:
+			case scsi_mam_medium_serial_number:
 				strncpy(tape->medium_serial_number, (char *) attr, 32);
 				space = strchr(tape->medium_serial_number, ' ');
 				if (space)

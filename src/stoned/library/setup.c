@@ -234,7 +234,7 @@ int st_changer_setup() {
 	// do loaderinfo
 	for (i = 0; i < st_nb_real_changers; i++) {
 		int fd = open(st_changers[i].device, O_RDWR);
-		st_scsi_loaderinfo(fd, st_changers + i);
+		st_scsi_loader_info(fd, st_changers + i);
 		close(fd);
 	}
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Jun 2012 12:23:25 +0200                         *
+*  Last modified: Wed, 06 Jun 2012 10:25:04 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -798,10 +798,11 @@ int st_db_postgresql_get_tape(struct st_database_connection * connection, struct
 	}
 
 	ExecStatusType status = PQresultStatus(result);
+	int nb_tuples = PQntuples(result);
 
 	if (status == PGRES_FATAL_ERROR)
 		st_db_postgresql_get_error(result, query);
-	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+	else if (status == PGRES_TUPLES_OK && nb_tuples == 1) {
 		st_db_postgresql_get_long(result, 0, 0, &tape->id);
 		st_db_postgresql_get_string(result, 0, 2, tape->label);
 		st_db_postgresql_get_string(result, 0, 3, tape->medium_serial_number);
@@ -835,7 +836,7 @@ int st_db_postgresql_get_tape(struct st_database_connection * connection, struct
 
 	PQclear(result);
 
-	return status != PGRES_TUPLES_OK;
+	return status != PGRES_TUPLES_OK || nb_tuples < 1;
 }
 
 int st_db_postgresql_get_tape_format(struct st_database_connection * connection, struct st_tape_format * tape_format, long id, unsigned char density_code) {

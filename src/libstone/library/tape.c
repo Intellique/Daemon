@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Jun 2012 12:04:10 +0200                         *
+*  Last modified: Wed, 06 Jun 2012 10:29:38 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -421,7 +421,7 @@ void st_tape_retrieve(struct st_tape ** tape, long id, const char * uuid, const 
 
 		if (con->ops->get_tape(con, *tape, id, uuid, label)) {
 			free(*tape);
-			tape = 0;
+			*tape = 0;
 		} else {
 			st_tape_tapes = realloc(st_tape_tapes, (st_tape_nb_tapes + 1) * sizeof(struct st_tape *));
 			st_tape_tapes[st_tape_nb_tapes] = *tape;
