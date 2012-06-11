@@ -906,8 +906,8 @@ ssize_t st_drive_io_writer_get_available_size(struct st_stream_writer * io) {
 	//return 536870912 - self->position;
 
 	// we reserve 16 blocks at the end of tape
-	if (tape->available_block <= 16)
-		return 0;
+	// if (tape->available_block <= 16)
+	// 	return 0;
 
 	return (tape->available_block - 16) * tape->block_size - self->buffer_used;
 }

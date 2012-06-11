@@ -43,6 +43,7 @@
 #include "libstone/test.h"
 #include "log.h"
 #include "stone-config/test.h"
+#include "stoned/test.h"
 
 int main(int argc, char * argv[]) {
 	enum {
@@ -133,6 +134,7 @@ int main(int argc, char * argv[]) {
 
 	test_stoneconfig_add_suite();
     test_libstone_add_suite();
+    test_stoned_add_suite();
 
     st_log_disable_display_log();
 
