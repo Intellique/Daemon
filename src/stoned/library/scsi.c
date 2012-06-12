@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 11 Jun 2012 23:31:28 +0200                         *
+*  Last modified: Tue, 12 Jun 2012 17:27:54 +0200                         *
 \*************************************************************************/
 
 // htobe16
@@ -42,66 +42,6 @@
 #include <sys/ioctl.h>
 
 #include "scsi.h"
-
-typedef struct Inquiry {
-	unsigned char PeripheralDeviceType:5; /* Byte 0 Bits 0-4 */
-	unsigned char PeripheralQualifier:3;  /* Byte 0 Bits 5-7 */
-	unsigned char DeviceTypeModifier:7;   /* Byte 1 Bits 0-6 */
-	char RMB:1;                           /* Byte 1 Bit 7 */
-	unsigned char ANSI_ApprovedVersion:3; /* Byte 2 Bits 0-2 */
-	unsigned char ECMA_Version:3;         /* Byte 2 Bits 3-5 */
-	unsigned char ISO_Version:2;          /* Byte 2 Bits 6-7 */
-	unsigned char ResponseDataFormat:4;   /* Byte 3 Bits 0-3 */
-	unsigned char :2;                     /* Byte 3 Bits 4-5 */
-	char TrmIOP:1;                        /* Byte 3 Bit 6 */
-	char AENC:1;                          /* Byte 3 Bit 7 */
-	unsigned char AdditionalLength;       /* Byte 4 */
-	unsigned char :8;                     /* Byte 5 */
-	char ADDR16:1;                        /* Byte 6 bit 0 */
-	char Obs6_1:1;                        /* Byte 6 bit 1 */
-	char Obs6_2:1;/* obsolete */          /* Byte 6 bit 2 */
-	char MChngr:1;/* Media Changer */     /* Byte 6 bit 3 */
-	char MultiP:1;                        /* Byte 6 bit 4 */
-	char VS:1;                            /* Byte 6 bit 5 */
-	char EncServ:1;                       /* Byte 6 bit 6 */
-	char BQue:1;                          /* Byte 6 bit 7 */
-	char SftRe:1;                         /* Byte 7 Bit 0 */
-	char CmdQue:1;                        /* Byte 7 Bit 1 */
-char :1;                              /* Byte 7 Bit 2 */
-	  char Linked:1;                        /* Byte 7 Bit 3 */
-	  char Sync:1;                          /* Byte 7 Bit 4 */
-	  char WBus16:1;                        /* Byte 7 Bit 5 */
-	  char WBus32:1;                        /* Byte 7 Bit 6 */
-	  char RelAdr:1;                        /* Byte 7 Bit 7 */
-	  unsigned char VendorIdentification[8];      /* Bytes 8-15 */
-	  unsigned char ProductIdentification[16];    /* Bytes 16-31 */
-	  unsigned char ProductRevisionLevel[4];      /* Bytes 32-35 */
-	  unsigned char FullProductRevisionLevel[19]; /* bytes 36-54 */
-	  unsigned char VendorFlags;                  /* byte 55 */
-} Inquiry_T;
-
-typedef struct RequestSense {
-	unsigned char ErrorCode:7;				/* Byte 0 Bits 0-6 */
-	char Valid:1;					/* Byte 0 Bit 7 */
-	unsigned char SegmentNumber;				/* Byte 1 */
-	unsigned char SenseKey:4;				/* Byte 2 Bits 0-3 */
-	unsigned char :1;					/* Byte 2 Bit 4 */
-	char ILI:1;					/* Byte 2 Bit 5 */
-	char EOM:1;					/* Byte 2 Bit 6 */
-	char Filemark:1;					/* Byte 2 Bit 7 */
-	unsigned char Information[4];				/* Bytes 3-6 */
-	unsigned char AdditionalSenseLength;			/* Byte 7 */
-	unsigned char CommandSpecificInformation[4];		/* Bytes 8-11 */
-	unsigned char AdditionalSenseCode;			/* Byte 12 */
-	unsigned char AdditionalSenseCodeQualifier;		/* Byte 13 */
-	unsigned char :8;					/* Byte 14 */
-	unsigned char BitPointer:3;                           /* Byte 15 */
-	char BPV:1;
-	unsigned char :2;
-	char CommandData :1;
-	char SKSV:1;      
-	unsigned char FieldData[2];       	 		/* Byte 16,17 */
-} RequestSense_T;
 
 
 struct scsi_inquiry {
@@ -819,14 +759,132 @@ void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, stru
 }
 
 
+void st_scsi_tape_info(int fd, struct st_drive * drive) {
+	struct {
+		unsigned char peripheral_device_type:5;
+		unsigned char peripheral_device_qualifier:3;
+		unsigned char reserved0:7;
+		unsigned char removable_medium_bit:1;
+		unsigned char version:3;
+		unsigned char ecma_version:3;
+		unsigned char iso_version:2;
+		unsigned char response_data_format:4;
+		unsigned char hi_sup:1;
+		unsigned char norm_aca:1;
+		unsigned char obsolete0:1;
+		unsigned char asynchronous_event_reporting_capability:1;
+		unsigned char additional_length;
+		unsigned char reserved1:7;
+		unsigned char scc_supported:1;
+		unsigned char addr16:1;
+		unsigned char addr32:1;
+		unsigned char obsolete1:1;
+		unsigned char medium_changer:1;
+		unsigned char multi_port:1;
+		unsigned char vs:1;
+		unsigned char enclosure_service:1;
+		unsigned char basic_queuing:1;
+		unsigned char reserved2:1;
+		unsigned char command_queuing:1;
+		unsigned char trans_dis:1;
+		unsigned char linked_command:1;
+		unsigned char synchonous_transfer:1;
+		unsigned char wide_bus_16:1;
+		unsigned char obsolete2:1;
+		unsigned char relative_addressing:1;
+		char vendor_identification[8];
+		char product_identification[16];
+		char product_revision_level[4];
+		unsigned char aut_dis:1;
+		unsigned char performance_limit;
+		unsigned char reserved3[3];
+		unsigned char oem_specific;
+	} __attribute__((packed)) result_inquiry;
 
-int st_scsi_tape_locate(int fd, off_t position) {
-	RequestSense_T sense;
+	struct scsi_inquiry command_inquiry = {
+		.operation_code = 0x12,
+		.enable_vital_product_data = 0,
+		.page_code = 0,
+		.allocation_length = sizeof(result_inquiry),
+	};
 
+	struct scsi_request_sense sense;
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
+	memset(&result_inquiry, 0, sizeof(result_inquiry));
 
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command_inquiry);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result_inquiry);
+	header.cmdp = (unsigned char *) &command_inquiry;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &result_inquiry;
+	header.timeout = 60000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	if (ioctl(fd, SG_IO, &header))
+		return;
+
+	ssize_t length;
+	drive->vendor = malloc(9);
+	strncpy(drive->vendor, result_inquiry.vendor_identification, 8);
+	drive->vendor[8] = '\0';
+	for (length = 7; length >= 0 && drive->vendor[length] == ' '; length--)
+		drive->vendor[length] = '\0';
+
+	drive->model = malloc(17);
+	strncpy(drive->model, result_inquiry.product_identification, 16);
+	drive->model[16] = '\0';
+	for (length = 15; length >= 0 && drive->model[length] == ' '; length--)
+		drive->model[length] = '\0';
+
+	drive->revision = malloc(5);
+	strncpy(drive->revision, result_inquiry.product_revision_level, 4);
+	drive->revision[4] = '\0';
+	for (length = 3; length >= 0 && drive->revision[length] == ' '; length--)
+		drive->revision[length] = '\0';
+
+	struct {
+		unsigned char peripheral_device_type:5;
+		unsigned char peripheral_device_qualifier:3;
+		unsigned char page_code;
+		unsigned char reserved;
+		unsigned char page_length;
+		char unit_serial_number[10];
+	} __attribute__((packed)) result_serial_number;
+
+	struct scsi_inquiry command_serial_number = {
+		.operation_code = 0x12,
+		.enable_vital_product_data = 1,
+		.page_code = 0x80,
+		.allocation_length = sizeof(result_serial_number),
+	};
+
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(&result_serial_number, 0, sizeof(result_serial_number));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command_serial_number);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result_serial_number);
+	header.cmdp = (unsigned char *) &command_serial_number;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &result_serial_number;
+	header.timeout = 60000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	if (ioctl(fd, SG_IO, &header))
+		return;
+
+	drive->serial_number = malloc(13);
+	strncpy(drive->serial_number, result_serial_number.unit_serial_number, 12);
+	drive->serial_number[12] = '\0';
+}
+
+int st_scsi_tape_locate(int fd, off_t position) {
 	struct {
 		unsigned char op_code;
 		unsigned char immed:1;
@@ -847,6 +905,8 @@ int st_scsi_tape_locate(int fd, off_t position) {
 		.partition = 0,
 	};
 
+	struct scsi_request_sense sense;
+	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
 
@@ -868,27 +928,50 @@ int st_scsi_tape_locate(int fd, off_t position) {
 }
 
 int st_scsi_tape_position(int fd, struct st_tape * tape) {
-	RequestSense_T sense;
-	unsigned char buffer[20];
-	bzero(buffer, 20);
+	struct {
+		unsigned char op_code;
+		unsigned char service_action:5;
+		unsigned char obsolete:3;
+		unsigned char reserved[5];
+		unsigned short parameter_length; // should be a bigger endian integer
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.op_code = 0x34,
+		.service_action = 0,
+		.parameter_length = 0,
+	};
 
+	struct {
+		unsigned char reserved0:1;
+		unsigned char perr:1;
+		unsigned char block_position_unknown:1;
+		unsigned char reserved1:1;
+		unsigned char bycu:1;
+		unsigned char bcu:1;
+		unsigned char end_of_partition:1;
+		unsigned char begginning_of_partition:1;
+		unsigned char partition_number;
+		unsigned char reserved2[2];
+		unsigned int first_block_location;
+		unsigned int last_block_location;
+		unsigned char reserved3;
+		unsigned int number_of_blocks_in_buffer;
+		unsigned int number_of_bytes_in_buffer;
+	} __attribute__((packed)) result;
+
+	struct scsi_request_sense sense;
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
-
-	unsigned char com[10] = { 0x34, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-	memset(&header, 0, sizeof(header));
-	memset(&sense, 0, sizeof(sense));
-	memset(buffer, 0, 20);
+	memset(&result, 0, sizeof(result));
 
 	header.interface_id = 'S';
-	header.cmd_len = sizeof(com);
+	header.cmd_len = sizeof(command);
 	header.mx_sb_len = sizeof(sense);
-	header.dxfer_len = 20;
-	header.cmdp = com;
+	header.dxfer_len = sizeof(result);;
+	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
-	header.dxferp = buffer;
+	header.dxferp = (unsigned char *) &result;
 	header.timeout = 60000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
@@ -896,10 +979,15 @@ int st_scsi_tape_position(int fd, struct st_tape * tape) {
 	if (status)
 		return 1;
 
-	if (buffer[0] & 0x4)
+	if (result.block_position_unknown)
 		return -1;
 
-	tape->end_position = (((unsigned int) buffer[4] << 24) + ((unsigned int) buffer[5] << 16) + ((unsigned int) buffer[6] <<  8) + buffer[7]);
+	result.first_block_location = be32toh(result.first_block_location);
+	result.last_block_location = be32toh(result.last_block_location);
+	result.number_of_blocks_in_buffer = be32toh(result.number_of_blocks_in_buffer);
+	result.number_of_bytes_in_buffer = be32toh(result.number_of_bytes_in_buffer);
+
+	tape->end_position = result.first_block_location;
 
 	return 0;
 }
@@ -940,7 +1028,7 @@ int st_scsi_tape_read_position(int fd, off_t * position) {
 		unsigned int number_of_bytes_in_buffer;
 	} __attribute__((packed)) result;
 
-	RequestSense_T sense;
+	struct scsi_request_sense sense;
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
@@ -965,19 +1053,45 @@ int st_scsi_tape_read_position(int fd, off_t * position) {
 }
 
 int st_scsi_tape_read_mam(int fd, struct st_tape * tape) {
-	RequestSense_T sense;
+	struct {
+		unsigned char operation_code;
+		enum {
+			scsi_read_attribute_service_action_attributes_values = 0x00,
+			scsi_read_attribute_service_action_attribute_list = 0x01,
+			scsi_read_attribute_service_action_volume_list = 0x02,
+			scsi_read_attribute_service_action_parition_list = 0x03,
+		} service_action:5;
+		unsigned char obsolete:3;
+		unsigned char reserved0[3];
+		unsigned char volume_number;
+		unsigned char reserved1;
+		unsigned char partition_number;
+		unsigned short first_attribute_id;
+		unsigned short allocation_length;
+		unsigned char reserved2;
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x8C,
+		.service_action = scsi_read_attribute_service_action_attributes_values,
+		.volume_number = 0,
+		.partition_number = 0,
+		.first_attribute_id = 0,
+		.allocation_length = htobe16(1024),
+		.control = 0,
+	};
+
+	struct scsi_request_sense sense;
 	unsigned char buffer[1024];
-	unsigned char com[16] = { 0x8C, 0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, (sizeof(buffer) >> 8) & 0xFF, sizeof(buffer) & 0xFF, 0, 0 };
 
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
 
 	header.interface_id = 'S';
-	header.cmd_len = sizeof(com);
+	header.cmd_len = sizeof(command);
 	header.mx_sb_len = sizeof(sense);
 	header.dxfer_len = sizeof(buffer);
-	header.cmdp = com;
+	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = buffer;
 	header.timeout = 2000;
@@ -989,44 +1103,47 @@ int st_scsi_tape_read_mam(int fd, struct st_tape * tape) {
 	if (status)
 		return status;
 
-	unsigned int data_available = ((buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] << 8) | buffer[3]) - 4;
+	struct scsi_mam {
+		enum scsi_mam_attribute attribute_identifier:16;
+		unsigned char format:2;
+		unsigned char reserved:5;
+		unsigned char read_only:1;
+		unsigned short attribute_length;
+		union {
+			unsigned char int8;
+			unsigned short be16;
+			unsigned long long be64;
+			char text[160];
+		} attribute_value;
+	} __attribute__((packed));
+
+	unsigned int data_available = be32toh(*(unsigned int *) buffer);
 	unsigned char * ptr = buffer + 4;
 
 	for (ptr = buffer + 4; ptr < buffer + data_available;) {
-		enum scsi_mam_attribute attr_id = (ptr[0] << 8) | ptr[1];
-		// unsigned char read_only = ptr[2] & 0x80;
-		// unsigned char format = ptr[2] & 0x3;
-		unsigned short attr_length = (ptr[3] << 8) | ptr[4];
+		struct scsi_mam * attr = (struct scsi_mam *) ptr;
+		attr->attribute_identifier = be16toh(attr->attribute_identifier);
+		attr->attribute_length = be16toh(attr->attribute_length);
 
-		unsigned char * attr = ptr + 5;
-		ptr += 5 + attr_length;
+		ptr += attr->attribute_length + 5;
 
-		if (attr_length == 0)
+		if (attr->attribute_length == 0)
 			continue;
 
-		unsigned int i;
 		char * space;
-		switch (attr_id) {
+		switch (attr->attribute_identifier) {
 			case scsi_mam_remaining_capacity:
-				tape->available_block = 0;
-				for (i = 0; i < attr_length; i++) {
-					tape->available_block <<= 8;
-					tape->available_block += (unsigned char) attr[i];
-				}
+				tape->available_block = be64toh(attr->attribute_value.be64);
 				tape->available_block <<= 10;
 				tape->available_block /= (tape->block_size >> 10);
 				break;
 
 			case scsi_mam_load_count:
-				tape->load_count = 0;
-				for (i = 0; i < attr_length; i++) {
-					tape->load_count <<= 8;
-					tape->load_count += (unsigned char) attr[i];
-				}
+				tape->load_count = be64toh(attr->attribute_value.be64);
 				break;
 
 			case scsi_mam_medium_serial_number:
-				strncpy(tape->medium_serial_number, (char *) attr, 32);
+				strncpy(tape->medium_serial_number, attr->attribute_value.text, 32);
 				space = strchr(tape->medium_serial_number, ' ');
 				if (space)
 					*space = '\0';
@@ -1043,9 +1160,24 @@ int st_scsi_tape_read_mam(int fd, struct st_tape * tape) {
 }
 
 int st_scsi_tape_size_available(int fd, struct st_tape * tape) {
-	RequestSense_T sense;
-	unsigned char buffer[2048];
-	bzero(buffer, 2048);
+	struct {
+		unsigned char page_code:6;
+		unsigned char reserved0:2;
+		unsigned char reserved1;
+		unsigned short page_length;
+		struct {
+			unsigned short parameter_code;
+			unsigned char lp:1;
+			unsigned char lbin:1;
+			unsigned char tmc:2;
+			unsigned char etc:1;
+			unsigned char tsd:1;
+			unsigned char ds:1;
+			unsigned char du:1;
+			unsigned char parameter_length;
+			unsigned int value;
+		} parameters[4];
+	} __attribute__((packed)) result;
 
 	struct {
 		unsigned char op_code;
@@ -1054,7 +1186,12 @@ int st_scsi_tape_size_available(int fd, struct st_tape * tape) {
 		unsigned char reserved0:3;
 		unsigned char obsolete:3;
 		unsigned char page_code:5;
-		unsigned char pc:2;
+		enum {
+			log_sense_page_control_maximum_value = 0x0,
+			log_sense_page_control_current_value = 0x1,
+			log_sense_page_control_maximum_value2 = 0x2,
+			log_sense_page_control_power_on_value = 0x3,
+		} page_control:2;
 		unsigned char reserved1[2];
 		unsigned short parameter_pointer;
 		unsigned short allocation_length;
@@ -1064,119 +1201,43 @@ int st_scsi_tape_size_available(int fd, struct st_tape * tape) {
 		.sp = 0,
 		.ppc = 0,
 		.page_code = 0x11,
-		.pc = 1,
+		.page_control = log_sense_page_control_current_value,
 		.parameter_pointer = 0,
-		.allocation_length = htobe16(2048),
+		.allocation_length = htobe16(sizeof(result)),
 		.control = 0,
 	};
 
-	// unsigned char com1[10] = { 0x4D, 0, 0x31, 0, 0, 0, 0, 2048 >> 8 & 0xFF, 2048 & 0xFF, 0 };
-
+	struct scsi_request_sense sense;
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
+	memset(&result, 0, sizeof(result));
 
 	header.interface_id = 'S';
 	header.cmd_len = sizeof(command);
 	header.mx_sb_len = sizeof(sense);
-	header.dxfer_len = sizeof(buffer);
+	header.dxfer_len = sizeof(result);
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
-	header.dxferp = buffer;
+	header.dxferp = (unsigned char *) &result;
 	header.timeout = 60000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);
-	if (status || ((buffer[0] & 0x3F) != 0x31))
+	if (status || result.page_code != 0x31)
 		return 1;
 
-	if (buffer[8] == buffer[24] && buffer[9] == buffer[25] && buffer[10] == buffer[26] && buffer[11] == buffer[27] && tape->end_position > 0)
-		return 0;
-
-	tape->available_block = ((unsigned int) buffer[8] << 24) + ((unsigned int) buffer[9] << 16) + ((unsigned int) buffer[10] <<  8) + buffer[11];
-	// check for buggy tape drive, they report always the same value for available size and total size
-	if (buffer[8] == buffer[24] && buffer[9] == buffer[25] && buffer[10] == buffer[26] && buffer[11] == buffer[27] && tape->end_position > 0) {
-		// update available only for buggy tape drive
-		// tape->available_block is in MBytes
-		tape->available_block <<= 10;
-		tape->available_block /= (tape->block_size >> 10);
-		tape->available_block -= tape->end_position;
-	} else {
-		// tape->available_block is in KBytes
-		tape->available_block /= (tape->block_size >> 10);
+	result.page_length = be16toh(result.page_length);
+	unsigned short i;
+	for (i = 0; i < 4; i++) {
+		result.parameters[i].parameter_code = be16toh(result.parameters[i].parameter_code);
+		result.parameters[i].value = be32toh(result.parameters[i].value);
 	}
 
+	tape->available_block = result.parameters[0].value << 10;
+	tape->available_block /= (tape->block_size >> 10);
+	tape->available_block -= tape->end_position;
+
 	return 0;
-}
-
-void st_scsi_tapeinfo(int fd, struct st_drive * drive) {
-	Inquiry_T inq;
-	RequestSense_T sense;
-
-	unsigned char hdr_inq[sizeof(struct sg_header) + sizeof(inq)];
-	unsigned char com1[6] = { 0x12, 0, 0, 0, sizeof(hdr_inq), 0 };
-
-	sg_io_hdr_t header;
-	memset(&header, 0, sizeof(header));
-	memset(&sense, 0, sizeof(sense));
-
-	header.interface_id = 'S';
-	header.cmd_len = sizeof(com1);
-	header.mx_sb_len = sizeof(sense);
-	header.dxfer_len = sizeof(inq);
-	header.cmdp = com1;
-	header.sbp = (unsigned char *) &sense;
-	header.dxferp = &inq;
-	header.timeout = 60000;
-	header.dxfer_direction = SG_DXFER_FROM_DEV;
-
-	int status = ioctl(fd, SG_IO, &header);
-	if (status)
-		return;
-
-	ssize_t length = sizeof(inq.VendorIdentification);
-	drive->vendor = malloc(length + 1);
-	strncpy(drive->vendor, (char *) inq.VendorIdentification, length);
-	drive->vendor[length] = '\0';
-	for (length--; drive->vendor[length] ==  ' '; length--)
-		drive->vendor[length] = '\0';
-	drive->vendor = realloc(drive->vendor, strlen(drive->vendor) + 1);
-
-	length = sizeof(inq.ProductIdentification);
-	drive->model = malloc(length + 1);
-	strncpy(drive->model, (char *) inq.ProductIdentification, length);
-	drive->model[length] = '\0';
-	for (length--; drive->model[length] ==  ' '; length--)
-		drive->model[length] = '\0';
-	drive->model = realloc(drive->model, strlen(drive->model) + 1);
-
-	drive->revision = malloc(5);
-	strncpy(drive->revision, (char *) inq.ProductRevisionLevel, 4);
-	drive->revision[4] = '\0';
-
-	unsigned char com2[6] = { 0x12, 1, 0x80, 0, 30, 0 };
-	char buffer[30];
-
-	memset(&header, 0, sizeof(header));
-	memset(&sense, 0, sizeof(sense));
-
-	header.interface_id = 'S';
-	header.cmd_len = sizeof(com2);
-	header.mx_sb_len = sizeof(sense);
-	header.dxfer_len = 30;
-	header.cmdp = com2;
-	header.sbp = (unsigned char *) &sense;
-	header.dxferp = &buffer;
-	header.timeout = 60000;
-	header.dxfer_direction = SG_DXFER_FROM_DEV;
-
-	status = ioctl(fd, SG_IO, &header);
-	if (status)
-		return;
-
-	length = buffer[3];
-	drive->serial_number = malloc(length + 1);
-	strncpy(drive->serial_number, buffer + 4, length);
-	drive->serial_number[length] = '\0';
 }
 

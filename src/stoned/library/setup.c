@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 30 Jan 2012 13:14:48 +0100                         *
+*  Last modified: Mon, 11 Jun 2012 23:35:49 +0200                         *
 \*************************************************************************/
 
 // open
@@ -241,7 +241,7 @@ int st_changer_setup() {
 	// do tapeinfo
 	for (i = 0; i < nb_drives; i++) {
 		int fd = open(drives[i].scsi_device, O_RDWR);
-		st_scsi_tapeinfo(fd, drives + i);
+		st_scsi_tape_info(fd, drives + i);
 		close(fd);
 	}
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 08 Jun 2012 16:01:25 +0200                         *
+*  Last modified: Mon, 11 Jun 2012 23:35:25 +0200                         *
 \*************************************************************************/
 
 #ifndef SCSI_H__
@@ -38,13 +38,12 @@ int st_scsi_loader_move(int fd, struct st_changer * ch, struct st_slot * from, s
 int st_scsi_loader_ready(int fd);
 void st_scsi_loader_status_new(int fd, struct st_changer * changer);
 
-void st_scsi_mtx_status_new(int fd, struct st_changer * changer);
+void st_scsi_tape_info(int fd, struct st_drive * drive);
 int st_scsi_tape_locate(int fd, off_t position);
 int st_scsi_tape_position(int fd, struct st_tape * tape);
 int st_scsi_tape_read_mam(int fd, struct st_tape * tape);
 int st_scsi_tape_read_position(int fd, off_t * position);
 int st_scsi_tape_size_available(int fd, struct st_tape * tape);
-void st_scsi_tapeinfo(int fd, struct st_drive * drive);
 
 #endif
 
