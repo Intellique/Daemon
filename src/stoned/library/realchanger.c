@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 12 Jun 2012 10:09:10 +0200                         *
+*  Last modified: Wed, 13 Jun 2012 13:10:47 +0200                         *
 \*************************************************************************/
 
 // open
@@ -99,8 +99,6 @@ int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st
 	if (from->changer != ch || to->changer != ch)
 		return 1;
 
-	struct st_tape * tape = from->tape;
-
 	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: loading tape '%s' from slot #%td to drive #%td", ch->vendor, ch->model, from->volume_name, from - ch->slots, to - ch->drives);
 
 	struct st_realchanger_private * self = ch->data;
@@ -108,6 +106,16 @@ int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st
 
 	st_realchanger_update_status(ch, ST_CHANGER_LOADING);
 	int failed = st_scsi_loader_move(self->fd, ch, from, to->slot);
+
+	if (failed) {
+		struct st_slot tmp_from = *from;
+		st_scsi_loader_check_slot(self->fd, ch, &tmp_from);
+
+		struct st_slot tmp_to = *to->slot;
+		st_scsi_loader_check_slot(self->fd, ch, &tmp_to);
+
+		failed = tmp_from.full || !tmp_to.full;
+	}
 
 	if (!failed) {
 		if (from->tape) {
@@ -128,7 +136,7 @@ int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st
 		st_realchanger_update_status(ch, ST_CHANGER_ERROR);
 	}
 
-	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "[%s | %s]: loading tape '%s' from slot #%td to drive #%td finished with code = %d", ch->vendor, ch->model, "", from - ch->slots, to - ch->drives, failed);
+	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "[%s | %s]: loading tape '%s' from slot #%td to drive #%td finished with code = %d", ch->vendor, ch->model, to->slot->volume_name, from - ch->slots, to - ch->drives, failed);
 
 	return failed;
 }
@@ -328,8 +336,6 @@ int st_realchanger_unload(struct st_changer * ch, struct st_drive * from, struct
 	if (from->changer != ch || to->changer != ch)
 		return 1;
 
-	struct st_tape * tape = from->slot->tape;
-
 	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: unloading tape '%s' from drive #%td to slot #%td", ch->vendor, ch->model, from->slot->volume_name, from - ch->drives, to - ch->slots);
 
 	struct st_realchanger_private * self = ch->data;
@@ -337,6 +343,16 @@ int st_realchanger_unload(struct st_changer * ch, struct st_drive * from, struct
 
 	st_realchanger_update_status(ch, ST_CHANGER_UNLOADING);
 	int failed = st_scsi_loader_move(self->fd, ch, from->slot, to);
+
+	if (failed) {
+		struct st_slot tmp_from = *from->slot;
+		st_scsi_loader_check_slot(self->fd, ch, &tmp_from);
+
+		struct st_slot tmp_to = *to;
+		st_scsi_loader_check_slot(self->fd, ch, &tmp_to);
+
+		failed = tmp_from.full || !tmp_to.full;
+	}
 
 	if (!failed) {
 		to->tape = from->slot->tape;
@@ -355,7 +371,7 @@ int st_realchanger_unload(struct st_changer * ch, struct st_drive * from, struct
 		st_realchanger_update_status(ch, ST_CHANGER_ERROR);
 	}
 
-	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading tape '%s' from drive #%td to slot #%td finished with code = %d", ch->vendor, ch->model, "", from - ch->drives, to - ch->slots, failed);
+	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading tape '%s' from drive #%td to slot #%td finished with code = %d", ch->vendor, ch->model, to->volume_name, from - ch->drives, to - ch->slots, failed);
 
 	return failed;
 }

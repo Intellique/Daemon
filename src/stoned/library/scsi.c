@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 12 Jun 2012 17:27:54 +0200                         *
+*  Last modified: Wed, 13 Jun 2012 13:31:37 +0200                         *
 \*************************************************************************/
 
 // htobe16
@@ -40,6 +40,8 @@
 #include <string.h>
 // ioctl
 #include <sys/ioctl.h>
+// sleep
+#include <unistd.h>
 
 #include "scsi.h"
 
@@ -226,6 +228,16 @@ struct scsi_request_sense {
 
 static void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, struct st_slot * slot_base, int start_element, int nb_elements, enum scsi_loader_element_type type);
 
+
+void st_scsi_loader_check_slot(int fd, struct st_changer * changer, struct st_slot * slot) {
+	enum scsi_loader_element_type type = scsi_loader_element_type_storage_element;
+	if (slot->drive)
+		type = scsi_loader_element_type_data_transfer;
+	else if (slot->is_import_export_slot)
+		type = scsi_loader_element_type_import_export_element;
+
+	st_scsi_loader_status_update_slot(fd, changer, slot, slot->address, 1, type);
+}
 
 void st_scsi_loader_info(int fd, struct st_changer * changer) {
 	struct {
@@ -581,12 +593,12 @@ void st_scsi_loader_status_new(int fd, struct st_changer * changer) {
 		slot->is_import_export_slot = 0;
 	}
 
-    st_scsi_loader_status_update_slot(fd, changer, changer->slots + changer->nb_drives, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element);
-    st_scsi_loader_status_update_slot(fd, changer, changer->slots, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer);
-    if (result.number_of_import_export_elements > 0)
-        st_scsi_loader_status_update_slot(fd, changer, changer->slots + result.number_of_medium_transport_elements + result.number_of_storage_elements, result.first_import_export_element_address, result.number_of_import_export_elements, scsi_loader_element_type_import_export_element);
+	st_scsi_loader_status_update_slot(fd, changer, changer->slots + changer->nb_drives, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element);
+	st_scsi_loader_status_update_slot(fd, changer, changer->slots, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer);
+	if (result.number_of_import_export_elements > 0)
+		st_scsi_loader_status_update_slot(fd, changer, changer->slots + result.number_of_medium_transport_elements + result.number_of_storage_elements, result.first_import_export_element_address, result.number_of_import_export_elements, scsi_loader_element_type_import_export_element);
 
-    changer->transport_address = result.medium_transport_element_address;
+	changer->transport_address = result.medium_transport_element_address;
 }
 
 void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, struct st_slot * slot_base, int start_element, int nb_elements, enum scsi_loader_element_type type) {
@@ -655,22 +667,31 @@ void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, stru
 	header.timeout = 1200000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
-	int failed = ioctl(fd, SG_IO, &header);
-	if (failed) {
-		free(result);
-		return;
-	}
+	unsigned char * ptr;
+	struct scsi_loader_element_status * element_header;
+	do {
+		int failed = ioctl(fd, SG_IO, &header);
+		if (failed) {
+			free(result);
+			return;
+		}
 
-	result->number_of_elements = be16toh(result->number_of_elements);
+		result->number_of_elements = be16toh(result->number_of_elements);
 
-	unsigned char * ptr = (unsigned char *) (result + 1);
+		ptr = (unsigned char *) (result + 1);
+
+		element_header = (struct scsi_loader_element_status *) (ptr);
+		element_header->element_descriptor_length = be16toh(element_header->element_descriptor_length);
+		element_header->byte_count_of_descriptor_data_available = be32toh(element_header->byte_count_of_descriptor_data_available);
+		ptr += sizeof(struct scsi_loader_element_status);
+
+		if (element_header->type != type) {
+			sleep(1);
+			st_scsi_loader_ready(fd);
+		}
+	} while (element_header->type != type);
+
 	unsigned short i;
-
-	struct scsi_loader_element_status * element_header = (struct scsi_loader_element_status *) (ptr);
-	element_header->element_descriptor_length = be16toh(element_header->element_descriptor_length);
-	element_header->byte_count_of_descriptor_data_available = be32toh(element_header->byte_count_of_descriptor_data_available);
-	ptr += sizeof(struct scsi_loader_element_status);
-
 	for (i = 0; i < result->number_of_elements; i++) {
 		struct st_slot * slot;
 		switch (element_header->type) {
@@ -693,7 +714,7 @@ void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, stru
 							slot->volume_name[j] = '\0';
 					} else
 						*slot->volume_name = '\0';
-					slot->is_import_export_slot = 1;
+					slot->is_import_export_slot = 0;
 					slot->address = data_transfer_element->element_address;
 					slot->src_address = 0;
 				}
@@ -718,8 +739,8 @@ void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, stru
 					slot->is_import_export_slot = 1;
 					slot->address = import_export_element->element_address;
 					slot->src_address = 0;
-				}
-				break;
+				 }
+				 break;
 
 			case scsi_loader_element_type_medium_transport_element: {
 					struct scsi_loader_medium_transport_element * transport_element = (struct scsi_loader_medium_transport_element *) ptr;
@@ -729,27 +750,27 @@ void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, stru
 				break;
 
 			case scsi_loader_element_type_storage_element: {
-					struct scsi_loader_storage_element * storage_element = (struct scsi_loader_storage_element *) ptr;
-					storage_element->element_address = be16toh(storage_element->element_address);
-					storage_element->source_storage_element_address = be16toh(storage_element->source_storage_element_address);
+				struct scsi_loader_storage_element * storage_element = (struct scsi_loader_storage_element *) ptr;
+				storage_element->element_address = be16toh(storage_element->element_address);
+				storage_element->source_storage_element_address = be16toh(storage_element->source_storage_element_address);
 
-					slot = slot_base + i;
-					slot->full = storage_element->full;
+				slot = slot_base + i;
+				slot->full = storage_element->full;
 
-					if (slot->full) {
-						strncpy(slot->volume_name, storage_element->primary_volume_tag_information, 36);
-						slot->volume_name[36] = '\0';
+				if (slot->full) {
+					strncpy(slot->volume_name, storage_element->primary_volume_tag_information, 36);
+					slot->volume_name[36] = '\0';
 
-						int j;
-						for (j = 35; j >= 0 && slot->volume_name[j] == ' '; j--)
-							slot->volume_name[j] = '\0';
-					} else
-						*slot->volume_name = '\0';
-					slot->is_import_export_slot = 0;
-					slot->address = storage_element->element_address;
-					slot->src_address = 0;
-				}
-				break;
+					int j;
+					for (j = 35; j >= 0 && slot->volume_name[j] == ' '; j--)
+						slot->volume_name[j] = '\0';
+				} else
+					*slot->volume_name = '\0';
+				slot->is_import_export_slot = 0;
+				slot->address = storage_element->element_address;
+				slot->src_address = 0;
+			}
+			break;
 		}
 
 		ptr += element_header->element_descriptor_length;
