@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 May 2012 21:18:58 +0200                         *
+*  Last modified: Fri, 15 Jun 2012 13:09:42 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -207,7 +207,6 @@ void st_sched_init_job(struct st_job * j) {
 	jp->updated = time(0);
 
 	j->done = 0;
-	j->archive = 0;
 	j->db_ops = &st_sched_db_ops;
 }
 
