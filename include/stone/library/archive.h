@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 03 May 2012 19:36:40 +0200                         *
+*  Last modified: Fri, 15 Jun 2012 12:36:24 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -60,6 +60,8 @@ struct st_archive {
 
 	struct st_archive_volume * volumes;
 	unsigned int nb_volumes;
+
+	unsigned int last_sequence;
 
 	struct st_job * job;
 };

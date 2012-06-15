@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 03 Apr 2012 15:43:16 +0200                         *
+*  Last modified: Thu, 14 Jun 2012 10:47:42 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -98,7 +98,7 @@ struct st_log_module * st_log_postgresql_new(struct st_log_module * module, cons
 		self->hostid = strdup(PQgetvalue(result, 0, 0));
 	PQclear(result);
 
-	PGresult * prepare = PQprepare(con, "insert_log", "INSERT INTO log VALUES (DEFAULT, $1, $2, $3, $4, $5, $6)", 0, 0);
+	PGresult * prepare = PQprepare(con, "insert_log", "INSERT INTO log(type, level, time, message, host, login) VALUES ($1, $2, $3, $4, $5, $6)", 0, 0);
 	PQclear(prepare);
 
 	return module;
