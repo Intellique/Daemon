@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 05 Jun 2012 18:09:14 +0200                         *
+*  Last modified: Fri, 15 Jun 2012 13:33:42 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -474,8 +474,11 @@ int st_job_save_run(struct st_job * job) {
 	jp->db_con->ops->start_transaction(jp->db_con);
 
 	// archive
-	struct st_archive * archive = job->archive = st_archive_new(job);
-	jp->db_con->ops->new_archive(jp->db_con, archive);
+	struct st_archive * archive = job->archive;
+	if (!archive) {
+		archive = job->archive = st_archive_new(job);
+		jp->db_con->ops->new_archive(jp->db_con, archive);
+	}
 	jp->json = st_io_json_new(archive);
 	st_io_json_add_metadata(jp->json, job->job_meta);
 	// volume

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 15 Jun 2012 12:51:39 +0200                         *
+*  Last modified: Fri, 15 Jun 2012 13:42:14 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -486,7 +486,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 	const char * query10 = "select_restore";
 	st_db_postgresql_prepare(self, query10, "SELECT path, nbtruncpath FROM restoreto WHERE job = $1 LIMIT 1");
 	const char * query11 = "select_archive";
-	st_db_postgresql_prepare(self, query11, "SELECT a.id, a.name, a.ctime, a.endtime, t.pool, MAX(av.sequence) FROM archive a RIGHT JOIN archivevolume av ON a.id = av.archive AND a.id = $1 LEFT JOIN tape t ON av.tape = t.id GROUP BY a.id, a.name, a.ctime, a.endtime, t.pool");
+	st_db_postgresql_prepare(self, query11, "SELECT a.id, a.name, a.ctime, a.endtime, t.pool, MAX(av.sequence) + 1 FROM archive a RIGHT JOIN archivevolume av ON a.id = av.archive AND a.id = $1 LEFT JOIN tape t ON av.tape = t.id GROUP BY a.id, a.name, a.ctime, a.endtime, t.pool");
 
 	char csince[24], * lastmaxjobs = 0, * nbjobs = 0;
 	struct tm tm_since;
@@ -725,7 +725,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 					st_db_postgresql_get_time(result2, 0, 2, &archive->ctime);
 					st_db_postgresql_get_time(result2, 0, 3, &archive->endtime);
 					st_db_postgresql_get_int(result2, 0, 4, &poolid);
-					st_db_postgresql_get_uint(result2, 0, 5, &archive->last_sequence);
+					st_db_postgresql_get_uint(result2, 0, 5, &archive->next_sequence);
 
 					if (poolid >= 0)
 						jobs[i]->pool = st_pool_get_by_id(poolid);

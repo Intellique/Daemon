@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 15 Jun 2012 12:36:26 +0200                         *
+*  Last modified: Fri, 15 Jun 2012 13:40:38 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -137,7 +137,7 @@ struct st_archive * st_archive_new(struct st_job * job) {
 
 	archive->volumes = 0;
 	archive->nb_volumes = 0;
-	archive->last_sequence = 0;
+	archive->next_sequence = 0;
 
 	archive->job = job;
 
@@ -166,7 +166,7 @@ struct st_archive_volume * st_archive_volume_new(struct st_job * job, struct st_
 
 	struct st_archive_volume * volume = archive->volumes + index_volume;
 	volume->id = -1;
-	volume->sequence = index_volume;
+	volume->sequence = index_volume + archive->next_sequence;
 	volume->size = 0;
 	volume->ctime = time(0);
 	volume->endtime = 0;
