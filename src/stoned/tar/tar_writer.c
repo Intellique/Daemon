@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 05 Jun 2012 17:21:00 +0200                         *
+*  Last modified: Fri, 15 Jun 2012 20:59:25 +0200                         *
 \*************************************************************************/
 
 #include <errno.h>
@@ -162,7 +162,7 @@ enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * f
 			current_header = header = realloc(header, block_size);
 
 			bzero(current_header, block_size - 512);
-			st_tar_out_compute_link(current_header, (char *) (current_header + 1), link, link_length, 'L', &sfile);
+			st_tar_out_compute_link(current_header, (char *) (current_header + 1), link, link_length, 'K', &sfile);
 
 			current_header += 2;
 		}
