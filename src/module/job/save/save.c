@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 15 Jun 2012 13:33:42 +0200                         *
+*  Last modified: Sat, 16 Jun 2012 17:14:05 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -352,7 +352,7 @@ int st_job_save_compute_filter(const struct dirent * file) {
 ssize_t st_job_save_compute_total_size(struct st_job * job, const char * path) {
 	struct stat st;
 
-	if (stat(path, &st)) {
+	if (lstat(path, &st)) {
 		job->db_ops->add_record(job, st_log_level_error, "Error while getting information about: %s", path);
 		return 0;
 	}
