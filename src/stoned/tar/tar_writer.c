@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 15 Jun 2012 21:15:43 +0200                         *
+*  Last modified: Sat, 16 Jun 2012 16:30:13 +0200                         *
 \*************************************************************************/
 
 #include <errno.h>
@@ -133,8 +133,8 @@ enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * f
 	struct st_tar * header = malloc(block_size);
 	struct st_tar * current_header = header;
 
-	filename = st_tar_out_skip_leading_slash(filename);
-	int filename_length = strlen(filename);
+	const char * filename2 = st_tar_out_skip_leading_slash(filename);
+	int filename_length = strlen(filename2);
 	if (S_ISLNK(sfile.st_mode)) {
 		char link[257];
 		ssize_t link_length = readlink(filename, link, 256);
@@ -146,7 +146,7 @@ enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * f
 
 			bzero(current_header, block_size - 512);
 			st_tar_out_compute_link(current_header, (char *) (current_header + 1), link, link_length, 'K', &sfile);
-			st_tar_out_compute_link(current_header + 2, (char *) (current_header + 3), filename, filename_length, 'L', &sfile);
+			st_tar_out_compute_link(current_header + 2, (char *) (current_header + 3), filename2, filename_length, 'L', &sfile);
 
 			current_header += 4;
 		} else if (filename_length > 100) {
@@ -154,7 +154,7 @@ enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * f
 			current_header = header = realloc(header, block_size);
 
 			bzero(current_header, block_size - 512);
-			st_tar_out_compute_link(current_header, (char *) (current_header + 1), filename, filename_length, 'L', &sfile);
+			st_tar_out_compute_link(current_header, (char *) (current_header + 1), filename2, filename_length, 'L', &sfile);
 
 			current_header += 2;
 		} else if (link_length > 100) {
@@ -171,14 +171,14 @@ enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * f
 		current_header = header = realloc(header, block_size);
 
 		bzero(current_header, 1024);
-		st_tar_out_compute_link(current_header, (char *) (current_header + 1), filename, filename_length, 'L', &sfile);
+		st_tar_out_compute_link(current_header, (char *) (current_header + 1), filename2, filename_length, 'L', &sfile);
 
 		current_header += 2;
 	}
 
 	struct st_tar_private_out * format = f->data;
 	bzero(current_header, 512);
-	strncpy(current_header->filename, filename, 100);
+	strncpy(current_header->filename, filename2, 100);
 	snprintf(current_header->filemode, 8, "%07o", sfile.st_mode & 0777);
 	snprintf(current_header->uid, 8, "%07o", sfile.st_uid);
 	snprintf(current_header->gid, 8, "%07o", sfile.st_gid);
@@ -187,21 +187,27 @@ enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * f
 	if (S_ISREG(sfile.st_mode)) {
 		st_tar_out_compute_size(current_header->size, sfile.st_size);
 		current_header->flag = '0';
+		format->size = sfile.st_size;
 	} else if (S_ISLNK(sfile.st_mode)) {
 		current_header->flag = '2';
 		readlink(filename, current_header->linkname, 100);
+		format->size = 0;
 	} else if (S_ISCHR(sfile.st_mode)) {
 		current_header->flag = '3';
 		snprintf(current_header->devmajor, 8, "%07o", (unsigned int) (sfile.st_rdev >> 8));
 		snprintf(current_header->devminor, 8, "%07o", (unsigned int) (sfile.st_rdev & 0xFF));
+		format->size = 0;
 	} else if (S_ISBLK(sfile.st_mode)) {
 		current_header->flag = '4';
 		snprintf(current_header->devmajor, 8, "%07o", (unsigned int) (sfile.st_rdev >> 8));
 		snprintf(current_header->devminor, 8, "%07o", (unsigned int) (sfile.st_rdev & 0xFF));
+		format->size = 0;
 	} else if (S_ISDIR(sfile.st_mode)) {
 		current_header->flag = '5';
+		format->size = 0;
 	} else if (S_ISFIFO(sfile.st_mode)) {
 		current_header->flag = '6';
+		format->size = 0;
 	}
 
 	strcpy(current_header->magic, "ustar  ");
@@ -211,7 +217,6 @@ enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * f
 	st_tar_out_compute_checksum(current_header, current_header->checksum);
 
 	format->position = 0;
-	format->size = sfile.st_size;
 
 	return st_tar_out_write_header(format, header, block_size);
 }
