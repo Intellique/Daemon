@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 16 Jun 2012 17:38:04 +0200                         *
+*  Last modified: Sun, 17 Jun 2012 10:34:08 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -185,6 +185,7 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 			if (available_size == 0) {
 				ssize_t position = jp->tar->ops->get_file_position(jp->tar);
 
+				jp->tar->ops->close(jp->tar);
 				st_job_save_change_tape(job);
 				available_size = jp->tar->ops->get_available_size(jp->tar);
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 15 May 2012 21:02:16 +0200                         *
+*  Last modified: Sun, 17 Jun 2012 12:53:32 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -903,7 +903,8 @@ ssize_t st_drive_io_writer_get_available_size(struct st_stream_writer * io) {
 		return 0;
 
 	// only for test purpose
-	//return 536870912 - self->position;
+	// should be a multiple of blocksize
+	// return 59999977472 - self->position;
 
 	// we reserve 16 blocks at the end of tape
 	// if (tape->available_block <= 16)
