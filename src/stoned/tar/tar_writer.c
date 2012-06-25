@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 16 Jun 2012 16:30:13 +0200                         *
+*  Last modified: Tue, 19 Jun 2012 19:09:12 +0200                         *
 \*************************************************************************/
 
 #include <errno.h>
@@ -62,7 +62,7 @@ struct st_tar_private_out {
 	ssize_t remain_size;
 };
 
-static enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * filename);
+static enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * file, const char * filename);
 static enum st_tar_out_status st_tar_out_add_label(struct st_tar_out * f, const char * label);
 static enum st_tar_out_status st_tar_out_add_link(struct st_tar_out * f, const char * src, const char * target, struct st_tar_header * header);
 static int st_tar_out_close(struct st_tar_out * f);
@@ -122,9 +122,9 @@ struct st_tar_out * st_tar_new_out(struct st_stream_writer * io) {
 	return self;
 }
 
-enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * filename) {
+enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * file, const char * filename) {
 	struct stat sfile;
-	if (lstat(filename, &sfile)) {
+	if (lstat(file, &sfile)) {
 		//mtar_verbose_printf("An unexpected error occured while getting information about: %s\n", filename);
 		return ST_TAR_OUT_ERROR;
 	}

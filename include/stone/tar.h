@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 05 Jun 2012 11:19:57 +0200                         *
+*  Last modified: Tue, 19 Jun 2012 19:08:00 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_TAR_H__
@@ -139,7 +139,7 @@ struct st_tar_in {
 		int (*last_errno)(struct st_tar_in * f);
 		ssize_t (*position)(struct st_tar_in * f);
 		ssize_t (*read)(struct st_tar_in * f, void * data, ssize_t length);
-		int (*skip_file)(struct st_tar_in * f);
+		enum st_tar_header_status (*skip_file)(struct st_tar_in * f);
 	} * ops;
 	/**
 	 * \brief Private data used by io module
@@ -149,7 +149,7 @@ struct st_tar_in {
 
 struct st_tar_out {
 	struct st_tar_out_ops {
-		enum st_tar_out_status (*add_file)(struct st_tar_out * f, const char * filename);
+		enum st_tar_out_status (*add_file)(struct st_tar_out * f, const char * file, const char * filename);
 		enum st_tar_out_status (*add_label)(struct st_tar_out * f, const char * label);
 		enum st_tar_out_status (*add_link)(struct st_tar_out * f, const char * src, const char * target, struct st_tar_header * header);
 		int (*close)(struct st_tar_out * io);

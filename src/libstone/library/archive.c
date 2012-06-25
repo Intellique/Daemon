@@ -122,6 +122,7 @@ void st_archive_free(struct st_archive * archive) {
 	archive->user = 0;
 
 	archive->job = 0;
+	archive->copy_of = 0;
 }
 
 struct st_archive * st_archive_new(struct st_job * job) {
@@ -138,6 +139,8 @@ struct st_archive * st_archive_new(struct st_job * job) {
 	archive->volumes = 0;
 	archive->nb_volumes = 0;
 	archive->next_sequence = 0;
+
+	archive->copy_of = 0;
 
 	archive->job = job;
 

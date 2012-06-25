@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 15 Jun 2012 13:42:14 +0200                         *
+*  Last modified: Mon, 18 Jun 2012 09:50:01 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -468,7 +468,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 	const char * query1 = "select_num_runs";
 	st_db_postgresql_prepare(self, query1, "SELECT MAX(numrun) AS max FROM jobrecord WHERE job = $1");
 	const char * query2 = "select_job_tape1";
-	st_db_postgresql_prepare(self, query2, "SELECT av.sequence, t.uuid AS tape, av.tapeposition, af.blocknumber, SUM(CASE WHEN af.type = 'regular file' THEN af.size ELSE 0 END) AS size FROM archivevolume av LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id LEFT JOIN tape t ON av.tape = t.id, (SELECT DISTINCT path, CHAR_LENGTH(path) AS length FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $2)) AS sf WHERE archive = $1 AND SUBSTR(af.name, 0, sf.length + 1) = sf.path GROUP BY av.sequence, t.uuid, av.tapeposition, af.blocknumber ORDER BY sequence, blocknumber");
+	st_db_postgresql_prepare(self, query2, "SELECT av.sequence, t.uuid AS tape, av.tapeposition, afv.blocknumber, SUM(CASE WHEN af.type = 'regular file' THEN af.size ELSE 0 END) AS size FROM archivevolume av LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id LEFT JOIN tape t ON av.tape = t.id, (SELECT DISTINCT path, CHAR_LENGTH(path) AS length FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $2)) AS sf WHERE archive = $1 AND SUBSTR(af.name, 0, sf.length + 1) = sf.path GROUP BY av.sequence, t.uuid, av.tapeposition, afv.blocknumber ORDER BY sequence, blocknumber");
 	const char * query3 = "select_job_tape2";
 	st_db_postgresql_prepare(self, query3, "SELECT av.sequence, t.uuid, av.tapeposition, 0 AS blocknumber, SUM(av.size) AS size FROM archivevolume av LEFT JOIN tape t ON av.tape = t.id WHERE archive = $1 GROUP BY sequence, uuid, tapeposition, blocknumber ORDER BY sequence");
 	const char * query4 = "select_pool_by_id";
@@ -486,7 +486,9 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 	const char * query10 = "select_restore";
 	st_db_postgresql_prepare(self, query10, "SELECT path, nbtruncpath FROM restoreto WHERE job = $1 LIMIT 1");
 	const char * query11 = "select_archive";
-	st_db_postgresql_prepare(self, query11, "SELECT a.id, a.name, a.ctime, a.endtime, t.pool, MAX(av.sequence) + 1 FROM archive a RIGHT JOIN archivevolume av ON a.id = av.archive AND a.id = $1 LEFT JOIN tape t ON av.tape = t.id GROUP BY a.id, a.name, a.ctime, a.endtime, t.pool");
+	st_db_postgresql_prepare(self, query11, "SELECT a.id, a.name, a.ctime, a.endtime, t.pool, MAX(av.sequence) + 1 FROM archive a LEFT JOIN archivevolume av ON a.id = av.archive LEFT JOIN tape t ON av.tape = t.id WHERE a.id = $1 GROUP BY a.id, a.name, a.ctime, a.endtime, t.pool");
+	const char * query12 = "select_archive_for_copy";
+	st_db_postgresql_prepare(self, query12, "SELECT id, name, ctime, endtime FROM archive WHERE id = $1");
 
 	char csince[24], * lastmaxjobs = 0, * nbjobs = 0;
 	struct tm tm_since;
@@ -559,6 +561,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 			jobs[i]->tape = st_tape_get_by_id(tapeid);
 
 		if (poolid) {
+			// TODO: use st_pool_get_by_id instead of st_pool_get_by_uuid
 			char * pool_uuid = 0, * tapeformat = 0;
 			unsigned char densitycode;
 
@@ -658,11 +661,11 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 		}
 		PQclear(result2);
 
-		// if job restore
-		result2 = PQexecPrepared(self->db_con, query9, 1, param2, 0, 0, 0);
+		// if job restore or copy or save into existing archive
+		result2 = PQexecPrepared(self->db_con, query10, 1, param2, 0, 0, 0);
 		status2 = PQresultStatus(result2);
 		if (status2 == PGRES_FATAL_ERROR)
-			st_db_postgresql_get_error(result2, query9);
+			st_db_postgresql_get_error(result2, query10);
 		else if (PQresultStatus(result2) == PGRES_TUPLES_OK && PQntuples(result2) == 1) {
 			struct st_job_restore_to * rt = jobs[i]->restore_to = malloc(sizeof(struct st_job_restore_to));
 			bzero(jobs[i]->restore_to, sizeof(struct st_job_restore_to));
@@ -674,6 +677,7 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 
 		if (archiveid) {
 			if (jobs[i]->restore_to) {
+				// job restore && copy
 				const char * param3[] = { archiveid, jobid };
 
 				const char * query;
@@ -705,7 +709,10 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 					}
 				}
 				PQclear(result2);
-			} else {
+			}
+
+			if (!jobs[i]->restore_to || jobs[i]->nb_checksums > 0) {
+				// job save with existing archive && copy
 				const char * param3[] = { archiveid, };
 
 				result2 = PQexecPrepared(self->db_con, query11, 1, param3, 0, 0, 0);
@@ -727,9 +734,29 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 					st_db_postgresql_get_int(result2, 0, 4, &poolid);
 					st_db_postgresql_get_uint(result2, 0, 5, &archive->next_sequence);
 
-					if (poolid >= 0)
+					if (poolid >= 0 && !jobs[i]->restore_to)
 						jobs[i]->pool = st_pool_get_by_id(poolid);
 				}
+
+				PQclear(result2);
+			}
+
+			if (jobs[i]->restore_to && jobs[i]->nb_checksums > 0) {
+				const char * param3[] = { archiveid, };
+
+				result2 = PQexecPrepared(self->db_con, query12, 1, param3, 0, 0, 0);
+
+				if (status2 == PGRES_FATAL_ERROR)
+					st_db_postgresql_get_error(result2, query12);
+				else if (status2 == PGRES_TUPLES_OK && PQntuples(result2) == 1) {
+					struct st_archive * ar = jobs[i]->archive = malloc(sizeof(struct st_archive));
+
+					st_db_postgresql_get_long(result2, 0, 0, &ar->id);
+					st_db_postgresql_get_string_dup(result2, 0, 1, &ar->name);
+					st_db_postgresql_get_time(result2, 0, 2, &ar->ctime);
+					st_db_postgresql_get_time(result2, 0, 3, &ar->endtime);
+				}
+
 				PQclear(result2);
 			}
 		}
@@ -2075,14 +2102,15 @@ int st_db_postgresql_file_link_to_volume(struct st_database_connection * connect
 	st_db_postgresql_check(connection);
 
 	const char * query = "insert_archivefiletoarchivevolume";
-	st_db_postgresql_prepare(self, query, "INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile) VALUES ($1, $2)");
+	st_db_postgresql_prepare(self, query, "INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile, blocknumber) VALUES ($1, $2, $3)");
 
-	char * volumeid = 0, * fileid = 0;
+	char * volumeid = 0, * fileid = 0, * block_number = 0;
 	asprintf(&volumeid, "%ld", volume->id);
 	asprintf(&fileid, "%ld", file->id);
+	asprintf(&block_number, "%zd", file->position);
 
-	const char * param[] = { volumeid, fileid };
-	PGresult * result = PQexecPrepared(self->db_con, query, 2, param, 0, 0, 0);
+	const char * param[] = { volumeid, fileid, block_number, };
+	PGresult * result = PQexecPrepared(self->db_con, query, 3, param, 0, 0, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)
@@ -2091,6 +2119,7 @@ int st_db_postgresql_file_link_to_volume(struct st_database_connection * connect
 	PQclear(result);
 	free(volumeid);
 	free(fileid);
+	free(block_number);
 
 	return status == PGRES_FATAL_ERROR;
 }
@@ -2164,14 +2193,13 @@ int st_db_postgresql_new_file(struct st_database_connection * connection, struct
 	st_db_postgresql_check(connection);
 
 	const char * query = "insert_archive_file";
-	st_db_postgresql_prepare(self, query, "INSERT INTO archivefile(name, type, mimetype, ownerid, owner, groupid, groups, perm, ctime, mtime, size, blocknumber) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id");
+	st_db_postgresql_prepare(self, query, "INSERT INTO archivefile(name, type, mimetype, ownerid, owner, groupid, groups, perm, ctime, mtime, size) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id");
 
-	char * perm = 0, * ownerid = 0, * groupid = 0, * size = 0, * block_number = 0;
+	char * perm = 0, * ownerid = 0, * groupid = 0, * size = 0;
 	asprintf(&perm, "%o", file->perm & 0x777);
 	asprintf(&ownerid, "%d", file->ownerid);
 	asprintf(&groupid, "%d", file->groupid);
 	asprintf(&size, "%zd", file->size);
-	asprintf(&block_number, "%zd", file->position);
 
 	char ctime[32];
 	struct tm local_current;
@@ -2185,16 +2213,15 @@ int st_db_postgresql_new_file(struct st_database_connection * connection, struct
 	const char * param[] = {
 		file->name, st_archive_file_type_to_string(file->type),
 		"", ownerid, file->owner, groupid, file->group, perm,
-		ctime, mtime, size, block_number,
+		ctime, mtime, size,
 	};
-	PGresult * result = PQexecPrepared(self->db_con, query, 12, param, 0, 0, 0);
+	PGresult * result = PQexecPrepared(self->db_con, query, 11, param, 0, 0, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	free(perm);
 	free(ownerid);
 	free(groupid);
 	free(size);
-	free(block_number);
 
 	if (status == PGRES_FATAL_ERROR) {
 		st_db_postgresql_get_error(result, query);

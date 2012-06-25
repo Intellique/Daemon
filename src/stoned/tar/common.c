@@ -22,22 +22,37 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jan 2012 13:47:56 +0100                         *
+*  Last modified: Mon, 18 Jun 2012 12:05:36 +0200                         *
 \*************************************************************************/
 
+// free
+#include <stdlib.h>
 // bzero
 #include <string.h>
 
 #include "common.h"
+
+void st_tar_free_header(struct st_tar_header * h) {
+	if (!h)
+		return;
+
+	if (h->path)
+		free(h->path);
+	h->path = h->filename = 0;
+
+	if (h->link)
+		free(h->link);
+	h->link = 0;
+}
 
 void st_tar_init_header(struct st_tar_header * h) {
 	if (!h)
 		return;
 
 	h->dev = 0;
-	bzero(h->path, 256);
+	h->path = 0;
 	h->filename = 0;
-	bzero(h->link, 256);
+	h->link = 0;
 	h->size = 0;
 	h->offset = 0;
 	h->mode = 0;

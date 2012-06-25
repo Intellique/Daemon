@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 04 May 2012 09:56:05 +0200                         *
+*  Last modified: Mon, 18 Jun 2012 10:29:59 +0200                         *
 \*************************************************************************/
 
 #include <jansson.h>
@@ -83,15 +83,11 @@ void st_io_json_add_file(struct st_io_json * js, struct st_archive_file * file) 
 	json_object_set_new(js->current_file, "size", json_integer(file->size));
 	json_object_set_new(js->current_file, "block number", json_integer(file->position));
 
-	json_t * checksums = json_array();
 	// checksum
+	json_t * checksums = json_object();
 	unsigned int i;
-	for (i = 0; i < file->nb_checksums; i++) {
-		json_t * checksum = json_object();
-		json_object_set_new(checksum, "name", json_string(file->archive->job->checksums[i]));
-		json_object_set_new(checksum, "value", json_string(file->digests[i]));
-		json_array_append_new(checksums, checksum);
-	}
+	for (i = 0; i < file->nb_checksums; i++)
+		json_object_set_new(checksums, file->archive->job->checksums[i], json_string(file->digests[i]));
 	json_object_set_new(js->current_file, "checksums", checksums);
 
 	json_array_append(js->current_volume_files, js->current_file);
@@ -202,15 +198,11 @@ void st_io_json_update_volume(struct st_io_json * js, struct st_archive_volume *
 	json_object_set_new(js->current_volume, "finish time", json_string(endtime));
 	json_object_set_new(js->current_volume, "size", json_integer(volume->size));
 
-	json_t * checksums = json_array();
 	// checksum
+	json_t * checksums = json_object();
 	unsigned int i;
-	for (i = 0; i < volume->nb_checksums; i++) {
-		json_t * checksum = json_object();
-		json_object_set_new(checksum, "name", json_string(volume->archive->job->checksums[i]));
-		json_object_set_new(checksum, "value", json_string(volume->digests[i]));
-		json_array_append_new(checksums, checksum);
-	}
+	for (i = 0; i < volume->nb_checksums; i++)
+		json_object_set_new(checksums, volume->archive->job->checksums[i], json_string(volume->digests[i]));
 	json_object_set_new(js->current_volume, "checksums", checksums);
 
 	json_object_set_new(js->current_volume, "files", js->current_volume_files);
@@ -220,7 +212,7 @@ ssize_t st_io_json_write_to(struct st_io_json * js, struct st_stream_writer * wr
 	if (!js || !writer)
 		return -1;
 
-	char * buffer = json_dumps(js->root, JSON_INDENT(2));
+	char * buffer = json_dumps(js->root, JSON_COMPACT);
 	ssize_t nb_write = writer->ops->write(writer, buffer, strlen(buffer));
 
 	free(buffer);

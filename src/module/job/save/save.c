@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 17 Jun 2012 10:34:08 +0200                         *
+*  Last modified: Tue, 19 Jun 2012 19:12:25 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -74,6 +74,7 @@ struct st_job_save_private {
 	unsigned int nb_savepoints;
 
 	struct st_drive * current_drive;
+	struct st_archive_file * current_file;
 	struct st_archive_volume * current_volume;
 
 	struct st_stream_writer * current_tape_writer;
@@ -151,7 +152,7 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 
 	ssize_t block_number = jp->tar->ops->position(jp->tar) / jp->block_size;
 
-	enum st_tar_out_status status = jp->tar->ops->add_file(jp->tar, path);
+	enum st_tar_out_status status = jp->tar->ops->add_file(jp->tar, path, path);
 	int failed;
 	switch (status) {
 		case ST_TAR_OUT_END_OF_TAPE:
@@ -171,9 +172,9 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 			break;
 	}
 
-	struct st_archive_file * file = st_archive_file_new(job, &st, path, block_number);
-	jp->db_con->ops->new_file(jp->db_con, file);
-	jp->db_con->ops->file_link_to_volume(jp->db_con, file, jp->current_volume);
+	jp->current_file = st_archive_file_new(job, &st, path, block_number);
+	jp->db_con->ops->new_file(jp->db_con, jp->current_file);
+	jp->db_con->ops->file_link_to_volume(jp->db_con, jp->current_file, jp->current_volume);
 
 	if (S_ISREG(st.st_mode)) {
 		int fd = open(path, O_RDONLY);
@@ -223,11 +224,11 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 		}
 		file_checksum->ops->close(file_checksum);
 
-		file->digests = st_checksum_get_digest_from_writer(file_checksum);
-		file->nb_checksums = job->nb_checksums;
-		jp->db_con->ops->file_add_checksum(jp->db_con, file);
+		jp->current_file->digests = st_checksum_get_digest_from_writer(file_checksum);
+		jp->current_file->nb_checksums = job->nb_checksums;
+		jp->db_con->ops->file_add_checksum(jp->db_con, jp->current_file);
 
-		st_io_json_add_file(jp->json, file);
+		st_io_json_add_file(jp->json, jp->current_file);
 
 		close(fd);
 		file_checksum->ops->free(file_checksum);
@@ -237,7 +238,7 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 			return 6;
 		}
 
-		st_io_json_add_file(jp->json, file);
+		st_io_json_add_file(jp->json, jp->current_file);
 
 		struct dirent ** dl = 0;
 		int nb_files = scandir(path, &dl, st_job_save_compute_filter, 0);
@@ -261,7 +262,7 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 		return failed;
 	}
 
-	st_archive_file_free(file);
+	st_archive_file_free(jp->current_file);
 
 	return 0;
 }
@@ -330,16 +331,25 @@ int st_job_save_change_tape(struct st_job * job) {
 		dr = new_drive;
 	}
 
+	// create new volume
 	jp->current_volume = st_archive_volume_new(job, dr);
 	jp->db_con->ops->new_volume(jp->db_con, jp->current_volume);
 	st_io_json_add_volume(jp->json, jp->current_volume);
+
+	// link current file to new volume
+	jp->current_file->position = 0;
+	jp->db_con->ops->file_link_to_volume(jp->db_con, jp->current_file, jp->current_volume);
 
 	tw = jp->current_tape_writer = dr->ops->get_writer(dr);
 	cw = jp->current_checksum_writer = st_checksum_get_steam_writer((const char **) job->checksums, job->nb_checksums, tw);
 	jp->tar->ops->new_volume(jp->tar, cw);
 
-	jp->block_size = jp->tar->ops->get_block_size(jp->tar);
-	jp->buffer = realloc(jp->buffer, jp->block_size);
+	// take care about block size of new tape
+	ssize_t new_block_size = jp->tar->ops->get_block_size(jp->tar);
+	if (new_block_size != jp->block_size) {
+		jp->block_size = jp->tar->ops->get_block_size(jp->tar);
+		jp->buffer = realloc(jp->buffer, jp->block_size);
+	}
 
 	return 0;
 }
@@ -421,6 +431,7 @@ void st_job_save_new_job(struct st_database_connection * db __attribute__((unuse
 	self->nb_savepoints = 0;
 
 	self->current_drive = 0;
+	self->current_file = 0;
 	self->current_volume = 0;
 
 	self->tapes = 0;

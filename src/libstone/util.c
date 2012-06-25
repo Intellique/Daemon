@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 03 May 2012 00:33:49 +0200                         *
+*  Last modified: Tue, 19 Jun 2012 11:46:43 +0200                         *
 \*************************************************************************/
 
 // getgrgid_r
@@ -286,6 +286,18 @@ void st_util_uid2name(char * name, ssize_t length, uid_t uid) {
 	}
 
 	free(buffer);
+}
+
+char * st_util_trunc_path(char * path, int nb_trunc_path) {
+	while (nb_trunc_path > 0 && path) {
+		path = strchr(path, '/');
+		nb_trunc_path--;
+
+		if (path && *path == '/')
+			path++;
+	}
+
+	return path;
 }
 
 int st_util_valid_utf8_char(const char * string) {
