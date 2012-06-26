@@ -46,6 +46,6 @@ CREATE TABLE UserEvent (
     id SERIAL PRIMARY KEY,
     event TEXT NOT NULL UNIQUE
 );
-INSERT INTO UserEvent(event) VALUES ('connection', 'deconnection');
+INSERT INTO UserEvent(event) VALUES ('connection'), ('deconnection');
 ALTER TABLE UserLog ADD COLUMN event INTEGER NOT NULL REFERENCES UserEvent(id) ON UPDATE CASCADE ON DELETE RESTRICT;
 
