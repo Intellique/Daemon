@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 19 Jun 2012 19:12:25 +0200                         *
+*  Last modified: Mon, 25 Jun 2012 18:32:41 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -468,8 +468,13 @@ int st_job_save_run(struct st_job * job) {
 
 	// compute total files size
 	unsigned int i;
-	for (i = 0; i < job->nb_paths; i++)
+	for (i = 0; i < job->nb_paths; i++) {
+		// remove double '/'
+		st_util_string_delete_double_char(job->paths[i], '/');
+		st_util_string_rtrim(job->paths[i], '/');
+
 		jp->total_size += st_job_save_compute_total_size(job, job->paths[i]);
+    }
 
 	if (jp->total_size == 0) {
 		job->db_ops->add_record(job, st_log_level_error, "There is no file to archive or total size of all files is null");

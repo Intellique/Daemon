@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 19 Jun 2012 19:12:28 +0200                         *
+*  Last modified: Tue, 26 Jun 2012 13:51:32 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -42,7 +42,7 @@
 #include <sys/stat.h>
 // S_*
 #include <sys/types.h>
-// sleep
+// rmdir, sleep, unlink
 #include <unistd.h>
 
 
@@ -154,9 +154,12 @@ int st_job_copy_archive_file(struct st_job * job, const char * path) {
 	if (S_ISSOCK(st.st_mode))
 		return 0;
 
-	ssize_t block_number = jp->tar_out->ops->position(jp->tar_out) / jp->block_size;
+	// ssize_t block_number = jp->tar_out->ops->position(jp->tar_out) / jp->block_size;
 
-	enum st_tar_out_status status = jp->tar_out->ops->add_file(jp->tar_out, path, path + jp->restore_path_length);
+	enum st_tar_out_status status = ST_TAR_OUT_OK;
+	if (path[jp->restore_path_length] != '\0')
+		jp->tar_out->ops->add_file(jp->tar_out, path, path + jp->restore_path_length);
+
 	int failed;
 	switch (status) {
 		case ST_TAR_OUT_END_OF_TAPE:
@@ -171,8 +174,7 @@ int st_job_copy_archive_file(struct st_job * job, const char * path) {
 				return failed;
 			break;
 
-		case ST_TAR_OUT_OK:
-			block_number = jp->tar_out->ops->position(jp->tar_out) / jp->block_size;
+		default:
 			break;
 	}
 
@@ -211,7 +213,8 @@ int st_job_copy_archive_file(struct st_job * job, const char * path) {
 			if (nb_write > 0)
 				jp->total_done += nb_write;
 
-			job->done = (float) jp->total_done / jp->total_size;
+			ssize_t position = jp->tar_out->ops->position(jp->tar_out);
+			job->done = 0.5 + (float) position / jp->total_size;
 			job->db_ops->update_status(job);
 		}
 
@@ -245,11 +248,20 @@ int st_job_copy_archive_file(struct st_job * job, const char * path) {
 		}
 
 		free(dl);
-
-		return failed;
 	}
 
-	return 0;
+	ssize_t position = jp->tar_out->ops->position(jp->tar_out);
+	job->done = 0.5 + (float) position / jp->total_size;
+	job->db_ops->update_status(job);
+
+	// delete file or directory
+	if (S_ISDIR(st.st_mode)) {
+		rmdir(path);
+	} else {
+		unlink(path);
+	}
+
+	return failed;
 }
 
 int st_job_copy_change_tape(struct st_job * job) {
@@ -635,6 +647,10 @@ int st_job_copy_restore_archive(struct st_job * job) {
 		tar->ops->free(tar);
 
 		status = (hdr_status != ST_TAR_HEADER_NOT_FOUND || failed);
+
+		if (!status)
+			job->done = 0.5;
+		job->db_ops->update_status(job);
 	}
 
 	return status;
@@ -827,8 +843,10 @@ int st_job_copy_run(struct st_job * job) {
 	// create temporary directory
 	jp->restore_path_length = strlen(job->restore_to->path);
 	job->restore_to->path = realloc(job->restore_to->path, jp->restore_path_length + 14);
+	st_util_string_rtrim(job->restore_to->path, '/');
 	strcat(job->restore_to->path, "/stone_XXXXXX");
 	mkdtemp(job->restore_to->path);
+	jp->restore_path_length += 13;
 
 	unsigned int i;
 	for (i = 0; i < job->nb_block_numbers; i++)
@@ -880,6 +898,10 @@ int st_job_copy_run(struct st_job * job) {
 		jp->buffer = malloc(jp->block_size);
 
 		status = st_job_copy_archive_file(job, job->restore_to->path);
+
+		jp->tar_out->ops->close(jp->tar_out);
+		jp->tar_out->ops->free(jp->tar_out);
+		jp->tar_out = 0;
 
 		drive = jp->drive;
 		tape_writer = jp->tape_writer;

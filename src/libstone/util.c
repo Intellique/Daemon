@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 19 Jun 2012 11:46:43 +0200                         *
+*  Last modified: Mon, 25 Jun 2012 18:10:20 +0200                         *
 \*************************************************************************/
 
 // getgrgid_r
@@ -266,6 +266,16 @@ void st_util_string_trim(char * str, char trim) {
 		memmove(str, ptr, length + 1);
 	}
 
+	for (ptr = str + (length - 1); *ptr == trim && ptr > str; ptr--);
+
+	if (ptr[1] != '\0')
+		ptr[1] = '\0';
+}
+
+void st_util_string_rtrim(char * str, char trim) {
+	size_t length = strlen(str);
+
+	char * ptr;
 	for (ptr = str + (length - 1); *ptr == trim && ptr > str; ptr--);
 
 	if (ptr[1] != '\0')

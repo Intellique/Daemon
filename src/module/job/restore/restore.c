@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 May 2012 23:21:48 +0200                         *
+*  Last modified: Mon, 25 Jun 2012 18:37:02 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -393,6 +393,7 @@ int st_job_restore_restore_archive(struct st_job * job) {
 			failed = st_job_restore_restore_file(job, tar, &header, restore_path);
 
 			free(restore_path);
+			st_tar_free_header(&header);
 
 			if (failed)
 				break;
@@ -610,6 +611,7 @@ int st_job_restore_restore_files(struct st_job * job) {
 			if (hdr_status != ST_TAR_HEADER_OK) { }
 
 			while (!st_job_restore_filter(job, &header) && hdr_status == ST_TAR_HEADER_OK) {
+				st_tar_free_header(&header);
 				tar->ops->skip_file(tar);
 				hdr_status = tar->ops->get_header(tar, &header);
 			}
@@ -646,6 +648,7 @@ int st_job_restore_restore_files(struct st_job * job) {
 				int failed = st_job_restore_restore_file(job, tar, &header, restore_path);
 
 				free(restore_path);
+				st_tar_free_header(&header);
 
 				if (failed)
 					break;

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 18 Jun 2012 09:50:01 +0200                         *
+*  Last modified: Wed, 20 Jun 2012 13:12:26 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -835,19 +835,19 @@ int st_db_postgresql_get_tape(struct st_database_connection * connection, struct
 	const char * query;
 	if (uuid) {
 		query = "select_tape_by_uuid";
-		st_db_postgresql_prepare(self, query, "SELECT id, label, mediumserialnumber, name, status, location, firstused, usebefore, loadcount, readcount, writecount, endpos, nbfiles, blocksize, haspartition, tapeformat, pool FROM tape WHERE uuid = $1 LIMIT 1");
+		st_db_postgresql_prepare(self, query, "SELECT id, uuid, label, mediumserialnumber, name, status, location, firstused, usebefore, loadcount, readcount, writecount, endpos, nbfiles, blocksize, haspartition, tapeformat, pool FROM tape WHERE uuid = $1 LIMIT 1");
 
 		const char * param[] = { uuid };
 		result = PQexecPrepared(self->db_con, query, 1, param, 0, 0, 0);
 	} else if (label) {
 		query = "select_tape_by_label";
-		st_db_postgresql_prepare(self, query, "SELECT id, label, mediumserialnumber, name, status, location, firstused, usebefore, loadcount, readcount, writecount, endpos, nbfiles, blocksize, haspartition, tapeformat, pool FROM tape WHERE label = $1 LIMIT 1");
+		st_db_postgresql_prepare(self, query, "SELECT id, uuid, label, mediumserialnumber, name, status, location, firstused, usebefore, loadcount, readcount, writecount, endpos, nbfiles, blocksize, haspartition, tapeformat, pool FROM tape WHERE label = $1 LIMIT 1");
 
 		const char * param[] = { label };
 		result = PQexecPrepared(self->db_con, query, 1, param, 0, 0, 0);
 	} else {
 		query = "select_tape_by_id";
-		st_db_postgresql_prepare(self, query, "SELECT id, label, mediumserialnumber, name, status, location, firstused, usebefore, loadcount, readcount, writecount, endpos, nbfiles, blocksize, haspartition, tapeformat, pool FROM tape WHERE id = $1 LIMIT 1");
+		st_db_postgresql_prepare(self, query, "SELECT id, uuid, label, mediumserialnumber, name, status, location, firstused, usebefore, loadcount, readcount, writecount, endpos, nbfiles, blocksize, haspartition, tapeformat, pool FROM tape WHERE id = $1 LIMIT 1");
 
 		char * tapeid = 0;
 		asprintf(&tapeid, "%ld", id);
@@ -865,24 +865,25 @@ int st_db_postgresql_get_tape(struct st_database_connection * connection, struct
 		st_db_postgresql_get_error(result, query);
 	else if (status == PGRES_TUPLES_OK && nb_tuples == 1) {
 		st_db_postgresql_get_long(result, 0, 0, &tape->id);
-		st_db_postgresql_get_string(result, 0, 1, tape->label);
-		st_db_postgresql_get_string(result, 0, 2, tape->medium_serial_number);
-		st_db_postgresql_get_string(result, 0, 3, tape->name);
-		tape->status = st_tape_string_to_status(PQgetvalue(result, 0, 4));
-		tape->location = st_tape_string_to_location(PQgetvalue(result, 0, 5));
-		st_db_postgresql_get_time(result, 0, 6, &tape->first_used);
-		st_db_postgresql_get_time(result, 0, 7, &tape->use_before);
-		st_db_postgresql_get_long(result, 0, 8, &tape->load_count);
-		st_db_postgresql_get_long(result, 0, 9, &tape->read_count);
-		st_db_postgresql_get_long(result, 0, 10, &tape->write_count);
-		st_db_postgresql_get_ssize(result, 0, 11, &tape->end_position);
-		st_db_postgresql_get_int(result, 0, 12, &tape->nb_files);
-		st_db_postgresql_get_ssize(result, 0, 13, &tape->block_size);
-		st_db_postgresql_get_bool(result, 0, 14, &tape->has_partition);
+        st_db_postgresql_get_string(result, 0, 1, tape->uuid);
+		st_db_postgresql_get_string(result, 0, 2, tape->label);
+		st_db_postgresql_get_string(result, 0, 3, tape->medium_serial_number);
+		st_db_postgresql_get_string(result, 0, 4, tape->name);
+		tape->status = st_tape_string_to_status(PQgetvalue(result, 0, 5));
+		tape->location = st_tape_string_to_location(PQgetvalue(result, 0, 6));
+		st_db_postgresql_get_time(result, 0, 7, &tape->first_used);
+		st_db_postgresql_get_time(result, 0, 8, &tape->use_before);
+		st_db_postgresql_get_long(result, 0, 9, &tape->load_count);
+		st_db_postgresql_get_long(result, 0, 10, &tape->read_count);
+		st_db_postgresql_get_long(result, 0, 11, &tape->write_count);
+		st_db_postgresql_get_ssize(result, 0, 12, &tape->end_position);
+		st_db_postgresql_get_int(result, 0, 13, &tape->nb_files);
+		st_db_postgresql_get_ssize(result, 0, 14, &tape->block_size);
+		st_db_postgresql_get_bool(result, 0, 15, &tape->has_partition);
 
 		long tapeformatid = -1, poolid = -1;
-		st_db_postgresql_get_long(result, 0, 15, &tapeformatid);
-		st_db_postgresql_get_long(result, 0, 16, &poolid);
+		st_db_postgresql_get_long(result, 0, 16, &tapeformatid);
+		st_db_postgresql_get_long(result, 0, 17, &poolid);
 
 		if (tapeformatid > -1)
 			tape->format = st_tape_format_get_by_id(tapeformatid);
