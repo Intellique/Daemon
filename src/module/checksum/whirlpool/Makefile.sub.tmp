@@ -9,7 +9,7 @@ STONE_CHECKSUM_WHIRLPOOL_DEP_FILES		:= $(sort $(shell test -d ${STONE_CHECKSUM_W
 
 STONE_CHECKSUM_WHIRLPOOL_BIN			:= lib/libchecksum-whirlpool.so
 STONE_CHECKSUM_WHIRLPOOL_CFLAG			:= -pthread -fPIC -fvisibility=hidden
-STONE_CHECKSUM_WHIRLPOOL_LD				:= -pthread -shared -lssl
+STONE_CHECKSUM_WHIRLPOOL_LD				:= -pthread -shared -lcrypto
 
 STONE_CHECKSUM_WHIRLPOOL_LIB			:=
 

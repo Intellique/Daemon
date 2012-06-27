@@ -9,7 +9,7 @@ STONE_CHECKSUM_MD5_DEP_FILES	:= $(sort $(shell test -d ${STONE_CHECKSUM_MD5_DEPE
 
 STONE_CHECKSUM_MD5_BIN			:= lib/libchecksum-md5.so
 STONE_CHECKSUM_MD5_CFLAG		:= -pthread -fPIC -fvisibility=hidden
-STONE_CHECKSUM_MD5_LD			:= -pthread -shared -lssl
+STONE_CHECKSUM_MD5_LD			:= -pthread -shared -lcrypto
 
 STONE_CHECKSUM_MD5_LIB			:=
 
