@@ -129,12 +129,13 @@ struct st_archive * st_archive_new(struct st_job * job) {
 	struct timeval current;
 	gettimeofday(&current, 0);
 
-	struct st_archive * archive = job->archive = malloc(sizeof(struct st_archive));
+	struct st_archive * archive = malloc(sizeof(struct st_archive));
 	archive->id = -1;
 	archive->name = strdup(job->name);
 	archive->ctime = current.tv_sec;
 	archive->endtime = 0;
 	archive->user = job->user;
+	archive->copy_of = job->archive;
 
 	archive->volumes = 0;
 	archive->nb_volumes = 0;

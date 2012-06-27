@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 26 Jun 2012 13:51:32 +0200                         *
+*  Last modified: Tue, 26 Jun 2012 19:31:08 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -42,12 +42,15 @@
 #include <sys/stat.h>
 // S_*
 #include <sys/types.h>
+// time
+#include <time.h>
 // rmdir, sleep, unlink
 #include <unistd.h>
 
 
 #include <stone/io.h>
 #include <stone/io/checksum.h>
+#include <stone/library/archive.h>
 #include <stone/library/changer.h>
 #include <stone/library/drive.h>
 #include <stone/library/ressource.h>
@@ -83,6 +86,9 @@ struct st_job_copy_private {
 
 	struct st_stream_writer * tape_writer;
 	struct st_stream_writer * checksum_writer;
+
+	struct st_archive_file * current_file;
+	struct st_archive_volume * current_volume;
 
 	struct st_tape ** tapes;
 	unsigned int nb_tapes;
@@ -154,7 +160,10 @@ int st_job_copy_archive_file(struct st_job * job, const char * path) {
 	if (S_ISSOCK(st.st_mode))
 		return 0;
 
-	// ssize_t block_number = jp->tar_out->ops->position(jp->tar_out) / jp->block_size;
+	ssize_t block_number = jp->tar_out->ops->position(jp->tar_out) / jp->block_size;
+
+	jp->current_file = st_archive_file_new(job, &st, path, block_number);
+	jp->db_con->ops->file_link_to_volume(jp->db_con, jp->current_file, jp->current_volume);
 
 	enum st_tar_out_status status = ST_TAR_OUT_OK;
 	if (path[jp->restore_path_length] != '\0')
@@ -272,6 +281,14 @@ int st_job_copy_change_tape(struct st_job * job) {
 	struct st_stream_writer * tw = jp->tape_writer;
 	struct st_stream_writer * cw = jp->checksum_writer;
 
+	// update volume
+	jp->current_volume->size = tw->ops->position(tw);
+	jp->current_volume->endtime = time(0);
+	jp->current_volume->digests = st_checksum_get_digest_from_writer(cw);
+	jp->current_volume->nb_checksums = job->nb_checksums;
+	// jp->db_con->ops->update_volume(jp->db_con, jp->current_volume);
+	// st_io_json_update_volume(jp->json, jp->current_volume);
+
 	// add tape into list to remember to not use it again
 	jp->tapes = realloc(jp->tapes, (jp->nb_tapes + 1) * sizeof(struct st_tape *));
 	jp->tapes[jp->nb_tapes] = dr->slot->tape;
@@ -319,6 +336,15 @@ int st_job_copy_change_tape(struct st_job * job) {
 		dr->lock->ops->unlock(dr->lock);
 		dr = new_drive;
 	}
+
+	// add new volume
+	jp->current_volume = st_archive_volume_new(job, dr);
+	// jp->db_con->ops->new_volume(jp->db_con, jp->current_volume);
+	// st_io_json_add_volume(jp->json, jp->current_volume);
+
+	// link current file to new volume
+	jp->current_file->position = 0;
+	// jp->db_con->ops->file_link_to_volume(jp->db_con, jp->current_file, jp->current_volume);
 
 	tw = jp->tape_writer = dr->ops->get_writer(dr);
 	cw = jp->checksum_writer = st_checksum_get_steam_writer((const char **) job->checksums, job->nb_checksums, tw);
@@ -825,14 +851,6 @@ int st_job_copy_run(struct st_job * job) {
 
 	job->db_ops->add_record(job, st_log_level_info, "Start copy job (job id: %ld), num runs %ld", job->id, job->num_runs);
 
-	// check permission
-	struct st_user * user = job->user;
-	if (!user->can_restore) {
-		job->sched_status = st_job_status_error;
-		job->db_ops->add_record(job, st_log_level_error, "User (%s) is not allowed to create archive", user->fullname);
-		return 1;
-	}
-
 	int status = st_job_copy_mkdir(job->restore_to->path);
 	if (status) {
 		job->sched_status = st_job_status_error;
@@ -892,7 +910,19 @@ int st_job_copy_run(struct st_job * job) {
 		struct st_drive * drive = st_job_copy_select_tape(job, select_new_tape);
 
 		struct st_stream_writer * tape_writer = jp->tape_writer = drive->ops->get_writer(drive);
-		jp->tar_out = st_tar_new_out(tape_writer);
+		struct st_stream_writer * checksum_writer = jp->checksum_writer = st_checksum_get_steam_writer((const char **) job->checksums, job->nb_checksums, tape_writer);
+		jp->tar_out = st_tar_new_out(checksum_writer);
+
+		// archive
+		struct st_archive * archive = st_archive_new(job);
+		// jp->db_con->ops->new_archive(jp->db_con, archive);
+		// jp->json = st_io_json_new(archive);
+		// st_io_json_add_metadata(jp->json, job->job_meta);
+
+		// volume
+		jp->current_volume = st_archive_volume_new(job, drive);
+		// jp->db_con->ops->new_volume(jp->db_con, jp->current_volume);
+		// st_io_json_add_volume(jp->json, jp->current_volume);
 
 		jp->block_size = jp->tar_out->ops->get_block_size(jp->tar_out);
 		jp->buffer = malloc(jp->block_size);

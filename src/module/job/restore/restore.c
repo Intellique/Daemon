@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 25 Jun 2012 18:37:02 +0200                         *
+*  Last modified: Wed, 27 Jun 2012 11:33:53 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -417,7 +417,7 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 	struct st_job_restore_private * jp = job->data;
 	int status = 0;
 
-	if (header->link[0] != '\0' && !(header->mode & S_IFMT)) {
+	if (header->link && !(header->mode & S_IFMT)) {
 		if (!access(path, F_OK)) {
 			status = unlink(path);
 
@@ -610,13 +610,13 @@ int st_job_restore_restore_files(struct st_job * job) {
 
 			if (hdr_status != ST_TAR_HEADER_OK) { }
 
-			while (!st_job_restore_filter(job, &header) && hdr_status == ST_TAR_HEADER_OK) {
+			while (hdr_status == ST_TAR_HEADER_OK && !st_job_restore_filter(job, &header)) {
 				st_tar_free_header(&header);
 				tar->ops->skip_file(tar);
 				hdr_status = tar->ops->get_header(tar, &header);
 			}
 
-			while (st_job_restore_filter(job, &header) && hdr_status == ST_TAR_HEADER_OK) {
+			while (hdr_status == ST_TAR_HEADER_OK && st_job_restore_filter(job, &header)) {
 				char * path = header.path;
 				if (job->restore_to->nb_trunc_path > 0)
 					path = st_job_restore_trunc_filename(path, job->restore_to->nb_trunc_path);

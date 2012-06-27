@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 18 Jun 2012 13:17:15 +0200                         *
+*  Last modified: Wed, 27 Jun 2012 14:12:23 +0200                         *
 \*************************************************************************/
 
 // sscanf, snprintf
@@ -118,7 +118,7 @@ ssize_t st_tar_in_convert_size(const char * size) {
 		ssize_t result = 0;
 		for (i = 1; i < 12; i++) {
 			result <<= 8;
-			result |= size[i];
+			result |= (unsigned char) size[i];
 		}
 		return result;
 	} else {
