@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 18 Jun 2012 15:20:31 +0200                         *
+*  Last modified: Thu, 28 Jun 2012 18:01:52 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -33,6 +33,7 @@
 // ssize_t
 #include <sys/types.h>
 
+struct st_archive_file;
 struct st_archive_volume;
 struct st_drive;
 struct st_job;
@@ -53,6 +54,7 @@ enum st_archive_file_type {
 
 struct st_archive {
 	long id;
+
 	char * name;
 	time_t ctime;
 	time_t endtime;
@@ -70,6 +72,7 @@ struct st_archive {
 
 struct st_archive_volume {
 	long id;
+
 	long sequence;
 	ssize_t size;
 	time_t ctime;
@@ -81,10 +84,18 @@ struct st_archive_volume {
 
 	char ** digests;
 	unsigned int nb_checksums;
+
+	struct st_archive_files {
+		struct st_archive_file * file;
+		ssize_t position;
+	} * files;
+	unsigned int nb_files;
+
 };
 
 struct st_archive_file {
 	long id;
+
 	char * name;
 	mode_t perm;
 	enum st_archive_file_type type;
@@ -95,7 +106,6 @@ struct st_archive_file {
 	time_t ctime;
 	time_t mtime;
 	ssize_t size;
-	ssize_t position;
 
 	char ** digests;
 	unsigned int nb_checksums;
@@ -104,9 +114,10 @@ struct st_archive_file {
 };
 
 void st_archive_file_free(struct st_archive_file * file);
-struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * file, const char * filename, ssize_t position);
+struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * file, const char * filename);
 void st_archive_free(struct st_archive * archive);
 struct st_archive * st_archive_new(struct st_job * job);
+void st_archive_volume_add_file(struct st_archive_volume * volume, struct st_archive_file * file, ssize_t position);
 void st_archive_volume_free(struct st_archive_volume * volume);
 struct st_archive_volume * st_archive_volume_new(struct st_job * job, struct st_drive * drive);
 enum st_archive_file_type st_archive_file_string_to_type(const char * type);

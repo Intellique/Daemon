@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 26 Jun 2012 19:31:08 +0200                         *
+*  Last modified: Mon, 02 Jul 2012 19:27:49 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -162,12 +162,14 @@ int st_job_copy_archive_file(struct st_job * job, const char * path) {
 
 	ssize_t block_number = jp->tar_out->ops->position(jp->tar_out) / jp->block_size;
 
-	jp->current_file = st_archive_file_new(job, &st, path, block_number);
-	jp->db_con->ops->file_link_to_volume(jp->db_con, jp->current_file, jp->current_volume);
-
 	enum st_tar_out_status status = ST_TAR_OUT_OK;
-	if (path[jp->restore_path_length] != '\0')
+	if (path[jp->restore_path_length] != '\0') {
 		jp->tar_out->ops->add_file(jp->tar_out, path, path + jp->restore_path_length);
+
+		jp->current_file = st_archive_file_new(job, &st, path + jp->restore_path_length);
+		st_archive_volume_add_file(jp->current_volume, jp->current_file, block_number);
+		//jp->db_con->ops->file_link_to_volume(jp->db_con, jp->current_file, jp->current_volume);
+	}
 
 	int failed;
 	switch (status) {
@@ -343,7 +345,7 @@ int st_job_copy_change_tape(struct st_job * job) {
 	// st_io_json_add_volume(jp->json, jp->current_volume);
 
 	// link current file to new volume
-	jp->current_file->position = 0;
+	// jp->current_file->position = 0;
 	// jp->db_con->ops->file_link_to_volume(jp->db_con, jp->current_file, jp->current_volume);
 
 	tw = jp->tape_writer = dr->ops->get_writer(dr);
@@ -930,6 +932,27 @@ int st_job_copy_run(struct st_job * job) {
 		status = st_job_copy_archive_file(job, job->restore_to->path);
 
 		jp->tar_out->ops->close(jp->tar_out);
+
+		if (!status) {
+			struct st_database * driver = st_db_get_default_db();
+			jp->db_con = driver->ops->connect(driver, 0);
+
+			// archive
+			archive->endtime = jp->current_volume->endtime = time(0);
+			// volume
+			jp->current_volume->size = tape_writer->ops->position(tape_writer);
+			jp->current_volume->endtime = time(0);
+			jp->current_volume->digests = st_checksum_get_digest_from_writer(checksum_writer);
+			jp->current_volume->nb_checksums = job->nb_checksums;
+
+			jp->db_con->ops->new_archive(jp->db_con, archive);
+			jp->db_con->ops->update_archive(jp->db_con, archive);
+
+			jp->db_con->ops->close(jp->db_con);
+			jp->db_con->ops->free(jp->db_con);
+		} else {
+		}
+
 		jp->tar_out->ops->free(jp->tar_out);
 		jp->tar_out = 0;
 

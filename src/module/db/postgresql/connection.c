@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 20 Jun 2012 13:12:26 +0200                         *
+*  Last modified: Mon, 02 Jul 2012 19:23:46 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -2108,7 +2108,7 @@ int st_db_postgresql_file_link_to_volume(struct st_database_connection * connect
 	char * volumeid = 0, * fileid = 0, * block_number = 0;
 	asprintf(&volumeid, "%ld", volume->id);
 	asprintf(&fileid, "%ld", file->id);
-	asprintf(&block_number, "%zd", file->position);
+	//asprintf(&block_number, "%zd", file->position);
 
 	const char * param[] = { volumeid, fileid, block_number, };
 	PGresult * result = PQexecPrepared(self->db_con, query, 3, param, 0, 0, 0);
@@ -2135,13 +2135,17 @@ int st_db_postgresql_new_archive(struct st_database_connection * connection, str
 	const char * query0 = "get_job_metadata";
 	st_db_postgresql_prepare(self, query0, "SELECT metadata FROM job WHERE id = $1 LIMIT 1");
 	const char * query1 = "insert_archive";
-	st_db_postgresql_prepare(self, query1, "INSERT INTO archive(name, ctime, creator, owner, metadata) VALUES ($1, $2, $3, $3, $4) RETURNING id");
+	st_db_postgresql_prepare(self, query1, "INSERT INTO archive(name, ctime, creator, owner, metadata, copyof) VALUES ($1, $2, $3, $3, $4, $5) RETURNING id");
+	const char * query2 = "copy_link_volume_file";
+	st_db_postgresql_prepare(self, query2, "SELECT af.id FROM archivefiletoarchivevolume afv LEFT JOIN archivevolume av ON afv.archivevolume = av.id AND av.id = $1 LEFT JOIN archivefile af ON afv.archivefile = af.id WHERE $2 = af.name LIMIT 1");
+	const char * query3 = "copy_link_volume_file2";
+	st_db_postgresql_prepare(self, query3, "INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile, blocknumber) VALUES ($1, $2, $3)");
 
 	char * jobid;
 	asprintf(&jobid, "%ld", archive->job->id);
 
-	const char * param1[] = { jobid };
-	PGresult * result = PQexecPrepared(self->db_con, query0, 1, param1, 0, 0, 0);
+	const char * param0[] = { jobid };
+	PGresult * result = PQexecPrepared(self->db_con, query0, 1, param0, 0, 0, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	free(jobid);
@@ -2166,8 +2170,12 @@ int st_db_postgresql_new_archive(struct st_database_connection * connection, str
 	char * loginid = 0;
 	asprintf(&loginid, "%ld", archive->user->id);
 
-	const char * param2[] = { archive->name, ctime, loginid, metadata };
-	result = PQexecPrepared(self->db_con, query1, 4, param2, 0, 0, 0);
+	char * copyof = 0;
+	if (archive->copy_of)
+		asprintf(&copyof, "%ld", archive->copy_of->id);
+
+	const char * param1[] = { archive->name, ctime, loginid, metadata, copyof };
+	result = PQexecPrepared(self->db_con, query1, 5, param1, 0, 0, 0);
 	status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR) {
@@ -2183,7 +2191,62 @@ int st_db_postgresql_new_archive(struct st_database_connection * connection, str
 	free(loginid);
 	free(metadata);
 
-	return status != PGRES_TUPLES_OK;
+	if (status != PGRES_TUPLES_OK)
+		return 1;
+
+	unsigned int i, j;
+	for (i = 0; i < archive->nb_volumes; i++)
+		st_db_postgresql_new_volume(connection, archive->volumes + i);
+
+	char * archive_copy_id = 0;
+	asprintf(&archive_copy_id, "%ld", archive->copy_of->id);
+
+	for (i = 0; i < archive->nb_volumes; i++) {
+		struct st_archive_volume * v = archive->volumes + i;
+
+		char * archive_volume_id = 0;
+		asprintf(&archive_volume_id, "%ld", v->id);
+
+		for (j = 0; j < v->nb_files; j++) {
+			const char * param2[] = { archive_copy_id, v->files[j].file->name, };
+
+			result = PQexecPrepared(self->db_con, query2, 2, param2, 0, 0, 0);
+
+			if (status == PGRES_FATAL_ERROR) {
+				st_db_postgresql_get_error(result, query1);
+				PQclear(result);
+			} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 0) {
+				PQclear(result);
+				continue;
+			}
+
+			char * file_id, * block_number;
+			st_db_postgresql_get_string_dup(result, 0, 0, &file_id);
+			asprintf(&block_number, "%zd", v->files[j].position);
+
+			PQclear(result);
+
+			const char * param3[] = { archive_volume_id, file_id, block_number, };
+			result = PQexecPrepared(self->db_con, query3, 3, param3, 0, 0, 0);
+
+			if (status == PGRES_FATAL_ERROR)
+				st_db_postgresql_get_error(result, query3);
+
+			free(file_id);
+			free(block_number);
+
+			PQclear(result);
+		}
+
+		free(archive_volume_id);
+
+		st_db_postgresql_update_volume(connection, v);
+	}
+
+	if (archive_copy_id)
+		free(archive_copy_id);
+
+	return 0;
 }
 
 int st_db_postgresql_new_file(struct st_database_connection * connection, struct st_archive_file * file) {

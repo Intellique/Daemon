@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 15 Jun 2012 13:40:38 +0200                         *
+*  Last modified: Mon, 02 Jul 2012 16:18:36 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -66,7 +66,10 @@ void st_archive_file_free(struct st_archive_file * file) {
 	if (!file)
 		return;
 
-	free(file->name);
+	if (file->name)
+		free(file->name);
+	file->name = 0;
+
 	file->digests = 0;
 	file->nb_checksums = 0;
 	file->archive = 0;
@@ -74,7 +77,7 @@ void st_archive_file_free(struct st_archive_file * file) {
 	free(file);
 }
 
-struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * file, const char * filename, ssize_t position) {
+struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * file, const char * filename) {
 	struct st_archive_file * f = malloc(sizeof(struct st_archive_file));
 	f->id = -1;
 	f->name = strdup(filename);
@@ -102,7 +105,6 @@ struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * 
 	f->ctime = file->st_ctime;
 	f->mtime = file->st_mtime;
 	f->size = file->st_size;
-	f->position = position;
 
 	f->digests = 0;
 	f->nb_checksums = 0;
@@ -136,16 +138,24 @@ struct st_archive * st_archive_new(struct st_job * job) {
 	archive->endtime = 0;
 	archive->user = job->user;
 	archive->copy_of = job->archive;
+	job->archive = archive;
 
 	archive->volumes = 0;
 	archive->nb_volumes = 0;
 	archive->next_sequence = 0;
 
-	archive->copy_of = 0;
-
 	archive->job = job;
 
 	return archive;
+}
+
+void st_archive_volume_add_file(struct st_archive_volume * volume, struct st_archive_file * file, ssize_t position) {
+	volume->files = realloc(volume->files, (volume->nb_files + 1) * sizeof(struct st_archive_files));
+	struct st_archive_files * f = volume->files + volume->nb_files;
+	volume->nb_files++;
+
+	f->file = file;
+	f->position = position;
 }
 
 void st_archive_volume_free(struct st_archive_volume * volume) {
@@ -160,6 +170,12 @@ void st_archive_volume_free(struct st_archive_volume * volume) {
 		free(volume->digests[i]);
 	free(volume->digests[i]);
 	volume->digests[i] = 0;
+
+	for (i = 0; i < volume->nb_files; i++)
+		st_archive_file_free(volume->files[i].file);
+	if (volume->files)
+		free(volume->files);
+	volume->files = 0;
 }
 
 struct st_archive_volume * st_archive_volume_new(struct st_job * job, struct st_drive * drive) {
@@ -178,6 +194,9 @@ struct st_archive_volume * st_archive_volume_new(struct st_job * job, struct st_
 	volume->archive = archive;
 	volume->tape = drive->slot->tape;
 	volume->tape_position = drive->file_position;
+
+	volume->files = 0;
+	volume->nb_files = 0;
 
 	return volume;
 }
