@@ -9,7 +9,7 @@ STONE_CHECKSUM_SHA256_DEP_FILES		:= $(sort $(shell test -d ${STONE_CHECKSUM_SHA2
 
 STONE_CHECKSUM_SHA256_BIN			:= lib/libchecksum-sha256.so
 STONE_CHECKSUM_SHA256_CFLAG			:= -pthread -fPIC -fvisibility=hidden
-STONE_CHECKSUM_SHA256_LD			:= -pthread -shared -lssl
+STONE_CHECKSUM_SHA256_LD			:= -pthread -shared -lcrypto
 
 STONE_CHECKSUM_SHA256_LIB			:=
 
