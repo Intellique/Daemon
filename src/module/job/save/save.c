@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 25 Jun 2012 18:32:41 +0200                         *
+*  Last modified: Mon, 02 Jul 2012 13:57:02 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -442,8 +442,7 @@ void st_job_save_new_job(struct st_database_connection * db __attribute__((unuse
 
 	self->json = 0;
 
-	struct st_database * driver = st_db_get_default_db();
-	self->db_con = driver->ops->connect(driver, 0);
+	self->db_con = 0;
 
 	job->data = self;
 	job->job_ops = &st_job_save_ops;
@@ -453,6 +452,9 @@ int st_job_save_run(struct st_job * job) {
 	struct st_job_save_private * jp = job->data;
 
 	job->db_ops->add_record(job, st_log_level_info, "Start archive job (job id: %ld), num runs %ld", job->id, job->num_runs);
+
+	struct st_database * driver = st_db_get_default_db();
+	jp->db_con = driver->ops->connect(driver, 0);
 
 	// check permission
 	struct st_user * user = job->user;
