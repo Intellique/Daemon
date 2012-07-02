@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jul 2012 12:13:43 +0200                         *
+*  Last modified: Mon, 02 Jul 2012 13:41:46 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -808,6 +808,11 @@ off_t st_drive_io_reader_set_position(struct st_stream_reader * io, off_t positi
 		return -1;
 	}
 
+	/**
+	 * There is a limitation with scsi command 'space' used by driver st of linux.
+	 * In this command block_number is specified into 3 bytes so 8388607 is the
+	 * maximum that we can forward in one time.
+	 */
 	if (pos.mt_blkno < position) {
 		unsigned int nb_blocks, nb_blocks_remains;
 		for (nb_blocks_remains = position - pos.mt_blkno; nb_blocks_remains > 0 && !failed; nb_blocks_remains -= nb_blocks ) {
@@ -835,12 +840,14 @@ off_t st_drive_io_reader_set_position(struct st_stream_reader * io, off_t positi
 	if (failed) {
 		self->last_errno = errno;
 		return -1;
+	} else {
+		self->position = (ssize_t) pos.mt_blkno * self->block_size;
 	}
 
 	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: positioning tape to block = %zd, finish with code = %d", self->drive->vendor, self->drive->model, self->drive - self->drive->changer->drives, position, failed);
 
 	self->buffer_pos = self->buffer + self->block_size;
-	return self->position = pos.mt_blkno * self->block_size;
+	return self->position;
 }
 
 
