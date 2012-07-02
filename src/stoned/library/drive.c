@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jul 2012 10:24:22 +0200                         *
+*  Last modified: Mon, 02 Jul 2012 12:13:43 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -809,21 +809,21 @@ off_t st_drive_io_reader_set_position(struct st_stream_reader * io, off_t positi
 	}
 
 	if (pos.mt_blkno < position) {
-        unsigned int nb_blocks, nb_blocks_remains;
-        for (nb_blocks_remains = position - pos.mt_blkno; nb_blocks_remains > 0 && !failed; nb_blocks_remains -= nb_blocks ) {
-            nb_blocks = nb_blocks_remains > 1048576 ? 1048576 : nb_blocks_remains;
+		unsigned int nb_blocks, nb_blocks_remains;
+		for (nb_blocks_remains = position - pos.mt_blkno; nb_blocks_remains > 0 && !failed; nb_blocks_remains -= nb_blocks ) {
+			nb_blocks = nb_blocks_remains > 8388607 ? 8388607 : nb_blocks_remains;
 
-            struct mtop forward = { MTFSR, nb_blocks };
-            failed = ioctl(self->fd, MTIOCTOP, &forward);
-        }
+			struct mtop forward = { MTFSR, nb_blocks };
+			failed = ioctl(self->fd, MTIOCTOP, &forward);
+		}
 	} else if (pos.mt_blkno > position) {
-        unsigned int nb_blocks, nb_blocks_remains;
-        for (nb_blocks_remains = pos.mt_blkno - position; nb_blocks_remains > 0 && !failed; nb_blocks_remains -= nb_blocks ) {
-            nb_blocks = nb_blocks_remains > 1048576 ? 1048576 : nb_blocks_remains;
+		unsigned int nb_blocks, nb_blocks_remains;
+		for (nb_blocks_remains = pos.mt_blkno - position; nb_blocks_remains > 0 && !failed; nb_blocks_remains -= nb_blocks ) {
+			nb_blocks = nb_blocks_remains > 8388607 ? 8388607 : nb_blocks_remains;
 
-            struct mtop backward = { MTFSR, nb_blocks };
-            failed = ioctl(self->fd, MTIOCTOP, &backward);
-        }
+			struct mtop backward = { MTFSR, nb_blocks };
+			failed = ioctl(self->fd, MTIOCTOP, &backward);
+		}
 	}
 
 	if (failed) {
