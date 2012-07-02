@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 15 Jun 2012 13:09:42 +0200                         *
+*  Last modified: Mon, 02 Jul 2012 14:17:05 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -142,9 +142,9 @@ void st_sched_do_loop() {
 				}
 
 				j->sched_status = st_job_status_idle;
-				st_sched_init_job(j);
+				//st_sched_init_job(j);
 
-				j->driver->new_job(connection, j);
+				//j->driver->new_job(connection, j);
 			}
 
 			nb_jobs += new_jobs;
@@ -171,6 +171,8 @@ void st_sched_do_loop() {
 
 			// start job
 			if (st_job_status_idle == j->db_status && j->start < update && st_job_status_idle == j->sched_status && j->repetition > 0) {
+				st_sched_init_job(j);
+				j->driver->new_job(connection, j);
 				st_threadpool_run(st_sched_run_job, j);
 			}
 
