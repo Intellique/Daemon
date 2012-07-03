@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 20 Jan 2012 15:12:00 +0100                         *
+*  Last modified: Wed, 04 Jul 2012 00:01:15 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -139,7 +139,7 @@ void * st_threadpool_work(void * arg) {
 		struct timeval now;
 		struct timespec timeout;
 		gettimeofday(&now, 0);
-		timeout.tv_sec = now.tv_sec + 60;
+		timeout.tv_sec = now.tv_sec + 300;
 		timeout.tv_nsec = now.tv_usec * 1000;
 
 		pthread_cond_timedwait(&th->wait, &th->lock, &timeout);
