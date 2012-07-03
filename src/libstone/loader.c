@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 15 Jan 2012 19:11:30 +0100                         *
+*  Last modified: Tue, 03 Jul 2012 18:50:04 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -52,7 +52,7 @@ void * st_loader_load(const char * module, const char * name) {
 		return 0;
 
 	char path[256];
-	snprintf(path, 256, "%s/lib%s-%s.so", MODULE_PATH, module, name);
+	snprintf(path, 256, MODULE_PATH "/lib%s-%s.so", module, name);
 
 	return st_loader_load_file(path);
 }

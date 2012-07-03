@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 17 Apr 2012 19:26:47 +0200                         *
+*  Last modified: Tue, 03 Jul 2012 23:51:35 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -48,13 +48,17 @@
 static void st_log_exit(void) __attribute__((destructor));
 static void st_log_sent_message(void * arg);
 
-static int st_log_display_at_exit = 1;
+static short st_log_display_at_exit = 1;
+static volatile unsigned short st_log_logger_running = 0;
+
 static struct st_log_driver ** st_log_drivers = 0;
 static unsigned int st_log_nb_drivers = 0;
-static struct st_log_message_unsent {
+
+static volatile struct st_log_message_unsent {
 	struct st_log_message data;
 	struct st_log_message_unsent * next;
 } * st_log_message_first = 0, * st_log_message_last = 0;
+
 static pthread_mutex_t st_log_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 static pthread_cond_t st_log_wait = PTHREAD_COND_INITIALIZER;
 
@@ -97,21 +101,21 @@ void st_log_disable_display_log() {
 
 void st_log_exit() {
 	if (st_log_display_at_exit) {
-		struct st_log_message_unsent * mes;
+		volatile struct st_log_message_unsent * mes;
 		for (mes = st_log_message_first; mes; mes = mes->next)
 			printf("%c: %s\n", st_log_level_to_string(mes->data.level)[0], mes->data.message);
 	}
 }
 
 struct st_log_driver * st_log_get_driver(const char * driver) {
-	int old_state;
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
-	pthread_mutex_lock(&st_log_lock);
-
 	if (!driver) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Driver shall not be null");
 		return 0;
 	}
+
+	int old_state;
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
+	pthread_mutex_lock(&st_log_lock);
 
 	unsigned int i;
 	struct st_log_driver * dr = 0;
@@ -121,7 +125,7 @@ struct st_log_driver * st_log_get_driver(const char * driver) {
 
 	void * cookie = 0;
 	if (!dr)
-		cookie =st_loader_load("log", driver);
+		cookie = st_loader_load("log", driver);
 
 	if (!dr && !cookie) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Failed to load driver %s", driver);
@@ -137,12 +141,12 @@ struct st_log_driver * st_log_get_driver(const char * driver) {
 			dr->cookie = cookie;
 		}
 
-	if (!dr)
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Driver %s not found", driver);
-
 	pthread_mutex_unlock(&st_log_lock);
 	if (old_state == PTHREAD_CANCEL_DISABLE)
 		pthread_setcancelstate(old_state, 0);
+
+	if (!dr)
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Driver %s not found", driver);
 
 	return dr;
 }
@@ -152,6 +156,7 @@ const char * st_log_level_to_string(enum st_log_level level) {
 	for (ptr = st_log_levels; ptr->level != st_log_level_unknown; ptr++)
 		if (ptr->level == level)
 			return ptr->name;
+
 	return ptr->name;
 }
 
@@ -161,8 +166,8 @@ void st_log_register_driver(struct st_log_driver * driver) {
 		return;
 	}
 
-	if (driver->api_version != STONE_LOG_APIVERSION) {
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Driver(%s) has not the correct api version (current: %d, expected: %d)", driver->name, driver->api_version, STONE_LOG_APIVERSION);
+	if (driver->api_level != STONE_LOG_API_LEVEL) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Driver(%s) has not the correct api version (current: %d, expected: %d)", driver->name, driver->api_level, STONE_LOG_API_LEVEL);
 		return;
 	}
 
@@ -185,9 +190,12 @@ void st_log_register_driver(struct st_log_driver * driver) {
 void st_log_sent_message(void * arg __attribute__((unused))) {
 	for (;;) {
 		pthread_mutex_lock(&st_log_lock);
+		if (!st_log_logger_running)
+			break;
 		if (!st_log_message_first)
 			pthread_cond_wait(&st_log_wait, &st_log_lock);
-		struct st_log_message_unsent * message = st_log_message_first;
+
+		struct st_log_message_unsent * message = (struct st_log_message_unsent *) st_log_message_first;
 		st_log_message_first = st_log_message_last = 0;
 		pthread_mutex_unlock(&st_log_lock);
 
@@ -208,16 +216,33 @@ void st_log_sent_message(void * arg __attribute__((unused))) {
 			message = next;
 		}
 	}
+
+	pthread_cond_signal(&st_log_wait);
+	pthread_mutex_unlock(&st_log_lock);
 }
 
 void st_log_start_logger() {
-	st_threadpool_run(st_log_sent_message, 0);
-	st_log_display_at_exit = 0;
+	pthread_mutex_lock(&st_log_lock);
+
+	if (!st_log_logger_running) {
+		st_log_logger_running = 1;
+		st_threadpool_run(st_log_sent_message, 0);
+		st_log_display_at_exit = 0;
+	}
+
+	pthread_mutex_unlock(&st_log_lock);
 }
 
 void st_log_stop_logger() {
-	while (st_log_message_first)
-		sleep(1);
+	pthread_mutex_lock(&st_log_lock);
+
+	if (st_log_logger_running) {
+		st_log_logger_running = 0;
+		pthread_cond_signal(&st_log_wait);
+		pthread_cond_wait(&st_log_wait, &st_log_lock);
+	}
+
+	pthread_mutex_unlock(&st_log_lock);
 }
 
 enum st_log_level st_log_string_to_level(const char * string) {
@@ -228,6 +253,7 @@ enum st_log_level st_log_string_to_level(const char * string) {
 	for (ptr = st_log_levels; ptr->level != st_log_level_unknown; ptr++)
 		if (!strcasecmp(ptr->name, string))
 			return ptr->level;
+
 	return st_log_level_unknown;
 }
 
@@ -239,6 +265,7 @@ enum st_log_type st_log_string_to_type(const char * string) {
 	for (ptr = st_log_types; ptr->type != st_log_type_unknown; ptr++)
 		if (!strcasecmp(ptr->name, string))
 			return ptr->type;
+
 	return st_log_type_unknown;
 }
 
@@ -247,6 +274,7 @@ const char * st_log_type_to_string(enum st_log_type type) {
 	for (ptr = st_log_types; ptr->type != st_log_type_unknown; ptr++)
 		if (ptr->type == type)
 			return ptr->name;
+
 	return ptr->name;
 }
 
@@ -267,8 +295,6 @@ void st_log_write_all(enum st_log_level level, enum st_log_type type, const char
 	data->timestamp = time(0);
 	mes->next = 0;
 
-	int old_state;
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
 	pthread_mutex_lock(&st_log_lock);
 
 	if (!st_log_message_first)
@@ -276,11 +302,8 @@ void st_log_write_all(enum st_log_level level, enum st_log_type type, const char
 	else
 		st_log_message_last = st_log_message_last->next = mes;
 
-	pthread_mutex_unlock(&st_log_lock);
-	if (old_state == PTHREAD_CANCEL_DISABLE)
-		pthread_setcancelstate(old_state, 0);
-
 	pthread_cond_signal(&st_log_wait);
+	pthread_mutex_unlock(&st_log_lock);
 }
 
 void st_log_write_all2(enum st_log_level level, enum st_log_type type, struct st_user * user, const char * format, ...) {
@@ -300,8 +323,6 @@ void st_log_write_all2(enum st_log_level level, enum st_log_type type, struct st
 	data->timestamp = time(0);
 	mes->next = 0;
 
-	int old_state;
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
 	pthread_mutex_lock(&st_log_lock);
 
 	if (!st_log_message_first)
@@ -309,10 +330,7 @@ void st_log_write_all2(enum st_log_level level, enum st_log_type type, struct st
 	else
 		st_log_message_last = st_log_message_last->next = mes;
 
-	pthread_mutex_unlock(&st_log_lock);
-	if (old_state == PTHREAD_CANCEL_DISABLE)
-		pthread_setcancelstate(old_state, 0);
-
 	pthread_cond_signal(&st_log_wait);
+	pthread_mutex_unlock(&st_log_lock);
 }
 

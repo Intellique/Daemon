@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 03 Apr 2012 15:20:38 +0200                         *
+*  Last modified: Tue, 03 Jul 2012 23:28:32 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LOG_H__
@@ -38,111 +38,253 @@ struct st_user;
 
 
 /**
- * \brief Enumerate level
+ * \enum st_log_level
+ * \brief Enumerate level of message
  *
- * Each level has a priority (i.e. debug < info < warning < error)
+ * Each level has a priority (i.e. debug > info > warning > error)
  */
 enum st_log_level {
 	/**
-	 * \brief reserved for debugging
+	 * \brief Reserved for debugging
 	 */
-	st_log_level_debug		= 0x3,
+	st_log_level_debug = 0x3,
 
 	/**
-	 * \brief should be used to alert errors
+	 * \brief Should be used to alert errors
 	 */
-	st_log_level_error		= 0x0,
+	st_log_level_error = 0x0,
 
 	/**
-	 * \brief should be used to inform what the server does.
+	 * \brief Should be used to inform what the server does.
 	 *
 	 * Example: server starts a new job
 	 */
-	st_log_level_info		= 0x2,
+	st_log_level_info = 0x2,
 
 	/**
-	 * \brief should be used to alert errors which can be recovered
+	 * \brief Should be used to alert errors which can be recovered
 	 *
 	 * Example: dns service not available
 	 */
-	st_log_level_warning	= 0x1,
+	st_log_level_warning = 0x1,
 
 	/**
-	 * \brief should not be used
+	 * \brief Should not be used
 	 *
-	 * Used only by st_log_stringTolevel to report an error
+	 * Used only by st_log_string_to_level to report an error
+	 * \see st_log_string_to_level
 	 */
-	st_log_level_unknown	= 0xF,
+	st_log_level_unknown = 0xF,
 };
 
+/**
+ * \enum st_log_type
+ * \brief Enumerate type of message
+ */
 enum st_log_type {
+	/**
+	 * \brief used by changer
+	 */
 	st_log_type_changer,
+	/**
+	 * \brief used by checksum
+	 */
 	st_log_type_checksum,
+	/**
+	 * \brief generic message from daemon
+	 */
 	st_log_type_daemon,
+	/**
+	 * \brief used by database
+	 */
 	st_log_type_database,
+	/**
+	 * \brief used by tape drive
+	 */
 	st_log_type_drive,
 	st_log_type_job,
+	/**
+	 * \brief used by checksum module
+	 */
 	st_log_type_plugin_checksum,
+	/**
+	 * \brief used by database module
+	 */
 	st_log_type_plugin_db,
+	/**
+	 * \brief used by log module
+	 */
 	st_log_type_plugin_log,
+	/**
+	 * \brief used by scheduler
+	 */
 	st_log_type_scheduler,
+	/**
+	 * \brief used by user interface
+	 */
 	st_log_type_ui,
 	st_log_type_user_message,
 
+	/**
+	 * \brief Should not be used
+	 *
+	 * Used only by st_log_string_to_type to report an error
+	 * \see st_log_string_to_type
+	 */
 	st_log_type_unknown,
 };
 
 
+/**
+ * \struct st_log_message
+ * \brief This structure represents a message send to a log module
+ *
+ * Only usefull for log module
+ */
 struct st_log_message {
+	/**
+	 * \brief Level of message
+	 */
 	enum st_log_level level;
+	/**
+	 * \brief Kind of message
+	 */
 	enum st_log_type type;
+	/**
+	 * \brief Message
+	 */
 	char * message;
+	/**
+	 * \brief User associated of this message
+	 *
+	 * \note can be null
+	 */
 	struct st_user * user;
+	/**
+	 * \brief timestamp of message
+	 *
+	 * \note Number of seconds since \b Epoch (i.e. Thu, 01 Jan 1970 00:00:00 +0000)
+	 */
 	time_t timestamp;
 };
 
+/**
+ * \struct st_log_driver
+ * \brief Structure used used only one time by each log module
+ *
+ * \note This structure should be staticaly allocated and passed to function st_log_register_driver
+ * \see st_log_register_driver
+ */
 struct st_log_driver {
+	/**
+	 * \brief Name of driver
+	 *
+	 * \note Should be unique and equals to liblog-name.so where name is the name of driver.
+	 */
 	const char * name;
-	int (*add)(struct st_log_driver * driver, const char * alias, enum st_log_level level, struct st_hashtable * params);
-	void * data;
+	/**
+	 * \brief Add a module to this driver
+	 *
+	 * \param[in] alias : name of module
+	 * \param[in] level : level of message
+	 * \param[in] params : addictional parameters
+	 * \returns 0 if \b ok
+	 *
+	 * \pre
+	 * \li alias is not null and should be duplicated
+	 * \li level is not equal to st_log_level_unknown
+	 * \li params is not null
+	 */
+	int (*add)(const char * alias, enum st_log_level level, const struct st_hashtable * params);
 
-	// used by server only
-	// should not be modified
+	/**
+	 * \brief cookie
+	 *
+	 * Is a value returns by dlopen and should not be used nor released
+	 */
 	void * cookie;
-	const int api_version;
+	/**
+	 * \brief api level supported by this driver
+	 *
+	 * Should be define by using STONE_LOG_API_LEVEL only
+	 */
+	const int api_level;
 
+	/**
+	 * \struct st_log_module
+	 * \brief A log module
+	 */
 	struct st_log_module {
+		/**
+		 * \brief name of module
+		 */
 		char * alias;
+		/**
+		 * \brief Minimal level
+		 */
 		enum st_log_level level;
+		/**
+		 * \struct st_log_module_ops
+		 * \brief Functions associated to a log module
+		 */
 		struct st_log_module_ops {
+			/**
+			 * \brief release a module
+			 *
+			 * \param[in] module : release this module
+			 */
 			void (*free)(struct st_log_module * module);
-			void (*write)(struct st_log_module * module, struct st_log_message * message);
+			/**
+			 * \brief Write a message to a module
+			 *
+			 * \param[in] module : write to this module
+			 * \param[in] message : write this message
+			 */
+			void (*write)(struct st_log_module * module, const struct st_log_message * message);
 		} * ops;
 
+		/**
+		 * \brief Private data of a log module
+		 */
 		void * data;
 	} * modules;
+	/**
+	 * \brief Numbers of modules associated to this driver
+	 */
 	unsigned int nb_modules;
 };
 
 /**
- * \brief Current api version
+ * \brief Current api level
  *
  * Will increment from new version of struct st_log_driver or struct st_log
  */
-#define STONE_LOG_APIVERSION 1
+#define STONE_LOG_API_LEVEL 1
 
 
 /**
- * \brief get a log driver
+ * \brief Disable display remains messages.
+ *
+ * Default behaviour is to display all messages into terminal
+ * if no log modules are loaded at exit of process.
+ */
+void st_log_disable_display_log(void);
+
+/**
+ * \brief Get a log driver
+ *
  * \param module : driver's name
  * \return 0 if failed
  * \note if the driver is not loaded, we try to load it
+ *
+ * \pre module should not be null
  */
 struct st_log_driver * st_log_get_driver(const char * module);
 
 /**
  * \brief Each log driver should call this function only one time
- * \param driver : a static allocated struct
+ *
+ * \param driver : a static allocated structure
  * \code
  * __attribute__((constructor))
  * static void log_myLog_init() {
@@ -153,25 +295,72 @@ struct st_log_driver * st_log_get_driver(const char * module);
 void st_log_register_driver(struct st_log_driver * driver);
 
 /**
- * \brief convert an enumeration to a statically allocated string
+ * \brief Convert an enumeration to a statically allocated string
+ *
  * \param level : one log level
- * \return string
+ * \return a statically allocated string
+ * \note returned value should not be released
  */
 const char * st_log_level_to_string(enum st_log_level level);
 
 /**
- * \brief convert a string to an enumeration
+ * \brief Start thread which write messages to log modules
+ *
+ * \note Should be used only one time
+ * \note This function is thread-safe
+ */
+void st_log_start_logger(void);
+
+/**
+ * \brief Convert a c string to an enumeration
+ *
  * \param string : one string level
  * \return an enumeration
  */
 enum st_log_level st_log_string_to_level(const char * string);
 
+/**
+ * \brief Convert a c string to an enum st_log_type
+ *
+ * \param string : one string type
+ * \return an enumeration
+ */
 enum st_log_type st_log_string_to_type(const char * string);
+
+/**
+ * \brief Convert an enum st_log_type to a statically allocated c string
+ *
+ * \param[in] type : a log type
+ * \return a statically allocated c string
+ */
 const char * st_log_type_to_string(enum st_log_type type);
 
+/**
+ * \brief Write a message to all log modules
+ *
+ * \param[in] level : level of message
+ * \param[in] type : type of message
+ * \param[in] format : message with printf-like syntax
+ *
+ * \note Message can be wrote after that this function has returned.
+ * \note This function is thread-safe
+ */
 void st_log_write_all(enum st_log_level level, enum st_log_type type, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
+
+/**
+ * \brief Write a message to all log modules
+ *
+ * \param[in] level : level of message
+ * \param[in] type : type of message
+ * \param[in] user : user associted to this message
+ * \param[in] format : message with printf-like syntax
+ *
+ * \note Message can be wrote after that this function has returned.
+ * \note This function is thread-safe
+ */
 void st_log_write_all2(enum st_log_level level, enum st_log_type type, struct st_user * user, const char * format, ...) __attribute__ ((format (printf, 4, 5)));
-void st_log_write_to(const char * alias, enum st_log_type type, enum st_log_level level, const char * format, ...) __attribute__ ((format (printf, 4, 5)));
+
+//void st_log_write_to(const char * alias, enum st_log_type type, enum st_log_level level, const char * format, ...) __attribute__ ((format (printf, 4, 5)));
 
 #endif
 
