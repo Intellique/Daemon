@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 27 Jun 2012 11:33:53 +0200                         *
+*  Last modified: Wed, 04 Jul 2012 19:20:03 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -50,6 +50,7 @@
 #include <stone/log.h>
 #include <stone/tar.h>
 #include <stone/user.h>
+#include <stone/util.h>
 
 struct st_job_restore_private {
 	char * buffer;
@@ -115,8 +116,15 @@ int st_job_restore_filter(struct st_job * job, struct st_tar_header * header) {
 		if (*header->path != '/')
 			path++;
 
+		char * tar_header = strdup(header->path);
+		st_util_string_delete_double_char(tar_header, '/');
+
 		ssize_t length = strlen(path);
-		if (!strncmp(header->path, path, length))
+		int diff = strncmp(tar_header, path, length);
+
+		free(tar_header);
+
+		if (!diff)
 			return 1;
 	}
 
@@ -283,6 +291,8 @@ int st_job_restore_mkdir(const char * path) {
 		return 0;
 
 	char * path2 = strdup(path);
+	st_util_string_delete_double_char(path2, '/');
+
 	ssize_t length = strlen(path2);
 	while (path2[length - 1] == '/') {
 		length--;
