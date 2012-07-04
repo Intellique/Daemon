@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 03 Jul 2012 18:50:04 +0200                         *
+*  Last modified: Wed, 04 Jul 2012 10:12:57 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -34,6 +34,8 @@
 #include <glob.h>
 // snprintf
 #include <stdio.h>
+// free
+#include <stdlib.h>
 // access
 #include <unistd.h>
 
@@ -51,14 +53,19 @@ void * st_loader_load(const char * module, const char * name) {
 	if (!module || !name)
 		return 0;
 
-	char path[256];
-	snprintf(path, 256, MODULE_PATH "/lib%s-%s.so", module, name);
+	char * path;
+	asprintf(&path, MODULE_PATH "/lib%s-%s.so", module, name);
 
-	return st_loader_load_file(path);
+	void * cookie = st_loader_load_file(path);
+
+	free(path);
+
+	return cookie;
 }
 
 void * st_loader_load_file(const char * filename) {
 	if (access(filename, R_OK | X_OK)) {
+		st_log_write_all(st_log_level_debug, st_log_type_daemon, "Loader: access to file %s failed because %m", filename);
 		return 0;
 	}
 

@@ -22,19 +22,33 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 15 Mar 2012 13:54:17 +0100                         *
+*  Last modified: Wed, 04 Jul 2012 10:30:54 +0200                         *
 \*************************************************************************/
 
-#ifndef __STONE_HASHTABLE_H__
-#define __STONE_HASHTABLE_H__
+#ifndef __STONE_UTIL_HASHTABLE_H__
+#define __STONE_UTIL_HASHTABLE_H__
 
+/**
+ * \struct st_hashtable
+ * \brief This is a hashtable
+ */
 struct st_hashtable {
+	/**
+	 * \struct st_hashtable_node
+	 * \brief A node of one hashtable
+	 */
 	struct st_hashtable_node {
+		/**
+		 * \brief Hash value of key
+		 */
 		unsigned long long hash;
 		void * key;
 		void * value;
 		struct st_hashtable_node * next;
 	} ** nodes;
+	/**
+	 * \brief Numbers of elements in hashtable
+	 */
 	unsigned int nb_elements;
 	unsigned int size_node;
 
@@ -44,8 +58,21 @@ struct st_hashtable {
 	void (*release_key_value)(void *, void *);
 };
 
+/**
+ * \brief Remove (and release) all elements in hashtable
+ */
 void st_hashtable_clear(struct st_hashtable * hashtable);
+/**
+ * \brief Release a hashtable
+ */
 void st_hashtable_free(struct st_hashtable * hashtable);
+/**
+ * \brief Check if hashtable contains this key
+ *
+ * \param[in] hashtable : a hashtable
+ * \param[in] key : a key
+ * \returns 1 if found otherwise 0
+ */
 short st_hashtable_has_key(struct st_hashtable * hashtable, const void * key);
 const void ** st_hashtable_keys(struct st_hashtable * hashtable);
 struct st_hashtable * st_hashtable_new(unsigned long long (*compute_hash)(const void * key));
