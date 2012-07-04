@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jul 2012 19:27:49 +0200                         *
+*  Last modified: Wed, 04 Jul 2012 13:51:31 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -50,6 +50,7 @@
 
 #include <stone/io.h>
 #include <stone/io/checksum.h>
+#include <stone/io/json.h>
 #include <stone/library/archive.h>
 #include <stone/library/changer.h>
 #include <stone/library/drive.h>
@@ -67,6 +68,7 @@ struct st_job_copy_private {
 	char * buffer;
 	ssize_t block_size;
 
+	char * first_file;
 	size_t restore_path_length;
 
 	ssize_t position;
@@ -117,6 +119,7 @@ static int st_job_copy_mkdir(const char * path);
 static void st_job_copy_new_job(struct st_database_connection * db, struct st_job * job);
 static int st_job_copy_restore_archive(struct st_job * job);
 static int st_job_copy_restore_file(struct st_job * job, struct st_tar_in * tar, struct st_tar_header * header, const char * path);
+static void st_job_copy_rmdir(const char * path);
 static int st_job_copy_run(struct st_job * job);
 static struct st_drive * st_job_copy_select_tape(struct st_job * job, enum st_job_copy_state state);
 static void st_job_copy_savepoint_save(struct st_job * job, struct st_changer * changer, struct st_drive * drive, struct st_slot * slot);
@@ -163,13 +166,11 @@ int st_job_copy_archive_file(struct st_job * job, const char * path) {
 	ssize_t block_number = jp->tar_out->ops->position(jp->tar_out) / jp->block_size;
 
 	enum st_tar_out_status status = ST_TAR_OUT_OK;
-	if (path[jp->restore_path_length] != '\0') {
-		jp->tar_out->ops->add_file(jp->tar_out, path, path + jp->restore_path_length);
+	jp->tar_out->ops->add_file(jp->tar_out, path, path + jp->restore_path_length);
 
-		jp->current_file = st_archive_file_new(job, &st, path + jp->restore_path_length);
-		st_archive_volume_add_file(jp->current_volume, jp->current_file, block_number);
-		//jp->db_con->ops->file_link_to_volume(jp->db_con, jp->current_file, jp->current_volume);
-	}
+	jp->current_file = st_archive_file_new(job, &st, path + jp->restore_path_length);
+	st_archive_volume_add_file(jp->current_volume, jp->current_file, block_number);
+	//jp->db_con->ops->file_link_to_volume(jp->db_con, jp->current_file, jp->current_volume);
 
 	int failed;
 	switch (status) {
@@ -578,6 +579,7 @@ void st_job_copy_new_job(struct st_database_connection * db __attribute__((unuse
 	self->buffer = 0;
 	self->block_size = 0;
 
+	self->first_file = 0;
 	self->restore_path_length = 0;
 
 	self->position = 0;
@@ -637,6 +639,9 @@ int st_job_copy_restore_archive(struct st_job * job) {
 
 			if (!path)
 				continue;
+
+			if (!jp->first_file)
+				jp->first_file = strdup(path);
 
 			ssize_t length = restore_path_length + strlen(path);
 			char * restore_path = malloc(length + 2);
@@ -848,6 +853,36 @@ int st_job_copy_restore_file(struct st_job * job, struct st_tar_in * tar, struct
 	return status;
 }
 
+void st_job_copy_rmdir(const char * path) {
+	struct stat st;
+	int failed = lstat(path, &st);
+	if (failed)
+		return;
+
+	if (S_ISDIR(st.st_mode)) {
+		struct dirent ** dl = 0;
+		int nb_files = scandir(path, &dl, st_job_copy_filter, 0);
+
+		int i;
+		for (i = 0; i < nb_files; i++) {
+			if (!failed) {
+				char * subpath = 0;
+				asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
+
+				st_job_copy_rmdir(subpath);
+
+				free(subpath);
+			}
+
+			free(dl[i]);
+		}
+
+		free(dl);
+	} else {
+		unlink(path);
+	}
+}
+
 int st_job_copy_run(struct st_job * job) {
 	struct st_job_copy_private * jp = job->data;
 
@@ -917,19 +952,19 @@ int st_job_copy_run(struct st_job * job) {
 
 		// archive
 		struct st_archive * archive = st_archive_new(job);
-		// jp->db_con->ops->new_archive(jp->db_con, archive);
-		// jp->json = st_io_json_new(archive);
-		// st_io_json_add_metadata(jp->json, job->job_meta);
 
 		// volume
 		jp->current_volume = st_archive_volume_new(job, drive);
-		// jp->db_con->ops->new_volume(jp->db_con, jp->current_volume);
-		// st_io_json_add_volume(jp->json, jp->current_volume);
 
 		jp->block_size = jp->tar_out->ops->get_block_size(jp->tar_out);
 		jp->buffer = malloc(jp->block_size);
 
-		status = st_job_copy_archive_file(job, job->restore_to->path);
+		char * path;
+		asprintf(&path, "%s/%s", job->restore_to->path, jp->first_file);
+
+		status = st_job_copy_archive_file(job, path);
+
+		free(path);
 
 		jp->tar_out->ops->close(jp->tar_out);
 
@@ -948,9 +983,10 @@ int st_job_copy_run(struct st_job * job) {
 			jp->db_con->ops->new_archive(jp->db_con, archive);
 			jp->db_con->ops->update_archive(jp->db_con, archive);
 
+			struct st_io_json * json = st_io_json_copy(archive);
+
 			jp->db_con->ops->close(jp->db_con);
 			jp->db_con->ops->free(jp->db_con);
-		} else {
 		}
 
 		jp->tar_out->ops->free(jp->tar_out);
@@ -961,6 +997,8 @@ int st_job_copy_run(struct st_job * job) {
 	}
 
 	jp->drive->lock->ops->unlock(jp->drive->lock);
+
+	st_job_copy_rmdir(job->restore_to->path);
 
 	if (!status) {
 		job->done = 1;

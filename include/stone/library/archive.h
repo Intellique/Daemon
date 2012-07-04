@@ -90,7 +90,6 @@ struct st_archive_volume {
 		ssize_t position;
 	} * files;
 	unsigned int nb_files;
-
 };
 
 struct st_archive_file {

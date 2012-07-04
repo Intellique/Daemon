@@ -135,6 +135,62 @@ void st_io_json_add_volume(struct st_io_json * js, struct st_archive_volume * vo
 		json_array_append(js->current_volume, js->current_file);
 }
 
+struct st_io_json * st_io_json_copy(struct st_archive * archive) {
+	struct st_io_json * js = malloc(sizeof(struct st_io_json));
+	js->root = json_object();
+
+	json_t * stone = json_object();
+	json_object_set_new(stone, "version", json_string(STONE_VERSION));
+	json_object_set_new(stone, "build", json_string(__DATE__ " " __TIME__));
+	json_object_set_new(js->root, "STone", stone);
+
+	js->archive = json_object();
+	json_object_set_new(js->root, "archive", js->archive);
+
+	js->archive_volumes = json_array();
+
+	json_t * name = json_string(archive->name);
+	json_object_set_new(js->archive, "name", name);
+	json_object_set_new(js->archive, "user", json_string(archive->user->login));
+
+	char ctime[32];
+	struct tm local_current;
+	localtime_r(&archive->ctime, &local_current);
+	strftime(ctime, 32, "%F %T", &local_current);
+	json_object_set_new(js->archive, "create time", json_string(ctime));
+
+	char endtime[32];
+	localtime_r(&archive->endtime, &local_current);
+	strftime(endtime, 32, "%F %T", &local_current);
+	json_object_set_new(js->archive, "finish time", json_string(endtime));
+
+	json_t * copy = json_object();
+	json_object_set_new(copy, "name", json_string(archive->copy_of->name));
+
+	localtime_r(&archive->ctime, &local_current);
+	strftime(ctime, 32, "%F %T", &local_current);
+	json_object_set_new(copy, "create time", json_string(ctime));
+
+	json_object_set_new(js->archive, "copy of", copy);
+
+	js->current_volume = 0;
+	js->current_file = 0;
+
+	unsigned int i, j;
+	for (i = 0; i < archive->nb_volumes; i++) {
+		struct st_archive_volume * vol = archive->volumes + i;
+
+		st_io_json_add_volume(js, vol);
+
+		for (j = 0; j < vol->nb_files; j++) {
+		}
+
+		st_io_json_update_volume(js, vol);
+	}
+
+	return js;
+}
+
 void st_io_json_free(struct st_io_json * js) {
 	if (!js)
 		return;
