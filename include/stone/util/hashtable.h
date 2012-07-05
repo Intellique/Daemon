@@ -22,27 +22,37 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Jul 2012 10:03:31 +0200                         *
+*  Last modified: Thu, 05 Jul 2012 15:21:52 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_UTIL_HASHTABLE_H__
 #define __STONE_UTIL_HASHTABLE_H__
 
 /**
- * \typedef st_compute_hash_f
- * \brief Pointer function used to compute hash of keys
+ * \brief Function used to compute hash of keys
  *
- * \param[in] key: a \a key
+ * \param[in] key : a \a key
  * \returns hash
  *
- * \note mathematical consideration, \f$ \forall (x, y), x \ne y, f(x) \ne f(y) \f$ \n
- * If \f$ f(x) = f(y) \f$, there is a collision.
+ * \note Mathematical consideration : \f$ \forall (x, y), x \ne y \Rightarrow f(x) \ne f(y) \f$ \n
+ * If \f$ x \ne y, f(x) = f(y) \f$, the hash function admits a collision. \n
+ * Hash function returns a 64 bits integer so we can have \f$ 2^{64}-1 \f$ (= 18446744073709551615) differents values
  */
 typedef unsigned long long (*st_compute_hash_f)(const void * key);
 
 /**
+ * \brief Function used by a hashtable to release a pair of key value
+ *
+ * \param[in] key : a \a key
+ * \param[in] value : a \a value
+ */
+typedef void (*st_release_key_value_f)(void * key, void * value);
+
+/**
  * \struct st_hashtable
  * \brief This is a hashtable
+ *
+ * A hashtable is a collection of pairs of keys values.
  */
 struct st_hashtable {
 	/**
@@ -62,30 +72,49 @@ struct st_hashtable {
 	 * \brief Numbers of elements in hashtable
 	 */
 	unsigned int nb_elements;
+	/**
+	 * \brief Only for internal use of hashtable
+	 */
 	unsigned int size_node;
-
+	/**
+	 * \brief Only for internal use of hashtable
+	 */
 	unsigned char allow_rehash;
 
-	unsigned long long (*compute_hash)(const void *);
-	void (*release_key_value)(void *, void *);
+	/**
+	 * \brief Function used by hashtable for computing hash of one key
+	 *
+	 * \see st_compute_hash_f
+	 */
+	st_compute_hash_f compute_hash;
+	/**
+	 * \brief Function used by hashtable for releasing elements in hashtable
+	 *
+	 * \see st_release_key_value_f
+	 */
+	st_release_key_value_f release_key_value;
 };
 
 /**
  * \brief Remove (and release) all elements in hashtable
  *
  * \param[in] hashtable : a hashtable
+ *
+ * \see st_release_key_value_f
  */
 void st_hashtable_clear(struct st_hashtable * hashtable);
 
 /**
- * \brief Release a hashtable
+ * \brief Release memory associated to a hashtable
  *
  * \param[in] hashtable : a hashtable
+ *
+ * \see st_hashtable_clear
  */
 void st_hashtable_free(struct st_hashtable * hashtable);
 
 /**
- * \brief Check if hashtable contains this key
+ * \brief Check if this \a hashtable contains this key
  *
  * \param[in] hashtable : a hashtable
  * \param[in] key : a key
@@ -107,19 +136,26 @@ const void ** st_hashtable_keys(struct st_hashtable * hashtable);
 /**
  * \brief Create a new hashtable
  *
- * \param[in] compute_hash : function used by hashtable to compute hash of keys
+ * \param[in] ch : function used by hashtable to compute hash of keys
  * \returns a hashtable
+ *
+ * \attention You sould use a function that not contains known collisions.
+ *
+ * \see st_compute_hash_f
  */
-struct st_hashtable * st_hashtable_new(unsigned long long (*compute_hash)(const void * key));
+struct st_hashtable * st_hashtable_new(st_compute_hash_f ch);
 
 /**
  * \brief Create a new hashtable
  *
- * \param[in] compute_hash : function used by hashtable to compute hash of keys
- * \param[in] release_key_value : function used by hashtable to release a pair of key and value
+ * \param[in] ch : function used by hashtable to compute hash of keys
+ * \param[in] release : function used by hashtable to release a pair of key and value
  * \returns a hashtable
+ *
+ * \see st_hashtable_new
+ * \see st_release_key_value_f
  */
-struct st_hashtable * st_hashtable_new2(st_compute_hash_f ch, void (*release_key_value)(void * key, void * value));
+struct st_hashtable * st_hashtable_new2(st_compute_hash_f ch, st_release_key_value_f release);
 
 /**
  * \brief Put a new pair of key value into this \a hashtable
