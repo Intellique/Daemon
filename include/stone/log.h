@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 03 Jul 2012 23:28:32 +0200                         *
+*  Last modified: Wed, 04 Jul 2012 22:53:36 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LOG_H__
@@ -255,9 +255,10 @@ struct st_log_driver {
 };
 
 /**
+ * \def STONE_LOG_API_LEVEL
  * \brief Current api level
  *
- * Will increment from new version of struct st_log_driver or struct st_log
+ * Will increment with new version of struct st_log_driver or struct st_log
  */
 #define STONE_LOG_API_LEVEL 1
 

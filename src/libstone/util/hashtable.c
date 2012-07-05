@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jan 2012 11:54:23 +0100                         *
+*  Last modified: Thu, 05 Jul 2012 09:58:22 +0200                         *
 \*************************************************************************/
 
 // calloc, free, malloc
@@ -147,28 +147,32 @@ void st_hashtable_put2(struct st_hashtable * hashtable, unsigned int index, stru
 		if (node->hash == new_node->hash) {
 			if (hashtable->release_key_value && node->key != new_node->key && node->value != new_node->value)
 				hashtable->release_key_value(node->key, node->value);
+
 			hashtable->nodes[index] = new_node;
 			new_node->next = node->next;
 			free(node);
 			hashtable->nb_elements--;
 		} else {
-			short nbElement = 1;
+			short nb_element = 1;
 			while (node->next) {
 				if (node->next->hash == new_node->hash) {
 					struct st_hashtable_node * next = node->next;
 					if (hashtable->release_key_value && next->key != new_node->key && next->value != new_node->value)
 						hashtable->release_key_value(next->key, next->value);
+
 					new_node->next = next->next;
 					node->next = new_node;
 					free(next);
 					hashtable->nb_elements--;
 					return;
 				}
+
 				node = node->next;
-				nbElement++;
+				nb_element++;
 			}
+
 			node->next = new_node;
-			if (nbElement > 4)
+			if (nb_element > 4)
 				st_hashtable_rehash(hashtable);
 		}
 	} else
@@ -203,35 +207,44 @@ void st_hashtable_rehash(struct st_hashtable * hashtable) {
 	hashtable->allow_rehash = 1;
 }
 
-void * st_hashtable_remove(struct st_hashtable * hashtable, const void * key) {
+void st_hashtable_remove(struct st_hashtable * hashtable, const void * key) {
 	if (!hashtable || !key)
-		return 0;
+		return;
 
 	unsigned long long hash = hashtable->compute_hash(key);
 	unsigned int index = hash % hashtable->size_node;
 
 	struct st_hashtable_node * node = hashtable->nodes[index];
-	if (node && node->hash == hash) {
+	if (!node)
+		return;
+
+	if (node->hash == hash) {
 		hashtable->nodes[index] = node->next;
-		void * value = node->value;
+
+		if (hashtable->release_key_value)
+			hashtable->release_key_value(node->key, node->value);
+
 		free(node);
 		hashtable->nb_elements--;
-		return value;
+		return;
 	}
+
 	while (node->next) {
 		if (node->next->hash == hash) {
 			struct st_hashtable_node * current_node = node->next;
 			node->next = current_node->next;
 
-			void * value = current_node->value;
+			if (hashtable->release_key_value)
+				hashtable->release_key_value(current_node->key, current_node->value);
+
 			free(current_node);
 			hashtable->nb_elements--;
-			return value;
+			return;
 		}
 		node->next = node->next->next;
 	}
 
-	return 0;
+	return;
 }
 
 void * st_hashtable_value(struct st_hashtable * hashtable, const void * key) {
@@ -242,11 +255,9 @@ void * st_hashtable_value(struct st_hashtable * hashtable, const void * key) {
 	unsigned int index = hash % hashtable->size_node;
 
 	struct st_hashtable_node * node = hashtable->nodes[index];
-	while (node) {
+	for (node = hashtable->nodes[index]; node; node = node->next)
 		if (node->hash == hash)
 			return node->value;
-		node = node->next;
-	}
 
 	return 0;
 }
@@ -256,15 +267,11 @@ void ** st_hashtable_values(struct st_hashtable * hashtable) {
 		return 0;
 
 	void ** values = calloc(sizeof(void *), hashtable->nb_elements + 1);
-	unsigned int iNode = 0, index = 0;
-	while (iNode < hashtable->size_node) {
-		struct st_hashtable_node * node = hashtable->nodes[iNode];
-		while (node) {
-			values[index] = node->value;
-			index++;
-			node = node->next;
-		}
-		iNode++;
+	unsigned int i_node, index = 0;
+	for (i_node = 0; i_node < hashtable->size_node; i_node++) {
+		struct st_hashtable_node * node;
+		for (node = hashtable->nodes[i_node]; node; node = node->next)
+			values[index++] = node->value;
 	}
 	values[index] = 0;
 
