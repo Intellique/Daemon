@@ -276,7 +276,7 @@ void st_log_disable_display_log(void);
  *
  * \param module : driver's name
  * \return 0 if failed
- * \note if the driver is not loaded, we try to load it
+ * \note if the driver is not loaded, st_log_get_driver will try to load it
  *
  * \pre module should not be null
  */
@@ -287,7 +287,7 @@ struct st_log_driver * st_log_get_driver(const char * module);
  *
  * \param driver : a static allocated structure
  * \code
- * __attribute__((constructor))
+ * \_\_attribute\_\_((constructor))
  * static void log_myLog_init() {
  *    log_register_driver(&log_myLog_module);
  * }
@@ -333,6 +333,8 @@ enum st_log_type st_log_string_to_type(const char * string);
  *
  * \param[in] type : a log type
  * \return a statically allocated c string
+ *
+ * \note st_log_type_to_string never returns NULL and you <b>SHOULD NOT RELEASE</b> returned value
  */
 const char * st_log_type_to_string(enum st_log_type type);
 

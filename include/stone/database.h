@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Jun 2012 12:04:03 +0200                         *
+*  Last modified: Fri, 06 Jul 2012 18:53:25 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -31,50 +31,43 @@
 // time_t
 #include <sys/time.h>
 
+struct st_stream_reader;
+
 struct st_archive;
 struct st_archive_file;
 struct st_archive_volume;
 struct st_changer;
-struct st_database_connection;
 struct st_drive;
 struct st_job;
 struct st_hashtable;
 struct st_pool;
-struct st_stream_reader;
 struct st_tape;
 struct st_tape_format;
 struct st_user;
 
-struct st_database {
-	char * name;
-	struct st_database_ops {
-		struct st_stream_reader * (*backup_db)(struct st_database * db);
-		struct st_database_connection * (*connect)(struct st_database * db, struct st_database_connection * connection);
-		int (*ping)(struct st_database * db);
-		int (*setup)(struct st_database * db, struct st_hashtable * params);
-	} * ops;
-	void * data;
-
-	// used by server only
-	// should not be modified
-	void * cookie;
-	int api_version;
-};
 
 /**
- * \brief Current api version
- *
- * Will increment from new version of struct st_database or struct st_database_connection
+ * \struct st_database_connection
+ * \brief A database connection
  */
-#define STONE_DATABASE_APIVERSION 1
-
 struct st_database_connection {
+	/**
+	 * \brief A uniq identifier that identify one database connection
+	 */
 	long id;
-	struct st_database * driver;
+
+	/**
+	 * \struct st_database_connection_ops
+	 * \brief Operations on a database connection
+	 *
+	 * \var ops
+	 * \brief Operations
+	 */
 	struct st_database_connection_ops {
 		/**
 		 * \brief close \a db connection
-		 * \param db : a database connection
+		 *
+		 * \param[in] db : a database connection
 		 * \return a value which correspond to
 		 * \li 0 if ok
 		 * \li < 0 if error
@@ -82,11 +75,13 @@ struct st_database_connection {
 		int (*close)(struct st_database_connection * db);
 		/**
 		 * \brief free memory associated with database connection
-		 * \param db : a database connection
+		 *
+		 * \param[in] db : a database connection
 		 * \return a value which correspond to
 		 * \li 0 if ok
 		 * \li < 0 if error
-		 * \warning implementation of this function SHOULD NOT call
+		 *
+		 * \warning Implementation of this function SHOULD NOT call
 		 * \code
 		 * free(db);
 		 * \endcode
@@ -94,16 +89,18 @@ struct st_database_connection {
 		int (*free)(struct st_database_connection * db);
 
 		/**
-		 * \brief rool back a transaction
-		 * \param db : a database connection
+		 * \brief Rool back a transaction
+		 *
+		 * \param[in] db : a database connection
 		 * \li 0 if ok
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
 		int (*cancel_transaction)(struct st_database_connection * db);
 		/**
-		 * \brief finish a transaction
-		 * \param db : a database connection
+		 * \brief Finish a transaction
+		 *
+		 * \param[in] db : a database connection
 		 * \return a value which correspond to
 		 * \li 0 if ok
 		 * \li 1 if noop
@@ -111,9 +108,10 @@ struct st_database_connection {
 		 */
 		int (*finish_transaction)(struct st_database_connection * db);
 		/**
-		 * \brief starts a transaction
-		 * \param db : a database connection
-		 * \param readOnly : is a read only transaction
+		 * \brief Starts a transaction
+		 *
+		 * \param[in] db : a database connection
+		 * \param[in] readOnly : is a read only transaction
 		 * \return a value which correspond to
 		 * \li 0 if ok
 		 * \li 1 if noop
@@ -121,6 +119,11 @@ struct st_database_connection {
 		 */
 		int (*start_transaction)(struct st_database_connection * db);
 
+
+
+
+
+		/*
 		int (*add_job_record)(struct st_database_connection * db, struct st_job * job, const char * message);
 		int (*create_pool)(struct st_database_connection * db, struct st_pool * pool);
 		int (*get_nb_new_jobs)(struct st_database_connection * db, long * nb_new_jobs, time_t since, long last_max_jobs);
@@ -147,34 +150,176 @@ struct st_database_connection {
 		int (*new_volume)(struct st_database_connection * db, struct st_archive_volume * volume);
 		int (*update_archive)(struct st_database_connection * db, struct st_archive * archive);
 		int (*update_volume)(struct st_database_connection * db, struct st_archive_volume * volume);
+		*/
 	} * ops;
+
+	/**
+	 * \brief private data
+	 */
 	void * data;
+	/**
+	 * \brief Reference to a database driver
+	 */
+	struct st_database * driver;
+	/**
+	 * \brief Reference to a database configuration
+	 */
+	struct st_database_config * config;
 };
 
+/**
+ * \struct st_database_config
+ * \brief Describe a database configuration
+ */
+struct st_database_config {
+	/**
+	 * \brief name of config
+	 */
+	char * name;
 
-struct st_database * st_db_get_default_db(void);
+	/**
+	 * \struct st_database_config_ops
+	 *
+	 * \var ops
+	 * \brief Database operations which require a configuration
+	 */
+	struct st_database_config_ops {
+		/**
+		 * \brief Backup
+		 *
+		 * \returns a stream reader which contains data of database
+		 */
+		struct st_stream_reader * (*backup_db)(struct st_database_config * db_config);
+		/**
+		 * \brief Create a new connection to database
+		 *
+		 * \returns a database connection
+		 */
+		struct st_database_connection * (*connect)(struct st_database_config * db_config);
+		/**
+		 * \brief Check if database is online
+		 */
+		int (*ping)(struct st_database_config * db_config);
+	} * ops;
+
+	/**
+	 * \brief private data
+	 */
+	void * data;
+	/**
+	 * \brief Reference to a database driver
+	 */
+	struct st_database * driver;
+};
+
+/**
+ * \struct st_database
+ * \brief Database driver
+ *
+ * A unique instance by type of database
+ */
+struct st_database {
+	/**
+	 * \brief Name of driver
+	 *
+	 * \note Should be unique and equals to libdb-name.so where name is the name of driver.
+	 */
+	char * name;
+	/**
+	 * \struct st_database_ops
+	 * \brief Operations on one database driver
+	 *
+	 * \var ops
+	 * \brief Database operation
+	 */
+	struct st_database_ops {
+		/**
+		 * \brief Add configure to this database driver
+		 *
+		 * \param[in] params : hashtable which contains parameters
+		 * \returns \b 0 if ok
+		 */
+		int (*add)(struct st_hashtable * params);
+		/**
+		 * \brief Get default database configuration
+		 */
+		struct st_database_config * (*get_default_config)(void);
+	} * ops;
+
+	/**
+	 * \brief Collection of database configurations
+	 */
+	struct st_database_config * configurations;
+	/**
+	 * \brief Numbers of configs associated to this driver
+	 */
+	unsigned int nb_configs;
+
+	/**
+	 * \brief cookie
+	 *
+	 * Is a value returns by dlopen and should not be used nor released
+	 */
+	void * cookie;
+	/**
+	 * \brief api level supported by this driver
+	 *
+	 * Should be define by using STONE_DATABASE_API_LEVEL only
+	 */
+	int api_level;
+};
+
+/**
+ * \def STONE_DATABASE_API_LEVEL
+ * \brief Current api level
+ *
+ * Will increment with new version of struct st_database or struct st_database_connection
+ */
+#define STONE_DATABASE_API_LEVEL 1
+
+
+/**
+ * \brief Get a database configuration by his name
+ *
+ * This configuration should be previous loaded.
+ *
+ * \param[in] name : name of config
+ * \returns \b NULL if not found
+ */
+struct st_database_config * st_database_get_config_by_name(const char * name);
+
+/**
+ * \brief get the default database driver
+ *
+ * \return 0 if failed
+ *
+ * \note if \a database is not loaded then we try to load it
+ */
+struct st_database * st_database_get_default_driver(void);
 
 /**
  * \brief get a database driver
- * \param db : database name
+ *
+ * \param[in] database : database name
  * \return 0 if failed
- * \note if \a db is not loaded then we try to load it
+ *
+ * \note if \a database is not loaded then we try to load it
  */
-struct st_database * st_db_get_db(const char * db);
+struct st_database * st_database_get_driver(const char * database);
 
 /**
- * \brief Each db module should call this function only one time
- * \param db : a statically allocated struct database
+ * \brief Each database driver should call this function only one time
+ *
+ * \param[in] database : a statically allocated struct st_database
+ *
  * \code
- * __attribute__((constructor))
- * static void db_myDb_init() {
- *    db_registerDb(&db_myDb_module);
+ * \_\_attribute\_\_((constructor))
+ * static void database_myDb_init() {
+ *    st_database_register_driver(&database_myDb_module);
  * }
  * \endcode
  */
-void st_db_register_db(struct st_database * db);
-
-void st_db_set_default_db(struct st_database * db);
+void st_database_register_driver(struct st_database * database);
 
 #endif
 

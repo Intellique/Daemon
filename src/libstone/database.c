@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 23 Dec 2011 23:03:16 +0100                         *
+*  Last modified: Fri, 06 Jul 2012 18:25:25 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -38,27 +38,43 @@
 
 #include "loader.h"
 
-static struct st_database ** st_db_databases = 0;
-static unsigned int st_db_nb_databases = 0;
-static struct st_database * st_db_default_db = 0;
+static struct st_database ** st_database_databases = 0;
+static unsigned int st_database_nb_databases = 0;
 
 
-struct st_database * st_db_get_default_db() {
-	return st_db_default_db;
+struct st_database_config * st_database_get_config_by_name(const char * name) {
+	unsigned int i;
+	for (i = 0; i < st_database_nb_databases; i++) {
+		unsigned int j;
+		struct st_database * db = st_database_databases[i];
+
+		for (j = 0; j < db->nb_configs; j++) {
+			struct st_database_config * conf = db->configurations + j;
+			if (!strcmp(name, conf->name))
+				return conf;
+		}
+	}
+
+	return 0;
 }
 
-struct st_database * st_db_get_db(const char * driver) {
+struct st_database * st_database_get_default_driver() {
+	if (st_database_nb_databases > 0)
+		return *st_database_databases;
+
+	return 0;
+}
+
+struct st_database * st_database_get_driver(const char * driver) {
 	static pthread_mutex_t lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
-	int old_state;
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
 	pthread_mutex_lock(&lock);
 
 	unsigned int i;
 	struct st_database * dr = 0;
-	for (i = 0; i < st_db_nb_databases && !dr; i++)
-		if (!strcmp(driver, st_db_databases[i]->name))
-			dr = st_db_databases[i];
+	for (i = 0; i < st_database_nb_databases && !dr; i++)
+		if (!strcmp(driver, st_database_databases[i]->name))
+			dr = st_database_databases[i];
 
 	void * cookie = 0;
 	if (!dr)
@@ -67,14 +83,12 @@ struct st_database * st_db_get_db(const char * driver) {
 	if (!dr && !cookie) {
 		st_log_write_all(st_log_level_error, st_log_type_database, "Failed to load driver %s", driver);
 		pthread_mutex_unlock(&lock);
-		if (old_state == PTHREAD_CANCEL_DISABLE)
-			pthread_setcancelstate(old_state, 0);
 		return 0;
 	}
 
-	for (i = 0; i < st_db_nb_databases && !dr; i++)
-		if (!strcmp(driver, st_db_databases[i]->name)) {
-			dr = st_db_databases[i];
+	for (i = 0; i < st_database_nb_databases && !dr; i++)
+		if (!strcmp(driver, st_database_databases[i]->name)) {
+			dr = st_database_databases[i];
 			dr->cookie = cookie;
 		}
 
@@ -82,38 +96,27 @@ struct st_database * st_db_get_db(const char * driver) {
 		st_log_write_all(st_log_level_error, st_log_type_database, "Driver %s not found", driver);
 
 	pthread_mutex_unlock(&lock);
-	if (old_state == PTHREAD_CANCEL_DISABLE)
-		pthread_setcancelstate(old_state, 0);
 
 	return dr;
 }
 
-void st_db_register_db(struct st_database * db) {
+void st_database_register_driver(struct st_database * db) {
 	if (!db) {
 		st_log_write_all(st_log_level_error, st_log_type_database, "Try to register with driver=0");
 		return;
 	}
 
-	if (db->api_version != STONE_DATABASE_APIVERSION) {
-		st_log_write_all(st_log_level_error, st_log_type_database, "Driver(%s) has not the correct api version (current: %d, expected: %d)", db->name, db->api_version, STONE_DATABASE_APIVERSION);
+	if (db->api_level != STONE_DATABASE_API_LEVEL) {
+		st_log_write_all(st_log_level_error, st_log_type_database, "Driver(%s) has not the correct api version (current: %d, expected: %d)", db->name, db->api_level, STONE_DATABASE_API_LEVEL);
 		return;
 	}
 
-	st_db_databases = realloc(st_db_databases, (st_db_nb_databases + 1) * sizeof(struct st_database *));
-	st_db_databases[st_db_nb_databases] = db;
-	st_db_nb_databases++;
+	st_database_databases = realloc(st_database_databases, (st_database_nb_databases + 1) * sizeof(struct st_database *));
+	st_database_databases[st_database_nb_databases] = db;
+	st_database_nb_databases++;
 
 	st_loader_register_ok();
 
 	st_log_write_all(st_log_level_info, st_log_type_database, "Driver(%s) is now registred", db->name);
-}
-
-void st_db_set_default_db(struct st_database * db) {
-	if (st_db_default_db)
-		st_log_write_all(st_log_level_debug, st_log_type_database, "set new default database from %s to %s", st_db_default_db->name, db->name);
-	else
-		st_log_write_all(st_log_level_debug, st_log_type_database, "set new default database to %s", db->name);
-	if (db)
-		st_db_default_db = db;
 }
 

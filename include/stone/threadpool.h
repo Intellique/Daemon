@@ -35,6 +35,8 @@
  * \param[in] arg : call this function by passing this argument
  *
  * \note this function reuse an unused thread or create new one
+ *
+ * \note All threads which are not used while 5 minutes are stopped
  */
 void st_threadpool_run(void (*function)(void * arg), void * arg);
 
