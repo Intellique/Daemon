@@ -22,54 +22,54 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:07:29 +0100                         *
+*  Last modified: Mon, 09 Jul 2012 13:32:26 +0200                         *
 \*************************************************************************/
 
-#ifndef __STONE_CONF_H__
-#define __STONE_CONF_H__
+#ifndef __STONE_UTIL_FILE_H__
+#define __STONE_UTIL_FILE_H__
+
+// gid_t, ssize_t
+#include <sys/types.h>
 
 /**
- * \brief st_conf_check_pid
- * \param[in] pid : pid
- * \return a value which correspond to
- * \li 1 is the daemon is alive
- * \li 0 if the daemon is dead
- * \li -1 if another process used this pid
+ * \brief Convert \a size to humain readeable format (i.e. 30KB)
+ *
+ * \param[in] size : convert this \a size
+ * \param[out] str : an allocated string which will contain result
+ * \param[in] str_len : length of \a str in bytes
  */
-int st_conf_check_pid(int pid);
+void st_util_file_convert_size_to_string(ssize_t size, char * str, ssize_t str_len);
 
 /**
- * \brief st_conf_delete_pid
- * \param[in] pid_file : file with pid
- * \return what "unlink" returned
- * \note see man page unlink(2)
+ * \brief Convert group's name from \a gid
+ *
+ * \param[out] name : write login into it, name should be allocated
+ * \param[in] length : length of \a name
+ * \param[in] gid : a known \a gid
+ *
+ * \note if \a gid is not found, write gid number into \a name
  */
-int st_conf_delete_pid(const char * pid_file);
+void st_util_file_gid2name(char * name, ssize_t length, gid_t gid);
 
 /**
- * \brief st_conf_read_pid read pid file
- * \param[in] pid_file : file with pid
- * \return the pid or -1 if not found
+ * \brief Trunc \a nb_trunc_path directories from \a path
+ *
+ * \param[in] path : a \a path
+ * \param[in] nb_trunc_path : number of directories to trunc
+ * \returns a pointer on \a path or \b NULL
  */
-int st_conf_read_pid(const char * pid_file);
+char * st_util_file_trunc_path(char * path, int nb_trunc_path);
 
 /**
- * \brief st_conf_write_pid write pid into file
- * \param[in] pid_file : file with pid
- * \param[in] pid : pid
- * \return 0 if ok
+ * \brief Convert user's name from \a uid
+ *
+ * \param[out] name write user's name into it, \a name should be allocated
+ * \param[in] length : length of \a name
+ * \param[in] uid : a known \a uid
+ *
+ * \note if \a uid is not found, write uid number into \a name
  */
-int st_conf_write_pid(const char * pid_file, int pid);
-
-
-/**
- * \brief st_read config file
- * \param[in] conf_file : config file
- * \return a value which correspond to
- * \li 0 if ok
- * \li 1 if error
- */
-int st_conf_read_config(const char * conf_file);
+void st_util_file_uid2name(char * name, ssize_t length, uid_t uid);
 
 #endif
 

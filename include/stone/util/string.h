@@ -22,27 +22,72 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 25 Jun 2012 18:10:21 +0200                         *
+*  Last modified: Mon, 09 Jul 2012 11:35:56 +0200                         *
 \*************************************************************************/
 
-#ifndef __STONE_UTIL_H__
-#define __STONE_UTIL_H__
+#ifndef __STONE_UTIL_STRING_H__
+#define __STONE_UTIL_STRING_H__
 
-// ssize_t
-#include <sys/types.h>
+/**
+ * \brief Check if \a string is a valid utf8 string
+ *
+ * \param[in] string : a utf8 string
+ * \returns \b 1 if ok else 0
+ */
+int st_util_string_check_valid_utf8(const char * string);
 
-void st_util_basic_free(void * key, void * value);
-int st_util_check_valid_utf8(const char * string);
-unsigned long long st_util_compute_hash_string(const void * key);
-void st_util_convert_size_to_string(ssize_t size, char * str, ssize_t str_len);
-void st_util_fix_invalid_utf8(char * string);
-void st_util_gid2name(char * name, ssize_t length, gid_t gid);
+/**
+ * \brief Compute hash of key
+ *
+ * \param[in] key : a c string
+ * \returns computed hash
+ *
+ * \see st_hashtable_new
+ */
+unsigned long long st_util_string_compute_hash(const void * key);
+
+/**
+ * \brief Remove from \a str a sequence of two or more of character \a delete_char
+ *
+ * \param[in,out] str : a string
+ * \param[in] delete_char : a character
+ */
 void st_util_string_delete_double_char(char * str, char delete_char);
+
+/**
+ * \brief Fix a UTF8 string by removing invalid character
+ *
+ * \param[in,out] string : a (in)valid UTF8 string
+ */
+void st_util_string_fix_invalid_utf8(char * string);
+
+/**
+ * \brief Justify \a str with a width \a width
+ *
+ * \param[in] str : a string
+ * \param[in] width : width of each lines
+ * \param[out] nb_lines : get the numbers of lines returned
+ * \returns an array which contains each lines justified
+ */
 char ** st_util_string_justified(const char * str, unsigned int width, unsigned int * nb_lines);
+
+/**
+ * \brief Remove characters \a trim at the beginning and at the end of \a str
+ *
+ * \param[in,out] str : a string
+ * \param[in] trim : a character
+ */
 void st_util_string_trim(char * str, char trim);
+
+/**
+ * \brief Remove characters \a trim at the end of \a str
+ *
+ * \param[in,out] str : a string
+ * \param[in] trim : a character
+ *
+ * \see st_util_string_trim
+ */
 void st_util_string_rtrim(char * str, char trim);
-char * st_util_trunc_path(char * path, int nb_trunc_path);
-void st_util_uid2name(char * name, ssize_t length, uid_t uid);
 
 #endif
 
