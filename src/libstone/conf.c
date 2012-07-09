@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 25 May 2012 15:23:03 +0200                         *
+*  Last modified: Mon, 09 Jul 2012 13:59:39 +0200                         *
 \*************************************************************************/
 
 // strerror
@@ -42,13 +42,13 @@
 // access, close, fstat, read, readlink, unlink, write
 #include <unistd.h>
 
-#include <stone/conf.h>
-#include <stone/database.h>
-#include <stone/util.h>
-#include <stone/util/hashtable.h>
+#include <libstone/conf.h>
+#include <libstone/database.h>
+#include <libstone/util/hashtable.h>
+#include <libstone/util/string.h>
+#include <libstone/util/util.h>
 
 #include "log.h"
-//#include "util/util.h"
 
 enum st_conf_section {
 	st_conf_section_db,
@@ -56,7 +56,17 @@ enum st_conf_section {
 	st_conf_section_unknown,
 };
 
+/**
+ * \brief Load a database module
+ *
+ * \param[in] params : a hashtable which contains all parameters
+ */
 static void st_conf_load_db(struct st_hashtable * params);
+/**
+ * \brief Load a log module
+ *
+ * \param[in] params : a hashtable which contains all parameters
+ */
 static void st_conf_load_log(struct st_hashtable * params);
 
 
@@ -166,15 +176,20 @@ void st_conf_load_db(struct st_hashtable * params) {
 		return;
 	}
 
-	struct st_database * db = st_db_get_db(driver);
+	struct st_database * db = st_database_get_driver(driver);
 	if (db) {
 		st_log_write_all(st_log_level_info, st_log_type_daemon, "Conf: load_db: driver (%s) => ok", driver);
-		short setup_ok = !db->ops->setup(db, params);
-		short ping_ok = db->ops->ping(db) > 0;
-		st_log_write_all(setup_ok || ping_ok ? st_log_level_info : st_log_level_error, st_log_type_daemon, "Conf: load_db: setup %s, ping %s", setup_ok ? "ok" : "failed", ping_ok ? "ok" : "failed");
 
-		if (!st_db_get_default_db())
-			st_db_set_default_db(db);
+		short setup_ok = 0, ping_ok = 0;
+
+		struct st_database_config * config = db->ops->add(params);
+
+		if (config) {
+			setup_ok = 1;
+			ping_ok = config->ops->ping(config) >= 0;
+		}
+
+		st_log_write_all(setup_ok || ping_ok ? st_log_level_info : st_log_level_error, st_log_type_daemon, "Conf: load_db: setup %s, ping %s", setup_ok ? "ok" : "failed", ping_ok ? "ok" : "failed");
 	} else
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: load_db: no driver (%s) found", driver);
 }
@@ -200,7 +215,7 @@ void st_conf_load_log(struct st_hashtable * params) {
 	struct st_log_driver * dr = st_log_get_driver(type);
 	if (dr) {
 		st_log_write_all(st_log_level_info, st_log_type_daemon, "Conf: load_log: using module='%s', alias='%s', verbosity='%s'", type, alias, st_log_level_to_string(verbosity));
-		dr->add(dr, alias, verbosity, params);
+		dr->add(alias, verbosity, params);
 	} else
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: load_log: module='%s' not found", type);
 }
@@ -223,7 +238,7 @@ int st_conf_read_config(const char * confFile) {
 
 	char * ptr = buffer;
 	enum st_conf_section section = st_conf_section_unknown;
-	struct st_hashtable * params = st_hashtable_new2(st_util_compute_hash_string, st_util_basic_free);
+	struct st_hashtable * params = st_hashtable_new2(st_util_string_compute_hash, st_util_basic_free);
 	while (*ptr) {
 		switch (*ptr) {
 			case ';':

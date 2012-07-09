@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 06 Jul 2012 18:53:25 +0200                         *
+*  Last modified: Mon, 09 Jul 2012 13:54:26 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -239,7 +239,7 @@ struct st_database {
 		 * \param[in] params : hashtable which contains parameters
 		 * \returns \b 0 if ok
 		 */
-		int (*add)(struct st_hashtable * params);
+		struct st_database_config * (*add)(struct st_hashtable * params);
 		/**
 		 * \brief Get default database configuration
 		 */
