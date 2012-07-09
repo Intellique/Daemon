@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 06 Jul 2012 18:25:25 +0200                         *
+*  Last modified: Mon, 09 Jul 2012 13:37:47 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -33,8 +33,8 @@
 // strcmp
 #include <string.h>
 
-#include <stone/database.h>
-#include <stone/log.h>
+#include <libstone/database.h>
+#include <libstone/log.h>
 
 #include "loader.h"
 

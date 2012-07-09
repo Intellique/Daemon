@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 03 Jul 2012 23:51:35 +0200                         *
+*  Last modified: Mon, 09 Jul 2012 13:38:00 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -39,8 +39,8 @@
 // sleep
 #include <unistd.h>
 
-#include <stone/threadpool.h>
-#include <stone/user.h>
+#include <libstone/threadpool.h>
+#include <libstone/user.h>
 
 #include "loader.h"
 #include "log.h"

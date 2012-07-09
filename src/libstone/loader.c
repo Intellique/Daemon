@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jul 2012 10:12:57 +0200                         *
+*  Last modified: Mon, 09 Jul 2012 13:37:55 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -39,7 +39,7 @@
 // access
 #include <unistd.h>
 
-#include <stone/log.h>
+#include <libstone/log.h>
 
 #include "config.h"
 #include "loader.h"

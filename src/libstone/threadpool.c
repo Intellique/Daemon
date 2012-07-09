@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jul 2012 00:01:15 +0200                         *
+*  Last modified: Mon, 09 Jul 2012 13:38:11 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -31,8 +31,8 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
-#include <stone/log.h>
-#include <stone/threadpool.h>
+#include <libstone/log.h>
+#include <libstone/threadpool.h>
 
 struct st_threadpool_thread {
 	pthread_t thread;

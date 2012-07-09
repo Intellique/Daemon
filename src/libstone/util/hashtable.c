@@ -22,13 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Jul 2012 09:58:22 +0200                         *
+*  Last modified: Mon, 09 Jul 2012 13:38:29 +0200                         *
 \*************************************************************************/
 
 // calloc, free, malloc
 #include <malloc.h>
 
-#include "stone/util/hashtable.h"
+#include <libstone/util/hashtable.h>
 
 void st_hashtable_put2(struct st_hashtable * hashtable, unsigned int index, struct st_hashtable_node * new_node);
 void st_hashtable_rehash(struct st_hashtable * hashtable);

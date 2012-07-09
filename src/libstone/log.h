@@ -22,13 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 03 Jul 2012 23:16:51 +0200                         *
+*  Last modified: Mon, 09 Jul 2012 13:38:06 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LOG_P_H__
 #define __STONE_LOG_P_H__
 
-#include <stone/log.h>
+#include <libstone/log.h>
 
 void st_log_stop_logger(void);
 

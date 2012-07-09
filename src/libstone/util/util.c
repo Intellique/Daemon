@@ -22,13 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jul 2012 12:20:20 +0200                         *
+*  Last modified: Mon, 09 Jul 2012 13:38:38 +0200                         *
 \*************************************************************************/
 
 // free
 #include <stdlib.h>
 
-#include <stone/util/util.h>
+#include <libstone/util/util.h>
 
 void st_util_basic_free(void * key, void * value) {
 	if (key && key == value) {

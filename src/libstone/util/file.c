@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jul 2012 13:34:07 +0200                         *
+*  Last modified: Mon, 09 Jul 2012 13:38:16 +0200                         *
 \*************************************************************************/
 
 // getgrgid_r
@@ -38,7 +38,7 @@
 // getgrgid_r, getpwuid_r
 #include <sys/types.h>
 
-#include <stone/util/file.h>
+#include <libstone/util/file.h>
 
 void st_util_file_convert_size_to_string(ssize_t size, char * str, ssize_t str_len) {
 	unsigned short mult = 0;

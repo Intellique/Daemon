@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jul 2012 11:43:33 +0200                         *
+*  Last modified: Mon, 09 Jul 2012 13:38:33 +0200                         *
 \*************************************************************************/
 
 // free, realloc
@@ -30,7 +30,7 @@
 // strlen, strspn, strstr
 #include <string.h>
 
-#include <stone/util/string.h>
+#include <libstone/util/string.h>
 
 /**
  * \brief Compute size of a UTF8 character
