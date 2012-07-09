@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jul 2012 13:51:31 +0200                         *
+*  Last modified: Mon, 09 Jul 2012 11:40:30 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -165,14 +165,12 @@ int st_job_copy_archive_file(struct st_job * job, const char * path) {
 
 	ssize_t block_number = jp->tar_out->ops->position(jp->tar_out) / jp->block_size;
 
-	enum st_tar_out_status status = ST_TAR_OUT_OK;
-	jp->tar_out->ops->add_file(jp->tar_out, path, path + jp->restore_path_length);
+	enum st_tar_out_status status = jp->tar_out->ops->add_file(jp->tar_out, path, path + jp->restore_path_length);
 
 	jp->current_file = st_archive_file_new(job, &st, path + jp->restore_path_length);
 	st_archive_volume_add_file(jp->current_volume, jp->current_file, block_number);
-	//jp->db_con->ops->file_link_to_volume(jp->db_con, jp->current_file, jp->current_volume);
 
-	int failed;
+	int failed = 0;
 	switch (status) {
 		case ST_TAR_OUT_END_OF_TAPE:
 			failed = st_job_copy_change_tape(job);
@@ -192,6 +190,7 @@ int st_job_copy_archive_file(struct st_job * job, const char * path) {
 
 	if (S_ISREG(st.st_mode)) {
 		int fd = open(path, O_RDONLY);
+		struct st_stream_writer * file_checksum = st_checksum_get_steam_writer((const char **) job->checksums, job->nb_checksums, 0);
 
 		for (;;) {
 			ssize_t available_size = jp->tar_out->ops->get_available_size(jp->tar_out);
@@ -222,8 +221,10 @@ int st_job_copy_archive_file(struct st_job * job, const char * path) {
 					return 4;
 			}
 
-			if (nb_write > 0)
+			if (nb_write > 0) {
+				file_checksum->ops->write(file_checksum, jp->buffer, nb_write);
 				jp->total_done += nb_write;
+			}
 
 			ssize_t position = jp->tar_out->ops->position(jp->tar_out);
 			job->done = 0.5 + (float) position / jp->total_size;
@@ -234,8 +235,15 @@ int st_job_copy_archive_file(struct st_job * job, const char * path) {
 			if (st_job_copy_manage_error(job, jp->tar_out->ops->last_errno(jp->tar_out)))
 				return 5;
 		}
+		file_checksum->ops->close(file_checksum);
+
+		jp->current_file->digests = st_checksum_get_digest_from_writer(file_checksum);
+		jp->current_file->nb_checksums = job->nb_checksums;
+
+		st_io_json_add_file(jp->json, jp->current_file);
 
 		close(fd);
+		file_checksum->ops->free(file_checksum);
 	} else if (S_ISDIR(st.st_mode)) {
 		if (access(path, R_OK | X_OK)) {
 			job->db_ops->add_record(job, st_log_level_error, "Can't read directory: %s", path);
@@ -245,7 +253,7 @@ int st_job_copy_archive_file(struct st_job * job, const char * path) {
 		struct dirent ** dl = 0;
 		int nb_files = scandir(path, &dl, st_job_copy_filter, 0);
 
-		int i, failed = 0;
+		int i;
 		for (i = 0; i < nb_files; i++) {
 			if (!failed) {
 				char * subpath = 0;
@@ -289,8 +297,8 @@ int st_job_copy_change_tape(struct st_job * job) {
 	jp->current_volume->endtime = time(0);
 	jp->current_volume->digests = st_checksum_get_digest_from_writer(cw);
 	jp->current_volume->nb_checksums = job->nb_checksums;
-	// jp->db_con->ops->update_volume(jp->db_con, jp->current_volume);
-	// st_io_json_update_volume(jp->json, jp->current_volume);
+	jp->db_con->ops->update_volume(jp->db_con, jp->current_volume);
+	st_io_json_update_volume(jp->json, jp->current_volume);
 
 	// add tape into list to remember to not use it again
 	jp->tapes = realloc(jp->tapes, (jp->nb_tapes + 1) * sizeof(struct st_tape *));
@@ -342,12 +350,12 @@ int st_job_copy_change_tape(struct st_job * job) {
 
 	// add new volume
 	jp->current_volume = st_archive_volume_new(job, dr);
-	// jp->db_con->ops->new_volume(jp->db_con, jp->current_volume);
-	// st_io_json_add_volume(jp->json, jp->current_volume);
+	jp->db_con->ops->new_volume(jp->db_con, jp->current_volume);
+	st_io_json_add_volume(jp->json, jp->current_volume);
 
 	// link current file to new volume
 	// jp->current_file->position = 0;
-	// jp->db_con->ops->file_link_to_volume(jp->db_con, jp->current_file, jp->current_volume);
+	jp->db_con->ops->file_link_to_volume(jp->db_con, jp->current_file, jp->current_volume);
 
 	tw = jp->tape_writer = dr->ops->get_writer(dr);
 	cw = jp->checksum_writer = st_checksum_get_steam_writer((const char **) job->checksums, job->nb_checksums, tw);
@@ -878,6 +886,8 @@ void st_job_copy_rmdir(const char * path) {
 		}
 
 		free(dl);
+
+		rmdir(path);
 	} else {
 		unlink(path);
 	}
@@ -952,9 +962,12 @@ int st_job_copy_run(struct st_job * job) {
 
 		// archive
 		struct st_archive * archive = st_archive_new(job);
+		jp->json = st_io_json_new(archive);
+        st_io_json_add_metadata(jp->json, job->job_meta);
 
 		// volume
 		jp->current_volume = st_archive_volume_new(job, drive);
+		st_io_json_add_volume(jp->json, jp->current_volume);
 
 		jp->block_size = jp->tar_out->ops->get_block_size(jp->tar_out);
 		jp->buffer = malloc(jp->block_size);
@@ -974,23 +987,36 @@ int st_job_copy_run(struct st_job * job) {
 
 			// archive
 			archive->endtime = jp->current_volume->endtime = time(0);
+			st_io_json_update_archive(jp->json, archive);
 			// volume
 			jp->current_volume->size = tape_writer->ops->position(tape_writer);
 			jp->current_volume->endtime = time(0);
 			jp->current_volume->digests = st_checksum_get_digest_from_writer(checksum_writer);
 			jp->current_volume->nb_checksums = job->nb_checksums;
+			st_io_json_update_volume(jp->json, jp->current_volume);
 
 			jp->db_con->ops->new_archive(jp->db_con, archive);
 			jp->db_con->ops->update_archive(jp->db_con, archive);
 
-			struct st_io_json * json = st_io_json_copy(archive);
+			st_archive_free(archive);
+
+			jp->tar_out->ops->free(jp->tar_out);
+			jp->tar_out = 0;
 
 			jp->db_con->ops->close(jp->db_con);
 			jp->db_con->ops->free(jp->db_con);
-		}
 
-		jp->tar_out->ops->free(jp->tar_out);
-		jp->tar_out = 0;
+			tape_writer = drive->ops->get_writer(drive);
+			st_io_json_write_to(jp->json, tape_writer);
+			tape_writer->ops->close(tape_writer);
+
+			tape_writer->ops->free(tape_writer);
+			free(tape_writer);
+			st_io_json_free(jp->json);
+		} else {
+			jp->tar_out->ops->free(jp->tar_out);
+			jp->tar_out = 0;
+		}
 
 		drive = jp->drive;
 		tape_writer = jp->tape_writer;

@@ -559,7 +559,6 @@ int st_job_save_run(struct st_job * job) {
 		tape_writer->ops->close(tape_writer);
 
 		tape_writer->ops->free(tape_writer);
-		free(tape_writer);
 		st_io_json_free(jp->json);
 	}
 

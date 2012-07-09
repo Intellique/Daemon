@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jul 2012 19:23:46 +0200                         *
+*  Last modified: Mon, 09 Jul 2012 09:27:24 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -2191,7 +2191,7 @@ int st_db_postgresql_new_archive(struct st_database_connection * connection, str
 	free(loginid);
 	free(metadata);
 
-	if (status != PGRES_TUPLES_OK)
+	if (status != PGRES_TUPLES_OK || !archive->copy_of)
 		return 1;
 
 	unsigned int i, j;
