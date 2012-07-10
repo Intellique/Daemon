@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 16 Mar 2012 16:29:58 +0100                         *
+*  Last modified: Tue, 10 Jul 2012 13:42:11 +0200                         *
 \*************************************************************************/
 
 // sscanf
@@ -109,6 +109,13 @@ int st_job_format_tape_run(struct st_job * job) {
 				job->sched_status = st_job_status_running;
 				job->db_ops->update_status(job);
 
+				if (job->db_status != st_job_status_running) {
+					job->db_ops->add_record(job, st_log_level_error, "Job: Stop requested");
+					job->db_ops->add_record(job, st_log_level_error, "Job: format tape aborted (job id: %ld), num runs %ld", job->id, job->num_runs);
+
+					return 1;
+				}
+
 				state = look_for_changer;
 				break;
 
@@ -168,6 +175,14 @@ int st_job_format_tape_run(struct st_job * job) {
 		}
 	}
 
+	if (job->db_status != st_job_status_running) {
+		drive->lock->ops->unlock(drive->lock);
+		changer->ops->sync_db(changer);
+
+		job->db_ops->add_record(job, st_log_level_error, "Job: Stop requested");
+		job->db_ops->add_record(job, st_log_level_error, "Job: format tape aborted (job id: %ld), num runs %ld", job->id, job->num_runs);
+	}
+
 	if ((drive->slot->tape && drive->slot->tape != job->tape) || !drive->slot->tape)
 		changer->lock->ops->lock(changer->lock);
 
@@ -218,6 +233,15 @@ int st_job_format_tape_run(struct st_job * job) {
 		}
 	}
 
+	if (job->db_status != st_job_status_running) {
+		drive->lock->ops->unlock(drive->lock);
+		changer->lock->ops->unlock(changer->lock);
+		changer->ops->sync_db(changer);
+
+		job->db_ops->add_record(job, st_log_level_error, "Job: Stop requested");
+		job->db_ops->add_record(job, st_log_level_error, "Job: format tape aborted (job id: %ld), num runs %ld", job->id, job->num_runs);
+	}
+
 	if (!drive->slot->tape) {
 		job->db_ops->add_record(job, st_log_level_info, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
 		changer->ops->load(changer, slot, drive);
@@ -225,6 +249,14 @@ int st_job_format_tape_run(struct st_job * job) {
 		changer->lock->ops->unlock(changer->lock);
 
 		drive->ops->reset(drive);
+	}
+
+	if (job->db_status != st_job_status_running) {
+		drive->lock->ops->unlock(drive->lock);
+		changer->ops->sync_db(changer);
+
+		job->db_ops->add_record(job, st_log_level_error, "Job: Stop requested");
+		job->db_ops->add_record(job, st_log_level_error, "Job: format tape aborted (job id: %ld), num runs %ld", job->id, job->num_runs);
 	}
 
 	job->db_ops->add_record(job, st_log_level_info, "Got changer: %s %s", changer->vendor, changer->model);
@@ -285,7 +317,15 @@ int st_job_format_tape_run(struct st_job * job) {
 			break;
 	}
 
-	int status = st_tape_write_header(drive, job->pool);
+	int stop_request = 0;
+	if (job->db_status != st_job_status_running) {
+		stop_request = 1;
+		job->db_ops->add_record(job, st_log_level_error, "Job: Stop requested");
+	}
+	int status = 0;
+	
+	if (!stop_request)
+		status = st_tape_write_header(drive, job->pool);
 
 	drive->lock->ops->unlock(drive->lock);
 
@@ -298,7 +338,9 @@ int st_job_format_tape_run(struct st_job * job) {
 	sleep(1);
 	job->db_ops->update_status(job);
 
-	if (status)
+	if (stop_request)
+		job->db_ops->add_record(job, st_log_level_error, "Job: format tape aborted (job id: %ld), num runs %ld", job->id, job->num_runs);
+	else if (status)
 		job->db_ops->add_record(job, st_log_level_error, "Job: format tape finished with code = %d (job id: %ld), num runs %ld", status, job->id, job->num_runs);
 	else
 		job->db_ops->add_record(job, st_log_level_info, "Job: format tape finished with code = OK (job id: %ld), num runs %ld", job->id, job->num_runs);
