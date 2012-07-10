@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 13 Mar 2012 18:56:27 +0100                         *
+*  Last modified: Tue, 10 Jul 2012 17:50:00 +0200                         *
 \*************************************************************************/
 
 // free, malloc
@@ -32,7 +32,7 @@
 // crc32
 #include <zlib.h>
 
-#include <stone/checksum.h>
+#include <libstone/checksum.h>
 
 struct st_checksum_crc32_private {
 	uLong crc32;
@@ -41,7 +41,7 @@ struct st_checksum_crc32_private {
 
 static char * st_checksum_crc32_digest(struct st_checksum * checksum);
 static void st_checksum_crc32_free(struct st_checksum * checksum);
-static struct st_checksum * st_checksum_crc32_new_checksum(struct st_checksum * checksum);
+static struct st_checksum * st_checksum_crc32_new_checksum(void);
 static void st_checksum_crc32_init(void) __attribute__((constructor));
 static ssize_t st_checksum_crc32_update(struct st_checksum * checksum, const void * data, ssize_t length);
 
@@ -49,7 +49,7 @@ static struct st_checksum_driver st_checksum_crc32_driver = {
 	.name			= "crc32",
 	.new_checksum	= st_checksum_crc32_new_checksum,
 	.cookie			= 0,
-	.api_version    = STONE_CHECKSUM_APIVERSION,
+	.api_level      = STONE_CHECKSUM_API_LEVEL,
 };
 
 static struct st_checksum_ops st_checksum_crc32_ops = {
@@ -85,23 +85,22 @@ void st_checksum_crc32_free(struct st_checksum * checksum) {
 		return;
 
 	struct st_checksum_crc32_private * self = checksum->data;
-
 	if (self)
 		free(self);
 
 	checksum->data = 0;
 	checksum->ops = 0;
 	checksum->driver = 0;
+
+	free(checksum);
 }
 
 void st_checksum_crc32_init() {
 	st_checksum_register_driver(&st_checksum_crc32_driver);
 }
 
-struct st_checksum * st_checksum_crc32_new_checksum(struct st_checksum * checksum) {
-	if (!checksum)
-		checksum = malloc(sizeof(struct st_checksum));
-
+struct st_checksum * st_checksum_crc32_new_checksum() {
+	struct st_checksum * checksum = malloc(sizeof(struct st_checksum));
 	checksum->ops = &st_checksum_crc32_ops;
 	checksum->driver = &st_checksum_crc32_driver;
 
