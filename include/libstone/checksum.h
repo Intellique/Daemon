@@ -22,11 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 13 Mar 2012 18:55:57 +0100                         *
+*  Last modified: Tue, 10 Jul 2012 09:41:14 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_CHECKSUM_H__
 #define __STONE_CHECKSUM_H__
+
+struct st_database_connection;
 
 // ssize_t
 #include <sys/types.h>
@@ -240,32 +242,32 @@
 
 /**
  * \struct st_checksum
- * \brief this structure is used as an handler to a specific checksum
+ * \brief This structure is used as an handler to a specific checksum
  */
 struct st_checksum {
 	/**
 	 * \struct st_checksum_ops
-	 * \brief this structure contains only pointer functions
+	 * \brief This structure contains only pointer functions
+	 *
 	 * \note all functions \b SHALL point on <b>real function</b>
 	 */
 	struct st_checksum_ops {
 		/**
-		 * \brief compute digest and return it
+		 * \brief Compute digest and return it
+		 *
 		 * \param[in] checksum : a checksum handler
 		 * \return a dynamically allocated string which contains a digest in hexadecimal form
 		 */
 		char * (*digest)(struct st_checksum * checksum);
 		/**
-		 * \brief this function releases all memory associated to ckecksum
+		 * \brief This function releases all memory associated to ckecksum
+		 *
 		 * \param[in] checksum : a checksum handler
-		 * \warning this function <b>SHALL NOT call</b> :
-		 * \code
-		 * free(checksum);
-		 * \endcode
 		 */
 		void (*free)(struct st_checksum * checksum);
 		/**
-		 * \brief this function reads some data
+		 * \brief This function reads some data
+		 *
 		 * \param[in] checksum : a checksum handler
 		 * \param[in] data : some or full data
 		 * \param[in] length : length of data
@@ -273,17 +275,19 @@ struct st_checksum {
 		 * \li -1 if param error
 		 * \li -2 if digest is already computed
 		 * \li \a length is ok
+		 *
 		 * \note this function can be called one or many times until function digest is called
 		 */
 		ssize_t (*update)(struct st_checksum * checksum, const void * data, ssize_t length);
 	} * ops;
 	/**
-	 * \brief private data of one checksum
+	 * \brief Private data of one checksum
 	 */
 	void * data;
 	/**
-	 * \brief driver associated
-	 * \note <b>SHOULD NOT BE NULL</b>
+	 * \brief Driver associated
+	 *
+	 * \note Should not be NULL
 	 */
 	struct st_checksum_driver * driver;
 };
@@ -299,11 +303,11 @@ struct st_checksum_driver {
 	char * name;
 	/**
 	 * \brief get a new checksum handler
-	 * \param[out] checksum : an allocated checksum or \b NULL
+	 *
 	 * \return same value of \a checksum if \a checksum if <b>NOT NULL</b> or new value
 	 * \note if \a checksum is \b NULL, this function allocate enough memory with \a malloc
 	 */
-	struct st_checksum * (*new_checksum)(struct st_checksum * checksum);
+	struct st_checksum * (*new_checksum)(void);
 	/**
 	 * \brief private data used by st_checksum_get_driver
 	 * \note <b>SHOULD NOT be MODIFIED</b>
@@ -313,19 +317,21 @@ struct st_checksum_driver {
 	 * \brief check if the driver have an up to date api version
 	 * \note Should be defined to STONE_CHECKSUM_APIVERSION
 	 */
-	int api_version;
+	int api_level;
 };
 
 /**
+ * \def STONE_CHECKSUM_API_LEVEL
  * \brief Current api version
  *
  * Will increment from new version of struct st_checksum_driver or struct st_checksum
  */
-#define STONE_CHECKSUM_APIVERSION 1
+#define STONE_CHECKSUM_API_LEVEL 1
 
 
 /**
  * \brief Simple function to compute checksum
+ *
  * \param[in] checksum : name of checksum plugin
  * \param[in] data : compute with this \a data
  * \param[in] length : length of \a data
@@ -335,9 +341,11 @@ char * st_checksum_compute(const char * checksum, const char * data, ssize_t len
 
 /**
  * \brief This function converts a digest into hexadecimal form
+ *
  * \param[in] digest : a digest
  * \param[in] length : length of digest in bytes
  * \param[out] hexDigest : result of convertion
+ *
  * \note this function supposed that hexDigest is already allocated
  * and its size is, at least, \f$ 2 length + 1 \f$
  */
@@ -345,34 +353,36 @@ void st_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * h
 
 /**
  * \brief get a checksum driver
+ *
  * \param[in] driver : driver's name
  * \return 0 if failed
+ *
  * \note if this driver is not loaded, we try to load it
  * \warning the returned value <b>SHALL NOT BE RELEASE</b> with \a free
  */
 struct st_checksum_driver * st_checksum_get_driver(const char * driver);
 
 /**
- * \brief get a thread helper
- * \param[out] helper : an allocated checksum or \b NULL
- * \param[in] checksum : clone this checksum
- * \return same value of \a helper if \a helper if <b>NOT NULL</b> or new value or NULL if \a checksum is NULL
- * \note checksum SHOULD NOT BE NULL, if \a helper is \b NULL, this function allocate enough memory with \a malloc.
- * \note checksum will be computed into another thread.
- */
-struct st_checksum * st_checksum_get_helper(struct st_checksum * helper, struct st_checksum * checksum);
-
-/**
  * \brief Register an checksum driver
+ *
  * \param[in] driver : a statically allocated <c>struct checksum_driver</c>
  * \note Each checksum driver should call this function only one time
  * \code
- * static void mychecksum_init() __attribute__((constructor)) {
+ * static void mychecksum_init() \_\_attribute\_\_((constructor)) {
  *    checksum_registerDriver(&mychecksum_driver);
  * }
  * \endcode
  */
 void st_checksum_register_driver(struct st_checksum_driver * driver);
+
+/**
+ * \brief Synchronise checksum plugin to database
+ *
+ * \param[in] connection : an already connected link to database
+ *
+ * \todo: implement it
+ */
+void st_checksum_sync_plugins(struct st_database_connection * connection);
 
 #endif
 
