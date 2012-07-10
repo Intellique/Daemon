@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jul 2012 19:20:03 +0200                         *
+*  Last modified: Tue, 10 Jul 2012 16:45:45 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -262,7 +262,7 @@ int st_job_restore_load_tape(struct st_job * job, struct st_tape * tape) {
 
 						jp->drive->ops->eject(jp->drive);
 						jp->changer->lock->ops->lock(jp->changer->lock);
-						jp->changer->ops->unload(jp->changer, jp->drive, jp->slot);
+						jp->changer->ops->unload(jp->changer, jp->drive, sl);
 						jp->changer->lock->ops->unlock(jp->changer->lock);
 						sl->lock->ops->unlock(sl->lock);
 					}
