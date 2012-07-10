@@ -22,13 +22,32 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 01 Jun 2012 10:28:49 +0200                         *
+*  Last modified: Tue, 10 Jul 2012 13:00:30 +0200                         *
 \*************************************************************************/
 
-#ifndef __STONECONFIG_SCAN_H__
-#define __STONECONFIG_SCAN_H__
+#ifndef __STONECONFIG_SCSI_H__
+#define __STONECONFIG_SCSI_H__
 
-int stcfg_scan(void);
+#include <stone/library/changer.h>
+#include <stone/library/drive.h>
+
+/**
+ * \brief Inquiry the changer
+ *
+ * \param[in] filename : a generic scsi filename which used by a changer
+ * \param[out] changer : an already allocated changer
+ * \returns 0 if ok
+ */
+int stcfg_scsi_loaderinfo(const char * filename, struct st_changer * changer);
+
+/**
+ * \brief Inquiry the drive
+ *
+ * \param[in] filename : a generic scsi filename which used by a tape drive
+ * \param[out] drive : an already allocated drive
+ * \returns 0 if ok
+ */
+int stcfg_scsi_tapeinfo(const char * filename, struct st_drive * drive);
 
 #endif
 

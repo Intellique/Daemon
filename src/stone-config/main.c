@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 01 Jun 2012 10:29:04 +0200                         *
+*  Last modified: Tue, 10 Jul 2012 13:35:00 +0200                         *
 \*************************************************************************/
 
 // getopt_long
@@ -30,14 +30,13 @@
 // printf
 #include <stdio.h>
 
-#include <stone/conf.h>
-#include <stone/database.h>
-#include <stone/library/changer.h>
-#include <stone/job.h>
+#include <libstone/conf.h>
+#include <libstone/database.h>
+#include <libstone/log.h>
 
 #include "config.h"
-#include "log.h"
 #include "scan.h"
+#include "stone.version"
 
 static void st_show_help(void);
 
@@ -113,7 +112,7 @@ int main(int argc, char ** argv) {
 	}
 
 	// check if config file contains a database
-	if (!st_db_get_default_db()) {
+	if (!st_database_get_default_driver()) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: There is no database into config file '%s'", config_file);
         printf("Fatal error: There is no database into config file '%s'", config_file);
 		return 5;

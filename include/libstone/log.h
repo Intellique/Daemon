@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 04 Jul 2012 22:53:36 +0200                         *
+*  Last modified: Tue, 10 Jul 2012 13:36:56 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LOG_H__
@@ -311,6 +311,8 @@ const char * st_log_level_to_string(enum st_log_level level);
  * \note This function is thread-safe
  */
 void st_log_start_logger(void);
+
+void st_log_stop_logger();
 
 /**
  * \brief Convert a c string to an enumeration

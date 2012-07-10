@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 01 Jun 2012 16:13:36 +0200                         *
+*  Last modified: Tue, 10 Jul 2012 10:36:41 +0200                         *
 \*************************************************************************/
 
 // be*toh, htobe*
@@ -45,9 +45,6 @@
 #include <sys/types.h>
 // close
 #include <unistd.h>
-
-#include <stone/library/changer.h>
-#include <stone/library/drive.h>
 
 #include "scsi.h"
 

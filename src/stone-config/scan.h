@@ -22,14 +22,16 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 29 May 2012 12:38:48 +0200                         *
+*  Last modified: Fri, 01 Jun 2012 10:28:49 +0200                         *
 \*************************************************************************/
 
-#ifndef __STONECONFIG_SCSI_H__
-#define __STONECONFIG_SCSI_H__
+#ifndef __STONECONFIG_SCAN_H__
+#define __STONECONFIG_SCAN_H__
 
-int stcfg_scsi_loaderinfo(const char * filename, struct st_changer * changer);
-int stcfg_scsi_tapeinfo(const char * filename, struct st_drive * drive);
+/**
+ * \brief Scan hardware
+ */
+int stcfg_scan(void);
 
 #endif
 

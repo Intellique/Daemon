@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 01 Jun 2012 15:08:17 +0200                         *
+*  Last modified: Tue, 10 Jul 2012 13:29:27 +0200                         *
 \*************************************************************************/
 
 // glob, globfree
@@ -38,10 +38,10 @@
 // readlink
 #include <unistd.h>
 
-#include <stone/database.h>
+#include <libstone/database.h>
+#include <libstone/log.h>
 #include <stone/library/changer.h>
 #include <stone/library/drive.h>
-#include <stone/log.h>
 
 #include "scan.h"
 #include "scsi.h"
@@ -247,23 +247,28 @@ int stcfg_scan() {
 	if (drives)
 		free(drives);
 
-	struct st_database * db = st_db_get_default_db();
+	struct st_database * db = st_database_get_default_driver();
 	if (!db) {
+		printf("Warning, there is no database driver loaded\n");
+		return 1;
+	}
+
+	struct st_database_config * config = db->ops->get_default_config();
+	if (!config) {
 		printf("Warning, there is no database configured\n");
 		return 1;
 	}
 
-	struct st_database_connection * db_con = db->ops->connect(db, 0);
-
-	if (db_con) {
+	struct st_database_connection * connect = config->ops->connect(config);
+	if (connect) {
 		printf("Synchronization with database\n");
 
 		int failed = 0;
-		for (i = 0; db_con && i < nb_real_changers + nb_fake_changers; i++)
-			failed = db_con->ops->sync_changer(db_con, changers + i);
+		//for (i = 0; i < nb_real_changers + nb_fake_changers; i++)
+		//	failed = connect->ops->sync_changer(connect, changers + i);
 
-		db_con->ops->close(db_con);
-		db_con->ops->free(db_con);
+		connect->ops->close(connect);
+		connect->ops->free(connect);
 
 		if (failed)
 			printf("Synchronization failed with status = %d\n", failed);
