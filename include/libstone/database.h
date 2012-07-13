@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jul 2012 13:54:26 +0200                         *
+*  Last modified: Wed, 11 Jul 2012 10:31:50 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -52,11 +52,6 @@ struct st_user;
  */
 struct st_database_connection {
 	/**
-	 * \brief A uniq identifier that identify one database connection
-	 */
-	long id;
-
-	/**
 	 * \struct st_database_connection_ops
 	 * \brief Operations on a database connection
 	 *
@@ -72,7 +67,7 @@ struct st_database_connection {
 		 * \li 0 if ok
 		 * \li < 0 if error
 		 */
-		int (*close)(struct st_database_connection * db);
+		int (*close)(struct st_database_connection * connect);
 		/**
 		 * \brief free memory associated with database connection
 		 *
@@ -86,7 +81,7 @@ struct st_database_connection {
 		 * free(db);
 		 * \endcode
 		 */
-		int (*free)(struct st_database_connection * db);
+		int (*free)(struct st_database_connection * connect);
 
 		/**
 		 * \brief Rool back a transaction
@@ -96,7 +91,7 @@ struct st_database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*cancel_transaction)(struct st_database_connection * db);
+		int (*cancel_transaction)(struct st_database_connection * connect);
 		/**
 		 * \brief Finish a transaction
 		 *
@@ -106,7 +101,7 @@ struct st_database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*finish_transaction)(struct st_database_connection * db);
+		int (*finish_transaction)(struct st_database_connection * connect);
 		/**
 		 * \brief Starts a transaction
 		 *
@@ -117,7 +112,7 @@ struct st_database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*start_transaction)(struct st_database_connection * db);
+		int (*start_transaction)(struct st_database_connection * connect);
 
 
 
@@ -239,7 +234,7 @@ struct st_database {
 		 * \param[in] params : hashtable which contains parameters
 		 * \returns \b 0 if ok
 		 */
-		struct st_database_config * (*add)(struct st_hashtable * params);
+		struct st_database_config * (*add)(const struct st_hashtable * params);
 		/**
 		 * \brief Get default database configuration
 		 */
@@ -253,7 +248,7 @@ struct st_database {
 	/**
 	 * \brief Numbers of configs associated to this driver
 	 */
-	unsigned int nb_configs;
+	unsigned int nb_configurations;
 
 	/**
 	 * \brief cookie

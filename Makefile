@@ -156,7 +156,8 @@ binaries: prepare $(sort ${BINS})
 
 check:
 	@echo 'Checking source files...'
-	-@${CC} -fsyntax-only ${CFLAGS} ${SRC_FILES}
+	@cppcheck -v --std=c99 --enable=all $(addprefix -I,${INCLUDE_DIR}) ${SRC_FILES}
+#-@${CC} -fsyntax-only ${CFLAGS} ${SRC_FILES}
 
 clean:
 	@echo ' RM       -Rf $(foreach dir,${BIN_DIRS},$(word 1,$(subst /, ,$(dir)))) ${BUILD_DIR}'

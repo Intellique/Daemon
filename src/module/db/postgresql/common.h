@@ -22,34 +22,25 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 May 2012 16:24:52 +0200                         *
+*  Last modified: Tue, 10 Jul 2012 23:59:13 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DB_POSTGRESQL_CONNNECTION_H__
 #define __STONE_DB_POSTGRESQL_CONNNECTION_H__
 
-#include <postgresql/libpq-fe.h>
+#include <libstone/database.h>
 
-#include <stone/database.h>
-#include <stone/util.h>
-#include <stone/util/hashtable.h>
+typedef struct pg_conn PGconn;
+struct st_hashtable;
 
-struct st_db_postgresql_private {
-	char * user;
-	char * password;
-	char * db;
-	char * host;
-	char * port;
-};
+/**
+ * \brief Initialize a postgresql config
+ *
+ * \returns 0 if ok
+ */
+int st_db_postgresql_config_init(struct st_database_config * config, const struct st_hashtable * params);
 
-struct st_db_postgresql_connetion_private {
-	PGconn * db_con;
-	struct st_hashtable * cached;
-};
-
-struct st_stream_reader * st_db_postgresql_init_backup(struct st_db_postgresql_private * driver_private);
-int st_db_postgresql_init_connection(struct st_database_connection * connection, struct st_db_postgresql_private * driver_private);
-void st_db_postgresql_pr_free(struct st_db_postgresql_private * self);
+struct st_database_connection * st_db_postgresql_connnect_init(PGconn * pg_connect);
 
 #endif
 

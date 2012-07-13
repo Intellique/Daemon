@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jul 2012 13:37:47 +0200                         *
+*  Last modified: Tue, 10 Jul 2012 22:31:05 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -48,7 +48,7 @@ struct st_database_config * st_database_get_config_by_name(const char * name) {
 		unsigned int j;
 		struct st_database * db = st_database_databases[i];
 
-		for (j = 0; j < db->nb_configs; j++) {
+		for (j = 0; j < db->nb_configurations; j++) {
 			struct st_database_config * conf = db->configurations + j;
 			if (!strcmp(name, conf->name))
 				return conf;

@@ -22,17 +22,17 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jul 2012 09:41:15 +0200                         *
+*  Last modified: Thu, 12 Jul 2012 10:50:40 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
-// glob
+// glob, globfree
 #include <glob.h>
 // pthread_mutex_lock, pthread_mutex_unlock,
 #include <pthread.h>
 // free, malloc, realloc
 #include <stdlib.h>
-// snprintf
+// asprintf
 #include <stdio.h>
 // strcmp, strdup
 #include <string.h>
@@ -169,8 +169,8 @@ void st_checksum_sync_plugins(struct st_database_connection * connection) {
 	if (!connection)
 		return;
 
-	char path[256];
-	snprintf(path, 256, "%s/libchecksum-*.so", MODULE_PATH);
+	char * path;
+	asprintf(&path, "%s/libchecksum-*.so", MODULE_PATH);
 
 	glob_t gl;
 	gl.gl_offs = 0;
@@ -186,5 +186,8 @@ void st_checksum_sync_plugins(struct st_database_connection * connection) {
 		//if (connection->ops->sync_plugin_checksum(connection, plugin))
 		//	st_log_write_all(st_log_level_error, st_log_type_checksum, "Failed to synchronize plugin (%s)", plugin);
 	}
+
+	globfree(&gl);
+	free(path);
 }
 

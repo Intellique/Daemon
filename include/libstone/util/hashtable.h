@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 05 Jul 2012 15:21:52 +0200                         *
+*  Last modified: Tue, 10 Jul 2012 23:28:40 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_UTIL_HASHTABLE_H__
@@ -120,7 +120,7 @@ void st_hashtable_free(struct st_hashtable * hashtable);
  * \param[in] key : a key
  * \returns 1 if found otherwise 0
  */
-short st_hashtable_has_key(struct st_hashtable * hashtable, const void * key);
+short st_hashtable_has_key(const struct st_hashtable * hashtable, const void * key);
 
 /**
  * \brief Gets keys from hashtable
@@ -213,7 +213,7 @@ void st_hashtable_remove(struct st_hashtable * hashtable, const void * key);
  * \attention You <b> SHOULD NOT RELEASE </b> the returned value because this value is
  * shared with this \a hashtable
  */
-void * st_hashtable_value(struct st_hashtable * hashtable, const void * key);
+void * st_hashtable_value(const struct st_hashtable * hashtable, const void * key);
 
 /**
  * \brief Get all values of this \a hashtable

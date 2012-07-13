@@ -1,0 +1,11 @@
+STONE_DB_POSTGRESQL_SRC_DIR			:= src/module/db/postgresql
+
+STONE_DB_POSTGRESQL_BIN				:= lib/libdb-postgresql.so
+STONE_DB_POSTGRESQL_CFLAG			:= -pthread -fPIC -fvisibility=hidden
+STONE_DB_POSTGRESQL_LD				:= -pthread -shared -lpq
+
+STONE_DB_POSTGRESQL_DEPEND_LIB		:=
+
+STONE_DB_POSTGRESQL_CHCKSUM_FILE	:= libdb-postgresql.chcksum
+
+BIN_SYMS							+= STONE_DB_POSTGRESQL

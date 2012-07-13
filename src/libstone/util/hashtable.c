@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jul 2012 13:38:29 +0200                         *
+*  Last modified: Tue, 10 Jul 2012 23:28:48 +0200                         *
 \*************************************************************************/
 
 // calloc, free, malloc
@@ -87,7 +87,7 @@ void st_hashtable_clear(struct st_hashtable * hashtable) {
 	hashtable->nb_elements = 0;
 }
 
-short st_hashtable_has_key(struct st_hashtable * hashtable, const void * key) {
+short st_hashtable_has_key(const struct st_hashtable * hashtable, const void * key) {
 	if (!hashtable || !key)
 		return 0;
 
@@ -247,7 +247,7 @@ void st_hashtable_remove(struct st_hashtable * hashtable, const void * key) {
 	return;
 }
 
-void * st_hashtable_value(struct st_hashtable * hashtable, const void * key) {
+void * st_hashtable_value(const struct st_hashtable * hashtable, const void * key) {
 	if (!hashtable || !key)
 		return 0;
 
