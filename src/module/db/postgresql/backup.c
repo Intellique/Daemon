@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 24 May 2012 18:04:05 +0200                         *
+*  Last modified: Fri, 13 Jul 2012 23:01:33 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -35,7 +35,7 @@
 // memcpy
 #include <string.h>
 
-#include <stone/io.h>
+#include <libstone/io.h>
 
 #include "common.h"
 
@@ -89,9 +89,9 @@ static struct st_stream_reader_ops st_db_postgresql_stream_backup_ops = {
 };
 
 
-struct st_stream_reader * st_db_postgresql_init_backup(struct st_db_postgresql_private * driver_private) {
+struct st_stream_reader * st_db_postgresql_backup_init(PGconn * pg_connect) {
 	struct st_db_postgresql_stream_backup_private * self = malloc(sizeof(struct st_db_postgresql_stream_backup_private));
-	self->con = PQsetdbLogin(driver_private->host, driver_private->port, 0, 0, driver_private->db, driver_private->user, driver_private->password);
+	self->con = pg_connect;
 	self->c_result = 0;
 	self->c_table = tables;
 	self->c_header = 0;

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 10 May 2012 15:51:14 +0200                         *
+*  Last modified: Sat, 14 Jul 2012 10:30:11 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_IO_H__
@@ -31,18 +31,72 @@
 // ssize_t
 #include <sys/types.h>
 
+/**
+ * \struct st_stream_reader
+ * \brief Generic structure for reading from
+ */
 struct st_stream_reader {
+	/**
+	 * \brief stream operation
+	 */
 	struct st_stream_reader_ops {
+		/**
+		 * \brief Close stream
+		 *
+		 * \param[in] io : a stream reader
+		 * \return 0 if ok
+		 */
 		int (*close)(struct st_stream_reader * io);
+		/**
+		 * \brief Test if we are at the end of stream
+		 *
+		 * \param[in] io : a stream reader
+		 * \return 0 if remain data
+		 */
 		int (*end_of_file)(struct st_stream_reader * io);
+		/**
+		 * \brief Forward into the stream
+		 *
+		 * \param[in] io : a stream reader
+		 * \param[in] offset : length of forward
+		 * \returns new position into the stream or -1 if error
+		 */
 		off_t (*forward)(struct st_stream_reader * io, off_t offset);
+		/**
+		 * \brief Release all resource associated to \a io
+		 *
+		 * \param[in] io : a stream reader
+		 */
 		void (*free)(struct st_stream_reader * io);
 		ssize_t (*get_block_size)(struct st_stream_reader * io);
-		int (*last_errno)(struct st_stream_reader * f);
+		/**
+		 * \brief Get the latest errno
+		 *
+		 * \param[in] io : a stream reader
+		 * \returns latest errno or 0
+		 */
+		int (*last_errno)(struct st_stream_reader * io);
+		/**
+		 * \brief Get current position into stream \a io
+		 *
+		 * \param[in] io : a stream reader
+		 * \returns current position
+		 */
 		ssize_t (*position)(struct st_stream_reader * io);
+		/**
+		 * \brief Read from the stream \a io
+		 *
+		 * \param[in] io : a stream reader
+		 * \param[out] buffer : write data read into it
+		 * \param[in] length : length of \a buffer
+		 * \returns length read or -1 if error
+		 */
 		ssize_t (*read)(struct st_stream_reader * io, void * buffer, ssize_t length);
 		off_t (*set_position)(struct st_stream_reader * io, off_t position);
 	} * ops;
+	/**
+	 * \brief private data
+	 */
 	void * data;
 };
 
@@ -59,7 +113,6 @@ struct st_stream_writer {
 	void * data;
 };
 
-struct st_stream_writer * st_stream_get_tmp_writer(void);
 ssize_t st_stream_writer_printf(struct st_stream_writer * writer, const char * format, ...) __attribute__ ((format (printf, 2, 3)));
 
 #endif

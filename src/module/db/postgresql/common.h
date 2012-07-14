@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jul 2012 23:59:13 +0200                         *
+*  Last modified: Fri, 13 Jul 2012 22:59:50 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DB_POSTGRESQL_CONNNECTION_H__
@@ -32,6 +32,9 @@
 
 typedef struct pg_conn PGconn;
 struct st_hashtable;
+
+
+struct st_stream_reader * st_db_postgresql_backup_init(PGconn * pg_connect);
 
 /**
  * \brief Initialize a postgresql config

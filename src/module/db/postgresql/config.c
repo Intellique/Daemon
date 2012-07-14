@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 11 Jul 2012 10:17:48 +0200                         *
+*  Last modified: Sat, 14 Jul 2012 15:54:31 +0200                         *
 \*************************************************************************/
 
 // PQfinish, PQsetdbLogin, PQstatus
@@ -57,7 +57,21 @@ static struct st_database_config_ops st_db_postgresql_config_ops = {
 
 
 struct st_stream_reader * st_db_postgresql_backup_db(struct st_database_config * db_config) {
-	return 0;
+	struct st_db_postgresql_config_private * self = db_config->data;
+
+	PGconn * connect = PQsetdbLogin(self->host, self->port, 0, 0, self->db, self->user, self->password);
+	ConnStatusType status = PQstatus(connect);
+
+	if (status == CONNECTION_BAD) {
+		PQfinish(connect);
+		return 0;
+	}
+
+	struct st_stream_reader * backup = st_db_postgresql_backup_init(connect);
+	if (!backup)
+		PQfinish(connect);
+
+	return backup;
 }
 
 struct st_database_connection * st_db_postgresql_connect(struct st_database_config * db_config) {
