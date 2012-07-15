@@ -22,11 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 06 Jul 2012 19:15:33 +0200                         *
+*  Last modified: Sun, 15 Jul 2012 14:55:28 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_CONF_H__
 #define __STONE_CONF_H__
+
+struct st_hashtable;
 
 /**
  * \brief st_conf_check_pid
@@ -36,6 +38,8 @@
  * \li 1 is the daemon is alive
  * \li 0 if the daemon is dead
  * \li -1 if another process used this pid
+ *
+ * \todo This function should not be specific to daemon
  */
 int st_conf_check_pid(int pid);
 
@@ -66,6 +70,8 @@ int st_conf_read_pid(const char * pid_file);
 int st_conf_write_pid(const char * pid_file, int pid);
 
 
+typedef void (*st_conf_callback_f)(struct st_hashtable * params);
+
 /**
  * \brief st_read config file
  *
@@ -75,6 +81,8 @@ int st_conf_write_pid(const char * pid_file, int pid);
  * \li 1 if error
  */
 int st_conf_read_config(const char * conf_file);
+
+void st_conf_register_callback(const char * section, st_conf_callback_f callback);
 
 #endif
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jul 2012 13:59:39 +0200                         *
+*  Last modified: Sun, 15 Jul 2012 15:47:05 +0200                         *
 \*************************************************************************/
 
 // strerror
@@ -50,12 +50,8 @@
 
 #include "log.h"
 
-enum st_conf_section {
-	st_conf_section_db,
-	st_conf_section_log,
-	st_conf_section_unknown,
-};
-
+static void st_conf_free_key(void * key, void * value);
+static void st_conf_init(void) __attribute__((constructor));
 /**
  * \brief Load a database module
  *
@@ -68,6 +64,8 @@ static void st_conf_load_db(struct st_hashtable * params);
  * \param[in] params : a hashtable which contains all parameters
  */
 static void st_conf_load_log(struct st_hashtable * params);
+
+static struct st_hashtable * st_conf_callback = 0;
 
 
 int st_conf_check_pid(int pid) {
@@ -96,7 +94,7 @@ int st_conf_check_pid(int pid) {
 	else
 		ptr = link;
 
-	int failed = strcmp(link, "stone");
+	int failed = strcmp(link, "stoned");
 	st_log_write_all(failed ? st_log_level_warning : st_log_level_info, st_log_type_daemon, "Conf: check_pid: process 'stone' %s", failed ? "not found" : "found");
 	return failed ? -1 : 1;
 }
@@ -165,6 +163,17 @@ int st_conf_write_pid(const char * pid_file, int pid) {
 	return 0;
 }
 
+
+void st_conf_free_key(void * key, void * value __attribute__((unused))) {
+	free(key);
+}
+
+void st_conf_init() {
+	st_conf_callback = st_hashtable_new2(st_util_string_compute_hash, st_conf_free_key);
+
+	st_hashtable_put(st_conf_callback, strdup("database"), st_conf_load_db);
+	st_hashtable_put(st_conf_callback, strdup("log"), st_conf_load_log);
+}
 
 void st_conf_load_db(struct st_hashtable * params) {
 	if (!params)
@@ -237,8 +246,9 @@ int st_conf_read_config(const char * confFile) {
 	buffer[st.st_size] = '\0';
 
 	char * ptr = buffer;
-	enum st_conf_section section = st_conf_section_unknown;
+	char section[24] = { '\0' };
 	struct st_hashtable * params = st_hashtable_new2(st_util_string_compute_hash, st_util_basic_free);
+
 	while (*ptr) {
 		switch (*ptr) {
 			case ';':
@@ -248,36 +258,25 @@ int st_conf_read_config(const char * confFile) {
 			case '\n':
 				ptr++;
 				if (*ptr == '\n') {
-					switch (section) {
-						case st_conf_section_db:
-							st_conf_load_db(params);
-							break;
-
-						case st_conf_section_log:
-							st_conf_load_log(params);
-							break;
-
-						default:
-							break;
+					if (*section) {
+						st_conf_callback_f f = st_hashtable_value(st_conf_callback, section);
+						if (f)
+							f(params);
 					}
 
-					section = st_conf_section_unknown;
+					*section = 0;
 					st_hashtable_clear(params);
 				}
 				continue;
 
 			case '[':
-				if (strlen(ptr + 1) > 8 && !strncmp(ptr + 1, "database", 8))
-					section = st_conf_section_db;
-				else if (strlen(ptr + 1) > 3 && !strncmp(ptr + 1, "log", 3))
-					section = st_conf_section_log;
-				else
-					section = st_conf_section_unknown;
+				sscanf(ptr, "[%23s]", section);
+
 				ptr = strchr(ptr, '\n');
 				continue;
 
 			default:
-				if (section == st_conf_section_unknown)
+				if (*section)
 					continue;
 
 				if (strchr(ptr, '=') < strchr(ptr, '\n')) {
@@ -291,19 +290,10 @@ int st_conf_read_config(const char * confFile) {
 		}
 	}
 
-	if (params->nb_elements > 0) {
-		switch (section) {
-			case st_conf_section_db:
-				st_conf_load_db(params);
-				break;
-
-			case st_conf_section_log:
-				st_conf_load_log(params);
-				break;
-
-			default:
-				break;
-		}
+	if (params->nb_elements > 0 && *section) {
+		st_conf_callback_f f = st_hashtable_value(st_conf_callback, section);
+		if (f)
+			f(params);
 	}
 
 	st_hashtable_free(params);
@@ -312,5 +302,12 @@ int st_conf_read_config(const char * confFile) {
 	st_log_start_logger();
 
 	return 0;
+}
+
+void st_conf_register_callback(const char * section, st_conf_callback_f callback) {
+	if (!section || !callback)
+		return;
+
+	st_hashtable_put(st_conf_callback, strdup(section), callback);
 }
 
