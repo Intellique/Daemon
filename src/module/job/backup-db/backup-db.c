@@ -140,6 +140,8 @@ int st_job_backupdb_run(struct st_job * job) {
 	db_reader->ops->close(db_reader);
 	db_reader->ops->free(db_reader);
 
+    free(buffer);
+
 	return 0;
 }
 

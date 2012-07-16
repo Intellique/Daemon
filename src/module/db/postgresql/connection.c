@@ -2220,6 +2220,7 @@ int st_db_postgresql_new_archive(struct st_database_connection * connection, str
 		PQclear(result);
 		free(loginid);
 		free(metadata);
+        free(copyof);
 		return 1;
 	} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
 		st_db_postgresql_get_long(result, 0, 0, &archive->id);
@@ -2227,6 +2228,7 @@ int st_db_postgresql_new_archive(struct st_database_connection * connection, str
 	PQclear(result);
 	free(loginid);
 	free(metadata);
+    free(copyof);
 
 	if (status != PGRES_TUPLES_OK || !archive->copy_of)
 		return 1;
@@ -2447,8 +2449,10 @@ int st_db_postgresql_update_volume(struct st_database_connection * connection, s
 	PQclear(result);
 	free(size);
 
-	if (status != PGRES_COMMAND_OK)
+	if (status != PGRES_COMMAND_OK) {
+        free(volumeid);
 		return 1;
+    }
 
 	const char * query1 = "select_checksumresult";
 	st_db_postgresql_prepare(self, query1, "SELECT id FROM checksumresult WHERE checksum = $1 AND result = $2 LIMIT 1");
@@ -2471,6 +2475,7 @@ int st_db_postgresql_update_volume(struct st_database_connection * connection, s
 
 			PQclear(result);
 			free(checksumid);
+            free(volumeid);
 
 			return 1;
 		} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
@@ -2486,6 +2491,7 @@ int st_db_postgresql_update_volume(struct st_database_connection * connection, s
 				st_db_postgresql_get_error(result, query2);
 
 				free(checksumid);
+                free(volumeid);
 				return 1;
 			} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
 				st_db_postgresql_get_string_dup(result, 0, 0, &checksumresultid);

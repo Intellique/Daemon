@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 14 Jun 2012 10:53:14 +0200                         *
+*  Last modified: Thu, 12 Jul 2012 10:44:51 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -49,6 +49,8 @@ enum st_job_status {
 	st_job_status_idle,
 	st_job_status_pause,
 	st_job_status_running,
+	st_job_status_stopped,
+	st_job_status_waiting,
 
 	st_job_status_unknown,
 };
@@ -75,7 +77,7 @@ struct st_job {
 	// job
 	float done;
 	struct st_archive * archive;
-    struct st_backup * backup;
+	struct st_backup * backup;
 	struct st_tape * tape;
 	struct st_pool * pool;
 

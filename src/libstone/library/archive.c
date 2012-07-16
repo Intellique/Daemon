@@ -66,9 +66,8 @@ void st_archive_file_free(struct st_archive_file * file) {
 	if (!file)
 		return;
 
-	if (file->name)
-		free(file->name);
-	file->name = 0;
+    free(file->name);
+    file->name = 0;
 
 	file->digests = 0;
 	file->nb_checksums = 0;

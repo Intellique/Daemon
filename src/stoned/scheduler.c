@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jul 2012 12:45:59 +0200                         *
+*  Last modified: Thu, 12 Jul 2012 16:05:10 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -117,7 +117,7 @@ void st_sched_do_loop() {
 
 			if (j->id < 0 && j->sched_status == st_job_status_running)
 				j->job_ops->stop(j);
-			else if (j->sched_status != j->db_status && j->db_status != st_job_status_running)
+			else if (j->db_status == st_job_status_stopped)
 				j->job_ops->stop(j);
 		}
 

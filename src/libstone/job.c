@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 15 Jan 2012 19:26:28 +0100                         *
+*  Last modified: Thu, 12 Jul 2012 10:46:06 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -59,6 +59,8 @@ static const struct st_job_status2 {
 	{ "idle",    st_job_status_idle },
 	{ "pause",   st_job_status_pause },
 	{ "running", st_job_status_running },
+	{ "stopped", st_job_status_stopped },
+	{ "waiting", st_job_status_waiting },
 
 	{ "unknown", st_job_status_unknown },
 };
