@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jul 2012 17:50:00 +0200                         *
+*  Last modified: Sun, 15 Jul 2012 16:46:02 +0200                         *
 \*************************************************************************/
 
 // free, malloc
@@ -64,7 +64,6 @@ char * st_checksum_crc32_digest(struct st_checksum * checksum) {
 		return 0;
 
 	struct st_checksum_crc32_private * self = checksum->data;
-
 	if (self->digest[0] != '\0')
 		return strdup(self->digest);
 
@@ -85,8 +84,7 @@ void st_checksum_crc32_free(struct st_checksum * checksum) {
 		return;
 
 	struct st_checksum_crc32_private * self = checksum->data;
-	if (self)
-		free(self);
+	free(self);
 
 	checksum->data = 0;
 	checksum->ops = 0;
@@ -117,10 +115,9 @@ ssize_t st_checksum_crc32_update(struct st_checksum * checksum, const void * dat
 		return -1;
 
 	struct st_checksum_crc32_private * self = checksum->data;
-	if (*self->digest != '\0')
-		return -2;
-
 	self->crc32 = crc32(self->crc32, data, length);
+	*self->digest = '\0';
+
 	return length;
 }
 

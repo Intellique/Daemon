@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 12 Jul 2012 10:50:40 +0200                         *
+*  Last modified: Sun, 15 Jul 2012 23:39:09 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -81,24 +81,24 @@ char * st_checksum_compute(const char * checksum, const char * data, ssize_t len
 	return digest;
 }
 
-void st_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * hexDigest) {
-	if (!digest || length < 1 || !hexDigest) {
+void st_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * hex_digest) {
+	if (!digest || length < 1 || !hex_digest) {
 		st_log_write_all(st_log_level_error, st_log_type_checksum, "st_checksum_convert_to_hex error");
 		if (!digest)
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "because digest is null");
 		if (length < 1)
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "because length is lower than 1 (length=%zd)", length);
-		if (!hexDigest)
+		if (!hex_digest)
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "because hexDigest is null");
 		return;
 	}
 
 	int i;
 	for (i = 0; i < length; i++)
-		snprintf(hexDigest + (i << 1), 3, "%02x", digest[i]);
-	hexDigest[i << 1] = '\0';
+		snprintf(hex_digest + (i << 1), 3, "%02x", digest[i]);
+	hex_digest[i << 1] = '\0';
 
-	st_log_write_all(st_log_level_debug, st_log_type_checksum, "computed => '%s'", hexDigest);
+	st_log_write_all(st_log_level_debug, st_log_type_checksum, "computed => '%s'", hex_digest);
 }
 
 struct st_checksum_driver * st_checksum_get_driver(const char * driver) {
@@ -145,24 +145,30 @@ void st_checksum_register_driver(struct st_checksum_driver * driver) {
 	}
 
 	if (driver->api_level != STONE_CHECKSUM_API_LEVEL) {
-		st_log_write_all(st_log_level_error, st_log_type_checksum, "Driver(%s) has not the correct api version (current: %d, expected: %d)", driver->name, driver->api_level, STONE_CHECKSUM_API_LEVEL);
+		st_log_write_all(st_log_level_error, st_log_type_checksum, "Driver '%s' has not the correct api level (current: %d, expected: %d)", driver->name, driver->api_level, STONE_CHECKSUM_API_LEVEL);
 		return;
 	}
 
 	unsigned int i;
 	for (i = 0; i < st_checksum_nb_drivers; i++)
 		if (st_checksum_drivers[i] == driver || !strcmp(driver->name, st_checksum_drivers[i]->name)) {
-			st_log_write_all(st_log_level_warning, st_log_type_checksum, "Driver(%s) is already registred", driver->name);
+			st_log_write_all(st_log_level_warning, st_log_type_checksum, "Driver '%s' is already registred", driver->name);
 			return;
 		}
 
-	st_checksum_drivers = realloc(st_checksum_drivers, (st_checksum_nb_drivers + 1) * sizeof(struct st_checksum_driver *));
+	void * new_addr = realloc(st_checksum_drivers, (st_checksum_nb_drivers + 1) * sizeof(struct st_checksum_driver *));
+	if (!new_addr) {
+		st_log_write_all(st_log_level_info, st_log_type_checksum, "Driver '%s' cannot be registred because there is not enough memory", driver->name);
+		return;
+	}
+
+	st_checksum_drivers = new_addr;
 	st_checksum_drivers[st_checksum_nb_drivers] = driver;
 	st_checksum_nb_drivers++;
 
 	st_loader_register_ok();
 
-	st_log_write_all(st_log_level_info, st_log_type_checksum, "Driver(%s) is now registred", driver->name);
+	st_log_write_all(st_log_level_info, st_log_type_checksum, "Driver '%s' is now registred", driver->name);
 }
 
 void st_checksum_sync_plugins(struct st_database_connection * connection) {

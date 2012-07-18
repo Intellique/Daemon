@@ -156,7 +156,7 @@ binaries: prepare $(sort ${BINS})
 
 check:
 	@echo 'Checking source files...'
-	@cppcheck -v --std=c99 --enable=all $(addprefix -I,${INCLUDE_DIR}) ${SRC_FILES}
+	@cppcheck -v --std=c99 $(addprefix -I,${INCLUDE_DIR}) ${SRC_FILES}
 #-@${CC} -fsyntax-only ${CFLAGS} ${SRC_FILES}
 
 clean:
