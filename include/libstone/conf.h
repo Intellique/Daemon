@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 15 Jul 2012 14:55:28 +0200                         *
+*  Last modified: Fri, 20 Jul 2012 10:34:18 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_CONF_H__
@@ -33,24 +33,14 @@ struct st_hashtable;
 /**
  * \brief st_conf_check_pid
  *
+ * \param[in] prog_name : name of process
  * \param[in] pid : pid
  * \return a value which correspond to
  * \li 1 is the daemon is alive
  * \li 0 if the daemon is dead
  * \li -1 if another process used this pid
- *
- * \todo This function should not be specific to daemon
  */
-int st_conf_check_pid(int pid);
-
-/**
- * \brief st_conf_delete_pid
- *
- * \param[in] pid_file : file with pid
- * \return what "unlink" returned
- * \note see man page unlink(2)
- */
-int st_conf_delete_pid(const char * pid_file);
+int st_conf_check_pid(const char * prog_name, int pid);
 
 /**
  * \brief st_conf_read_pid read pid file
@@ -70,7 +60,12 @@ int st_conf_read_pid(const char * pid_file);
 int st_conf_write_pid(const char * pid_file, int pid);
 
 
-typedef void (*st_conf_callback_f)(struct st_hashtable * params);
+/**
+ * \brief Callback function
+ *
+ * \param[in] params : All keys values associated to section
+ */
+typedef void (*st_conf_callback_f)(const struct st_hashtable * params);
 
 /**
  * \brief st_read config file
@@ -82,6 +77,16 @@ typedef void (*st_conf_callback_f)(struct st_hashtable * params);
  */
 int st_conf_read_config(const char * conf_file);
 
+/**
+ * \brief Register a function which will be called if a \a section is found
+ *
+ * First, register a function \a callback associated to a \a section.
+ * Then, call st_conf_read_config and if \a section is found, the function 
+ * \a callback will be called.
+ *
+ * \param[in] section : a section name
+ * \param[in] callback : a function called if \a section is found into a config file.
+ */
 void st_conf_register_callback(const char * section, st_conf_callback_f callback);
 
 #endif

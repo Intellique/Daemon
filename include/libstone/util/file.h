@@ -22,14 +22,26 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jul 2012 13:32:26 +0200                         *
+*  Last modified: Fri, 20 Jul 2012 10:36:00 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_UTIL_FILE_H__
 #define __STONE_UTIL_FILE_H__
 
-// gid_t, ssize_t
+// gid_t, mode_t, ssize_t
 #include <sys/types.h>
+
+struct dirent;
+
+/**
+ * \brief Basic function which is designed to be used by scandir
+ *
+ * This function, when used by scandir, remove only files named '.' and '..'
+ *
+ * \param[in] d : directory information
+ * \returns 0 if d->d_name equals '.' or '..'
+ */
+int st_util_file_basic_scandir_filter(const struct dirent * d);
 
 /**
  * \brief Convert \a size to humain readeable format (i.e. 30KB)
@@ -50,6 +62,23 @@ void st_util_file_convert_size_to_string(ssize_t size, char * str, ssize_t str_l
  * \note if \a gid is not found, write gid number into \a name
  */
 void st_util_file_gid2name(char * name, ssize_t length, gid_t gid);
+
+/**
+ * \brief Create directory recursively
+ *
+ * \param[in] dirname : a directory name
+ * \param[in] mode : create directory with specific mode
+ * \returns 0 if ok or read errno
+ */
+int st_util_file_mkdir(const char * dirname, mode_t mode);
+
+/**
+ * \brief Remove recursively path
+ *
+ * \param[in] path : a path that will be deleted
+ * \returns 0 if ok or read errno
+ */
+int st_util_file_rm(const char * path);
 
 /**
  * \brief Trunc \a nb_trunc_path directories from \a path

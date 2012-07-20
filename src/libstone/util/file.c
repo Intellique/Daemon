@@ -22,9 +22,11 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jul 2012 13:38:16 +0200                         *
+*  Last modified: Fri, 20 Jul 2012 10:33:30 +0200                         *
 \*************************************************************************/
 
+// scandir
+#include <dirent.h>
 // getgrgid_r
 #include <grp.h>
 // getpwuid_r
@@ -33,12 +35,28 @@
 #include <stdio.h>
 // free, malloc
 #include <stdlib.h>
-// memmove, strchr, strlen, strncpy
+// memmove, strdup, strchr, strcpy, strlen, strncpy
 #include <string.h>
-// getgrgid_r, getpwuid_r
+// lstat, mkdir
+#include <sys/stat.h>
+// getgrgid_r, getpwuid_r, lstat, mkdir
 #include <sys/types.h>
+// access, lstat, rmdir, unlink
+#include <unistd.h>
 
 #include <libstone/util/file.h>
+#include <libstone/util/string.h>
+
+
+int st_util_file_basic_scandir_filter(const struct dirent * d) {
+	if (d->d_name[0] != '.')
+		return 1;
+
+	if (d->d_name[1] == '\0')
+		return 0;
+
+	return d->d_name[1] != '.' || d->d_name[2] != '\0';
+}
 
 void st_util_file_convert_size_to_string(ssize_t size, char * str, ssize_t str_len) {
 	unsigned short mult = 0;
@@ -93,6 +111,84 @@ void st_util_file_gid2name(char * name, ssize_t length, gid_t gid) {
 	}
 
 	free(buffer);
+}
+
+int st_util_file_mkdir(const char * dirname, mode_t mode) {
+	if (!access(dirname, F_OK))
+		return 0;
+
+	char * dir = strdup(dirname);
+	st_util_string_delete_double_char(dir, '/');
+
+	char * ptr = strrchr(dir, '/');
+	if (!ptr) {
+		free(dir);
+		return mkdir(dirname, mode);
+	}
+
+	unsigned short nb = 0;
+	do {
+		*ptr = '\0';
+		nb++;
+		ptr = strrchr(dir, '/');
+	} while (ptr && access(dir, F_OK));
+
+	unsigned short i;
+	int failed = 0;
+	for (i = 0; i < nb && !failed; i++) {
+		size_t length = strlen(dir);
+		dir[length] = '/';
+
+		failed = mkdir(dir, mode);
+	}
+
+	free(dir);
+
+	return failed;
+}
+
+int st_util_file_rm(const char * path) {
+	if (access(path, F_OK))
+		return 0;
+
+	struct stat st;
+	if (lstat(path, &st))
+		return -1;
+
+	if (S_ISDIR(st.st_mode)) {
+		struct dirent ** files;
+		int nb_files = scandir(path, &files, st_util_file_basic_scandir_filter, 0);
+		if (nb_files < 0)
+			return -1;
+
+		size_t path_length = strlen(path);
+
+		int i, failed = 0;
+		for (i = 0; i < nb_files; i++) {
+			if (!failed) {
+				size_t file_length = strlen(files[i]->d_name);
+				char * file = malloc(path_length + file_length + 2);
+
+				strcpy(file, path);
+				file[path_length] = '/';
+				strcpy(file + path_length + 1, files[i]->d_name);
+
+				failed = st_util_file_rm(file);
+
+				free(file);
+			}
+
+			free(files[i]);
+		}
+		free(files);
+
+		if (failed)
+			return failed;
+
+		return rmdir(path);
+	} else {
+		return unlink(path);
+	}
 }
 
 char * st_util_file_trunc_path(char * path, int nb_trunc_path) {

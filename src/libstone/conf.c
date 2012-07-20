@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 15 Jul 2012 15:47:05 +0200                         *
+*  Last modified: Fri, 20 Jul 2012 10:34:25 +0200                         *
 \*************************************************************************/
 
 // strerror
@@ -57,20 +57,23 @@ static void st_conf_init(void) __attribute__((constructor));
  *
  * \param[in] params : a hashtable which contains all parameters
  */
-static void st_conf_load_db(struct st_hashtable * params);
+static void st_conf_load_db(const struct st_hashtable * params);
 /**
  * \brief Load a log module
  *
  * \param[in] params : a hashtable which contains all parameters
  */
-static void st_conf_load_log(struct st_hashtable * params);
+static void st_conf_load_log(const struct st_hashtable * params);
 
 static struct st_hashtable * st_conf_callback = 0;
 
 
-int st_conf_check_pid(int pid) {
-	if (pid < 1) {
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: check_pid: pid contains a wrong value (pid=%d)", pid);
+int st_conf_check_pid(const char * prog_name, int pid) {
+	if (!prog_name || pid < 1) {
+		if (!prog_name)
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: check_pid: prog_name should not be null");
+		if (pid < 1)
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: check_pid: pid contains a wrong value (pid=%d)", pid);
 		return 0;
 	}
 
@@ -94,23 +97,9 @@ int st_conf_check_pid(int pid) {
 	else
 		ptr = link;
 
-	int failed = strcmp(link, "stoned");
+	int failed = strcmp(link, prog_name);
 	st_log_write_all(failed ? st_log_level_warning : st_log_level_info, st_log_type_daemon, "Conf: check_pid: process 'stone' %s", failed ? "not found" : "found");
 	return failed ? -1 : 1;
-}
-
-int st_conf_delete_pid(const char * pid_file) {
-	if (!pid_file) {
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: delete_pid: pid_file is null");
-		return 1;
-	}
-
-	int failed = unlink(pid_file);
-	if (failed)
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: delete_pid: delete pid file => failed");
-	else
-		st_log_write_all(st_log_level_debug, st_log_type_daemon, "Conf: delete_pid: delete pid file => ok");
-	return failed;
 }
 
 int st_conf_read_pid(const char * pid_file) {
@@ -175,7 +164,7 @@ void st_conf_init() {
 	st_hashtable_put(st_conf_callback, strdup("log"), st_conf_load_log);
 }
 
-void st_conf_load_db(struct st_hashtable * params) {
+void st_conf_load_db(const struct st_hashtable * params) {
 	if (!params)
 		return;
 
@@ -203,7 +192,7 @@ void st_conf_load_db(struct st_hashtable * params) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: load_db: no driver (%s) found", driver);
 }
 
-void st_conf_load_log(struct st_hashtable * params) {
+void st_conf_load_log(const struct st_hashtable * params) {
 	if (!params)
 		return;
 
