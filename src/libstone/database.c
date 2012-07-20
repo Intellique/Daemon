@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jul 2012 22:31:05 +0200                         *
+*  Last modified: Fri, 20 Jul 2012 19:04:59 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -111,7 +111,13 @@ void st_database_register_driver(struct st_database * db) {
 		return;
 	}
 
-	st_database_databases = realloc(st_database_databases, (st_database_nb_databases + 1) * sizeof(struct st_database *));
+	void * new_addr = realloc(st_database_databases, (st_database_nb_databases + 1) * sizeof(struct st_database *));
+	if (!new_addr) {
+		st_log_write_all(st_log_level_info, st_log_type_database, "Driver '%s' cannot be registred because there is not enough memory", db->name);
+		return;
+	}
+
+	st_database_databases = new_addr;
 	st_database_databases[st_database_nb_databases] = db;
 	st_database_nb_databases++;
 

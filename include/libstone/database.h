@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 11 Jul 2012 10:31:50 +0200                         *
+*  Last modified: Fri, 20 Jul 2012 14:48:19 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -105,7 +105,7 @@ struct st_database_connection {
 		/**
 		 * \brief Starts a transaction
 		 *
-		 * \param[in] db : a database connection
+		 * \param[in] connection : a database connection
 		 * \param[in] readOnly : is a read only transaction
 		 * \return a value which correspond to
 		 * \li 0 if ok
@@ -114,6 +114,14 @@ struct st_database_connection {
 		 */
 		int (*start_transaction)(struct st_database_connection * connect);
 
+		/**
+		 * \brief Synchronise checksum plugin with database
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] name : name of plugin
+		 * \returns 0 if ok
+		 */
+		int (*sync_plugin_checksum)(struct st_database_connection * connect, const char * name);
 
 
 

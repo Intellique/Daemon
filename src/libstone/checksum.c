@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 15 Jul 2012 23:39:09 +0200                         *
+*  Last modified: Fri, 20 Jul 2012 18:45:52 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -189,8 +189,8 @@ void st_checksum_sync_plugins(struct st_database_connection * connection) {
 		char plugin[64];
 		sscanf(ptr, "libchecksum-%64[^.].so", plugin);
 
-		//if (connection->ops->sync_plugin_checksum(connection, plugin))
-		//	st_log_write_all(st_log_level_error, st_log_type_checksum, "Failed to synchronize plugin (%s)", plugin);
+		if (connection->ops->sync_plugin_checksum(connection, plugin))
+			st_log_write_all(st_log_level_error, st_log_type_checksum, "Failed to synchronize plugin (%s)", plugin);
 	}
 
 	globfree(&gl);

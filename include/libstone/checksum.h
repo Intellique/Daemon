@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 15 Jul 2012 23:48:36 +0200                         *
+*  Last modified: Fri, 20 Jul 2012 19:01:45 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_CHECKSUM_H__
@@ -134,7 +134,7 @@ struct st_database_connection;
  *
  *    MD5_CTX md5 = self->md5;
  *    unsigned char digest[MD5_DIGEST_LENGTH];
- *    if (!MD5_Final(digest, &self->md5))
+ *    if (!MD5_Final(digest, &md5))
  *       return 0;
  *
  *    st_checksum_convert_to_hex(digest, MD5_DIGEST_LENGTH, self->digest);
@@ -330,8 +330,6 @@ void st_checksum_register_driver(struct st_checksum_driver * driver);
  * \brief Synchronise checksum plugin to database
  *
  * \param[in] connection : an already connected link to database
- *
- * \todo: implement it
  */
 void st_checksum_sync_plugins(struct st_database_connection * connection);
 

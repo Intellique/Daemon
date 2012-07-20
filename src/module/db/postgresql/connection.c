@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 13 Jul 2012 10:16:24 +0200                         *
+*  Last modified: Fri, 20 Jul 2012 18:45:00 +0200                         *
 \*************************************************************************/
 
 // PQclear, PQexec, PQfinish, PQresultStatus, PQsetErrorVerbosity
@@ -52,7 +52,10 @@ static int st_db_postgresql_cancel_transaction(struct st_database_connection * c
 static int st_db_postgresql_finish_transaction(struct st_database_connection * connect);
 static int st_db_postgresql_start_transaction(struct st_database_connection * connect);
 
+static int st_db_postgresql_sync_plugin_checksum(struct st_database_connection * connect, const char * name);
+
 static void st_db_postgresql_get_error(PGresult * result, const char * prepared_query);
+static void st_db_postgresql_prepare(struct st_db_postgresql_connection_private * self, const char * statement_name, const char * query);
 
 static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.close = st_db_postgresql_close,
@@ -61,6 +64,8 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.cancel_transaction = st_db_postgresql_cancel_transaction,
 	.finish_transaction = st_db_postgresql_finish_transaction,
 	.start_transaction  = st_db_postgresql_start_transaction,
+
+	.sync_plugin_checksum = st_db_postgresql_sync_plugin_checksum,
 };
 
 
@@ -107,6 +112,9 @@ struct st_database_connection * st_db_postgresql_connnect_init(PGconn * pg_conne
 
 
 int st_db_postgresql_cancel_transaction(struct st_database_connection * connect) {
+	if (!connect)
+		return -1;
+
 	struct st_db_postgresql_connection_private * self = connect->data;
 
 	PGTransactionStatusType status = PQtransactionStatus(self->connect);
@@ -128,6 +136,9 @@ int st_db_postgresql_cancel_transaction(struct st_database_connection * connect)
 }
 
 int st_db_postgresql_finish_transaction(struct st_database_connection * connect) {
+	if (!connect)
+		return -1;
+
 	struct st_db_postgresql_connection_private * self = connect->data;
 
 	PGTransactionStatusType status = PQtransactionStatus(self->connect);
@@ -155,8 +166,10 @@ int st_db_postgresql_finish_transaction(struct st_database_connection * connect)
 }
 
 int st_db_postgresql_start_transaction(struct st_database_connection * connect) {
-	struct st_db_postgresql_connection_private * self = connect->data;
+	if (!connect)
+		return -1;
 
+	struct st_db_postgresql_connection_private * self = connect->data;
 	PGTransactionStatusType status = PQtransactionStatus(self->connect);
 	switch (status) {
 		case PQTRANS_IDLE: {
@@ -172,6 +185,44 @@ int st_db_postgresql_start_transaction(struct st_database_connection * connect) 
 		default:
 			return 1;
 	}
+}
+
+
+int st_db_postgresql_sync_plugin_checksum(struct st_database_connection * connect, const char * name) {
+	if (!connect || !name)
+		return -1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	const char * query = "select_checksum_by_name";
+	st_db_postgresql_prepare(self, query, "SELECT name FROM checksum WHERE name = $1 LIMIT 1");
+
+	const char * param[] = { name};
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	int found = 0;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		found = 1;
+
+	PQclear(result);
+
+	if (found)
+		return 0;
+
+	query = "insert_checksum";
+	st_db_postgresql_prepare(self, query, "INSERT INTO checksum(name) VALUES ($1)");
+
+	result = PQexecPrepared(self->connect, query, 1, param, 0, 0, 0);
+	status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+
+	PQclear(result);
+
+	return status == PGRES_FATAL_ERROR;
 }
 
 
@@ -204,6 +255,20 @@ void st_db_postgresql_get_error(PGresult * result, const char * prepared_query) 
 			line = strtok_r(0, "\n", &ptr);
 		}
 		free(error);
+	}
+}
+
+void st_db_postgresql_prepare(struct st_db_postgresql_connection_private * self, const char * statement_name, const char * query) {
+	if (!st_hashtable_has_key(self->cached_query, statement_name)) {
+		PGresult * prepare = PQprepare(self->connect, statement_name, query, 0, 0);
+		ExecStatusType status = PQresultStatus(prepare);
+		if (status == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(prepare, statement_name);
+		else
+			st_hashtable_put(self->cached_query, strdup(statement_name), 0);
+		PQclear(prepare);
+
+		st_log_write_all(status == PGRES_COMMAND_OK ? st_log_level_debug : st_log_level_error, st_log_type_plugin_db, "Postgresql: new query prepared (%s) => {%s}, status: %s", statement_name, query, PQresStatus(status));
 	}
 }
 
