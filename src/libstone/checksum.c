@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 20 Jul 2012 18:45:52 +0200                         *
+*  Last modified: Sun, 22 Jul 2012 11:48:48 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -158,7 +158,7 @@ void st_checksum_register_driver(struct st_checksum_driver * driver) {
 
 	void * new_addr = realloc(st_checksum_drivers, (st_checksum_nb_drivers + 1) * sizeof(struct st_checksum_driver *));
 	if (!new_addr) {
-		st_log_write_all(st_log_level_info, st_log_type_checksum, "Driver '%s' cannot be registred because there is not enough memory", driver->name);
+		st_log_write_all(st_log_level_error, st_log_type_checksum, "Driver '%s' cannot be registred because there is not enough memory", driver->name);
 		return;
 	}
 

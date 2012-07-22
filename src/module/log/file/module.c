@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 03 Apr 2012 15:40:47 +0200                         *
+*  Last modified: Sun, 22 Jul 2012 12:20:26 +0200                         *
 \*************************************************************************/
 
 // open
@@ -44,7 +44,7 @@
 // close
 #include <unistd.h>
 
-#include <stone/user.h>
+#include <libstone/user.h>
 
 #include "common.h"
 
@@ -54,7 +54,7 @@ struct st_log_file_private {
 };
 
 static void st_log_file_module_free(struct st_log_module * module);
-static void st_log_file_module_write(struct st_log_module * module, struct st_log_message * message);
+static void st_log_file_module_write(struct st_log_module * module, const struct st_log_message * message);
 
 static struct st_log_module_ops st_log_file_module_ops = {
 	.free  = st_log_file_module_free,
@@ -65,14 +65,12 @@ static struct st_log_module_ops st_log_file_module_ops = {
 void st_log_file_module_free(struct st_log_module * module) {
 	struct st_log_file_private * self = module->data;
 
-	if (module->alias)
-		free(module->alias);
+	free(module->alias);
 	module->alias = 0;
 	module->ops = 0;
 	module->data = 0;
 
-	if (self->path)
-		free(self->path);
+	free(self->path);
 	self->path = 0;
 	if (self->fd >= 0)
 		close(self->fd);
@@ -81,23 +79,27 @@ void st_log_file_module_free(struct st_log_module * module) {
 	free(self);
 }
 
-struct st_log_module * st_log_file_new(struct st_log_module * module, const char * alias, enum st_log_level level, const char * path) {
-	if (!module)
-		module = malloc(sizeof(struct st_log_module));
+int st_log_file_new(struct st_log_module * module, const char * alias, enum st_log_level level, const char * path) {
+	if (!module || !alias || !path)
+		return 1;
+
+	int fd = open(path, O_WRONLY | O_APPEND | O_CREAT, 0640);
+	if (fd < 0)
+		return 2;
+
+	struct st_log_file_private * self = malloc(sizeof(struct st_log_file_private));
+	self->path = strdup(path);
+	self->fd = fd;
 
 	module->alias = strdup(alias);
 	module->level = level;
 	module->ops = &st_log_file_module_ops;
-
-	struct st_log_file_private * self = malloc(sizeof(struct st_log_file_private));
-	self->path = strdup(path);
-	self->fd = open(path, O_WRONLY | O_APPEND | O_CREAT, 0640);
-
 	module->data = self;
-	return module;
+
+	return 0;
 }
 
-void st_log_file_module_write(struct st_log_module * module, struct st_log_message * message) {
+void st_log_file_module_write(struct st_log_module * module, const struct st_log_message * message) {
 	struct st_log_file_private * self = module->data;
 
 	struct tm curTime2;

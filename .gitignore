@@ -1,10 +1,11 @@
 .*.swp
 bin/
 build/
+checksum/
 cscope.out
 depend/
 doc/
 lib/
-log/
+logs/
 tags
 tmp*

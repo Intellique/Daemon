@@ -22,47 +22,55 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:29:13 +0100                         *
+*  Last modified: Sun, 22 Jul 2012 12:06:08 +0200                         *
 \*************************************************************************/
 
 // realloc
-#include <malloc.h>
+#include <stdlib.h>
 
-#include <stone/util/hashtable.h>
+#include <libstone/log.h>
+#include <libstone/util/hashtable.h>
 
 #include "common.h"
 
-static int st_log_file_add(struct st_log_driver * driver, const char * alias, enum st_log_level level, struct st_hashtable * params);
+static int st_log_file_add(const char * alias, enum st_log_level level, const struct st_hashtable * params);
 static void st_log_file_init(void) __attribute__((constructor));
 
-
 static struct st_log_driver st_log_file_driver = {
-	.name         = "file",
-	.add          = st_log_file_add,
-	.data         = 0,
-	.cookie       = 0,
-	.api_version  = STONE_LOG_APIVERSION,
-	.modules      = 0,
-	.nb_modules   = 0,
+	.name = "file",
+
+	.add = st_log_file_add,
+
+	.cookie = 0,
+	.api_level = STONE_LOG_API_LEVEL,
+
+	.modules = 0,
+	.nb_modules = 0,
 };
 
 
-int st_log_file_add(struct st_log_driver * driver, const char * alias, enum st_log_level level, struct st_hashtable * params) {
-	if (!driver || !alias || !params)
+int st_log_file_add(const char * alias, enum st_log_level level, const struct st_hashtable * params) {
+	if (!alias || !params)
 		return 1;
 
 	char * path = st_hashtable_value(params, "path");
 	if (!path)
 		return 1;
 
-	driver->modules = realloc(driver->modules, (driver->nb_modules + 1) * sizeof(struct st_log_module));
-	st_log_file_new(driver->modules + driver->nb_modules, alias, level, path);
-	driver->nb_modules++;
+	void * new_addr = realloc(st_log_file_driver.modules, (st_log_file_driver.nb_modules + 1) * sizeof(struct st_log_module));
+	if (new_addr) {
+		st_log_write_all(st_log_level_error, st_log_type_plugin_log, "Error, there is no enough memory to allocate new file module");
+		return 1;
+	}
+
+	st_log_file_driver.modules = new_addr;
+	st_log_file_new(st_log_file_driver.modules + st_log_file_driver.nb_modules, alias, level, path);
+	st_log_file_driver.nb_modules++;
 
 	return 0;
 }
 
-static void st_log_file_init() {
+void st_log_file_init() {
 	st_log_register_driver(&st_log_file_driver);
 }
 

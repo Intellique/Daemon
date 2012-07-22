@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jul 2012 13:38:00 +0200                         *
+*  Last modified: Fri, 20 Jul 2012 23:47:32 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -178,7 +178,13 @@ void st_log_register_driver(struct st_log_driver * driver) {
 			return;
 		}
 
-	st_log_drivers = realloc(st_log_drivers, (st_log_nb_drivers + 1) * sizeof(struct st_log_driver *));
+	void * new_addr = realloc(st_log_drivers, (st_log_nb_drivers + 1) * sizeof(struct st_log_driver *));
+	if (!new_addr) {
+		st_log_write_all(st_log_level_info, st_log_type_daemon, "Driver '%s' cannot be registred because there is not enough memory", driver->name);
+		return;
+	}
+
+	st_log_drivers = new_addr;
 	st_log_drivers[st_log_nb_drivers] = driver;
 	st_log_nb_drivers++;
 

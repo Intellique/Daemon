@@ -1,0 +1,11 @@
+STONE_LOG_FILE_SRC_DIR		:= src/module/log/file
+
+STONE_LOG_FILE_BIN			:= lib/liblog-file.so
+STONE_LOG_FILE_CFLAG		:= -pthread -fPIC -fvisibility=hidden
+STONE_LOG_FILE_LD			:= -pthread -shared
+
+STONE_LOG_FILE_DEPEND_LIB	:=
+
+STONE_LOG_FILE_CHCKSUM_FILE	:= liblog-file.chcksum
+
+BIN_SYMS					+= STONE_LOG_FILE

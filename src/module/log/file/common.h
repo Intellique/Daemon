@@ -22,15 +22,15 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:28:42 +0100                         *
+*  Last modified: Sun, 22 Jul 2012 12:11:30 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LOG_FILE_H__
 #define __STONE_LOG_FILE_H__
 
-#include <stone/log.h>
+#include <libstone/log.h>
 
-struct st_log_module * st_log_file_new(struct st_log_module * module, const char * alias, enum st_log_level level, const char * path);
+int st_log_file_new(struct st_log_module * module, const char * alias, enum st_log_level level, const char * path);
 
 #endif
 
