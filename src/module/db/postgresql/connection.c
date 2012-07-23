@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 20 Jul 2012 18:45:00 +0200                         *
+*  Last modified: Mon, 23 Jul 2012 14:04:40 +0200                         *
 \*************************************************************************/
 
 // PQclear, PQexec, PQfinish, PQresultStatus, PQsetErrorVerbosity
@@ -105,6 +105,7 @@ struct st_database_connection * st_db_postgresql_connnect_init(PGconn * pg_conne
 	self->cached_query = st_hashtable_new2(st_util_string_compute_hash, st_util_basic_free);
 
 	struct st_database_connection * connect = malloc(sizeof(struct st_database_connection));
+	connect->data = self;
 	connect->ops = &st_db_postgresql_connection_ops;
 
 	return connect;
