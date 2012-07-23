@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 22 Jul 2012 12:06:08 +0200                         *
+*  Last modified: Mon, 23 Jul 2012 09:36:16 +0200                         *
 \*************************************************************************/
 
 // realloc
@@ -55,19 +55,20 @@ int st_log_file_add(const char * alias, enum st_log_level level, const struct st
 
 	char * path = st_hashtable_value(params, "path");
 	if (!path)
-		return 1;
+		return 2;
 
 	void * new_addr = realloc(st_log_file_driver.modules, (st_log_file_driver.nb_modules + 1) * sizeof(struct st_log_module));
 	if (new_addr) {
-		st_log_write_all(st_log_level_error, st_log_type_plugin_log, "Error, there is no enough memory to allocate new file module");
-		return 1;
+		st_log_write_all(st_log_level_error, st_log_type_plugin_log, "Error, there is not enough memory to allocate new file module");
+		return 3;
 	}
 
 	st_log_file_driver.modules = new_addr;
-	st_log_file_new(st_log_file_driver.modules + st_log_file_driver.nb_modules, alias, level, path);
-	st_log_file_driver.nb_modules++;
+	int failed = st_log_file_new(st_log_file_driver.modules + st_log_file_driver.nb_modules, alias, level, path);
+	if (!failed)
+		st_log_file_driver.nb_modules++;
 
-	return 0;
+	return failed + 3;
 }
 
 void st_log_file_init() {

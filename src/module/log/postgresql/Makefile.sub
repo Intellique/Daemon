@@ -1,0 +1,11 @@
+STONE_LOG_POSTGRESQL_SRC_DIR		:= src/module/log/postgresql
+
+STONE_LOG_POSTGRESQL_BIN			:= lib/liblog-postgresql.so
+STONE_LOG_POSTGRESQL_CFLAG			:= -pthread -fPIC -fvisibility=hidden
+STONE_LOG_POSTGRESQL_LD				:= -pthread -shared -lpq
+
+STONE_LOG_POSTGRESQL_DEPEND_LIB		:=
+
+STONE_LOG_POSTGRESQL_CHCKSUM_FILE	:= liblog-postgresql.chcksum
+
+BIN_SYMS							+= STONE_LOG_POSTGRESQL
