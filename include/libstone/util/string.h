@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jul 2012 11:35:56 +0200                         *
+*  Last modified: Mon, 23 Jul 2012 18:43:05 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_UTIL_STRING_H__
@@ -60,16 +60,6 @@ void st_util_string_delete_double_char(char * str, char delete_char);
  * \param[in,out] string : a (in)valid UTF8 string
  */
 void st_util_string_fix_invalid_utf8(char * string);
-
-/**
- * \brief Justify \a str with a width \a width
- *
- * \param[in] str : a string
- * \param[in] width : width of each lines
- * \param[out] nb_lines : get the numbers of lines returned
- * \returns an array which contains each lines justified
- */
-char ** st_util_string_justified(const char * str, unsigned int width, unsigned int * nb_lines);
 
 /**
  * \brief Remove characters \a trim at the beginning and at the end of \a str

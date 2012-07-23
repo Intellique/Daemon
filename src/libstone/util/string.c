@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jul 2012 13:38:33 +0200                         *
+*  Last modified: Mon, 23 Jul 2012 18:43:07 +0200                         *
 \*************************************************************************/
 
 // free, realloc
@@ -107,78 +107,6 @@ void st_util_string_fix_invalid_utf8(char * string) {
 		else
 			*ptr = '\0';
 	}
-}
-
-char ** st_util_string_justified(const char * str, unsigned int width, unsigned int * nb_lines) {
-	char * str_dup = strdup(str);
-
-	char ** words = 0;
-	unsigned int nb_words = 0;
-
-	char * ptr = strtok(str_dup, " ");
-	while (ptr) {
-		words = realloc(words, (nb_words + 1) * sizeof(char *));
-		words[nb_words] = ptr;
-		nb_words++;
-
-		ptr = strtok(0, " ");
-	}
-
-	char ** lines = 0;
-	*nb_lines = 0;
-	unsigned int index_words = 0, index_words2 = 0;
-	while (index_words < nb_words) {
-		size_t current_length_line = 0;
-
-		unsigned int nb_space = 0;
-		while (index_words < nb_words) {
-			size_t word_length = strlen(words[index_words]);
-
-			if (current_length_line > 0)
-				nb_space++;
-
-			if (current_length_line + word_length + nb_space > width)
-				break;
-
-			current_length_line += word_length;
-			index_words++;
-		}
-
-		double small_space = 1;
-		if (current_length_line + nb_space > width * 0.82 || index_words < nb_words) {
-			small_space = width - current_length_line;
-			if (index_words - index_words2 > 2)
-				small_space /= index_words - index_words2 - 1;
-		}
-
-		char * line = malloc(width + 1);
-		strcpy(line, words[index_words2]);
-		index_words2++;
-
-		int total_spaces = 0;
-		unsigned int i = 1;
-		while (index_words2 < index_words) {
-			int nb_space = i * small_space - total_spaces;
-			total_spaces += nb_space;
-
-			size_t current_line_length = strlen(line);
-			memset(line + current_line_length, ' ', nb_space);
-			line[current_line_length + nb_space] = '\0';
-
-			strcat(line, words[index_words2]);
-
-			index_words2++, i++;
-		}
-
-		lines = realloc(lines, (*nb_lines + 1) * sizeof(char *));
-		lines[*nb_lines] = line;
-		(*nb_lines)++;
-	}
-
-	free(str_dup);
-	free(words);
-
-	return lines;
 }
 
 void st_util_string_trim(char * str, char trim) {
