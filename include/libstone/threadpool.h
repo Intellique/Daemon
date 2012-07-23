@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 03 Jul 2012 23:55:36 +0200                         *
+*  Last modified: Mon, 23 Jul 2012 18:32:50 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_THREADPOOL_H__
@@ -33,12 +33,13 @@
  *
  * \param[in] function : call this function from another thread
  * \param[in] arg : call this function by passing this argument
+ * \returns 0 if OK
  *
  * \note this function reuse an unused thread or create new one
  *
  * \note All threads which are not used while 5 minutes are stopped
  */
-void st_threadpool_run(void (*function)(void * arg), void * arg);
+int st_threadpool_run(void (*function)(void * arg), void * arg);
 
 #endif
 

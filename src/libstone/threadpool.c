@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jul 2012 13:38:11 +0200                         *
+*  Last modified: Mon, 23 Jul 2012 18:34:52 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -56,7 +56,7 @@ static unsigned int st_threadpool_nb_threads = 0;
 static pthread_mutex_t st_threadpool_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
 
-void st_threadpool_run(void (*function)(void * arg), void * arg) {
+int st_threadpool_run(void (*function)(void * arg), void * arg) {
 	pthread_mutex_lock(&st_threadpool_lock);
 	unsigned int i;
 	for (i = 0; i < st_threadpool_nb_threads; i++) {
@@ -72,7 +72,7 @@ void st_threadpool_run(void (*function)(void * arg), void * arg) {
 
 			pthread_mutex_unlock(&st_threadpool_lock);
 
-			return;
+			return 0;
 		}
 	}
 
@@ -94,11 +94,17 @@ void st_threadpool_run(void (*function)(void * arg), void * arg) {
 
 			pthread_attr_destroy(&attr);
 
-			return;
+			return 0;
 		}
 	}
 
-	st_threadpool_threads = realloc(st_threadpool_threads, (st_threadpool_nb_threads + 1) * sizeof(struct st_threadpool_thread *));
+	void * new_addr = realloc(st_threadpool_threads, (st_threadpool_nb_threads + 1) * sizeof(struct st_threadpool_thread *));
+	if (!new_addr) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Error, not enought memory to start new thread");
+		return 1;
+	}
+
+	st_threadpool_threads = new_addr;
 	struct st_threadpool_thread * th = st_threadpool_threads[st_threadpool_nb_threads] = malloc(sizeof(struct st_threadpool_thread));
 	st_threadpool_nb_threads++;
 
@@ -118,6 +124,8 @@ void st_threadpool_run(void (*function)(void * arg), void * arg) {
 	pthread_mutex_unlock(&st_threadpool_lock);
 
 	pthread_attr_destroy(&attr);
+
+	return 0;
 }
 
 void * st_threadpool_work(void * arg) {
