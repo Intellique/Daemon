@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jul 2012 11:54:02 +0200                         *
+*  Last modified: Tue, 24 Jul 2012 13:07:08 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1084,20 +1084,15 @@ int st_db_postgresql_refresh_job(struct st_database_connection * connection, str
 	st_db_postgresql_check(connection);
 
 	const char * query = "select_job_since_by_id";
-	st_db_postgresql_prepare(self, query, "SELECT status, update, nextstart FROM job WHERE id = $1 AND update >= $2");
+	st_db_postgresql_prepare(self, query, "SELECT status, update, nextstart FROM job WHERE id = $1");
 
 	char * jobid = 0;
 	asprintf(&jobid, "%ld", job->id);
 
-	char updated[24];
-	struct tm tm_updated;
-	localtime_r(&job->updated, &tm_updated);
-	strftime(updated, 23, "%F %T", &tm_updated);
-
 	st_db_postgresql_start_transaction(connection);
 
-	const char * param[] = { jobid, updated };
-	PGresult * result = PQexecPrepared(self->db_con, query, 2, param, 0, 0, 0);
+	const char * param[] = { jobid };
+	PGresult * result = PQexecPrepared(self->db_con, query, 1, param, 0, 0, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)
@@ -2036,7 +2031,7 @@ int st_db_postgresql_update_job(struct st_database_connection * connection, stru
 
 	PQclear(result);
 
-	if (job->db_status != job->sched_status && job->sched_status == st_job_status_running) {
+	if (job->db_status != job->sched_status && job->sched_status == st_job_status_stopped) {
 		free(jobid);
 		free(crepetition);
 		free(cdone);

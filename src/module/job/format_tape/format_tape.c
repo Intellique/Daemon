@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 12 Jul 2012 17:33:33 +0200                         *
+*  Last modified: Tue, 24 Jul 2012 13:49:30 +0200                         *
 \*************************************************************************/
 
 // sscanf
@@ -99,6 +99,7 @@ int st_job_format_tape_run(struct st_job * job) {
 	struct st_drive * drive = 0;
 	struct st_slot * slot = 0;
 	short stop = 0, has_alert_user = 0;
+	short has_changer_lock = 0, has_drive_lock = 0;
 	unsigned int i;
 
 	while (!stop) {
@@ -141,6 +142,7 @@ int st_job_format_tape_run(struct st_job * job) {
 						drive = slot->drive;
 						if (drive && !drive->lock->ops->trylock(drive->lock)) {
 							stop = 1;
+							has_drive_lock = 1;
 							break;
 						} else if (drive) {
 							sleep(5);
@@ -171,6 +173,7 @@ int st_job_format_tape_run(struct st_job * job) {
 
 				if (drive) {
 					stop = 1;
+					has_drive_lock = 1;
 				} else {
 					slot->lock->ops->unlock(slot->lock);
 					sleep(5);
@@ -180,8 +183,10 @@ int st_job_format_tape_run(struct st_job * job) {
 		}
 	}
 
-	if ((drive->slot->tape && drive->slot->tape != job->tape) || !drive->slot->tape)
+	if ((drive->slot->tape && drive->slot->tape != job->tape) || !drive->slot->tape) {
 		changer->lock->ops->lock(changer->lock);
+		has_changer_lock = 1;
+	}
 
 	if (!self->stop_request && drive->slot->tape && drive->slot->tape != job->tape) {
 		struct st_slot * slot_to = 0;
@@ -212,12 +217,14 @@ int st_job_format_tape_run(struct st_job * job) {
 			job->db_ops->add_record(job, st_log_level_info, "Unloading tape from drive #%td to slot #%td", drive - changer->drives, slot_to - changer->slots);
 			changer->ops->unload(changer, drive, slot_to);
 			slot_to->lock->ops->unlock(slot_to->lock);
+			has_changer_lock = 0;
 		} else if (!changer->ops->can_load()) {
 			drive->ops->eject(drive);
 
 			job->db_ops->add_record(job, st_log_level_info, "Unloading tape from drive #%td", drive - changer->drives);
 			changer->ops->unload(changer, drive, 0);
 			slot_to->lock->ops->unlock(slot_to->lock);
+			has_changer_lock = 0;
 		} else {
 			job->sched_status = st_job_status_error;
 			job->db_ops->add_record(job, st_log_level_error, "Fatal error: There is no place for unloading tape (%s)", drive->slot->tape->name);
@@ -225,6 +232,8 @@ int st_job_format_tape_run(struct st_job * job) {
 			// release lock
 			changer->lock->ops->unlock(changer->lock);
 			drive->lock->ops->unlock(drive->lock);
+			has_drive_lock = 0;
+			has_changer_lock = 0;
 
 			return 1;
 		}
@@ -235,6 +244,7 @@ int st_job_format_tape_run(struct st_job * job) {
 		changer->ops->load(changer, slot, drive);
 		slot->lock->ops->unlock(slot->lock);
 		changer->lock->ops->unlock(changer->lock);
+		has_changer_lock = 0;
 
 		drive->ops->reset(drive);
 	}
@@ -305,10 +315,10 @@ int st_job_format_tape_run(struct st_job * job) {
 	if (!self->stop_request)
 		status = st_tape_write_header(drive, job->pool);
 
-	if (changer && changer->lock->locked)
+	if (changer && has_changer_lock)
 		changer->lock->ops->unlock(changer->lock);
 
-	if (drive && drive->lock->locked)
+	if (drive && has_drive_lock)
 		drive->lock->ops->unlock(drive->lock);
 
 	if (status)
@@ -336,7 +346,7 @@ int st_job_format_tape_run(struct st_job * job) {
 
 int st_job_format_tape_stop(struct st_job * job) {
 	struct st_job_format_tape_private * self = job->data;
-	if (self) {
+	if (self && !self->stop_request) {
 		self->stop_request = 1;
 		job->db_ops->add_record(job, st_log_level_warning, "Job: Stop requested");
 		return 0;
