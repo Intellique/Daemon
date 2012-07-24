@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jul 2012 18:40:04 +0200                         *
+*  Last modified: Fri, 20 Jul 2012 13:30:34 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -426,6 +426,11 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 	if (header->is_label)
 		return 0;
 
+	if (header->path)
+		st_util_string_delete_double_char(header->path, '/');
+	if (header->link)
+		st_util_string_delete_double_char(header->link, '/');
+
 	struct st_job_restore_private * jp = job->data;
 	int status = 0;
 
@@ -490,7 +495,8 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 	} else if (S_ISDIR(header->mode)) {
 		if (!access(path, F_OK))
 			return 0;
-		status = mkdir(path, header->mode & 0777);
+
+		status = st_job_restore_mkdir(path);
 		if (status) {
 			switch (errno) {
 				default:
