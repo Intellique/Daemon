@@ -22,32 +22,45 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jul 2012 23:23:59 +0200                         *
+*  Last modified: Tue, 24 Jul 2012 23:43:26 +0200                         *
 \*************************************************************************/
 
-#ifndef __STONECONFIG_SCSI_H__
-#define __STONECONFIG_SCSI_H__
+// strcmp
+#include <string.h>
 
-#include <libstone/library/drive.h>
-#include <stoned/library/changer.h>
+#include <libstone/library/changer.h>
 
-/**
- * \brief Inquiry the changer
- *
- * \param[in] filename : a generic scsi filename which used by a changer
- * \param[out] changer : an already allocated changer
- * \returns 0 if ok
- */
-int stcfg_scsi_loaderinfo(const char * filename, struct st_changer * changer);
+static const struct st_changer_status2 {
+	const char * name;
+	enum st_changer_status status;
+} st_library_status[] = {
+	{ "error",		ST_CHANGER_ERROR },
+	{ "exporting",	ST_CHANGER_EXPORTING },
+	{ "idle",		ST_CHANGER_IDLE },
+	{ "importing",	ST_CHANGER_IMPORTING },
+	{ "loading",	ST_CHANGER_LOADING },
+	{ "unknown",	ST_CHANGER_UNKNOWN },
+	{ "unloading",	ST_CHANGER_UNLOADING },
 
-/**
- * \brief Inquiry the drive
- *
- * \param[in] filename : a generic scsi filename which used by a tape drive
- * \param[out] drive : an already allocated drive
- * \returns 0 if ok
- */
-int stcfg_scsi_tapeinfo(const char * filename, struct st_drive * drive);
+	{ 0, ST_CHANGER_UNKNOWN },
+};
 
-#endif
+
+const char * st_changer_status_to_string(enum st_changer_status status) {
+	const struct st_changer_status2 * ptr;
+	for (ptr = st_library_status; ptr->name; ptr++)
+		if (ptr->status == status)
+			return ptr->name;
+
+	return 0;
+}
+
+enum st_changer_status st_changer_string_to_status(const char * status) {
+	const struct st_changer_status2 * ptr;
+	for (ptr = st_library_status; ptr->name; ptr++)
+		if (!strcmp(ptr->name, status))
+			return ptr->status;
+
+	return ptr->status;
+}
 

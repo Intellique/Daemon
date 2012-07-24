@@ -22,32 +22,18 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jul 2012 23:23:59 +0200                         *
+*  Last modified: Tue, 24 Jul 2012 22:59:10 +0200                         *
 \*************************************************************************/
 
-#ifndef __STONECONFIG_SCSI_H__
-#define __STONECONFIG_SCSI_H__
+#ifndef __STONED_LIBRARY_CHANGER_H__
+#define __STONED_LIBRARY_CHANGER_H__
 
-#include <libstone/library/drive.h>
-#include <stoned/library/changer.h>
+#include <libstone/library/changer.h>
 
-/**
- * \brief Inquiry the changer
- *
- * \param[in] filename : a generic scsi filename which used by a changer
- * \param[out] changer : an already allocated changer
- * \returns 0 if ok
- */
-int stcfg_scsi_loaderinfo(const char * filename, struct st_changer * changer);
-
-/**
- * \brief Inquiry the drive
- *
- * \param[in] filename : a generic scsi filename which used by a tape drive
- * \param[out] drive : an already allocated drive
- * \returns 0 if ok
- */
-int stcfg_scsi_tapeinfo(const char * filename, struct st_drive * drive);
+struct st_changer * st_changer_get_by_media(struct st_media * media);
+struct st_changer * st_changer_get_first_changer(void);
+struct st_changer * st_changer_get_next_changer(struct st_changer * changer);
+int st_changer_setup(void);
 
 #endif
 

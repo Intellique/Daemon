@@ -22,32 +22,44 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jul 2012 23:23:59 +0200                         *
+*  Last modified: Tue, 24 Jul 2012 23:42:26 +0200                         *
 \*************************************************************************/
 
-#ifndef __STONECONFIG_SCSI_H__
-#define __STONECONFIG_SCSI_H__
+// strcmp
+#include <string.h>
 
-#include <libstone/library/drive.h>
-#include <stoned/library/changer.h>
+#include <libstone/library/slot.h>
 
-/**
- * \brief Inquiry the changer
- *
- * \param[in] filename : a generic scsi filename which used by a changer
- * \param[out] changer : an already allocated changer
- * \returns 0 if ok
- */
-int stcfg_scsi_loaderinfo(const char * filename, struct st_changer * changer);
+static const struct st_slot_type2 {
+	const char * name;
+	enum st_slot_type type;
+} st_slot_types[] = {
+	{ "drive slot",         st_slot_type_drive },
+	{ "import-export slot", st_slot_type_import_export },
+	{ "storage slot",       st_slot_type_storage },
+	{ "storage slot",       st_slot_type_storage },
+	{ "transport slot",     st_slot_type_import_export },
+	{ "unknown slot",       st_slot_type_unkown },
 
-/**
- * \brief Inquiry the drive
- *
- * \param[in] filename : a generic scsi filename which used by a tape drive
- * \param[out] drive : an already allocated drive
- * \returns 0 if ok
- */
-int stcfg_scsi_tapeinfo(const char * filename, struct st_drive * drive);
+	{ 0, st_slot_type_unkown },
+};
 
-#endif
+
+const char * st_slot_type_to_string(enum st_slot_type type) {
+	const struct st_slot_type2 * ptr;
+	for (ptr = st_slot_types; ptr->name; ptr++)
+		if (ptr->type == type)
+			return ptr->name;
+
+	return 0;
+}
+
+enum st_slot_type st_slot_string_to_type(const char * type) {
+	const struct st_slot_type2 * ptr;
+	for (ptr = st_slot_types; ptr->name; ptr++)
+		if (!strcmp(type, ptr->name))
+			return ptr->type;
+
+	return st_slot_type_unkown;
+}
 

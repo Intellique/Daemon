@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jul 2012 13:29:27 +0200                         *
+*  Last modified: Tue, 24 Jul 2012 23:23:20 +0200                         *
 \*************************************************************************/
 
 // glob, globfree
@@ -33,15 +33,13 @@
 #include <stdlib.h>
 // strcat, strchr, strcpy
 #include <string.h>
-// time
-#include <time.h>
 // readlink
 #include <unistd.h>
 
 #include <libstone/database.h>
+#include <libstone/library/drive.h>
 #include <libstone/log.h>
-#include <stone/library/changer.h>
-#include <stone/library/drive.h>
+#include <stoned/library/changer.h>
 
 #include "scan.h"
 #include "scsi.h"
@@ -96,7 +94,6 @@ int stcfg_scan() {
 		strcpy(device, "/dev/n");
 		strcat(device, ptr);
 
-		drives[i].id = -1;
 		drives[i].device = strdup(device);
 		drives[i].scsi_device = strdup(scsi_device);
 		drives[i].status = ST_DRIVE_UNKNOWN;
@@ -114,20 +111,6 @@ int stcfg_scan() {
 		drives[i].slot = 0;
 
 		drives[i].data = 0;
-		drives[i].file_position = 0;
-		drives[i].nb_files = 0;
-		drives[i].block_number = 0;
-
-		drives[i].is_bottom_of_tape = 0;
-		drives[i].is_end_of_file = 0;
-		drives[i].is_writable = 0;
-		drives[i].is_online = 0;
-		drives[i].is_door_opened = 0;
-
-		drives[i].block_size = 0;
-		drives[i].density_code = 0;
-		drives[i].operation_duration = 0;
-		drives[i].last_clean = time(0);
 	}
 	globfree(&gl);
 
@@ -164,7 +147,6 @@ int stcfg_scan() {
 		strcpy(device, "/dev");
 		strcat(device, ptr);
 
-		changers[i].id = -1;
 		changers[i].device = strdup(device);
 		changers[i].status = ST_CHANGER_UNKNOWN;
 		changers[i].model = 0;
@@ -184,8 +166,6 @@ int stcfg_scan() {
 		changers[i].nb_slots = 0;
 
 		changers[i].data = 0;
-		changers[i].lock = 0;
-		changers[i].transport_address = 0;
 	}
 	globfree(&gl);
 
@@ -223,7 +203,6 @@ int stcfg_scan() {
 			if (!drives[j].changer) {
 				drives[j].changer = changers + i;
 
-				changers[i].id = -1;
 				changers[i].device = strdup("");
 				changers[i].status = ST_CHANGER_UNKNOWN;
 				changers[i].model = strdup(drives[j].model);

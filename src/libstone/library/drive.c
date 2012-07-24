@@ -22,88 +22,50 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 31 May 2012 16:24:12 +0200                         *
+*  Last modified: Tue, 24 Jul 2012 23:45:00 +0200                         *
 \*************************************************************************/
 
-#ifndef __STONE_LIBRARY_CHANGER_H__
-#define __STONE_LIBRARY_CHANGER_H__
+// strcmp
+#include <string.h>
 
-struct st_drive;
-struct st_pool;
-struct st_ressource;
-struct st_slot;
-struct st_tape;
+#include <libstone/library/drive.h>
 
-enum st_changer_status {
-	ST_CHANGER_ERROR,
-	ST_CHANGER_EXPORTING,
-	ST_CHANGER_IDLE,
-	ST_CHANGER_IMPORTING,
-	ST_CHANGER_LOADING,
-	ST_CHANGER_UNKNOWN,
-	ST_CHANGER_UNLOADING,
-};
+static const struct st_drive_status2 {
+	const char * name;
+	enum st_drive_status status;
+} st_drive_status[] = {
+	{ "cleaning",		ST_DRIVE_CLEANING },
+	{ "empty idle",		ST_DRIVE_EMPTY_IDLE },
+	{ "erasing",		ST_DRIVE_ERASING },
+	{ "error",			ST_DRIVE_ERROR },
+	{ "loaded idle",	ST_DRIVE_LOADED_IDLE },
+	{ "loading",		ST_DRIVE_LOADING },
+	{ "positioning",	ST_DRIVE_POSITIONING },
+	{ "reading",		ST_DRIVE_READING },
+	{ "rewinding",		ST_DRIVE_REWINDING },
+	{ "unknown",		ST_DRIVE_UNKNOWN },
+	{ "unloading",		ST_DRIVE_UNLOADING },
+	{ "writing",		ST_DRIVE_WRITING },
 
-struct st_changer {
-	long id;
-	char * device;
-	enum st_changer_status status;
-	char * model;
-	char * vendor;
-	char * revision;
-	char * serial_number;
-	int barcode;
-
-	int host;
-	int target;
-	int channel;
-	int bus;
-
-	struct st_drive * drives;
-	unsigned int nb_drives;
-	struct st_slot * slots;
-	unsigned int nb_slots;
-	char enabled;
-
-	struct st_changer_ops {
-		int (*can_load)();
-		struct st_slot * (*get_tape)(struct st_changer * ch, struct st_tape * tape);
-		int (*load)(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
-		int (*sync_db)(struct st_changer * ch);
-		int (*unload)(struct st_changer * ch, struct st_drive * from, struct st_slot * to);
-	} * ops;
-	void * data;
-
-	struct st_ressource * lock;
-
-	// for scsi use only
-	int transport_address;
-};
-
-struct st_slot {
-	long id;
-	struct st_changer * changer;
-	struct st_drive * drive;
-	struct st_tape * tape;
-
-	char volume_name[37];
-	char full;
-	char is_import_export_slot;
-
-	struct st_ressource * lock;
-
-	// for scsi use only
-	int address;
-	int src_address;
+	{ 0, ST_DRIVE_UNKNOWN },
 };
 
 
-struct st_changer * st_changer_get_by_tape(struct st_tape * tape);
-struct st_changer * st_changer_get_first_changer(void);
-struct st_changer * st_changer_get_next_changer(struct st_changer * changer);
-const char * st_changer_status_to_string(enum st_changer_status status);
-enum st_changer_status st_changer_string_to_status(const char * status);
-int st_changer_setup(void);
+const char * st_drive_status_to_string(enum st_drive_status status) {
+	const struct st_drive_status2 * ptr;
+	for (ptr = st_drive_status; ptr->name; ptr++)
+		if (ptr->status == status)
+			return ptr->name;
 
-#endif
+	return 0;
+}
+
+enum st_drive_status st_drive_string_to_status(const char * status) {
+	const struct st_drive_status2 * ptr;
+	for (ptr = st_drive_status; ptr->name; ptr++)
+		if (!strcmp(ptr->name, status))
+			return ptr->status;
+
+	return ptr->status;
+}
 

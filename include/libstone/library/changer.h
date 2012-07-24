@@ -22,32 +22,60 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jul 2012 23:23:59 +0200                         *
+*  Last modified: Tue, 24 Jul 2012 22:59:07 +0200                         *
 \*************************************************************************/
 
-#ifndef __STONECONFIG_SCSI_H__
-#define __STONECONFIG_SCSI_H__
+#ifndef __STONE_LIBRARY_CHANGER_H__
+#define __STONE_LIBRARY_CHANGER_H__
 
-#include <libstone/library/drive.h>
-#include <stoned/library/changer.h>
+struct st_database_connection;
+struct st_drive;
+struct st_media;
+struct st_slot;
 
-/**
- * \brief Inquiry the changer
- *
- * \param[in] filename : a generic scsi filename which used by a changer
- * \param[out] changer : an already allocated changer
- * \returns 0 if ok
- */
-int stcfg_scsi_loaderinfo(const char * filename, struct st_changer * changer);
+enum st_changer_status {
+	ST_CHANGER_ERROR,
+	ST_CHANGER_EXPORTING,
+	ST_CHANGER_IDLE,
+	ST_CHANGER_IMPORTING,
+	ST_CHANGER_LOADING,
+	ST_CHANGER_UNKNOWN,
+	ST_CHANGER_UNLOADING,
+};
 
-/**
- * \brief Inquiry the drive
- *
- * \param[in] filename : a generic scsi filename which used by a tape drive
- * \param[out] drive : an already allocated drive
- * \returns 0 if ok
- */
-int stcfg_scsi_tapeinfo(const char * filename, struct st_drive * drive);
+struct st_changer {
+	char * device;
+	enum st_changer_status status;
+	unsigned char enabled;
+
+	char * model;
+	char * vendor;
+	char * revision;
+	char * serial_number;
+	int barcode;
+
+	int host;
+	int target;
+	int channel;
+	int bus;
+
+	struct st_drive * drives;
+	unsigned int nb_drives;
+
+	struct st_slot * slots;
+	unsigned int nb_slots;
+
+	struct st_changer_ops {
+		int (*load_media)(struct st_changer * ch, struct st_media * from, struct st_drive * to);
+		int (*load_slot)(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
+		int (*sync_db)(struct st_changer * ch, struct st_database_connection * connection);
+		int (*unload)(struct st_changer * ch, struct st_drive * from);
+	} * ops;
+	void * data;
+};
+
+const char * st_changer_status_to_string(enum st_changer_status status);
+enum st_changer_status st_changer_string_to_status(const char * status);
 
 #endif
 

@@ -1,0 +1,11 @@
+STONED_SRC_DIR		:= src/stoned
+
+STONED_BIN			:= bin/stoned
+STONED_CFLAG		:=
+STONED_LD			:= -lstone -ljansson -Llib
+
+STONED_DEPEND_LIB	:= lib/libstone.so
+
+STONED_CHCKSUM_FILE	:= stoned.chcksum
+
+BIN_SYMS			+= STONED
