@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jul 2012 22:59:07 +0200                         *
+*  Last modified: Wed, 25 Jul 2012 20:56:43 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_CHANGER_H__
@@ -34,24 +34,52 @@ struct st_media;
 struct st_slot;
 
 enum st_changer_status {
-	ST_CHANGER_ERROR,
-	ST_CHANGER_EXPORTING,
-	ST_CHANGER_IDLE,
-	ST_CHANGER_IMPORTING,
-	ST_CHANGER_LOADING,
-	ST_CHANGER_UNKNOWN,
-	ST_CHANGER_UNLOADING,
+	st_changer_error,
+	st_changer_exporting,
+	st_changer_idle,
+	st_changer_importing,
+	st_changer_loading,
+	st_changer_unknown,
+	st_changer_unloading,
 };
 
+/**
+ * \struct st_changer
+ * \brief Common structure for all changers
+ */
 struct st_changer {
+	/**
+	 * \brief Filename of device
+	 */
 	char * device;
+	/**
+	 * \brief Status of changer
+	 */
 	enum st_changer_status status;
+	/**
+	 * \brief Can use this \a changer
+	 */
 	unsigned char enabled;
 
+	/**
+	 * \brief Model of this \a changer
+	 */
 	char * model;
+	/**
+	 * \brief Vendor of this \a changer
+	 */
 	char * vendor;
+	/**
+	 * \brief Revision of this \a changer
+	 */
 	char * revision;
+	/**
+	 * \brief Serial number of this \a changer
+	 */
 	char * serial_number;
+	/**
+	 * \brief Vendor of this \a changer
+	 */
 	int barcode;
 
 	int host;
@@ -59,16 +87,54 @@ struct st_changer {
 	int channel;
 	int bus;
 
+	/**
+	 * \brief Drives into this \a changer
+	 */
 	struct st_drive * drives;
+	/**
+	 * \brief Number of drives into this \a changer
+	 */
 	unsigned int nb_drives;
 
+	/**
+	 * \brief Slots into this \a changer
+	 */
 	struct st_slot * slots;
+	/**
+	 * \brief Number of slots into this \a changer
+	 */
 	unsigned int nb_slots;
 
+	/**
+	 * \struct st_changer_ops
+	 * \brief Operations associated to this \a changer
+	 */
 	struct st_changer_ops {
+		/**
+		 * \brief Load a media
+		 *
+		 * \param[in] ch : a \a changer
+		 * \param[in] from : load this media
+		 * \param[in] to : a destination drive
+		 * \returns 0 if ok
+		 */
 		int (*load_media)(struct st_changer * ch, struct st_media * from, struct st_drive * to);
+		/**
+		 * \brief Load a media by the slot which contains it
+		 *
+		 * \param[in] ch : a \a changer
+		 * \param[in] from : load this media
+		 * \param[in] to : a destination drive
+		 * \returns 0 if ok
+		 */
 		int (*load_slot)(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
-		int (*sync_db)(struct st_changer * ch, struct st_database_connection * connection);
+		/**
+		 * \brief Unload media from drive
+		 *
+		 * \param[in] ch : a \a changer
+		 * \param[in] from : \a drive
+		 * \returns 0 if ok
+		 */
 		int (*unload)(struct st_changer * ch, struct st_drive * from);
 	} * ops;
 	void * data;

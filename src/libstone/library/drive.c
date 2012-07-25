@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jul 2012 23:45:00 +0200                         *
+*  Last modified: Wed, 25 Jul 2012 09:39:55 +0200                         *
 \*************************************************************************/
 
 // strcmp
@@ -34,20 +34,20 @@ static const struct st_drive_status2 {
 	const char * name;
 	enum st_drive_status status;
 } st_drive_status[] = {
-	{ "cleaning",		ST_DRIVE_CLEANING },
-	{ "empty idle",		ST_DRIVE_EMPTY_IDLE },
-	{ "erasing",		ST_DRIVE_ERASING },
-	{ "error",			ST_DRIVE_ERROR },
-	{ "loaded idle",	ST_DRIVE_LOADED_IDLE },
-	{ "loading",		ST_DRIVE_LOADING },
-	{ "positioning",	ST_DRIVE_POSITIONING },
-	{ "reading",		ST_DRIVE_READING },
-	{ "rewinding",		ST_DRIVE_REWINDING },
-	{ "unknown",		ST_DRIVE_UNKNOWN },
-	{ "unloading",		ST_DRIVE_UNLOADING },
-	{ "writing",		ST_DRIVE_WRITING },
+	{ "cleaning",		st_drive_cleaning },
+	{ "empty idle",		st_drive_empty_idle },
+	{ "erasing",		st_drive_erasing },
+	{ "error",			st_drive_error },
+	{ "loaded idle",	st_drive_loaded_idle },
+	{ "loading",		st_drive_loading },
+	{ "positioning",	st_drive_positioning },
+	{ "reading",		st_drive_reading },
+	{ "rewinding",		st_drive_rewinding },
+	{ "unknown",		st_drive_unknown },
+	{ "unloading",		st_drive_unloading },
+	{ "writing",		st_drive_writing },
 
-	{ 0, ST_DRIVE_UNKNOWN },
+	{ 0, st_drive_unknown },
 };
 
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jul 2012 23:43:26 +0200                         *
+*  Last modified: Wed, 25 Jul 2012 09:29:53 +0200                         *
 \*************************************************************************/
 
 // strcmp
@@ -34,15 +34,15 @@ static const struct st_changer_status2 {
 	const char * name;
 	enum st_changer_status status;
 } st_library_status[] = {
-	{ "error",		ST_CHANGER_ERROR },
-	{ "exporting",	ST_CHANGER_EXPORTING },
-	{ "idle",		ST_CHANGER_IDLE },
-	{ "importing",	ST_CHANGER_IMPORTING },
-	{ "loading",	ST_CHANGER_LOADING },
-	{ "unknown",	ST_CHANGER_UNKNOWN },
-	{ "unloading",	ST_CHANGER_UNLOADING },
+	{ "error",		st_changer_error },
+	{ "exporting",	st_changer_exporting },
+	{ "idle",		st_changer_idle },
+	{ "importing",	st_changer_importing },
+	{ "loading",	st_changer_loading },
+	{ "unknown",	st_changer_unknown },
+	{ "unloading",	st_changer_unloading },
 
-	{ 0, ST_CHANGER_UNKNOWN },
+	{ 0, st_changer_unknown },
 };
 
 
@@ -52,10 +52,13 @@ const char * st_changer_status_to_string(enum st_changer_status status) {
 		if (ptr->status == status)
 			return ptr->name;
 
-	return 0;
+	return "unknown";
 }
 
 enum st_changer_status st_changer_string_to_status(const char * status) {
+	if (!status)
+		return st_changer_unknown;
+
 	const struct st_changer_status2 * ptr;
 	for (ptr = st_library_status; ptr->name; ptr++)
 		if (!strcmp(ptr->name, status))

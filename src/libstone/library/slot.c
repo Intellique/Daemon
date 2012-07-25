@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jul 2012 23:42:26 +0200                         *
+*  Last modified: Wed, 25 Jul 2012 11:33:16 +0200                         *
 \*************************************************************************/
 
 // strcmp
@@ -51,10 +51,13 @@ const char * st_slot_type_to_string(enum st_slot_type type) {
 		if (ptr->type == type)
 			return ptr->name;
 
-	return 0;
+	return "unknown slot";
 }
 
 enum st_slot_type st_slot_string_to_type(const char * type) {
+	if (!type)
+		return st_slot_type_unkown;
+
 	const struct st_slot_type2 * ptr;
 	for (ptr = st_slot_types; ptr->name; ptr++)
 		if (!strcmp(type, ptr->name))

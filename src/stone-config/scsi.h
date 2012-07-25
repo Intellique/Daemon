@@ -28,8 +28,8 @@
 #ifndef __STONECONFIG_SCSI_H__
 #define __STONECONFIG_SCSI_H__
 
+#include <libstone/library/changer.h>
 #include <libstone/library/drive.h>
-#include <stoned/library/changer.h>
 
 /**
  * \brief Inquiry the changer

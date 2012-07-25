@@ -33,6 +33,7 @@
 struct st_changer * st_changer_get_by_media(struct st_media * media);
 struct st_changer * st_changer_get_first_changer(void);
 struct st_changer * st_changer_get_next_changer(struct st_changer * changer);
+
 int st_changer_setup(void);
 
 #endif

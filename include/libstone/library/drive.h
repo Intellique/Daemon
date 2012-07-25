@@ -22,11 +22,11 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jul 2012 18:16:23 +0200                         *
+*  Last modified: Wed, 25 Jul 2012 13:04:30 +0200                         *
 \*************************************************************************/
 
-#ifndef __STONED_LIBRARY_DRIVE_H__
-#define __STONED_LIBRARY_DRIVE_H__
+#ifndef __STONE_LIBRARY_DRIVE_H__
+#define __STONE_LIBRARY_DRIVE_H__
 
 // ssize_t
 #include <sys/types.h>
@@ -37,18 +37,18 @@ struct st_slot;
 struct st_stream_reader;
 
 enum st_drive_status {
-	ST_DRIVE_CLEANING,
-	ST_DRIVE_EMPTY_IDLE,
-	ST_DRIVE_ERASING,
-	ST_DRIVE_ERROR,
-	ST_DRIVE_LOADED_IDLE,
-	ST_DRIVE_LOADING,
-	ST_DRIVE_POSITIONING,
-	ST_DRIVE_READING,
-	ST_DRIVE_REWINDING,
-	ST_DRIVE_UNKNOWN,
-	ST_DRIVE_UNLOADING,
-	ST_DRIVE_WRITING,
+	st_drive_cleaning,
+	st_drive_empty_idle,
+	st_drive_erasing,
+	st_drive_error,
+	st_drive_loaded_idle,
+	st_drive_loading,
+	st_drive_positioning,
+	st_drive_reading,
+	st_drive_rewinding,
+	st_drive_unknown,
+	st_drive_unloading,
+	st_drive_writing,
 };
 
 struct st_drive {
@@ -72,15 +72,10 @@ struct st_drive {
 
 	struct st_drive_ops {
 		int (*eject)(struct st_drive * drive);
-		struct st_stream_reader * (*get_reader)(struct st_drive * drive);
-		struct st_stream_writer * (*get_writer)(struct st_drive * drive);
-
-		int (*eod)(struct st_drive * drive);
-		int (*read_mam)(struct st_drive * drive);
-		void (*reset)(struct st_drive * drive);
-		int (*rewind_file)(struct st_drive * drive);
-		int (*rewind_tape)(struct st_drive * drive);
-		int (*set_file_position)(struct st_drive * drive, int file_position);
+		int (*format)(struct st_drive * drive, int quick_mode);
+		struct st_stream_reader * (*get_reader)(struct st_drive * drive, int file_position);
+		struct st_stream_writer * (*get_writer)(struct st_drive * drive, int file_position);
+		int (*update_media_info)(struct st_drive * drive);
 	} * ops;
 	void * data;
 

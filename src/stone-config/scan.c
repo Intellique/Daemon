@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jul 2012 23:23:20 +0200                         *
+*  Last modified: Wed, 25 Jul 2012 12:58:57 +0200                         *
 \*************************************************************************/
 
 // glob, globfree
@@ -37,9 +37,7 @@
 #include <unistd.h>
 
 #include <libstone/database.h>
-#include <libstone/library/drive.h>
 #include <libstone/log.h>
-#include <stoned/library/changer.h>
 
 #include "scan.h"
 #include "scsi.h"
@@ -96,7 +94,7 @@ int stcfg_scan() {
 
 		drives[i].device = strdup(device);
 		drives[i].scsi_device = strdup(scsi_device);
-		drives[i].status = ST_DRIVE_UNKNOWN;
+		drives[i].status = st_drive_unknown;
 		drives[i].model = 0;
 		drives[i].vendor = 0;
 		drives[i].revision = 0;
@@ -148,7 +146,7 @@ int stcfg_scan() {
 		strcat(device, ptr);
 
 		changers[i].device = strdup(device);
-		changers[i].status = ST_CHANGER_UNKNOWN;
+		changers[i].status = st_changer_unknown;
 		changers[i].model = 0;
 		changers[i].vendor = 0;
 		changers[i].revision = 0;
@@ -204,7 +202,7 @@ int stcfg_scan() {
 				drives[j].changer = changers + i;
 
 				changers[i].device = strdup("");
-				changers[i].status = ST_CHANGER_UNKNOWN;
+				changers[i].status = st_changer_unknown;
 				changers[i].model = strdup(drives[j].model);
 				changers[i].vendor = strdup(drives[j].vendor);
 				changers[i].revision = strdup(drives[j].revision);
