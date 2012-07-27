@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 22 Jul 2012 12:20:26 +0200                         *
+*  Last modified: Fri, 27 Jul 2012 23:28:17 +0200                         *
 \*************************************************************************/
 
 // open
@@ -33,15 +33,15 @@
 #include <stdio.h>
 // strdup
 #include <string.h>
-// open
+// fstat, open, stat
 #include <sys/stat.h>
 // gettimeofday
 #include <sys/time.h>
-// open
+// fstat, open, stat
 #include <sys/types.h>
 // localtime_r, strftime
 #include <time.h>
-// close
+// close, fstat, sleep, stat
 #include <unistd.h>
 
 #include <libstone/user.h>
@@ -53,6 +53,7 @@ struct st_log_file_private {
 	int fd;
 };
 
+static void st_log_file_check_logrotate(struct st_log_file_private * self);
 static void st_log_file_module_free(struct st_log_module * module);
 static void st_log_file_module_write(struct st_log_module * module, const struct st_log_message * message);
 
@@ -61,6 +62,28 @@ static struct st_log_module_ops st_log_file_module_ops = {
 	.write = st_log_file_module_write,
 };
 
+
+void st_log_file_check_logrotate(struct st_log_file_private * self) {
+	struct stat current;
+	fstat(self->fd, &current);
+
+	struct stat reference;
+	int failed = 0;
+	do {
+		if (failed)
+			sleep(1);
+
+		failed = stat(self->path, &reference);
+	} while (!failed);
+
+	if (current.st_ino != reference.st_ino) {
+		st_log_write_all(st_log_level_info, st_log_type_plugin_log, "Log: file: logrotate detected");
+
+		close(self->fd);
+
+		self->fd = open(self->path, O_WRONLY | O_APPEND | O_CREAT, 0640);
+	}
+}
 
 void st_log_file_module_free(struct st_log_module * module) {
 	struct st_log_file_private * self = module->data;
@@ -101,6 +124,8 @@ int st_log_file_new(struct st_log_module * module, const char * alias, enum st_l
 
 void st_log_file_module_write(struct st_log_module * module, const struct st_log_message * message) {
 	struct st_log_file_private * self = module->data;
+
+	st_log_file_check_logrotate(self);
 
 	struct tm curTime2;
 	char strtime[32];
