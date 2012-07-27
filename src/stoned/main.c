@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jul 2012 09:53:29 +0200                         *
+*  Last modified: Fri, 27 Jul 2012 23:13:29 +0200                         *
 \*************************************************************************/
 
 // getopt_long
@@ -32,6 +32,7 @@
 // daemon
 #include <unistd.h>
 
+#include <libstone/checksum.h>
 #include <libstone/conf.h>
 #include <libstone/database.h>
 #include <libstone/log.h>
@@ -155,10 +156,10 @@ int main(int argc, char ** argv) {
 	}
 
 	// check if config file contains a database
-	//if (!st_db_get_default_db()) {
-	//	st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: There is no database into config file '%s'", config_file);
-	//	return 5;
-	//}
+	if (!st_database_get_default_driver()) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: There is no database into config file '%s'", config_file);
+		return 5;
+	}
 
 	// synchronize checksum plugins
 	//st_checksum_sync_plugins();

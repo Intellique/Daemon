@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 11 Jun 2012 23:35:49 +0200                         *
+*  Last modified: Fri, 27 Jul 2012 22:14:12 +0200                         *
 \*************************************************************************/
 
 // open
@@ -44,10 +44,9 @@
 // readlink
 #include <unistd.h>
 
-#include <stone/database.h>
-#include <stone/io.h>
-#include <stone/library/ressource.h>
-#include <stone/log.h>
+#include <libstone/database.h>
+#include <libstone/log.h>
+#include <stoned/library/changer.h>
 
 #include "common.h"
 #include "scsi.h"
@@ -56,38 +55,6 @@ static struct st_changer * st_changers = 0;
 static unsigned int st_nb_fake_changers = 0;
 static unsigned int st_nb_real_changers = 0;
 
-
-struct st_changer * st_changer_get_by_tape(struct st_tape * tape) {
-	if (!tape)
-		return 0;
-
-	unsigned int i, nb_changer = st_nb_real_changers + st_nb_fake_changers;
-	for (i = 0; i < nb_changer; i++) {
-		struct st_changer * ch = st_changers + i;
-
-		unsigned int j;
-		for (j = 0; j < ch->nb_slots; j++) {
-			struct st_slot * sl = ch->slots + j;
-
-			if (sl->tape == tape)
-				return ch;
-		}
-	}
-
-	return 0;
-}
-
-struct st_changer * st_changer_get_first_changer() {
-	return st_changers;
-}
-
-struct st_changer * st_changer_get_next_changer(struct st_changer * changer) {
-	unsigned int i, nb_changer = st_nb_real_changers + st_nb_fake_changers - 1;
-	for (i = 0; i < nb_changer; i++)
-		if (changer == st_changers + i)
-			return st_changers + i + 1;
-	return 0;
-}
 
 int st_changer_setup() {
 	glob_t gl;
@@ -138,10 +105,9 @@ int st_changer_setup() {
 		strcpy(device, "/dev/n");
 		strcat(device, ptr);
 
-		drives[i].id = -1;
 		drives[i].device = strdup(device);
 		drives[i].scsi_device = strdup(scsi_device);
-		drives[i].status = ST_DRIVE_UNKNOWN;
+		drives[i].status = st_drive_unknown;
 		drives[i].model = 0;
 		drives[i].vendor = 0;
 		drives[i].revision = 0;
@@ -156,20 +122,6 @@ int st_changer_setup() {
 		drives[i].slot = 0;
 
 		drives[i].data = 0;
-		drives[i].file_position = 0;
-		drives[i].nb_files = 0;
-		drives[i].block_number = 0;
-
-		drives[i].is_bottom_of_tape = 0;
-		drives[i].is_end_of_file = 0;
-		drives[i].is_writable = 0;
-		drives[i].is_online = 0;
-		drives[i].is_door_opened = 0;
-
-		drives[i].block_size = 0;
-		drives[i].density_code = 0;
-		drives[i].operation_duration = 0;
-		drives[i].last_clean = time(0);
 	}
 	globfree(&gl);
 
@@ -205,9 +157,8 @@ int st_changer_setup() {
 		strcpy(device, "/dev");
 		strcat(device, ptr);
 
-		st_changers[i].id = -1;
 		st_changers[i].device = strdup(device);
-		st_changers[i].status = ST_CHANGER_UNKNOWN;
+		st_changers[i].status = st_changer_unknown;
 		st_changers[i].model = 0;
 		st_changers[i].vendor = 0;
 		st_changers[i].revision = 0;
@@ -225,8 +176,6 @@ int st_changer_setup() {
 		st_changers[i].nb_slots = 0;
 
 		st_changers[i].data = 0;
-		st_changers[i].lock = 0;
-		st_changers[i].transport_address = 0;
 	}
 	globfree(&gl);
 
@@ -265,10 +214,17 @@ int st_changer_setup() {
 
 	// try to link drive to real changer with database
 	if (nb_changer_without_drive > 0) {
-		struct st_database * db = st_db_get_default_db();
-		struct st_database_connection * con = db->ops->connect(db, 0);
+		struct st_database * db = 0;
+		struct st_database_config * config = 0;
+		struct st_database_connection * connect = 0;
 
-		for (i = 0; con && i < st_nb_real_changers; i++) {
+		db = st_database_get_default_driver();
+		if (db)
+			config = db->ops->get_default_config();
+		if (config)
+			connect = config->ops->connect(config);
+
+		for (i = 0; connect && i < st_nb_real_changers; i++) {
 			if (st_changers[i].nb_drives > 0)
 				continue;
 
@@ -277,10 +233,10 @@ int st_changer_setup() {
 				if (drives[j].changer)
 					continue;
 
-				con->ops->sync_changer(con, st_changers + i);
-				con->ops->sync_drive(con, drives + i);
+				connect->ops->sync_changer(connect, st_changers + i);
+				connect->ops->sync_drive(connect, drives + i);
 
-				if (con->ops->is_changer_contain_drive(con, st_changers + i, drives + j)) {
+				if (connect->ops->is_changer_contain_drive(connect, st_changers + i, drives + j)) {
 					drives[j].changer = st_changers + i;
 
 					st_changers[i].drives = realloc(st_changers[i].drives, (st_changers[i].nb_drives + 1) * sizeof(struct st_drive));
@@ -295,10 +251,9 @@ int st_changer_setup() {
 				nb_changer_without_drive--;
 		}
 
-		if (con) {
-			con->ops->close(con);
-			con->ops->free(con);
-			free(con);
+		if (connect) {
+			connect->ops->close(connect);
+			connect->ops->free(connect);
 		}
 	}
 
@@ -307,8 +262,15 @@ int st_changer_setup() {
 	if (nb_changer_without_drive > 0) {
 		st_log_write_all(st_log_level_warning, st_log_type_user_message, "Library: There is %u changer%s without drives", nb_changer_without_drive, nb_changer_without_drive != 1 ? "s" : "");
 
-		struct st_database * db = st_db_get_default_db();
-		struct st_database_connection * con = db->ops->connect(db, 0);
+		struct st_database * db = 0;
+		struct st_database_config * config = 0;
+		struct st_database_connection * connect = 0;
+
+		db = st_database_get_default_driver();
+		if (db)
+			config = db->ops->get_default_config();
+		if (config)
+			connect = config->ops->connect(config);
 
 		while (nb_changer_without_drive > 0) {
 			sleep(60);
@@ -322,7 +284,7 @@ int st_changer_setup() {
 					if (drives[j].changer)
 						continue;
 
-					if (con->ops->is_changer_contain_drive(con, st_changers + i, drives + j)) {
+					if (connect->ops->is_changer_contain_drive(connect, st_changers + i, drives + j)) {
 						drives[j].changer = st_changers + i;
 
 						st_changers[i].drives = realloc(st_changers[i].drives, (st_changers[i].nb_drives + 1) * sizeof(struct st_drive));
@@ -338,10 +300,9 @@ int st_changer_setup() {
 			}
 		}
 
-		if (con) {
-			con->ops->close(con);
-			con->ops->free(con);
-			free(con);
+		if (connect) {
+			connect->ops->close(connect);
+			connect->ops->free(connect);
 		}
 	}
 
@@ -366,29 +327,12 @@ int st_changer_setup() {
 	if (drives)
 		free(drives);
 
-	for (i = 0; i < st_nb_real_changers; i++)
-		st_realchanger_setup(st_changers + i);
+	//for (i = 0; i < st_nb_real_changers; i++)
+		//st_realchanger_setup(st_changers + i);
 
-	for (i = st_nb_real_changers; i < st_nb_fake_changers + st_nb_real_changers; i++)
-		st_fakechanger_setup(st_changers + i);
+	//for (i = st_nb_real_changers; i < st_nb_fake_changers + st_nb_real_changers; i++)
+		//st_fakechanger_setup(st_changers + i);
 
 	return 0;
-}
-
-void st_changer_update_drive_status() {
-	unsigned int i, nb_changer = st_nb_real_changers + st_nb_fake_changers;
-	for (i = 0; i < nb_changer; i++) {
-		struct st_changer * changer = st_changers + i;
-		if (changer->ops->can_load())
-			continue;
-
-		struct st_drive * drive = changer->drives;
-		if (drive->lock->ops->trylock(drive->lock))
-			continue;
-
-		drive->ops->reset(drive);
-
-		drive->lock->ops->unlock(drive->lock);
-	}
 }
 

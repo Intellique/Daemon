@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 20 Jul 2012 14:48:19 +0200                         *
+*  Last modified: Fri, 27 Jul 2012 22:07:40 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -31,19 +31,10 @@
 // time_t
 #include <sys/time.h>
 
-struct st_stream_reader;
-
-struct st_archive;
-struct st_archive_file;
-struct st_archive_volume;
 struct st_changer;
 struct st_drive;
-struct st_job;
 struct st_hashtable;
-struct st_pool;
-struct st_tape;
-struct st_tape_format;
-struct st_user;
+struct st_stream_reader;
 
 
 /**
@@ -123,6 +114,31 @@ struct st_database_connection {
 		 */
 		int (*sync_plugin_checksum)(struct st_database_connection * connect, const char * name);
 
+		/**
+		 * \brief Check if \a drive is a part of \a changer
+		 *
+		 * \param[in] connect : a database connection
+		 * \param[in] changer : a \a changer
+		 * \param[in] drive : a \a drive
+		 * \returns 1 if \a true
+		 */
+		int (*is_changer_contain_drive)(struct st_database_connection * connect, struct st_changer * changer, struct st_drive * drive);
+		/**
+		 * \brief Synchronize \a changer with database
+		 *
+		 * \param[in] connect : a database connection
+		 * \param[in] changer : a \a changer
+		 * \returns 0 if OK
+		 */
+		int (*sync_changer)(struct st_database_connection * connect, struct st_changer * changer);
+		/**
+		 * \brief Synchronize \a drive with database
+		 *
+		 * \param[in] connect : a database connection
+		 * \param[in] drive : a \a drive
+		 * \returns 0 if OK
+		 */
+		int (*sync_drive)(struct st_database_connection * connect, struct st_drive * drive);
 
 
 
@@ -135,11 +151,7 @@ struct st_database_connection {
 		int (*get_tape)(struct st_database_connection * db, struct st_tape * tape, long id, const char * uuid, const char * label);
 		int (*get_tape_format)(struct st_database_connection * db, struct st_tape_format * tape_format, long id, unsigned char density_code);
 		int (*get_user)(struct st_database_connection * db, struct st_user * user, long user_id, const char * login);
-		int (*is_changer_contain_drive)(struct st_database_connection * db, struct st_changer * changer, struct st_drive * drive);
 		int (*refresh_job)(struct st_database_connection * db, struct st_job * job);
-		int (*sync_changer)(struct st_database_connection * db, struct st_changer * changer);
-		int (*sync_drive)(struct st_database_connection * db, struct st_drive * drive);
-		int (*sync_plugin_checksum)(struct st_database_connection * db, const char * plugin);
 		int (*sync_plugin_job)(struct st_database_connection * db, const char * plugin);
 		int (*sync_pool)(struct st_database_connection * db, struct st_pool * pool);
 		int (*sync_tape)(struct st_database_connection * db, struct st_tape * tape);

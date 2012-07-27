@@ -22,17 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jul 2012 22:59:10 +0200                         *
+*  Last modified: Fri, 27 Jul 2012 21:01:59 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONED_LIBRARY_CHANGER_H__
 #define __STONED_LIBRARY_CHANGER_H__
 
 #include <libstone/library/changer.h>
-
-struct st_changer * st_changer_get_by_media(struct st_media * media);
-struct st_changer * st_changer_get_first_changer(void);
-struct st_changer * st_changer_get_next_changer(struct st_changer * changer);
 
 int st_changer_setup(void);
 
