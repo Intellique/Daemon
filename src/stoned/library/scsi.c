@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 13 Jun 2012 13:31:37 +0200                         *
+*  Last modified: Fri, 27 Jul 2012 20:54:21 +0200                         *
 \*************************************************************************/
 
 // htobe16
@@ -226,6 +226,11 @@ struct scsi_request_sense {
 	unsigned char field_data[2];					/* Byte 16,17 */
 };
 
+struct st_slot_private {
+	int address;
+	int src_address;
+};
+
 static void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, struct st_slot * slot_base, int start_element, int nb_elements, enum scsi_loader_element_type type);
 
 
@@ -233,10 +238,11 @@ void st_scsi_loader_check_slot(int fd, struct st_changer * changer, struct st_sl
 	enum scsi_loader_element_type type = scsi_loader_element_type_storage_element;
 	if (slot->drive)
 		type = scsi_loader_element_type_data_transfer;
-	else if (slot->is_import_export_slot)
+	else if (slot->type == st_slot_type_import_export)
 		type = scsi_loader_element_type_import_export_element;
 
-	st_scsi_loader_status_update_slot(fd, changer, slot, slot->address, 1, type);
+	struct st_slot_private * sp = slot->data;
+	st_scsi_loader_status_update_slot(fd, changer, slot, sp->address, 1, type);
 }
 
 void st_scsi_loader_info(int fd, struct st_changer * changer) {
@@ -411,7 +417,10 @@ int st_scsi_loader_medium_removal(int fd, int allow) {
 	return failed;
 }
 
-int st_scsi_loader_move(int fd, struct st_changer * ch, struct st_slot * from, struct st_slot * to) {
+int st_scsi_loader_move(int fd, int transport_address, struct st_slot * from, struct st_slot * to) {
+	struct st_slot_private * sf = from->data;
+	struct st_slot_private * st = to->data;
+
 	struct scsi_request_sense sense;
 	struct {
 		unsigned char operation_code;
@@ -426,9 +435,9 @@ int st_scsi_loader_move(int fd, struct st_changer * ch, struct st_slot * from, s
 	} __attribute__((packed)) command = {
 		.operation_code = 0xA5,
 		.reserved0 = 0,
-		.transport_element_address = htobe16(ch->transport_address),
-		.source_address = htobe16(from->address),
-		.destination_address = htobe16(to->address),
+		.transport_element_address = htobe16(transport_address),
+		.source_address = htobe16(sf->address),
+		.destination_address = htobe16(st->address),
 		.reserved1 = { 0, 0 },
 		.invert = 0,
 		.reserved2 = 0,
@@ -483,7 +492,7 @@ int st_scsi_loader_ready(int fd) {
 	return sense.sense_key;
 }
 
-void st_scsi_loader_status_new(int fd, struct st_changer * changer) {
+void st_scsi_loader_status_new(int fd, struct st_changer * changer, int * transport_address) {
 	struct scsi_request_sense sense;
 	struct {
 		unsigned char mode_data_length;
@@ -579,18 +588,20 @@ void st_scsi_loader_status_new(int fd, struct st_changer * changer) {
 	for (i = 0; i < changer->nb_slots; i++) {
 		struct st_slot * slot = changer->slots + i;
 
-		slot->id = -1;
 		slot->changer = changer;
-
 		slot->drive = 0;
+		slot->media = 0;
+
 		if (i < changer->nb_drives) {
 			slot->drive = changer->drives + i;
 			changer->drives[i].slot = slot;
 		}
 
-		slot->tape = 0;
+		slot->volume_name = 0;
+		slot->full = 0;
 
-		slot->is_import_export_slot = 0;
+		struct st_slot_private * sp = slot->data = malloc(sizeof(struct st_slot_private));
+		sp->address = sp->src_address = 0;
 	}
 
 	st_scsi_loader_status_update_slot(fd, changer, changer->slots + changer->nb_drives, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element);
@@ -598,7 +609,8 @@ void st_scsi_loader_status_new(int fd, struct st_changer * changer) {
 	if (result.number_of_import_export_elements > 0)
 		st_scsi_loader_status_update_slot(fd, changer, changer->slots + result.number_of_medium_transport_elements + result.number_of_storage_elements, result.first_import_export_element_address, result.number_of_import_export_elements, scsi_loader_element_type_import_export_element);
 
-	changer->transport_address = result.medium_transport_element_address;
+	if (transport_address)
+		*transport_address = result.medium_transport_element_address;
 }
 
 void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, struct st_slot * slot_base, int start_element, int nb_elements, enum scsi_loader_element_type type) {
@@ -706,17 +718,24 @@ void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, stru
 					slot = slot_base + i;
 					slot->full = data_transfer_element->full;
 					if (slot->full) {
+						if (!slot->volume_name)
+							slot->volume_name = malloc(37);
+
 						strncpy(slot->volume_name, data_transfer_element->primary_volume_tag_information, 36);
 						slot->volume_name[36] = '\0';
 
 						int j;
 						for (j = 35; j >= 0 && slot->volume_name[j] == ' '; j--)
 							slot->volume_name[j] = '\0';
-					} else
-						*slot->volume_name = '\0';
-					slot->is_import_export_slot = 0;
-					slot->address = data_transfer_element->element_address;
-					slot->src_address = 0;
+					} else {
+						free(slot->volume_name);
+						slot->volume_name = 0;
+					}
+					slot->type = st_slot_type_drive;
+
+					struct st_slot_private * sp = slot->data;
+					sp->address = data_transfer_element->element_address;
+					sp->src_address = 0;
 				}
 				break;
 
@@ -728,17 +747,25 @@ void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, stru
 					slot = slot_base + i;
 					slot->full = import_export_element->full;
 					if (slot->full) {
+						if (!slot->volume_name)
+							slot->volume_name = malloc(37);
+
 						strncpy(slot->volume_name, import_export_element->primary_volume_tag_information, 36);
 						slot->volume_name[36] = '\0';
 
 						int j;
 						for (j = 35; j >= 0 && slot->volume_name[j] == ' '; j--)
 							slot->volume_name[j] = '\0';
-					} else
-						*slot->volume_name = '\0';
-					slot->is_import_export_slot = 1;
-					slot->address = import_export_element->element_address;
-					slot->src_address = 0;
+					} else {
+						free(slot->volume_name);
+						slot->volume_name = 0;
+					}
+
+					slot->type = st_slot_type_import_export;
+
+					struct st_slot_private * sp = slot->data;
+					sp->address = import_export_element->element_address;
+					sp->src_address = 0;
 				 }
 				 break;
 
@@ -750,27 +777,34 @@ void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, stru
 				break;
 
 			case scsi_loader_element_type_storage_element: {
-				struct scsi_loader_storage_element * storage_element = (struct scsi_loader_storage_element *) ptr;
-				storage_element->element_address = be16toh(storage_element->element_address);
-				storage_element->source_storage_element_address = be16toh(storage_element->source_storage_element_address);
+					struct scsi_loader_storage_element * storage_element = (struct scsi_loader_storage_element *) ptr;
+					storage_element->element_address = be16toh(storage_element->element_address);
+					storage_element->source_storage_element_address = be16toh(storage_element->source_storage_element_address);
 
-				slot = slot_base + i;
-				slot->full = storage_element->full;
+					slot = slot_base + i;
+					slot->full = storage_element->full;
 
-				if (slot->full) {
-					strncpy(slot->volume_name, storage_element->primary_volume_tag_information, 36);
-					slot->volume_name[36] = '\0';
+					if (slot->full) {
+						if (!slot->volume_name)
+							slot->volume_name = malloc(37);
 
-					int j;
-					for (j = 35; j >= 0 && slot->volume_name[j] == ' '; j--)
-						slot->volume_name[j] = '\0';
-				} else
-					*slot->volume_name = '\0';
-				slot->is_import_export_slot = 0;
-				slot->address = storage_element->element_address;
-				slot->src_address = 0;
-			}
-			break;
+						strncpy(slot->volume_name, storage_element->primary_volume_tag_information, 36);
+						slot->volume_name[36] = '\0';
+
+						int j;
+						for (j = 35; j >= 0 && slot->volume_name[j] == ' '; j--)
+							slot->volume_name[j] = '\0';
+					} else {
+						free(slot->volume_name);
+						slot->volume_name = 0;
+					}
+					slot->type = st_slot_type_storage;
+
+					struct st_slot_private * sp = slot->data;
+					sp->address = storage_element->element_address;
+					sp->src_address = 0;
+				}
+				break;
 		}
 
 		ptr += element_header->element_descriptor_length;
@@ -948,7 +982,7 @@ int st_scsi_tape_locate(int fd, off_t position) {
 	return 0;
 }
 
-int st_scsi_tape_position(int fd, struct st_tape * tape) {
+int st_scsi_tape_position(int fd, struct st_media * tape) {
 	struct {
 		unsigned char op_code;
 		unsigned char service_action:5;
@@ -1073,7 +1107,7 @@ int st_scsi_tape_read_position(int fd, off_t * position) {
 	return 0;
 }
 
-int st_scsi_tape_read_mam(int fd, struct st_tape * tape) {
+int st_scsi_tape_read_mam(int fd, struct st_media * media) {
 	struct {
 		unsigned char operation_code;
 		enum {
@@ -1118,8 +1152,6 @@ int st_scsi_tape_read_mam(int fd, struct st_tape * tape) {
 	header.timeout = 2000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
-	tape->mam_ok = 0;
-
 	int status = ioctl(fd, SG_IO, &header);
 	if (status)
 		return status;
@@ -1154,33 +1186,46 @@ int st_scsi_tape_read_mam(int fd, struct st_tape * tape) {
 		char * space;
 		switch (attr->attribute_identifier) {
 			case scsi_mam_remaining_capacity:
-				tape->available_block = be64toh(attr->attribute_value.be64);
-				tape->available_block <<= 10;
-				tape->available_block /= (tape->block_size >> 10);
+				media->available_block = be64toh(attr->attribute_value.be64);
+				media->available_block <<= 10;
+				media->available_block /= (media->block_size >> 10);
 				break;
 
 			case scsi_mam_load_count:
-				tape->load_count = be64toh(attr->attribute_value.be64);
+				media->load_count = be64toh(attr->attribute_value.be64);
 				break;
 
 			case scsi_mam_medium_serial_number:
-				strncpy(tape->medium_serial_number, attr->attribute_value.text, 32);
-				space = strchr(tape->medium_serial_number, ' ');
+				strncpy(media->medium_serial_number, attr->attribute_value.text, 32);
+				space = strchr(media->medium_serial_number, ' ');
 				if (space)
 					*space = '\0';
 				break;
+
+			case scsi_mam_medium_type:
+				switch (attr->attribute_value.int8) {
+					case 0x01:
+						media->type = st_media_type_cleanning;
+						break;
+
+					case 0x80:
+						media->type = st_media_type_readonly;
+						break;
+
+					default:
+						media->type = st_media_type_rewritable;
+						break;
+				}
 
 			default:
 				break;
 		}
 	}
 
-	tape->mam_ok = 1;
-
 	return 0;
 }
 
-int st_scsi_tape_size_available(int fd, struct st_tape * tape) {
+int st_scsi_tape_size_available(int fd, struct st_media * tape) {
 	struct {
 		unsigned char page_code:6;
 		unsigned char reserved0:2;
