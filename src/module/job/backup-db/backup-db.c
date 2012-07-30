@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 25 May 2012 13:03:34 +0200                         *
+*  Last modified: Wed, 25 Jul 2012 11:58:48 +0200                         *
 \*************************************************************************/
 
 // malloc, realloc
@@ -54,6 +54,8 @@ struct st_job_backup_private {
 
 	struct st_tape ** tapes;
 	unsigned int nb_tapes;
+
+	int stop_request;
 };
 
 enum st_job_backup_state {
@@ -100,12 +102,15 @@ void st_job_backupdb_new_job(struct st_database_connection * db __attribute__((u
 	self->nb_savepoints = 0;
 	self->tapes = 0;
 	self->nb_tapes = 0;
+	self->stop_request = 0;
 
 	job->job_ops = &st_job_backupdb_ops;
 	job->data = self;
 }
 
 int st_job_backupdb_run(struct st_job * job) {
+	struct st_job_backup_private * self = job->data;
+
 	job->db_ops->add_record(job, st_log_level_info, "Start backup job (job id: %ld), num runs %ld", job->id, job->num_runs);
 
 	if (!job->user->is_admin) {
@@ -122,25 +127,31 @@ int st_job_backupdb_run(struct st_job * job) {
 	struct st_stream_reader * db_reader = driver->ops->backup_db(driver);
 
 	struct st_drive * drive = st_job_backupdb_select_tape(job, look_in_first_changer);
-	drive->ops->eod(drive);
+	if (drive && !self->stop_request)
+		drive->ops->eod(drive);
 
-	struct st_stream_writer * tape_writer = drive->ops->get_writer(drive);
+	if (drive && !self->stop_request) {
+		struct st_stream_writer * tape_writer = drive->ops->get_writer(drive);
 
-	ssize_t block_size = tape_writer->ops->get_block_size(tape_writer);
-	char * buffer = malloc(block_size);
+		ssize_t block_size = tape_writer->ops->get_block_size(tape_writer);
+		char * buffer = malloc(block_size);
 
-	ssize_t nb_read;
-	while ((nb_read = db_reader->ops->read(db_reader, buffer, block_size)) > 0) {
-		tape_writer->ops->write(tape_writer, buffer, nb_read);
+		ssize_t nb_read;
+		while ((nb_read = db_reader->ops->read(db_reader, buffer, block_size)) > 0) {
+			tape_writer->ops->write(tape_writer, buffer, nb_read);
+		}
+
+		tape_writer->ops->close(tape_writer);
+		tape_writer->ops->free(tape_writer);
+
+		free(buffer);
 	}
-
-	tape_writer->ops->close(tape_writer);
-	tape_writer->ops->free(tape_writer);
 
 	db_reader->ops->close(db_reader);
 	db_reader->ops->free(db_reader);
 
-    free(buffer);
+	if (drive)
+		drive->lock->ops->unlock(drive->lock);
 
 	return 0;
 }
@@ -338,8 +349,14 @@ struct st_drive * st_job_backupdb_select_tape(struct st_job * job, enum st_job_b
 	return 0;
 }
 
-int st_job_backupdb_stop(struct st_job * job __attribute__((unused))) {
-	return 0;
+int st_job_backupdb_stop(struct st_job * job) {
+	struct st_job_backup_private * self = job->data;
+	if (self && !self->stop_request) {
+		self->stop_request = 1;
+		job->db_ops->add_record(job, st_log_level_warning, "Job: Stop requested");
+		return 0;
+	}
+	return 1;
 }
 
 int st_job_backupdb_tape_in_list(struct st_job_backup_private * jp, struct st_tape * tape) {

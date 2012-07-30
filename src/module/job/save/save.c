@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jul 2012 13:57:02 +0200                         *
+*  Last modified: Fri, 27 Jul 2012 15:13:15 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -89,6 +89,8 @@ struct st_job_save_private {
 	struct st_io_json * json;
 
 	struct st_database_connection * db_con;
+
+	int stop_request;
 };
 
 enum st_job_save_state {
@@ -245,7 +247,7 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 
 		int i, failed = 0;
 		for (i = 0; i < nb_files; i++) {
-			if (!failed) {
+			if (!failed && !jp->stop_request) {
 				char * subpath = 0;
 				asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
 
@@ -444,6 +446,8 @@ void st_job_save_new_job(struct st_database_connection * db __attribute__((unuse
 
 	self->db_con = 0;
 
+	self->stop_request = 0;
+
 	job->data = self;
 	job->job_ops = &st_job_save_ops;
 }
@@ -476,7 +480,7 @@ int st_job_save_run(struct st_job * job) {
 		st_util_string_rtrim(job->paths[i], '/');
 
 		jp->total_size += st_job_save_compute_total_size(job, job->paths[i]);
-    }
+	}
 
 	if (jp->total_size == 0) {
 		job->db_ops->add_record(job, st_log_level_error, "There is no file to archive or total size of all files is null");
@@ -513,7 +517,7 @@ int st_job_save_run(struct st_job * job) {
 	jp->buffer = malloc(jp->block_size);
 
 	int failed = 0;
-	for (i = 0; i < job->nb_paths && !failed; i++) {
+	for (i = 0; i < job->nb_paths && !failed && !jp->stop_request; i++) {
 		job->db_ops->add_record(job, st_log_level_info, "Archive %s", job->paths[i]);
 		failed = st_job_save_archive_file(job, job->paths[i]);
 	}
@@ -564,7 +568,9 @@ int st_job_save_run(struct st_job * job) {
 
 	drive->lock->ops->unlock(drive->lock);
 
-	if (failed)
+	if (jp->stop_request)
+		job->db_ops->add_record(job, st_log_level_error, "Job: save aborted (job id: %ld), num runs %ld", job->id, job->num_runs);
+	else if (failed)
 		job->db_ops->add_record(job, st_log_level_error, "Finish archive job (job id: %ld), with status = %d, num runs %ld", job->id, failed, job->num_runs);
 	else
 		job->db_ops->add_record(job, st_log_level_info, "Finish archive job (job id: %ld) with status = Ok, num runs %ld", job->id, job->num_runs);
@@ -765,8 +771,14 @@ void st_job_save_savepoint_save(struct st_job * job, struct st_changer * changer
 	jp->nb_savepoints++;
 }
 
-int st_job_save_stop(struct st_job * job __attribute__((unused))) {
-	return 0;
+int st_job_save_stop(struct st_job * job) {
+	struct st_job_save_private * self = job->data;
+	if (self && !self->stop_request) {
+		self->stop_request = 1;
+		job->db_ops->add_record(job, st_log_level_warning, "Job: Stop requested");
+		return 0;
+	}
+	return 1;
 }
 
 int st_job_save_tape_in_list(struct st_job_save_private * jp, struct st_tape * tape) {

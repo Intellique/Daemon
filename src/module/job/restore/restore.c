@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 20 Jul 2012 13:30:34 +0200                         *
+*  Last modified: Fri, 27 Jul 2012 15:52:31 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -65,6 +65,8 @@ struct st_job_restore_private {
 	struct st_changer * changer;
 	struct st_drive * drive;
 	struct st_slot * slot;
+
+	int stop_request;
 };
 
 static void st_job_restore_compute_complete_progress(struct st_job * job, struct st_job_restore_private * jp);
@@ -343,6 +345,8 @@ void st_job_restore_new_job(struct st_database_connection * db __attribute__((un
 	self->drive = 0;
 	self->slot = 0;
 
+	self->stop_request = 0;
+
 	job->data = self;
 	job->job_ops = &st_job_restore_ops;
 }
@@ -353,7 +357,7 @@ int st_job_restore_restore_archive(struct st_job * job) {
 
 	unsigned int i;
 	int status = 0;
-	for (i = 0; i < job->nb_block_numbers && !status; i++) {
+	for (i = 0; i < job->nb_block_numbers && !status && !jp->stop_request; i++) {
 		struct st_job_block_number * bn = job->block_numbers + i;
 
 		status = st_job_restore_load_tape(job, bn->tape);
@@ -375,7 +379,7 @@ int st_job_restore_restore_archive(struct st_job * job) {
 		ssize_t restore_path_length = strlen(job->restore_to->path);
 		int failed = 0;
 
-		while ((hdr_status = tar->ops->get_header(tar, &header)) == ST_TAR_HEADER_OK) {
+		while ((hdr_status = tar->ops->get_header(tar, &header)) == ST_TAR_HEADER_OK && !jp->stop_request) {
 			char * path = header.path;
 			if (job->restore_to->nb_trunc_path > 0)
 				path = st_job_restore_trunc_filename(path, job->restore_to->nb_trunc_path);
@@ -599,7 +603,7 @@ int st_job_restore_restore_files(struct st_job * job) {
 	int status = 0;
 	ssize_t restore_path_length = strlen(job->restore_to->path);
 
-	for (i = 0; i < job->nb_block_numbers && !status;) {
+	for (i = 0; i < job->nb_block_numbers && !status && !jp->stop_request;) {
 		struct st_job_block_number * bn = job->block_numbers + i;
 
 		status = st_job_restore_load_tape(job, bn->tape);
@@ -611,7 +615,7 @@ int st_job_restore_restore_files(struct st_job * job) {
 		jp->drive->ops->set_file_position(jp->drive, bn->tape_position);
 
 		long current_sequence = bn->sequence;
-		while (bn->sequence == current_sequence) {
+		while (bn->sequence == current_sequence && !jp->stop_request) {
 			struct st_stream_reader * tape_reader = jp->drive->ops->get_reader(jp->drive);
 
 			jp->length = tape_reader->ops->get_block_size(tape_reader);
@@ -628,13 +632,13 @@ int st_job_restore_restore_files(struct st_job * job) {
 
 			if (hdr_status != ST_TAR_HEADER_OK) { }
 
-			while (hdr_status == ST_TAR_HEADER_OK && !st_job_restore_filter(job, &header)) {
+			while (hdr_status == ST_TAR_HEADER_OK && !st_job_restore_filter(job, &header) && !jp->stop_request) {
 				st_tar_free_header(&header);
 				tar->ops->skip_file(tar);
 				hdr_status = tar->ops->get_header(tar, &header);
 			}
 
-			while (hdr_status == ST_TAR_HEADER_OK && st_job_restore_filter(job, &header)) {
+			while (hdr_status == ST_TAR_HEADER_OK && st_job_restore_filter(job, &header) && !jp->stop_request) {
 				char * path = header.path;
 				if (job->restore_to->nb_trunc_path > 0)
 					path = st_job_restore_trunc_filename(path, job->restore_to->nb_trunc_path);
@@ -682,7 +686,7 @@ int st_job_restore_restore_files(struct st_job * job) {
 			free(jp->buffer);
 			jp->buffer = 0;
 
-			while (i < job->nb_block_numbers && current_sequence == bn->sequence && job->block_numbers[i].block_number <= current_block) {
+			while (i < job->nb_block_numbers && current_sequence == bn->sequence && job->block_numbers[i].block_number <= current_block && !jp->stop_request) {
 				i++;
 			}
 
@@ -727,7 +731,9 @@ int st_job_restore_run(struct st_job * job) {
 
 	jp->drive->lock->ops->unlock(jp->drive->lock);
 
-	if (!status) {
+	if (jp->stop_request) {
+		job->db_ops->add_record(job, st_log_level_error, "Job: restore aborted (job id: %ld), num runs %ld", job->id, job->num_runs);
+	} else if (!status) {
 		job->done = 1;
 		job->db_ops->add_record(job, st_log_level_info, "Job restore (id:%ld) finished with status = OK", job->id);
 	} else
@@ -736,8 +742,14 @@ int st_job_restore_run(struct st_job * job) {
 	return status;
 }
 
-int st_job_restore_stop(struct st_job * job __attribute__((unused))) {
-	return 0;
+int st_job_restore_stop(struct st_job * job) {
+	struct st_job_restore_private * self = job->data;
+	if (self && !self->stop_request) {
+		self->stop_request = 1;
+		job->db_ops->add_record(job, st_log_level_warning, "Job: Stop requested");
+		return 0;
+	}
+	return 1;
 }
 
 char * st_job_restore_trunc_filename(char * path, int nb_trunc_path) {

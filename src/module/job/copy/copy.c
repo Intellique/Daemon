@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jul 2012 11:40:30 +0200                         *
+*  Last modified: Wed, 25 Jul 2012 13:47:29 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -98,6 +98,8 @@ struct st_job_copy_private {
 	struct st_io_json * json;
 
 	struct st_database_connection * db_con;
+
+	int stop_request;
 };
 
 enum st_job_copy_state {
@@ -255,7 +257,7 @@ int st_job_copy_archive_file(struct st_job * job, const char * path) {
 
 		int i;
 		for (i = 0; i < nb_files; i++) {
-			if (!failed) {
+			if (!failed && !jp->stop_request) {
 				char * subpath = 0;
 				asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
 
@@ -609,6 +611,8 @@ void st_job_copy_new_job(struct st_database_connection * db __attribute__((unuse
 
 	self->db_con = 0;
 
+	self->stop_request = 0;
+
 	job->data = self;
 	job->job_ops = &st_job_copy_ops;
 }
@@ -640,7 +644,7 @@ int st_job_copy_restore_archive(struct st_job * job) {
 		ssize_t restore_path_length = strlen(job->restore_to->path);
 		int failed = 0;
 
-		while ((hdr_status = tar->ops->get_header(tar, &header)) == ST_TAR_HEADER_OK) {
+		while ((hdr_status = tar->ops->get_header(tar, &header)) == ST_TAR_HEADER_OK && !jp->stop_request) {
 			char * path = header.path;
 			if (job->restore_to->nb_trunc_path > 0)
 				path = st_util_trunc_path(path, job->restore_to->nb_trunc_path);
@@ -821,6 +825,9 @@ int st_job_copy_restore_file(struct st_job * job, struct st_tar_in * tar, struct
 
 		ssize_t nb_read, nb_total_read = 0;
 		while ((nb_read = tar->ops->read(tar, jp->buffer, jp->block_size)) > 0) {
+			if (jp->stop_request)
+				break;
+
 			ssize_t nb_write = write(fd, jp->buffer, nb_read);
 			if (nb_write < 0) {
 				job->db_ops->add_record(job, st_log_level_warning, "An error occured while writing to file named %s because %m", path);
@@ -918,9 +925,10 @@ int st_job_copy_run(struct st_job * job) {
 		jp->total_size += job->block_numbers[i].size;
 	jp->total_size <<= 1;
 
-	status = st_job_copy_restore_archive(job);
+	if (!jp->stop_request)
+		status = st_job_copy_restore_archive(job);
 
-	if (!status) {
+	if (!status && !jp->stop_request) {
 		struct st_slot * sl = 0;
 		for (i = jp->changer->nb_drives; i < jp->changer->nb_slots; i++) {
 			sl = jp->changer->slots + i;
@@ -953,7 +961,7 @@ int st_job_copy_run(struct st_job * job) {
 		}
 	}
 
-	if (!status) {
+	if (!status && !jp->stop_request) {
 		struct st_drive * drive = st_job_copy_select_tape(job, select_new_tape);
 
 		struct st_stream_writer * tape_writer = jp->tape_writer = drive->ops->get_writer(drive);
@@ -1026,11 +1034,14 @@ int st_job_copy_run(struct st_job * job) {
 
 	st_job_copy_rmdir(job->restore_to->path);
 
-	if (!status) {
+	if (jp->stop_request) {
+		job->db_ops->add_record(job, st_log_level_error, "Job: copy aborted (job id: %ld), num runs %ld", job->id, job->num_runs);
+	} else if (!status) {
 		job->done = 1;
 		job->db_ops->add_record(job, st_log_level_info, "Job copy (id:%ld) finished with status = OK", job->id);
-	} else
+	} else {
 		job->db_ops->add_record(job, st_log_level_error, "Job copy (id:%ld) finished with status = %d", job->id, status);
+	}
 
 	return status;
 }
@@ -1229,7 +1240,13 @@ struct st_drive * st_job_copy_select_tape(struct st_job * job, enum st_job_copy_
 }
 
 int st_job_copy_stop(struct st_job * job __attribute__((unused))) {
-	return 0;
+	struct st_job_copy_private * self = job->data;
+	if (self && !self->stop_request) {
+		self->stop_request = 1;
+		job->db_ops->add_record(job, st_log_level_warning, "Job: Stop requested");
+		return 0;
+	}
+	return 1;
 }
 
 int st_job_copy_tape_in_list(struct st_job_copy_private * jp, struct st_tape * tape) {
