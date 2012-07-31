@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 27 Jul 2012 15:13:15 +0200                         *
+*  Last modified: Tue, 31 Jul 2012 12:38:39 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -509,61 +509,66 @@ int st_job_save_run(struct st_job * job) {
 	jp->db_con->ops->new_volume(jp->db_con, jp->current_volume);
 	st_io_json_add_volume(jp->json, jp->current_volume);
 
-	struct st_stream_writer * tape_writer = jp->current_tape_writer = drive->ops->get_writer(drive);
-	struct st_stream_writer * checksum_writer = jp->current_checksum_writer = st_checksum_get_steam_writer((const char **) job->checksums, job->nb_checksums, tape_writer);
-	jp->tar = st_tar_new_out(checksum_writer);
-
-	jp->block_size = jp->tar->ops->get_block_size(jp->tar);
-	jp->buffer = malloc(jp->block_size);
-
 	int failed = 0;
-	for (i = 0; i < job->nb_paths && !failed && !jp->stop_request; i++) {
-		job->db_ops->add_record(job, st_log_level_info, "Archive %s", job->paths[i]);
-		failed = st_job_save_archive_file(job, job->paths[i]);
-	}
+	if (!jp->stop_request) {
+		struct st_stream_writer * tape_writer = jp->current_tape_writer = drive->ops->get_writer(drive);
+		struct st_stream_writer * checksum_writer = jp->current_checksum_writer = st_checksum_get_steam_writer((const char **) job->checksums, job->nb_checksums, tape_writer);
+		jp->tar = st_tar_new_out(checksum_writer);
 
-	// because drive has maybe changed
-	drive = jp->current_drive;
-	tape_writer = jp->current_tape_writer;
-	checksum_writer = jp->current_checksum_writer;
+		jp->block_size = jp->tar->ops->get_block_size(jp->tar);
+		jp->buffer = malloc(jp->block_size);
 
-	jp->tar->ops->close(jp->tar);
+		for (i = 0; i < job->nb_paths && !failed && !jp->stop_request; i++) {
+			job->db_ops->add_record(job, st_log_level_info, "Archive %s", job->paths[i]);
+			failed = st_job_save_archive_file(job, job->paths[i]);
+		}
 
-	if (!failed) {
-		// archive
-		archive->endtime = jp->current_volume->endtime = time(0);
-		jp->db_con->ops->update_archive(jp->db_con, archive);
-		st_io_json_update_archive(jp->json, archive);
-		// volume
-		jp->current_volume->size = tape_writer->ops->position(tape_writer);
-		jp->current_volume->endtime = time(0);
-		jp->current_volume->digests = st_checksum_get_digest_from_writer(checksum_writer);
-		jp->current_volume->nb_checksums = job->nb_checksums;
-		jp->db_con->ops->update_volume(jp->db_con, jp->current_volume);
-		st_io_json_update_volume(jp->json, jp->current_volume);
+		// because drive has maybe changed
+		drive = jp->current_drive;
+		tape_writer = jp->current_tape_writer;
+		checksum_writer = jp->current_checksum_writer;
 
-		// commit transaction
-		jp->db_con->ops->finish_transaction(jp->db_con);
+		jp->tar->ops->close(jp->tar);
+
+		if (!failed) {
+			// archive
+			archive->endtime = jp->current_volume->endtime = time(0);
+			jp->db_con->ops->update_archive(jp->db_con, archive);
+			st_io_json_update_archive(jp->json, archive);
+			// volume
+			jp->current_volume->size = tape_writer->ops->position(tape_writer);
+			jp->current_volume->endtime = time(0);
+			jp->current_volume->digests = st_checksum_get_digest_from_writer(checksum_writer);
+			jp->current_volume->nb_checksums = job->nb_checksums;
+			jp->db_con->ops->update_volume(jp->db_con, jp->current_volume);
+			st_io_json_update_volume(jp->json, jp->current_volume);
+
+			// commit transaction
+			jp->db_con->ops->finish_transaction(jp->db_con);
+		} else {
+			// rollback transaction
+			jp->db_con->ops->cancel_transaction(jp->db_con);
+		}
+
+		// release some memory
+		jp->tar->ops->free(jp->tar);
+		st_archive_free(job->archive);
+		//job->archive = 0;
+		//
+
+		if (!failed) {
+			// write index file
+			job->db_ops->add_record(job, st_log_level_info, "Writing index file");
+
+			tape_writer = drive->ops->get_writer(drive);
+			st_io_json_write_to(jp->json, tape_writer);
+			tape_writer->ops->close(tape_writer);
+
+			tape_writer->ops->free(tape_writer);
+			st_io_json_free(jp->json);
+		}
 	} else {
-		// rollback transaction
-		jp->db_con->ops->cancel_transaction(jp->db_con);
-	}
-
-	// release some memory
-	jp->tar->ops->free(jp->tar);
-	st_archive_free(job->archive);
-	//job->archive = 0;
-
-	if (!failed) {
-		// write index file
-		job->db_ops->add_record(job, st_log_level_info, "Writing index file");
-
-		tape_writer = drive->ops->get_writer(drive);
-		st_io_json_write_to(jp->json, tape_writer);
-		tape_writer->ops->close(tape_writer);
-
-		tape_writer->ops->free(tape_writer);
-		st_io_json_free(jp->json);
+		st_archive_free(job->archive);
 	}
 
 	drive->lock->ops->unlock(drive->lock);
