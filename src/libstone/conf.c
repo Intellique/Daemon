@@ -259,13 +259,13 @@ int st_conf_read_config(const char * confFile) {
 				continue;
 
 			case '[':
-				sscanf(ptr, "[%23s]", section);
+				sscanf(ptr, "[%23[^]]]", section);
 
 				ptr = strchr(ptr, '\n');
 				continue;
 
 			default:
-				if (*section)
+				if (!*section)
 					continue;
 
 				if (strchr(ptr, '=') < strchr(ptr, '\n')) {

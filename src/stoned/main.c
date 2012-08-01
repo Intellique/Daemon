@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 27 Jul 2012 23:13:29 +0200                         *
+*  Last modified: Mon, 30 Jul 2012 22:04:12 +0200                         *
 \*************************************************************************/
 
 // getopt_long
@@ -167,8 +167,8 @@ int main(int argc, char ** argv) {
 	// synchronize job plugins
 	//st_job_sync_plugins();
 
-	//if (st_changer_setup())
-	//	return 6;
+	if (st_changer_setup())
+		return 6;
 
 	// start remote admin
 	//st_admin_start();

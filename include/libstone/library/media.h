@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 27 Jul 2012 09:42:56 +0200                         *
+*  Last modified: Tue, 31 Jul 2012 23:00:38 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -95,6 +95,7 @@ struct st_media {
 	long load_count;
 	long read_count;
 	long write_count;
+	long operation_count;
 
 	ssize_t block_size;
 	ssize_t end_position; // in block size, not in bytes
@@ -103,7 +104,7 @@ struct st_media {
 	unsigned int nb_volumes;
 	enum st_media_type type;
 
-	struct st_tape_format * format;
+	struct st_media_format * format;
 	struct st_pool * pool;
 };
 
@@ -117,7 +118,7 @@ struct st_media_format {
 	long max_load_count;
 	long max_read_count;
 	long max_write_count;
-	long max_op_count;
+	long max_operation_count;
 
 	long long life_span;
 

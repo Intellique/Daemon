@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jul 2012 22:35:58 +0200                         *
+*  Last modified: Tue, 31 Jul 2012 22:42:16 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONED_LIBRARY_MEDIA_H__
@@ -30,14 +30,13 @@
 
 #include <libstone/library/media.h>
 
-struct st_media * st_media_get_by_id(long id);
 struct st_media * st_media_get_by_label(const char * label);
+struct st_media * st_media_get_by_medium_serial_number(const char * medium_serial_number);
 struct st_media * st_media_get_by_uuid(const char * uuid);
 struct st_media * st_media_new(struct st_drive * dr);
 int st_media_write_header(struct st_drive * dr, struct st_pool * pool);
 
-struct st_tape_format * st_tape_format_get_by_id(long id);
-struct st_tape_format * st_tape_format_get_by_density_code(unsigned char density_code);
+struct st_media_format * st_media_format_get_by_density_code(unsigned char density_code, enum st_media_format_mode mode);
 
 struct st_pool * st_pool_get_by_id(long id);
 struct st_pool * st_pool_get_by_uuid(const char * uuid);

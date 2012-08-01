@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:03:15 +0100                         *
+*  Last modified: Fri, 27 Jul 2012 23:32:14 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -36,7 +36,7 @@
 // calloc, free, malloc
 #include <stdlib.h>
 
-#include <stone/library/ressource.h>
+#include <libstone/library/ressource.h>
 
 
 struct st_ressource_private {

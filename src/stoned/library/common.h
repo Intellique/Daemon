@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 27 Jul 2012 21:15:17 +0200                         *
+*  Last modified: Tue, 31 Jul 2012 23:02:26 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_COMMON_H__
@@ -33,10 +33,10 @@
 struct st_changer;
 struct st_drive;
 
-void st_drive_setup(struct st_drive * drive);
+void st_scsi_tape_drive_setup(struct st_drive * drive);
 
 void st_fakechanger_setup(struct st_changer * changer);
-void st_realchanger_setup(struct st_changer * changer);
+void st_scsi_changer_setup(struct st_changer * changer);
 
 #endif
 

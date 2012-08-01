@@ -22,13 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jul 2012 13:04:30 +0200                         *
+*  Last modified: Sun, 29 Jul 2012 20:19:44 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_DRIVE_H__
 #define __STONE_LIBRARY_DRIVE_H__
 
-// ssize_t
+// ssize_t, time_t
 #include <sys/types.h>
 
 struct st_changer;
@@ -56,6 +56,9 @@ struct st_drive {
 	char * scsi_device;
 	enum st_drive_status status;
 	unsigned char enabled;
+	long double operation_duration;
+	time_t last_clean;
+	unsigned char is_empty;
 
 	char * model;
 	char * vendor;
