@@ -22,25 +22,49 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 31 Jul 2012 22:42:16 +0200                         *
+*  Last modified: Wed, 01 Aug 2012 09:45:56 +0200                         *
 \*************************************************************************/
 
-#ifndef __STONED_LIBRARY_MEDIA_H__
-#define __STONED_LIBRARY_MEDIA_H__
+// PQresultErrorField
+#include <postgresql/libpq-fe.h>
+// free
+#include <stdlib.h>
+// strdup, strtok_r
+#include <string.h>
 
-#include <libstone/library/media.h>
+#include <libstone/log.h>
 
-struct st_media * st_media_get_by_label(const char * label);
-struct st_media * st_media_get_by_medium_serial_number(const char * medium_serial_number);
-struct st_media * st_media_get_by_uuid(const char * uuid);
-struct st_media * st_media_new(struct st_drive * dr);
-int st_media_write_header(struct st_drive * dr, struct st_pool * pool);
+#include "common.h"
 
-struct st_media_format * st_media_format_get_by_density_code(unsigned char density_code, enum st_media_format_mode mode);
+void st_db_postgresql_get_error(PGresult * result, const char * prepared_query) {
+	char * error = PQresultErrorField(result, PG_DIAG_MESSAGE_PRIMARY);
+	if (prepared_query)
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: error {%s} => %s", prepared_query, error);
+	else
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: error => %s", error);
 
-struct st_pool * st_pool_get_by_id(long id);
-struct st_pool * st_pool_get_by_uuid(const char * uuid);
-int st_pool_sync(struct st_pool * pool);
+	error = PQresultErrorField(result, PG_DIAG_MESSAGE_DETAIL);
+	if (error) {
+		error = strdup(error);
+		char * ptr;
+		char * line = strtok_r(error, "\n", &ptr);
+		while (line) {
+			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: detail => %s", line);
+			line = strtok_r(0, "\n", &ptr);
+		}
+		free(error);
+	}
 
-#endif
+	error = PQresultErrorField(result, PG_DIAG_MESSAGE_HINT);
+	if (error) {
+		error = strdup(error);
+		char * ptr;
+		char * line = strtok_r(error, "\n", &ptr);
+		while (line) {
+			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: hint => %s", line);
+			line = strtok_r(0, "\n", &ptr);
+		}
+		free(error);
+	}
+}
 

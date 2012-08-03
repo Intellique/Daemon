@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 27 Jul 2012 23:28:17 +0200                         *
+*  Last modified: Fri, 03 Aug 2012 15:55:20 +0200                         *
 \*************************************************************************/
 
 // open
@@ -74,7 +74,7 @@ void st_log_file_check_logrotate(struct st_log_file_private * self) {
 			sleep(1);
 
 		failed = stat(self->path, &reference);
-	} while (!failed);
+	} while (failed);
 
 	if (current.st_ino != reference.st_ino) {
 		st_log_write_all(st_log_level_info, st_log_type_plugin_log, "Log: file: logrotate detected");

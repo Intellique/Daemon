@@ -22,17 +22,21 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jul 2012 14:04:40 +0200                         *
+*  Last modified: Sat, 04 Aug 2012 00:46:04 +0200                         *
 \*************************************************************************/
 
-// PQclear, PQexec, PQfinish, PQresultStatus, PQsetErrorVerbosity
-// PQtransactionStatus
+#define _GNU_SOURCE
+// PQclear, PQexec, PQexecPrepared, PQfinish, PQresultStatus
+// PQsetErrorVerbosity, PQtransactionStatus
 #include <postgresql/libpq-fe.h>
+// asprintf
+#include <stdio.h>
 // free, malloc
 #include <stdlib.h>
-// strdup, strtok_r
+// strdup
 #include <string.h>
 
+#include <libstone/library/media.h>
 #include <libstone/log.h>
 #include <libstone/util/hashtable.h>
 #include <libstone/util/string.h>
@@ -54,7 +58,9 @@ static int st_db_postgresql_start_transaction(struct st_database_connection * co
 
 static int st_db_postgresql_sync_plugin_checksum(struct st_database_connection * connect, const char * name);
 
-static void st_db_postgresql_get_error(PGresult * result, const char * prepared_query);
+static int st_db_postgresql_get_media(struct st_database_connection * connect, struct st_media * media, const char * uuid, const char * medium_serial_number, const char * label);
+static int st_db_postgresql_get_media_format(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, enum st_media_format_mode mode);
+
 static void st_db_postgresql_prepare(struct st_db_postgresql_connection_private * self, const char * statement_name, const char * query);
 
 static struct st_database_connection_ops st_db_postgresql_connection_ops = {
@@ -66,6 +72,9 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.start_transaction  = st_db_postgresql_start_transaction,
 
 	.sync_plugin_checksum = st_db_postgresql_sync_plugin_checksum,
+
+	.get_media        = st_db_postgresql_get_media,
+	.get_media_format = st_db_postgresql_get_media_format,
 };
 
 
@@ -227,37 +236,119 @@ int st_db_postgresql_sync_plugin_checksum(struct st_database_connection * connec
 }
 
 
-void st_db_postgresql_get_error(PGresult * result, const char * prepared_query) {
-	char * error = PQresultErrorField(result, PG_DIAG_MESSAGE_PRIMARY);
-	if (prepared_query)
-		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: error {%s} => %s", prepared_query, error);
-	else
-		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: error => %s", error);
+int st_db_postgresql_get_media(struct st_database_connection * connect, struct st_media * media, const char * uuid, const char * medium_serial_number, const char * label) {
+	if (!connect || !media)
+		return 1;
 
-	error = PQresultErrorField(result, PG_DIAG_MESSAGE_DETAIL);
-	if (error) {
-		error = strdup(error);
-		char * ptr;
-		char * line = strtok_r(error, "\n", &ptr);
-		while (line) {
-			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: detail => %s", line);
-			line = strtok_r(0, "\n", &ptr);
-		}
-		free(error);
+	struct st_db_postgresql_connection_private * self = connect->data;
+
+	const char * query;
+	PGresult * result;
+
+	if (uuid) {
+		query = "select_media_by_uuid";
+		st_db_postgresql_prepare(self, query, "SELECT uuid, label, mediumserialnumber, t.name, status, location, firstused, usebefore, loadcount, readcount, writecount, t.blocksize, endpos, nbfiles, densitycode, mode FROM tape t LEFT JOIN tapeformat tf ON t.tapeformat = tf.id WHERE uuid = $1 LIMIT 1");
+
+		const char * param[] = { uuid };
+		result = PQexecPrepared(self->connect, query, 1, param, 0, 0, 0);
+	} else if (medium_serial_number) {
+		query = "select_media_by_medium_serial_number";
+		st_db_postgresql_prepare(self, query, "SELECT uuid, label, mediumserialnumber, t.name, status, location, firstused, usebefore, loadcount, readcount, writecount, t.blocksize, endpos, nbfiles, densitycode, mode FROM tape t LEFT JOIN tapeformat tf ON t.tapeformat = tf.id WHERE mediumserialnumber = $1 LIMIT 1");
+
+		const char * param[] = { medium_serial_number };
+		result = PQexecPrepared(self->connect, query, 1, param, 0, 0, 0);
+	} else {
+		query = "select_media_by_label";
+		st_db_postgresql_prepare(self, query, "SELECT uuid, label, mediumserialnumber, t.name, status, location, firstused, usebefore, loadcount, readcount, writecount, t.blocksize, endpos, nbfiles, densitycode, mode FROM tape t LEFT JOIN tapeformat tf ON t.tapeformat = tf.id WHERE label = $1 LIMIT 1");
+
+		const char * param[] = { label };
+		result = PQexecPrepared(self->connect, query, 1, param, 0, 0, 0);
 	}
 
-	error = PQresultErrorField(result, PG_DIAG_MESSAGE_HINT);
-	if (error) {
-		error = strdup(error);
-		char * ptr;
-		char * line = strtok_r(error, "\n", &ptr);
-		while (line) {
-			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: hint => %s", line);
-			line = strtok_r(0, "\n", &ptr);
-		}
-		free(error);
+	ExecStatusType status = PQresultStatus(result);
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		st_db_postgresql_get_string(result, 0, 0, media->uuid, 37);
+		st_db_postgresql_get_string_dup(result, 0, 1, &media->label);
+		st_db_postgresql_get_string_dup(result, 0, 2, &media->medium_serial_number);
+		st_db_postgresql_get_string_dup(result, 0, 3, &media->name);
+
+		media->status = st_media_string_to_status(PQgetvalue(result, 0, 4));
+		media->location = st_media_string_to_location(PQgetvalue(result, 0, 5));
+
+		// media->first_used
+		// media->use_before
+
+		st_db_postgresql_get_long(result, 0, 8, &media->load_count);
+		st_db_postgresql_get_long(result, 0, 9, &media->read_count);
+		st_db_postgresql_get_long(result, 0, 10, &media->write_count);
+		// st_db_postgresql_get_long(result, 0, 11, &media->operation_count);
+
+		st_db_postgresql_get_ssize(result, 0, 11, &media->block_size);
+		st_db_postgresql_get_ssize(result, 0, 12, &media->end_position);
+		// media->available_block
+
+		st_db_postgresql_get_uint(result, 0, 13, &media->nb_volumes);
+		// media->type
+
+		unsigned char density_code;
+		st_db_postgresql_get_uchar(result, 0, 14, &density_code);
+		enum st_media_format_mode mode = st_media_string_to_format_mode(PQgetvalue(result, 0, 15));
+		media->format = st_media_format_get_by_density_code(density_code, mode);
+
+		PQclear(result);
+		return 0;
 	}
+
+	PQclear(result);
+	return 1;
 }
+
+int st_db_postgresql_get_media_format(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, enum st_media_format_mode mode) {
+	if (!connect || !media_format)
+		return 1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	char * c_density_code = 0;
+	asprintf(&c_density_code, "%d", density_code);
+
+	const char * query = "select_media_format";
+	st_db_postgresql_prepare(self, query, "SELECT name, datatype, maxloadcount, maxreadcount, maxwritecount, maxopcount, lifespan, capacity, blocksize, supportpartition, supportmam FROM tapeformat WHERE densitycode = $1 AND mode = $2 LIMIT 1");
+
+	const char * param[] = { c_density_code, st_media_format_mode_to_string(mode) };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		st_db_postgresql_get_string(result, 0, 0, media_format->name, 64);
+		media_format->density_code = density_code;
+		media_format->type = st_media_string_to_format_data(PQgetvalue(result, 0, 1));
+		media_format->mode = mode;
+
+		st_db_postgresql_get_long(result, 0, 2, &media_format->max_load_count);
+		st_db_postgresql_get_long(result, 0, 3, &media_format->max_read_count);
+		st_db_postgresql_get_long(result, 0, 4, &media_format->max_write_count);
+		st_db_postgresql_get_long(result, 0, 5, &media_format->max_operation_count);
+
+		media_format->life_span = 0;
+
+		st_db_postgresql_get_ssize(result, 0, 7, &media_format->capacity);
+		st_db_postgresql_get_ssize(result, 0, 8, &media_format->block_size);
+
+		st_db_postgresql_get_bool(result, 0, 9, &media_format->support_partition);
+		st_db_postgresql_get_bool(result, 0, 10, &media_format->support_mam);
+
+		PQclear(result);
+		return 0;
+	}
+
+	PQclear(result);
+	return 1;
+}
+
 
 void st_db_postgresql_prepare(struct st_db_postgresql_connection_private * self, const char * statement_name, const char * query) {
 	if (!st_hashtable_has_key(self->cached_query, statement_name)) {

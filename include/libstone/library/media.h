@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 31 Jul 2012 23:00:38 +0200                         *
+*  Last modified: Thu, 02 Aug 2012 22:23:04 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -125,8 +125,8 @@ struct st_media_format {
 	ssize_t capacity;
 	ssize_t block_size;
 
-	char support_partition;
-	char support_mam;
+	unsigned char support_partition;
+	unsigned char support_mam;
 };
 
 struct st_pool {
@@ -146,6 +146,18 @@ enum st_media_location st_media_string_to_location(const char * location);
 enum st_media_status st_media_string_to_status(const char * status);
 enum st_media_format_data_type st_media_string_to_format_data(const char * type);
 enum st_media_format_mode st_media_string_to_format_mode(const char * mode);
+
+struct st_media * st_media_get_by_label(const char * label);
+struct st_media * st_media_get_by_medium_serial_number(const char * medium_serial_number);
+struct st_media * st_media_get_by_uuid(const char * uuid);
+struct st_media * st_media_new(struct st_drive * dr);
+int st_media_write_header(struct st_drive * dr, struct st_pool * pool);
+
+struct st_media_format * st_media_format_get_by_density_code(unsigned char density_code, enum st_media_format_mode mode);
+
+struct st_pool * st_pool_get_by_id(long id);
+struct st_pool * st_pool_get_by_uuid(const char * uuid);
+int st_pool_sync(struct st_pool * pool);
 
 #endif
 

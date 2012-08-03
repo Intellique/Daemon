@@ -22,56 +22,90 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 02 Aug 2012 22:41:00 +0200                         *
+*  Last modified: Sat, 04 Aug 2012 00:40:52 +0200                         *
 \*************************************************************************/
 
-// realloc
-#include <stdlib.h>
-
-#include <libstone/log.h>
-#include <libstone/util/hashtable.h>
+// PQgetvalue
+#include <postgresql/libpq-fe.h>
+// strcmp, strdup, strncpy
+#include <string.h>
 
 #include "common.h"
 
-static int st_log_file_add(const char * alias, enum st_log_level level, const struct st_hashtable * params);
-static void st_log_file_init(void) __attribute__((constructor));
+int st_db_postgresql_get_bool(PGresult * result, int row, int column, unsigned char * val) {
+	if (column < 0)
+		return -1;
 
-static struct st_log_driver st_log_file_driver = {
-	.name = "file",
+	char * value = PQgetvalue(result, row, column);
+	if (value)
+		*val = strcmp(value, "t") ? 0 : 1;
 
-	.add = st_log_file_add,
-
-	.cookie = 0,
-	.api_level = STONE_LOG_API_LEVEL,
-
-	.modules = 0,
-	.nb_modules = 0,
-};
-
-
-int st_log_file_add(const char * alias, enum st_log_level level, const struct st_hashtable * params) {
-	if (!alias || !params)
-		return 1;
-
-	char * path = st_hashtable_value(params, "path");
-	if (!path)
-		return 2;
-
-	void * new_addr = realloc(st_log_file_driver.modules, (st_log_file_driver.nb_modules + 1) * sizeof(struct st_log_module));
-	if (!new_addr) {
-		st_log_write_all(st_log_level_error, st_log_type_plugin_log, "Error, there is not enough memory to allocate new file module");
-		return 3;
-	}
-
-	st_log_file_driver.modules = new_addr;
-	int failed = st_log_file_new(st_log_file_driver.modules + st_log_file_driver.nb_modules, alias, level, path);
-	if (!failed)
-		st_log_file_driver.nb_modules++;
-
-	return failed + 3;
+	return value != 0;
 }
 
-void st_log_file_init() {
-	st_log_register_driver(&st_log_file_driver);
+int st_db_postgresql_get_long(PGresult * result, int row, int column, long * val) {
+	if (column < 0)
+		return -1;
+
+	char * value = PQgetvalue(result, row, column);
+	if (value && sscanf(value, "%ld", val) == 1)
+		return 0;
+
+	return value != 0;
+}
+
+int st_db_postgresql_get_ssize(PGresult * result, int row, int column, ssize_t * val) {
+	if (column < 0)
+		return -1;
+
+	char * value = PQgetvalue(result, row, column);
+	if (value && sscanf(value, "%zd", val) == 1)
+		return 0;
+
+	return value != 0;
+}
+
+int st_db_postgresql_get_string(PGresult * result, int row, int column, char * string, size_t length) {
+	if (column < 0)
+		return -1;
+
+	char * value = PQgetvalue(result, row, column);
+	if (value)
+		strncpy(string, value, length);
+
+	return value != 0;
+}
+
+int st_db_postgresql_get_string_dup(PGresult * result, int row, int column, char ** string) {
+	if (column < 0)
+		return -1;
+
+	char * value = PQgetvalue(result, row, column);
+	if (value)
+		*string = strdup(value);
+
+	return value != 0;
+}
+
+int st_db_postgresql_get_uchar(PGresult * result, int row, int column, unsigned char * val) {
+	if (column < 0)
+		return -1;
+
+	char * value = PQgetvalue(result, row, column);
+	if (value && sscanf(value, "%hhu", val) == 1)
+		return 0;
+
+	return value != 0;
+}
+
+int st_db_postgresql_get_uint(PGresult * result, int row, int column, unsigned int * val) {
+	if (column < 0)
+		return -1;
+
+	char * value = PQgetvalue(result, row, column);
+	if (value && sscanf(value, "%u", val) == 1)
+		return 0;
+
+	return value != 0;
 }
 

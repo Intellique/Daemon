@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 31 Jul 2012 23:01:59 +0200                         *
+*  Last modified: Thu, 02 Aug 2012 22:26:00 +0200                         *
 \*************************************************************************/
 
 // open
@@ -42,8 +42,8 @@
 #include <unistd.h>
 
 #include <libstone/log.h>
+#include <libstone/library/media.h>
 #include <libstone/library/ressource.h>
-#include <stoned/library/media.h>
 
 #include "common.h"
 #include "scsi.h"

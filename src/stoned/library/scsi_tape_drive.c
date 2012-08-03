@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 01 Aug 2012 09:23:22 +0200                         *
+*  Last modified: Thu, 02 Aug 2012 22:27:36 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -52,9 +52,9 @@
 
 #include <libstone/io.h>
 #include <libstone/library/drive.h>
+#include <libstone/library/media.h>
 #include <libstone/library/ressource.h>
 #include <libstone/log.h>
-#include <stoned/library/media.h>
 
 #include "common.h"
 #include "scsi.h"
