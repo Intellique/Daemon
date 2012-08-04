@@ -85,7 +85,7 @@ static struct st_stream_reader_ops st_db_postgresql_stream_backup_ops = {
 	.last_errno     = st_db_postgresql_stream_backup_last_errno,
 	.position       = st_db_postgresql_stream_backup_position,
 	.read           = st_db_postgresql_stream_backup_read,
-	.set_position   = st_db_postgresql_stream_backup_set_position,
+	//.set_position   = st_db_postgresql_stream_backup_set_position,
 };
 
 

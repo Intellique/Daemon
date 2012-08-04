@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 14 Jul 2012 10:30:11 +0200                         *
+*  Last modified: Sat, 04 Aug 2012 14:53:27 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_IO_H__
@@ -68,6 +68,9 @@ struct st_stream_reader {
 		 * \param[in] io : a stream reader
 		 */
 		void (*free)(struct st_stream_reader * io);
+		/**
+		 * \brief Get block size of this <a>stream reader</a>
+		 */
 		ssize_t (*get_block_size)(struct st_stream_reader * io);
 		/**
 		 * \brief Get the latest errno
@@ -92,7 +95,6 @@ struct st_stream_reader {
 		 * \returns length read or -1 if error
 		 */
 		ssize_t (*read)(struct st_stream_reader * io, void * buffer, ssize_t length);
-		off_t (*set_position)(struct st_stream_reader * io, off_t position);
 	} * ops;
 	/**
 	 * \brief private data
