@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 02 Aug 2012 22:26:00 +0200                         *
+*  Last modified: Sat, 04 Aug 2012 14:07:27 +0200                         *
 \*************************************************************************/
 
 // open
@@ -54,17 +54,34 @@ struct st_scsi_changer_private {
 	struct st_ressource * lock;
 };
 
+static struct st_drive * st_scsi_changer_find_free_drive(struct st_changer * ch);
 static int st_scsi_changer_load_media(struct st_changer * ch, struct st_media * from, struct st_drive * to);
 static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
 static void * st_scsi_changer_setup2(void * drive);
 static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from);
 
 static struct st_changer_ops st_scsi_changer_ops = {
-	.load_media = st_scsi_changer_load_media,
-	.load_slot  = st_scsi_changer_load_slot,
-	.unload     = st_scsi_changer_unload,
+	.find_free_drive = st_scsi_changer_find_free_drive,
+	.load_media      = st_scsi_changer_load_media,
+	.load_slot       = st_scsi_changer_load_slot,
+	.unload          = st_scsi_changer_unload,
 };
 
+
+struct st_drive * st_scsi_changer_find_free_drive(struct st_changer * ch) {
+	if (!ch)
+		return 0;
+
+	unsigned int i;
+	for (i = 0; i < ch->nb_drives; i++) {
+		struct st_drive * dr = ch->drives + i;
+
+		if (!dr->lock->ops->trylock(dr->lock))
+			return dr;
+	}
+
+	return 0;
+}
 
 int st_scsi_changer_load_media(struct st_changer * ch, struct st_media * from, struct st_drive * to) {
 	unsigned int i;

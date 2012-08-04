@@ -22,13 +22,35 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 27 Jul 2012 21:01:59 +0200                         *
+*  Last modified: Sat, 04 Aug 2012 14:01:43 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONED_LIBRARY_CHANGER_H__
 #define __STONED_LIBRARY_CHANGER_H__
 
 #include <libstone/library/changer.h>
+
+struct st_pool;
+
+/**
+ * \brief Select a \a media by his \a pool
+ *
+ * This function will select a media from \a pool. But it will also exclude medias contained into \a previous_media.
+ *
+ * \param[in] pool : \a pool, should not be null
+ * \param[in] previous_medias : previous medias returned by this function
+ * \param[in] nb_medias : number of medias
+ * \returns a locked slot which contains a media from \a pool
+ */
+struct st_slot * st_changer_find_media_by_pool(struct st_pool * pool, struct st_media ** previous_medias, unsigned int nb_medias);
+
+/**
+ * \brief Retreive slot which contains \a media
+ *
+ * \param[in] media : a media
+ * \returns a locked slot or NULL if \a media is not found or the slot which contains \e media is already locked
+ */
+struct st_slot * st_changer_find_slot_by_media(struct st_media * media);
 
 int st_changer_setup(void);
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jul 2012 20:56:43 +0200                         *
+*  Last modified: Sat, 04 Aug 2012 14:45:16 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_CHANGER_H__
@@ -78,7 +78,7 @@ struct st_changer {
 	 */
 	char * serial_number;
 	/**
-	 * \brief Vendor of this \a changer
+	 * \brief This changer has got a barcode reader
 	 */
 	int barcode;
 
@@ -110,6 +110,14 @@ struct st_changer {
 	 * \brief Operations associated to this \a changer
 	 */
 	struct st_changer_ops {
+		/**
+		 * \brief Find a free drive and acquire \a his lock
+		 *
+		 * \param[in] : a \a changer
+		 * \returns a locked drive
+		 * \attention Do not forget to unlock drive after using it
+		 */
+		struct st_drive * (*find_free_drive)(struct st_changer * ch);
 		/**
 		 * \brief Load a media
 		 *

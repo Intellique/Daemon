@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 31 Jul 2012 23:02:44 +0200                         *
+*  Last modified: Sat, 04 Aug 2012 14:28:32 +0200                         *
 \*************************************************************************/
 
 // open
@@ -45,6 +45,7 @@
 #include <unistd.h>
 
 #include <libstone/database.h>
+#include <libstone/library/ressource.h>
 #include <libstone/log.h>
 #include <stoned/library/changer.h>
 
@@ -55,6 +56,60 @@ static struct st_changer * st_changers = 0;
 static unsigned int st_nb_fake_changers = 0;
 static unsigned int st_nb_real_changers = 0;
 
+struct st_slot * st_changer_find_media_by_pool(struct st_pool * pool, struct st_media ** previous_medias, unsigned int nb_medias) {
+	unsigned int i;
+	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers; i++) {
+		struct st_changer * changer = st_changers + i;
+
+		unsigned int j;
+		for (j = 0; j < changer->nb_slots; j++) {
+			struct st_slot * slot = changer->slots + j;
+
+			if (slot->lock->ops->trylock(slot->lock))
+				continue;
+
+			struct st_media * media = slot->media;
+			if (!media || media->pool != pool) {
+				slot->lock->ops->unlock(slot->lock);
+				continue;
+			}
+
+			unsigned int k;
+			for (k = 0; media && k < nb_medias; k++)
+				if (media == previous_medias[k])
+					media = 0;
+
+			if (media)
+				return slot;
+
+			slot->lock->ops->unlock(slot->lock);
+		}
+	}
+
+	return 0;
+}
+
+struct st_slot * st_changer_find_slot_by_media(struct st_media * media) {
+	unsigned int i;
+	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers; i++) {
+		struct st_changer * changer = st_changers + i;
+
+		unsigned int j;
+		for (j = 0; j < changer->nb_slots; j++) {
+			struct st_slot * slot = changer->slots + j;
+
+			if (slot->lock->ops->trylock(slot->lock))
+				continue;
+
+			if (media == slot->media)
+				return slot;
+
+			slot->lock->ops->unlock(slot->lock);
+		}
+	}
+
+	return 0;
+}
 
 int st_changer_setup() {
 	glob_t gl;
