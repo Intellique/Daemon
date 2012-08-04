@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 02 Aug 2012 22:27:36 +0200                         *
+*  Last modified: Sat, 04 Aug 2012 12:52:43 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -230,7 +230,10 @@ ssize_t st_scsi_tape_drive_get_block_size(struct st_drive * drive) {
 
 		if (!st_scsi_tape_drive_rewind(drive)) {
 			block_size <<= 1;
-			buffer = realloc(buffer, block_size);
+			void * new_addr = realloc(buffer, block_size);
+			if (!new_addr)
+				free(buffer);
+			buffer = new_addr;
 		} else
 			break;
 	}
