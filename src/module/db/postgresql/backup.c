@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 13 Jul 2012 23:01:33 +0200                         *
+*  Last modified: Sun, 05 Aug 2012 13:45:53 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -74,7 +74,6 @@ static ssize_t st_db_postgresql_stream_backup_get_block_size(struct st_stream_re
 static int st_db_postgresql_stream_backup_last_errno(struct st_stream_reader * io);
 static ssize_t st_db_postgresql_stream_backup_position(struct st_stream_reader * io);
 static ssize_t st_db_postgresql_stream_backup_read(struct st_stream_reader * io, void * buffer, ssize_t length);
-static off_t st_db_postgresql_stream_backup_set_position(struct st_stream_reader * io, off_t position);
 
 static struct st_stream_reader_ops st_db_postgresql_stream_backup_ops = {
 	.close          = st_db_postgresql_stream_backup_close,
@@ -85,7 +84,6 @@ static struct st_stream_reader_ops st_db_postgresql_stream_backup_ops = {
 	.last_errno     = st_db_postgresql_stream_backup_last_errno,
 	.position       = st_db_postgresql_stream_backup_position,
 	.read           = st_db_postgresql_stream_backup_read,
-	//.set_position   = st_db_postgresql_stream_backup_set_position,
 };
 
 
@@ -270,9 +268,5 @@ ssize_t st_db_postgresql_stream_backup_read(struct st_stream_reader * io, void *
 	}
 
 	return nb_total_read;
-}
-
-off_t st_db_postgresql_stream_backup_set_position(struct st_stream_reader * io __attribute__((unused)), off_t position __attribute__((unused))) {
-	return -1;
 }
 
