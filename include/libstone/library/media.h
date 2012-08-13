@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 02 Aug 2012 22:23:04 +0200                         *
+*  Last modified: Mon, 13 Aug 2012 19:24:39 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -106,6 +106,8 @@ struct st_media {
 
 	struct st_media_format * format;
 	struct st_pool * pool;
+
+	void * db_data;
 };
 
 struct st_media_format {

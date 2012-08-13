@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 04 Aug 2012 14:28:32 +0200                         *
+*  Last modified: Mon, 13 Aug 2012 13:12:43 +0200                         *
 \*************************************************************************/
 
 // open
@@ -177,6 +177,7 @@ int st_changer_setup() {
 		drives[i].slot = 0;
 
 		drives[i].data = 0;
+		drives[i].db_data = 0;
 	}
 	globfree(&gl);
 
@@ -231,6 +232,7 @@ int st_changer_setup() {
 		st_changers[i].nb_slots = 0;
 
 		st_changers[i].data = 0;
+		st_changers[i].db_data = 0;
 	}
 	globfree(&gl);
 

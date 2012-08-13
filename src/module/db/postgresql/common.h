@@ -22,13 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 02 Aug 2012 22:07:11 +0200                         *
+*  Last modified: Mon, 06 Aug 2012 00:02:15 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DB_POSTGRESQL_CONNNECTION_H__
 #define __STONE_DB_POSTGRESQL_CONNNECTION_H__
 
-// ssize_t
+// ssize_t, time_t
 #include <sys/types.h>
 
 #include <libstone/database.h>
@@ -51,6 +51,8 @@ struct st_database_connection * st_db_postgresql_connnect_init(PGconn * pg_conne
 
 int st_db_postgresql_get_bool(PGresult * result, int row, int column, unsigned char * value);
 
+int st_db_postgresql_get_double(PGresult * result, int row, int column, double * value);
+
 void st_db_postgresql_get_error(PGresult * result, const char * prepared_query);
 
 int st_db_postgresql_get_long(PGresult * result, int row, int column, long * value);
@@ -60,6 +62,8 @@ int st_db_postgresql_get_ssize(PGresult * result, int row, int column, ssize_t *
 int st_db_postgresql_get_string(PGresult * result, int row, int column, char * string, size_t length);
 
 int st_db_postgresql_get_string_dup(PGresult * result, int row, int column, char ** string);
+
+int st_db_postgresql_get_time(PGresult * result, int row, int column, time_t * value);
 
 int st_db_postgresql_get_uchar(PGresult * result, int row, int column, unsigned char * value);
 

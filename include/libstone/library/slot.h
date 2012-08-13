@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jul 2012 18:56:14 +0200                         *
+*  Last modified: Mon, 13 Aug 2012 22:55:52 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONED_LIBRARY_SLOT_H__
@@ -53,6 +53,11 @@ struct st_slot {
 	struct st_ressource * lock;
 
 	void * data;
+
+	/**
+	 * \brief Private data used by database plugin
+	 */
+	void * db_data;
 };
 
 const char * st_slot_type_to_string(enum st_slot_type type);

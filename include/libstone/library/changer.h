@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 04 Aug 2012 14:45:16 +0200                         *
+*  Last modified: Mon, 13 Aug 2012 13:11:37 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_CHANGER_H__
@@ -146,6 +146,11 @@ struct st_changer {
 		int (*unload)(struct st_changer * ch, struct st_drive * from);
 	} * ops;
 	void * data;
+
+	/**
+	 * \brief Private data used by database plugin
+	 */
+	void * db_data;
 };
 
 const char * st_changer_status_to_string(enum st_changer_status status);

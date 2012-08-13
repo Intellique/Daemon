@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jul 2012 12:58:57 +0200                         *
+*  Last modified: Mon, 13 Aug 2012 19:25:45 +0200                         *
 \*************************************************************************/
 
 // glob, globfree
@@ -53,7 +53,7 @@ int stcfg_scan() {
 	}
 
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
-    printf("Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+	printf("Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
 
 	struct st_drive * drives = calloc(gl.gl_pathc, sizeof(struct st_drive));
 	unsigned int nb_drives = gl.gl_pathc;
@@ -109,6 +109,7 @@ int stcfg_scan() {
 		drives[i].slot = 0;
 
 		drives[i].data = 0;
+		drives[i].db_data = 0;
 	}
 	globfree(&gl);
 
@@ -164,6 +165,7 @@ int stcfg_scan() {
 		changers[i].nb_slots = 0;
 
 		changers[i].data = 0;
+		changers[i].db_data = 0;
 	}
 	globfree(&gl);
 

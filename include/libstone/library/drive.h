@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 29 Jul 2012 20:19:44 +0200                         *
+*  Last modified: Mon, 13 Aug 2012 13:11:39 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_DRIVE_H__
@@ -30,6 +30,8 @@
 
 // ssize_t, time_t
 #include <sys/types.h>
+
+#include "media.h"
 
 struct st_changer;
 struct st_database_connection;
@@ -56,6 +58,9 @@ struct st_drive {
 	char * scsi_device;
 	enum st_drive_status status;
 	unsigned char enabled;
+
+	unsigned char density_code;
+	enum st_media_format_mode mode;
 	long double operation_duration;
 	time_t last_clean;
 	unsigned char is_empty;
@@ -81,6 +86,11 @@ struct st_drive {
 		int (*update_media_info)(struct st_drive * drive);
 	} * ops;
 	void * data;
+
+	/**
+	 * \brief Private data used by database plugin
+	 */
+	void * db_data;
 
 	struct st_ressource * lock;
 };
