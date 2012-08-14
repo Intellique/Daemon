@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 14 Aug 2012 09:41:24 +0200                         *
+*  Last modified: Wed, 15 Aug 2012 00:04:26 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -192,6 +192,9 @@ void st_scsi_tape_drive_create_media(struct st_drive * drive) {
 }
 
 int st_scsi_tape_drive_eject(struct st_drive * drive) {
+	if (!drive || !drive->enabled)
+		return 1;
+
 	struct st_scsi_tape_drive_private * self = drive->data;
 
 	st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: rewind tape and put the drive offline", drive->vendor, drive->model, drive - drive->changer->drives);
@@ -212,6 +215,9 @@ int st_scsi_tape_drive_eject(struct st_drive * drive) {
 }
 
 int st_scsi_tape_drive_format(struct st_drive * drive, int quick_mode) {
+	if (!drive || !drive->enabled)
+		return 1;
+
 	struct st_scsi_tape_drive_private * self = drive->data;
 
 	st_scsi_tape_drive_operation_start(self);
@@ -319,6 +325,9 @@ ssize_t st_scsi_tape_drive_get_block_size(struct st_drive * drive) {
 }
 
 struct st_stream_reader * st_scsi_tape_drive_get_reader(struct st_drive * drive, int file_position) {
+	if (!drive || !drive->enabled)
+		return 0;
+
 	if (st_scsi_tape_drive_set_file_position(drive, file_position))
 		return 0;
 
@@ -335,6 +344,9 @@ struct st_stream_reader * st_scsi_tape_drive_get_reader(struct st_drive * drive,
 }
 
 struct st_stream_writer * st_scsi_tape_drive_get_writer(struct st_drive * drive, int file_position) {
+	if (!drive || !drive->enabled)
+		return 0;
+
 	st_scsi_tape_drive_set_file_position(drive, file_position);
 
 	struct st_scsi_tape_drive_private * self = drive->data;
@@ -466,6 +478,9 @@ int st_scsi_tape_drive_set_file_position(struct st_drive * drive, int file_posit
 }
 
 int st_scsi_tape_drive_update_media_info(struct st_drive * drive) {
+	if (!drive || !drive->enabled)
+		return 1;
+
 	struct st_scsi_tape_drive_private * self = drive->data;
 
 	st_scsi_tape_drive_on_failed(drive, 0, 1);

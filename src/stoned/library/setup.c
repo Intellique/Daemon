@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 14 Aug 2012 08:52:58 +0200                         *
+*  Last modified: Tue, 14 Aug 2012 23:58:45 +0200                         *
 \*************************************************************************/
 
 // open
@@ -163,6 +163,8 @@ int st_changer_setup() {
 		drives[i].device = strdup(device);
 		drives[i].scsi_device = strdup(scsi_device);
 		drives[i].status = st_drive_unknown;
+		drives[i].enabled = 1;
+
 		drives[i].model = 0;
 		drives[i].vendor = 0;
 		drives[i].revision = 0;
@@ -215,6 +217,8 @@ int st_changer_setup() {
 
 		st_changers[i].device = strdup(device);
 		st_changers[i].status = st_changer_unknown;
+		st_changers[i].enabled = 1;
+
 		st_changers[i].model = 0;
 		st_changers[i].vendor = 0;
 		st_changers[i].revision = 0;

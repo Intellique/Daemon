@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 14 Aug 2012 22:46:42 +0200                         *
+*  Last modified: Wed, 15 Aug 2012 00:01:42 +0200                         *
 \*************************************************************************/
 
 // open
@@ -76,6 +76,9 @@ struct st_drive * st_scsi_changer_find_free_drive(struct st_changer * ch) {
 	for (i = 0; i < ch->nb_drives; i++) {
 		struct st_drive * dr = ch->drives + i;
 
+		if (!dr->enabled)
+			continue;
+
 		if (!dr->lock->ops->trylock(dr->lock))
 			return dr;
 	}
@@ -84,6 +87,9 @@ struct st_drive * st_scsi_changer_find_free_drive(struct st_changer * ch) {
 }
 
 int st_scsi_changer_load_media(struct st_changer * ch, struct st_media * from, struct st_drive * to) {
+	if (!ch->enabled)
+		return 1;
+
 	unsigned int i;
 	struct st_slot * slot = 0;
 	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
@@ -100,7 +106,7 @@ int st_scsi_changer_load_media(struct st_changer * ch, struct st_media * from, s
 }
 
 int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * from, struct st_drive * to) {
-	if (!ch || !from || !to)
+	if (!ch || !from || !to || !ch->enabled)
 		return 1;
 
 	if (to->slot == from)
@@ -301,7 +307,7 @@ void * st_scsi_changer_setup2(void * drive) {
 }
 
 int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from) {
-	if (!ch || !from)
+	if (!ch || !from || !ch->enabled)
 		return 1;
 
 	struct st_scsi_changer_private * self = ch->data;
