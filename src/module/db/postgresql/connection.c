@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 14 Aug 2012 10:17:16 +0200                         *
+*  Last modified: Tue, 14 Aug 2012 15:29:08 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1006,7 +1006,11 @@ int st_db_postgresql_sync_slot(struct st_database_connection * connect, struct s
 		slot_data->id = -1;
 	}
 
-	char * changer_id = 0, * drive_id = 0, * slot_id = 0;
+	struct st_db_postgresql_media_data * media_data = 0;
+	if (slot->media)
+		media_data = slot->media->db_data;
+
+	char * changer_id = 0, * drive_id = 0, * media_id = 0, * slot_id = 0;
 	asprintf(&changer_id, "%ld", changer_data->id);
 	if (drive_data)
 		asprintf(&drive_id, "%ld", drive_data->id);
@@ -1015,7 +1019,7 @@ int st_db_postgresql_sync_slot(struct st_database_connection * connect, struct s
 
 	if (slot_data->id >= 0) {
 		const char * query = "select_slot_by_id";
-		st_db_postgresql_prepare(self, query, "SELECT id FROM changerslot WHERE id = $1 FOR UPDATE NOWAIT");
+		st_db_postgresql_prepare(self, query, "SELECT tape FROM changerslot WHERE id = $1 FOR UPDATE NOWAIT");
 
 		const char * param[] = { slot_id };
 		PGresult * result = PQexecPrepared(self->connect, query, 1, param, 0, 0, 0);
@@ -1023,6 +1027,8 @@ int st_db_postgresql_sync_slot(struct st_database_connection * connect, struct s
 
 		if (status == PGRES_FATAL_ERROR)
 			st_db_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1 && !PQgetisnull(result, 0, 0))
+			st_db_postgresql_get_string_dup(result, 0, 0, &media_id);
 
 		PQclear(result);
 		free(changer_id);
@@ -1033,7 +1039,7 @@ int st_db_postgresql_sync_slot(struct st_database_connection * connect, struct s
 			return 2;
 	} else {
 		const char * query = "select_slot_by_index_changer";
-		st_db_postgresql_prepare(self, query, "SELECT id FROM changerslot WHERE index = $1 AND changer = $2 FOR UPDATE NOWAIT");
+		st_db_postgresql_prepare(self, query, "SELECT id, tape FROM changerslot WHERE index = $1 AND changer = $2 FOR UPDATE NOWAIT");
 
 		char * slot_index = 0;
 		asprintf(&slot_index, "%td", slot - slot->changer->slots);
@@ -1047,6 +1053,8 @@ int st_db_postgresql_sync_slot(struct st_database_connection * connect, struct s
 		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			st_db_postgresql_get_long(result, 0, 0, &slot_data->id);
 			st_db_postgresql_get_string_dup(result, 0, 0, &slot_id);
+			if (!PQgetisnull(result, 0, 1))
+				st_db_postgresql_get_string_dup(result, 0, 1, &media_id);
 		}
 
 		PQclear(result);
@@ -1057,13 +1065,36 @@ int st_db_postgresql_sync_slot(struct st_database_connection * connect, struct s
 			return 2;
 	}
 
+	if (media_id) {
+		long mediaid;
+		sscanf(media_id, "%ld", &mediaid);
+
+		if (!media_data || mediaid != media_data->id) {
+			const char * query = "update_media_offline";
+			st_db_postgresql_prepare(self, query, "UPDATE tape SET location = 'offline' WHERE id = $1");
+
+			const char * param[] = { media_id };
+			PGresult * result = PQexecPrepared(self->connect, query, 1, param, 0, 0, 0);
+			ExecStatusType status = PQresultStatus(result);
+
+			if (status == PGRES_FATAL_ERROR)
+				st_db_postgresql_get_error(result, query);
+
+			PQclear(result);
+
+			free(media_id);
+			media_id = 0;
+		}
+	}
+
+	if (media_data && media_data->id >= 0 && !media_id)
+		asprintf(&media_id, "%ld", media_data->id);
+
 	if (slot_data->id >= 0) {
 		const char * query = "update_slot";
 		st_db_postgresql_prepare(self, query, "UPDATE changerslot SET tape = $1 WHERE id = $2");
 
-		char * tape_id = 0;
-
-		const char * param[] = { tape_id, slot_id };
+		const char * param[] = { media_id, slot_id };
 		PGresult * result = PQexecPrepared(self->connect, query, 2, param, 0, 0, 0);
 		ExecStatusType status = PQresultStatus(result);
 
@@ -1072,37 +1103,45 @@ int st_db_postgresql_sync_slot(struct st_database_connection * connect, struct s
 
 		PQclear(result);
 		free(slot_id);
-		if (tape_id)
-			free(tape_id);
+		free(media_id);
 
 		return status == PGRES_FATAL_ERROR;
 	} else {
 		const char * query = "insert_slot";
 		st_db_postgresql_prepare(self, query, "INSERT INTO changerslot(index, changer, tape, type) VALUES ($1, $2, $3, $4) RETURNING id");
 
-		char * changer_id = 0, * slot_index = 0, * tape_id = 0;
+		char * changer_id = 0, * slot_index = 0;
 		asprintf(&slot_index, "%td", slot - slot->changer->slots);
-		char * type = "default";
-		if (slot->drive)
-			type = "drive";
-		// else if (slot->is_import_export_slot)
-		//	type = "import / export";
+		char * type;
+		switch (slot->media->type) {
+			case st_slot_type_drive:
+				type = "drive";
+				break;
 
-		const char * param[] = { slot_index, changer_id, tape_id, type };
+			case st_slot_type_import_export:
+				type = "import / export";
+				break;
+
+			default:
+				type = "default";
+				break;
+		}
+
+		const char * param[] = { slot_index, changer_id, media_id, type };
 		PGresult * result = PQexecPrepared(self->connect, query, 4, param, 0, 0, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
 			st_db_postgresql_get_error(result, query);
-		//else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
-		//	st_db_postgresql_get_long(result, 0, 0, &slot->id);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+			st_db_postgresql_get_long(result, 0, 0, &slot_data->id);
 
 		PQclear(result);
 
-		if (tape_id)
-			free(tape_id);
+		free(media_id);
 		free(slot_index);
 		free(changer_id);
+		free(media_id);
 
 		return status == PGRES_FATAL_ERROR;
 	}
