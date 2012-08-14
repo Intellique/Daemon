@@ -45,7 +45,9 @@ CREATE TYPE JobStatus AS ENUM (
     'error',
     'idle',
     'pause',
-    'running'
+    'running',
+    'stopped',
+    'waiting'
 );
 
 CREATE TYPE LogLevel AS ENUM (
@@ -469,6 +471,8 @@ COMMENT ON COLUMN Archive.endtime IS 'End time of archive creation';
 COMMENT ON TABLE Checksum IS 'Contains only checksum available';
 
 COMMENT ON COLUMN DriveFormat.cleaningInterval IS 'Interval between two cleaning in days';
+
+COMMENT ON TYPE JobStatus IS E'disable => disabled,\nerror => error while running,\nidle => not yet started or completed,\npause => waiting for user action,\nrunning => running,\nstopped => stopped by user,\nwaiting => waiting for a resource';
 
 COMMENT ON COLUMN Tape.label IS 'Contains an UUID';
 

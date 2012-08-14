@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 13 Aug 2012 19:24:39 +0200                         *
+*  Last modified: Tue, 14 Aug 2012 21:34:27 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -133,10 +133,11 @@ struct st_media_format {
 
 struct st_pool {
 	char uuid[37];
-	char name[64];
+	char * name;
 	unsigned char growable;
+	unsigned char rewritable;
 
-	struct st_tape_format * format;
+	struct st_media_format * format;
 };
 
 
@@ -157,7 +158,6 @@ int st_media_write_header(struct st_drive * dr, struct st_pool * pool);
 
 struct st_media_format * st_media_format_get_by_density_code(unsigned char density_code, enum st_media_format_mode mode);
 
-struct st_pool * st_pool_get_by_id(long id);
 struct st_pool * st_pool_get_by_uuid(const char * uuid);
 int st_pool_sync(struct st_pool * pool);
 

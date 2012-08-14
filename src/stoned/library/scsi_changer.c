@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 04 Aug 2012 14:07:27 +0200                         *
+*  Last modified: Tue, 14 Aug 2012 19:32:29 +0200                         *
 \*************************************************************************/
 
 // open
@@ -169,22 +169,67 @@ void st_scsi_changer_setup(struct st_changer * changer) {
 	changer->data = ch;
 
 	unsigned int i;
+	for (i = changer->nb_drives; i < changer->nb_slots; i++)
+		changer->slots[i].lock = st_ressource_new();
+
 	for (i = 0; i < changer->nb_drives; i++) {
 		struct st_drive * dr = changer->drives + i;
 		dr->slot->drive = dr;
 		st_scsi_tape_drive_setup(dr);
 
 		if (dr->is_empty && dr->slot->full) {
-			if (st_scsi_changer_unload(changer, dr)) {
+			struct st_slot * slot_from = dr->slot;
+			struct st_scsislot * slot_from_data = slot_from->data;
+
+			unsigned int j;
+			struct st_slot * slot_to = 0;
+			for (j = changer->nb_drives; j < changer->nb_slots && !slot_to && slot_from_data->src_address; j++) {
+				slot_to = changer->slots + j;
+
+				struct st_scsislot * slot_to_data = slot_to->data;
+				if (slot_from_data->src_address != slot_to_data->address) {
+					slot_to = 0;
+					continue;
+				}
+
+				if (slot_to->lock->ops->trylock(slot_to->lock)) {
+					slot_to = 0;
+					break;
+				}
+			}
+
+			for (j = changer->nb_drives; j < changer->nb_slots && !slot_to; j++) {
+				slot_to = changer->slots + j;
+
+				if (slot_to->full) {
+					slot_to = 0;
+					continue;
+				}
+
+				if (slot_to->lock->ops->trylock(slot_to->lock)) {
+					slot_to = 0;
+					break;
+				}
+			}
+
+			if (st_scsi_loader_move(ch->fd, ch->transport_address, slot_from, slot_to)) {
 				st_log_write_all(st_log_level_warning, st_log_type_changer, "[%s | %s]: your drive #%td is offline but there is a media inside and there is no place for unloading it", changer->vendor, changer->model, changer->drives - dr);
 				st_log_write_all(st_log_level_error, st_log_type_changer, "[%s | %s]: panic: your library require manual maintenance because there is no free slot for unloading drive", changer->vendor, changer->model);
 				exit(1);
+			} else {
+				slot_to->media = dr->slot->media;
+				dr->slot->media = 0;
+				slot_to->volume_name = dr->slot->volume_name;
+				dr->slot->volume_name = 0;
+				dr->slot->full = 0;
+				slot_to->full = 1;
+				slot_from_data->src_address = 0;
+
+				if (slot_to->media)
+					slot_to->media->location = st_media_location_online;
 			}
 		}
 	}
-
-	for (i = changer->nb_drives; i < changer->nb_slots; i++)
-		changer->slots[i].lock = st_ressource_new();
 
 	pthread_t * workers = 0;
 	if (changer->nb_drives > 1) {
@@ -337,7 +382,6 @@ int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from) {
 
 		if (to->media)
 			to->media->location = st_media_location_online;
-
 	}
 
 	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading tape '%s' from drive #%td to slot #%td finished with code = %d", ch->vendor, ch->model, to->volume_name, from - ch->drives, to - ch->slots, failed);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 03 Aug 2012 23:56:42 +0200                         *
+*  Last modified: Tue, 14 Aug 2012 21:20:19 +0200                         *
 \*************************************************************************/
 
 // pthread_mutex_lock, pthread_mutex_unlock
@@ -46,10 +46,16 @@ static pthread_mutex_t st_media_format_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct st_media_format ** st_media_formats = 0;
 static unsigned int st_media_format_nb_formats = 0;
 
+static pthread_mutex_t st_pool_lock = PTHREAD_MUTEX_INITIALIZER;
+static struct st_pool ** st_pools = 0;
+static unsigned int st_pool_nb_pools = 0;
+
 static void st_media_add(struct st_media * media);
 static int st_media_retrieve(struct st_media ** media, const char * uuid, const char * medium_serial_number, const char * label);
 
 static int st_media_format_retrieve(struct st_media_format ** media_format, unsigned char density_code, enum st_media_format_mode mode);
+
+static int st_pool_retreive(struct st_pool ** pool, const char * uuid);
 
 
 static const struct st_media_format_data_type2 {
@@ -205,11 +211,9 @@ struct st_media * st_media_get_by_label(const char * label) {
 
 	struct st_media * media = 0;
 	unsigned int i;
-	for (i = 0; i < st_media_nb_medias; i++)
-		if (!strcmp(label, st_medias[i]->label)) {
+	for (i = 0; i < st_media_nb_medias && !media; i++)
+		if (!strcmp(label, st_medias[i]->label))
 			media = st_medias[i];
-			break;
-		}
 
 	if (!media && st_media_retrieve(&media, 0, 0, label))
 		st_media_add(media);
@@ -227,11 +231,9 @@ struct st_media * st_media_get_by_medium_serial_number(const char * medium_seria
 
 	struct st_media * media = 0;
 	unsigned int i;
-	for (i = 0; i < st_media_nb_medias; i++)
-		if (!strcmp(medium_serial_number, st_medias[i]->medium_serial_number)) {
+	for (i = 0; i < st_media_nb_medias && !media; i++)
+		if (!strcmp(medium_serial_number, st_medias[i]->medium_serial_number))
 			media = st_medias[i];
-			break;
-		}
 
 	if (!media && st_media_retrieve(&media, 0, medium_serial_number, 0))
 		st_media_add(media);
@@ -249,11 +251,9 @@ struct st_media * st_media_get_by_uuid(const char * uuid) {
 
 	struct st_media * media = 0;
 	unsigned int i;
-	for (i = 0; i < st_media_nb_medias; i++)
-		if (!strcmp(uuid, st_medias[i]->uuid)) {
+	for (i = 0; i < st_media_nb_medias && !media; i++)
+		if (!strcmp(uuid, st_medias[i]->uuid))
 			media = st_medias[i];
-			break;
-		}
 
 	if (!media && st_media_retrieve(&media, uuid, 0, 0))
 		st_media_add(media);
@@ -301,11 +301,9 @@ struct st_media_format * st_media_format_get_by_density_code(unsigned char densi
 
 	struct st_media_format * media_format = 0;
 	unsigned int i;
-	for (i = 0; i < st_media_format_nb_formats; i++)
-		if (st_media_formats[i]->density_code == density_code && st_media_formats[i]->mode == mode) {
+	for (i = 0; i < st_media_format_nb_formats && !media_format; i++)
+		if (st_media_formats[i]->density_code == density_code && st_media_formats[i]->mode == mode)
 			media_format = st_media_formats[i];
-			break;
-		}
 
 	if (!media_format && st_media_format_retrieve(&media_format, density_code, mode)) {
 		void * new_addr = realloc(st_media_formats, (st_media_format_nb_formats + 1) * sizeof(struct st_media_format *));
@@ -341,6 +339,65 @@ int st_media_format_retrieve(struct st_media_format ** media_format, unsigned ch
 			if (!*media_format)
 				*media_format = malloc(sizeof(struct st_media_format));
 			memcpy(*media_format, &format, sizeof(struct st_media_format));
+			ok = 1;
+		}
+
+		connect->ops->close(connect);
+		connect->ops->free(connect);
+
+		return ok;
+	}
+
+	return 0;
+}
+
+
+struct st_pool * st_pool_get_by_uuid(const char * uuid) {
+	if (!uuid)
+		return 0;
+
+	pthread_mutex_lock(&st_pool_lock);
+
+	struct st_pool * pool = 0;
+	unsigned int i;
+	for (i = 0; i < st_pool_nb_pools && !pool; i++)
+		if (!strcmp(uuid, st_pools[i]->uuid))
+			pool = st_pools[i];
+
+	if (!pool && st_pool_retreive(&pool, uuid)) {
+		void * new_addr = realloc(st_pools, (st_pool_nb_pools + 1) * sizeof(struct st_pool *));
+		if (new_addr) {
+			st_pools = new_addr;
+			st_pools[st_pool_nb_pools] = pool;
+			st_pool_nb_pools++;
+		}
+	}
+
+	pthread_mutex_unlock(&st_pool_lock);
+
+	return pool;
+}
+
+int st_pool_retreive(struct st_pool ** pool, const char * uuid) {
+	struct st_database * db = st_database_get_default_driver();
+	struct st_database_config * config = 0;
+	struct st_database_connection * connect = 0;
+
+	if (db)
+		config = db->ops->get_default_config();
+
+	if (config)
+		connect = config->ops->connect(config);
+
+	if (connect) {
+		struct st_pool pool2;
+		bzero(&pool2, sizeof(struct st_pool));
+
+		short ok = 0;
+		if (!connect->ops->get_pool(connect, &pool2, uuid)) {
+			if (!*pool)
+				*pool = malloc(sizeof(struct st_pool));
+			memcpy(*pool, &pool2, sizeof(struct st_pool));
 			ok = 1;
 		}
 

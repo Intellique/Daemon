@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 01 Aug 2012 21:12:28 +0200                         *
+*  Last modified: Tue, 14 Aug 2012 21:17:49 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -37,6 +37,7 @@ struct st_hashtable;
 struct st_media;
 struct st_media_format;
 enum st_media_format_mode;
+struct st_pool;
 struct st_stream_reader;
 
 
@@ -145,6 +146,7 @@ struct st_database_connection {
 
 		int (*get_media)(struct st_database_connection * connect, struct st_media * media, const char * uuid, const char * medium_serial_number, const char * label);
 		int (*get_media_format)(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, enum st_media_format_mode mode);
+		int (*get_pool)(struct st_database_connection * connect, struct st_pool * pool, const char * uuid);
 
 
 
