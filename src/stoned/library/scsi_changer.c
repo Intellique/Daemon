@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 14 Aug 2012 19:32:29 +0200                         *
+*  Last modified: Tue, 14 Aug 2012 22:46:42 +0200                         *
 \*************************************************************************/
 
 // open
@@ -282,6 +282,7 @@ void * st_scsi_changer_setup2(void * drive) {
 
 		sl->media = st_media_get_by_label(sl->volume_name);
 		if (sl->media) {
+			sl->media->location = st_media_location_online;
 			sl->lock->ops->unlock(sl->lock);
 			continue;
 		}
