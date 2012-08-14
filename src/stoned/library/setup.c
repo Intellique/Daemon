@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 13 Aug 2012 13:12:43 +0200                         *
+*  Last modified: Tue, 14 Aug 2012 08:52:58 +0200                         *
 \*************************************************************************/
 
 // open
@@ -391,5 +391,11 @@ int st_changer_setup() {
 	// 	st_fakechanger_setup(st_changers + i);
 
 	return 0;
+}
+
+void st_changer_sync(struct st_database_connection * connection) {
+	unsigned int i;
+	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers; i++)
+		connection->ops->sync_changer(connection, st_changers + i);
 }
 

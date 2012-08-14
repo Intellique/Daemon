@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 04 Aug 2012 16:38:56 +0200                         *
+*  Last modified: Tue, 14 Aug 2012 09:41:24 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -357,6 +357,7 @@ void st_scsi_tape_drive_setup(struct st_drive * drive) {
 	self->fd_nst = fd;
 	self->used_by_io = 0;
 
+	drive->mode = st_media_format_mode_linear;
 	drive->ops = &st_scsi_tape_drive_ops;
 	drive->data = self;
 	drive->operation_duration = 0;

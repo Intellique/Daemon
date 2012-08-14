@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 13 Aug 2012 23:30:19 +0200                         *
+*  Last modified: Tue, 14 Aug 2012 10:17:16 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -211,6 +211,16 @@ int st_db_postgresql_create_checkpoint(struct st_database_connection * connect, 
 	st_log_write_all(st_log_level_debug, st_log_type_plugin_db, "Create savepoint '%s'", checkpoint);
 
 	struct st_db_postgresql_connection_private * self = connect->data;
+	PGTransactionStatusType transStatus = PQtransactionStatus(self->connect);
+
+	if (transStatus == PQTRANS_INERROR) {
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: Can't create checkpoint because there is an error into current transaction");
+		return -1;
+	} else if (transStatus == PQTRANS_IDLE) {
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: Can't create checkpoint because there is no active transaction");
+		return -1;
+	}
+
 	char * query = 0;
 	asprintf(&query, "SAVEPOINT %s", checkpoint);
 
@@ -238,6 +248,8 @@ int st_db_postgresql_finish_transaction(struct st_database_connection * connect)
 	PGTransactionStatusType status = PQtransactionStatus(self->connect);
 	switch (status) {
 		case PQTRANS_INERROR: {
+			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: Rolling back transaction because current transaction is in error");
+
 			PGresult * result = PQexec(self->connect, "ROLL BACK");
 			PQclear(result);
 			return 1;
@@ -267,7 +279,7 @@ int st_db_postgresql_start_transaction(struct st_database_connection * connect) 
 	PGTransactionStatusType status = PQtransactionStatus(self->connect);
 	switch (status) {
 		case PQTRANS_IDLE: {
-			PGresult * result = PQexec(self->connect, "COMMIT");
+			PGresult * result = PQexec(self->connect, "BEGIN");
 			ExecStatusType commit_status = PQresultStatus(result);
 			if (commit_status != PGRES_COMMAND_OK)
 				st_db_postgresql_get_error(result, 0);
@@ -477,10 +489,11 @@ int st_db_postgresql_sync_changer(struct st_database_connection * connect, struc
 		PGresult * result = PQexecPrepared(self->connect, query, 4, params, 0, 0, 0);
 		ExecStatusType status = PQresultStatus(result);
 
+		free(changerid);
+
 		if (status == PGRES_FATAL_ERROR) {
 			st_db_postgresql_get_error(result, query);
 
-			free(changerid);
 			free(hostid);
 			PQclear(result);
 
@@ -517,7 +530,6 @@ int st_db_postgresql_sync_changer(struct st_database_connection * connect, struc
 		}
 	}
 
-	free(changerid);
 	free(hostid);
 
 	st_db_postgresql_create_checkpoint(connect, "sync_changer_before_drive");
@@ -580,7 +592,8 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connect, struct 
 		if (status == PGRES_FATAL_ERROR)
 			st_db_postgresql_get_error(result, query);
 		else if (status == PGRES_TUPLES_OK && nb_result == 1) {
-			st_db_postgresql_get_string_dup(result, 0, 0, &driveformatid);
+			if (!PQgetisnull(result, 0, 0))
+				st_db_postgresql_get_string_dup(result, 0, 0, &driveformatid);
 			st_db_postgresql_get_bool(result, 0, 1, &drive->enabled);
 		} else if (status == PGRES_TUPLES_OK && nb_result == 1)
 			drive->enabled = 0;
@@ -588,6 +601,7 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connect, struct 
 		PQclear(result);
 
 		if (status == PGRES_FATAL_ERROR) {
+			free(changerid);
 			if (transStatus == PQTRANS_IDLE)
 				st_db_postgresql_cancel_transaction(connect);
 			return 3;
@@ -611,13 +625,15 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connect, struct 
 			drive->operation_duration += old_operation_duration;
 
 			st_db_postgresql_get_time(result, 0, 2, &drive->last_clean);
-			st_db_postgresql_get_string_dup(result, 0, 3, &driveformatid);
+			if (!PQgetisnull(result, 0, 3))
+				st_db_postgresql_get_string_dup(result, 0, 3, &driveformatid);
 			st_db_postgresql_get_bool(result, 0, 4, &drive->enabled);
 		}
 
 		PQclear(result);
 
 		if (status == PGRES_FATAL_ERROR) {
+			free(changerid);
 			if (transStatus == PQTRANS_IDLE)
 				st_db_postgresql_cancel_transaction(connect);
 			return 3;
@@ -667,13 +683,12 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connect, struct 
 			st_db_postgresql_get_error(result, query);
 
 		PQclear(result);
-		free(op_duration);
+		free(changerid);
 		free(driveid);
 		free(driveformatid);
+		free(op_duration);
 
 		if (status == PGRES_FATAL_ERROR) {
-			if (drive->changer)
-				free(changerid);
 			if (transStatus == PQTRANS_IDLE)
 				st_db_postgresql_cancel_transaction(connect);
 			return 3;
@@ -705,21 +720,17 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connect, struct 
 			st_db_postgresql_get_long(result, 0, 0, &drive_data->id);
 
 		PQclear(result);
-		free(op_duration);
+		free(changerid);
 		free(changer_num);
 		free(driveformatid);
+		free(op_duration);
 
 		if (status == PGRES_FATAL_ERROR) {
-			if (drive->changer)
-				free(changerid);
 			if (transStatus == PQTRANS_IDLE)
 				st_db_postgresql_cancel_transaction(connect);
 			return 3;
 		}
 	}
-
-	free(changerid);
-	free(driveid);
 
 	st_db_postgresql_create_checkpoint(connect, "sync_drive_before_slot");
 
@@ -999,7 +1010,8 @@ int st_db_postgresql_sync_slot(struct st_database_connection * connect, struct s
 	asprintf(&changer_id, "%ld", changer_data->id);
 	if (drive_data)
 		asprintf(&drive_id, "%ld", drive_data->id);
-	asprintf(&slot_id, "%ld", slot_data->id);
+	if (slot_data->id >= 0)
+		asprintf(&slot_id, "%ld", slot_data->id);
 
 	if (slot_data->id >= 0) {
 		const char * query = "select_slot_by_id";

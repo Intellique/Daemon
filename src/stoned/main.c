@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 30 Jul 2012 22:04:12 +0200                         *
+*  Last modified: Tue, 14 Aug 2012 08:55:54 +0200                         *
 \*************************************************************************/
 
 // getopt_long
@@ -41,6 +41,7 @@
 
 #include "config.h"
 #include "stone.version"
+#include "library/common.h"
 //#include "admin.h"
 //#include "scheduler.h"
 
@@ -169,6 +170,17 @@ int main(int argc, char ** argv) {
 
 	if (st_changer_setup())
 		return 6;
+
+	struct st_database * db = st_database_get_default_driver();
+	struct st_database_config * config = 0;
+	struct st_database_connection * connect = 0;
+
+	if (db)
+		config = db->ops->get_default_config();
+	if (config)
+		connect = config->ops->connect(config);
+	if (connect)
+		st_changer_sync(connect);
 
 	// start remote admin
 	//st_admin_start();
