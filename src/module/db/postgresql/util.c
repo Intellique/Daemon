@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 15 Aug 2012 12:52:57 +0200                         *
+*  Last modified: Wed, 15 Aug 2012 20:42:43 +0200                         *
 \*************************************************************************/
 
 #define _XOPEN_SOURCE 500
@@ -30,6 +30,8 @@
 #include <postgresql/libpq-fe.h>
 // strcmp, strdup, strncpy
 #include <string.h>
+// bzero
+#include <strings.h>
 // mktime, strptime
 #include <time.h>
 
@@ -118,10 +120,15 @@ int st_db_postgresql_get_time(PGresult * result, int row, int column, time_t * v
 
 	char * value = PQgetvalue(result, row, column);
 	struct tm tv;
-
+	bzero(&tv, sizeof(struct tm));
 	int failed = strptime(value, "%F %T", &tv) ? 0 : 1;
-	if (!failed)
+
+	if (!failed) {
 		*val = mktime(&tv);
+
+		if (tv.tm_isdst)
+			*val -= 3600 * tv.tm_isdst;
+	}
 
 	return failed;
 }

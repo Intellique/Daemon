@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 15 Aug 2012 13:06:06 +0200                         *
+*  Last modified: Wed, 15 Aug 2012 19:09:55 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -71,7 +71,7 @@ struct st_job {
 		void (*free)(struct st_job * j);
 		int (*run)(struct st_job * j);
 		int (*stop)(struct st_job * j);
-	} * job_ops;
+	} * ops;
 	void * data;
 
 	void * db_data;
@@ -81,7 +81,7 @@ struct st_job {
 
 struct st_job_driver {
 	char * name;
-	void (*new_job)(struct st_database_connection * db, struct st_job * job);
+	void (*new_job)(struct st_job * job, struct st_database_connection * db);
 	void * cookie;
 	int api_version;
 };

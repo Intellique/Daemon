@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 15 Aug 2012 17:10:02 +0200                         *
+*  Last modified: Wed, 15 Aug 2012 18:28:28 +0200                         *
 \*************************************************************************/
 
 // getopt_long
@@ -35,16 +35,14 @@
 #include <libstone/checksum.h>
 #include <libstone/conf.h>
 #include <libstone/database.h>
+#include <libstone/job.h>
 #include <libstone/log.h>
 #include <stoned/library/changer.h>
-//#include <stone/job.h>
 
 #include "checksum/stoned.chcksum"
 #include "config.h"
 #include "stone.version"
-#include "library/common.h"
 #include "scheduler.h"
-//#include "admin.h"
 
 static void st_show_help(void);
 
@@ -159,21 +157,12 @@ int main(int argc, char ** argv) {
 	}
 
 	// check if config file contains a database
-	if (!st_database_get_default_driver()) {
+	struct st_database * db = st_database_get_default_driver();
+	if (!db) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: There is no database into config file '%s'", config_file);
 		return 5;
 	}
 
-	// synchronize checksum plugins
-	//st_checksum_sync_plugins();
-
-	// synchronize job plugins
-	//st_job_sync_plugins();
-
-	if (st_changer_setup())
-		return 6;
-
-	struct st_database * db = st_database_get_default_driver();
 	struct st_database_config * config = 0;
 	struct st_database_connection * connect = 0;
 
@@ -181,8 +170,20 @@ int main(int argc, char ** argv) {
 		config = db->ops->get_default_config();
 	if (config)
 		connect = config->ops->connect(config);
-	if (connect)
-		st_changer_sync(connect);
+
+	if (!connect) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: Failed to connect to database ");
+		return 5;
+	}
+
+	// synchronize checksum plugins
+	st_checksum_sync_plugins(connect);
+
+	// synchronize job plugins
+	st_job_sync_plugins(connect);
+
+	if (st_changer_setup())
+		return 6;
 
 	// start remote admin
 	//st_admin_start();

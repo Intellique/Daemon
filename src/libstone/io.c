@@ -22,15 +22,32 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 30 Dec 2011 17:27:31 +0100                         *
+*  Last modified: Wed, 15 Aug 2012 18:17:20 +0200                         *
 \*************************************************************************/
 
-#ifndef __STONE_JOB_P_H__
-#define __STONE_JOB_P_H__
+#define _GNU_SOURCE
+// va_end, va_start
+#include <stdarg.h>
+// free
+#include <stdlib.h>
+// vasprintf
+#include <stdio.h>
 
-#include <stone/job.h>
+#include <libstone/io.h>
 
-void st_job_sync_plugins(void);
 
-#endif
+ssize_t st_stream_writer_printf(struct st_stream_writer * writer, const char * format, ...) {
+	char * message = 0;
+
+	va_list va;
+	va_start(va, format);
+	ssize_t str_message = vasprintf(&message, format, va);
+	va_end(va);
+
+	ssize_t nb_write = writer->ops->write(writer, message, str_message);
+
+	free(message);
+
+	return nb_write;
+}
 

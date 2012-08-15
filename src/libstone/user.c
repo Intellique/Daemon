@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 15 Aug 2012 13:53:12 +0200                         *
+*  Last modified: Wed, 15 Aug 2012 22:03:16 +0200                         *
 \*************************************************************************/
 
 // pthread_mutex_lock, pthread_mutex_unlock
@@ -110,12 +110,13 @@ int st_user_sync(struct st_user * user) {
 	if (config)
 		connect = config->ops->connect(config);
 
-	int ok;
-	if (connect)
+	int ok = 0;
+	if (connect) {
 		ok = connect->ops->sync_user(connect, user);
 
-	connect->ops->close(connect);
-	connect->ops->free(connect);
+		connect->ops->close(connect);
+		connect->ops->free(connect);
+	}
 
 	return ok;
 }
