@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 14 Aug 2012 08:55:54 +0200                         *
+*  Last modified: Wed, 15 Aug 2012 17:10:02 +0200                         *
 \*************************************************************************/
 
 // getopt_long
@@ -39,16 +39,18 @@
 #include <stoned/library/changer.h>
 //#include <stone/job.h>
 
+#include "checksum/stoned.chcksum"
 #include "config.h"
 #include "stone.version"
 #include "library/common.h"
+#include "scheduler.h"
 //#include "admin.h"
-//#include "scheduler.h"
 
 static void st_show_help(void);
 
 int main(int argc, char ** argv) {
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone, version: " STONE_VERSION ", build: " __DATE__ " " __TIME__);
+	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Checksum: " STONED_SRCSUM ", last commit: " STONE_GIT_COMMIT);
 
 	enum {
 		OPT_CONFIG   = 'c',
@@ -185,7 +187,7 @@ int main(int argc, char ** argv) {
 	// start remote admin
 	//st_admin_start();
 
-	//st_sched_do_loop();
+	st_sched_do_loop(connect);
 
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone exit");
 

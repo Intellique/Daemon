@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 14 Aug 2012 21:17:49 +0200                         *
+*  Last modified: Wed, 15 Aug 2012 13:42:40 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -34,11 +34,13 @@
 struct st_changer;
 struct st_drive;
 struct st_hashtable;
+struct st_job;
 struct st_media;
 struct st_media_format;
 enum st_media_format_mode;
 struct st_pool;
 struct st_stream_reader;
+struct st_user;
 
 
 /**
@@ -117,6 +119,14 @@ struct st_database_connection {
 		 * \returns 0 if ok
 		 */
 		int (*sync_plugin_checksum)(struct st_database_connection * connect, const char * name);
+		/**
+		 * \brief Synchronise job plugin with database
+		 *
+		 * \param[in] connection : a database connection
+		 * \param[in] name : name of plugin
+		 * \returns 0 if ok
+		 */
+		int (*sync_plugin_job)(struct st_database_connection * connect, const char * plugin);
 
 		/**
 		 * \brief Check if \a drive is a part of \a changer
@@ -148,6 +158,11 @@ struct st_database_connection {
 		int (*get_media_format)(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, enum st_media_format_mode mode);
 		int (*get_pool)(struct st_database_connection * connect, struct st_pool * pool, const char * uuid);
 
+		int (*sync_job)(struct st_database_connection * connect, struct st_job *** jobs, unsigned int * nb_jobs);
+
+		int (*get_user)(struct st_database_connection * connect, struct st_user * user, const char * login);
+		int (*sync_user)(struct st_database_connection * connect, struct st_user * user);
+
 
 
 		/*
@@ -160,7 +175,6 @@ struct st_database_connection {
 		int (*get_tape_format)(struct st_database_connection * db, struct st_tape_format * tape_format, long id, unsigned char density_code);
 		int (*get_user)(struct st_database_connection * db, struct st_user * user, long user_id, const char * login);
 		int (*refresh_job)(struct st_database_connection * db, struct st_job * job);
-		int (*sync_plugin_job)(struct st_database_connection * db, const char * plugin);
 		int (*sync_pool)(struct st_database_connection * db, struct st_pool * pool);
 		int (*sync_tape)(struct st_database_connection * db, struct st_tape * tape);
 		int (*sync_user)(struct st_database_connection * db, struct st_user * user);

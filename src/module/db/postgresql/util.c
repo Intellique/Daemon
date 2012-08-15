@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 06 Aug 2012 10:03:29 +0200                         *
+*  Last modified: Wed, 15 Aug 2012 12:52:57 +0200                         *
 \*************************************************************************/
 
 #define _XOPEN_SOURCE 500
@@ -52,6 +52,17 @@ int st_db_postgresql_get_double(PGresult * result, int row, int column, double *
 
 	char * value = PQgetvalue(result, row, column);
 	if (value && sscanf(value, "%lg", val) == 1)
+		return 0;
+
+	return value != 0;
+}
+
+int st_db_postgresql_get_float(PGresult * result, int row, int column, float * val) {
+	if (column < 0)
+		return -1;
+
+	char * value = PQgetvalue(result, row, column);
+	if (value && sscanf(value, "%g", val) == 1)
 		return 0;
 
 	return value != 0;

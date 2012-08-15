@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jul 2012 09:40:34 +0200                         *
+*  Last modified: Wed, 15 Aug 2012 17:18:14 +0200                         *
 \*************************************************************************/
 
 // realloc
@@ -55,7 +55,7 @@ int st_log_postgresql_add(const char * alias, enum st_log_level level, const str
 		return 2;
 
 	void * new_addr = realloc(st_log_postgresql_driver.modules, (st_log_postgresql_driver.nb_modules + 1) * sizeof(struct st_log_module));
-	if (new_addr) {
+	if (!new_addr) {
 		st_log_write_all(st_log_level_error, st_log_type_plugin_log, "Error, there is not enough memory to allocate new postgresql module");
 		return 3;
 	}

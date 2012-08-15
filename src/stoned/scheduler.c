@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jul 2012 14:17:05 +0200                         *
+*  Last modified: Wed, 15 Aug 2012 17:07:28 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -40,67 +40,33 @@
 // sleep
 #include <unistd.h>
 
-#include <stone/database.h>
-#include <stone/job.h>
-#include <stone/log.h>
-#include <stone/threadpool.h>
-#include <stone/util/hashtable.h>
+#include <libstone/database.h>
+#include <libstone/job.h>
+#include <libstone/log.h>
+#include <libstone/threadpool.h>
+#include <libstone/util/hashtable.h>
 
-#include "library/common.h"
 #include "scheduler.h"
 
-struct st_sched_job {
-	struct st_database_connection * status_con;
-	time_t updated;
-};
-
-static int st_sched_add_record(struct st_job * j, enum st_log_level level, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
 static void st_sched_exit(int signal);
-static void st_sched_init_job(struct st_job * j);
 static void st_sched_run_job(void * arg);
-static int st_sched_update_status(struct st_job * j);
 
 static short st_sched_stop_request = 0;
-static struct st_scheduler_ops st_sched_db_ops = {
-	.add_record    = st_sched_add_record,
-	.update_status = st_sched_update_status,
-};
 
 
-int st_sched_add_record(struct st_job * j, enum st_log_level level, const char * format, ...) {
-	char * message = 0;
-
-	va_list va;
-	va_start(va, format);
-	vasprintf(&message, format, va);
-	va_end(va);
-
-	st_log_write_all2(level, st_log_type_job, j->user, message);
-
-	struct st_sched_job * jp = j->scheduler_private;
-	int status = jp->status_con->ops->add_job_record(jp->status_con, j, message);
-	free(message);
-	return status;
-}
-
-void st_sched_do_loop() {
+void st_sched_do_loop(struct st_database_connection * connection) {
 	signal(SIGINT, st_sched_exit);
-
-	struct st_database * db = st_db_get_default_db();
-	struct st_database_connection * connection = db->ops->connect(db, 0);
-	if (!connection) {
-		st_log_write_all(st_log_level_error, st_log_type_scheduler, "Scheduler: failed to connect to database");
-		return;
-	}
 
 	st_log_write_all(st_log_level_info, st_log_type_scheduler, "starting main loop");
 
 	struct st_job ** jobs = 0;
 	unsigned int nb_jobs = 0;
 	time_t update = time(0);
-	long last_max_jobs = -1;
 
 	while (!st_sched_stop_request) {
+		connection->ops->sync_job(connection, &jobs, &nb_jobs);
+
+		/*
 		unsigned int i;
 		for (i = 0; i < nb_jobs; i++) {
 			struct st_job * j = jobs[i];
@@ -182,15 +148,14 @@ void st_sched_do_loop() {
 
 		// update status of stone-alone drives
 		st_changer_update_drive_status();
+		*/
 
-		struct tm current;
-		update = time(0);
-		localtime_r(&update, &current);
-		sleep(5 - current.tm_sec % 5);
+		//struct tm current;
+		//update = time(0);
+		//localtime_r(&update, &current);
+		//sleep(5 - current.tm_sec % 5);
 
 	}
-
-	connection->ops->free(connection);
 }
 
 void st_sched_exit(int signal) {
@@ -200,114 +165,37 @@ void st_sched_exit(int signal) {
 	}
 }
 
-void st_sched_init_job(struct st_job * j) {
-	struct st_database * db = st_db_get_default_db();
-	struct st_database_connection * connection = db->ops->connect(db, 0);
-
-	struct st_sched_job * jp = j->scheduler_private = malloc(sizeof(struct st_sched_job));
-	jp->status_con = connection;
-	jp->updated = time(0);
-
-	j->done = 0;
-	j->db_ops = &st_sched_db_ops;
-}
-
 void st_sched_run_job(void * arg) {
 	struct st_job * job = arg;
 
-	st_log_write_all(st_log_level_info, st_log_type_scheduler, "starting job id = %ld", job->id);
+	st_log_write_all(st_log_level_info, st_log_type_scheduler, "starting job");
 
 	job->sched_status = st_job_status_running;
 	job->repetition--;
 	job->num_runs++;
-
-	sleep(1);
-	st_sched_update_status(job);
 
 	int status = job->job_ops->run(job);
 
 	if (job->sched_status == st_job_status_running)
 		job->sched_status = st_job_status_idle;
 
-	sleep(1);
-	st_sched_update_status(job);
-
 	job->job_ops->free(job);
 	job->data = 0;
 
-	struct st_sched_job * jp = job->scheduler_private;
-	jp->status_con->ops->close(jp->status_con);
-	jp->status_con->ops->free(jp->status_con);
-	free(jp);
-
 	free(job->name);
 	job->name = 0;
-
-	job->db_ops = 0;
-	job->scheduler_private = 0;
-
-	// j->archive
-	job->pool = 0;
-	job->tape = 0;
-
-	if (job->paths) {
-		unsigned int i;
-		for (i = 0; i < job->nb_paths; i++)
-			free(job->paths[i]);
-		free(job->paths);
-		job->paths = 0;
-	};
-
-	if (job->checksums) {
-		unsigned int i;
-		for (i = 0; i < job->nb_checksums; i++)
-			free(job->checksums[i]);
-		free(job->checksums);
-		free(job->checksum_ids);
-		job->checksums = 0;
-		job->checksum_ids = 0;
-	}
-
-	if (job->nb_block_numbers > 0) {
-		free(job->block_numbers);
-		job->block_numbers = 0;
-		job->nb_block_numbers = 0;
-	}
-
-	if (job->restore_to) {
-		free(job->restore_to->path);
-		free(job->restore_to);
-		job->restore_to = 0;
-	}
 
 	job->user = 0;
 
 	job->driver = 0;
 
-	if (job->job_meta) {
-		st_hashtable_free(job->job_meta);
-		job->job_meta = 0;
-	}
-	if (job->job_option) {
-		st_hashtable_free(job->job_option);
-		job->job_option = 0;
-	}
+	if (job->meta)
+		st_hashtable_free(job->meta);
+	job->meta = 0;
+	if (job->option)
+		st_hashtable_free(job->option);
+	job->option = 0;
 
-	st_log_write_all(st_log_level_info, st_log_type_scheduler, "job finished, id = %ld, with exited code = %d", job->id, status);
-
-	job->id = -1;
-}
-
-int st_sched_update_status(struct st_job * j) {
-	struct st_sched_job * jp = j->scheduler_private;
-
-	time_t now = time(0);
-	if (now <= jp->updated)
-		return 0;
-
-	int status = jp->status_con->ops->update_job(jp->status_con, j);
-	jp->updated = now;
-
-	return status;
+	st_log_write_all(st_log_level_info, st_log_type_scheduler, "job finished, with exited code = %d", status);
 }
 

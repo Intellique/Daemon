@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 06 Aug 2012 00:02:15 +0200                         *
+*  Last modified: Wed, 15 Aug 2012 12:52:10 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DB_POSTGRESQL_CONNNECTION_H__
@@ -54,6 +54,8 @@ int st_db_postgresql_get_bool(PGresult * result, int row, int column, unsigned c
 int st_db_postgresql_get_double(PGresult * result, int row, int column, double * value);
 
 void st_db_postgresql_get_error(PGresult * result, const char * prepared_query);
+
+int st_db_postgresql_get_float(PGresult * result, int row, int column, float * value);
 
 int st_db_postgresql_get_long(PGresult * result, int row, int column, long * value);
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jul 2012 10:45:48 +0200                         *
+*  Last modified: Wed, 15 Aug 2012 17:13:23 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -146,6 +146,9 @@ int st_log_postgresql_new(struct st_log_module * module, enum st_log_level level
 	PGresult * prepare = PQprepare(connect, "insert_log", "INSERT INTO log(type, level, time, message, host, login) VALUES ($1, $2, $3, $4, $5, $6)", 0, 0);
 	PQclear(prepare);
 
+	prepare = PQprepare(connect, "select_user_by_login", "SELECT id FROM users WHERE login = $1 LIMIT 1", 0, 0);
+	PQclear(prepare);
+
 	struct st_log_postgresql_private * self = malloc(sizeof(struct st_log_postgresql_private));
 	self->connection = connect;
 	self->hostid = hostid;
@@ -168,8 +171,15 @@ void st_log_postgresql_module_write(struct st_log_module * module, const struct 
 	strftime(buffer, 32, "%F %T", &curTime2);
 
 	char * userid = 0;
-	if (message->user)
-		asprintf(&userid, "%ld", message->user->id);
+	if (message->user) {
+		const char * param[] = { message->user->login };
+		PGresult * result = PQexecPrepared(self->connection, "select_user_by_login", 1, param, 0, 0, 0);
+
+		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
+			userid = strdup(PQgetvalue(result, 0, 0));
+
+		PQclear(result);
+	}
 
 	const char * param[] = {
 		st_log_postgresql_types[message->type], st_log_postgresql_levels[message->level],
@@ -179,7 +189,6 @@ void st_log_postgresql_module_write(struct st_log_module * module, const struct 
 	PGresult * result = PQexecPrepared(self->connection, "insert_log", 6, param, 0, 0, 0);
 	PQclear(result);
 
-	if (userid)
-		free(userid);
+	free(userid);
 }
 

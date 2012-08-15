@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 14 Aug 2012 22:38:31 +0200                         *
+*  Last modified: Wed, 15 Aug 2012 17:24:44 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -31,20 +31,24 @@
 #include <postgresql/libpq-fe.h>
 // asprintf
 #include <stdio.h>
-// free, malloc
+// free, malloc, realloc
 #include <stdlib.h>
 // strdup
 #include <string.h>
+// bzero
+#include <strings.h>
 // uname
 #include <sys/utsname.h>
-// localtime_r, strftime
+// localtime_r, strftime, time
 #include <time.h>
 
+#include <libstone/job.h>
 #include <libstone/library/changer.h>
 #include <libstone/library/drive.h>
 #include <libstone/library/media.h>
 #include <libstone/library/slot.h>
 #include <libstone/log.h>
+#include <libstone/user.h>
 #include <libstone/util/hashtable.h>
 #include <libstone/util/string.h>
 #include <libstone/util/util.h>
@@ -64,11 +68,19 @@ struct st_db_postgresql_drive_data {
 	long id;
 };
 
+struct st_db_postgresql_job_data {
+	long id;
+};
+
 struct st_db_postgresql_media_data {
 	long id;
 };
 
 struct st_db_postgresql_slot_data {
+	long id;
+};
+
+struct st_db_postgresql_user_data {
 	long id;
 };
 
@@ -82,6 +94,7 @@ static int st_db_postgresql_finish_transaction(struct st_database_connection * c
 static int st_db_postgresql_start_transaction(struct st_database_connection * connect);
 
 static int st_db_postgresql_sync_plugin_checksum(struct st_database_connection * connect, const char * name);
+static int st_db_postgresql_sync_plugin_job(struct st_database_connection * connect, const char * plugin);
 
 static char * st_db_postgresql_get_host(struct st_database_connection * connect);
 static int st_db_postgresql_is_changer_contain_drive(struct st_database_connection * connect, struct st_changer * changer, struct st_drive * drive);
@@ -94,6 +107,11 @@ static int st_db_postgresql_get_media(struct st_database_connection * connect, s
 static int st_db_postgresql_get_media_format(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, enum st_media_format_mode mode);
 static int st_db_postgresql_get_pool(struct st_database_connection * connect, struct st_pool * pool, const char * uuid);
 
+static int st_db_postgresql_sync_job(struct st_database_connection * connect, struct st_job *** jobs, unsigned int * nb_jobs);
+
+static int st_db_postgresql_get_user(struct st_database_connection * connect, struct st_user * user, const char * login);
+static int st_db_postgresql_sync_user(struct st_database_connection * connect, struct st_user * user);
+
 static void st_db_postgresql_prepare(struct st_db_postgresql_connection_private * self, const char * statement_name, const char * query);
 
 static struct st_database_connection_ops st_db_postgresql_connection_ops = {
@@ -105,6 +123,7 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.start_transaction  = st_db_postgresql_start_transaction,
 
 	.sync_plugin_checksum = st_db_postgresql_sync_plugin_checksum,
+	.sync_plugin_job      = st_db_postgresql_sync_plugin_job,
 
 	.is_changer_contain_drive = st_db_postgresql_is_changer_contain_drive,
 	.sync_changer             = st_db_postgresql_sync_changer,
@@ -113,6 +132,11 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.get_media        = st_db_postgresql_get_media,
 	.get_media_format = st_db_postgresql_get_media_format,
 	.get_pool         = st_db_postgresql_get_pool,
+
+	.sync_job = st_db_postgresql_sync_job,
+
+	.get_user  = st_db_postgresql_get_user,
+	.sync_user = st_db_postgresql_sync_user,
 };
 
 
@@ -321,6 +345,43 @@ int st_db_postgresql_sync_plugin_checksum(struct st_database_connection * connec
 
 	query = "insert_checksum";
 	st_db_postgresql_prepare(self, query, "INSERT INTO checksum(name) VALUES ($1)");
+
+	result = PQexecPrepared(self->connect, query, 1, param, 0, 0, 0);
+	status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+
+	PQclear(result);
+
+	return status == PGRES_FATAL_ERROR;
+}
+
+int st_db_postgresql_sync_plugin_job(struct st_database_connection * connect, const char * plugin) {
+	if (!connect || !plugin)
+		return -1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	const char * query = "select_jobtype_by_name";
+	st_db_postgresql_prepare(self, query, "SELECT name FROM jobtype WHERE name = $1 LIMIT 1");
+
+	const char * param[] = { plugin };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	int found = 0;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		found = 1;
+
+	PQclear(result);
+
+	if (found)
+		return 0;
+
+	query = "insert_jobtype";
+	st_db_postgresql_prepare(self, query, "INSERT INTO jobtype(name) VALUES ($1)");
 
 	result = PQexecPrepared(self->connect, query, 1, param, 0, 0, 0);
 	status = PQresultStatus(result);
@@ -1332,6 +1393,268 @@ int st_db_postgresql_get_pool(struct st_database_connection * connect, struct st
 	PQclear(result);
 
 	return 1;
+}
+
+
+int st_db_postgresql_sync_job(struct st_database_connection * connect, struct st_job *** jobs, unsigned int * nb_jobs) {
+	if (!connect || !jobs || !nb_jobs)
+		return 1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+
+	long max_id = 0;
+	unsigned int i;
+	for (i = 0; i < *nb_jobs; i++) {
+		const char * query = "select_job_by_id";
+		st_db_postgresql_prepare(self, query, "SELECT status FROM job WHERE id = $1 FOR UPDATE LIMIT 1");
+
+		struct st_job * job = (*jobs)[i];
+		struct st_db_postgresql_job_data * job_data = job->db_data;
+		char * job_id;
+		asprintf(&job_id, "%ld", job_data->id);
+
+		if (max_id < job_data->id)
+			max_id = job_data->id;
+
+		const char * param1[] = { job_id };
+		PGresult * result = PQexecPrepared(self->connect, query, 1, param1, 0, 0, 0);
+		ExecStatusType status = PQresultStatus(result);
+		int nb_result = PQntuples(result);
+
+		int found = 0;
+		if (status == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && nb_result == 1) {
+			job->db_status = st_job_string_to_status(PQgetvalue(result, 0, 0));
+			found = 1;
+		} else if (status == PGRES_TUPLES_OK && nb_result == 0)
+			job->db_status = st_job_status_stopped;
+
+		PQclear(result);
+
+		if (!found || job->db_status == st_job_status_stopped) {
+			free(job_id);
+			continue;
+		}
+
+		query = "update_job";
+		st_db_postgresql_prepare(self, query, "UPDATE job SET repetition = $1, done = $2, status = $3, update = NOW() WHERE id = $4");
+
+		char * repetition, * done;
+		asprintf(&repetition, "%ld", job->repetition);
+		asprintf(&done, "%f", job->done);
+
+		const char * param2[] = { repetition, done, st_job_status_to_string(job->sched_status), job_id };
+		result = PQexecPrepared(self->connect, query, 4, param2, 0, 0, 0);
+		status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(result, query);
+
+		free(repetition);
+		free(done);
+		PQclear(result);
+	}
+
+	const char * query0 = "select_new_jobs";
+	st_db_postgresql_prepare(self, query0, "SELECT j.id, j.name, nextstart, interval, repetition, done, status, u.login, metadata, options, jt.name FROM job j LEFT JOIN jobtype jt ON j.type = jt.id LEFT JOIN users u ON j.login = u.id WHERE host = $1 AND j.id > $2 ORDER BY j.id");
+	const char * query1 = "select_job_meta";
+	st_db_postgresql_prepare(self, query1, "SELECT * FROM each((SELECT metadata FROM job WHERE id = $1 LIMIT 1))");
+	const char * query2 = "select_job_option";
+	st_db_postgresql_prepare(self, query2, "SELECT * FROM each((SELECT options FROM job WHERE id = $1 LIMIT 1))");
+	const char * query3 = "select_num_runs";
+	st_db_postgresql_prepare(self, query3, "SELECT MAX(numrun) AS max FROM jobrecord WHERE job = $1");
+
+	char * hostid = st_db_postgresql_get_host(connect);
+	char * job_id;
+	asprintf(&job_id, "%ld", max_id);
+
+	const char * param[] = { hostid, job_id };
+	PGresult * result = PQexecPrepared(self->connect, query0, 2, param, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+	unsigned int nb_result = PQntuples(result);
+
+	free(job_id);
+	free(hostid);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query0);
+	else if (status == PGRES_TUPLES_OK && nb_result > 0) {
+		void * new_addr = realloc(*jobs, (*nb_jobs + nb_result + 1) * (sizeof(struct st_job *)));
+
+		if (!new_addr) {
+			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Not enough memory to get new jobs");
+
+			PQclear(result);
+
+			return 1;
+		}
+
+		*jobs = new_addr;
+
+		for (i = 0; i < nb_result; i++) {
+			struct st_job * job = (*jobs)[*nb_jobs + i] = malloc(sizeof(struct st_job));
+			bzero(job, sizeof(struct st_job));
+			struct st_db_postgresql_job_data * job_data = malloc(sizeof(struct st_db_postgresql_job_data));
+			char * job_id;
+
+			job->db_data = job_data;
+			st_db_postgresql_get_long(result, i, 0, &job_data->id);
+			st_db_postgresql_get_string_dup(result, i, 0, &job_id);
+			st_db_postgresql_get_string_dup(result, i, 1, &job->name);
+			st_db_postgresql_get_time(result, i, 2, &job->next_start);
+			// interval
+			st_db_postgresql_get_long(result, i, 4, &job->repetition);
+
+			st_db_postgresql_get_float(result, i, 5, &job->done);
+			job->db_status = st_job_string_to_status(PQgetvalue(result, i, 6));
+			job->sched_status = st_job_status_idle;
+			job->updated = time(0);
+
+			// login
+			job->user = st_user_get(PQgetvalue(result, i, 7));
+
+			// meta
+			const char * param2[] = { job_id };
+			job->meta = st_hashtable_new2(st_util_string_compute_hash, st_util_basic_free);
+			PGresult * result2 = PQexecPrepared(self->connect, query1, 1, param2, 0, 0, 0);
+			ExecStatusType status2 = PQresultStatus(result);
+
+			if (status2 == PGRES_FATAL_ERROR)
+				st_db_postgresql_get_error(result2, query1);
+			else if (PQresultStatus(result2) == PGRES_TUPLES_OK) {
+				unsigned int j, nb_metadatas = PQntuples(result2);
+				for (j = 0; j < nb_metadatas; j++)
+					st_hashtable_put(job->meta, strdup(PQgetvalue(result2, j, 0)), strdup(PQgetvalue(result2, j, 1)));
+			}
+
+			PQclear(result2);
+
+			// options
+			job->option = st_hashtable_new2(st_util_string_compute_hash, st_util_basic_free);
+			result2 = PQexecPrepared(self->connect, query2, 1, param2, 0, 0, 0);
+			status2 = PQresultStatus(result);
+
+			if (status2 == PGRES_FATAL_ERROR)
+				st_db_postgresql_get_error(result2, query2);
+			else if (PQresultStatus(result2) == PGRES_TUPLES_OK) {
+				unsigned int j, nb_metadatas = PQntuples(result2);
+				for (j = 0; j < nb_metadatas; j++)
+					st_hashtable_put(job->option, strdup(PQgetvalue(result2, j, 0)), strdup(PQgetvalue(result2, j, 1)));
+			}
+
+			PQclear(result2);
+
+			// num_runs
+			result2 = PQexecPrepared(self->connect, query3, 1, param2, 0, 0, 0);
+			status2 = PQresultStatus(result2);
+
+			if (status2 == PGRES_FATAL_ERROR)
+				st_db_postgresql_get_error(result2, query3);
+			else if (status == PGRES_TUPLES_OK && PQntuples(result2) == 1 && !PQgetisnull(result2, 0, 0))
+				st_db_postgresql_get_long(result2, 0, 0, &job->num_runs);
+			PQclear(result2);
+
+			// driver
+			job->driver = st_job_get_driver(PQgetvalue(result, i, 10));
+
+			free(job_id);
+		}
+
+		(*jobs)[*nb_jobs + i] = 0;
+		*nb_jobs += nb_result;
+	}
+
+	PQclear(result);
+
+	return 0;
+}
+
+
+int st_db_postgresql_get_user(struct st_database_connection * connect, struct st_user * user, const char * login) {
+	if (!connect || !user || !login)
+		return 1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	const char * query = "select_user_by_id_or_login";
+	st_db_postgresql_prepare(self, query, "SELECT u.id, login, password, salt, fullname, email, isadmin, canarchive, canrestore, disabled, p.uuid FROM users u LEFT JOIN pool p ON u.pool = p.id WHERE login = $1 LIMIT 1");
+
+	const char * param[] = { login };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+	int nb_result = PQntuples(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && nb_result == 1) {
+		struct st_db_postgresql_user_data * user_data = user->db_data;
+		if (!user_data)
+			user->db_data = user_data = malloc(sizeof(struct st_db_postgresql_user_data));
+
+		st_db_postgresql_get_string_dup(result, 0, 1, &user->login);
+		st_db_postgresql_get_string_dup(result, 0, 2, &user->password);
+		st_db_postgresql_get_string_dup(result, 0, 3, &user->salt);
+		st_db_postgresql_get_string_dup(result, 0, 4, &user->fullname);
+		st_db_postgresql_get_string_dup(result, 0, 5, &user->email);
+
+		st_db_postgresql_get_bool(result, 0, 6, &user->is_admin);
+		st_db_postgresql_get_bool(result, 0, 7, &user->can_archive);
+		st_db_postgresql_get_bool(result, 0, 8, &user->can_restore);
+		st_db_postgresql_get_bool(result, 0, 9, &user->disabled);
+
+		user->pool = st_pool_get_by_uuid(PQgetvalue(result, 0, 10));
+	}
+
+	PQclear(result);
+
+	return status != PGRES_TUPLES_OK || nb_result < 1;
+}
+
+int st_db_postgresql_sync_user(struct st_database_connection * connect, struct st_user * user) {
+	if (!connect || !user)
+		return 1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	const char * query = "select_user_by_id";
+	st_db_postgresql_prepare(self, query, "SELECT password, salt, fullname, email, isadmin, canarchive, canrestore, disabled, uuid FROM users u LEFT JOIN pool p ON u.pool = p.id WHERE id = $1 LIMIT 1");
+
+	struct st_db_postgresql_user_data * user_data = user->db_data;
+
+	char * userid = 0;
+	asprintf(&userid, "%ld", user_data->id);
+
+	const char * param[] = { userid };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		free(user->password);
+		st_db_postgresql_get_string_dup(result, 0, 0, &user->password);
+
+		free(user->salt);
+		st_db_postgresql_get_string_dup(result, 0, 1, &user->salt);
+
+		free(user->fullname);
+		st_db_postgresql_get_string_dup(result, 0, 2, &user->fullname);
+
+		free(user->email);
+		st_db_postgresql_get_string_dup(result, 0, 3, &user->email);
+
+		st_db_postgresql_get_bool(result, 0, 4, &user->is_admin);
+		st_db_postgresql_get_bool(result, 0, 5, &user->can_archive);
+		st_db_postgresql_get_bool(result, 0, 6, &user->can_restore);
+
+		st_db_postgresql_get_bool(result, 0, 7, &user->disabled);
+
+		user->pool = st_pool_get_by_uuid(PQgetvalue(result, 0, 10));
+	}
+
+	PQclear(result);
+	free(userid);
+
+	return status == PGRES_TUPLES_OK;
 }
 
 

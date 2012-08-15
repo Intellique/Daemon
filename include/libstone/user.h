@@ -22,29 +22,33 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 May 2012 19:01:23 +0200                         *
+*  Last modified: Wed, 15 Aug 2012 14:13:57 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_USER_H__
 #define __STONE_USER_H__
 
-#include <sys/types.h>
+struct st_database_connection;
+struct st_pool;
 
 struct st_user {
-	long id;
 	char * login;
 	char * password;
 	char * salt;
 	char * fullname;
 	char * email;
-	char is_admin;
-	char can_archive;
-	char can_restore;
-	char disabled;
+
+	unsigned char is_admin;
+	unsigned char can_archive;
+	unsigned char can_restore;
+	unsigned char disabled;
+
 	struct st_pool * pool;
+
+	void * db_data;
 };
 
-struct st_user * st_user_get(long id, const char * login);
+struct st_user * st_user_get(const char * login);
 int st_user_sync(struct st_user * user);
 
 #endif
