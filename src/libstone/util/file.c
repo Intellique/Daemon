@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 20 Jul 2012 10:33:30 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 10:43:12 +0200                         *
 \*************************************************************************/
 
 // scandir
@@ -133,8 +133,11 @@ int st_util_file_mkdir(const char * dirname, mode_t mode) {
 		ptr = strrchr(dir, '/');
 	} while (ptr && access(dir, F_OK));
 
-	unsigned short i;
 	int failed = 0;
+	if (access(dir, F_OK))
+		failed = mkdir(dir, mode);
+
+	unsigned short i;
 	for (i = 0; i < nb && !failed; i++) {
 		size_t length = strlen(dir);
 		dir[length] = '/';

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jul 2012 13:38:38 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 10:51:04 +0200                         *
 \*************************************************************************/
 
 // free
@@ -31,14 +31,9 @@
 #include <libstone/util/util.h>
 
 void st_util_basic_free(void * key, void * value) {
-	if (key && key == value) {
-		free(key);
-		return;
-	}
+	free(key);
 
-	if (key)
-		free(key);
-	if (value)
+	if (value && key != value)
 		free(value);
 }
 
