@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Jun 2012 12:04:03 +0200                         *
+*  Last modified: Tue, 14 Aug 2012 11:21:19 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -34,6 +34,7 @@
 struct st_archive;
 struct st_archive_file;
 struct st_archive_volume;
+struct st_backupdb;
 struct st_changer;
 struct st_database_connection;
 struct st_drive;
@@ -147,6 +148,8 @@ struct st_database_connection {
 		int (*new_volume)(struct st_database_connection * db, struct st_archive_volume * volume);
 		int (*update_archive)(struct st_database_connection * db, struct st_archive * archive);
 		int (*update_volume)(struct st_database_connection * db, struct st_archive_volume * volume);
+
+        int (*add_backup)(struct st_database_connection * db, struct st_backupdb * backup);
 	} * ops;
 	void * data;
 };

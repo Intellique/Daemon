@@ -1,0 +1,16 @@
+STONE_JOB_RESTOREDB_SRC_DIR		:= src/module/job/restore-db
+STONE_JOB_RESTOREDB_BUILD_DIR	:= ${BUILD_DIR}/module/job/restore-db
+STONE_JOB_RESTOREDB_DEPEND_DIR	:= ${DEPEND_DIR}/module/job/restore-db
+
+STONE_JOB_RESTOREDB_SRC_FILES	:= $(sort $(shell test -d ${STONE_JOB_RESTOREDB_SRC_DIR} && find ${STONE_JOB_RESTOREDB_SRC_DIR} -name '*.c'))
+STONE_JOB_RESTOREDB_HEAD_FILES	:= $(sort $(shell test -d ${STONE_JOB_RESTOREDB_SRC_DIR} && find ${STONE_JOB_RESTOREDB_SRC_DIR} -name '*.h'))
+STONE_JOB_RESTOREDB_OBJ_FILES	:= $(sort $(patsubst src/%.c,${BUILD_DIR}/%.o,${STONE_JOB_RESTOREDB_SRC_FILES}))
+STONE_JOB_RESTOREDB_DEP_FILES	:= $(sort $(shell test -d ${STONE_JOB_RESTOREDB_DEPEND_DIR} && find ${STONE_JOB_RESTOREDB_DEPEND_DIR} -name '*.d'))
+
+STONE_JOB_RESTOREDB_BIN			:= lib/libjob-restore-db.so
+STONE_JOB_RESTOREDB_CFLAG		:= -pthread -fPIC -fvisibility=hidden
+STONE_JOB_RESTOREDB_LD			:= -pthread -shared
+
+STONE_JOB_RESTOREDB_LIB			:=
+
+BIN_SYMS						+= STONE_JOB_RESTOREDB

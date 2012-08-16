@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jul 2012 13:07:08 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 11:37:53 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -44,6 +44,7 @@
 
 #include <stone/job.h>
 #include <stone/library/archive.h>
+#include <stone/library/backup-db.h>
 #include <stone/library/changer.h>
 #include <stone/library/drive.h>
 #include <stone/library/tape.h>
@@ -90,6 +91,8 @@ static int st_db_postgresql_new_file(struct st_database_connection * db, struct 
 static int st_db_postgresql_new_volume(struct st_database_connection * db, struct st_archive_volume * volume);
 static int st_db_postgresql_update_archive(struct st_database_connection * db, struct st_archive * archive);
 static int st_db_postgresql_update_volume(struct st_database_connection * db, struct st_archive_volume * volume);
+
+static int st_db_postgresql_add_backup(struct st_database_connection * db, struct st_backupdb * backup);
 
 static int st_db_postgresql_get_bool(PGresult * result, int row, int column, char * value);
 static int st_db_postgresql_get_double(PGresult * result, int row, int column, double * value);
@@ -138,6 +141,8 @@ static struct st_database_connection_ops st_db_postgresql_con_ops = {
 	.new_volume          = st_db_postgresql_new_volume,
 	.update_archive      = st_db_postgresql_update_archive,
 	.update_volume       = st_db_postgresql_update_volume,
+
+	.add_backup = st_db_postgresql_add_backup,
 };
 
 
@@ -2215,7 +2220,7 @@ int st_db_postgresql_new_archive(struct st_database_connection * connection, str
 		PQclear(result);
 		free(loginid);
 		free(metadata);
-        free(copyof);
+		free(copyof);
 		return 1;
 	} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
 		st_db_postgresql_get_long(result, 0, 0, &archive->id);
@@ -2223,7 +2228,7 @@ int st_db_postgresql_new_archive(struct st_database_connection * connection, str
 	PQclear(result);
 	free(loginid);
 	free(metadata);
-    free(copyof);
+	free(copyof);
 
 	if (status != PGRES_TUPLES_OK || !archive->copy_of)
 		return 1;
@@ -2445,9 +2450,9 @@ int st_db_postgresql_update_volume(struct st_database_connection * connection, s
 	free(size);
 
 	if (status != PGRES_COMMAND_OK) {
-        free(volumeid);
+		free(volumeid);
 		return 1;
-    }
+	}
 
 	const char * query1 = "select_checksumresult";
 	st_db_postgresql_prepare(self, query1, "SELECT id FROM checksumresult WHERE checksum = $1 AND result = $2 LIMIT 1");
@@ -2470,7 +2475,7 @@ int st_db_postgresql_update_volume(struct st_database_connection * connection, s
 
 			PQclear(result);
 			free(checksumid);
-            free(volumeid);
+			free(volumeid);
 
 			return 1;
 		} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
@@ -2486,7 +2491,7 @@ int st_db_postgresql_update_volume(struct st_database_connection * connection, s
 				st_db_postgresql_get_error(result, query2);
 
 				free(checksumid);
-                free(volumeid);
+				free(volumeid);
 				return 1;
 			} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
 				st_db_postgresql_get_string_dup(result, 0, 0, &checksumresultid);
@@ -2507,6 +2512,107 @@ int st_db_postgresql_update_volume(struct st_database_connection * connection, s
 	}
 
 	free(volumeid);
+
+	return 0;
+}
+
+
+int st_db_postgresql_add_backup(struct st_database_connection * connection, struct st_backupdb * backup) {
+	if (!connection || !backup)
+		return -1;
+
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	const char * query = "select_nb_tapes";
+	st_db_postgresql_prepare(self, query, "SELECT COUNT(*) FROM tape WHERE status = 'in use'");
+
+	PGresult * result = PQexecPrepared(self->db_con, query, 0, 0, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	char * nb_tapes = 0;
+	if (status == PGRES_FATAL_ERROR) {
+		st_db_postgresql_get_error(result, query);
+		PQclear(result);
+		return 1;
+	} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		st_db_postgresql_get_string_dup(result, 0, 0, &nb_tapes);
+
+	PQclear(result);
+
+	query = "select_nb_archives";
+	st_db_postgresql_prepare(self, query, "SELECT COUNT(*) FROM archive");
+
+	result = PQexecPrepared(self->db_con, query, 0, 0, 0, 0, 0);
+	status = PQresultStatus(result);
+
+	char * nb_archives = 0;
+	if (status == PGRES_FATAL_ERROR) {
+		st_db_postgresql_get_error(result, query);
+		free(nb_tapes);
+		PQclear(result);
+		return 1;
+	} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		st_db_postgresql_get_string_dup(result, 0, 0, &nb_archives);
+
+	PQclear(result);
+
+	query = "insert_backup";
+	st_db_postgresql_prepare(self, query, "INSERT INTO backup(timestamp, nbtape, nbarchive) VALUES ($1, $2, $3) RETURNING id");
+
+	char ctime[32];
+	struct tm local_current;
+	localtime_r(&backup->ctime, &local_current);
+	strftime(ctime, 32, "%F %T", &local_current);
+
+	const char * param[] = { ctime, nb_tapes, nb_archives };
+	result = PQexecPrepared(self->db_con, query, 3, param, 0, 0, 0);
+	status = PQresultStatus(result);
+
+	char * backupid = 0;
+
+	if (status == PGRES_FATAL_ERROR) {
+		st_db_postgresql_get_error(result, query);
+		PQclear(result);
+		free(nb_tapes);
+		free(nb_archives);
+		return 1;
+	} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		st_db_postgresql_get_long(result, 0, 0, &backup->id);
+		st_db_postgresql_get_string_dup(result, 0, 0, &backupid);
+	}
+
+	PQclear(result);
+
+	query = "insert_backup_volume";
+	st_db_postgresql_prepare(self, query, "INSERT INTO backupvolume(sequence, backup, tape, tapeposition) VALUES ($1, $2, $3, $4)");
+
+	unsigned int i;
+	for (i = 0; i < backup->nb_volumes; i++) {
+		struct st_backupdb_volume * vol = backup->volumes + i;
+
+		char * seq = 0, * tape_id = 0, * tape_position = 0;
+		asprintf(&seq, "%ld", vol->sequence);
+		asprintf(&tape_id, "%ld", vol->tape->id);
+		asprintf(&tape_position, "%ld", vol->tape_position);
+
+		const char * param1[] = { seq, backupid, tape_id, tape_position };
+		result = PQexecPrepared(self->db_con, query, 4, param1, 0, 0, 0);
+		status = PQresultStatus(result);
+
+		free(seq);
+		free(tape_id);
+		free(tape_position);
+
+		if (status == PGRES_FATAL_ERROR) {
+			st_db_postgresql_get_error(result, query);
+			PQclear(result);
+		}
+	}
+
+	free(backupid);
+	free(nb_tapes);
+	free(nb_archives);
 
 	return 0;
 }

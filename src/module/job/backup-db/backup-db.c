@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jul 2012 11:58:48 +0200                         *
+*  Last modified: Tue, 14 Aug 2012 17:53:09 +0200                         *
 \*************************************************************************/
 
 // malloc, realloc
@@ -35,6 +35,7 @@
 #include <stone/database.h>
 #include <stone/io.h>
 #include <stone/job.h>
+#include <stone/library/backup-db.h>
 #include <stone/library/changer.h>
 #include <stone/library/drive.h>
 #include <stone/library/ressource.h>
@@ -55,7 +56,7 @@ struct st_job_backup_private {
 	struct st_tape ** tapes;
 	unsigned int nb_tapes;
 
-	int stop_request;
+	volatile int stop_request;
 };
 
 enum st_job_backup_state {
@@ -111,7 +112,7 @@ void st_job_backupdb_new_job(struct st_database_connection * db __attribute__((u
 int st_job_backupdb_run(struct st_job * job) {
 	struct st_job_backup_private * self = job->data;
 
-	job->db_ops->add_record(job, st_log_level_info, "Start backup job (job id: %ld), num runs %ld", job->id, job->num_runs);
+	job->db_ops->add_record(job, st_log_level_info, "Start backup database job (job id: %ld), num runs %ld", job->id, job->num_runs);
 
 	if (!job->user->is_admin) {
 		job->sched_status = st_job_status_error;
@@ -129,6 +130,9 @@ int st_job_backupdb_run(struct st_job * job) {
 	struct st_drive * drive = st_job_backupdb_select_tape(job, look_in_first_changer);
 	if (drive && !self->stop_request)
 		drive->ops->eod(drive);
+
+	struct st_backupdb * backup = st_backupdb_new();
+	st_backupdb_volume_new(backup, drive->slot->tape, drive->slot->tape->nb_files);
 
 	if (drive && !self->stop_request) {
 		struct st_stream_writer * tape_writer = drive->ops->get_writer(drive);
@@ -149,6 +153,19 @@ int st_job_backupdb_run(struct st_job * job) {
 
 	db_reader->ops->close(db_reader);
 	db_reader->ops->free(db_reader);
+
+	if (!self->stop_request) {
+		struct st_database_connection * connect = driver->ops->connect(driver, 0);
+		connect->ops->start_transaction(connect);
+
+		int status = connect->ops->add_backup(connect, backup);
+		if (!status)
+			connect->ops->finish_transaction(connect);
+		else
+			connect->ops->cancel_transaction(connect);
+
+		connect->ops->close(connect);
+	}
 
 	if (drive)
 		drive->lock->ops->unlock(drive->lock);
