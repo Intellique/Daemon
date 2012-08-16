@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 20 Jul 2012 10:34:25 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 10:13:38 +0200                         *
 \*************************************************************************/
 
 // strerror
@@ -87,7 +87,7 @@ int st_conf_check_pid(const char * prog_name, int pid) {
 
 	char link[128];
 	if (readlink(path, link, 128) < 0) {
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: check_pid: readlink failed (%s) => %s", link, strerror(errno));
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: check_pid: readlink failed '%s' => %s", link, strerror(errno));
 		return 0;
 	}
 
@@ -113,8 +113,12 @@ int st_conf_read_pid(const char * pid_file) {
 		return -1;
 	}
 
-	// TODO: do some check
 	int fd = open(pid_file, O_RDONLY);
+	if (fd < 0) {
+		st_log_write_all(st_log_level_warning, st_log_type_daemon, "Conf: read_pid: failed to open file '%s' because %s", pid_file, strerror(errno));
+		return -1;
+	}
+
 	char buffer[16];
 	read(fd, buffer, 16);
 	close(fd);
@@ -176,7 +180,7 @@ void st_conf_load_db(const struct st_hashtable * params) {
 
 	struct st_database * db = st_database_get_driver(driver);
 	if (db) {
-		st_log_write_all(st_log_level_info, st_log_type_daemon, "Conf: load_db: driver (%s) => ok", driver);
+		st_log_write_all(st_log_level_info, st_log_type_daemon, "Conf: load_db: driver '%s' => ok", driver);
 
 		short setup_ok = 0, ping_ok = 0;
 
@@ -189,7 +193,7 @@ void st_conf_load_db(const struct st_hashtable * params) {
 
 		st_log_write_all(setup_ok || ping_ok ? st_log_level_info : st_log_level_error, st_log_type_daemon, "Conf: load_db: setup %s, ping %s", setup_ok ? "ok" : "failed", ping_ok ? "ok" : "failed");
 	} else
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: load_db: no driver (%s) found", driver);
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: load_db: no driver '%s' found", driver);
 }
 
 void st_conf_load_log(const struct st_hashtable * params) {

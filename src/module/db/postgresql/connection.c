@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 15 Aug 2012 17:24:44 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 10:29:38 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1591,6 +1591,7 @@ int st_db_postgresql_get_user(struct st_database_connection * connect, struct st
 		if (!user_data)
 			user->db_data = user_data = malloc(sizeof(struct st_db_postgresql_user_data));
 
+		st_db_postgresql_get_long(result, 0, 0, &user_data->id);
 		st_db_postgresql_get_string_dup(result, 0, 1, &user->login);
 		st_db_postgresql_get_string_dup(result, 0, 2, &user->password);
 		st_db_postgresql_get_string_dup(result, 0, 3, &user->salt);
@@ -1616,7 +1617,7 @@ int st_db_postgresql_sync_user(struct st_database_connection * connect, struct s
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	const char * query = "select_user_by_id";
-	st_db_postgresql_prepare(self, query, "SELECT password, salt, fullname, email, isadmin, canarchive, canrestore, disabled, uuid FROM users u LEFT JOIN pool p ON u.pool = p.id WHERE id = $1 LIMIT 1");
+	st_db_postgresql_prepare(self, query, "SELECT login, password, salt, fullname, email, isadmin, canarchive, canrestore, disabled, uuid FROM users u LEFT JOIN pool p ON u.pool = p.id WHERE id = $1 LIMIT 1");
 
 	struct st_db_postgresql_user_data * user_data = user->db_data;
 
@@ -1630,25 +1631,33 @@ int st_db_postgresql_sync_user(struct st_database_connection * connect, struct s
 	if (status == PGRES_FATAL_ERROR)
 		st_db_postgresql_get_error(result, query);
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		free(user->login);
+		user->login = 0;
+		st_db_postgresql_get_string_dup(result, 0, 0, &user->login);
+
 		free(user->password);
-		st_db_postgresql_get_string_dup(result, 0, 0, &user->password);
+		user->password = 0;
+		st_db_postgresql_get_string_dup(result, 0, 1, &user->password);
 
 		free(user->salt);
-		st_db_postgresql_get_string_dup(result, 0, 1, &user->salt);
+		user->salt = 0;
+		st_db_postgresql_get_string_dup(result, 0, 2, &user->salt);
 
 		free(user->fullname);
-		st_db_postgresql_get_string_dup(result, 0, 2, &user->fullname);
+		user->fullname = 0;
+		st_db_postgresql_get_string_dup(result, 0, 3, &user->fullname);
 
 		free(user->email);
-		st_db_postgresql_get_string_dup(result, 0, 3, &user->email);
+		user->email = 0;
+		st_db_postgresql_get_string_dup(result, 0, 4, &user->email);
 
-		st_db_postgresql_get_bool(result, 0, 4, &user->is_admin);
-		st_db_postgresql_get_bool(result, 0, 5, &user->can_archive);
-		st_db_postgresql_get_bool(result, 0, 6, &user->can_restore);
+		st_db_postgresql_get_bool(result, 0, 5, &user->is_admin);
+		st_db_postgresql_get_bool(result, 0, 6, &user->can_archive);
+		st_db_postgresql_get_bool(result, 0, 7, &user->can_restore);
 
-		st_db_postgresql_get_bool(result, 0, 7, &user->disabled);
+		st_db_postgresql_get_bool(result, 0, 8, &user->disabled);
 
-		user->pool = st_pool_get_by_uuid(PQgetvalue(result, 0, 10));
+		user->pool = st_pool_get_by_uuid(PQgetvalue(result, 0, 11));
 	}
 
 	PQclear(result);

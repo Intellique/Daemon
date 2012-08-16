@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 20 Jul 2012 23:47:32 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 10:06:29 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -108,13 +108,9 @@ void st_log_exit() {
 }
 
 struct st_log_driver * st_log_get_driver(const char * driver) {
-	if (!driver) {
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Driver shall not be null");
+	if (!driver)
 		return 0;
-	}
 
-	int old_state;
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
 	pthread_mutex_lock(&st_log_lock);
 
 	unsigned int i;
@@ -123,30 +119,26 @@ struct st_log_driver * st_log_get_driver(const char * driver) {
 		if (!strcmp(driver, st_log_drivers[i]->name))
 			dr = st_log_drivers[i];
 
-	void * cookie = 0;
-	if (!dr)
-		cookie = st_loader_load("log", driver);
+	if (!dr) {
+		void * cookie = st_loader_load("log", driver);
 
-	if (!dr && !cookie) {
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Failed to load driver %s", driver);
-		pthread_mutex_unlock(&st_log_lock);
-		if (old_state == PTHREAD_CANCEL_DISABLE)
-			pthread_setcancelstate(old_state, 0);
-		return 0;
-	}
-
-	for (i = 0; i < st_log_nb_drivers && !dr; i++)
-		if (!strcmp(driver, st_log_drivers[i]->name)) {
-			dr = st_log_drivers[i];
-			dr->cookie = cookie;
+		if (!dr && !cookie) {
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Failed to load driver %s", driver);
+			pthread_mutex_unlock(&st_log_lock);
+			return 0;
 		}
 
-	pthread_mutex_unlock(&st_log_lock);
-	if (old_state == PTHREAD_CANCEL_DISABLE)
-		pthread_setcancelstate(old_state, 0);
+		for (i = 0; i < st_log_nb_drivers && !dr; i++)
+			if (!strcmp(driver, st_log_drivers[i]->name)) {
+				dr = st_log_drivers[i];
+				dr->cookie = cookie;
+			}
 
-	if (!dr)
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Driver %s not found", driver);
+		if (!dr)
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Driver %s not found", driver);
+	}
+
+	pthread_mutex_unlock(&st_log_lock);
 
 	return dr;
 }
@@ -167,14 +159,14 @@ void st_log_register_driver(struct st_log_driver * driver) {
 	}
 
 	if (driver->api_level != STONE_LOG_API_LEVEL) {
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Driver(%s) has not the correct api version (current: %d, expected: %d)", driver->name, driver->api_level, STONE_LOG_API_LEVEL);
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Driver '%s' has not the correct api version (current: %d, expected: %d)", driver->name, driver->api_level, STONE_LOG_API_LEVEL);
 		return;
 	}
 
 	unsigned int i;
 	for (i = 0; i < st_log_nb_drivers; i++)
 		if (st_log_drivers[i] == driver || !strcmp(driver->name, st_log_drivers[i]->name)) {
-			st_log_write_all(st_log_level_info, st_log_type_daemon, "Log: Driver(%s) is already registred", driver->name);
+			st_log_write_all(st_log_level_info, st_log_type_daemon, "Log: Driver '%s' is already registred", driver->name);
 			return;
 		}
 
@@ -190,7 +182,7 @@ void st_log_register_driver(struct st_log_driver * driver) {
 
 	st_loader_register_ok();
 
-	st_log_write_all(st_log_level_info, st_log_type_daemon, "Log: Driver(%s) is now registred", driver->name);
+	st_log_write_all(st_log_level_info, st_log_type_daemon, "Log: Driver '%s' is now registred", driver->name);
 }
 
 void st_log_sent_message(void * arg __attribute__((unused))) {

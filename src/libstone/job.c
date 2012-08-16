@@ -22,11 +22,11 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 15 Aug 2012 18:33:38 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 10:15:40 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
-// glob
+// glob, globfree
 #include <glob.h>
 // pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate,
 // pthread_cond_destroy, pthread_cond_init, pthread_cond_signal,
@@ -36,7 +36,7 @@
 #include <pthread.h>
 // free, malloc, realloc
 #include <stdlib.h>
-// snprintf
+// globfree
 #include <stdio.h>
 // strcmp, strdup
 #include <string.h>
@@ -80,24 +80,24 @@ struct st_job_driver * st_job_get_driver(const char * driver) {
 		if (!strcmp(driver, st_job_drivers[i]->name))
 			dr = st_job_drivers[i];
 
-	void * cookie = 0;
-	if (!dr)
-		cookie = st_loader_load("job", driver);
+	if (!dr) {
+		void * cookie = st_loader_load("job", driver);
 
-	if (!dr && !cookie) {
-		st_log_write_all(st_log_level_error, st_log_type_job, "Failed to load driver '%s'", driver);
-		pthread_mutex_unlock(&lock);
-		return 0;
-	}
-
-	for (i = 0; i < st_job_nb_drivers && !dr; i++)
-		if (!strcmp(driver, st_job_drivers[i]->name)) {
-			dr = st_job_drivers[i];
-			dr->cookie = cookie;
+		if (!cookie) {
+			st_log_write_all(st_log_level_error, st_log_type_job, "Failed to load driver '%s'", driver);
+			pthread_mutex_unlock(&lock);
+			return 0;
 		}
 
-	if (!dr)
-		st_log_write_all(st_log_level_error, st_log_type_job, "Driver '%s' not found", driver);
+		for (i = 0; i < st_job_nb_drivers && !dr; i++)
+			if (!strcmp(driver, st_job_drivers[i]->name)) {
+				dr = st_job_drivers[i];
+				dr->cookie = cookie;
+			}
+
+		if (!dr)
+			st_log_write_all(st_log_level_error, st_log_type_job, "Driver '%s' not found", driver);
+	}
 
 	pthread_mutex_unlock(&lock);
 
@@ -111,14 +111,14 @@ void st_job_register_driver(struct st_job_driver * driver) {
 	}
 
 	if (driver->api_version != STONE_JOB_API_LEVEL) {
-		st_log_write_all(st_log_level_error, st_log_type_job, "Driver(%s) has not the correct api version (current: %d, expected: %d)", driver->name, driver->api_version, STONE_JOB_API_LEVEL);
+		st_log_write_all(st_log_level_error, st_log_type_job, "Driver '%s' has not the correct api version (current: %d, expected: %d)", driver->name, driver->api_version, STONE_JOB_API_LEVEL);
 		return;
 	}
 
 	unsigned int i;
 	for (i = 0; i < st_job_nb_drivers; i++)
 		if (st_job_drivers[i] == driver || !strcmp(driver->name, st_job_drivers[i]->name)) {
-			st_log_write_all(st_log_level_warning, st_log_type_job, "Driver(%s) is already registred", driver->name);
+			st_log_write_all(st_log_level_warning, st_log_type_job, "Driver '%s' is already registred", driver->name);
 			return;
 		}
 
@@ -134,7 +134,7 @@ void st_job_register_driver(struct st_job_driver * driver) {
 
 	st_loader_register_ok();
 
-	st_log_write_all(st_log_level_info, st_log_type_job, "Driver(%s) is now registred", driver->name);
+	st_log_write_all(st_log_level_info, st_log_type_job, "Driver '%s' is now registred", driver->name);
 }
 
 const char * st_job_status_to_string(enum st_job_status status) {
@@ -147,6 +147,9 @@ const char * st_job_status_to_string(enum st_job_status status) {
 }
 
 enum st_job_status st_job_string_to_status(const char * status) {
+	if (!status)
+		return st_job_status_unknown;
+
 	unsigned int i;
 	for (i = 0; st_job_status[i].status != st_job_status_unknown; i++)
 		if (!strcmp(status, st_job_status[i].name))
@@ -156,12 +159,12 @@ enum st_job_status st_job_string_to_status(const char * status) {
 }
 
 void st_job_sync_plugins(struct st_database_connection * connection) {
-	char * path;
-	asprintf(&path, "%s/libjob-*.so", MODULE_PATH);
+	if (!connection)
+		return;
 
 	glob_t gl;
 	gl.gl_offs = 0;
-	glob(path, GLOB_DOOFFS, 0, &gl);
+	glob(MODULE_PATH "%s/libjob-*.so", GLOB_DOOFFS, 0, &gl);
 
 	unsigned int i;
 	for (i = 0; i < gl.gl_pathc; i++) {
@@ -171,10 +174,9 @@ void st_job_sync_plugins(struct st_database_connection * connection) {
 		sscanf(ptr, "libjob-%64[^.].so", plugin);
 
 		if (connection->ops->sync_plugin_job(connection, plugin))
-			st_log_write_all(st_log_level_error, st_log_type_job, "Failed to synchronize plugin (%s)", plugin);
+			st_log_write_all(st_log_level_error, st_log_type_job, "Failed to synchronize plugin '%s'", plugin);
 	}
 
 	globfree(&gl);
-	free(path);
 }
 

@@ -22,13 +22,12 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 15 Aug 2012 14:13:57 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 10:20:36 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_USER_H__
 #define __STONE_USER_H__
 
-struct st_database_connection;
 struct st_pool;
 
 struct st_user {

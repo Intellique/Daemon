@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 15 Aug 2012 18:28:28 +0200                         *
+*  Last modified: Wed, 15 Aug 2012 22:46:33 +0200                         *
 \*************************************************************************/
 
 // getopt_long
@@ -37,6 +37,7 @@
 #include <libstone/database.h>
 #include <libstone/job.h>
 #include <libstone/log.h>
+#include <libstone/util/file.h>
 #include <stoned/library/changer.h>
 
 #include "checksum/stoned.chcksum"
@@ -189,6 +190,9 @@ int main(int argc, char ** argv) {
 	//st_admin_start();
 
 	st_sched_do_loop(connect);
+
+	// remove pid file
+	st_util_file_rm(pid_file);
 
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone exit");
 

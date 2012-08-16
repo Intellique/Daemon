@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 22 Jul 2012 11:48:48 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 10:13:14 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -32,7 +32,7 @@
 #include <pthread.h>
 // free, malloc, realloc
 #include <stdlib.h>
-// asprintf
+// sscanf
 #include <stdio.h>
 // strcmp, strdup
 #include <string.h>
@@ -70,8 +70,8 @@ char * st_checksum_compute(const char * checksum, const char * data, ssize_t len
 	}
 
 	struct st_checksum * chck = driver->new_checksum();
-    if (length > 0)
-        chck->ops->update(chck, data, length);
+	if (length > 0)
+		chck->ops->update(chck, data, length);
 
 	char * digest = chck->ops->digest(chck);
 	chck->ops->free(chck);
@@ -102,8 +102,8 @@ void st_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * h
 }
 
 struct st_checksum_driver * st_checksum_get_driver(const char * driver) {
-    if (!driver)
-        return 0;
+	if (!driver)
+		return 0;
 
 	static pthread_mutex_t lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 	pthread_mutex_lock(&lock);
@@ -114,24 +114,24 @@ struct st_checksum_driver * st_checksum_get_driver(const char * driver) {
 		if (!strcmp(driver, st_checksum_drivers[i]->name))
 			dr = st_checksum_drivers[i];
 
-	void * cookie = 0;
-	if (!dr)
-		cookie = st_loader_load("checksum", driver);
+	if (!dr) {
+		void * cookie = st_loader_load("checksum", driver);
 
-	if (!dr && !cookie) {
-		st_log_write_all(st_log_level_error, st_log_type_checksum, "Failed to load driver '%s'", driver);
-		pthread_mutex_unlock(&lock);
-		return 0;
-	}
-
-	for (i = 0; i < st_checksum_nb_drivers && !dr; i++)
-		if (!strcmp(driver, st_checksum_drivers[i]->name)) {
-			dr = st_checksum_drivers[i];
-			dr->cookie = cookie;
+		if (!cookie) {
+			st_log_write_all(st_log_level_error, st_log_type_checksum, "Failed to load driver '%s'", driver);
+			pthread_mutex_unlock(&lock);
+			return 0;
 		}
 
-	if (!dr)
-		st_log_write_all(st_log_level_error, st_log_type_checksum, "Driver '%s' not found", driver);
+		for (i = 0; i < st_checksum_nb_drivers && !dr; i++)
+			if (!strcmp(driver, st_checksum_drivers[i]->name)) {
+				dr = st_checksum_drivers[i];
+				dr->cookie = cookie;
+			}
+
+		if (!dr)
+			st_log_write_all(st_log_level_error, st_log_type_checksum, "Driver '%s' not found", driver);
+	}
 
 	pthread_mutex_unlock(&lock);
 
@@ -175,12 +175,9 @@ void st_checksum_sync_plugins(struct st_database_connection * connection) {
 	if (!connection)
 		return;
 
-	char * path;
-	asprintf(&path, "%s/libchecksum-*.so", MODULE_PATH);
-
 	glob_t gl;
 	gl.gl_offs = 0;
-	glob(path, GLOB_DOOFFS, 0, &gl);
+	glob(MODULE_PATH "/libchecksum-*.so", GLOB_DOOFFS, 0, &gl);
 
 	unsigned int i;
 	for (i = 0; i < gl.gl_pathc; i++) {
@@ -190,10 +187,9 @@ void st_checksum_sync_plugins(struct st_database_connection * connection) {
 		sscanf(ptr, "libchecksum-%64[^.].so", plugin);
 
 		if (connection->ops->sync_plugin_checksum(connection, plugin))
-			st_log_write_all(st_log_level_error, st_log_type_checksum, "Failed to synchronize plugin (%s)", plugin);
+			st_log_write_all(st_log_level_error, st_log_type_checksum, "Failed to synchronize plugin '%s'", plugin);
 	}
 
 	globfree(&gl);
-	free(path);
 }
 
