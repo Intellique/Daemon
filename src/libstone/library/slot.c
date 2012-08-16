@@ -22,10 +22,10 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jul 2012 11:33:16 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 22:31:09 +0200                         *
 \*************************************************************************/
 
-// strcmp
+// strcasecmp
 #include <string.h>
 
 #include <libstone/library/slot.h>
@@ -39,30 +39,29 @@ static const struct st_slot_type2 {
 	{ "storage slot",       st_slot_type_storage },
 	{ "storage slot",       st_slot_type_storage },
 	{ "transport slot",     st_slot_type_import_export },
-	{ "unknown slot",       st_slot_type_unkown },
 
-	{ 0, st_slot_type_unkown },
+	{ "unknown slot", st_slot_type_unkown },
 };
 
 
 const char * st_slot_type_to_string(enum st_slot_type type) {
-	const struct st_slot_type2 * ptr;
-	for (ptr = st_slot_types; ptr->name; ptr++)
-		if (ptr->type == type)
-			return ptr->name;
+	unsigned int i;
+	for (i = 0; st_slot_types[i].type != st_slot_type_unkown; i++)
+		if (st_slot_types[i].type == type)
+			return st_slot_types[i].name;
 
-	return "unknown slot";
+	return st_slot_types[i].name;
 }
 
 enum st_slot_type st_slot_string_to_type(const char * type) {
-	if (!type)
+	if (type == NULL)
 		return st_slot_type_unkown;
 
-	const struct st_slot_type2 * ptr;
-	for (ptr = st_slot_types; ptr->name; ptr++)
-		if (!strcmp(type, ptr->name))
-			return ptr->type;
+	unsigned int i;
+	for (i = 0; st_slot_types[i].type != st_slot_type_unkown; i++)
+		if (!strcasecmp(type, st_slot_types[i].name))
+			return st_slot_types[i].type;
 
-	return st_slot_type_unkown;
+	return st_slot_types[i].type;
 }
 

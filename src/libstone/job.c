@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 10:15:40 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 22:42:31 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -38,7 +38,7 @@
 #include <stdlib.h>
 // globfree
 #include <stdio.h>
-// strcmp, strdup
+// strcasecmp, strcmp, strdup
 #include <string.h>
 
 #include <libstone/database.h>
@@ -49,7 +49,7 @@
 #include "loader.h"
 
 
-static struct st_job_driver ** st_job_drivers = 0;
+static struct st_job_driver ** st_job_drivers = NULL;
 static unsigned int st_job_nb_drivers = 0;
 static const struct st_job_status2 {
 	char * name;
@@ -68,34 +68,36 @@ static const struct st_job_status2 {
 
 
 struct st_job_driver * st_job_get_driver(const char * driver) {
-    if (!driver)
-        return 0;
+	if (!driver) {
+		st_log_write_all(st_log_level_error, st_log_type_job, "Failed to load driver '%s'", driver);
+		return NULL;
+	}
 
 	static pthread_mutex_t lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 	pthread_mutex_lock(&lock);
 
 	unsigned int i;
-	struct st_job_driver * dr = 0;
-	for (i = 0; i < st_job_nb_drivers && !dr; i++)
+	struct st_job_driver * dr = NULL;
+	for (i = 0; i < st_job_nb_drivers && dr == NULL; i++)
 		if (!strcmp(driver, st_job_drivers[i]->name))
 			dr = st_job_drivers[i];
 
-	if (!dr) {
+	if (dr == NULL) {
 		void * cookie = st_loader_load("job", driver);
 
-		if (!cookie) {
+		if (cookie == NULL) {
 			st_log_write_all(st_log_level_error, st_log_type_job, "Failed to load driver '%s'", driver);
 			pthread_mutex_unlock(&lock);
-			return 0;
+			return NULL;
 		}
 
-		for (i = 0; i < st_job_nb_drivers && !dr; i++)
+		for (i = 0; i < st_job_nb_drivers && dr == NULL; i++)
 			if (!strcmp(driver, st_job_drivers[i]->name)) {
 				dr = st_job_drivers[i];
 				dr->cookie = cookie;
 			}
 
-		if (!dr)
+		if (dr == NULL)
 			st_log_write_all(st_log_level_error, st_log_type_job, "Driver '%s' not found", driver);
 	}
 
@@ -105,8 +107,8 @@ struct st_job_driver * st_job_get_driver(const char * driver) {
 }
 
 void st_job_register_driver(struct st_job_driver * driver) {
-	if (!driver) {
-		st_log_write_all(st_log_level_error, st_log_type_job, "Try to register with driver=0");
+	if (driver == NULL) {
+		st_log_write_all(st_log_level_error, st_log_type_job, "Try to register with driver is NULL");
 		return;
 	}
 
@@ -123,7 +125,7 @@ void st_job_register_driver(struct st_job_driver * driver) {
 		}
 
 	void * new_addr = realloc(st_job_drivers, (st_job_nb_drivers + 1) * sizeof(struct st_job_driver *));
-	if (!new_addr) {
+	if (new_addr == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_checksum, "Driver '%s' cannot be registred because there is not enough memory", driver->name);
 		return;
 	}
@@ -147,24 +149,24 @@ const char * st_job_status_to_string(enum st_job_status status) {
 }
 
 enum st_job_status st_job_string_to_status(const char * status) {
-	if (!status)
+	if (status == NULL)
 		return st_job_status_unknown;
 
 	unsigned int i;
 	for (i = 0; st_job_status[i].status != st_job_status_unknown; i++)
-		if (!strcmp(status, st_job_status[i].name))
+		if (!strcasecmp(status, st_job_status[i].name))
 			return st_job_status[i].status;
 
 	return st_job_status[i].status;
 }
 
 void st_job_sync_plugins(struct st_database_connection * connection) {
-	if (!connection)
+	if (connection == NULL)
 		return;
 
 	glob_t gl;
 	gl.gl_offs = 0;
-	glob(MODULE_PATH "%s/libjob-*.so", GLOB_DOOFFS, 0, &gl);
+	glob(MODULE_PATH "%s/libjob-*.so", GLOB_DOOFFS, NULL, &gl);
 
 	unsigned int i;
 	for (i = 0; i < gl.gl_pathc; i++) {

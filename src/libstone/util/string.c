@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jul 2012 18:43:07 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 19:56:30 +0200                         *
 \*************************************************************************/
 
 // free, realloc
@@ -41,7 +41,7 @@
 static int st_util_string_valid_utf8_char(const char * string);
 
 int st_util_string_check_valid_utf8(const char * string) {
-	if (!string)
+	if (string == NULL)
 		return 0;
 
 	const char * ptr = string;
@@ -73,7 +73,7 @@ void st_util_string_delete_double_char(char * str, char delete_char) {
 	char double_char[3] = { delete_char, delete_char, '\0' };
 
 	char * ptr = strstr(str, double_char);
-	while (ptr) {
+	while (ptr != NULL) {
 		ptr++;
 
 		size_t length = strlen(ptr);
@@ -86,7 +86,7 @@ void st_util_string_delete_double_char(char * str, char delete_char) {
 }
 
 void st_util_string_fix_invalid_utf8(char * string) {
-	if (!string)
+	if (string == NULL)
 		return;
 
 	char * ptr = string;
@@ -140,7 +140,7 @@ void st_util_string_rtrim(char * str, char trim) {
 		ptr[1] = '\0';
 }
 
-int st_util_string_valid_utf8_char(const char * string) {
+static int st_util_string_valid_utf8_char(const char * string) {
 	const unsigned char * ptr = (const unsigned char *) string;
 	if ((*ptr & 0x7F) == *ptr) {
 		return 1;

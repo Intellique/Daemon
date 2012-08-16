@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jul 2012 23:28:48 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 19:54:54 +0200                         *
 \*************************************************************************/
 
 // calloc, free, malloc
@@ -30,17 +30,17 @@
 
 #include <libstone/util/hashtable.h>
 
-void st_hashtable_put2(struct st_hashtable * hashtable, unsigned int index, struct st_hashtable_node * new_node);
-void st_hashtable_rehash(struct st_hashtable * hashtable);
+static void st_hashtable_put2(struct st_hashtable * hashtable, unsigned int index, struct st_hashtable_node * new_node);
+static void st_hashtable_rehash(struct st_hashtable * hashtable);
 
 
 struct st_hashtable * st_hashtable_new(unsigned long long (*compute_hash)(const void *)) {
-	return st_hashtable_new2(compute_hash, 0);
+	return st_hashtable_new2(compute_hash, NULL);
 }
 
 struct st_hashtable * st_hashtable_new2(unsigned long long (*compute_hash)(const void * key), void (*release_key_value)(void * key, void * value)) {
-	if (!compute_hash)
-		return 0;
+	if (compute_hash == NULL)
+		return NULL;
 
 	struct st_hashtable * l_hash = malloc(sizeof(struct st_hashtable));
 
@@ -55,47 +55,47 @@ struct st_hashtable * st_hashtable_new2(unsigned long long (*compute_hash)(const
 }
 
 void st_hashtable_free(struct st_hashtable * hashtable) {
-	if (!hashtable)
+	if (hashtable == NULL)
 		return;
 
 	st_hashtable_clear(hashtable);
 	free(hashtable->nodes);
-	hashtable->nodes = 0;
-	hashtable->compute_hash = 0;
+	hashtable->nodes = NULL;
+	hashtable->compute_hash = NULL;
 
 	free(hashtable);
 }
 
 
 void st_hashtable_clear(struct st_hashtable * hashtable) {
-	if (!hashtable)
+	if (hashtable == NULL)
 		return;
 
 	unsigned int i;
 	for (i = 0; i < hashtable->size_node; i++) {
 		struct st_hashtable_node * ptr = hashtable->nodes[i];
-		while (ptr != 0) {
+		while (ptr != NULL) {
 			struct st_hashtable_node * tmp = ptr;
 			ptr = ptr->next;
-			if (hashtable->release_key_value)
+			if (hashtable->release_key_value != NULL)
 				hashtable->release_key_value(tmp->key, tmp->value);
-			tmp->key = tmp->value = tmp->next = 0;
+			tmp->key = tmp->value = tmp->next = NULL;
 			free(tmp);
 		}
-		hashtable->nodes[i] = 0;
+		hashtable->nodes[i] = NULL;
 	}
 	hashtable->nb_elements = 0;
 }
 
 short st_hashtable_has_key(const struct st_hashtable * hashtable, const void * key) {
-	if (!hashtable || !key)
+	if (hashtable == NULL || key == NULL)
 		return 0;
 
 	unsigned long long hash = hashtable->compute_hash(key);
 	unsigned int index = hash % hashtable->size_node;
 
 	const struct st_hashtable_node * node = hashtable->nodes[index];
-	while (node) {
+	while (node != NULL) {
 		if (node->hash == hash)
 			return 1;
 		node = node->next;
@@ -105,27 +105,27 @@ short st_hashtable_has_key(const struct st_hashtable * hashtable, const void * k
 }
 
 const void ** st_hashtable_keys(struct st_hashtable * hashtable) {
-	if (!hashtable)
-		return 0;
+	if (hashtable == NULL)
+		return NULL;
 
 	const void ** keys = calloc(sizeof(void *), hashtable->nb_elements + 1);
 	unsigned int iNode = 0, index = 0;
 	while (iNode < hashtable->size_node) {
 		struct st_hashtable_node * node = hashtable->nodes[iNode];
-		while (node) {
+		while (node != NULL) {
 			keys[index] = node->key;
 			index++;
 			node = node->next;
 		}
 		iNode++;
 	}
-	keys[index] = 0;
+	keys[index] = NULL;
 
 	return keys;
 }
 
 void st_hashtable_put(struct st_hashtable * hashtable, void * key, void * value) {
-	if (!hashtable || !key)
+	if (hashtable == NULL || key == NULL)
 		return;
 
 	unsigned long long hash = hashtable->compute_hash(key);
@@ -135,17 +135,17 @@ void st_hashtable_put(struct st_hashtable * hashtable, void * key, void * value)
 	new_node->hash = hash;
 	new_node->key = key;
 	new_node->value = value;
-	new_node->next = 0;
+	new_node->next = NULL;
 
 	st_hashtable_put2(hashtable, index, new_node);
 	hashtable->nb_elements++;
 }
 
-void st_hashtable_put2(struct st_hashtable * hashtable, unsigned int index, struct st_hashtable_node * new_node) {
+static void st_hashtable_put2(struct st_hashtable * hashtable, unsigned int index, struct st_hashtable_node * new_node) {
 	struct st_hashtable_node * node = hashtable->nodes[index];
-	if (node) {
+	if (node != NULL) {
 		if (node->hash == new_node->hash) {
-			if (hashtable->release_key_value && node->key != new_node->key && node->value != new_node->value)
+			if (hashtable->release_key_value != NULL && node->key != new_node->key && node->value != new_node->value)
 				hashtable->release_key_value(node->key, node->value);
 
 			hashtable->nodes[index] = new_node;
@@ -157,7 +157,7 @@ void st_hashtable_put2(struct st_hashtable * hashtable, unsigned int index, stru
 			while (node->next) {
 				if (node->next->hash == new_node->hash) {
 					struct st_hashtable_node * next = node->next;
-					if (hashtable->release_key_value && next->key != new_node->key && next->value != new_node->value)
+					if (hashtable->release_key_value != NULL && next->key != new_node->key && next->value != new_node->value)
 						hashtable->release_key_value(next->key, next->value);
 
 					new_node->next = next->next;
@@ -179,7 +179,7 @@ void st_hashtable_put2(struct st_hashtable * hashtable, unsigned int index, stru
 		hashtable->nodes[index] = new_node;
 }
 
-void st_hashtable_rehash(struct st_hashtable * hashtable) {
+static void st_hashtable_rehash(struct st_hashtable * hashtable) {
 	if (!hashtable->allow_rehash)
 		return;
 
@@ -193,10 +193,10 @@ void st_hashtable_rehash(struct st_hashtable * hashtable) {
 	unsigned int i;
 	for (i = 0; i < old_size_node; i++) {
 		struct st_hashtable_node * node = old_nodes[i];
-		while (node) {
+		while (node != NULL) {
 			struct st_hashtable_node * current_node = node;
 			node = node->next;
-			current_node->next = 0;
+			current_node->next = NULL;
 
 			unsigned int index = current_node->hash % hashtable->size_node;
 			st_hashtable_put2(hashtable, index, current_node);
@@ -208,20 +208,20 @@ void st_hashtable_rehash(struct st_hashtable * hashtable) {
 }
 
 void st_hashtable_remove(struct st_hashtable * hashtable, const void * key) {
-	if (!hashtable || !key)
+	if (hashtable == NULL || key == NULL)
 		return;
 
 	unsigned long long hash = hashtable->compute_hash(key);
 	unsigned int index = hash % hashtable->size_node;
 
 	struct st_hashtable_node * node = hashtable->nodes[index];
-	if (!node)
+	if (node == NULL)
 		return;
 
 	if (node->hash == hash) {
 		hashtable->nodes[index] = node->next;
 
-		if (hashtable->release_key_value)
+		if (hashtable->release_key_value != NULL)
 			hashtable->release_key_value(node->key, node->value);
 
 		free(node);
@@ -229,7 +229,7 @@ void st_hashtable_remove(struct st_hashtable * hashtable, const void * key) {
 		return;
 	}
 
-	while (node->next) {
+	while (node->next != NULL) {
 		if (node->next->hash == hash) {
 			struct st_hashtable_node * current_node = node->next;
 			node->next = current_node->next;
@@ -248,23 +248,23 @@ void st_hashtable_remove(struct st_hashtable * hashtable, const void * key) {
 }
 
 void * st_hashtable_value(const struct st_hashtable * hashtable, const void * key) {
-	if (!hashtable || !key)
-		return 0;
+	if (hashtable == NULL || key == NULL)
+		return NULL;
 
 	unsigned long long hash = hashtable->compute_hash(key);
 	unsigned int index = hash % hashtable->size_node;
 
 	struct st_hashtable_node * node = hashtable->nodes[index];
-	for (node = hashtable->nodes[index]; node; node = node->next)
+	for (node = hashtable->nodes[index]; node != NULL; node = node->next)
 		if (node->hash == hash)
 			return node->value;
 
-	return 0;
+	return NULL;
 }
 
 void ** st_hashtable_values(struct st_hashtable * hashtable) {
-	if (!hashtable)
-		return 0;
+	if (hashtable == NULL)
+		return NULL;
 
 	void ** values = calloc(sizeof(void *), hashtable->nb_elements + 1);
 	unsigned int i_node, index = 0;
@@ -273,7 +273,7 @@ void ** st_hashtable_values(struct st_hashtable * hashtable) {
 		for (node = hashtable->nodes[i_node]; node; node = node->next)
 			values[index++] = node->value;
 	}
-	values[index] = 0;
+	values[index] = NULL;
 
 	return values;
 }

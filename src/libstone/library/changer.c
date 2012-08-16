@@ -22,10 +22,10 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jul 2012 09:29:53 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 22:26:17 +0200                         *
 \*************************************************************************/
 
-// strcmp
+// strcasecmp
 #include <string.h>
 
 #include <libstone/library/changer.h>
@@ -39,31 +39,30 @@ static const struct st_changer_status2 {
 	{ "idle",		st_changer_idle },
 	{ "importing",	st_changer_importing },
 	{ "loading",	st_changer_loading },
-	{ "unknown",	st_changer_unknown },
 	{ "unloading",	st_changer_unloading },
 
-	{ 0, st_changer_unknown },
+	{ "unknown", st_changer_unknown },
 };
 
 
 const char * st_changer_status_to_string(enum st_changer_status status) {
-	const struct st_changer_status2 * ptr;
-	for (ptr = st_library_status; ptr->name; ptr++)
-		if (ptr->status == status)
-			return ptr->name;
+	unsigned int i;
+	for (i = 0; st_library_status[i].status != st_changer_unknown; i++)
+		if (st_library_status[i].status == status)
+			return st_library_status[i].name;
 
-	return "unknown";
+	return st_library_status[i].name;
 }
 
 enum st_changer_status st_changer_string_to_status(const char * status) {
-	if (!status)
+	if (status == NULL)
 		return st_changer_unknown;
 
-	const struct st_changer_status2 * ptr;
-	for (ptr = st_library_status; ptr->name; ptr++)
-		if (!strcmp(ptr->name, status))
-			return ptr->status;
+	unsigned int i;
+	for (i = 0; st_library_status[i].status != st_changer_unknown; i++)
+		if (!strcasecmp(status, st_library_status[i].name))
+			return st_library_status[i].status;
 
-	return ptr->status;
+	return st_library_status[i].status;
 }
 

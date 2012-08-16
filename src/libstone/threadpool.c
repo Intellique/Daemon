@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jul 2012 18:34:52 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 22:34:22 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -51,7 +51,7 @@ struct st_threadpool_thread {
 
 static void * st_threadpool_work(void * arg);
 
-static struct st_threadpool_thread ** st_threadpool_threads = 0;
+static struct st_threadpool_thread ** st_threadpool_threads = NULL;
 static unsigned int st_threadpool_nb_threads = 0;
 static pthread_mutex_t st_threadpool_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
@@ -99,7 +99,7 @@ int st_threadpool_run(void (*function)(void * arg), void * arg) {
 	}
 
 	void * new_addr = realloc(st_threadpool_threads, (st_threadpool_nb_threads + 1) * sizeof(struct st_threadpool_thread *));
-	if (!new_addr) {
+	if (new_addr == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Error, not enought memory to start new thread");
 		return 1;
 	}
@@ -112,8 +112,8 @@ int st_threadpool_run(void (*function)(void * arg), void * arg) {
 	th->arg = arg;
 	th->state = st_threadpool_state_running;
 
-	pthread_mutex_init(&th->lock, 0);
-	pthread_cond_init(&th->wait, 0);
+	pthread_mutex_init(&th->lock, NULL);
+	pthread_cond_init(&th->wait, NULL);
 
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
@@ -128,7 +128,7 @@ int st_threadpool_run(void (*function)(void * arg), void * arg) {
 	return 0;
 }
 
-void * st_threadpool_work(void * arg) {
+static void * st_threadpool_work(void * arg) {
 	struct st_threadpool_thread * th = arg;
 
 	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Starting new thread #%ld to function: %p with parameter: %p", th->thread, th->function, th->arg);
@@ -140,13 +140,13 @@ void * st_threadpool_work(void * arg) {
 
 		pthread_mutex_lock(&th->lock);
 
-		th->function = 0;
-		th->arg = 0;
+		th->function = NULL;
+		th->arg = NULL;
 		th->state = st_threadpool_state_waiting;
 
 		struct timeval now;
 		struct timespec timeout;
-		gettimeofday(&now, 0);
+		gettimeofday(&now, NULL);
 		timeout.tv_sec = now.tv_sec + 300;
 		timeout.tv_nsec = now.tv_usec * 1000;
 
@@ -164,6 +164,6 @@ void * st_threadpool_work(void * arg) {
 
 	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Thread #%ld is dead", th->thread);
 
-	return 0;
+	return NULL;
 }
 

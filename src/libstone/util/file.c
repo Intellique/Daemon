@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 10:43:12 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 19:45:36 +0200                         *
 \*************************************************************************/
 
 // scandir
@@ -121,7 +121,7 @@ int st_util_file_mkdir(const char * dirname, mode_t mode) {
 	st_util_string_delete_double_char(dir, '/');
 
 	char * ptr = strrchr(dir, '/');
-	if (!ptr) {
+	if (ptr == NULL) {
 		free(dir);
 		return mkdir(dirname, mode);
 	}
@@ -131,7 +131,7 @@ int st_util_file_mkdir(const char * dirname, mode_t mode) {
 		*ptr = '\0';
 		nb++;
 		ptr = strrchr(dir, '/');
-	} while (ptr && access(dir, F_OK));
+	} while (ptr != NULL && access(dir, F_OK));
 
 	int failed = 0;
 	if (access(dir, F_OK))
@@ -160,7 +160,7 @@ int st_util_file_rm(const char * path) {
 
 	if (S_ISDIR(st.st_mode)) {
 		struct dirent ** files;
-		int nb_files = scandir(path, &files, st_util_file_basic_scandir_filter, 0);
+		int nb_files = scandir(path, &files, st_util_file_basic_scandir_filter, NULL);
 		if (nb_files < 0)
 			return -1;
 

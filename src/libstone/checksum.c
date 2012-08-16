@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 10:13:14 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 15:31:54 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -47,26 +47,26 @@
 #include "loader.h"
 
 
-static struct st_checksum_driver ** st_checksum_drivers = 0;
+static struct st_checksum_driver ** st_checksum_drivers = NULL;
 static unsigned int st_checksum_nb_drivers = 0;
 
 
 char * st_checksum_compute(const char * checksum, const char * data, ssize_t length) {
-	if (!checksum || !data || length < 0) {
+	if (checksum == NULL || data == NULL || length < 0) {
 		st_log_write_all(st_log_level_error, st_log_type_checksum, "compute error");
-		if (!checksum)
+		if (checksum == NULL)
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "because checksum is null");
-		if (!checksum)
+		if (checksum == NULL)
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "because data is null");
 		if (length < 0)
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "because length is lower than 0 (length=%zd)", length);
-		return 0;
+		return NULL;
 	}
 
 	struct st_checksum_driver * driver = st_checksum_get_driver(checksum);
-	if (!driver) {
+	if (driver == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_checksum, "Driver '%s' not found", checksum);
-		return 0;
+		return NULL;
 	}
 
 	struct st_checksum * chck = driver->new_checksum();
@@ -82,13 +82,13 @@ char * st_checksum_compute(const char * checksum, const char * data, ssize_t len
 }
 
 void st_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * hex_digest) {
-	if (!digest || length < 1 || !hex_digest) {
+	if (digest == NULL || length < 1 || hex_digest == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_checksum, "st_checksum_convert_to_hex error");
-		if (!digest)
+		if (digest == NULL)
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "because digest is null");
 		if (length < 1)
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "because length is lower than 1 (length=%zd)", length);
-		if (!hex_digest)
+		if (hex_digest == NULL)
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "because hexDigest is null");
 		return;
 	}
@@ -102,34 +102,36 @@ void st_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * h
 }
 
 struct st_checksum_driver * st_checksum_get_driver(const char * driver) {
-	if (!driver)
-		return 0;
+	if (driver == NULL) {
+		st_log_write_all(st_log_level_error, st_log_type_checksum, "Get checksum driver with driver's name is NULL");
+		return NULL;
+	}
 
 	static pthread_mutex_t lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 	pthread_mutex_lock(&lock);
 
 	unsigned int i;
-	struct st_checksum_driver * dr = 0;
-	for (i = 0; i < st_checksum_nb_drivers && !dr; i++)
+	struct st_checksum_driver * dr = NULL;
+	for (i = 0; i < st_checksum_nb_drivers && dr == NULL; i++)
 		if (!strcmp(driver, st_checksum_drivers[i]->name))
 			dr = st_checksum_drivers[i];
 
-	if (!dr) {
+	if (dr == NULL) {
 		void * cookie = st_loader_load("checksum", driver);
 
-		if (!cookie) {
+		if (cookie == NULL) {
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "Failed to load driver '%s'", driver);
 			pthread_mutex_unlock(&lock);
-			return 0;
+			return NULL;
 		}
 
-		for (i = 0; i < st_checksum_nb_drivers && !dr; i++)
+		for (i = 0; i < st_checksum_nb_drivers && dr == NULL; i++)
 			if (!strcmp(driver, st_checksum_drivers[i]->name)) {
 				dr = st_checksum_drivers[i];
 				dr->cookie = cookie;
 			}
 
-		if (!dr)
+		if (dr == NULL)
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "Driver '%s' not found", driver);
 	}
 
@@ -139,8 +141,8 @@ struct st_checksum_driver * st_checksum_get_driver(const char * driver) {
 }
 
 void st_checksum_register_driver(struct st_checksum_driver * driver) {
-	if (!driver) {
-		st_log_write_all(st_log_level_error, st_log_type_checksum, "Try to register with driver=0");
+	if (driver == NULL) {
+		st_log_write_all(st_log_level_error, st_log_type_checksum, "Try to register with null driver");
 		return;
 	}
 
@@ -157,7 +159,7 @@ void st_checksum_register_driver(struct st_checksum_driver * driver) {
 		}
 
 	void * new_addr = realloc(st_checksum_drivers, (st_checksum_nb_drivers + 1) * sizeof(struct st_checksum_driver *));
-	if (!new_addr) {
+	if (new_addr == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_checksum, "Driver '%s' cannot be registred because there is not enough memory", driver->name);
 		return;
 	}
@@ -172,12 +174,19 @@ void st_checksum_register_driver(struct st_checksum_driver * driver) {
 }
 
 void st_checksum_sync_plugins(struct st_database_connection * connection) {
-	if (!connection)
+	if (connection == NULL) {
+		st_log_write_all(st_log_level_error, st_log_type_checksum, "Try to synchronize checksum's plugins without database connection");
 		return;
+	}
+
+	if (connection->ops->is_connection_closed(connection)) {
+		st_log_write_all(st_log_level_error, st_log_type_checksum, "Try to synchronize checksum's plugins with closed connection to database");
+		return;
+	}
 
 	glob_t gl;
 	gl.gl_offs = 0;
-	glob(MODULE_PATH "/libchecksum-*.so", GLOB_DOOFFS, 0, &gl);
+	glob(MODULE_PATH "/libchecksum-*.so", GLOB_DOOFFS, NULL, &gl);
 
 	unsigned int i;
 	for (i = 0; i < gl.gl_pathc; i++) {

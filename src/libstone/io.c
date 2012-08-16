@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 15 Aug 2012 18:17:20 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 15:08:07 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -34,10 +34,20 @@
 #include <stdio.h>
 
 #include <libstone/io.h>
+#include <libstone/log.h>
 
 
 ssize_t st_stream_writer_printf(struct st_stream_writer * writer, const char * format, ...) {
-	char * message = 0;
+	if (writer == NULL || format == NULL) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "st_stream_writer_printf: error because");
+		if (writer == NULL)
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "writer is NULL");
+		if (format == NULL)
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "format is NULL");
+		return -1;
+	}
+
+	char * message = NULL;
 
 	va_list va;
 	va_start(va, format);

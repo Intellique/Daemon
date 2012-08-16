@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 09 Jul 2012 13:37:55 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 19:58:58 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -50,8 +50,8 @@ static short st_loader_loaded = 0;
 
 
 void * st_loader_load(const char * module, const char * name) {
-	if (!module || !name)
-		return 0;
+	if (module == NULL || name == NULL)
+		return NULL;
 
 	char * path;
 	asprintf(&path, MODULE_PATH "/lib%s-%s.so", module, name);
@@ -63,10 +63,10 @@ void * st_loader_load(const char * module, const char * name) {
 	return cookie;
 }
 
-void * st_loader_load_file(const char * filename) {
+static void * st_loader_load_file(const char * filename) {
 	if (access(filename, R_OK | X_OK)) {
 		st_log_write_all(st_log_level_debug, st_log_type_daemon, "Loader: access to file %s failed because %m", filename);
-		return 0;
+		return NULL;
 	}
 
 	static pthread_mutex_t lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
@@ -75,18 +75,18 @@ void * st_loader_load_file(const char * filename) {
 	st_loader_loaded = 0;
 
 	void * cookie = dlopen(filename, RTLD_NOW);
-	if (!cookie) {
+	if (cookie == NULL) {
 		st_log_write_all(st_log_level_debug, st_log_type_daemon, "Loader: failed to load '%s' because %s", filename, dlerror());
 	} else if (!st_loader_loaded) {
 		dlclose(cookie);
-		cookie = 0;
+		cookie = NULL;
 	}
 
 	pthread_mutex_unlock(&lock);
 	return cookie;
 }
 
-void st_loader_register_ok() {
+void st_loader_register_ok(void) {
 	st_loader_loaded = 1;
 }
 

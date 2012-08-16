@@ -22,10 +22,10 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jul 2012 09:39:55 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 22:26:34 +0200                         *
 \*************************************************************************/
 
-// strcmp
+// strcasecmp
 #include <string.h>
 
 #include <libstone/library/drive.h>
@@ -43,29 +43,31 @@ static const struct st_drive_status2 {
 	{ "positioning",	st_drive_positioning },
 	{ "reading",		st_drive_reading },
 	{ "rewinding",		st_drive_rewinding },
-	{ "unknown",		st_drive_unknown },
 	{ "unloading",		st_drive_unloading },
 	{ "writing",		st_drive_writing },
 
-	{ 0, st_drive_unknown },
+	{ "unknown", st_drive_unknown },
 };
 
 
 const char * st_drive_status_to_string(enum st_drive_status status) {
-	const struct st_drive_status2 * ptr;
-	for (ptr = st_drive_status; ptr->name; ptr++)
-		if (ptr->status == status)
-			return ptr->name;
+	unsigned int i;
+	for (i = 0; st_drive_status[i].status != st_drive_unknown; i++)
+		if (st_drive_status[i].status == status)
+			return st_drive_status[i].name;
 
-	return 0;
+	return st_drive_status[i].name;
 }
 
 enum st_drive_status st_drive_string_to_status(const char * status) {
-	const struct st_drive_status2 * ptr;
-	for (ptr = st_drive_status; ptr->name; ptr++)
-		if (!strcmp(ptr->name, status))
-			return ptr->status;
+	if (status == NULL)
+		return st_drive_unknown;
 
-	return ptr->status;
+	unsigned int i;
+	for (i = 0; st_drive_status[i].status != st_drive_unknown; i++)
+		if (!strcasecmp(status, st_drive_status[i].name))
+			return st_drive_status[i].status;
+
+	return st_drive_status[i].status;
 }
 

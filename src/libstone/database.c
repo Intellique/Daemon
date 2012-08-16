@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 10:13:57 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 22:40:08 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -38,11 +38,16 @@
 
 #include "loader.h"
 
-static struct st_database ** st_database_drivers = 0;
+static struct st_database ** st_database_drivers = NULL;
 static unsigned int st_database_nb_databases = 0;
 
 
 struct st_database_config * st_database_get_config_by_name(const char * name) {
+	if (name == NULL) {
+		st_log_write_all(st_log_level_error, st_log_type_database, "Try to get a database configuration with name is NULL");
+		return NULL;
+	}
+
 	unsigned int i;
 	for (i = 0; i < st_database_nb_databases; i++) {
 		unsigned int j;
@@ -55,46 +60,47 @@ struct st_database_config * st_database_get_config_by_name(const char * name) {
 		}
 	}
 
-	return 0;
+	return NULL;
 }
 
-struct st_database * st_database_get_default_driver() {
+struct st_database * st_database_get_default_driver(void) {
 	if (st_database_nb_databases > 0)
 		return *st_database_drivers;
 
-	return 0;
+	return NULL;
 }
 
 struct st_database * st_database_get_driver(const char * driver) {
-	if (!driver)
-		return 0;
+	if (driver == NULL) {
+		st_log_write_all(st_log_level_error, st_log_type_database, "Try to get a database driver with driver is NULL");
+		return NULL;
+	}
 
 	static pthread_mutex_t lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
-
 	pthread_mutex_lock(&lock);
 
 	unsigned int i;
-	struct st_database * dr = 0;
-	for (i = 0; i < st_database_nb_databases && !dr; i++)
+	struct st_database * dr = NULL;
+	for (i = 0; i < st_database_nb_databases && dr == NULL; i++)
 		if (!strcmp(driver, st_database_drivers[i]->name))
 			dr = st_database_drivers[i];
 
-	if (!dr) {
+	if (dr == NULL) {
 		void * cookie = st_loader_load("db", driver);
 
-		if (!cookie) {
+		if (cookie == NULL) {
 			st_log_write_all(st_log_level_error, st_log_type_database, "Failed to load driver %s", driver);
 			pthread_mutex_unlock(&lock);
-			return 0;
+			return NULL;
 		}
 
-		for (i = 0; i < st_database_nb_databases && !dr; i++)
+		for (i = 0; i < st_database_nb_databases && dr == NULL; i++)
 			if (!strcmp(driver, st_database_drivers[i]->name)) {
 				dr = st_database_drivers[i];
 				dr->cookie = cookie;
 			}
 
-		if (!dr)
+		if (dr == NULL)
 			st_log_write_all(st_log_level_error, st_log_type_database, "Driver %s not found", driver);
 	}
 
@@ -104,7 +110,7 @@ struct st_database * st_database_get_driver(const char * driver) {
 }
 
 void st_database_register_driver(struct st_database * driver) {
-	if (!driver) {
+	if (driver == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_database, "Try to register with driver=0");
 		return;
 	}
@@ -122,7 +128,7 @@ void st_database_register_driver(struct st_database * driver) {
 		}
 
 	void * new_addr = realloc(st_database_drivers, (st_database_nb_databases + 1) * sizeof(struct st_database *));
-	if (!new_addr) {
+	if (new_addr == NULL) {
 		st_log_write_all(st_log_level_info, st_log_type_database, "Driver '%s' cannot be registred because there is not enough memory", driver->name);
 		return;
 	}

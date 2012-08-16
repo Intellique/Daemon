@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 10:13:38 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 13:29:44 +0200                         *
 \*************************************************************************/
 
 // strerror
@@ -65,12 +65,12 @@ static void st_conf_load_db(const struct st_hashtable * params);
  */
 static void st_conf_load_log(const struct st_hashtable * params);
 
-static struct st_hashtable * st_conf_callback = 0;
+static struct st_hashtable * st_conf_callback = NULL;
 
 
 int st_conf_check_pid(const char * prog_name, int pid) {
-	if (!prog_name || pid < 1) {
-		if (!prog_name)
+	if (prog_name == NULL || pid < 1) {
+		if (prog_name == NULL)
 			st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: check_pid: prog_name should not be null");
 		if (pid < 1)
 			st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: check_pid: pid contains a wrong value (pid=%d)", pid);
@@ -92,7 +92,7 @@ int st_conf_check_pid(const char * prog_name, int pid) {
 	}
 
 	char * ptr = strrchr(link, '/');
-	if (ptr)
+	if (ptr != NULL)
 		ptr++;
 	else
 		ptr = link;
@@ -103,7 +103,7 @@ int st_conf_check_pid(const char * prog_name, int pid) {
 }
 
 int st_conf_read_pid(const char * pid_file) {
-	if (!pid_file) {
+	if (pid_file == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: read_pid: pid_file is null");
 		return -1;
 	}
@@ -134,8 +134,8 @@ int st_conf_read_pid(const char * pid_file) {
 }
 
 int st_conf_write_pid(const char * pid_file, int pid) {
-	if (!pid_file || pid < 1) {
-		if (!pid_file)
+	if (pid_file == NULL || pid < 1) {
+		if (pid_file == NULL)
 			st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: write_pid: pid_file is null");
 		if (pid < 1)
 			st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: write_pid: pid should be greater than 0 (pid=%d)", pid);
@@ -157,36 +157,36 @@ int st_conf_write_pid(const char * pid_file, int pid) {
 }
 
 
-void st_conf_free_key(void * key, void * value __attribute__((unused))) {
+static void st_conf_free_key(void * key, void * value __attribute__((unused))) {
 	free(key);
 }
 
-void st_conf_init() {
+static void st_conf_init(void) {
 	st_conf_callback = st_hashtable_new2(st_util_string_compute_hash, st_conf_free_key);
 
 	st_hashtable_put(st_conf_callback, strdup("database"), st_conf_load_db);
 	st_hashtable_put(st_conf_callback, strdup("log"), st_conf_load_log);
 }
 
-void st_conf_load_db(const struct st_hashtable * params) {
-	if (!params)
+static void st_conf_load_db(const struct st_hashtable * params) {
+	if (params == NULL)
 		return;
 
 	char * driver = st_hashtable_value(params, "driver");
-	if (!driver) {
+	if (driver == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "conf: load_db: there is no driver in config file");
 		return;
 	}
 
 	struct st_database * db = st_database_get_driver(driver);
-	if (db) {
+	if (db != NULL) {
 		st_log_write_all(st_log_level_info, st_log_type_daemon, "Conf: load_db: driver '%s' => ok", driver);
 
 		short setup_ok = 0, ping_ok = 0;
 
 		struct st_database_config * config = db->ops->add(params);
 
-		if (config) {
+		if (config != NULL) {
 			setup_ok = 1;
 			ping_ok = config->ops->ping(config) >= 0;
 		}
@@ -196,18 +196,18 @@ void st_conf_load_db(const struct st_hashtable * params) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: load_db: no driver '%s' found", driver);
 }
 
-void st_conf_load_log(const struct st_hashtable * params) {
-	if (!params)
+static void st_conf_load_log(const struct st_hashtable * params) {
+	if (params == NULL)
 		return;
 
 	char * alias = st_hashtable_value(params, "alias");
 	char * type = st_hashtable_value(params, "type");
 	enum st_log_level verbosity = st_log_string_to_level(st_hashtable_value(params, "verbosity"));
 
-	if (!alias || !type || verbosity == st_log_level_unknown) {
-		if (!alias)
+	if (alias == NULL || type == NULL || verbosity == st_log_level_unknown) {
+		if (alias == NULL)
 			st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: load_log: alias required for log");
-		if (!type)
+		if (type == NULL)
 			st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: load_log: type required for log");
 		if (verbosity == st_log_level_unknown)
 			st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: load_log: verbosity required for log");
@@ -215,20 +215,25 @@ void st_conf_load_log(const struct st_hashtable * params) {
 	}
 
 	struct st_log_driver * dr = st_log_get_driver(type);
-	if (dr) {
+	if (dr != NULL) {
 		st_log_write_all(st_log_level_info, st_log_type_daemon, "Conf: load_log: using module='%s', alias='%s', verbosity='%s'", type, alias, st_log_level_to_string(verbosity));
 		dr->add(alias, verbosity, params);
 	} else
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: load_log: module='%s' not found", type);
 }
 
-int st_conf_read_config(const char * confFile) {
-	if (access(confFile, R_OK)) {
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: read_config: Can't access to '%s'", confFile);
+int st_conf_read_config(const char * conf_file) {
+	if (conf_file == NULL) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: read_config: conf_file is NULL");
 		return -1;
 	}
 
-	int fd = open(confFile, O_RDONLY);
+	if (access(conf_file, R_OK)) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: read_config: Can't access to '%s'", conf_file);
+		return -1;
+	}
+
+	int fd = open(conf_file, O_RDONLY);
 
 	struct stat st;
 	fstat(fd, &st);
@@ -242,7 +247,7 @@ int st_conf_read_config(const char * confFile) {
 	char section[24] = { '\0' };
 	struct st_hashtable * params = st_hashtable_new2(st_util_string_compute_hash, st_util_basic_free);
 
-	while (*ptr) {
+	while (ptr != NULL && *ptr) {
 		switch (*ptr) {
 			case ';':
 				ptr = strchr(ptr, '\n');
@@ -298,8 +303,14 @@ int st_conf_read_config(const char * confFile) {
 }
 
 void st_conf_register_callback(const char * section, st_conf_callback_f callback) {
-	if (!section || !callback)
+	if (section == NULL || callback == NULL) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Register callback function: error because");
+		if (section == NULL)
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "section is NULL");
+		if (callback == NULL)
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "callback function is NULL");
 		return;
+	}
 
 	st_hashtable_put(st_conf_callback, strdup(section), callback);
 }

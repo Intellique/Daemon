@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 15 Aug 2012 13:42:40 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 12:57:41 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -79,6 +79,13 @@ struct st_database_connection {
 		 * \endcode
 		 */
 		int (*free)(struct st_database_connection * connect);
+		/**
+		 * \brief check if the connection to database is closed
+		 *
+		 * \param[in] db : a database connection
+		 * \return 0 if the connection is not closed
+		 */
+		int (*is_connection_closed)(struct st_database_connection * connect);
 
 		/**
 		 * \brief Rool back a transaction
