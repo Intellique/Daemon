@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 15 Aug 2012 19:10:22 +0200                         *
+*  Last modified: Fri, 17 Aug 2012 00:35:23 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -62,9 +62,9 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 
 	st_changer_sync(connection);
 
-	struct st_job ** jobs = 0;
+	struct st_job ** jobs = NULL;
 	unsigned int nb_jobs = 0;
-	time_t update = time(0);
+	time_t update = time(NULL);
 
 	while (!st_sched_stop_request) {
 		connection->ops->sync_job(connection, &jobs, &nb_jobs);
@@ -86,20 +86,20 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 		st_changer_sync(connection);
 
 		struct tm current;
-		update = time(0);
+		update = time(NULL);
 		localtime_r(&update, &current);
 		sleep(5 - current.tm_sec % 5);
 	}
 }
 
-void st_sched_exit(int signal) {
+static void st_sched_exit(int signal) {
 	if (signal == SIGINT) {
 		st_log_write_all(st_log_level_info, st_log_type_scheduler, "catch SIGINT");
 		st_sched_stop_request = 1;
 	}
 }
 
-void st_sched_run_job(void * arg) {
+static void st_sched_run_job(void * arg) {
 	struct st_job * job = arg;
 
 	st_log_write_all(st_log_level_info, st_log_type_scheduler, "starting job");
@@ -115,21 +115,21 @@ void st_sched_run_job(void * arg) {
 		job->sched_status = st_job_status_idle;
 
 	job->ops->free(job);
-	job->data = 0;
+	job->data = NULL;
 
 	free(job->name);
-	job->name = 0;
+	job->name = NULL;
 
-	job->user = 0;
+	job->user = NULL;
 
-	job->driver = 0;
+	job->driver = NULL;
 
 	if (job->meta)
 		st_hashtable_free(job->meta);
-	job->meta = 0;
+	job->meta = NULL;
 	if (job->option)
 		st_hashtable_free(job->option);
-	job->option = 0;
+	job->option = NULL;
 
 	st_log_write_all(st_log_level_info, st_log_type_scheduler, "job finished, with exited code = %d", status);
 }

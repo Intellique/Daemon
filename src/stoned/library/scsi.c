@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 30 Jul 2012 21:09:41 +0200                         *
+*  Last modified: Fri, 17 Aug 2012 00:22:53 +0200                         *
 \*************************************************************************/
 
 // htobe16
@@ -205,13 +205,13 @@ enum scsi_mam_attribute {
 
 struct scsi_request_sense {
 	unsigned char error_code:7;						/* Byte 0 Bits 0-6 */
-	char valid:1;									/* Byte 0 Bit 7 */
+	unsigned char valid:1;							/* Byte 0 Bit 7 */
 	unsigned char segment_number;					/* Byte 1 */
 	unsigned char sense_key:4;						/* Byte 2 Bits 0-3 */
 	unsigned char :1;								/* Byte 2 Bit 4 */
-	char ili:1;										/* Byte 2 Bit 5 */
-	char eom:1;										/* Byte 2 Bit 6 */
-	char filemark:1;								/* Byte 2 Bit 7 */
+	unsigned char ili:1;							/* Byte 2 Bit 5 */
+	unsigned char eom:1;							/* Byte 2 Bit 6 */
+	unsigned char filemark:1;						/* Byte 2 Bit 7 */
 	unsigned char information[4];					/* Bytes 3-6 */
 	unsigned char additional_sense_length;			/* Byte 7 */
 	unsigned char command_specific_information[4];	/* Bytes 8-11 */
@@ -219,10 +219,10 @@ struct scsi_request_sense {
 	unsigned char additional_sense_code_qualifier;	/* Byte 13 */
 	unsigned char :8;								/* Byte 14 */
 	unsigned char bit_pointer:3;					/* Byte 15 */
-	char bpv:1;
+	unsigned char bpv:1;
 	unsigned char :2;
-	char command_data :1;
-	char sksv:1;
+	unsigned char command_data :1;
+	unsigned char sksv:1;
 	unsigned char field_data[2];					/* Byte 16,17 */
 };
 
@@ -403,7 +403,7 @@ int st_scsi_loader_medium_removal(int fd, int allow) {
 	header.dxfer_len = 0;
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
-	header.dxferp = 0;
+	header.dxferp = NULL;
 	header.timeout = 1200000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
@@ -449,7 +449,7 @@ int st_scsi_loader_move(int fd, int transport_address, struct st_slot * from, st
 	header.dxfer_len = 0;
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
-	header.dxferp = 0;
+	header.dxferp = NULL;
 	header.timeout = 1200000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
@@ -478,7 +478,7 @@ int st_scsi_loader_ready(int fd) {
 	header.dxfer_len = 0;
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
-	header.dxferp = 0;
+	header.dxferp = NULL;
 	header.timeout = 1200000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
@@ -584,15 +584,15 @@ void st_scsi_loader_status_new(int fd, struct st_changer * changer, int * transp
 		struct st_slot * slot = changer->slots + i;
 
 		slot->changer = changer;
-		slot->drive = 0;
-		slot->media = 0;
+		slot->drive = NULL;
+		slot->media = NULL;
 
 		if (i < changer->nb_drives) {
 			slot->drive = changer->drives + i;
 			changer->drives[i].slot = slot;
 		}
 
-		slot->volume_name = 0;
+		slot->volume_name = NULL;
 		slot->full = 0;
 
 		struct st_scsislot * sp = slot->data = malloc(sizeof(struct st_scsislot));
@@ -608,7 +608,7 @@ void st_scsi_loader_status_new(int fd, struct st_changer * changer, int * transp
 		*transport_address = result.medium_transport_element_address;
 }
 
-void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, struct st_slot * slot_base, int start_element, int nb_elements, enum scsi_loader_element_type type) {
+static void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, struct st_slot * slot_base, int start_element, int nb_elements, enum scsi_loader_element_type type) {
 	size_t size_needed = 16;
 	switch (type) {
 		case scsi_loader_element_type_all_elements:
@@ -724,7 +724,7 @@ void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, stru
 							slot->volume_name[j] = '\0';
 					} else {
 						free(slot->volume_name);
-						slot->volume_name = 0;
+						slot->volume_name = NULL;
 					}
 					slot->type = st_slot_type_drive;
 
@@ -753,7 +753,7 @@ void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, stru
 							slot->volume_name[j] = '\0';
 					} else {
 						free(slot->volume_name);
-						slot->volume_name = 0;
+						slot->volume_name = NULL;
 					}
 
 					slot->type = st_slot_type_import_export;
@@ -791,7 +791,7 @@ void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, stru
 							slot->volume_name[j] = '\0';
 					} else {
 						free(slot->volume_name);
-						slot->volume_name = 0;
+						slot->volume_name = NULL;
 					}
 					slot->type = st_slot_type_storage;
 
@@ -835,7 +835,7 @@ int st_scsi_tape_format(int fd, int quick) {
 	header.dxfer_len = 0;
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
-	header.dxferp = 0;
+	header.dxferp = NULL;
 	header.timeout = 60000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
@@ -1003,7 +1003,7 @@ int st_scsi_tape_locate(int fd, off_t position) {
 	header.dxfer_len = 0;
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
-	header.dxferp = 0;
+	header.dxferp = NULL;
 	header.timeout = 60000;
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 

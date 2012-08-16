@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jul 2012 10:36:41 +0200                         *
+*  Last modified: Fri, 17 Aug 2012 00:20:06 +0200                         *
 \*************************************************************************/
 
 // be*toh, htobe*
@@ -61,13 +61,13 @@ struct scsi_inquiry {
 
 struct scsi_request_sense {
 	unsigned char error_code:7;						/* Byte 0 Bits 0-6 */
-	char valid:1;									/* Byte 0 Bit 7 */
+	unsigned char valid:1;							/* Byte 0 Bit 7 */
 	unsigned char segment_number;					/* Byte 1 */
 	unsigned char sense_key:4;						/* Byte 2 Bits 0-3 */
 	unsigned char :1;								/* Byte 2 Bit 4 */
-	char ili:1;										/* Byte 2 Bit 5 */
-	char eom:1;										/* Byte 2 Bit 6 */
-	char filemark:1;								/* Byte 2 Bit 7 */
+	unsigned char ili:1;							/* Byte 2 Bit 5 */
+	unsigned char eom:1;							/* Byte 2 Bit 6 */
+	unsigned char filemark:1;						/* Byte 2 Bit 7 */
 	unsigned char information[4];					/* Bytes 3-6 */
 	unsigned char additional_sense_length;			/* Byte 7 */
 	unsigned char command_specific_information[4];	/* Bytes 8-11 */
@@ -75,10 +75,10 @@ struct scsi_request_sense {
 	unsigned char additional_sense_code_qualifier;	/* Byte 13 */
 	unsigned char :8;								/* Byte 14 */
 	unsigned char bit_pointer:3;					/* Byte 15 */
-	char bpv:1;
+	unsigned char bpv:1;
 	unsigned char :2;
-	char command_data :1;
-	char sksv:1;
+	unsigned char command_data :1;
+	unsigned char sksv:1;
 	unsigned char field_data[2];					/* Byte 16,17 */
 };
 

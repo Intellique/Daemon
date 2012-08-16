@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 14 Aug 2012 23:58:45 +0200                         *
+*  Last modified: Fri, 17 Aug 2012 00:33:11 +0200                         *
 \*************************************************************************/
 
 // open
@@ -52,7 +52,7 @@
 #include "common.h"
 #include "scsi.h"
 
-static struct st_changer * st_changers = 0;
+static struct st_changer * st_changers = NULL;
 static unsigned int st_nb_fake_changers = 0;
 static unsigned int st_nb_real_changers = 0;
 
@@ -77,7 +77,7 @@ struct st_slot * st_changer_find_media_by_pool(struct st_pool * pool, struct st_
 			unsigned int k;
 			for (k = 0; media && k < nb_medias; k++)
 				if (media == previous_medias[k])
-					media = 0;
+					media = NULL;
 
 			if (media)
 				return slot;
@@ -86,7 +86,7 @@ struct st_slot * st_changer_find_media_by_pool(struct st_pool * pool, struct st_
 		}
 	}
 
-	return 0;
+	return NULL;
 }
 
 struct st_slot * st_changer_find_slot_by_media(struct st_media * media) {
@@ -108,13 +108,13 @@ struct st_slot * st_changer_find_slot_by_media(struct st_media * media) {
 		}
 	}
 
-	return 0;
+	return NULL;
 }
 
-int st_changer_setup() {
+int st_changer_setup(void) {
 	glob_t gl;
 	gl.gl_offs = 0;
-	glob("/sys/class/scsi_device/*/device/scsi_tape", GLOB_DOOFFS, 0, &gl);
+	glob("/sys/class/scsi_device/*/device/scsi_tape", GLOB_DOOFFS, NULL, &gl);
 
 	if (gl.gl_pathc == 0) {
 		st_log_write_all(st_log_level_error, st_log_type_user_message, "Panic: There is drive found, exit now !!!");
@@ -165,26 +165,26 @@ int st_changer_setup() {
 		drives[i].status = st_drive_unknown;
 		drives[i].enabled = 1;
 
-		drives[i].model = 0;
-		drives[i].vendor = 0;
-		drives[i].revision = 0;
-		drives[i].serial_number = 0;
+		drives[i].model = NULL;
+		drives[i].vendor = NULL;
+		drives[i].revision = NULL;
+		drives[i].serial_number = NULL;
 
 		drives[i].host = host;
 		drives[i].target = target;
 		drives[i].channel = channel;
 		drives[i].bus = bus;
 
-		drives[i].changer = 0;
-		drives[i].slot = 0;
+		drives[i].changer = NULL;
+		drives[i].slot = NULL;
 
-		drives[i].data = 0;
-		drives[i].db_data = 0;
+		drives[i].data = NULL;
+		drives[i].db_data = NULL;
 	}
 	globfree(&gl);
 
 	gl.gl_offs = 0;
-	glob("/sys/class/scsi_changer/*/device", GLOB_DOOFFS, 0, &gl);
+	glob("/sys/class/scsi_changer/*/device", GLOB_DOOFFS, NULL, &gl);
 
 	/**
 	 * In the worst case, we have nb_drives changers,
@@ -219,10 +219,10 @@ int st_changer_setup() {
 		st_changers[i].status = st_changer_unknown;
 		st_changers[i].enabled = 1;
 
-		st_changers[i].model = 0;
-		st_changers[i].vendor = 0;
-		st_changers[i].revision = 0;
-		st_changers[i].serial_number = 0;
+		st_changers[i].model = NULL;
+		st_changers[i].vendor = NULL;
+		st_changers[i].revision = NULL;
+		st_changers[i].serial_number = NULL;
 		st_changers[i].barcode = 0;
 
 		st_changers[i].host = host;
@@ -230,13 +230,13 @@ int st_changer_setup() {
 		st_changers[i].channel = channel;
 		st_changers[i].bus = bus;
 
-		st_changers[i].drives = 0;
+		st_changers[i].drives = NULL;
 		st_changers[i].nb_drives = 0;
-		st_changers[i].slots = 0;
+		st_changers[i].slots = NULL;
 		st_changers[i].nb_slots = 0;
 
-		st_changers[i].data = 0;
-		st_changers[i].db_data = 0;
+		st_changers[i].data = NULL;
+		st_changers[i].db_data = NULL;
 	}
 	globfree(&gl);
 
@@ -275,9 +275,9 @@ int st_changer_setup() {
 
 	// try to link drive to real changer with database
 	if (nb_changer_without_drive > 0) {
-		struct st_database * db = 0;
-		struct st_database_config * config = 0;
-		struct st_database_connection * connect = 0;
+		struct st_database * db = NULL;
+		struct st_database_config * config = NULL;
+		struct st_database_connection * connect = NULL;
 
 		db = st_database_get_default_driver();
 		if (db)
@@ -323,9 +323,9 @@ int st_changer_setup() {
 	if (nb_changer_without_drive > 0) {
 		st_log_write_all(st_log_level_warning, st_log_type_user_message, "Library: There is %u changer%s without drives", nb_changer_without_drive, nb_changer_without_drive != 1 ? "s" : "");
 
-		struct st_database * db = 0;
-		struct st_database_config * config = 0;
-		struct st_database_connection * connect = 0;
+		struct st_database * db = NULL;
+		struct st_database_config * config = NULL;
+		struct st_database_connection * connect = NULL;
 
 		db = st_database_get_default_driver();
 		if (db)

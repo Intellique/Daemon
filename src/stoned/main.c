@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 15 Aug 2012 22:46:33 +0200                         *
+*  Last modified: Fri, 17 Aug 2012 00:34:24 +0200                         *
 \*************************************************************************/
 
 // getopt_long
@@ -61,13 +61,13 @@ int main(int argc, char ** argv) {
 
 	static int option_index = 0;
 	static struct option long_options[] = {
-		{ "config",   1, 0, OPT_CONFIG },
-		{ "detach",   0, 0, OPT_DETACH },
-		{ "help",     0, 0, OPT_HELP },
-		{ "pid-file", 1, 0, OPT_PID_FILE },
-		{ "version",  0, 0, OPT_VERSION },
+		{ "config",   1, NULL, OPT_CONFIG },
+		{ "detach",   0, NULL, OPT_DETACH },
+		{ "help",     0, NULL, OPT_HELP },
+		{ "pid-file", 1, NULL, OPT_PID_FILE },
+		{ "version",  0, NULL, OPT_VERSION },
 
-		{0, 0, 0, 0},
+		{ NULL, 0, NULL, 0 },
 	};
 
 	char * config_file = DAEMON_CONFIG_FILE;
@@ -164,8 +164,8 @@ int main(int argc, char ** argv) {
 		return 5;
 	}
 
-	struct st_database_config * config = 0;
-	struct st_database_connection * connect = 0;
+	struct st_database_config * config = NULL;
+	struct st_database_connection * connect = NULL;
 
 	if (db)
 		config = db->ops->get_default_config();
@@ -201,7 +201,7 @@ int main(int argc, char ** argv) {
 	return 0;
 }
 
-void st_show_help() {
+static void st_show_help(void) {
 	st_log_disable_display_log();
 
 	printf("STone, version: " STONE_VERSION ", build: " __DATE__ " " __TIME__ "\n");

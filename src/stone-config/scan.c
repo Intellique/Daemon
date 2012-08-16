@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 13 Aug 2012 19:25:45 +0200                         *
+*  Last modified: Fri, 17 Aug 2012 00:18:50 +0200                         *
 \*************************************************************************/
 
 // glob, globfree
@@ -42,10 +42,10 @@
 #include "scan.h"
 #include "scsi.h"
 
-int stcfg_scan() {
+int stcfg_scan(void) {
 	glob_t gl;
 	gl.gl_offs = 0;
-	glob("/sys/class/scsi_device/*/device/scsi_tape", GLOB_DOOFFS, 0, &gl);
+	glob("/sys/class/scsi_device/*/device/scsi_tape", GLOB_DOOFFS, NULL, &gl);
 
 	if (gl.gl_pathc == 0) {
 		st_log_write_all(st_log_level_error, st_log_type_user_message, "Panic: There is drive found, exit now !!!");
@@ -95,26 +95,26 @@ int stcfg_scan() {
 		drives[i].device = strdup(device);
 		drives[i].scsi_device = strdup(scsi_device);
 		drives[i].status = st_drive_unknown;
-		drives[i].model = 0;
-		drives[i].vendor = 0;
-		drives[i].revision = 0;
-		drives[i].serial_number = 0;
+		drives[i].model = NULL;
+		drives[i].vendor = NULL;
+		drives[i].revision = NULL;
+		drives[i].serial_number = NULL;
 
 		drives[i].host = host;
 		drives[i].target = target;
 		drives[i].channel = channel;
 		drives[i].bus = bus;
 
-		drives[i].changer = 0;
-		drives[i].slot = 0;
+		drives[i].changer = NULL;
+		drives[i].slot = NULL;
 
-		drives[i].data = 0;
-		drives[i].db_data = 0;
+		drives[i].data = NULL;
+		drives[i].db_data = NULL;
 	}
 	globfree(&gl);
 
 	gl.gl_offs = 0;
-	glob("/sys/class/scsi_changer/*/device", GLOB_DOOFFS, 0, &gl);
+	glob("/sys/class/scsi_changer/*/device", GLOB_DOOFFS, NULL, &gl);
 
 	/**
 	 * In the worst case, we have nb_drives changers,
@@ -148,10 +148,10 @@ int stcfg_scan() {
 
 		changers[i].device = strdup(device);
 		changers[i].status = st_changer_unknown;
-		changers[i].model = 0;
-		changers[i].vendor = 0;
-		changers[i].revision = 0;
-		changers[i].serial_number = 0;
+		changers[i].model = NULL;
+		changers[i].vendor = NULL;
+		changers[i].revision = NULL;
+		changers[i].serial_number = NULL;
 		changers[i].barcode = 0;
 
 		changers[i].host = host;
@@ -159,13 +159,13 @@ int stcfg_scan() {
 		changers[i].channel = channel;
 		changers[i].bus = bus;
 
-		changers[i].drives = 0;
+		changers[i].drives = NULL;
 		changers[i].nb_drives = 0;
-		changers[i].slots = 0;
+		changers[i].slots = NULL;
 		changers[i].nb_slots = 0;
 
-		changers[i].data = 0;
-		changers[i].db_data = 0;
+		changers[i].data = NULL;
+		changers[i].db_data = NULL;
 	}
 	globfree(&gl);
 

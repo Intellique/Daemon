@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jul 2012 13:35:00 +0200                         *
+*  Last modified: Fri, 17 Aug 2012 00:17:33 +0200                         *
 \*************************************************************************/
 
 // getopt_long
@@ -52,12 +52,12 @@ int main(int argc, char ** argv) {
 
 	static int option_index = 0;
 	static struct option long_options[] = {
-		{ "config",  1, 0, OPT_CONFIG },
-		{ "help",    0, 0, OPT_HELP },
-        { "verbose", 0, 0, OPT_VERBOSE },
-		{ "version", 0, 0, OPT_VERSION },
+		{ "config",  1, NULL, OPT_CONFIG },
+		{ "help",    0, NULL, OPT_HELP },
+        { "verbose", 0, NULL, OPT_VERBOSE },
+		{ "version", 0, NULL, OPT_VERSION },
 
-		{0, 0, 0, 0},
+		{NULL, 0, NULL, 0},
 	};
 
 	char * config_file = DAEMON_CONFIG_FILE;
@@ -130,11 +130,11 @@ int main(int argc, char ** argv) {
 	return 0;
 }
 
-void st_show_help() {
+static void st_show_help(void) {
 	st_log_disable_display_log();
 
-	printf("STone, version: %s, build: %s %s\n", STONE_VERSION, __DATE__, __TIME__);
-	printf("    --config,   -c : Read this config file instead of \"%s\"\n", DAEMON_CONFIG_FILE);
+	printf("STone, version: " STONE_VERSION ", build: " __DATE__ " " __TIME__ "\n");
+	printf("    --config,   -c : Read this config file instead of \"" DAEMON_CONFIG_FILE "\"\n");
 	printf("    --help,     -h : Show this and exit\n");
 	printf("    --version,  -V : Show the version of STone then exit\n");
 }

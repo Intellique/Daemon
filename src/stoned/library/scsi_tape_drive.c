@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 15 Aug 2012 00:04:26 +0200                         *
+*  Last modified: Fri, 17 Aug 2012 00:31:14 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -160,7 +160,7 @@ static struct st_stream_writer_ops st_scsi_tape_drive_io_writer_ops = {
 };
 
 
-void st_scsi_tape_drive_create_media(struct st_drive * drive) {
+static void st_scsi_tape_drive_create_media(struct st_drive * drive) {
 	struct st_scsi_tape_drive_private * self = drive->data;
 
 	struct st_media * media = malloc(sizeof(struct st_media));
@@ -174,7 +174,7 @@ void st_scsi_tape_drive_create_media(struct st_drive * drive) {
 
 	media->status = st_media_status_foreign;
 	media->location = st_media_location_indrive;
-	media->first_used = time(0);
+	media->first_used = time(NULL);
 
 	media->load_count = 1;
 
@@ -191,8 +191,8 @@ void st_scsi_tape_drive_create_media(struct st_drive * drive) {
 	}
 }
 
-int st_scsi_tape_drive_eject(struct st_drive * drive) {
-	if (!drive || !drive->enabled)
+static int st_scsi_tape_drive_eject(struct st_drive * drive) {
+	if (drive == NULL || !drive->enabled)
 		return 1;
 
 	struct st_scsi_tape_drive_private * self = drive->data;
@@ -214,8 +214,8 @@ int st_scsi_tape_drive_eject(struct st_drive * drive) {
 	return failed;
 }
 
-int st_scsi_tape_drive_format(struct st_drive * drive, int quick_mode) {
-	if (!drive || !drive->enabled)
+static int st_scsi_tape_drive_format(struct st_drive * drive, int quick_mode) {
+	if (drive == NULL || !drive->enabled)
 		return 1;
 
 	struct st_scsi_tape_drive_private * self = drive->data;
@@ -265,7 +265,7 @@ int st_scsi_tape_drive_format(struct st_drive * drive, int quick_mode) {
 	return failed;
 }
 
-ssize_t st_scsi_tape_drive_get_block_size(struct st_drive * drive) {
+static ssize_t st_scsi_tape_drive_get_block_size(struct st_drive * drive) {
 	struct st_scsi_tape_drive_private * self = drive->data;
 
 	ssize_t block_size = (self->status.mt_dsreg & MT_ST_BLKSIZE_MASK) >> MT_ST_BLKSIZE_SHIFT;
@@ -324,17 +324,17 @@ ssize_t st_scsi_tape_drive_get_block_size(struct st_drive * drive) {
 	return -1;
 }
 
-struct st_stream_reader * st_scsi_tape_drive_get_reader(struct st_drive * drive, int file_position) {
-	if (!drive || !drive->enabled)
-		return 0;
+static struct st_stream_reader * st_scsi_tape_drive_get_reader(struct st_drive * drive, int file_position) {
+	if (drive == NULL || !drive->enabled)
+		return NULL;
 
 	if (st_scsi_tape_drive_set_file_position(drive, file_position))
-		return 0;
+		return NULL;
 
 	struct st_scsi_tape_drive_private * self = drive->data;
 	if (drive->is_empty || self->used_by_io) {
 		st_log_write_all(st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: drive is not free for reading on it", drive->vendor, drive->model, drive - drive->changer->drives);
-		return 0;
+		return NULL;
 	}
 
 	drive->slot->media->read_count++;
@@ -343,16 +343,16 @@ struct st_stream_reader * st_scsi_tape_drive_get_reader(struct st_drive * drive,
 	return st_scsi_tape_drive_io_reader_new(drive);
 }
 
-struct st_stream_writer * st_scsi_tape_drive_get_writer(struct st_drive * drive, int file_position) {
-	if (!drive || !drive->enabled)
-		return 0;
+static struct st_stream_writer * st_scsi_tape_drive_get_writer(struct st_drive * drive, int file_position) {
+	if (drive == NULL || !drive->enabled)
+		return NULL;
 
 	st_scsi_tape_drive_set_file_position(drive, file_position);
 
 	struct st_scsi_tape_drive_private * self = drive->data;
 	if (drive->is_empty || self->used_by_io) {
 		st_log_write_all(st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: drive is not free for writing on it", drive->vendor, drive->model, drive - drive->changer->drives);
-		return 0;
+		return NULL;
 	}
 
 	drive->slot->media->write_count++;
@@ -393,20 +393,20 @@ void st_scsi_tape_drive_setup(struct st_drive * drive) {
 	}
 }
 
-void st_scsi_tape_drive_operation_start(struct st_scsi_tape_drive_private * dr) {
-	gettimeofday(&dr->last_start, 0);
+static void st_scsi_tape_drive_operation_start(struct st_scsi_tape_drive_private * dr) {
+	gettimeofday(&dr->last_start, NULL);
 }
 
-void st_scsi_tape_drive_operation_stop(struct st_drive * drive) {
+static void st_scsi_tape_drive_operation_stop(struct st_drive * drive) {
 	struct st_scsi_tape_drive_private * self = drive->data;
 
 	struct timeval finish;
-	gettimeofday(&finish, 0);
+	gettimeofday(&finish, NULL);
 
 	drive->operation_duration += (finish.tv_sec - self->last_start.tv_sec) + ((double) (finish.tv_usec - self->last_start.tv_usec)) / 1000000;
 }
 
-void st_scsi_tape_drive_on_failed(struct st_drive * drive, int verbose, int sleep_time) {
+static void st_scsi_tape_drive_on_failed(struct st_drive * drive, int verbose, int sleep_time) {
 	struct st_scsi_tape_drive_private * self = drive->data;
 
 	if (verbose)
@@ -416,7 +416,7 @@ void st_scsi_tape_drive_on_failed(struct st_drive * drive, int verbose, int slee
 	self->fd_nst = open(drive->device, O_RDWR | O_NONBLOCK);
 }
 
-int st_scsi_tape_drive_rewind(struct st_drive * drive) {
+static int st_scsi_tape_drive_rewind(struct st_drive * drive) {
 	struct st_scsi_tape_drive_private * self = drive->data;
 
 	int failed = st_scsi_tape_drive_update_media_info(drive);
@@ -447,7 +447,7 @@ int st_scsi_tape_drive_rewind(struct st_drive * drive) {
 	return failed;
 }
 
-int st_scsi_tape_drive_set_file_position(struct st_drive * drive, int file_position) {
+static int st_scsi_tape_drive_set_file_position(struct st_drive * drive, int file_position) {
 	struct st_scsi_tape_drive_private * self = drive->data;
 
 	int failed;
@@ -477,8 +477,8 @@ int st_scsi_tape_drive_set_file_position(struct st_drive * drive, int file_posit
 	return failed;
 }
 
-int st_scsi_tape_drive_update_media_info(struct st_drive * drive) {
-	if (!drive || !drive->enabled)
+static int st_scsi_tape_drive_update_media_info(struct st_drive * drive) {
+	if (drive == NULL || !drive->enabled)
 		return 1;
 
 	struct st_scsi_tape_drive_private * self = drive->data;
@@ -543,8 +543,8 @@ int st_scsi_tape_drive_update_media_info(struct st_drive * drive) {
 }
 
 
-int st_scsi_tape_drive_io_reader_close(struct st_stream_reader * io) {
-	if (!io || !io->data)
+static int st_scsi_tape_drive_io_reader_close(struct st_stream_reader * io) {
+	if (io == NULL || !io->data)
 		return -1;
 
 	struct st_scsi_tape_drive_io_reader * self = io->data;
@@ -561,13 +561,16 @@ int st_scsi_tape_drive_io_reader_close(struct st_stream_reader * io) {
 	return 0;
 }
 
-int st_scsi_tape_drive_io_reader_end_of_file(struct st_stream_reader * io) {
+static int st_scsi_tape_drive_io_reader_end_of_file(struct st_stream_reader * io) {
+	if (io == NULL)
+		return 1;
+
 	struct st_scsi_tape_drive_io_reader * self = io->data;
 	return self->end_of_file;
 }
 
-off_t st_scsi_tape_drive_io_reader_forward(struct st_stream_reader * io, off_t offset) {
-	if (!io)
+static off_t st_scsi_tape_drive_io_reader_forward(struct st_stream_reader * io, off_t offset) {
+	if (io == NULL)
 		return -1;
 
 	struct st_scsi_tape_drive_io_reader * self = io->data;
@@ -632,8 +635,8 @@ off_t st_scsi_tape_drive_io_reader_forward(struct st_stream_reader * io, off_t o
 	return self->position;
 }
 
-void st_scsi_tape_drive_io_reader_free(struct st_stream_reader * io) {
-	if (!io)
+static void st_scsi_tape_drive_io_reader_free(struct st_stream_reader * io) {
+	if (io == NULL)
 		return;
 
 	struct st_scsi_tape_drive_io_reader * self = io->data;
@@ -642,21 +645,21 @@ void st_scsi_tape_drive_io_reader_free(struct st_stream_reader * io) {
 		free(self->buffer);
 		free(self);
 	}
-	io->data = 0;
-	io->ops = 0;
+	io->data = NULL;
+	io->ops = NULL;
 }
 
-ssize_t st_scsi_tape_drive_io_reader_get_block_size(struct st_stream_reader * io) {
+static ssize_t st_scsi_tape_drive_io_reader_get_block_size(struct st_stream_reader * io) {
 	struct st_scsi_tape_drive_io_reader * self = io->data;
 	return self->block_size;
 }
 
-int st_scsi_tape_drive_io_reader_last_errno(struct st_stream_reader * io) {
+static int st_scsi_tape_drive_io_reader_last_errno(struct st_stream_reader * io) {
 	struct st_scsi_tape_drive_io_reader * self = io->data;
 	return self->last_errno;
 }
 
-struct st_stream_reader * st_scsi_tape_drive_io_reader_new(struct st_drive * drive) {
+static struct st_stream_reader * st_scsi_tape_drive_io_reader_new(struct st_drive * drive) {
 	ssize_t block_size = st_scsi_tape_drive_get_block_size(drive);
 
 	struct st_scsi_tape_drive_private * dr = drive->data;
@@ -684,16 +687,16 @@ struct st_stream_reader * st_scsi_tape_drive_io_reader_new(struct st_drive * dri
 	return reader;
 }
 
-ssize_t st_scsi_tape_drive_io_reader_position(struct st_stream_reader * io) {
-	if (!io || !io->data)
+static ssize_t st_scsi_tape_drive_io_reader_position(struct st_stream_reader * io) {
+	if (io == NULL || io->data == NULL)
 		return -1;
 
 	struct st_scsi_tape_drive_io_reader * self = io->data;
 	return self->position;
 }
 
-ssize_t st_scsi_tape_drive_io_reader_read(struct st_stream_reader * io, void * buffer, ssize_t length) {
-	if (!io || !buffer || length < 0)
+static ssize_t st_scsi_tape_drive_io_reader_read(struct st_stream_reader * io, void * buffer, ssize_t length) {
+	if (io == NULL || buffer == NULL || length < 0)
 		return -1;
 
 	struct st_scsi_tape_drive_io_reader * self = io->data;
@@ -758,8 +761,8 @@ ssize_t st_scsi_tape_drive_io_reader_read(struct st_stream_reader * io, void * b
 }
 
 
-int st_scsi_tape_drive_io_writer_close(struct st_stream_writer * io) {
-	if (!io || !io->data)
+static int st_scsi_tape_drive_io_writer_close(struct st_stream_writer * io) {
+	if (io == NULL || io->data == NULL)
 		return -1;
 
 	struct st_scsi_tape_drive_io_writer * self = io->data;
@@ -804,8 +807,8 @@ int st_scsi_tape_drive_io_writer_close(struct st_stream_writer * io) {
 	return 0;
 }
 
-void st_scsi_tape_drive_io_writer_free(struct st_stream_writer * io) {
-	if (!io)
+static void st_scsi_tape_drive_io_writer_free(struct st_stream_writer * io) {
+	if (io == NULL)
 		return;
 
 	struct st_scsi_tape_drive_io_writer * self = io->data;
@@ -814,11 +817,11 @@ void st_scsi_tape_drive_io_writer_free(struct st_stream_writer * io) {
 		free(self->buffer);
 		free(self);
 	}
-	io->data = 0;
-	io->ops = 0;
+	io->data = NULL;
+	io->ops = NULL;
 }
 
-ssize_t st_scsi_tape_drive_io_writer_get_available_size(struct st_stream_writer * io) {
+static ssize_t st_scsi_tape_drive_io_writer_get_available_size(struct st_stream_writer * io) {
 	struct st_scsi_tape_drive_io_writer * self = io->data;
 	struct st_media * media = self->drive->slot->media;
 
@@ -836,17 +839,17 @@ ssize_t st_scsi_tape_drive_io_writer_get_available_size(struct st_stream_writer 
 	return (media->available_block - 16) * media->block_size - self->buffer_used;
 }
 
-ssize_t st_scsi_tape_drive_io_writer_get_block_size(struct st_stream_writer * io) {
+static ssize_t st_scsi_tape_drive_io_writer_get_block_size(struct st_stream_writer * io) {
 	struct st_scsi_tape_drive_io_writer * self = io->data;
 	return self->block_size;
 }
 
-int st_scsi_tape_drive_io_writer_last_errno(struct st_stream_writer * io) {
+static int st_scsi_tape_drive_io_writer_last_errno(struct st_stream_writer * io) {
 	struct st_scsi_tape_drive_io_writer * self = io->data;
 	return self->last_errno;
 }
 
-struct st_stream_writer * st_scsi_tape_drive_io_writer_new(struct st_drive * drive) {
+static struct st_stream_writer * st_scsi_tape_drive_io_writer_new(struct st_drive * drive) {
 	ssize_t block_size = st_scsi_tape_drive_get_block_size(drive);
 
 	struct st_scsi_tape_drive_private * dr = drive->data;
@@ -869,16 +872,16 @@ struct st_stream_writer * st_scsi_tape_drive_io_writer_new(struct st_drive * dri
 	return writer;
 }
 
-ssize_t st_scsi_tape_drive_io_writer_position(struct st_stream_writer * io) {
-	if (!io || !io->data)
+static ssize_t st_scsi_tape_drive_io_writer_position(struct st_stream_writer * io) {
+	if (io == NULL || io->data == NULL)
 		return -1;
 
 	struct st_scsi_tape_drive_io_writer * self = io->data;
 	return self->position;
 }
 
-ssize_t st_scsi_tape_drive_io_writer_write(struct st_stream_writer * io, const void * buffer, ssize_t length) {
-	if (!io || !buffer || length < 0)
+static ssize_t st_scsi_tape_drive_io_writer_write(struct st_stream_writer * io, const void * buffer, ssize_t length) {
+	if (io == NULL || buffer == NULL || length < 0)
 		return -1;
 
 	struct st_scsi_tape_drive_io_writer * self = io->data;
