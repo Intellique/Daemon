@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jul 2012 23:40:13 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 23:57:09 +0200                         *
 \*************************************************************************/
 
 // realloc
@@ -49,21 +49,24 @@ static struct st_database st_db_postgresql_driver = {
 
 	.ops       = &st_db_postgresql_driver_ops,
 
-	.configurations    = 0,
+	.configurations    = NULL,
 	.nb_configurations = 0,
 
-	.cookie    = 0,
+	.cookie    = NULL,
 	.api_level = STONE_DATABASE_API_LEVEL,
 };
 
 
-struct st_database_config * st_db_postgresql_add(const struct st_hashtable * params) {
+static struct st_database_config * st_db_postgresql_add(const struct st_hashtable * params) {
+	if (params == NULL)
+		return NULL;
+
 	st_db_postgresql_driver.configurations = realloc(st_db_postgresql_driver.configurations, (st_db_postgresql_driver.nb_configurations + 1) * sizeof(struct st_database_config));
 	struct st_database_config * config = st_db_postgresql_driver.configurations + st_db_postgresql_driver.nb_configurations;
 
 	if (st_db_postgresql_config_init(config, params)) {
 		st_db_postgresql_driver.configurations = realloc(st_db_postgresql_driver.configurations, st_db_postgresql_driver.nb_configurations * sizeof(struct st_database_config));
-		return 0;
+		return NULL;
 	} else {
 		st_db_postgresql_driver.nb_configurations++;
 		config->driver = &st_db_postgresql_driver;
@@ -71,13 +74,13 @@ struct st_database_config * st_db_postgresql_add(const struct st_hashtable * par
 	}
 }
 
-struct st_database_config * st_db_postgresql_get_default_config() {
+static struct st_database_config * st_db_postgresql_get_default_config(void) {
 	if (st_db_postgresql_driver.nb_configurations > 0)
 		return st_db_postgresql_driver.configurations;
-	return 0;
+	return NULL;
 }
 
-void st_db_postgresql_init() {
+static void st_db_postgresql_init(void) {
 	st_database_register_driver(&st_db_postgresql_driver);
 }
 

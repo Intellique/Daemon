@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 18 Jul 2012 21:00:47 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 23:03:35 +0200                         *
 \*************************************************************************/
 
 // free, malloc
@@ -48,7 +48,7 @@ static ssize_t st_checksum_sha256_update(struct st_checksum * checksum, const vo
 static struct st_checksum_driver st_checksum_sha256_driver = {
 	.name			= "sha256",
 	.new_checksum	= st_checksum_sha256_new_checksum,
-	.cookie			= 0,
+	.cookie			= NULL,
 	.api_level      = STONE_CHECKSUM_API_LEVEL,
 };
 
@@ -59,9 +59,9 @@ static struct st_checksum_ops st_checksum_sha256_ops = {
 };
 
 
-char * st_checksum_sha256_digest(struct st_checksum * checksum) {
-	if (!checksum)
-		return 0;
+static char * st_checksum_sha256_digest(struct st_checksum * checksum) {
+	if (checksum == NULL)
+		return NULL;
 
 	struct st_checksum_sha256_private * self = checksum->data;
 	if (self->digest[0] != '\0')
@@ -70,15 +70,15 @@ char * st_checksum_sha256_digest(struct st_checksum * checksum) {
 	SHA256_CTX sha256 = self->sha256;
 	unsigned char digest[SHA256_DIGEST_LENGTH];
 	if (!SHA256_Final(digest, &sha256))
-		return 0;
+		return NULL;
 
 	st_checksum_convert_to_hex(digest, SHA256_DIGEST_LENGTH, self->digest);
 
 	return strdup(self->digest);
 }
 
-void st_checksum_sha256_free(struct st_checksum * checksum) {
-	if (!checksum)
+static void st_checksum_sha256_free(struct st_checksum * checksum) {
+	if (checksum == NULL)
 		return;
 
 	struct st_checksum_sha256_private * self = checksum->data;
@@ -88,16 +88,16 @@ void st_checksum_sha256_free(struct st_checksum * checksum) {
 
 	free(self);
 
-	checksum->data = 0;
-	checksum->ops = 0;
-	checksum->driver = 0;
+	checksum->data = NULL;
+	checksum->ops = NULL;
+	checksum->driver = NULL;
 }
 
-void st_checksum_sha256_init() {
+static void st_checksum_sha256_init(void) {
 	st_checksum_register_driver(&st_checksum_sha256_driver);
 }
 
-struct st_checksum * st_checksum_sha256_new_checksum() {
+static struct st_checksum * st_checksum_sha256_new_checksum(void) {
 	struct st_checksum * checksum = malloc(sizeof(struct st_checksum));
 	checksum->ops = &st_checksum_sha256_ops;
 	checksum->driver = &st_checksum_sha256_driver;
@@ -110,8 +110,8 @@ struct st_checksum * st_checksum_sha256_new_checksum() {
 	return checksum;
 }
 
-ssize_t st_checksum_sha256_update(struct st_checksum * checksum, const void * data, ssize_t length) {
-	if (!checksum || !data || length < 1)
+static ssize_t st_checksum_sha256_update(struct st_checksum * checksum, const void * data, ssize_t length) {
+	if (checksum == NULL || data == NULL || length < 1)
 		return -1;
 
 	struct st_checksum_sha256_private * self = checksum->data;

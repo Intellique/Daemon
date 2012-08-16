@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 02 Aug 2012 22:41:00 +0200                         *
+*  Last modified: Fri, 17 Aug 2012 00:02:07 +0200                         *
 \*************************************************************************/
 
 // realloc
@@ -41,24 +41,24 @@ static struct st_log_driver st_log_file_driver = {
 
 	.add = st_log_file_add,
 
-	.cookie = 0,
+	.cookie = NULL,
 	.api_level = STONE_LOG_API_LEVEL,
 
-	.modules = 0,
+	.modules = NULL,
 	.nb_modules = 0,
 };
 
 
-int st_log_file_add(const char * alias, enum st_log_level level, const struct st_hashtable * params) {
-	if (!alias || !params)
+static int st_log_file_add(const char * alias, enum st_log_level level, const struct st_hashtable * params) {
+	if (alias == NULL || params == NULL)
 		return 1;
 
 	char * path = st_hashtable_value(params, "path");
-	if (!path)
+	if (path == NULL)
 		return 2;
 
 	void * new_addr = realloc(st_log_file_driver.modules, (st_log_file_driver.nb_modules + 1) * sizeof(struct st_log_module));
-	if (!new_addr) {
+	if (new_addr == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_plugin_log, "Error, there is not enough memory to allocate new file module");
 		return 3;
 	}
@@ -71,7 +71,7 @@ int st_log_file_add(const char * alias, enum st_log_level level, const struct st
 	return failed + 3;
 }
 
-void st_log_file_init() {
+static void st_log_file_init(void) {
 	st_log_register_driver(&st_log_file_driver);
 }
 

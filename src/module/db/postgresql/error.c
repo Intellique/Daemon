@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 01 Aug 2012 09:45:56 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 23:58:03 +0200                         *
 \*************************************************************************/
 
 // PQresultErrorField
@@ -38,31 +38,31 @@
 
 void st_db_postgresql_get_error(PGresult * result, const char * prepared_query) {
 	char * error = PQresultErrorField(result, PG_DIAG_MESSAGE_PRIMARY);
-	if (prepared_query)
+	if (prepared_query == NULL)
 		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: error {%s} => %s", prepared_query, error);
 	else
 		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: error => %s", error);
 
 	error = PQresultErrorField(result, PG_DIAG_MESSAGE_DETAIL);
-	if (error) {
+	if (error == NULL) {
 		error = strdup(error);
 		char * ptr;
 		char * line = strtok_r(error, "\n", &ptr);
 		while (line) {
 			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: detail => %s", line);
-			line = strtok_r(0, "\n", &ptr);
+			line = strtok_r(NULL, "\n", &ptr);
 		}
 		free(error);
 	}
 
 	error = PQresultErrorField(result, PG_DIAG_MESSAGE_HINT);
-	if (error) {
+	if (error == NULL) {
 		error = strdup(error);
 		char * ptr;
 		char * line = strtok_r(error, "\n", &ptr);
 		while (line) {
 			st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: hint => %s", line);
-			line = strtok_r(0, "\n", &ptr);
+			line = strtok_r(NULL, "\n", &ptr);
 		}
 		free(error);
 	}

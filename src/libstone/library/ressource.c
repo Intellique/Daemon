@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 27 Jul 2012 23:32:14 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 22:53:32 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -48,7 +48,7 @@ static int st_ressource_private_lock(struct st_ressource * res);
 static int st_ressource_private_trylock(struct st_ressource * res);
 static void st_ressource_private_unlock(struct st_ressource * res);
 
-struct st_ressource_ops st_ressource_private_ops = {
+static struct st_ressource_ops st_ressource_private_ops = {
 	.free    = st_ressource_private_free,
 	.lock    = st_ressource_private_lock,
 	.trylock = st_ressource_private_trylock,
@@ -84,7 +84,7 @@ int st_ressource_lock(int nb_res, struct st_ressource * res1, struct st_ressourc
 	return failed;
 }
 
-struct st_ressource * st_ressource_new() {
+struct st_ressource * st_ressource_new(void) {
 	pthread_mutexattr_t attr;
 	pthread_mutexattr_init(&attr);
 	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
@@ -101,7 +101,7 @@ struct st_ressource * st_ressource_new() {
 	return res;
 }
 
-int st_ressource_private_free(struct st_ressource * res) {
+static int st_ressource_private_free(struct st_ressource * res) {
 	struct st_ressource_private * self = res->data;
 
 	if (pthread_mutex_trylock(&self->lock) == EBUSY)
@@ -116,7 +116,7 @@ int st_ressource_private_free(struct st_ressource * res) {
 	return 0;
 }
 
-int st_ressource_private_lock(struct st_ressource * res) {
+static int st_ressource_private_lock(struct st_ressource * res) {
 	struct st_ressource_private * self = res->data;
 	int failed = pthread_mutex_lock(&self->lock);
 	if (!failed)
@@ -124,7 +124,7 @@ int st_ressource_private_lock(struct st_ressource * res) {
 	return failed;
 }
 
-int st_ressource_private_trylock(struct st_ressource * res) {
+static int st_ressource_private_trylock(struct st_ressource * res) {
 	struct st_ressource_private * self = res->data;
 	int failed = pthread_mutex_trylock(&self->lock);
 	if (!failed)
@@ -132,7 +132,7 @@ int st_ressource_private_trylock(struct st_ressource * res) {
 	return failed;
 }
 
-void st_ressource_private_unlock(struct st_ressource * res) {
+static void st_ressource_private_unlock(struct st_ressource * res) {
 	struct st_ressource_private * self = res->data;
 	if (!pthread_mutex_unlock(&self->lock))
 		res->locked = 0;

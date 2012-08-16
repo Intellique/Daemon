@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jul 2012 14:02:40 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 23:37:52 +0200                         *
 \*************************************************************************/
 
 // PQfinish, PQsetdbLogin, PQstatus
@@ -59,15 +59,15 @@ static struct st_database_config_ops st_db_postgresql_config_ops = {
 };
 
 
-struct st_stream_reader * st_db_postgresql_backup_db(struct st_database_config * db_config) {
+static struct st_stream_reader * st_db_postgresql_backup_db(struct st_database_config * db_config) {
 	struct st_db_postgresql_config_private * self = db_config->data;
 
-	PGconn * connect = PQsetdbLogin(self->host, self->port, 0, 0, self->db, self->user, self->password);
+	PGconn * connect = PQsetdbLogin(self->host, self->port, NULL, NULL, self->db, self->user, self->password);
 	ConnStatusType status = PQstatus(connect);
 
 	if (status == CONNECTION_BAD) {
 		PQfinish(connect);
-		return 0;
+		return NULL;
 	}
 
 	struct st_stream_reader * backup = st_db_postgresql_backup_init(connect);
@@ -77,12 +77,12 @@ struct st_stream_reader * st_db_postgresql_backup_db(struct st_database_config *
 	return backup;
 }
 
-int st_db_postgresql_check_db(PGconn * connect) {
+static int st_db_postgresql_check_db(PGconn * connect) {
 	struct utsname name;
 	uname(&name);
 
 	const char * param[] = { name.nodename };
-	PGresult * result = PQexecParams(connect, "SELECT id FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1", 1, 0, param, 0, 0, 0);
+	PGresult * result = PQexecParams(connect, "SELECT id FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1", 1, NULL, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR) {
@@ -100,10 +100,10 @@ int st_db_postgresql_check_db(PGconn * connect) {
 	}
 
 	const char * param2[] = { name.nodename, domaine };
-	result = PQexecParams(connect, "INSERT INTO host(name, domaine) VALUES ($1, $2) RETURNING id", 2, 0, param2, 0, 0, 0);
+	result = PQexecParams(connect, "INSERT INTO host(name, domaine) VALUES ($1, $2) RETURNING id", 2, NULL, param2, NULL, NULL, 0);
 	status = PQresultStatus(result);
 
-	if (domaine) {
+	if (domaine != NULL) {
 		domaine--;
 		*domaine = '.';
 	}
@@ -125,21 +125,21 @@ int st_db_postgresql_check_db(PGconn * connect) {
 	return retval;
 }
 
-struct st_database_connection * st_db_postgresql_connect(struct st_database_config * db_config) {
+static struct st_database_connection * st_db_postgresql_connect(struct st_database_config * db_config) {
 	struct st_db_postgresql_config_private * self = db_config->data;
 
-	PGconn * connect = PQsetdbLogin(self->host, self->port, 0, 0, self->db, self->user, self->password);
+	PGconn * connect = PQsetdbLogin(self->host, self->port, NULL, NULL, self->db, self->user, self->password);
 	ConnStatusType status = PQstatus(connect);
 
 	if (status == CONNECTION_BAD || st_db_postgresql_check_db(connect)) {
 		PQfinish(connect);
-		return 0;
+		return NULL;
 	}
 
 	struct st_database_connection * connection = st_db_postgresql_connnect_init(connect);
 	if (!connection) {
 		PQfinish(connect);
-		return 0;
+		return NULL;
 	}
 
 	connection->driver = db_config->driver;
@@ -152,23 +152,23 @@ int st_db_postgresql_config_init(struct st_database_config * config, const struc
 	bzero(self, sizeof(struct st_db_postgresql_config_private));
 
 	const char * value = st_hashtable_value(params, "user");
-	if (value)
+	if (value != NULL)
 		self->user = strdup(value);
 
 	value = st_hashtable_value(params, "password");
-	if (value)
+	if (value != NULL)
 		self->password = strdup(value);
 
 	value = st_hashtable_value(params, "db");
-	if (value)
+	if (value != NULL)
 		self->db = strdup(value);
 
 	value = st_hashtable_value(params, "host");
-	if (value)
+	if (value != NULL)
 		self->host = strdup(value);
 
 	value = st_hashtable_value(params, "port");
-	if (value)
+	if (value != NULL)
 		self->port = strdup(value);
 
 	config->name = strdup(st_hashtable_value(params, "alias"));
@@ -178,10 +178,10 @@ int st_db_postgresql_config_init(struct st_database_config * config, const struc
 	return 0;
 }
 
-int st_db_postgresql_ping(struct st_database_config * db_config) {
+static int st_db_postgresql_ping(struct st_database_config * db_config) {
 	struct st_db_postgresql_config_private * self = db_config->data;
 
-	PGconn * connect = PQsetdbLogin(self->host, self->port, 0, 0, self->db, self->user, self->password);
+	PGconn * connect = PQsetdbLogin(self->host, self->port, NULL, NULL, self->db, self->user, self->password);
 	ConnStatusType status = PQstatus(connect);
 
 	if (status == CONNECTION_BAD) {

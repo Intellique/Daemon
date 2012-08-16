@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 03 Aug 2012 15:55:20 +0200                         *
+*  Last modified: Fri, 17 Aug 2012 00:06:07 +0200                         *
 \*************************************************************************/
 
 // open
@@ -51,6 +51,8 @@
 struct st_log_file_private {
 	char * path;
 	int fd;
+
+	struct stat current;
 };
 
 static void st_log_file_check_logrotate(struct st_log_file_private * self);
@@ -63,10 +65,7 @@ static struct st_log_module_ops st_log_file_module_ops = {
 };
 
 
-void st_log_file_check_logrotate(struct st_log_file_private * self) {
-	struct stat current;
-	fstat(self->fd, &current);
-
+static void st_log_file_check_logrotate(struct st_log_file_private * self) {
 	struct stat reference;
 	int failed = 0;
 	do {
@@ -76,25 +75,26 @@ void st_log_file_check_logrotate(struct st_log_file_private * self) {
 		failed = stat(self->path, &reference);
 	} while (failed);
 
-	if (current.st_ino != reference.st_ino) {
+	if (self->current.st_ino != reference.st_ino) {
 		st_log_write_all(st_log_level_info, st_log_type_plugin_log, "Log: file: logrotate detected");
 
 		close(self->fd);
 
 		self->fd = open(self->path, O_WRONLY | O_APPEND | O_CREAT, 0640);
+		fstat(self->fd, &self->current);
 	}
 }
 
-void st_log_file_module_free(struct st_log_module * module) {
+static void st_log_file_module_free(struct st_log_module * module) {
 	struct st_log_file_private * self = module->data;
 
 	free(module->alias);
-	module->alias = 0;
-	module->ops = 0;
-	module->data = 0;
+	module->alias = NULL;
+	module->ops = NULL;
+	module->data = NULL;
 
 	free(self->path);
-	self->path = 0;
+	self->path = NULL;
 	if (self->fd >= 0)
 		close(self->fd);
 	self->fd = -1;
@@ -103,7 +103,7 @@ void st_log_file_module_free(struct st_log_module * module) {
 }
 
 int st_log_file_new(struct st_log_module * module, const char * alias, enum st_log_level level, const char * path) {
-	if (!module || !alias || !path)
+	if (module == NULL || alias == NULL || path == NULL)
 		return 1;
 
 	int fd = open(path, O_WRONLY | O_APPEND | O_CREAT, 0640);
@@ -114,6 +114,8 @@ int st_log_file_new(struct st_log_module * module, const char * alias, enum st_l
 	self->path = strdup(path);
 	self->fd = fd;
 
+	fstat(fd, &self->current);
+
 	module->alias = strdup(alias);
 	module->level = level;
 	module->ops = &st_log_file_module_ops;
@@ -122,7 +124,7 @@ int st_log_file_new(struct st_log_module * module, const char * alias, enum st_l
 	return 0;
 }
 
-void st_log_file_module_write(struct st_log_module * module, const struct st_log_message * message) {
+static void st_log_file_module_write(struct st_log_module * module, const struct st_log_message * message) {
 	struct st_log_file_private * self = module->data;
 
 	st_log_file_check_logrotate(self);

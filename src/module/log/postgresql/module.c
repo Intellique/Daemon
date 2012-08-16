@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 15 Aug 2012 17:13:23 +0200                         *
+*  Last modified: Fri, 17 Aug 2012 00:11:50 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -81,15 +81,15 @@ static const char * st_log_postgresql_types[] = {
 };
 
 
-void st_log_postgresql_module_free(struct st_log_module * module) {
+static void st_log_postgresql_module_free(struct st_log_module * module) {
 	struct st_log_postgresql_private * self = module->data;
 
 	PQfinish(self->connection);
 	free(self);
 
 	free(module->alias);
-	module->ops = 0;
-	module->data = 0;
+	module->ops = NULL;
+	module->data = NULL;
 }
 
 int st_log_postgresql_new(struct st_log_module * module, enum st_log_level level, const struct st_hashtable * params) {
@@ -100,14 +100,14 @@ int st_log_postgresql_new(struct st_log_module * module, enum st_log_level level
 	const char * user = st_hashtable_value(params, "user");
 	const char * password = st_hashtable_value(params, "password");
 
-	PGconn * connect = PQsetdbLogin(host, port, 0, 0, db, user, password);
+	PGconn * connect = PQsetdbLogin(host, port, NULL, NULL, db, user, password);
 
-	char * hostid = 0;
+	char * hostid = NULL;
 	struct utsname name;
 	uname(&name);
 
 	const char * param[] = { name.nodename };
-	PGresult * result = PQexecParams(connect, "SELECT id FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1", 1, 0, param, 0, 0, 0);
+	PGresult * result = PQexecParams(connect, "SELECT id FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1", 1, NULL, param, NULL, NULL, 0);
 	if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
 		hostid = strdup(PQgetvalue(result, 0, 0));
 	PQclear(result);
@@ -120,7 +120,7 @@ int st_log_postgresql_new(struct st_log_module * module, enum st_log_level level
 		}
 
 		const char * param2[] = { name.nodename, domaine };
-		result = PQexecParams(connect, "INSERT INTO host(name, domaine) VALUES ($1, $2) RETURNING id", 2, 0, param2, 0, 0, 0);
+		result = PQexecParams(connect, "INSERT INTO host(name, domaine) VALUES ($1, $2) RETURNING id", 2, NULL, param2, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (domaine) {
@@ -143,10 +143,10 @@ int st_log_postgresql_new(struct st_log_module * module, enum st_log_level level
 		PQclear(result);
 	}
 
-	PGresult * prepare = PQprepare(connect, "insert_log", "INSERT INTO log(type, level, time, message, host, login) VALUES ($1, $2, $3, $4, $5, $6)", 0, 0);
+	PGresult * prepare = PQprepare(connect, "insert_log", "INSERT INTO log(type, level, time, message, host, login) VALUES ($1, $2, $3, $4, $5, $6)", 0, NULL);
 	PQclear(prepare);
 
-	prepare = PQprepare(connect, "select_user_by_login", "SELECT id FROM users WHERE login = $1 LIMIT 1", 0, 0);
+	prepare = PQprepare(connect, "select_user_by_login", "SELECT id FROM users WHERE login = $1 LIMIT 1", 0, NULL);
 	PQclear(prepare);
 
 	struct st_log_postgresql_private * self = malloc(sizeof(struct st_log_postgresql_private));
@@ -161,7 +161,7 @@ int st_log_postgresql_new(struct st_log_module * module, enum st_log_level level
 	return 0;
 }
 
-void st_log_postgresql_module_write(struct st_log_module * module, const struct st_log_message * message) {
+static void st_log_postgresql_module_write(struct st_log_module * module, const struct st_log_message * message) {
 	struct st_log_postgresql_private * self = module->data;
 
 	struct tm curTime2;
@@ -170,10 +170,10 @@ void st_log_postgresql_module_write(struct st_log_module * module, const struct 
 	localtime_r(&message->timestamp, &curTime2);
 	strftime(buffer, 32, "%F %T", &curTime2);
 
-	char * userid = 0;
+	char * userid = NULL;
 	if (message->user) {
 		const char * param[] = { message->user->login };
-		PGresult * result = PQexecPrepared(self->connection, "select_user_by_login", 1, param, 0, 0, 0);
+		PGresult * result = PQexecPrepared(self->connection, "select_user_by_login", 1, param, NULL, NULL, 0);
 
 		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
 			userid = strdup(PQgetvalue(result, 0, 0));
@@ -186,7 +186,7 @@ void st_log_postgresql_module_write(struct st_log_module * module, const struct 
 		buffer, message->message, self->hostid, userid,
 	};
 
-	PGresult * result = PQexecPrepared(self->connection, "insert_log", 6, param, 0, 0, 0);
+	PGresult * result = PQexecPrepared(self->connection, "insert_log", 6, param, NULL, NULL, 0);
 	PQclear(result);
 
 	free(userid);

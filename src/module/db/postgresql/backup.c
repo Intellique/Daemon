@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 05 Aug 2012 13:45:53 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 23:09:03 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -63,7 +63,7 @@ static const char * tables[] = {
 	"checksum", "checksumresult", "archivefiletochecksumresult", "archivevolumetochecksumresult", "jobtype", 
 	"job", "jobtochecksum", "jobrecord", "jobtoselectedfile", "log", "restoreto", 
 
-	0,
+	NULL,
 };
 
 static int st_db_postgresql_stream_backup_close(struct st_stream_reader * io);
@@ -90,10 +90,10 @@ static struct st_stream_reader_ops st_db_postgresql_stream_backup_ops = {
 struct st_stream_reader * st_db_postgresql_backup_init(PGconn * pg_connect) {
 	struct st_db_postgresql_stream_backup_private * self = malloc(sizeof(struct st_db_postgresql_stream_backup_private));
 	self->con = pg_connect;
-	self->c_result = 0;
+	self->c_result = NULL;
 	self->c_table = tables;
-	self->c_header = 0;
-	self->c_line = 0;
+	self->c_header = NULL;
+	self->c_line = NULL;
 	self->status = BACKUP_STATUS_HEADER;
 	self->position = 0;
 
@@ -112,61 +112,61 @@ struct st_stream_reader * st_db_postgresql_backup_init(PGconn * pg_connect) {
 	return reader;
 }
 
-int st_db_postgresql_stream_backup_close(struct st_stream_reader * io) {
+static int st_db_postgresql_stream_backup_close(struct st_stream_reader * io) {
 	struct st_db_postgresql_stream_backup_private * self = io->data;
 
-	if (self->con) {
+	if (self->con != NULL) {
 		PGresult * result = PQexec(self->con, "ROLLBACK");
 		PQclear(result);
 		PQfinish(self->con);
 	}
-	self->con = 0;
+	self->con = NULL;
 
-	self->c_table = 0;
+	self->c_table = NULL;
 	if (self->c_header)
 		free(self->c_header);
-	self->c_header = 0;
+	self->c_header = NULL;
 	if (self->c_line)
 		PQfreemem(self->c_line);
-	self->c_line = 0;
+	self->c_line = NULL;
 
 	return 0;
 }
 
-int st_db_postgresql_stream_backup_end_of_file(struct st_stream_reader * io) {
+static int st_db_postgresql_stream_backup_end_of_file(struct st_stream_reader * io) {
 	struct st_db_postgresql_stream_backup_private * self = io->data;
-	return self->c_table != 0;
+	return self->c_table != NULL;
 }
 
-off_t st_db_postgresql_stream_backup_forward(struct st_stream_reader * io __attribute__((unused)), off_t offset __attribute__((unused))) {
+static off_t st_db_postgresql_stream_backup_forward(struct st_stream_reader * io __attribute__((unused)), off_t offset __attribute__((unused))) {
 	return -1;
 }
 
-void st_db_postgresql_stream_backup_free(struct st_stream_reader * io) {
+static void st_db_postgresql_stream_backup_free(struct st_stream_reader * io) {
 	struct st_db_postgresql_stream_backup_private * self = io->data;
 
-	if (self->con)
+	if (self->con == NULL)
 		PQfinish(self->con);
-	self->con = 0;
+	self->con = NULL;
 
 	free(self);
 	free(io);
 }
 
-ssize_t st_db_postgresql_stream_backup_get_block_size(struct st_stream_reader * io __attribute__((unused))) {
+static ssize_t st_db_postgresql_stream_backup_get_block_size(struct st_stream_reader * io __attribute__((unused))) {
 	return 4096;
 }
 
-int st_db_postgresql_stream_backup_last_errno(struct st_stream_reader * io __attribute__((unused))) {
+static int st_db_postgresql_stream_backup_last_errno(struct st_stream_reader * io __attribute__((unused))) {
 	return 0;
 }
 
-ssize_t st_db_postgresql_stream_backup_position(struct st_stream_reader * io) {
+static ssize_t st_db_postgresql_stream_backup_position(struct st_stream_reader * io) {
 	struct st_db_postgresql_stream_backup_private * self = io->data;
 	return self->position;
 }
 
-ssize_t st_db_postgresql_stream_backup_read(struct st_stream_reader * io, void * buffer, ssize_t length) {
+static ssize_t st_db_postgresql_stream_backup_read(struct st_stream_reader * io, void * buffer, ssize_t length) {
 	if (length < 1)
 		return 0;
 
@@ -194,7 +194,7 @@ ssize_t st_db_postgresql_stream_backup_read(struct st_stream_reader * io, void *
 				nb_total_read++;
 
 				PQclear(self->c_result);
-				self->c_result = 0;
+				self->c_result = NULL;
 
 				self->c_table++;
 				if (!*self->c_table) {
@@ -220,14 +220,14 @@ ssize_t st_db_postgresql_stream_backup_read(struct st_stream_reader * io, void *
 
 				asprintf(&self->c_header, "%s %s", *self->c_table, self->c_line);
 				PQfreemem(self->c_line);
-				self->c_line = 0;
+				self->c_line = NULL;
 
 				c_length = strlen(self->c_header);
 
 				if (c_length <= length - nb_total_read) {
 					memcpy(c_buffer, self->c_header, c_length);
 					free(self->c_header);
-					self->c_header = 0;
+					self->c_header = NULL;
 				} else
 					return nb_total_read;
 
@@ -250,7 +250,7 @@ ssize_t st_db_postgresql_stream_backup_read(struct st_stream_reader * io, void *
 				if (c_length <= length - nb_total_read) {
 					memcpy(c_buffer, self->c_line, c_length);
 					PQfreemem(self->c_line);
-					self->c_line = 0;
+					self->c_line = NULL;
 				} else
 					return nb_total_read;
 
