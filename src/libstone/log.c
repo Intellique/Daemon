@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 22:24:19 +0200                         *
+*  Last modified: Fri, 17 Aug 2012 09:34:00 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -108,7 +108,7 @@ static void st_log_exit(void) {
 }
 
 struct st_log_driver * st_log_get_driver(const char * driver) {
-	if (driver != NULL) {
+	if (driver == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Get checksum driver with driver's name is NULL");
 		return NULL;
 	}

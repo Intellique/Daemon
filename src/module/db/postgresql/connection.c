@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 23:55:31 +0200                         *
+*  Last modified: Fri, 17 Aug 2012 09:39:48 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -86,6 +86,7 @@ struct st_db_postgresql_user_data {
 
 static int st_db_postgresql_close(struct st_database_connection * connect);
 static int st_db_postgresql_free(struct st_database_connection * connect);
+static int st_db_postgresql_is_connection_closed(struct st_database_connection * connect);
 
 static int st_db_postgresql_cancel_checkpoint(struct st_database_connection * connect, const char * checkpoint);
 static int st_db_postgresql_cancel_transaction(struct st_database_connection * connect);
@@ -115,8 +116,9 @@ static int st_db_postgresql_sync_user(struct st_database_connection * connect, s
 static void st_db_postgresql_prepare(struct st_db_postgresql_connection_private * self, const char * statement_name, const char * query);
 
 static struct st_database_connection_ops st_db_postgresql_connection_ops = {
-	.close = st_db_postgresql_close,
-	.free  = st_db_postgresql_free,
+	.close                = st_db_postgresql_close,
+	.free                 = st_db_postgresql_free,
+	.is_connection_closed = st_db_postgresql_is_connection_closed,
 
 	.cancel_transaction = st_db_postgresql_cancel_transaction,
 	.finish_transaction = st_db_postgresql_finish_transaction,
@@ -180,6 +182,11 @@ struct st_database_connection * st_db_postgresql_connnect_init(PGconn * pg_conne
 	connect->ops = &st_db_postgresql_connection_ops;
 
 	return connect;
+}
+
+static int st_db_postgresql_is_connection_closed(struct st_database_connection * connect) {
+	struct st_db_postgresql_connection_private * self = connect->data;
+	return self->connect == NULL;
 }
 
 
