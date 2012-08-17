@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 17 Aug 2012 09:39:48 +0200                         *
+*  Last modified: Fri, 17 Aug 2012 21:14:17 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -485,14 +485,14 @@ static int st_db_postgresql_sync_changer(struct st_database_connection * connect
 		return 2;
 
 	char * hostid = st_db_postgresql_get_host(connect);
-	if (!hostid)
+	if (hostid == NULL)
 		return 1;
 
 	if (transStatus == PQTRANS_IDLE)
 		st_db_postgresql_start_transaction(connect);
 
 	struct st_db_postgresql_changer_data * changer_data = changer->db_data;
-	if (!changer_data) {
+	if (changer_data == NULL) {
 		changer->db_data = changer_data = malloc(sizeof(struct st_db_postgresql_changer_data));
 		changer_data->id = -1;
 	}
@@ -640,7 +640,7 @@ static int st_db_postgresql_sync_drive(struct st_database_connection * connect, 
 
 	struct st_db_postgresql_changer_data * changer_data = drive->changer->db_data;
 	struct st_db_postgresql_drive_data * drive_data = drive->db_data;
-	if (!drive_data) {
+	if (drive_data == NULL) {
 		drive->db_data = drive_data = malloc(sizeof(struct st_db_postgresql_drive_data));
 		drive_data->id = -1;
 	}
@@ -672,6 +672,7 @@ static int st_db_postgresql_sync_drive(struct st_database_connection * connect, 
 
 		if (status == PGRES_FATAL_ERROR) {
 			free(changerid);
+			free(driveid);
 			if (transStatus == PQTRANS_IDLE)
 				st_db_postgresql_cancel_transaction(connect);
 			return 3;
@@ -817,7 +818,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 	struct st_db_postgresql_connection_private * self = connect->data;
 
 	struct st_db_postgresql_media_data * media_data = media->db_data;
-	if (!media_data) {
+	if (media_data == NULL) {
 		media->db_data = media_data = malloc(sizeof(struct st_db_postgresql_media_data));
 		media_data->id = -1;
 	}
@@ -1072,6 +1073,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		free(nbfiles);
 		free(blocksize);
 		free(mediaid);
+		free(mediaformatid);
 		free(poolid);
 
 		return status == PGRES_FATAL_ERROR;
@@ -1089,21 +1091,23 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 	struct st_db_postgresql_changer_data * changer_data = slot->changer->db_data;
 
 	struct st_db_postgresql_drive_data * drive_data = NULL;
-	if (slot->drive)
+	if (slot->drive != NULL)
 		drive_data = slot->drive->db_data;
 
 	struct st_db_postgresql_slot_data * slot_data = slot->db_data;
-	if (!slot_data) {
+	if (slot_data == NULL) {
 		slot->db_data = slot_data = malloc(sizeof(struct st_db_postgresql_slot_data));
 		slot_data->id = -1;
 	}
 
 	struct st_db_postgresql_media_data * media_data = NULL;
-	if (slot->media)
+	if (slot->media != NULL)
 		media_data = slot->media->db_data;
 
-	char * changer_id = NULL, * media_id = NULL, * slot_id = NULL;
+	char * changer_id = NULL, * drive_id = NULL, * media_id = NULL, * slot_id = NULL;
 	asprintf(&changer_id, "%ld", changer_data->id);
+	if (drive_data != NULL)
+		asprintf(&drive_id, "%ld", drive_data->id);
 	if (slot_data->id >= 0)
 		asprintf(&slot_id, "%ld", slot_data->id);
 
@@ -1121,17 +1125,18 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 			st_db_postgresql_get_string_dup(result, 0, 0, &media_id);
 
 		PQclear(result);
-		free(slot_id);
 
 		if (status == PGRES_FATAL_ERROR) {
 			free(changer_id);
+			free(drive_id);
+			free(slot_id);
 			return 2;
 		}
 	} else {
 		const char * query = "select_slot_by_index_changer";
 		st_db_postgresql_prepare(self, query, "SELECT id, tape FROM changerslot WHERE index = $1 AND changer = $2 FOR UPDATE NOWAIT");
 
-		char * drive_id = NULL, * slot_index = NULL;
+		char * slot_index = NULL;
 		asprintf(&slot_index, "%td", slot - slot->changer->slots);
 		if (drive_data)
 			asprintf(&drive_id, "%ld", drive_data->id);
@@ -1150,11 +1155,11 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 		}
 
 		PQclear(result);
-		free(drive_id);
 		free(slot_index);
 
 		if (status == PGRES_FATAL_ERROR) {
 			free(changer_id);
+			free(drive_id);
 			return 2;
 		}
 	}
@@ -1163,7 +1168,7 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 	if (media_id) {
 		sscanf(media_id, "%ld", &mediaid);
 
-		if (!media_data || mediaid != media_data->id) {
+		if (media_data == NULL || mediaid != media_data->id) {
 			const char * query = "update_media_offline";
 			st_db_postgresql_prepare(self, query, "UPDATE tape SET location = 'offline' WHERE id = $1");
 
@@ -1178,18 +1183,11 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 
 			free(media_id);
 			media_id = NULL;
+
+			if (media_data != NULL && media_data->id > -1)
+				asprintf(&media_id, "%ld", media_data->id);
 		}
 	}
-
-	if ((!media_data && !media_id) || (media_data && media_data->id == mediaid)) {
-		free(changer_id);
-		free(media_id);
-		free(slot_id);
-		return 0;
-	}
-
-	if (media_data && media_data->id >= 0 && !media_id)
-		asprintf(&media_id, "%ld", media_data->id);
 
 	if (slot_data->id >= 0) {
 		const char * query = "update_slot";
@@ -1203,13 +1201,15 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 			st_db_postgresql_get_error(result, query);
 
 		PQclear(result);
+		free(changer_id);
+		free(drive_id);
 		free(slot_id);
 		free(media_id);
 
 		return status == PGRES_FATAL_ERROR;
 	} else {
 		const char * query = "insert_slot";
-		st_db_postgresql_prepare(self, query, "INSERT INTO changerslot(index, changer, tape, type) VALUES ($1, $2, $3, $4) RETURNING id");
+		st_db_postgresql_prepare(self, query, "INSERT INTO changerslot(index, changer, drive, tape, type) VALUES ($1, $2, $3, $4, $5) RETURNING id");
 
 		char * slot_index = NULL;
 		asprintf(&slot_index, "%td", slot - slot->changer->slots);
@@ -1228,7 +1228,7 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 				break;
 		}
 
-		const char * param[] = { slot_index, changer_id, media_id, type };
+		const char * param[] = { slot_index, changer_id, drive_id, media_id, type };
 		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
@@ -1238,15 +1238,13 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 			st_db_postgresql_get_long(result, 0, 0, &slot_data->id);
 
 		PQclear(result);
-
 		free(changer_id);
+		free(drive_id);
 		free(media_id);
 		free(slot_index);
 
 		return status == PGRES_FATAL_ERROR;
 	}
-
-	return 0;
 }
 
 

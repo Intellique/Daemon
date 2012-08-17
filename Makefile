@@ -1,7 +1,7 @@
 MAKEFLAGS 	+= -rR --no-print-directory
 
 # commands
-# static code analysis tool: cppcheck, sparse, splint
+# static code analysis tool: cppcheck, sparse (cgcc), splint
 CC			:= $(shell which ccache) ${TARGET}gcc
 CSCOPE		:= cscope
 CTAGS		:= ctags
