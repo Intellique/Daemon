@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 18 Aug 2012 14:30:38 +0200                         *
+*  Last modified: Sat, 18 Aug 2012 15:45:31 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -175,6 +175,7 @@ static void st_scsi_tape_drive_create_media(struct st_drive * drive) {
 	media->status = st_media_status_foreign;
 	media->location = st_media_location_indrive;
 	media->first_used = time(NULL);
+	media->use_before = media->first_used + media->format->life_span;
 
 	media->load_count = 1;
 

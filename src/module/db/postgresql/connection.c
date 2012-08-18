@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 18 Aug 2012 00:38:38 +0200                         *
+*  Last modified: Sat, 18 Aug 2012 15:42:11 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -824,7 +824,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 	}
 
 	char * mediaid = NULL, * mediaformatid = NULL, * poolid = NULL;
-	if (media_data->id < 0 && media->medium_serial_number) {
+	if (media_data->id < 0 && media->medium_serial_number != NULL) {
 		const char * query = "select_tape_by_medium_serial_number";
 		st_db_postgresql_prepare(self, query, "SELECT id, uuid, label, name, firstused, usebefore, loadcount, readcount, writecount, endpos, blocksize, tapeformat, pool FROM tape WHERE mediumserialnumber = $1 FOR UPDATE NOWAIT");
 
@@ -911,7 +911,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		PQclear(result);
 	}
 
-	if (media_data->id < 0 && media->label) {
+	if (media_data->id < 0 && media->label != NULL) {
 		const char * query = "select_tape_by_label";
 		st_db_postgresql_prepare(self, query, "SELECT id, name, firstused, usebefore, loadcount, readcount, writecount, endpos, blocksize, tapeformat, pool FROM tape WHERE label = $1 FOR UPDATE NOWAIT");
 
@@ -953,7 +953,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		PQclear(result);
 	}
 
-	if (media_data->id < 0 && !mediaformatid) {
+	if (media_data->id < 0 && mediaformatid == NULL) {
 		const char * query = "select_tape_format_by_density";
 		st_db_postgresql_prepare(self, query, "SELECT id FROM tapeformat WHERE densitycode = $1 AND mode = $2 FOR SHARE NOWAIT");
 
@@ -973,7 +973,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		PQclear(result);
 	}
 
-	if (!poolid && media->pool) {
+	if (!poolid && media->pool != NULL) {
 		const char * query = "select_pool_id_by uuid";
 		st_db_postgresql_prepare(self, query, "SELECT id FROM pool WHERE uuid = $1 LIMIT 1");
 
@@ -1329,7 +1329,7 @@ static int st_db_postgresql_get_media_format(struct st_database_connection * con
 	asprintf(&c_density_code, "%d", density_code);
 
 	const char * query = "select_media_format";
-	st_db_postgresql_prepare(self, query, "SELECT name, datatype, maxloadcount, maxreadcount, maxwritecount, maxopcount, lifespan, capacity, blocksize, supportpartition, supportmam FROM tapeformat WHERE densitycode = $1 AND mode = $2 LIMIT 1");
+	st_db_postgresql_prepare(self, query, "SELECT name, datatype, maxloadcount, maxreadcount, maxwritecount, maxopcount, EXTRACT('epoch' FROM lifespan), capacity, blocksize, supportpartition, supportmam FROM tapeformat WHERE densitycode = $1 AND mode = $2 LIMIT 1");
 
 	const char * param[] = { c_density_code, st_media_format_mode_to_string(mode) };
 	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
@@ -1348,7 +1348,7 @@ static int st_db_postgresql_get_media_format(struct st_database_connection * con
 		st_db_postgresql_get_long(result, 0, 4, &media_format->max_write_count);
 		st_db_postgresql_get_long(result, 0, 5, &media_format->max_operation_count);
 
-		media_format->life_span = 0;
+		st_db_postgresql_get_long(result, 0, 6, &media_format->life_span);
 
 		st_db_postgresql_get_ssize(result, 0, 7, &media_format->capacity);
 		st_db_postgresql_get_ssize(result, 0, 8, &media_format->block_size);

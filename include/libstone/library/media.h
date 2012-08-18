@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 14 Aug 2012 21:34:27 +0200                         *
+*  Last modified: Sat, 18 Aug 2012 15:42:24 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -122,7 +122,7 @@ struct st_media_format {
 	long max_write_count;
 	long max_operation_count;
 
-	long long life_span;
+	long life_span;
 
 	ssize_t capacity;
 	ssize_t block_size;
