@@ -22,20 +22,33 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 22:27:18 +0200                         *
+*  Last modified: Sat, 18 Aug 2012 18:14:04 +0200                         *
 \*************************************************************************/
 
+#define _GNU_SOURCE
 // pthread_mutex_lock, pthread_mutex_unlock
 #include <pthread.h>
 // malloc, realloc
 #include <stdlib.h>
+// sscanf
+#include <stdio.h>
 // memcpy, strcasecmp, strcmp
 #include <string.h>
 // bzero
 #include <strings.h>
+// uuid_generate, uuid_unparse_lower
+#include <uuid/uuid.h>
 
+#include <libstone/checksum.h>
 #include <libstone/database.h>
+#include <libstone/io.h>
+#include <libstone/library/changer.h>
+#include <libstone/library/drive.h>
 #include <libstone/library/media.h>
+#include <libstone/library/slot.h>
+#include <libstone/log.h>
+
+#include "stone.version"
 
 
 static pthread_mutex_t st_media_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -263,6 +276,102 @@ struct st_media * st_media_get_by_uuid(const char * uuid) {
 	return media;
 }
 
+int st_media_read_header(struct st_drive * drive) {
+	if (drive == NULL)
+		return 1;
+
+	struct st_media * media = drive->slot->media;
+	if (media == NULL)
+		return 1;
+
+	struct st_stream_reader * reader = drive->ops->get_reader(drive, 0);
+	if (reader == NULL) {
+		st_log_write_all(st_log_level_info, st_log_type_daemon, "[%s | %s | #%td]: failed to read tape", drive->vendor, drive->model, drive - drive->changer->drives);
+		return 1;
+	}
+
+	char buffer[512];
+	ssize_t nb_read = reader->ops->read(reader, buffer, 512);
+	reader->ops->close(reader);
+	reader->ops->free(reader);
+
+	if (nb_read <= 0) {
+		media->status = st_media_status_new;
+		media->nb_volumes = 0;
+		return 0;
+	}
+
+	// M | STone (v0.1)
+	// M | Tape format: version=1
+	// O | Label: A0000002
+	// M | Tape id: uuid=f680dd48-dd3e-4715-8ddc-a90d3e708914
+	// M | Pool: name=Foo, uuid=07117f1a-2b13-11e1-8bcb-80ee73001df6
+	// M | Block size: 32768
+	// M | Checksum: crc32=1eb6931d
+	char stone_version[33];
+	int tape_format_version = 0;
+	int nb_parsed = 0;
+	if (sscanf(buffer, "STone (v%32[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
+		char uuid[37];
+		char name[65];
+		char pool_id[37];
+		char pool_name[65];
+		ssize_t block_size;
+		char checksum_name[12];
+		char checksum_value[64];
+
+		int nb_parsed2 = 0;
+		int ok = 1;
+
+		if (sscanf(buffer + nb_parsed, "Label: %36s\n%n", name, &nb_parsed2) == 1)
+			nb_parsed += nb_parsed2;
+
+		if (ok && sscanf(buffer + nb_parsed, "Tape id: uuid=%37s\n%n", uuid, &nb_parsed2) == 1)
+			nb_parsed += nb_parsed2;
+		else
+			ok = 0;
+
+		if (ok && sscanf(buffer + nb_parsed, "Pool: name=%65[^,], uuid=%36s\n%n", pool_name, pool_id, &nb_parsed2) == 2)
+			nb_parsed += nb_parsed2;
+		else
+			ok = 0;
+
+		if (ok && sscanf(buffer + nb_parsed, "Block size: %zd\n%n", &block_size, &nb_parsed2) == 1)
+			nb_parsed += nb_parsed2;
+		else
+			ok = 0;
+
+		if (ok)
+			ok = sscanf(buffer + nb_parsed, "Checksum: %11[^=]=%64s\n", checksum_name, checksum_value) == 2;
+
+		if (ok) {
+			char * digest = st_checksum_compute(checksum_name, buffer, nb_parsed);
+			ok = digest != NULL && !strcmp(checksum_value, digest);
+			free(digest);
+
+			media->pool = st_pool_get_by_uuid(pool_id);
+			// TODO: create pool
+			// if (media->pool == NULL)
+			//	media->pool = st_pool_create(pool_id, pool_name, media->format);
+		}
+
+		if (ok) {
+			st_log_write_all(st_log_level_debug, st_log_type_drive, "Found STone header in media with (uuid=%s, label=%s, blocksize=%zd)", uuid, name, block_size);
+
+			strcpy(media->uuid, uuid);
+			media->label = strdup(name);
+			media->name = strdup(name);
+			media->status = st_media_status_in_use;
+			media->block_size = block_size;
+		} else
+			media->status = st_media_status_foreign;
+	} else {
+		media->status = st_media_status_foreign;
+	}
+
+	return 0;
+}
+
 static int st_media_retrieve(struct st_media ** media, const char * uuid, const char * medium_serial_number, const char * label) {
 	struct st_database * db = st_database_get_default_driver();
 	struct st_database_config * config = NULL;
@@ -293,6 +402,90 @@ static int st_media_retrieve(struct st_media ** media, const char * uuid, const 
 	}
 
 	return 0;
+}
+
+int st_media_write_header(struct st_drive * drive, struct st_pool * pool) {
+	if (drive == NULL)
+		return 1;
+
+	struct st_media * media = drive->slot->media;
+	if (media == NULL) {
+		st_log_write_all(st_log_level_warning, st_log_type_drive, "Try to write a tape header to a drive without tape");
+		return 1;
+	}
+
+	if (*media->uuid == '\0') {
+		uuid_t id;
+		uuid_generate(id);
+		uuid_unparse_lower(id, media->uuid);
+	}
+
+	// check for block size
+	if (media->block_size == 0)
+		media->block_size = media->format->block_size;
+
+	// M | STone (v0.1)
+	// M | Tape format: version=1
+	// O | Label: A0000002
+	// M | Tape id: uuid=f680dd48-dd3e-4715-8ddc-a90d3e708914
+	// M | Pool: name=Foo, uuid=07117f1a-2b13-11e1-8bcb-80ee73001df6
+	// M | Block size: 32768
+	// M | Checksum: crc32=1eb6931d
+	char * hdr = strdup("STone (" STONE_VERSION ")\nTape format: version=1\n"), * hdr2;
+	ssize_t shdr = strlen(hdr), shdr2;
+
+	/**
+	 * With stand-alone tape drive, we cannot retreive tape label.
+	 * In this case, media's label is NULL.
+	 * That why, Label field in header is optionnal
+	 */
+	if (media->label != NULL) {
+		shdr2 = asprintf(&hdr2, "Label: %s\n", media->label);
+		hdr = realloc(hdr, shdr + shdr2 + 1);
+		strcpy(hdr + shdr, hdr2);
+		shdr += shdr2;
+		free(hdr2);
+		hdr2 = NULL;
+	}
+
+	shdr2 = asprintf(&hdr2, "Tape id: uuid=%s\nPool: name=%s, uuid=%s\nBlock size: %zd\n", media->uuid, pool->name, pool->uuid, media->block_size);
+	hdr = realloc(hdr, shdr + shdr2 + 1);
+	strcpy(hdr + shdr, hdr2);
+	shdr += shdr2;
+	free(hdr2);
+	hdr2 = NULL;
+
+	// compute header's checksum
+	char * digest = st_checksum_compute("crc32", hdr, shdr);
+	if (digest == NULL) {
+		st_log_write_all(st_log_level_info, st_log_type_daemon, "Failed to compute digest before write media header");
+		free(hdr);
+		return 3;
+	}
+
+	ssize_t sdigest = strlen(digest);
+	hdr = realloc(hdr, shdr + sdigest + 18);
+	shdr += snprintf(hdr + shdr, sdigest + 18, "Checksum: crc32=%s\n", digest);
+
+	struct st_stream_writer * writer = drive->ops->get_writer(drive, 0);
+	ssize_t nb_write = writer->ops->write(writer, hdr, shdr);
+	int failed = writer->ops->close(writer);
+	writer->ops->free(writer);
+
+	free(hdr);
+
+	if (nb_write == shdr && !failed) {
+		media->status = st_media_status_in_use;
+		media->pool = pool;
+
+		st_log_write_all(st_log_level_info, st_log_type_drive, "Write a media header: succed");
+	} else {
+		media->status = st_media_status_error;
+
+		st_log_write_all(st_log_level_info, st_log_type_drive, "Write a media header: failed");
+	}
+
+	return failed;
 }
 
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 18 Aug 2012 15:45:31 +0200                         *
+*  Last modified: Sat, 18 Aug 2012 17:04:09 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -186,11 +186,11 @@ static void st_scsi_tape_drive_create_media(struct st_drive * drive) {
 		int failed = st_scsi_tape_read_mam(fd, media);
 		close(fd);
 
-		if (!failed) {
-		} else {
+		if (failed)
 			st_log_write_all(st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: failed to read medium axilary memory", drive->vendor, drive->model, drive - drive->changer->drives);
-		}
 	}
+
+	st_media_read_header(drive);
 }
 
 static int st_scsi_tape_drive_eject(struct st_drive * drive) {
