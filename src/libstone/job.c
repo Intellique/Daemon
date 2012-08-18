@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 22:42:31 +0200                         *
+*  Last modified: Fri, 17 Aug 2012 23:32:31 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -166,7 +166,7 @@ void st_job_sync_plugins(struct st_database_connection * connection) {
 
 	glob_t gl;
 	gl.gl_offs = 0;
-	glob(MODULE_PATH "%s/libjob-*.so", GLOB_DOOFFS, NULL, &gl);
+	glob(MODULE_PATH "/libjob-*.so", GLOB_DOOFFS, NULL, &gl);
 
 	unsigned int i;
 	for (i = 0; i < gl.gl_pathc; i++) {

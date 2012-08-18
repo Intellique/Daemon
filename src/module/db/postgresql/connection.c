@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 17 Aug 2012 21:14:17 +0200                         *
+*  Last modified: Sat, 18 Aug 2012 00:38:38 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1443,14 +1443,19 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 		}
 
 		query = "update_job";
-		st_db_postgresql_prepare(self, query, "UPDATE job SET repetition = $1, done = $2, status = $3, update = NOW() WHERE id = $4");
+		st_db_postgresql_prepare(self, query, "UPDATE job SET nextstart = $1, repetition = $2, done = $3, status = $4, update = NOW() WHERE id = $5");
+
+		char next_start[24];
+		struct tm tm_next_start;
+		localtime_r(&job->next_start, &tm_next_start);
+		strftime(next_start, 23, "%F %T", &tm_next_start);
 
 		char * repetition, * done;
 		asprintf(&repetition, "%ld", job->repetition);
 		asprintf(&done, "%f", job->done);
 
-		const char * param2[] = { repetition, done, st_job_status_to_string(job->sched_status), job_id };
-		result = PQexecPrepared(self->connect, query, 4, param2, NULL, NULL, 0);
+		const char * param2[] = { next_start, repetition, done, st_job_status_to_string(job->sched_status), job_id };
+		result = PQexecPrepared(self->connect, query, 5, param2, NULL, NULL, 0);
 		status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -1462,7 +1467,7 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 	}
 
 	const char * query0 = "select_new_jobs";
-	st_db_postgresql_prepare(self, query0, "SELECT j.id, j.name, nextstart, interval, repetition, done, status, u.login, metadata, options, jt.name FROM job j LEFT JOIN jobtype jt ON j.type = jt.id LEFT JOIN users u ON j.login = u.id WHERE host = $1 AND j.id > $2 ORDER BY j.id");
+	st_db_postgresql_prepare(self, query0, "SELECT j.id, j.name, nextstart, EXTRACT('epoch' FROM interval), repetition, done, status, u.login, metadata, options, jt.name FROM job j LEFT JOIN jobtype jt ON j.type = jt.id LEFT JOIN users u ON j.login = u.id WHERE host = $1 AND j.id > $2 ORDER BY j.id");
 	const char * query1 = "select_job_meta";
 	st_db_postgresql_prepare(self, query1, "SELECT * FROM each((SELECT metadata FROM job WHERE id = $1 LIMIT 1))");
 	const char * query2 = "select_job_option";
@@ -1508,7 +1513,8 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 			st_db_postgresql_get_string_dup(result, i, 0, &job_id);
 			st_db_postgresql_get_string_dup(result, i, 1, &job->name);
 			st_db_postgresql_get_time(result, i, 2, &job->next_start);
-			// interval
+			if (!PQgetisnull(result, i, 3))
+				st_db_postgresql_get_long(result, i, 3, &job->interval);
 			st_db_postgresql_get_long(result, i, 4, &job->repetition);
 
 			st_db_postgresql_get_float(result, i, 5, &job->done);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 17 Aug 2012 00:35:23 +0200                         *
+*  Last modified: Sat, 18 Aug 2012 11:57:11 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -66,29 +66,45 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 	unsigned int nb_jobs = 0;
 	time_t update = time(NULL);
 
+	connection->ops->sync_job(connection, &jobs, &nb_jobs);
+
+	unsigned int i;
+	for (i = 0; i < nb_jobs; i++) {
+		struct st_job * job = jobs[i];
+
+		if (job->db_status == st_job_status_running || job->db_status == st_job_status_waiting) {
+			job->driver->new_job(job, connection);
+
+			st_log_write_all(st_log_level_info, st_log_type_scheduler, "Checking job: %s", job->name);
+			short ok = job->ops->check(job);
+			job->ops->free(job);
+
+			st_log_write_all(st_log_level_info, st_log_type_scheduler, "Checking job: %s finished, status: %s", job->name, ok ? "ok" : "can't recover job");
+		}
+	}
+
 	while (!st_sched_stop_request) {
 		connection->ops->sync_job(connection, &jobs, &nb_jobs);
 
-		unsigned int i;
 		for (i = 0; i < nb_jobs; i++) {
 			struct st_job * job = jobs[i];
 
 			if (job->repetition != 0 && job->next_start < update && job->db_status == st_job_status_idle && job->sched_status == st_job_status_idle) {
-				// init and run job
 				job->driver->new_job(job, connection);
 				st_threadpool_run(st_sched_run_job, job);
-			} else if (job->db_status == st_job_status_stopped && (job->sched_status == st_job_status_running || job->sched_status == st_job_status_waiting)) {
-				// stop job
-				job->ops->stop(job);
 			}
 		}
 
 		st_changer_sync(connection);
 
-		struct tm current;
-		update = time(NULL);
-		localtime_r(&update, &current);
-		sleep(5 - current.tm_sec % 5);
+		time_t now = time(NULL);
+		if (now - update < 5) {
+			struct tm current;
+			update = now;
+			localtime_r(&update, &current);
+			sleep(5 - current.tm_sec % 5);
+		} else
+			update = now;
 	}
 }
 
@@ -102,7 +118,7 @@ static void st_sched_exit(int signal) {
 static void st_sched_run_job(void * arg) {
 	struct st_job * job = arg;
 
-	st_log_write_all(st_log_level_info, st_log_type_scheduler, "starting job");
+	st_log_write_all(st_log_level_info, st_log_type_scheduler, "Starting job: %s", job->name);
 
 	job->sched_status = st_job_status_running;
 	if (job->repetition > 0)
@@ -111,26 +127,19 @@ static void st_sched_run_job(void * arg) {
 
 	int status = job->ops->run(job);
 
+	job->ops->free(job);
+
+	if (job->interval > 0) {
+		time_t now = time(NULL);
+		long diff = now - job->next_start;
+		if (diff < 0)
+			diff = job->next_start - now;
+		job->next_start += diff - (diff % job->interval) + job->interval;
+	}
+
 	if (job->sched_status == st_job_status_running)
 		job->sched_status = st_job_status_idle;
 
-	job->ops->free(job);
-	job->data = NULL;
-
-	free(job->name);
-	job->name = NULL;
-
-	job->user = NULL;
-
-	job->driver = NULL;
-
-	if (job->meta)
-		st_hashtable_free(job->meta);
-	job->meta = NULL;
-	if (job->option)
-		st_hashtable_free(job->option);
-	job->option = NULL;
-
-	st_log_write_all(st_log_level_info, st_log_type_scheduler, "job finished, with exited code = %d", status);
+	st_log_write_all(st_log_level_info, st_log_type_scheduler, "Job %s finished, with exited code = %d", job->name, status);
 }
 

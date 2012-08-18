@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 15 Aug 2012 19:09:55 +0200                         *
+*  Last modified: Sat, 18 Aug 2012 11:54:08 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -67,10 +67,9 @@ struct st_job {
 	struct st_hashtable * option;
 
 	struct st_job_ops {
-		void (*check)(struct st_job * j);
+		short (*check)(struct st_job * j);
 		void (*free)(struct st_job * j);
 		int (*run)(struct st_job * j);
-		int (*stop)(struct st_job * j);
 	} * ops;
 	void * data;
 
