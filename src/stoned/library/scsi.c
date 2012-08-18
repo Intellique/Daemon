@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 17 Aug 2012 00:22:53 +0200                         *
+*  Last modified: Sat, 18 Aug 2012 14:31:32 +0200                         *
 \*************************************************************************/
 
 // htobe16
@@ -731,6 +731,8 @@ static void st_scsi_loader_status_update_slot(int fd, struct st_changer * change
 					struct st_scsislot * sp = slot->data;
 					sp->address = data_transfer_element->element_address;
 					sp->src_address = 0;
+					if (data_transfer_element->source_valid)
+						sp->src_address = data_transfer_element->source_storage_element_address;
 				}
 				break;
 
@@ -1228,7 +1230,7 @@ int st_scsi_tape_read_mam(int fd, struct st_media * media) {
 				break;
 
 			case scsi_mam_medium_serial_number:
-				strncpy(media->medium_serial_number, attr->attribute_value.text, 32);
+				media->medium_serial_number = strdup(attr->attribute_value.text);
 				space = strchr(media->medium_serial_number, ' ');
 				if (space)
 					*space = '\0';

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 17 Aug 2012 00:31:14 +0200                         *
+*  Last modified: Sat, 18 Aug 2012 14:30:38 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -180,13 +180,14 @@ static void st_scsi_tape_drive_create_media(struct st_drive * drive) {
 
 	media->block_size = st_scsi_tape_drive_get_block_size(drive);
 
-	if (media->format && media->format->support_mam) {
+	if (media->format != NULL && media->format->support_mam) {
 		int fd = open(drive->scsi_device, O_RDWR);
 		int failed = st_scsi_tape_read_mam(fd, media);
 		close(fd);
 
 		if (!failed) {
 		} else {
+			st_log_write_all(st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: failed to read medium axilary memory", drive->vendor, drive->model, drive - drive->changer->drives);
 		}
 	}
 }
@@ -276,11 +277,20 @@ static ssize_t st_scsi_tape_drive_get_block_size(struct st_drive * drive) {
 	if (drive->slot->media && media->block_size > 0)
 		return media->block_size;
 
+	drive->status = st_drive_rewinding;
+
+	static struct mtop rewind = { MTREW, 1 };
+	st_scsi_tape_drive_operation_start(self);
+	int failed = ioctl(self->fd_nst, MTIOCTOP, &rewind);
+	st_scsi_tape_drive_operation_stop(drive);
+
+	drive->status = st_drive_loaded_idle;
+
 	unsigned int i;
 	ssize_t nb_read;
 	block_size = 1 << 16;
 	char * buffer = malloc(block_size);
-	for (i = 0; i < 4 && buffer; i++) {
+	for (i = 0; i < 4 && buffer != NULL && !failed; i++) {
 		drive->status = st_drive_reading;
 
 		st_scsi_tape_drive_operation_start(self);
@@ -290,13 +300,13 @@ static ssize_t st_scsi_tape_drive_get_block_size(struct st_drive * drive) {
 		drive->status = st_drive_loaded_idle;
 
 		st_scsi_tape_drive_operation_start(self);
-		int failed = ioctl(self->fd_nst, MTIOCGET, &self->status);
+		failed = ioctl(self->fd_nst, MTIOCGET, &self->status);
 		st_scsi_tape_drive_operation_stop(drive);
 
 		if (!failed && self->status.mt_blkno < 1)
 			break;
 
-		if (media)
+		if (media != NULL)
 			media->read_count++;
 
 		if (nb_read > 0) {
@@ -306,10 +316,18 @@ static ssize_t st_scsi_tape_drive_get_block_size(struct st_drive * drive) {
 			return nb_read;
 		}
 
-		if (!st_scsi_tape_drive_rewind(drive)) {
+		drive->status = st_drive_rewinding;
+
+		st_scsi_tape_drive_operation_start(self);
+		failed = ioctl(self->fd_nst, MTIOCTOP, &rewind);
+		st_scsi_tape_drive_operation_stop(drive);
+
+		drive->status = st_drive_loaded_idle;
+
+		if (!failed) {
 			block_size <<= 1;
 			void * new_addr = realloc(buffer, block_size);
-			if (!new_addr)
+			if (new_addr == NULL)
 				free(buffer);
 			buffer = new_addr;
 		} else
@@ -318,7 +336,7 @@ static ssize_t st_scsi_tape_drive_get_block_size(struct st_drive * drive) {
 
 	free(buffer);
 
-	if (media && media->format)
+	if (media != NULL && media->format != NULL)
 		return media->format->block_size;
 
 	return -1;
@@ -521,7 +539,7 @@ static int st_scsi_tape_drive_update_media_info(struct st_drive * drive) {
 			drive->is_empty = 0;
 		}
 
-		if (!drive->slot->media && !drive->is_empty) {
+		if (drive->slot->media == NULL && !drive->is_empty) {
 			char medium_serial_number[32];
 			int fd = open(drive->scsi_device, O_RDWR);
 
@@ -532,7 +550,7 @@ static int st_scsi_tape_drive_update_media_info(struct st_drive * drive) {
 			if (!failed)
 				drive->slot->media = st_media_get_by_medium_serial_number(medium_serial_number);
 
-			if (!drive->slot->media)
+			if (drive->slot->media == NULL)
 				st_scsi_tape_drive_create_media(drive);
 		}
 	} else {
