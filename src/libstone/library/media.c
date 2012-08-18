@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 18 Aug 2012 18:14:04 +0200                         *
+*  Last modified: Sat, 18 Aug 2012 18:17:30 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -308,10 +308,10 @@ int st_media_read_header(struct st_drive * drive) {
 	// M | Pool: name=Foo, uuid=07117f1a-2b13-11e1-8bcb-80ee73001df6
 	// M | Block size: 32768
 	// M | Checksum: crc32=1eb6931d
-	char stone_version[33];
+	char stone_version[65];
 	int tape_format_version = 0;
 	int nb_parsed = 0;
-	if (sscanf(buffer, "STone (v%32[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
+	if (sscanf(buffer, "STone (v%64[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
 		char uuid[37];
 		char name[65];
 		char pool_id[37];
