@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 19 Aug 2012 18:45:21 +0200                         *
+*  Last modified: Sun, 19 Aug 2012 19:15:22 +0200                         *
 \*************************************************************************/
 
 // open
@@ -393,6 +393,8 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 		if (to->media)
 			to->media->location = st_media_location_online;
 	}
+
+	to->lock->ops->unlock(to->lock);
 
 	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading tape '%s' from drive #%td to slot #%td finished with code = %d", ch->vendor, ch->model, to->volume_name, from - ch->drives, to - ch->slots, failed);
 

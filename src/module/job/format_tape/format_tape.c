@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 19 Aug 2012 18:19:38 +0200                         *
+*  Last modified: Sun, 19 Aug 2012 19:16:22 +0200                         *
 \*************************************************************************/
 
 // sscanf
@@ -192,6 +192,9 @@ int st_job_format_tape_run(struct st_job * job) {
 
 	job->sched_status = st_job_status_running;
 
+	if (job->db_status != st_job_status_stopped)
+		job->done = 0.25;
+
 	if (job->db_status != st_job_status_stopped && drive->slot->media != NULL && drive->slot->media != media) {
 		st_job_add_record(self->connect, st_log_level_info, job, "unloading media: %s from drive: { %s, %s, #%td }", drive->slot->media->name, drive->vendor, drive->model, drive - drive->changer->drives);
 		int failed = slot->changer->ops->unload(slot->changer, drive);
@@ -206,6 +209,9 @@ int st_job_format_tape_run(struct st_job * job) {
 			return 2;
 		}
 	}
+
+	if (job->db_status != st_job_status_stopped)
+		job->done = 0.5;
 
 	if (job->db_status != st_job_status_stopped && drive->slot->media == NULL) {
 		st_job_add_record(self->connect, st_log_level_info, job, "loading media: %s to drive: { %s, %s, #%td }", media->name, drive->vendor, drive->model, drive - drive->changer->drives);
@@ -228,7 +234,7 @@ int st_job_format_tape_run(struct st_job * job) {
 	}
 
 	if (job->db_status != st_job_status_stopped)
-		job->done = 0.5;
+		job->done = 0.75;
 
 	// check blocksize
 	enum update_blocksize {
@@ -287,8 +293,10 @@ int st_job_format_tape_run(struct st_job * job) {
 
 		if (status)
 			st_job_add_record(self->connect, st_log_level_info, job, "Job: format tape finished with code = %d, num runs %ld", status, job->num_runs);
-		else
+		else {
+			job->done = 1;
 			st_job_add_record(self->connect, st_log_level_info, job, "Job: format tape finished with code = OK, num runs %ld", job->num_runs);
+		}
 	} else {
 		st_job_add_record(self->connect, st_log_level_warning, job, "Job: format tape aborted by user before formatting media");
 	}
