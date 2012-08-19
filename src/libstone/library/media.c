@@ -329,7 +329,7 @@ int st_media_read_header(struct st_drive * drive) {
 
 	struct st_stream_reader * reader = drive->ops->get_reader(drive, 0);
 	if (reader == NULL) {
-		st_log_write_all(st_log_level_info, st_log_type_daemon, "[%s | %s | #%td]: failed to read tape", drive->vendor, drive->model, drive - drive->changer->drives);
+		st_log_write_all(st_log_level_info, st_log_type_daemon, "[%s | %s | #%td]: failed to read media", drive->vendor, drive->model, drive - drive->changer->drives);
 		return 1;
 	}
 

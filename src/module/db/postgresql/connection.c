@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 19 Aug 2012 00:26:40 +0200                         *
+*  Last modified: Sun, 19 Aug 2012 14:06:48 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1334,7 +1334,7 @@ static struct st_media * st_db_postgresql_get_media(struct st_database_connectio
 	}
 
 	PQclear(result);
-	return NULL;
+	return media;
 }
 
 static int st_db_postgresql_get_media_format(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, enum st_media_format_mode mode) {
@@ -1428,9 +1428,6 @@ static struct st_pool * st_db_postgresql_get_pool(struct st_database_connection 
 		enum st_media_format_mode mode = st_media_string_to_format_mode(PQgetvalue(result, 0, 5));
 
 		pool->format = st_media_format_get_by_density_code(density_code, mode);
-
-		PQclear(result);
-		return 0;
 	}
 
 	PQclear(result);
