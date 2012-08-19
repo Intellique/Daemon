@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 19 Aug 2012 22:23:26 +0200                         *
+*  Last modified: Sun, 19 Aug 2012 23:30:35 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -107,7 +107,6 @@ static struct st_stream_writer * st_scsi_tape_drive_get_writer(struct st_drive *
 static void st_scsi_tape_drive_on_failed(struct st_drive * drive, int verbose, int sleep_time);
 static void st_scsi_tape_drive_operation_start(struct st_scsi_tape_drive_private * dr);
 static void st_scsi_tape_drive_operation_stop(struct st_drive * dr);
-static int st_scsi_tape_drive_rewind(struct st_drive * dr);
 static int st_scsi_tape_drive_set_file_position(struct st_drive * drive, int file_position);
 static int st_scsi_tape_drive_update_media_info(struct st_drive * drive);
 
@@ -434,37 +433,6 @@ static void st_scsi_tape_drive_on_failed(struct st_drive * drive, int verbose, i
 	close(self->fd_nst);
 	sleep(sleep_time);
 	self->fd_nst = open(drive->device, O_RDWR | O_NONBLOCK);
-}
-
-static int st_scsi_tape_drive_rewind(struct st_drive * drive) {
-	struct st_scsi_tape_drive_private * self = drive->data;
-
-	int failed = st_scsi_tape_drive_update_media_info(drive);
-	if (failed)
-		return failed;
-
-	if (self->status.mt_fileno == 0 && self->status.mt_blkno == 0)
-		return 0;
-
-	st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: rewind tape and put the drive offline", drive->vendor, drive->model, drive - drive->changer->drives);
-
-	drive->status = st_drive_rewinding;
-
-	static struct mtop rewind = { MTBSFM, 1 };
-	st_scsi_tape_drive_operation_start(self);
-	failed = ioctl(self->fd_nst, MTIOCTOP, &rewind);
-	st_scsi_tape_drive_operation_stop(drive);
-
-	drive->status = st_drive_loaded_idle;
-
-	if (!failed)
-		drive->slot->media->operation_count++;
-
-	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: rewind file, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, failed);
-
-	st_scsi_tape_drive_update_media_info(drive);
-
-	return failed;
 }
 
 static int st_scsi_tape_drive_set_file_position(struct st_drive * drive, int file_position) {
