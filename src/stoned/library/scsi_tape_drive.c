@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 18 Aug 2012 17:04:09 +0200                         *
+*  Last modified: Sun, 19 Aug 2012 22:23:26 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -366,7 +366,8 @@ static struct st_stream_writer * st_scsi_tape_drive_get_writer(struct st_drive *
 	if (drive == NULL || !drive->enabled)
 		return NULL;
 
-	st_scsi_tape_drive_set_file_position(drive, file_position);
+	if (st_scsi_tape_drive_set_file_position(drive, file_position))
+		return NULL;
 
 	struct st_scsi_tape_drive_private * self = drive->data;
 	if (drive->is_empty || self->used_by_io) {
@@ -476,7 +477,7 @@ static int st_scsi_tape_drive_set_file_position(struct st_drive * drive, int fil
 		failed = ioctl(self->fd_nst, MTIOCTOP, &eod);
 		st_scsi_tape_drive_operation_stop(drive);
 	} else {
-		static struct mtop rewind = { MTBSFM, 1 };
+		static struct mtop rewind = { MTREW, 1 };
 		st_scsi_tape_drive_operation_start(self);
 		failed = ioctl(self->fd_nst, MTIOCTOP, &rewind);
 		st_scsi_tape_drive_operation_stop(drive);
@@ -484,10 +485,12 @@ static int st_scsi_tape_drive_set_file_position(struct st_drive * drive, int fil
 		if (failed)
 			return failed;
 
-		struct mtop fsr = { MTFSF, file_position };
-		st_scsi_tape_drive_operation_start(self);
-		failed = ioctl(self->fd_nst, MTIOCTOP, &fsr);
-		st_scsi_tape_drive_operation_stop(drive);
+		if (file_position > 0) {
+			struct mtop fsr = { MTFSF, file_position };
+			st_scsi_tape_drive_operation_start(self);
+			failed = ioctl(self->fd_nst, MTIOCTOP, &fsr);
+			st_scsi_tape_drive_operation_stop(drive);
+		}
 	}
 
 	if (!failed)

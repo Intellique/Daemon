@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 19 Aug 2012 19:16:22 +0200                         *
+*  Last modified: Sun, 19 Aug 2012 20:03:46 +0200                         *
 \*************************************************************************/
 
 // sscanf
@@ -34,7 +34,9 @@
 // sleep
 #include <unistd.h>
 
+#include <libstone/checksum.h>
 #include <libstone/database.h>
+#include <libstone/io.h>
 #include <libstone/library/drive.h>
 #include <libstone/library/media.h>
 #include <libstone/library/ressource.h>
@@ -71,10 +73,247 @@ static struct st_job_driver st_job_format_tape_driver = {
 
 
 static short st_job_format_tape_check(struct st_job * job) {
-	return 0;
+	struct st_job_format_tape_private * self = job->data;
+
+	st_job_add_record(self->connect, st_log_level_info, job, "Start format tape job (recover mode) (job name: %s), num runs %ld", job->name, job->num_runs);
+
+	struct st_media * media = st_media_get_by_job(job, self->connect);
+	if (media == NULL) {
+		st_job_add_record(self->connect, st_log_level_error, job, "Media not found");
+		return 0;
+	}
+	if (media->type == st_media_type_cleanning) {
+		st_job_add_record(self->connect, st_log_level_error, job, "Try to format a cleaning media");
+		return 0;
+	}
+
+	struct st_pool * pool = st_pool_get_by_job(job, self->connect);
+	if (pool == NULL) {
+		pool = job->user->pool;
+		st_job_add_record(self->connect, st_log_level_warning, job, "using default pool '%s' of user '%s'", pool->name, job->user->login);
+	}
+
+	enum {
+		alert_user,
+		changer_has_free_drive,
+		drive_is_free,
+		look_for_media,
+		media_in_drive,
+		slot_is_free,
+	} state = look_for_media;
+	short stop = 0, has_alert_user = 0, has_lock_on_drive = 0, has_lock_on_slot = 0;
+	struct st_drive * drive = NULL;
+	struct st_slot * slot = NULL;
+
+	while (!stop) {
+		switch (state) {
+			case alert_user:
+				if (!has_alert_user)
+					st_job_add_record(self->connect, st_log_level_warning, job, "Media not found (named: %s)", media->name);
+				has_alert_user = 1;
+				sleep(15);
+				state = look_for_media;
+				break;
+
+			case changer_has_free_drive:
+				// if drive is not NULL, we own also a lock on it
+				drive = slot->changer->ops->find_free_drive(slot->changer);
+				if (drive != NULL) {
+					has_lock_on_drive = 1;
+					stop = 1;
+				} else {
+					sleep(5);
+					state = media_in_drive;
+				}
+				break;
+
+			case drive_is_free:
+				if (drive->lock->ops->trylock(drive->lock)) {
+					sleep(5);
+					state = media_in_drive;
+				} else if (slot->media == media) {
+					has_lock_on_drive = 1;
+					stop = 1;
+				} else {
+					// media has been vannished
+					drive->lock->ops->unlock(drive->lock);
+					drive = NULL;
+					slot = NULL;
+					state = look_for_media;
+				}
+				break;
+
+			case look_for_media:
+				// lock of slot can be owned by another job
+				slot = st_changer_find_slot_by_media(media);
+				state = slot != NULL ? media_in_drive : alert_user;
+				break;
+
+			case media_in_drive:
+				drive = slot->drive;
+				state = drive != NULL ? drive_is_free : slot_is_free;
+				break;
+
+			case slot_is_free:
+				if (slot->lock->ops->trylock(slot->lock)) {
+					sleep(5);
+					state = look_for_media;
+				} else {
+					has_lock_on_slot = 1;
+					state = changer_has_free_drive;
+				}
+				break;
+		}
+	}
+
+	if (drive->slot->media != NULL && drive->slot->media != media) {
+		st_job_add_record(self->connect, st_log_level_info, job, "unloading media: %s from drive: { %s, %s, #%td }", drive->slot->media->name, drive->vendor, drive->model, drive - drive->changer->drives);
+		int failed = slot->changer->ops->unload(slot->changer, drive);
+		if (failed) {
+			st_job_add_record(self->connect, st_log_level_error, job, "failed to unload media: %s from drive: { %s, %s, #%td }", drive->slot->media->name, drive->vendor, drive->model, drive - drive->changer->drives);
+
+			if (has_lock_on_slot)
+				slot->lock->ops->unlock(slot->lock);
+			if (has_lock_on_drive)
+				drive->lock->ops->unlock(drive->lock);
+
+			return 0;
+		}
+	}
+
+	if (drive->slot->media == NULL) {
+		st_job_add_record(self->connect, st_log_level_info, job, "loading media: %s to drive: { %s, %s, #%td }", media->name, drive->vendor, drive->model, drive - drive->changer->drives);
+		int failed = slot->changer->ops->load_slot(slot->changer, slot, drive);
+
+		if (has_lock_on_slot) {
+			slot->lock->ops->unlock(slot->lock);
+			has_lock_on_slot = 0;
+			slot = NULL;
+		}
+
+		if (failed) {
+			st_job_add_record(self->connect, st_log_level_error, job, "failed to load media: %s from drive: { %s, %s, #%td }", media->name, drive->vendor, drive->model, drive - drive->changer->drives);
+
+			if (has_lock_on_drive)
+				drive->lock->ops->unlock(drive->lock);
+
+			return 0;
+		}
+	}
+
+	char buffer[512];
+	struct st_stream_reader * reader = drive->ops->get_reader(drive, 0);
+	ssize_t nb_read = reader->ops->read(reader, buffer, 512);
+	reader->ops->close(reader);
+	reader->ops->free(reader);
+
+	if (drive != NULL && has_lock_on_drive)
+		drive->lock->ops->unlock(drive->lock);
+
+	if (nb_read <= 0) {
+		st_job_add_record(self->connect, st_log_level_info, job, "no header found, re-enable job");
+
+		job->repetition = 1;
+		job->done = 0;
+		job->db_status = job->sched_status = st_job_status_idle;
+
+		return 0;
+	}
+
+	// M | STone (v0.1)
+	// M | Tape format: version=1
+	// O | Label: A0000002
+	// M | Tape id: uuid=f680dd48-dd3e-4715-8ddc-a90d3e708914
+	// M | Pool: name=Foo, uuid=07117f1a-2b13-11e1-8bcb-80ee73001df6
+	// M | Block size: 32768
+	// M | Checksum: crc32=1eb6931d
+	char stone_version[65];
+	int tape_format_version = 0;
+	int nb_parsed = 0;
+	if (sscanf(buffer, "STone (v%64[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
+		char uuid[37];
+		char name[65];
+		char pool_id[37];
+		char pool_name[65];
+		ssize_t block_size;
+		char checksum_name[12];
+		char checksum_value[64];
+
+		int nb_parsed2 = 0;
+		int ok = 1;
+
+		if (sscanf(buffer + nb_parsed, "Label: %36s\n%n", name, &nb_parsed2) == 1)
+			nb_parsed += nb_parsed2;
+
+		if (ok && sscanf(buffer + nb_parsed, "Tape id: uuid=%37s\n%n", uuid, &nb_parsed2) == 1)
+			nb_parsed += nb_parsed2;
+		else
+			ok = 0;
+
+		if (ok && sscanf(buffer + nb_parsed, "Pool: name=%65[^,], uuid=%36s\n%n", pool_name, pool_id, &nb_parsed2) == 2)
+			nb_parsed += nb_parsed2;
+		else
+			ok = 0;
+
+		if (ok && sscanf(buffer + nb_parsed, "Block size: %zd\n%n", &block_size, &nb_parsed2) == 1)
+			nb_parsed += nb_parsed2;
+		else
+			ok = 0;
+
+		if (ok)
+			ok = sscanf(buffer + nb_parsed, "Checksum: %11[^=]=%64s\n", checksum_name, checksum_value) == 2;
+
+		if (ok) {
+			char * digest = st_checksum_compute(checksum_name, buffer, nb_parsed);
+			ok = digest != NULL && !strcmp(checksum_value, digest);
+			free(digest);
+		}
+
+		// checking parsed value
+		if (ok && strcmp(uuid, media->uuid))
+			ok = 0;
+
+		if (ok && strcmp(pool_id, pool->uuid))
+			ok = 0;
+
+		if (ok) {
+			st_job_add_record(self->connect, st_log_level_info, job, "header found, disable job");
+
+			job->repetition = 0;
+			job->done = 0;
+			job->db_status = job->sched_status = st_job_status_idle;
+
+			return 1;
+		} else {
+			st_job_add_record(self->connect, st_log_level_info, job, "wrong header found, re-enable job");
+
+			job->repetition = 1;
+			job->done = 0;
+			job->db_status = job->sched_status = st_job_status_idle;
+
+			return 1;
+		}
+	} else {
+		st_job_add_record(self->connect, st_log_level_info, job, "media contains data but no header found, re-enable job");
+
+		job->repetition = 1;
+		job->done = 0;
+		job->db_status = job->sched_status = st_job_status_idle;
+
+		return 1;
+	}
 }
 
-static void st_job_format_tape_free(struct st_job * job __attribute__((unused))) {}
+static void st_job_format_tape_free(struct st_job * job) {
+	struct st_job_format_tape_private * self = job->data;
+	if (self != NULL) {
+		self->connect->ops->close(self->connect);
+		self->connect->ops->free(self->connect);
+	}
+	free(self);
+
+	job->data = NULL;
+}
 
 static void st_job_format_tape_init(void) {
 	st_job_register_driver(&st_job_format_tape_driver);
