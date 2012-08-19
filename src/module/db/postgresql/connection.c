@@ -22,13 +22,15 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 18 Aug 2012 15:42:11 +0200                         *
+*  Last modified: Sun, 19 Aug 2012 00:26:40 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
 // PQclear, PQexec, PQexecPrepared, PQfinish, PQresultStatus
 // PQsetErrorVerbosity, PQtransactionStatus
 #include <postgresql/libpq-fe.h>
+// va_end, va_start
+#include <stdarg.h>
 // asprintf
 #include <stdio.h>
 // free, malloc, realloc
@@ -104,10 +106,11 @@ static int st_db_postgresql_sync_drive(struct st_database_connection * connect, 
 static int st_db_postgresql_sync_media(struct st_database_connection * connect, struct st_media * media);
 static int st_db_postgresql_sync_slot(struct st_database_connection * connect, struct st_slot * slot);
 
-static int st_db_postgresql_get_media(struct st_database_connection * connect, struct st_media * media, const char * uuid, const char * medium_serial_number, const char * label);
+static struct st_media * st_db_postgresql_get_media(struct st_database_connection * connect, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label);
 static int st_db_postgresql_get_media_format(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, enum st_media_format_mode mode);
-static int st_db_postgresql_get_pool(struct st_database_connection * connect, struct st_pool * pool, const char * uuid);
+static struct st_pool * st_db_postgresql_get_pool(struct st_database_connection * connect, struct st_job * job, const char * uuid);
 
+static int st_db_postgresql_add_job_record(struct st_database_connection * connect, struct st_job * job, const char * message);
 static int st_db_postgresql_sync_job(struct st_database_connection * connect, struct st_job *** jobs, unsigned int * nb_jobs);
 
 static int st_db_postgresql_get_user(struct st_database_connection * connect, struct st_user * user, const char * login);
@@ -135,7 +138,8 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.get_media_format = st_db_postgresql_get_media_format,
 	.get_pool         = st_db_postgresql_get_pool,
 
-	.sync_job = st_db_postgresql_sync_job,
+	.add_job_record = st_db_postgresql_add_job_record,
+	.sync_job       = st_db_postgresql_sync_job,
 
 	.get_user  = st_db_postgresql_get_user,
 	.sync_user = st_db_postgresql_sync_user,
@@ -1248,22 +1252,34 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 }
 
 
-static int st_db_postgresql_get_media(struct st_database_connection * connect, struct st_media * media, const char * uuid, const char * medium_serial_number, const char * label) {
-	if (connect == NULL || media == NULL)
-		return 1;
+static struct st_media * st_db_postgresql_get_media(struct st_database_connection * connect, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label) {
+	if (connect == NULL || (job == NULL && uuid == NULL && medium_serial_number == NULL && label == NULL))
+		return NULL;
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 
 	const char * query;
 	PGresult * result;
 
-	if (uuid) {
+	if (job != NULL) {
+		query = "select_media_by_job";
+		st_db_postgresql_prepare(self, query, "SELECT t.uuid, label, mediumserialnumber, t.name, t.status, location, firstused, usebefore, loadcount, readcount, writecount, t.blocksize, endpos, nbfiles, densitycode, mode, p.uuid FROM tape t LEFT JOIN tapeformat tf ON t.tapeformat = tf.id LEFT JOIN pool p ON t.pool = p.id LEFT JOIN job j ON j.tape = t.id WHERE j.id = $1 LIMIT 1");
+
+		struct st_db_postgresql_job_data * job_data = job->db_data;
+		char * jobid;
+		asprintf(&jobid, "%ld", job_data->id);
+
+		const char * param[] = { jobid };
+		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+
+		free(jobid);
+	} else if (uuid != NULL) {
 		query = "select_media_by_uuid";
 		st_db_postgresql_prepare(self, query, "SELECT t.uuid, label, mediumserialnumber, t.name, status, location, firstused, usebefore, loadcount, readcount, writecount, t.blocksize, endpos, nbfiles, densitycode, mode, p.uuid FROM tape t LEFT JOIN tapeformat tf ON t.tapeformat = tf.id LEFT JOIN pool p ON t.pool = p.id WHERE uuid = $1 LIMIT 1");
 
 		const char * param[] = { uuid };
 		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
-	} else if (medium_serial_number) {
+	} else if (medium_serial_number != NULL) {
 		query = "select_media_by_medium_serial_number";
 		st_db_postgresql_prepare(self, query, "SELECT t.uuid, label, mediumserialnumber, t.name, status, location, firstused, usebefore, loadcount, readcount, writecount, t.blocksize, endpos, nbfiles, densitycode, mode, p.uuid FROM tape t LEFT JOIN tapeformat tf ON t.tapeformat = tf.id LEFT JOIN pool p ON t.pool = p.id WHERE mediumserialnumber = $1 LIMIT 1");
 
@@ -1277,10 +1293,14 @@ static int st_db_postgresql_get_media(struct st_database_connection * connect, s
 		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 	}
 
+	struct st_media * media = NULL;
 	ExecStatusType status = PQresultStatus(result);
 	if (status == PGRES_FATAL_ERROR)
 		st_db_postgresql_get_error(result, query);
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		media = malloc(sizeof(struct st_media));
+		bzero(media, sizeof(struct st_media));
+
 		st_db_postgresql_get_string(result, 0, 0, media->uuid, 37);
 		st_db_postgresql_get_string_dup(result, 0, 1, &media->label);
 		st_db_postgresql_get_string_dup(result, 0, 2, &media->medium_serial_number);
@@ -1311,13 +1331,10 @@ static int st_db_postgresql_get_media(struct st_database_connection * connect, s
 
 		if (!PQgetisnull(result, 0, 16))
 			media->pool = st_pool_get_by_uuid(PQgetvalue(result, 0, 16));
-
-		PQclear(result);
-		return 0;
 	}
 
 	PQclear(result);
-	return 1;
+	return NULL;
 }
 
 static int st_db_postgresql_get_media_format(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, enum st_media_format_mode mode) {
@@ -1364,22 +1381,43 @@ static int st_db_postgresql_get_media_format(struct st_database_connection * con
 	return 1;
 }
 
-static int st_db_postgresql_get_pool(struct st_database_connection * connect, struct st_pool * pool, const char * uuid) {
-	if (connect == NULL || pool == NULL)
-		return 1;
+static struct st_pool * st_db_postgresql_get_pool(struct st_database_connection * connect, struct st_job * job, const char * uuid) {
+	if (connect == NULL || (job == NULL && uuid == NULL))
+		return NULL;
 
 	struct st_db_postgresql_connection_private * self = connect->data;
+	const char * query;
+	PGresult * result;
 
-	const char * query = "select_pool_by_uuid";
-	st_db_postgresql_prepare(self, query, "SELECT uuid, p.name, growable, rewritable, densitycode, mode FROM pool p LEFT JOIN tapeformat tf ON p.tapeformat = tf.id WHERE uuid = $1 LIMIT 1");
+	if (job != NULL) {
+		query = "select_pool_by_job";
+		st_db_postgresql_prepare(self, query, "SELECT uuid, p.name, growable, rewritable, densitycode, mode FROM job j RIGHT JOIN pool p ON j.pool = p.id LEFT JOIN tapeformat tf ON p.tapeformat = tf.id WHERE j.id = $1 LIMIT 1");
 
-	const char * param[] = { uuid };
-	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+		struct st_db_postgresql_job_data * job_data = job->db_data;
+		char * jobid;
+		asprintf(&jobid, "%ld", job_data->id);
+
+		const char * param[] = { jobid };
+		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+
+		free(jobid);
+	} else {
+		query = "select_pool_by_uuid";
+		st_db_postgresql_prepare(self, query, "SELECT uuid, p.name, growable, rewritable, densitycode, mode FROM pool p LEFT JOIN tapeformat tf ON p.tapeformat = tf.id WHERE uuid = $1 LIMIT 1");
+
+		const char * param[] = { uuid };
+		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	}
+
 	ExecStatusType status = PQresultStatus(result);
 
+	struct st_pool * pool = NULL;
 	if (status == PGRES_FATAL_ERROR)
 		st_db_postgresql_get_error(result, query);
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		pool = malloc(sizeof(struct st_pool));
+		bzero(pool, sizeof(struct st_pool));
+
 		st_db_postgresql_get_string(result, 0, 0, pool->uuid, 37);
 		st_db_postgresql_get_string_dup(result, 0, 1, &pool->name);
 		st_db_postgresql_get_bool(result, 0, 2, &pool->growable);
@@ -1397,9 +1435,37 @@ static int st_db_postgresql_get_pool(struct st_database_connection * connect, st
 
 	PQclear(result);
 
-	return 1;
+	return pool;
 }
 
+
+static int st_db_postgresql_add_job_record(struct st_database_connection * connect, struct st_job * job, const char * message) {
+	if (connect == NULL || job == NULL || message == NULL)
+		return 1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	const char * query = "insert_job_record";
+	st_db_postgresql_prepare(self, query, "INSERT INTO jobrecord(job, status, numrun, message) VALUES ($1, $2, $3, $4)");
+
+	struct st_db_postgresql_job_data * job_data = job->db_data;
+
+	char * jobid = 0, * numrun = 0;
+	asprintf(&jobid, "%ld", job_data->id);
+	asprintf(&numrun, "%ld", job->num_runs);
+
+	const char * param[] = { jobid, st_job_status_to_string(job->sched_status), numrun, message };
+	PGresult * result = PQexecPrepared(self->connect, query, 4, param, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+
+	PQclear(result);
+	free(numrun);
+	free(jobid);
+
+	return status != PGRES_COMMAND_OK;
+}
 
 static int st_db_postgresql_sync_job(struct st_database_connection * connect, struct st_job *** jobs, unsigned int * nb_jobs) {
 	if (connect == NULL || jobs == NULL || nb_jobs == NULL)

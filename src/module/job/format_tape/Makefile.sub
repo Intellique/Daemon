@@ -1,0 +1,11 @@
+STONE_JOB_FORMATTAPE_SRC_DIR		:= src/module/job/format_tape
+
+STONE_JOB_FORMATTAPE_BIN			:= lib/libjob-format-tape.so
+STONE_JOB_FORMATTAPE_CFLAG			:= -pthread -fPIC -fvisibility=hidden
+STONE_JOB_FORMATTAPE_LD				:= -pthread -shared
+
+STONE_JOB_FORMATTAPE_DEPEND_LIB		:=
+
+STONE_JOB_FORMATTAPE_CHCKSUM_FILE	:= libjob-formattape.chcksum
+
+BIN_SYMS							+= STONE_JOB_FORMATTAPE

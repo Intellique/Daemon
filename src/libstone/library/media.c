@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 18 Aug 2012 18:17:30 +0200                         *
+*  Last modified: Sun, 19 Aug 2012 00:16:03 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -64,11 +64,11 @@ static struct st_pool ** st_pools = NULL;
 static unsigned int st_pool_nb_pools = 0;
 
 static void st_media_add(struct st_media * media);
-static int st_media_retrieve(struct st_media ** media, const char * uuid, const char * medium_serial_number, const char * label);
+static struct st_media * st_media_retrieve(struct st_database_connection * connection, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label);
 
 static int st_media_format_retrieve(struct st_media_format ** media_format, unsigned char density_code, enum st_media_format_mode mode);
 
-static int st_pool_retreive(struct st_pool ** pool, const char * uuid);
+static struct st_pool * st_pool_retreive(struct st_database_connection * connection, struct st_job * job, const char * uuid);
 
 
 static const struct st_media_format_data_type2 {
@@ -216,6 +216,37 @@ static void st_media_add(struct st_media * media) {
 	}
 }
 
+struct st_media * st_media_get_by_job(struct st_job * job, struct st_database_connection * connection) {
+	if (job == NULL)
+		return NULL;
+
+	pthread_mutex_lock(&st_media_lock);
+
+	struct st_media * media = st_media_retrieve(connection, job, NULL, NULL, NULL);
+
+	unsigned int i;
+	for (i = 0; i < st_media_nb_medias && media == NULL; i++)
+		if (!strcmp(media->medium_serial_number, st_medias[i]->medium_serial_number)) {
+			free(media->label);
+			free(media->medium_serial_number);
+			free(media->name);
+			free(media->db_data);
+			free(media);
+
+			media = st_medias[i];
+
+			pthread_mutex_unlock(&st_media_lock);
+			return media;
+		}
+
+	if (media != NULL)
+		st_media_add(media);
+
+	pthread_mutex_unlock(&st_media_lock);
+
+	return media;
+}
+
 struct st_media * st_media_get_by_label(const char * label) {
 	if (label == NULL)
 		return NULL;
@@ -228,8 +259,12 @@ struct st_media * st_media_get_by_label(const char * label) {
 		if (!strcasecmp(label, st_medias[i]->label))
 			media = st_medias[i];
 
-	if (media == NULL && st_media_retrieve(&media, NULL, NULL, label))
-		st_media_add(media);
+	if (media == NULL) {
+		media = st_media_retrieve(NULL, NULL, NULL, NULL, label);
+
+		if (media != NULL)
+			st_media_add(media);
+	}
 
 	pthread_mutex_unlock(&st_media_lock);
 
@@ -248,8 +283,12 @@ struct st_media * st_media_get_by_medium_serial_number(const char * medium_seria
 		if (!strcmp(medium_serial_number, st_medias[i]->medium_serial_number))
 			media = st_medias[i];
 
-	if (media == NULL && st_media_retrieve(&media, NULL, medium_serial_number, NULL))
-		st_media_add(media);
+	if (media == NULL) {
+		media = st_media_retrieve(NULL, NULL, NULL, medium_serial_number, NULL);
+
+		if (media != NULL)
+			st_media_add(media);
+	}
 
 	pthread_mutex_unlock(&st_media_lock);
 
@@ -268,8 +307,12 @@ struct st_media * st_media_get_by_uuid(const char * uuid) {
 		if (!strcmp(uuid, st_medias[i]->uuid))
 			media = st_medias[i];
 
-	if (!media && st_media_retrieve(&media, uuid, NULL, NULL))
-		st_media_add(media);
+	if (media == NULL) {
+		media = st_media_retrieve(NULL, NULL, uuid, NULL, NULL);
+
+		if (media != NULL)
+			st_media_add(media);
+	}
 
 	pthread_mutex_unlock(&st_media_lock);
 
@@ -372,36 +415,27 @@ int st_media_read_header(struct st_drive * drive) {
 	return 0;
 }
 
-static int st_media_retrieve(struct st_media ** media, const char * uuid, const char * medium_serial_number, const char * label) {
-	struct st_database * db = st_database_get_default_driver();
+static struct st_media * st_media_retrieve(struct st_database_connection * connection, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label) {
+	struct st_database * db = NULL;
 	struct st_database_config * config = NULL;
-	struct st_database_connection * connect = NULL;
 
+	if (connection == NULL)
+		db = st_database_get_default_driver();
 	if (db != NULL)
 		config = db->ops->get_default_config();
-
 	if (config != NULL)
-		connect = config->ops->connect(config);
+		connection = config->ops->connect(config);
 
-	if (connect != NULL) {
-		struct st_media media2;
-		bzero(&media2, sizeof(struct st_media));
+	struct st_media * media = NULL;
+	if (connection != NULL)
+		media = connection->ops->get_media(connection, job, uuid, medium_serial_number, label);
 
-		short ok = 0;
-		if (!connect->ops->get_media(connect, &media2, uuid, medium_serial_number, label)) {
-			if (!*media)
-				*media = malloc(sizeof(struct st_media));
-			memcpy(*media, &media2, sizeof(struct st_media));
-			ok = 1;
-		}
-
-		connect->ops->close(connect);
-		connect->ops->free(connect);
-
-		return ok;
+	if (db != NULL) {
+		connection->ops->close(connection);
+		connection->ops->free(connection);
 	}
 
-	return 0;
+	return media;
 }
 
 int st_media_write_header(struct st_drive * drive, struct st_pool * pool) {
@@ -545,19 +579,27 @@ static int st_media_format_retrieve(struct st_media_format ** media_format, unsi
 }
 
 
-struct st_pool * st_pool_get_by_uuid(const char * uuid) {
-	if (uuid == NULL)
+struct st_pool * st_pool_get_by_job(struct st_job * job, struct st_database_connection * connection) {
+	if (job == NULL)
 		return NULL;
 
 	pthread_mutex_lock(&st_pool_lock);
 
-	struct st_pool * pool = NULL;
+	struct st_pool * pool = st_pool_retreive(connection, job, NULL);
+
 	unsigned int i;
-	for (i = 0; i < st_pool_nb_pools && pool == NULL; i++)
-		if (!strcmp(uuid, st_pools[i]->uuid))
+	for (i = 0; i < st_pool_nb_pools; i++)
+		if (!strcmp(pool->uuid, st_pools[i]->uuid)) {
+			free(pool->name);
+			free(pool);
+
 			pool = st_pools[i];
 
-	if (pool == NULL && st_pool_retreive(&pool, uuid)) {
+			pthread_mutex_unlock(&st_pool_lock);
+			return pool;
+		}
+
+	if (pool != NULL) {
 		void * new_addr = realloc(st_pools, (st_pool_nb_pools + 1) * sizeof(struct st_pool *));
 		if (new_addr != NULL) {
 			st_pools = new_addr;
@@ -571,35 +613,56 @@ struct st_pool * st_pool_get_by_uuid(const char * uuid) {
 	return pool;
 }
 
-static int st_pool_retreive(struct st_pool ** pool, const char * uuid) {
-	struct st_database * db = st_database_get_default_driver();
-	struct st_database_config * config = NULL;
-	struct st_database_connection * connect = NULL;
+struct st_pool * st_pool_get_by_uuid(const char * uuid) {
+	if (uuid == NULL)
+		return NULL;
 
-	if (db != NULL)
-		config = db->ops->get_default_config();
+	pthread_mutex_lock(&st_pool_lock);
 
-	if (config != NULL)
-		connect = config->ops->connect(config);
+	struct st_pool * pool = NULL;
+	unsigned int i;
+	for (i = 0; i < st_pool_nb_pools && pool == NULL; i++)
+		if (!strcmp(uuid, st_pools[i]->uuid))
+			pool = st_pools[i];
 
-	if (connect != NULL) {
-		struct st_pool pool2;
-		bzero(&pool2, sizeof(struct st_pool));
+	if (pool == NULL) {
+		pool = st_pool_retreive(NULL, NULL, uuid);
 
-		short ok = 0;
-		if (!connect->ops->get_pool(connect, &pool2, uuid)) {
-			if (!*pool)
-				*pool = malloc(sizeof(struct st_pool));
-			memcpy(*pool, &pool2, sizeof(struct st_pool));
-			ok = 1;
+		if (pool != NULL) {
+			void * new_addr = realloc(st_pools, (st_pool_nb_pools + 1) * sizeof(struct st_pool *));
+			if (new_addr != NULL) {
+				st_pools = new_addr;
+				st_pools[st_pool_nb_pools] = pool;
+				st_pool_nb_pools++;
+			}
 		}
-
-		connect->ops->close(connect);
-		connect->ops->free(connect);
-
-		return ok;
 	}
 
-	return 0;
+	pthread_mutex_unlock(&st_pool_lock);
+
+	return pool;
+}
+
+static struct st_pool * st_pool_retreive(struct st_database_connection * connection, struct st_job * job, const char * uuid) {
+	struct st_database * db = NULL;
+	struct st_database_config * config = NULL;
+
+	if (connection == NULL)
+		db = st_database_get_default_driver();
+	if (db != NULL)
+		config = db->ops->get_default_config();
+	if (config != NULL)
+		connection = config->ops->connect(config);
+
+	struct st_pool * pool = NULL;
+	if (connection != NULL)
+		pool = connection->ops->get_pool(connection, job, uuid);
+
+	if (db != NULL) {
+		connection->ops->close(connection);
+		connection->ops->free(connection);
+	}
+
+	return pool;
 }
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 17 Aug 2012 00:33:11 +0200                         *
+*  Last modified: Sun, 19 Aug 2012 10:32:51 +0200                         *
 \*************************************************************************/
 
 // open
@@ -98,13 +98,8 @@ struct st_slot * st_changer_find_slot_by_media(struct st_media * media) {
 		for (j = 0; j < changer->nb_slots; j++) {
 			struct st_slot * slot = changer->slots + j;
 
-			if (slot->lock->ops->trylock(slot->lock))
-				continue;
-
 			if (media == slot->media)
 				return slot;
-
-			slot->lock->ops->unlock(slot->lock);
 		}
 	}
 

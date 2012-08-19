@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 18 Aug 2012 11:54:08 +0200                         *
+*  Last modified: Sun, 19 Aug 2012 12:46:40 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -35,6 +35,7 @@
 
 struct st_database_connection;
 struct st_job_driver;
+enum st_log_level;
 struct st_user;
 
 enum st_job_status {
@@ -57,7 +58,7 @@ struct st_job {
 	long num_runs;
 
 	float done;
-	enum st_job_status db_status;
+	volatile enum st_job_status db_status;
 	enum st_job_status sched_status;
 	time_t updated;
 
@@ -87,6 +88,7 @@ struct st_job_driver {
 
 #define STONE_JOB_API_LEVEL 1
 
+void st_job_add_record(struct st_database_connection * connect, enum st_log_level level, struct st_job * job, const char * message, ...) __attribute__ ((format (printf, 4, 5)));
 struct st_job_driver * st_job_get_driver(const char * driver);
 void st_job_register_driver(struct st_job_driver * driver);
 const char * st_job_status_to_string(enum st_job_status status);

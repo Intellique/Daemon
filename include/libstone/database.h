@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 12:57:41 +0200                         *
+*  Last modified: Sat, 18 Aug 2012 23:22:48 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -161,10 +161,11 @@ struct st_database_connection {
 		 */
 		int (*sync_drive)(struct st_database_connection * connect, struct st_drive * drive);
 
-		int (*get_media)(struct st_database_connection * connect, struct st_media * media, const char * uuid, const char * medium_serial_number, const char * label);
+		struct st_media * (*get_media)(struct st_database_connection * connect, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label);
 		int (*get_media_format)(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, enum st_media_format_mode mode);
-		int (*get_pool)(struct st_database_connection * connect, struct st_pool * pool, const char * uuid);
+		struct st_pool * (*get_pool)(struct st_database_connection * connect, struct st_job * job, const char * uuid);
 
+		int (*add_job_record)(struct st_database_connection * connect, struct st_job * job, const char * message);
 		int (*sync_job)(struct st_database_connection * connect, struct st_job *** jobs, unsigned int * nb_jobs);
 
 		int (*get_user)(struct st_database_connection * connect, struct st_user * user, const char * login);
@@ -173,7 +174,6 @@ struct st_database_connection {
 
 
 		/*
-		int (*add_job_record)(struct st_database_connection * db, struct st_job * job, const char * message);
 		int (*create_pool)(struct st_database_connection * db, struct st_pool * pool);
 		int (*get_nb_new_jobs)(struct st_database_connection * db, long * nb_new_jobs, time_t since, long last_max_jobs);
 		int (*get_new_jobs)(struct st_database_connection * db, struct st_job ** jobs, unsigned int nb_jobs, time_t since, long last_max_jobs);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 17 Aug 2012 23:32:31 +0200                         *
+*  Last modified: Sat, 18 Aug 2012 22:13:28 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -34,6 +34,8 @@
 // pthread_mutex_init, pthread_mutex_lock, pthread_mutex_unlock,
 // pthread_setcancelstate
 #include <pthread.h>
+// va_end, va_start
+#include <stdarg.h>
 // free, malloc, realloc
 #include <stdlib.h>
 // globfree
@@ -66,6 +68,19 @@ static const struct st_job_status2 {
 	{ "unknown", st_job_status_unknown },
 };
 
+
+void st_job_add_record(struct st_database_connection * connect, enum st_log_level level, struct st_job * job, const char * format, ...) {
+	char * message = NULL;
+
+	va_list va;
+	va_start(va, format);
+	vasprintf(&message, format, va);
+	va_end(va);
+
+	st_log_write_all2(level, st_log_type_job, job->user, message);
+
+	connect->ops->add_job_record(connect, job, message);
+}
 
 struct st_job_driver * st_job_get_driver(const char * driver) {
 	if (!driver) {
