@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 23:58:03 +0200                         *
+*  Last modified: Sun, 19 Aug 2012 14:34:42 +0200                         *
 \*************************************************************************/
 
 // PQresultErrorField
@@ -44,7 +44,7 @@ void st_db_postgresql_get_error(PGresult * result, const char * prepared_query) 
 		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: error => %s", error);
 
 	error = PQresultErrorField(result, PG_DIAG_MESSAGE_DETAIL);
-	if (error == NULL) {
+	if (error != NULL) {
 		error = strdup(error);
 		char * ptr;
 		char * line = strtok_r(error, "\n", &ptr);
@@ -56,7 +56,7 @@ void st_db_postgresql_get_error(PGresult * result, const char * prepared_query) 
 	}
 
 	error = PQresultErrorField(result, PG_DIAG_MESSAGE_HINT);
-	if (error == NULL) {
+	if (error != NULL) {
 		error = strdup(error);
 		char * ptr;
 		char * line = strtok_r(error, "\n", &ptr);
