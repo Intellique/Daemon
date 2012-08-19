@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 19 Aug 2012 13:44:27 +0200                         *
+*  Last modified: Sun, 19 Aug 2012 18:19:38 +0200                         *
 \*************************************************************************/
 
 // sscanf
@@ -193,19 +193,23 @@ int st_job_format_tape_run(struct st_job * job) {
 	job->sched_status = st_job_status_running;
 
 	if (job->db_status != st_job_status_stopped && drive->slot->media != NULL && drive->slot->media != media) {
-		st_job_add_record(self->connect, st_log_level_error, job, "unloading media: %s from drive: %s %s #%td", drive->slot->media->name, drive->vendor, drive->model, drive - drive->changer->drives);
+		st_job_add_record(self->connect, st_log_level_info, job, "unloading media: %s from drive: { %s, %s, #%td }", drive->slot->media->name, drive->vendor, drive->model, drive - drive->changer->drives);
 		int failed = slot->changer->ops->unload(slot->changer, drive);
-		if (failed)
-			st_job_add_record(self->connect, st_log_level_error, job, "failed to unload media: %s from drive: %s %s #%td", drive->slot->media->name, drive->vendor, drive->model, drive - drive->changer->drives);
+		if (failed) {
+			st_job_add_record(self->connect, st_log_level_error, job, "failed to unload media: %s from drive: { %s, %s, #%td }", drive->slot->media->name, drive->vendor, drive->model, drive - drive->changer->drives);
 
-		return 2;
+			if (has_lock_on_slot)
+				slot->lock->ops->unlock(slot->lock);
+			if (has_lock_on_drive)
+				drive->lock->ops->unlock(drive->lock);
+
+			return 2;
+		}
 	}
 
 	if (job->db_status != st_job_status_stopped && drive->slot->media == NULL) {
-		st_job_add_record(self->connect, st_log_level_error, job, "loading media: %s to drive: %s %s #%td", media->name, drive->vendor, drive->model, drive - drive->changer->drives);
+		st_job_add_record(self->connect, st_log_level_info, job, "loading media: %s to drive: { %s, %s, #%td }", media->name, drive->vendor, drive->model, drive - drive->changer->drives);
 		int failed = slot->changer->ops->load_slot(slot->changer, slot, drive);
-		if (failed)
-			st_job_add_record(self->connect, st_log_level_error, job, "failed to load media: %s from drive: %s %s #%td", media->name, drive->vendor, drive->model, drive - drive->changer->drives);
 
 		if (has_lock_on_slot) {
 			slot->lock->ops->unlock(slot->lock);
@@ -213,7 +217,14 @@ int st_job_format_tape_run(struct st_job * job) {
 			slot = NULL;
 		}
 
-		return 3;
+		if (failed) {
+			st_job_add_record(self->connect, st_log_level_error, job, "failed to load media: %s from drive: { %s, %s, #%td }", media->name, drive->vendor, drive->model, drive - drive->changer->drives);
+
+			if (has_lock_on_drive)
+				drive->lock->ops->unlock(drive->lock);
+
+			return 3;
+		}
 	}
 
 	if (job->db_status != st_job_status_stopped)

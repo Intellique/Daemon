@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 18 Aug 2012 12:39:32 +0200                         *
+*  Last modified: Sun, 19 Aug 2012 18:45:21 +0200                         *
 \*************************************************************************/
 
 // open
@@ -148,6 +148,8 @@ static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * fr
 		struct st_scsislot * sfrom = from->data;
 		struct st_scsislot * sto = to->slot->data;
 		sto->src_address = sfrom->address;
+
+		to->ops->update_media_info(to);
 	}
 
 	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "[%s | %s]: loading tape '%s' from slot #%td to drive #%td finished with code = %d", ch->vendor, ch->model, to->slot->volume_name, from - ch->slots, to - ch->drives, failed);

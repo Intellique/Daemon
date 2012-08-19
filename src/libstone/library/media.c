@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 19 Aug 2012 00:16:03 +0200                         *
+*  Last modified: Sun, 19 Aug 2012 18:05:34 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -121,6 +121,17 @@ static const struct st_media_status2 {
 	{ "unknown", st_media_status_unknown },
 };
 
+static const struct st_media_type2 {
+	char * name;
+	enum st_media_type type;
+} st_media_types[] = {
+	{ "cleaning",   st_media_type_cleanning },
+	{ "read only",  st_media_type_readonly },
+	{ "rewritable", st_media_type_rewritable },
+
+	{ "unknown", st_media_type_unknown },
+};
+
 
 const char * st_media_format_data_to_string(enum st_media_format_data_type type) {
 	unsigned int i;
@@ -156,6 +167,15 @@ const char * st_media_status_to_string(enum st_media_status status) {
 			return st_media_status[i].name;
 
 	return st_media_status[i].name;
+}
+
+const char * st_media_type_to_string(enum st_media_type type) {
+	unsigned int i;
+	for (i = 0; st_media_types[i].type != st_media_type_unknown; i++)
+		if (st_media_types[i].type == type)
+			return st_media_types[i].name;
+
+	return st_media_types[i].name;
 }
 
 enum st_media_location st_media_string_to_location(const char * location) {
@@ -206,6 +226,18 @@ enum st_media_format_mode st_media_string_to_format_mode(const char * mode) {
 	return st_media_format_modes[i].mode;
 }
 
+enum st_media_type st_media_string_to_type(const char * type) {
+	if (type == NULL)
+		return st_media_type_unknown;
+
+	unsigned int i;
+	for (i = 0; st_media_types[i].type != st_media_type_unknown; i++)
+		if (!strcasecmp(type, st_media_types[i].name))
+			return st_media_types[i].type;
+
+	return st_media_types[i].type;
+}
+
 
 static void st_media_add(struct st_media * media) {
 	void * new_addr = realloc(st_medias, (st_media_nb_medias + 1) * sizeof(struct st_media *));
@@ -225,7 +257,7 @@ struct st_media * st_media_get_by_job(struct st_job * job, struct st_database_co
 	struct st_media * media = st_media_retrieve(connection, job, NULL, NULL, NULL);
 
 	unsigned int i;
-	for (i = 0; i < st_media_nb_medias && media == NULL; i++)
+	for (i = 0; i < st_media_nb_medias && media != NULL; i++)
 		if (!strcmp(media->medium_serial_number, st_medias[i]->medium_serial_number)) {
 			free(media->label);
 			free(media->medium_serial_number);

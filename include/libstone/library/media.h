@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 19 Aug 2012 00:00:05 +0200                         *
+*  Last modified: Sun, 19 Aug 2012 17:19:25 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -59,9 +59,11 @@ enum st_media_status {
 };
 
 enum st_media_type {
+	st_media_type_cleanning,
 	st_media_type_readonly,
 	st_media_type_rewritable,
-	st_media_type_cleanning,
+
+	st_media_type_unknown,
 };
 
 enum st_media_format_data_type {
@@ -147,10 +149,12 @@ const char * st_media_format_data_to_string(enum st_media_format_data_type type)
 const char * st_media_format_mode_to_string(enum st_media_format_mode mode);
 const char * st_media_location_to_string(enum st_media_location location);
 const char * st_media_status_to_string(enum st_media_status status);
+const char * st_media_type_to_string(enum st_media_type type);
 enum st_media_location st_media_string_to_location(const char * location);
 enum st_media_status st_media_string_to_status(const char * status);
 enum st_media_format_data_type st_media_string_to_format_data(const char * type);
 enum st_media_format_mode st_media_string_to_format_mode(const char * mode);
+enum st_media_type st_media_string_to_type(const char * type);
 
 struct st_media * st_media_get_by_job(struct st_job * job, struct st_database_connection * connection);
 struct st_media * st_media_get_by_label(const char * label);
