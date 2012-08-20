@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 20 Aug 2012 21:08:58 +0200                         *
+*  Last modified: Mon, 20 Aug 2012 21:40:47 +0200                         *
 \*************************************************************************/
 
 // sscanf
@@ -201,13 +201,23 @@ static short st_job_format_tape_check(struct st_job * job) {
 		}
 	}
 
+	if (drive == NULL) {
+		st_job_add_record(self->connect, st_log_level_error, job, "Internal error, drive is not supposed to be NULL");
+
+		job->repetition = 0;
+		job->done = 0;
+		job->db_status = job->sched_status = st_job_status_error;
+
+		return 1;
+	}
+
 	char buffer[512];
 	struct st_stream_reader * reader = drive->ops->get_reader(drive, 0);
 	ssize_t nb_read = reader->ops->read(reader, buffer, 512);
 	reader->ops->close(reader);
 	reader->ops->free(reader);
 
-	if (drive != NULL && has_lock_on_drive)
+	if (has_lock_on_drive)
 		drive->lock->ops->unlock(drive->lock);
 
 	if (nb_read <= 0) {

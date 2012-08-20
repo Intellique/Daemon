@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 19 Aug 2012 18:05:34 +0200                         *
+*  Last modified: Mon, 20 Aug 2012 21:46:29 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -386,7 +386,7 @@ int st_media_read_header(struct st_drive * drive) {
 	char stone_version[65];
 	int tape_format_version = 0;
 	int nb_parsed = 0;
-	if (sscanf(buffer, "STone (v%64[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
+	if (sscanf(buffer, "STone (%64[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
 		char uuid[37];
 		char name[65];
 		char pool_id[37];
@@ -507,7 +507,12 @@ int st_media_write_header(struct st_drive * drive, struct st_pool * pool) {
 	 */
 	if (media->label != NULL) {
 		shdr2 = asprintf(&hdr2, "Label: %s\n", media->label);
-		hdr = realloc(hdr, shdr + shdr2 + 1);
+		void * new_addr = realloc(hdr, shdr + shdr2 + 1);
+		if (new_addr == NULL) {
+			free(hdr);
+			return 1;
+		}
+		hdr = new_addr;
 		strcpy(hdr + shdr, hdr2);
 		shdr += shdr2;
 		free(hdr2);
@@ -515,7 +520,12 @@ int st_media_write_header(struct st_drive * drive, struct st_pool * pool) {
 	}
 
 	shdr2 = asprintf(&hdr2, "Tape id: uuid=%s\nPool: name=%s, uuid=%s\nBlock size: %zd\n", media->uuid, pool->name, pool->uuid, media->block_size);
-	hdr = realloc(hdr, shdr + shdr2 + 1);
+	void * new_addr = realloc(hdr, shdr + shdr2 + 1);
+	if (new_addr == NULL) {
+		free(hdr);
+		return 1;
+	}
+	hdr = new_addr;
 	strcpy(hdr + shdr, hdr2);
 	shdr += shdr2;
 	free(hdr2);
@@ -530,7 +540,12 @@ int st_media_write_header(struct st_drive * drive, struct st_pool * pool) {
 	}
 
 	ssize_t sdigest = strlen(digest);
-	hdr = realloc(hdr, shdr + sdigest + 18);
+	new_addr = realloc(hdr, shdr + sdigest + 18);
+	if (new_addr == NULL) {
+		free(hdr);
+		return 1;
+	}
+	hdr = new_addr;
 	shdr += snprintf(hdr + shdr, sdigest + 18, "Checksum: crc32=%s\n", digest);
 
 	struct st_stream_writer * writer = drive->ops->get_writer(drive, 0);
