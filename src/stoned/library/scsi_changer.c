@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 20 Aug 2012 15:31:10 +0200                         *
+*  Last modified: Mon, 20 Aug 2012 21:21:59 +0200                         *
 \*************************************************************************/
 
 // open
@@ -145,8 +145,10 @@ static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * fr
 		from->full = 0;
 		to->slot->full = 1;
 
-		if (media != NULL)
+		if (media != NULL) {
 			media->location = st_media_location_indrive;
+			media->load_count++;
+		}
 
 		struct st_scsislot * sfrom = from->data;
 		struct st_scsislot * sto = to->slot->data;
