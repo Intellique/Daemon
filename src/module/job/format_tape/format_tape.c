@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 19 Aug 2012 20:03:46 +0200                         *
+*  Last modified: Mon, 20 Aug 2012 21:08:58 +0200                         *
 \*************************************************************************/
 
 // sscanf
@@ -230,7 +230,7 @@ static short st_job_format_tape_check(struct st_job * job) {
 	char stone_version[65];
 	int tape_format_version = 0;
 	int nb_parsed = 0;
-	if (sscanf(buffer, "STone (v%64[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
+	if (sscanf(buffer, "STone (%64[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
 		char uuid[37];
 		char name[65];
 		char pool_id[37];
