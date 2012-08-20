@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 19 Aug 2012 18:41:02 +0200                         *
+*  Last modified: Mon, 20 Aug 2012 09:26:01 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1095,10 +1095,6 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 
 	struct st_db_postgresql_changer_data * changer_data = slot->changer->db_data;
 
-	struct st_db_postgresql_drive_data * drive_data = NULL;
-	if (slot->drive != NULL)
-		drive_data = slot->drive->db_data;
-
 	struct st_db_postgresql_slot_data * slot_data = slot->db_data;
 	if (slot_data == NULL) {
 		slot->db_data = slot_data = malloc(sizeof(struct st_db_postgresql_slot_data));
@@ -1109,10 +1105,8 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 	if (slot->media != NULL)
 		media_data = slot->media->db_data;
 
-	char * changer_id = NULL, * drive_id = NULL, * media_id = NULL, * slot_id = NULL;
+	char * changer_id = NULL, * media_id = NULL, * slot_id = NULL;
 	asprintf(&changer_id, "%ld", changer_data->id);
-	if (drive_data != NULL)
-		asprintf(&drive_id, "%ld", drive_data->id);
 	if (slot_data->id >= 0)
 		asprintf(&slot_id, "%ld", slot_data->id);
 
@@ -1133,7 +1127,6 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 
 		if (status == PGRES_FATAL_ERROR) {
 			free(changer_id);
-			free(drive_id);
 			free(slot_id);
 			return 2;
 		}
@@ -1143,8 +1136,6 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 
 		char * slot_index = NULL;
 		asprintf(&slot_index, "%td", slot - slot->changer->slots);
-		if (drive_data)
-			asprintf(&drive_id, "%ld", drive_data->id);
 
 		const char * param[] = { slot_index, changer_id };
 		PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
@@ -1164,7 +1155,6 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 
 		if (status == PGRES_FATAL_ERROR) {
 			free(changer_id);
-			free(drive_id);
 			return 2;
 		}
 	}
@@ -1207,14 +1197,13 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 
 		PQclear(result);
 		free(changer_id);
-		free(drive_id);
 		free(slot_id);
 		free(media_id);
 
 		return status == PGRES_FATAL_ERROR;
 	} else {
 		const char * query = "insert_slot";
-		st_db_postgresql_prepare(self, query, "INSERT INTO changerslot(index, changer, drive, tape, type) VALUES ($1, $2, $3, $4, $5) RETURNING id");
+		st_db_postgresql_prepare(self, query, "INSERT INTO changerslot(index, changer, tape, type) VALUES ($1, $2, $3, $4) RETURNING id");
 
 		char * slot_index = NULL;
 		asprintf(&slot_index, "%td", slot - slot->changer->slots);
@@ -1233,8 +1222,8 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 				break;
 		}
 
-		const char * param[] = { slot_index, changer_id, drive_id, media_id, type };
-		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+		const char * param[] = { slot_index, changer_id, media_id, type };
+		PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -1244,7 +1233,6 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 
 		PQclear(result);
 		free(changer_id);
-		free(drive_id);
 		free(media_id);
 		free(slot_index);
 
