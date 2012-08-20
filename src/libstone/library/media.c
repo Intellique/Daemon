@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 20 Aug 2012 21:46:29 +0200                         *
+*  Last modified: Mon, 20 Aug 2012 22:43:47 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -359,7 +359,7 @@ int st_media_read_header(struct st_drive * drive) {
 	if (media == NULL)
 		return 1;
 
-	struct st_stream_reader * reader = drive->ops->get_reader(drive, 0);
+	struct st_stream_reader * reader = drive->ops->get_raw_reader(drive, 0);
 	if (reader == NULL) {
 		st_log_write_all(st_log_level_info, st_log_type_daemon, "[%s | %s | #%td]: failed to read media", drive->vendor, drive->model, drive - drive->changer->drives);
 		return 1;
@@ -548,7 +548,7 @@ int st_media_write_header(struct st_drive * drive, struct st_pool * pool) {
 	hdr = new_addr;
 	shdr += snprintf(hdr + shdr, sdigest + 18, "Checksum: crc32=%s\n", digest);
 
-	struct st_stream_writer * writer = drive->ops->get_writer(drive, 0);
+	struct st_stream_writer * writer = drive->ops->get_raw_writer(drive, 0);
 	ssize_t nb_write = writer->ops->write(writer, hdr, shdr);
 	int failed = writer->ops->close(writer);
 	writer->ops->free(writer);

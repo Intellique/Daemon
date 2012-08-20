@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 13 Aug 2012 13:11:39 +0200                         *
+*  Last modified: Mon, 20 Aug 2012 23:43:58 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_DRIVE_H__
@@ -35,8 +35,11 @@
 
 struct st_changer;
 struct st_database_connection;
+struct st_format_reader;
+struct st_format_writer;
 struct st_slot;
 struct st_stream_reader;
+struct st_stream_writer;
 
 enum st_drive_status {
 	st_drive_cleaning,
@@ -81,8 +84,10 @@ struct st_drive {
 	struct st_drive_ops {
 		int (*eject)(struct st_drive * drive);
 		int (*format)(struct st_drive * drive, int quick_mode);
-		struct st_stream_reader * (*get_reader)(struct st_drive * drive, int file_position);
-		struct st_stream_writer * (*get_writer)(struct st_drive * drive, int file_position);
+		struct st_stream_reader * (*get_raw_reader)(struct st_drive * drive, int file_position);
+		struct st_format_reader * (*get_reader)(struct st_drive * drive, int file_position);
+		struct st_stream_writer * (*get_raw_writer)(struct st_drive * drive, int file_position);
+		struct st_format_writer * (*get_writer)(struct st_drive * drive, int file_position);
 		int (*update_media_info)(struct st_drive * drive);
 	} * ops;
 	void * data;

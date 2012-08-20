@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 19 Aug 2012 23:30:35 +0200                         *
+*  Last modified: Mon, 20 Aug 2012 22:44:25 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -102,8 +102,8 @@ static void st_scsi_tape_drive_create_media(struct st_drive * drive);
 static int st_scsi_tape_drive_eject(struct st_drive * drive);
 static int st_scsi_tape_drive_format(struct st_drive * drive, int quick_mode);
 static ssize_t st_scsi_tape_drive_get_block_size(struct st_drive * drive);
-static struct st_stream_reader * st_scsi_tape_drive_get_reader(struct st_drive * drive, int file_position);
-static struct st_stream_writer * st_scsi_tape_drive_get_writer(struct st_drive * drive, int file_position);
+static struct st_stream_reader * st_scsi_tape_drive_get_raw_reader(struct st_drive * drive, int file_position);
+static struct st_stream_writer * st_scsi_tape_drive_get_raw_writer(struct st_drive * drive, int file_position);
 static void st_scsi_tape_drive_on_failed(struct st_drive * drive, int verbose, int sleep_time);
 static void st_scsi_tape_drive_operation_start(struct st_scsi_tape_drive_private * dr);
 static void st_scsi_tape_drive_operation_stop(struct st_drive * dr);
@@ -132,8 +132,8 @@ static ssize_t st_scsi_tape_drive_io_writer_write(struct st_stream_writer * io, 
 static struct st_drive_ops st_scsi_tape_drive_ops = {
 	.eject             = st_scsi_tape_drive_eject,
 	.format            = st_scsi_tape_drive_format,
-	.get_reader        = st_scsi_tape_drive_get_reader,
-	.get_writer        = st_scsi_tape_drive_get_writer,
+	.get_raw_reader    = st_scsi_tape_drive_get_raw_reader,
+	.get_raw_writer    = st_scsi_tape_drive_get_raw_writer,
 	.update_media_info = st_scsi_tape_drive_update_media_info,
 };
 
@@ -342,7 +342,7 @@ static ssize_t st_scsi_tape_drive_get_block_size(struct st_drive * drive) {
 	return -1;
 }
 
-static struct st_stream_reader * st_scsi_tape_drive_get_reader(struct st_drive * drive, int file_position) {
+static struct st_stream_reader * st_scsi_tape_drive_get_raw_reader(struct st_drive * drive, int file_position) {
 	if (drive == NULL || !drive->enabled)
 		return NULL;
 
@@ -361,7 +361,7 @@ static struct st_stream_reader * st_scsi_tape_drive_get_reader(struct st_drive *
 	return st_scsi_tape_drive_io_reader_new(drive);
 }
 
-static struct st_stream_writer * st_scsi_tape_drive_get_writer(struct st_drive * drive, int file_position) {
+static struct st_stream_writer * st_scsi_tape_drive_get_raw_writer(struct st_drive * drive, int file_position) {
 	if (drive == NULL || !drive->enabled)
 		return NULL;
 

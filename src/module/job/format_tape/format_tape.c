@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 20 Aug 2012 21:40:47 +0200                         *
+*  Last modified: Mon, 20 Aug 2012 22:42:20 +0200                         *
 \*************************************************************************/
 
 // sscanf
@@ -212,7 +212,7 @@ static short st_job_format_tape_check(struct st_job * job) {
 	}
 
 	char buffer[512];
-	struct st_stream_reader * reader = drive->ops->get_reader(drive, 0);
+	struct st_stream_reader * reader = drive->ops->get_raw_reader(drive, 0);
 	ssize_t nb_read = reader->ops->read(reader, buffer, 512);
 	reader->ops->close(reader);
 	reader->ops->free(reader);
