@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 20 Aug 2012 09:26:01 +0200                         *
+*  Last modified: Mon, 20 Aug 2012 10:15:35 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1178,11 +1178,11 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 
 			free(media_id);
 			media_id = NULL;
-
-			if (media_data != NULL && media_data->id > -1)
-				asprintf(&media_id, "%ld", media_data->id);
 		}
 	}
+
+	if (media_id == NULL && media_data != NULL && media_data->id > -1)
+		asprintf(&media_id, "%ld", media_data->id);
 
 	if (slot_data->id >= 0) {
 		const char * query = "update_slot";
