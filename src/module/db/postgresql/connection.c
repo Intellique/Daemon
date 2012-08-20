@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 20 Aug 2012 10:15:35 +0200                         *
+*  Last modified: Mon, 20 Aug 2012 20:24:14 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1048,6 +1048,9 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 
 		return status == PGRES_FATAL_ERROR;
 	} else {
+		if (mediaid == NULL)
+			asprintf(&mediaid, "%ld", media_data->id);
+
 		const char * query = "update_tape";
 		st_db_postgresql_prepare(self, query, "UPDATE tape SET uuid = $1, name = $2, status = $3, location = $4, loadcount = $5, readcount = $6, writecount = $7, endpos = $8, nbfiles = $9, blocksize = $10, pool = $11 WHERE id = $12");
 

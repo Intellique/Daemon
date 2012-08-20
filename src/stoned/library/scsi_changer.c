@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 19 Aug 2012 19:15:22 +0200                         *
+*  Last modified: Mon, 20 Aug 2012 15:31:10 +0200                         *
 \*************************************************************************/
 
 // open
@@ -138,12 +138,15 @@ static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * fr
 			from->media->load_count++;
 		}
 
-		to->slot->media = from->media;
+		struct st_media * media = to->slot->media = from->media;
 		from->media = NULL;
 		to->slot->volume_name = from->volume_name;
 		from->volume_name = NULL;
 		from->full = 0;
 		to->slot->full = 1;
+
+		if (media != NULL)
+			media->location = st_media_location_indrive;
 
 		struct st_scsislot * sfrom = from->data;
 		struct st_scsislot * sto = to->slot->data;
@@ -382,7 +385,7 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 	}
 
 	if (!failed) {
-		to->media = from->slot->media;
+		struct st_media * media = to->media = from->slot->media;
 		from->slot->media = NULL;
 		to->volume_name = from->slot->volume_name;
 		from->slot->volume_name = NULL;
@@ -390,8 +393,8 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 		to->full = 1;
 		slot_from->src_address = 0;
 
-		if (to->media)
-			to->media->location = st_media_location_online;
+		if (media != NULL)
+			media->location = st_media_location_online;
 	}
 
 	to->lock->ops->unlock(to->lock);
