@@ -36,7 +36,7 @@ struct st_database_connection;
 
 void st_scsi_tape_drive_setup(struct st_drive * drive);
 
-void st_fakechanger_setup(struct st_changer * changer);
+void st_standalone_drive_setup(struct st_changer * changer);
 void st_scsi_changer_setup(struct st_changer * changer);
 
 void st_changer_sync(struct st_database_connection * connection);

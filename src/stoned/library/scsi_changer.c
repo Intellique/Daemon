@@ -69,7 +69,7 @@ static struct st_changer_ops st_scsi_changer_ops = {
 
 
 static struct st_drive * st_scsi_changer_find_free_drive(struct st_changer * ch) {
-	if (ch == NULL)
+	if (ch == NULL || !ch->enabled)
 		return NULL;
 
 	unsigned int i;

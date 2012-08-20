@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 19 Aug 2012 10:32:51 +0200                         *
+*  Last modified: Mon, 20 Aug 2012 22:19:30 +0200                         *
 \*************************************************************************/
 
 // open
@@ -386,8 +386,8 @@ int st_changer_setup(void) {
 	for (i = 0; i < st_nb_real_changers; i++)
 		st_scsi_changer_setup(st_changers + i);
 
-	// for (i = st_nb_real_changers; i < st_nb_fake_changers + st_nb_real_changers; i++)
-	// 	st_fakechanger_setup(st_changers + i);
+	for (i = st_nb_real_changers; i < st_nb_fake_changers + st_nb_real_changers; i++)
+		st_standalone_drive_setup(st_changers + i);
 
 	return 0;
 }
