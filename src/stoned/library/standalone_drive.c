@@ -22,11 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 20 Aug 2012 21:21:59 +0200                         *
+*  Last modified: Tue, 21 Aug 2012 09:48:28 +0200                         *
 \*************************************************************************/
 
 // malloc
 #include <stdlib.h>
+// strdup
+#include <string.h>
 // bzero
 #include <strings.h>
 
@@ -74,6 +76,7 @@ static int st_standalone_drive_load_slot(struct st_changer * ch __attribute__((u
 void st_standalone_drive_setup(struct st_changer * changer) {
 	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: starting setup", changer->vendor, changer->model);
 
+	changer->device = strdup("");
 	changer->status = st_changer_idle;
 	changer->ops = &st_standalone_drive_ops;
 	changer->data = NULL;
@@ -83,14 +86,25 @@ void st_standalone_drive_setup(struct st_changer * changer) {
 	changer->nb_slots = 1;
 
 	slot->changer = changer;
-	slot->drive = changer->drives;
+	struct st_drive * drive = slot->drive = changer->drives;
 	slot->media = NULL;
+	drive->slot = slot;
 
 	slot->volume_name = NULL;
 	slot->full = 0;
 	slot->type = st_slot_type_drive;
 
 	st_scsi_tape_drive_setup(changer->drives);
+
+	changer->model = strdup(drive->model);
+	changer->vendor = strdup(drive->vendor);
+	changer->revision = strdup(drive->revision);
+	changer->serial_number = strdup(drive->serial_number);
+	changer->barcode = 0;
+
+	drive->ops->update_media_info(drive);
+
+	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: setup finish", changer->vendor, changer->model);
 }
 
 static int st_standalone_drive_unload(struct st_changer * ch, struct st_drive * from) {

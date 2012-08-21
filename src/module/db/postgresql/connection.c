@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 20 Aug 2012 20:24:14 +0200                         *
+*  Last modified: Tue, 21 Aug 2012 10:17:25 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -979,7 +979,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 	}
 
 	if (!poolid && media->pool != NULL) {
-		const char * query = "select_pool_id_by uuid";
+		const char * query = "select_pool_id_by_uuid";
 		st_db_postgresql_prepare(self, query, "SELECT id FROM pool WHERE uuid = $1 LIMIT 1");
 
 		const char * param[] = { media->pool->uuid };
@@ -1226,7 +1226,7 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 		}
 
 		const char * param[] = { slot_index, changer_id, media_id, type };
-		PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
