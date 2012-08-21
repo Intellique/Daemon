@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 21 Aug 2012 10:17:25 +0200                         *
+*  Last modified: Tue, 21 Aug 2012 19:17:37 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -710,6 +710,29 @@ static int st_db_postgresql_sync_drive(struct st_database_connection * connect, 
 			if (transStatus == PQTRANS_IDLE)
 				st_db_postgresql_cancel_transaction(connect);
 			return 3;
+		}
+	}
+
+	if (driveformatid != NULL) {
+		const char * query = "select_driveformat_by_id";
+		st_db_postgresql_prepare(self, query, "SELECT densitycode FROM driveformat WHERE id = $1 LIMIT 1");
+
+		const char * param[] = { driveformatid };
+		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		unsigned char density_code = 0;
+
+		if (status == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+			st_db_postgresql_get_uchar(result, 0, 0, &density_code);
+
+		PQclear(result);
+
+		if (drive->density_code > density_code) {
+			free(driveformatid);
+			driveformatid = NULL;
 		}
 	}
 
