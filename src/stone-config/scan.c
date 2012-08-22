@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 17 Aug 2012 00:18:50 +0200                         *
+*  Last modified: Wed, 22 Aug 2012 20:36:00 +0200                         *
 \*************************************************************************/
 
 // glob, globfree
@@ -53,7 +53,7 @@ int stcfg_scan(void) {
 	}
 
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
-	printf("Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+	printf("Library: Found %zd drive%s\n", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
 
 	struct st_drive * drives = calloc(gl.gl_pathc, sizeof(struct st_drive));
 	unsigned int nb_drives = gl.gl_pathc;
@@ -124,7 +124,7 @@ int stcfg_scan(void) {
 	unsigned int nb_real_changers = gl.gl_pathc;
 
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd changer%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
-	printf("Library: Found %zd changer%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+	printf("Library: Found %zd changer%s\n", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
 
 	for (i = 0; i < gl.gl_pathc; i++) {
 		char link[256];
@@ -221,30 +221,30 @@ int stcfg_scan(void) {
 	}
 
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %u stand-alone drive%s", nb_fake_changers, nb_fake_changers != 1 ? "s" : "");
-	printf("Library: Found %u stand-alone drive%s", nb_fake_changers, nb_fake_changers != 1 ? "s" : "");
+	printf("Library: Found %u stand-alone drive%s\n", nb_fake_changers, nb_fake_changers != 1 ? "s" : "");
 
 	if (drives)
 		free(drives);
 
 	struct st_database * db = st_database_get_default_driver();
-	if (!db) {
+	if (db == NULL) {
 		printf("Warning, there is no database driver loaded\n");
 		return 1;
 	}
 
 	struct st_database_config * config = db->ops->get_default_config();
-	if (!config) {
+	if (config == NULL) {
 		printf("Warning, there is no database configured\n");
 		return 1;
 	}
 
 	struct st_database_connection * connect = config->ops->connect(config);
-	if (connect) {
+	if (connect != NULL) {
 		printf("Synchronization with database\n");
 
 		int failed = 0;
-		//for (i = 0; i < nb_real_changers + nb_fake_changers; i++)
-		//	failed = connect->ops->sync_changer(connect, changers + i);
+		for (i = 0; i < nb_real_changers + nb_fake_changers; i++)
+			failed = connect->ops->sync_changer(connect, changers + i);
 
 		connect->ops->close(connect);
 		connect->ops->free(connect);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 20 Aug 2012 22:19:30 +0200                         *
+*  Last modified: Wed, 22 Aug 2012 20:43:15 +0200                         *
 \*************************************************************************/
 
 // open
@@ -275,12 +275,12 @@ int st_changer_setup(void) {
 		struct st_database_connection * connect = NULL;
 
 		db = st_database_get_default_driver();
-		if (db)
+		if (db != NULL)
 			config = db->ops->get_default_config();
-		if (config)
+		if (config != NULL)
 			connect = config->ops->connect(config);
 
-		for (i = 0; connect && i < st_nb_real_changers; i++) {
+		for (i = 0; connect != NULL && i < st_nb_real_changers; i++) {
 			if (st_changers[i].nb_drives > 0)
 				continue;
 
@@ -307,7 +307,7 @@ int st_changer_setup(void) {
 				nb_changer_without_drive--;
 		}
 
-		if (connect) {
+		if (connect != NULL) {
 			connect->ops->close(connect);
 			connect->ops->free(connect);
 		}
@@ -323,21 +323,19 @@ int st_changer_setup(void) {
 		struct st_database_connection * connect = NULL;
 
 		db = st_database_get_default_driver();
-		if (db)
+		if (db != NULL)
 			config = db->ops->get_default_config();
-		if (config)
+		if (config != NULL)
 			connect = config->ops->connect(config);
 
 		while (nb_changer_without_drive > 0) {
-			sleep(60);
-
 			for (i = 0; i < st_nb_real_changers; i++) {
 				if (st_changers[i].nb_drives > 0)
 					continue;
 
 				unsigned int j, linked = 0;
 				for (j = 0; j < nb_drives; j++) {
-					if (drives[j].changer)
+					if (drives[j].changer != NULL)
 						continue;
 
 					if (connect->ops->is_changer_contain_drive(connect, st_changers + i, drives + j)) {
@@ -354,6 +352,9 @@ int st_changer_setup(void) {
 				if (linked)
 					nb_changer_without_drive--;
 			}
+
+			if (nb_changer_without_drive > 0)
+				sleep(60);
 		}
 
 		if (connect) {
@@ -366,7 +367,7 @@ int st_changer_setup(void) {
 	for (i = st_nb_real_changers; i < nb_drives; i++) {
 		unsigned j;
 		for (j = 0; j < nb_drives; j++) {
-			if (!drives[j].changer) {
+			if (drives[j].changer != NULL) {
 				drives[j].changer = st_changers + i;
 
 				st_changers[i].drives = malloc(sizeof(struct st_drive));

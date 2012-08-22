@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 21 Aug 2012 19:17:37 +0200                         *
+*  Last modified: Wed, 22 Aug 2012 20:49:01 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -640,7 +640,10 @@ static int st_db_postgresql_sync_drive(struct st_database_connection * connect, 
 	else if (transStatus == PQTRANS_IDLE)
 		st_db_postgresql_start_transaction(connect);
 
-	struct st_db_postgresql_changer_data * changer_data = drive->changer->db_data;
+	struct st_db_postgresql_changer_data * changer_data = NULL;
+	if (drive->changer != NULL)
+		changer_data = drive->changer->db_data;
+
 	struct st_db_postgresql_drive_data * drive_data = drive->db_data;
 	if (drive_data == NULL) {
 		drive->db_data = drive_data = malloc(sizeof(struct st_db_postgresql_drive_data));
@@ -648,7 +651,8 @@ static int st_db_postgresql_sync_drive(struct st_database_connection * connect, 
 	}
 
 	char * changerid = NULL, * driveid = NULL, * driveformatid = NULL;
-	asprintf(&changerid, "%ld", changer_data->id);
+	if (changer_data != NULL)
+		asprintf(&changerid, "%ld", changer_data->id);
 
 	if (drive_data->id >= 0) {
 		asprintf(&driveid, "%ld", drive_data->id);
@@ -830,7 +834,7 @@ static int st_db_postgresql_sync_drive(struct st_database_connection * connect, 
 
 	st_db_postgresql_create_checkpoint(connect, "sync_drive_before_slot");
 
-	if (drive->slot && st_db_postgresql_sync_slot(connect, drive->slot))
+	if (drive->slot != NULL && st_db_postgresql_sync_slot(connect, drive->slot))
 		st_db_postgresql_cancel_checkpoint(connect, "sync_drive_before_slot");
 
 	if (transStatus == PQTRANS_IDLE)
