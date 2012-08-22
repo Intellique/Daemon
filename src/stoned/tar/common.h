@@ -22,13 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 19 Jan 2012 21:34:40 +0100                         *
+*  Last modified: Tue, 21 Aug 2012 20:41:12 +0200                         *
 \*************************************************************************/
 
-#ifndef __MTAR_TAR_P_H__
-#define __MTAR_TAR_P_H__
+#ifndef __STONE_TAR_H__
+#define __STONE_TAR_H__
 
-#include <stone/tar.h>
+#include <libstone/format.h>
 
 struct st_tar {
 	char filename[100];

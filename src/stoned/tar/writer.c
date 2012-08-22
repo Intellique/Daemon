@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 19 Jun 2012 19:09:12 +0200                         *
+*  Last modified: Wed, 22 Aug 2012 10:15:01 +0200                         *
 \*************************************************************************/
 
 #include <errno.h>
@@ -47,11 +47,12 @@
 // access, readlink, stat
 #include <unistd.h>
 
-#include <stone/io.h>
+#include <libstone/format.h>
+#include <libstone/io.h>
 
 #include "common.h"
 
-struct st_tar_private_out {
+struct st_tar_writer_private {
 	struct st_stream_writer * io;
 	off_t position;
 	ssize_t size;
@@ -62,82 +63,73 @@ struct st_tar_private_out {
 	ssize_t remain_size;
 };
 
-static enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * file, const char * filename);
-static enum st_tar_out_status st_tar_out_add_label(struct st_tar_out * f, const char * label);
-static enum st_tar_out_status st_tar_out_add_link(struct st_tar_out * f, const char * src, const char * target, struct st_tar_header * header);
-static int st_tar_out_close(struct st_tar_out * f);
-static void st_tar_out_compute_checksum(const void * header, char * checksum);
-static void st_tar_out_compute_link(struct st_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile);
-static void st_tar_out_compute_size(char * csize, ssize_t size);
-static void st_tar_out_copy(struct st_tar_header * h_to, struct st_tar * h_from, struct stat * sfile);
-static int st_tar_out_end_of_file(struct st_tar_out * f);
-static void st_tar_out_free(struct st_tar_out * f);
-static ssize_t st_tar_out_get_available_size(struct st_tar_out * f);
-static ssize_t st_tar_out_get_block_size(struct st_tar_out * f);
-static ssize_t st_tar_out_get_file_position(struct st_tar_out * f);
-static void st_tar_out_gid2name(char * name, ssize_t length, gid_t uid);
-static int st_tar_out_last_errno(struct st_tar_out * f);
-static void st_tar_out_new_volume(struct st_tar_out * f, struct st_stream_writer * writer);
-static ssize_t st_tar_out_position(struct st_tar_out * f);
-static int st_tar_out_restart_file(struct st_tar_out * f, const char * filename, ssize_t position);
-static const char * st_tar_out_skip_leading_slash(const char * str);
-static void st_tar_out_uid2name(char * name, ssize_t length, uid_t uid);
-static ssize_t st_tar_out_write(struct st_tar_out * f, const void * data, ssize_t length);
-static enum st_tar_out_status st_tar_out_write_header(struct st_tar_private_out * f, void * data, ssize_t length);
+static enum st_format_writer_status st_tar_writer_add_file(struct st_format_writer * sfw, const char * file);
+static enum st_format_writer_status st_tar_writer_add_label(struct st_format_writer * sfw, const char * label);
+static int st_tar_writer_close(struct st_format_writer * sfw);
+static void st_tar_writer_compute_checksum(const void * header, char * checksum);
+static void st_tar_writer_compute_link(struct st_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile);
+static void st_tar_writer_compute_size(char * csize, ssize_t size);
+// static void st_tar_writer_copy(struct st_tar_header * h_to, struct st_tar * h_from, struct stat * sfile);
+static void st_tar_writer_free(struct st_format_writer * sfw);
+static ssize_t st_tar_writer_get_available_size(struct st_format_writer * sfw);
+static ssize_t st_tar_writer_get_block_size(struct st_format_writer * f);
+static void st_tar_writer_gid2name(char * name, ssize_t length, gid_t uid);
+static int st_tar_writer_last_errno(struct st_format_writer * f);
+// static void st_tar_writer_new_volume(struct st_format_writer * f, struct st_stream_writer * writer);
+static ssize_t st_tar_writer_position(struct st_format_writer * f);
+static int st_tar_writer_restart_file(struct st_format_writer * f, const char * filename, ssize_t position);
+static const char * st_tar_writer_skip_leading_slash(const char * str);
+static void st_tar_writer_uid2name(char * name, ssize_t length, uid_t uid);
+static ssize_t st_tar_writer_write(struct st_format_writer * f, const void * data, ssize_t length);
+static enum st_format_writer_status st_tar_writer_write_header(struct st_tar_writer_private * f, void * data, ssize_t length);
 
-static struct st_tar_out_ops st_tar_out_ops = {
-	.add_file           = st_tar_out_add_file,
-	.add_label          = st_tar_out_add_label,
-	.add_link           = st_tar_out_add_link,
-	.close              = st_tar_out_close,
-	.end_of_file        = st_tar_out_end_of_file,
-	.get_available_size = st_tar_out_get_available_size,
-	.get_block_size     = st_tar_out_get_block_size,
-	.get_file_position  = st_tar_out_get_file_position,
-	.free               = st_tar_out_free,
-	.last_errno         = st_tar_out_last_errno,
-	.new_volume         = st_tar_out_new_volume,
-	.position           = st_tar_out_position,
-	.restart_file       = st_tar_out_restart_file,
-	.write              = st_tar_out_write,
+static struct st_format_writer_ops st_tar_writer_ops = {
+	.add_file           = st_tar_writer_add_file,
+	.add_label          = st_tar_writer_add_label,
+	.close              = st_tar_writer_close,
+	.get_available_size = st_tar_writer_get_available_size,
+	.get_block_size     = st_tar_writer_get_block_size,
+	.free               = st_tar_writer_free,
+	.last_errno         = st_tar_writer_last_errno,
+	.position           = st_tar_writer_position,
+	.restart_file       = st_tar_writer_restart_file,
+	.write              = st_tar_writer_write,
 };
 
 
-struct st_tar_out * st_tar_new_out(struct st_stream_writer * io) {
-	if (!io)
-		return 0;
+struct st_format_writer * st_tar_get_writer(struct st_stream_writer * writer) {
+	if (writer == NULL)
+		return NULL;
 
-	struct st_tar_private_out * data = malloc(sizeof(struct st_tar_private_out));
-	data->io = io;
+	struct st_tar_writer_private * data = malloc(sizeof(struct st_tar_writer_private));
+	data->io = writer;
 	data->position = 0;
 	data->size = 0;
 	data->last_errno = 0;
 	data->remain_header = 0;
 	data->remain_size = 0;
 
-	struct st_tar_out * self = malloc(sizeof(struct st_tar_out));
-	self->ops  = &st_tar_out_ops;
+	struct st_format_writer * self = malloc(sizeof(struct st_format_writer));
+	self->ops  = &st_tar_writer_ops;
 	self->data = data;
 
 	return self;
 }
 
-enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * file, const char * filename) {
+static enum st_format_writer_status st_tar_writer_add_file(struct st_format_writer * f, const char * file) {
 	struct stat sfile;
-	if (lstat(file, &sfile)) {
-		//mtar_verbose_printf("An unexpected error occured while getting information about: %s\n", filename);
-		return ST_TAR_OUT_ERROR;
-	}
+	if (lstat(file, &sfile))
+		return st_format_writer_error;
 
 	ssize_t block_size = 512;
 	struct st_tar * header = malloc(block_size);
 	struct st_tar * current_header = header;
 
-	const char * filename2 = st_tar_out_skip_leading_slash(filename);
+	const char * filename2 = st_tar_writer_skip_leading_slash(file);
 	int filename_length = strlen(filename2);
 	if (S_ISLNK(sfile.st_mode)) {
 		char link[257];
-		ssize_t link_length = readlink(filename, link, 256);
+		ssize_t link_length = readlink(file, link, 256);
 		link[link_length] = '\0';
 
 		if (filename_length > 100 && link_length > 100) {
@@ -145,8 +137,8 @@ enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * f
 			current_header = header = realloc(header, block_size);
 
 			bzero(current_header, block_size - 512);
-			st_tar_out_compute_link(current_header, (char *) (current_header + 1), link, link_length, 'K', &sfile);
-			st_tar_out_compute_link(current_header + 2, (char *) (current_header + 3), filename2, filename_length, 'L', &sfile);
+			st_tar_writer_compute_link(current_header, (char *) (current_header + 1), link, link_length, 'K', &sfile);
+			st_tar_writer_compute_link(current_header + 2, (char *) (current_header + 3), filename2, filename_length, 'L', &sfile);
 
 			current_header += 4;
 		} else if (filename_length > 100) {
@@ -154,7 +146,7 @@ enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * f
 			current_header = header = realloc(header, block_size);
 
 			bzero(current_header, block_size - 512);
-			st_tar_out_compute_link(current_header, (char *) (current_header + 1), filename2, filename_length, 'L', &sfile);
+			st_tar_writer_compute_link(current_header, (char *) (current_header + 1), filename2, filename_length, 'L', &sfile);
 
 			current_header += 2;
 		} else if (link_length > 100) {
@@ -162,7 +154,7 @@ enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * f
 			current_header = header = realloc(header, block_size);
 
 			bzero(current_header, block_size - 512);
-			st_tar_out_compute_link(current_header, (char *) (current_header + 1), link, link_length, 'K', &sfile);
+			st_tar_writer_compute_link(current_header, (char *) (current_header + 1), link, link_length, 'K', &sfile);
 
 			current_header += 2;
 		}
@@ -171,12 +163,12 @@ enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * f
 		current_header = header = realloc(header, block_size);
 
 		bzero(current_header, 1024);
-		st_tar_out_compute_link(current_header, (char *) (current_header + 1), filename2, filename_length, 'L', &sfile);
+		st_tar_writer_compute_link(current_header, (char *) (current_header + 1), filename2, filename_length, 'L', &sfile);
 
 		current_header += 2;
 	}
 
-	struct st_tar_private_out * format = f->data;
+	struct st_tar_writer_private * format = f->data;
 	bzero(current_header, 512);
 	strncpy(current_header->filename, filename2, 100);
 	snprintf(current_header->filemode, 8, "%07o", sfile.st_mode & 0777);
@@ -185,12 +177,12 @@ enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * f
 	snprintf(current_header->mtime, 12, "%0*o", 11, (unsigned int) sfile.st_mtime);
 
 	if (S_ISREG(sfile.st_mode)) {
-		st_tar_out_compute_size(current_header->size, sfile.st_size);
+		st_tar_writer_compute_size(current_header->size, sfile.st_size);
 		current_header->flag = '0';
 		format->size = sfile.st_size;
 	} else if (S_ISLNK(sfile.st_mode)) {
 		current_header->flag = '2';
-		readlink(filename, current_header->linkname, 100);
+		readlink(file, current_header->linkname, 100);
 		format->size = 0;
 	} else if (S_ISCHR(sfile.st_mode)) {
 		current_header->flag = '3';
@@ -211,21 +203,19 @@ enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * f
 	}
 
 	strcpy(current_header->magic, "ustar  ");
-	st_tar_out_uid2name(current_header->uname, 32, sfile.st_uid);
-	st_tar_out_gid2name(current_header->gname, 32, sfile.st_gid);
+	st_tar_writer_uid2name(current_header->uname, 32, sfile.st_uid);
+	st_tar_writer_gid2name(current_header->gname, 32, sfile.st_gid);
 
-	st_tar_out_compute_checksum(current_header, current_header->checksum);
+	st_tar_writer_compute_checksum(current_header, current_header->checksum);
 
 	format->position = 0;
 
-	return st_tar_out_write_header(format, header, block_size);
+	return st_tar_writer_write_header(format, header, block_size);
 }
 
-enum st_tar_out_status st_tar_out_add_label(struct st_tar_out * f, const char * label) {
-	if (!label) {
-		//mtar_verbose_printf("Label should be defined\n");
-		return ST_TAR_OUT_ERROR;
-	}
+static enum st_format_writer_status st_tar_writer_add_label(struct st_format_writer * f, const char * label) {
+	if (label == NULL)
+		return st_format_writer_error;
 
 	struct st_tar * header = malloc(512);
 	bzero(header, 512);
@@ -233,56 +223,21 @@ enum st_tar_out_status st_tar_out_add_label(struct st_tar_out * f, const char * 
 	snprintf(header->mtime, 12, "%0*o", 11, (unsigned int) time(0));
 	header->flag = 'V';
 
-	st_tar_out_compute_checksum(header, header->checksum);
+	st_tar_writer_compute_checksum(header, header->checksum);
 
-	struct st_tar_private_out * format = f->data;
+	struct st_tar_writer_private * format = f->data;
 	format->position = 0;
 	format->size = 0;
 
-	return st_tar_out_write_header(format, header, 512);
+	return st_tar_writer_write_header(format, header, 512);
 }
 
-enum st_tar_out_status st_tar_out_add_link(struct st_tar_out * f, const char * src, const char * target, struct st_tar_header * h_out) {
-	struct stat sfile;
-	if (stat(src, &sfile)) {
-		//mtar_verbose_printf("An unexpected error occured while getting information about: %s\n", src);
-		return ST_TAR_OUT_ERROR;
-	}
-
-	ssize_t block_size = 512;
-	struct st_tar * header = malloc(block_size);
-	struct st_tar * current_header = header;
-
-	struct st_tar_private_out * format = f->data;
-	bzero(current_header, 512);
-	strncpy(current_header->filename, src, 100);
-	snprintf(current_header->filemode, 8, "%07o", sfile.st_mode & 0777);
-	snprintf(header->uid, 8, "%07o", sfile.st_uid);
-	snprintf(header->gid, 8, "%07o", sfile.st_gid);
-	snprintf(current_header->mtime, 12, "%0*o", 11, (unsigned int) sfile.st_mtime);
-	current_header->flag = '1';
-	strncpy(current_header->linkname, target, 100);
-	strcpy(current_header->magic, "ustar  ");
-	st_tar_out_uid2name(header->uname, 32, sfile.st_uid);
-	st_tar_out_gid2name(header->gname, 32, sfile.st_gid);
-
-	st_tar_out_compute_checksum(current_header, current_header->checksum);
-
-	st_tar_out_copy(h_out, header, &sfile);
-	h_out->size = 0;
-
-	format->position = 0;
-	format->size = 0;
-
-	return st_tar_out_write_header(format, header, block_size);
-}
-
-int st_tar_out_close(struct st_tar_out * f) {
-	struct st_tar_private_out * format = f->data;
+static int st_tar_writer_close(struct st_format_writer * f) {
+	struct st_tar_writer_private * format = f->data;
 	return format->io->ops->close(format->io);
 }
 
-void st_tar_out_copy(struct st_tar_header * h_to, struct st_tar * h_from, struct stat * sfile) {
+/*static void st_tar_writer_copy(struct st_tar_header * h_to, struct st_tar * h_from, struct stat * sfile) {
 	st_tar_init_header(h_to);
 
 	h_to->dev = sfile->st_rdev;
@@ -297,9 +252,9 @@ void st_tar_out_copy(struct st_tar_header * h_to, struct st_tar * h_from, struct
 	h_to->gid = sfile->st_gid;
 	strcpy(h_to->gname, h_from->gname);
 	h_to->is_label = (h_from->flag == 'V');
-}
+}*/
 
-void st_tar_out_compute_checksum(const void * header, char * checksum) {
+static void st_tar_writer_compute_checksum(const void * header, char * checksum) {
 	const unsigned char * ptr = header;
 
 	memset(checksum, ' ', 8);
@@ -311,24 +266,24 @@ void st_tar_out_compute_checksum(const void * header, char * checksum) {
 	snprintf(checksum, 7, "%06o", sum);
 }
 
-void st_tar_out_compute_link(struct st_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile) {
+static void st_tar_writer_compute_link(struct st_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile) {
 	strcpy(header->filename, "././@LongLink");
 	memset(header->filemode, '0', 7);
 	memset(header->uid, '0', 7);
 	memset(header->gid, '0', 7);
-	st_tar_out_compute_size(header->size, filename_length);
+	st_tar_writer_compute_size(header->size, filename_length);
 	memset(header->mtime, '0', 11);
 	header->flag = flag;
 	strcpy(header->magic, "ustar  ");
-	st_tar_out_uid2name(header->uname, 32, sfile->st_uid);
-	st_tar_out_gid2name(header->gname, 32, sfile->st_gid);
+	st_tar_writer_uid2name(header->uname, 32, sfile->st_uid);
+	st_tar_writer_gid2name(header->gname, 32, sfile->st_gid);
 
-	st_tar_out_compute_checksum(header, header->checksum);
+	st_tar_writer_compute_checksum(header, header->checksum);
 
 	strcpy(link, filename);
 }
 
-void st_tar_out_compute_size(char * csize, ssize_t size) {
+static void st_tar_writer_compute_size(char * csize, ssize_t size) {
 	if (size > 077777777777) {
 		*csize = (char) 0x80;
 		unsigned int i;
@@ -341,40 +296,18 @@ void st_tar_out_compute_size(char * csize, ssize_t size) {
 	}
 }
 
-int st_tar_out_end_of_file(struct st_tar_out * f) {
-	struct st_tar_private_out * format = f->data;
-
-	unsigned short mod = format->position % 512;
-	if (mod > 0) {
-		char * buffer = malloc(512);
-		bzero(buffer, 512 - mod);
-
-		ssize_t nb_write = format->io->ops->write(format->io, buffer, 512 - mod);
-		free(buffer);
-		if (nb_write < 0)
-			return -1;
-	}
-
-	return 0;
-}
-
-ssize_t st_tar_out_get_available_size(struct st_tar_out * f) {
-	struct st_tar_private_out * format = f->data;
+static ssize_t st_tar_writer_get_available_size(struct st_format_writer * f) {
+	struct st_tar_writer_private * format = f->data;
 	return format->io->ops->get_available_size(format->io);
 }
 
-ssize_t st_tar_out_get_block_size(struct st_tar_out * f) {
-	struct st_tar_private_out * format = f->data;
+static ssize_t st_tar_writer_get_block_size(struct st_format_writer * f) {
+	struct st_tar_writer_private * format = f->data;
 	return format->io->ops->get_block_size(format->io);
 }
 
-ssize_t st_tar_out_get_file_position(struct st_tar_out * f) {
-	struct st_tar_private_out * format = f->data;
-	return format->position;
-}
-
-void st_tar_out_free(struct st_tar_out * f) {
-	struct st_tar_private_out * self = f->data;
+static void st_tar_writer_free(struct st_format_writer * f) {
+	struct st_tar_writer_private * self = f->data;
 
 	if (self->io) {
 		self->io->ops->close(self->io);
@@ -385,7 +318,7 @@ void st_tar_out_free(struct st_tar_out * f) {
 	free(f);
 }
 
-void st_tar_out_gid2name(char * name, ssize_t length, gid_t uid) {
+static void st_tar_writer_gid2name(char * name, ssize_t length, gid_t uid) {
 	char * buffer = malloc(512);
 
 	struct group gr;
@@ -401,35 +334,19 @@ void st_tar_out_gid2name(char * name, ssize_t length, gid_t uid) {
 	free(buffer);
 }
 
-int st_tar_out_last_errno(struct st_tar_out * f) {
-	struct st_tar_private_out * format = f->data;
+static int st_tar_writer_last_errno(struct st_format_writer * f) {
+	struct st_tar_writer_private * format = f->data;
 	if (format->last_errno)
 		return format->last_errno;
 	return format->io->ops->last_errno(format->io);
 }
 
-void st_tar_out_new_volume(struct st_tar_out * f, struct st_stream_writer * writer) {
-	struct st_tar_private_out * format = f->data;
-
-	if (format->io)
-		format->io->ops->free(format->io);
-	format->io = writer;
-
-	if (format->remain_size > 0) {
-		writer->ops->write(writer, format->remain_header, format->remain_size);
-
-		free(format->remain_header);
-		format->remain_header = 0;
-		format->remain_size = 0;
-	}
-}
-
-ssize_t st_tar_out_position(struct st_tar_out * f) {
-	struct st_tar_private_out * format = f->data;
+static ssize_t st_tar_writer_position(struct st_format_writer * f) {
+	struct st_tar_writer_private * format = f->data;
 	return format->io->ops->position(format->io);
 }
 
-int st_tar_out_restart_file(struct st_tar_out * f, const char * filename, ssize_t position) {
+static int st_tar_writer_restart_file(struct st_format_writer * f, const char * filename, ssize_t position) {
 	struct stat sfile;
 	if (lstat(filename, &sfile)) {
 		//mtar_verbose_printf("An unexpected error occured while getting information about: %s\n", filename);
@@ -451,8 +368,8 @@ int st_tar_out_restart_file(struct st_tar_out * f, const char * filename, ssize_
 			current_header = header = realloc(header, block_size);
 
 			bzero(current_header, block_size - 512);
-			st_tar_out_compute_link(current_header, (char *) (current_header + 1), filename, filename_length, 'K', &sfile);
-			st_tar_out_compute_link(current_header + 2, (char *) (current_header + 3), link, link_length, 'L', &sfile);
+			st_tar_writer_compute_link(current_header, (char *) (current_header + 1), filename, filename_length, 'K', &sfile);
+			st_tar_writer_compute_link(current_header + 2, (char *) (current_header + 3), link, link_length, 'L', &sfile);
 
 			current_header += 4;
 		} else if (filename_length > 100) {
@@ -460,7 +377,7 @@ int st_tar_out_restart_file(struct st_tar_out * f, const char * filename, ssize_
 			current_header = header = realloc(header, block_size);
 
 			bzero(current_header, block_size - 512);
-			st_tar_out_compute_link(current_header, (char *) (current_header + 1), filename, filename_length, 'L', &sfile);
+			st_tar_writer_compute_link(current_header, (char *) (current_header + 1), filename, filename_length, 'L', &sfile);
 
 			current_header += 2;
 		} else if (link_length > 100) {
@@ -468,7 +385,7 @@ int st_tar_out_restart_file(struct st_tar_out * f, const char * filename, ssize_
 			current_header = header = realloc(header, block_size);
 
 			bzero(current_header, block_size - 512);
-			st_tar_out_compute_link(current_header, (char *) (current_header + 1), link, link_length, 'L', &sfile);
+			st_tar_writer_compute_link(current_header, (char *) (current_header + 1), link, link_length, 'L', &sfile);
 
 			current_header += 2;
 		}
@@ -477,21 +394,21 @@ int st_tar_out_restart_file(struct st_tar_out * f, const char * filename, ssize_
 		current_header = header = realloc(header, block_size);
 
 		bzero(current_header, 1024);
-		st_tar_out_compute_link(current_header, (char *) (current_header + 1), filename, filename_length, 'L', &sfile);
+		st_tar_writer_compute_link(current_header, (char *) (current_header + 1), filename, filename_length, 'L', &sfile);
 
 		current_header += 2;
 	}
 
-	struct st_tar_private_out * format = f->data;
+	struct st_tar_writer_private * format = f->data;
 	bzero(current_header, 512);
-	strncpy(current_header->filename, st_tar_out_skip_leading_slash(filename), 100);
-	st_tar_out_compute_size(current_header->size, sfile.st_size - position);
+	strncpy(current_header->filename, st_tar_writer_skip_leading_slash(filename), 100);
+	st_tar_writer_compute_size(current_header->size, sfile.st_size - position);
 	current_header->flag = 'M';
-	st_tar_out_uid2name(header->uname, 32, sfile.st_uid);
-	st_tar_out_gid2name(header->gname, 32, sfile.st_gid);
-	st_tar_out_compute_size(current_header->position, position);
+	st_tar_writer_uid2name(header->uname, 32, sfile.st_uid);
+	st_tar_writer_gid2name(header->gname, 32, sfile.st_gid);
+	st_tar_writer_compute_size(current_header->position, position);
 
-	st_tar_out_compute_checksum(current_header, current_header->checksum);
+	st_tar_writer_compute_checksum(current_header, current_header->checksum);
 
 	format->position = 0;
 	format->size = position;
@@ -508,7 +425,7 @@ int st_tar_out_restart_file(struct st_tar_out * f, const char * filename, ssize_
 	return block_size != nbWrite ? -1 : 0;
 }
 
-const char * st_tar_out_skip_leading_slash(const char * str) {
+static const char * st_tar_writer_skip_leading_slash(const char * str) {
 	if (!str)
 		return 0;
 
@@ -519,7 +436,7 @@ const char * st_tar_out_skip_leading_slash(const char * str) {
 	return ptr;
 }
 
-void st_tar_out_uid2name(char * name, ssize_t length, uid_t uid) {
+static void st_tar_writer_uid2name(char * name, ssize_t length, uid_t uid) {
 	char * buffer = malloc(512);
 
 	struct passwd pw;
@@ -535,8 +452,8 @@ void st_tar_out_uid2name(char * name, ssize_t length, uid_t uid) {
 	free(buffer);
 }
 
-ssize_t st_tar_out_write(struct st_tar_out * f, const void * data, ssize_t length) {
-	struct st_tar_private_out * format = f->data;
+static ssize_t st_tar_writer_write(struct st_format_writer * f, const void * data, ssize_t length) {
+	struct st_tar_writer_private * format = f->data;
 
 	if (format->position >= format->size)
 		return 0;
@@ -552,7 +469,7 @@ ssize_t st_tar_out_write(struct st_tar_out * f, const void * data, ssize_t lengt
 	return nb_write;
 }
 
-enum st_tar_out_status st_tar_out_write_header(struct st_tar_private_out * f, void * data, ssize_t length) {
+enum st_format_writer_status st_tar_writer_write_header(struct st_tar_writer_private * f, void * data, ssize_t length) {
 	ssize_t available = f->io->ops->get_available_size(f->io);
 
 	ssize_t nb_write = 0;
@@ -565,7 +482,7 @@ enum st_tar_out_status st_tar_out_write_header(struct st_tar_private_out * f, vo
 		last_errno = f->io->ops->last_errno(f->io);
 
 		if (last_errno != ENOSPC)
-			return ST_TAR_OUT_ERROR;
+			return st_format_writer_error;
 
 		nb_write = 0;
 	}
@@ -576,7 +493,7 @@ enum st_tar_out_status st_tar_out_write_header(struct st_tar_private_out * f, vo
 
 		f->io->ops->close(f->io);
 
-		return ST_TAR_OUT_END_OF_TAPE;
+		return st_format_writer_end_of_volume;
 	} else if (length > nb_write) {
 		f->remain_size = length - nb_write;
 		f->remain_header = malloc(f->remain_size);
@@ -585,11 +502,11 @@ enum st_tar_out_status st_tar_out_write_header(struct st_tar_private_out * f, vo
 
 		f->io->ops->close(f->io);
 
-		return ST_TAR_OUT_END_OF_TAPE;
+		return st_format_writer_end_of_volume;
 	}
 
 	free(data);
 
-	return ST_TAR_OUT_OK;
+	return st_format_writer_ok;
 }
 

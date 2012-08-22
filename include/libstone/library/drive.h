@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 20 Aug 2012 23:43:58 +0200                         *
+*  Last modified: Tue, 21 Aug 2012 20:29:08 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_DRIVE_H__
@@ -85,8 +85,8 @@ struct st_drive {
 		int (*eject)(struct st_drive * drive);
 		int (*format)(struct st_drive * drive, int quick_mode);
 		struct st_stream_reader * (*get_raw_reader)(struct st_drive * drive, int file_position);
-		struct st_format_reader * (*get_reader)(struct st_drive * drive, int file_position);
 		struct st_stream_writer * (*get_raw_writer)(struct st_drive * drive, int file_position);
+		struct st_format_reader * (*get_reader)(struct st_drive * drive, int file_position);
 		struct st_format_writer * (*get_writer)(struct st_drive * drive, int file_position);
 		int (*update_media_info)(struct st_drive * drive);
 	} * ops;

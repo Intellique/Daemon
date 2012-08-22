@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 21 Aug 2012 10:02:54 +0200                         *
+*  Last modified: Wed, 22 Aug 2012 10:16:46 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -50,6 +50,7 @@
 // close, read, sleep
 #include <unistd.h>
 
+#include <libstone/format.h>
 #include <libstone/io.h>
 #include <libstone/library/drive.h>
 #include <libstone/library/media.h>
@@ -104,6 +105,8 @@ static int st_scsi_tape_drive_format(struct st_drive * drive, int quick_mode);
 static ssize_t st_scsi_tape_drive_get_block_size(struct st_drive * drive);
 static struct st_stream_reader * st_scsi_tape_drive_get_raw_reader(struct st_drive * drive, int file_position);
 static struct st_stream_writer * st_scsi_tape_drive_get_raw_writer(struct st_drive * drive, int file_position);
+static struct st_format_reader * st_scsi_tape_drive_get_reader(struct st_drive * drive, int file_position);
+static struct st_format_writer * st_scsi_tape_drive_get_writer(struct st_drive * drive, int file_position);
 static void st_scsi_tape_drive_on_failed(struct st_drive * drive, int verbose, int sleep_time);
 static void st_scsi_tape_drive_operation_start(struct st_scsi_tape_drive_private * dr);
 static void st_scsi_tape_drive_operation_stop(struct st_drive * dr);
@@ -134,6 +137,8 @@ static struct st_drive_ops st_scsi_tape_drive_ops = {
 	.format            = st_scsi_tape_drive_format,
 	.get_raw_reader    = st_scsi_tape_drive_get_raw_reader,
 	.get_raw_writer    = st_scsi_tape_drive_get_raw_writer,
+	.get_reader        = st_scsi_tape_drive_get_reader,
+	.get_writer        = st_scsi_tape_drive_get_writer,
 	.update_media_info = st_scsi_tape_drive_update_media_info,
 };
 
@@ -378,6 +383,20 @@ static struct st_stream_writer * st_scsi_tape_drive_get_raw_writer(struct st_dri
 	st_log_write_all(st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: drive is open for writing", drive->vendor, drive->model, drive - drive->changer->drives);
 
 	return st_scsi_tape_drive_io_writer_new(drive);
+}
+
+static struct st_format_reader * st_scsi_tape_drive_get_reader(struct st_drive * drive, int file_position) {
+	struct st_stream_reader * reader = st_scsi_tape_drive_get_raw_reader(drive, file_position);
+	if (reader != NULL)
+		return st_tar_get_reader(reader);
+	return NULL;
+}
+
+static struct st_format_writer * st_scsi_tape_drive_get_writer(struct st_drive * drive, int file_position) {
+	struct st_stream_writer * writer = st_scsi_tape_drive_get_raw_writer(drive, file_position);
+	if (writer != NULL)
+		return st_tar_get_writer(writer);
+	return NULL;
 }
 
 void st_scsi_tape_drive_setup(struct st_drive * drive) {

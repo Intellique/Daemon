@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 20 Aug 2012 23:06:30 +0200                         *
+*  Last modified: Wed, 22 Aug 2012 10:06:28 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_FORMAT_H__
@@ -31,6 +31,9 @@
 // dev_t, mode_t, ssize_t, time_t
 #include <sys/types.h>
 
+struct st_stream_reader;
+struct st_stream_writer;
+
 struct st_format_file {
 	char * filename;
 	char * link;
@@ -38,6 +41,7 @@ struct st_format_file {
 	ssize_t position;
 	ssize_t size;
 
+	dev_t dev;
 	mode_t mode;
 	uid_t uid;
 	char * user;
@@ -46,6 +50,8 @@ struct st_format_file {
 
 	time_t ctime;
 	time_t mtime;
+
+	unsigned char is_label;
 };
 
 enum st_format_reader_header_status {
@@ -69,7 +75,7 @@ struct st_format_reader {
 		ssize_t (*get_block_size)(struct st_format_reader * sf);
 		enum st_format_reader_header_status (*get_header)(struct st_format_reader * sf, struct st_format_file * file);
 		int (*last_errno)(struct st_format_reader * sf);
-		ssize_t (*positsfn)(struct st_format_reader * io);
+		ssize_t (*position)(struct st_format_reader * io);
 		ssize_t (*read)(struct st_format_reader * sf, void * buffer, ssize_t length);
 		enum st_format_reader_header_status (*skip_file)(struct st_format_reader * sf);
 	} * ops;
@@ -78,14 +84,14 @@ struct st_format_reader {
 
 struct st_format_writer {
 	struct st_format_writer_ops {
-		enum st_format_writer_status (*add_file)(struct st_stream_writer * sf, const char * file);
-		enum st_format_writer_status (*add_label)(struct st_stream_writer * sf, const char * label);
+		enum st_format_writer_status (*add_file)(struct st_format_writer * sf, const char * file);
+		enum st_format_writer_status (*add_label)(struct st_format_writer * sf, const char * label);
 		int (*close)(struct st_format_writer * sf);
 		void (*free)(struct st_format_writer * sf);
 		ssize_t (*get_available_size)(struct st_format_writer * sf);
 		ssize_t (*get_block_size)(struct st_format_writer * sf);
 		int (*last_errno)(struct st_format_writer * sf);
-		ssize_t (*positsfn)(struct st_format_writer * sf);
+		ssize_t (*position)(struct st_format_writer * sf);
 		int (*restart_file)(struct st_format_writer * sf, const char * filename, ssize_t position);
 		ssize_t (*write)(struct st_format_writer * sf, const void * buffer, ssize_t length);
 	} * ops;
@@ -93,6 +99,9 @@ struct st_format_writer {
 };
 
 void st_format_file_free(struct st_format_file * file);
+
+struct st_format_reader * st_tar_get_reader(struct st_stream_reader * reader);
+struct st_format_writer * st_tar_get_writer(struct st_stream_writer * writer);
 
 #endif
 

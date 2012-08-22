@@ -22,45 +22,22 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 18 Jun 2012 12:05:36 +0200                         *
+*  Last modified: Tue, 21 Aug 2012 20:38:07 +0200                         *
 \*************************************************************************/
 
 // free
 #include <stdlib.h>
-// bzero
-#include <string.h>
 
-#include "common.h"
+#include <libstone/format.h>
 
-void st_tar_free_header(struct st_tar_header * h) {
-	if (!h)
+void st_format_file_free(struct st_format_file * file) {
+	if (file != NULL)
 		return;
 
-	if (h->path)
-		free(h->path);
-	h->path = h->filename = 0;
-
-	if (h->link)
-		free(h->link);
-	h->link = 0;
-}
-
-void st_tar_init_header(struct st_tar_header * h) {
-	if (!h)
-		return;
-
-	h->dev = 0;
-	h->path = 0;
-	h->filename = 0;
-	h->link = 0;
-	h->size = 0;
-	h->offset = 0;
-	h->mode = 0;
-	h->mtime = 0;
-	h->uid = 0;
-	bzero(h->uname, 32);
-	h->gid = 0;
-	bzero(h->gname, 32);
-	h->is_label = 0;
+	free(file->filename);
+	free(file->link);
+	free(file->user);
+	free(file->group);
+	free(file);
 }
 
