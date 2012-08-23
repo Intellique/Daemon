@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 22 Aug 2012 10:15:01 +0200                         *
+*  Last modified: Wed, 22 Aug 2012 22:21:34 +0200                         *
 \*************************************************************************/
 
 #include <errno.h>
@@ -70,6 +70,7 @@ static void st_tar_writer_compute_checksum(const void * header, char * checksum)
 static void st_tar_writer_compute_link(struct st_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile);
 static void st_tar_writer_compute_size(char * csize, ssize_t size);
 // static void st_tar_writer_copy(struct st_tar_header * h_to, struct st_tar * h_from, struct stat * sfile);
+static void st_tar_writer_end_of_file(struct st_format_writer * sfw);
 static void st_tar_writer_free(struct st_format_writer * sfw);
 static ssize_t st_tar_writer_get_available_size(struct st_format_writer * sfw);
 static ssize_t st_tar_writer_get_block_size(struct st_format_writer * f);
@@ -87,9 +88,10 @@ static struct st_format_writer_ops st_tar_writer_ops = {
 	.add_file           = st_tar_writer_add_file,
 	.add_label          = st_tar_writer_add_label,
 	.close              = st_tar_writer_close,
+	.end_of_file        = st_tar_writer_end_of_file,
+	.free               = st_tar_writer_free,
 	.get_available_size = st_tar_writer_get_available_size,
 	.get_block_size     = st_tar_writer_get_block_size,
-	.free               = st_tar_writer_free,
 	.last_errno         = st_tar_writer_last_errno,
 	.position           = st_tar_writer_position,
 	.restart_file       = st_tar_writer_restart_file,
@@ -296,14 +298,18 @@ static void st_tar_writer_compute_size(char * csize, ssize_t size) {
 	}
 }
 
-static ssize_t st_tar_writer_get_available_size(struct st_format_writer * f) {
-	struct st_tar_writer_private * format = f->data;
-	return format->io->ops->get_available_size(format->io);
-}
+static void st_tar_writer_end_of_file(struct st_format_writer * sfw) {
+	struct st_tar_writer_private * self = sfw->data;
 
-static ssize_t st_tar_writer_get_block_size(struct st_format_writer * f) {
-	struct st_tar_writer_private * format = f->data;
-	return format->io->ops->get_block_size(format->io);
+	unsigned short mod = self->position % 512;
+	if (mod > 0) {
+		size_t length = 512 - mod;
+		char * buffer = malloc(length);
+		bzero(buffer, length);
+
+		self->io->ops->write(self->io, buffer, length);
+		free(buffer);
+	}
 }
 
 static void st_tar_writer_free(struct st_format_writer * f) {
@@ -316,6 +322,16 @@ static void st_tar_writer_free(struct st_format_writer * f) {
 
 	free(f->data);
 	free(f);
+}
+
+static ssize_t st_tar_writer_get_available_size(struct st_format_writer * f) {
+	struct st_tar_writer_private * format = f->data;
+	return format->io->ops->get_available_size(format->io);
+}
+
+static ssize_t st_tar_writer_get_block_size(struct st_format_writer * f) {
+	struct st_tar_writer_private * format = f->data;
+	return format->io->ops->get_block_size(format->io);
 }
 
 static void st_tar_writer_gid2name(char * name, ssize_t length, gid_t uid) {

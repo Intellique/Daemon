@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 22 Aug 2012 10:06:28 +0200                         *
+*  Last modified: Wed, 22 Aug 2012 22:21:57 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_FORMAT_H__
@@ -87,6 +87,7 @@ struct st_format_writer {
 		enum st_format_writer_status (*add_file)(struct st_format_writer * sf, const char * file);
 		enum st_format_writer_status (*add_label)(struct st_format_writer * sf, const char * label);
 		int (*close)(struct st_format_writer * sf);
+		void (*end_of_file)(struct st_format_writer * sf);
 		void (*free)(struct st_format_writer * sf);
 		ssize_t (*get_available_size)(struct st_format_writer * sf);
 		ssize_t (*get_block_size)(struct st_format_writer * sf);
