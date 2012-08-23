@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 22 Aug 2012 22:21:57 +0200                         *
+*  Last modified: Thu, 23 Aug 2012 19:59:10 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_FORMAT_H__
@@ -92,6 +92,7 @@ struct st_format_writer {
 		ssize_t (*get_available_size)(struct st_format_writer * sf);
 		ssize_t (*get_block_size)(struct st_format_writer * sf);
 		int (*last_errno)(struct st_format_writer * sf);
+		void (*new_volume)(struct st_format_writer * sf, struct st_stream_writer * sfw);
 		ssize_t (*position)(struct st_format_writer * sf);
 		int (*restart_file)(struct st_format_writer * sf, const char * filename, ssize_t position);
 		ssize_t (*write)(struct st_format_writer * sf, const void * buffer, ssize_t length);
