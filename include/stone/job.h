@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 12 Jul 2012 10:44:51 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 13:18:26 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -36,7 +36,7 @@
 #include "database.h"
 
 struct st_archive;
-struct st_backup;
+struct st_backupdb;
 struct st_job_driver;
 enum st_log_level;
 struct st_pool;
@@ -77,7 +77,7 @@ struct st_job {
 	// job
 	float done;
 	struct st_archive * archive;
-	struct st_backup * backup;
+	struct st_backupdb * backup;
 	struct st_tape * tape;
 	struct st_pool * pool;
 

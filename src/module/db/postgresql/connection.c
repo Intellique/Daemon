@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 11:37:53 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 15:29:41 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -494,6 +494,10 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 	st_db_postgresql_prepare(self, query11, "SELECT a.id, a.name, a.ctime, a.endtime, t.pool, MAX(av.sequence) + 1 FROM archive a LEFT JOIN archivevolume av ON a.id = av.archive LEFT JOIN tape t ON av.tape = t.id WHERE a.id = $1 GROUP BY a.id, a.name, a.ctime, a.endtime, t.pool");
 	const char * query12 = "select_archive_for_copy";
 	st_db_postgresql_prepare(self, query12, "SELECT id, name, ctime, endtime FROM archive WHERE id = $1");
+	const char * query13 = "select_backupdb";
+	st_db_postgresql_prepare(self, query13, "SELECT id, timestamp FROM backup WHERE id = $1");
+	const char * query14 = "select_backupdb_volumes";
+	st_db_postgresql_prepare(self, query14, "SELECT id, sequence, tape, tapeposition FROM backupvolume WHERE backup = $1 ORDER BY sequence");
 
 	char csince[24], * lastmaxjobs = 0, * nbjobs = 0;
 	struct tm tm_since;
@@ -560,6 +564,48 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 		PQclear(result2);
 
 		if (backupid) {
+			struct st_backupdb * backup = jobs[i]->backup = malloc(sizeof(struct st_backupdb));
+
+			const char * param3[] = { backupid };
+			result2 = PQexecPrepared(self->db_con, query13, 1, param3, 0, 0, 0);
+			ExecStatusType status3 = PQresultStatus(result2);
+
+			if (status3 == PGRES_FATAL_ERROR)
+				st_db_postgresql_get_error(result2, query13);
+			else if (status3 == PGRES_TUPLES_OK && PQntuples(result2) == 1) {
+				st_db_postgresql_get_long(result2, 0, 0, &backup->id);
+				st_db_postgresql_get_time(result2, 0, 1, &backup->ctime);
+			}
+			PQclear(result2);
+
+			backup->volumes = 0;
+			backup->nb_volumes = 0;
+
+			result2 = PQexecPrepared(self->db_con, query14, 1, param3, 0, 0, 0);
+			status3 = PQresultStatus(result2);
+			int nb_result = PQntuples(result2);
+
+			if (status3 == PGRES_FATAL_ERROR)
+				st_db_postgresql_get_error(result2, query13);
+			else if (status3 == PGRES_TUPLES_OK && nb_result > 0) {
+				backup->volumes = calloc(nb_result, sizeof(struct st_backupdb_volume));
+				backup->nb_volumes = nb_result;
+
+				int j;
+				for (j = 0; j < nb_result; j++) {
+					struct st_backupdb_volume * vol = backup->volumes + j;
+
+					st_db_postgresql_get_long(result2, j, 0, &vol->id);
+					st_db_postgresql_get_long(result2, j, 1, &vol->sequence);
+					long tape_id = -1;
+					st_db_postgresql_get_long(result2, j, 2, &tape_id);
+					st_db_postgresql_get_long(result2, j, 3, &vol->tape_position);
+
+					if (tape_id > -1)
+						vol->tape = st_tape_get_by_id(tape_id);
+				}
+			}
+			PQclear(result2);
 		}
 
 		if (tapeid > -1)

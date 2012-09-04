@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 14 Aug 2012 11:21:19 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 18:55:33 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -42,6 +42,7 @@ struct st_job;
 struct st_hashtable;
 struct st_pool;
 struct st_stream_reader;
+struct st_stream_writer;
 struct st_tape;
 struct st_tape_format;
 struct st_user;
@@ -52,6 +53,7 @@ struct st_database {
 		struct st_stream_reader * (*backup_db)(struct st_database * db);
 		struct st_database_connection * (*connect)(struct st_database * db, struct st_database_connection * connection);
 		int (*ping)(struct st_database * db);
+		struct st_stream_writer * (*restore_db)(struct st_database * db);
 		int (*setup)(struct st_database * db, struct st_hashtable * params);
 	} * ops;
 	void * data;

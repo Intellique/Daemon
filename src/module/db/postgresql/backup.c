@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 24 May 2012 18:04:05 +0200                         *
+*  Last modified: Fri, 17 Aug 2012 16:22:03 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -103,8 +103,9 @@ struct st_stream_reader * st_db_postgresql_init_backup(struct st_db_postgresql_p
 	PQclear(result);
 
 	char * query;
-	asprintf(&query, "COPY %s TO STDOUT WITH CSV HEADER", *self->c_table);
+	asprintf(&query, "COPY %s TO STDOUT", *self->c_table);
 	self->c_result = PQexec(self->con, query);
+	self->c_result = 0;
 	free(query);
 
 	struct st_stream_reader * reader = malloc(sizeof(struct st_stream_reader));
@@ -205,7 +206,7 @@ ssize_t st_db_postgresql_stream_backup_read(struct st_stream_reader * io, void *
 				}
 
 				char * query;
-				asprintf(&query, "COPY %s TO STDOUT WITH CSV HEADER", *self->c_table);
+				asprintf(&query, "COPY %s TO STDOUT", *self->c_table);
 
 				self->c_result = PQexec(self->con, query);
 				free(query);

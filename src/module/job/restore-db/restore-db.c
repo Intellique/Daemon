@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 01 Aug 2012 13:44:42 +0200                         *
+*  Last modified: Fri, 17 Aug 2012 10:25:47 +0200                         *
 \*************************************************************************/
 
 // free
@@ -30,7 +30,9 @@
 // sleep
 #include <unistd.h>
 
+#include <stone/io.h>
 #include <stone/job.h>
+#include <stone/library/backup-db.h>
 #include <stone/library/changer.h>
 #include <stone/library/drive.h>
 #include <stone/library/ressource.h>
@@ -66,7 +68,7 @@ struct st_job_ops st_job_restoredb_ops = {
 };
 
 struct st_job_driver st_job_restoredb_driver = {
-	.name        = "restoredb",
+	.name        = "restore-db",
 	.new_job     = st_job_restoredb_new_job,
 	.cookie      = 0,
 	.api_version = STONE_JOB_APIVERSION,
@@ -74,9 +76,9 @@ struct st_job_driver st_job_restoredb_driver = {
 
 
 void st_job_restoredb_free(struct st_job * job) {
-    struct st_job_restoredb_private * self = job->data;
+	struct st_job_restoredb_private * self = job->data;
 
-    free(self->buffer);
+	free(self->buffer);
 	free(job->data);
 }
 
@@ -262,15 +264,51 @@ int st_job_restoredb_run(struct st_job * job) {
 		return 1;
 	}
 
-    // grace period
-    sleep(15);
+	// grace period
+	sleep(15);
 
-    if (self->stop_request) {
+	if (self->stop_request) {
 		job->db_ops->add_record(job, st_log_level_error, "Job: restore aborted (job id: %ld), num runs %ld", job->id, job->num_runs);
-        return 0;
-    }
+		return 0;
+	}
 
-    return 0;
+	unsigned int i;
+	struct st_backupdb * backup = job->backup;
+
+	struct st_database * driver = st_db_get_default_db();
+	struct st_stream_writer * writer = driver->ops->restore_db(driver);
+
+	int status = 0;
+	for (i = 0; i < backup->nb_volumes && !status; i++) {
+		struct st_backupdb_volume * vol = backup->volumes + i;
+
+		status = st_job_restoredb_load_tape(job, vol->tape);
+		if (status) {
+			job->db_ops->add_record(job, st_log_level_error, "Failed to load tape: %s", vol->tape->name);
+			return status;
+		}
+
+		self->drive->ops->set_file_position(self->drive, vol->tape_position);
+
+		struct st_stream_reader * tape_reader = self->drive->ops->get_reader(self->drive);
+
+		self->length = tape_reader->ops->get_block_size(tape_reader);
+		self->buffer = malloc(self->length);
+
+		ssize_t nb_read;
+		while ((nb_read = tape_reader->ops->read(tape_reader, self->buffer, self->length)) > 0) {
+			writer->ops->write(writer, self->buffer, nb_read);
+
+			self->nb_total_read += nb_read;
+		}
+
+		tape_reader->ops->close(tape_reader);
+	}
+
+	writer->ops->close(writer);
+	writer->ops->free(writer);
+
+	return status;
 }
 
 int st_job_restoredb_stop(struct st_job * job) {

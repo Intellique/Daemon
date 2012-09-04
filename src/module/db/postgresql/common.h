@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 May 2012 16:24:52 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 16:34:55 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DB_POSTGRESQL_CONNNECTION_H__
@@ -49,6 +49,7 @@ struct st_db_postgresql_connetion_private {
 
 struct st_stream_reader * st_db_postgresql_init_backup(struct st_db_postgresql_private * driver_private);
 int st_db_postgresql_init_connection(struct st_database_connection * connection, struct st_db_postgresql_private * driver_private);
+struct st_stream_writer * st_db_postgresql_init_restore(struct st_db_postgresql_private * driver_private);
 void st_db_postgresql_pr_free(struct st_db_postgresql_private * self);
 
 #endif

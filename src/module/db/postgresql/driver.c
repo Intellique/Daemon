@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 23 May 2012 16:25:24 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 18:57:14 +0200                         *
 \*************************************************************************/
 
 // free, malloc
@@ -41,14 +41,16 @@ static struct st_stream_reader * st_db_postgresql_backup_db(struct st_database *
 static struct st_database_connection * st_db_postgresql_connect(struct st_database * db, struct st_database_connection * connection);
 static void st_db_postgresql_init(void) __attribute__((constructor));
 static int st_db_postgresql_ping(struct st_database * db);
+static struct st_stream_writer * st_db_postgresql_restore_db(struct st_database * db);
 static int st_db_postgresql_setup(struct st_database * db, struct st_hashtable * params);
 
 
 static struct st_database_ops st_db_postgresql_ops = {
-	.backup_db = st_db_postgresql_backup_db,
-	.connect   = st_db_postgresql_connect,
-	.ping      = st_db_postgresql_ping,
-	.setup     = st_db_postgresql_setup,
+	.backup_db  = st_db_postgresql_backup_db,
+	.connect    = st_db_postgresql_connect,
+	.ping       = st_db_postgresql_ping,
+	.restore_db = st_db_postgresql_restore_db,
+	.setup      = st_db_postgresql_setup,
 };
 
 static struct st_database st_db_postgresql = {
@@ -128,6 +130,10 @@ int st_db_postgresql_ping(struct st_database * db) {
 		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: ping => Failed");
 
 	return status == CONNECTION_OK ? 1 : -1;
+}
+
+struct st_stream_writer * st_db_postgresql_restore_db(struct st_database * db) {
+	return st_db_postgresql_init_restore(db->data);
 }
 
 int st_db_postgresql_setup(struct st_database * db, struct st_hashtable * params) {

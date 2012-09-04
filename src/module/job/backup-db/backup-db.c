@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 14 Aug 2012 17:53:09 +0200                         *
+*  Last modified: Thu, 16 Aug 2012 13:52:44 +0200                         *
 \*************************************************************************/
 
 // malloc, realloc
@@ -169,6 +169,8 @@ int st_job_backupdb_run(struct st_job * job) {
 
 	if (drive)
 		drive->lock->ops->unlock(drive->lock);
+
+	job->done = 1;
 
 	return 0;
 }
