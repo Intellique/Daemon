@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 14 Aug 2012 11:45:02 +0200                         *
+*  Last modified: Wed, 05 Sep 2012 19:02:21 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -182,8 +182,8 @@ void st_sched_do_loop() {
 				last_max_jobs = j->id;
 		}
 
-		// update status of stone-alone drives
-		st_changer_update_drive_status();
+		// update status of changer
+		st_changer_update_status(connection);
 
 		struct tm current;
 		update = time(0);

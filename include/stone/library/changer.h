@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 31 May 2012 16:24:12 +0200                         *
+*  Last modified: Wed, 05 Sep 2012 19:05:25 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_CHANGER_H__
@@ -69,7 +69,6 @@ struct st_changer {
 		int (*can_load)();
 		struct st_slot * (*get_tape)(struct st_changer * ch, struct st_tape * tape);
 		int (*load)(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
-		int (*sync_db)(struct st_changer * ch);
 		int (*unload)(struct st_changer * ch, struct st_drive * from, struct st_slot * to);
 	} * ops;
 	void * data;

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 13 Jun 2012 13:10:47 +0200                         *
+*  Last modified: Wed, 05 Sep 2012 19:08:52 +0200                         *
 \*************************************************************************/
 
 // open
@@ -41,7 +41,6 @@
 // exit
 #include <unistd.h>
 
-#include <stone/database.h>
 #include <stone/log.h>
 #include <stone/library/ressource.h>
 #include <stone/library/tape.h>
@@ -51,22 +50,18 @@
 
 struct st_realchanger_private {
 	int fd;
-	struct st_database_connection * db_con;
 };
 
 static int st_realchanger_can_load(void);
 static struct st_slot * st_realchanger_get_tape(struct st_changer * ch, struct st_tape * tape);
 static int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
 static void * st_realchanger_setup2(void * drive);
-static int st_realchanger_sync_db(struct st_changer * ch);
 static int st_realchanger_unload(struct st_changer * ch, struct st_drive * from, struct st_slot * to);
-static int st_realchanger_update_status(struct st_changer * ch, enum st_changer_status status);
 
 static struct st_changer_ops st_realchanger_ops = {
 	.can_load = st_realchanger_can_load,
 	.get_tape = st_realchanger_get_tape,
 	.load     = st_realchanger_load,
-	.sync_db  = st_realchanger_sync_db,
 	.unload   = st_realchanger_unload,
 };
 
@@ -104,7 +99,7 @@ int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st
 	struct st_realchanger_private * self = ch->data;
 	st_scsi_loader_ready(self->fd);
 
-	st_realchanger_update_status(ch, ST_CHANGER_LOADING);
+	ch->status = ST_CHANGER_LOADING;
 	int failed = st_scsi_loader_move(self->fd, ch, from, to->slot);
 
 	if (failed) {
@@ -131,9 +126,9 @@ int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st
 		to->slot->full = 1;
 		to->slot->src_address = from->address;
 
-		st_realchanger_update_status(ch, ST_CHANGER_IDLE);
+		ch->status = ST_CHANGER_IDLE;
 	} else {
-		st_realchanger_update_status(ch, ST_CHANGER_ERROR);
+		ch->status = ST_CHANGER_ERROR;
 	}
 
 	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "[%s | %s]: loading tape '%s' from slot #%td to drive #%td finished with code = %d", ch->vendor, ch->model, to->slot->volume_name, from - ch->slots, to - ch->drives, failed);
@@ -155,7 +150,6 @@ void st_realchanger_setup(struct st_changer * changer) {
 
 	struct st_realchanger_private * ch = malloc(sizeof(struct st_realchanger_private));
 	ch->fd = fd;
-	ch->db_con = 0;
 
 	changer->status = ST_CHANGER_IDLE;
 	changer->ops = &st_realchanger_ops;
@@ -231,18 +225,6 @@ void st_realchanger_setup(struct st_changer * changer) {
 		free(workers);
 
 	st_scsi_loader_medium_removal(fd, 1);
-
-	struct st_database * db = st_db_get_default_db();
-	if (db) {
-		ch->db_con = db->ops->connect(db, 0);
-		if (ch->db_con) {
-			ch->db_con->ops->sync_changer(ch->db_con, changer);
-		} else {
-			st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: failed to connect to default database", changer->vendor, changer->model);
-		}
-	} else {
-		st_log_write_all(st_log_level_warning, st_log_type_changer, "[%s | %s]: there is no default database so changer is not able to synchronize with one database", changer->vendor, changer->model);
-	}
 
 	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: setup terminated", changer->vendor, changer->model);
 }
@@ -322,10 +304,6 @@ void * st_realchanger_setup2(void * drive) {
 	return 0;
 }
 
-int st_realchanger_sync_db(struct st_changer * ch) {
-	return st_realchanger_update_status(ch, ch->status);
-}
-
 int st_realchanger_unload(struct st_changer * ch, struct st_drive * from, struct st_slot * to) {
 	if (!ch || !from || !to)
 		return 1;
@@ -341,7 +319,7 @@ int st_realchanger_unload(struct st_changer * ch, struct st_drive * from, struct
 	struct st_realchanger_private * self = ch->data;
 	st_scsi_loader_ready(self->fd);
 
-	st_realchanger_update_status(ch, ST_CHANGER_UNLOADING);
+	ch->status = ST_CHANGER_UNLOADING;
 	int failed = st_scsi_loader_move(self->fd, ch, from->slot, to);
 
 	if (failed) {
@@ -366,23 +344,12 @@ int st_realchanger_unload(struct st_changer * ch, struct st_drive * from, struct
 		if (to->tape)
 			to->tape->location = ST_TAPE_LOCATION_ONLINE;
 
-		st_realchanger_update_status(ch, ST_CHANGER_IDLE);
+		ch->status = ST_CHANGER_IDLE;
 	} else {
-		st_realchanger_update_status(ch, ST_CHANGER_ERROR);
+		ch->status = ST_CHANGER_ERROR;
 	}
 
 	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading tape '%s' from drive #%td to slot #%td finished with code = %d", ch->vendor, ch->model, to->volume_name, from - ch->drives, to - ch->slots, failed);
-
-	return failed;
-}
-
-int st_realchanger_update_status(struct st_changer * ch, enum st_changer_status status) {
-	struct st_realchanger_private * self = ch->data;
-	ch->status = status;
-
-	int failed = 0;
-	if (self->db_con)
-		failed = self->db_con->ops->sync_changer(self->db_con, ch);
 
 	return failed;
 }

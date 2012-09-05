@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jul 2012 13:49:30 +0200                         *
+*  Last modified: Wed, 05 Sep 2012 19:09:46 +0200                         *
 \*************************************************************************/
 
 // sscanf
@@ -329,7 +329,6 @@ int st_job_format_tape_run(struct st_job * job) {
 		sleep(1);
 	}
 
-	changer->ops->sync_db(changer);
 	job->db_ops->update_status(job);
 
 	if (self->stop_request)

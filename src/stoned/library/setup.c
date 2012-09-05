@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 11 Jun 2012 23:35:49 +0200                         *
+*  Last modified: Wed, 05 Sep 2012 19:02:02 +0200                         *
 \*************************************************************************/
 
 // open
@@ -375,20 +375,10 @@ int st_changer_setup() {
 	return 0;
 }
 
-void st_changer_update_drive_status() {
+void st_changer_update_status(struct st_database_connection * connect) {
 	unsigned int i, nb_changer = st_nb_real_changers + st_nb_fake_changers;
 	for (i = 0; i < nb_changer; i++) {
-		struct st_changer * changer = st_changers + i;
-		if (changer->ops->can_load())
-			continue;
-
-		struct st_drive * drive = changer->drives;
-		if (drive->lock->ops->trylock(drive->lock))
-			continue;
-
-		drive->ops->reset(drive);
-
-		drive->lock->ops->unlock(drive->lock);
+		connect->ops->sync_changer(connect, st_changers + i);
 	}
 }
 

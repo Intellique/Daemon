@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 28 Dec 2011 13:59:18 +0100                         *
+*  Last modified: Wed, 05 Sep 2012 18:52:07 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_COMMON_H__
@@ -31,9 +31,10 @@
 #include <stone/library/changer.h>
 
 struct st_changer;
+struct st_database_connection;
 struct st_drive;
 
-void st_changer_update_drive_status(void);
+void st_changer_update_status(struct st_database_connection * connect);
 
 void st_drive_setup(struct st_drive * drive);
 
