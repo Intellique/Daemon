@@ -174,7 +174,7 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 			break;
 	}
 
-	jp->current_file = st_archive_file_new(job, &st, path/*, block_number*/);
+	jp->current_file = st_archive_file_new(job, &st, path, block_number);
 	jp->db_con->ops->new_file(jp->db_con, jp->current_file);
 	jp->db_con->ops->file_link_to_volume(jp->db_con, jp->current_file, jp->current_volume);
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 27 Jul 2012 15:52:31 +0200                         *
+*  Last modified: Wed, 05 Sep 2012 17:52:50 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -71,7 +71,7 @@ struct st_job_restore_private {
 
 static void st_job_restore_compute_complete_progress(struct st_job * job, struct st_job_restore_private * jp);
 static void st_job_restore_compute_partial_progress(struct st_job * job, struct st_job_restore_private * jp);
-static int st_job_restore_filter(struct st_job * job, struct st_tar_header * header);
+static int st_job_restore_filter(struct st_job_block_number * block_number, struct st_tar_header * header);
 static void st_job_restore_free(struct st_job * job);
 static void st_job_restore_init(void) __attribute__((constructor));
 static int st_job_restore_load_tape(struct st_job * job, struct st_tape * tape);
@@ -108,27 +108,24 @@ void st_job_restore_compute_partial_progress(struct st_job * job, struct st_job_
 	job->db_ops->update_status(job);
 }
 
-int st_job_restore_filter(struct st_job * job, struct st_tar_header * header) {
-	if (job->nb_paths == 0)
+int st_job_restore_filter(struct st_job_block_number * block_number, struct st_tar_header * header) {
+	if (block_number->path == NULL)
 		return 1;
 
-	unsigned int i;
-	for (i = 0; i < job->nb_paths; i++) {
-		char * path = job->paths[i];
-		if (*header->path != '/')
-			path++;
+	char * path = block_number->path;
+	if (*header->path != '/')
+		path++;
 
-		char * tar_header = strdup(header->path);
-		st_util_string_delete_double_char(tar_header, '/');
+	char * tar_header = strdup(header->path);
+	st_util_string_delete_double_char(tar_header, '/');
 
-		ssize_t length = strlen(path);
-		int diff = strncmp(tar_header, path, length);
+	ssize_t length = strlen(path);
+	int diff = strncmp(tar_header, path, length);
 
-		free(tar_header);
+	free(tar_header);
 
-		if (!diff)
-			return 1;
-	}
+	if (!diff)
+		return 1;
 
 	return 0;
 }
@@ -615,30 +612,29 @@ int st_job_restore_restore_files(struct st_job * job) {
 		jp->drive->ops->set_file_position(jp->drive, bn->tape_position);
 
 		long current_sequence = bn->sequence;
-		while (bn->sequence == current_sequence && !jp->stop_request) {
-			struct st_stream_reader * tape_reader = jp->drive->ops->get_reader(jp->drive);
+		struct st_stream_reader * tape_reader = jp->drive->ops->get_reader(jp->drive);
 
-			jp->length = tape_reader->ops->get_block_size(tape_reader);
-			jp->buffer = malloc(jp->length);
+		jp->length = tape_reader->ops->get_block_size(tape_reader);
+		jp->buffer = malloc(jp->length);
 
+		struct st_tar_in * tar = st_tar_new_in(tape_reader);
+
+		while (i < job->nb_block_numbers && bn->sequence == current_sequence && !jp->stop_request) {
 			if (bn->block_number > 0)
 				tape_reader->ops->set_position(tape_reader, bn->block_number);
 
-			struct st_tar_in * tar = st_tar_new_in(tape_reader);
 			enum st_tar_header_status hdr_status = ST_TAR_HEADER_BAD_CHECKSUM;
 			struct st_tar_header header;
 
 			while ((hdr_status = tar->ops->get_header(tar, &header)) != ST_TAR_HEADER_OK);
 
-			if (hdr_status != ST_TAR_HEADER_OK) { }
-
-			while (hdr_status == ST_TAR_HEADER_OK && !st_job_restore_filter(job, &header) && !jp->stop_request) {
+			while (hdr_status == ST_TAR_HEADER_OK && !st_job_restore_filter(bn, &header) && !jp->stop_request) {
 				st_tar_free_header(&header);
 				tar->ops->skip_file(tar);
 				hdr_status = tar->ops->get_header(tar, &header);
 			}
 
-			while (hdr_status == ST_TAR_HEADER_OK && st_job_restore_filter(job, &header) && !jp->stop_request) {
+			if (hdr_status == ST_TAR_HEADER_OK && st_job_restore_filter(bn, &header) && !jp->stop_request) {
 				char * path = header.path;
 				if (job->restore_to->nb_trunc_path > 0)
 					path = st_job_restore_trunc_filename(path, job->restore_to->nb_trunc_path);
@@ -646,6 +642,7 @@ int st_job_restore_restore_files(struct st_job * job) {
 				if (!path) {
 					tar->ops->skip_file(tar);
 					hdr_status = tar->ops->get_header(tar, &header);
+					continue;
 				}
 
 				ssize_t length = restore_path_length + strlen(path);
@@ -674,27 +671,16 @@ int st_job_restore_restore_files(struct st_job * job) {
 
 				if (failed)
 					break;
-
-				hdr_status = tar->ops->get_header(tar, &header);
 			}
 
-			long current_sequence = bn->sequence;
-			ssize_t current_block = tar->ops->position(tar) / jp->length;
-
-			tar->ops->close(tar);
-			tar->ops->free(tar);
-			free(jp->buffer);
-			jp->buffer = 0;
-
-			while (i < job->nb_block_numbers && current_sequence == bn->sequence && job->block_numbers[i].block_number <= current_block && !jp->stop_request) {
-				i++;
-			}
-
-			if (i >= job->nb_block_numbers)
-				break;
-
+			i++;
 			bn = job->block_numbers + i;
 		}
+
+		tar->ops->close(tar);
+		tar->ops->free(tar);
+		free(jp->buffer);
+		jp->buffer = 0;
 	}
 
 	return status;

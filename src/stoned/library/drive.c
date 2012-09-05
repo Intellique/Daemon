@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jul 2012 13:41:46 +0200                         *
+*  Last modified: Tue, 04 Sep 2012 17:40:15 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -635,18 +635,32 @@ off_t st_drive_io_reader_forward(struct st_stream_reader * io, off_t offset) {
 	if (offset - nb_total_read >= self->block_size) {
 		int nb_records = (offset - nb_total_read) / self->block_size;
 
-		struct mtop forward = { MTFSR, nb_records };
-		st_drive_generic_operation_start(self->drive_private);
-		int failed = ioctl(self->fd, MTIOCTOP, &forward);
-		st_drive_generic_operation_stop(self->drive);
+		st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: forward (#record %d)", self->drive->vendor, self->drive->model, self->drive - self->drive->changer->drives, nb_records);
 
-		if (failed) {
-			self->last_errno = errno;
-			return failed;
+		/**
+		 * There is a limitation with scsi command 'space' used by driver st of linux.
+		 * In this command block_number is specified into 3 bytes so 8388607 is the
+		 * maximum that we can forward in one time.
+		 */
+		int failed = 0;
+		while (nb_records > 0 && !failed) {
+			int move_nb_records = nb_records > 8388607 ? 8388607 : nb_records;
+
+			struct mtop forward = { MTFSR, move_nb_records };
+			st_drive_generic_operation_start(self->drive_private);
+			failed = ioctl(self->fd, MTIOCTOP, &forward);
+			st_drive_generic_operation_stop(self->drive);
+
+			if (failed) {
+				self->last_errno = errno;
+				return failed;
+			}
+
+			nb_records -= move_nb_records;
+
+			self->position += move_nb_records * self->block_size;
+			nb_total_read += move_nb_records * self->block_size;
 		}
-
-		self->position += nb_records * self->block_size;
-		nb_total_read += nb_records * self->block_size;
 	}
 
 	if (nb_total_read == offset)

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 25 Jul 2012 13:47:29 +0200                         *
+*  Last modified: Tue, 04 Sep 2012 13:03:32 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -169,7 +169,7 @@ int st_job_copy_archive_file(struct st_job * job, const char * path) {
 
 	enum st_tar_out_status status = jp->tar_out->ops->add_file(jp->tar_out, path, path + jp->restore_path_length);
 
-	jp->current_file = st_archive_file_new(job, &st, path + jp->restore_path_length);
+	jp->current_file = st_archive_file_new(job, &st, path + jp->restore_path_length, block_number);
 	st_archive_volume_add_file(jp->current_volume, jp->current_file, block_number);
 
 	int failed = 0;

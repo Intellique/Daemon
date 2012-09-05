@@ -105,6 +105,7 @@ struct st_archive_file {
 	time_t ctime;
 	time_t mtime;
 	ssize_t size;
+	ssize_t block_number;
 
 	char ** digests;
 	unsigned int nb_checksums;
@@ -113,7 +114,7 @@ struct st_archive_file {
 };
 
 void st_archive_file_free(struct st_archive_file * file);
-struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * file, const char * filename);
+struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * file, const char * filename, ssize_t block_number);
 void st_archive_free(struct st_archive * archive);
 struct st_archive * st_archive_new(struct st_job * job);
 void st_archive_volume_add_file(struct st_archive_volume * volume, struct st_archive_file * file, ssize_t position);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 15:29:41 +0200                         *
+*  Last modified: Wed, 05 Sep 2012 15:53:40 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -473,9 +473,9 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 	const char * query1 = "select_num_runs";
 	st_db_postgresql_prepare(self, query1, "SELECT MAX(numrun) AS max FROM jobrecord WHERE job = $1");
 	const char * query2 = "select_job_tape1";
-	st_db_postgresql_prepare(self, query2, "SELECT av.sequence, t.uuid AS tape, av.tapeposition, afv.blocknumber, SUM(CASE WHEN af.type = 'regular file' THEN af.size ELSE 0 END) AS size FROM archivevolume av LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id LEFT JOIN tape t ON av.tape = t.id, (SELECT DISTINCT path, CHAR_LENGTH(path) AS length FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $2)) AS sf WHERE archive = $1 AND SUBSTR(af.name, 0, sf.length + 1) = sf.path GROUP BY av.sequence, t.uuid, av.tapeposition, afv.blocknumber ORDER BY sequence, blocknumber");
+	st_db_postgresql_prepare(self, query2, "SELECT av.sequence, t.uuid AS tape, av.tapeposition, afv.blocknumber, af.name, CASE WHEN af.type = 'regular file' THEN af.size ELSE 0 END AS size FROM archivevolume av LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id LEFT JOIN tape t ON av.tape = t.id, (SELECT DISTINCT path, CHAR_LENGTH(path) AS length FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $2)) AS sf WHERE archive = $1 AND SUBSTR(af.name, 0, sf.length + 1) = sf.path ORDER BY sequence, blocknumber");
 	const char * query3 = "select_job_tape2";
-	st_db_postgresql_prepare(self, query3, "SELECT av.sequence, t.uuid, av.tapeposition, 0 AS blocknumber, SUM(av.size) AS size FROM archivevolume av LEFT JOIN tape t ON av.tape = t.id WHERE archive = $1 GROUP BY sequence, uuid, tapeposition, blocknumber ORDER BY sequence");
+	st_db_postgresql_prepare(self, query3, "SELECT av.sequence, t.uuid AS tape, av.tapeposition, 0 AS blocknumber, NULL AS name, SUM(av.size) AS size FROM archivevolume av LEFT JOIN tape t ON av.tape = t.id WHERE archive = $1 GROUP BY sequence, uuid, tapeposition, blocknumber ORDER BY sequence");
 	const char * query4 = "select_pool_by_id";
 	st_db_postgresql_prepare(self, query4, "SELECT uuid, tapeformat FROM pool WHERE id = $1 LIMIT 1");
 	const char * query5 = "select_tapeformat_by_id";
@@ -756,7 +756,8 @@ int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, st
 						block_number->tape = st_tape_get_by_uuid(PQgetvalue(result2, j, 1));
 						st_db_postgresql_get_long(result2, j, 2, &block_number->tape_position);
 						st_db_postgresql_get_ssize(result2, j, 3, &block_number->block_number);
-						st_db_postgresql_get_ssize(result2, j, 4, &block_number->size);
+						st_db_postgresql_get_string_dup(result2, j, 4, &block_number->path);
+						st_db_postgresql_get_ssize(result2, j, 5, &block_number->size);
 					}
 				}
 				PQclear(result2);
@@ -2191,7 +2192,7 @@ int st_db_postgresql_file_link_to_volume(struct st_database_connection * connect
 	char * volumeid = 0, * fileid = 0, * block_number = 0;
 	asprintf(&volumeid, "%ld", volume->id);
 	asprintf(&fileid, "%ld", file->id);
-	//asprintf(&block_number, "%zd", file->position);
+	asprintf(&block_number, "%zd", file->block_number);
 
 	const char * param[] = { volumeid, fileid, block_number, };
 	PGresult * result = PQexecPrepared(self->db_con, query, 3, param, 0, 0, 0);
