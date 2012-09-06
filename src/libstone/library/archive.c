@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 04 Sep 2012 13:01:42 +0200                         *
+*  Last modified: Thu, 06 Sep 2012 10:39:25 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -104,7 +104,7 @@ struct st_archive_file * st_archive_file_new(struct st_job * job, struct stat * 
 	f->ctime = file->st_ctime;
 	f->mtime = file->st_mtime;
 	f->size = file->st_size;
-	f->block_number = block_number;
+	f->position = block_number;
 
 	f->digests = 0;
 	f->nb_checksums = 0;

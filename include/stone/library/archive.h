@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 28 Jun 2012 18:01:52 +0200                         *
+*  Last modified: Thu, 06 Sep 2012 10:39:00 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -105,7 +105,7 @@ struct st_archive_file {
 	time_t ctime;
 	time_t mtime;
 	ssize_t size;
-	ssize_t block_number;
+	ssize_t position;
 
 	char ** digests;
 	unsigned int nb_checksums;

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 31 Jul 2012 12:38:39 +0200                         *
+*  Last modified: Thu, 06 Sep 2012 10:38:01 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -339,7 +339,7 @@ int st_job_save_change_tape(struct st_job * job) {
 	st_io_json_add_volume(jp->json, jp->current_volume);
 
 	// link current file to new volume
-	// jp->current_file->position = 0;
+	jp->current_file->position = 0;
 	jp->db_con->ops->file_link_to_volume(jp->db_con, jp->current_file, jp->current_volume);
 
 	tw = jp->current_tape_writer = dr->ops->get_writer(dr);

@@ -431,56 +431,12 @@ ssize_t st_tar_out_position(struct st_tar_out * f) {
 
 int st_tar_out_restart_file(struct st_tar_out * f, const char * filename, ssize_t position) {
 	struct stat sfile;
-	if (lstat(filename, &sfile)) {
-		//mtar_verbose_printf("An unexpected error occured while getting information about: %s\n", filename);
+	if (lstat(filename, &sfile))
 		return 1;
-	}
 
 	ssize_t block_size = 512;
 	struct st_tar * header = malloc(block_size);
 	struct st_tar * current_header = header;
-
-	int filename_length = strlen(filename);
-	if (S_ISLNK(sfile.st_mode)) {
-		char link[257];
-		ssize_t link_length = readlink(filename, link, 256);
-		link[link_length] = '\0';
-
-		if (filename_length > 100 && link_length > 100) {
-			block_size += 2048 + filename_length - filename_length % 512 + link_length - link_length % 512;
-			current_header = header = realloc(header, block_size);
-
-			bzero(current_header, block_size - 512);
-			st_tar_out_compute_link(current_header, (char *) (current_header + 1), filename, filename_length, 'K', &sfile);
-			st_tar_out_compute_link(current_header + 2, (char *) (current_header + 3), link, link_length, 'L', &sfile);
-
-			current_header += 4;
-		} else if (filename_length > 100) {
-			block_size += 1024 + filename_length - filename_length % 512;
-			current_header = header = realloc(header, block_size);
-
-			bzero(current_header, block_size - 512);
-			st_tar_out_compute_link(current_header, (char *) (current_header + 1), filename, filename_length, 'L', &sfile);
-
-			current_header += 2;
-		} else if (link_length > 100) {
-			block_size += 1024 + link_length - link_length % 512;
-			current_header = header = realloc(header, block_size);
-
-			bzero(current_header, block_size - 512);
-			st_tar_out_compute_link(current_header, (char *) (current_header + 1), link, link_length, 'L', &sfile);
-
-			current_header += 2;
-		}
-	} else if (filename_length > 100) {
-		block_size += 1024 + filename_length - filename_length % 512;
-		current_header = header = realloc(header, block_size);
-
-		bzero(current_header, 1024);
-		st_tar_out_compute_link(current_header, (char *) (current_header + 1), filename, filename_length, 'L', &sfile);
-
-		current_header += 2;
-	}
 
 	struct st_tar_private_out * format = f->data;
 	bzero(current_header, 512);

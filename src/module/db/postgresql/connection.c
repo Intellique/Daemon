@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 05 Sep 2012 15:53:40 +0200                         *
+*  Last modified: Thu, 06 Sep 2012 10:39:47 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -2192,7 +2192,7 @@ int st_db_postgresql_file_link_to_volume(struct st_database_connection * connect
 	char * volumeid = 0, * fileid = 0, * block_number = 0;
 	asprintf(&volumeid, "%ld", volume->id);
 	asprintf(&fileid, "%ld", file->id);
-	asprintf(&block_number, "%zd", file->block_number);
+	asprintf(&block_number, "%zd", file->position);
 
 	const char * param[] = { volumeid, fileid, block_number, };
 	PGresult * result = PQexecPrepared(self->db_con, query, 3, param, 0, 0, 0);
