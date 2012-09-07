@@ -62,7 +62,6 @@ struct st_tar_header {
 	 * \brief Size of file
 	 */
 	ssize_t size;
-	ssize_t position;
 	/**
 	 * \brief Offset
 	 */

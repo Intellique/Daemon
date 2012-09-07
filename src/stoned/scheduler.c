@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 05 Sep 2012 19:02:21 +0200                         *
+*  Last modified: Fri, 07 Sep 2012 10:12:08 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -273,8 +273,14 @@ void st_sched_run_job(void * arg) {
 	}
 
 	if (job->nb_block_numbers > 0) {
+		unsigned int i;
+		for (i = 0; i < job->nb_block_numbers; i++) {
+			struct st_job_block_number * bn = job->block_numbers + i;
+			free(bn->path);
+			bn->path = NULL;
+		}
 		free(job->block_numbers);
-		job->block_numbers = 0;
+		job->block_numbers = NULL;
 		job->nb_block_numbers = 0;
 	}
 

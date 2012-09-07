@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 27 Jun 2012 14:12:23 +0200                         *
+*  Last modified: Thu, 06 Sep 2012 18:41:53 +0200                         *
 \*************************************************************************/
 
 // sscanf, snprintf
@@ -238,7 +238,7 @@ enum st_tar_header_status st_tar_in_get_header(struct st_tar_in * f, struct st_t
 				continue;
 
 			case 'M':
-				header->position = st_tar_in_convert_size(raw_header->position);
+				header->offset = st_tar_in_convert_size(raw_header->position);
 				break;
 
 			case '1':

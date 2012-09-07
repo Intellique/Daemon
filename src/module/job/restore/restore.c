@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 05 Sep 2012 17:52:50 +0200                         *
+*  Last modified: Fri, 07 Sep 2012 10:04:09 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -56,6 +56,7 @@ struct st_job_restore_private {
 	char * buffer;
 	ssize_t length;
 
+	char * previous_file;
 	ssize_t position;
 	ssize_t nb_total_read_partial; // used for restoring partial archive
 	ssize_t nb_total_read_total; // used for restoring complete archive
@@ -119,15 +120,15 @@ int st_job_restore_filter(struct st_job_block_number * block_number, struct st_t
 	char * tar_header = strdup(header->path);
 	st_util_string_delete_double_char(tar_header, '/');
 
-	ssize_t length = strlen(path);
-	int diff = strncmp(tar_header, path, length);
+	int diff;
+	if (header->offset > 0)
+		diff = strncmp(tar_header, path, strlen(header->path));
+	else
+		diff = strcmp(tar_header, path);
 
 	free(tar_header);
 
-	if (!diff)
-		return 1;
-
-	return 0;
+	return diff == 0 ? 1 : 0;
 }
 
 void st_job_restore_free(struct st_job * job) {
@@ -332,6 +333,7 @@ void st_job_restore_new_job(struct st_database_connection * db __attribute__((un
 	self->buffer = 0;
 	self->length = 0;
 
+	self->previous_file = NULL;
 	self->position = 0;
 	self->nb_total_read_partial = 0;
 	self->nb_total_read_total = 0;
@@ -535,7 +537,17 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 				}
 			}
 		}
-		int fd = open(path, O_CREAT | O_WRONLY, header->mode);
+
+		const char * filename = path;
+		if (header->offset > 0) {
+			filename = jp->previous_file;
+		} else {
+			if (jp->previous_file != NULL)
+				free(jp->previous_file);
+			jp->previous_file = strdup(path);
+		}
+
+		int fd = open(filename, O_CREAT | O_WRONLY, header->mode);
 		if (fd < 0) {
 			job->db_ops->add_record(job, st_log_level_warning, "Failed to create a file named %s because %m", path);
 			return status;
@@ -707,8 +719,15 @@ int st_job_restore_run(struct st_job * job) {
 	}
 
 	unsigned int i;
-	for (i = 0; i < job->nb_block_numbers; i++)
-		jp->total_size += job->block_numbers[i].size;
+	char * last_file = NULL;
+	for (i = 0; i < job->nb_block_numbers; i++) {
+		int diff = last_file != NULL && job->block_numbers[i].path != NULL ? strcmp(last_file, job->block_numbers[i].path) : 1;
+		if (diff != 0)
+			jp->total_size += job->block_numbers[i].size;
+
+		if (strlen(job->block_numbers[i].path) > 0)
+			last_file = job->block_numbers[i].path;
+	}
 
 	if (job->nb_paths > 0)
 		status = st_job_restore_restore_files(job);
@@ -716,6 +735,10 @@ int st_job_restore_run(struct st_job * job) {
 		status = st_job_restore_restore_archive(job);
 
 	jp->drive->lock->ops->unlock(jp->drive->lock);
+
+	if (jp->previous_file != NULL)
+		free(jp->previous_file);
+	jp->previous_file = NULL;
 
 	if (jp->stop_request) {
 		job->db_ops->add_record(job, st_log_level_error, "Job: restore aborted (job id: %ld), num runs %ld", job->id, job->num_runs);

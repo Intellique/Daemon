@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 06 Sep 2012 10:38:01 +0200                         *
+*  Last modified: Thu, 06 Sep 2012 12:43:52 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -130,8 +130,6 @@ struct st_job_driver st_job_save_driver = {
 
 
 int st_job_save_archive_file(struct st_job * job, const char * path) {
-	struct st_job_save_private * jp = job->data;
-
 	if (!st_util_check_valid_utf8(path)) {
 		char * fixed_path = strdup(path);
 		st_util_fix_invalid_utf8(fixed_path);
@@ -149,13 +147,24 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 		return 1;
 	}
 
+	// Do not archive socket file as does tar
 	if (S_ISSOCK(st.st_mode))
 		return 0;
 
+	int failed;
+	struct st_job_save_private * jp = job->data;
+	if (jp->tar->ops->get_available_size(jp->tar) == 0) {
+		failed = st_job_save_change_tape(job);
+		if (failed)
+			return failed;
+	}
+
 	ssize_t block_number = jp->tar->ops->position(jp->tar) / jp->block_size;
+	jp->current_file = st_archive_file_new(job, &st, path, block_number);
+	jp->db_con->ops->new_file(jp->db_con, jp->current_file);
+	jp->db_con->ops->file_link_to_volume(jp->db_con, jp->current_file, jp->current_volume);
 
 	enum st_tar_out_status status = jp->tar->ops->add_file(jp->tar, path, path);
-	int failed;
 	switch (status) {
 		case ST_TAR_OUT_END_OF_TAPE:
 			failed = st_job_save_change_tape(job);
@@ -169,14 +178,9 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 				return failed;
 			break;
 
-		case ST_TAR_OUT_OK:
-			block_number = jp->tar->ops->position(jp->tar) / jp->block_size;
+		default:
 			break;
 	}
-
-	jp->current_file = st_archive_file_new(job, &st, path, block_number);
-	jp->db_con->ops->new_file(jp->db_con, jp->current_file);
-	jp->db_con->ops->file_link_to_volume(jp->db_con, jp->current_file, jp->current_volume);
 
 	if (S_ISREG(st.st_mode)) {
 		int fd = open(path, O_RDONLY);
@@ -265,6 +269,7 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 	}
 
 	st_archive_file_free(jp->current_file);
+	jp->current_file = NULL;
 
 	return 0;
 }
@@ -339,8 +344,10 @@ int st_job_save_change_tape(struct st_job * job) {
 	st_io_json_add_volume(jp->json, jp->current_volume);
 
 	// link current file to new volume
-	jp->current_file->position = 0;
-	jp->db_con->ops->file_link_to_volume(jp->db_con, jp->current_file, jp->current_volume);
+	if (jp->current_file != NULL) {
+		jp->current_file->position = 0;
+		jp->db_con->ops->file_link_to_volume(jp->db_con, jp->current_file, jp->current_volume);
+	}
 
 	tw = jp->current_tape_writer = dr->ops->get_writer(dr);
 	cw = jp->current_checksum_writer = st_checksum_get_steam_writer((const char **) job->checksums, job->nb_checksums, tw);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 18 Jun 2012 12:05:36 +0200                         *
+*  Last modified: Thu, 06 Sep 2012 17:54:51 +0200                         *
 \*************************************************************************/
 
 // free
@@ -49,18 +49,6 @@ void st_tar_init_header(struct st_tar_header * h) {
 	if (!h)
 		return;
 
-	h->dev = 0;
-	h->path = 0;
-	h->filename = 0;
-	h->link = 0;
-	h->size = 0;
-	h->offset = 0;
-	h->mode = 0;
-	h->mtime = 0;
-	h->uid = 0;
-	bzero(h->uname, 32);
-	h->gid = 0;
-	bzero(h->gname, 32);
-	h->is_label = 0;
+	bzero(h, sizeof(struct st_tar_header));
 }
 
