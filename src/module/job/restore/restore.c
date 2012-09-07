@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 07 Sep 2012 10:04:09 +0200                         *
+*  Last modified: Fri, 07 Sep 2012 11:13:36 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -413,6 +413,8 @@ int st_job_restore_restore_archive(struct st_job * job) {
 			if (failed)
 				break;
 		}
+
+		jp->position += tar->ops->position(tar);
 
 		free(jp->buffer);
 
