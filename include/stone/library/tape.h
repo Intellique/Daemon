@@ -129,6 +129,7 @@ enum st_tape_status st_tape_string_to_status(const char * status);
 enum st_tape_format_data_type st_tape_string_to_format_data(const char * type);
 enum st_tape_format_mode st_tape_string_to_format_mode(const char * mode);
 
+struct st_tape * st_tape_find_offline(struct st_pool * pool);
 struct st_tape * st_tape_get_by_id(long id);
 struct st_tape * st_tape_get_by_label(const char * label);
 struct st_tape * st_tape_get_by_uuid(const char * uuid);

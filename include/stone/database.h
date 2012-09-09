@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 18:55:33 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 20:16:39 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -30,6 +30,8 @@
 
 // time_t
 #include <sys/time.h>
+// ssize_t
+#include <sys/types.h>
 
 struct st_archive;
 struct st_archive_file;
@@ -126,6 +128,7 @@ struct st_database_connection {
 
 		int (*add_job_record)(struct st_database_connection * db, struct st_job * job, const char * message);
 		int (*create_pool)(struct st_database_connection * db, struct st_pool * pool);
+		ssize_t (*get_available_size_by_pool)(struct st_database_connection * db, struct st_pool * pool);
 		int (*get_nb_new_jobs)(struct st_database_connection * db, long * nb_new_jobs, time_t since, long last_max_jobs);
 		int (*get_new_jobs)(struct st_database_connection * db, struct st_job ** jobs, unsigned int nb_jobs, time_t since, long last_max_jobs);
 		int (*get_pool)(struct st_database_connection * db, struct st_pool * pool, long id, const char * uuid);

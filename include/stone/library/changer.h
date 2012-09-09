@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 11:22:30 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 16:14:49 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_CHANGER_H__
@@ -102,6 +102,7 @@ struct st_slot {
 };
 
 
+struct st_drive * st_changer_find_free_drive(struct st_pool * hint);
 ssize_t st_changer_get_available_size_by_pool(struct st_pool * pool);
 ssize_t st_changer_get_available_size_of_new_tapes(void);
 struct st_changer * st_changer_get_by_tape(struct st_tape * tape);

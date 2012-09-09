@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 07 Sep 2012 14:55:29 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 20:32:22 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -65,36 +65,37 @@ static int st_db_postgresql_create_checkpoint(struct st_database_connection * co
 static int st_db_postgresql_finish_transaction(struct st_database_connection * connection);
 static int st_db_postgresql_start_transaction(struct st_database_connection * connection);
 
-static int st_db_postgresql_add_job_record(struct st_database_connection * db, struct st_job * job, const char * message);
-static int st_db_postgresql_create_pool(struct st_database_connection * db, struct st_pool * pool);
+static int st_db_postgresql_add_job_record(struct st_database_connection * connection, struct st_job * job, const char * message);
+static int st_db_postgresql_create_pool(struct st_database_connection * connection, struct st_pool * pool);
+static ssize_t st_db_postgresql_get_available_size_by_pool(struct st_database_connection * connection, struct st_pool * pool);
 static char * st_db_postgresql_get_host(struct st_database_connection * connection);
-static int st_db_postgresql_get_nb_new_jobs(struct st_database_connection * db, long * nb_new_jobs, time_t since, long last_max_jobs);
-static int st_db_postgresql_get_new_jobs(struct st_database_connection * db, struct st_job ** jobs, unsigned int nb_jobs, time_t since, long last_max_jobs);
-static int st_db_postgresql_get_pool(struct st_database_connection * db, struct st_pool * pool, long id, const char * uuid);
-static int st_db_postgresql_get_tape(struct st_database_connection * db, struct st_tape * tape, long id, const char * uuid, const char * label);
-static int st_db_postgresql_get_tape_format(struct st_database_connection * db, struct st_tape_format * tape_format, long id, unsigned char density_code);
-static int st_db_postgresql_get_user(struct st_database_connection * db, struct st_user * user, long user_id, const char * login);
-static int st_db_postgresql_is_changer_contain_drive(struct st_database_connection * db, struct st_changer * changer, struct st_drive * drive);
-static int st_db_postgresql_refresh_job(struct st_database_connection * db, struct st_job * job);
-static int st_db_postgresql_sync_changer(struct st_database_connection * db, struct st_changer * changer);
-static int st_db_postgresql_sync_drive(struct st_database_connection * db, struct st_drive * drive);
-static int st_db_postgresql_sync_plugin_checksum(struct st_database_connection * db, const char * plugin);
-static int st_db_postgresql_sync_plugin_job(struct st_database_connection * db, const char * plugin);
-static int st_db_postgresql_sync_pool(struct st_database_connection * db, struct st_pool * pool);
-static int st_db_postgresql_sync_slot(struct st_database_connection * db, struct st_slot * slot);
-static int st_db_postgresql_sync_tape(struct st_database_connection * db, struct st_tape * tape);
-static int st_db_postgresql_sync_user(struct st_database_connection * db, struct st_user * user);
-static int st_db_postgresql_update_job(struct st_database_connection * db, struct st_job * job);
+static int st_db_postgresql_get_nb_new_jobs(struct st_database_connection * connection, long * nb_new_jobs, time_t since, long last_max_jobs);
+static int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, struct st_job ** jobs, unsigned int nb_jobs, time_t since, long last_max_jobs);
+static int st_db_postgresql_get_pool(struct st_database_connection * connection, struct st_pool * pool, long id, const char * uuid);
+static int st_db_postgresql_get_tape(struct st_database_connection * connection, struct st_tape * tape, long id, const char * uuid, const char * label);
+static int st_db_postgresql_get_tape_format(struct st_database_connection * connection, struct st_tape_format * tape_format, long id, unsigned char density_code);
+static int st_db_postgresql_get_user(struct st_database_connection * connection, struct st_user * user, long user_id, const char * login);
+static int st_db_postgresql_is_changer_contain_drive(struct st_database_connection * connection, struct st_changer * changer, struct st_drive * drive);
+static int st_db_postgresql_refresh_job(struct st_database_connection * connection, struct st_job * job);
+static int st_db_postgresql_sync_changer(struct st_database_connection * connection, struct st_changer * changer);
+static int st_db_postgresql_sync_drive(struct st_database_connection * connection, struct st_drive * drive);
+static int st_db_postgresql_sync_plugin_checksum(struct st_database_connection * connection, const char * plugin);
+static int st_db_postgresql_sync_plugin_job(struct st_database_connection * connection, const char * plugin);
+static int st_db_postgresql_sync_pool(struct st_database_connection * connection, struct st_pool * pool);
+static int st_db_postgresql_sync_slot(struct st_database_connection * connection, struct st_slot * slot);
+static int st_db_postgresql_sync_tape(struct st_database_connection * connection, struct st_tape * tape);
+static int st_db_postgresql_sync_user(struct st_database_connection * connection, struct st_user * user);
+static int st_db_postgresql_update_job(struct st_database_connection * connection, struct st_job * job);
 
-static int st_db_postgresql_file_add_checksum(struct st_database_connection * db, struct st_archive_file * file);
-static int st_db_postgresql_file_link_to_volume(struct st_database_connection * db, struct st_archive_file * file, struct st_archive_volume * volume);
-static int st_db_postgresql_new_archive(struct st_database_connection * db, struct st_archive * archive);
-static int st_db_postgresql_new_file(struct st_database_connection * db, struct st_archive_file * file);
-static int st_db_postgresql_new_volume(struct st_database_connection * db, struct st_archive_volume * volume);
-static int st_db_postgresql_update_archive(struct st_database_connection * db, struct st_archive * archive);
-static int st_db_postgresql_update_volume(struct st_database_connection * db, struct st_archive_volume * volume);
+static int st_db_postgresql_file_add_checksum(struct st_database_connection * connection, struct st_archive_file * file);
+static int st_db_postgresql_file_link_to_volume(struct st_database_connection * connection, struct st_archive_file * file, struct st_archive_volume * volume);
+static int st_db_postgresql_new_archive(struct st_database_connection * connection, struct st_archive * archive);
+static int st_db_postgresql_new_file(struct st_database_connection * connection, struct st_archive_file * file);
+static int st_db_postgresql_new_volume(struct st_database_connection * connection, struct st_archive_volume * volume);
+static int st_db_postgresql_update_archive(struct st_database_connection * connection, struct st_archive * archive);
+static int st_db_postgresql_update_volume(struct st_database_connection * connection, struct st_archive_volume * volume);
 
-static int st_db_postgresql_add_backup(struct st_database_connection * db, struct st_backupdb * backup);
+static int st_db_postgresql_add_backup(struct st_database_connection * connection, struct st_backupdb * backup);
 
 static int st_db_postgresql_get_bool(PGresult * result, int row, int column, bool * value);
 static int st_db_postgresql_get_double(PGresult * result, int row, int column, double * value);
@@ -117,24 +118,25 @@ static struct st_database_connection_ops st_db_postgresql_con_ops = {
 	.finish_transaction = st_db_postgresql_finish_transaction,
 	.start_transaction  = st_db_postgresql_start_transaction,
 
-	.add_job_record           = st_db_postgresql_add_job_record,
-	.create_pool              = st_db_postgresql_create_pool,
-	.get_nb_new_jobs          = st_db_postgresql_get_nb_new_jobs,
-	.get_new_jobs             = st_db_postgresql_get_new_jobs,
-	.get_pool                 = st_db_postgresql_get_pool,
-	.get_tape                 = st_db_postgresql_get_tape,
-	.get_tape_format          = st_db_postgresql_get_tape_format,
-	.get_user                 = st_db_postgresql_get_user,
-	.is_changer_contain_drive = st_db_postgresql_is_changer_contain_drive,
-	.refresh_job              = st_db_postgresql_refresh_job,
-	.sync_changer             = st_db_postgresql_sync_changer,
-	.sync_drive               = st_db_postgresql_sync_drive,
-	.sync_plugin_checksum     = st_db_postgresql_sync_plugin_checksum,
-	.sync_plugin_job          = st_db_postgresql_sync_plugin_job,
-	.sync_pool                = st_db_postgresql_sync_pool,
-	.sync_tape                = st_db_postgresql_sync_tape,
-	.sync_user                = st_db_postgresql_sync_user,
-	.update_job               = st_db_postgresql_update_job,
+	.add_job_record             = st_db_postgresql_add_job_record,
+	.create_pool                = st_db_postgresql_create_pool,
+	.get_available_size_by_pool = st_db_postgresql_get_available_size_by_pool,
+	.get_nb_new_jobs            = st_db_postgresql_get_nb_new_jobs,
+	.get_new_jobs               = st_db_postgresql_get_new_jobs,
+	.get_pool                   = st_db_postgresql_get_pool,
+	.get_tape                   = st_db_postgresql_get_tape,
+	.get_tape_format            = st_db_postgresql_get_tape_format,
+	.get_user                   = st_db_postgresql_get_user,
+	.is_changer_contain_drive   = st_db_postgresql_is_changer_contain_drive,
+	.refresh_job                = st_db_postgresql_refresh_job,
+	.sync_changer               = st_db_postgresql_sync_changer,
+	.sync_drive                 = st_db_postgresql_sync_drive,
+	.sync_plugin_checksum       = st_db_postgresql_sync_plugin_checksum,
+	.sync_plugin_job            = st_db_postgresql_sync_plugin_job,
+	.sync_pool                  = st_db_postgresql_sync_pool,
+	.sync_tape                  = st_db_postgresql_sync_tape,
+	.sync_user                  = st_db_postgresql_sync_user,
+	.update_job                 = st_db_postgresql_update_job,
 
 	.file_add_checksum   = st_db_postgresql_file_add_checksum,
 	.file_link_to_volume = st_db_postgresql_file_link_to_volume,
@@ -377,6 +379,36 @@ int st_db_postgresql_create_pool(struct st_database_connection * connection, str
 	free(tape_format);
 
 	return status == PGRES_FATAL_ERROR;
+}
+
+ssize_t st_db_postgresql_get_available_size_by_pool(struct st_database_connection * connection, struct st_pool * pool) {
+	if (connection == NULL || pool == NULL)
+		return 0;
+
+	struct st_db_postgresql_connetion_private * self = connection->data;
+	st_db_postgresql_check(connection);
+
+	const char * query = "select_available_offline_size_by_pool";
+	st_db_postgresql_prepare(self, query, "SELECT SUM(tf.capacity - t.endpos * t.blocksize::BIGINT) AS total FROM tape t LEFT JOIN tapeformat tf ON t.tapeformat = tf.id WHERE location = 'offline' AND pool = $1");
+
+	char * poolid;
+	asprintf(&poolid, "%ld", pool->id);
+
+	const char * param[] = { poolid };
+	PGresult * result = PQexecPrepared(self->db_con, query, 1, param, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	free(poolid);
+
+	ssize_t total_size = 0;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1 && !PQgetisnull(result, 0, 0))
+		st_db_postgresql_get_ssize(result, 0, 0, &total_size);
+
+	PQclear(result);
+
+	return total_size;
 }
 
 char * st_db_postgresql_get_host(struct st_database_connection * connection) {

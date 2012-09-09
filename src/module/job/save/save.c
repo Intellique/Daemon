@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 12:10:58 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 20:55:55 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -94,11 +94,13 @@ struct st_job_save_private {
 };
 
 enum st_job_save_state {
-	changer_got_tape,
-	look_for_free_drive,
-	look_in_first_changer,
-	look_in_next_changer,
-	select_new_tape,
+	check_offline_free_size_left,
+	check_online_free_size_left,
+	check_tape_free_space,
+	check_tape_in_drive,
+	find_free_drive,
+	is_pool_growable1,
+	is_pool_growable2,
 };
 
 static int st_job_save_archive_file(struct st_job * job, const char * path);
@@ -110,8 +112,7 @@ static void st_job_save_init(void) __attribute__((constructor));
 static int st_job_save_manage_error(struct st_job * job, int error);
 static void st_job_save_new_job(struct st_database_connection * db, struct st_job * job);
 static int st_job_save_run(struct st_job * job);
-static struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_state state);
-static void st_job_save_savepoint_save(struct st_job * job, struct st_changer * changer, struct st_drive * drive, struct st_slot * slot);
+static struct st_drive * st_job_save_select_tape(struct st_job * job);
 static int st_job_save_stop(struct st_job * job);
 static int st_job_save_tape_in_list(struct st_job_save_private * jp, struct st_tape * tape);
 
@@ -300,7 +301,7 @@ int st_job_save_change_tape(struct st_job * job) {
 
 	job->db_ops->add_record(job, st_log_level_info, "Unloading tape from drive #%td", dr - ch->drives);
 
-	struct st_drive * new_drive = st_job_save_select_tape(job, select_new_tape);
+	struct st_drive * new_drive = st_job_save_select_tape(job);
 
 	if (dr != new_drive) {
 		dr->lock->ops->unlock(dr->lock);
@@ -466,33 +467,7 @@ int st_job_save_run(struct st_job * job) {
 		return 3;
 	}
 
-    /*
-	char will_archive[32], remain_size[32];
-	st_util_convert_size_to_string(jp->total_size, will_archive, 32);
-
-	ssize_t total_remaining_size_of_pool = st_changer_get_available_size_by_pool(job->pool);
-	if (jp->total_size > total_remaining_size_of_pool && !job->pool->growable) {
-		st_util_convert_size_to_string(total_remaining_size_of_pool, remain_size, 32);
-		job->db_ops->add_record(job, st_log_level_error, "Not enough space remaining from pool (%s) and this pool is not growable", job->pool->name);
-		job->db_ops->add_record(job, st_log_level_error, "Size required: %s, Size left: %s", will_archive, remain_size);
-
-		job->sched_status = st_job_status_error;
-		return 1;
-	}
-
-	total_remaining_size_of_pool += st_changer_get_available_size_of_new_tapes();
-	if (jp->total_size > total_remaining_size_of_pool) {
-		st_util_convert_size_to_string(total_remaining_size_of_pool, remain_size, 32);
-		job->db_ops->add_record(job, st_log_level_error, "Not enough space remaining from pool (%s) and not enough available new tape", job->pool->name);
-		job->db_ops->add_record(job, st_log_level_error, "Size required: %s, Size left: %s", will_archive, remain_size);
-
-		job->sched_status = st_job_status_error;
-		return 1;
-	}
-
-	job->db_ops->add_record(job, st_log_level_info, "Will archive %s", will_archive);*/
-
-	struct st_drive * drive = jp->current_drive = st_job_save_select_tape(job, look_in_first_changer);
+	struct st_drive * drive = jp->current_drive = st_job_save_select_tape(job);
 
 	// start new transaction
 	jp->db_con->ops->start_transaction(jp->db_con);
@@ -584,197 +559,161 @@ int st_job_save_run(struct st_job * job) {
 	return 0;
 }
 
-struct st_drive * st_job_save_select_tape(struct st_job * job, enum st_job_save_state state) {
+struct st_drive * st_job_save_select_tape(struct st_job * job) {
 	struct st_job_save_private * jp = job->data;
 
 	struct st_changer * changer = 0;
 	struct st_drive * drive = 0;
-	struct st_slot * slot = 0;
 
-	short stop = 0;
-	unsigned int i, j;
+	bool stop = false;
+	unsigned int i;
+	ssize_t total_free_space = 0;
+	bool has_alerted_user = false;
+	enum st_job_save_state state = find_free_drive;
+
 	while (!stop) {
 		switch (state) {
-			case changer_got_tape:
-				slot = 0;
-				for (i = 0; i < changer->nb_slots && !slot; i++) {
-					slot = changer->slots + i;
+			case check_offline_free_size_left:
+				total_free_space += jp->db_con->ops->get_available_size_by_pool(jp->db_con, job->pool);
 
-					if (!slot->tape || slot->tape->pool != job->pool || st_job_save_tape_in_list(jp, slot->tape) || (drive && slot->drive == drive)) {
-						slot = 0;
-						continue;
+				if (jp->total_size - jp->total_size_done < total_free_space) {
+					if (!has_alerted_user)
+						job->db_ops->add_record(job, st_log_level_warning, "Please, insert media which is a part of pool nammed %s", job->pool->name);
+					has_alerted_user = true;
+
+					job->sched_status = st_job_status_pause;
+					sleep(60);
+					job->sched_status = st_job_status_running;
+
+					state = check_online_free_size_left;
+				} else
+					state = is_pool_growable2;
+
+				break;
+
+			case check_online_free_size_left:
+				total_free_space = st_changer_get_available_size_by_pool(job->pool);
+
+				if (jp->total_size - jp->total_size_done < total_free_space) {
+					if (drive->slot->tape == NULL) {
+						struct st_slot * sl = NULL;
+						for (i = changer->nb_drives; i < changer->nb_slots && !sl; i++) {
+							sl = changer->slots + i;
+
+							if (sl->lock->ops->trylock(sl->lock)) {
+								sl = NULL;
+								continue;
+							}
+
+							if (sl->tape == NULL || sl->tape->pool != job->pool || st_job_save_tape_in_list(jp, job->tape)) {
+								sl->lock->ops->unlock(sl->lock);
+								sl = NULL;
+								continue;
+							}
+						}
+
+						if (sl != NULL) {
+							changer->lock->ops->lock(changer->lock);
+							changer->ops->load(changer, sl, drive);
+							changer->lock->ops->unlock(changer->lock);
+
+							drive->ops->reset(drive);
+
+							return drive;
+						}
 					}
+				}
 
-					if (slot->drive) {
-						if (!slot->drive->lock->ops->trylock(slot->drive->lock)) {
-							slot->drive->ops->eod(slot->drive);
-							return slot->drive;
-						} else {
-							st_job_save_savepoint_save(job, changer, slot->drive, slot);
-							slot = 0;
+				state = is_pool_growable1;
+
+				break;
+
+			case check_tape_free_space: {
+					struct st_tape * tape = drive->slot->tape;
+					if (tape->available_block * tape->block_size >= tape->format->capacity / 10)
+						return drive;
+					state = is_pool_growable1;
+				}
+				break;
+
+			case check_tape_in_drive:
+				if (drive->slot->tape != NULL && drive->slot->tape->pool != job->pool) {
+					drive->ops->eject(drive);
+					changer->ops->unload(changer, drive);
+				}
+
+				state = check_online_free_size_left;
+				if (drive->slot->tape != NULL && jp->total_size - jp->total_size_done > drive->slot->tape->available_block * drive->slot->tape->block_size)
+					state = check_tape_free_space;
+
+				break;
+
+			case find_free_drive:
+				drive = st_changer_find_free_drive(job->pool);
+
+				if (drive != NULL) {
+					changer = drive->changer;
+					state = check_tape_in_drive;
+				} else {
+					job->sched_status = st_job_status_pause;
+					sleep(60);
+					job->sched_status = st_job_status_running;
+				}
+
+				break;
+
+			case is_pool_growable1:
+				if (job->pool->growable) {
+					struct st_slot * sl_format = NULL;
+					for (i = changer->nb_drives; i < changer->nb_slots && !sl_format; i++) {
+						sl_format = changer->slots + i;
+
+						if (sl_format->lock->ops->trylock(sl_format->lock)) {
+							sl_format = NULL;
+							continue;
+						}
+
+						if (sl_format->tape == NULL || sl_format->tape->status != ST_TAPE_STATUS_NEW) {
+							sl_format->lock->ops->unlock(sl_format->lock);
+							sl_format = NULL;
 							continue;
 						}
 					}
 
-					if (!slot->lock->ops->trylock(slot->lock)) {
-						if (drive) {
-							changer->lock->ops->lock(changer->lock);
-							job->db_ops->add_record(job, st_log_level_info, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
-							changer->ops->load(changer, slot, drive);
-							changer->lock->ops->unlock(changer->lock);
-							slot->lock->ops->unlock(slot->lock);
+					if (sl_format != NULL) {
+						changer->lock->ops->lock(changer->lock);
+						changer->ops->load(changer, sl_format, drive);
+						changer->lock->ops->unlock(changer->lock);
+						sl_format->lock->ops->unlock(sl_format->lock);
 
-							drive->ops->reset(drive);
-							drive->ops->eod(drive);
-							return drive;
-						}
+						st_tape_write_header(drive, job->pool);
 
-						state = look_for_free_drive;
-					} else {
-						st_job_save_savepoint_save(job, changer, drive, slot);
-						slot = 0;
-					}
-				}
-
-				if (!slot)
-					state = look_in_next_changer;
+						return drive;
+					} else
+						state = check_offline_free_size_left;
+				} else
+					state = check_offline_free_size_left;
 
 				break;
 
-			case look_for_free_drive:
-				for (i = 0; i < changer->nb_drives; i++) {
-					drive = changer->drives + i;
-
-					if (!drive->lock->ops->trylock(drive->lock))
-						break;
-
-					drive = 0;
+			case is_pool_growable2:
+				if (job->pool->growable && !has_alerted_user) {
+					job->db_ops->add_record(job, st_log_level_warning, "Please, insert new media which will be a part of pool %s", job->pool->name);
+				} else if (!has_alerted_user) {
+					job->db_ops->add_record(job, st_log_level_warning, "Please, you must to extent the pool (%s)", job->pool->name);
 				}
 
-				if (drive) {
-					changer->lock->ops->lock(changer->lock);
-					job->db_ops->add_record(job, st_log_level_info, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
-					changer->ops->load(changer, slot, drive);
-					changer->lock->ops->unlock(changer->lock);
-					slot->lock->ops->unlock(slot->lock);
+				has_alerted_user = true;
 
-					drive->ops->reset(drive);
-					drive->ops->eod(drive);
-					return drive;
-				}
-				st_job_save_savepoint_save(job, changer, drive, slot);
-				slot->lock->ops->unlock(slot->lock);
-				state = look_in_next_changer;
-				break;
+				job->sched_status = st_job_status_pause;
+				sleep(60);
+				job->sched_status = st_job_status_running;
 
-			case look_in_first_changer:
-				changer = st_changer_get_first_changer();
-				state = changer_got_tape;
-				break;
-
-			case look_in_next_changer:
-				changer = st_changer_get_next_changer(changer);
-
-				if (changer) {
-					state = changer_got_tape;
-				} else {
-					while (jp->nb_savepoints > 0) {
-						for (i = 0; i < jp->nb_savepoints; i++) {
-							struct st_job_save_savepoint * sp = jp->savepoints + i;
-
-							changer = sp->changer;
-							drive = sp->drive;
-							slot = sp->slot;
-
-							if (drive && !drive->lock->ops->trylock(drive->lock)) {
-								if (!drive->slot->tape || drive->slot->tape->pool != job->pool) {
-									drive->lock->ops->unlock(drive->lock);
-
-									if (i + 1 < jp->nb_savepoints)
-										memmove(jp->savepoints + i, jp->savepoints + i + 1, (jp->nb_savepoints - i - 1) * sizeof(struct st_job_save_savepoint));
-									jp->savepoints = realloc(jp->savepoints, (jp->nb_savepoints - 1) * sizeof(struct st_job_save_savepoint));
-									jp->nb_savepoints--;
-
-									i--;
-
-									if (jp->nb_savepoints == 0)
-										state = look_in_first_changer;
-
-									continue;
-								}
-
-								drive->ops->eod(drive);
-								return drive;
-							} else if (drive) {
-								continue;
-							} else if (slot && !slot->lock->ops->trylock(slot->lock)) {
-								if (!slot->tape || slot->tape->pool != job->pool) {
-									slot->lock->ops->unlock(slot->lock);
-
-									if (i + 1 < jp->nb_savepoints)
-										memmove(jp->savepoints + i, jp->savepoints + i + 1, (jp->nb_savepoints - i - 1) * sizeof(struct st_job_save_savepoint));
-									jp->savepoints = realloc(jp->savepoints, (jp->nb_savepoints - 1) * sizeof(struct st_job_save_savepoint));
-									jp->nb_savepoints--;
-
-									i--;
-
-									if (jp->nb_savepoints == 0)
-										state = look_in_first_changer;
-
-									continue;
-								}
-
-								// look for free drive
-								for (j = 0; j < changer->nb_drives; j++) {
-									drive = changer->drives + j;
-
-									if (!drive->lock->ops->trylock(drive->lock))
-										break;
-
-									drive = 0;
-								}
-
-								if (drive) {
-									changer->lock->ops->lock(changer->lock);
-									job->db_ops->add_record(job, st_log_level_info, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
-									changer->ops->load(changer, slot, drive);
-									changer->lock->ops->unlock(changer->lock);
-									slot->lock->ops->unlock(slot->lock);
-
-									drive->ops->reset(drive);
-									drive->ops->eod(drive);
-									return drive;
-								} else {
-									slot->lock->ops->unlock(slot->lock);
-								}
-							}
-						}
-
-						sleep(5);
-					}
-
-					if (jp->nb_savepoints == 0)
-						sleep(5);
-				}
-				break;
-
-			case select_new_tape:
-				changer = jp->current_drive->changer;
-				drive = jp->current_drive;
-				state = changer_got_tape;
+				state = check_online_free_size_left;
 				break;
 		}
 	}
 	return 0;
-}
-
-void st_job_save_savepoint_save(struct st_job * job, struct st_changer * changer, struct st_drive * drive, struct st_slot * slot) {
-	struct st_job_save_private * jp = job->data;
-	jp->savepoints = realloc(jp->savepoints, (jp->nb_savepoints + 1) * sizeof(struct st_job_save_savepoint));
-	jp->savepoints[jp->nb_savepoints].changer = changer;
-	jp->savepoints[jp->nb_savepoints].drive = drive;
-	jp->savepoints[jp->nb_savepoints].slot = slot;
-	jp->nb_savepoints++;
 }
 
 int st_job_save_stop(struct st_job * job) {

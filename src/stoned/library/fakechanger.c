@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 11:25:05 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 18:45:46 +0200                         *
 \*************************************************************************/
 
 // malloc
@@ -103,7 +103,10 @@ void st_fakechanger_setup(struct st_changer * changer) {
 }
 
 int st_fakechanger_unload(struct st_changer * changer, struct st_drive * drive) {
-	drive->slot->tape = 0;
+	if (drive->slot->tape != NULL)
+		drive->ops->eject(drive);
+	drive->slot->tape = NULL;
+
 	st_log_write_all(st_log_level_warning, st_log_type_user_message, "[%s | %s | #%td]: Tape has been unloaded", drive->vendor, drive->model, drive - changer->drives);
 	return 0;
 }

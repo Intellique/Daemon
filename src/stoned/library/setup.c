@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 07 Sep 2012 13:25:50 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 16:23:06 +0200                         *
 \*************************************************************************/
 
 // open
@@ -56,6 +56,63 @@ static struct st_changer * st_changers = 0;
 static unsigned int st_nb_fake_changers = 0;
 static unsigned int st_nb_real_changers = 0;
 
+
+struct st_drive * st_changer_find_free_drive(struct st_pool * hint) {
+	unsigned int i, nb_changer = st_nb_real_changers + st_nb_fake_changers;
+	for (i = 0; i < nb_changer; i++) {
+        struct st_changer * ch = st_changers + i;
+
+        unsigned j;
+        for (j = 0; j < ch->nb_drives; j++) {
+            struct st_drive * dr = ch->drives + j;
+
+            if (dr->lock->ops->trylock(dr->lock))
+                continue;
+
+            if (dr->slot->tape == NULL || dr->slot->tape->pool != hint) {
+                dr->lock->ops->unlock(dr->lock);
+                continue;
+            }
+
+            return dr;
+        }
+    }
+
+	for (i = 0; i < nb_changer; i++) {
+        struct st_changer * ch = st_changers + i;
+
+        unsigned j;
+        for (j = 0; j < ch->nb_drives; j++) {
+            struct st_drive * dr = ch->drives + j;
+
+            if (dr->lock->ops->trylock(dr->lock))
+                continue;
+
+            if (dr->slot->tape != NULL) {
+                dr->lock->ops->unlock(dr->lock);
+                continue;
+            }
+
+            return dr;
+        }
+    }
+
+	for (i = 0; i < nb_changer; i++) {
+        struct st_changer * ch = st_changers + i;
+
+        unsigned j;
+        for (j = 0; j < ch->nb_drives; j++) {
+            struct st_drive * dr = ch->drives + j;
+
+            if (dr->lock->ops->trylock(dr->lock))
+                continue;
+
+            return dr;
+        }
+    }
+
+    return NULL;
+}
 
 ssize_t st_changer_get_available_size_by_pool(struct st_pool * pool) {
 	unsigned int i;
