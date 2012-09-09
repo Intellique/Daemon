@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 05 Sep 2012 19:05:57 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 11:25:05 +0200                         *
 \*************************************************************************/
 
 // malloc
@@ -41,7 +41,7 @@
 static int st_fakechanger_can_load(void);
 static struct st_slot * st_fakechanger_get_tape(struct st_changer * ch, struct st_tape * tape);
 static int st_fakechanger_load(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
-static int st_fakechanger_unload(struct st_changer * ch, struct st_drive * from, struct st_slot * to);
+static int st_fakechanger_unload(struct st_changer * ch, struct st_drive * from);
 
 static struct st_changer_ops st_fakechanger_ops = {
 	.can_load = st_fakechanger_can_load,
@@ -102,7 +102,7 @@ void st_fakechanger_setup(struct st_changer * changer) {
 		dr->slot->tape = st_tape_new(dr);
 }
 
-int st_fakechanger_unload(struct st_changer * changer, struct st_drive * drive, struct st_slot * to __attribute__((unused))) {
+int st_fakechanger_unload(struct st_changer * changer, struct st_drive * drive) {
 	drive->slot->tape = 0;
 	st_log_write_all(st_log_level_warning, st_log_type_user_message, "[%s | %s | #%td]: Tape has been unloaded", drive->vendor, drive->model, drive - changer->drives);
 	return 0;

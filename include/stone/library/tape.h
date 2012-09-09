@@ -22,12 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Jun 2012 11:55:32 +0200                         *
+*  Last modified: Fri, 07 Sep 2012 14:52:08 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_TAPE_H__
 #define __STONE_LIBRARY_TAPE_H__
 
+// bool
+#include <stdbool.h>
 // ssize_t, time_t
 #include <sys/types.h>
 
@@ -86,7 +88,7 @@ struct st_tape {
 	ssize_t block_size;
 	ssize_t available_block; // in block size, not in bytes
 	int nb_files;
-	char has_partition;
+	bool has_partition;
 	struct st_tape_format * format;
 	struct st_pool * pool;
 	char mam_ok; // data read from mam
@@ -105,15 +107,15 @@ struct st_tape_format {
 	long life_span;
 	ssize_t capacity;
 	ssize_t block_size;
-	char support_partition;
-	char support_mam;
+	bool support_partition;
+	bool support_mam;
 };
 
 struct st_pool {
 	long id;
 	char uuid[37];
 	char name[64];
-	unsigned char growable;
+	bool growable;
 	struct st_tape_format * format;
 };
 

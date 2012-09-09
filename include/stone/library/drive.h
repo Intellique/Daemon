@@ -22,12 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 31 May 2012 16:24:17 +0200                         *
+*  Last modified: Fri, 07 Sep 2012 14:54:40 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_DRIVE_H__
 #define __STONE_LIBRARY_DRIVE_H__
 
+// bool
+#include <stdbool.h>
 // ssize_t
 #include <sys/types.h>
 
@@ -67,7 +69,7 @@ struct st_drive {
 
 	struct st_changer * changer;
 	struct st_slot * slot;
-	char enabled;
+	bool enabled;
 
 	struct st_drive_ops {
 		int (*eject)(struct st_drive * drive);

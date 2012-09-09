@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 06 Sep 2012 10:39:47 +0200                         *
+*  Last modified: Fri, 07 Sep 2012 14:55:29 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -33,6 +33,8 @@
 #include <postgresql/libpq-fe.h>
 // uname
 #include <sys/utsname.h>
+// bool
+#include <stdbool.h>
 // sscanf, snprintf
 #include <stdio.h>
 // strcmp, strdup
@@ -94,7 +96,7 @@ static int st_db_postgresql_update_volume(struct st_database_connection * db, st
 
 static int st_db_postgresql_add_backup(struct st_database_connection * db, struct st_backupdb * backup);
 
-static int st_db_postgresql_get_bool(PGresult * result, int row, int column, char * value);
+static int st_db_postgresql_get_bool(PGresult * result, int row, int column, bool * value);
 static int st_db_postgresql_get_double(PGresult * result, int row, int column, double * value);
 static void st_db_postgresql_get_error(PGresult * result, const char * prepared_query);
 static int st_db_postgresql_get_int(PGresult * result, int row, int column, int * value);
@@ -368,7 +370,7 @@ int st_db_postgresql_create_pool(struct st_database_connection * connection, str
 		st_db_postgresql_get_error(result, query);
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 		st_db_postgresql_get_long(result, 0, 0, &pool->id);
-		st_db_postgresql_get_uchar(result, 0, 1, &pool->growable);
+		st_db_postgresql_get_bool(result, 0, 1, &pool->growable);
 	}
 
 	PQclear(result);
@@ -861,7 +863,7 @@ int st_db_postgresql_get_pool(struct st_database_connection * connection, struct
 		st_db_postgresql_get_long(result, 0, 0, &pool->id);
 		st_db_postgresql_get_string(result, 0, 1, pool->uuid);
 		st_db_postgresql_get_string(result, 0, 2, pool->name);
-		st_db_postgresql_get_uchar(result, 0, 3, &pool->growable);
+		st_db_postgresql_get_bool(result, 0, 3, &pool->growable);
 
 		long tapeformatid;
 		st_db_postgresql_get_long(result, 0, 4, &tapeformatid);
@@ -1627,7 +1629,7 @@ int st_db_postgresql_sync_pool(struct st_database_connection * connection, struc
 		st_db_postgresql_get_error(result, query);
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 		st_db_postgresql_get_string(result, 0, 0, pool->name);
-		st_db_postgresql_get_uchar(result, 0, 1, &pool->growable);
+		st_db_postgresql_get_bool(result, 0, 1, &pool->growable);
 	}
 
 	PQclear(result);
@@ -2665,13 +2667,13 @@ int st_db_postgresql_add_backup(struct st_database_connection * connection, stru
 }
 
 
-int st_db_postgresql_get_bool(PGresult * result, int row, int column, char * val) {
+int st_db_postgresql_get_bool(PGresult * result, int row, int column, bool * val) {
 	if (column < 0)
 		return -1;
 
 	char * value = PQgetvalue(result, row, column);
 	if (value)
-		*val = strcmp(value, "t") ? 0 : 1;
+		*val = strcmp(value, "t") ? false : true;
 
 	return value != 0;
 }

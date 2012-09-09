@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 05 Sep 2012 19:02:02 +0200                         *
+*  Last modified: Fri, 07 Sep 2012 13:25:50 +0200                         *
 \*************************************************************************/
 
 // open
@@ -56,6 +56,54 @@ static struct st_changer * st_changers = 0;
 static unsigned int st_nb_fake_changers = 0;
 static unsigned int st_nb_real_changers = 0;
 
+
+ssize_t st_changer_get_available_size_by_pool(struct st_pool * pool) {
+	unsigned int i;
+	ssize_t total_size = 0;
+	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers; i++) {
+		struct st_changer * ch = st_changers + i;
+
+		unsigned int j;
+		for (j = 0; j < ch->nb_slots; j++) {
+			struct st_slot * sl = ch->slots + j;
+			if (sl->tape == NULL)
+				continue;
+
+			struct st_tape * tape = sl->tape;
+			if (tape->pool == pool && tape->format != NULL) {
+				if (tape->available_block > 0)
+					total_size += tape->available_block * tape->block_size;
+				else
+					total_size += tape->format->capacity - tape->end_position * tape->block_size;
+			}
+		}
+	}
+	return total_size;
+}
+
+ssize_t st_changer_get_available_size_of_new_tapes(void) {
+	unsigned int i;
+	ssize_t total_size = 0;
+	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers; i++) {
+		struct st_changer * ch = st_changers + i;
+
+		unsigned int j;
+		for (j = 0; j < ch->nb_slots; j++) {
+			struct st_slot * sl = ch->slots + j;
+			if (sl->tape == NULL)
+				continue;
+
+			struct st_tape * tape = sl->tape;
+			if (tape->status == ST_TAPE_STATUS_NEW && tape->format != NULL) {
+				if (tape->available_block > 0)
+					total_size += tape->available_block * tape->block_size;
+				else
+					total_size += tape->format->capacity - tape->end_position * tape->block_size;
+			}
+		}
+	}
+	return total_size;
+}
 
 struct st_changer * st_changer_get_by_tape(struct st_tape * tape) {
 	if (!tape)

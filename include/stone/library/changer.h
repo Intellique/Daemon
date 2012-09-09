@@ -22,11 +22,16 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 05 Sep 2012 19:05:25 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 11:22:30 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_CHANGER_H__
 #define __STONE_LIBRARY_CHANGER_H__
+
+// bool
+#include <stdbool.h>
+// ssize_t
+#include <sys/types.h>
 
 struct st_drive;
 struct st_pool;
@@ -52,7 +57,7 @@ struct st_changer {
 	char * vendor;
 	char * revision;
 	char * serial_number;
-	int barcode;
+	bool barcode;
 
 	int host;
 	int target;
@@ -63,13 +68,13 @@ struct st_changer {
 	unsigned int nb_drives;
 	struct st_slot * slots;
 	unsigned int nb_slots;
-	char enabled;
+	bool enabled;
 
 	struct st_changer_ops {
 		int (*can_load)();
 		struct st_slot * (*get_tape)(struct st_changer * ch, struct st_tape * tape);
 		int (*load)(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
-		int (*unload)(struct st_changer * ch, struct st_drive * from, struct st_slot * to);
+		int (*unload)(struct st_changer * ch, struct st_drive * from);
 	} * ops;
 	void * data;
 
@@ -86,8 +91,8 @@ struct st_slot {
 	struct st_tape * tape;
 
 	char volume_name[37];
-	char full;
-	char is_import_export_slot;
+	bool full;
+	bool is_import_export_slot;
 
 	struct st_ressource * lock;
 
@@ -97,6 +102,8 @@ struct st_slot {
 };
 
 
+ssize_t st_changer_get_available_size_by_pool(struct st_pool * pool);
+ssize_t st_changer_get_available_size_of_new_tapes(void);
 struct st_changer * st_changer_get_by_tape(struct st_tape * tape);
 struct st_changer * st_changer_get_first_changer(void);
 struct st_changer * st_changer_get_next_changer(struct st_changer * changer);

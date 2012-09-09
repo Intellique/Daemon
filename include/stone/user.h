@@ -22,13 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 22 May 2012 19:01:23 +0200                         *
+*  Last modified: Fri, 07 Sep 2012 14:53:01 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_USER_H__
 #define __STONE_USER_H__
 
-#include <sys/types.h>
+// bool
+#include <stdbool.h>
 
 struct st_user {
 	long id;
@@ -37,10 +38,10 @@ struct st_user {
 	char * salt;
 	char * fullname;
 	char * email;
-	char is_admin;
-	char can_archive;
-	char can_restore;
-	char disabled;
+	bool is_admin;
+	bool can_archive;
+	bool can_restore;
+	bool disabled;
 	struct st_pool * pool;
 };
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 05 Sep 2012 19:09:46 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 12:04:35 +0200                         *
 \*************************************************************************/
 
 // sscanf
@@ -189,43 +189,9 @@ int st_job_format_tape_run(struct st_job * job) {
 	}
 
 	if (!self->stop_request && drive->slot->tape && drive->slot->tape != job->tape) {
-		struct st_slot * slot_to = 0;
+		drive->ops->eject(drive);
 
-		// look for the tape was stored
-		for (i = changer->nb_drives; i < changer->nb_slots; i++) {
-			slot_to = changer->slots + i;
-
-			if (!slot_to->tape && slot_to->address == drive->slot->src_address && !slot_to->lock->ops->trylock(slot_to->lock))
-				break;
-
-			slot_to = 0;
-		}
-
-		// if not found, look for free slot
-		for (i = changer->nb_drives; i < changer->nb_slots && !slot_to; i++) {
-			slot_to = changer->slots + i;
-
-			if (!slot_to->tape && !slot_to->lock->ops->trylock(slot_to->lock))
-				break;
-
-			slot_to = 0;
-		}
-
-		if (slot_to) {
-			drive->ops->eject(drive);
-
-			job->db_ops->add_record(job, st_log_level_info, "Unloading tape from drive #%td to slot #%td", drive - changer->drives, slot_to - changer->slots);
-			changer->ops->unload(changer, drive, slot_to);
-			slot_to->lock->ops->unlock(slot_to->lock);
-			has_changer_lock = 0;
-		} else if (!changer->ops->can_load()) {
-			drive->ops->eject(drive);
-
-			job->db_ops->add_record(job, st_log_level_info, "Unloading tape from drive #%td", drive - changer->drives);
-			changer->ops->unload(changer, drive, 0);
-			slot_to->lock->ops->unlock(slot_to->lock);
-			has_changer_lock = 0;
-		} else {
+		if (changer->ops->unload(changer, drive)) {
 			job->sched_status = st_job_status_error;
 			job->db_ops->add_record(job, st_log_level_error, "Fatal error: There is no place for unloading tape (%s)", drive->slot->tape->name);
 

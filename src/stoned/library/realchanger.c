@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 05 Sep 2012 19:08:52 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 11:43:23 +0200                         *
 \*************************************************************************/
 
 // open
@@ -56,7 +56,7 @@ static int st_realchanger_can_load(void);
 static struct st_slot * st_realchanger_get_tape(struct st_changer * ch, struct st_tape * tape);
 static int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
 static void * st_realchanger_setup2(void * drive);
-static int st_realchanger_unload(struct st_changer * ch, struct st_drive * from, struct st_slot * to);
+static int st_realchanger_unload(struct st_changer * ch, struct st_drive * from);
 
 static struct st_changer_ops st_realchanger_ops = {
 	.can_load = st_realchanger_can_load,
@@ -163,22 +163,8 @@ void st_realchanger_setup(struct st_changer * changer) {
 		st_drive_setup(dr);
 
 		if (dr->is_door_opened && dr->slot->full) {
-			struct st_slot * sl = 0;
-			unsigned int i;
-			for (i = changer->nb_drives; !sl && i < changer->nb_slots; i++) {
-				struct st_slot * ptrsl = changer->slots + i;
-				if (ptrsl->address == dr->slot->src_address)
-					sl = ptrsl;
-			}
-			for (i = changer->nb_drives; !sl && i < changer->nb_slots; i++) {
-				struct st_slot * ptrsl = changer->slots + i;
-				if (!ptrsl->full)
-					sl = ptrsl;
-			}
-
-			if (sl) {
-				st_realchanger_unload(changer, dr, sl);
-			} else {
+			int failed = st_realchanger_unload(changer, dr);
+			if (failed) {
 				st_log_write_all(st_log_level_warning, st_log_type_changer, "[%s | %s]: your drive #%td is offline and there is no place for unloading it", changer->vendor, changer->model, changer->drives - dr);
 				st_log_write_all(st_log_level_error, st_log_type_changer, "[%s | %s]: panic: your library require manual maintenance because there is no free slot for unloading drive", changer->vendor, changer->model);
 				exit(1);
@@ -238,35 +224,8 @@ void * st_realchanger_setup2(void * drive) {
 		if (!dr->slot->tape)
 			dr->slot->tape = st_tape_new(dr);
 
-		struct st_slot * sl = 0;
-		unsigned int i;
-		for (i = ch->nb_drives; !sl && i < ch->nb_slots; i++) {
-			struct st_slot * ptrsl = ch->slots + i;
-			if (ptrsl->lock->ops->trylock(ptrsl->lock))
-				continue;
-			if (ptrsl->address == dr->slot->src_address)
-				sl = ptrsl;
-			else
-				ptrsl->lock->ops->unlock(ptrsl->lock);
-		}
-		for (i = ch->nb_drives; !sl && i < ch->nb_slots; i++) {
-			struct st_slot * ptrsl = ch->slots + i;
-			if (ptrsl->lock->ops->trylock(ptrsl->lock))
-				continue;
-			if (!ptrsl->full)
-				sl = ptrsl;
-			else
-				ptrsl->lock->ops->unlock(ptrsl->lock);
-		}
-
-		if (!sl)
-			return 0;
-
 		dr->ops->eject(dr);
-		ch->lock->ops->lock(ch->lock);
-		st_realchanger_unload(ch, dr, sl);
-		ch->lock->ops->unlock(ch->lock);
-		sl->lock->ops->unlock(sl->lock);
+		st_realchanger_unload(ch, dr);
 	}
 
 	unsigned int i;
@@ -294,9 +253,7 @@ void * st_realchanger_setup2(void * drive) {
 		dr->slot->tape = st_tape_new(dr);
 		dr->ops->eject(dr);
 
-		ch->lock->ops->lock(ch->lock);
-		st_realchanger_unload(ch, dr, sl);
-		ch->lock->ops->unlock(ch->lock);
+		st_realchanger_unload(ch, dr);
 
 		sl->lock->ops->unlock(sl->lock);
 	}
@@ -304,26 +261,51 @@ void * st_realchanger_setup2(void * drive) {
 	return 0;
 }
 
-int st_realchanger_unload(struct st_changer * ch, struct st_drive * from, struct st_slot * to) {
-	if (!ch || !from || !to)
+int st_realchanger_unload(struct st_changer * ch, struct st_drive * drive) {
+	if (!ch || !drive)
 		return 1;
 
-	if (to == from->slot)
-		return 0;
-
-	if (from->changer != ch || to->changer != ch)
+	if (drive->changer != ch)
 		return 1;
 
-	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: unloading tape '%s' from drive #%td to slot #%td", ch->vendor, ch->model, from->slot->volume_name, from - ch->drives, to - ch->slots);
+	struct st_slot * from = drive->slot;
+	struct st_slot * to = NULL;
+	unsigned int i;
+	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
+		to = ch->slots + i;
+
+		if (from->src_address != to->address) {
+			to = NULL;
+			continue;
+		}
+
+		if (to->lock->ops->trylock(to->lock))
+			to = NULL;
+	}
+
+	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
+		to = ch->slots + i;
+
+		if (to->lock->ops->trylock(to->lock))
+			to = NULL;
+	}
+
+	if (to == NULL) {
+		st_log_write_all(st_log_level_error, st_log_type_changer, "[%s | %s]: unloading tape '%s', because there is no free slot available", ch->vendor, ch->model, from->volume_name);
+	}
+
+	ch->lock->ops->lock(ch->lock);
+
+	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: unloading tape '%s' from drive #%td to slot #%td", ch->vendor, ch->model, from->volume_name, drive - ch->drives, to - ch->slots);
 
 	struct st_realchanger_private * self = ch->data;
 	st_scsi_loader_ready(self->fd);
 
 	ch->status = ST_CHANGER_UNLOADING;
-	int failed = st_scsi_loader_move(self->fd, ch, from->slot, to);
+	int failed = st_scsi_loader_move(self->fd, ch, from, to);
 
 	if (failed) {
-		struct st_slot tmp_from = *from->slot;
+		struct st_slot tmp_from = *from;
 		st_scsi_loader_check_slot(self->fd, ch, &tmp_from);
 
 		struct st_slot tmp_to = *to;
@@ -333,13 +315,13 @@ int st_realchanger_unload(struct st_changer * ch, struct st_drive * from, struct
 	}
 
 	if (!failed) {
-		to->tape = from->slot->tape;
-		from->slot->tape = 0;
-		strncpy(to->volume_name, from->slot->volume_name, 37);
-		*from->slot->volume_name = '\0';
-		from->slot->full = 0;
+		to->tape = from->tape;
+		from->tape = NULL;
+		strncpy(to->volume_name, from->volume_name, 37);
+		*from->volume_name = '\0';
+		from->full = 0;
 		to->full = 1;
-		from->slot->src_address = 0;
+		from->src_address = 0;
 
 		if (to->tape)
 			to->tape->location = ST_TAPE_LOCATION_ONLINE;
@@ -349,7 +331,10 @@ int st_realchanger_unload(struct st_changer * ch, struct st_drive * from, struct
 		ch->status = ST_CHANGER_ERROR;
 	}
 
-	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading tape '%s' from drive #%td to slot #%td finished with code = %d", ch->vendor, ch->model, to->volume_name, from - ch->drives, to - ch->slots, failed);
+	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading tape '%s' from drive #%td to slot #%td finished with code = %d", ch->vendor, ch->model, to->volume_name, drive - ch->drives, to - ch->slots, failed);
+
+	to->lock->ops->unlock(to->lock);
+	ch->lock->ops->unlock(ch->lock);
 
 	return failed;
 }

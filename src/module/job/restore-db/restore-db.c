@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 17 Aug 2012 10:25:47 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 12:08:17 +0200                         *
 \*************************************************************************/
 
 // free
@@ -181,39 +181,8 @@ int st_job_restoredb_load_tape(struct st_job * job, struct st_tape * tape) {
 
 				if (jp->drive) {
 					if (jp->drive->slot->tape) {
-						// find original slot of loaded tape in selected drive
-						struct st_slot * sl = 0;
-						for (i = jp->changer->nb_drives; i < jp->changer->nb_slots; i++) {
-							sl = jp->changer->slots + i;
-
-							if (!sl->tape && sl->address == jp->drive->slot->src_address && !sl->lock->ops->trylock(sl->lock))
-								break;
-
-							sl = 0;
-						}
-
-						// if original slot is not found
-						for (i = jp->changer->nb_drives; !sl && i < jp->changer->nb_slots; i++) {
-							sl = jp->changer->slots + i;
-
-							if (!sl->tape && !sl->lock->ops->trylock(sl->lock))
-								break;
-
-							sl = 0;
-						}
-
-						if (!sl) {
-							// no free slot for unloading tape
-							job->sched_status = st_job_status_error;
-							job->db_ops->add_record(job, st_log_level_error, "No slot free for unloading tape");
-							return 1;
-						}
-
 						jp->drive->ops->eject(jp->drive);
-						jp->changer->lock->ops->lock(jp->changer->lock);
-						jp->changer->ops->unload(jp->changer, jp->drive, sl);
-						jp->changer->lock->ops->unlock(jp->changer->lock);
-						sl->lock->ops->unlock(sl->lock);
+						jp->changer->ops->unload(jp->changer, jp->drive);
 					}
 
 					jp->changer->lock->ops->lock(jp->changer->lock);

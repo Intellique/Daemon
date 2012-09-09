@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 04 Sep 2012 13:03:32 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 11:54:26 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -307,41 +307,13 @@ int st_job_copy_change_tape(struct st_job * job) {
 	jp->tapes[jp->nb_tapes] = dr->slot->tape;
 	jp->nb_tapes++;
 
-	unsigned int i;
-	struct st_slot * sl = 0;
-	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
-		sl = ch->slots + i;
-
-		if (!sl->tape && sl->address == dr->slot->src_address && !sl->lock->ops->trylock(sl->lock))
-			break;
-
-		sl = 0;
-	}
-
-	// if not found, look for free slot
-	for (i = ch->nb_drives; i < ch->nb_slots && !sl; i++) {
-		sl = ch->slots + i;
-
-		if (!sl->tape && !sl->lock->ops->trylock(sl->lock))
-			break;
-
-		sl = 0;
-	}
-
-	if (!sl) {
-		// no slot for unloading tape
-		job->sched_status = st_job_status_error;
-		job->db_ops->add_record(job, st_log_level_error, "No slot free for unloading tape");
-		return 1;
-	}
-
 	dr->ops->eject(dr);
 
-	ch->lock->ops->lock(ch->lock);
-	job->db_ops->add_record(job, st_log_level_info, "Unloading tape from drive #%td to slot #%td", dr - ch->drives, sl - ch->slots);
-	ch->ops->unload(ch, dr, sl);
-	ch->lock->ops->unlock(ch->lock);
-	sl->lock->ops->unlock(sl->lock);
+	job->db_ops->add_record(job, st_log_level_info, "Unloading tape from drive #%td", dr - ch->drives);
+	if (ch->ops->unload(ch, dr)) {
+		job->db_ops->add_record(job, st_log_level_error, "An error occured while unloading tape, job existing");
+		return 1;
+	}
 
 	struct st_drive * new_drive = st_job_copy_select_tape(job, select_new_tape);
 
@@ -480,39 +452,12 @@ int st_job_copy_load_tape(struct st_job * job, struct st_tape * tape) {
 
 				if (jp->drive) {
 					if (jp->drive->slot->tape) {
-						// find original slot of loaded tape in selected drive
-						struct st_slot * sl = 0;
-						for (i = jp->changer->nb_drives; i < jp->changer->nb_slots; i++) {
-							sl = jp->changer->slots + i;
+						jp->drive->ops->eject(jp->drive);
 
-							if (!sl->tape && sl->address == jp->drive->slot->src_address && !sl->lock->ops->trylock(sl->lock))
-								break;
-
-							sl = 0;
-						}
-
-						// if original slot is not found
-						for (i = jp->changer->nb_drives; !sl && i < jp->changer->nb_slots; i++) {
-							sl = jp->changer->slots + i;
-
-							if (!sl->tape && !sl->lock->ops->trylock(sl->lock))
-								break;
-
-							sl = 0;
-						}
-
-						if (!sl) {
-							// no free slot for unloading tape
-							job->sched_status = st_job_status_error;
-							job->db_ops->add_record(job, st_log_level_error, "No slot free for unloading tape");
+						if (jp->changer->ops->unload(jp->changer, jp->drive)) {
+							job->db_ops->add_record(job, st_log_level_error, "An error occured while unloading tape, job existing");
 							return 1;
 						}
-
-						jp->drive->ops->eject(jp->drive);
-						jp->changer->lock->ops->lock(jp->changer->lock);
-						jp->changer->ops->unload(jp->changer, jp->drive, jp->slot);
-						jp->changer->lock->ops->unlock(jp->changer->lock);
-						sl->lock->ops->unlock(sl->lock);
 					}
 
 					jp->changer->lock->ops->lock(jp->changer->lock);
@@ -929,34 +874,10 @@ int st_job_copy_run(struct st_job * job) {
 		status = st_job_copy_restore_archive(job);
 
 	if (!status && !jp->stop_request) {
-		struct st_slot * sl = 0;
-		for (i = jp->changer->nb_drives; i < jp->changer->nb_slots; i++) {
-			sl = jp->changer->slots + i;
+		jp->drive->ops->eject(jp->drive);
 
-			if (!sl->tape && sl->address == jp->drive->slot->src_address && !sl->lock->ops->trylock(sl->lock))
-				break;
-
-			sl = 0;
-		}
-
-		for (i = jp->changer->nb_drives; !sl && i < jp->changer->nb_slots; i++) {
-			sl = jp->changer->slots + i;
-
-			if (!sl->tape && !sl->lock->ops->trylock(sl->lock))
-				break;
-
-			sl = 0;
-		}
-
-		if (sl) {
-			jp->drive->ops->eject(jp->drive);
-			jp->changer->lock->ops->lock(jp->changer->lock);
-			jp->changer->ops->unload(jp->changer, jp->drive, jp->slot);
-			jp->changer->lock->ops->unlock(jp->changer->lock);
-			sl->lock->ops->unlock(sl->lock);
-		} else {
-			job->sched_status = st_job_status_error;
-			job->db_ops->add_record(job, st_log_level_error, "No slot free for unloading tape");
+		if (jp->changer->ops->unload(jp->changer, jp->drive)) {
+			job->db_ops->add_record(job, st_log_level_error, "An error occured while unloading tape, job existing");
 			status = 1;
 		}
 	}

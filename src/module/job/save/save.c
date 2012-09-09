@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 06 Sep 2012 12:43:52 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 12:10:58 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -295,41 +295,10 @@ int st_job_save_change_tape(struct st_job * job) {
 	jp->tapes[jp->nb_tapes] = dr->slot->tape;
 	jp->nb_tapes++;
 
-	unsigned int i;
-	struct st_slot * sl = 0;
-	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
-		sl = ch->slots + i;
-
-		if (!sl->tape && sl->address == dr->slot->src_address && !sl->lock->ops->trylock(sl->lock))
-			break;
-
-		sl = 0;
-	}
-
-	// if not found, look for free slot
-	for (i = ch->nb_drives; i < ch->nb_slots && !sl; i++) {
-		sl = ch->slots + i;
-
-		if (!sl->tape && !sl->lock->ops->trylock(sl->lock))
-			break;
-
-		sl = 0;
-	}
-
-	if (!sl) {
-		// no slot for unloading tape
-		job->sched_status = st_job_status_error;
-		job->db_ops->add_record(job, st_log_level_error, "No slot free for unloading tape");
-		return 1;
-	}
-
 	dr->ops->eject(dr);
+	ch->ops->unload(ch, dr);
 
-	ch->lock->ops->lock(ch->lock);
-	job->db_ops->add_record(job, st_log_level_info, "Unloading tape from drive #%td to slot #%td", dr - ch->drives, sl - ch->slots);
-	ch->ops->unload(ch, dr, sl);
-	ch->lock->ops->unlock(ch->lock);
-	sl->lock->ops->unlock(sl->lock);
+	job->db_ops->add_record(job, st_log_level_info, "Unloading tape from drive #%td", dr - ch->drives);
 
 	struct st_drive * new_drive = st_job_save_select_tape(job, select_new_tape);
 
@@ -479,11 +448,14 @@ int st_job_save_run(struct st_job * job) {
 	if (!job->pool)
 		job->pool = job->user->pool;
 
+	// TODO: synchronize job->pool
+
 	// compute total files size
 	unsigned int i;
 	for (i = 0; i < job->nb_paths; i++) {
 		// remove double '/'
 		st_util_string_delete_double_char(job->paths[i], '/');
+		// remove trailing '/'
 		st_util_string_rtrim(job->paths[i], '/');
 
 		jp->total_size += st_job_save_compute_total_size(job, job->paths[i]);
@@ -494,9 +466,31 @@ int st_job_save_run(struct st_job * job) {
 		return 3;
 	}
 
-	char bufsize[32];
-	st_util_convert_size_to_string(jp->total_size, bufsize, 32);
-	job->db_ops->add_record(job, st_log_level_info, "Will archive %s", bufsize);
+    /*
+	char will_archive[32], remain_size[32];
+	st_util_convert_size_to_string(jp->total_size, will_archive, 32);
+
+	ssize_t total_remaining_size_of_pool = st_changer_get_available_size_by_pool(job->pool);
+	if (jp->total_size > total_remaining_size_of_pool && !job->pool->growable) {
+		st_util_convert_size_to_string(total_remaining_size_of_pool, remain_size, 32);
+		job->db_ops->add_record(job, st_log_level_error, "Not enough space remaining from pool (%s) and this pool is not growable", job->pool->name);
+		job->db_ops->add_record(job, st_log_level_error, "Size required: %s, Size left: %s", will_archive, remain_size);
+
+		job->sched_status = st_job_status_error;
+		return 1;
+	}
+
+	total_remaining_size_of_pool += st_changer_get_available_size_of_new_tapes();
+	if (jp->total_size > total_remaining_size_of_pool) {
+		st_util_convert_size_to_string(total_remaining_size_of_pool, remain_size, 32);
+		job->db_ops->add_record(job, st_log_level_error, "Not enough space remaining from pool (%s) and not enough available new tape", job->pool->name);
+		job->db_ops->add_record(job, st_log_level_error, "Size required: %s, Size left: %s", will_archive, remain_size);
+
+		job->sched_status = st_job_status_error;
+		return 1;
+	}
+
+	job->db_ops->add_record(job, st_log_level_info, "Will archive %s", will_archive);*/
 
 	struct st_drive * drive = jp->current_drive = st_job_save_select_tape(job, look_in_first_changer);
 
