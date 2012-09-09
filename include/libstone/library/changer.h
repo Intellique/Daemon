@@ -22,11 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 13 Aug 2012 13:11:37 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 23:06:06 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_CHANGER_H__
 #define __STONE_LIBRARY_CHANGER_H__
+
+// bool
+#include <stdbool.h>
 
 struct st_database_connection;
 struct st_drive;
@@ -59,7 +62,7 @@ struct st_changer {
 	/**
 	 * \brief Can use this \a changer
 	 */
-	unsigned char enabled;
+	bool enabled;
 
 	/**
 	 * \brief Model of this \a changer
@@ -80,7 +83,7 @@ struct st_changer {
 	/**
 	 * \brief This changer has got a barcode reader
 	 */
-	int barcode;
+	bool barcode;
 
 	int host;
 	int target;

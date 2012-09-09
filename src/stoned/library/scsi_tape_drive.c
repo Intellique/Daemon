@@ -22,13 +22,15 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 22 Aug 2012 10:16:46 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 22:59:13 +0200                         *
 \*************************************************************************/
 
 // errno
 #include <errno.h>
 // open
 #include <fcntl.h>
+// bool
+#include <stdbool.h>
 // free, malloc, realloc
 #include <stdlib.h>
 // memcpy, memmove, strdup
@@ -76,7 +78,7 @@ struct st_scsi_tape_drive_io_reader {
 	char * buffer_pos;
 
 	ssize_t position;
-	short end_of_file;
+	bool end_of_file;
 
 	int last_errno;
 
@@ -114,7 +116,7 @@ static int st_scsi_tape_drive_set_file_position(struct st_drive * drive, int fil
 static int st_scsi_tape_drive_update_media_info(struct st_drive * drive);
 
 static int st_scsi_tape_drive_io_reader_close(struct st_stream_reader * io);
-static int st_scsi_tape_drive_io_reader_end_of_file(struct st_stream_reader * io);
+static bool st_scsi_tape_drive_io_reader_end_of_file(struct st_stream_reader * io);
 static off_t st_scsi_tape_drive_io_reader_forward(struct st_stream_reader * io, off_t offset);
 static void st_scsi_tape_drive_io_reader_free(struct st_stream_reader * io);
 static ssize_t st_scsi_tape_drive_io_reader_get_block_size(struct st_stream_reader * io);
@@ -574,9 +576,9 @@ static int st_scsi_tape_drive_io_reader_close(struct st_stream_reader * io) {
 	return 0;
 }
 
-static int st_scsi_tape_drive_io_reader_end_of_file(struct st_stream_reader * io) {
+static bool st_scsi_tape_drive_io_reader_end_of_file(struct st_stream_reader * io) {
 	if (io == NULL)
-		return 1;
+		return true;
 
 	struct st_scsi_tape_drive_io_reader * self = io->data;
 	return self->end_of_file;
@@ -686,7 +688,7 @@ static struct st_stream_reader * st_scsi_tape_drive_io_reader_new(struct st_driv
 
 	self->position = 0;
 	self->last_errno = 0;
-	self->end_of_file = 0;
+	self->end_of_file = false;
 
 	self->drive = drive;
 	self->drive_private = dr;
@@ -746,7 +748,7 @@ static ssize_t st_scsi_tape_drive_io_reader_read(struct st_stream_reader * io, v
 			nb_total_read += nb_read;
 			self->position += nb_read;
 		} else {
-			self->end_of_file = 1;
+			self->end_of_file = true;
 			return nb_total_read;
 		}
 	}
@@ -768,7 +770,7 @@ static ssize_t st_scsi_tape_drive_io_reader_read(struct st_stream_reader * io, v
 		self->position += will_copy;
 		return length;
 	} else {
-		self->end_of_file = 1;
+		self->end_of_file = true;
 		return nb_total_read;
 	}
 }

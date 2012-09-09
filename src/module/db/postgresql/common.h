@@ -22,12 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 15 Aug 2012 12:52:10 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 23:04:45 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DB_POSTGRESQL_CONNNECTION_H__
 #define __STONE_DB_POSTGRESQL_CONNNECTION_H__
 
+// bool
+#include <stdbool.h>
 // ssize_t, time_t
 #include <sys/types.h>
 
@@ -49,7 +51,7 @@ int st_db_postgresql_config_init(struct st_database_config * config, const struc
 
 struct st_database_connection * st_db_postgresql_connnect_init(PGconn * pg_connect);
 
-int st_db_postgresql_get_bool(PGresult * result, int row, int column, unsigned char * value);
+int st_db_postgresql_get_bool(PGresult * result, int row, int column, bool * value);
 
 int st_db_postgresql_get_double(PGresult * result, int row, int column, double * value);
 

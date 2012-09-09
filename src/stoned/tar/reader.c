@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 21 Aug 2012 21:26:05 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 22:54:02 +0200                         *
 \*************************************************************************/
 
 // sscanf, snprintf
@@ -61,7 +61,7 @@ static gid_t st_tar_reader_convert_gid(struct st_tar * header);
 static ssize_t st_tar_reader_convert_size(const char * size);
 static time_t st_tar_reader_convert_time(struct st_tar * header);
 static uid_t st_tar_reader_convert_uid(struct st_tar * header);
-static int st_tar_reader_end_of_file(struct st_format_reader * sfr);
+static bool st_tar_reader_end_of_file(struct st_format_reader * sfr);
 static void st_tar_reader_free(struct st_format_reader * sfr);
 static ssize_t st_tar_reader_get_block_size(struct st_format_reader * sfr);
 static enum st_format_reader_header_status st_tar_reader_get_header(struct st_format_reader * sfr, struct st_format_file * header);
@@ -166,7 +166,7 @@ static uid_t st_tar_reader_convert_uid(struct st_tar * header) {
 	return result;
 }
 
-static int st_tar_reader_end_of_file(struct st_format_reader * sfr) {
+static bool st_tar_reader_end_of_file(struct st_format_reader * sfr) {
 	struct st_tar_reader_private * self = sfr->data;
 	return self->io->ops->end_of_file(self->io);
 }

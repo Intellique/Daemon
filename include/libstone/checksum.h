@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 20 Jul 2012 19:01:45 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 23:01:24 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_CHECKSUM_H__
@@ -248,7 +248,7 @@ struct st_checksum_driver {
 	/**
 	 * \brief Name of the driver
 	 */
-	char * name;
+	const char * name;
 	/**
 	 * \brief Get a new checksum handler
 	 *
@@ -266,7 +266,7 @@ struct st_checksum_driver {
 	 *
 	 * \note Should be defined to STONE_CHECKSUM_APIVERSION
 	 */
-	int api_level;
+	const unsigned int api_level;
 };
 
 /**

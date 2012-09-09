@@ -22,12 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 23 Aug 2012 19:59:10 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 22:53:22 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_FORMAT_H__
 #define __STONE_FORMAT_H__
 
+// bool
+#include <stdbool.h>
 // dev_t, mode_t, ssize_t, time_t
 #include <sys/types.h>
 
@@ -51,7 +53,7 @@ struct st_format_file {
 	time_t ctime;
 	time_t mtime;
 
-	unsigned char is_label;
+	bool is_label;
 };
 
 enum st_format_reader_header_status {
@@ -70,7 +72,7 @@ enum st_format_writer_status {
 struct st_format_reader {
 	struct st_format_reader_ops {
 		int (*close)(struct st_format_reader * fr);
-		int (*end_of_file)(struct st_format_reader * fr);
+		bool (*end_of_file)(struct st_format_reader * fr);
 		void (*free)(struct st_format_reader * sf);
 		ssize_t (*get_block_size)(struct st_format_reader * sf);
 		enum st_format_reader_header_status (*get_header)(struct st_format_reader * sf, struct st_format_file * file);

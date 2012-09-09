@@ -31,6 +31,8 @@
 #include <postgresql/libpq-fe.h>
 // va_end, va_start
 #include <stdarg.h>
+// bool
+#include <stdbool.h>
 // asprintf
 #include <stdio.h>
 // free, malloc, realloc

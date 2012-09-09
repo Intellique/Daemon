@@ -22,11 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 10:20:36 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 23:03:05 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_USER_H__
 #define __STONE_USER_H__
+
+// bool
+#include <stdbool.h>
 
 struct st_pool;
 
@@ -37,10 +40,10 @@ struct st_user {
 	char * fullname;
 	char * email;
 
-	unsigned char is_admin;
-	unsigned char can_archive;
-	unsigned char can_restore;
-	unsigned char disabled;
+	bool is_admin;
+	bool can_archive;
+	bool can_restore;
+	bool disabled;
 
 	struct st_pool * pool;
 

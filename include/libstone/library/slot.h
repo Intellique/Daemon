@@ -22,11 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 13 Aug 2012 22:55:52 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 23:08:32 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONED_LIBRARY_SLOT_H__
 #define __STONED_LIBRARY_SLOT_H__
+
+// bool
+#include <stdbool.h>
 
 struct st_changer;
 struct st_drive;
@@ -47,7 +50,7 @@ struct st_slot {
 	struct st_media * media;
 
 	char * volume_name;
-	unsigned char full;
+	bool full;
 	enum st_slot_type type;
 
 	struct st_ressource * lock;

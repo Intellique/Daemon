@@ -22,12 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 23:09:03 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 23:00:01 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
 // PQfreemem, PQgetCopyData
 #include <postgresql/libpq-fe.h>
+// bool
+#include <stdbool.h>
 // free
 #include <stdlib.h>
 // asprintf
@@ -67,7 +69,7 @@ static const char * tables[] = {
 };
 
 static int st_db_postgresql_stream_backup_close(struct st_stream_reader * io);
-static int st_db_postgresql_stream_backup_end_of_file(struct st_stream_reader * io);
+static bool st_db_postgresql_stream_backup_end_of_file(struct st_stream_reader * io);
 static off_t st_db_postgresql_stream_backup_forward(struct st_stream_reader * io, off_t offset);
 static void st_db_postgresql_stream_backup_free(struct st_stream_reader * io);
 static ssize_t st_db_postgresql_stream_backup_get_block_size(struct st_stream_reader * io);
@@ -133,9 +135,9 @@ static int st_db_postgresql_stream_backup_close(struct st_stream_reader * io) {
 	return 0;
 }
 
-static int st_db_postgresql_stream_backup_end_of_file(struct st_stream_reader * io) {
+static bool st_db_postgresql_stream_backup_end_of_file(struct st_stream_reader * io) {
 	struct st_db_postgresql_stream_backup_private * self = io->data;
-	return self->c_table != NULL;
+	return self->c_table != NULL ? true : false;
 }
 
 static off_t st_db_postgresql_stream_backup_forward(struct st_stream_reader * io __attribute__((unused)), off_t offset __attribute__((unused))) {

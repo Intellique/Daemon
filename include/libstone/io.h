@@ -22,12 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 22 Aug 2012 21:17:43 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 22:57:16 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_IO_H__
 #define __STONE_IO_H__
 
+// bool
+#include <stdbool.h>
 // ssize_t
 #include <sys/types.h>
 
@@ -53,7 +55,7 @@ struct st_stream_reader {
 		 * \param[in] io : a stream reader
 		 * \return 0 if remain data
 		 */
-		int (*end_of_file)(struct st_stream_reader * io);
+		bool (*end_of_file)(struct st_stream_reader * io);
 		/**
 		 * \brief Forward into the stream
 		 *

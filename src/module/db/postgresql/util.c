@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 23:58:58 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 23:05:12 +0200                         *
 \*************************************************************************/
 
 #define _XOPEN_SOURCE 500
@@ -37,13 +37,13 @@
 
 #include "common.h"
 
-int st_db_postgresql_get_bool(PGresult * result, int row, int column, unsigned char * val) {
+int st_db_postgresql_get_bool(PGresult * result, int row, int column, bool * val) {
 	if (column < 0)
 		return -1;
 
 	char * value = PQgetvalue(result, row, column);
 	if (value)
-		*val = strcmp(value, "t") ? 0 : 1;
+		*val = strcmp(value, "t") ? false : true;
 
 	return value != NULL;
 }

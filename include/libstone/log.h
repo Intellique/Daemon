@@ -208,7 +208,7 @@ struct st_log_driver {
 	 *
 	 * Should be define by using STONE_LOG_API_LEVEL only
 	 */
-	const int api_level;
+	const unsigned int api_level;
 
 	/**
 	 * \struct st_log_module

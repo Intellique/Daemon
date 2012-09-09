@@ -22,12 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 21 Aug 2012 20:29:08 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 23:06:49 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_DRIVE_H__
 #define __STONE_LIBRARY_DRIVE_H__
 
+// bool
+#include <stdbool.h>
 // ssize_t, time_t
 #include <sys/types.h>
 
@@ -60,13 +62,13 @@ struct st_drive {
 	char * device;
 	char * scsi_device;
 	enum st_drive_status status;
-	unsigned char enabled;
+	bool enabled;
 
 	unsigned char density_code;
 	enum st_media_format_mode mode;
 	long double operation_duration;
 	time_t last_clean;
-	unsigned char is_empty;
+	bool is_empty;
 
 	char * model;
 	char * vendor;

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 18 Aug 2012 23:22:48 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 23:01:41 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -268,7 +268,7 @@ struct st_database {
 	 *
 	 * \note Should be unique and equals to libdb-name.so where name is the name of driver.
 	 */
-	char * name;
+	const char * name;
 	/**
 	 * \struct st_database_ops
 	 * \brief Operations on one database driver
@@ -310,7 +310,7 @@ struct st_database {
 	 *
 	 * Should be define by using STONE_DATABASE_API_LEVEL only
 	 */
-	int api_level;
+	const unsigned int api_level;
 };
 
 /**

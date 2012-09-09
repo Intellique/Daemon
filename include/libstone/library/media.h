@@ -22,12 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 19 Aug 2012 17:19:25 +0200                         *
+*  Last modified: Sun, 09 Sep 2012 23:09:04 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
 #define __STONE_LIBRARY_MEDIA_H__
 
+// bool
+#include <stdbool.h>
 // ssize_t, time_t
 #include <sys/types.h>
 
@@ -131,15 +133,15 @@ struct st_media_format {
 	ssize_t capacity;
 	ssize_t block_size;
 
-	unsigned char support_partition;
-	unsigned char support_mam;
+	bool support_partition;
+	bool support_mam;
 };
 
 struct st_pool {
 	char uuid[37];
 	char * name;
-	unsigned char growable;
-	unsigned char rewritable;
+	bool growable;
+	bool rewritable;
 
 	struct st_media_format * format;
 };
