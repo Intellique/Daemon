@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 11:54:26 +0200                         *
+*  Last modified: Mon, 10 Sep 2012 18:52:14 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -464,7 +464,7 @@ int st_job_copy_load_tape(struct st_job * job, struct st_tape * tape) {
 					jp->changer->ops->load(jp->changer, jp->slot, jp->drive);
 					jp->changer->lock->ops->unlock(jp->changer->lock);
 					jp->slot->lock->ops->unlock(jp->slot->lock);
-					jp->drive->ops->reset(jp->drive);
+					jp->drive->ops->reset(jp->drive, false, false);
 
 					return 0;
 				} else {
@@ -892,7 +892,7 @@ int st_job_copy_run(struct st_job * job) {
 		// archive
 		struct st_archive * archive = st_archive_new(job);
 		jp->json = st_io_json_new(archive);
-        st_io_json_add_metadata(jp->json, job->job_meta);
+		st_io_json_add_metadata(jp->json, job->job_meta);
 
 		// volume
 		jp->current_volume = st_archive_volume_new(job, drive);
@@ -1016,7 +1016,7 @@ struct st_drive * st_job_copy_select_tape(struct st_job * job, enum st_job_copy_
 							changer->lock->ops->unlock(changer->lock);
 							slot->lock->ops->unlock(slot->lock);
 
-							drive->ops->reset(drive);
+							drive->ops->reset(drive, false, false);
 							drive->ops->eod(drive);
 							return drive;
 						}
@@ -1050,7 +1050,7 @@ struct st_drive * st_job_copy_select_tape(struct st_job * job, enum st_job_copy_
 					changer->lock->ops->unlock(changer->lock);
 					slot->lock->ops->unlock(slot->lock);
 
-					drive->ops->reset(drive);
+					drive->ops->reset(drive, false, false);
 					drive->ops->eod(drive);
 					return drive;
 				}
@@ -1133,7 +1133,7 @@ struct st_drive * st_job_copy_select_tape(struct st_job * job, enum st_job_copy_
 									changer->lock->ops->unlock(changer->lock);
 									slot->lock->ops->unlock(slot->lock);
 
-									drive->ops->reset(drive);
+									drive->ops->reset(drive, false, false);
 									drive->ops->eod(drive);
 									return drive;
 								} else {

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 16:23:06 +0200                         *
+*  Last modified: Mon, 10 Sep 2012 18:53:21 +0200                         *
 \*************************************************************************/
 
 // open
@@ -60,58 +60,58 @@ static unsigned int st_nb_real_changers = 0;
 struct st_drive * st_changer_find_free_drive(struct st_pool * hint) {
 	unsigned int i, nb_changer = st_nb_real_changers + st_nb_fake_changers;
 	for (i = 0; i < nb_changer; i++) {
-        struct st_changer * ch = st_changers + i;
+		struct st_changer * ch = st_changers + i;
 
-        unsigned j;
-        for (j = 0; j < ch->nb_drives; j++) {
-            struct st_drive * dr = ch->drives + j;
+		unsigned j;
+		for (j = 0; j < ch->nb_drives; j++) {
+			struct st_drive * dr = ch->drives + j;
 
-            if (dr->lock->ops->trylock(dr->lock))
-                continue;
+			if (dr->lock->ops->trylock(dr->lock))
+				continue;
 
-            if (dr->slot->tape == NULL || dr->slot->tape->pool != hint) {
-                dr->lock->ops->unlock(dr->lock);
-                continue;
-            }
+			if (dr->slot->tape == NULL || dr->slot->tape->pool != hint) {
+				dr->lock->ops->unlock(dr->lock);
+				continue;
+			}
 
-            return dr;
-        }
-    }
-
-	for (i = 0; i < nb_changer; i++) {
-        struct st_changer * ch = st_changers + i;
-
-        unsigned j;
-        for (j = 0; j < ch->nb_drives; j++) {
-            struct st_drive * dr = ch->drives + j;
-
-            if (dr->lock->ops->trylock(dr->lock))
-                continue;
-
-            if (dr->slot->tape != NULL) {
-                dr->lock->ops->unlock(dr->lock);
-                continue;
-            }
-
-            return dr;
-        }
-    }
+			return dr;
+		}
+	}
 
 	for (i = 0; i < nb_changer; i++) {
-        struct st_changer * ch = st_changers + i;
+		struct st_changer * ch = st_changers + i;
 
-        unsigned j;
-        for (j = 0; j < ch->nb_drives; j++) {
-            struct st_drive * dr = ch->drives + j;
+		unsigned j;
+		for (j = 0; j < ch->nb_drives; j++) {
+			struct st_drive * dr = ch->drives + j;
 
-            if (dr->lock->ops->trylock(dr->lock))
-                continue;
+			if (dr->lock->ops->trylock(dr->lock))
+				continue;
 
-            return dr;
-        }
-    }
+			if (dr->slot->tape != NULL) {
+				dr->lock->ops->unlock(dr->lock);
+				continue;
+			}
 
-    return NULL;
+			return dr;
+		}
+	}
+
+	for (i = 0; i < nb_changer; i++) {
+		struct st_changer * ch = st_changers + i;
+
+		unsigned j;
+		for (j = 0; j < ch->nb_drives; j++) {
+			struct st_drive * dr = ch->drives + j;
+
+			if (dr->lock->ops->trylock(dr->lock))
+				continue;
+
+			return dr;
+		}
+	}
+
+	return NULL;
 }
 
 ssize_t st_changer_get_available_size_by_pool(struct st_pool * pool) {
@@ -483,7 +483,10 @@ int st_changer_setup() {
 void st_changer_update_status(struct st_database_connection * connect) {
 	unsigned int i, nb_changer = st_nb_real_changers + st_nb_fake_changers;
 	for (i = 0; i < nb_changer; i++) {
-		connect->ops->sync_changer(connect, st_changers + i);
+		struct st_changer * ch = st_changers + i;
+		ch->ops->update_status(ch);
+
+		connect->ops->sync_changer(connect, ch);
 	}
 }
 

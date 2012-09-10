@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 20:55:55 +0200                         *
+*  Last modified: Mon, 10 Sep 2012 18:52:39 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -617,7 +617,7 @@ struct st_drive * st_job_save_select_tape(struct st_job * job) {
 							changer->ops->load(changer, sl, drive);
 							changer->lock->ops->unlock(changer->lock);
 
-							drive->ops->reset(drive);
+							drive->ops->reset(drive, false, false);
 
 							return drive;
 						}

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 20:32:22 +0200                         *
+*  Last modified: Mon, 10 Sep 2012 18:51:58 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -72,7 +72,7 @@ static char * st_db_postgresql_get_host(struct st_database_connection * connecti
 static int st_db_postgresql_get_nb_new_jobs(struct st_database_connection * connection, long * nb_new_jobs, time_t since, long last_max_jobs);
 static int st_db_postgresql_get_new_jobs(struct st_database_connection * connection, struct st_job ** jobs, unsigned int nb_jobs, time_t since, long last_max_jobs);
 static int st_db_postgresql_get_pool(struct st_database_connection * connection, struct st_pool * pool, long id, const char * uuid);
-static int st_db_postgresql_get_tape(struct st_database_connection * connection, struct st_tape * tape, long id, const char * uuid, const char * label);
+static int st_db_postgresql_get_tape(struct st_database_connection * connection, struct st_tape * tape, long id, const char * medium_serial_number, const char * uuid, const char * label);
 static int st_db_postgresql_get_tape_format(struct st_database_connection * connection, struct st_tape_format * tape_format, long id, unsigned char density_code);
 static int st_db_postgresql_get_user(struct st_database_connection * connection, struct st_user * user, long user_id, const char * login);
 static int st_db_postgresql_is_changer_contain_drive(struct st_database_connection * connection, struct st_changer * changer, struct st_drive * drive);
@@ -197,8 +197,6 @@ int st_db_postgresql_create_checkpoint(struct st_database_connection * connectio
 	if (!connection || !checkpoint)
 		return -1;
 
-	st_log_write_all(st_log_level_debug, st_log_type_plugin_db, "Create savepoint '%s' (cid #%ld)", checkpoint, connection->id);
-
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
 
@@ -223,8 +221,6 @@ int st_db_postgresql_create_checkpoint(struct st_database_connection * connectio
 int st_db_postgresql_finish_transaction(struct st_database_connection * connection) {
 	if (!connection)
 		return -1;
-
-	st_log_write_all(st_log_level_debug, st_log_type_plugin_db, "Commit a transaction (cid #%ld)", connection->id);
 
 	struct st_db_postgresql_connetion_private * self = connection->data;
 	st_db_postgresql_check(connection);
@@ -910,7 +906,7 @@ int st_db_postgresql_get_pool(struct st_database_connection * connection, struct
 	return status != PGRES_TUPLES_OK || pool->id == -1;
 }
 
-int st_db_postgresql_get_tape(struct st_database_connection * connection, struct st_tape * tape, long id, const char * uuid, const char * label) {
+int st_db_postgresql_get_tape(struct st_database_connection * connection, struct st_tape * tape, long id, const char * medium_serial_number, const char * uuid, const char * label) {
 	if (!connection || !tape)
 		return 1;
 
@@ -919,7 +915,13 @@ int st_db_postgresql_get_tape(struct st_database_connection * connection, struct
 
 	PGresult * result = 0;
 	const char * query;
-	if (uuid) {
+	if (medium_serial_number) {
+		query = "select_tape_by_medium_serial_number";
+		st_db_postgresql_prepare(self, query, "SELECT id, uuid, label, mediumserialnumber, name, status, location, firstused, usebefore, loadcount, readcount, writecount, endpos, nbfiles, blocksize, haspartition, tapeformat, pool FROM tape WHERE mediumserialnumber = $1 LIMIT 1");
+
+		const char * param[] = { medium_serial_number };
+		result = PQexecPrepared(self->db_con, query, 1, param, 0, 0, 0);
+	} else if (uuid) {
 		query = "select_tape_by_uuid";
 		st_db_postgresql_prepare(self, query, "SELECT id, uuid, label, mediumserialnumber, name, status, location, firstused, usebefore, loadcount, readcount, writecount, endpos, nbfiles, blocksize, haspartition, tapeformat, pool FROM tape WHERE uuid = $1 LIMIT 1");
 
@@ -1352,6 +1354,23 @@ int st_db_postgresql_sync_changer(struct st_database_connection * connection, st
 
 	if (status)
 		st_db_postgresql_cancel_checkpoint(connection, "sync_changer_before_slot");
+
+	// Put tape offline if there are not in changerslot table
+	st_db_postgresql_create_checkpoint(connection, "sync_changer_after_slot");
+
+	const char * query = "update_offline_tape";
+	st_db_postgresql_prepare(self, query, "UPDATE tape SET location = 'offline' WHERE id NOT IN (SELECT tape FROM changerslot WHERE tape IS NOT NULL) AND location != 'offline'");
+
+	PGresult * result = PQexecPrepared(self->db_con, query, 0, NULL, 0, 0, 0);
+	ExecStatusType status_update = PQresultStatus(result);
+
+	if (status_update == PGRES_FATAL_ERROR) {
+		st_db_postgresql_get_error(result, query);
+		st_db_postgresql_cancel_checkpoint(connection, "sync_changer_after_slot");
+	}
+
+	free(result);
+
 
 	if (transStatus == PQTRANS_IDLE)
 		st_db_postgresql_finish_transaction(connection);

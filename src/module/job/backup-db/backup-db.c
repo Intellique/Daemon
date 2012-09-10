@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 13:52:44 +0200                         *
+*  Last modified: Mon, 10 Sep 2012 18:52:08 +0200                         *
 \*************************************************************************/
 
 // malloc, realloc
@@ -224,7 +224,7 @@ struct st_drive * st_job_backupdb_select_tape(struct st_job * job, enum st_job_b
 							changer->lock->ops->unlock(changer->lock);
 							slot->lock->ops->unlock(slot->lock);
 
-							drive->ops->reset(drive);
+							drive->ops->reset(drive, false, false);
 							drive->ops->eod(drive);
 							return drive;
 						}
@@ -258,7 +258,7 @@ struct st_drive * st_job_backupdb_select_tape(struct st_job * job, enum st_job_b
 					changer->lock->ops->unlock(changer->lock);
 					slot->lock->ops->unlock(slot->lock);
 
-					drive->ops->reset(drive);
+					drive->ops->reset(drive, false, false);
 					drive->ops->eod(drive);
 					return drive;
 				}
@@ -341,7 +341,7 @@ struct st_drive * st_job_backupdb_select_tape(struct st_job * job, enum st_job_b
 									changer->lock->ops->unlock(changer->lock);
 									slot->lock->ops->unlock(slot->lock);
 
-									drive->ops->reset(drive);
+									drive->ops->reset(drive, false, false);
 									drive->ops->eod(drive);
 									return drive;
 								} else {

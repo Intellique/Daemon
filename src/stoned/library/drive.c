@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 05 Sep 2012 19:25:52 +0200                         *
+*  Last modified: Mon, 10 Sep 2012 18:52:52 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -102,7 +102,7 @@ static void st_drive_generic_on_failed(struct st_drive * drive, int verbose);
 static void st_drive_generic_operation_start(struct st_drive_generic * dr);
 static void st_drive_generic_operation_stop(struct st_drive * dr);
 static int st_drive_generic_read_mam(struct st_drive * drive);
-static void st_drive_generic_reset(struct st_drive * drive);
+static void st_drive_generic_reset(struct st_drive * drive, bool quick_mode, bool force);
 static int st_drive_generic_rewind_file(struct st_drive * drive);
 static int st_drive_generic_rewind_tape(struct st_drive * drive);
 static int st_drive_generic_set_file_position(struct st_drive * drive, int file_position);
@@ -354,13 +354,22 @@ int st_drive_generic_read_mam(struct st_drive * drive) {
 	return failed;
 }
 
-void st_drive_generic_reset(struct st_drive * drive) {
+void st_drive_generic_reset(struct st_drive * drive, bool quick_mode, bool force) {
 	struct st_drive_generic * self = drive->data;
+
+	if (force) {
+		if (self->fd_nst > -1)
+			close(self->fd_nst);
+
+		sleep(1);
+
+		self->fd_nst = open(drive->device, O_RDWR | O_NONBLOCK);
+	}
 
 	static struct mtop nop = { MTNOP, 1 };
 
 	int i, failed = 1;
-	for (i = 0; i < 600 && failed; i++) {
+	for (i = 0; i < 600 && failed && !force; i++) {
 		if (self->fd_nst > -1) {
 			st_drive_generic_operation_start(self);
 			failed = ioctl(self->fd_nst, MTIOCTOP, &nop);
@@ -378,6 +387,9 @@ void st_drive_generic_reset(struct st_drive * drive) {
 
 			self->fd_nst = open(drive->device, O_RDWR | O_NONBLOCK);
 		}
+
+		if (quick_mode && failed)
+			return;
 	}
 
 	drive->nb_files = 0;

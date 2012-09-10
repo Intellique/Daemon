@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 07 Sep 2012 14:54:40 +0200                         *
+*  Last modified: Mon, 10 Sep 2012 18:51:24 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_DRIVE_H__
@@ -78,7 +78,7 @@ struct st_drive {
 		struct st_stream_reader * (*get_reader)(struct st_drive * drive);
 		struct st_stream_writer * (*get_writer)(struct st_drive * drive);
 		int (*read_mam)(struct st_drive * drive);
-		void (*reset)(struct st_drive * drive);
+		void (*reset)(struct st_drive * drive, bool quick_mode, bool force);
 		int (*rewind_file)(struct st_drive * drive);
 		int (*rewind_tape)(struct st_drive * drive);
 		int (*set_file_position)(struct st_drive * drive, int file_position);

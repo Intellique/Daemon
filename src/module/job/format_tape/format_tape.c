@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 12:04:35 +0200                         *
+*  Last modified: Mon, 10 Sep 2012 18:52:20 +0200                         *
 \*************************************************************************/
 
 // sscanf
@@ -212,7 +212,7 @@ int st_job_format_tape_run(struct st_job * job) {
 		changer->lock->ops->unlock(changer->lock);
 		has_changer_lock = 0;
 
-		drive->ops->reset(drive);
+		drive->ops->reset(drive, false, false);
 	}
 
 	if (!self->stop_request) {
