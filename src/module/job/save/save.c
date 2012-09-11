@@ -648,7 +648,7 @@ struct st_drive * st_job_save_select_tape(struct st_job * job) {
 				break;
 
 			case check_tape_in_drive:
-				if (drive->slot->tape != NULL && drive->slot->tape->pool != job->pool) {
+				if (drive->slot->tape != NULL && drive->slot->tape->pool != NULL && drive->slot->tape->pool != job->pool) {
 					drive->ops->eject(drive);
 					changer->ops->unload(changer, drive);
 				}
@@ -667,7 +667,7 @@ struct st_drive * st_job_save_select_tape(struct st_job * job) {
 					state = check_tape_in_drive;
 				} else {
 					job->sched_status = st_job_status_pause;
-					sleep(60);
+					sleep(18);
 					job->sched_status = st_job_status_running;
 				}
 
@@ -675,35 +675,57 @@ struct st_drive * st_job_save_select_tape(struct st_job * job) {
 
 			case is_pool_growable1:
 				if (job->pool->growable) {
-					struct st_slot * sl_format = NULL;
-					for (i = changer->nb_drives; i < changer->nb_slots && !sl_format; i++) {
-						sl_format = changer->slots + i;
+					struct st_slot * sl = drive->slot;
 
-						if (sl_format->lock->ops->trylock(sl_format->lock)) {
-							sl_format = NULL;
+					if (!(sl->tape && sl->tape->status == ST_TAPE_STATUS_NEW && sl->tape->format == job->pool->format))
+						sl = NULL;
+
+					for (i = 0; i < changer->nb_drives && sl == NULL; i++) {
+						struct st_drive * dr = changer->drives + i;
+
+						if (dr == drive || !dr->lock->ops->trylock(dr->lock))
+							continue;
+
+						drive->lock->ops->unlock(drive->lock);
+						drive = dr;
+						sl = dr->slot;
+					}
+
+					for (i = changer->nb_drives; i < changer->nb_slots && sl == NULL; i++) {
+						sl = changer->slots + i;
+
+						if (sl->lock->ops->trylock(sl->lock)) {
+							sl = NULL;
 							continue;
 						}
 
-						if (sl_format->tape == NULL || sl_format->tape->status != ST_TAPE_STATUS_NEW) {
-							sl_format->lock->ops->unlock(sl_format->lock);
-							sl_format = NULL;
+						if (sl->tape == NULL || sl->tape->status != ST_TAPE_STATUS_NEW || sl->tape->format != job->pool->format) {
+							sl->lock->ops->unlock(sl->lock);
+							sl = NULL;
 							continue;
 						}
 					}
 
-					if (sl_format != NULL) {
-						changer->lock->ops->lock(changer->lock);
-						changer->ops->load(changer, sl_format, drive);
-						changer->lock->ops->unlock(changer->lock);
-						sl_format->lock->ops->unlock(sl_format->lock);
+					if (sl != NULL) {
+						if (drive->slot != sl) {
+							drive->ops->eject(drive);
+							changer->ops->unload(changer, drive);
+						}
+
+						if (drive->slot->tape == NULL) {
+							changer->lock->ops->lock(changer->lock);
+							changer->ops->load(changer, sl, drive);
+							changer->lock->ops->unlock(changer->lock);
+							sl->lock->ops->unlock(sl->lock);
+						}
 
 						st_tape_write_header(drive, job->pool);
 
 						return drive;
-					} else
-						state = check_offline_free_size_left;
-				} else
-					state = check_offline_free_size_left;
+					}
+				}
+
+				state = check_offline_free_size_left;
 
 				break;
 
