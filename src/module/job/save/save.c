@@ -578,14 +578,19 @@ struct st_drive * st_job_save_select_tape(struct st_job * job) {
 
 				if (jp->total_size - jp->total_size_done < total_free_space) {
 					if (!has_alerted_user)
-						job->db_ops->add_record(job, st_log_level_warning, "Please, insert media which is a part of pool nammed %s", job->pool->name);
+						job->db_ops->add_record(job, st_log_level_warning, "Please, insert media which is a part of pool named %s", job->pool->name);
 					has_alerted_user = true;
+
+					if (drive) {
+						drive->lock->ops->unlock(drive->lock);
+						drive = NULL;
+					}
 
 					job->sched_status = st_job_status_pause;
 					sleep(60);
 					job->sched_status = st_job_status_running;
 
-					state = check_online_free_size_left;
+					state = find_free_drive;
 				} else
 					state = is_pool_growable2;
 
