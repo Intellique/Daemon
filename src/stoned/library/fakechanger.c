@@ -104,12 +104,14 @@ void st_fakechanger_setup(struct st_changer * changer) {
 	sl->drive = dr;
 	sl->tape = 0;
 	*sl->volume_name = '\0';
-	sl->full = 0;
-	sl->lock = 0;
+	sl->full = false;
+	sl->lock = NULL;
 
 	st_drive_setup(dr);
 
 	if (!dr->is_door_opened) {
+		sl->full = true;
+
 		char serial_number[32];
 		int fd = open(dr->scsi_device, O_RDWR);
 
@@ -120,6 +122,9 @@ void st_fakechanger_setup(struct st_changer * changer) {
 
 		if (dr->slot->tape == NULL)
 			dr->slot->tape = st_tape_new(dr);
+
+		if (dr->slot->tape->format->support_mam)
+			dr->ops->read_mam(dr);
 	}
 }
 

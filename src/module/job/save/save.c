@@ -618,9 +618,13 @@ struct st_drive * st_job_save_select_tape(struct st_job * job) {
 							changer->lock->ops->unlock(changer->lock);
 
 							drive->ops->reset(drive, false, false);
+							drive->ops->eod(drive);
 
 							return drive;
 						}
+					} else {
+						drive->ops->eod(drive);
+						return drive;
 					}
 				}
 
@@ -630,8 +634,10 @@ struct st_drive * st_job_save_select_tape(struct st_job * job) {
 
 			case check_tape_free_space: {
 					struct st_tape * tape = drive->slot->tape;
-					if (tape->available_block * tape->block_size >= tape->format->capacity / 10)
+					if (tape->available_block * tape->block_size >= tape->format->capacity / 10) {
+						drive->ops->eod(drive);
 						return drive;
+					}
 					state = is_pool_growable1;
 				}
 				break;

@@ -555,6 +555,10 @@ void st_drive_generic_update_status(struct st_drive * drive) {
 			drive->best_density_code = drive->density_code;
 
 		drive->status = drive->is_door_opened ? ST_DRIVE_EMPTY_IDLE : ST_DRIVE_LOADED_IDLE;
+
+		struct st_tape * tape = drive->slot->tape;
+		if (tape && !tape->mam_ok && tape->format && tape->format->support_mam)
+			st_drive_generic_read_mam(drive);
 	} else {
 		drive->status = ST_DRIVE_ERROR;
 	}
