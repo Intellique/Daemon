@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 11 Jun 2012 23:35:25 +0200                         *
+*  Last modified: Mon, 10 Sep 2012 18:53:16 +0200                         *
 \*************************************************************************/
 
 #ifndef SCSI_H__
@@ -43,6 +43,7 @@ void st_scsi_tape_info(int fd, struct st_drive * drive);
 int st_scsi_tape_locate(int fd, off_t position);
 int st_scsi_tape_position(int fd, struct st_tape * tape);
 int st_scsi_tape_read_mam(int fd, struct st_tape * tape);
+int st_scsi_tape_read_medium_serial_number(int fd, char * buffer);
 int st_scsi_tape_read_position(int fd, off_t * position);
 int st_scsi_tape_size_available(int fd, struct st_tape * tape);
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 20:16:39 +0200                         *
+*  Last modified: Mon, 10 Sep 2012 18:50:47 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -132,7 +132,7 @@ struct st_database_connection {
 		int (*get_nb_new_jobs)(struct st_database_connection * db, long * nb_new_jobs, time_t since, long last_max_jobs);
 		int (*get_new_jobs)(struct st_database_connection * db, struct st_job ** jobs, unsigned int nb_jobs, time_t since, long last_max_jobs);
 		int (*get_pool)(struct st_database_connection * db, struct st_pool * pool, long id, const char * uuid);
-		int (*get_tape)(struct st_database_connection * db, struct st_tape * tape, long id, const char * uuid, const char * label);
+		int (*get_tape)(struct st_database_connection * db, struct st_tape * tape, long id, const char * medium_serial_number, const char * uuid, const char * label);
 		int (*get_tape_format)(struct st_database_connection * db, struct st_tape_format * tape_format, long id, unsigned char density_code);
 		int (*get_user)(struct st_database_connection * db, struct st_user * user, long user_id, const char * login);
 		int (*is_changer_contain_drive)(struct st_database_connection * db, struct st_changer * changer, struct st_drive * drive);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 16:14:49 +0200                         *
+*  Last modified: Mon, 10 Sep 2012 18:51:17 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_CHANGER_H__
@@ -71,10 +71,11 @@ struct st_changer {
 	bool enabled;
 
 	struct st_changer_ops {
-		int (*can_load)();
+		bool (*can_load)(void);
 		struct st_slot * (*get_tape)(struct st_changer * ch, struct st_tape * tape);
 		int (*load)(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
 		int (*unload)(struct st_changer * ch, struct st_drive * from);
+		int (*update_status)(struct st_changer * ch);
 	} * ops;
 	void * data;
 

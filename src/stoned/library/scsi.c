@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 13 Jun 2012 13:31:37 +0200                         *
+*  Last modified: Mon, 10 Sep 2012 18:53:13 +0200                         *
 \*************************************************************************/
 
 // htobe16
@@ -1176,6 +1176,99 @@ int st_scsi_tape_read_mam(int fd, struct st_tape * tape) {
 	}
 
 	tape->mam_ok = 1;
+
+	return 0;
+}
+
+int st_scsi_tape_read_medium_serial_number(int fd, char * buf) {
+	struct {
+		unsigned char operation_code;
+		enum {
+			scsi_read_attribute_service_action_attributes_values = 0x00,
+			scsi_read_attribute_service_action_attribute_list = 0x01,
+			scsi_read_attribute_service_action_volume_list = 0x02,
+			scsi_read_attribute_service_action_parition_list = 0x03,
+		} service_action:5;
+		unsigned char obsolete:3;
+		unsigned char reserved0[3];
+		unsigned char volume_number;
+		unsigned char reserved1;
+		unsigned char partition_number;
+		unsigned short first_attribute_id;
+		unsigned short allocation_length;
+		unsigned char reserved2;
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x8C,
+		.service_action = scsi_read_attribute_service_action_attributes_values,
+		.volume_number = 0,
+		.partition_number = 0,
+		.first_attribute_id = 0,
+		.allocation_length = htobe16(1024),
+		.control = 0,
+	};
+
+	struct scsi_request_sense sense;
+	unsigned char buffer[1024];
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(buffer);
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = buffer;
+	header.timeout = 2000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	if (status)
+		return status;
+
+	struct scsi_mam {
+		enum scsi_mam_attribute attribute_identifier:16;
+		unsigned char format:2;
+		unsigned char reserved:5;
+		unsigned char read_only:1;
+		unsigned short attribute_length;
+		union {
+			unsigned char int8;
+			unsigned short be16;
+			unsigned long long be64;
+			char text[160];
+		} attribute_value;
+	} __attribute__((packed));
+
+	unsigned int data_available = be32toh(*(unsigned int *) buffer);
+	unsigned char * ptr = buffer + 4;
+
+	for (ptr = buffer + 4; ptr < buffer + data_available;) {
+		struct scsi_mam * attr = (struct scsi_mam *) ptr;
+		attr->attribute_identifier = be16toh(attr->attribute_identifier);
+		attr->attribute_length = be16toh(attr->attribute_length);
+
+		ptr += attr->attribute_length + 5;
+
+		if (attr->attribute_length == 0)
+			continue;
+
+		char * space;
+		switch (attr->attribute_identifier) {
+			case scsi_mam_medium_serial_number:
+				strncpy(buf, attr->attribute_value.text, 32);
+				space = strchr(buf, ' ');
+				if (space)
+					*space = '\0';
+				break;
+
+			default:
+				break;
+		}
+	}
 
 	return 0;
 }

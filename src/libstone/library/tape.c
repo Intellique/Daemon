@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 06 Jun 2012 10:29:38 +0200                         *
+*  Last modified: Mon, 10 Sep 2012 18:51:41 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -100,7 +100,7 @@ static const struct st_tape_status2 {
 };
 
 
-static void st_tape_retrieve(struct st_tape ** tape, long id, const char * uuid, const char * label);
+static void st_tape_retrieve(struct st_tape ** tape, long id, const char * medium_serial_number, const char * uuid, const char * label);
 static void st_tape_format_retrieve(struct st_tape_format ** format, long id, unsigned char density_code);
 static struct st_pool * st_pool_create(const char * uuid, const char * name, struct st_tape_format * format);
 static void st_pool_retrieve(struct st_pool ** pool, long id, const char * uuid);
@@ -184,8 +184,6 @@ enum st_tape_format_mode st_tape_string_to_format_mode(const char * mode) {
 
 
 struct st_tape * st_tape_get_by_id(long id) {
-	int old_state;
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
 	pthread_mutex_lock(&st_tape_lock);
 
 	struct st_tape * tape = 0;
@@ -197,10 +195,9 @@ struct st_tape * st_tape_get_by_id(long id) {
 		}
 
 	if (!tape)
-		st_tape_retrieve(&tape, id, 0, 0);
+		st_tape_retrieve(&tape, id, NULL, NULL, NULL);
 
 	pthread_mutex_unlock(&st_tape_lock);
-	pthread_setcancelstate(old_state, 0);
 
 	return tape;
 }
@@ -209,8 +206,6 @@ struct st_tape * st_tape_get_by_label(const char * label) {
 	if (!label)
 		return 0;
 
-	int old_state;
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
 	pthread_mutex_lock(&st_tape_lock);
 
 	struct st_tape * tape = 0;
@@ -222,17 +217,36 @@ struct st_tape * st_tape_get_by_label(const char * label) {
 		}
 
 	if (!tape)
-		st_tape_retrieve(&tape, -1, 0, label);
+		st_tape_retrieve(&tape, -1, NULL, NULL, label);
 
 	pthread_mutex_unlock(&st_tape_lock);
-	pthread_setcancelstate(old_state, 0);
+
+	return tape;
+}
+
+struct st_tape * st_tape_get_by_medium_serial_number(const char * medium_serial_number) {
+	if (!medium_serial_number)
+		return 0;
+
+	pthread_mutex_lock(&st_tape_lock);
+
+	struct st_tape * tape = 0;
+	unsigned int i;
+	for (i = 0; i < st_tape_nb_tapes; i++)
+		if (!strcmp(medium_serial_number, st_tape_tapes[i]->medium_serial_number)) {
+			tape = st_tape_tapes[i];
+			break;
+		}
+
+	if (!tape)
+		st_tape_retrieve(&tape, -1, medium_serial_number, NULL, NULL);
+
+	pthread_mutex_unlock(&st_tape_lock);
 
 	return tape;
 }
 
 struct st_tape * st_tape_get_by_uuid(const char * uuid) {
-	int old_state;
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
 	pthread_mutex_lock(&st_tape_lock);
 
 	struct st_tape * tape = 0;
@@ -244,17 +258,14 @@ struct st_tape * st_tape_get_by_uuid(const char * uuid) {
 		}
 
 	if (!tape)
-		st_tape_retrieve(&tape, -1, uuid, 0);
+		st_tape_retrieve(&tape, -1, NULL, uuid, NULL);
 
 	pthread_mutex_unlock(&st_tape_lock);
-	pthread_setcancelstate(old_state, 0);
 
 	return tape;
 }
 
 struct st_tape * st_tape_new(struct st_drive * dr) {
-	int old_state;
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
 	pthread_mutex_lock(&st_tape_lock);
 
 	struct st_tape * tape = dr->slot->tape = malloc(sizeof(struct st_tape));
@@ -313,7 +324,6 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 		}
 
 		pthread_mutex_unlock(&st_tape_lock);
-		pthread_setcancelstate(old_state, 0);
 
 		return tape;
 	}
@@ -407,19 +417,18 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 	}
 
 	pthread_mutex_unlock(&st_tape_lock);
-	pthread_setcancelstate(old_state, 0);
 
 	return tape;
 }
 
-void st_tape_retrieve(struct st_tape ** tape, long id, const char * uuid, const char * label) {
+void st_tape_retrieve(struct st_tape ** tape, long id, const char * medium_serial_number, const char * uuid, const char * label) {
 	struct st_database * db = st_db_get_default_db();
 	struct st_database_connection * con = db->ops->connect(db, 0);
 	if (con) {
 		*tape = malloc(sizeof(struct st_tape));
 		bzero(*tape, sizeof(struct st_tape));
 
-		if (con->ops->get_tape(con, *tape, id, uuid, label)) {
+		if (con->ops->get_tape(con, *tape, id, medium_serial_number, uuid, label)) {
 			free(*tape);
 			*tape = 0;
 		} else {
@@ -636,7 +645,7 @@ struct st_pool * st_pool_get_by_id(long id) {
 		}
 
 	if (!pool)
-		st_pool_retrieve(&pool, id, 0);
+		st_pool_retrieve(&pool, id, NULL);
 
 	pthread_mutex_unlock(&st_pool_lock);
 	pthread_setcancelstate(old_state, 0);
@@ -645,8 +654,6 @@ struct st_pool * st_pool_get_by_id(long id) {
 }
 
 struct st_pool * st_pool_get_by_uuid(const char * uuid) {
-	int old_state;
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_state);
 	pthread_mutex_lock(&st_pool_lock);
 
 	unsigned int i;
@@ -661,7 +668,6 @@ struct st_pool * st_pool_get_by_uuid(const char * uuid) {
 		st_pool_retrieve(&pool, -1, uuid);
 
 	pthread_mutex_unlock(&st_pool_lock);
-	pthread_setcancelstate(old_state, 0);
 
 	return pool;
 }

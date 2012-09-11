@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 11:43:23 +0200                         *
+*  Last modified: Mon, 10 Sep 2012 18:53:03 +0200                         *
 \*************************************************************************/
 
 // open
@@ -52,22 +52,24 @@ struct st_realchanger_private {
 	int fd;
 };
 
-static int st_realchanger_can_load(void);
+static bool st_realchanger_can_load(void);
 static struct st_slot * st_realchanger_get_tape(struct st_changer * ch, struct st_tape * tape);
 static int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
 static void * st_realchanger_setup2(void * drive);
 static int st_realchanger_unload(struct st_changer * ch, struct st_drive * from);
+static int st_realchanger_update_status(struct st_changer * ch);
 
 static struct st_changer_ops st_realchanger_ops = {
-	.can_load = st_realchanger_can_load,
-	.get_tape = st_realchanger_get_tape,
-	.load     = st_realchanger_load,
-	.unload   = st_realchanger_unload,
+	.can_load      = st_realchanger_can_load,
+	.get_tape      = st_realchanger_get_tape,
+	.load          = st_realchanger_load,
+	.unload        = st_realchanger_unload,
+	.update_status = st_realchanger_update_status,
 };
 
 
-int st_realchanger_can_load() {
-	return 1;
+bool st_realchanger_can_load(void) {
+	return true;
 }
 
 struct st_slot * st_realchanger_get_tape(struct st_changer * ch, struct st_tape * tape) {
@@ -249,7 +251,7 @@ void * st_realchanger_setup2(void * drive) {
 		st_realchanger_load(ch, sl, dr);
 		ch->lock->ops->unlock(ch->lock);
 
-		dr->ops->reset(dr);
+		dr->ops->reset(dr, false, false);
 		dr->slot->tape = st_tape_new(dr);
 		dr->ops->eject(dr);
 
@@ -337,5 +339,9 @@ int st_realchanger_unload(struct st_changer * ch, struct st_drive * drive) {
 	ch->lock->ops->unlock(ch->lock);
 
 	return failed;
+}
+
+int st_realchanger_update_status(struct st_changer * ch) {
+	return 0;
 }
 
