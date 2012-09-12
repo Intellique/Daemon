@@ -482,10 +482,13 @@ int st_changer_setup() {
 
 int st_changer_shut_down(void) {
 	unsigned int i, nb_changer = st_nb_real_changers + st_nb_fake_changers;
+	int nb_failed = 0;
 	for (i = 0; i < nb_changer; i++) {
 		struct st_changer * ch = st_changers + i;
-		ch->ops->shut_down(ch);
+		if (ch->ops->shut_down(ch))
+			nb_failed++;
 	}
+	return nb_failed;
 }
 
 void st_changer_update_status(struct st_database_connection * connect) {

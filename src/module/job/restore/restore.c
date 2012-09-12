@@ -615,7 +615,7 @@ int st_job_restore_restore_files(struct st_job * job) {
 				hdr_status = tar->ops->get_header(tar, &header);
 			}
 
-			if (hdr_status == ST_TAR_HEADER_OK && st_job_restore_filter(bn, &header) && !jp->stop_request) {
+			while (hdr_status == ST_TAR_HEADER_OK && st_job_restore_filter(bn, &header) && !jp->stop_request) {
 				char * path = header.path;
 				if (job->restore_to->nb_trunc_path > 0)
 					path = st_job_restore_trunc_filename(path, job->restore_to->nb_trunc_path);
@@ -652,10 +652,14 @@ int st_job_restore_restore_files(struct st_job * job) {
 
 				if (failed)
 					break;
-			}
 
-			i++;
-			bn = job->block_numbers + i;
+				i++;
+				if (i >= job->nb_block_numbers)
+					break;
+
+				bn = job->block_numbers + i;
+				hdr_status = tar->ops->get_header(tar, &header);
+			}
 		}
 
 		tar->ops->close(tar);
