@@ -157,10 +157,8 @@ int st_job_restore_load_tape(struct st_job * job, struct st_tape * tape) {
 				sleep(1);
 				job->db_ops->update_status(job);
 
-				if (!has_alert_user) {
-					job->db_ops->add_record(job, st_log_level_warning, "Tape not found (named: %s)", tape->name);
-					st_log_write_all(st_log_level_error, st_log_type_user_message, "Job: restore (id:%ld) request you to put a tape (named: %s) in your changer or standalone drive", job->id, tape->name);
-				}
+				if (!has_alert_user)
+					job->db_ops->add_record(job, st_log_level_warning, "Please, insert tape(%s) for restore job: %s", tape->name, job->name);
 				has_alert_user = 1;
 				sleep(5);
 
