@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 10 Sep 2012 18:53:21 +0200                         *
+*  Last modified: Wed, 12 Sep 2012 09:59:29 +0200                         *
 \*************************************************************************/
 
 // open
@@ -478,6 +478,14 @@ int st_changer_setup() {
 		st_fakechanger_setup(st_changers + i);
 
 	return 0;
+}
+
+int st_changer_shut_down(void) {
+	unsigned int i, nb_changer = st_nb_real_changers + st_nb_fake_changers;
+	for (i = 0; i < nb_changer; i++) {
+		struct st_changer * ch = st_changers + i;
+		ch->ops->shut_down(ch);
+	}
 }
 
 void st_changer_update_status(struct st_database_connection * connect) {

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 10 Sep 2012 18:52:58 +0200                         *
+*  Last modified: Wed, 12 Sep 2012 09:49:15 +0200                         *
 \*************************************************************************/
 
 // open
@@ -50,6 +50,7 @@
 static bool st_fakechanger_can_load(void);
 static struct st_slot * st_fakechanger_get_tape(struct st_changer * ch, struct st_tape * tape);
 static int st_fakechanger_load(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
+static int st_fakechanger_shut_down(struct st_changer * ch);
 static int st_fakechanger_unload(struct st_changer * ch, struct st_drive * from);
 static int st_fakechanger_update_status(struct st_changer * ch);
 
@@ -57,6 +58,7 @@ static struct st_changer_ops st_fakechanger_ops = {
 	.can_load      = st_fakechanger_can_load,
 	.get_tape      = st_fakechanger_get_tape,
 	.load          = st_fakechanger_load,
+	.shut_down     = st_fakechanger_shut_down,
 	.unload        = st_fakechanger_unload,
 	.update_status = st_fakechanger_update_status,
 };
@@ -126,6 +128,10 @@ void st_fakechanger_setup(struct st_changer * changer) {
 		if (dr->slot->tape->format->support_mam)
 			dr->ops->read_mam(dr);
 	}
+}
+
+static int st_fakechanger_shut_down(struct st_changer * ch) {
+	return 0;
 }
 
 int st_fakechanger_unload(struct st_changer * changer, struct st_drive * drive) {

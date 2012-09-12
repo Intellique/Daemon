@@ -28,13 +28,16 @@
 #ifndef SCSI_H__
 #define SCSI_H__
 
+// bool
+#include <stdbool.h>
+
 #include <stone/library/changer.h>
 #include <stone/library/drive.h>
 #include <stone/library/tape.h>
 
 void st_scsi_loader_check_slot(int fd, struct st_changer * changer, struct st_slot * slot);
 void st_scsi_loader_info(int fd, struct st_changer * changer);
-int st_scsi_loader_medium_removal(int fd, int allow);
+int st_scsi_loader_medium_removal(int fd, bool allow);
 int st_scsi_loader_move(int fd, struct st_changer * ch, struct st_slot * from, struct st_slot * to);
 int st_scsi_loader_ready(int fd);
 void st_scsi_loader_status_new(int fd, struct st_changer * changer);

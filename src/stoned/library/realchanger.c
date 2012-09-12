@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 10 Sep 2012 18:53:03 +0200                         *
+*  Last modified: Wed, 12 Sep 2012 09:53:44 +0200                         *
 \*************************************************************************/
 
 // open
@@ -56,6 +56,7 @@ static bool st_realchanger_can_load(void);
 static struct st_slot * st_realchanger_get_tape(struct st_changer * ch, struct st_tape * tape);
 static int st_realchanger_load(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
 static void * st_realchanger_setup2(void * drive);
+static int st_realchanger_shut_down(struct st_changer * ch);
 static int st_realchanger_unload(struct st_changer * ch, struct st_drive * from);
 static int st_realchanger_update_status(struct st_changer * ch);
 
@@ -63,6 +64,7 @@ static struct st_changer_ops st_realchanger_ops = {
 	.can_load      = st_realchanger_can_load,
 	.get_tape      = st_realchanger_get_tape,
 	.load          = st_realchanger_load,
+	.shut_down     = st_realchanger_shut_down,
 	.unload        = st_realchanger_unload,
 	.update_status = st_realchanger_update_status,
 };
@@ -145,9 +147,8 @@ void st_realchanger_setup(struct st_changer * changer) {
 
 	st_scsi_loader_ready(fd);
 
-	st_scsi_loader_medium_removal(fd, 0);
+	st_scsi_loader_medium_removal(fd, false);
 
-	//st_scsi_mtx_status_new(fd, changer);
 	st_scsi_loader_status_new(fd, changer);
 
 	struct st_realchanger_private * ch = malloc(sizeof(struct st_realchanger_private));
@@ -212,7 +213,7 @@ void st_realchanger_setup(struct st_changer * changer) {
 	if (workers)
 		free(workers);
 
-	st_scsi_loader_medium_removal(fd, 1);
+	//st_scsi_loader_medium_removal(fd, 1);
 
 	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: setup terminated", changer->vendor, changer->model);
 }
@@ -259,6 +260,14 @@ void * st_realchanger_setup2(void * drive) {
 
 		sl->lock->ops->unlock(sl->lock);
 	}
+
+	return 0;
+}
+
+int st_realchanger_shut_down(struct st_changer * ch) {
+	struct st_realchanger_private * self = ch->data;
+
+	st_scsi_loader_medium_removal(self->fd, true);
 
 	return 0;
 }

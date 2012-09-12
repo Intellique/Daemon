@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 07 Sep 2012 10:12:08 +0200                         *
+*  Last modified: Wed, 12 Sep 2012 10:02:30 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -193,6 +193,8 @@ void st_sched_do_loop() {
 	}
 
 	connection->ops->free(connection);
+
+	st_changer_shut_down();
 }
 
 void st_sched_exit(int signal) {
