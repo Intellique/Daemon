@@ -42,7 +42,6 @@ CREATE TYPE FileType AS ENUM (
 
 CREATE TYPE JobStatus AS ENUM (
     'disable',
-    'finished',
     'error',
     'idle',
     'pause',
@@ -102,12 +101,6 @@ CREATE TYPE TapeStatus AS ENUM (
     'unknown'
 );
 
-CREATE TYPE TapeType AS ENUM (
-    'read only',
-    'rewritable',
-    'cleaning'
-);
-
 
 -- Tables
 CREATE TABLE TapeFormat (
@@ -142,7 +135,6 @@ CREATE TABLE Pool (
 
     growable BOOLEAN NOT NULL DEFAULT FALSE,
     rewritable BOOLEAN NOT NULL DEFAULT TRUE,
-    deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
     metadata TEXT NOT NULL DEFAULT ''
 );
@@ -170,7 +162,6 @@ CREATE TABLE Tape (
     blockSize INTEGER NOT NULL DEFAULT 0 CHECK (blockSize >= 0),
 
     hasPartition BOOLEAN NOT NULL DEFAULT FALSE,
-    type tapetype NOT NULL DEFAULT 'rewritable',
 
     tapeFormat INTEGER NOT NULL REFERENCES TapeFormat(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     pool INTEGER NULL REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE SET NULL,
@@ -178,19 +169,11 @@ CREATE TABLE Tape (
     CHECK (firstUsed < useBefore)
 );
 
-CREATE TABLE TapeLabel (
-    id BIGSERIAL PRIMARY KEY,
-
-    name TEXT NOT NULL,
-    tape INTEGER NOT NULL REFERENCES Tape(id) ON UPDATE CASCADE ON DELETE CASCADE
-);
-
 CREATE TABLE DriveFormat (
     id SERIAL PRIMARY KEY,
 
     name VARCHAR(64) NOT NULL UNIQUE,
     densityCode SMALLINT NOT NULL CHECK (densityCode > 0),
-    mode TapeFormatMode NOT NULL,
 
     cleaningInterval INTERVAL NOT NULL CHECK (cleaningInterval >= INTERVAL 'P1W')
 );
@@ -315,7 +298,7 @@ CREATE TABLE Archive (
     owner INTEGER NOT NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
     metadata hstore NOT NULL,
-    copyOf BIGINT NULL REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+	copyOf BIGINT NULL REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
     CONSTRAINT archive_time CHECK (ctime <= endtime)
 );
@@ -327,9 +310,9 @@ CREATE TABLE ArchiveFile (
     type FileType NOT NULL,
     mimeType VARCHAR(64) NOT NULL,
 
-    ownerId INTEGER NOT NULL DEFAULT 0,
+    ownerId SMALLINT NOT NULL DEFAULT 0,
     owner VARCHAR(255) NOT NULL,
-    groupId INTEGER NOT NULL DEFAULT 0,
+    groupId SMALLINT NOT NULL DEFAULT 0,
     groups VARCHAR(255) NOT NULL,
 
     perm SMALLINT NOT NULL CHECK (perm >= 0),
@@ -360,22 +343,22 @@ CREATE TABLE ArchiveFileToArchiveVolume (
     archiveVolume BIGINT NOT NULL REFERENCES ArchiveVolume(id) ON UPDATE CASCADE ON DELETE CASCADE,
     archiveFile BIGINT NOT NULL REFERENCES ArchiveFile(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
-    blockNumber BIGINT NOT NULL DEFAULT 0 CHECK (blockNumber >= 0),
+    blockNumber BIGINT CHECK (blockNumber >= 0),
 
     PRIMARY KEY (archiveVolume, archiveFile)
 );
 
 CREATE TABLE Backup (
-    id BIGSERIAL PRIMARY KEY,
+	id BIGSERIAL PRIMARY KEY,
 
-    timestamp TIMESTAMP(0) NOT NULL DEFAULT now(),
+	timestamp TIMESTAMP(0) NOT NULL DEFAULT now(),
 
-    nbTape INTEGER NOT NULL DEFAULT 0 CHECK (nbTape >= 0),
-    nbArchive INTEGER NOT NULL DEFAULT 0 CHECK (nbArchive >= 0)
+	nbTape INTEGER NOT NULL DEFAULT 0 CHECK (nbTape >= 0),
+	nbArchive INTEGER NOT NULL DEFAULT 0 CHECK (nbArchive >= 0)
 );
 
 CREATE TABLE BackupVolume (
-    id BIGSERIAL PRIMARY KEY,
+	id BIGSERIAL PRIMARY KEY,
 
     sequence INTEGER NOT NULL DEFAULT 0 CHECK (sequence >= 0),
     backup BIGINT NOT NULL REFERENCES Backup(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -450,7 +433,7 @@ CREATE TABLE JobRecord (
     job BIGINT NOT NULL REFERENCES Job(id) ON UPDATE CASCADE ON DELETE CASCADE,
     status JobStatus NOT NULL CHECK (status != 'disable'),
     numRun INTEGER NOT NULL DEFAULT 1 CHECK (numRun > 0),
-    timestamp TIMESTAMP(0) NOT NULL DEFAULT NOW(),
+    timestamp TIMESTAMP(0) NOT NULL,
     message TEXT
 );
 
@@ -486,8 +469,6 @@ COMMENT ON COLUMN Archive.endtime IS 'End time of archive creation';
 COMMENT ON TABLE Checksum IS 'Contains only checksum available';
 
 COMMENT ON COLUMN DriveFormat.cleaningInterval IS 'Interval between two cleaning in days';
-
-COMMENT ON TYPE JobStatus IS E'disable => disabled,\nfinish => job finished,\nerror => error while running,\nidle => not yet started or completed,\npause => waiting for user action,\nrunning => running,\nstopped => stopped by user,\nwaiting => waiting for a resource';
 
 COMMENT ON COLUMN Tape.label IS 'Contains an UUID';
 
