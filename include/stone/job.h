@@ -45,6 +45,7 @@ struct st_user;
 
 enum st_job_status {
 	st_job_status_disable,
+	st_job_status_finished,
 	st_job_status_error,
 	st_job_status_idle,
 	st_job_status_pause,

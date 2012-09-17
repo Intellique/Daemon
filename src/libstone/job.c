@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 12 Jul 2012 10:46:06 +0200                         *
+*  Last modified: Fri, 14 Sep 2012 16:54:50 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -54,13 +54,14 @@ static const struct st_job_status2 {
 	char * name;
 	enum st_job_status status;
 } st_job_status[] = {
-	{ "disable", st_job_status_disable },
-	{ "error",   st_job_status_error },
-	{ "idle",    st_job_status_idle },
-	{ "pause",   st_job_status_pause },
-	{ "running", st_job_status_running },
-	{ "stopped", st_job_status_stopped },
-	{ "waiting", st_job_status_waiting },
+	{ "disable",  st_job_status_disable },
+	{ "error",    st_job_status_error },
+	{ "finished", st_job_status_finished },
+	{ "idle",     st_job_status_idle },
+	{ "pause",    st_job_status_pause },
+	{ "running",  st_job_status_running },
+	{ "stopped",  st_job_status_stopped },
+	{ "waiting",  st_job_status_waiting },
 
 	{ "unknown", st_job_status_unknown },
 };

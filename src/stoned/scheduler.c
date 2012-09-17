@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 12 Sep 2012 10:02:30 +0200                         *
+*  Last modified: Mon, 17 Sep 2012 09:56:43 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -230,9 +230,11 @@ void st_sched_run_job(void * arg) {
 
 	int status = job->job_ops->run(job);
 
-	if (job->sched_status == st_job_status_running)
+	if (job->sched_status == st_job_status_running && job->repetition != 0)
 		job->sched_status = st_job_status_idle;
-	if (job->db_status == st_job_status_stopped)
+	else if (job->sched_status == st_job_status_running)
+		job->sched_status = st_job_status_finished;
+	else if (job->db_status == st_job_status_stopped)
 		job->sched_status = st_job_status_stopped;
 
 	sleep(1);
