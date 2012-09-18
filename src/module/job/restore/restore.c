@@ -550,6 +550,10 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 		if (nb_read < 0)
 			job->db_ops->add_record(job, st_log_level_warning, "An error occured while reading from tape because %m");
 
+		if (fchown(fd, header->uid, header->gid)) {
+			job->db_ops->add_record(job, st_log_level_warning, "Failed to restore owner(%u:%s) and group(%u:%s) of %s because %m", header->uid, header->uname, header->gid, header->gname, path);
+		}
+
 		close(fd);
 
 	} else if (S_ISLNK(header->mode)) {
