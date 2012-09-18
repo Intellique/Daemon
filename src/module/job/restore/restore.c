@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 10 Sep 2012 18:52:33 +0200                         *
+*  Last modified: Tue, 18 Sep 2012 10:27:28 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -37,7 +37,7 @@
 #include <sys/stat.h>
 // S_*
 #include <sys/types.h>
-// sleep
+// chown, sleep
 #include <unistd.h>
 
 
@@ -565,6 +565,13 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 			}
 		}
 		status = symlink(header->link, header->path);
+	}
+
+	// restore owner id and group id
+	if (header->offset == 0) {
+		if (chown(header->path, header->uid, header->gid)) {
+			job->db_ops->add_record(job, st_log_level_warning, "Failed to restore owner(%u:%s) and group(%u:%s) of %s because %m", header->uid, header->uname, header->gid, header->gname, path);
+		}
 	}
 
 	jp->nb_total_read_total = jp->position + tar->ops->position(tar);
