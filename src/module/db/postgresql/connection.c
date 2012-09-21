@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 10 Sep 2012 18:51:58 +0200                         *
+*  Last modified: Fri, 21 Sep 2012 12:06:24 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -2740,6 +2740,10 @@ int st_db_postgresql_get_double(PGresult * result, int row, int column, double *
 }
 
 void st_db_postgresql_get_error(PGresult * result, const char * prepared_query) {
+	char * error_code = PQresultErrorField(result, PG_DIAG_SQLSTATE);
+	if (!strcmp("55P03", error_code))
+		return;
+
 	char * error = PQresultErrorMessage(result);
 
 	if (prepared_query)
