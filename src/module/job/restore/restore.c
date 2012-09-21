@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 18 Sep 2012 10:27:28 +0200                         *
+*  Last modified: Fri, 21 Sep 2012 18:04:48 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -79,7 +79,7 @@ static int st_job_restore_load_tape(struct st_job * job, struct st_tape * tape);
 static int st_job_restore_mkdir(const char * path);
 static void st_job_restore_new_job(struct st_database_connection * db, struct st_job * job);
 static int st_job_restore_restore_archive(struct st_job * job);
-static int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, struct st_tar_header * header, const char * path);
+static int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, struct st_tar_header * header, char * path);
 static int st_job_restore_restore_files(struct st_job * job);
 static int st_job_restore_run(struct st_job * job);
 static int st_job_restore_stop(struct st_job * job);
@@ -394,14 +394,30 @@ int st_job_restore_restore_archive(struct st_job * job) {
 	return status;
 }
 
-int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, struct st_tar_header * header, const char * path) {
+int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, struct st_tar_header * header, char * path) {
 	if (header->is_label)
 		return 0;
 
-	if (header->path)
-		st_util_string_delete_double_char(header->path, '/');
+	if (path)
+		st_util_string_delete_double_char(path, '/');
 	if (header->link)
 		st_util_string_delete_double_char(header->link, '/');
+
+	int dir_fd = -1;
+	if (!S_ISREG(header->mode)) {
+		char * pos = strrchr(path, '/');
+		if (pos != NULL) {
+			*pos = '\0';
+
+			dir_fd = open(path, O_RDONLY);
+
+			if (dir_fd < 0) {
+				job->db_ops->add_record(job, st_log_level_error, "Failed to open directory %s because %m", path);
+			}
+
+			*pos = '/';
+		}
+	}
 
 	struct st_job_restore_private * jp = job->data;
 	int status = 0;
@@ -465,9 +481,6 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 			}
 		}
 	} else if (S_ISDIR(header->mode)) {
-		if (!access(path, F_OK))
-			return 0;
-
 		status = st_job_restore_mkdir(path);
 		if (status) {
 			switch (errno) {
@@ -551,7 +564,19 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 			job->db_ops->add_record(job, st_log_level_warning, "An error occured while reading from tape because %m");
 
 		if (fchown(fd, header->uid, header->gid)) {
-			job->db_ops->add_record(job, st_log_level_warning, "Failed to restore owner(%u:%s) and group(%u:%s) of %s because %m", header->uid, header->uname, header->gid, header->gname, path);
+			job->db_ops->add_record(job, st_log_level_warning, "Failed to restore owner (%u:%s) and group(%u:%s) of %s because %m", header->uid, header->uname, header->gid, header->gname, path);
+		}
+
+		if (fchmod(fd, header->mode)) {
+			job->db_ops->add_record(job, st_log_level_warning, "Failed to restore permission (%03o) of %s because %m", header->mode, path);
+		}
+
+		struct timeval tv[] = {
+			{ header->mtime, 0 },
+			{ header->mtime, 0 },
+		};
+		if (futimes(fd, tv)) {
+			job->db_ops->add_record(job, st_log_level_warning, "Failed to restore motify time of %s because %m", path);
 		}
 
 		close(fd);
@@ -568,13 +593,35 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 				}
 			}
 		}
-		status = symlink(header->link, header->path);
+		status = symlink(header->link, path);
+		if (status) {
+			switch (errno) {
+				default:
+					job->db_ops->add_record(job, st_log_level_warning, "Failed to create a block device (major:%d,minor:%d) named %s because %m", (int) header->dev >> 8, (int) header->dev & 0xFF, path);
+					break;
+			}
+		}
 	}
 
 	// restore owner id and group id
-	if (header->offset == 0) {
-		if (chown(header->path, header->uid, header->gid)) {
+	if (!S_ISREG(header->mode)) {
+		fsync(dir_fd);
+		close(dir_fd);
+
+		if (chown(path, header->uid, header->gid)) {
 			job->db_ops->add_record(job, st_log_level_warning, "Failed to restore owner(%u:%s) and group(%u:%s) of %s because %m", header->uid, header->uname, header->gid, header->gname, path);
+		}
+
+		if (chmod(path, header->mode)) {
+			job->db_ops->add_record(job, st_log_level_warning, "Failed to restore permission (%03o) of %s because %m", header->mode, path);
+		}
+
+		struct timeval tv[] = {
+			{ header->mtime, 0 },
+			{ header->mtime, 0 },
+		};
+		if (utimes(path, tv)) {
+			job->db_ops->add_record(job, st_log_level_warning, "Failed to restore motify time of %s because %m", path);
 		}
 	}
 
