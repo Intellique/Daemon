@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 12 Sep 2012 09:53:44 +0200                         *
+*  Last modified: Thu, 20 Sep 2012 16:57:28 +0200                         *
 \*************************************************************************/
 
 // open
@@ -160,6 +160,9 @@ void st_realchanger_setup(struct st_changer * changer) {
 	changer->lock = st_ressource_new();
 
 	unsigned int i;
+	for (i = changer->nb_drives; i < changer->nb_slots; i++)
+		changer->slots[i].lock = st_ressource_new();
+
 	for (i = 0; i < changer->nb_drives; i++) {
 		struct st_drive * dr = changer->drives + i;
 		dr->slot->drive = dr;
@@ -187,9 +190,6 @@ void st_realchanger_setup(struct st_changer * changer) {
 		st_log_write_all(st_log_level_error, st_log_type_changer, "[%s | %s]: panic: your library require manual maintenance because there is not enough free slot for unloading drive", changer->vendor, changer->model);
 		exit(1);
 	}
-
-	for (i = changer->nb_drives; i < changer->nb_slots; i++)
-		changer->slots[i].lock = st_ressource_new();
 
 	pthread_t * workers = 0;
 	if (changer->nb_drives > 1) {
