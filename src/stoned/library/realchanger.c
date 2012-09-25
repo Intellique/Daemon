@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 21 Sep 2012 09:49:35 +0200                         *
+*  Last modified: Tue, 25 Sep 2012 13:17:00 +0200                         *
 \*************************************************************************/
 
 // open
@@ -285,20 +285,29 @@ int st_realchanger_unload(struct st_changer * ch, struct st_drive * drive) {
 	for (i = ch->nb_drives; i < ch->nb_slots && to == NULL; i++) {
 		to = ch->slots + i;
 
-		if (from->src_address != to->address) {
+		if (to->lock->ops->trylock(to->lock)) {
 			to = NULL;
 			continue;
 		}
 
-		if (to->lock->ops->trylock(to->lock))
+		if (from->src_address != to->address || to->full) {
+			to->lock->ops->unlock(to->lock);
 			to = NULL;
+		}
 	}
 
 	for (i = ch->nb_drives; i < ch->nb_slots && to == NULL; i++) {
 		to = ch->slots + i;
 
-		if (to->lock->ops->trylock(to->lock))
+		if (to->lock->ops->trylock(to->lock)) {
 			to = NULL;
+			continue;
+		}
+
+		if (to->full) {
+			to->lock->ops->unlock(to->lock);
+			to = NULL;
+		}
 	}
 
 	if (to == NULL) {
