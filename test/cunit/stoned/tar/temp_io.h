@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Jun 2012 19:01:37 +0200                         *
+*  Last modified: Wed, 26 Sep 2012 16:23:52 +0200                         *
 \*************************************************************************/
 
 #ifndef __TEST_STONED_TAR_TEMPIO_H__
@@ -30,6 +30,7 @@
 
 #include <stone/io.h>
 
+const char * test_stoned_tar_get_filename(struct st_stream_writer * file);
 struct st_stream_writer * test_stoned_tar_get_temp_file(void);
 
 #endif

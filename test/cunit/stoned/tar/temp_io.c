@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Jun 2012 19:01:37 +0200                         *
+*  Last modified: Wed, 26 Sep 2012 16:24:18 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -149,6 +149,11 @@ ssize_t test_stoned_tar_tempio_writer_write(struct st_stream_writer * io, const 
 	return nb_write;
 }
 
+
+const char * test_stoned_tar_get_filename(struct st_stream_writer * file) {
+	struct test_stoned_tar_tempio_writer_private * self = file->data;
+    return self->filename;
+}
 
 struct st_stream_writer * st_stream_get_tmp_writer() {
 	char filename[] = "/tmp/STone_XXXXXX";
