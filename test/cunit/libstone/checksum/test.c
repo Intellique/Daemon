@@ -112,11 +112,13 @@ void test_libstone_checksum_compute_1() {
 void test_libstone_checksum_compute_2() {
     char * digest = st_checksum_compute(0, "Hello, world!!!", 15);
     CU_ASSERT_PTR_NULL(digest);
+    free(digest);
 }
 
 void test_libstone_checksum_compute_3() {
     char * digest = st_checksum_compute("sha256", 0, 15);
     CU_ASSERT_PTR_NULL(digest);
+    free(digest);
 }
 
 void test_libstone_checksum_compute_4() {
@@ -129,6 +131,7 @@ void test_libstone_checksum_compute_4() {
 void test_libstone_checksum_compute_5() {
     char * digest = st_checksum_compute("sha256", 0, 15);
     CU_ASSERT_PTR_NULL(digest);
+    free(digest);
 }
 
 void test_libstone_checksum_convert_0() {

@@ -22,17 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Jun 2012 09:43:50 +0200                         *
+*  Last modified: Tue, 29 May 2012 12:38:48 +0200                         *
 \*************************************************************************/
 
-#include "test.h"
-#include "checksum/test.h"
-#include "conf/test.h"
-#include "util/test.h"
+#ifndef __STONECONFIG_SCSI_H__
+#define __STONECONFIG_SCSI_H__
 
-void test_libstone_add_suite() {
-    test_libstone_checksum_add_suite();
-	test_libstone_conf_add_suite();
-	test_libstone_util_add_suite();
-}
+int stcfg_scsi_loaderinfo(const char * filename, struct st_changer * changer);
+int stcfg_scsi_tapeinfo(const char * filename, struct st_drive * drive);
+
+#endif
 

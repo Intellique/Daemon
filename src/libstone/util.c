@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 25 Jun 2012 18:10:20 +0200                         *
+*  Last modified: Wed, 26 Sep 2012 11:34:20 +0200                         *
 \*************************************************************************/
 
 // getgrgid_r
@@ -74,6 +74,7 @@ int st_util_check_valid_utf8(const char * string) {
 
 /**
  * sdbm function
+ * http://www.cse.yorku.ca/~oz/hash.html
  **/
 unsigned long long st_util_compute_hash_string(const void * key) {
 	const char * cstr = key;
@@ -137,11 +138,11 @@ void st_util_fix_invalid_utf8(char * string) {
 		}
 
 		char * ptr_end = ptr + 1;
-		while (st_util_valid_utf8_char(ptr_end) == 0)
+		while (*ptr_end && st_util_valid_utf8_char(ptr_end) == 0)
 			ptr_end++;
 
 		if (*ptr_end)
-			memmove(ptr, ptr_end, strlen((char *) ptr_end) + 1);
+			memmove(ptr, ptr_end, strlen(ptr_end) + 1);
 		else
 			*ptr = '\0';
 	}
@@ -173,7 +174,7 @@ void st_util_string_delete_double_char(char * str, char delete_char) {
 		size_t length = strlen(ptr);
 		size_t delete_length = strspn(ptr, double_char + 1);
 
-		memmove(ptr, ptr + delete_length, length - delete_length);
+		memmove(ptr, ptr + delete_length, length - delete_length + 1);
 
 		ptr = strstr(ptr, double_char);
 	}

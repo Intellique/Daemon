@@ -175,7 +175,8 @@ stat-extra:
 
 tar: ${NAME}.tar.bz2
 
-test: prepare $(sort ${TEST_BINS})
+test: prepare binaries $(sort ${TEST_BINS})
+	@./bin/cunit
 
 
 # real target
