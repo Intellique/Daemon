@@ -22,19 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 26 Sep 2012 11:50:52 +0200                         *
+*  Last modified: Wed, 26 Sep 2012 11:45:54 +0200                         *
 \*************************************************************************/
 
-#include "test.h"
-#include "checksum/test.h"
-#include "conf/test.h"
-#include "util/test.h"
-#include "util/hashtable/test.h"
+#ifndef __TEST_LIBSTONE_UTIL_HASHTABLE_H__
+#define __TEST_LIBSTONE_UTIL_HASHTABLE_H__
 
-void test_libstone_add_suite() {
-    test_libstone_checksum_add_suite();
-	test_libstone_conf_add_suite();
-	test_libstone_util_add_suite();
-	test_libstone_util_hashtable_add_suite();
-}
+void test_libstone_util_hashtable_add_suite(void);
+
+#endif
 

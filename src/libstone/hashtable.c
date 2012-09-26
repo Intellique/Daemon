@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 02 Jan 2012 11:54:23 +0100                         *
+*  Last modified: Wed, 26 Sep 2012 15:00:23 +0200                         *
 \*************************************************************************/
 
 // calloc, free, malloc
@@ -218,7 +218,8 @@ void * st_hashtable_remove(struct st_hashtable * hashtable, const void * key) {
 		hashtable->nb_elements--;
 		return value;
 	}
-	while (node->next) {
+
+	while (node && node->next) {
 		if (node->next->hash == hash) {
 			struct st_hashtable_node * current_node = node->next;
 			node->next = current_node->next;
