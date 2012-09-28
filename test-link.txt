@@ -1,7 +1,0 @@
-src/libstone/log.h -> test/cunit/log.h
-src/stone-config/scsi.c -> test/cunit/ext/scsi.c
-src/stone-config/scsi.h -> test/cunit/ext/scsi.h
-src/stone-config/scsi.h -> test/cunit/stone-config/scsi.h
-src/stoned/tar/common.c -> test/cunit/stoned/ext/common.c
-src/stoned/tar/common.h -> test/cunit/stoned/ext/common.h
-src/stoned/tar/tar_writer.c -> test/cunit/stoned/ext/tar_writer.c

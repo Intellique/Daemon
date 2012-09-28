@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 21 Sep 2012 12:06:24 +0200                         *
+*  Last modified: Fri, 28 Sep 2012 17:32:56 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1410,7 +1410,7 @@ int st_db_postgresql_sync_drive(struct st_database_connection * connection, stru
 
 			st_db_postgresql_get_time(result, 0, 2, &drive->last_clean);
 
-			unsigned char densitycode;
+			unsigned char densitycode = 0;
 			st_db_postgresql_get_uchar(result, 0, 3, &densitycode);
 
 			if (densitycode > drive->best_density_code)
@@ -2812,6 +2812,7 @@ int st_db_postgresql_get_time(PGresult * result, int row, int column, time_t * v
 
 	char * value = PQgetvalue(result, row, column);
 	struct tm tv;
+	bzero(&tv, sizeof(tv));
 
 	int failed = strptime(value, "%F %T", &tv) ? 0 : 1;
 	if (!failed)

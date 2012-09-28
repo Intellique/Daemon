@@ -367,8 +367,8 @@ int stcfg_scsi_tapeinfo(const char * filename, struct st_drive * drive) {
 		return 3;
 
 	drive->serial_number = malloc(13);
-	strncpy(drive->serial_number, result_serial_number.unit_serial_number, 12);
-	drive->serial_number[12] = '\0';
+	strncpy(drive->serial_number, result_serial_number.unit_serial_number, 10);
+	drive->serial_number[10] = '\0';
 
 	return 0;
 }
