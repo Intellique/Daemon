@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 28 Sep 2012 17:32:56 +0200                         *
+*  Last modified: Fri, 28 Sep 2012 20:03:44 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -2815,8 +2815,10 @@ int st_db_postgresql_get_time(PGresult * result, int row, int column, time_t * v
 	bzero(&tv, sizeof(tv));
 
 	int failed = strptime(value, "%F %T", &tv) ? 0 : 1;
-	if (!failed)
+	if (!failed) {
+		tv.tm_isdst = -1;
 		*val = mktime(&tv);
+	}
 
 	return failed;
 }
