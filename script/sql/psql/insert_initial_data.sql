@@ -45,4 +45,4 @@ INSERT INTO Users(login, password, salt, fullname, email, isAdmin, canArchive, c
 	('storiq', '8a6eb1d3b4fecbf8a1d6528a6aecb064e801b1e0', 'cd8c63688e0c2cff', 'storiq', 'storiq@localhost', TRUE, TRUE, TRUE, 1, hstore('step', '0'));
 
 INSERT INTO UserEvent(event) VALUES
-	('connection');
+	('connection', 'disconnection');
