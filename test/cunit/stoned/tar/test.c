@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 26 Sep 2012 17:19:25 +0200                         *
+*  Last modified: Mon, 01 Oct 2012 16:59:36 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -51,23 +51,33 @@
 #include "pipe_io.h"
 #include "temp_io.h"
 
-static void test_stoned_tar_writer_single_label(void);
+static void test_stoned_tar_reader_parse_0(void);
+static void test_stoned_tar_reader_parse_1(void);
+static void test_stoned_tar_reader_parse_2(void);
 
-static int test_stoned_tar_writer_add_file(struct st_tar_out * tar, const char * filename);
-static int test_stoned_tar_writer_filter(const struct dirent * file);
+static void test_stoned_tar_writer_single_label(void);
 static void test_stoned_tar_writer_add_single_file(void);
 static void test_stoned_tar_writer_add_directory_0(void);
 static void test_stoned_tar_writer_add_directory_1(void);
+static void test_stoned_tar_writer_add_directory_2(void);
+
+static int test_stoned_tar_writer_add_file(struct st_tar_out * tar, const char * filename);
+static int test_stoned_tar_writer_filter(const struct dirent * file);
 
 static struct {
 	void (*function)(void);
 	char * name;
 } test_functions[] = {
+	{ test_stoned_tar_reader_parse_0, "stoned: tar reader: parse #0"},
+	{ test_stoned_tar_reader_parse_1, "stoned: tar reader: parse #1"},
+	{ test_stoned_tar_reader_parse_2, "stoned: tar reader: parse #2"},
+
 	{ test_stoned_tar_writer_single_label, "stoned: tar writer: single label, #0" },
 
 	{ test_stoned_tar_writer_add_single_file, "stoned: tar writer: add single file #0" },
 	{ test_stoned_tar_writer_add_directory_0, "stoned: tar writer: add directory #0" },
 	{ test_stoned_tar_writer_add_directory_1, "stoned: tar writer: add directory #1" },
+	{ test_stoned_tar_writer_add_directory_2, "stoned: tar writer: add directory #2" },
 
 	{ 0, 0 },
 };
@@ -88,6 +98,198 @@ void test_stoned_tar_add_suite() {
 			_exit(3);
 		}
 	}
+}
+
+
+void test_stoned_tar_reader_parse_0() {
+	static char * tar_params[] = { "tar", "cf", "-", "test", NULL };
+	struct st_stream_reader * file = test_stoned_tar_get_pipe_reader(tar_params, NULL);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(file);
+
+	struct st_tar_in * tar = st_tar_new_in(file);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(tar);
+
+	struct st_tar_header header;
+	enum st_tar_header_status hdr_status;
+
+	while ((hdr_status = tar->ops->get_header(tar, &header)) == ST_TAR_HEADER_OK) {
+		struct stat fs;
+		int failed = lstat(header.path, &fs);
+
+		CU_ASSERT_EQUAL(failed, 0);
+
+		if (header.link && S_ISREG(header.mode)) {
+			CU_ASSERT_TRUE(S_ISREG(fs.st_mode));
+			CU_ASSERT_EQUAL(header.size, 0);
+		} else if (S_ISFIFO(header.mode)) {
+			CU_ASSERT_TRUE(S_ISFIFO(fs.st_mode));
+		} else if (S_ISCHR(header.mode)) {
+			CU_ASSERT_TRUE(S_ISCHR(fs.st_mode));
+			CU_ASSERT_EQUAL(header.dev, fs.st_dev);
+		} else if (S_ISDIR(header.mode)) {
+			CU_ASSERT_TRUE(S_ISDIR(fs.st_mode));
+		} else if (S_ISBLK(header.mode)) {
+			CU_ASSERT_TRUE(S_ISBLK(fs.st_mode));
+			CU_ASSERT_EQUAL(header.dev, fs.st_dev);
+		} else if (S_ISREG(header.mode)) {
+			CU_ASSERT_TRUE(S_ISREG(fs.st_mode));
+			CU_ASSERT_EQUAL(header.size, fs.st_size);
+
+			tar->ops->skip_file(tar);
+		} else if (S_ISLNK(header.mode)) {
+			CU_ASSERT_TRUE(S_ISLNK(fs.st_mode));
+
+			char * link = malloc(256);
+			ssize_t link_length = readlink(header.path, link, 256);
+			CU_ASSERT_NOT_EQUAL(link_length, -1);
+
+			if (link_length > 0) {
+				link[link_length] = '\0';
+
+				CU_ASSERT_STRING_EQUAL(header.link, link);
+			}
+
+			free(link);
+		}
+
+		st_tar_free_header(&header);
+	}
+
+	CU_ASSERT_EQUAL(hdr_status, ST_TAR_HEADER_NOT_FOUND);
+
+	int failed = tar->ops->close(tar);
+	CU_ASSERT_EQUAL(failed, 0);
+
+	tar->ops->free(tar);
+}
+
+void test_stoned_tar_reader_parse_1() {
+	static char * tar_params[] = { "tar", "cf", "-", "usr", NULL };
+	struct st_stream_reader * file = test_stoned_tar_get_pipe_reader(tar_params, "/");
+	CU_ASSERT_PTR_NOT_NULL_FATAL(file);
+
+	struct st_tar_in * tar = st_tar_new_in(file);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(tar);
+
+	struct st_tar_header header;
+	enum st_tar_header_status hdr_status;
+
+	while ((hdr_status = tar->ops->get_header(tar, &header)) == ST_TAR_HEADER_OK) {
+		char * path = malloc(strlen(header.path) + 2);
+		path[0] = '/';
+		strcpy(path + 1, header.path);
+
+		struct stat fs;
+		int failed = lstat(path, &fs);
+
+		CU_ASSERT_EQUAL(failed, 0);
+
+		if (header.link && S_ISREG(header.mode)) {
+			CU_ASSERT_TRUE(S_ISREG(fs.st_mode));
+			CU_ASSERT_EQUAL(header.size, 0);
+		} else if (S_ISFIFO(header.mode)) {
+			CU_ASSERT_TRUE(S_ISFIFO(fs.st_mode));
+		} else if (S_ISCHR(header.mode)) {
+			CU_ASSERT_TRUE(S_ISCHR(fs.st_mode));
+			CU_ASSERT_EQUAL(header.dev, fs.st_dev);
+		} else if (S_ISDIR(header.mode)) {
+			CU_ASSERT_TRUE(S_ISDIR(fs.st_mode));
+		} else if (S_ISBLK(header.mode)) {
+			CU_ASSERT_TRUE(S_ISBLK(fs.st_mode));
+			CU_ASSERT_EQUAL(header.dev, fs.st_dev);
+		} else if (S_ISREG(header.mode)) {
+			CU_ASSERT_TRUE(S_ISREG(fs.st_mode));
+			CU_ASSERT_EQUAL(header.size, fs.st_size);
+
+			tar->ops->skip_file(tar);
+		} else if (S_ISLNK(header.mode)) {
+			CU_ASSERT_TRUE(S_ISLNK(fs.st_mode));
+
+			char * link = malloc(256);
+			ssize_t link_length = readlink(path, link, 256);
+			CU_ASSERT_NOT_EQUAL(link_length, -1);
+
+			if (link_length > 0) {
+				link[link_length] = '\0';
+
+				CU_ASSERT_STRING_EQUAL(header.link, link);
+			}
+
+			free(link);
+		}
+
+		st_tar_free_header(&header);
+		free(path);
+	}
+
+	CU_ASSERT_EQUAL(hdr_status, ST_TAR_HEADER_NOT_FOUND);
+
+	int failed = tar->ops->close(tar);
+	CU_ASSERT_EQUAL(failed, 0);
+
+	tar->ops->free(tar);
+}
+
+void test_stoned_tar_reader_parse_2() {
+	static char * tar_params[] = { "tar", "cf", "-", "test-data", NULL };
+	struct st_stream_reader * file = test_stoned_tar_get_pipe_reader(tar_params, NULL);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(file);
+
+	struct st_tar_in * tar = st_tar_new_in(file);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(tar);
+
+	struct st_tar_header header;
+	enum st_tar_header_status hdr_status;
+
+	while ((hdr_status = tar->ops->get_header(tar, &header)) == ST_TAR_HEADER_OK) {
+		struct stat fs;
+		int failed = lstat(header.path, &fs);
+
+		CU_ASSERT_EQUAL(failed, 0);
+
+		if (header.link && S_ISREG(header.mode)) {
+			CU_ASSERT_TRUE(S_ISREG(fs.st_mode));
+			CU_ASSERT_EQUAL(header.size, 0);
+		} else if (S_ISFIFO(header.mode)) {
+			CU_ASSERT_TRUE(S_ISFIFO(fs.st_mode));
+		} else if (S_ISCHR(header.mode)) {
+			CU_ASSERT_TRUE(S_ISCHR(fs.st_mode));
+			CU_ASSERT_EQUAL(header.dev, fs.st_dev);
+		} else if (S_ISDIR(header.mode)) {
+			CU_ASSERT_TRUE(S_ISDIR(fs.st_mode));
+		} else if (S_ISBLK(header.mode)) {
+			CU_ASSERT_TRUE(S_ISBLK(fs.st_mode));
+			CU_ASSERT_EQUAL(header.dev, fs.st_dev);
+		} else if (S_ISREG(header.mode)) {
+			CU_ASSERT_TRUE(S_ISREG(fs.st_mode));
+			CU_ASSERT_EQUAL(header.size, fs.st_size);
+
+			tar->ops->skip_file(tar);
+		} else if (S_ISLNK(header.mode)) {
+			CU_ASSERT_TRUE(S_ISLNK(fs.st_mode));
+
+			char * link = malloc(256);
+			ssize_t link_length = readlink(header.path, link, 256);
+			CU_ASSERT_NOT_EQUAL(link_length, -1);
+
+			if (link_length > 0) {
+				link[link_length] = '\0';
+
+				CU_ASSERT_STRING_EQUAL(header.link, link);
+			}
+
+			free(link);
+		}
+
+		st_tar_free_header(&header);
+	}
+
+	CU_ASSERT_EQUAL(hdr_status, ST_TAR_HEADER_NOT_FOUND);
+
+	int failed = tar->ops->close(tar);
+	CU_ASSERT_EQUAL(failed, 0);
+
+	tar->ops->free(tar);
 }
 
 
@@ -182,7 +384,7 @@ int test_stoned_tar_writer_filter(const struct dirent * file) {
 
 void test_stoned_tar_writer_add_single_file() {
 	static char * tar_params[] = { "tar", "df", "-", NULL };
-	struct st_stream_writer * file = test_stoned_tar_get_pipe(tar_params, NULL);
+	struct st_stream_writer * file = test_stoned_tar_get_pipe_writer(tar_params, NULL);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(file);
 
 	struct st_tar_out * tar = st_tar_new_out(file);
@@ -199,7 +401,7 @@ void test_stoned_tar_writer_add_single_file() {
 
 void test_stoned_tar_writer_add_directory_0() {
 	static char * tar_params[] = { "tar", "df", "-", NULL };
-	struct st_stream_writer * file = test_stoned_tar_get_pipe(tar_params, NULL);
+	struct st_stream_writer * file = test_stoned_tar_get_pipe_writer(tar_params, NULL);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(file);
 
 	struct st_tar_out * tar = st_tar_new_out(file);
@@ -216,13 +418,30 @@ void test_stoned_tar_writer_add_directory_0() {
 
 void test_stoned_tar_writer_add_directory_1() {
 	static char * tar_params[] = { "tar", "df", "-", NULL };
-	struct st_stream_writer * file = test_stoned_tar_get_pipe(tar_params, "/");
+	struct st_stream_writer * file = test_stoned_tar_get_pipe_writer(tar_params, "/");
 	CU_ASSERT_PTR_NOT_NULL_FATAL(file);
 
 	struct st_tar_out * tar = st_tar_new_out(file);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(tar);
 
 	int failed = test_stoned_tar_writer_add_file(tar, "/usr/bin");
+	CU_ASSERT_EQUAL(failed, 0);
+
+	failed = tar->ops->close(tar);
+	CU_ASSERT_EQUAL(failed, 0);
+
+	tar->ops->free(tar);
+}
+
+void test_stoned_tar_writer_add_directory_2() {
+	static char * tar_params[] = { "tar", "df", "-", NULL };
+	struct st_stream_writer * file = test_stoned_tar_get_pipe_writer(tar_params, "/");
+	CU_ASSERT_PTR_NOT_NULL_FATAL(file);
+
+	struct st_tar_out * tar = st_tar_new_out(file);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(tar);
+
+	int failed = test_stoned_tar_writer_add_file(tar, "/bin");
 	CU_ASSERT_EQUAL(failed, 0);
 
 	failed = tar->ops->close(tar);

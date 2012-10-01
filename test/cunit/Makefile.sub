@@ -15,5 +15,5 @@ CUNIT_DEPEND_LIB	:= lib/libstone.so
 
 TEST_BIN_SYMS		+= CUNIT
 
-CUNIT_OBJ_FILES		+= build/stone-config/scsi.o build/stoned/tar/common.o build/stoned/tar/tar_writer.o
+CUNIT_OBJ_FILES		+= build/stone-config/scsi.o build/stoned/tar/common.o build/stoned/tar/tar_reader.o build/stoned/tar/tar_writer.o
 

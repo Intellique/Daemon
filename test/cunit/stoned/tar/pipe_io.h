@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 01 Oct 2012 13:02:32 +0200                         *
+*  Last modified: Mon, 01 Oct 2012 13:21:28 +0200                         *
 \*************************************************************************/
 
 #ifndef __TEST_STONED_TAR_PIPEIO_H__
@@ -30,7 +30,8 @@
 
 #include <stone/io.h>
 
-struct st_stream_writer * test_stoned_tar_get_pipe(char * const params[], const char * chdir);
+struct st_stream_reader * test_stoned_tar_get_pipe_reader(char * const params[], const char * chdir);
+struct st_stream_writer * test_stoned_tar_get_pipe_writer(char * const params[], const char * chdir);
 
 #endif
 
