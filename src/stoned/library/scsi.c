@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 12 Sep 2012 10:00:50 +0200                         *
+*  Last modified: Mon, 01 Oct 2012 11:28:47 +0200                         *
 \*************************************************************************/
 
 // htobe16
@@ -595,8 +595,8 @@ void st_scsi_loader_status_new(int fd, struct st_changer * changer) {
 
 	st_scsi_loader_status_update_slot(fd, changer, changer->slots + changer->nb_drives, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element);
 	st_scsi_loader_status_update_slot(fd, changer, changer->slots, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer);
-	if (result.number_of_import_export_elements > 0)
-		st_scsi_loader_status_update_slot(fd, changer, changer->slots + result.number_of_medium_transport_elements + result.number_of_storage_elements, result.first_import_export_element_address, result.number_of_import_export_elements, scsi_loader_element_type_import_export_element);
+	if (nb_io_slots > 0)
+		st_scsi_loader_status_update_slot(fd, changer, changer->slots + result.number_of_medium_transport_elements + result.number_of_storage_elements, result.first_import_export_element_address, nb_io_slots, scsi_loader_element_type_import_export_element);
 
 	changer->transport_address = result.medium_transport_element_address;
 }
@@ -900,9 +900,9 @@ void st_scsi_tape_info(int fd, struct st_drive * drive) {
 	if (ioctl(fd, SG_IO, &header))
 		return;
 
-	drive->serial_number = malloc(13);
-	strncpy(drive->serial_number, result_serial_number.unit_serial_number, 12);
-	drive->serial_number[12] = '\0';
+	drive->serial_number = malloc(11);
+	strncpy(drive->serial_number, result_serial_number.unit_serial_number, 10);
+	drive->serial_number[10] = '\0';
 }
 
 int st_scsi_tape_locate(int fd, off_t position) {

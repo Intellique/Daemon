@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 28 Sep 2012 20:03:44 +0200                         *
+*  Last modified: Mon, 01 Oct 2012 11:45:15 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1068,10 +1068,11 @@ int st_db_postgresql_get_user(struct st_database_connection * connection, struct
 	const char * param[] = { userid, login };
 	PGresult * result = PQexecPrepared(self->db_con, query, 2, param, 0, 0, 0);
 	ExecStatusType status = PQresultStatus(result);
+	int nb_result = PQntuples(result);
 
 	if (status == PGRES_FATAL_ERROR)
 		st_db_postgresql_get_error(result, query);
-	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+	else if (status == PGRES_TUPLES_OK && nb_result == 1) {
 		st_db_postgresql_get_long(result, 0, 0, &user->id);
 		st_db_postgresql_get_string_dup(result, 0, 1, &user->login);
 		st_db_postgresql_get_string_dup(result, 0, 2, &user->password);
@@ -1092,7 +1093,7 @@ int st_db_postgresql_get_user(struct st_database_connection * connection, struct
 	PQclear(result);
 	free(userid);
 
-	return status != PGRES_TUPLES_OK || PQntuples(result) < 1;
+	return status != PGRES_TUPLES_OK || nb_result < 1;
 }
 
 int st_db_postgresql_init_connection(struct st_database_connection * connection, struct st_db_postgresql_private * driver_private) {
