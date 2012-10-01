@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 19 Jun 2012 19:09:12 +0200                         *
+*  Last modified: Mon, 01 Oct 2012 13:11:22 +0200                         *
 \*************************************************************************/
 
 #include <errno.h>
@@ -179,7 +179,7 @@ enum st_tar_out_status st_tar_out_add_file(struct st_tar_out * f, const char * f
 	struct st_tar_private_out * format = f->data;
 	bzero(current_header, 512);
 	strncpy(current_header->filename, filename2, 100);
-	snprintf(current_header->filemode, 8, "%07o", sfile.st_mode & 0777);
+	snprintf(current_header->filemode, 8, "%07o", sfile.st_mode & 07777);
 	snprintf(current_header->uid, 8, "%07o", sfile.st_uid);
 	snprintf(current_header->gid, 8, "%07o", sfile.st_gid);
 	snprintf(current_header->mtime, 12, "%0*o", 11, (unsigned int) sfile.st_mtime);

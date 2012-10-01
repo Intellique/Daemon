@@ -48,6 +48,7 @@
 
 #include <stone/tar.h>
 
+#include "pipe_io.h"
 #include "temp_io.h"
 
 static void test_stoned_tar_writer_single_label(void);
@@ -55,7 +56,8 @@ static void test_stoned_tar_writer_single_label(void);
 static int test_stoned_tar_writer_add_file(struct st_tar_out * tar, const char * filename);
 static int test_stoned_tar_writer_filter(const struct dirent * file);
 static void test_stoned_tar_writer_add_single_file(void);
-static void test_stoned_tar_writer_add_directory(void);
+static void test_stoned_tar_writer_add_directory_0(void);
+static void test_stoned_tar_writer_add_directory_1(void);
 
 static struct {
 	void (*function)(void);
@@ -64,7 +66,8 @@ static struct {
 	{ test_stoned_tar_writer_single_label, "stoned: tar writer: single label, #0" },
 
 	{ test_stoned_tar_writer_add_single_file, "stoned: tar writer: add single file #0" },
-	{ test_stoned_tar_writer_add_directory, "stoned: tar writer: add directory #0" },
+	{ test_stoned_tar_writer_add_directory_0, "stoned: tar writer: add directory #0" },
+	{ test_stoned_tar_writer_add_directory_1, "stoned: tar writer: add directory #1" },
 
 	{ 0, 0 },
 };
@@ -178,7 +181,8 @@ int test_stoned_tar_writer_filter(const struct dirent * file) {
 }
 
 void test_stoned_tar_writer_add_single_file() {
-	struct st_stream_writer * file = st_stream_get_tmp_writer();
+	static char * tar_params[] = { "tar", "df", "-", NULL };
+	struct st_stream_writer * file = test_stoned_tar_get_pipe(tar_params, NULL);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(file);
 
 	struct st_tar_out * tar = st_tar_new_out(file);
@@ -190,18 +194,12 @@ void test_stoned_tar_writer_add_single_file() {
 	failed = tar->ops->close(tar);
 	CU_ASSERT_EQUAL(failed, 0);
 
-	char * command;
-	asprintf(&command, "tar df %s > /dev/null", test_stoned_tar_get_filename(file));
-
-	failed = system(command);
-	CU_ASSERT_EQUAL(failed, 0);
-
-	free(command);
 	tar->ops->free(tar);
 }
 
-void test_stoned_tar_writer_add_directory() {
-	struct st_stream_writer * file = st_stream_get_tmp_writer();
+void test_stoned_tar_writer_add_directory_0() {
+	static char * tar_params[] = { "tar", "df", "-", NULL };
+	struct st_stream_writer * file = test_stoned_tar_get_pipe(tar_params, NULL);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(file);
 
 	struct st_tar_out * tar = st_tar_new_out(file);
@@ -213,13 +211,23 @@ void test_stoned_tar_writer_add_directory() {
 	failed = tar->ops->close(tar);
 	CU_ASSERT_EQUAL(failed, 0);
 
-	char * command;
-	asprintf(&command, "tar df %s > /dev/null", test_stoned_tar_get_filename(file));
+	tar->ops->free(tar);
+}
 
-	failed = system(command);
+void test_stoned_tar_writer_add_directory_1() {
+	static char * tar_params[] = { "tar", "df", "-", NULL };
+	struct st_stream_writer * file = test_stoned_tar_get_pipe(tar_params, "/");
+	CU_ASSERT_PTR_NOT_NULL_FATAL(file);
+
+	struct st_tar_out * tar = st_tar_new_out(file);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(tar);
+
+	int failed = test_stoned_tar_writer_add_file(tar, "/usr/bin");
 	CU_ASSERT_EQUAL(failed, 0);
 
-	free(command);
+	failed = tar->ops->close(tar);
+	CU_ASSERT_EQUAL(failed, 0);
+
 	tar->ops->free(tar);
 }
 
