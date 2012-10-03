@@ -1,6 +1,6 @@
 INSERT INTO Host(name, domaine, description) VALUES
 	('localhost', NULL, DEFAULT),
-	('d65', NULL, '3U test'),
+	('d72', NULL, '3U test'),
 	('taiko', 'intellique.com', '5U court'),
 	('kazoo', 'intellique.com', 'shuttle'),
 	('storiq-stone', 'intellique.com', '2U Test stone');
