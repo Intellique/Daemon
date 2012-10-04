@@ -25,16 +25,15 @@
 *  Last modified: Wed, 26 Sep 2012 16:23:52 +0200                         *
 \*************************************************************************/
 
-#ifndef __TEST_STONED_TAR_TEMPIO_H__
-#define __TEST_STONED_TAR_TEMPIO_H__
+#ifndef __TEST_STONED_TAR_FILE_READER_H__
+#define __TEST_STONED_TAR_FILE_READER_H__
 
 // ssize_t
 #include <sys/types.h>
 
 #include <stone/io.h>
 
-char * test_stoned_tar_get_filename(struct st_stream_writer * file);
-struct st_stream_writer * test_stoned_tar_get_temp_file(ssize_t limit_size);
+struct st_stream_reader * test_stoned_tar_get_file_reader(const char * filename);
 
 #endif
 

@@ -22,19 +22,77 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 26 Sep 2012 16:23:52 +0200                         *
+*  Last modified: Tue, 02 Oct 2012 15:21:44 +0200                         *
 \*************************************************************************/
 
-#ifndef __TEST_STONED_TAR_TEMPIO_H__
-#define __TEST_STONED_TAR_TEMPIO_H__
-
-// ssize_t
+#define _GNU_SOURCE
+// errno
+#include <errno.h>
+// pipe2
+#include <fcntl.h>
+// poll
+#include <poll.h>
+// free, malloc
+#include <stdlib.h>
+// strdup
+#include <string.h>
+// fstat, pipe2
+#include <sys/stat.h>
+// fstat, pipe2
 #include <sys/types.h>
+// fstatfs
+#include <sys/vfs.h>
+// waitpid
+#include <sys/wait.h>
+// close, fstat, pipe2
+#include <unistd.h>
 
-#include <stone/io.h>
+#include "command.h"
 
-char * test_stoned_tar_get_filename(struct st_stream_writer * file);
-struct st_stream_writer * test_stoned_tar_get_temp_file(ssize_t limit_size);
+int test_stoned_tar_command_new(char * const params[], const char * directory, const char * input, const char * output, const char * error) {
+	int pid = fork();
+	if (pid < 0)
+		return -1;
 
-#endif
+	if (pid > 0)
+		return pid;
+
+	if (input) {
+		int fd = open(input, O_RDONLY);
+		dup2(fd, 0);
+		close(fd);
+	} else
+		close(0);
+
+	if (output) {
+		int fd = open(output, O_WRONLY);
+		dup2(fd, 1);
+		close(fd);
+	} //else
+		//close(1);
+
+	if (error) {
+		int fd = open(error, O_WRONLY);
+		dup2(fd, 2);
+		close(fd);
+	} //else
+		//close(2);
+
+	if (directory)
+		chdir(directory);
+
+	execvp(params[0], params);
+
+	_exit(1);
+}
+
+int test_stoned_tar_command_wait(int pid) {
+	int status = 0;
+	waitpid(pid, &status, 0);
+
+	if (WIFEXITED(status))
+		return WEXITSTATUS(status);
+	else
+		return -1;
+}
 

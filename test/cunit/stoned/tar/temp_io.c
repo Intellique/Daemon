@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 26 Sep 2012 16:24:18 +0200                         *
+*  Last modified: Tue, 02 Oct 2012 12:57:27 +0200                         *
 \*************************************************************************/
 
 // errno
@@ -46,6 +46,7 @@ struct test_stoned_tar_tempio_writer_private {
 	int fd;
 	char * filename;
 	ssize_t position;
+	ssize_t size;
 	int last_errno;
 };
 
@@ -72,6 +73,17 @@ int test_stoned_tar_tempio_writer_close(struct st_stream_writer * io) {
 	struct test_stoned_tar_tempio_writer_private * self = io->data;
 	self->last_errno = 0;
 
+	if (self->size > 0) {
+		ssize_t block_size = test_stoned_tar_tempio_writer_get_block_size(io);
+		if (self->position % block_size) {
+			char buffer[block_size];
+
+			ssize_t will_write = block_size - self->position % block_size;
+			bzero(buffer, will_write);
+			write(self->fd, buffer, will_write);
+		}
+	}
+
 	int failed = 0;
 	if (self->fd > -1) {
 		failed = close(self->fd);
@@ -89,7 +101,6 @@ void test_stoned_tar_tempio_writer_free(struct st_stream_writer * io) {
 	if (self->fd > -1)
 		test_stoned_tar_tempio_writer_close(io);
 
-	unlink(self->filename);
 	free(self->filename);
 	free(self);
 
@@ -100,6 +111,9 @@ void test_stoned_tar_tempio_writer_free(struct st_stream_writer * io) {
 ssize_t test_stoned_tar_tempio_writer_get_available_size(struct st_stream_writer * io) {
 	struct test_stoned_tar_tempio_writer_private * self = io->data;
 	self->last_errno = 0;
+
+	if (self->size > 0)
+		return self->size - self->position;
 
 	struct statfs st;
 	if (fstatfs(self->fd, &st)) {
@@ -139,6 +153,9 @@ ssize_t test_stoned_tar_tempio_writer_write(struct st_stream_writer * io, const 
 	if (self->fd < 0)
 		return -1;
 
+	if (self->size > 0 && self->size - self->position < length)
+		length = self->size - self->position;
+
 	ssize_t nb_write = write(self->fd, buffer, length);
 
 	if (nb_write > 0)
@@ -150,12 +167,12 @@ ssize_t test_stoned_tar_tempio_writer_write(struct st_stream_writer * io, const 
 }
 
 
-const char * test_stoned_tar_get_filename(struct st_stream_writer * file) {
+char * test_stoned_tar_get_filename(struct st_stream_writer * file) {
 	struct test_stoned_tar_tempio_writer_private * self = file->data;
-    return self->filename;
+    return strdup(self->filename);
 }
 
-struct st_stream_writer * st_stream_get_tmp_writer() {
+struct st_stream_writer * test_stoned_tar_get_temp_file(ssize_t limit_size) {
 	char filename[] = "/tmp/STone_XXXXXX";
 
 	int fd = mkstemp(filename);
@@ -166,6 +183,7 @@ struct st_stream_writer * st_stream_get_tmp_writer() {
 	self->fd = fd;
 	self->filename = strdup(filename);
 	self->position = 0;
+	self->size = limit_size;
 
 	struct st_stream_writer * w = malloc(sizeof(struct st_stream_writer));
 	w->ops = &test_stoned_tar_tempio_writer_ops;

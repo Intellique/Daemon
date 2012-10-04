@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 01 Jun 2012 15:08:17 +0200                         *
+*  Last modified: Fri, 28 Sep 2012 17:28:27 +0200                         *
 \*************************************************************************/
 
 // glob, globfree
@@ -57,7 +57,7 @@ int stcfg_scan() {
 	}
 
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
-    printf("Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+	printf("Library: Found %zd drive%s\n", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
 
 	struct st_drive * drives = calloc(gl.gl_pathc, sizeof(struct st_drive));
 	unsigned int nb_drives = gl.gl_pathc;
@@ -135,14 +135,14 @@ int stcfg_scan() {
 	glob("/sys/class/scsi_changer/*/device", GLOB_DOOFFS, 0, &gl);
 
 	/**
-	 * In the worst case, we have nb_drives changers,
+	 * In the worst case, we have (nb_drives + nb_changer) changers,
 	 * so we alloc enough memory for this worst case.
 	 */
-	struct st_changer * changers = calloc(nb_drives, sizeof(struct st_changer));
+	struct st_changer * changers = calloc(nb_drives + nb_drives, sizeof(struct st_changer));
 	unsigned int nb_real_changers = gl.gl_pathc;
 
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd changer%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
-	printf("Library: Found %zd changer%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+	printf("Library: Found %zd changer%s\n", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
 
 	for (i = 0; i < gl.gl_pathc; i++) {
 		char link[256];
@@ -217,7 +217,7 @@ int stcfg_scan() {
 
 	// link stand-alone drive to fake changer
 	unsigned int nb_fake_changers = 0;
-	for (i = nb_real_changers; i < nb_drives; i++) {
+	while (nb_changer_without_drive) {
 		unsigned j;
 		for (j = 0; j < nb_drives; j++) {
 			if (!drives[j].changer) {
@@ -239,10 +239,12 @@ int stcfg_scan() {
 				nb_fake_changers++;
 			}
 		}
+
+		nb_changer_without_drive--;
 	}
 
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %u stand-alone drive%s", nb_fake_changers, nb_fake_changers != 1 ? "s" : "");
-	printf("Library: Found %u stand-alone drive%s", nb_fake_changers, nb_fake_changers != 1 ? "s" : "");
+	printf("Library: Found %u stand-alone drive%s\n", nb_fake_changers, nb_fake_changers != 1 ? "s" : "");
 
 	if (drives)
 		free(drives);
