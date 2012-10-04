@@ -22,18 +22,18 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 01 Oct 2012 13:21:28 +0200                         *
+*  Last modified: Wed, 26 Sep 2012 16:23:52 +0200                         *
 \*************************************************************************/
 
-#ifndef __TEST_STONED_TAR_PIPEIO_H__
-#define __TEST_STONED_TAR_PIPEIO_H__
+#ifndef __TEST_STONED_TAR_FILE_READER_H__
+#define __TEST_STONED_TAR_FILE_READER_H__
+
+// ssize_t
+#include <sys/types.h>
 
 #include <stone/io.h>
 
-struct st_stream_reader * test_stoned_tar_get_pipe_reader(char * const params[], const char * chdir);
-struct st_stream_writer * test_stoned_tar_get_pipe_writer(char * const params[], const char * chdir);
-
-void test_stoned_tar_writer_flush(struct st_stream_writer * writer);
+struct st_stream_reader * test_stoned_tar_get_file_reader(const char * filename);
 
 #endif
 

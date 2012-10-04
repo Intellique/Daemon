@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 01 Oct 2012 13:33:32 +0200                         *
+*  Last modified: Tue, 02 Oct 2012 15:51:26 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -242,6 +242,11 @@ int test_stoned_tar_pipeio_writer_close(struct st_stream_writer * io) {
 	return failed;
 }
 
+void test_stoned_tar_writer_flush(struct st_stream_writer * writer) {
+	struct test_stoned_tar_pipeio_private * self = writer->data;
+	fdatasync(self->fd);
+}
+
 void test_stoned_tar_pipeio_writer_free(struct st_stream_writer * io) {
 	struct test_stoned_tar_pipeio_private * self = io->data;
 
@@ -296,7 +301,7 @@ ssize_t test_stoned_tar_pipeio_writer_write(struct st_stream_writer * io, const 
 
 struct st_stream_reader * test_stoned_tar_get_pipe_reader(char * const params[], const char * directory) {
 	int fds[2];
-	int failed = pipe2(fds, O_CLOEXEC);
+	int failed = pipe(fds);
 	if (failed)
 		return NULL;
 
@@ -312,7 +317,10 @@ struct st_stream_reader * test_stoned_tar_get_pipe_reader(char * const params[],
 
 		close(fds[0]);
 		close(fds[1]);
-		//close(2);
+
+		int fd = open("/dev/null", O_WRONLY);
+		dup2(fd, 2);
+		close(fd);
 
 		execvp(params[0], params);
 
@@ -327,16 +335,16 @@ struct st_stream_reader * test_stoned_tar_get_pipe_reader(char * const params[],
 	self->position = 0;
 	self->last_errno = 0;
 
-	struct st_stream_reader * w = malloc(sizeof(struct st_stream_reader));
-	w->ops = &test_stoned_tar_pipeio_reader_ops;
-	w->data = self;
+	struct st_stream_reader * r = malloc(sizeof(struct st_stream_reader));
+	r->ops = &test_stoned_tar_pipeio_reader_ops;
+	r->data = self;
 
-	return w;
+	return r;
 }
 
 struct st_stream_writer * test_stoned_tar_get_pipe_writer(char * const params[], const char * directory) {
 	int fds[2];
-	int failed = pipe2(fds, O_CLOEXEC);
+	int failed = pipe(fds);
 	if (failed)
 		return NULL;
 
@@ -352,7 +360,10 @@ struct st_stream_writer * test_stoned_tar_get_pipe_writer(char * const params[],
 
 		close(fds[0]);
 		close(fds[1]);
-		//close(2);
+
+		int fd = open("/dev/null", O_WRONLY);
+		dup2(fd, 2);
+		close(fd);
 
 		execvp(params[0], params);
 

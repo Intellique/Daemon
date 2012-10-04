@@ -28,10 +28,13 @@
 #ifndef __TEST_STONED_TAR_TEMPIO_H__
 #define __TEST_STONED_TAR_TEMPIO_H__
 
+// ssize_t
+#include <sys/types.h>
+
 #include <stone/io.h>
 
-const char * test_stoned_tar_get_filename(struct st_stream_writer * file);
-struct st_stream_writer * test_stoned_tar_get_temp_file(void);
+char * test_stoned_tar_get_filename(struct st_stream_writer * file);
+struct st_stream_writer * test_stoned_tar_get_temp_file(ssize_t limit_size);
 
 #endif
 
