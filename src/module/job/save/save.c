@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 10 Sep 2012 18:52:39 +0200                         *
+*  Last modified: Thu, 04 Oct 2012 14:04:07 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -144,8 +144,8 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 
 	struct stat st;
 	if (lstat(path, &st)) {
-		job->db_ops->add_record(job, st_log_level_error, "Error while getting information about: %s", path);
-		return 1;
+		job->db_ops->add_record(job, st_log_level_warning, "Error while getting information about: %s", path);
+		return 0;
 	}
 
 	// Do not archive socket file as does tar
@@ -185,6 +185,11 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 
 	if (S_ISREG(st.st_mode)) {
 		int fd = open(path, O_RDONLY);
+		if (fd < 0) {
+			job->db_ops->add_record(job, st_log_level_warning, "Error while opening file: '%s' because %m", path);
+			return 0;
+		}
+
 		struct st_stream_writer * file_checksum = st_checksum_get_steam_writer((const char **) job->checksums, job->nb_checksums, 0);
 
 		for (;;) {
@@ -207,6 +212,7 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 
 			if (nb_read < 0) {
 				job->db_ops->add_record(job, st_log_level_error, "Unexpected error while reading from file '%s' because %m", path);
+				job->sched_status = st_log_level_error;
 				return 3; // in the future, we will check errors
 			}
 
@@ -324,9 +330,9 @@ int st_job_save_change_tape(struct st_job * job) {
 	jp->tar->ops->new_volume(jp->tar, cw);
 
 	// take care about block size of new tape
-	ssize_t new_block_size = jp->tar->ops->get_block_size(jp->tar);
+	ssize_t new_block_size = tw->ops->get_block_size(tw);
 	if (new_block_size != jp->block_size) {
-		jp->block_size = jp->tar->ops->get_block_size(jp->tar);
+		jp->block_size = new_block_size;
 		jp->buffer = realloc(jp->buffer, jp->block_size);
 	}
 
@@ -610,7 +616,7 @@ struct st_drive * st_job_save_select_tape(struct st_job * job) {
 								continue;
 							}
 
-							if (sl->tape == NULL || sl->tape->pool != job->pool || st_job_save_tape_in_list(jp, job->tape)) {
+							if (sl->tape == NULL || sl->tape->pool != job->pool || st_job_save_tape_in_list(jp, sl->tape)) {
 								sl->lock->ops->unlock(sl->lock);
 								sl = NULL;
 								continue;
