@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 10 Sep 2012 18:51:41 +0200                         *
+*  Last modified: Fri, 05 Oct 2012 11:49:04 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -441,6 +441,9 @@ void st_tape_retrieve(struct st_tape ** tape, long id, const char * medium_seria
 		con->ops->free(con);
 		free(con);
 	}
+
+	if (*tape != NULL && (*tape)->available_block == 0 && (*tape)->format != NULL)
+		(*tape)->available_block = (*tape)->format->capacity / (*tape)->block_size - (*tape)->end_position;
 }
 
 int st_tape_write_header(struct st_drive * dr, struct st_pool * pool) {
