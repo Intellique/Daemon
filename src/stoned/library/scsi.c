@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 04 Oct 2012 16:09:23 +0200                         *
+*  Last modified: Mon, 01 Oct 2012 11:28:47 +0200                         *
 \*************************************************************************/
 
 // htobe16
@@ -108,10 +108,6 @@ struct scsi_loader_data_transfer_element {
 	unsigned char reserved10:4;
 	unsigned char identifier_type_2:4;
 	unsigned char reserved11:4;
-	unsigned char reserved12;
-	unsigned char identifier_length_2;
-	unsigned char device_identifier_2[8];
-	unsigned char tape_drive_serial_number[10];
 } __attribute__((packed));
 
 struct scsi_loader_import_export_element {
@@ -647,13 +643,13 @@ void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, stru
 		.reserved0 = 0,
 		.starting_element_address = htobe16(start_element),
 		.number_of_elements = htobe16(nb_elements),
-		.device_id = 1,
+		.device_id = 0,
 		.current_data = 0,
 		.reserved1 = 0,
 		.allocation_length = { size_needed >> 16, size_needed >> 8, size_needed & 0xFF, },
 		.reserved2 = 0,
 		.reserved3 = 0,
-		.serial_number_request = 1,
+		.serial_number_request = 0,
 	};
 
 	sg_io_hdr_t header;
@@ -680,9 +676,7 @@ void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, stru
 			return;
 		}
 
-		result->first_element_address = be16toh(result->first_element_address);
 		result->number_of_elements = be16toh(result->number_of_elements);
-		result->byte_count_of_report = be32toh(result->byte_count_of_report);
 
 		ptr = (unsigned char *) (result + 1);
 
