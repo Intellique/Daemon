@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 05 Oct 2012 12:20:17 +0200                         *
+*  Last modified: Wed, 10 Oct 2012 17:35:36 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -197,11 +197,13 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 
 			if (available_size == 0) {
 				ssize_t position = jp->tar->ops->get_file_position(jp->tar);
-
 				jp->tar->ops->close(jp->tar);
-				st_job_save_change_tape(job);
-				available_size = jp->tar->ops->get_available_size(jp->tar);
 
+				failed = st_job_save_change_tape(job);
+				if (failed)
+					break;
+
+				available_size = jp->tar->ops->get_available_size(jp->tar);
 				jp->tar->ops->restart_file(jp->tar, path, position);
 			}
 
@@ -278,7 +280,7 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 	st_archive_file_free(jp->current_file);
 	jp->current_file = NULL;
 
-	return 0;
+	return failed;
 }
 
 int st_job_save_change_tape(struct st_job * job) {
@@ -302,8 +304,19 @@ int st_job_save_change_tape(struct st_job * job) {
 	jp->tapes[jp->nb_tapes] = dr->slot->tape;
 	jp->nb_tapes++;
 
-	dr->ops->eject(dr);
-	ch->ops->unload(ch, dr);
+	if (dr->ops->eject(dr)) {
+		job->db_ops->add_record(job, st_log_level_error, "Ejecting tape from drive #%td failed", dr - ch->drives);
+		job->sched_status = st_job_status_error;
+
+		return 1;
+	}
+
+	if (ch->ops->unload(ch, dr)) {
+		job->db_ops->add_record(job, st_log_level_error, "Unloading tape from drive #%td failed", dr - ch->drives);
+		job->sched_status = st_job_status_error;
+
+		return 1;
+	}
 
 	job->db_ops->add_record(job, st_log_level_info, "Unloading tape from drive #%td", dr - ch->drives);
 
