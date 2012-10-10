@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 10 Sep 2012 18:52:20 +0200                         *
+*  Last modified: Wed, 10 Oct 2012 16:50:38 +0200                         *
 \*************************************************************************/
 
 // sscanf
@@ -207,7 +207,19 @@ int st_job_format_tape_run(struct st_job * job) {
 
 	if (!self->stop_request && !drive->slot->tape) {
 		job->db_ops->add_record(job, st_log_level_info, "Loading tape from slot #%td to drive #%td", slot - changer->slots, drive - changer->drives);
-		changer->ops->load(changer, slot, drive);
+
+		if (changer->ops->load(changer, slot, drive)) {
+			job->sched_status = st_job_status_error;
+			job->db_ops->add_record(job, st_log_level_error, "Fatal error: Failed to load tape");
+
+			changer->lock->ops->unlock(changer->lock);
+			drive->lock->ops->unlock(drive->lock);
+			has_drive_lock = 0;
+			has_changer_lock = 0;
+
+			return 1;
+		}
+
 		slot->lock->ops->unlock(slot->lock);
 		changer->lock->ops->unlock(changer->lock);
 		has_changer_lock = 0;
