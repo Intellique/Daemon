@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 01 Oct 2012 11:45:15 +0200                         *
+*  Last modified: Thu, 11 Oct 2012 17:08:19 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1921,7 +1921,7 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 		}
 	} else {
 		const char * query = "select_tape_by_id";
-		st_db_postgresql_prepare(self, query, "SELECT id FROM tape WHERE id = $1 FOR UPDATE NOWAIT");
+		st_db_postgresql_prepare(self, query, "SELECT label, name FROM tape WHERE id = $1 FOR UPDATE NOWAIT");
 
 		char * tape_id = 0;
 		asprintf(&tape_id, "%ld", tape->id);
@@ -1932,6 +1932,10 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 
 		if (status == PGRES_FATAL_ERROR)
 			st_db_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+			st_db_postgresql_get_string(result, 0, 0, tape->label);
+			st_db_postgresql_get_string(result, 0, 1, tape->name);
+		}
 
 		PQclear(result);
 		free(tape_id);
