@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 12 Oct 2012 12:07:20 +0200                         *
+*  Last modified: Fri, 12 Oct 2012 12:53:33 +0200                         *
 \*************************************************************************/
 
 // glob, globfree
@@ -68,8 +68,6 @@ int stcfg_scan(void) {
 		link[length] = '\0';
 
 		ptr = strrchr(link, '/') + 1;
-		int host = 0, target = 0, channel = 0, bus = 0;
-		sscanf(ptr, "%d:%d:%d:%d", &host, &target, &channel, &bus);
 
 		char path[256];
 		strcpy(path, gl.gl_pathv[i]);
@@ -100,11 +98,6 @@ int stcfg_scan(void) {
 		drives[i].revision = NULL;
 		drives[i].serial_number = NULL;
 
-		drives[i].host = host;
-		drives[i].target = target;
-		drives[i].channel = channel;
-		drives[i].bus = bus;
-
 		drives[i].changer = NULL;
 		drives[i].slot = NULL;
 
@@ -132,8 +125,6 @@ int stcfg_scan(void) {
 		link[length] = '\0';
 
 		char * ptr = strrchr(link, '/') + 1;
-		int host = 0, target = 0, channel = 0, bus = 0;
-		sscanf(ptr, "%d:%d:%d:%d", &host, &target, &channel, &bus);
 
 		char path[256];
 		strcpy(path, gl.gl_pathv[i]);
@@ -153,11 +144,6 @@ int stcfg_scan(void) {
 		changers[i].revision = NULL;
 		changers[i].serial_number = NULL;
 		changers[i].barcode = 0;
-
-		changers[i].host = host;
-		changers[i].target = target;
-		changers[i].channel = channel;
-		changers[i].bus = bus;
 
 		changers[i].drives = NULL;
 		changers[i].nb_drives = 0;
