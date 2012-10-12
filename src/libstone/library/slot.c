@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 22:31:09 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 00:55:48 +0200                         *
 \*************************************************************************/
 
 // strcasecmp
@@ -36,7 +36,6 @@ static const struct st_slot_type2 {
 } st_slot_types[] = {
 	{ "drive slot",         st_slot_type_drive },
 	{ "import-export slot", st_slot_type_import_export },
-	{ "storage slot",       st_slot_type_storage },
 	{ "storage slot",       st_slot_type_storage },
 	{ "transport slot",     st_slot_type_import_export },
 
