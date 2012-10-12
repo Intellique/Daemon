@@ -22,18 +22,22 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 00:49:16 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 00:05:44 +0200                         *
 \*************************************************************************/
 
-// free
-#include <stdlib.h>
+#ifndef __STONE_PLUGIN_H__
+#define __STONE_PLUGIN_H__
 
-#include <libstone/util/util.h>
+// bool
+#include <stdbool.h>
 
-void st_util_basic_free(void * key, void * value) {
-	free(key);
+struct st_plugin {
+	unsigned int checksum;
+	unsigned int database;
+	unsigned int job;
+};
 
-	if (value != NULL && key != value)
-		free(value);
-}
+bool st_plugin_check(const struct st_plugin * plugin);
+
+#endif
 

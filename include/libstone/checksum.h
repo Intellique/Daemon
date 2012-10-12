@@ -22,13 +22,15 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 23:01:24 +0200                         *
+*  Last modified: Fri, 12 Oct 2012 23:40:04 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_CHECKSUM_H__
 #define __STONE_CHECKSUM_H__
 
 struct st_database_connection;
+
+#include "plugin.h"
 
 // ssize_t
 #include <sys/types.h>
@@ -263,10 +265,8 @@ struct st_checksum_driver {
 	void * cookie;
 	/**
 	 * \brief Check if the driver have an up to date api level
-	 *
-	 * \note Should be defined to STONE_CHECKSUM_APIVERSION
 	 */
-	const unsigned int api_level;
+	const struct st_plugin api_level;
 };
 
 /**

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 18 Aug 2012 22:13:28 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 00:12:55 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -57,13 +57,14 @@ static const struct st_job_status2 {
 	char * name;
 	enum st_job_status status;
 } st_job_status[] = {
-	{ "disable", st_job_status_disable },
-	{ "error",   st_job_status_error },
-	{ "idle",    st_job_status_idle },
-	{ "pause",   st_job_status_pause },
-	{ "running", st_job_status_running },
-	{ "stopped", st_job_status_stopped },
-	{ "waiting", st_job_status_waiting },
+	{ "disable",  st_job_status_disable },
+	{ "finished", st_job_status_finished },
+	{ "error",    st_job_status_error },
+	{ "idle",     st_job_status_idle },
+	{ "pause",    st_job_status_pause },
+	{ "running",  st_job_status_running },
+	{ "stopped",  st_job_status_stopped },
+	{ "waiting",  st_job_status_waiting },
 
 	{ "unknown", st_job_status_unknown },
 };
@@ -127,8 +128,8 @@ void st_job_register_driver(struct st_job_driver * driver) {
 		return;
 	}
 
-	if (driver->api_version != STONE_JOB_API_LEVEL) {
-		st_log_write_all(st_log_level_error, st_log_type_job, "Driver '%s' has not the correct api version (current: %d, expected: %d)", driver->name, driver->api_version, STONE_JOB_API_LEVEL);
+	if (st_plugin_check(&driver->api_level)) {
+		st_log_write_all(st_log_level_error, st_log_type_job, "Driver '%s' has not the correct api version", driver->name);
 		return;
 	}
 

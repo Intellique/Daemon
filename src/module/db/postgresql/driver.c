@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 23:57:09 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 00:07:19 +0200                         *
 \*************************************************************************/
 
 // realloc
@@ -53,7 +53,11 @@ static struct st_database st_db_postgresql_driver = {
 	.nb_configurations = 0,
 
 	.cookie    = NULL,
-	.api_level = STONE_DATABASE_API_LEVEL,
+	.api_level      = {
+		.checksum = 0,
+		.database = STONE_DATABASE_API_LEVEL,
+		.job      = 0,
+	},
 };
 
 

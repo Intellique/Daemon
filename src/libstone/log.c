@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 17 Aug 2012 09:34:00 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 00:21:48 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -54,10 +54,12 @@ static volatile unsigned short st_log_logger_running = 0;
 static struct st_log_driver ** st_log_drivers = NULL;
 static unsigned int st_log_nb_drivers = 0;
 
-static volatile struct st_log_message_unsent {
+struct st_log_message_unsent {
 	struct st_log_message data;
 	struct st_log_message_unsent * next;
-} * st_log_message_first = NULL, * st_log_message_last = NULL;
+};
+static struct st_log_message_unsent * volatile st_log_message_first = NULL;
+static struct st_log_message_unsent * volatile st_log_message_last = NULL;
 
 static pthread_mutex_t st_log_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 static pthread_cond_t st_log_wait = PTHREAD_COND_INITIALIZER;
@@ -101,7 +103,7 @@ void st_log_disable_display_log(void) {
 
 static void st_log_exit(void) {
 	if (st_log_display_at_exit) {
-		volatile struct st_log_message_unsent * mes;
+		struct st_log_message_unsent * mes;
 		for (mes = st_log_message_first; mes != NULL; mes = mes->next)
 			printf("%c: %s\n", st_log_level_to_string(mes->data.level)[0], mes->data.message);
 	}
@@ -195,7 +197,7 @@ static void st_log_sent_message(void * arg __attribute__((unused))) {
 		if (st_log_message_first == NULL)
 			pthread_cond_wait(&st_log_wait, &st_log_lock);
 
-		struct st_log_message_unsent * message = (struct st_log_message_unsent *) st_log_message_first;
+		struct st_log_message_unsent * message = st_log_message_first;
 		st_log_message_first = st_log_message_last = NULL;
 		pthread_mutex_unlock(&st_log_lock);
 

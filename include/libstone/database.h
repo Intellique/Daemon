@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 23:01:41 +0200                         *
+*  Last modified: Fri, 12 Oct 2012 23:52:09 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -30,6 +30,8 @@
 
 // time_t
 #include <sys/time.h>
+
+#include "plugin.h"
 
 struct st_changer;
 struct st_drive;
@@ -310,7 +312,7 @@ struct st_database {
 	 *
 	 * Should be define by using STONE_DATABASE_API_LEVEL only
 	 */
-	const unsigned int api_level;
+	const struct st_plugin api_level;
 };
 
 /**

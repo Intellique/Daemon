@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 24 Aug 2012 09:18:50 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 00:09:24 +0200                         *
 \*************************************************************************/
 
 // free, malloc
@@ -51,7 +51,11 @@ static struct st_job_driver st_job_save_driver = {
 	.name        = "save",
 	.new_job     = st_job_save_new_job,
 	.cookie      = NULL,
-	.api_version = STONE_JOB_API_LEVEL,
+	.api_level   = {
+		.checksum = 0,
+		.database = 0,
+		.job      = STONE_JOB_API_LEVEL,
+	},
 };
 
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 13:29:44 +0200                         *
+*  Last modified: Fri, 12 Oct 2012 23:16:44 +0200                         *
 \*************************************************************************/
 
 // strerror
@@ -31,6 +31,8 @@
 #include <fcntl.h>
 // free, malloc
 #include <malloc.h>
+// bool
+#include <stdbool.h>
 // snprintf, sscanf
 #include <stdio.h>
 // strchp, strcmp, strerror, strlen, strncmp, strrchr
@@ -120,8 +122,15 @@ int st_conf_read_pid(const char * pid_file) {
 	}
 
 	char buffer[16];
-	read(fd, buffer, 16);
+	ssize_t nb_read = read(fd, buffer, 15);
 	close(fd);
+
+	if (nb_read < 0) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: read_pid: error while reading file '%s' because %m", pid_file);
+		return -1;
+	}
+
+	buffer[nb_read] = '\0';
 
 	int pid = 0;
 	if (sscanf(buffer, "%d", &pid) == 1) {
@@ -148,12 +157,12 @@ int st_conf_write_pid(const char * pid_file, int pid) {
 		return 1;
 	}
 
-	dprintf(fd, "%d\n", pid);
+	ssize_t nb_write = dprintf(fd, "%d\n", pid);
 	close(fd);
 
-	st_log_write_all(st_log_level_info, st_log_type_daemon, "Conf: write_pid: write ok (pid=%d)", pid);
+	st_log_write_all(nb_write > 0 ? st_log_level_info : st_log_level_warning, st_log_type_daemon, "Conf: write_pid: write %s (pid=%d)", nb_write > 0 ? "ok" : "failed", pid);
 
-	return 0;
+	return nb_write < 1;
 }
 
 
@@ -182,13 +191,12 @@ static void st_conf_load_db(const struct st_hashtable * params) {
 	if (db != NULL) {
 		st_log_write_all(st_log_level_info, st_log_type_daemon, "Conf: load_db: driver '%s' => ok", driver);
 
-		short setup_ok = 0, ping_ok = 0;
-
+		bool setup_ok = false, ping_ok = false;
 		struct st_database_config * config = db->ops->add(params);
 
 		if (config != NULL) {
-			setup_ok = 1;
-			ping_ok = config->ops->ping(config) >= 0;
+			setup_ok = true;
+			ping_ok = config->ops->ping(config) >= 0 ? true : false;
 		}
 
 		st_log_write_all(setup_ok || ping_ok ? st_log_level_info : st_log_level_error, st_log_type_daemon, "Conf: load_db: setup %s, ping %s", setup_ok ? "ok" : "failed", ping_ok ? "ok" : "failed");
@@ -239,9 +247,15 @@ int st_conf_read_config(const char * conf_file) {
 	fstat(fd, &st);
 
 	char * buffer = malloc(st.st_size + 1);
-	read(fd, buffer, st.st_size);
+	ssize_t nb_read = read(fd, buffer, st.st_size);
 	close(fd);
-	buffer[st.st_size] = '\0';
+	buffer[nb_read] = '\0';
+
+	if (nb_read < 0) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: read_config: error while reading from '%s'", conf_file);
+		free(buffer);
+		return 1;
+	}
 
 	char * ptr = buffer;
 	char section[24] = { '\0' };
@@ -258,7 +272,7 @@ int st_conf_read_config(const char * conf_file) {
 				if (*ptr == '\n') {
 					if (*section) {
 						st_conf_callback_f f = st_hashtable_value(st_conf_callback, section);
-						if (f)
+						if (f != NULL)
 							f(params);
 					}
 
@@ -290,7 +304,7 @@ int st_conf_read_config(const char * conf_file) {
 
 	if (params->nb_elements > 0 && *section) {
 		st_conf_callback_f f = st_hashtable_value(st_conf_callback, section);
-		if (f)
+		if (f != NULL)
 			f(params);
 	}
 

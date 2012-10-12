@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 20 Aug 2012 22:42:20 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 00:09:06 +0200                         *
 \*************************************************************************/
 
 // sscanf
@@ -68,7 +68,11 @@ static struct st_job_driver st_job_format_tape_driver = {
 	.name        = "format-tape",
 	.new_job     = st_job_format_tape_new_job,
 	.cookie      = NULL,
-	.api_version = STONE_JOB_API_LEVEL,
+	.api_level   = {
+		.checksum = STONE_CHECKSUM_API_LEVEL,
+		.database = STONE_DATABASE_API_LEVEL,
+		.job      = STONE_JOB_API_LEVEL,
+	},
 };
 
 

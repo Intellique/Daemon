@@ -22,18 +22,30 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 00:49:16 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 00:06:16 +0200                         *
 \*************************************************************************/
 
-// free
-#include <stdlib.h>
+// NULL
+#include <stddef.h>
 
-#include <libstone/util/util.h>
+#include <libstone/checksum.h>
+#include <libstone/database.h>
+#include <libstone/job.h>
+#include <libstone/plugin.h>
 
-void st_util_basic_free(void * key, void * value) {
-	free(key);
+bool st_plugin_check(const struct st_plugin * plugin) {
+	if (plugin == NULL)
+		return false;
 
-	if (value != NULL && key != value)
-		free(value);
+	if (plugin->checksum > 0 && plugin->checksum != STONE_CHECKSUM_API_LEVEL)
+		return false;
+
+	if (plugin->database > 0 && plugin->database != STONE_DATABASE_API_LEVEL)
+		return false;
+
+	if (plugin->job > 0 && plugin->job != STONE_JOB_API_LEVEL)
+		return false;
+
+	return true;
 }
 

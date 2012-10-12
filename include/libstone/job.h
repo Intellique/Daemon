@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 23:02:09 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 00:12:52 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -33,6 +33,8 @@
 // ssize_t
 #include <sys/types.h>
 
+#include "plugin.h"
+
 struct st_database_connection;
 struct st_job_driver;
 enum st_log_level;
@@ -40,6 +42,7 @@ struct st_user;
 
 enum st_job_status {
 	st_job_status_disable,
+	st_job_status_finished,
 	st_job_status_error,
 	st_job_status_idle,
 	st_job_status_pause,
@@ -83,7 +86,7 @@ struct st_job_driver {
 	const char * name;
 	void (*new_job)(struct st_job * job, struct st_database_connection * db);
 	void * cookie;
-	unsigned int api_version;
+	const struct st_plugin api_level;
 };
 
 #define STONE_JOB_API_LEVEL 1
