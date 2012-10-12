@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 21 Aug 2012 20:38:07 +0200                         *
+*  Last modified: Fri, 12 Oct 2012 09:50:11 +0200                         *
 \*************************************************************************/
 
 // free
@@ -31,7 +31,7 @@
 #include <libstone/format.h>
 
 void st_format_file_free(struct st_format_file * file) {
-	if (file != NULL)
+	if (file == NULL)
 		return;
 
 	free(file->filename);

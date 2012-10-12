@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 21 Aug 2012 09:48:28 +0200                         *
+*  Last modified: Fri, 12 Oct 2012 10:05:45 +0200                         *
 \*************************************************************************/
 
 // malloc
@@ -41,12 +41,14 @@
 static struct st_drive * st_standalone_drive_find_free_drive(struct st_changer * ch);
 static int st_standalone_drive_load_media(struct st_changer * ch, struct st_media * from, struct st_drive * to);
 static int st_standalone_drive_load_slot(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
+static int st_standalone_drive_shut_down(struct st_changer * ch);
 static int st_standalone_drive_unload(struct st_changer * ch, struct st_drive * from);
 
 static struct st_changer_ops st_standalone_drive_ops = {
 	.find_free_drive = st_standalone_drive_find_free_drive,
 	.load_media      = st_standalone_drive_load_media,
 	.load_slot       = st_standalone_drive_load_slot,
+	.shut_down       = st_standalone_drive_shut_down,
 	.unload          = st_standalone_drive_unload,
 };
 
@@ -105,6 +107,10 @@ void st_standalone_drive_setup(struct st_changer * changer) {
 	drive->ops->update_media_info(drive);
 
 	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: setup finish", changer->vendor, changer->model);
+}
+
+static int st_standalone_drive_shut_down(struct st_changer * ch __attribute__((unused))) {
+	return 0;
 }
 
 static int st_standalone_drive_unload(struct st_changer * ch, struct st_drive * from) {

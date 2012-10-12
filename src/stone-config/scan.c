@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 22 Aug 2012 20:36:00 +0200                         *
+*  Last modified: Fri, 12 Oct 2012 12:07:20 +0200                         *
 \*************************************************************************/
 
 // glob, globfree
@@ -182,7 +182,7 @@ int stcfg_scan(void) {
 	for (i = 0; i < nb_real_changers; i++) {
 		unsigned j;
 		for (j = 0; j < nb_drives; j++) {
-			if (changers[i].host == drives[j].host && changers[i].target == drives[j].target && changers[i].channel == drives[j].channel) {
+			if (stcfg_scsi_drive_in_changer(drives + j, changers + i)) {
 				drives[j].changer = changers + i;
 
 				changers[i].drives = realloc(changers[i].drives, (changers[i].nb_drives + 1) * sizeof(struct st_drive));

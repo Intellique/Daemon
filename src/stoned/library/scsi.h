@@ -22,11 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 30 Jul 2012 21:08:01 +0200                         *
+*  Last modified: Fri, 12 Oct 2012 09:57:22 +0200                         *
 \*************************************************************************/
 
 #ifndef __ST_STONED_LIBRARY_SCSI_H__
 #define __ST_STONED_LIBRARY_SCSI_H__
+
+// bool
+#include <stdbool.h>
 
 #include <libstone/library/changer.h>
 #include <libstone/library/drive.h>
@@ -40,7 +43,7 @@ struct st_scsislot {
 
 void st_scsi_loader_check_slot(int fd, struct st_changer * changer, struct st_slot * slot);
 void st_scsi_loader_info(int fd, struct st_changer * changer);
-int st_scsi_loader_medium_removal(int fd, int allow);
+int st_scsi_loader_medium_removal(int fd, bool allow);
 int st_scsi_loader_move(int fd, int transport_address, struct st_slot * from, struct st_slot * to);
 int st_scsi_loader_ready(int fd);
 void st_scsi_loader_status_new(int fd, struct st_changer * changer, int * transport_address);

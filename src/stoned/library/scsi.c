@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 18 Aug 2012 14:31:32 +0200                         *
+*  Last modified: Fri, 12 Oct 2012 09:58:05 +0200                         *
 \*************************************************************************/
 
 // htobe16
@@ -374,7 +374,7 @@ void st_scsi_loader_info(int fd, struct st_changer * changer) {
 	changer->serial_number[12] = '\0';
 }
 
-int st_scsi_loader_medium_removal(int fd, int allow) {
+int st_scsi_loader_medium_removal(int fd, bool allow) {
 	struct scsi_request_sense sense;
 	struct {
 		unsigned char operation_code;

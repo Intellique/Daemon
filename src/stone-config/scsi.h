@@ -22,14 +22,22 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 24 Jul 2012 23:23:59 +0200                         *
+*  Last modified: Fri, 12 Oct 2012 10:24:56 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONECONFIG_SCSI_H__
 #define __STONECONFIG_SCSI_H__
 
+// bool
+#include <stdbool.h>
+
 #include <libstone/library/changer.h>
 #include <libstone/library/drive.h>
+
+/**
+ * \brief Check if \a drive is in \a changer
+ */
+bool stcfg_scsi_drive_in_changer(struct st_drive * drive, struct st_changer * changer);
 
 /**
  * \brief Inquiry the changer

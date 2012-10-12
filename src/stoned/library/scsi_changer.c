@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 20 Aug 2012 21:21:59 +0200                         *
+*  Last modified: Fri, 12 Oct 2012 10:04:13 +0200                         *
 \*************************************************************************/
 
 // open
@@ -58,12 +58,14 @@ static struct st_drive * st_scsi_changer_find_free_drive(struct st_changer * ch)
 static int st_scsi_changer_load_media(struct st_changer * ch, struct st_media * from, struct st_drive * to);
 static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
 static void * st_scsi_changer_setup2(void * drive);
+static int st_scsi_changer_shut_down(struct st_changer * ch);
 static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from);
 
 static struct st_changer_ops st_scsi_changer_ops = {
 	.find_free_drive = st_scsi_changer_find_free_drive,
 	.load_media      = st_scsi_changer_load_media,
 	.load_slot       = st_scsi_changer_load_slot,
+	.shut_down       = st_scsi_changer_shut_down,
 	.unload          = st_scsi_changer_unload,
 };
 
@@ -169,7 +171,7 @@ void st_scsi_changer_setup(struct st_changer * changer) {
 
 	st_scsi_loader_ready(fd);
 
-	// st_scsi_loader_medium_removal(fd, 0);
+	st_scsi_loader_medium_removal(fd, false);
 
 	struct st_scsi_changer_private * ch = malloc(sizeof(struct st_scsi_changer_private));
 	ch->fd = fd;
@@ -265,8 +267,6 @@ void st_scsi_changer_setup(struct st_changer * changer) {
 
 	free(workers);
 
-	// st_scsi_loader_medium_removal(fd, 1);
-
 	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: setup terminated", changer->vendor, changer->model);
 }
 
@@ -308,6 +308,12 @@ static void * st_scsi_changer_setup2(void * drive) {
 	}
 
 	return NULL;
+}
+
+static int st_scsi_changer_shut_down(struct st_changer * ch) {
+	struct st_scsi_changer_private * self = ch->data;
+	st_scsi_loader_medium_removal(self->fd, true);
+	return 0;
 }
 
 static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from) {

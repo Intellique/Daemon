@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 23:06:06 +0200                         *
+*  Last modified: Fri, 12 Oct 2012 09:51:35 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_CHANGER_H__
@@ -139,6 +139,7 @@ struct st_changer {
 		 * \returns 0 if ok
 		 */
 		int (*load_slot)(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
+		int (*shut_down)(struct st_changer * ch);
 		/**
 		 * \brief Unload media from drive
 		 *
