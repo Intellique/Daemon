@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 09:56:28 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 12:19:15 +0200                         *
 \*************************************************************************/
 
 #ifndef __ST_STONED_LIBRARY_SCSI_H__
@@ -49,7 +49,7 @@ int st_scsi_loader_move(int fd, int transport_address, struct st_slot * from, st
 int st_scsi_loader_ready(int fd);
 void st_scsi_loader_status_new(int fd, struct st_changer * changer, int * transport_address);
 
-int st_scsi_tape_format(int fd, int quick);
+int st_scsi_tape_format(int fd, bool quick);
 void st_scsi_tape_info(int fd, struct st_drive * drive);
 int st_scsi_tape_locate(int fd, off_t position);
 int st_scsi_tape_position(int fd, struct st_media * media);

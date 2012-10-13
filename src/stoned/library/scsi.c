@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 10:00:14 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 12:38:17 +0200                         *
 \*************************************************************************/
 
 // htobe16
@@ -293,7 +293,7 @@ bool st_scsi_loader_has_drive(struct st_changer * changer, struct st_drive * dri
 		unsigned char allocation_length;
 		unsigned char reserved3;
 	} __attribute__((packed)) command = {
-		.operation_code = 0x1A,
+		.operation_code = 0x1A, // Mode sense
 		.reserved0 = 0,
 		.disable_block_descriptors = 0,
 		.reserved1 = 0,
@@ -1011,7 +1011,7 @@ static void st_scsi_loader_status_update_slot(int fd, struct st_changer * change
 }
 
 
-int st_scsi_tape_format(int fd, int quick) {
+int st_scsi_tape_format(int fd, bool quick) {
 	struct {
 		unsigned char op_code;
 		unsigned char long_mode:1;
@@ -1021,8 +1021,8 @@ int st_scsi_tape_format(int fd, int quick) {
 		unsigned char reserved1[3];
 		unsigned char control;
 	} __attribute__((packed)) command = {
-		.op_code = 0x19,
-		.long_mode = !quick,
+		.op_code = 0x19, // ERASE
+		.long_mode = quick == false,
 		.immed = 0,
 	};
 
@@ -1038,7 +1038,7 @@ int st_scsi_tape_format(int fd, int quick) {
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = NULL;
-	header.timeout = 60000;
+	header.timeout = 15300000; // 255 minutes
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);
@@ -1091,7 +1091,7 @@ void st_scsi_tape_info(int fd, struct st_drive * drive) {
 	} __attribute__((packed)) result_inquiry;
 
 	struct scsi_inquiry command_inquiry = {
-		.operation_code = 0x12,
+		.operation_code = 0x12, // INQUIRY
 		.enable_vital_product_data = 0,
 		.page_code = 0,
 		.allocation_length = sizeof(result_inquiry),
@@ -1110,7 +1110,7 @@ void st_scsi_tape_info(int fd, struct st_drive * drive) {
 	header.cmdp = (unsigned char *) &command_inquiry;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = (unsigned char *) &result_inquiry;
-	header.timeout = 60000;
+	header.timeout = 60000; // 1 minutes
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	if (ioctl(fd, SG_IO, &header))
@@ -1145,9 +1145,9 @@ void st_scsi_tape_info(int fd, struct st_drive * drive) {
 	} __attribute__((packed)) result_serial_number;
 
 	struct scsi_inquiry command_serial_number = {
-		.operation_code = 0x12,
+		.operation_code = 0x12, // INQUIRY
 		.enable_vital_product_data = 1,
-		.page_code = 0x80,
+		.page_code = 0x80, // UNIT SERIAL NUMBER
 		.allocation_length = sizeof(result_serial_number),
 	};
 
@@ -1162,7 +1162,7 @@ void st_scsi_tape_info(int fd, struct st_drive * drive) {
 	header.cmdp = (unsigned char *) &command_serial_number;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = (unsigned char *) &result_serial_number;
-	header.timeout = 60000;
+	header.timeout = 60000; // 1 minutes
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	if (ioctl(fd, SG_IO, &header))
@@ -1187,7 +1187,7 @@ int st_scsi_tape_locate(int fd, off_t position) {
 		unsigned char partition;
 		unsigned char control;
 	} __attribute__((packed)) command = {
-		.op_code = 0x2B,
+		.op_code = 0x2B, // LOCATE(10)
 		.cp = 0,
 		.bt = 0,
 		.block_address = htobe32(position),
@@ -1206,7 +1206,7 @@ int st_scsi_tape_locate(int fd, off_t position) {
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = NULL;
-	header.timeout = 60000;
+	header.timeout = 1260000; // 21 minutes
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);
@@ -1225,7 +1225,7 @@ int st_scsi_tape_position(int fd, struct st_media * tape) {
 		unsigned short parameter_length; // should be a bigger endian integer
 		unsigned char control;
 	} __attribute__((packed)) command = {
-		.op_code = 0x34,
+		.op_code = 0x34, // READ POSITION
 		.service_action = 0,
 		.parameter_length = 0,
 	};
@@ -1261,7 +1261,7 @@ int st_scsi_tape_position(int fd, struct st_media * tape) {
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = (unsigned char *) &result;
-	header.timeout = 60000;
+	header.timeout = 60000; // 1 minute
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);
@@ -1293,7 +1293,7 @@ int st_scsi_tape_read_position(int fd, off_t * position) {
 		unsigned short parameter_length;	// must be a bigger endian integer
 		unsigned char control;
 	} __attribute__((packed)) command = {
-		.operation_code = 0x34,
+		.operation_code = 0x34, // READ POSITION
 		.service_action = 0,
 		.parameter_length = 0,
 		.control = 0,
@@ -1329,7 +1329,7 @@ int st_scsi_tape_read_position(int fd, off_t * position) {
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = &result;
-	header.timeout = 60000;
+	header.timeout = 60000; // 1 minute
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);
@@ -1360,7 +1360,7 @@ int st_scsi_tape_read_mam(int fd, struct st_media * media) {
 		unsigned char reserved2;
 		unsigned char control;
 	} __attribute__((packed)) command = {
-		.operation_code = 0x8C,
+		.operation_code = 0x8C, // READ ATTRIBUTE
 		.service_action = scsi_read_attribute_service_action_attributes_values,
 		.volume_number = 0,
 		.partition_number = 0,
@@ -1383,7 +1383,7 @@ int st_scsi_tape_read_mam(int fd, struct st_media * media) {
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = buffer;
-	header.timeout = 2000;
+	header.timeout = 60000; // 1 minute
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);
@@ -1478,7 +1478,7 @@ int st_scsi_tape_read_medium_serial_number(int fd, char * medium_serial_number, 
 		unsigned char reserved2;
 		unsigned char control;
 	} __attribute__((packed)) command = {
-		.operation_code = 0x8C,
+		.operation_code = 0x8C, // READ ATTRIBUTE
 		.service_action = scsi_read_attribute_service_action_attributes_values,
 		.volume_number = 0,
 		.partition_number = 0,
@@ -1501,7 +1501,7 @@ int st_scsi_tape_read_medium_serial_number(int fd, char * medium_serial_number, 
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = buffer;
-	header.timeout = 2000;
+	header.timeout = 60000; // 1 minute
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);
@@ -1590,10 +1590,10 @@ int st_scsi_tape_size_available(int fd, struct st_media * tape) {
 		unsigned short allocation_length;
 		unsigned char control;
 	} __attribute__((packed)) command = {
-		.op_code = 0x4D,
+		.op_code = 0x4D, // LOG SENSE
 		.sp = 0,
 		.ppc = 0,
-		.page_code = 0x11,
+		.page_code = 0x11, // TAPE CAPACITY LOG
 		.page_control = log_sense_page_control_current_value,
 		.parameter_pointer = 0,
 		.allocation_length = htobe16(sizeof(result)),
@@ -1613,7 +1613,7 @@ int st_scsi_tape_size_available(int fd, struct st_media * tape) {
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = (unsigned char *) &result;
-	header.timeout = 60000;
+	header.timeout = 60000; // 1 minute
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);
