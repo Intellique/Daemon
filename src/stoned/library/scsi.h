@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 12 Oct 2012 09:57:22 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 09:56:28 +0200                         *
 \*************************************************************************/
 
 #ifndef __ST_STONED_LIBRARY_SCSI_H__
@@ -42,6 +42,7 @@ struct st_scsislot {
 };
 
 void st_scsi_loader_check_slot(int fd, struct st_changer * changer, struct st_slot * slot);
+bool st_scsi_loader_has_drive(struct st_changer * changer, struct st_drive * drive);
 void st_scsi_loader_info(int fd, struct st_changer * changer);
 int st_scsi_loader_medium_removal(int fd, bool allow);
 int st_scsi_loader_move(int fd, int transport_address, struct st_slot * from, struct st_slot * to);

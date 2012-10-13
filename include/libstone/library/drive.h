@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 23:06:49 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 10:02:52 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_DRIVE_H__
@@ -74,11 +74,6 @@ struct st_drive {
 	char * vendor;
 	char * revision;
 	char * serial_number;
-
-	int host;
-	int target;
-	int channel;
-	int bus;
 
 	struct st_changer * changer;
 	struct st_slot * slot;

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 23 Aug 2012 20:06:07 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 09:54:30 +0200                         *
 \*************************************************************************/
 
 #include <errno.h>
@@ -173,7 +173,7 @@ static enum st_format_writer_status st_tar_writer_add_file(struct st_format_writ
 	struct st_tar_writer_private * format = f->data;
 	bzero(current_header, 512);
 	strncpy(current_header->filename, filename2, 100);
-	snprintf(current_header->filemode, 8, "%07o", sfile.st_mode & 0777);
+	snprintf(current_header->filemode, 8, "%07o", sfile.st_mode & 07777);
 	snprintf(current_header->uid, 8, "%07o", sfile.st_uid);
 	snprintf(current_header->gid, 8, "%07o", sfile.st_gid);
 	snprintf(current_header->mtime, 12, "%0*o", 11, (unsigned int) sfile.st_mtime);
@@ -369,48 +369,6 @@ static int st_tar_writer_restart_file(struct st_format_writer * f, const char * 
 	ssize_t block_size = 512;
 	struct st_tar * header = malloc(block_size);
 	struct st_tar * current_header = header;
-
-	int filename_length = strlen(filename);
-	if (S_ISLNK(sfile.st_mode)) {
-		char link[257];
-		ssize_t link_length = readlink(filename, link, 256);
-		link[link_length] = '\0';
-
-		if (filename_length > 100 && link_length > 100) {
-			block_size += 2048 + filename_length - filename_length % 512 + link_length - link_length % 512;
-			current_header = header = realloc(header, block_size);
-
-			bzero(current_header, block_size - 512);
-			st_tar_writer_compute_link(current_header, (char *) (current_header + 1), filename, filename_length, 'K', &sfile);
-			st_tar_writer_compute_link(current_header + 2, (char *) (current_header + 3), link, link_length, 'L', &sfile);
-
-			current_header += 4;
-		} else if (filename_length > 100) {
-			block_size += 1024 + filename_length - filename_length % 512;
-			current_header = header = realloc(header, block_size);
-
-			bzero(current_header, block_size - 512);
-			st_tar_writer_compute_link(current_header, (char *) (current_header + 1), filename, filename_length, 'L', &sfile);
-
-			current_header += 2;
-		} else if (link_length > 100) {
-			block_size += 1024 + link_length - link_length % 512;
-			current_header = header = realloc(header, block_size);
-
-			bzero(current_header, block_size - 512);
-			st_tar_writer_compute_link(current_header, (char *) (current_header + 1), link, link_length, 'L', &sfile);
-
-			current_header += 2;
-		}
-	} else if (filename_length > 100) {
-		block_size += 1024 + filename_length - filename_length % 512;
-		current_header = header = realloc(header, block_size);
-
-		bzero(current_header, 1024);
-		st_tar_writer_compute_link(current_header, (char *) (current_header + 1), filename, filename_length, 'L', &sfile);
-
-		current_header += 2;
-	}
 
 	struct st_tar_writer_private * format = f->data;
 	bzero(current_header, 512);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 12 Oct 2012 10:04:13 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 09:22:53 +0200                         *
 \*************************************************************************/
 
 // open
@@ -81,7 +81,7 @@ static struct st_drive * st_scsi_changer_find_free_drive(struct st_changer * ch)
 		if (!dr->enabled)
 			continue;
 
-		if (!dr->lock->ops->trylock(dr->lock))
+		if (!dr->lock->ops->try_lock(dr->lock))
 			return dr;
 	}
 
@@ -97,7 +97,7 @@ static int st_scsi_changer_load_media(struct st_changer * ch, struct st_media * 
 	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
 		slot = ch->slots + i;
 
-		if (slot->media == from && !slot->lock->ops->trylock(slot->lock)) {
+		if (slot->media == from && !slot->lock->ops->try_lock(slot->lock)) {
 			int failed = st_scsi_changer_load_slot(ch, slot, to);
 			slot->lock->ops->unlock(slot->lock);
 			return failed;
@@ -207,7 +207,7 @@ void st_scsi_changer_setup(struct st_changer * changer) {
 					continue;
 				}
 
-				if (slot_to->lock->ops->trylock(slot_to->lock)) {
+				if (slot_to->lock->ops->try_lock(slot_to->lock)) {
 					slot_to = NULL;
 					break;
 				}
@@ -221,7 +221,7 @@ void st_scsi_changer_setup(struct st_changer * changer) {
 					continue;
 				}
 
-				if (slot_to->lock->ops->trylock(slot_to->lock)) {
+				if (slot_to->lock->ops->try_lock(slot_to->lock)) {
 					slot_to = NULL;
 					break;
 				}
@@ -283,7 +283,7 @@ static void * st_scsi_changer_setup2(void * drive) {
 	unsigned int i;
 	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
 		struct st_slot * sl = ch->slots + i;
-		if (sl->lock->ops->trylock(sl->lock))
+		if (sl->lock->ops->try_lock(sl->lock))
 			continue;
 
 		if (sl->media != NULL || !sl->full) {
@@ -344,7 +344,7 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 			continue;
 		}
 
-		if (to->lock->ops->trylock(to->lock)) {
+		if (to->lock->ops->try_lock(to->lock)) {
 			to = NULL;
 			break;
 		}
@@ -363,7 +363,7 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 
 		nb_free_slots++;
 
-		if (to->lock->ops->trylock(to->lock))
+		if (to->lock->ops->try_lock(to->lock))
 			to = NULL;
 		else
 			st_log_write_all(st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading media, step 1 : found free slot '#%td' of media '%s'", ch->vendor, ch->model, to - ch->slots, from->slot->volume_name);

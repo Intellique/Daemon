@@ -22,14 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 12 Oct 2012 09:58:05 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 10:00:14 +0200                         *
 \*************************************************************************/
 
 // htobe16
 #include <endian.h>
-// ssize_t
-#include <sys/types.h>
-
+// open
+#include <fcntl.h>
 // sg_io_hdr_t
 #include <scsi/scsi.h>
 // sg_io_hdr_t
@@ -40,6 +39,10 @@
 #include <string.h>
 // ioctl
 #include <sys/ioctl.h>
+// open
+#include <sys/stat.h>
+// open, ssize_t
+#include <sys/types.h>
 // sleep
 #include <unistd.h>
 
@@ -226,6 +229,7 @@ struct scsi_request_sense {
 	unsigned char field_data[2];					/* Byte 16,17 */
 };
 
+static bool st_scsi_loader_has_drive2(int fd, struct st_changer * changer, int start_element, int nb_elements, struct st_drive * drive);
 static void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, struct st_slot * slot_base, int start_element, int nb_elements, enum scsi_loader_element_type type);
 
 
@@ -238,6 +242,202 @@ void st_scsi_loader_check_slot(int fd, struct st_changer * changer, struct st_sl
 
 	struct st_scsislot * sp = slot->data;
 	st_scsi_loader_status_update_slot(fd, changer, slot, sp->address, 1, type);
+}
+
+bool st_scsi_loader_has_drive(struct st_changer * changer, struct st_drive * drive) {
+	int fd = open(changer->device, O_RDWR);
+	if (fd < 0)
+		return 1;
+
+	struct scsi_request_sense sense;
+	struct {
+		unsigned char mode_data_length;
+		unsigned char reserved0[3];
+
+		unsigned char page_code:6;
+		unsigned char reserved1:1;
+		unsigned char page_saved:1;
+		unsigned char parameter_length;
+		unsigned short medium_transport_element_address;
+		unsigned short number_of_medium_transport_elements;
+		unsigned short first_storage_element_address;
+		unsigned short number_of_storage_elements;
+		unsigned short first_import_export_element_address;
+		unsigned short number_of_import_export_elements;
+		unsigned short first_data_transfer_element_address;
+		unsigned short number_of_data_transfer_elements;
+		unsigned char reserved2[2];
+	} __attribute__((packed)) result;
+	struct {
+		unsigned char operation_code;
+		unsigned char reserved0:3;
+		unsigned char disable_block_descriptors:1;
+		unsigned char reserved1:4;
+		enum {
+			page_code_element_address_assignement_page = 0x1D,
+			page_code_transport_geometry_descriptor_page = 0x1E,
+			page_code_device_capabilities_page = 0x1F,
+			page_code_unique_properties_page = 0x21,
+			page_code_lcd_mode_page = 0x22,
+			page_code_cleaning_configuration_page = 0x25,
+			page_code_operating_mode_page = 0x26,
+			page_code_all_pages = 0x3F,
+		} code_page:6;
+		enum {
+			page_control_current_value = 0x00,
+			page_control_changeable_value = 0x01,
+			page_control_default_value = 0x02,
+			page_control_saved_value = 0x03,
+		} page_control:2;
+		unsigned char reserved2;
+		unsigned char allocation_length;
+		unsigned char reserved3;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x1A,
+		.reserved0 = 0,
+		.disable_block_descriptors = 0,
+		.reserved1 = 0,
+		.code_page = page_code_element_address_assignement_page,
+		.page_control = page_control_current_value,
+		.reserved2 = 0,
+		.allocation_length = sizeof(result),
+		.reserved3 = 0,
+	};
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result);
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &result;
+	header.timeout = 1200000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int failed = ioctl(fd, SG_IO, &header);
+	if (failed) {
+		close(fd);
+		return false;
+	}
+
+	int start_element = be16toh(result.first_data_transfer_element_address);
+	int nb_elements = be16toh(result.number_of_data_transfer_elements);
+
+	bool ok = st_scsi_loader_has_drive2(fd, changer, start_element, nb_elements, drive);
+
+	close(fd);
+
+	return ok;
+}
+
+static bool st_scsi_loader_has_drive2(int fd, struct st_changer * changer, int start_element, int nb_elements, struct st_drive * drive) {
+	size_t size_needed = 16 + nb_elements * sizeof(struct scsi_loader_data_transfer_element);
+
+	struct scsi_request_sense sense;
+	struct {
+		unsigned short first_element_address;
+		unsigned short number_of_elements;
+		unsigned char reserved;
+		unsigned int byte_count_of_report:24;
+	} __attribute__((packed)) * result = malloc(size_needed);
+	struct {
+		unsigned char operation_code;
+		enum scsi_loader_element_type type:4;
+		unsigned char volume_tag:1;
+		unsigned char reserved0:3;
+		unsigned short starting_element_address;
+		unsigned short number_of_elements;
+		unsigned char device_id:1;
+		unsigned char current_data:1;
+		unsigned char reserved1:6;
+		unsigned char allocation_length[3];
+		unsigned char reserved2;
+		unsigned char reserved3:7;
+		unsigned char serial_number_request:1;
+	} __attribute__((packed)) command = {
+		.operation_code = 0xB8,
+		.type = scsi_loader_element_type_data_transfer,
+		.volume_tag = changer->barcode ? 1 : 0,
+		.reserved0 = 0,
+		.starting_element_address = htobe16(start_element),
+		.number_of_elements = htobe16(nb_elements),
+		.device_id = 1,
+		.current_data = 0,
+		.reserved1 = 0,
+		.allocation_length = { size_needed >> 16, size_needed >> 8, size_needed & 0xFF, },
+		.reserved2 = 0,
+		.reserved3 = 0,
+		.serial_number_request = 1,
+	};
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(result, 0, size_needed);
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = size_needed;
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) result;
+	header.timeout = 1200000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	unsigned char * ptr;
+	struct scsi_loader_element_status * element_header;
+	do {
+		int failed = ioctl(fd, SG_IO, &header);
+		if (failed) {
+			free(result);
+			return false;
+		}
+
+		result->number_of_elements = be16toh(result->number_of_elements);
+
+		ptr = (unsigned char *) (result + 1);
+
+		element_header = (struct scsi_loader_element_status *) (ptr);
+		element_header->element_descriptor_length = be16toh(element_header->element_descriptor_length);
+		element_header->byte_count_of_descriptor_data_available = be32toh(element_header->byte_count_of_descriptor_data_available);
+		ptr += sizeof(struct scsi_loader_element_status);
+
+		if (element_header->type != scsi_loader_element_type_data_transfer) {
+			sleep(1);
+			st_scsi_loader_ready(fd);
+		}
+	} while (element_header->type != scsi_loader_element_type_data_transfer);
+
+	unsigned short i;
+	bool found = false;
+	for (i = 0; i < result->number_of_elements && found == false; i++) {
+		if (element_header->type == scsi_loader_element_type_data_transfer) {
+			struct scsi_loader_data_transfer_element * data_transfer_element = (struct scsi_loader_data_transfer_element *) ptr;
+
+			char dev[35];
+			dev[34] = '\0';
+			memset(dev, ' ', 35);
+			strncpy(dev, drive->vendor, strlen(drive->vendor));
+			dev[7] = ' ';
+			strncpy(dev + 8, drive->model, strlen(drive->model));
+			dev[23] = ' ';
+			strcpy(dev + 24, drive->serial_number);
+
+			if (!strncmp((char *) data_transfer_element->device_identifier_1, dev, 34))
+				found = true;
+		}
+
+		ptr += element_header->element_descriptor_length;
+	}
+
+	free(result);
+
+	return found;
 }
 
 void st_scsi_loader_info(int fd, struct st_changer * changer) {

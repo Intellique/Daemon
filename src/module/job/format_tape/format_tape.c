@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 00:09:06 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 09:23:26 +0200                         *
 \*************************************************************************/
 
 // sscanf
@@ -132,7 +132,7 @@ static short st_job_format_tape_check(struct st_job * job) {
 				break;
 
 			case drive_is_free:
-				if (drive->lock->ops->trylock(drive->lock)) {
+				if (drive->lock->ops->try_lock(drive->lock)) {
 					sleep(5);
 					state = media_in_drive;
 				} else if (slot->media == media) {
@@ -159,7 +159,7 @@ static short st_job_format_tape_check(struct st_job * job) {
 				break;
 
 			case slot_is_free:
-				if (slot->lock->ops->trylock(slot->lock)) {
+				if (slot->lock->ops->try_lock(slot->lock)) {
 					sleep(5);
 					state = look_for_media;
 				} else {
@@ -403,7 +403,7 @@ int st_job_format_tape_run(struct st_job * job) {
 				break;
 
 			case drive_is_free:
-				if (drive->lock->ops->trylock(drive->lock)) {
+				if (drive->lock->ops->try_lock(drive->lock)) {
 					job->sched_status = st_job_status_waiting;
 					sleep(5);
 					state = media_in_drive;
@@ -431,7 +431,7 @@ int st_job_format_tape_run(struct st_job * job) {
 				break;
 
 			case slot_is_free:
-				if (slot->lock->ops->trylock(slot->lock)) {
+				if (slot->lock->ops->try_lock(slot->lock)) {
 					job->sched_status = st_job_status_waiting;
 					sleep(5);
 					state = look_for_media;

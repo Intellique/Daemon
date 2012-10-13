@@ -22,13 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 22:34:22 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 09:19:13 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
 #include <pthread.h>
 // free, malloc, realloc
 #include <stdlib.h>
+// gettimeofday
 #include <sys/time.h>
 
 #include <libstone/log.h>

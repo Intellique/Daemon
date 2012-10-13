@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 22:53:32 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 09:20:59 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -35,6 +35,8 @@
 #include <stdarg.h>
 // calloc, free, malloc
 #include <stdlib.h>
+// gettimeofday
+#include <sys/time.h>
 
 #include <libstone/library/ressource.h>
 
@@ -45,14 +47,16 @@ struct st_ressource_private {
 
 static int st_ressource_private_free(struct st_ressource * res);
 static int st_ressource_private_lock(struct st_ressource * res);
-static int st_ressource_private_trylock(struct st_ressource * res);
+static int st_ressource_private_timed_lock(struct st_ressource * res, unsigned int timeout);
+static int st_ressource_private_try_lock(struct st_ressource * res);
 static void st_ressource_private_unlock(struct st_ressource * res);
 
 static struct st_ressource_ops st_ressource_private_ops = {
-	.free    = st_ressource_private_free,
-	.lock    = st_ressource_private_lock,
-	.trylock = st_ressource_private_trylock,
-	.unlock  = st_ressource_private_unlock,
+	.free       = st_ressource_private_free,
+	.lock       = st_ressource_private_lock,
+	.timed_lock = st_ressource_private_timed_lock,
+	.try_lock   = st_ressource_private_try_lock,
+	.unlock     = st_ressource_private_unlock,
 };
 
 
@@ -71,7 +75,7 @@ int st_ressource_lock(int nb_res, struct st_ressource * res1, struct st_ressourc
 	va_end(resX);
 
 	for (i = 0; i < nb_res && !failed; i++)
-		failed = res[i]->ops->trylock(res[i]);
+		failed = res[i]->ops->try_lock(res[i]);
 
 	if (failed) {
 		int j;
@@ -102,6 +106,9 @@ struct st_ressource * st_ressource_new(void) {
 }
 
 static int st_ressource_private_free(struct st_ressource * res) {
+	if (res == NULL)
+		return 2;
+
 	struct st_ressource_private * self = res->data;
 
 	if (pthread_mutex_trylock(&self->lock) == EBUSY)
@@ -117,6 +124,9 @@ static int st_ressource_private_free(struct st_ressource * res) {
 }
 
 static int st_ressource_private_lock(struct st_ressource * res) {
+	if (res == NULL)
+		return 2;
+
 	struct st_ressource_private * self = res->data;
 	int failed = pthread_mutex_lock(&self->lock);
 	if (!failed)
@@ -124,7 +134,33 @@ static int st_ressource_private_lock(struct st_ressource * res) {
 	return failed;
 }
 
-static int st_ressource_private_trylock(struct st_ressource * res) {
+static int st_ressource_private_timed_lock(struct st_ressource * res, unsigned int timeout) {
+	if (res == NULL)
+		return 2;
+
+	struct timeval now;
+	struct timespec ts_timeout;
+	gettimeofday(&now, NULL);
+	ts_timeout.tv_sec = now.tv_sec + timeout / 1000;
+	ts_timeout.tv_nsec = now.tv_usec * 1000 + timeout % 1000;
+
+	if (ts_timeout.tv_nsec > 1000000) {
+		ts_timeout.tv_nsec -= 1000000;
+		ts_timeout.tv_sec++;
+	}
+
+	struct st_ressource_private * self = res->data;
+	int failed = pthread_mutex_timedlock(&self->lock, &ts_timeout);
+	if (!failed)
+		res->locked = 1;
+
+	return failed;
+}
+
+static int st_ressource_private_try_lock(struct st_ressource * res) {
+	if (res == NULL)
+		return 2;
+
 	struct st_ressource_private * self = res->data;
 	int failed = pthread_mutex_trylock(&self->lock);
 	if (!failed)
@@ -133,6 +169,9 @@ static int st_ressource_private_trylock(struct st_ressource * res) {
 }
 
 static void st_ressource_private_unlock(struct st_ressource * res) {
+	if (res == NULL)
+		return;
+
 	struct st_ressource_private * self = res->data;
 	if (!pthread_mutex_unlock(&self->lock))
 		res->locked = 0;

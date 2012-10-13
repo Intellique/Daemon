@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 12 Oct 2012 09:51:35 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 10:02:19 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_CHANGER_H__
@@ -84,11 +84,6 @@ struct st_changer {
 	 * \brief This changer has got a barcode reader
 	 */
 	bool barcode;
-
-	int host;
-	int target;
-	int channel;
-	int bus;
 
 	/**
 	 * \brief Drives into this \a changer

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 22 Aug 2012 20:43:15 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 10:03:50 +0200                         *
 \*************************************************************************/
 
 // open
@@ -65,7 +65,7 @@ struct st_slot * st_changer_find_media_by_pool(struct st_pool * pool, struct st_
 		for (j = 0; j < changer->nb_slots; j++) {
 			struct st_slot * slot = changer->slots + j;
 
-			if (slot->lock->ops->trylock(slot->lock))
+			if (slot->lock->ops->try_lock(slot->lock))
 				continue;
 
 			struct st_media * media = slot->media;
@@ -131,8 +131,6 @@ int st_changer_setup(void) {
 		link[length] = '\0';
 
 		ptr = strrchr(link, '/') + 1;
-		int host = 0, target = 0, channel = 0, bus = 0;
-		sscanf(ptr, "%d:%d:%d:%d", &host, &target, &channel, &bus);
 
 		char path[256];
 		strcpy(path, gl.gl_pathv[i]);
@@ -165,11 +163,6 @@ int st_changer_setup(void) {
 		drives[i].revision = NULL;
 		drives[i].serial_number = NULL;
 
-		drives[i].host = host;
-		drives[i].target = target;
-		drives[i].channel = channel;
-		drives[i].bus = bus;
-
 		drives[i].changer = NULL;
 		drives[i].slot = NULL;
 
@@ -196,8 +189,6 @@ int st_changer_setup(void) {
 		link[length] = '\0';
 
 		char * ptr = strrchr(link, '/') + 1;
-		int host = 0, target = 0, channel = 0, bus = 0;
-		sscanf(ptr, "%d:%d:%d:%d", &host, &target, &channel, &bus);
 
 		char path[256];
 		strcpy(path, gl.gl_pathv[i]);
@@ -219,11 +210,6 @@ int st_changer_setup(void) {
 		st_changers[i].revision = NULL;
 		st_changers[i].serial_number = NULL;
 		st_changers[i].barcode = 0;
-
-		st_changers[i].host = host;
-		st_changers[i].target = target;
-		st_changers[i].channel = channel;
-		st_changers[i].bus = bus;
 
 		st_changers[i].drives = NULL;
 		st_changers[i].nb_drives = 0;
@@ -255,7 +241,7 @@ int st_changer_setup(void) {
 	for (i = 0; i < st_nb_real_changers; i++) {
 		unsigned j;
 		for (j = 0; j < nb_drives; j++) {
-			if (st_changers[i].host == drives[j].host && st_changers[i].target == drives[j].target) {
+			if (st_scsi_loader_has_drive(st_changers + i, drives + j)) {
 				drives[j].changer = st_changers + i;
 
 				st_changers[i].drives = realloc(st_changers[i].drives, (st_changers[i].nb_drives + 1) * sizeof(struct st_drive));

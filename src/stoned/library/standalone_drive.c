@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 12 Oct 2012 10:05:45 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 09:23:04 +0200                         *
 \*************************************************************************/
 
 // malloc
@@ -61,7 +61,7 @@ static struct st_drive * st_standalone_drive_find_free_drive(struct st_changer *
 	if (!dr->enabled)
 		return NULL;
 
-	if (!dr->lock->ops->trylock(dr->lock))
+	if (!dr->lock->ops->try_lock(dr->lock))
 		return dr;
 
 	return NULL;

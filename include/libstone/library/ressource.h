@@ -22,21 +22,22 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 17 Dec 2011 19:09:14 +0100                         *
+*  Last modified: Sat, 13 Oct 2012 09:21:36 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_RESSOURCE_H__
 #define __STONE_LIBRARY_RESSOURCE_H__
 
 struct st_ressource {
-    struct st_ressource_ops {
-        int (*free)(struct st_ressource * res);
-        int (*lock)(struct st_ressource * res);
-        int (*trylock)(struct st_ressource * res);
-        void (*unlock)(struct st_ressource * res);
-    } * ops;
-    void * data;
-    int locked;
+	struct st_ressource_ops {
+		int (*free)(struct st_ressource * res);
+		int (*lock)(struct st_ressource * res);
+		int (*timed_lock)(struct st_ressource *res, unsigned int timeout);
+		int (*try_lock)(struct st_ressource * res);
+		void (*unlock)(struct st_ressource * res);
+	} * ops;
+	void * data;
+	int locked;
 };
 
 int st_ressource_lock(int nb_res, struct st_ressource * res1, struct st_ressource * res2, ...);

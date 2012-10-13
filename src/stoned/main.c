@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 17 Aug 2012 00:34:24 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 09:36:12 +0200                         *
 \*************************************************************************/
 
 // getopt_long
@@ -107,7 +107,8 @@ int main(int argc, char ** argv) {
 			case OPT_VERSION:
 				st_log_disable_display_log();
 
-				printf("STone, version: %s, build: %s %s\n", STONE_VERSION, __DATE__, __TIME__);
+				printf("STone, version: " STONE_VERSION ", build: " __DATE__ " " __TIME__ "\n");
+				printf("Checksum: " STONED_SRCSUM ", last commit: " STONE_GIT_COMMIT "\n");
 				return 0;
 
 			default:
@@ -159,7 +160,7 @@ int main(int argc, char ** argv) {
 
 	// check if config file contains a database
 	struct st_database * db = st_database_get_default_driver();
-	if (!db) {
+	if (db == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: There is no database into config file '%s'", config_file);
 		return 5;
 	}
@@ -167,12 +168,12 @@ int main(int argc, char ** argv) {
 	struct st_database_config * config = NULL;
 	struct st_database_connection * connect = NULL;
 
-	if (db)
+	if (db != NULL)
 		config = db->ops->get_default_config();
-	if (config)
+	if (config != NULL)
 		connect = config->ops->connect(config);
 
-	if (!connect) {
+	if (connect == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: Failed to connect to database ");
 		return 5;
 	}
