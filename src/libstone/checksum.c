@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 12 Oct 2012 23:42:21 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 14:03:46 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -146,7 +146,7 @@ void st_checksum_register_driver(struct st_checksum_driver * driver) {
 		return;
 	}
 
-	if (st_plugin_check(&driver->api_level)) {
+	if (st_plugin_check(&driver->api_level) == false) {
 		st_log_write_all(st_log_level_error, st_log_type_checksum, "Driver '%s' has not the correct api level", driver->name);
 		return;
 	}

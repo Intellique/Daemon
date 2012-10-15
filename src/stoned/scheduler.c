@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 09:44:51 +0200                         *
+*  Last modified: Sun, 14 Oct 2012 22:34:55 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -33,6 +33,8 @@
 #include <signal.h>
 // va_end, va_start
 #include <stdarg.h>
+// bool
+#include <stdbool.h>
 // memmove
 #include <string.h>
 // time
@@ -43,7 +45,7 @@
 #include <libstone/database.h>
 #include <libstone/job.h>
 #include <libstone/log.h>
-#include <libstone/threadpool.h>
+#include <libstone/thread_pool.h>
 #include <libstone/util/hashtable.h>
 
 #include "library/common.h"
@@ -52,7 +54,7 @@
 static void st_sched_exit(int signal);
 static void st_sched_run_job(void * arg);
 
-static short st_sched_stop_request = 0;
+static bool st_sched_stop_request = false;
 
 
 void st_sched_do_loop(struct st_database_connection * connection) {
@@ -76,7 +78,7 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 			job->driver->new_job(job, connection);
 
 			st_log_write_all(st_log_level_info, st_log_type_scheduler, "Checking job: %s", job->name);
-			short ok = job->ops->check(job);
+			bool ok = job->ops->check(job);
 			job->ops->free(job);
 
 			st_log_write_all(st_log_level_info, st_log_type_scheduler, "Checking job: %s finished, status: %s", job->name, ok ? "ok" : "can't recover job");
@@ -90,8 +92,10 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 			struct st_job * job = jobs[i];
 
 			if (job->repetition != 0 && job->next_start < update && job->db_status == st_job_status_idle && job->sched_status == st_job_status_idle) {
+				connection->ops->sync_user(connection, job->user);
+
 				job->driver->new_job(job, connection);
-				st_threadpool_run(st_sched_run_job, job);
+				st_thread_pool_run(st_sched_run_job, job);
 			}
 		}
 
@@ -111,7 +115,7 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 static void st_sched_exit(int signal) {
 	if (signal == SIGINT) {
 		st_log_write_all(st_log_level_info, st_log_type_scheduler, "catch SIGINT");
-		st_sched_stop_request = 1;
+		st_sched_stop_request = true;
 	}
 }
 

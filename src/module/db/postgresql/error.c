@@ -22,14 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 19 Aug 2012 14:34:42 +0200                         *
+*  Last modified: Sun, 14 Oct 2012 20:21:06 +0200                         *
 \*************************************************************************/
 
 // PQresultErrorField
 #include <postgresql/libpq-fe.h>
 // free
 #include <stdlib.h>
-// strdup, strtok_r
+// strdup, strcmp, strtok_r
 #include <string.h>
 
 #include <libstone/log.h>
@@ -37,6 +37,10 @@
 #include "common.h"
 
 void st_db_postgresql_get_error(PGresult * result, const char * prepared_query) {
+	char * error_code = PQresultErrorField(result, PG_DIAG_SQLSTATE);
+	if (!strcmp("55P03", error_code))
+		return;
+
 	char * error = PQresultErrorField(result, PG_DIAG_MESSAGE_PRIMARY);
 	if (prepared_query == NULL)
 		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: error {%s} => %s", prepared_query, error);

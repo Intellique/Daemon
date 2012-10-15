@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 00:21:48 +0200                         *
+*  Last modified: Sun, 14 Oct 2012 20:31:22 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -39,7 +39,7 @@
 // sleep
 #include <unistd.h>
 
-#include <libstone/threadpool.h>
+#include <libstone/thread_pool.h>
 #include <libstone/user.h>
 
 #include "loader.h"
@@ -230,7 +230,7 @@ void st_log_start_logger(void) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Start logger without log modules loaded");
 	} else if (!st_log_logger_running) {
 		st_log_logger_running = 1;
-		st_threadpool_run(st_log_sent_message, NULL);
+		st_thread_pool_run2(st_log_sent_message, NULL, 4);
 		st_log_display_at_exit = 0;
 	}
 

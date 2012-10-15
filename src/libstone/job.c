@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 00:12:55 +0200                         *
+*  Last modified: Sat, 13 Oct 2012 14:04:33 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -128,7 +128,7 @@ void st_job_register_driver(struct st_job_driver * driver) {
 		return;
 	}
 
-	if (st_plugin_check(&driver->api_level)) {
+	if (st_plugin_check(&driver->api_level) == false) {
 		st_log_write_all(st_log_level_error, st_log_type_job, "Driver '%s' has not the correct api version", driver->name);
 		return;
 	}

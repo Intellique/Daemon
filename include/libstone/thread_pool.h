@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jul 2012 18:32:50 +0200                         *
+*  Last modified: Sun, 14 Oct 2012 21:30:38 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_THREADPOOL_H__
@@ -39,7 +39,22 @@
  *
  * \note All threads which are not used while 5 minutes are stopped
  */
-int st_threadpool_run(void (*function)(void * arg), void * arg);
+int st_thread_pool_run(void (*function)(void * arg), void * arg);
+
+/**
+ * \brief Run this function into another thread with specified
+ * \a nice priority.
+ *
+ * \param[in] function : call this function from another thread
+ * \param[in] arg : call this function by passing this argument
+ * \param[in] nice : call nice(2) before call \a function
+ * \returns 0 if OK
+ *
+ * \note this function reuse an unused thread or create new one
+ *
+ * \note All threads which are not used while 5 minutes are stopped
+ */
+int st_thread_pool_run2(void (*function)(void * arg), void * arg, int nice);
 
 #endif
 

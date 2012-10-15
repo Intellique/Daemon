@@ -22,14 +22,11 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 12 Oct 2012 23:52:09 +0200                         *
+*  Last modified: Sun, 14 Oct 2012 20:23:52 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
 #define __STONE_DATABASE_H__
-
-// time_t
-#include <sys/time.h>
 
 #include "plugin.h"
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 22:57:16 +0200                         *
+*  Last modified: Sun, 14 Oct 2012 20:26:34 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_IO_H__
@@ -30,7 +30,7 @@
 
 // bool
 #include <stdbool.h>
-// ssize_t
+// off_t, ssize_t
 #include <sys/types.h>
 
 /**

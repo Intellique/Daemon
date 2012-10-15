@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 22:53:22 +0200                         *
+*  Last modified: Sun, 14 Oct 2012 20:24:55 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_FORMAT_H__
@@ -30,7 +30,7 @@
 
 // bool
 #include <stdbool.h>
-// dev_t, mode_t, ssize_t, time_t
+// dev_t, gid_t, mode_t, ssize_t, time_t, uid_t
 #include <sys/types.h>
 
 struct st_stream_reader;

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 00:09:24 +0200                         *
+*  Last modified: Sun, 14 Oct 2012 11:22:24 +0200                         *
 \*************************************************************************/
 
 // free, malloc
@@ -35,7 +35,7 @@ struct st_job_save_private {
 	struct st_database_connection * connect;
 };
 
-static short st_job_save_check(struct st_job * job);
+static bool st_job_save_check(struct st_job * job);
 static void st_job_save_free(struct st_job * job);
 static void st_job_save_init(void) __attribute__((constructor));
 static void st_job_save_new_job(struct st_job * job, struct st_database_connection * db);
@@ -59,8 +59,8 @@ static struct st_job_driver st_job_save_driver = {
 };
 
 
-static short st_job_save_check(struct st_job * job __attribute__((unused))) {
-	return 2;
+static bool st_job_save_check(struct st_job * job __attribute__((unused))) {
+	return true;
 }
 
 static void st_job_save_free(struct st_job * job __attribute__((unused))) {}

@@ -22,16 +22,16 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 00:12:52 +0200                         *
+*  Last modified: Sun, 14 Oct 2012 20:27:44 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
 #define __STONE_JOB_H__
 
+// bool
+#include <stdbool.h>
 // time_t
 #include <sys/time.h>
-// ssize_t
-#include <sys/types.h>
 
 #include "plugin.h"
 
@@ -62,7 +62,7 @@ struct st_job {
 
 	float done;
 	volatile enum st_job_status db_status;
-	enum st_job_status sched_status;
+	volatile enum st_job_status sched_status;
 	time_t updated;
 
 	struct st_user * user;
@@ -71,7 +71,7 @@ struct st_job {
 	struct st_hashtable * option;
 
 	struct st_job_ops {
-		short (*check)(struct st_job * j);
+		bool (*check)(struct st_job * j);
 		void (*free)(struct st_job * j);
 		int (*run)(struct st_job * j);
 	} * ops;

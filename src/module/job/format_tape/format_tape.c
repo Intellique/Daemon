@@ -22,9 +22,11 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 09:23:26 +0200                         *
+*  Last modified: Sun, 14 Oct 2012 11:21:02 +0200                         *
 \*************************************************************************/
 
+// bool
+#include <stdbool.h>
 // sscanf
 #include <stdio.h>
 // free, malloc
@@ -52,7 +54,7 @@ struct st_job_format_tape_private {
 	struct st_database_connection * connect;
 };
 
-static short st_job_format_tape_check(struct st_job * job);
+static bool st_job_format_tape_check(struct st_job * job);
 static void st_job_format_tape_free(struct st_job * job);
 static void st_job_format_tape_init(void) __attribute__((constructor));
 static void st_job_format_tape_new_job(struct st_job * job, struct st_database_connection * db);
@@ -76,7 +78,7 @@ static struct st_job_driver st_job_format_tape_driver = {
 };
 
 
-static short st_job_format_tape_check(struct st_job * job) {
+static bool st_job_format_tape_check(struct st_job * job) {
 	struct st_job_format_tape_private * self = job->data;
 
 	st_job_add_record(self->connect, st_log_level_info, job, "Start format tape job (recover mode) (job name: %s), num runs %ld", job->name, job->num_runs);
@@ -84,11 +86,11 @@ static short st_job_format_tape_check(struct st_job * job) {
 	struct st_media * media = st_media_get_by_job(job, self->connect);
 	if (media == NULL) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Media not found");
-		return 0;
+		return false;
 	}
 	if (media->type == st_media_type_cleanning) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Try to format a cleaning media");
-		return 0;
+		return false;
 	}
 
 	struct st_pool * pool = st_pool_get_by_job(job, self->connect);
@@ -105,16 +107,16 @@ static short st_job_format_tape_check(struct st_job * job) {
 		media_in_drive,
 		slot_is_free,
 	} state = look_for_media;
-	short stop = 0, has_alert_user = 0, has_lock_on_drive = 0, has_lock_on_slot = 0;
+	bool stop = false, has_alert_user = false, has_lock_on_drive = false, has_lock_on_slot = false;
 	struct st_drive * drive = NULL;
 	struct st_slot * slot = NULL;
 
-	while (!stop) {
+	while (stop == false) {
 		switch (state) {
 			case alert_user:
-				if (!has_alert_user)
+				if (has_alert_user == false)
 					st_job_add_record(self->connect, st_log_level_warning, job, "Media not found (named: %s)", media->name);
-				has_alert_user = 1;
+				has_alert_user = true;
 				sleep(15);
 				state = look_for_media;
 				break;
@@ -123,8 +125,8 @@ static short st_job_format_tape_check(struct st_job * job) {
 				// if drive is not NULL, we own also a lock on it
 				drive = slot->changer->ops->find_free_drive(slot->changer);
 				if (drive != NULL) {
-					has_lock_on_drive = 1;
-					stop = 1;
+					has_lock_on_drive = true;
+					stop = true;
 				} else {
 					sleep(5);
 					state = media_in_drive;
@@ -136,8 +138,8 @@ static short st_job_format_tape_check(struct st_job * job) {
 					sleep(5);
 					state = media_in_drive;
 				} else if (slot->media == media) {
-					has_lock_on_drive = 1;
-					stop = 1;
+					has_lock_on_drive = true;
+					stop = true;
 				} else {
 					// media has been vannished
 					drive->lock->ops->unlock(drive->lock);
@@ -163,7 +165,7 @@ static short st_job_format_tape_check(struct st_job * job) {
 					sleep(5);
 					state = look_for_media;
 				} else {
-					has_lock_on_slot = 1;
+					has_lock_on_slot = true;
 					state = changer_has_free_drive;
 				}
 				break;
@@ -181,7 +183,7 @@ static short st_job_format_tape_check(struct st_job * job) {
 			if (has_lock_on_drive)
 				drive->lock->ops->unlock(drive->lock);
 
-			return 0;
+			return false;
 		}
 	}
 
@@ -191,7 +193,7 @@ static short st_job_format_tape_check(struct st_job * job) {
 
 		if (has_lock_on_slot) {
 			slot->lock->ops->unlock(slot->lock);
-			has_lock_on_slot = 0;
+			has_lock_on_slot = false;
 			slot = NULL;
 		}
 
@@ -201,7 +203,7 @@ static short st_job_format_tape_check(struct st_job * job) {
 			if (has_lock_on_drive)
 				drive->lock->ops->unlock(drive->lock);
 
-			return 0;
+			return false;
 		}
 	}
 
@@ -212,7 +214,7 @@ static short st_job_format_tape_check(struct st_job * job) {
 		job->done = 0;
 		job->db_status = job->sched_status = st_job_status_error;
 
-		return 1;
+		return true;
 	}
 
 	char buffer[512];
@@ -231,7 +233,7 @@ static short st_job_format_tape_check(struct st_job * job) {
 		job->done = 0;
 		job->db_status = job->sched_status = st_job_status_idle;
 
-		return 0;
+		return false;
 	}
 
 	// M | STone (v0.1)
@@ -297,7 +299,7 @@ static short st_job_format_tape_check(struct st_job * job) {
 			job->done = 0;
 			job->db_status = job->sched_status = st_job_status_idle;
 
-			return 1;
+			return true;
 		} else {
 			st_job_add_record(self->connect, st_log_level_info, job, "wrong header found, re-enable job");
 
@@ -305,7 +307,7 @@ static short st_job_format_tape_check(struct st_job * job) {
 			job->done = 0;
 			job->db_status = job->sched_status = st_job_status_idle;
 
-			return 1;
+			return true;
 		}
 	} else {
 		st_job_add_record(self->connect, st_log_level_info, job, "media contains data but no header found, re-enable job");
@@ -314,7 +316,7 @@ static short st_job_format_tape_check(struct st_job * job) {
 		job->done = 0;
 		job->db_status = job->sched_status = st_job_status_idle;
 
-		return 1;
+		return true;
 	}
 }
 
@@ -374,17 +376,17 @@ int st_job_format_tape_run(struct st_job * job) {
 		media_in_drive,
 		slot_is_free,
 	} state = look_for_media;
-	short stop = 0, has_alert_user = 0, has_lock_on_drive = 0, has_lock_on_slot = 0;
+	bool stop = false, has_alert_user = false, has_lock_on_drive = false, has_lock_on_slot = false;
 	struct st_drive * drive = NULL;
 	struct st_slot * slot = NULL;
 
-	while (!stop && job->db_status != st_job_status_stopped) {
+	while (stop == false && job->db_status != st_job_status_stopped) {
 		switch (state) {
 			case alert_user:
 				job->sched_status = st_job_status_waiting;
 				if (!has_alert_user)
 					st_job_add_record(self->connect, st_log_level_warning, job, "Media not found (named: %s)", media->name);
-				has_alert_user = 1;
+				has_alert_user = true;
 				sleep(15);
 				state = look_for_media;
 				break;
@@ -393,8 +395,8 @@ int st_job_format_tape_run(struct st_job * job) {
 				// if drive is not NULL, we own also a lock on it
 				drive = slot->changer->ops->find_free_drive(slot->changer);
 				if (drive != NULL) {
-					has_lock_on_drive = 1;
-					stop = 1;
+					has_lock_on_drive = true;
+					stop = true;
 				} else {
 					job->sched_status = st_job_status_waiting;
 					sleep(5);
@@ -408,8 +410,8 @@ int st_job_format_tape_run(struct st_job * job) {
 					sleep(5);
 					state = media_in_drive;
 				} else if (slot->media == media) {
-					has_lock_on_drive = 1;
-					stop = 1;
+					has_lock_on_drive = true;
+					stop = true;
 				} else {
 					// media has been vannished
 					drive->lock->ops->unlock(drive->lock);
@@ -436,7 +438,7 @@ int st_job_format_tape_run(struct st_job * job) {
 					sleep(5);
 					state = look_for_media;
 				} else {
-					has_lock_on_slot = 1;
+					has_lock_on_slot = true;
 					state = changer_has_free_drive;
 				}
 				break;
@@ -472,7 +474,7 @@ int st_job_format_tape_run(struct st_job * job) {
 
 		if (has_lock_on_slot) {
 			slot->lock->ops->unlock(slot->lock);
-			has_lock_on_slot = 0;
+			has_lock_on_slot = false;
 			slot = NULL;
 		}
 

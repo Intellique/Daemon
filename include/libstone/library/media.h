@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 23:09:04 +0200                         *
+*  Last modified: Sun, 14 Oct 2012 20:15:27 +0200                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -142,6 +142,7 @@ struct st_pool {
 	char * name;
 	bool growable;
 	bool rewritable;
+	bool deleted;
 
 	struct st_media_format * format;
 };

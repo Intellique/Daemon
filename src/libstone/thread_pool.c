@@ -22,76 +22,93 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 09:19:13 +0200                         *
+*  Last modified: Sun, 14 Oct 2012 21:32:02 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
 #include <pthread.h>
 // free, malloc, realloc
 #include <stdlib.h>
-// gettimeofday
+// setpriority
+#include <sys/resource.h>
+// syscall
+#include <sys/syscall.h>
+// gettimeofday, setpriority
 #include <sys/time.h>
+// pid
+#include <sys/types.h>
+// syscall
+#include <unistd.h>
 
 #include <libstone/log.h>
-#include <libstone/threadpool.h>
+#include <libstone/thread_pool.h>
 
-struct st_threadpool_thread {
+struct st_thread_pool_thread {
 	pthread_t thread;
 	pthread_mutex_t lock;
 	pthread_cond_t wait;
 
 	void (*function)(void * arg);
 	void * arg;
+	int nice;
 
 	volatile enum {
-		st_threadpool_state_exited,
-		st_threadpool_state_running,
-		st_threadpool_state_waiting,
+		st_thread_pool_state_exited,
+		st_thread_pool_state_running,
+		st_thread_pool_state_waiting,
 	} state;
 };
 
-static void * st_threadpool_work(void * arg);
+static void * st_thread_pool_work(void * arg);
 
-static struct st_threadpool_thread ** st_threadpool_threads = NULL;
-static unsigned int st_threadpool_nb_threads = 0;
-static pthread_mutex_t st_threadpool_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+static struct st_thread_pool_thread ** st_thread_pool_threads = NULL;
+static unsigned int st_thread_pool_nb_threads = 0;
+static pthread_mutex_t st_thread_pool_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
 
-int st_threadpool_run(void (*function)(void * arg), void * arg) {
-	pthread_mutex_lock(&st_threadpool_lock);
+int st_thread_pool_run(void (*function)(void * arg), void * arg) {
+	return st_thread_pool_run2(function, arg, 0);
+}
+
+int st_thread_pool_run2(void (*function)(void * arg), void * arg, int nice) {
+	pthread_mutex_lock(&st_thread_pool_lock);
 	unsigned int i;
-	for (i = 0; i < st_threadpool_nb_threads; i++) {
-		struct st_threadpool_thread * th = st_threadpool_threads[i];
+	for (i = 0; i < st_thread_pool_nb_threads; i++) {
+		struct st_thread_pool_thread * th = st_thread_pool_threads[i];
 
-		if (th->state == st_threadpool_state_waiting) {
+		if (th->state == st_thread_pool_state_waiting) {
 			pthread_mutex_lock(&th->lock);
+
 			th->function = function;
 			th->arg = arg;
-			th->state = st_threadpool_state_running;
+			th->nice = nice;
+			th->state = st_thread_pool_state_running;
+
 			pthread_cond_signal(&th->wait);
 			pthread_mutex_unlock(&th->lock);
 
-			pthread_mutex_unlock(&st_threadpool_lock);
+			pthread_mutex_unlock(&st_thread_pool_lock);
 
 			return 0;
 		}
 	}
 
-	for (i = 0; i < st_threadpool_nb_threads; i++) {
-		struct st_threadpool_thread * th = st_threadpool_threads[i];
+	for (i = 0; i < st_thread_pool_nb_threads; i++) {
+		struct st_thread_pool_thread * th = st_thread_pool_threads[i];
 
-		if (th->state == st_threadpool_state_exited) {
+		if (th->state == st_thread_pool_state_exited) {
 			th->function = function;
 			th->arg = arg;
-			th->state = st_threadpool_state_running;
+			th->nice = nice;
+			th->state = st_thread_pool_state_running;
 
 			pthread_attr_t attr;
 			pthread_attr_init(&attr);
 			pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-			pthread_create(&th->thread, &attr, st_threadpool_work, th);
+			pthread_create(&th->thread, &attr, st_thread_pool_work, th);
 
-			pthread_mutex_unlock(&st_threadpool_lock);
+			pthread_mutex_unlock(&st_thread_pool_lock);
 
 			pthread_attr_destroy(&attr);
 
@@ -99,19 +116,20 @@ int st_threadpool_run(void (*function)(void * arg), void * arg) {
 		}
 	}
 
-	void * new_addr = realloc(st_threadpool_threads, (st_threadpool_nb_threads + 1) * sizeof(struct st_threadpool_thread *));
+	void * new_addr = realloc(st_thread_pool_threads, (st_thread_pool_nb_threads + 1) * sizeof(struct st_thread_pool_thread *));
 	if (new_addr == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Error, not enought memory to start new thread");
 		return 1;
 	}
 
-	st_threadpool_threads = new_addr;
-	struct st_threadpool_thread * th = st_threadpool_threads[st_threadpool_nb_threads] = malloc(sizeof(struct st_threadpool_thread));
-	st_threadpool_nb_threads++;
+	st_thread_pool_threads = new_addr;
+	struct st_thread_pool_thread * th = st_thread_pool_threads[st_thread_pool_nb_threads] = malloc(sizeof(struct st_thread_pool_thread));
+	st_thread_pool_nb_threads++;
 
 	th->function = function;
 	th->arg = arg;
-	th->state = st_threadpool_state_running;
+	th->nice = nice;
+	th->state = st_thread_pool_state_running;
 
 	pthread_mutex_init(&th->lock, NULL);
 	pthread_cond_init(&th->wait, NULL);
@@ -120,21 +138,25 @@ int st_threadpool_run(void (*function)(void * arg), void * arg) {
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-	pthread_create(&th->thread, &attr, st_threadpool_work, th);
+	pthread_create(&th->thread, &attr, st_thread_pool_work, th);
 
-	pthread_mutex_unlock(&st_threadpool_lock);
+	pthread_mutex_unlock(&st_thread_pool_lock);
 
 	pthread_attr_destroy(&attr);
 
 	return 0;
 }
 
-static void * st_threadpool_work(void * arg) {
-	struct st_threadpool_thread * th = arg;
+static void * st_thread_pool_work(void * arg) {
+	struct st_thread_pool_thread * th = arg;
 
-	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Starting new thread #%ld to function: %p with parameter: %p", th->thread, th->function, th->arg);
+	pid_t tid = syscall(SYS_gettid);
+
+	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Starting new thread #%ld (pid: %d) to function: %p with parameter: %p", th->thread, tid, th->function, th->arg);
 
 	do {
+		setpriority(PRIO_PROCESS, tid, th->nice);
+
 		th->function(th->arg);
 
 		st_log_write_all(st_log_level_debug, st_log_type_daemon, "Thread #%ld is going to sleep", th->thread);
@@ -143,7 +165,7 @@ static void * st_threadpool_work(void * arg) {
 
 		th->function = NULL;
 		th->arg = NULL;
-		th->state = st_threadpool_state_waiting;
+		th->state = st_thread_pool_state_waiting;
 
 		struct timeval now;
 		struct timespec timeout;
@@ -153,15 +175,15 @@ static void * st_threadpool_work(void * arg) {
 
 		pthread_cond_timedwait(&th->wait, &th->lock, &timeout);
 
-		if (th->state != st_threadpool_state_running)
-			th->state = st_threadpool_state_exited;
+		if (th->state != st_thread_pool_state_running)
+			th->state = st_thread_pool_state_exited;
 
 		pthread_mutex_unlock(&th->lock);
 
-		if (th->state == st_threadpool_state_running)
+		if (th->state == st_thread_pool_state_running)
 			st_log_write_all(st_log_level_debug, st_log_type_daemon, "Restarting thread #%ld to function: %p with parameter: %p", th->thread, th->function, th->arg);
 
-	} while (th->state == st_threadpool_state_running);
+	} while (th->state == st_thread_pool_state_running);
 
 	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Thread #%ld is dead", th->thread);
 
