@@ -46,7 +46,9 @@ CREATE TYPE JobStatus AS ENUM (
     'error',
     'idle',
     'pause',
-    'running'
+    'running',
+    'stopped',
+    'waiting'
 );
 
 CREATE TYPE LogLevel AS ENUM (
