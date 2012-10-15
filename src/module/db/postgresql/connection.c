@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 11 Oct 2012 17:08:19 +0200                         *
+*  Last modified: Mon, 15 Oct 2012 19:20:42 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -2109,13 +2109,11 @@ int st_db_postgresql_update_job(struct st_database_connection * connection, stru
 	const char * query0 = "select_job_before_update";
 	st_db_postgresql_prepare(self, query0, "SELECT status FROM job WHERE id = $1 LIMIT 1");
 
-	char * cdone = 0, * crepetition = 0, * jobid = 0;
+	char * jobid = 0;
 	asprintf(&jobid, "%ld", job->id);
-	asprintf(&cdone, "%f", job->done);
-	asprintf(&crepetition, "%ld", job->repetition);
 
-	const char * param[] = { jobid, cdone, st_job_status_to_string(job->sched_status), crepetition };
-	PGresult * result = PQexecPrepared(self->db_con, query0, 1, param, 0, 0, 0);
+	const char * param1[] = { jobid };
+	PGresult * result = PQexecPrepared(self->db_con, query0, 1, param1, 0, 0, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR) {
@@ -2123,16 +2121,12 @@ int st_db_postgresql_update_job(struct st_database_connection * connection, stru
 		PQclear(result);
 
 		free(jobid);
-		free(cdone);
-		free(crepetition);
 
 		return 1;
 	} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 0) {
 		PQclear(result);
 
 		free(jobid);
-		free(cdone);
-		free(crepetition);
 
 		return 1;
 	} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
@@ -2141,18 +2135,20 @@ int st_db_postgresql_update_job(struct st_database_connection * connection, stru
 
 	PQclear(result);
 
-	if (job->db_status != job->sched_status && job->sched_status == st_job_status_stopped) {
+	if (job->db_status != job->sched_status && job->db_status == st_job_status_stopped) {
 		free(jobid);
-		free(crepetition);
-		free(cdone);
-
 		return 0;
 	}
 
 	const char * query1 = "update_job";
 	st_db_postgresql_prepare(self, query1, "UPDATE job SET done = $2, status = $3, repetition = $4, update = NOW() WHERE id = $1");
 
-	result = PQexecPrepared(self->db_con, query1, 4, param, 0, 0, 0);
+	char * cdone = 0, * crepetition = 0;
+	asprintf(&cdone, "%f", job->done);
+	asprintf(&crepetition, "%ld", job->repetition);
+
+	const char * param2[] = { jobid, cdone, st_job_status_to_string(job->sched_status), crepetition };
+	result = PQexecPrepared(self->db_con, query1, 4, param2, 0, 0, 0);
 	status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)

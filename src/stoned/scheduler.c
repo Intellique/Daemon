@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 17 Sep 2012 09:56:43 +0200                         *
+*  Last modified: Mon, 15 Oct 2012 19:20:40 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -115,10 +115,13 @@ void st_sched_do_loop() {
 
 			connection->ops->refresh_job(connection, j);
 
-			if (j->id < 0 && j->sched_status == st_job_status_running)
+			if (j->id < 0 && j->sched_status == st_job_status_running) {
 				j->job_ops->stop(j);
-			else if (j->db_status == st_job_status_stopped && j->sched_status == st_job_status_running)
+				j->sched_status = st_job_status_stopped;
+			} else if (j->db_status == st_job_status_stopped && j->sched_status == st_job_status_running) {
 				j->job_ops->stop(j);
+				j->sched_status = st_job_status_stopped;
+			}
 		}
 
 		short ok_transaction = connection->ops->start_transaction(connection) >= 0;
