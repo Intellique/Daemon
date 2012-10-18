@@ -22,12 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 05 Oct 2012 11:49:04 +0200                         *
+*  Last modified: Thu, 18 Oct 2012 11:06:39 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
 // pthread_mutex_lock, pthread_mutex_unlock
 #include <pthread.h>
+// bool
+#include <stdbool.h>
 // sscanf
 #include <stdio.h>
 // malloc, realloc
@@ -349,9 +351,12 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 
 		int nb_parsed2 = 0;
 		int ok = 1;
+		bool has_label = false;
 
-		if (sscanf(buffer + nb_parsed, "Label: %36s\n%n", name, &nb_parsed2) == 1)
+		if (sscanf(buffer + nb_parsed, "Label: %36s\n%n", name, &nb_parsed2) == 1) {
 			nb_parsed += nb_parsed2;
+			has_label = true;
+		}
 
 		if (ok && sscanf(buffer + nb_parsed, "Tape id: uuid=%37s\n%n", uuid, &nb_parsed2) == 1)
 			nb_parsed += nb_parsed2;
@@ -387,7 +392,8 @@ struct st_tape * st_tape_new(struct st_drive * dr) {
 			st_log_write_all(st_log_level_debug, st_log_type_drive, "Found STone header in tape with (uuid=%s, label=%s, blocksize=%zd)", uuid, name, block_size);
 
 			strcpy(tape->uuid, uuid);
-			strcpy(tape->label, name);
+			if (has_label)
+				strcpy(tape->label, name);
 			strcpy(tape->name, name);
 			tape->status = ST_TAPE_STATUS_IN_USE;
 			tape->block_size = block_size;
