@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 10 Oct 2012 17:35:36 +0200                         *
+*  Last modified: Thu, 18 Oct 2012 11:48:29 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -152,7 +152,7 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 	if (S_ISSOCK(st.st_mode))
 		return 0;
 
-	int failed;
+	int failed = 0;
 	struct st_job_save_private * jp = job->data;
 	if (jp->tar->ops->get_available_size(jp->tar) == 0) {
 		failed = st_job_save_change_tape(job);
@@ -258,7 +258,7 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 		struct dirent ** dl = 0;
 		int nb_files = scandir(path, &dl, st_job_save_compute_filter, 0);
 
-		int i, failed = 0;
+		int i;
 		for (i = 0; i < nb_files; i++) {
 			if (!failed && !jp->stop_request) {
 				char * subpath = 0;
