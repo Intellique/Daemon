@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 18 Oct 2012 11:48:29 +0200                         *
+*  Last modified: Wed, 24 Oct 2012 18:49:01 +0200                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -630,10 +630,19 @@ struct st_drive * st_job_save_select_tape(struct st_job * job) {
 							}
 
 							struct st_tape * tape = sl->tape;
-							if (tape == NULL || tape->pool != job->pool || st_job_save_tape_in_list(jp, tape) || 10 * tape->available_block < tape->format->capacity / tape->block_size || (jp->total_size - jp->total_size_done > tape->available_block * tape->block_size)) {
+							if (tape == NULL || tape->pool != job->pool || st_job_save_tape_in_list(jp, tape)) {
 								sl->lock->ops->unlock(sl->lock);
 								sl = NULL;
 								continue;
+							}
+
+							if (jp->total_size - jp->total_size_done < tape->available_block * tape->block_size)
+								break;
+
+							if (10 * tape->available_block < tape->format->capacity / tape->block_size) {
+								// select another tape
+								sl->lock->ops->unlock(sl->lock);
+								sl = NULL;
 							}
 						}
 
