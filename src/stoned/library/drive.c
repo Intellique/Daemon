@@ -938,7 +938,8 @@ ssize_t st_drive_io_writer_get_available_size(struct st_stream_writer * io) {
 	// if (tape->available_block <= 16)
 	// 	return 0;
 
-	return (tape->available_block - 16) * tape->block_size - self->buffer_used;
+	// return (tape->available_block - 16) * tape->block_size - self->buffer_used;
+	return tape->format->capacity - tape->end_position * tape->block_size - self->buffer_used;
 }
 
 ssize_t st_drive_io_writer_get_block_size(struct st_stream_writer * io) {
