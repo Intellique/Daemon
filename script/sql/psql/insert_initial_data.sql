@@ -6,10 +6,10 @@ INSERT INTO Host(name, domaine, description) VALUES
 	('storiq-stone', 'intellique.com', '2U Test stone');
 
 INSERT INTO TapeFormat(name, dataType, mode, maxLoadCount, maxReadCount, maxWriteCount, maxOpCount, lifespan, capacity, blockSize, densityCode, supportPartition, supportMAM) VALUES
-	('LTO-5', 'data', 'linear', 4096, 4096, 40960, 40960, INTERVAL 'P10Y', 1676052267008, 32768, 88, TRUE, TRUE),
-	('LTO-4', 'data', 'linear', 4096, 4096, 40960, 40960, INTERVAL 'P8Y', 838026133504, 32768, 70, FALSE, TRUE),
-	('LTO-3', 'data', 'linear', 4096, 4096, 40960, 40960, INTERVAL 'P6Y', 419013066752, 8192, 68, FALSE, TRUE),
-	('LTO-2', 'data', 'linear', 4096, 4096, 40960, 40960, INTERVAL 'P6Y', 209506533376, 8192, 66, FALSE, TRUE),
+	('LTO-5', 'data', 'linear', 4096, 4096, 40960, 40960, INTERVAL 'P10Y', 1529931104256, 32768, 88, TRUE, TRUE),
+	('LTO-4', 'data', 'linear', 4096, 4096, 40960, 40960, INTERVAL 'P8Y', 764965552128, 32768, 70, FALSE, TRUE),
+	('LTO-3', 'data', 'linear', 4096, 4096, 40960, 40960, INTERVAL 'P6Y', 382482776064, 8192, 68, FALSE, TRUE),
+	('LTO-2', 'data', 'linear', 4096, 4096, 40960, 40960, INTERVAL 'P6Y', 191241388032, 8192, 66, FALSE, TRUE),
 	('X23', 'data', 'linear', 4096, 4096, 40960, 40960, INTERVAL 'P6Y', 153691136, 1024, 130, FALSE, FALSE),
 	('DLT', 'data', 'linear', 4096, 4096, 40960, 40960, INTERVAL 'P6Y', 153691136, 1024, 129, FALSE, FALSE);
 
