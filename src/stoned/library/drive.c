@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 05 Nov 2012 18:21:35 +0100                         *
+*  Last modified: Tue, 06 Nov 2012 00:24:40 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -934,7 +934,7 @@ ssize_t st_drive_io_writer_get_available_size(struct st_stream_writer * io) {
 		return 0;
 
 	if (self->eod_reached)
-		return self->block_size - self->buffer_used;
+		return self->buffer_used > 0 ? self->block_size - self->buffer_used : 0;
 
 	// only for test purpose
 	// should be a multiple of blocksize
