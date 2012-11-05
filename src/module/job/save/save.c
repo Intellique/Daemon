@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 24 Oct 2012 18:49:01 +0200                         *
+*  Last modified: Sun, 04 Nov 2012 22:18:54 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -220,8 +220,17 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 
 			ssize_t nb_write;
 			while ((nb_write = jp->tar->ops->write(jp->tar, jp->buffer, nb_read)) < 0) {
-				if (st_job_save_manage_error(job, jp->tar->ops->last_errno(jp->tar)))
-					return 4;
+				if (jp->tar->ops->last_errno(jp->tar) == ENOSPC) {
+					ssize_t position = jp->tar->ops->get_file_position(jp->tar);
+					jp->tar->ops->close(jp->tar);
+
+					failed = st_job_save_change_tape(job);
+					if (failed)
+						break;
+
+					available_size = jp->tar->ops->get_available_size(jp->tar);
+					jp->tar->ops->restart_file(jp->tar, path, position);
+				}
 			}
 
 			if (nb_write > 0) {
@@ -233,7 +242,7 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 			job->db_ops->update_status(job);
 		}
 
-		while (jp->tar->ops->end_of_file(jp->tar) < 0) {
+		while (!failed && jp->tar->ops->end_of_file(jp->tar) < 0) {
 			if (st_job_save_manage_error(job, jp->tar->ops->last_errno(jp->tar)))
 				return 5;
 		}
@@ -249,8 +258,8 @@ int st_job_save_archive_file(struct st_job * job, const char * path) {
 		file_checksum->ops->free(file_checksum);
 	} else if (S_ISDIR(st.st_mode)) {
 		if (access(path, R_OK | X_OK)) {
-			job->db_ops->add_record(job, st_log_level_error, "Can't read directory: %s", path);
-			return 6;
+			job->db_ops->add_record(job, st_log_level_warning, "Can't access directory: %s", path);
+			return 0;
 		}
 
 		st_io_json_add_file(jp->json, jp->current_file);
@@ -485,6 +494,10 @@ int st_job_save_run(struct st_job * job) {
 		job->db_ops->add_record(job, st_log_level_error, "There is no file to archive or total size of all files is null");
 		return 3;
 	}
+
+	char bufsize[32];
+	st_util_convert_size_to_string(jp->total_size, bufsize, 32);
+	job->db_ops->add_record(job, st_log_level_info, "Will archive %s", bufsize);
 
 	struct st_drive * drive = jp->current_drive = st_job_save_select_tape(job);
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 10 Sep 2012 18:52:52 +0200                         *
+*  Last modified: Fri, 02 Nov 2012 17:44:21 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -939,7 +939,7 @@ ssize_t st_drive_io_writer_get_available_size(struct st_stream_writer * io) {
 	// 	return 0;
 
 	// return (tape->available_block - 16) * tape->block_size - self->buffer_used;
-	return tape->format->capacity - tape->end_position * tape->block_size - self->buffer_used;
+	return tape->format->capacity - tape->end_position * tape->block_size - self->position;
 }
 
 ssize_t st_drive_io_writer_get_block_size(struct st_stream_writer * io) {

@@ -22,13 +22,18 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 21 Sep 2012 18:04:48 +0200                         *
+*  Last modified: Tue, 30 Oct 2012 12:56:18 +0100                         *
 \*************************************************************************/
 
+#define _GNU_SOURCE
 // errno
 #include <errno.h>
 // open
 #include <fcntl.h>
+// bool
+#include <stdbool.h>
+// asprintf
+#include <stdio.h>
 // free, malloc
 #include <stdlib.h>
 // strchr
@@ -509,38 +514,43 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 			}
 		}
 	} else if (S_ISREG(header->mode)) {
-		if (!access(path, F_OK) && header->offset == 0) {
-			status = unlink(path);
-			if (status) {
-				switch (errno) {
-					default:
-						job->db_ops->add_record(job, st_log_level_error, "Failed to delete file before restoring regular file named %s because %m", path);
-						return status;
-				}
+		char * filename = path;
+		bool filename_modified = false;
+
+		if (header->offset == 0) {
+			unsigned int next = 0;
+			size_t path_length = strlen(path);
+			char * extension = strrchr(path, '.');
+			size_t extension_length = 0;
+			if (extension != NULL)
+				extension_length = strlen(extension);
+
+			while (!access(filename, F_OK) && header->offset == 0) {
+				if (filename_modified)
+					free(filename);
+				filename_modified = true;
+
+				if (extension != NULL)
+					asprintf(&filename, "%.*s_%u%s", (int) (path_length - extension_length), path, next, extension);
+				else
+					asprintf(&filename, "%s_%u", path, next);
+
+				next++;
 			}
-		}
 
-		const char * filename = path;
-		if (header->offset > 0) {
-			filename = jp->previous_file;
+			if (filename_modified && header->offset == 0)
+				job->db_ops->add_record(job, st_log_level_warning, "Restore file '%s' as '%s' because '%s' already exists", path, filename, path);
+
+			free(jp->previous_file);
+			jp->previous_file = strdup(filename);
 		} else {
-			if (jp->previous_file != NULL)
-				free(jp->previous_file);
-			jp->previous_file = strdup(path);
+			filename = strdup(jp->previous_file);
 		}
 
-		int fd = open(filename, O_CREAT | O_WRONLY, header->mode);
+		int fd = open(filename, O_CREAT | O_WRONLY | O_APPEND, header->mode);
 		if (fd < 0) {
 			job->db_ops->add_record(job, st_log_level_warning, "Failed to create a file named %s because %m", path);
 			return status;
-		}
-
-		if (header->offset > 0) {
-			if (lseek(fd, header->offset, SEEK_SET) == (off_t) -1) {
-				job->db_ops->add_record(job, st_log_level_warning, "Failed to seek position into file named %s because %m", path);
-				close(fd);
-				return status;
-			}
 		}
 
 		struct st_job_restore_private * jp = job->data;
@@ -580,7 +590,8 @@ int st_job_restore_restore_file(struct st_job * job, struct st_tar_in * tar, str
 		}
 
 		close(fd);
-
+		if (filename_modified)
+			free(filename);
 	} else if (S_ISLNK(header->mode)) {
 		if (!access(path, F_OK)) {
 			status = unlink(path);
