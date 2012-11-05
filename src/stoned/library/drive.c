@@ -22,13 +22,15 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 02 Nov 2012 17:44:21 +0100                         *
+*  Last modified: Mon, 05 Nov 2012 18:21:35 +0100                         *
 \*************************************************************************/
 
 // errno
 #include <errno.h>
 // open
 #include <fcntl.h>
+// bool
+#include <stdbool.h>
 // free, malloc, realloc
 #include <stdlib.h>
 // bzero, memcpy, memmove
@@ -88,6 +90,7 @@ struct st_drive_io_writer {
 	ssize_t block_size;
 	ssize_t position;
 	int last_errno;
+	bool eod_reached;
 
 	struct st_drive * drive;
 	struct st_drive_generic * drive_private;
@@ -930,15 +933,13 @@ ssize_t st_drive_io_writer_get_available_size(struct st_stream_writer * io) {
 	if (!tape)
 		return 0;
 
+	if (self->eod_reached)
+		return self->block_size - self->buffer_used;
+
 	// only for test purpose
 	// should be a multiple of blocksize
-	// return 59999977472 - self->position;
+	// return 8589934592 - self->position;
 
-	// we reserve 16 blocks at the end of tape
-	// if (tape->available_block <= 16)
-	// 	return 0;
-
-	// return (tape->available_block - 16) * tape->block_size - self->buffer_used;
 	return tape->format->capacity - tape->end_position * tape->block_size - self->position;
 }
 
@@ -963,6 +964,7 @@ struct st_stream_writer * st_drive_io_writer_new(struct st_drive * drive) {
 	self->block_size = block_size;
 	self->position = 0;
 	self->last_errno = 0;
+	self->eod_reached = false;
 	self->drive = drive;
 	self->drive_private = dr;
 
@@ -1006,8 +1008,21 @@ ssize_t st_drive_io_writer_write(struct st_stream_writer * io, const void * buff
 	st_drive_generic_operation_stop(self->drive);
 
 	if (nb_write < 0) {
-		self->last_errno = errno;
-		return -1;
+		switch (errno) {
+			case ENOSPC:
+				self->eod_reached = true;
+
+				st_drive_generic_operation_start(self->drive_private);
+				nb_write = write(self->fd, self->buffer, self->block_size);
+				st_drive_generic_operation_stop(self->drive);
+
+				if (nb_write == self->block_size)
+					break;
+
+			default:
+				self->last_errno = errno;
+				return -1;
+		}
 	}
 
 	ssize_t nb_total_write = buffer_available;
@@ -1022,8 +1037,21 @@ ssize_t st_drive_io_writer_write(struct st_stream_writer * io, const void * buff
 		st_drive_generic_operation_stop(self->drive);
 
 		if (nb_write < 0) {
-			self->last_errno = errno;
-			return -1;
+			switch (errno) {
+				case ENOSPC:
+					self->eod_reached = true;
+
+					st_drive_generic_operation_start(self->drive_private);
+					nb_write = write(self->fd, c_buffer + nb_total_write, self->block_size);
+					st_drive_generic_operation_stop(self->drive);
+
+					if (nb_write == self->block_size)
+						break;
+
+				default:
+					self->last_errno = errno;
+					return -1;
+			}
 		}
 
 		nb_total_write += nb_write;
