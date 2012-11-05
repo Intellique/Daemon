@@ -159,6 +159,7 @@ enum st_media_format_data_type st_media_string_to_format_data(const char * type)
 enum st_media_format_mode st_media_string_to_format_mode(const char * mode);
 enum st_media_type st_media_string_to_type(const char * type);
 
+ssize_t st_media_get_available_size(struct st_media * media);
 struct st_media * st_media_get_by_job(struct st_job * job, struct st_database_connection * connection);
 struct st_media * st_media_get_by_label(const char * label);
 struct st_media * st_media_get_by_medium_serial_number(const char * medium_serial_number);

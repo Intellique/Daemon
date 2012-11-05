@@ -22,18 +22,18 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 14 Oct 2012 11:22:24 +0200                         *
+*  Last modified: Sun, 04 Nov 2012 18:47:23 +0100                         *
 \*************************************************************************/
 
 // free, malloc
 #include <stdlib.h>
 
-#include <libstone/database.h>
-#include <libstone/job.h>
+#include <libstone/library/media.h>
+#include <libstone/log.h>
+#include <libstone/user.h>
+#include <libstone/util/string.h>
 
-struct st_job_save_private {
-	struct st_database_connection * connect;
-};
+#include "save.h"
 
 static bool st_job_save_check(struct st_job * job);
 static void st_job_save_free(struct st_job * job);
@@ -63,7 +63,25 @@ static bool st_job_save_check(struct st_job * job __attribute__((unused))) {
 	return true;
 }
 
-static void st_job_save_free(struct st_job * job __attribute__((unused))) {}
+static void st_job_save_free(struct st_job * job) {
+	struct st_job_save_private * self = job->data;
+	if (self != NULL) {
+		self->connect->ops->close(self->connect);
+		self->connect->ops->free(self->connect);
+	}
+
+	if (self->nb_selected_paths > 0) {
+		unsigned int i;
+		for (i = 0; i < self->nb_selected_paths; i++)
+			free(self->selected_paths[i]);
+		free(self->selected_paths);
+		self->selected_paths = NULL;
+		self->nb_selected_paths = 0;
+	}
+
+	free(self);
+	job->data = NULL;
+}
 
 static void st_job_save_init(void) {
 	st_job_register_driver(&st_job_save_driver);
@@ -73,11 +91,44 @@ static void st_job_save_new_job(struct st_job * job, struct st_database_connecti
 	struct st_job_save_private * self = malloc(sizeof(struct st_job_save_private));
 	self->connect = db->config->ops->connect(db->config);
 
+	self->selected_paths = NULL;
+	self->nb_selected_paths = 0;
+
+	self->data_worker = NULL;
+
 	job->data = self;
 	job->ops = &st_job_save_ops;
 }
 
-static int st_job_save_run(struct st_job * job __attribute__((unused))) {
-	return 1;
+static int st_job_save_run(struct st_job * job) {
+	struct st_job_save_private * self = job->data;
+
+	st_job_add_record(self->connect, st_log_level_info, job, "Start archive job (job name: %s), num runs %ld", job->name, job->num_runs);
+
+	if (!job->user->can_archive) {
+		st_job_add_record(self->connect, st_log_level_error, job, "Error, user (%s) cannot create archive", job->user->login);
+		return 1;
+	}
+
+	struct st_pool * pool = st_pool_get_by_job(job, self->connect);
+	if (pool == NULL) {
+		pool = job->user->pool;
+		st_job_add_record(self->connect, st_log_level_info, job, "Using pool (%s) of user (%s)", pool->name, job->user->login);
+	}
+
+	self->selected_paths = self->connect->ops->get_selected_paths(self->connect, job, &self->nb_selected_paths);
+
+	ssize_t archive_size = 0;
+	unsigned int i;
+	for (i = 0; i < self->nb_selected_paths; i++) {
+		// remove double '/'
+		st_util_string_delete_double_char(self->selected_paths[i], '/');
+		// remove trailing '/'
+		st_util_string_rtrim(self->selected_paths[i], '/');
+
+		archive_size += st_job_save_compute_size(self->selected_paths[i]);
+	}
+
+	return 0;
 }
 

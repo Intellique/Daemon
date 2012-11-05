@@ -365,7 +365,7 @@ int st_job_format_tape_run(struct st_job * job) {
 	struct st_pool * pool = st_pool_get_by_job(job, self->connect);
 	if (pool == NULL) {
 		pool = job->user->pool;
-		st_job_add_record(self->connect, st_log_level_warning, job, "using default pool '%s' of user '%s'", pool->name, job->user->login);
+		st_job_add_record(self->connect, st_log_level_warning, job, "Using default pool '%s' of user '%s'", pool->name, job->user->login);
 	}
 
 	enum {

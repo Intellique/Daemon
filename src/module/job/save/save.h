@@ -22,39 +22,37 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 04 Nov 2012 22:07:34 +0100                         *
+*  Last modified: Sun, 04 Nov 2012 23:00:26 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONED_LIBRARY_CHANGER_H__
-#define __STONED_LIBRARY_CHANGER_H__
+#ifndef __STONE_JOB_SAVE_H__
+#define __STONE_JOB_SAVE_H__
 
-#include <libstone/library/changer.h>
+// size_t
+#include <sys/types.h>
 
-struct st_pool;
+#include <libstone/database.h>
+#include <libstone/job.h>
 
-/**
- * \brief Select a \a media by his \a pool
- *
- * This function will select a media from \a pool. But it will also exclude medias contained into \a previous_media.
- *
- * \param[in] pool : \a pool, should not be null
- * \param[in] previous_medias : previous medias returned by this function
- * \param[in] nb_medias : number of medias
- * \returns a locked slot which contains a media from \a pool
- */
-struct st_slot * st_changer_find_media_by_pool(struct st_pool * pool, struct st_media ** previous_medias, unsigned int nb_medias);
+struct st_job_save_private {
+	struct st_database_connection * connect;
 
-/**
- * \brief Retreive slot which contains \a media
- *
- * \param[in] media : a media
- * \returns a locked slot or NULL if \a media is not found or the slot which contains \e media is already locked
- */
-struct st_slot * st_changer_find_slot_by_media(struct st_media * media);
+	char ** selected_paths;
+	unsigned int nb_selected_paths;
 
-ssize_t st_changer_get_online_size(struct st_pool * pool);
+	struct st_job_save_data_worker {
+		struct st_job_save_data_worker_ops {
+			void (*free)(struct st_job_save_data_worker * worker);
+			int (*load_media)(struct st_job_save_data_worker * worker);
+			ssize_t (*write)(struct st_job_save_data_worker * worker, void * buffer, ssize_t length);
+		} * ops;
+		void * data;
+	} * data_worker;
+};
 
-int st_changer_setup(void);
+ssize_t st_job_save_compute_size(const char * path);
+
+struct st_job_save_data_worker * st_job_save_single_worker(struct st_pool * pool, ssize_t archive_size);
 
 #endif
 

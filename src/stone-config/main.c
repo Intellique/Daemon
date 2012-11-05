@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 22 Aug 2012 20:31:35 +0200                         *
+*  Last modified: Mon, 15 Oct 2012 09:58:55 +0200                         *
 \*************************************************************************/
 
 // getopt_long
@@ -41,7 +41,7 @@
 static void st_show_help(void);
 
 int main(int argc, char ** argv) {
-	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone config, version: %s, build: %s %s", STONE_VERSION, __DATE__, __TIME__);
+	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone config, version: " STONE_VERSION ", build: " __DATE__ " " __TIME__);
 
 	enum {
 		OPT_CONFIG  = 'c',

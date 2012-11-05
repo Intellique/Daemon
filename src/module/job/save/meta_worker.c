@@ -22,39 +22,61 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 04 Nov 2012 22:07:34 +0100                         *
+*  Last modified: Sun, 04 Nov 2012 20:21:16 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONED_LIBRARY_CHANGER_H__
-#define __STONED_LIBRARY_CHANGER_H__
+#define _GNU_SOURCE
+// scandir
+#include <dirent.h>
+// asprintf
+#include <stdio.h>
+// free
+#include <stdlib.h>
+// lstat
+#include <sys/stat.h>
+// lstat
+#include <sys/types.h>
+// access, lstat
+#include <unistd.h>
 
-#include <libstone/library/changer.h>
+#include <libstone/util/file.h>
 
-struct st_pool;
+#include "save.h"
 
-/**
- * \brief Select a \a media by his \a pool
- *
- * This function will select a media from \a pool. But it will also exclude medias contained into \a previous_media.
- *
- * \param[in] pool : \a pool, should not be null
- * \param[in] previous_medias : previous medias returned by this function
- * \param[in] nb_medias : number of medias
- * \returns a locked slot which contains a media from \a pool
- */
-struct st_slot * st_changer_find_media_by_pool(struct st_pool * pool, struct st_media ** previous_medias, unsigned int nb_medias);
+ssize_t st_job_save_compute_size(const char * path) {
+	if (path == NULL)
+		return 0;
 
-/**
- * \brief Retreive slot which contains \a media
- *
- * \param[in] media : a media
- * \returns a locked slot or NULL if \a media is not found or the slot which contains \e media is already locked
- */
-struct st_slot * st_changer_find_slot_by_media(struct st_media * media);
+	struct stat st;
+	if (lstat(path, &st))
+		return 0;
 
-ssize_t st_changer_get_online_size(struct st_pool * pool);
+	if (S_ISREG(st.st_mode))
+		return st.st_size;
 
-int st_changer_setup(void);
+	if (S_ISDIR(st.st_mode)) {
+		if (access(path, R_OK | X_OK))
+			return 0;
 
-#endif
+		struct dirent ** dl = 0;
+		int nb_files = scandir(path, &dl, st_util_file_basic_scandir_filter, 0);
+
+		int i;
+		ssize_t total = 0;
+		for (i = 0; i < nb_files; i++) {
+			char * subpath = 0;
+			asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
+
+			total = st_job_save_compute_size(subpath);
+
+			free(subpath);
+			free(dl[i]);
+		}
+		free(dl);
+
+		return total;
+	}
+
+	return 0;
+}
 

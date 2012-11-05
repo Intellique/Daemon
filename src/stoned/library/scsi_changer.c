@@ -28,7 +28,7 @@
 // open
 #include <fcntl.h>
 // pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate,
-//  pthread_create, pthread_join
+// pthread_create, pthread_join
 #include <pthread.h>
 // malloc
 #include <stdlib.h>

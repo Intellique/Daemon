@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 14 Oct 2012 20:17:55 +0200                         *
+*  Last modified: Sun, 04 Nov 2012 19:32:59 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -113,6 +113,7 @@ static int st_db_postgresql_get_media_format(struct st_database_connection * con
 static struct st_pool * st_db_postgresql_get_pool(struct st_database_connection * connect, struct st_job * job, const char * uuid);
 
 static int st_db_postgresql_add_job_record(struct st_database_connection * connect, struct st_job * job, const char * message);
+static char ** st_db_postgresql_get_selected_paths(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_paths);
 static int st_db_postgresql_sync_job(struct st_database_connection * connect, struct st_job *** jobs, unsigned int * nb_jobs);
 
 static int st_db_postgresql_get_user(struct st_database_connection * connect, struct st_user * user, const char * login);
@@ -140,8 +141,9 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.get_media_format = st_db_postgresql_get_media_format,
 	.get_pool         = st_db_postgresql_get_pool,
 
-	.add_job_record = st_db_postgresql_add_job_record,
-	.sync_job       = st_db_postgresql_sync_job,
+	.add_job_record     = st_db_postgresql_add_job_record,
+	.get_selected_paths = st_db_postgresql_get_selected_paths,
+	.sync_job           = st_db_postgresql_sync_job,
 
 	.get_user  = st_db_postgresql_get_user,
 	.sync_user = st_db_postgresql_sync_user,
@@ -1509,6 +1511,37 @@ static int st_db_postgresql_add_job_record(struct st_database_connection * conne
 	free(jobid);
 
 	return status != PGRES_COMMAND_OK;
+}
+
+static char ** st_db_postgresql_get_selected_paths(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_paths) {
+	if (connect == NULL || job == NULL || nb_paths == NULL)
+		return NULL;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	const char * query = "select_selected_paths_by_job";
+	st_db_postgresql_prepare(self, query, "SELECT path FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1)");
+
+	struct st_db_postgresql_job_data * job_data = job->db_data;
+	char * jobid;
+	asprintf(&jobid, "%ld", job_data->id);
+
+	const char * param[] = { jobid };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	char ** paths = NULL;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else {
+		*nb_paths = PQntuples(result);
+		paths = calloc(*nb_paths, sizeof(char *));
+
+		unsigned int i;
+		for (i = 0; i < *nb_paths; i++)
+			st_db_postgresql_get_string_dup(result, i, 0, paths + i);
+	}
+
+	return paths;
 }
 
 static int st_db_postgresql_sync_job(struct st_database_connection * connect, struct st_job *** jobs, unsigned int * nb_jobs) {

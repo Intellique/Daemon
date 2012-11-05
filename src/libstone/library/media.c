@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 20 Aug 2012 22:43:47 +0200                         *
+*  Last modified: Sun, 04 Nov 2012 23:08:05 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -248,6 +248,13 @@ static void st_media_add(struct st_media * media) {
 	}
 }
 
+ssize_t st_media_get_available_size(struct st_media * media) {
+	if (media == NULL || media->format == NULL)
+		return 0;
+
+	return media->format->capacity - media->end_position * media->block_size;
+}
+
 struct st_media * st_media_get_by_job(struct st_job * job, struct st_database_connection * connection) {
 	if (job == NULL)
 		return NULL;
@@ -397,9 +404,12 @@ int st_media_read_header(struct st_drive * drive) {
 
 		int nb_parsed2 = 0;
 		int ok = 1;
+		bool has_label = false;
 
-		if (sscanf(buffer + nb_parsed, "Label: %36s\n%n", name, &nb_parsed2) == 1)
+		if (sscanf(buffer + nb_parsed, "Label: %36s\n%n", name, &nb_parsed2) == 1) {
 			nb_parsed += nb_parsed2;
+			has_label = true;
+		}
 
 		if (ok && sscanf(buffer + nb_parsed, "Tape id: uuid=%37s\n%n", uuid, &nb_parsed2) == 1)
 			nb_parsed += nb_parsed2;
@@ -434,7 +444,8 @@ int st_media_read_header(struct st_drive * drive) {
 			st_log_write_all(st_log_level_debug, st_log_type_drive, "Found STone header in media with (uuid=%s, label=%s, blocksize=%zd)", uuid, name, block_size);
 
 			strcpy(media->uuid, uuid);
-			media->label = strdup(name);
+			if (has_label)
+				media->label = strdup(name);
 			media->name = strdup(name);
 			media->status = st_media_status_in_use;
 			media->block_size = block_size;

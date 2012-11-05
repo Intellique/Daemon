@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 22:59:13 +0200                         *
+*  Last modified: Sat, 03 Nov 2012 17:52:29 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -847,11 +847,7 @@ static ssize_t st_scsi_tape_drive_io_writer_get_available_size(struct st_stream_
 	// should be a multiple of blocksize
 	// return 59999977472 - self->position;
 
-	// we reserve 16 blocks at the end of tape
-	// if (tape->available_block <= 16)
-	// 	return 0;
-
-	return (media->available_block - 16) * media->block_size - self->buffer_used;
+	return media->format->capacity - media->end_position * media->block_size - self->position;
 }
 
 static ssize_t st_scsi_tape_drive_io_writer_get_block_size(struct st_stream_writer * io) {

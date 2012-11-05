@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 10:03:50 +0200                         *
+*  Last modified: Sun, 04 Nov 2012 23:38:36 +0100                         *
 \*************************************************************************/
 
 // open
@@ -64,25 +64,34 @@ struct st_slot * st_changer_find_media_by_pool(struct st_pool * pool, struct st_
 		unsigned int j;
 		for (j = 0; j < changer->nb_slots; j++) {
 			struct st_slot * slot = changer->slots + j;
+			struct st_drive * drive = slot->drive;
 
-			if (slot->lock->ops->try_lock(slot->lock))
+			if (drive != NULL && drive->lock->ops->try_lock(drive->lock))
+				continue;
+			else if (slot->lock->ops->try_lock(slot->lock))
 				continue;
 
 			struct st_media * media = slot->media;
-			if (!media || media->pool != pool) {
-				slot->lock->ops->unlock(slot->lock);
+			if (media == NULL || media->pool != pool) {
+				if (drive != NULL)
+					drive->lock->ops->unlock(drive->lock);
+				else
+					slot->lock->ops->unlock(slot->lock);
 				continue;
 			}
 
 			unsigned int k;
-			for (k = 0; media && k < nb_medias; k++)
+			for (k = 0; media != NULL && k < nb_medias; k++)
 				if (media == previous_medias[k])
 					media = NULL;
 
-			if (media)
+			if (media != NULL)
 				return slot;
 
-			slot->lock->ops->unlock(slot->lock);
+			if (drive != NULL)
+				drive->lock->ops->unlock(drive->lock);
+			else
+				slot->lock->ops->unlock(slot->lock);
 		}
 	}
 
@@ -104,6 +113,28 @@ struct st_slot * st_changer_find_slot_by_media(struct st_media * media) {
 	}
 
 	return NULL;
+}
+
+ssize_t st_changer_get_online_size(struct st_pool * pool) {
+	unsigned int i;
+	ssize_t total = 0;
+	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers; i++) {
+		struct st_changer * changer = st_changers + i;
+
+		unsigned int j;
+		for (j = 0; j < changer->nb_slots; j++) {
+			struct st_slot * slot = changer->slots + j;
+
+			struct st_media * media = slot->media;
+			if (media == NULL || media->pool != pool)
+				continue;
+
+			if (media != NULL)
+				total += media->format->capacity - media->end_position * media->block_size;
+		}
+	}
+
+	return total;
 }
 
 int st_changer_setup(void) {
