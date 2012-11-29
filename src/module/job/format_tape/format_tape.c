@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 10 Oct 2012 16:50:38 +0200                         *
+*  Last modified: Wed, 28 Nov 2012 19:23:37 +0100                         *
 \*************************************************************************/
 
 // sscanf
@@ -88,6 +88,9 @@ int st_job_format_tape_run(struct st_job * job) {
 
 	if (!job->pool)
 		job->pool = job->user->pool;
+
+	job->tape->locked = true;
+	st_tape_sync(job->tape);
 
 	enum {
 		alert_user,
@@ -201,6 +204,9 @@ int st_job_format_tape_run(struct st_job * job) {
 			has_drive_lock = 0;
 			has_changer_lock = 0;
 
+			job->tape->locked = false;
+			st_tape_sync(job->tape);
+
 			return 1;
 		}
 	}
@@ -216,6 +222,9 @@ int st_job_format_tape_run(struct st_job * job) {
 			drive->lock->ops->unlock(drive->lock);
 			has_drive_lock = 0;
 			has_changer_lock = 0;
+
+			job->tape->locked = false;
+			st_tape_sync(job->tape);
 
 			return 1;
 		}
@@ -317,6 +326,9 @@ int st_job_format_tape_run(struct st_job * job) {
 		job->db_ops->add_record(job, st_log_level_info, "Job: format tape finished with code = OK (job id: %ld), num runs %ld", job->id, job->num_runs);
 
 	free(self);
+
+	job->tape->locked = false;
+	st_tape_sync(job->tape);
 
 	return 0;
 }

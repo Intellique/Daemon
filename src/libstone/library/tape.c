@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 18 Oct 2012 11:06:39 +0200                         *
+*  Last modified: Wed, 28 Nov 2012 19:22:10 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -450,6 +450,21 @@ void st_tape_retrieve(struct st_tape ** tape, long id, const char * medium_seria
 
 	if (*tape != NULL && (*tape)->available_block == 0 && (*tape)->format != NULL)
 		(*tape)->available_block = (*tape)->format->capacity / (*tape)->block_size - (*tape)->end_position;
+}
+
+void st_tape_sync(struct st_tape * tape) {
+	if (tape == NULL)
+		return;
+
+	struct st_database * db = st_db_get_default_db();
+	struct st_database_connection * con = db->ops->connect(db, 0);
+	if (con) {
+		con->ops->sync_tape(con, tape);
+
+		con->ops->close(con);
+		con->ops->free(con);
+		free(con);
+	}
 }
 
 int st_tape_write_header(struct st_drive * dr, struct st_pool * pool) {

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 10 Sep 2012 18:51:33 +0200                         *
+*  Last modified: Wed, 28 Nov 2012 19:20:27 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_TAPE_H__
@@ -92,6 +92,7 @@ struct st_tape {
 	struct st_tape_format * format;
 	struct st_pool * pool;
 	char mam_ok; // data read from mam
+	volatile bool locked;
 };
 
 struct st_tape_format {
@@ -124,6 +125,7 @@ const char * st_tape_format_data_to_string(enum st_tape_format_data_type type);
 const char * st_tape_format_mode_to_string(enum st_tape_format_mode mode);
 const char * st_tape_location_to_string(enum st_tape_location location);
 const char * st_tape_status_to_string(enum st_tape_status status);
+void st_tape_sync(struct st_tape * tape);
 enum st_tape_location st_tape_string_to_location(const char * location);
 enum st_tape_status st_tape_string_to_status(const char * status);
 enum st_tape_format_data_type st_tape_string_to_format_data(const char * type);

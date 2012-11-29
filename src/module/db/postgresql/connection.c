@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 15 Oct 2012 19:20:42 +0200                         *
+*  Last modified: Thu, 29 Nov 2012 10:26:44 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1919,9 +1919,9 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 
 			PQclear(result);
 		}
-	} else {
+	} else if (!tape->locked) {
 		const char * query = "select_tape_by_id";
-		st_db_postgresql_prepare(self, query, "SELECT label, name FROM tape WHERE id = $1 FOR UPDATE NOWAIT");
+		st_db_postgresql_prepare(self, query, "SELECT label, name, pool FROM tape WHERE id = $1 FOR UPDATE NOWAIT");
 
 		char * tape_id = 0;
 		asprintf(&tape_id, "%ld", tape->id);
@@ -1935,6 +1935,14 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			st_db_postgresql_get_string(result, 0, 0, tape->label);
 			st_db_postgresql_get_string(result, 0, 1, tape->name);
+
+			long poolid = -1;
+			st_db_postgresql_get_long(result, 0, 2, &poolid);
+
+			if (poolid > -1)
+				tape->pool = st_pool_get_by_id(poolid);
+			else
+				tape->pool = NULL;
 		}
 
 		PQclear(result);
@@ -1947,7 +1955,7 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 	if (tape->medium_serial_number[0] != '\0' || tape->uuid[0] != '\0' || tape->label[0] != '\0') {
 		if (tape->id > -1) {
 			const char * query = "update_tape";
-			st_db_postgresql_prepare(self, query, "UPDATE tape SET uuid = $1, name = $2, status = $3, location = $4, loadcount = $5, readcount = $6, writecount = $7, endpos = $8, nbfiles = $9, blocksize = $10, haspartition = $11, pool = $12 WHERE id = $13");
+			st_db_postgresql_prepare(self, query, "UPDATE tape SET uuid = $1, name = $2, status = $3, location = $4, loadcount = $5, readcount = $6, writecount = $7, endpos = $8, nbfiles = $9, blocksize = $10, haspartition = $11, pool = $12, locked = $13 WHERE id = $14");
 
 			char * load, * read, * write, * endpos, * nbfiles, * blocksize, * pool = 0, * id;
 			asprintf(&load, "%ld", tape->load_count);
@@ -1956,7 +1964,7 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 			asprintf(&endpos, "%zd", tape->end_position);
 			asprintf(&nbfiles, "%u", tape->nb_files);
 			asprintf(&blocksize, "%zd", tape->block_size);
-			if (tape->pool)
+			if (tape->pool != NULL)
 				asprintf(&pool, "%ld", tape->pool->id);
 			asprintf(&id, "%ld", tape->id);
 
@@ -1964,9 +1972,10 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 				*tape->uuid ? tape->uuid : 0, tape->name, st_tape_status_to_string(tape->status),
 				st_tape_location_to_string(tape->location),
 				load, read, write, endpos, nbfiles, blocksize,
-				tape->has_partition ? "true" : "false", pool, id
+				tape->has_partition ? "true" : "false", pool,
+				tape->locked ? "true" : "false", id,
 			};
-			PGresult * result = PQexecPrepared(self->db_con, query, 13, param, 0, 0, 0);
+			PGresult * result = PQexecPrepared(self->db_con, query, 14, param, 0, 0, 0);
 			ExecStatusType status = PQresultStatus(result);
 
 			if (status == PGRES_FATAL_ERROR)
@@ -1986,7 +1995,7 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 			return status == PGRES_FATAL_ERROR;
 		} else {
 			const char * query = "insert_tape";
-			st_db_postgresql_prepare(self, query, "INSERT INTO tape(uuid, label, mediumserialnumber, name, status, location, firstused, usebefore, loadcount, readcount, writecount, endpos, nbfiles, blocksize, haspartition, tapeformat, pool) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING id");
+			st_db_postgresql_prepare(self, query, "INSERT INTO tape(uuid, label, mediumserialnumber, name, status, location, firstused, usebefore, loadcount, readcount, writecount, endpos, nbfiles, blocksize, haspartition, tapeformat, pool, locked) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id");
 
 			char buffer_first_used[32];
 			char buffer_use_before[32];
@@ -2017,9 +2026,10 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 				st_tape_location_to_string(tape->location),
 				buffer_first_used, buffer_use_before,
 				load, read, write, endpos, nbfiles, blocksize,
-				tape->has_partition ? "true" : "false", tapeformat, pool
+				tape->has_partition ? "true" : "false", tapeformat, pool,
+				tape->locked ? "true" : "false"
 			};
-			PGresult * result = PQexecPrepared(self->db_con, query, 17, param, 0, 0, 0);
+			PGresult * result = PQexecPrepared(self->db_con, query, 18, param, 0, 0, 0);
 			ExecStatusType status = PQresultStatus(result);
 
 			if (status == PGRES_FATAL_ERROR)
