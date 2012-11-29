@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Nov 2012 10:26:44 +0100                         *
+*  Last modified: Thu, 29 Nov 2012 14:46:12 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1941,8 +1941,10 @@ int st_db_postgresql_sync_tape(struct st_database_connection * connection, struc
 
 			if (poolid > -1)
 				tape->pool = st_pool_get_by_id(poolid);
-			else
+			else if (tape->pool != NULL) {
 				tape->pool = NULL;
+				tape->status = ST_TAPE_STATUS_NEW;
+			}
 		}
 
 		PQclear(result);
