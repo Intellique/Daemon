@@ -22,11 +22,21 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 04 Nov 2012 18:47:23 +0100                         *
+*  Last modified: Sun, 25 Nov 2012 20:27:21 +0100                         *
 \*************************************************************************/
 
+// open
+#include <fcntl.h>
 // free, malloc
 #include <stdlib.h>
+// strdup
+#include <string.h>
+// lstat, open
+#include <sys/stat.h>
+// lstat, open
+#include <sys/types.h>
+// access, lstat
+#include <unistd.h>
 
 #include <libstone/library/media.h>
 #include <libstone/log.h>
@@ -35,6 +45,7 @@
 
 #include "save.h"
 
+static int st_job_save_archive(struct st_job * job, const struct st_job_selected_path * path);
 static bool st_job_save_check(struct st_job * job);
 static void st_job_save_free(struct st_job * job);
 static void st_job_save_init(void) __attribute__((constructor));
@@ -59,6 +70,60 @@ static struct st_job_driver st_job_save_driver = {
 };
 
 
+static int st_job_save_archive(struct st_job * job, const struct st_job_selected_path * p) {
+	struct st_job_save_private * self = job->data;
+
+	if (st_util_string_check_valid_utf8(p->path)) {
+		char * fixed_path = strdup(p->path);
+		st_util_string_fix_invalid_utf8(fixed_path);
+
+		st_job_add_record(self->connect, st_log_level_warning, job, "Path '%s' contains invalid utf8 characters", fixed_path);
+
+		free(fixed_path);
+		return 0;
+	}
+
+	struct stat st;
+	if (lstat(p->path, &st)) {
+		st_job_add_record(self->connect, st_log_level_warning, job, "Error while getting information about: %s", p->path);
+		return 0;
+	}
+
+	if (S_ISSOCK(st.st_mode))
+		return 0;
+
+	self->worker->ops->add_file(self->worker, p->path);
+
+	if (S_ISREG(st.st_mode)) {
+		int fd = open(p->path, O_RDONLY);
+		if (fd < 0) {
+			st_job_add_record(self->connect, st_log_level_warning, job, "Error while opening file: '%s' because %m", p->path);
+			return 0;
+		}
+
+		char buffer[4096];
+
+		ssize_t nb_read = read(fd, buffer, 4096);
+
+		while (nb_read > 0) {
+			self->worker->ops->write(self->worker, buffer, nb_read);
+
+			nb_read = read(fd, buffer, 4096);
+		}
+
+		if (nb_read < 0) {
+			st_job_add_record(self->connect, st_log_level_error, job, "Unexpected error while reading from file '%s' because %m", p->path);
+		}
+
+		close(fd);
+	} else if (S_ISDIR(st.st_mode)) {
+		if (access(p->path, F_OK | R_OK | X_OK)) {
+		}
+	}
+
+	return 0;
+}
+
 static bool st_job_save_check(struct st_job * job __attribute__((unused))) {
 	return true;
 }
@@ -72,8 +137,11 @@ static void st_job_save_free(struct st_job * job) {
 
 	if (self->nb_selected_paths > 0) {
 		unsigned int i;
-		for (i = 0; i < self->nb_selected_paths; i++)
-			free(self->selected_paths[i]);
+		for (i = 0; i < self->nb_selected_paths; i++) {
+			struct st_job_selected_path * p = self->selected_paths + i;
+			free(p->path);
+			free(p->db_data);
+		}
 		free(self->selected_paths);
 		self->selected_paths = NULL;
 		self->nb_selected_paths = 0;
@@ -94,7 +162,7 @@ static void st_job_save_new_job(struct st_job * job, struct st_database_connecti
 	self->selected_paths = NULL;
 	self->nb_selected_paths = 0;
 
-	self->data_worker = NULL;
+	self->worker = NULL;
 
 	job->data = self;
 	job->ops = &st_job_save_ops;
@@ -121,13 +189,17 @@ static int st_job_save_run(struct st_job * job) {
 	ssize_t archive_size = 0;
 	unsigned int i;
 	for (i = 0; i < self->nb_selected_paths; i++) {
+		struct st_job_selected_path * p = self->selected_paths + i;
 		// remove double '/'
-		st_util_string_delete_double_char(self->selected_paths[i], '/');
+		st_util_string_delete_double_char(p->path, '/');
 		// remove trailing '/'
-		st_util_string_rtrim(self->selected_paths[i], '/');
+		st_util_string_rtrim(p->path, '/');
 
-		archive_size += st_job_save_compute_size(self->selected_paths[i]);
+		archive_size += st_job_save_compute_size(p->path);
 	}
+
+	self->worker = st_job_save_single_worker(job, pool, archive_size, self->connect);
+	self->worker->ops->load_media(self->worker);
 
 	return 0;
 }

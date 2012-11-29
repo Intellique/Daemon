@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 04 Nov 2012 23:38:36 +0100                         *
+*  Last modified: Mon, 05 Nov 2012 20:51:53 +0100                         *
 \*************************************************************************/
 
 // open
@@ -55,6 +55,43 @@
 static struct st_changer * st_changers = NULL;
 static unsigned int st_nb_fake_changers = 0;
 static unsigned int st_nb_real_changers = 0;
+
+struct st_slot * st_changer_find_free_media_by_format(struct st_media_format * format) {
+	unsigned int i;
+	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers; i++) {
+		struct st_changer * changer = st_changers + i;
+
+		unsigned int j;
+		for (j = 0; j < changer->nb_slots; j++) {
+			struct st_slot * slot = changer->slots + j;
+			struct st_drive * drive = slot->drive;
+
+			if (drive != NULL && drive->lock->ops->try_lock(drive->lock))
+				continue;
+			else if (slot->lock->ops->try_lock(slot->lock))
+				continue;
+
+			struct st_media * media = slot->media;
+			if (media == NULL || media->format != format) {
+				if (drive != NULL)
+					drive->lock->ops->unlock(drive->lock);
+				else
+					slot->lock->ops->unlock(slot->lock);
+				continue;
+			}
+
+			if (media != NULL)
+				return slot;
+
+			if (drive != NULL)
+				drive->lock->ops->unlock(drive->lock);
+			else
+				slot->lock->ops->unlock(slot->lock);
+		}
+	}
+
+	return NULL;
+}
 
 struct st_slot * st_changer_find_media_by_pool(struct st_pool * pool, struct st_media ** previous_medias, unsigned int nb_medias) {
 	unsigned int i;

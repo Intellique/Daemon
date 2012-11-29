@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 14 Oct 2012 20:27:44 +0200                         *
+*  Last modified: Sun, 25 Nov 2012 15:17:49 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -87,6 +87,11 @@ struct st_job_driver {
 	void (*new_job)(struct st_job * job, struct st_database_connection * db);
 	void * cookie;
 	const struct st_plugin api_level;
+};
+
+struct st_job_selected_path {
+	char * path;
+	void * db_data;
 };
 
 #define STONE_JOB_API_LEVEL 1

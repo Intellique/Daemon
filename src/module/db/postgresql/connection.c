@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 04 Nov 2012 19:32:59 +0100                         *
+*  Last modified: Sun, 25 Nov 2012 15:23:38 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -80,6 +80,10 @@ struct st_db_postgresql_media_data {
 	long id;
 };
 
+struct st_db_postgresql_selected_path_data {
+	long id;
+};
+
 struct st_db_postgresql_slot_data {
 	long id;
 };
@@ -108,12 +112,13 @@ static int st_db_postgresql_sync_drive(struct st_database_connection * connect, 
 static int st_db_postgresql_sync_media(struct st_database_connection * connect, struct st_media * media);
 static int st_db_postgresql_sync_slot(struct st_database_connection * connect, struct st_slot * slot);
 
+static ssize_t st_db_postgresql_get_available_size_of_offline_media_from_pool(struct st_database_connection * connect, struct st_pool * pool);
 static struct st_media * st_db_postgresql_get_media(struct st_database_connection * connect, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label);
 static int st_db_postgresql_get_media_format(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, enum st_media_format_mode mode);
 static struct st_pool * st_db_postgresql_get_pool(struct st_database_connection * connect, struct st_job * job, const char * uuid);
 
 static int st_db_postgresql_add_job_record(struct st_database_connection * connect, struct st_job * job, const char * message);
-static char ** st_db_postgresql_get_selected_paths(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_paths);
+static struct st_job_selected_path * st_db_postgresql_get_selected_paths(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_paths);
 static int st_db_postgresql_sync_job(struct st_database_connection * connect, struct st_job *** jobs, unsigned int * nb_jobs);
 
 static int st_db_postgresql_get_user(struct st_database_connection * connect, struct st_user * user, const char * login);
@@ -137,9 +142,10 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.sync_changer             = st_db_postgresql_sync_changer,
 	.sync_drive               = st_db_postgresql_sync_drive,
 
-	.get_media        = st_db_postgresql_get_media,
-	.get_media_format = st_db_postgresql_get_media_format,
-	.get_pool         = st_db_postgresql_get_pool,
+	.get_available_size_of_offline_media_from_pool = st_db_postgresql_get_available_size_of_offline_media_from_pool,
+	.get_media                                     = st_db_postgresql_get_media,
+	.get_media_format                              = st_db_postgresql_get_media_format,
+	.get_pool                                      = st_db_postgresql_get_pool,
 
 	.add_job_record     = st_db_postgresql_add_job_record,
 	.get_selected_paths = st_db_postgresql_get_selected_paths,
@@ -1296,6 +1302,29 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 }
 
 
+static ssize_t st_db_postgresql_get_available_size_of_offline_media_from_pool(struct st_database_connection * connect, struct st_pool * pool) {
+	if (connect == NULL || pool == NULL)
+		return -1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_available_offline_size_by_pool";
+	st_db_postgresql_prepare(self, query, "SELECT SUM(tf.capacity - t.endpos * t.blocksize::BIGINT) AS total FROM tape t LEFT JOIN tapeformat tf ON t.tapeformat = tf.id WHERE location = 'offline' AND pool IN (SELECT id FROM pool WHERE uuid = $1 LIMIT 1)");
+
+	const char * param[] = { pool->uuid };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	ssize_t total = 0;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1 && !PQgetisnull(result, 0, 0))
+		st_db_postgresql_get_ssize(result, 0, 0, &total);
+
+	PQclear(result);
+	return total;
+}
+
 static struct st_media * st_db_postgresql_get_media(struct st_database_connection * connect, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label) {
 	if (connect == NULL || (job == NULL && uuid == NULL && medium_serial_number == NULL && label == NULL))
 		return NULL;
@@ -1513,13 +1542,13 @@ static int st_db_postgresql_add_job_record(struct st_database_connection * conne
 	return status != PGRES_COMMAND_OK;
 }
 
-static char ** st_db_postgresql_get_selected_paths(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_paths) {
+static struct st_job_selected_path * st_db_postgresql_get_selected_paths(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_paths) {
 	if (connect == NULL || job == NULL || nb_paths == NULL)
 		return NULL;
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	const char * query = "select_selected_paths_by_job";
-	st_db_postgresql_prepare(self, query, "SELECT path FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1)");
+	st_db_postgresql_prepare(self, query, "SELECT id, path FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1)");
 
 	struct st_db_postgresql_job_data * job_data = job->db_data;
 	char * jobid;
@@ -1529,16 +1558,21 @@ static char ** st_db_postgresql_get_selected_paths(struct st_database_connection
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
-	char ** paths = NULL;
+	struct st_job_selected_path * paths = NULL;
 	if (status == PGRES_FATAL_ERROR)
 		st_db_postgresql_get_error(result, query);
 	else {
 		*nb_paths = PQntuples(result);
-		paths = calloc(*nb_paths, sizeof(char *));
+		paths = calloc(*nb_paths, sizeof(struct st_job_selected_path));
 
 		unsigned int i;
-		for (i = 0; i < *nb_paths; i++)
-			st_db_postgresql_get_string_dup(result, i, 0, paths + i);
+		for (i = 0; i < *nb_paths; i++) {
+			struct st_job_selected_path * path = paths + i;
+			st_db_postgresql_get_string_dup(result, i, 1, &path->path);
+
+			struct st_db_postgresql_selected_path_data * data = path->db_data = malloc(sizeof(struct st_db_postgresql_selected_path_data));
+			st_db_postgresql_get_long(result, i, 0, &data->id);
+		}
 	}
 
 	return paths;

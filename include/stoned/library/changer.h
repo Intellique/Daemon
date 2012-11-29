@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 04 Nov 2012 22:07:34 +0100                         *
+*  Last modified: Mon, 05 Nov 2012 20:49:06 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONED_LIBRARY_CHANGER_H__
@@ -31,6 +31,8 @@
 #include <libstone/library/changer.h>
 
 struct st_pool;
+
+struct st_slot * st_changer_find_free_media_by_format(struct st_media_format * format);
 
 /**
  * \brief Select a \a media by his \a pool

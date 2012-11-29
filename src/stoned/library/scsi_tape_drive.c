@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 03 Nov 2012 17:52:29 +0100                         *
+*  Last modified: Sun, 25 Nov 2012 15:13:59 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -108,7 +108,7 @@ static ssize_t st_scsi_tape_drive_get_block_size(struct st_drive * drive);
 static struct st_stream_reader * st_scsi_tape_drive_get_raw_reader(struct st_drive * drive, int file_position);
 static struct st_stream_writer * st_scsi_tape_drive_get_raw_writer(struct st_drive * drive, int file_position);
 static struct st_format_reader * st_scsi_tape_drive_get_reader(struct st_drive * drive, int file_position);
-static struct st_format_writer * st_scsi_tape_drive_get_writer(struct st_drive * drive, int file_position);
+static struct st_format_writer * st_scsi_tape_drive_get_writer(struct st_drive * drive, int file_position, struct st_stream_writer * (*filter)(struct st_stream_writer * writer));
 static void st_scsi_tape_drive_on_failed(struct st_drive * drive, int verbose, int sleep_time);
 static void st_scsi_tape_drive_operation_start(struct st_scsi_tape_drive_private * dr);
 static void st_scsi_tape_drive_operation_stop(struct st_drive * dr);
@@ -394,10 +394,20 @@ static struct st_format_reader * st_scsi_tape_drive_get_reader(struct st_drive *
 	return NULL;
 }
 
-static struct st_format_writer * st_scsi_tape_drive_get_writer(struct st_drive * drive, int file_position) {
+static struct st_format_writer * st_scsi_tape_drive_get_writer(struct st_drive * drive, int file_position, struct st_stream_writer * (*filter)(struct st_stream_writer * writer)) {
 	struct st_stream_writer * writer = st_scsi_tape_drive_get_raw_writer(drive, file_position);
-	if (writer != NULL)
+	if (writer != NULL) {
+		if (filter != NULL) {
+			struct st_stream_writer * tmp_io = filter(writer);
+			if (tmp_io != NULL)
+				writer = tmp_io;
+			else {
+				writer->ops->free(writer);
+				return NULL;
+			}
+		}
 		return st_tar_get_writer(writer);
+	}
 	return NULL;
 }
 

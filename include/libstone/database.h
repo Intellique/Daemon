@@ -22,11 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 04 Nov 2012 18:57:00 +0100                         *
+*  Last modified: Sun, 25 Nov 2012 15:18:48 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
 #define __STONE_DATABASE_H__
+
+// ssize_t
+#include <sys/types.h>
 
 #include "plugin.h"
 
@@ -34,6 +37,7 @@ struct st_changer;
 struct st_drive;
 struct st_hashtable;
 struct st_job;
+struct st_job_selected_path;
 struct st_media;
 struct st_media_format;
 enum st_media_format_mode;
@@ -160,12 +164,13 @@ struct st_database_connection {
 		 */
 		int (*sync_drive)(struct st_database_connection * connect, struct st_drive * drive);
 
+		ssize_t (*get_available_size_of_offline_media_from_pool)(struct st_database_connection * connect, struct st_pool * pool);
 		struct st_media * (*get_media)(struct st_database_connection * connect, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label);
 		int (*get_media_format)(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, enum st_media_format_mode mode);
 		struct st_pool * (*get_pool)(struct st_database_connection * connect, struct st_job * job, const char * uuid);
 
 		int (*add_job_record)(struct st_database_connection * connect, struct st_job * job, const char * message);
-		char ** (*get_selected_paths)(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_paths);
+		struct st_job_selected_path * (*get_selected_paths)(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_paths);
 		int (*sync_job)(struct st_database_connection * connect, struct st_job *** jobs, unsigned int * nb_jobs);
 
 		int (*get_user)(struct st_database_connection * connect, struct st_user * user, const char * login);

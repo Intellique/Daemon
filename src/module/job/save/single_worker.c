@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 04 Nov 2012 20:44:50 +0100                         *
+*  Last modified: Mon, 05 Nov 2012 22:42:00 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -35,11 +35,15 @@
 #include <libstone/library/drive.h>
 #include <libstone/library/ressource.h>
 #include <libstone/library/slot.h>
+#include <libstone/log.h>
 #include <stoned/library/changer.h>
 
 #include "save.h"
 
 struct st_job_save_single_worker_private {
+	struct st_job * job;
+	struct st_database_connection * connect;
+
 	struct st_pool * pool;
 
 	ssize_t total_done;
@@ -64,8 +68,11 @@ static struct st_job_save_data_worker_ops st_job_save_single_worker_ops = {
 };
 
 
-struct st_job_save_data_worker * st_job_save_single_worker(struct st_pool * pool, ssize_t archive_size) {
+struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, struct st_pool * pool, ssize_t archive_size, struct st_database_connection * connect) {
 	struct st_job_save_single_worker_private * self = malloc(sizeof(struct st_job_save_single_worker_private));
+	self->job = job;
+	self->connect = connect;
+
 	self->pool = pool;
 
 	self->total_done = 0;
@@ -104,9 +111,17 @@ static void st_job_save_single_worker_free(struct st_job_save_data_worker * work
 }
 
 static int st_job_save_single_worker_load_media(struct st_job_save_data_worker * worker) {
+	struct st_job_save_single_worker_private * self = worker->data;
+
+	if (st_job_save_single_worker_select_media(self)) {
+	}
+
+	return 0;
 }
 
 static bool st_job_save_single_worker_select_media(struct st_job_save_single_worker_private * self) {
+	bool has_alerted_user = false;
+	bool ok = false;
 	bool stop = false;
 	enum state {
 		check_offline_free_size_left,
@@ -126,6 +141,22 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 
 	while (!stop) {
 		switch (state) {
+			case check_offline_free_size_left:
+				total_size += self->connect->ops->get_available_size_of_offline_media_from_pool(self->connect, self->pool);
+
+				if (self->archive_size - self->total_done < total_size) {
+					// alert user
+					if (!has_alerted_user)
+						st_job_add_record(self->connect, st_log_level_warning, self->job, "Please, insert media which is a part of pool named %s", self->pool->name);
+					has_alerted_user = true;
+
+					state = find_free_drive;
+				} else {
+					state = is_pool_growable2;
+				}
+
+				break;
+
 			case check_online_free_size_left:
 				total_size = st_changer_get_online_size(self->pool);
 
@@ -133,6 +164,7 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 					if (slot == drive->slot) {
 						// media is already loaded
 						stop = true;
+						ok = true;
 						break;
 					}
 
@@ -141,6 +173,7 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 
 						if (self->archive_size - self->total_done < media_available) {
 							stop = true;
+							ok = true;
 							break;
 						}
 
@@ -163,6 +196,7 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 					}
 
 					stop = true;
+					ok = true;
 					break;
 				}
 
@@ -172,7 +206,7 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 
 			case check_media_free_space:
 				if (st_media_get_available_size(drive->slot->media) >= drive->slot->media->format->capacity / 10)
-					stop = true;
+					stop = true, ok = true;
 				else
 					state = is_pool_growable1;
 
@@ -219,14 +253,51 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 
 			case is_pool_growable1:
 				if (self->pool->growable) {
+					// assume that slot, drive, changer are NULL
+					slot = st_changer_find_free_media_by_format(self->pool->format);
+
+					if (slot != NULL) {
+						drive = slot->drive;
+						changer = slot->changer;
+
+						while (drive == NULL) {
+							drive = changer->ops->find_free_drive(changer);
+							// pause
+						}
+
+						if (drive != NULL && drive->slot != slot) {
+							if (drive->slot->media != NULL)
+								changer->ops->unload(changer, drive);
+
+							changer->ops->load_slot(changer, slot, drive);
+						}
+
+						st_media_write_header(drive, self->pool);
+					}
 				}
 
 				state = check_offline_free_size_left;
 				break;
+
+			case is_pool_growable2:
+				if (self->pool->growable && !has_alerted_user) {
+				} else if (!has_alerted_user) {
+				}
+
+				// wait
+
+				state = check_online_free_size_left;
+				break;
 		}
 	}
 
-	return true;
+	if (ok && drive != NULL && drive->slot != slot)
+		changer->ops->load_slot(changer, slot, drive);
+
+	if (ok)
+		self->drive = drive;
+
+	return ok;
 }
 
 static ssize_t st_job_save_single_worker_write(struct st_job_save_data_worker * worker, void * buffer, ssize_t length) {

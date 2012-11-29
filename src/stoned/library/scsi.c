@@ -106,7 +106,7 @@ struct scsi_loader_data_transfer_element {
     unsigned char reserved8:4;
     unsigned char reserved9;
     unsigned char identifier_length_1;
-    unsigned char device_identifier_1[34];
+    char device_identifier_1[34];
     unsigned char code_set_2:4;
     unsigned char reserved10:4;
     unsigned char identifier_type_2:4;
@@ -428,7 +428,7 @@ static bool st_scsi_loader_has_drive2(int fd, struct st_changer * changer, int s
 			dev[23] = ' ';
 			strcpy(dev + 24, drive->serial_number);
 
-			if (!strncmp((char *) data_transfer_element->device_identifier_1, dev, 34))
+			if (!strncmp(data_transfer_element->device_identifier_1, dev, 34))
 				found = true;
 		}
 
