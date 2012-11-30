@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Nov 2012 17:11:08 +0100                         *
+*  Last modified: Fri, 30 Nov 2012 17:44:56 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -691,6 +691,9 @@ struct st_drive * st_job_save_select_tape(struct st_job * job) {
 							return drive;
 						}
 					} else {
+						drive->slot->tape->locked = true;
+						st_tape_sync(drive->slot->tape);
+
 						drive->ops->eod(drive);
 						return drive;
 					}
@@ -773,7 +776,7 @@ struct st_drive * st_job_save_select_tape(struct st_job * job) {
 					}
 
 					if (sl != NULL) {
-						if (drive->slot != sl) {
+						if (drive->slot != sl && drive->slot->tape != NULL) {
 							drive->ops->eject(drive);
 							changer->ops->unload(changer, drive);
 						}
@@ -783,6 +786,8 @@ struct st_drive * st_job_save_select_tape(struct st_job * job) {
 							changer->ops->load(changer, sl, drive);
 							changer->lock->ops->unlock(changer->lock);
 							sl->lock->ops->unlock(sl->lock);
+
+							drive->ops->reset(drive, false, false);
 						}
 
 						st_tape_write_header(drive, job->pool);
