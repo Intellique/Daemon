@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Nov 2012 10:12:05 +0100                         *
+*  Last modified: Thu, 29 Nov 2012 17:11:08 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -561,8 +561,13 @@ int st_job_save_run(struct st_job * job) {
 		// release some memory
 		jp->tar->ops->free(jp->tar);
 		st_archive_free(job->archive);
-		//job->archive = 0;
-		//
+
+		free(jp->buffer);
+		jp->buffer = NULL;
+
+		free(jp->savepoints);
+		jp->savepoints = NULL;
+		jp->nb_savepoints = 0;
 
 		if (!failed) {
 			// write index file
@@ -586,6 +591,10 @@ int st_job_save_run(struct st_job * job) {
 
 	drive->slot->tape->locked = false;
 	st_tape_sync(drive->slot->tape);
+
+	free(jp->tapes);
+	jp->tapes = NULL;
+	jp->nb_tapes = 0;
 
 	drive->lock->ops->unlock(drive->lock);
 

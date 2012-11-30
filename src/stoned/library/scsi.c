@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 01 Oct 2012 11:28:47 +0200                         *
+*  Last modified: Thu, 29 Nov 2012 19:12:57 +0100                         *
 \*************************************************************************/
 
 // htobe16
@@ -542,6 +542,7 @@ void st_scsi_loader_status_new(int fd, struct st_changer * changer) {
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
+	memset(&result, 0, sizeof(result));
 
 	header.interface_id = 'S';
 	header.cmd_len = sizeof(command);
@@ -1107,6 +1108,7 @@ int st_scsi_tape_read_mam(int fd, struct st_tape * tape) {
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
+	memset(buffer, 0, 1024);
 
 	header.interface_id = 'S';
 	header.cmd_len = sizeof(command);
