@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 14 Oct 2012 22:34:55 +0200                         *
+*  Last modified: Mon, 03 Dec 2012 23:59:29 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -142,7 +142,7 @@ static void st_sched_run_job(void * arg) {
 	}
 
 	if (job->sched_status == st_job_status_running)
-		job->sched_status = st_job_status_idle;
+		job->sched_status = job->repetition != 0 ? st_job_status_idle : st_job_status_finished;
 
 	st_log_write_all(st_log_level_info, st_log_type_scheduler, "Job %s finished, with exited code = %d", job->name, status);
 }
