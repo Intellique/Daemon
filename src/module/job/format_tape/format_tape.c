@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 03 Dec 2012 22:39:35 +0100                         *
+*  Last modified: Mon, 03 Dec 2012 23:48:56 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -450,6 +450,11 @@ int st_job_format_tape_run(struct st_job * job) {
 	if (job->db_status != st_job_status_stopped)
 		job->done = 0.2;
 
+	// lock media and sync it with database
+	media->locked = true;
+	media->lock->ops->lock(media->lock);
+	self->connect->ops->sync_media(self->connect, media);
+
 	if (job->db_status != st_job_status_stopped && drive->slot->media != NULL && drive->slot->media != media) {
 		st_job_add_record(self->connect, st_log_level_info, job, "unloading media: %s from drive: { %s, %s, #%td }", drive->slot->media->name, drive->vendor, drive->model, drive - drive->changer->drives);
 		int failed = slot->changer->ops->unload(slot->changer, drive);
@@ -460,6 +465,10 @@ int st_job_format_tape_run(struct st_job * job) {
 				slot->lock->ops->unlock(slot->lock);
 			if (has_lock_on_drive)
 				drive->lock->ops->unlock(drive->lock);
+
+			media->locked = false;
+			media->lock->ops->unlock(media->lock);
+			self->connect->ops->sync_media(self->connect, media);
 
 			return 2;
 		}
@@ -483,6 +492,10 @@ int st_job_format_tape_run(struct st_job * job) {
 
 			if (has_lock_on_drive)
 				drive->lock->ops->unlock(drive->lock);
+
+			media->locked = false;
+			media->lock->ops->unlock(media->lock);
+			self->connect->ops->sync_media(self->connect, media);
 
 			return 3;
 		}
@@ -561,6 +574,10 @@ int st_job_format_tape_run(struct st_job * job) {
 	} else {
 		st_job_add_record(self->connect, st_log_level_warning, job, "Job: format tape aborted by user before formatting media");
 	}
+
+	media->locked = false;
+	media->lock->ops->unlock(media->lock);
+	self->connect->ops->sync_media(self->connect, media);
 
 	if (drive != NULL && has_lock_on_drive)
 		drive->lock->ops->unlock(drive->lock);

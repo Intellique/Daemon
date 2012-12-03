@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 03 Dec 2012 22:17:39 +0100                         *
+*  Last modified: Mon, 03 Dec 2012 23:45:48 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -115,6 +115,7 @@ struct st_media {
 	struct st_pool * pool;
 
 	struct st_ressource * lock;
+	volatile bool locked;
 
 	void * db_data;
 };

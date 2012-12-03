@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 03 Dec 2012 22:31:44 +0100                         *
+*  Last modified: Mon, 03 Dec 2012 23:47:32 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -575,8 +575,10 @@ static struct st_media * st_media_retrieve(struct st_database_connection * conne
 		connection->ops->free(connection);
 	}
 
-	if (media != NULL)
+	if (media != NULL) {
 		media->lock = st_ressource_new();
+		media->locked = false;
+	}
 
 	return media;
 }

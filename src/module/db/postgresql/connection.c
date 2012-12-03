@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 03 Dec 2012 21:52:54 +0100                         *
+*  Last modified: Mon, 03 Dec 2012 23:07:25 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1091,7 +1091,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 			asprintf(&mediaid, "%ld", media_data->id);
 
 		bool locked = true;
-		if (!media->lock->ops->try_lock(media->lock)) {
+		if (!media->locked && !media->lock->ops->try_lock(media->lock)) {
 			locked = false;
 
 			const char * query = "select_media_before_update";
@@ -1824,7 +1824,7 @@ static int st_db_postgresql_sync_user(struct st_database_connection * connect, s
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	const char * query = "select_user_by_id";
-	st_db_postgresql_prepare(self, query, "SELECT login, password, salt, fullname, email, isadmin, canarchive, canrestore, disabled, uuid FROM users u LEFT JOIN pool p ON u.pool = p.id WHERE id = $1 LIMIT 1");
+	st_db_postgresql_prepare(self, query, "SELECT login, password, salt, fullname, email, isadmin, canarchive, canrestore, disabled, uuid FROM users u LEFT JOIN pool p ON u.pool = p.id WHERE u.id = $1 LIMIT 1");
 
 	struct st_db_postgresql_user_data * user_data = user->db_data;
 
