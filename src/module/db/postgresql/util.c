@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 23:05:12 +0200                         *
+*  Last modified: Mon, 03 Dec 2012 21:24:41 +0100                         *
 \*************************************************************************/
 
 #define _XOPEN_SOURCE 500
@@ -104,8 +104,11 @@ int st_db_postgresql_get_string(PGresult * result, int row, int column, char * s
 }
 
 int st_db_postgresql_get_string_dup(PGresult * result, int row, int column, char ** string) {
-	if (column < 0)
+	if (row < 0 || column < 0)
 		return -1;
+
+	if (PQgetisnull(result, row, column))
+		return 1;
 
 	char * value = PQgetvalue(result, row, column);
 	if (value)
