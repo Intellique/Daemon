@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 22:36:19 +0200                         *
+*  Last modified: Mon, 03 Dec 2012 21:36:04 +0100                         *
 \*************************************************************************/
 
 // pthread_mutex_lock, pthread_mutex_unlock
@@ -74,6 +74,7 @@ struct st_user * st_user_get(const char * login) {
 				if (new_addr != NULL) {
 					st_users = new_addr;
 					user = st_users[st_user_nb_users] = malloc(sizeof(struct st_user));
+					st_user_nb_users++;
 					memcpy(user, &user2, sizeof(struct st_user));
 				} else {
 					free(user2.login);
