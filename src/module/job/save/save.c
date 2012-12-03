@@ -22,13 +22,19 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 25 Nov 2012 20:27:21 +0100                         *
+*  Last modified: Fri, 30 Nov 2012 13:51:53 +0100                         *
 \*************************************************************************/
 
+// asprintf, versionsort
+#define _GNU_SOURCE
+// scandir
+#include <dirent.h>
 // open
 #include <fcntl.h>
 // free, malloc
 #include <stdlib.h>
+// asprintf
+#include <stdio.h>
 // strdup
 #include <string.h>
 // lstat, open
@@ -41,11 +47,12 @@
 #include <libstone/library/media.h>
 #include <libstone/log.h>
 #include <libstone/user.h>
+#include <libstone/util/file.h>
 #include <libstone/util/string.h>
 
 #include "save.h"
 
-static int st_job_save_archive(struct st_job * job, const struct st_job_selected_path * path);
+static int st_job_save_archive(struct st_job * job, const struct st_job_selected_path * selected_path, const char * path);
 static bool st_job_save_check(struct st_job * job);
 static void st_job_save_free(struct st_job * job);
 static void st_job_save_init(void) __attribute__((constructor));
@@ -70,11 +77,11 @@ static struct st_job_driver st_job_save_driver = {
 };
 
 
-static int st_job_save_archive(struct st_job * job, const struct st_job_selected_path * p) {
+static int st_job_save_archive(struct st_job * job, const struct st_job_selected_path * selected_path, const char * path) {
 	struct st_job_save_private * self = job->data;
 
-	if (st_util_string_check_valid_utf8(p->path)) {
-		char * fixed_path = strdup(p->path);
+	if (st_util_string_check_valid_utf8(path)) {
+		char * fixed_path = strdup(path);
 		st_util_string_fix_invalid_utf8(fixed_path);
 
 		st_job_add_record(self->connect, st_log_level_warning, job, "Path '%s' contains invalid utf8 characters", fixed_path);
@@ -84,20 +91,20 @@ static int st_job_save_archive(struct st_job * job, const struct st_job_selected
 	}
 
 	struct stat st;
-	if (lstat(p->path, &st)) {
-		st_job_add_record(self->connect, st_log_level_warning, job, "Error while getting information about: %s", p->path);
+	if (lstat(path, &st)) {
+		st_job_add_record(self->connect, st_log_level_warning, job, "Error while getting information about: %s", path);
 		return 0;
 	}
 
 	if (S_ISSOCK(st.st_mode))
 		return 0;
 
-	self->worker->ops->add_file(self->worker, p->path);
+	self->worker->ops->add_file(self->worker, path);
 
 	if (S_ISREG(st.st_mode)) {
-		int fd = open(p->path, O_RDONLY);
+		int fd = open(path, O_RDONLY);
 		if (fd < 0) {
-			st_job_add_record(self->connect, st_log_level_warning, job, "Error while opening file: '%s' because %m", p->path);
+			st_job_add_record(self->connect, st_log_level_warning, job, "Error while opening file: '%s' because %m", path);
 			return 0;
 		}
 
@@ -112,13 +119,36 @@ static int st_job_save_archive(struct st_job * job, const struct st_job_selected
 		}
 
 		if (nb_read < 0) {
-			st_job_add_record(self->connect, st_log_level_error, job, "Unexpected error while reading from file '%s' because %m", p->path);
+			st_job_add_record(self->connect, st_log_level_error, job, "Unexpected error while reading from file '%s' because %m", path);
 		}
 
 		close(fd);
 	} else if (S_ISDIR(st.st_mode)) {
-		if (access(p->path, F_OK | R_OK | X_OK)) {
+		if (access(path, F_OK | R_OK | X_OK)) {
+			st_job_add_record(self->connect, st_log_level_warning, job, "Can't access to directory %s", path);
+			return 0;
 		}
+
+		struct dirent ** dl = NULL;
+		int nb_files = scandir(path, &dl, st_util_file_basic_scandir_filter, versionsort);
+
+		int i, failed = 0;
+		for (i = 0; i < nb_files; i++) {
+			if (!failed) {
+				char * subpath = NULL;
+				asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
+
+				failed = st_job_save_archive(job, selected_path, subpath);
+
+				free(subpath);
+			}
+
+			free(dl[i]->d_name);
+		}
+
+		free(dl);
+
+		return failed;
 	}
 
 	return 0;
@@ -200,6 +230,11 @@ static int st_job_save_run(struct st_job * job) {
 
 	self->worker = st_job_save_single_worker(job, pool, archive_size, self->connect);
 	self->worker->ops->load_media(self->worker);
+
+	for (i = 0; i < self->nb_selected_paths; i++) {
+		struct st_job_selected_path * p = self->selected_paths + i;
+		st_job_save_archive(job, p, p->path);
+	}
 
 	return 0;
 }

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 04 Nov 2012 23:08:05 +0100                         *
+*  Last modified: Thu, 29 Nov 2012 18:36:53 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -45,6 +45,7 @@
 #include <libstone/library/changer.h>
 #include <libstone/library/drive.h>
 #include <libstone/library/media.h>
+#include <libstone/library/ressource.h>
 #include <libstone/library/slot.h>
 #include <libstone/log.h>
 
@@ -477,6 +478,9 @@ static struct st_media * st_media_retrieve(struct st_database_connection * conne
 		connection->ops->close(connection);
 		connection->ops->free(connection);
 	}
+
+	if (media != NULL)
+		media->lock = st_ressource_new();
 
 	return media;
 }

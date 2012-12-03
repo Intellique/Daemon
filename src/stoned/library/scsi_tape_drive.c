@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 25 Nov 2012 15:13:59 +0100                         *
+*  Last modified: Thu, 29 Nov 2012 18:38:47 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -186,6 +186,8 @@ static void st_scsi_tape_drive_create_media(struct st_drive * drive) {
 	media->load_count = 1;
 
 	media->block_size = st_scsi_tape_drive_get_block_size(drive);
+
+	media->lock = st_ressource_new();
 
 	if (media->format != NULL && media->format->support_mam) {
 		int fd = open(drive->scsi_device, O_RDWR);

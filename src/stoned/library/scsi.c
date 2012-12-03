@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 12:38:17 +0200                         *
+*  Last modified: Mon, 03 Dec 2012 20:32:47 +0100                         *
 \*************************************************************************/
 
 // htobe16
@@ -111,6 +111,10 @@ struct scsi_loader_data_transfer_element {
     unsigned char reserved10:4;
     unsigned char identifier_type_2:4;
     unsigned char reserved11:4;
+	unsigned char reserved12;
+	unsigned char identifier_length_2;
+	unsigned char device_identifier_2[8];
+	unsigned char tape_drive_serial_number[10];
 } __attribute__((packed));
 
 struct scsi_loader_import_export_element {

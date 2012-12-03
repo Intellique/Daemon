@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 25 Nov 2012 15:23:38 +0100                         *
+*  Last modified: Fri, 30 Nov 2012 10:06:05 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -50,6 +50,7 @@
 #include <libstone/library/changer.h>
 #include <libstone/library/drive.h>
 #include <libstone/library/media.h>
+#include <libstone/library/ressource.h>
 #include <libstone/library/slot.h>
 #include <libstone/log.h>
 #include <libstone/user.h>
@@ -1088,29 +1089,43 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		if (mediaid == NULL)
 			asprintf(&mediaid, "%ld", media_data->id);
 
-		const char * query = "select_media_before_update";
-		st_db_postgresql_prepare(self, query, "SELECT name, label FROM tape WHERE id = $1 FOR UPDATE");
-		const char * param1[] = { mediaid };
+		bool locked = true;
+		if (!media->lock->ops->try_lock(media->lock)) {
+			locked = false;
 
-		PGresult * result = PQexecPrepared(self->connect, query, 1, param1, NULL, NULL, 0);
-		ExecStatusType status = PQresultStatus(result);
+			const char * query = "select_media_before_update";
+			st_db_postgresql_prepare(self, query, "SELECT t.name, t.label, p.uuid FROM tape	LEFT JOIN pool p ON t.pool = p.id WHERE id = $1");
+			const char * param1[] = { mediaid };
 
-		if (status == PGRES_FATAL_ERROR)
-			st_db_postgresql_get_error(result, query);
-		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
-			free(media->name);
-			free(media->label);
-			media->name = media->label = NULL;
+			PGresult * result = PQexecPrepared(self->connect, query, 1, param1, NULL, NULL, 0);
+			ExecStatusType status = PQresultStatus(result);
 
-			st_db_postgresql_get_string_dup(result, 0, 0, &media->name);
-			st_db_postgresql_get_string_dup(result, 0, 1, &media->label);
+			if (status == PGRES_FATAL_ERROR)
+				st_db_postgresql_get_error(result, query);
+			else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+				free(media->name);
+				free(media->label);
+				media->name = media->label = NULL;
+
+				st_db_postgresql_get_string_dup(result, 0, 0, &media->name);
+				st_db_postgresql_get_string_dup(result, 0, 1, &media->label);
+
+				char * uuid = NULL;
+				st_db_postgresql_get_string_dup(result, 0, 2, &uuid);
+
+				if (uuid != NULL)
+					media->pool = st_pool_get_by_uuid(uuid);
+				else
+					media->pool = NULL;
+			}
+
+			PQclear(result);
+
+			media->lock->ops->unlock(media->lock);
 		}
 
-		PQclear(result);
-
-
-		query = "update_media";
-		st_db_postgresql_prepare(self, query, "UPDATE tape SET uuid = $1, name = $2, status = $3, location = $4, loadcount = $5, readcount = $6, writecount = $7, endpos = $8, nbfiles = $9, blocksize = $10, pool = $11 WHERE id = $12");
+		const char * query = "update_media";
+		st_db_postgresql_prepare(self, query, "UPDATE tape SET uuid = $1, name = $2, status = $3, location = $4, loadcount = $5, readcount = $6, writecount = $7, endpos = $8, nbfiles = $9, blocksize = $10, pool = $11, locked = $12 WHERE id = $13");
 
 		char * load, * read, * write, * endpos, * nbfiles, * blocksize;
 		asprintf(&load, "%ld", media->load_count);
@@ -1123,10 +1138,11 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		const char * param2[] = {
 			*media->uuid ? media->uuid : NULL, media->name, st_media_status_to_string(media->status),
 			st_media_location_to_string(media->location),
-			load, read, write, endpos, nbfiles, blocksize, poolid, mediaid
+			load, read, write, endpos, nbfiles, blocksize, poolid,
+			locked ? "true" : "false", mediaid
 		};
-		result = PQexecPrepared(self->connect, query, 12, param2, NULL, NULL, 0);
-		status = PQresultStatus(result);
+		PGresult * result = PQexecPrepared(self->connect, query, 13, param2, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
 			st_db_postgresql_get_error(result, query);

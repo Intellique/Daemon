@@ -55,6 +55,7 @@ struct st_job_save_single_worker_private {
 	unsigned int nb_medias_used;
 };
 
+static int st_job_save_single_worker_add_file(struct st_job_save_data_worker * worker, const char * path);
 static void st_job_save_single_worker_add_media(struct st_job_save_single_worker_private * self, struct st_media * media);
 static void st_job_save_single_worker_free(struct st_job_save_data_worker * worker);
 static int st_job_save_single_worker_load_media(struct st_job_save_data_worker * worker);
@@ -62,11 +63,16 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 static ssize_t st_job_save_single_worker_write(struct st_job_save_data_worker * worker, void * buffer, ssize_t length);
 
 static struct st_job_save_data_worker_ops st_job_save_single_worker_ops = {
+	.add_file   = st_job_save_single_worker_add_file,
 	.free       = st_job_save_single_worker_free,
 	.load_media = st_job_save_single_worker_load_media,
 	.write      = st_job_save_single_worker_write,
 };
 
+
+static int st_job_save_single_worker_add_file(struct st_job_save_data_worker * worker, const char * path) {
+	struct st_job_save_single_worker_private * self = worker->data;
+}
 
 struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, struct st_pool * pool, ssize_t archive_size, struct st_database_connection * connect) {
 	struct st_job_save_single_worker_private * self = malloc(sizeof(struct st_job_save_single_worker_private));

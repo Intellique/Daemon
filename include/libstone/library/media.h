@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 14 Oct 2012 20:15:27 +0200                         *
+*  Last modified: Thu, 29 Nov 2012 18:34:38 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -37,6 +37,7 @@ struct st_database_connection;
 struct st_drive;
 struct st_job;
 struct st_pool;
+struct st_ressource;
 struct st_tape_format;
 
 enum st_media_location {
@@ -112,6 +113,8 @@ struct st_media {
 
 	struct st_media_format * format;
 	struct st_pool * pool;
+
+	struct st_ressource * lock;
 
 	void * db_data;
 };
