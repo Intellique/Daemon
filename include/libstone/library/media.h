@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Nov 2012 18:34:38 +0100                         *
+*  Last modified: Mon, 03 Dec 2012 22:17:39 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -162,6 +162,7 @@ enum st_media_format_data_type st_media_string_to_format_data(const char * type)
 enum st_media_format_mode st_media_string_to_format_mode(const char * mode);
 enum st_media_type st_media_string_to_type(const char * type);
 
+bool st_media_check_header(struct st_drive * dr);
 ssize_t st_media_get_available_size(struct st_media * media);
 struct st_media * st_media_get_by_job(struct st_job * job, struct st_database_connection * connection);
 struct st_media * st_media_get_by_label(const char * label);

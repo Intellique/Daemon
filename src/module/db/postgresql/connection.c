@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 03 Dec 2012 21:11:32 +0100                         *
+*  Last modified: Mon, 03 Dec 2012 21:52:54 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -147,6 +147,7 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.get_media                                     = st_db_postgresql_get_media,
 	.get_media_format                              = st_db_postgresql_get_media_format,
 	.get_pool                                      = st_db_postgresql_get_pool,
+	.sync_media                                    = st_db_postgresql_sync_media,
 
 	.add_job_record     = st_db_postgresql_add_job_record,
 	.get_selected_paths = st_db_postgresql_get_selected_paths,
@@ -1115,8 +1116,10 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 
 				if (uuid != NULL)
 					media->pool = st_pool_get_by_uuid(uuid);
-				else
+				else if (media->pool != NULL) {
 					media->pool = NULL;
+					media->status = st_media_status_new;
+				}
 			}
 
 			PQclear(result);

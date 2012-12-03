@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 14 Oct 2012 11:21:02 +0200                         *
+*  Last modified: Mon, 03 Dec 2012 22:39:35 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -150,7 +150,7 @@ static bool st_job_format_tape_check(struct st_job * job) {
 				break;
 
 			case look_for_media:
-				// lock of slot can be owned by another job
+				// lock of this slot can be owned by another job
 				slot = st_changer_find_slot_by_media(media);
 				state = slot != NULL ? media_in_drive : alert_user;
 				break;
@@ -161,8 +161,8 @@ static bool st_job_format_tape_check(struct st_job * job) {
 				break;
 
 			case slot_is_free:
-				if (slot->lock->ops->try_lock(slot->lock)) {
-					sleep(5);
+				if (slot->lock->ops->timed_lock(slot->lock, 2000)) {
+					sleep(8);
 					state = look_for_media;
 				} else {
 					has_lock_on_slot = true;
@@ -422,7 +422,7 @@ int st_job_format_tape_run(struct st_job * job) {
 				break;
 
 			case look_for_media:
-				// lock of slot can be owned by another job
+				// lock of this slot can be owned by another job
 				slot = st_changer_find_slot_by_media(media);
 				state = slot != NULL ? media_in_drive : alert_user;
 				break;
@@ -433,9 +433,9 @@ int st_job_format_tape_run(struct st_job * job) {
 				break;
 
 			case slot_is_free:
-				if (slot->lock->ops->try_lock(slot->lock)) {
+				if (slot->lock->ops->timed_lock(slot->lock, 2000)) {
 					job->sched_status = st_job_status_waiting;
-					sleep(5);
+					sleep(8);
 					state = look_for_media;
 				} else {
 					has_lock_on_slot = true;
@@ -448,7 +448,7 @@ int st_job_format_tape_run(struct st_job * job) {
 	job->sched_status = st_job_status_running;
 
 	if (job->db_status != st_job_status_stopped)
-		job->done = 0.25;
+		job->done = 0.2;
 
 	if (job->db_status != st_job_status_stopped && drive->slot->media != NULL && drive->slot->media != media) {
 		st_job_add_record(self->connect, st_log_level_info, job, "unloading media: %s from drive: { %s, %s, #%td }", drive->slot->media->name, drive->vendor, drive->model, drive - drive->changer->drives);
@@ -466,7 +466,7 @@ int st_job_format_tape_run(struct st_job * job) {
 	}
 
 	if (job->db_status != st_job_status_stopped)
-		job->done = 0.5;
+		job->done = 0.4;
 
 	if (job->db_status != st_job_status_stopped && drive->slot->media == NULL) {
 		st_job_add_record(self->connect, st_log_level_info, job, "loading media: %s to drive: { %s, %s, #%td }", media->name, drive->vendor, drive->model, drive - drive->changer->drives);
@@ -489,7 +489,7 @@ int st_job_format_tape_run(struct st_job * job) {
 	}
 
 	if (job->db_status != st_job_status_stopped)
-		job->done = 0.75;
+		job->done = 0.6;
 
 	// check blocksize
 	enum update_blocksize {
@@ -545,6 +545,12 @@ int st_job_format_tape_run(struct st_job * job) {
 	if (job->db_status != st_job_status_stopped) {
 		st_job_add_record(self->connect, st_log_level_info, job, "Formatting media in progress");
 		status = st_media_write_header(drive, pool);
+
+		if (!status) {
+			job->done = 0.8;
+			st_job_add_record(self->connect, st_log_level_info, job, "Checking media header in progress");
+			status = !st_media_check_header(drive);
+		}
 
 		if (status)
 			st_job_add_record(self->connect, st_log_level_info, job, "Job: format tape finished with code = %d, num runs %ld", status, job->num_runs);

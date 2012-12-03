@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 25 Nov 2012 15:18:48 +0100                         *
+*  Last modified: Mon, 03 Dec 2012 21:52:17 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -168,6 +168,7 @@ struct st_database_connection {
 		struct st_media * (*get_media)(struct st_database_connection * connect, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label);
 		int (*get_media_format)(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, enum st_media_format_mode mode);
 		struct st_pool * (*get_pool)(struct st_database_connection * connect, struct st_job * job, const char * uuid);
+		int (*sync_media)(struct st_database_connection * connnect, struct st_media * media);
 
 		int (*add_job_record)(struct st_database_connection * connect, struct st_job * job, const char * message);
 		struct st_job_selected_path * (*get_selected_paths)(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_paths);

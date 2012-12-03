@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 29 Nov 2012 18:36:53 +0100                         *
+*  Last modified: Mon, 03 Dec 2012 22:31:44 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -247,6 +247,102 @@ static void st_media_add(struct st_media * media) {
 		st_medias[st_media_nb_medias] = media;
 		st_media_nb_medias++;
 	}
+}
+
+bool st_media_check_header(struct st_drive * drive) {
+	if (drive == NULL)
+		return false;
+
+	struct st_media * media = drive->slot->media;
+	if (media == NULL)
+		return false;
+
+	struct st_stream_reader * reader = drive->ops->get_raw_reader(drive, 0);
+	if (reader == NULL) {
+		st_log_write_all(st_log_level_info, st_log_type_daemon, "[%s | %s | #%td]: failed to read media", drive->vendor, drive->model, drive - drive->changer->drives);
+		return 1;
+	}
+
+	char buffer[512];
+	ssize_t nb_read = reader->ops->read(reader, buffer, 512);
+	reader->ops->close(reader);
+	reader->ops->free(reader);
+
+	if (nb_read <= 0) {
+		st_log_write_all(st_log_level_warning, st_log_type_daemon, "[%s | %s | #%td]: media has no header", drive->vendor, drive->model, drive - drive->changer->drives);
+		return false;
+	}
+
+	char stone_version[65];
+	int tape_format_version = 0;
+	int nb_parsed = 0;
+	if (sscanf(buffer, "STone (%64[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
+		char uuid[37];
+		char name[65];
+		char pool_id[37];
+		char pool_name[65];
+		ssize_t block_size;
+		char checksum_name[12];
+		char checksum_value[64];
+
+		int nb_parsed2 = 0;
+		int ok = 1;
+		bool has_label = false;
+
+		if (sscanf(buffer + nb_parsed, "Label: %36s\n%n", name, &nb_parsed2) == 1) {
+			nb_parsed += nb_parsed2;
+			has_label = true;
+		}
+
+		if (ok && sscanf(buffer + nb_parsed, "Tape id: uuid=%37s\n%n", uuid, &nb_parsed2) == 1)
+			nb_parsed += nb_parsed2;
+		else
+			ok = 0;
+
+		if (ok && sscanf(buffer + nb_parsed, "Pool: name=%65[^,], uuid=%36s\n%n", pool_name, pool_id, &nb_parsed2) == 2)
+			nb_parsed += nb_parsed2;
+		else
+			ok = 0;
+
+		if (ok && sscanf(buffer + nb_parsed, "Block size: %zd\n%n", &block_size, &nb_parsed2) == 1)
+			nb_parsed += nb_parsed2;
+		else
+			ok = 0;
+
+		if (ok)
+			ok = sscanf(buffer + nb_parsed, "Checksum: %11[^=]=%64s\n", checksum_name, checksum_value) == 2;
+
+		if (ok) {
+			char * digest = st_checksum_compute(checksum_name, buffer, nb_parsed);
+			ok = digest != NULL && !strcmp(checksum_value, digest);
+			free(digest);
+
+			st_log_write_all(st_log_level_debug, st_log_type_daemon, "[%s | %s | #%td]: media has valid header", drive->vendor, drive->model, drive - drive->changer->drives);
+		}
+
+		if (ok) {
+			bool differ = false;
+
+			if (strcmp(media->uuid, uuid)) {
+				st_log_write_all(st_log_level_debug, st_log_type_daemon, "[%s | %s | #%td]: media has different uuid (%s vs %s)", drive->vendor, drive->model, drive - drive->changer->drives, uuid, media->uuid);
+				differ = true;
+			}
+
+			if ((has_label && media->label == NULL) || (!has_label && media->label == NULL) || (has_label && media->label && strcmp(name, media->label))) {
+				st_log_write_all(st_log_level_debug, st_log_type_daemon, "[%s | %s | #%td]: media has different label", drive->vendor, drive->model, drive - drive->changer->drives);
+				differ = true;
+			}
+
+			if (strcmp(media->name, name)) {
+				st_log_write_all(st_log_level_debug, st_log_type_daemon, "[%s | %s | #%td]: media has different name (%s vs %s)", drive->vendor, drive->model, drive - drive->changer->drives, name, media->name);
+				differ = true;
+			}
+
+			return !differ;
+		}
+	}
+
+	return false;
 }
 
 ssize_t st_media_get_available_size(struct st_media * media) {
