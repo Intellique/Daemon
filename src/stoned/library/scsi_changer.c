@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 09:22:53 +0200                         *
+*  Last modified: Tue, 04 Dec 2012 00:48:32 +0100                         *
 \*************************************************************************/
 
 // open
@@ -135,17 +135,12 @@ static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * fr
 	}
 
 	if (!failed) {
-		if (from->media != NULL) {
-			from->media->location = st_media_location_indrive;
-			from->media->load_count++;
-		}
-
 		struct st_media * media = to->slot->media = from->media;
 		from->media = NULL;
 		to->slot->volume_name = from->volume_name;
 		from->volume_name = NULL;
-		from->full = 0;
-		to->slot->full = 1;
+		from->full = false;
+		to->slot->full = true;
 
 		if (media != NULL) {
 			media->location = st_media_location_indrive;
@@ -397,8 +392,8 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 		from->slot->media = NULL;
 		to->volume_name = from->slot->volume_name;
 		from->slot->volume_name = NULL;
-		from->slot->full = 0;
-		to->full = 1;
+		from->slot->full = false;
+		to->full = true;
 		slot_from->src_address = 0;
 
 		if (media != NULL)

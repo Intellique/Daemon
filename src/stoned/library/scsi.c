@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 03 Dec 2012 20:32:47 +0100                         *
+*  Last modified: Tue, 04 Dec 2012 01:15:42 +0100                         *
 \*************************************************************************/
 
 // htobe16
@@ -1556,7 +1556,7 @@ int st_scsi_tape_read_medium_serial_number(int fd, char * medium_serial_number, 
 	return 0;
 }
 
-int st_scsi_tape_size_available(int fd, struct st_media * tape) {
+int st_scsi_tape_size_available(int fd, struct st_media * media) {
 	struct {
 		unsigned char page_code:6;
 		unsigned char reserved0:2;
@@ -1573,32 +1573,32 @@ int st_scsi_tape_size_available(int fd, struct st_media * tape) {
 			unsigned char du:1;
 			unsigned char parameter_length;
 			unsigned int value;
-		} parameters[4];
+		} values[4];
 	} __attribute__((packed)) result;
 
 	struct {
-		unsigned char op_code;
-		unsigned char sp:1;
-		unsigned char ppc:1;
+		unsigned char operation_code;
+		unsigned char saved_paged:1;
+		unsigned char parameter_pointer_control:1;
 		unsigned char reserved0:3;
 		unsigned char obsolete:3;
-		unsigned char page_code:5;
+		unsigned char page_code:6;
 		enum {
-			log_sense_page_control_maximum_value = 0x0,
-			log_sense_page_control_current_value = 0x1,
-			log_sense_page_control_maximum_value2 = 0x2,
-			log_sense_page_control_power_on_value = 0x3,
+			page_control_max_value = 0x0,
+			page_control_current_value = 0x1,
+			page_control_max_value2 = 0x2, // same as page_control_max_value ?
+			page_control_power_on_value = 0x3,
 		} page_control:2;
 		unsigned char reserved1[2];
-		unsigned short parameter_pointer;
-		unsigned short allocation_length;
+		unsigned short parameter_pointer; // must be a bigger endian integer
+		unsigned short allocation_length; // must be a bigger endian integer
 		unsigned char control;
 	} __attribute__((packed)) command = {
-		.op_code = 0x4D, // LOG SENSE
-		.sp = 0,
-		.ppc = 0,
-		.page_code = 0x11, // TAPE CAPACITY LOG
-		.page_control = log_sense_page_control_current_value,
+		.operation_code = 0x4D,
+		.saved_paged = 0,
+		.parameter_pointer_control = 0,
+		.page_code = 0x31,
+		.page_control = page_control_current_value,
 		.parameter_pointer = 0,
 		.allocation_length = htobe16(sizeof(result)),
 		.control = 0,
@@ -1627,13 +1627,19 @@ int st_scsi_tape_size_available(int fd, struct st_media * tape) {
 	result.page_length = be16toh(result.page_length);
 	unsigned short i;
 	for (i = 0; i < 4; i++) {
-		result.parameters[i].parameter_code = be16toh(result.parameters[i].parameter_code);
-		result.parameters[i].value = be32toh(result.parameters[i].value);
+		result.values[i].parameter_code = be16toh(result.values[i].parameter_code);
+		result.values[i].value = be32toh(result.values[i].value);
 	}
 
-	tape->available_block = result.parameters[0].value << 10;
-	tape->available_block /= (tape->block_size >> 10);
-	tape->available_block -= tape->end_position;
+	unsigned long long total_size = result.values[2].value;
+	total_size <<= 20;
+	total_size /= media->block_size;
+
+	media->available_block = result.values[0].value << 10;
+	media->available_block /= (media->block_size >> 10);
+	media->available_block -= media->end_position;
+
+	media->end_position = total_size - media->available_block;
 
 	return 0;
 }

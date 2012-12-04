@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 03 Dec 2012 23:48:11 +0100                         *
+*  Last modified: Tue, 04 Dec 2012 01:20:32 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -539,10 +539,10 @@ static int st_scsi_tape_drive_update_media_info(struct st_drive * drive) {
 	if (!failed) {
 		if (GMT_DR_OPEN(self->status.mt_gstat)) {
 			drive->status = st_drive_empty_idle;
-			drive->is_empty = 1;
+			drive->is_empty = true;
 		} else {
 			drive->status = st_drive_loaded_idle;
-			drive->is_empty = 0;
+			drive->is_empty = false;
 
 			unsigned char density_code = (self->status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT;
 			if (drive->density_code < density_code)
@@ -562,6 +562,12 @@ static int st_scsi_tape_drive_update_media_info(struct st_drive * drive) {
 
 			if (drive->slot->media == NULL)
 				st_scsi_tape_drive_create_media(drive);
+		}
+
+		if (drive->slot->media != NULL && !drive->is_empty) {
+			int fd = open(drive->scsi_device, O_RDWR);
+			st_scsi_tape_size_available(fd, drive->slot->media);
+			close(fd);
 		}
 	} else {
 		drive->status = st_drive_error;
