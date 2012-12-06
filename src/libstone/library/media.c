@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 03 Dec 2012 23:47:32 +0100                         *
+*  Last modified: Wed, 05 Dec 2012 09:58:16 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -349,7 +349,7 @@ ssize_t st_media_get_available_size(struct st_media * media) {
 	if (media == NULL || media->format == NULL)
 		return 0;
 
-	return media->format->capacity - media->end_position * media->block_size;
+	return media->available_block * media->block_size;
 }
 
 struct st_media * st_media_get_by_job(struct st_job * job, struct st_database_connection * connection) {
@@ -541,8 +541,11 @@ int st_media_read_header(struct st_drive * drive) {
 			st_log_write_all(st_log_level_debug, st_log_type_drive, "Found STone header in media with (uuid=%s, label=%s, blocksize=%zd)", uuid, name, block_size);
 
 			strcpy(media->uuid, uuid);
-			if (has_label)
+			if (has_label) {
+				free(media->label);
 				media->label = strdup(name);
+			}
+			free(media->name);
 			media->name = strdup(name);
 			media->status = st_media_status_in_use;
 			media->block_size = block_size;

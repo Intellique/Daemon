@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 03 Dec 2012 23:45:48 +0100                         *
+*  Last modified: Tue, 04 Dec 2012 23:12:32 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -105,8 +105,8 @@ struct st_media {
 	long operation_count;
 
 	ssize_t block_size;
-	ssize_t end_position; // in block size, not in bytes
 	ssize_t available_block; // in block size, not in bytes
+	ssize_t total_block;
 
 	unsigned int nb_volumes;
 	enum st_media_type type;

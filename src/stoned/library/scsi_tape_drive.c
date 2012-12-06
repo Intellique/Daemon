@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 04 Dec 2012 01:20:32 +0100                         *
+*  Last modified: Tue, 04 Dec 2012 23:17:17 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -866,7 +866,7 @@ static ssize_t st_scsi_tape_drive_io_writer_get_available_size(struct st_stream_
 	// should be a multiple of blocksize
 	// return 59999977472 - self->position;
 
-	return media->format->capacity - media->end_position * media->block_size - self->position;
+	return media->available_block * media->block_size - self->position;
 }
 
 static ssize_t st_scsi_tape_drive_io_writer_get_block_size(struct st_stream_writer * io) {
@@ -933,8 +933,21 @@ static ssize_t st_scsi_tape_drive_io_writer_write(struct st_stream_writer * io, 
 	st_scsi_tape_drive_operation_stop(self->drive);
 
 	if (nb_write < 0) {
-		self->last_errno = errno;
-		return -1;
+		switch (errno) {
+			case ENOSPC:
+				self->drive->slot->media->available_block = 0;
+
+				st_scsi_tape_drive_operation_start(self->drive_private);
+				nb_write = write(self->fd, self->buffer, self->block_size);
+				st_scsi_tape_drive_operation_stop(self->drive);
+
+				if (nb_write == self->block_size)
+					break;
+
+			default:
+				self->last_errno = errno;
+				return -1;
+		}
 	}
 
 	ssize_t nb_total_write = buffer_available;
@@ -949,8 +962,21 @@ static ssize_t st_scsi_tape_drive_io_writer_write(struct st_stream_writer * io, 
 		st_scsi_tape_drive_operation_stop(self->drive);
 
 		if (nb_write < 0) {
-			self->last_errno = errno;
-			return -1;
+			switch (errno) {
+				case ENOSPC:
+					self->drive->slot->media->available_block = 0;
+
+					st_scsi_tape_drive_operation_start(self->drive_private);
+					nb_write = write(self->fd, self->buffer, self->block_size);
+					st_scsi_tape_drive_operation_stop(self->drive);
+
+					if (nb_write == self->block_size)
+						break;
+
+				default:
+					self->last_errno = errno;
+					return -1;
+			}
 		}
 
 		nb_total_write += nb_write;

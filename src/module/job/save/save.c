@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 30 Nov 2012 13:51:53 +0100                         *
+*  Last modified: Tue, 04 Dec 2012 22:22:28 +0100                         *
 \*************************************************************************/
 
 // asprintf, versionsort
@@ -80,7 +80,7 @@ static struct st_job_driver st_job_save_driver = {
 static int st_job_save_archive(struct st_job * job, const struct st_job_selected_path * selected_path, const char * path) {
 	struct st_job_save_private * self = job->data;
 
-	if (st_util_string_check_valid_utf8(path)) {
+	if (!st_util_string_check_valid_utf8(path)) {
 		char * fixed_path = strdup(path);
 		st_util_string_fix_invalid_utf8(fixed_path);
 

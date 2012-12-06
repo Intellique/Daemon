@@ -22,11 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 23 Jul 2012 18:43:05 +0200                         *
+*  Last modified: Tue, 04 Dec 2012 22:21:30 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_UTIL_STRING_H__
 #define __STONE_UTIL_STRING_H__
+
+// bool
+#include <stdbool.h>
 
 /**
  * \brief Check if \a string is a valid utf8 string
@@ -34,7 +37,7 @@
  * \param[in] string : a utf8 string
  * \returns \b 1 if ok else 0
  */
-int st_util_string_check_valid_utf8(const char * string);
+bool st_util_string_check_valid_utf8(const char * string);
 
 /**
  * \brief Compute hash of key

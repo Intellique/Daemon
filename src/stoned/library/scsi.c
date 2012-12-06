@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 04 Dec 2012 01:15:42 +0100                         *
+*  Last modified: Tue, 04 Dec 2012 23:44:21 +0100                         *
 \*************************************************************************/
 
 // htobe16
@@ -1220,71 +1220,6 @@ int st_scsi_tape_locate(int fd, off_t position) {
 	return 0;
 }
 
-int st_scsi_tape_position(int fd, struct st_media * tape) {
-	struct {
-		unsigned char op_code;
-		unsigned char service_action:5;
-		unsigned char obsolete:3;
-		unsigned char reserved[5];
-		unsigned short parameter_length; // should be a bigger endian integer
-		unsigned char control;
-	} __attribute__((packed)) command = {
-		.op_code = 0x34, // READ POSITION
-		.service_action = 0,
-		.parameter_length = 0,
-	};
-
-	struct {
-		unsigned char reserved0:1;
-		unsigned char perr:1;
-		unsigned char block_position_unknown:1;
-		unsigned char reserved1:1;
-		unsigned char bycu:1;
-		unsigned char bcu:1;
-		unsigned char end_of_partition:1;
-		unsigned char begginning_of_partition:1;
-		unsigned char partition_number;
-		unsigned char reserved2[2];
-		unsigned int first_block_location;
-		unsigned int last_block_location;
-		unsigned char reserved3;
-		unsigned int number_of_blocks_in_buffer;
-		unsigned int number_of_bytes_in_buffer;
-	} __attribute__((packed)) result;
-
-	struct scsi_request_sense sense;
-	sg_io_hdr_t header;
-	memset(&header, 0, sizeof(header));
-	memset(&sense, 0, sizeof(sense));
-	memset(&result, 0, sizeof(result));
-
-	header.interface_id = 'S';
-	header.cmd_len = sizeof(command);
-	header.mx_sb_len = sizeof(sense);
-	header.dxfer_len = sizeof(result);;
-	header.cmdp = (unsigned char *) &command;
-	header.sbp = (unsigned char *) &sense;
-	header.dxferp = (unsigned char *) &result;
-	header.timeout = 60000; // 1 minute
-	header.dxfer_direction = SG_DXFER_FROM_DEV;
-
-	int status = ioctl(fd, SG_IO, &header);
-	if (status)
-		return 1;
-
-	if (result.block_position_unknown)
-		return -1;
-
-	result.first_block_location = be32toh(result.first_block_location);
-	result.last_block_location = be32toh(result.last_block_location);
-	result.number_of_blocks_in_buffer = be32toh(result.number_of_blocks_in_buffer);
-	result.number_of_bytes_in_buffer = be32toh(result.number_of_bytes_in_buffer);
-
-	tape->end_position = result.first_block_location;
-
-	return 0;
-}
-
 int st_scsi_tape_read_position(int fd, off_t * position) {
 	if (!position)
 		return 1;
@@ -1631,15 +1566,11 @@ int st_scsi_tape_size_available(int fd, struct st_media * media) {
 		result.values[i].value = be32toh(result.values[i].value);
 	}
 
-	unsigned long long total_size = result.values[2].value;
-	total_size <<= 20;
-	total_size /= media->block_size;
-
 	media->available_block = result.values[0].value << 10;
 	media->available_block /= (media->block_size >> 10);
-	media->available_block -= media->end_position;
 
-	media->end_position = total_size - media->available_block;
+	media->total_block = result.values[2].value << 10;
+	media->total_block /= (media->block_size >> 10);
 
 	return 0;
 }

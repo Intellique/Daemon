@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 00:48:01 +0200                         *
+*  Last modified: Tue, 04 Dec 2012 22:22:11 +0100                         *
 \*************************************************************************/
 
 // free, realloc
@@ -40,21 +40,21 @@
  */
 static int st_util_string_valid_utf8_char(const char * string);
 
-int st_util_string_check_valid_utf8(const char * string) {
+bool st_util_string_check_valid_utf8(const char * string) {
 	if (string == NULL)
-		return 0;
+		return false;
 
 	const char * ptr = string;
 	while (*ptr) {
 		int size = st_util_string_valid_utf8_char(ptr);
 
 		if (!size)
-			return 0;
+			return false;
 
 		ptr += size;
 	}
 
-	return 1;
+	return true;
 }
 
 /**
