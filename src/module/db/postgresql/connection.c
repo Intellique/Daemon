@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 13:20:44 +0100                         *
+*  Last modified: Sat, 08 Dec 2012 15:23:03 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1727,7 +1727,7 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 			else if (PQresultStatus(result2) == PGRES_TUPLES_OK) {
 				unsigned int j, nb_metadatas = PQntuples(result2);
 				for (j = 0; j < nb_metadatas; j++)
-					st_hashtable_put(job->meta, strdup(PQgetvalue(result2, j, 0)), strdup(PQgetvalue(result2, j, 1)));
+					st_hashtable_put(job->meta, strdup(PQgetvalue(result2, j, 0)), st_hashtable_val_string(strdup(PQgetvalue(result2, j, 1))));
 			}
 
 			PQclear(result2);
@@ -1742,7 +1742,7 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 			else if (PQresultStatus(result2) == PGRES_TUPLES_OK) {
 				unsigned int j, nb_metadatas = PQntuples(result2);
 				for (j = 0; j < nb_metadatas; j++)
-					st_hashtable_put(job->option, strdup(PQgetvalue(result2, j, 0)), strdup(PQgetvalue(result2, j, 1)));
+					st_hashtable_put(job->option, strdup(PQgetvalue(result2, j, 0)), st_hashtable_val_string(strdup(PQgetvalue(result2, j, 1))));
 			}
 
 			PQclear(result2);
@@ -1876,7 +1876,7 @@ static void st_db_postgresql_prepare(struct st_db_postgresql_connection_private 
 		if (status == PGRES_FATAL_ERROR)
 			st_db_postgresql_get_error(prepare, statement_name);
 		else
-			st_hashtable_put(self->cached_query, strdup(statement_name), NULL);
+			st_hashtable_put(self->cached_query, strdup(statement_name), st_hashtable_val_null());
 		PQclear(prepare);
 
 		st_log_write_all(status == PGRES_COMMAND_OK ? st_log_level_debug : st_log_level_error, st_log_type_plugin_db, "Postgresql: new query prepared (%s) => {%s}, status: %s", statement_name, query, PQresStatus(status));

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 17 Aug 2012 00:11:50 +0200                         *
+*  Last modified: Sat, 08 Dec 2012 15:24:13 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -93,12 +93,12 @@ static void st_log_postgresql_module_free(struct st_log_module * module) {
 }
 
 int st_log_postgresql_new(struct st_log_module * module, enum st_log_level level, const struct st_hashtable * params) {
-	const char * alias = st_hashtable_value(params, "alias");
-	const char * host = st_hashtable_value(params, "host");
-	const char * port = st_hashtable_value(params, "port");
-	const char * db = st_hashtable_value(params, "db");
-	const char * user = st_hashtable_value(params, "user");
-	const char * password = st_hashtable_value(params, "password");
+	const char * alias = st_hashtable_get(params, "alias").value.string;
+	const char * host = st_hashtable_get(params, "host").value.string;
+	const char * port = st_hashtable_get(params, "port").value.string;
+	const char * db = st_hashtable_get(params, "db").value.string;
+	const char * user = st_hashtable_get(params, "user").value.string;
+	const char * password = st_hashtable_get(params, "password").value.string;
 
 	PGconn * connect = PQsetdbLogin(host, port, NULL, NULL, db, user, password);
 

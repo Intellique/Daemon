@@ -22,67 +22,96 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 15:13:27 +0100                         *
+*  Last modified: Sat, 08 Dec 2012 14:07:32 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONE_UTIL_STRING_H__
-#define __STONE_UTIL_STRING_H__
+#ifndef __STONE_ARCHIVE_H__
+#define __STONE_ARCHIVE_H__
 
-// bool
-#include <stdbool.h>
-// uint64_t
-#include <stdint.h>
+// time_t
+#include <sys/time.h>
+// ssize_t
+#include <sys/types.h>
 
-/**
- * \brief Check if \a string is a valid utf8 string
- *
- * \param[in] string : a utf8 string
- * \returns \b 1 if ok else 0
- */
-bool st_util_string_check_valid_utf8(const char * string);
+struct st_archive_file;
+struct st_archive_volume;
+struct st_job;
+struct st_media;
+struct st_job_selected_path;
+struct st_user;
 
-/**
- * \brief Compute hash of key
- *
- * \param[in] key : a c string
- * \returns computed hash
- *
- * \see st_hashtable_new
- */
-uint64_t st_util_string_compute_hash(const void * key);
+enum st_archive_file_type {
+	st_archive_file_type_block_device,
+	st_archive_file_type_character_device,
+	st_archive_file_type_directory,
+	st_archive_file_type_fifo,
+	st_archive_file_type_regular_file,
+	st_archive_file_type_socket,
+	st_archive_file_type_symbolic_link,
 
-/**
- * \brief Remove from \a str a sequence of two or more of character \a delete_char
- *
- * \param[in,out] str : a string
- * \param[in] delete_char : a character
- */
-void st_util_string_delete_double_char(char * str, char delete_char);
+	st_archive_file_type_unknown,
+};
 
-/**
- * \brief Fix a UTF8 string by removing invalid character
- *
- * \param[in,out] string : a (in)valid UTF8 string
- */
-void st_util_string_fix_invalid_utf8(char * string);
+struct st_archive {
+	char * name;
+	time_t ctime;
+	time_t endtime;
+	struct st_user * user;
 
-/**
- * \brief Remove characters \a trim at the beginning and at the end of \a str
- *
- * \param[in,out] str : a string
- * \param[in] trim : a character
- */
-void st_util_string_trim(char * str, char trim);
+	struct st_archive_volume * volumes;
+	unsigned int nb_volumes;
 
-/**
- * \brief Remove characters \a trim at the end of \a str
- *
- * \param[in,out] str : a string
- * \param[in] trim : a character
- *
- * \see st_util_string_trim
- */
-void st_util_string_rtrim(char * str, char trim);
+	unsigned int next_sequence;
+
+	struct st_archive * copy_of;
+
+	struct st_job * job;
+
+	void * db_data;
+};
+
+struct st_archive_volume {
+	long sequence;
+	ssize_t size;
+	time_t ctime;
+	time_t endtime;
+
+	struct st_archive * archive;
+	struct st_media * media;
+	long media_position;
+
+	char ** digests;
+	unsigned int nb_checksums;
+
+	struct st_archive_files {
+		struct st_archive_file * file;
+		ssize_t position;
+	} * files;
+	unsigned int nb_files;
+
+	void * db_data;
+};
+
+struct st_archive_file {
+	char * name;
+	mode_t perm;
+	enum st_archive_file_type type;
+	uid_t ownerid;
+	char owner[32];
+	gid_t groupid;
+	char group[32];
+	time_t ctime;
+	time_t mtime;
+	ssize_t size;
+
+	char ** digests;
+	unsigned int nb_checksums;
+
+	struct st_archive * archive;
+	struct st_job_selected_path * selected_path;
+
+	void * db_data;
+};
 
 #endif
 

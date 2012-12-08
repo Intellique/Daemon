@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 12 Oct 2012 23:16:44 +0200                         *
+*  Last modified: Sat, 08 Dec 2012 15:18:31 +0100                         *
 \*************************************************************************/
 
 // strerror
@@ -173,15 +173,15 @@ static void st_conf_free_key(void * key, void * value __attribute__((unused))) {
 static void st_conf_init(void) {
 	st_conf_callback = st_hashtable_new2(st_util_string_compute_hash, st_conf_free_key);
 
-	st_hashtable_put(st_conf_callback, strdup("database"), st_conf_load_db);
-	st_hashtable_put(st_conf_callback, strdup("log"), st_conf_load_log);
+	st_hashtable_put(st_conf_callback, strdup("database"), st_hashtable_val_custom(st_conf_load_db));
+	st_hashtable_put(st_conf_callback, strdup("log"), st_hashtable_val_custom( st_conf_load_log));
 }
 
 static void st_conf_load_db(const struct st_hashtable * params) {
 	if (params == NULL)
 		return;
 
-	char * driver = st_hashtable_value(params, "driver");
+	char * driver = st_hashtable_get(params, "driver").value.string;
 	if (driver == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "conf: load_db: there is no driver in config file");
 		return;
@@ -208,9 +208,9 @@ static void st_conf_load_log(const struct st_hashtable * params) {
 	if (params == NULL)
 		return;
 
-	char * alias = st_hashtable_value(params, "alias");
-	char * type = st_hashtable_value(params, "type");
-	enum st_log_level verbosity = st_log_string_to_level(st_hashtable_value(params, "verbosity"));
+	char * alias = st_hashtable_get(params, "alias").value.string;
+	char * type = st_hashtable_get(params, "type").value.string;
+	enum st_log_level verbosity = st_log_string_to_level(st_hashtable_get(params, "verbosity").value.string);
 
 	if (alias == NULL || type == NULL || verbosity == st_log_level_unknown) {
 		if (alias == NULL)
@@ -271,7 +271,7 @@ int st_conf_read_config(const char * conf_file) {
 				ptr++;
 				if (*ptr == '\n') {
 					if (*section) {
-						st_conf_callback_f f = st_hashtable_value(st_conf_callback, section);
+						st_conf_callback_f f = st_hashtable_get(st_conf_callback, section).value.custom;
 						if (f != NULL)
 							f(params);
 					}
@@ -296,14 +296,14 @@ int st_conf_read_config(const char * conf_file) {
 					char value[64];
 					int val = sscanf(ptr, "%s = %s", key, value);
 					if (val == 2)
-						st_hashtable_put(params, strdup(key), strdup(value));
+						st_hashtable_put(params, strdup(key), st_hashtable_val_string(strdup(value)));
 				}
 				ptr = strchr(ptr, '\n');
 		}
 	}
 
 	if (params->nb_elements > 0 && *section) {
-		st_conf_callback_f f = st_hashtable_value(st_conf_callback, section);
+		st_conf_callback_f f = st_hashtable_get(st_conf_callback, section).value.custom;
 		if (f != NULL)
 			f(params);
 	}
@@ -326,6 +326,6 @@ void st_conf_register_callback(const char * section, st_conf_callback_f callback
 		return;
 	}
 
-	st_hashtable_put(st_conf_callback, strdup(section), callback);
+	st_hashtable_put(st_conf_callback, strdup(section), st_hashtable_val_custom(callback));
 }
 

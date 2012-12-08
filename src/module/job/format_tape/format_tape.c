@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 03 Dec 2012 23:48:56 +0100                         *
+*  Last modified: Sat, 08 Dec 2012 15:23:29 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -511,7 +511,7 @@ int st_job_format_tape_run(struct st_job * job) {
 		blocksize_set_default,
 	} do_update_block_size = blocksize_nop;
 	ssize_t block_size = 0;
-	char * blocksize = st_hashtable_value(job->option, "blocksize");
+	char * blocksize = st_hashtable_get(job->option, "blocksize").value.string;
 	if (blocksize != NULL) {
 		if (sscanf(blocksize, "%zd", &block_size) == 1) {
 			if (block_size > 0) {

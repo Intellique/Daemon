@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 23:37:52 +0200                         *
+*  Last modified: Sat, 08 Dec 2012 15:20:56 +0100                         *
 \*************************************************************************/
 
 // PQfinish, PQsetdbLogin, PQstatus
@@ -151,27 +151,27 @@ int st_db_postgresql_config_init(struct st_database_config * config, const struc
 	struct st_db_postgresql_config_private * self = malloc(sizeof(struct st_db_postgresql_config_private));
 	bzero(self, sizeof(struct st_db_postgresql_config_private));
 
-	const char * value = st_hashtable_value(params, "user");
+	const char * value = st_hashtable_get(params, "user").value.string;
 	if (value != NULL)
 		self->user = strdup(value);
 
-	value = st_hashtable_value(params, "password");
+	value = st_hashtable_get(params, "password").value.string;
 	if (value != NULL)
 		self->password = strdup(value);
 
-	value = st_hashtable_value(params, "db");
+	value = st_hashtable_get(params, "db").value.string;
 	if (value != NULL)
 		self->db = strdup(value);
 
-	value = st_hashtable_value(params, "host");
+	value = st_hashtable_get(params, "host").value.string;
 	if (value != NULL)
 		self->host = strdup(value);
 
-	value = st_hashtable_value(params, "port");
+	value = st_hashtable_get(params, "port").value.string;
 	if (value != NULL)
 		self->port = strdup(value);
 
-	config->name = strdup(st_hashtable_value(params, "alias"));
+	config->name = strdup(st_hashtable_get(params, "alias").value.string);
 	config->ops = &st_db_postgresql_config_ops;
 	config->data = self;
 

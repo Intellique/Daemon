@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 17 Aug 2012 00:02:07 +0200                         *
+*  Last modified: Sat, 08 Dec 2012 15:23:48 +0100                         *
 \*************************************************************************/
 
 // realloc
@@ -53,7 +53,7 @@ static int st_log_file_add(const char * alias, enum st_log_level level, const st
 	if (alias == NULL || params == NULL)
 		return 1;
 
-	char * path = st_hashtable_value(params, "path");
+	char * path = st_hashtable_get(params, "path").value.string;
 	if (path == NULL)
 		return 2;
 

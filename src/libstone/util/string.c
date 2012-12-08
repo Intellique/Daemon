@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 04 Dec 2012 22:22:11 +0100                         *
+*  Last modified: Sat, 08 Dec 2012 15:18:59 +0100                         *
 \*************************************************************************/
 
 // free, realloc
@@ -61,9 +61,9 @@ bool st_util_string_check_valid_utf8(const char * string) {
  * sdbm function
  * http://www.cse.yorku.ca/~oz/hash.html
  **/
-unsigned long long st_util_string_compute_hash(const void * key) {
+uint64_t st_util_string_compute_hash(const void * key) {
 	const char * cstr = key;
-	unsigned long long int hash = 0;
+	uint64_t hash = 0;
 	int length = strlen(cstr), i;
 	for (i = 0; i < length; i++)
 		hash = cstr[i] + (hash << 6) + (hash << 16) - hash;

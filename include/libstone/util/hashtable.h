@@ -22,11 +22,16 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jul 2012 23:28:40 +0200                         *
+*  Last modified: Sat, 08 Dec 2012 14:38:59 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_UTIL_HASHTABLE_H__
 #define __STONE_UTIL_HASHTABLE_H__
+
+// bool
+#include <stdbool.h>
+// {,u}int*_t
+#include <stdint.h>
 
 /**
  * \brief Function used to compute hash of keys
@@ -38,7 +43,7 @@
  * If \f$ x \ne y, f(x) = f(y) \f$, the hash function admits a collision. \n
  * Hash function returns a 64 bits integer so we can have \f$ 2^{64}-1 \f$ (= 18446744073709551615) differents values
  */
-typedef unsigned long long (*st_compute_hash_f)(const void * key);
+typedef uint64_t (*st_hashtable_compute_hash_f)(const void * key);
 
 /**
  * \brief Function used by a hashtable to release a pair of key value
@@ -46,7 +51,27 @@ typedef unsigned long long (*st_compute_hash_f)(const void * key);
  * \param[in] key : a \a key
  * \param[in] value : a \a value
  */
-typedef void (*st_release_key_value_f)(void * key, void * value);
+typedef void (*st_hashtable_free_f)(void * key, void * value);
+
+struct st_hashtable_value {
+	enum {
+		st_hashtable_value_null,
+		st_hashtable_value_boolean,
+		st_hashtable_value_signed_integer,
+		st_hashtable_value_unsigned_integer,
+		st_hashtable_value_float,
+		st_hashtable_value_string,
+		st_hashtable_value_custom,
+	} type;
+	union {
+		bool boolean;
+		int64_t signed_integer;
+		uint64_t unsigned_integer;
+		double floating;
+		char * string;
+		void * custom;
+	} value;
+};
 
 /**
  * \struct st_hashtable
@@ -63,37 +88,47 @@ struct st_hashtable {
 		/**
 		 * \brief Hash value of key
 		 */
-		unsigned long long hash;
+		uint64_t hash;
 		void * key;
-		void * value;
+		struct st_hashtable_value value;
 		struct st_hashtable_node * next;
 	} ** nodes;
 	/**
 	 * \brief Numbers of elements in hashtable
 	 */
-	unsigned int nb_elements;
+	uint32_t nb_elements;
 	/**
 	 * \brief Only for internal use of hashtable
 	 */
-	unsigned int size_node;
+	uint32_t size_node;
 	/**
 	 * \brief Only for internal use of hashtable
 	 */
-	unsigned char allow_rehash;
+	bool allow_rehash;
 
 	/**
 	 * \brief Function used by hashtable for computing hash of one key
 	 *
 	 * \see st_compute_hash_f
 	 */
-	st_compute_hash_f compute_hash;
+	st_hashtable_compute_hash_f compute_hash;
 	/**
 	 * \brief Function used by hashtable for releasing elements in hashtable
 	 *
 	 * \see st_release_key_value_f
 	 */
-	st_release_key_value_f release_key_value;
+	st_hashtable_free_f release_key_value;
 };
+
+
+struct st_hashtable_value st_hashtable_val_boolean(bool val);
+struct st_hashtable_value st_hashtable_val_custom(void * val);
+struct st_hashtable_value st_hashtable_val_float(double val);
+struct st_hashtable_value st_hashtable_val_null(void);
+struct st_hashtable_value st_hashtable_val_signed_integer(int64_t val);
+struct st_hashtable_value st_hashtable_val_string(char * string);
+struct st_hashtable_value st_hashtable_val_unsigned_integer(uint64_t val);
+
 
 /**
  * \brief Remove (and release) all elements in hashtable
@@ -114,13 +149,31 @@ void st_hashtable_clear(struct st_hashtable * hashtable);
 void st_hashtable_free(struct st_hashtable * hashtable);
 
 /**
+ * \brief Get a value associated with this \a key
+ *
+ * Compute hash of \a key to find a pair of key value. If the pair is no found,
+ * this function returns \b NULL.\n Otherwise returns value of found pair.
+ *
+ * \param[in] hashtable : a hashtable
+ * \param[in] key : a key
+ * \returns \b 0 if there is no value associated with this \a key
+ *
+ * \note Parameters \a hashtable and \a key are not supposed to be \b NULL so
+ * st_hashtable_value returns \b 0 if \a hashtable is \b NULL or \a key is \b NULL
+ *
+ * \attention You <b> SHOULD NOT RELEASE </b> the returned value because this value is
+ * shared with this \a hashtable
+ */
+struct st_hashtable_value st_hashtable_get(const struct st_hashtable * hashtable, const void * key);
+
+/**
  * \brief Check if this \a hashtable contains this key
  *
  * \param[in] hashtable : a hashtable
  * \param[in] key : a key
  * \returns 1 if found otherwise 0
  */
-short st_hashtable_has_key(const struct st_hashtable * hashtable, const void * key);
+bool st_hashtable_has_key(const struct st_hashtable * hashtable, const void * key);
 
 /**
  * \brief Gets keys from hashtable
@@ -131,7 +184,7 @@ short st_hashtable_has_key(const struct st_hashtable * hashtable, const void * k
  * \attention You should release the returned array with \a free but not keys
  * because keys are shared with hashtable
  */
-const void ** st_hashtable_keys(struct st_hashtable * hashtable);
+const void ** st_hashtable_keys(struct st_hashtable * hashtable, uint32_t * nb_value);
 
 /**
  * \brief Create a new hashtable
@@ -143,7 +196,7 @@ const void ** st_hashtable_keys(struct st_hashtable * hashtable);
  *
  * \see st_compute_hash_f
  */
-struct st_hashtable * st_hashtable_new(st_compute_hash_f ch);
+struct st_hashtable * st_hashtable_new(st_hashtable_compute_hash_f ch);
 
 /**
  * \brief Create a new hashtable
@@ -155,7 +208,7 @@ struct st_hashtable * st_hashtable_new(st_compute_hash_f ch);
  * \see st_hashtable_new
  * \see st_release_key_value_f
  */
-struct st_hashtable * st_hashtable_new2(st_compute_hash_f ch, st_release_key_value_f release);
+struct st_hashtable * st_hashtable_new2(st_hashtable_compute_hash_f ch, st_hashtable_free_f release);
 
 /**
  * \brief Put a new pair of key value into this \a hashtable
@@ -176,7 +229,7 @@ struct st_hashtable * st_hashtable_new2(st_compute_hash_f ch, st_release_key_val
  *
  * \see st_hashtable_new2
  */
-void st_hashtable_put(struct st_hashtable * hashtable, void * key, void * value);
+void st_hashtable_put(struct st_hashtable * hashtable, void * key, struct st_hashtable_value value);
 
 /**
  * \brief Remove a pair of key and value
@@ -198,24 +251,6 @@ void st_hashtable_put(struct st_hashtable * hashtable, void * key, void * value)
 void st_hashtable_remove(struct st_hashtable * hashtable, const void * key);
 
 /**
- * \brief Get a value associated with this \a key
- *
- * Compute hash of \a key to find a pair of key value. If the pair is no found,
- * this function returns \b NULL.\n Otherwise returns value of found pair.
- *
- * \param[in] hashtable : a hashtable
- * \param[in] key : a key
- * \returns \b 0 if there is no value associated with this \a key
- *
- * \note Parameters \a hashtable and \a key are not supposed to be \b NULL so
- * st_hashtable_value returns \b 0 if \a hashtable is \b NULL or \a key is \b NULL
- *
- * \attention You <b> SHOULD NOT RELEASE </b> the returned value because this value is
- * shared with this \a hashtable
- */
-void * st_hashtable_value(const struct st_hashtable * hashtable, const void * key);
-
-/**
  * \brief Get all values of this \a hashtable
  *
  * \param[in] hashtable : a hashtable
@@ -229,7 +264,7 @@ void * st_hashtable_value(const struct st_hashtable * hashtable, const void * ke
  *
  * \see st_hashtable_keys
  */
-void ** st_hashtable_values(struct st_hashtable * hashtable);
+struct st_hashtable_value * st_hashtable_values(struct st_hashtable * hashtable, uint32_t * nb_value);
 
 #endif
 
