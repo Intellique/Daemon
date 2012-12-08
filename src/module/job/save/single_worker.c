@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 05 Nov 2012 22:42:00 +0100                         *
+*  Last modified: Sat, 08 Dec 2012 12:34:17 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -32,11 +32,12 @@
 // sleep
 #include <unistd.h>
 
+#include <libstone/format.h>
 #include <libstone/library/drive.h>
 #include <libstone/library/ressource.h>
-#include <libstone/library/slot.h>
 #include <libstone/log.h>
 #include <stoned/library/changer.h>
+#include <stoned/library/slot.h>
 
 #include "save.h"
 
@@ -50,13 +51,10 @@ struct st_job_save_single_worker_private {
 	ssize_t archive_size;
 
 	struct st_drive * drive;
-
-	struct st_media ** medias_used;
-	unsigned int nb_medias_used;
+	struct st_format_writer * writer;
 };
 
 static int st_job_save_single_worker_add_file(struct st_job_save_data_worker * worker, const char * path);
-static void st_job_save_single_worker_add_media(struct st_job_save_single_worker_private * self, struct st_media * media);
 static void st_job_save_single_worker_free(struct st_job_save_data_worker * worker);
 static int st_job_save_single_worker_load_media(struct st_job_save_data_worker * worker);
 static bool st_job_save_single_worker_select_media(struct st_job_save_single_worker_private * self);
@@ -72,6 +70,10 @@ static struct st_job_save_data_worker_ops st_job_save_single_worker_ops = {
 
 static int st_job_save_single_worker_add_file(struct st_job_save_data_worker * worker, const char * path) {
 	struct st_job_save_single_worker_private * self = worker->data;
+
+	self->writer->ops->add_file(self->writer, path);
+
+	return 0;
 }
 
 struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, struct st_pool * pool, ssize_t archive_size, struct st_database_connection * connect) {
@@ -85,9 +87,7 @@ struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, 
 	self->archive_size = archive_size;
 
 	self->drive = NULL;
-
-	self->medias_used = NULL;
-	self->nb_medias_used = 0;
+	self->writer = NULL;
 
 	struct st_job_save_data_worker * worker = malloc(sizeof(struct st_job_save_data_worker));
 	worker->ops = &st_job_save_single_worker_ops;
@@ -96,23 +96,8 @@ struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, 
 	return worker;
 }
 
-static void st_job_save_single_worker_add_media(struct st_job_save_single_worker_private * self, struct st_media * media) {
-	void * new_addr = realloc(self->medias_used, (self->nb_medias_used + 1) * sizeof(struct st_media *));
-	if (new_addr == NULL) {
-		// add warning
-		return;
-	}
-
-	self->medias_used = new_addr;
-	self->medias_used[self->nb_medias_used] = media;
-	self->nb_medias_used++;
-}
-
 static void st_job_save_single_worker_free(struct st_job_save_data_worker * worker) {
-	struct st_job_save_single_worker_private * self = worker->data;
-	free(self->medias_used);
-
-	free(self);
+	free(worker->data);
 	free(worker);
 }
 
@@ -120,9 +105,12 @@ static int st_job_save_single_worker_load_media(struct st_job_save_data_worker *
 	struct st_job_save_single_worker_private * self = worker->data;
 
 	if (st_job_save_single_worker_select_media(self)) {
+		self->writer = self->drive->ops->get_writer(self->drive, -1, NULL);
+
+		return self->writer == NULL;
 	}
 
-	return 0;
+	return 1;
 }
 
 static bool st_job_save_single_worker_select_media(struct st_job_save_single_worker_private * self) {
@@ -132,12 +120,10 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 	enum state {
 		check_offline_free_size_left,
 		check_online_free_size_left,
-		check_media_free_space,
-		check_media_in_drive,
 		find_free_drive,
 		is_pool_growable1,
 		is_pool_growable2,
-	} state = find_free_drive;
+	} state = check_online_free_size_left;
 
 	struct st_changer * changer = NULL;
 	struct st_drive * drive = NULL;
@@ -150,13 +136,13 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 			case check_offline_free_size_left:
 				total_size += self->connect->ops->get_available_size_of_offline_media_from_pool(self->connect, self->pool);
 
-				if (self->archive_size - self->total_done < total_size) {
+				if (self->archive_size - self->total_done > total_size) {
 					// alert user
 					if (!has_alerted_user)
 						st_job_add_record(self->connect, st_log_level_warning, self->job, "Please, insert media which is a part of pool named %s", self->pool->name);
 					has_alerted_user = true;
 
-					state = find_free_drive;
+					state = check_online_free_size_left;
 				} else {
 					state = is_pool_growable2;
 				}
@@ -167,81 +153,46 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 				total_size = st_changer_get_online_size(self->pool);
 
 				if (self->archive_size - self->total_done < total_size) {
-					if (slot == drive->slot) {
-						// media is already loaded
-						stop = true;
-						ok = true;
-						break;
+					struct st_slot_iterator * iter = st_slot_iterator_by_pool(self->pool);
+
+					while (iter->ops->has_next(iter)) {
+						slot = iter->ops->next(iter);
+
+						struct st_media * media = slot->media;
+						if (self->archive_size - self->total_done < media->available_block * media->block_size)
+							break;
+
+						if (10 * media->available_block < media->total_block)
+							break;
+
+						slot->lock->ops->unlock(slot->lock);
+						slot = NULL;
 					}
+
+					iter->ops->free(iter);
 
 					if (slot != NULL) {
-						ssize_t media_available = st_media_get_available_size(slot->media);
+						changer = slot->changer;
+						drive = slot->drive;
 
-						if (self->archive_size - self->total_done < media_available) {
-							stop = true;
-							ok = true;
-							break;
-						}
-
-						if (10 * media_available < slot->media->format->capacity) {
-							// release lock
-							if (slot == drive->slot)
-								drive->lock->ops->unlock(drive->lock);
-							else
-								slot->lock->ops->unlock(slot->lock);
-
-							st_job_save_single_worker_add_media(self, slot->media);
-
-							changer = NULL;
-							drive = NULL;
-							slot = NULL;
-
-							state = find_free_drive;
-							break;
-						}
+						state = find_free_drive;
+						break;
 					}
-
-					stop = true;
-					ok = true;
-					break;
 				}
 
 				state = is_pool_growable1;
 
 				break;
 
-			case check_media_free_space:
-				if (st_media_get_available_size(drive->slot->media) >= drive->slot->media->format->capacity / 10)
-					stop = true, ok = true;
-				else
-					state = is_pool_growable1;
-
-				break;
-
-			case check_media_in_drive:
-				if (drive->slot != slot && drive->slot->media != NULL)
-					changer->ops->unload(changer, drive);
-
-				state = check_online_free_size_left;
-				// check remain archive size
-				if (drive->slot->media != NULL && st_media_get_available_size(drive->slot->media) > (self->archive_size - self->total_done))
-					state = check_media_free_space;
-
-				break;
-
 			case find_free_drive:
-				slot = st_changer_find_media_by_pool(self->pool, self->medias_used, self->nb_medias_used);
-
-				if (slot == NULL) {
-					sleep(20);
-					break;
-				}
-
-				changer = slot->changer;
-				drive = slot->drive;
-
-				if (drive == NULL) {
-					drive = changer->ops->find_free_drive(changer);
+				if (self->drive != NULL) {
+					if (self->drive->changer != slot->changer || (drive != NULL && drive != self->drive)) {
+						self->drive->lock->ops->unlock(self->drive->lock);
+						self->drive = NULL;
+					}
+				} else {
+					if (drive == NULL)
+						drive = changer->ops->find_free_drive(changer);
 
 					if (drive == NULL) {
 						slot->lock->ops->unlock(slot->lock);
@@ -249,12 +200,17 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 						changer = NULL;
 						slot = NULL;
 
+						self->job->sched_status = st_job_status_pause;
 						sleep(20);
+						self->job->sched_status = st_job_status_running;
+
+						state = check_online_free_size_left;
 						break;
 					}
 				}
 
-				state = check_media_in_drive;
+				stop = true;
+				ok = true;
 				break;
 
 			case is_pool_growable1:
@@ -263,22 +219,11 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 					slot = st_changer_find_free_media_by_format(self->pool->format);
 
 					if (slot != NULL) {
-						drive = slot->drive;
 						changer = slot->changer;
+						drive = slot->drive;
 
-						while (drive == NULL) {
-							drive = changer->ops->find_free_drive(changer);
-							// pause
-						}
-
-						if (drive != NULL && drive->slot != slot) {
-							if (drive->slot->media != NULL)
-								changer->ops->unload(changer, drive);
-
-							changer->ops->load_slot(changer, slot, drive);
-						}
-
-						st_media_write_header(drive, self->pool);
+						state = find_free_drive;
+						break;
 					}
 				}
 
@@ -287,25 +232,74 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 
 			case is_pool_growable2:
 				if (self->pool->growable && !has_alerted_user) {
+					st_job_add_record(self->connect, st_log_level_warning, self->job, "Please, insert new media which will be a part of pool %s", self->pool->name);
 				} else if (!has_alerted_user) {
+					st_job_add_record(self->connect, st_log_level_warning, self->job, "Please, you must to extent the pool (%s)", self->pool->name);
 				}
 
+				has_alerted_user = true;
 				// wait
+
+				self->job->sched_status = st_job_status_pause;
+				sleep(60);
+				self->job->sched_status = st_job_status_running;
 
 				state = check_online_free_size_left;
 				break;
 		}
 	}
 
-	if (ok && drive != NULL && drive->slot != slot)
-		changer->ops->load_slot(changer, slot, drive);
+	if (ok) {
+		if (self->drive == NULL)
+			self->drive = drive;
 
-	if (ok)
-		self->drive = drive;
+		if (self->drive->slot->media != NULL && self->drive->slot != slot) {
+			struct st_media * media = self->drive->slot->media;
+
+			st_job_add_record(self->connect, st_log_level_info, self->job, "Unloading media (%s) from drive #%td of changer [ %s | %s ]", media->name, self->drive - changer->drives, changer->vendor, changer->model);
+
+			int failed = changer->ops->unload(changer, self->drive);
+			if (failed) {
+				st_job_add_record(self->connect, st_log_level_error, self->job, "Unloading media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", media->name, self->drive - changer->drives, changer->vendor, changer->model, failed);
+				ok = false;
+			} else
+				st_job_add_record(self->connect, st_log_level_info, self->job, "Unloading media (%s) from drive #%td of changer [ %s | %s ] finished with code = OK", media->name, self->drive - changer->drives, changer->vendor, changer->model);
+		}
+	}
+
+	if (ok) {
+		if (self->drive->slot->media == NULL) {
+			struct st_media * media = slot->media;
+
+			st_job_add_record(self->connect, st_log_level_info, self->job, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ]", media->name, slot - changer->slots, self->drive - changer->drives, changer->vendor, changer->model);
+
+			int failed = changer->ops->load_slot(changer, slot, self->drive);
+			if (failed) {
+				st_job_add_record(self->connect, st_log_level_error, self->job, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ] finished with code = %d", media->name, slot - changer->slots, self->drive - changer->drives, changer->vendor, changer->model, failed);
+				ok = false;
+			} else
+				st_job_add_record(self->connect, st_log_level_info, self->job, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ] finished with code = OK", media->name, slot - changer->slots, self->drive - changer->drives, changer->vendor, changer->model);
+		}
+	}
+
+	if (ok) {
+		if (self->drive->slot->media->status == st_media_status_new) {
+			st_job_add_record(self->connect, st_log_level_info, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ]", slot->media->name, changer->drives - self->drive, changer->vendor, changer->model);
+
+			int failed = st_media_write_header(self->drive, self->pool);
+			if (failed) {
+				st_job_add_record(self->connect, st_log_level_error, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", slot->media->name, changer->drives - self->drive, changer->vendor, changer->model, failed);
+				ok = false;
+			} else
+				st_job_add_record(self->connect, st_log_level_info, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = OK", slot->media->name, changer->drives - self->drive, changer->vendor, changer->model);
+		}
+	}
 
 	return ok;
 }
 
 static ssize_t st_job_save_single_worker_write(struct st_job_save_data_worker * worker, void * buffer, ssize_t length) {
+	struct st_job_save_single_worker_private * self = worker->data;
+	return self->writer->ops->write(self->writer, buffer, length);
 }
 

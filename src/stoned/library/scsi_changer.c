@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 06 Dec 2012 13:38:24 +0100                         *
+*  Last modified: Sat, 08 Dec 2012 11:49:39 +0100                         *
 \*************************************************************************/
 
 // open
@@ -117,7 +117,7 @@ static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * fr
 	if (from->changer != ch || to->changer != ch)
 		return 1;
 
-	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: loading tape '%s' from slot #%td to drive #%td", ch->vendor, ch->model, from->volume_name, from - ch->slots, to - ch->drives);
+	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: loading media '%s' from slot #%td to drive #%td", ch->vendor, ch->model, from->volume_name, from - ch->slots, to - ch->drives);
 
 	struct st_scsi_changer_private * self = ch->data;
 	st_scsi_loader_ready(self->fd);
@@ -151,11 +151,11 @@ static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * fr
 		struct st_scsislot * sto = to->slot->data;
 		sto->src_address = sfrom->address;
 
-		st_log_write_all(st_log_level_debug, st_log_type_changer, "[%s | %s]: loading tape '%s' from slot #%td to drive #%td finished with code = OK", ch->vendor, ch->model, to->slot->volume_name, from - ch->slots, to - ch->drives);
+		st_log_write_all(st_log_level_debug, st_log_type_changer, "[%s | %s]: loading media '%s' from slot #%td to drive #%td finished with code = OK", ch->vendor, ch->model, to->slot->volume_name, from - ch->slots, to - ch->drives);
 
 		to->ops->update_media_info(to);
 	} else
-		st_log_write_all(st_log_level_error, st_log_type_changer, "[%s | %s]: loading tape '%s' from slot #%td to drive #%td finished with code = %d", ch->vendor, ch->model, to->slot->volume_name, from - ch->slots, to - ch->drives, failed);
+		st_log_write_all(st_log_level_error, st_log_type_changer, "[%s | %s]: loading media '%s' from slot #%td to drive #%td finished with code = %d", ch->vendor, ch->model, to->slot->volume_name, from - ch->slots, to - ch->drives, failed);
 
 	return failed;
 }
@@ -401,7 +401,7 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 
 	to->lock->ops->unlock(to->lock);
 
-	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading tape '%s' from drive #%td to slot #%td finished with code = %d", ch->vendor, ch->model, to->volume_name, from - ch->drives, to - ch->slots, failed);
+	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading media '%s' from drive #%td to slot #%td finished with code = %d", ch->vendor, ch->model, to->volume_name, from - ch->drives, to - ch->slots, failed);
 
 	return failed;
 }

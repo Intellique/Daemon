@@ -22,58 +22,19 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 07 Dec 2012 17:01:16 +0100                         *
+*  Last modified: Fri, 07 Dec 2012 20:12:20 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONE_LIBRARY_SLOT_H__
-#define __STONE_LIBRARY_SLOT_H__
+#ifndef __STONED_LIBRARY_SLOT_H__
+#define __STONED_LIBRARY_SLOT_H__
 
-// bool
-#include <stdbool.h>
+#include <libstone/library/slot.h>
 
-struct st_changer;
-struct st_drive;
-struct st_media;
+struct st_media_format;
+struct st_pool;
 
-enum st_slot_type {
-	st_slot_type_drive,
-	st_slot_type_import_export,
-	st_slot_type_storage,
-	st_slot_type_transport,
-
-	st_slot_type_unkown,
-};
-
-struct st_slot {
-	struct st_changer * changer;
-	struct st_drive * drive;
-	struct st_media * media;
-
-	char * volume_name;
-	bool full;
-	enum st_slot_type type;
-
-	struct st_ressource * lock;
-
-	void * data;
-
-	/**
-	 * \brief Private data used by database plugin
-	 */
-	void * db_data;
-};
-
-struct st_slot_iterator {
-	struct st_slot_iterator_ops {
-		void (*free)(struct st_slot_iterator * iterator);
-		bool (*has_next)(struct st_slot_iterator * iterator);
-		struct st_slot * (*next)(struct st_slot_iterator * iterator);
-	} * ops;
-	void * data;
-};
-
-const char * st_slot_type_to_string(enum st_slot_type type);
-enum st_slot_type st_slot_string_to_type(const char * type);
+struct st_slot_iterator * st_slot_iterator_by_new_media(struct st_media_format * format);
+struct st_slot_iterator * st_slot_iterator_by_pool(struct st_pool * pool);
 
 #endif
 

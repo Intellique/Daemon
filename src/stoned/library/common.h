@@ -22,17 +22,20 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 14 Aug 2012 08:51:31 +0200                         *
+*  Last modified: Fri, 07 Dec 2012 20:13:09 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_COMMON_H__
 #define __STONE_LIBRARY_COMMON_H__
 
 #include <libstone/library/changer.h>
+#include <stoned/library/slot.h>
 
 struct st_changer;
 struct st_drive;
 struct st_database_connection;
+struct st_media_format;
+struct st_pool;
 
 void st_scsi_tape_drive_setup(struct st_drive * drive);
 
@@ -40,6 +43,9 @@ void st_standalone_drive_setup(struct st_changer * changer);
 void st_scsi_changer_setup(struct st_changer * changer);
 
 void st_changer_sync(struct st_database_connection * connection);
+
+struct st_slot_iterator * st_slot_iterator_by_new_media2(struct st_media_format * format, struct st_changer * changers, unsigned int nb_changers);
+struct st_slot_iterator * st_slot_iterator_by_pool2(struct st_pool * pool, struct st_changer * changers, unsigned int nb_changers);
 
 #endif
 
