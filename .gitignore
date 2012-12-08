@@ -7,5 +7,7 @@ depend/
 doc/
 lib/
 logs/
+stone.version
 tags
+test2/
 tmp*

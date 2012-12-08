@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 13:49:19 +0100                         *
+*  Last modified: Sat, 08 Dec 2012 17:54:59 +0100                         *
 \*************************************************************************/
 
 // asprintf, versionsort
@@ -100,6 +100,7 @@ static int st_job_save_archive(struct st_job * job, const struct st_job_selected
 		return 0;
 
 	self->worker->ops->add_file(self->worker, path);
+	self->meta->ops->add_file(self->meta, selected_path, path);
 
 	if (S_ISREG(st.st_mode)) {
 		int fd = open(path, O_RDONLY);
@@ -235,6 +236,8 @@ static int st_job_save_run(struct st_job * job) {
 	self->worker = st_job_save_single_worker(job, pool, self->total_size, self->connect);
 	self->worker->ops->load_media(self->worker);
 
+	self->meta = st_job_save_meta_worker_new(job);
+
 	for (i = 0; i < self->nb_selected_paths; i++) {
 		struct st_job_selected_path * p = self->selected_paths + i;
 		st_job_save_archive(job, p, p->path);
@@ -242,6 +245,10 @@ static int st_job_save_run(struct st_job * job) {
 
 	self->worker->ops->close(self->worker);
 	self->worker->ops->free(self->worker);
+
+	self->meta->ops->wait(self->meta);
+
+	self->meta->ops->free(self->meta);
 
 	return 0;
 }

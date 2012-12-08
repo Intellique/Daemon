@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 03 Dec 2012 21:52:17 +0100                         *
+*  Last modified: Sat, 08 Dec 2012 17:58:52 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -171,6 +171,7 @@ struct st_database_connection {
 		int (*sync_media)(struct st_database_connection * connnect, struct st_media * media);
 
 		int (*add_job_record)(struct st_database_connection * connect, struct st_job * job, const char * message);
+		char ** (*get_checksums_by_job)(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_checksums);
 		struct st_job_selected_path * (*get_selected_paths)(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_paths);
 		int (*sync_job)(struct st_database_connection * connect, struct st_job *** jobs, unsigned int * nb_jobs);
 
@@ -181,17 +182,7 @@ struct st_database_connection {
 
 		/*
 		int (*create_pool)(struct st_database_connection * db, struct st_pool * pool);
-		int (*get_nb_new_jobs)(struct st_database_connection * db, long * nb_new_jobs, time_t since, long last_max_jobs);
-		int (*get_new_jobs)(struct st_database_connection * db, struct st_job ** jobs, unsigned int nb_jobs, time_t since, long last_max_jobs);
-		int (*get_pool)(struct st_database_connection * db, struct st_pool * pool, long id, const char * uuid);
-		int (*get_tape)(struct st_database_connection * db, struct st_tape * tape, long id, const char * uuid, const char * label);
-		int (*get_tape_format)(struct st_database_connection * db, struct st_tape_format * tape_format, long id, unsigned char density_code);
-		int (*get_user)(struct st_database_connection * db, struct st_user * user, long user_id, const char * login);
-		int (*refresh_job)(struct st_database_connection * db, struct st_job * job);
 		int (*sync_pool)(struct st_database_connection * db, struct st_pool * pool);
-		int (*sync_tape)(struct st_database_connection * db, struct st_tape * tape);
-		int (*sync_user)(struct st_database_connection * db, struct st_user * user);
-		int (*update_job)(struct st_database_connection * db, struct st_job * job);
 
 		int (*file_add_checksum)(struct st_database_connection * db, struct st_archive_file * file);
 		int (*file_link_to_volume)(struct st_database_connection * db, struct st_archive_file * file, struct st_archive_volume * volume);
