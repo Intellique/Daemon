@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 25 Nov 2012 19:20:32 +0100                         *
+*  Last modified: Sat, 08 Dec 2012 12:57:04 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_SAVE_H__
@@ -40,9 +40,13 @@ struct st_job_save_private {
 	struct st_job_selected_path * selected_paths;
 	unsigned int nb_selected_paths;
 
+	ssize_t total_done;
+	ssize_t total_size;
+
 	struct st_job_save_data_worker {
 		struct st_job_save_data_worker_ops {
 			int (*add_file)(struct st_job_save_data_worker * worker, const char * path);
+			void (*close)(struct st_job_save_data_worker * worker);
 			void (*free)(struct st_job_save_data_worker * worker);
 			int (*load_media)(struct st_job_save_data_worker * worker);
 			ssize_t (*write)(struct st_job_save_data_worker * worker, void * buffer, ssize_t length);

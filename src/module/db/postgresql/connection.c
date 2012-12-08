@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 06 Dec 2012 16:15:11 +0100                         *
+*  Last modified: Sat, 08 Dec 2012 13:20:44 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1859,7 +1859,7 @@ static int st_db_postgresql_sync_user(struct st_database_connection * connect, s
 
 		st_db_postgresql_get_bool(result, 0, 8, &user->disabled);
 
-		user->pool = st_pool_get_by_uuid(PQgetvalue(result, 0, 11));
+		user->pool = st_pool_get_by_uuid(PQgetvalue(result, 0, 9));
 	}
 
 	PQclear(result);

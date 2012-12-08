@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 04 Dec 2012 22:22:28 +0100                         *
+*  Last modified: Sat, 08 Dec 2012 13:49:19 +0100                         *
 \*************************************************************************/
 
 // asprintf, versionsort
@@ -113,7 +113,10 @@ static int st_job_save_archive(struct st_job * job, const struct st_job_selected
 		ssize_t nb_read = read(fd, buffer, 4096);
 
 		while (nb_read > 0) {
-			self->worker->ops->write(self->worker, buffer, nb_read);
+			ssize_t nb_write = self->worker->ops->write(self->worker, buffer, nb_read);
+
+			self->total_done += nb_write;
+			job->done = ((float) self->total_done) / self->total_size;
 
 			nb_read = read(fd, buffer, 4096);
 		}
@@ -192,6 +195,8 @@ static void st_job_save_new_job(struct st_job * job, struct st_database_connecti
 	self->selected_paths = NULL;
 	self->nb_selected_paths = 0;
 
+	self->total_done = self->total_size = 0;
+
 	self->worker = NULL;
 
 	job->data = self;
@@ -216,7 +221,6 @@ static int st_job_save_run(struct st_job * job) {
 
 	self->selected_paths = self->connect->ops->get_selected_paths(self->connect, job, &self->nb_selected_paths);
 
-	ssize_t archive_size = 0;
 	unsigned int i;
 	for (i = 0; i < self->nb_selected_paths; i++) {
 		struct st_job_selected_path * p = self->selected_paths + i;
@@ -225,16 +229,19 @@ static int st_job_save_run(struct st_job * job) {
 		// remove trailing '/'
 		st_util_string_rtrim(p->path, '/');
 
-		archive_size += st_job_save_compute_size(p->path);
+		self->total_size += st_job_save_compute_size(p->path);
 	}
 
-	self->worker = st_job_save_single_worker(job, pool, archive_size, self->connect);
+	self->worker = st_job_save_single_worker(job, pool, self->total_size, self->connect);
 	self->worker->ops->load_media(self->worker);
 
 	for (i = 0; i < self->nb_selected_paths; i++) {
 		struct st_job_selected_path * p = self->selected_paths + i;
 		st_job_save_archive(job, p, p->path);
 	}
+
+	self->worker->ops->close(self->worker);
+	self->worker->ops->free(self->worker);
 
 	return 0;
 }

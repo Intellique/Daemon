@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 12:34:17 +0100                         *
+*  Last modified: Sat, 08 Dec 2012 13:47:43 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -55,6 +55,7 @@ struct st_job_save_single_worker_private {
 };
 
 static int st_job_save_single_worker_add_file(struct st_job_save_data_worker * worker, const char * path);
+static void st_job_save_single_worker_close(struct st_job_save_data_worker * worker);
 static void st_job_save_single_worker_free(struct st_job_save_data_worker * worker);
 static int st_job_save_single_worker_load_media(struct st_job_save_data_worker * worker);
 static bool st_job_save_single_worker_select_media(struct st_job_save_single_worker_private * self);
@@ -62,19 +63,12 @@ static ssize_t st_job_save_single_worker_write(struct st_job_save_data_worker * 
 
 static struct st_job_save_data_worker_ops st_job_save_single_worker_ops = {
 	.add_file   = st_job_save_single_worker_add_file,
+	.close      = st_job_save_single_worker_close,
 	.free       = st_job_save_single_worker_free,
 	.load_media = st_job_save_single_worker_load_media,
 	.write      = st_job_save_single_worker_write,
 };
 
-
-static int st_job_save_single_worker_add_file(struct st_job_save_data_worker * worker, const char * path) {
-	struct st_job_save_single_worker_private * self = worker->data;
-
-	self->writer->ops->add_file(self->writer, path);
-
-	return 0;
-}
 
 struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, struct st_pool * pool, ssize_t archive_size, struct st_database_connection * connect) {
 	struct st_job_save_single_worker_private * self = malloc(sizeof(struct st_job_save_single_worker_private));
@@ -96,7 +90,28 @@ struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, 
 	return worker;
 }
 
+static int st_job_save_single_worker_add_file(struct st_job_save_data_worker * worker, const char * path) {
+	struct st_job_save_single_worker_private * self = worker->data;
+
+	self->writer->ops->add_file(self->writer, path);
+
+	return 0;
+}
+
+static void st_job_save_single_worker_close(struct st_job_save_data_worker * worker) {
+	struct st_job_save_single_worker_private * self = worker->data;
+
+	self->writer->ops->close(self->writer);
+}
+
 static void st_job_save_single_worker_free(struct st_job_save_data_worker * worker) {
+	struct st_job_save_single_worker_private * self = worker->data;
+
+	if (self->drive != NULL)
+		self->drive->lock->ops->unlock(self->drive->lock);
+
+	self->writer->ops->free(self->writer);
+
 	free(worker->data);
 	free(worker);
 }
@@ -284,14 +299,16 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 
 	if (ok) {
 		if (self->drive->slot->media->status == st_media_status_new) {
-			st_job_add_record(self->connect, st_log_level_info, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ]", slot->media->name, changer->drives - self->drive, changer->vendor, changer->model);
+			struct st_media * media = self->drive->slot->media;
+
+			st_job_add_record(self->connect, st_log_level_info, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ]", media->name, changer->drives - self->drive, changer->vendor, changer->model);
 
 			int failed = st_media_write_header(self->drive, self->pool);
 			if (failed) {
-				st_job_add_record(self->connect, st_log_level_error, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", slot->media->name, changer->drives - self->drive, changer->vendor, changer->model, failed);
+				st_job_add_record(self->connect, st_log_level_error, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", media->name, changer->drives - self->drive, changer->vendor, changer->model, failed);
 				ok = false;
 			} else
-				st_job_add_record(self->connect, st_log_level_info, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = OK", slot->media->name, changer->drives - self->drive, changer->vendor, changer->model);
+				st_job_add_record(self->connect, st_log_level_info, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = OK", media->name, changer->drives - self->drive, changer->vendor, changer->model);
 		}
 	}
 
@@ -300,6 +317,9 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 
 static ssize_t st_job_save_single_worker_write(struct st_job_save_data_worker * worker, void * buffer, ssize_t length) {
 	struct st_job_save_single_worker_private * self = worker->data;
-	return self->writer->ops->write(self->writer, buffer, length);
+	ssize_t nb_write = self->writer->ops->write(self->writer, buffer, length);
+	if (nb_write > 0)
+		self->total_done += nb_write;
+	return nb_write;
 }
 
