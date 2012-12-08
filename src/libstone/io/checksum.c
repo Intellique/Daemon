@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 22:44:47 +0100                         *
+*  Last modified: Sat, 08 Dec 2012 22:54:52 +0100                         *
 \*************************************************************************/
 
 // pthread_cond_destroy, pthread_cond_init, pthread_cond_signal, pthread_cond_wait
@@ -141,6 +141,8 @@ static void st_stream_checksum_free(struct st_stream_writer * sfw) {
 		self->out->ops->free(self->out);
 
 	self->worker->ops->free(self->worker);
+	free(self);
+	free(sfw);
 }
 
 static ssize_t st_stream_checksum_get_available_size(struct st_stream_writer * sfw) {

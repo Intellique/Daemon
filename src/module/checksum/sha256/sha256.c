@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 00:07:03 +0200                         *
+*  Last modified: Sat, 08 Dec 2012 22:57:51 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -95,6 +95,8 @@ static void st_checksum_sha256_free(struct st_checksum * checksum) {
 	checksum->data = NULL;
 	checksum->ops = NULL;
 	checksum->driver = NULL;
+
+	free(checksum);
 }
 
 static void st_checksum_sha256_init(void) {
