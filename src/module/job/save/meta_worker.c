@@ -22,12 +22,16 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 20:57:19 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 11:15:18 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
 // scandir
 #include <dirent.h>
+// magic_file, magic_open
+#include <magic.h>
+// open
+#include <fcntl.h>
 // pthread_cond_destroy, pthread_cond_init, pthread_cond_signal, pthread_cond_wait
 // pthread_mutex_destroy, pthread_mutex_init, pthread_mutex_lock, pthread_mutex_lock
 #include <pthread.h>
@@ -37,21 +41,25 @@
 #include <stdlib.h>
 // strdup
 #include <string.h>
-// lstat
+// lstat, open
 #include <sys/stat.h>
-// lstat
+// lstat, open
 #include <sys/types.h>
 // access, lstat
 #include <unistd.h>
 
+#include <libstone/io.h>
+#include <libstone/library/archive.h>
 #include <libstone/thread_pool.h>
 #include <libstone/util/file.h>
+#include <libstone/util/hashtable.h>
+#include <libstone/util/string.h>
 
 #include "save.h"
 
 struct st_job_save_meta_worker_private {
 	struct st_linked_list_file {
-		const struct st_job_selected_path * selected_path;
+		struct st_job_selected_path * selected_path;
 		char * file;
 		struct st_linked_list_file * next;
 	} * volatile first_file, * volatile last_file;
@@ -60,12 +68,20 @@ struct st_job_save_meta_worker_private {
 
 	pthread_mutex_t lock;
 	pthread_cond_t wait;
+
+	char ** checksums;
+	unsigned int nb_checksums;
+
+	struct st_hashtable * meta_files;
 };
 
-static void st_job_save_meta_worker_add_file(struct st_job_save_meta_worker * worker, const struct st_job_selected_path * selected_path, const char * path);
+static void st_job_save_free_meta_file(void * key, void * val);
+
+static void st_job_save_meta_worker_add_file(struct st_job_save_meta_worker * worker, struct st_job_selected_path * selected_path, const char * path);
 static void st_job_save_meta_worker_free(struct st_job_save_meta_worker * worker);
 static void st_job_save_meta_worker_wait(struct st_job_save_meta_worker * worker);
 static void st_job_save_meta_worker_work(void * arg);
+static void st_job_save_meta_worker_work2(struct st_job_save_meta_worker_private * self, struct st_job_selected_path * selected_path, const char * path);
 
 static struct st_job_save_meta_worker_ops st_job_save_meta_worker_ops = {
 	.add_file = st_job_save_meta_worker_add_file,
@@ -112,7 +128,13 @@ ssize_t st_job_save_compute_size(const char * path) {
 }
 
 
-static void st_job_save_meta_worker_add_file(struct st_job_save_meta_worker * worker, const struct st_job_selected_path * selected_path, const char * path) {
+static void st_job_save_free_meta_file(void * key __attribute__((unused)), void * val) {
+	struct st_archive_file * file = val;
+	st_archive_file_free(file);
+}
+
+
+static void st_job_save_meta_worker_add_file(struct st_job_save_meta_worker * worker, struct st_job_selected_path * selected_path, const char * path) {
 	struct st_job_save_meta_worker_private * self = worker->data;
 
 	struct st_linked_list_file * next = malloc(sizeof(struct st_linked_list_file));
@@ -135,11 +157,20 @@ static void st_job_save_meta_worker_free(struct st_job_save_meta_worker * worker
 	pthread_mutex_destroy(&self->lock);
 	pthread_cond_destroy(&self->wait);
 
+	unsigned int i;
+	for (i = 0; i < self->nb_checksums; i++)
+		free(self->checksums[i]);
+	free(self->checksums);
+
+	st_hashtable_free(self->meta_files);
+
 	free(self);
 	free(worker);
 }
 
 struct st_job_save_meta_worker * st_job_save_meta_worker_new(struct st_job * job) {
+	struct st_job_save_private * jp = job->data;
+
 	struct st_job_save_meta_worker_private * self = malloc(sizeof(struct st_job_save_meta_worker_private));
 	self->first_file = self->last_file = NULL;
 
@@ -148,11 +179,16 @@ struct st_job_save_meta_worker * st_job_save_meta_worker_new(struct st_job * job
 	pthread_mutex_init(&self->lock, NULL);
 	pthread_cond_init(&self->wait, NULL);
 
-	st_thread_pool_run2(st_job_save_meta_worker_work, self, 8);
+	self->checksums = jp->connect->ops->get_checksums_by_job(jp->connect, job, &self->nb_checksums);
+
+	self->meta_files = st_hashtable_new2(st_util_string_compute_hash, st_job_save_free_meta_file);
 
 	struct st_job_save_meta_worker * meta = malloc(sizeof(struct st_job_save_meta_worker));
 	meta->ops = &st_job_save_meta_worker_ops;
 	meta->data = self;
+	meta->meta_files = self->meta_files;
+
+	st_thread_pool_run2(st_job_save_meta_worker_work, self, 8);
 
 	return meta;
 }
@@ -182,7 +218,7 @@ static void st_job_save_meta_worker_work(void * arg) {
 		pthread_mutex_unlock(&self->lock);
 
 		while (files != NULL) {
-			// compute hash of files->file
+			st_job_save_meta_worker_work2(self, files->selected_path, files->file);
 
 			struct st_linked_list_file * next = files->next;
 			free(files->file);
@@ -194,5 +230,45 @@ static void st_job_save_meta_worker_work(void * arg) {
 
 	pthread_cond_signal(&self->wait);
 	pthread_mutex_unlock(&self->lock);
+}
+
+static void st_job_save_meta_worker_work2(struct st_job_save_meta_worker_private * self, struct st_job_selected_path * selected_path, const char * path) {
+	struct stat st;
+	if (lstat(path, &st))
+		return;
+
+	struct st_archive_file * file = st_archive_file_new(&st, path);
+	file->selected_path = selected_path;
+
+	if (S_ISREG(st.st_mode)) {
+		magic_t handle = magic_open(MAGIC_MIME_TYPE);
+		const char * mime_type = magic_file(handle, path);
+
+		if (mime_type != NULL)
+			file->mime_type = strdup(mime_type);
+
+		magic_close(handle);
+
+		int fd = open(path, O_RDONLY);
+		struct st_stream_writer * writer = st_checksum_writer_new(NULL, self->checksums, self->nb_checksums, false);
+
+		char buffer[4096];
+		ssize_t nb_read = read(fd, buffer, 4096);
+
+		while (nb_read > 0) {
+			writer->ops->write(writer, buffer, nb_read);
+
+			nb_read = read(fd, buffer, 4096);
+		}
+
+		close(fd);
+		writer->ops->close(writer);
+
+		file->digests = st_checksum_writer_get_checksums(writer);
+
+		writer->ops->free(writer);
+	}
+
+	st_hashtable_put(self->meta_files, file->name, st_hashtable_val_custom(file));
 }
 

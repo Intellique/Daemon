@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 14:45:27 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 11:33:25 +0100                         *
 \*************************************************************************/
 
 // calloc, free, malloc
@@ -46,16 +46,16 @@ struct st_hashtable_value st_hashtable_val_boolean(bool val) {
 
 struct st_hashtable_value st_hashtable_val_custom(void * val) {
 	struct st_hashtable_value v = {
-		.type          = st_hashtable_value_custom,
-		.value.boolean = val,
+		.type         = st_hashtable_value_custom,
+		.value.custom = val,
 	};
 	return v;
 }
 
 struct st_hashtable_value st_hashtable_val_float(double val) {
 	struct st_hashtable_value v = {
-		.type          = st_hashtable_value_float,
-		.value.boolean = val,
+		.type           = st_hashtable_value_float,
+		.value.floating = val,
 	};
 	return v;
 }
@@ -69,24 +69,24 @@ struct st_hashtable_value st_hashtable_val_null() {
 
 struct st_hashtable_value st_hashtable_val_signed_integer(int64_t val) {
 	struct st_hashtable_value v = {
-		.type          = st_hashtable_value_signed_integer,
-		.value.boolean = val,
+		.type                 = st_hashtable_value_signed_integer,
+		.value.signed_integer = val,
 	};
 	return v;
 }
 
 struct st_hashtable_value st_hashtable_val_string(char * string) {
 	struct st_hashtable_value v = {
-		.type          = st_hashtable_value_string,
-		.value.boolean = string,
+		.type         = st_hashtable_value_string,
+		.value.string = string,
 	};
 	return v;
 }
 
 struct st_hashtable_value st_hashtable_val_unsigned_integer(uint64_t val) {
 	struct st_hashtable_value v = {
-		.type          = st_hashtable_value_unsigned_integer,
-		.value.boolean = val,
+		.type                   = st_hashtable_value_unsigned_integer,
+		.value.unsigned_integer = val,
 	};
 	return v;
 }

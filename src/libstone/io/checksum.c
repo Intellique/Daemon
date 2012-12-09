@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 22:54:52 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 10:51:15 +0100                         *
 \*************************************************************************/
 
 // pthread_cond_destroy, pthread_cond_init, pthread_cond_signal, pthread_cond_wait
@@ -32,7 +32,7 @@
 #include <stdbool.h>
 // calloc, free, malloc
 #include <stdlib.h>
-// memcpy
+// memcpy, strdup
 #include <string.h>
 
 #include <libstone/checksum.h>
@@ -86,13 +86,13 @@ static ssize_t st_stream_checksum_write(struct st_stream_writer * sfw, const voi
 static char ** st_stream_checksum_backend_digest(struct st_stream_checksum_backend * worker);
 static void st_stream_checksum_backend_finish(struct st_stream_checksum_backend * worker);
 static void st_stream_checksum_backend_free(struct st_stream_checksum_backend * worker);
-static struct st_stream_checksum_backend * st_stream_checksum_backend_new(const char ** checksums, unsigned int nb_checksums);
+static struct st_stream_checksum_backend * st_stream_checksum_backend_new(char ** checksums, unsigned int nb_checksums);
 static void st_stream_checksum_backend_update(struct st_stream_checksum_backend * worker, const void * buffer, ssize_t length);
 
 static char ** st_stream_checksum_threaded_backend_digest(struct st_stream_checksum_backend * worker);
 static void st_stream_checksum_threaded_backend_finish(struct st_stream_checksum_backend * worker);
 static void st_stream_checksum_threaded_backend_free(struct st_stream_checksum_backend * worker);
-static struct st_stream_checksum_backend * st_stream_checksum_threaded_backend_new(const char ** checksums, unsigned int nb_checksums);
+static struct st_stream_checksum_backend * st_stream_checksum_threaded_backend_new(char ** checksums, unsigned int nb_checksums);
 static void st_stream_checksum_threaded_backend_update(struct st_stream_checksum_backend * worker, const void * buffer, ssize_t length);
 static void st_stream_checksum_threaded_backend_work(void * arg);
 
@@ -189,7 +189,13 @@ static ssize_t st_stream_checksum_write(struct st_stream_writer * sfw, const voi
 
 static char ** st_stream_checksum_backend_digest(struct st_stream_checksum_backend * worker) {
 	struct st_stream_checksum_backend_private * self = worker->data;
-	return self->digests;
+
+	char ** digest = calloc(self->nb_checksums, sizeof(char *));
+	unsigned int i;
+	for (i = 0; i < self->nb_checksums; i++)
+		digest[i] = strdup(self->digests[i]);
+
+	return digest;
 }
 
 static void st_stream_checksum_backend_finish(struct st_stream_checksum_backend * worker) {
@@ -220,7 +226,7 @@ static void st_stream_checksum_backend_free(struct st_stream_checksum_backend * 
 	free(worker);
 }
 
-static struct st_stream_checksum_backend * st_stream_checksum_backend_new(const char ** checksums, unsigned int nb_checksums) {
+static struct st_stream_checksum_backend * st_stream_checksum_backend_new(char ** checksums, unsigned int nb_checksums) {
 	struct st_stream_checksum_backend_private * self = malloc(sizeof(struct st_stream_checksum_backend_private));
 	self->checksums = calloc(nb_checksums, sizeof(struct st_checksum *));
 	self->digests = calloc(nb_checksums, sizeof(char *));
@@ -273,7 +279,7 @@ static void st_stream_checksum_threaded_backend_free(struct st_stream_checksum_b
 	free(worker);
 }
 
-static struct st_stream_checksum_backend * st_stream_checksum_threaded_backend_new(const char ** checksums, unsigned int nb_checksums) {
+static struct st_stream_checksum_backend * st_stream_checksum_threaded_backend_new(char ** checksums, unsigned int nb_checksums) {
 	struct st_stream_checksum_threaded_backend_private * self = malloc(sizeof(struct st_stream_checksum_threaded_backend_private));
 	self->first_block = self->last_block = NULL;
 
@@ -348,7 +354,7 @@ char ** st_checksum_writer_get_checksums(struct st_stream_writer * sfw) {
 	return self->worker->ops->digest(self->worker);
 }
 
-struct st_stream_writer * st_checksum_writer_new(struct st_stream_writer * stream, const char ** checksums, unsigned int nb_checksums, bool thread_helper) {
+struct st_stream_writer * st_checksum_writer_new(struct st_stream_writer * stream, char ** checksums, unsigned int nb_checksums, bool thread_helper) {
 	struct st_stream_checksum_private * self = malloc(sizeof(struct st_stream_checksum_private));
 	self->out = stream;
 

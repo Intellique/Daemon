@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 17:53:44 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 11:14:11 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_SAVE_H__
@@ -33,6 +33,8 @@
 
 #include <libstone/database.h>
 #include <libstone/job.h>
+
+struct st_hashtable;
 
 struct st_job_save_private {
 	struct st_database_connection * connect;
@@ -56,11 +58,13 @@ struct st_job_save_private {
 
 	struct st_job_save_meta_worker {
 		struct st_job_save_meta_worker_ops {
-			void (*add_file)(struct st_job_save_meta_worker * worker, const struct st_job_selected_path * selected_path, const char * path);
+			void (*add_file)(struct st_job_save_meta_worker * worker, struct st_job_selected_path * selected_path, const char * path);
 			void (*free)(struct st_job_save_meta_worker * worker);
 			void (*wait)(struct st_job_save_meta_worker * worker);
 		} * ops;
 		void * data;
+
+		struct st_hashtable * meta_files;
 	} * meta;
 };
 

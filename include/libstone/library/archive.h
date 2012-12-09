@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 14:07:32 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 11:04:58 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -39,6 +39,7 @@ struct st_job;
 struct st_media;
 struct st_job_selected_path;
 struct st_user;
+struct stat;
 
 enum st_archive_file_type {
 	st_archive_file_type_block_device,
@@ -104,6 +105,8 @@ struct st_archive_file {
 	time_t mtime;
 	ssize_t size;
 
+	char * mime_type;
+
 	char ** digests;
 	unsigned int nb_checksums;
 
@@ -112,6 +115,11 @@ struct st_archive_file {
 
 	void * db_data;
 };
+
+void st_archive_file_free(struct st_archive_file * file);
+struct st_archive_file * st_archive_file_new(struct stat * file, const char * filename);
+enum st_archive_file_type st_archive_file_string_to_type(const char * type);
+const char * st_archive_file_type_to_string(enum st_archive_file_type type);
 
 #endif
 

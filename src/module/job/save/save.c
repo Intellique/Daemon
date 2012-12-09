@@ -52,7 +52,7 @@
 
 #include "save.h"
 
-static int st_job_save_archive(struct st_job * job, const struct st_job_selected_path * selected_path, const char * path);
+static int st_job_save_archive(struct st_job * job, struct st_job_selected_path * selected_path, const char * path);
 static bool st_job_save_check(struct st_job * job);
 static void st_job_save_free(struct st_job * job);
 static void st_job_save_init(void) __attribute__((constructor));
@@ -77,7 +77,7 @@ static struct st_job_driver st_job_save_driver = {
 };
 
 
-static int st_job_save_archive(struct st_job * job, const struct st_job_selected_path * selected_path, const char * path) {
+static int st_job_save_archive(struct st_job * job, struct st_job_selected_path * selected_path, const char * path) {
 	struct st_job_save_private * self = job->data;
 
 	if (!st_util_string_check_valid_utf8(path)) {
