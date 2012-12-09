@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 17:54:59 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 17:29:00 +0100                         *
 \*************************************************************************/
 
 // asprintf, versionsort
@@ -233,10 +233,10 @@ static int st_job_save_run(struct st_job * job) {
 		self->total_size += st_job_save_compute_size(p->path);
 	}
 
-	self->worker = st_job_save_single_worker(job, pool, self->total_size, self->connect);
-	self->worker->ops->load_media(self->worker);
-
 	self->meta = st_job_save_meta_worker_new(job);
+
+	self->worker = st_job_save_single_worker(job, pool, self->total_size, self->connect, self->meta);
+	self->worker->ops->load_media(self->worker);
 
 	for (i = 0; i < self->nb_selected_paths; i++) {
 		struct st_job_selected_path * p = self->selected_paths + i;
@@ -246,7 +246,7 @@ static int st_job_save_run(struct st_job * job) {
 	self->worker->ops->close(self->worker);
 	self->worker->ops->free(self->worker);
 
-	self->meta->ops->wait(self->meta);
+	self->meta->ops->wait(self->meta, true);
 
 	self->meta->ops->free(self->meta);
 

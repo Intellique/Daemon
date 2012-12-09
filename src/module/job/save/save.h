@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 11:14:11 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 17:27:53 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_SAVE_H__
@@ -60,7 +60,7 @@ struct st_job_save_private {
 		struct st_job_save_meta_worker_ops {
 			void (*add_file)(struct st_job_save_meta_worker * worker, struct st_job_selected_path * selected_path, const char * path);
 			void (*free)(struct st_job_save_meta_worker * worker);
-			void (*wait)(struct st_job_save_meta_worker * worker);
+			void (*wait)(struct st_job_save_meta_worker * worker, bool stop);
 		} * ops;
 		void * data;
 
@@ -70,7 +70,7 @@ struct st_job_save_private {
 
 ssize_t st_job_save_compute_size(const char * path);
 
-struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, struct st_pool * pool, ssize_t archive_size, struct st_database_connection * connect);
+struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, struct st_pool * pool, ssize_t archive_size, struct st_database_connection * connect, struct st_job_save_meta_worker * meta_worker);
 
 struct st_job_save_meta_worker * st_job_save_meta_worker_new(struct st_job * job);
 

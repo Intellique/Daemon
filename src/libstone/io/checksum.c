@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 10:51:15 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 16:09:46 +0100                         *
 \*************************************************************************/
 
 // pthread_cond_destroy, pthread_cond_init, pthread_cond_signal, pthread_cond_wait
@@ -41,6 +41,7 @@
 
 struct st_stream_checksum_private {
 	struct st_stream_writer * out;
+	bool closed;
 
 	struct st_stream_checksum_backend {
 		struct st_stream_checksum_backend_ops {
@@ -124,18 +125,26 @@ static struct st_stream_checksum_backend_ops st_stream_checksum_threaded_backend
 static int st_stream_checksum_close(struct st_stream_writer * sfw) {
 	struct st_stream_checksum_private * self = sfw->data;
 
+	if (self->closed)
+		return 0;
+
 	int failed = 0;
 	if (self->out != NULL)
 		failed = self->out->ops->close(self->out);
 
-	if (!failed)
+	if (!failed) {
+		self->closed = true;
 		self->worker->ops->finish(self->worker);
+	}
 
 	return failed;
 }
 
 static void st_stream_checksum_free(struct st_stream_writer * sfw) {
 	struct st_stream_checksum_private * self = sfw->data;
+
+	if (!self->closed)
+		self->out->ops->close(self->out);
 
 	if (self->out != NULL)
 		self->out->ops->free(self->out);
@@ -175,6 +184,9 @@ static ssize_t st_stream_checksum_position(struct st_stream_writer * sfw) {
 
 static ssize_t st_stream_checksum_write(struct st_stream_writer * sfw, const void * buffer, ssize_t length) {
 	struct st_stream_checksum_private * self = sfw->data;
+
+	if (self->closed)
+		return -1;
 
 	ssize_t nb_write = length;
 	if (self->out != NULL)
@@ -357,6 +369,7 @@ char ** st_checksum_writer_get_checksums(struct st_stream_writer * sfw) {
 struct st_stream_writer * st_checksum_writer_new(struct st_stream_writer * stream, char ** checksums, unsigned int nb_checksums, bool thread_helper) {
 	struct st_stream_checksum_private * self = malloc(sizeof(struct st_stream_checksum_private));
 	self->out = stream;
+	self->closed = false;
 
 	if (thread_helper)
 		self->worker = st_stream_checksum_threaded_backend_new(checksums, nb_checksums);

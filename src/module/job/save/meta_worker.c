@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 11:15:18 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 17:31:02 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -79,7 +79,7 @@ static void st_job_save_free_meta_file(void * key, void * val);
 
 static void st_job_save_meta_worker_add_file(struct st_job_save_meta_worker * worker, struct st_job_selected_path * selected_path, const char * path);
 static void st_job_save_meta_worker_free(struct st_job_save_meta_worker * worker);
-static void st_job_save_meta_worker_wait(struct st_job_save_meta_worker * worker);
+static void st_job_save_meta_worker_wait(struct st_job_save_meta_worker * worker, bool stop);
 static void st_job_save_meta_worker_work(void * arg);
 static void st_job_save_meta_worker_work2(struct st_job_save_meta_worker_private * self, struct st_job_selected_path * selected_path, const char * path);
 
@@ -193,11 +193,11 @@ struct st_job_save_meta_worker * st_job_save_meta_worker_new(struct st_job * job
 	return meta;
 }
 
-static void st_job_save_meta_worker_wait(struct st_job_save_meta_worker * worker) {
+static void st_job_save_meta_worker_wait(struct st_job_save_meta_worker * worker, bool stop) {
 	struct st_job_save_meta_worker_private * self = worker->data;
 
 	pthread_mutex_lock(&self->lock);
-	self->stop = true;
+	self->stop = stop;
 	pthread_cond_signal(&self->wait);
 	pthread_cond_wait(&self->wait, &self->lock);
 	pthread_mutex_unlock(&self->lock);
@@ -210,8 +210,11 @@ static void st_job_save_meta_worker_work(void * arg) {
 		pthread_mutex_lock(&self->lock);
 		if (self->stop && self->first_file == NULL)
 			break;
-		if (self->first_file == NULL)
+
+		if (self->first_file == NULL) {
+			pthread_cond_signal(&self->wait);
 			pthread_cond_wait(&self->wait, &self->lock);
+		}
 
 		struct st_linked_list_file * files = self->first_file;
 		self->first_file = self->last_file = NULL;

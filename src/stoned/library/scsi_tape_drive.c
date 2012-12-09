@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 13:32:57 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 16:02:01 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -462,15 +462,15 @@ static int st_scsi_tape_drive_set_file_position(struct st_drive * drive, int fil
 
 	int failed;
 	if (file_position < 0) {
-		st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Rewinding media", drive->vendor, drive->model, drive - drive->changer->drives);
+		st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Fast forwarding to end of media", drive->vendor, drive->model, drive - drive->changer->drives);
 		static struct mtop eod = { MTEOM, 1 };
 		st_scsi_tape_drive_operation_start(self);
 		failed = ioctl(self->fd_nst, MTIOCTOP, &eod);
 		st_scsi_tape_drive_operation_stop(drive);
 		if (failed)
-			st_log_write_all(st_log_level_error, st_log_type_drive, "[%s | %s | #%td]: Rewinding media finished with error (%m)", drive->vendor, drive->model, drive - drive->changer->drives);
+			st_log_write_all(st_log_level_error, st_log_type_drive, "[%s | %s | #%td]: Fast forwarding to end of media finished with error (%m)", drive->vendor, drive->model, drive - drive->changer->drives);
 		else
-			st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Rewinding media finished with status = OK", drive->vendor, drive->model, drive - drive->changer->drives);
+			st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Fast forwarding to end of media finished with status = OK", drive->vendor, drive->model, drive - drive->changer->drives);
 	} else {
 		st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Positioning media to position #%d", drive->vendor, drive->model, drive - drive->changer->drives, file_position);
 		static struct mtop rewind = { MTREW, 1 };

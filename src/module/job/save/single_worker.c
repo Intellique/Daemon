@@ -22,23 +22,27 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 14:24:02 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 18:18:49 +0100                         *
 \*************************************************************************/
 
 // bool
 #include <stdbool.h>
 // free, malloc
 #include <stdlib.h>
+// strdup
+#include <string.h>
 // sleep
 #include <unistd.h>
 // time
 #include <time.h>
 
 #include <libstone/format.h>
+#include <libstone/io.h>
 #include <libstone/library/archive.h>
 #include <libstone/library/drive.h>
 #include <libstone/library/ressource.h>
 #include <libstone/log.h>
+#include <libstone/util/hashtable.h>
 #include <stoned/library/changer.h>
 #include <stoned/library/slot.h>
 
@@ -57,9 +61,23 @@ struct st_job_save_single_worker_private {
 
 	struct st_drive * drive;
 	struct st_format_writer * writer;
+
+	char ** checksums;
+	unsigned int nb_checksums;
+
+	struct st_linked_list_files {
+		char * path;
+		ssize_t block_position;
+		struct st_linked_list_files * next;
+	} * first_file, * last_file;
+	unsigned int nb_files;
+
+	struct st_stream_writer * checksum_writer;
+	struct st_job_save_meta_worker * meta_worker;
 };
 
 static int st_job_save_single_worker_add_file(struct st_job_save_data_worker * worker, const char * path);
+static struct st_stream_writer * st_job_save_single_worker_add_filter(struct st_stream_writer * writer, void * param);
 static void st_job_save_single_worker_close(struct st_job_save_data_worker * worker);
 static void st_job_save_single_worker_free(struct st_job_save_data_worker * worker);
 static int st_job_save_single_worker_load_media(struct st_job_save_data_worker * worker);
@@ -75,7 +93,9 @@ static struct st_job_save_data_worker_ops st_job_save_single_worker_ops = {
 };
 
 
-struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, struct st_pool * pool, ssize_t archive_size, struct st_database_connection * connect) {
+struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, struct st_pool * pool, ssize_t archive_size, struct st_database_connection * connect, struct st_job_save_meta_worker * meta_worker) {
+	struct st_job_save_private * jp = job->data;
+
 	struct st_job_save_single_worker_private * self = malloc(sizeof(struct st_job_save_single_worker_private));
 	self->job = job;
 	self->connect = connect;
@@ -90,6 +110,14 @@ struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, 
 	self->drive = NULL;
 	self->writer = NULL;
 
+	self->checksums = jp->connect->ops->get_checksums_by_job(jp->connect, job, &self->nb_checksums);
+
+	self->checksum_writer = NULL;
+	self->meta_worker = meta_worker;
+
+	self->first_file = self->last_file = NULL;
+	self->nb_files = 0;
+
 	struct st_job_save_data_worker * worker = malloc(sizeof(struct st_job_save_data_worker));
 	worker->ops = &st_job_save_single_worker_ops;
 	worker->data = self;
@@ -102,7 +130,27 @@ static int st_job_save_single_worker_add_file(struct st_job_save_data_worker * w
 
 	self->writer->ops->add_file(self->writer, path);
 
+	struct st_linked_list_files * f = malloc(sizeof(struct st_linked_list_files));
+	f->path = strdup(path);
+	f->block_position = self->writer->ops->position(self->writer) / self->writer->ops->get_block_size(self->writer);
+	f->next = NULL;
+
+	if (self->first_file == NULL)
+		self->first_file = self->last_file = f;
+	else
+		self->last_file = self->last_file->next = f;
+	self->nb_files++;
+
 	return 0;
+}
+
+static struct st_stream_writer * st_job_save_single_worker_add_filter(struct st_stream_writer * writer, void * param) {
+	struct st_job_save_single_worker_private * self = param;
+
+	if (self->nb_checksums > 0)
+		return self->checksum_writer = st_checksum_writer_new(writer, self->checksums, self->nb_checksums, true);
+
+	return writer;
 }
 
 static void st_job_save_single_worker_close(struct st_job_save_data_worker * worker) {
@@ -114,7 +162,30 @@ static void st_job_save_single_worker_close(struct st_job_save_data_worker * wor
 	last_volume->endtime = self->archive->endtime = time(NULL);
 	last_volume->size = self->writer->ops->position(self->writer);
 
-	// TODO: checksum
+	last_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
+	last_volume->nb_digests = self->nb_checksums;
+
+	self->meta_worker->ops->wait(self->meta_worker, false);
+
+	last_volume->files = calloc(self->nb_files, sizeof(struct st_archive_files));
+	unsigned int i;
+	struct st_linked_list_files * from_file = self->first_file;
+	for (i = 0; i < self->nb_files && from_file != NULL; i++) {
+		struct st_archive_file * f = st_hashtable_get(self->meta_worker->meta_files, from_file->path).value.custom;
+
+		struct st_archive_files * to_file = last_volume->files + i;
+		to_file->file = f;
+		to_file->position = from_file->block_position;
+
+		struct st_linked_list_files * next = from_file->next;
+		free(from_file->path);
+		free(from_file);
+
+		from_file = next;
+	}
+
+	self->first_file = self->last_file = NULL;
+	self->nb_files = 0;
 }
 
 static void st_job_save_single_worker_free(struct st_job_save_data_worker * worker) {
@@ -127,6 +198,11 @@ static void st_job_save_single_worker_free(struct st_job_save_data_worker * work
 
 	st_archive_free(self->archive);
 
+	unsigned int i;
+	for (i = 0; i < self->nb_checksums; i++)
+		free(self->checksums[i]);
+	free(self->checksums);
+
 	free(worker->data);
 	free(worker);
 }
@@ -135,7 +211,7 @@ static int st_job_save_single_worker_load_media(struct st_job_save_data_worker *
 	struct st_job_save_single_worker_private * self = worker->data;
 
 	if (st_job_save_single_worker_select_media(self)) {
-		self->writer = self->drive->ops->get_writer(self->drive, true, NULL, NULL);
+		self->writer = self->drive->ops->get_writer(self->drive, true, st_job_save_single_worker_add_filter, self);
 
 		int position = self->drive->ops->get_position(self->drive);
 
