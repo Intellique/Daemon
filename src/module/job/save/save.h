@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 17:27:53 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 18:55:52 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_SAVE_H__
@@ -51,6 +51,7 @@ struct st_job_save_private {
 			void (*close)(struct st_job_save_data_worker * worker);
 			void (*free)(struct st_job_save_data_worker * worker);
 			int (*load_media)(struct st_job_save_data_worker * worker);
+			int (*sync_db)(struct st_job_save_data_worker * worker);
 			ssize_t (*write)(struct st_job_save_data_worker * worker, void * buffer, ssize_t length);
 		} * ops;
 		void * data;

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 12:57:18 +0100                         *
+*  Last modified: Mon, 10 Dec 2012 00:02:18 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -47,6 +47,7 @@
 #include <time.h>
 
 #include <libstone/job.h>
+#include <libstone/library/archive.h>
 #include <libstone/library/changer.h>
 #include <libstone/library/drive.h>
 #include <libstone/library/media.h>
@@ -63,6 +64,18 @@
 struct st_db_postgresql_connection_private {
 	PGconn * connect;
 	struct st_hashtable * cached_query;
+};
+
+struct st_db_postgresql_archive_data {
+	long id;
+};
+
+struct st_db_postgresql_archive_file_data {
+	long id;
+};
+
+struct st_db_postgresql_archive_volume_data {
+	long id;
 };
 
 struct st_db_postgresql_changer_data {
@@ -126,6 +139,11 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 static int st_db_postgresql_get_user(struct st_database_connection * connect, struct st_user * user, const char * login);
 static int st_db_postgresql_sync_user(struct st_database_connection * connect, struct st_user * user);
 
+static int st_db_postgresql_add_checksum_result(struct st_database_connection * connect, char * checksum, char * result, char ** checksum_result_id);
+static int st_db_postgresql_sync_archive(struct st_database_connection * connect, struct st_archive * archive, char ** checksums);
+static int st_db_postgresql_sync_file(struct st_database_connection * connect, struct st_archive_file * file, char ** checksums, char ** file_id);
+static int st_db_postgresql_sync_volume(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_volume * volume, char ** checksums);
+
 static void st_db_postgresql_prepare(struct st_db_postgresql_connection_private * self, const char * statement_name, const char * query);
 
 static struct st_database_connection_ops st_db_postgresql_connection_ops = {
@@ -157,6 +175,8 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 
 	.get_user  = st_db_postgresql_get_user,
 	.sync_user = st_db_postgresql_sync_user,
+
+	.sync_archive = st_db_postgresql_sync_archive,
 };
 
 
@@ -1564,7 +1584,7 @@ static char ** st_db_postgresql_get_checksums_by_job(struct st_database_connecti
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	const char * query = "select_checksums_by_job";
-	st_db_postgresql_prepare(self, query, "SELECT name FROM checksum WHERE id IN (SELECT checksum FROM jobtochecksum WHERE job = $1)");
+	st_db_postgresql_prepare(self, query, "SELECT name FROM checksum WHERE id IN (SELECT checksum FROM jobtochecksum WHERE job = $1) ORDER BY id");
 
 	struct st_db_postgresql_job_data * job_data = job->db_data;
 	char * jobid;
@@ -1903,6 +1923,325 @@ static int st_db_postgresql_sync_user(struct st_database_connection * connect, s
 	free(userid);
 
 	return status == PGRES_TUPLES_OK;
+}
+
+
+static int st_db_postgresql_add_checksum_result(struct st_database_connection * connect, char * checksum, char * checksum_result, char ** checksum_result_id) {
+	struct st_db_postgresql_connection_private * self = connect->data;
+
+	const char * query0 = "select checksum_by_name";
+	st_db_postgresql_prepare(self, query0, "SELECT id FROM checksum WHERE name = $1 LIMIT 1");
+
+	const char * param0[] = { checksum };
+	PGresult * result = PQexecPrepared(self->connect, query0, 1, param0, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	char * checksumid;
+
+	if (status == PGRES_FATAL_ERROR) {
+		st_db_postgresql_get_error(result, query0);
+		PQclear(result);
+		return 1;
+	} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		st_db_postgresql_get_string_dup(result, 0, 0, &checksumid);
+	} else {
+		PQclear(result);
+		return 2;
+	}
+	PQclear(result);
+
+	const char * query1 = "select_checksumresult";
+	st_db_postgresql_prepare(self, query1, "SELECT id FROM checksumresult WHERE checksum = $1 AND result = $2 LIMIT 1");
+
+	const char * param1[] = { checksumid, checksum_result };
+	result = PQexecPrepared(self->connect, query1, 2, param1, NULL, NULL, 0);
+	status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR) {
+		st_db_postgresql_get_error(result, query1);
+		PQclear(result);
+		free(checksumid);
+		return 1;
+	} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		st_db_postgresql_get_string_dup(result, 0, 0, checksum_result_id);
+		PQclear(result);
+		free(checksumid);
+		return 0;
+	}
+	PQclear(result);
+
+	const char * query2 = "insert_checksumresult";
+	st_db_postgresql_prepare(self, query2, "INSERT INTO checksumresult(checksum, result) VALUES ($1, $2) RETURNING id");
+
+	result = PQexecPrepared(self->connect, query2, 2, param1, NULL, NULL, 0);
+	status = PQresultStatus(result);
+
+	free(checksumid);
+
+	if (status == PGRES_FATAL_ERROR) {
+		st_db_postgresql_get_error(result, query2);
+		PQclear(result);
+		return 1;
+	} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		st_db_postgresql_get_string_dup(result, 0, 0, checksum_result_id);
+		PQclear(result);
+		return 0;
+	} else {
+		PQclear(result);
+		return 2;
+	}
+}
+
+static int st_db_postgresql_sync_archive(struct st_database_connection * connect, struct st_archive * archive, char ** checksums) {
+	if (connect == NULL || archive == NULL)
+		return 1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_archive_data * archive_data = archive->db_data;
+	if (archive_data == NULL) {
+		archive->db_data = archive_data = malloc(sizeof(struct st_db_postgresql_archive_data));
+		archive_data->id = -1;
+	}
+
+	if (archive_data->id < 0) {
+		const char * query = "insert_archive";
+		st_db_postgresql_prepare(self, query, "INSERT INTO archive(name, ctime, endtime, creator, owner, metadata) VALUES ($1, $2, $3, $4, $4, $5) RETURNING id");
+
+		char buffer_ctime[32];
+		char buffer_endtime[32];
+		char * userid = NULL;
+
+		struct st_db_postgresql_user_data * user_data = archive->user->db_data;
+		asprintf(&userid, "%ld", user_data->id);
+
+		struct tm tv;
+		localtime_r(&archive->ctime, &tv);
+		strftime(buffer_ctime, 32, "%F %T", &tv);
+
+		localtime_r(&archive->endtime, &tv);
+		strftime(buffer_endtime, 32, "%F %T", &tv);
+
+		const char * param[] = {
+			archive->name, buffer_ctime, buffer_endtime, userid, ""
+		};
+		PGresult * result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+			st_db_postgresql_get_long(result, 0, 0, &archive_data->id);
+
+		PQclear(result);
+		free(userid);
+	}
+
+	unsigned int i;
+	int status = 0;
+	for (i = 0; i < archive->nb_volumes && !status; i++)
+		status = st_db_postgresql_sync_volume(connect, archive, archive->volumes + i, checksums);
+
+	return status;
+}
+
+static int st_db_postgresql_sync_file(struct st_database_connection * connect, struct st_archive_file * file, char ** checksums, char ** file_id) {
+	struct st_db_postgresql_archive_file_data * file_data = file->db_data;
+	if (file_data != NULL) {
+		asprintf(file_id, "%ld", file_data->id);
+		return 0;
+	} else {
+		file->db_data = file_data = malloc(sizeof(struct st_db_postgresql_archive_file_data));
+		file_data->id = -1;
+	}
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+
+	struct st_db_postgresql_selected_path_data * selected_data = file->selected_path->db_data;
+
+	const char * query = "insert_archive_file";
+	st_db_postgresql_prepare(self, query, "INSERT INTO archivefile(name, type, mimetype, ownerid, owner, groupid, groups, perm, ctime, mtime, size, parent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id");
+
+	char * perm, * ownerid, * groupid, * size, * parent;
+	asprintf(&perm, "%o", file->perm & 0x7777);
+	asprintf(&ownerid, "%d", file->ownerid);
+	asprintf(&groupid, "%d", file->groupid);
+	asprintf(&size, "%zd", file->size);
+	asprintf(&parent, "%ld", selected_data->id);
+
+	char ctime[32];
+	struct tm local_current;
+	localtime_r(&file->ctime, &local_current);
+	strftime(ctime, 32, "%F %T", &local_current);
+
+	char mtime[32];
+	localtime_r(&file->ctime, &local_current);
+	strftime(mtime, 32, "%F %T", &local_current);
+
+	const char * param[] = {
+		file->name, st_archive_file_type_to_string(file->type),
+		file->mime_type, ownerid, file->owner, groupid, file->group, perm,
+		ctime, mtime, size, parent
+	};
+	PGresult * result = PQexecPrepared(self->connect, query, 12, param, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	free(perm);
+	free(ownerid);
+	free(groupid);
+	free(size);
+	free(parent);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		st_db_postgresql_get_long(result, 0, 0, &file_data->id);
+		st_db_postgresql_get_string_dup(result, 0, 0, file_id);
+	}
+
+	PQclear(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		return 1;
+
+	query = "insert_archive_file_to_checksum";
+	st_db_postgresql_prepare(self, query, "INSERT INTO archivefiletochecksumresult VALUES ($1, $2)");
+
+	unsigned int i;
+	int failed = 0;
+	for (i = 0; i < file->nb_digests && !failed; i++) {
+		char * checksum_result = NULL;
+
+		failed = st_db_postgresql_add_checksum_result(connect, checksums[i], file->digests[i], &checksum_result);
+		if (failed)
+			break;
+
+		const char * param[] = { *file_id, checksum_result };
+		PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR) {
+			st_db_postgresql_get_error(result, query);
+			failed = 1;
+		}
+
+		PQclear(result);
+
+		free(checksum_result);
+	}
+
+	return failed;
+}
+
+static int st_db_postgresql_sync_volume(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_volume * volume, char ** checksums) {
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_archive_data * archive_data = archive->db_data;
+	struct st_db_postgresql_archive_volume_data * archive_volume_data = volume->db_data;
+	struct st_db_postgresql_media_data * media_data = volume->media->db_data;
+
+	if (archive_volume_data == NULL) {
+		volume->db_data = archive_volume_data = malloc(sizeof(struct st_db_postgresql_archive_volume_data));
+		archive_volume_data->id = -1;
+	}
+
+	char * volumeid = NULL;
+
+	if (archive_volume_data->id < 0) {
+		const char * query = "insert_archive_volume";
+		st_db_postgresql_prepare(self, query, "INSERT INTO archivevolume(sequence, size, ctime, endtime, archive, tape, tapeposition) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id");
+
+		char buffer_ctime[32];
+		char buffer_endtime[32];
+
+		struct tm tv;
+		localtime_r(&volume->ctime, &tv);
+		strftime(buffer_ctime, 32, "%F %T", &tv);
+
+		localtime_r(&volume->endtime, &tv);
+		strftime(buffer_endtime, 32, "%F %T", &tv);
+
+		char * sequence, * size, * archiveid, * mediaid, * mediaposition;
+		asprintf(&sequence, "%ld", volume->sequence);
+		asprintf(&size, "%zd", volume->size);
+		asprintf(&archiveid, "%ld", archive_data->id);
+		asprintf(&mediaid, "%ld", media_data->id);
+		asprintf(&mediaposition, "%ld", volume->media_position);
+
+		const char * param[] = {
+			sequence, size, buffer_ctime, buffer_endtime, archiveid, mediaid, mediaposition
+		};
+		PGresult * result = PQexecPrepared(self->connect, query, 7, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+			st_db_postgresql_get_long(result, 0, 0, &archive_volume_data->id);
+			st_db_postgresql_get_string_dup(result, 0, 0, &volumeid);
+		}
+
+		PQclear(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			return 1;
+	}
+
+	const char * query = "insert_archive_volume_to_checksum";
+	st_db_postgresql_prepare(self, query, "INSERT INTO archivevolumetochecksumresult VALUES ($1, $2)");
+
+	unsigned int i;
+	int failed = 0;
+	for (i = 0; i < volume->nb_digests && !failed; i++) {
+		char * checksum_result = NULL;
+
+		failed = st_db_postgresql_add_checksum_result(connect, checksums[i], volume->digests[i], &checksum_result);
+		if (failed)
+			break;
+
+		const char * param[] = { volumeid, checksum_result };
+		PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR) {
+			st_db_postgresql_get_error(result, query);
+			failed = 1;
+		}
+
+		PQclear(result);
+
+		free(checksum_result);
+	}
+
+	if (failed) {
+		free(volumeid);
+		return failed;
+	}
+
+	query = "insert_archivefiletoarchivevolume";
+	st_db_postgresql_prepare(self, query, "INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile, blocknumber) VALUES ($1, $2, $3)");
+
+	for (i = 0; i < volume->nb_files && !failed; i++) {
+		struct st_archive_files * f = volume->files + i;
+		char * file_id;
+
+		failed = st_db_postgresql_sync_file(connect, f->file, checksums, &file_id);
+
+		char * block_number;
+		asprintf(&block_number, "%zd", f->position);
+
+		const char * param[] = { volumeid, file_id, block_number };
+		PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(result, query);
+
+		PQclear(result);
+		free(block_number);
+		free(file_id);
+	}
+
+	free(volumeid);
+	return failed;
 }
 
 

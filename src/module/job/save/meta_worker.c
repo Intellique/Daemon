@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 17:31:02 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 23:51:47 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -73,6 +73,8 @@ struct st_job_save_meta_worker_private {
 	unsigned int nb_checksums;
 
 	struct st_hashtable * meta_files;
+
+	magic_t file;
 };
 
 static void st_job_save_free_meta_file(void * key, void * val);
@@ -164,6 +166,8 @@ static void st_job_save_meta_worker_free(struct st_job_save_meta_worker * worker
 
 	st_hashtable_free(self->meta_files);
 
+	magic_close(self->file);
+
 	free(self);
 	free(worker);
 }
@@ -182,6 +186,9 @@ struct st_job_save_meta_worker * st_job_save_meta_worker_new(struct st_job * job
 	self->checksums = jp->connect->ops->get_checksums_by_job(jp->connect, job, &self->nb_checksums);
 
 	self->meta_files = st_hashtable_new2(st_util_string_compute_hash, st_job_save_free_meta_file);
+
+	self->file = magic_open(MAGIC_MIME_TYPE);
+	magic_load(self->file, NULL);
 
 	struct st_job_save_meta_worker * meta = malloc(sizeof(struct st_job_save_meta_worker));
 	meta->ops = &st_job_save_meta_worker_ops;
@@ -244,13 +251,10 @@ static void st_job_save_meta_worker_work2(struct st_job_save_meta_worker_private
 	file->selected_path = selected_path;
 
 	if (S_ISREG(st.st_mode)) {
-		magic_t handle = magic_open(MAGIC_MIME_TYPE);
-		const char * mime_type = magic_file(handle, path);
+		const char * mime_type = magic_file(self->file, path);
 
 		if (mime_type != NULL)
 			file->mime_type = strdup(mime_type);
-
-		magic_close(handle);
 
 		int fd = open(path, O_RDONLY);
 		struct st_stream_writer * writer = st_checksum_writer_new(NULL, self->checksums, self->nb_checksums, false);
@@ -268,6 +272,7 @@ static void st_job_save_meta_worker_work2(struct st_job_save_meta_worker_private
 		writer->ops->close(writer);
 
 		file->digests = st_checksum_writer_get_checksums(writer);
+		file->nb_digests = self->nb_checksums;
 
 		writer->ops->free(writer);
 	}

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 17:29:00 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 18:29:45 +0100                         *
 \*************************************************************************/
 
 // asprintf, versionsort
@@ -244,10 +244,11 @@ static int st_job_save_run(struct st_job * job) {
 	}
 
 	self->worker->ops->close(self->worker);
-	self->worker->ops->free(self->worker);
-
 	self->meta->ops->wait(self->meta, true);
 
+	self->worker->ops->sync_db(self->worker);
+
+	self->worker->ops->free(self->worker);
 	self->meta->ops->free(self->meta);
 
 	return 0;

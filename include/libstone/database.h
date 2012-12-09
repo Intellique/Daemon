@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 17:58:52 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 21:11:35 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -33,6 +33,7 @@
 
 #include "plugin.h"
 
+struct st_archive;
 struct st_changer;
 struct st_drive;
 struct st_hashtable;
@@ -177,6 +178,8 @@ struct st_database_connection {
 
 		int (*get_user)(struct st_database_connection * connect, struct st_user * user, const char * login);
 		int (*sync_user)(struct st_database_connection * connect, struct st_user * user);
+
+		int (*sync_archive)(struct st_database_connection * connect, struct st_archive * archive, char ** checksums);
 
 
 

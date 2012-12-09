@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 12:42:31 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 22:13:09 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -149,7 +149,7 @@ struct st_archive_file * st_archive_file_new(struct stat * file, const char * fi
 	f->mime_type = NULL;
 
 	f->digests = NULL;
-	f->nb_checksums = 0;
+	f->nb_digests = 0;
 
 	f->archive = NULL;
 	f->selected_path = NULL;

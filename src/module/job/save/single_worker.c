@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 18:18:49 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 22:56:16 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -82,6 +82,7 @@ static void st_job_save_single_worker_close(struct st_job_save_data_worker * wor
 static void st_job_save_single_worker_free(struct st_job_save_data_worker * worker);
 static int st_job_save_single_worker_load_media(struct st_job_save_data_worker * worker);
 static bool st_job_save_single_worker_select_media(struct st_job_save_single_worker_private * self);
+static int st_job_save_single_worker_sync_db(struct st_job_save_data_worker * worker);
 static ssize_t st_job_save_single_worker_write(struct st_job_save_data_worker * worker, void * buffer, ssize_t length);
 
 static struct st_job_save_data_worker_ops st_job_save_single_worker_ops = {
@@ -89,6 +90,7 @@ static struct st_job_save_data_worker_ops st_job_save_single_worker_ops = {
 	.close      = st_job_save_single_worker_close,
 	.free       = st_job_save_single_worker_free,
 	.load_media = st_job_save_single_worker_load_media,
+	.sync_db    = st_job_save_single_worker_sync_db,
 	.write      = st_job_save_single_worker_write,
 };
 
@@ -185,6 +187,7 @@ static void st_job_save_single_worker_close(struct st_job_save_data_worker * wor
 	}
 
 	self->first_file = self->last_file = NULL;
+	last_volume->nb_files = self->nb_files;
 	self->nb_files = 0;
 }
 
@@ -408,6 +411,12 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 	}
 
 	return ok;
+}
+
+static int st_job_save_single_worker_sync_db(struct st_job_save_data_worker * worker) {
+	struct st_job_save_single_worker_private * self = worker->data;
+
+	return self->connect->ops->sync_archive(self->connect, self->archive, self->checksums);
 }
 
 static ssize_t st_job_save_single_worker_write(struct st_job_save_data_worker * worker, void * buffer, ssize_t length) {

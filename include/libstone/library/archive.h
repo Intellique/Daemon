@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 12:40:38 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 22:12:41 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -106,7 +106,7 @@ struct st_archive_file {
 	char * mime_type;
 
 	char ** digests;
-	unsigned int nb_checksums;
+	unsigned int nb_digests;
 
 	struct st_archive * archive;
 	struct st_job_selected_path * selected_path;
