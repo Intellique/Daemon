@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 05 Dec 2012 09:58:16 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 13:23:51 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -664,7 +664,8 @@ int st_media_write_header(struct st_drive * drive, struct st_pool * pool) {
 	hdr = new_addr;
 	shdr += snprintf(hdr + shdr, sdigest + 18, "Checksum: crc32=%s\n", digest);
 
-	struct st_stream_writer * writer = drive->ops->get_raw_writer(drive, 0);
+	drive->ops->rewind(drive);
+	struct st_stream_writer * writer = drive->ops->get_raw_writer(drive, false);
 	ssize_t nb_write = writer->ops->write(writer, hdr, shdr);
 	int failed = writer->ops->close(writer);
 	writer->ops->free(writer);

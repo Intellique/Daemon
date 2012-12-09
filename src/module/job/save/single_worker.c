@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 13:47:43 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 14:24:02 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -31,8 +31,11 @@
 #include <stdlib.h>
 // sleep
 #include <unistd.h>
+// time
+#include <time.h>
 
 #include <libstone/format.h>
+#include <libstone/library/archive.h>
 #include <libstone/library/drive.h>
 #include <libstone/library/ressource.h>
 #include <libstone/log.h>
@@ -46,6 +49,8 @@ struct st_job_save_single_worker_private {
 	struct st_database_connection * connect;
 
 	struct st_pool * pool;
+
+	struct st_archive * archive;
 
 	ssize_t total_done;
 	ssize_t archive_size;
@@ -77,6 +82,8 @@ struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, 
 
 	self->pool = pool;
 
+	self->archive = st_archive_new(job->name, job->user);
+
 	self->total_done = 0;
 	self->archive_size = archive_size;
 
@@ -102,6 +109,12 @@ static void st_job_save_single_worker_close(struct st_job_save_data_worker * wor
 	struct st_job_save_single_worker_private * self = worker->data;
 
 	self->writer->ops->close(self->writer);
+
+	struct st_archive_volume * last_volume = self->archive->volumes + (self->archive->nb_volumes - 1);
+	last_volume->endtime = self->archive->endtime = time(NULL);
+	last_volume->size = self->writer->ops->position(self->writer);
+
+	// TODO: checksum
 }
 
 static void st_job_save_single_worker_free(struct st_job_save_data_worker * worker) {
@@ -112,6 +125,8 @@ static void st_job_save_single_worker_free(struct st_job_save_data_worker * work
 
 	self->writer->ops->free(self->writer);
 
+	st_archive_free(self->archive);
+
 	free(worker->data);
 	free(worker);
 }
@@ -120,7 +135,11 @@ static int st_job_save_single_worker_load_media(struct st_job_save_data_worker *
 	struct st_job_save_single_worker_private * self = worker->data;
 
 	if (st_job_save_single_worker_select_media(self)) {
-		self->writer = self->drive->ops->get_writer(self->drive, -1, NULL);
+		self->writer = self->drive->ops->get_writer(self->drive, true, NULL, NULL);
+
+		int position = self->drive->ops->get_position(self->drive);
+
+		st_archive_add_volume(self->archive, self->drive->slot->media, position);
 
 		return self->writer == NULL;
 	}

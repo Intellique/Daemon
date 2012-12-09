@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 04 Dec 2012 23:17:17 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 13:32:57 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -103,15 +103,17 @@ struct st_scsi_tape_drive_io_writer {
 
 static void st_scsi_tape_drive_create_media(struct st_drive * drive);
 static int st_scsi_tape_drive_eject(struct st_drive * drive);
-static int st_scsi_tape_drive_format(struct st_drive * drive, int quick_mode);
+static int st_scsi_tape_drive_format(struct st_drive * drive, int file_position, bool quick_mode);
 static ssize_t st_scsi_tape_drive_get_block_size(struct st_drive * drive);
+static int st_scsi_tape_drive_get_position(struct st_drive * drive);
 static struct st_stream_reader * st_scsi_tape_drive_get_raw_reader(struct st_drive * drive, int file_position);
-static struct st_stream_writer * st_scsi_tape_drive_get_raw_writer(struct st_drive * drive, int file_position);
+static struct st_stream_writer * st_scsi_tape_drive_get_raw_writer(struct st_drive * drive, bool append);
 static struct st_format_reader * st_scsi_tape_drive_get_reader(struct st_drive * drive, int file_position);
-static struct st_format_writer * st_scsi_tape_drive_get_writer(struct st_drive * drive, int file_position, struct st_stream_writer * (*filter)(struct st_stream_writer * writer));
+static struct st_format_writer * st_scsi_tape_drive_get_writer(struct st_drive * drive, bool append, struct st_stream_writer * (*filter)(struct st_stream_writer * writer, void * param), void * param);
 static void st_scsi_tape_drive_on_failed(struct st_drive * drive, int verbose, int sleep_time);
 static void st_scsi_tape_drive_operation_start(struct st_scsi_tape_drive_private * dr);
 static void st_scsi_tape_drive_operation_stop(struct st_drive * dr);
+static int st_scsi_tape_drive_rewind(struct st_drive * drive);
 static int st_scsi_tape_drive_set_file_position(struct st_drive * drive, int file_position);
 static int st_scsi_tape_drive_update_media_info(struct st_drive * drive);
 
@@ -137,10 +139,12 @@ static ssize_t st_scsi_tape_drive_io_writer_write(struct st_stream_writer * io, 
 static struct st_drive_ops st_scsi_tape_drive_ops = {
 	.eject             = st_scsi_tape_drive_eject,
 	.format            = st_scsi_tape_drive_format,
+	.get_position      = st_scsi_tape_drive_get_position,
 	.get_raw_reader    = st_scsi_tape_drive_get_raw_reader,
 	.get_raw_writer    = st_scsi_tape_drive_get_raw_writer,
 	.get_reader        = st_scsi_tape_drive_get_reader,
 	.get_writer        = st_scsi_tape_drive_get_writer,
+	.rewind            = st_scsi_tape_drive_rewind,
 	.update_media_info = st_scsi_tape_drive_update_media_info,
 };
 
@@ -225,38 +229,13 @@ static int st_scsi_tape_drive_eject(struct st_drive * drive) {
 	return failed;
 }
 
-static int st_scsi_tape_drive_format(struct st_drive * drive, int quick_mode) {
+static int st_scsi_tape_drive_format(struct st_drive * drive, int file_position, bool quick_mode) {
 	if (drive == NULL || !drive->enabled)
 		return 1;
 
+	int failed = st_scsi_tape_drive_set_file_position(drive, file_position);
+
 	struct st_scsi_tape_drive_private * self = drive->data;
-
-	st_scsi_tape_drive_operation_start(self);
-	int failed = ioctl(self->fd_nst, MTIOCGET, &self->status);
-	st_scsi_tape_drive_operation_stop(drive);
-
-	/*
-	 * There is a limitation with scsi command 'space' used by driver st of linux.
-	 * In this command block_number is specified into 3 bytes so 8388607 is the
-	 * maximum that we can forward or backward in one time.
-	 */
-	while (self->status.mt_blkno > 0 && !failed) {
-		struct mtop backward = {
-			.mt_op    = MTBSR,
-			.mt_count = self->status.mt_blkno > 8388607 ? 8388607 : self->status.mt_blkno,
-		};
-
-		st_scsi_tape_drive_operation_start(self);
-		failed = ioctl(self->fd_nst, MTIOCTOP, &backward);
-		st_scsi_tape_drive_operation_stop(drive);
-
-		if (!failed)
-			drive->slot->media->operation_count++;
-
-		st_scsi_tape_drive_operation_start(self);
-		failed = ioctl(self->fd_nst, MTIOCGET, &self->status);
-		st_scsi_tape_drive_operation_stop(drive);
-	}
 
 	int fd = -1;
 	if (!failed)
@@ -352,6 +331,11 @@ static ssize_t st_scsi_tape_drive_get_block_size(struct st_drive * drive) {
 	return -1;
 }
 
+static int st_scsi_tape_drive_get_position(struct st_drive * drive) {
+	struct st_scsi_tape_drive_private * self = drive->data;
+	return self->status.mt_fileno;
+}
+
 static struct st_stream_reader * st_scsi_tape_drive_get_raw_reader(struct st_drive * drive, int file_position) {
 	if (drive == NULL || !drive->enabled)
 		return NULL;
@@ -371,11 +355,11 @@ static struct st_stream_reader * st_scsi_tape_drive_get_raw_reader(struct st_dri
 	return st_scsi_tape_drive_io_reader_new(drive);
 }
 
-static struct st_stream_writer * st_scsi_tape_drive_get_raw_writer(struct st_drive * drive, int file_position) {
+static struct st_stream_writer * st_scsi_tape_drive_get_raw_writer(struct st_drive * drive, bool append) {
 	if (drive == NULL || !drive->enabled)
 		return NULL;
 
-	if (st_scsi_tape_drive_set_file_position(drive, file_position))
+	if (append && st_scsi_tape_drive_set_file_position(drive, -1))
 		return NULL;
 
 	struct st_scsi_tape_drive_private * self = drive->data;
@@ -397,11 +381,11 @@ static struct st_format_reader * st_scsi_tape_drive_get_reader(struct st_drive *
 	return NULL;
 }
 
-static struct st_format_writer * st_scsi_tape_drive_get_writer(struct st_drive * drive, int file_position, struct st_stream_writer * (*filter)(struct st_stream_writer * writer)) {
-	struct st_stream_writer * writer = st_scsi_tape_drive_get_raw_writer(drive, file_position);
+static struct st_format_writer * st_scsi_tape_drive_get_writer(struct st_drive * drive, bool append, struct st_stream_writer * (*filter)(struct st_stream_writer * writer, void * param), void * param) {
+	struct st_stream_writer * writer = st_scsi_tape_drive_get_raw_writer(drive, append);
 	if (writer != NULL) {
 		if (filter != NULL) {
-			struct st_stream_writer * tmp_io = filter(writer);
+			struct st_stream_writer * tmp_io = filter(writer, param);
 			if (tmp_io != NULL)
 				writer = tmp_io;
 			else {
@@ -469,30 +453,48 @@ static void st_scsi_tape_drive_on_failed(struct st_drive * drive, int verbose, i
 	self->fd_nst = open(drive->device, O_RDWR | O_NONBLOCK);
 }
 
+static int st_scsi_tape_drive_rewind(struct st_drive * drive) {
+	return st_scsi_tape_drive_set_file_position(drive, -1);
+}
+
 static int st_scsi_tape_drive_set_file_position(struct st_drive * drive, int file_position) {
 	struct st_scsi_tape_drive_private * self = drive->data;
 
 	int failed;
 	if (file_position < 0) {
+		st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Rewinding media", drive->vendor, drive->model, drive - drive->changer->drives);
 		static struct mtop eod = { MTEOM, 1 };
 		st_scsi_tape_drive_operation_start(self);
 		failed = ioctl(self->fd_nst, MTIOCTOP, &eod);
 		st_scsi_tape_drive_operation_stop(drive);
+		if (failed)
+			st_log_write_all(st_log_level_error, st_log_type_drive, "[%s | %s | #%td]: Rewinding media finished with error (%m)", drive->vendor, drive->model, drive - drive->changer->drives);
+		else
+			st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Rewinding media finished with status = OK", drive->vendor, drive->model, drive - drive->changer->drives);
 	} else {
+		st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Positioning media to position #%d", drive->vendor, drive->model, drive - drive->changer->drives, file_position);
 		static struct mtop rewind = { MTREW, 1 };
 		st_scsi_tape_drive_operation_start(self);
 		failed = ioctl(self->fd_nst, MTIOCTOP, &rewind);
 		st_scsi_tape_drive_operation_stop(drive);
 
-		if (failed)
+		if (failed) {
+			st_log_write_all(st_log_level_error, st_log_type_drive, "[%s | %s | #%td]: Positioning media to position #%d finished with error (%m)", drive->vendor, drive->model, drive - drive->changer->drives, file_position);
 			return failed;
+		}
 
 		if (file_position > 0) {
 			struct mtop fsr = { MTFSF, file_position };
 			st_scsi_tape_drive_operation_start(self);
 			failed = ioctl(self->fd_nst, MTIOCTOP, &fsr);
 			st_scsi_tape_drive_operation_stop(drive);
-		}
+
+			if (failed)
+				st_log_write_all(st_log_level_error, st_log_type_drive, "[%s | %s | #%td]: Positioning media to position #%d finished with error (%m)", drive->vendor, drive->model, drive - drive->changer->drives, file_position);
+			else
+				st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Positioning media to position #%d finished with status = OK", drive->vendor, drive->model, drive - drive->changer->drives, file_position);
+		} else
+			st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Positioning media to position #%d finished with status = OK", drive->vendor, drive->model, drive - drive->changer->drives, file_position);
 	}
 
 	if (!failed)

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 11:04:58 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 12:40:38 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -66,8 +66,6 @@ struct st_archive {
 
 	struct st_archive * copy_of;
 
-	struct st_job * job;
-
 	void * db_data;
 };
 
@@ -82,7 +80,7 @@ struct st_archive_volume {
 	long media_position;
 
 	char ** digests;
-	unsigned int nb_checksums;
+	unsigned int nb_digests;
 
 	struct st_archive_files {
 		struct st_archive_file * file;
@@ -116,10 +114,14 @@ struct st_archive_file {
 	void * db_data;
 };
 
+struct st_archive_volume * st_archive_add_volume(struct st_archive * archive, struct st_media * media, long media_position);
+void st_archive_free(struct st_archive * archive);
+struct st_archive * st_archive_new(const char * name, struct st_user * user);
 void st_archive_file_free(struct st_archive_file * file);
 struct st_archive_file * st_archive_file_new(struct stat * file, const char * filename);
 enum st_archive_file_type st_archive_file_string_to_type(const char * type);
 const char * st_archive_file_type_to_string(enum st_archive_file_type type);
+void st_archive_volume_free(struct st_archive_volume * volume);
 
 #endif
 

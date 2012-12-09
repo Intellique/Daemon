@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 11:10:37 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 12:42:31 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -31,6 +31,8 @@
 #include <string.h>
 // struct stat
 #include <sys/stat.h>
+// time
+#include <time.h>
 
 #include <libstone/library/archive.h>
 #include <libstone/util/file.h>
@@ -51,6 +53,63 @@ static struct st_archive_file_type2 {
 	{ 0, st_archive_file_type_unknown },
 };
 
+
+struct st_archive_volume * st_archive_add_volume(struct st_archive * archive, struct st_media * media, long media_position) {
+	archive->volumes = realloc(archive->volumes, (archive->nb_volumes + 1) * sizeof(struct st_archive_volume));
+	struct st_archive_volume * volume = archive->volumes + archive->nb_volumes;
+	unsigned int index_volume = archive->nb_volumes;
+	archive->nb_volumes++;
+
+	volume->sequence = index_volume + archive->next_sequence;
+	volume->size = 0;
+	volume->ctime = time(NULL);
+	volume->endtime = 0;
+
+	volume->archive = archive;
+	volume->media = media;
+	volume->media_position = media_position;
+
+	volume->digests = NULL;
+	volume->nb_digests = 0;
+
+	volume->files = NULL;
+	volume->nb_files = 0;
+
+	volume->db_data = NULL;
+
+	return volume;
+}
+
+void st_archive_free(struct st_archive * archive) {
+	free(archive->name);
+
+	unsigned int i;
+	for (i = 0; i < archive->nb_volumes; i++)
+		st_archive_volume_free(archive->volumes + i);
+	free(archive->volumes);
+	free(archive->db_data);
+
+	free(archive);
+}
+
+struct st_archive * st_archive_new(const char * name, struct st_user * user) {
+	struct st_archive * archive = malloc(sizeof(struct st_archive));
+	archive->name = strdup(name);
+	archive->ctime = time(NULL);
+	archive->endtime = 0;
+	archive->user = user;
+
+	archive->volumes = NULL;
+	archive->nb_volumes = 0;
+
+	archive->next_sequence = 0;
+
+	archive->copy_of = NULL;
+
+	archive->db_data = NULL;
+
+	return archive;
+}
 
 void st_archive_file_free(struct st_archive_file * file) {
 	free(file->name);
@@ -114,5 +173,15 @@ const char * st_archive_file_type_to_string(enum st_archive_file_type type) {
 		if (ptr->type == type)
 			return ptr->name;
 	return "unknown";
+}
+
+void st_archive_volume_free(struct st_archive_volume * volume) {
+	unsigned int i;
+	for (i = 0; i < volume->nb_digests; i++)
+		free(volume->digests[i]);
+	free(volume->digests);
+
+	free(volume->files);
+	free(volume->db_data);
 }
 

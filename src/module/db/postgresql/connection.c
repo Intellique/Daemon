@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 18:08:06 +0100                         *
+*  Last modified: Sun, 09 Dec 2012 12:57:18 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1092,7 +1092,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 			locked = false;
 
 			const char * query = "select_media_before_update";
-			st_db_postgresql_prepare(self, query, "SELECT t.name, t.label, p.uuid FROM tape	t LEFT JOIN pool p ON t.pool = p.id WHERE t.id = $1");
+			st_db_postgresql_prepare(self, query, "SELECT t.name, t.label, p.uuid FROM tape t LEFT JOIN pool p ON t.pool = p.id WHERE t.id = $1");
 			const char * param1[] = { mediaid };
 
 			PGresult * result = PQexecPrepared(self->connect, query, 1, param1, NULL, NULL, 0);
