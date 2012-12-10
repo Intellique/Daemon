@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 16:02:01 +0100                         *
+*  Last modified: Mon, 10 Dec 2012 20:56:41 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -93,6 +93,8 @@ struct st_scsi_tape_drive_io_writer {
 	ssize_t buffer_used;
 	ssize_t block_size;
 	ssize_t position;
+
+	bool eof_reached;
 
 	int last_errno;
 
@@ -812,8 +814,19 @@ static int st_scsi_tape_drive_io_writer_close(struct st_stream_writer * io) {
 		st_scsi_tape_drive_operation_stop(self->drive);
 
 		if (nb_write < 0) {
-			self->last_errno = errno;
-			return -1;
+			switch (errno) {
+				case ENOSPC:
+					st_scsi_tape_drive_operation_start(self->drive_private);
+					nb_write = write(self->fd, self->buffer, self->block_size);
+					st_scsi_tape_drive_operation_stop(self->drive);
+
+					if (nb_write == self->block_size)
+						break;
+
+				default:
+					self->last_errno = errno;
+					return -1;
+			}
 		}
 
 		self->position += nb_write;
@@ -833,7 +846,7 @@ static int st_scsi_tape_drive_io_writer_close(struct st_stream_writer * io) {
 
 		st_scsi_tape_drive_update_media_info(self->drive);
 		self->drive->slot->media->nb_volumes = self->drive_private->status.mt_fileno;
-		//st_drive_generic_update_position(self->drive);
+		st_scsi_tape_drive_update_media_info(self->drive);
 
 		self->fd = -1;
 		self->drive_private->used_by_io = 0;
@@ -891,6 +904,7 @@ static struct st_stream_writer * st_scsi_tape_drive_io_writer_new(struct st_driv
 	self->buffer_used = 0;
 	self->block_size = block_size;
 	self->position = 0;
+	self->eof_reached = false;
 	self->last_errno = 0;
 	self->drive = drive;
 	self->drive_private = dr;
@@ -937,7 +951,8 @@ static ssize_t st_scsi_tape_drive_io_writer_write(struct st_stream_writer * io, 
 	if (nb_write < 0) {
 		switch (errno) {
 			case ENOSPC:
-				self->drive->slot->media->available_block = 0;
+				self->drive->slot->media->available_block = self->eof_reached ? 0 : 1;
+				self->eof_reached = true;
 
 				st_scsi_tape_drive_operation_start(self->drive_private);
 				nb_write = write(self->fd, self->buffer, self->block_size);
@@ -966,7 +981,8 @@ static ssize_t st_scsi_tape_drive_io_writer_write(struct st_stream_writer * io, 
 		if (nb_write < 0) {
 			switch (errno) {
 				case ENOSPC:
-					self->drive->slot->media->available_block = 0;
+					self->drive->slot->media->available_block = self->eof_reached ? 0 : 1;
+					self->eof_reached = true;
 
 					st_scsi_tape_drive_operation_start(self->drive_private);
 					nb_write = write(self->fd, self->buffer, self->block_size);

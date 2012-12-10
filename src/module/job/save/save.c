@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 18:29:45 +0100                         *
+*  Last modified: Mon, 10 Dec 2012 18:41:33 +0100                         *
 \*************************************************************************/
 
 // asprintf, versionsort
@@ -127,6 +127,8 @@ static int st_job_save_archive(struct st_job * job, struct st_job_selected_path 
 		}
 
 		close(fd);
+
+		self->worker->ops->end_file(self->worker);
 	} else if (S_ISDIR(st.st_mode)) {
 		if (access(path, F_OK | R_OK | X_OK)) {
 			st_job_add_record(self->connect, st_log_level_warning, job, "Can't access to directory %s", path);

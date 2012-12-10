@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 09:54:30 +0200                         *
+*  Last modified: Mon, 10 Dec 2012 20:27:12 +0100                         *
 \*************************************************************************/
 
 #include <errno.h>
@@ -69,7 +69,7 @@ static int st_tar_writer_close(struct st_format_writer * sfw);
 static void st_tar_writer_compute_checksum(const void * header, char * checksum);
 static void st_tar_writer_compute_link(struct st_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile);
 static void st_tar_writer_compute_size(char * csize, ssize_t size);
-static void st_tar_writer_end_of_file(struct st_format_writer * sfw);
+static ssize_t st_tar_writer_end_of_file(struct st_format_writer * sfw);
 static void st_tar_writer_free(struct st_format_writer * sfw);
 static ssize_t st_tar_writer_get_available_size(struct st_format_writer * sfw);
 static ssize_t st_tar_writer_get_block_size(struct st_format_writer * f);
@@ -281,7 +281,7 @@ static void st_tar_writer_compute_size(char * csize, ssize_t size) {
 	}
 }
 
-static void st_tar_writer_end_of_file(struct st_format_writer * sfw) {
+static ssize_t st_tar_writer_end_of_file(struct st_format_writer * sfw) {
 	struct st_tar_writer_private * self = sfw->data;
 
 	unsigned short mod = self->position % 512;
@@ -290,9 +290,13 @@ static void st_tar_writer_end_of_file(struct st_format_writer * sfw) {
 		char * buffer = malloc(length);
 		bzero(buffer, length);
 
-		self->io->ops->write(self->io, buffer, length);
+		ssize_t nb_write = self->io->ops->write(self->io, buffer, length);
 		free(buffer);
+
+		return nb_write;
 	}
+
+	return 0;
 }
 
 static void st_tar_writer_free(struct st_format_writer * f) {
