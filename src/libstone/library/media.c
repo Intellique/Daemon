@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 13:23:51 +0100                         *
+*  Last modified: Tue, 11 Dec 2012 22:21:29 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -69,7 +69,7 @@ static struct st_media * st_media_retrieve(struct st_database_connection * conne
 
 static int st_media_format_retrieve(struct st_media_format ** media_format, unsigned char density_code, enum st_media_format_mode mode);
 
-static struct st_pool * st_pool_retreive(struct st_database_connection * connection, struct st_job * job, const char * uuid);
+static struct st_pool * st_pool_retreive(struct st_database_connection * connection, struct st_archive * archive, struct st_job * job, const char * uuid);
 
 
 static const struct st_media_format_data_type2 {
@@ -743,13 +743,55 @@ static int st_media_format_retrieve(struct st_media_format ** media_format, unsi
 }
 
 
+struct st_pool * st_pool_get_by_archive(struct st_archive * archive, struct st_database_connection * connection) {
+	if (archive == NULL)
+		return NULL;
+
+	pthread_mutex_lock(&st_pool_lock);
+
+	struct st_pool * pool = st_pool_retreive(connection, archive, NULL, NULL);
+	if (pool == NULL) {
+		pthread_mutex_unlock(&st_pool_lock);
+		return NULL;
+	}
+
+	unsigned int i;
+	for (i = 0; i < st_pool_nb_pools; i++)
+		if (!strcmp(pool->uuid, st_pools[i]->uuid)) {
+			free(pool->name);
+			free(pool);
+
+			pool = st_pools[i];
+
+			pthread_mutex_unlock(&st_pool_lock);
+			return pool;
+		}
+
+	if (pool != NULL) {
+		void * new_addr = realloc(st_pools, (st_pool_nb_pools + 1) * sizeof(struct st_pool *));
+		if (new_addr != NULL) {
+			st_pools = new_addr;
+			st_pools[st_pool_nb_pools] = pool;
+			st_pool_nb_pools++;
+		}
+	}
+
+	pthread_mutex_unlock(&st_pool_lock);
+
+	return pool;
+}
+
 struct st_pool * st_pool_get_by_job(struct st_job * job, struct st_database_connection * connection) {
 	if (job == NULL)
 		return NULL;
 
 	pthread_mutex_lock(&st_pool_lock);
 
-	struct st_pool * pool = st_pool_retreive(connection, job, NULL);
+	struct st_pool * pool = st_pool_retreive(connection, NULL, job, NULL);
+	if (pool == NULL) {
+		pthread_mutex_unlock(&st_pool_lock);
+		return NULL;
+	}
 
 	unsigned int i;
 	for (i = 0; i < st_pool_nb_pools; i++)
@@ -790,7 +832,7 @@ struct st_pool * st_pool_get_by_uuid(const char * uuid) {
 			pool = st_pools[i];
 
 	if (pool == NULL) {
-		pool = st_pool_retreive(NULL, NULL, uuid);
+		pool = st_pool_retreive(NULL, NULL, NULL, uuid);
 
 		if (pool != NULL) {
 			void * new_addr = realloc(st_pools, (st_pool_nb_pools + 1) * sizeof(struct st_pool *));
@@ -807,7 +849,7 @@ struct st_pool * st_pool_get_by_uuid(const char * uuid) {
 	return pool;
 }
 
-static struct st_pool * st_pool_retreive(struct st_database_connection * connection, struct st_job * job, const char * uuid) {
+static struct st_pool * st_pool_retreive(struct st_database_connection * connection, struct st_archive * archive, struct st_job * job, const char * uuid) {
 	struct st_database * db = NULL;
 	struct st_database_config * config = NULL;
 
@@ -820,7 +862,7 @@ static struct st_pool * st_pool_retreive(struct st_database_connection * connect
 
 	struct st_pool * pool = NULL;
 	if (connection != NULL)
-		pool = connection->ops->get_pool(connection, job, uuid);
+		pool = connection->ops->get_pool(connection, archive, job, uuid);
 
 	if (db != NULL) {
 		connection->ops->close(connection);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 10 Dec 2012 18:41:33 +0100                         *
+*  Last modified: Tue, 11 Dec 2012 21:45:55 +0100                         *
 \*************************************************************************/
 
 // asprintf, versionsort
@@ -216,12 +216,6 @@ static int st_job_save_run(struct st_job * job) {
 		return 1;
 	}
 
-	struct st_pool * pool = st_pool_get_by_job(job, self->connect);
-	if (pool == NULL) {
-		pool = job->user->pool;
-		st_job_add_record(self->connect, st_log_level_info, job, "Using pool (%s) of user (%s)", pool->name, job->user->login);
-	}
-
 	self->selected_paths = self->connect->ops->get_selected_paths(self->connect, job, &self->nb_selected_paths);
 
 	unsigned int i;
@@ -237,7 +231,7 @@ static int st_job_save_run(struct st_job * job) {
 
 	self->meta = st_job_save_meta_worker_new(job);
 
-	self->worker = st_job_save_single_worker(job, pool, self->total_size, self->connect, self->meta);
+	self->worker = st_job_save_single_worker(job, self->total_size, self->connect, self->meta);
 	self->worker->ops->load_media(self->worker);
 
 	for (i = 0; i < self->nb_selected_paths; i++) {

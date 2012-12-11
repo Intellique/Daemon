@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 10 Dec 2012 20:56:41 +0100                         *
+*  Last modified: Tue, 11 Dec 2012 09:22:58 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -877,9 +877,7 @@ static ssize_t st_scsi_tape_drive_io_writer_get_available_size(struct st_stream_
 	if (!media)
 		return 0;
 
-	// only for test purpose
-	// should be a multiple of blocksize
-	// return 59999977472 - self->position;
+	// return 140991 * media->block_size - self->position;
 
 	return media->available_block * media->block_size - self->position;
 }

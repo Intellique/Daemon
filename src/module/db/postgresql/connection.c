@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 10 Dec 2012 00:02:18 +0100                         *
+*  Last modified: Tue, 11 Dec 2012 23:00:43 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -129,7 +129,7 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 static ssize_t st_db_postgresql_get_available_size_of_offline_media_from_pool(struct st_database_connection * connect, struct st_pool * pool);
 static struct st_media * st_db_postgresql_get_media(struct st_database_connection * connect, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label);
 static int st_db_postgresql_get_media_format(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, enum st_media_format_mode mode);
-static struct st_pool * st_db_postgresql_get_pool(struct st_database_connection * connect, struct st_job * job, const char * uuid);
+static struct st_pool * st_db_postgresql_get_pool(struct st_database_connection * connect, struct st_archive * archive, struct st_job * job, const char * uuid);
 
 static int st_db_postgresql_add_job_record(struct st_database_connection * connect, struct st_job * job, const char * message);
 static char ** st_db_postgresql_get_checksums_by_job(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_checksums);
@@ -140,6 +140,7 @@ static int st_db_postgresql_get_user(struct st_database_connection * connect, st
 static int st_db_postgresql_sync_user(struct st_database_connection * connect, struct st_user * user);
 
 static int st_db_postgresql_add_checksum_result(struct st_database_connection * connect, char * checksum, char * result, char ** checksum_result_id);
+static struct st_archive * st_db_postgresql_get_archive_by_job(struct st_database_connection * connect, struct st_job * job);
 static int st_db_postgresql_sync_archive(struct st_database_connection * connect, struct st_archive * archive, char ** checksums);
 static int st_db_postgresql_sync_file(struct st_database_connection * connect, struct st_archive_file * file, char ** checksums, char ** file_id);
 static int st_db_postgresql_sync_volume(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_volume * volume, char ** checksums);
@@ -176,7 +177,8 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.get_user  = st_db_postgresql_get_user,
 	.sync_user = st_db_postgresql_sync_user,
 
-	.sync_archive = st_db_postgresql_sync_archive,
+	.get_archive_by_job = st_db_postgresql_get_archive_by_job,
+	.sync_archive       = st_db_postgresql_sync_archive,
 };
 
 
@@ -1494,15 +1496,27 @@ static int st_db_postgresql_get_media_format(struct st_database_connection * con
 	return 1;
 }
 
-static struct st_pool * st_db_postgresql_get_pool(struct st_database_connection * connect, struct st_job * job, const char * uuid) {
-	if (connect == NULL || (job == NULL && uuid == NULL))
+static struct st_pool * st_db_postgresql_get_pool(struct st_database_connection * connect, struct st_archive * archive, struct st_job * job, const char * uuid) {
+	if (connect == NULL || (archive == NULL && job == NULL && uuid == NULL))
 		return NULL;
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	const char * query;
 	PGresult * result;
 
-	if (job != NULL) {
+	if (archive != NULL) {
+		query = "select_pool_by_archive";
+		st_db_postgresql_prepare(self, query, "SELECT DISTINCT p.uuid, p.name, growable, rewritable, densitycode, mode, deleted FROM pool p LEFT JOIN tapeformat tf ON p.tapeformat = tf.id LEFT JOIN tape t ON t.pool = p.id LEFT JOIN archivevolume av ON av.tape = t.id WHERE av.archive = $1");
+
+		struct st_db_postgresql_archive_data * archive_data = archive->db_data;
+		char * archiveid;
+		asprintf(&archiveid, "%ld", archive_data->id);
+
+		const char * param[] = { archiveid };
+		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+
+		free(archiveid);
+	} else if (job != NULL) {
 		query = "select_pool_by_job";
 		st_db_postgresql_prepare(self, query, "SELECT uuid, p.name, growable, rewritable, densitycode, mode, deleted FROM job j RIGHT JOIN pool p ON j.pool = p.id LEFT JOIN tapeformat tf ON p.tapeformat = tf.id WHERE j.id = $1 LIMIT 1");
 
@@ -1992,16 +2006,66 @@ static int st_db_postgresql_add_checksum_result(struct st_database_connection * 
 	}
 }
 
+static struct st_archive * st_db_postgresql_get_archive_by_job(struct st_database_connection * connect, struct st_job * job) {
+	if (connect == NULL || job == NULL)
+		return NULL;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_job_data * job_data = job->db_data;
+	if (job_data == NULL || job_data->id < 0)
+		return NULL;
+
+	const char * query = "select_archive_by_job";
+	st_db_postgresql_prepare(self, query, "SELECT a.id, name, ctime, endtime, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
+
+	char * jobid;
+	asprintf(&jobid, "%ld", job_data->id);
+
+	const char * param[] = { jobid };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	struct st_archive * archive = NULL;
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		archive = malloc(sizeof(struct st_archive));
+
+		st_db_postgresql_get_string_dup(result, 0, 1, &archive->name);
+		st_db_postgresql_get_time(result, 0, 2, &archive->ctime);
+		st_db_postgresql_get_time(result, 0, 3, &archive->endtime);
+
+		archive->volumes = NULL;
+		archive->nb_volumes = 0;
+
+		archive->user = st_user_get(PQgetvalue(result, 0, 4));
+
+		archive->copy_of = NULL;
+
+		struct st_db_postgresql_archive_data * archive_data = archive->db_data = malloc(sizeof(struct st_db_postgresql_archive_data));
+		st_db_postgresql_get_long(result, 0, 0, &archive_data->id);
+	}
+
+	PQclear(result);
+	free(jobid);
+
+	return archive;
+}
+
 static int st_db_postgresql_sync_archive(struct st_database_connection * connect, struct st_archive * archive, char ** checksums) {
 	if (connect == NULL || archive == NULL)
 		return 1;
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	struct st_db_postgresql_archive_data * archive_data = archive->db_data;
+
+	char * archiveid = NULL;
 	if (archive_data == NULL) {
 		archive->db_data = archive_data = malloc(sizeof(struct st_db_postgresql_archive_data));
 		archive_data->id = -1;
-	}
+	} else
+		asprintf(&archiveid, "%ld", archive_data->id);
 
 	if (archive_data->id < 0) {
 		const char * query = "insert_archive";
@@ -2029,19 +2093,40 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 
 		if (status == PGRES_FATAL_ERROR)
 			st_db_postgresql_get_error(result, query);
-		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			st_db_postgresql_get_long(result, 0, 0, &archive_data->id);
+			st_db_postgresql_get_string_dup(result, 0, 0, &archiveid);
+		}
 
 		PQclear(result);
 		free(userid);
 	}
 
-	unsigned int i;
-	int status = 0;
-	for (i = 0; i < archive->nb_volumes && !status; i++)
-		status = st_db_postgresql_sync_volume(connect, archive, archive->volumes + i, checksums);
+	const char * query = "select_last_volume_of_archive";
+	st_db_postgresql_prepare(self, query, "SELECT MAX(sequence) + 1 FROM archivevolume WHERE archive = $1");
 
-	return status;
+	const char * param[] = { archiveid };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	unsigned int last_volume = 0;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		st_db_postgresql_get_uint(result, 0, 0, &last_volume);
+
+	PQclear(result);
+	free(archiveid);
+
+	unsigned int i;
+	int failed = 0;
+	for (i = 0; i < archive->nb_volumes && !failed; i++) {
+		struct st_archive_volume * volume = archive->volumes + i;
+		volume->sequence += last_volume;
+		failed = st_db_postgresql_sync_volume(connect, archive, volume, checksums);
+	}
+
+	return failed;
 }
 
 static int st_db_postgresql_sync_file(struct st_database_connection * connect, struct st_archive_file * file, char ** checksums, char ** file_id) {

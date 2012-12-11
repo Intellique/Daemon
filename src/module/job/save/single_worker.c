@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 10 Dec 2012 22:45:11 +0100                         *
+*  Last modified: Tue, 11 Dec 2012 22:26:03 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -43,6 +43,7 @@
 #include <libstone/library/ressource.h>
 #include <libstone/log.h>
 #include <libstone/util/hashtable.h>
+#include <libstone/user.h>
 #include <stoned/library/changer.h>
 #include <stoned/library/slot.h>
 
@@ -100,16 +101,30 @@ static struct st_job_save_data_worker_ops st_job_save_single_worker_ops = {
 };
 
 
-struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, struct st_pool * pool, ssize_t archive_size, struct st_database_connection * connect, struct st_job_save_meta_worker * meta_worker) {
+struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, ssize_t archive_size, struct st_database_connection * connect, struct st_job_save_meta_worker * meta_worker) {
 	struct st_job_save_private * jp = job->data;
 
 	struct st_job_save_single_worker_private * self = malloc(sizeof(struct st_job_save_single_worker_private));
 	self->job = job;
 	self->connect = connect;
 
-	self->pool = pool;
+	self->archive = jp->connect->ops->get_archive_by_job(jp->connect, job);
+	if (self->archive == NULL)
+		self->archive = st_archive_new(job->name, job->user);
 
-	self->archive = st_archive_new(job->name, job->user);
+	self->pool = st_pool_get_by_job(job, connect);
+
+	if (self->pool == NULL && self->archive != NULL) {
+		self->pool = st_pool_get_by_archive(self->archive, connect);
+
+		if (self->pool != NULL)
+			st_job_add_record(connect, st_log_level_info, job, "Using pool (%s) of archive (%s)", self->pool->name, self->archive->name);
+	}
+
+	if (self->pool == NULL) {
+		self->pool = job->user->pool;
+		st_job_add_record(connect, st_log_level_info, job, "Using pool (%s) of user (%s)", self->pool->name, job->user->login);
+	}
 
 	self->total_done = 0;
 	self->archive_size = archive_size;

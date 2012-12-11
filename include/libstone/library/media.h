@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 04 Dec 2012 23:12:32 +0100                         *
+*  Last modified: Tue, 11 Dec 2012 21:48:33 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -33,6 +33,7 @@
 // ssize_t, time_t
 #include <sys/types.h>
 
+struct st_archive;
 struct st_database_connection;
 struct st_drive;
 struct st_job;
@@ -174,6 +175,7 @@ int st_media_write_header(struct st_drive * dr, struct st_pool * pool);
 
 struct st_media_format * st_media_format_get_by_density_code(unsigned char density_code, enum st_media_format_mode mode);
 
+struct st_pool * st_pool_get_by_archive(struct st_archive * archive, struct st_database_connection * connection);
 struct st_pool * st_pool_get_by_job(struct st_job * job, struct st_database_connection * connection);
 struct st_pool * st_pool_get_by_uuid(const char * uuid);
 int st_pool_sync(struct st_pool * pool);

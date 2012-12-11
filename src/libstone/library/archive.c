@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 22:13:09 +0100                         *
+*  Last modified: Tue, 11 Dec 2012 21:05:42 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -60,7 +60,7 @@ struct st_archive_volume * st_archive_add_volume(struct st_archive * archive, st
 	unsigned int index_volume = archive->nb_volumes;
 	archive->nb_volumes++;
 
-	volume->sequence = index_volume + archive->next_sequence;
+	volume->sequence = index_volume;
 	volume->size = 0;
 	volume->ctime = time(NULL);
 	volume->endtime = 0;
@@ -101,8 +101,6 @@ struct st_archive * st_archive_new(const char * name, struct st_user * user) {
 
 	archive->volumes = NULL;
 	archive->nb_volumes = 0;
-
-	archive->next_sequence = 0;
 
 	archive->copy_of = NULL;
 

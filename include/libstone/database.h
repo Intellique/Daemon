@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 21:11:35 +0100                         *
+*  Last modified: Tue, 11 Dec 2012 21:58:03 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -168,7 +168,7 @@ struct st_database_connection {
 		ssize_t (*get_available_size_of_offline_media_from_pool)(struct st_database_connection * connect, struct st_pool * pool);
 		struct st_media * (*get_media)(struct st_database_connection * connect, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label);
 		int (*get_media_format)(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, enum st_media_format_mode mode);
-		struct st_pool * (*get_pool)(struct st_database_connection * connect, struct st_job * job, const char * uuid);
+		struct st_pool * (*get_pool)(struct st_database_connection * connect, struct st_archive * archive, struct st_job * job, const char * uuid);
 		int (*sync_media)(struct st_database_connection * connnect, struct st_media * media);
 
 		int (*add_job_record)(struct st_database_connection * connect, struct st_job * job, const char * message);
@@ -179,6 +179,7 @@ struct st_database_connection {
 		int (*get_user)(struct st_database_connection * connect, struct st_user * user, const char * login);
 		int (*sync_user)(struct st_database_connection * connect, struct st_user * user);
 
+		struct st_archive * (*get_archive_by_job)(struct st_database_connection * connect, struct st_job * job);
 		int (*sync_archive)(struct st_database_connection * connect, struct st_archive * archive, char ** checksums);
 
 
