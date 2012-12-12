@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 11 Dec 2012 21:45:55 +0100                         *
+*  Last modified: Wed, 12 Dec 2012 15:28:35 +0100                         *
 \*************************************************************************/
 
 // asprintf, versionsort
@@ -149,7 +149,7 @@ static int st_job_save_archive(struct st_job * job, struct st_job_selected_path 
 				free(subpath);
 			}
 
-			free(dl[i]->d_name);
+			free(dl[i]);
 		}
 
 		free(dl);
@@ -229,7 +229,7 @@ static int st_job_save_run(struct st_job * job) {
 		self->total_size += st_job_save_compute_size(p->path);
 	}
 
-	self->meta = st_job_save_meta_worker_new(job);
+	self->meta = st_job_save_meta_worker_new(job, self->connect);
 
 	self->worker = st_job_save_single_worker(job, self->total_size, self->connect, self->meta);
 	self->worker->ops->load_media(self->worker);

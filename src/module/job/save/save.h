@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 11 Dec 2012 21:46:08 +0100                         *
+*  Last modified: Wed, 12 Dec 2012 15:19:44 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_SAVE_H__
@@ -74,7 +74,7 @@ ssize_t st_job_save_compute_size(const char * path);
 
 struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, ssize_t archive_size, struct st_database_connection * connect, struct st_job_save_meta_worker * meta_worker);
 
-struct st_job_save_meta_worker * st_job_save_meta_worker_new(struct st_job * job);
+struct st_job_save_meta_worker * st_job_save_meta_worker_new(struct st_job * job, struct st_database_connection * connect);
 
 #endif
 

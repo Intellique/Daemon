@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 23:51:47 +0100                         *
+*  Last modified: Wed, 12 Dec 2012 20:45:48 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -50,6 +50,7 @@
 
 #include <libstone/io.h>
 #include <libstone/library/archive.h>
+#include <libstone/log.h>
 #include <libstone/thread_pool.h>
 #include <libstone/util/file.h>
 #include <libstone/util/hashtable.h>
@@ -63,6 +64,9 @@ struct st_job_save_meta_worker_private {
 		char * file;
 		struct st_linked_list_file * next;
 	} * volatile first_file, * volatile last_file;
+
+	struct st_job * job;
+	struct st_database_connection * connect;
 
 	volatile bool stop;
 
@@ -172,12 +176,14 @@ static void st_job_save_meta_worker_free(struct st_job_save_meta_worker * worker
 	free(worker);
 }
 
-struct st_job_save_meta_worker * st_job_save_meta_worker_new(struct st_job * job) {
+struct st_job_save_meta_worker * st_job_save_meta_worker_new(struct st_job * job, struct st_database_connection * connect) {
 	struct st_job_save_private * jp = job->data;
 
 	struct st_job_save_meta_worker_private * self = malloc(sizeof(struct st_job_save_meta_worker_private));
 	self->first_file = self->last_file = NULL;
 
+	self->job = job;
+	self->connect = connect;
 	self->stop = false;
 
 	pthread_mutex_init(&self->lock, NULL);
@@ -247,14 +253,22 @@ static void st_job_save_meta_worker_work2(struct st_job_save_meta_worker_private
 	if (lstat(path, &st))
 		return;
 
+	// if ((S_ISDIR(st.st_mode) && access(path, R_OK | X_OK)) || access(path, R_OK))
+		// return;
+
 	struct st_archive_file * file = st_archive_file_new(&st, path);
 	file->selected_path = selected_path;
 
-	if (S_ISREG(st.st_mode)) {
-		const char * mime_type = magic_file(self->file, path);
+	const char * mime_type = magic_file(self->file, path);
 
-		if (mime_type != NULL)
-			file->mime_type = strdup(mime_type);
+	if (mime_type == NULL) {
+		file->mime_type = strdup("");
+		st_job_add_record(self->connect, st_log_level_info, self->job, "File (%s) has not mime type", path);
+	} else {
+		file->mime_type = strdup(mime_type);
+	}
+
+	if (S_ISREG(st.st_mode)) {
 
 		int fd = open(path, O_RDONLY);
 		struct st_stream_writer * writer = st_checksum_writer_new(NULL, self->checksums, self->nb_checksums, false);
