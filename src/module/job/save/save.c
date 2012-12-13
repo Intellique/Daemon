@@ -244,6 +244,8 @@ static int st_job_save_run(struct st_job * job) {
 
 	self->worker->ops->sync_db(self->worker);
 
+	self->worker->ops->write_meta(self->worker);
+
 	self->worker->ops->free(self->worker);
 	self->meta->ops->free(self->meta);
 

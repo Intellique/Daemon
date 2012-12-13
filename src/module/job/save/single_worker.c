@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 11 Dec 2012 22:26:03 +0100                         *
+*  Last modified: Thu, 13 Dec 2012 22:26:19 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -44,6 +44,7 @@
 #include <libstone/log.h>
 #include <libstone/util/hashtable.h>
 #include <libstone/user.h>
+#include <stoned/io.h>
 #include <stoned/library/changer.h>
 #include <stoned/library/slot.h>
 
@@ -89,6 +90,7 @@ static int st_job_save_single_worker_load_media(struct st_job_save_data_worker *
 static bool st_job_save_single_worker_select_media(struct st_job_save_single_worker_private * self);
 static int st_job_save_single_worker_sync_db(struct st_job_save_data_worker * worker);
 static ssize_t st_job_save_single_worker_write(struct st_job_save_data_worker * worker, void * buffer, ssize_t length);
+static int st_job_save_single_worker_write_meta(struct st_job_save_data_worker * worker);
 
 static struct st_job_save_data_worker_ops st_job_save_single_worker_ops = {
 	.add_file   = st_job_save_single_worker_add_file,
@@ -98,6 +100,7 @@ static struct st_job_save_data_worker_ops st_job_save_single_worker_ops = {
 	.load_media = st_job_save_single_worker_load_media,
 	.sync_db    = st_job_save_single_worker_sync_db,
 	.write      = st_job_save_single_worker_write,
+	.write_meta = st_job_save_single_worker_write_meta,
 };
 
 
@@ -545,5 +548,17 @@ static ssize_t st_job_save_single_worker_write(struct st_job_save_data_worker * 
 	}
 
 	return nb_write;
+}
+
+static int st_job_save_single_worker_write_meta(struct st_job_save_data_worker * worker) {
+	struct st_job_save_single_worker_private * self = worker->data;
+	struct st_stream_writer * writer = self->drive->ops->get_raw_writer(self->drive, true);
+
+	ssize_t nb_write = st_io_json_writer(writer, self->archive, self->checksums);
+
+	writer->ops->close(writer);
+	writer->ops->free(writer);
+
+	return nb_write < 1;
 }
 

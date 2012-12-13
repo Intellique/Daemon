@@ -22,60 +22,17 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 13 Dec 2012 22:04:33 +0100                         *
+*  Last modified: Thu, 13 Dec 2012 20:56:34 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONE_JOB_SAVE_H__
-#define __STONE_JOB_SAVE_H__
+#ifndef __STONED_IO_H__
+#define __STONED_IO_H__
 
-// size_t
-#include <sys/types.h>
+#include <libstone/io.h>
 
-#include <libstone/database.h>
-#include <libstone/job.h>
+struct st_archive;
 
-struct st_hashtable;
-
-struct st_job_save_private {
-	struct st_database_connection * connect;
-
-	struct st_job_selected_path * selected_paths;
-	unsigned int nb_selected_paths;
-
-	ssize_t total_done;
-	ssize_t total_size;
-
-	struct st_job_save_data_worker {
-		struct st_job_save_data_worker_ops {
-			int (*add_file)(struct st_job_save_data_worker * worker, const char * path);
-			void (*close)(struct st_job_save_data_worker * worker);
-			int (*end_file)(struct st_job_save_data_worker * worker);
-			void (*free)(struct st_job_save_data_worker * worker);
-			int (*load_media)(struct st_job_save_data_worker * worker);
-			int (*sync_db)(struct st_job_save_data_worker * worker);
-			ssize_t (*write)(struct st_job_save_data_worker * worker, void * buffer, ssize_t length);
-			int (*write_meta)(struct st_job_save_data_worker * worker);
-		} * ops;
-		void * data;
-	} * worker;
-
-	struct st_job_save_meta_worker {
-		struct st_job_save_meta_worker_ops {
-			void (*add_file)(struct st_job_save_meta_worker * worker, struct st_job_selected_path * selected_path, const char * path);
-			void (*free)(struct st_job_save_meta_worker * worker);
-			void (*wait)(struct st_job_save_meta_worker * worker, bool stop);
-		} * ops;
-		void * data;
-
-		struct st_hashtable * meta_files;
-	} * meta;
-};
-
-ssize_t st_job_save_compute_size(const char * path);
-
-struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, ssize_t archive_size, struct st_database_connection * connect, struct st_job_save_meta_worker * meta_worker);
-
-struct st_job_save_meta_worker * st_job_save_meta_worker_new(struct st_job * job, struct st_database_connection * connect);
+ssize_t st_io_json_writer(struct st_stream_writer * writer, struct st_archive * archive, char ** checksums);
 
 #endif
 
