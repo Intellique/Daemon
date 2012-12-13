@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 12 Dec 2012 20:45:48 +0100                         *
+*  Last modified: Thu, 13 Dec 2012 23:06:49 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -120,7 +120,7 @@ ssize_t st_job_save_compute_size(const char * path) {
 			char * subpath = 0;
 			asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
 
-			total = st_job_save_compute_size(subpath);
+			total += st_job_save_compute_size(subpath);
 
 			free(subpath);
 			free(dl[i]);

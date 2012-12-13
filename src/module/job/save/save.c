@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 12 Dec 2012 15:28:35 +0100                         *
+*  Last modified: Thu, 13 Dec 2012 23:00:57 +0100                         *
 \*************************************************************************/
 
 // asprintf, versionsort
@@ -111,15 +111,12 @@ static int st_job_save_archive(struct st_job * job, struct st_job_selected_path 
 
 		char buffer[4096];
 
-		ssize_t nb_read = read(fd, buffer, 4096);
-
-		while (nb_read > 0) {
+		ssize_t nb_read;
+		while (nb_read = read(fd, buffer, 4096), nb_read > 0) {
 			ssize_t nb_write = self->worker->ops->write(self->worker, buffer, nb_read);
 
-			self->total_done += nb_write;
-			job->done = ((float) self->total_done) / self->total_size;
-
-			nb_read = read(fd, buffer, 4096);
+			float done = self->total_done += nb_write;
+			job->done = 0.02 + done * 0.96 / self->total_size;
 		}
 
 		if (nb_read < 0) {
@@ -160,8 +157,10 @@ static int st_job_save_archive(struct st_job * job, struct st_job_selected_path 
 	return 0;
 }
 
-static bool st_job_save_check(struct st_job * job __attribute__((unused))) {
-	return true;
+static bool st_job_save_check(struct st_job * job) {
+	job->sched_status = st_job_status_error;
+	job->repetition = 0;
+	return false;
 }
 
 static void st_job_save_free(struct st_job * job) {
@@ -232,7 +231,12 @@ static int st_job_save_run(struct st_job * job) {
 	self->meta = st_job_save_meta_worker_new(job, self->connect);
 
 	self->worker = st_job_save_single_worker(job, self->total_size, self->connect, self->meta);
+
+	job->done = 0.01;
+
 	self->worker->ops->load_media(self->worker);
+
+	job->done = 0.02;
 
 	for (i = 0; i < self->nb_selected_paths; i++) {
 		struct st_job_selected_path * p = self->selected_paths + i;
@@ -242,9 +246,15 @@ static int st_job_save_run(struct st_job * job) {
 	self->worker->ops->close(self->worker);
 	self->meta->ops->wait(self->meta, true);
 
+	job->done = 0.98;
+
 	self->worker->ops->sync_db(self->worker);
 
+	job->done = 0.99;
+
 	self->worker->ops->write_meta(self->worker);
+
+	job->done = 1;
 
 	self->worker->ops->free(self->worker);
 	self->meta->ops->free(self->meta);
