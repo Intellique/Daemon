@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 14 Dec 2012 23:00:16 +0100                         *
+*  Last modified: Fri, 14 Dec 2012 23:09:27 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -48,9 +48,9 @@
 #include <stoned/library/changer.h>
 #include <stoned/library/slot.h>
 
-#include "save.h"
+#include "create_archive.h"
 
-struct st_job_save_single_worker_private {
+struct st_job_create_archive_single_worker_private {
 	struct st_job * job;
 	struct st_database_connection * connect;
 
@@ -77,37 +77,37 @@ struct st_job_save_single_worker_private {
 	ssize_t file_position;
 
 	struct st_stream_writer * checksum_writer;
-	struct st_job_save_meta_worker * meta_worker;
+	struct st_job_create_archive_meta_worker * meta_worker;
 };
 
-static int st_job_save_single_worker_add_file(struct st_job_save_data_worker * worker, const char * path);
-static struct st_stream_writer * st_job_save_single_worker_add_filter(struct st_stream_writer * writer, void * param);
-static int st_job_save_single_worker_change_volume(struct st_job_save_single_worker_private * self);
-static void st_job_save_single_worker_close(struct st_job_save_data_worker * worker);
-static int st_job_save_single_worker_end_file(struct st_job_save_data_worker * worker);
-static void st_job_save_single_worker_free(struct st_job_save_data_worker * worker);
-static int st_job_save_single_worker_load_media(struct st_job_save_data_worker * worker);
-static bool st_job_save_single_worker_select_media(struct st_job_save_single_worker_private * self);
-static int st_job_save_single_worker_sync_db(struct st_job_save_data_worker * worker);
-static ssize_t st_job_save_single_worker_write(struct st_job_save_data_worker * worker, void * buffer, ssize_t length);
-static int st_job_save_single_worker_write_meta(struct st_job_save_data_worker * worker);
+static int st_job_create_archive_single_worker_add_file(struct st_job_create_archive_data_worker * worker, const char * path);
+static struct st_stream_writer * st_job_create_archive_single_worker_add_filter(struct st_stream_writer * writer, void * param);
+static int st_job_create_archive_single_worker_change_volume(struct st_job_create_archive_single_worker_private * self);
+static void st_job_create_archive_single_worker_close(struct st_job_create_archive_data_worker * worker);
+static int st_job_create_archive_single_worker_end_file(struct st_job_create_archive_data_worker * worker);
+static void st_job_create_archive_single_worker_free(struct st_job_create_archive_data_worker * worker);
+static int st_job_create_archive_single_worker_load_media(struct st_job_create_archive_data_worker * worker);
+static bool st_job_create_archive_single_worker_select_media(struct st_job_create_archive_single_worker_private * self);
+static int st_job_create_archive_single_worker_sync_db(struct st_job_create_archive_data_worker * worker);
+static ssize_t st_job_create_archive_single_worker_write(struct st_job_create_archive_data_worker * worker, void * buffer, ssize_t length);
+static int st_job_create_archive_single_worker_write_meta(struct st_job_create_archive_data_worker * worker);
 
-static struct st_job_save_data_worker_ops st_job_save_single_worker_ops = {
-	.add_file   = st_job_save_single_worker_add_file,
-	.close      = st_job_save_single_worker_close,
-	.end_file   = st_job_save_single_worker_end_file,
-	.free       = st_job_save_single_worker_free,
-	.load_media = st_job_save_single_worker_load_media,
-	.sync_db    = st_job_save_single_worker_sync_db,
-	.write      = st_job_save_single_worker_write,
-	.write_meta = st_job_save_single_worker_write_meta,
+static struct st_job_create_archive_data_worker_ops st_job_create_archive_single_worker_ops = {
+	.add_file   = st_job_create_archive_single_worker_add_file,
+	.close      = st_job_create_archive_single_worker_close,
+	.end_file   = st_job_create_archive_single_worker_end_file,
+	.free       = st_job_create_archive_single_worker_free,
+	.load_media = st_job_create_archive_single_worker_load_media,
+	.sync_db    = st_job_create_archive_single_worker_sync_db,
+	.write      = st_job_create_archive_single_worker_write,
+	.write_meta = st_job_create_archive_single_worker_write_meta,
 };
 
 
-struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, ssize_t archive_size, struct st_database_connection * connect, struct st_job_save_meta_worker * meta_worker) {
-	struct st_job_save_private * jp = job->data;
+struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(struct st_job * job, ssize_t archive_size, struct st_database_connection * connect, struct st_job_create_archive_meta_worker * meta_worker) {
+	struct st_job_create_archive_private * jp = job->data;
 
-	struct st_job_save_single_worker_private * self = malloc(sizeof(struct st_job_save_single_worker_private));
+	struct st_job_create_archive_single_worker_private * self = malloc(sizeof(struct st_job_create_archive_single_worker_private));
 	self->job = job;
 	self->connect = connect;
 
@@ -145,21 +145,21 @@ struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, 
 
 	self->file_position = 0;
 
-	struct st_job_save_data_worker * worker = malloc(sizeof(struct st_job_save_data_worker));
-	worker->ops = &st_job_save_single_worker_ops;
+	struct st_job_create_archive_data_worker * worker = malloc(sizeof(struct st_job_create_archive_data_worker));
+	worker->ops = &st_job_create_archive_single_worker_ops;
 	worker->data = self;
 
 	return worker;
 }
 
-static int st_job_save_single_worker_add_file(struct st_job_save_data_worker * worker, const char * path) {
-	struct st_job_save_single_worker_private * self = worker->data;
+static int st_job_create_archive_single_worker_add_file(struct st_job_create_archive_data_worker * worker, const char * path) {
+	struct st_job_create_archive_single_worker_private * self = worker->data;
 
 	enum st_format_writer_status status = self->writer->ops->add_file(self->writer, path);
 	int failed;
 	switch (status) {
 		case st_format_writer_end_of_volume:
-			failed = st_job_save_single_worker_change_volume(self);
+			failed = st_job_create_archive_single_worker_change_volume(self);
 			if (failed)
 				return failed;
 			break;
@@ -187,8 +187,8 @@ static int st_job_save_single_worker_add_file(struct st_job_save_data_worker * w
 	return 0;
 }
 
-static struct st_stream_writer * st_job_save_single_worker_add_filter(struct st_stream_writer * writer, void * param) {
-	struct st_job_save_single_worker_private * self = param;
+static struct st_stream_writer * st_job_create_archive_single_worker_add_filter(struct st_stream_writer * writer, void * param) {
+	struct st_job_create_archive_single_worker_private * self = param;
 
 	if (self->nb_checksums > 0)
 		return self->checksum_writer = st_checksum_writer_new(writer, self->checksums, self->nb_checksums, true);
@@ -196,7 +196,7 @@ static struct st_stream_writer * st_job_save_single_worker_add_filter(struct st_
 	return writer;
 }
 
-static int st_job_save_single_worker_change_volume(struct st_job_save_single_worker_private * self) {
+static int st_job_create_archive_single_worker_change_volume(struct st_job_create_archive_single_worker_private * self) {
 	self->writer->ops->close(self->writer);
 
 	struct st_archive_volume * last_volume = self->archive->volumes + (self->archive->nb_volumes - 1);
@@ -230,7 +230,7 @@ static int st_job_save_single_worker_change_volume(struct st_job_save_single_wor
 	self->first_file = NULL;
 	last_volume->nb_files = self->nb_files;
 
-	if (!st_job_save_single_worker_select_media(self))
+	if (!st_job_create_archive_single_worker_select_media(self))
 		return 1;
 
 	struct st_stream_writer * writer = self->drive->ops->get_raw_writer(self->drive, true);
@@ -252,8 +252,8 @@ static int st_job_save_single_worker_change_volume(struct st_job_save_single_wor
 	return 0;
 }
 
-static void st_job_save_single_worker_close(struct st_job_save_data_worker * worker) {
-	struct st_job_save_single_worker_private * self = worker->data;
+static void st_job_create_archive_single_worker_close(struct st_job_create_archive_data_worker * worker) {
+	struct st_job_create_archive_single_worker_private * self = worker->data;
 
 	self->writer->ops->close(self->writer);
 
@@ -288,15 +288,15 @@ static void st_job_save_single_worker_close(struct st_job_save_data_worker * wor
 	self->nb_files = 0;
 }
 
-static int st_job_save_single_worker_end_file(struct st_job_save_data_worker * worker) {
-	struct st_job_save_single_worker_private * self = worker->data;
+static int st_job_create_archive_single_worker_end_file(struct st_job_create_archive_data_worker * worker) {
+	struct st_job_create_archive_single_worker_private * self = worker->data;
 	ssize_t nb_write = self->writer->ops->end_of_file(self->writer);
 
 	return nb_write >= 0 ? 0 : nb_write;
 }
 
-static void st_job_save_single_worker_free(struct st_job_save_data_worker * worker) {
-	struct st_job_save_single_worker_private * self = worker->data;
+static void st_job_create_archive_single_worker_free(struct st_job_create_archive_data_worker * worker) {
+	struct st_job_create_archive_single_worker_private * self = worker->data;
 
 	if (self->drive != NULL)
 		self->drive->lock->ops->unlock(self->drive->lock);
@@ -314,11 +314,11 @@ static void st_job_save_single_worker_free(struct st_job_save_data_worker * work
 	free(worker);
 }
 
-static int st_job_save_single_worker_load_media(struct st_job_save_data_worker * worker) {
-	struct st_job_save_single_worker_private * self = worker->data;
+static int st_job_create_archive_single_worker_load_media(struct st_job_create_archive_data_worker * worker) {
+	struct st_job_create_archive_single_worker_private * self = worker->data;
 
-	if (st_job_save_single_worker_select_media(self)) {
-		self->writer = self->drive->ops->get_writer(self->drive, true, st_job_save_single_worker_add_filter, self);
+	if (st_job_create_archive_single_worker_select_media(self)) {
+		self->writer = self->drive->ops->get_writer(self->drive, true, st_job_create_archive_single_worker_add_filter, self);
 
 		int position = self->drive->ops->get_position(self->drive);
 		st_archive_add_volume(self->archive, self->drive->slot->media, position);
@@ -329,7 +329,7 @@ static int st_job_save_single_worker_load_media(struct st_job_save_data_worker *
 	return 1;
 }
 
-static bool st_job_save_single_worker_select_media(struct st_job_save_single_worker_private * self) {
+static bool st_job_create_archive_single_worker_select_media(struct st_job_create_archive_single_worker_private * self) {
 	bool has_alerted_user = false;
 	bool ok = false;
 	bool stop = false;
@@ -529,18 +529,18 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 	return ok;
 }
 
-static int st_job_save_single_worker_sync_db(struct st_job_save_data_worker * worker) {
-	struct st_job_save_single_worker_private * self = worker->data;
+static int st_job_create_archive_single_worker_sync_db(struct st_job_create_archive_data_worker * worker) {
+	struct st_job_create_archive_single_worker_private * self = worker->data;
 
 	return self->connect->ops->sync_archive(self->connect, self->archive, self->checksums);
 }
 
-static ssize_t st_job_save_single_worker_write(struct st_job_save_data_worker * worker, void * buffer, ssize_t length) {
-	struct st_job_save_single_worker_private * self = worker->data;
+static ssize_t st_job_create_archive_single_worker_write(struct st_job_create_archive_data_worker * worker, void * buffer, ssize_t length) {
+	struct st_job_create_archive_single_worker_private * self = worker->data;
 
 	ssize_t available = self->writer->ops->get_available_size(self->writer);
 	if (available == 0) {
-		int failed = st_job_save_single_worker_change_volume(self);
+		int failed = st_job_create_archive_single_worker_change_volume(self);
 		if (failed)
 			return failed;
 
@@ -556,7 +556,7 @@ static ssize_t st_job_save_single_worker_write(struct st_job_save_data_worker * 
 	}
 
 	if (will_write < length) {
-		if (st_job_save_single_worker_change_volume(self))
+		if (st_job_create_archive_single_worker_change_volume(self))
 			return 1;
 
 		self->writer->ops->restart_file(self->writer, self->last_file->path, self->file_position);
@@ -565,8 +565,8 @@ static ssize_t st_job_save_single_worker_write(struct st_job_save_data_worker * 
 	return nb_write;
 }
 
-static int st_job_save_single_worker_write_meta(struct st_job_save_data_worker * worker) {
-	struct st_job_save_single_worker_private * self = worker->data;
+static int st_job_create_archive_single_worker_write_meta(struct st_job_create_archive_data_worker * worker) {
+	struct st_job_create_archive_single_worker_private * self = worker->data;
 	struct st_stream_writer * writer = self->drive->ops->get_raw_writer(self->drive, true);
 
 	ssize_t nb_write = st_io_json_writer(writer, self->archive, self->checksums);

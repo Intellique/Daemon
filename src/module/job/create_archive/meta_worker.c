@@ -56,9 +56,9 @@
 #include <libstone/util/hashtable.h>
 #include <libstone/util/string.h>
 
-#include "save.h"
+#include "create_archive.h"
 
-struct st_job_save_meta_worker_private {
+struct st_job_create_archive_meta_worker_private {
 	struct st_linked_list_file {
 		struct st_job_selected_path * selected_path;
 		char * file;
@@ -81,22 +81,22 @@ struct st_job_save_meta_worker_private {
 	magic_t file;
 };
 
-static void st_job_save_free_meta_file(void * key, void * val);
+static void st_job_create_archive_free_meta_file(void * key, void * val);
 
-static void st_job_save_meta_worker_add_file(struct st_job_save_meta_worker * worker, struct st_job_selected_path * selected_path, const char * path);
-static void st_job_save_meta_worker_free(struct st_job_save_meta_worker * worker);
-static void st_job_save_meta_worker_wait(struct st_job_save_meta_worker * worker, bool stop);
-static void st_job_save_meta_worker_work(void * arg);
-static void st_job_save_meta_worker_work2(struct st_job_save_meta_worker_private * self, struct st_job_selected_path * selected_path, const char * path);
+static void st_job_create_archive_meta_worker_add_file(struct st_job_create_archive_meta_worker * worker, struct st_job_selected_path * selected_path, const char * path);
+static void st_job_create_archive_meta_worker_free(struct st_job_create_archive_meta_worker * worker);
+static void st_job_create_archive_meta_worker_wait(struct st_job_create_archive_meta_worker * worker, bool stop);
+static void st_job_create_archive_meta_worker_work(void * arg);
+static void st_job_create_archive_meta_worker_work2(struct st_job_create_archive_meta_worker_private * self, struct st_job_selected_path * selected_path, const char * path);
 
-static struct st_job_save_meta_worker_ops st_job_save_meta_worker_ops = {
-	.add_file = st_job_save_meta_worker_add_file,
-	.free     = st_job_save_meta_worker_free,
-	.wait     = st_job_save_meta_worker_wait,
+static struct st_job_create_archive_meta_worker_ops st_job_create_archive_meta_worker_ops = {
+	.add_file = st_job_create_archive_meta_worker_add_file,
+	.free     = st_job_create_archive_meta_worker_free,
+	.wait     = st_job_create_archive_meta_worker_wait,
 };
 
 
-ssize_t st_job_save_compute_size(const char * path) {
+ssize_t st_job_create_archive_compute_size(const char * path) {
 	if (path == NULL)
 		return 0;
 
@@ -120,7 +120,7 @@ ssize_t st_job_save_compute_size(const char * path) {
 			char * subpath = 0;
 			asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
 
-			total += st_job_save_compute_size(subpath);
+			total += st_job_create_archive_compute_size(subpath);
 
 			free(subpath);
 			free(dl[i]);
@@ -134,14 +134,14 @@ ssize_t st_job_save_compute_size(const char * path) {
 }
 
 
-static void st_job_save_free_meta_file(void * key __attribute__((unused)), void * val) {
+static void st_job_create_archive_free_meta_file(void * key __attribute__((unused)), void * val) {
 	struct st_archive_file * file = val;
 	st_archive_file_free(file);
 }
 
 
-static void st_job_save_meta_worker_add_file(struct st_job_save_meta_worker * worker, struct st_job_selected_path * selected_path, const char * path) {
-	struct st_job_save_meta_worker_private * self = worker->data;
+static void st_job_create_archive_meta_worker_add_file(struct st_job_create_archive_meta_worker * worker, struct st_job_selected_path * selected_path, const char * path) {
+	struct st_job_create_archive_meta_worker_private * self = worker->data;
 
 	struct st_linked_list_file * next = malloc(sizeof(struct st_linked_list_file));
 	next->selected_path = selected_path;
@@ -157,8 +157,8 @@ static void st_job_save_meta_worker_add_file(struct st_job_save_meta_worker * wo
 	pthread_mutex_unlock(&self->lock);
 }
 
-static void st_job_save_meta_worker_free(struct st_job_save_meta_worker * worker) {
-	struct st_job_save_meta_worker_private * self = worker->data;
+static void st_job_create_archive_meta_worker_free(struct st_job_create_archive_meta_worker * worker) {
+	struct st_job_create_archive_meta_worker_private * self = worker->data;
 
 	pthread_mutex_destroy(&self->lock);
 	pthread_cond_destroy(&self->wait);
@@ -176,10 +176,10 @@ static void st_job_save_meta_worker_free(struct st_job_save_meta_worker * worker
 	free(worker);
 }
 
-struct st_job_save_meta_worker * st_job_save_meta_worker_new(struct st_job * job, struct st_database_connection * connect) {
-	struct st_job_save_private * jp = job->data;
+struct st_job_create_archive_meta_worker * st_job_create_archive_meta_worker_new(struct st_job * job, struct st_database_connection * connect) {
+	struct st_job_create_archive_private * jp = job->data;
 
-	struct st_job_save_meta_worker_private * self = malloc(sizeof(struct st_job_save_meta_worker_private));
+	struct st_job_create_archive_meta_worker_private * self = malloc(sizeof(struct st_job_create_archive_meta_worker_private));
 	self->first_file = self->last_file = NULL;
 
 	self->job = job;
@@ -191,23 +191,23 @@ struct st_job_save_meta_worker * st_job_save_meta_worker_new(struct st_job * job
 
 	self->checksums = jp->connect->ops->get_checksums_by_job(jp->connect, job, &self->nb_checksums);
 
-	self->meta_files = st_hashtable_new2(st_util_string_compute_hash, st_job_save_free_meta_file);
+	self->meta_files = st_hashtable_new2(st_util_string_compute_hash, st_job_create_archive_free_meta_file);
 
 	self->file = magic_open(MAGIC_MIME_TYPE);
 	magic_load(self->file, NULL);
 
-	struct st_job_save_meta_worker * meta = malloc(sizeof(struct st_job_save_meta_worker));
-	meta->ops = &st_job_save_meta_worker_ops;
+	struct st_job_create_archive_meta_worker * meta = malloc(sizeof(struct st_job_create_archive_meta_worker));
+	meta->ops = &st_job_create_archive_meta_worker_ops;
 	meta->data = self;
 	meta->meta_files = self->meta_files;
 
-	st_thread_pool_run2(st_job_save_meta_worker_work, self, 8);
+	st_thread_pool_run2(st_job_create_archive_meta_worker_work, self, 8);
 
 	return meta;
 }
 
-static void st_job_save_meta_worker_wait(struct st_job_save_meta_worker * worker, bool stop) {
-	struct st_job_save_meta_worker_private * self = worker->data;
+static void st_job_create_archive_meta_worker_wait(struct st_job_create_archive_meta_worker * worker, bool stop) {
+	struct st_job_create_archive_meta_worker_private * self = worker->data;
 
 	pthread_mutex_lock(&self->lock);
 	self->stop = stop;
@@ -216,8 +216,8 @@ static void st_job_save_meta_worker_wait(struct st_job_save_meta_worker * worker
 	pthread_mutex_unlock(&self->lock);
 }
 
-static void st_job_save_meta_worker_work(void * arg) {
-	struct st_job_save_meta_worker_private * self = arg;
+static void st_job_create_archive_meta_worker_work(void * arg) {
+	struct st_job_create_archive_meta_worker_private * self = arg;
 
 	for (;;) {
 		pthread_mutex_lock(&self->lock);
@@ -234,7 +234,7 @@ static void st_job_save_meta_worker_work(void * arg) {
 		pthread_mutex_unlock(&self->lock);
 
 		while (files != NULL) {
-			st_job_save_meta_worker_work2(self, files->selected_path, files->file);
+			st_job_create_archive_meta_worker_work2(self, files->selected_path, files->file);
 
 			struct st_linked_list_file * next = files->next;
 			free(files->file);
@@ -248,7 +248,7 @@ static void st_job_save_meta_worker_work(void * arg) {
 	pthread_mutex_unlock(&self->lock);
 }
 
-static void st_job_save_meta_worker_work2(struct st_job_save_meta_worker_private * self, struct st_job_selected_path * selected_path, const char * path) {
+static void st_job_create_archive_meta_worker_work2(struct st_job_create_archive_meta_worker_private * self, struct st_job_selected_path * selected_path, const char * path) {
 	struct stat st;
 	if (lstat(path, &st))
 		return;

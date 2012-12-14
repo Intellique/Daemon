@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 14 Dec 2012 22:57:11 +0100                         *
+*  Last modified: Fri, 14 Dec 2012 23:07:48 +0100                         *
 \*************************************************************************/
 
 // asprintf, versionsort
@@ -50,24 +50,24 @@
 #include <libstone/util/file.h>
 #include <libstone/util/string.h>
 
-#include "save.h"
+#include "create_archive.h"
 
-static int st_job_save_archive(struct st_job * job, struct st_job_selected_path * selected_path, const char * path);
-static bool st_job_save_check(struct st_job * job);
-static void st_job_save_free(struct st_job * job);
-static void st_job_save_init(void) __attribute__((constructor));
-static void st_job_save_new_job(struct st_job * job, struct st_database_connection * db);
-static int st_job_save_run(struct st_job * job);
+static int st_job_create_archive_archive(struct st_job * job, struct st_job_selected_path * selected_path, const char * path);
+static bool st_job_create_archive_check(struct st_job * job);
+static void st_job_create_archive_free(struct st_job * job);
+static void st_job_create_archive_init(void) __attribute__((constructor));
+static void st_job_create_archive_new_job(struct st_job * job, struct st_database_connection * db);
+static int st_job_create_archive_run(struct st_job * job);
 
-static struct st_job_ops st_job_save_ops = {
-	.check = st_job_save_check,
-	.free  = st_job_save_free,
-	.run   = st_job_save_run,
+static struct st_job_ops st_job_create_archive_ops = {
+	.check = st_job_create_archive_check,
+	.free  = st_job_create_archive_free,
+	.run   = st_job_create_archive_run,
 };
 
-static struct st_job_driver st_job_save_driver = {
-	.name        = "save",
-	.new_job     = st_job_save_new_job,
+static struct st_job_driver st_job_create_archive_driver = {
+	.name        = "create-archive",
+	.new_job     = st_job_create_archive_new_job,
 	.cookie      = NULL,
 	.api_level   = {
 		.checksum = 0,
@@ -77,8 +77,8 @@ static struct st_job_driver st_job_save_driver = {
 };
 
 
-static int st_job_save_archive(struct st_job * job, struct st_job_selected_path * selected_path, const char * path) {
-	struct st_job_save_private * self = job->data;
+static int st_job_create_archive_archive(struct st_job * job, struct st_job_selected_path * selected_path, const char * path) {
+	struct st_job_create_archive_private * self = job->data;
 
 	if (!st_util_string_check_valid_utf8(path)) {
 		char * fixed_path = strdup(path);
@@ -152,7 +152,7 @@ static int st_job_save_archive(struct st_job * job, struct st_job_selected_path 
 				char * subpath = NULL;
 				asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
 
-				failed = st_job_save_archive(job, selected_path, subpath);
+				failed = st_job_create_archive_archive(job, selected_path, subpath);
 
 				free(subpath);
 			}
@@ -166,14 +166,14 @@ static int st_job_save_archive(struct st_job * job, struct st_job_selected_path 
 	return failed;
 }
 
-static bool st_job_save_check(struct st_job * job) {
+static bool st_job_create_archive_check(struct st_job * job) {
 	job->sched_status = st_job_status_error;
 	job->repetition = 0;
 	return false;
 }
 
-static void st_job_save_free(struct st_job * job) {
-	struct st_job_save_private * self = job->data;
+static void st_job_create_archive_free(struct st_job * job) {
+	struct st_job_create_archive_private * self = job->data;
 	if (self != NULL) {
 		self->connect->ops->close(self->connect);
 		self->connect->ops->free(self->connect);
@@ -195,12 +195,12 @@ static void st_job_save_free(struct st_job * job) {
 	job->data = NULL;
 }
 
-static void st_job_save_init(void) {
-	st_job_register_driver(&st_job_save_driver);
+static void st_job_create_archive_init(void) {
+	st_job_register_driver(&st_job_create_archive_driver);
 }
 
-static void st_job_save_new_job(struct st_job * job, struct st_database_connection * db) {
-	struct st_job_save_private * self = malloc(sizeof(struct st_job_save_private));
+static void st_job_create_archive_new_job(struct st_job * job, struct st_database_connection * db) {
+	struct st_job_create_archive_private * self = malloc(sizeof(struct st_job_create_archive_private));
 	self->connect = db->config->ops->connect(db->config);
 
 	self->selected_paths = NULL;
@@ -211,11 +211,11 @@ static void st_job_save_new_job(struct st_job * job, struct st_database_connecti
 	self->worker = NULL;
 
 	job->data = self;
-	job->ops = &st_job_save_ops;
+	job->ops = &st_job_create_archive_ops;
 }
 
-static int st_job_save_run(struct st_job * job) {
-	struct st_job_save_private * self = job->data;
+static int st_job_create_archive_run(struct st_job * job) {
+	struct st_job_create_archive_private * self = job->data;
 
 	st_job_add_record(self->connect, st_log_level_info, job, "Start archive job (named: %s), num runs %ld", job->name, job->num_runs);
 
@@ -234,7 +234,7 @@ static int st_job_save_run(struct st_job * job) {
 		// remove trailing '/'
 		st_util_string_rtrim(p->path, '/');
 
-		self->total_size += st_job_save_compute_size(p->path);
+		self->total_size += st_job_create_archive_compute_size(p->path);
 	}
 
 	char bufsize[32];
@@ -246,9 +246,9 @@ static int st_job_save_run(struct st_job * job) {
 		return 0;
 	}
 
-	self->meta = st_job_save_meta_worker_new(job, self->connect);
+	self->meta = st_job_create_archive_meta_worker_new(job, self->connect);
 
-	self->worker = st_job_save_single_worker(job, self->total_size, self->connect, self->meta);
+	self->worker = st_job_create_archive_single_worker(job, self->total_size, self->connect, self->meta);
 
 	if (job->db_status != st_job_status_stopped) {
 		job->done = 0.01;
@@ -262,7 +262,7 @@ static int st_job_save_run(struct st_job * job) {
 		for (i = 0; i < self->nb_selected_paths && job->db_status != st_job_status_stopped && failed >= 0; i++) {
 			struct st_job_selected_path * p = self->selected_paths + i;
 			st_job_add_record(self->connect, st_log_level_info, job, "Archiving file: %s", p->path);
-			failed = st_job_save_archive(job, p, p->path);
+			failed = st_job_create_archive_archive(job, p, p->path);
 		}
 
 		bool stopped = job->db_status == st_job_status_stopped;

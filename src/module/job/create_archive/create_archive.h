@@ -22,11 +22,11 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 13 Dec 2012 22:04:33 +0100                         *
+*  Last modified: Fri, 14 Dec 2012 23:06:28 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONE_JOB_SAVE_H__
-#define __STONE_JOB_SAVE_H__
+#ifndef __STONE_JOB_CREATEARCHIVE_H__
+#define __STONE_JOB_CREATEARCHIVE_H__
 
 // size_t
 #include <sys/types.h>
@@ -36,7 +36,7 @@
 
 struct st_hashtable;
 
-struct st_job_save_private {
+struct st_job_create_archive_private {
 	struct st_database_connection * connect;
 
 	struct st_job_selected_path * selected_paths;
@@ -45,25 +45,25 @@ struct st_job_save_private {
 	ssize_t total_done;
 	ssize_t total_size;
 
-	struct st_job_save_data_worker {
-		struct st_job_save_data_worker_ops {
-			int (*add_file)(struct st_job_save_data_worker * worker, const char * path);
-			void (*close)(struct st_job_save_data_worker * worker);
-			int (*end_file)(struct st_job_save_data_worker * worker);
-			void (*free)(struct st_job_save_data_worker * worker);
-			int (*load_media)(struct st_job_save_data_worker * worker);
-			int (*sync_db)(struct st_job_save_data_worker * worker);
-			ssize_t (*write)(struct st_job_save_data_worker * worker, void * buffer, ssize_t length);
-			int (*write_meta)(struct st_job_save_data_worker * worker);
+	struct st_job_create_archive_data_worker {
+		struct st_job_create_archive_data_worker_ops {
+			int (*add_file)(struct st_job_create_archive_data_worker * worker, const char * path);
+			void (*close)(struct st_job_create_archive_data_worker * worker);
+			int (*end_file)(struct st_job_create_archive_data_worker * worker);
+			void (*free)(struct st_job_create_archive_data_worker * worker);
+			int (*load_media)(struct st_job_create_archive_data_worker * worker);
+			int (*sync_db)(struct st_job_create_archive_data_worker * worker);
+			ssize_t (*write)(struct st_job_create_archive_data_worker * worker, void * buffer, ssize_t length);
+			int (*write_meta)(struct st_job_create_archive_data_worker * worker);
 		} * ops;
 		void * data;
 	} * worker;
 
-	struct st_job_save_meta_worker {
-		struct st_job_save_meta_worker_ops {
-			void (*add_file)(struct st_job_save_meta_worker * worker, struct st_job_selected_path * selected_path, const char * path);
-			void (*free)(struct st_job_save_meta_worker * worker);
-			void (*wait)(struct st_job_save_meta_worker * worker, bool stop);
+	struct st_job_create_archive_meta_worker {
+		struct st_job_create_archive_meta_worker_ops {
+			void (*add_file)(struct st_job_create_archive_meta_worker * worker, struct st_job_selected_path * selected_path, const char * path);
+			void (*free)(struct st_job_create_archive_meta_worker * worker);
+			void (*wait)(struct st_job_create_archive_meta_worker * worker, bool stop);
 		} * ops;
 		void * data;
 
@@ -71,11 +71,11 @@ struct st_job_save_private {
 	} * meta;
 };
 
-ssize_t st_job_save_compute_size(const char * path);
+ssize_t st_job_create_archive_compute_size(const char * path);
 
-struct st_job_save_data_worker * st_job_save_single_worker(struct st_job * job, ssize_t archive_size, struct st_database_connection * connect, struct st_job_save_meta_worker * meta_worker);
+struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(struct st_job * job, ssize_t archive_size, struct st_database_connection * connect, struct st_job_create_archive_meta_worker * meta_worker);
 
-struct st_job_save_meta_worker * st_job_save_meta_worker_new(struct st_job * job, struct st_database_connection * connect);
+struct st_job_create_archive_meta_worker * st_job_create_archive_meta_worker_new(struct st_job * job, struct st_database_connection * connect);
 
 #endif
 
