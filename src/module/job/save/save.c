@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 14 Dec 2012 21:24:09 +0100                         *
+*  Last modified: Fri, 14 Dec 2012 22:57:11 +0100                         *
 \*************************************************************************/
 
 // asprintf, versionsort
@@ -87,33 +87,42 @@ static int st_job_save_archive(struct st_job * job, struct st_job_selected_path 
 		st_job_add_record(self->connect, st_log_level_warning, job, "Path '%s' contains invalid utf8 characters", fixed_path);
 
 		free(fixed_path);
-		return 0;
+		return 1;
 	}
 
 	struct stat st;
 	if (lstat(path, &st)) {
 		st_job_add_record(self->connect, st_log_level_warning, job, "Error while getting information about: %s", path);
-		return 0;
+		return 1;
 	}
 
 	if (S_ISSOCK(st.st_mode))
 		return 0;
 
-	self->worker->ops->add_file(self->worker, path);
+	int failed = self->worker->ops->add_file(self->worker, path);
+	if (failed) {
+		if (failed < 0)
+			st_job_add_record(self->connect, st_log_level_warning, job, "Error while adding file: '%s'", path);
+		return failed;
+	}
+
 	self->meta->ops->add_file(self->meta, selected_path, path);
 
 	if (S_ISREG(st.st_mode)) {
 		int fd = open(path, O_RDONLY);
 		if (fd < 0) {
 			st_job_add_record(self->connect, st_log_level_warning, job, "Error while opening file: '%s' because %m", path);
-			return 0;
+			return -1;
 		}
 
 		char buffer[4096];
 
 		ssize_t nb_read;
-		while (nb_read = read(fd, buffer, 4096), nb_read > 0) {
+		while (nb_read = read(fd, buffer, 4096), nb_read > 0 && !failed) {
 			ssize_t nb_write = self->worker->ops->write(self->worker, buffer, nb_read);
+
+			if (nb_write < 0)
+				failed = -2;
 
 			float done = self->total_done += nb_write;
 			job->done = 0.02 + done * 0.96 / self->total_size;
@@ -121,23 +130,25 @@ static int st_job_save_archive(struct st_job * job, struct st_job_selected_path 
 
 		if (nb_read < 0) {
 			st_job_add_record(self->connect, st_log_level_error, job, "Unexpected error while reading from file '%s' because %m", path);
+			failed = -1;
 		}
 
 		close(fd);
 
-		self->worker->ops->end_file(self->worker);
+		if (!failed)
+			self->worker->ops->end_file(self->worker);
 	} else if (S_ISDIR(st.st_mode)) {
 		if (access(path, F_OK | R_OK | X_OK)) {
 			st_job_add_record(self->connect, st_log_level_warning, job, "Can't access to directory %s", path);
-			return 0;
+			return 1;
 		}
 
 		struct dirent ** dl = NULL;
 		int nb_files = scandir(path, &dl, st_util_file_basic_scandir_filter, versionsort);
 
-		int i, failed = 0;
+		int i;
 		for (i = 0; i < nb_files; i++) {
-			if (!failed && job->db_status != st_job_status_stopped) {
+			if (failed >= 0 && job->db_status != st_job_status_stopped) {
 				char * subpath = NULL;
 				asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
 
@@ -150,11 +161,9 @@ static int st_job_save_archive(struct st_job * job, struct st_job_selected_path 
 		}
 
 		free(dl);
-
-		return failed;
 	}
 
-	return 0;
+	return failed;
 }
 
 static bool st_job_save_check(struct st_job * job) {
@@ -248,10 +257,12 @@ static int st_job_save_run(struct st_job * job) {
 
 	if (job->db_status != st_job_status_stopped) {
 		job->done = 0.02;
-		for (i = 0; i < self->nb_selected_paths && job->db_status != st_job_status_stopped; i++) {
+
+		int failed = 0;
+		for (i = 0; i < self->nb_selected_paths && job->db_status != st_job_status_stopped && failed >= 0; i++) {
 			struct st_job_selected_path * p = self->selected_paths + i;
 			st_job_add_record(self->connect, st_log_level_info, job, "Archiving file: %s", p->path);
-			st_job_save_archive(job, p, p->path);
+			failed = st_job_save_archive(job, p, p->path);
 		}
 
 		bool stopped = job->db_status == st_job_status_stopped;

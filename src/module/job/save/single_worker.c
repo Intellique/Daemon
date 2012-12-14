@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 13 Dec 2012 22:26:19 +0100                         *
+*  Last modified: Fri, 14 Dec 2012 23:00:16 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -156,10 +156,12 @@ static int st_job_save_single_worker_add_file(struct st_job_save_data_worker * w
 	struct st_job_save_single_worker_private * self = worker->data;
 
 	enum st_format_writer_status status = self->writer->ops->add_file(self->writer, path);
+	int failed;
 	switch (status) {
 		case st_format_writer_end_of_volume:
-			if (st_job_save_single_worker_change_volume(self))
-				return 1;
+			failed = st_job_save_single_worker_change_volume(self);
+			if (failed)
+				return failed;
 			break;
 
 		case st_format_writer_error:
@@ -233,7 +235,7 @@ static int st_job_save_single_worker_change_volume(struct st_job_save_single_wor
 
 	struct st_stream_writer * writer = self->drive->ops->get_raw_writer(self->drive, true);
 	if (writer == NULL)
-		return 1;
+		return -1;
 
 	self->checksum_writer = st_checksum_writer_new(writer, self->checksums, self->nb_checksums, true);
 	self->writer->ops->new_volume(self->writer, self->checksum_writer);
@@ -319,7 +321,6 @@ static int st_job_save_single_worker_load_media(struct st_job_save_data_worker *
 		self->writer = self->drive->ops->get_writer(self->drive, true, st_job_save_single_worker_add_filter, self);
 
 		int position = self->drive->ops->get_position(self->drive);
-
 		st_archive_add_volume(self->archive, self->drive->slot->media, position);
 
 		return self->writer == NULL;
@@ -356,6 +357,13 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 					if (!has_alerted_user)
 						st_job_add_record(self->connect, st_log_level_warning, self->job, "Please, insert media which is a part of pool named %s", self->pool->name);
 					has_alerted_user = true;
+
+					self->job->sched_status = st_job_status_pause;
+					sleep(10);
+					self->job->sched_status = st_job_status_running;
+
+					if (self->job->db_status == st_job_status_stopped)
+						return false;
 
 					state = check_online_free_size_left;
 				} else {
@@ -419,6 +427,9 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 						sleep(20);
 						self->job->sched_status = st_job_status_running;
 
+						if (self->job->db_status == st_job_status_stopped)
+							return false;
+
 						state = check_online_free_size_left;
 						break;
 					}
@@ -458,6 +469,9 @@ static bool st_job_save_single_worker_select_media(struct st_job_save_single_wor
 				self->job->sched_status = st_job_status_pause;
 				sleep(60);
 				self->job->sched_status = st_job_status_running;
+
+				if (self->job->db_status == st_job_status_stopped)
+					return false;
 
 				state = check_online_free_size_left;
 				break;
@@ -526,8 +540,9 @@ static ssize_t st_job_save_single_worker_write(struct st_job_save_data_worker * 
 
 	ssize_t available = self->writer->ops->get_available_size(self->writer);
 	if (available == 0) {
-		if (st_job_save_single_worker_change_volume(self))
-			return 1;
+		int failed = st_job_save_single_worker_change_volume(self);
+		if (failed)
+			return failed;
 
 		self->writer->ops->restart_file(self->writer, self->last_file->path, self->file_position);
 	}
