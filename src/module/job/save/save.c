@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 13 Dec 2012 23:00:57 +0100                         *
+*  Last modified: Fri, 14 Dec 2012 21:24:09 +0100                         *
 \*************************************************************************/
 
 // asprintf, versionsort
@@ -137,7 +137,7 @@ static int st_job_save_archive(struct st_job * job, struct st_job_selected_path 
 
 		int i, failed = 0;
 		for (i = 0; i < nb_files; i++) {
-			if (!failed) {
+			if (!failed && job->db_status != st_job_status_stopped) {
 				char * subpath = NULL;
 				asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
 
@@ -208,7 +208,7 @@ static void st_job_save_new_job(struct st_job * job, struct st_database_connecti
 static int st_job_save_run(struct st_job * job) {
 	struct st_job_save_private * self = job->data;
 
-	st_job_add_record(self->connect, st_log_level_info, job, "Start archive job (job name: %s), num runs %ld", job->name, job->num_runs);
+	st_job_add_record(self->connect, st_log_level_info, job, "Start archive job (named: %s), num runs %ld", job->name, job->num_runs);
 
 	if (!job->user->can_archive) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Error, user (%s) cannot create archive", job->user->login);
@@ -228,33 +228,57 @@ static int st_job_save_run(struct st_job * job) {
 		self->total_size += st_job_save_compute_size(p->path);
 	}
 
+	char bufsize[32];
+	st_util_file_convert_size_to_string(self->total_size, bufsize, 32);
+	st_job_add_record(self->connect, st_log_level_info, job, "Will archive %s", bufsize);
+
+	if (job->db_status == st_job_status_stopped) {
+		st_job_add_record(self->connect, st_log_level_warning, job, "Job stopped by user request");
+		return 0;
+	}
+
 	self->meta = st_job_save_meta_worker_new(job, self->connect);
 
 	self->worker = st_job_save_single_worker(job, self->total_size, self->connect, self->meta);
 
-	job->done = 0.01;
-
-	self->worker->ops->load_media(self->worker);
-
-	job->done = 0.02;
-
-	for (i = 0; i < self->nb_selected_paths; i++) {
-		struct st_job_selected_path * p = self->selected_paths + i;
-		st_job_save_archive(job, p, p->path);
+	if (job->db_status != st_job_status_stopped) {
+		job->done = 0.01;
+		self->worker->ops->load_media(self->worker);
 	}
 
-	self->worker->ops->close(self->worker);
-	self->meta->ops->wait(self->meta, true);
+	if (job->db_status != st_job_status_stopped) {
+		job->done = 0.02;
+		for (i = 0; i < self->nb_selected_paths && job->db_status != st_job_status_stopped; i++) {
+			struct st_job_selected_path * p = self->selected_paths + i;
+			st_job_add_record(self->connect, st_log_level_info, job, "Archiving file: %s", p->path);
+			st_job_save_archive(job, p, p->path);
+		}
 
-	job->done = 0.98;
+		bool stopped = job->db_status == st_job_status_stopped;
 
-	self->worker->ops->sync_db(self->worker);
+		self->worker->ops->close(self->worker);
+		self->meta->ops->wait(self->meta, true);
 
-	job->done = 0.99;
+		job->done = 0.98;
+		st_job_add_record(self->connect, st_log_level_info, job, "Synchronize database");
+		self->worker->ops->sync_db(self->worker);
 
-	self->worker->ops->write_meta(self->worker);
+		job->done = 0.99;
+		st_job_add_record(self->connect, st_log_level_info, job, "Writing index file");
+		self->worker->ops->write_meta(self->worker);
 
-	job->done = 1;
+		if (stopped)
+			st_job_add_record(self->connect, st_log_level_warning, job, "Job stopped by user request");
+
+		job->done = 1;
+		st_job_add_record(self->connect, st_log_level_info, job, "Archive job (named: %s) finished", job->name);
+	} else {
+		self->worker->ops->close(self->worker);
+		self->meta->ops->wait(self->meta, true);
+
+		st_job_add_record(self->connect, st_log_level_warning, job, "Job stopped by user request");
+		st_job_add_record(self->connect, st_log_level_info, job, "Archive job (named: %s) finished with status 'stopped'", job->name);
+	}
 
 	self->worker->ops->free(self->worker);
 	self->meta->ops->free(self->meta);
