@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 15:23:29 +0100                         *
+*  Last modified: Fri, 14 Dec 2012 23:18:10 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -50,25 +50,25 @@
 #include <stoned/library/changer.h>
 
 
-struct st_job_format_tape_private {
+struct st_job_format_media_private {
 	struct st_database_connection * connect;
 };
 
-static bool st_job_format_tape_check(struct st_job * job);
-static void st_job_format_tape_free(struct st_job * job);
-static void st_job_format_tape_init(void) __attribute__((constructor));
-static void st_job_format_tape_new_job(struct st_job * job, struct st_database_connection * db);
-static int st_job_format_tape_run(struct st_job * job);
+static bool st_job_format_media_check(struct st_job * job);
+static void st_job_format_media_free(struct st_job * job);
+static void st_job_format_media_init(void) __attribute__((constructor));
+static void st_job_format_media_new_job(struct st_job * job, struct st_database_connection * db);
+static int st_job_format_media_run(struct st_job * job);
 
-static struct st_job_ops st_job_format_tape_ops = {
-	.check = st_job_format_tape_check,
-	.free  = st_job_format_tape_free,
-	.run   = st_job_format_tape_run,
+static struct st_job_ops st_job_format_media_ops = {
+	.check = st_job_format_media_check,
+	.free  = st_job_format_media_free,
+	.run   = st_job_format_media_run,
 };
 
-static struct st_job_driver st_job_format_tape_driver = {
-	.name        = "format-tape",
-	.new_job     = st_job_format_tape_new_job,
+static struct st_job_driver st_job_format_media_driver = {
+	.name        = "format-media",
+	.new_job     = st_job_format_media_new_job,
 	.cookie      = NULL,
 	.api_level   = {
 		.checksum = STONE_CHECKSUM_API_LEVEL,
@@ -78,10 +78,10 @@ static struct st_job_driver st_job_format_tape_driver = {
 };
 
 
-static bool st_job_format_tape_check(struct st_job * job) {
-	struct st_job_format_tape_private * self = job->data;
+static bool st_job_format_media_check(struct st_job * job) {
+	struct st_job_format_media_private * self = job->data;
 
-	st_job_add_record(self->connect, st_log_level_info, job, "Start format tape job (recover mode) (job name: %s), num runs %ld", job->name, job->num_runs);
+	st_job_add_record(self->connect, st_log_level_info, job, "Start format media job (recover mode) (job name: %s), num runs %ld", job->name, job->num_runs);
 
 	struct st_media * media = st_media_get_by_job(job, self->connect);
 	if (media == NULL) {
@@ -244,9 +244,9 @@ static bool st_job_format_tape_check(struct st_job * job) {
 	// M | Block size: 32768
 	// M | Checksum: crc32=1eb6931d
 	char stone_version[65];
-	int tape_format_version = 0;
+	int media_format_version = 0;
 	int nb_parsed = 0;
-	if (sscanf(buffer, "STone (%64[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
+	if (sscanf(buffer, "STone (%64[^)])\nTape format: version=%d\n%n", stone_version, &media_format_version, &nb_parsed) == 2) {
 		char uuid[37];
 		char name[65];
 		char pool_id[37];
@@ -320,8 +320,8 @@ static bool st_job_format_tape_check(struct st_job * job) {
 	}
 }
 
-static void st_job_format_tape_free(struct st_job * job) {
-	struct st_job_format_tape_private * self = job->data;
+static void st_job_format_media_free(struct st_job * job) {
+	struct st_job_format_media_private * self = job->data;
 	if (self != NULL) {
 		self->connect->ops->close(self->connect);
 		self->connect->ops->free(self->connect);
@@ -331,22 +331,22 @@ static void st_job_format_tape_free(struct st_job * job) {
 	job->data = NULL;
 }
 
-static void st_job_format_tape_init(void) {
-	st_job_register_driver(&st_job_format_tape_driver);
+static void st_job_format_media_init(void) {
+	st_job_register_driver(&st_job_format_media_driver);
 }
 
-static void st_job_format_tape_new_job(struct st_job * job, struct st_database_connection * db) {
-	struct st_job_format_tape_private * self = malloc(sizeof(struct st_job_format_tape_private));
+static void st_job_format_media_new_job(struct st_job * job, struct st_database_connection * db) {
+	struct st_job_format_media_private * self = malloc(sizeof(struct st_job_format_media_private));
 	self->connect = db->config->ops->connect(db->config);
 
 	job->data = self;
-	job->ops = &st_job_format_tape_ops;
+	job->ops = &st_job_format_media_ops;
 }
 
-int st_job_format_tape_run(struct st_job * job) {
-	struct st_job_format_tape_private * self = job->data;
+int st_job_format_media_run(struct st_job * job) {
+	struct st_job_format_media_private * self = job->data;
 
-	st_job_add_record(self->connect, st_log_level_info, job, "Start format tape job (job name: %s), num runs %ld", job->name, job->num_runs);
+	st_job_add_record(self->connect, st_log_level_info, job, "Start format media job (job name: %s), num runs %ld", job->name, job->num_runs);
 
 	struct st_media * media = st_media_get_by_job(job, self->connect);
 	if (media == NULL) {
@@ -566,13 +566,13 @@ int st_job_format_tape_run(struct st_job * job) {
 		}
 
 		if (status)
-			st_job_add_record(self->connect, st_log_level_info, job, "Job: format tape finished with code = %d, num runs %ld", status, job->num_runs);
+			st_job_add_record(self->connect, st_log_level_info, job, "Job: format media finished with code = %d, num runs %ld", status, job->num_runs);
 		else {
 			job->done = 1;
-			st_job_add_record(self->connect, st_log_level_info, job, "Job: format tape finished with code = OK, num runs %ld", job->num_runs);
+			st_job_add_record(self->connect, st_log_level_info, job, "Job: format media finished with code = OK, num runs %ld", job->num_runs);
 		}
 	} else {
-		st_job_add_record(self->connect, st_log_level_warning, job, "Job: format tape aborted by user before formatting media");
+		st_job_add_record(self->connect, st_log_level_warning, job, "Job: format media aborted by user before formatting media");
 	}
 
 	media->locked = false;

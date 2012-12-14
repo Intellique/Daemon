@@ -1,0 +1,11 @@
+STONE_JOB_FORMATMEDIA_SRC_DIR		:= src/module/job/format_media
+
+STONE_JOB_FORMATMEDIA_BIN			:= lib/libjob-format-media.so
+STONE_JOB_FORMATMEDIA_CFLAG			:= -pthread -fPIC -fvisibility=hidden
+STONE_JOB_FORMATMEDIA_LD			:= -pthread -shared
+
+STONE_JOB_FORMATMEDIA_DEPEND_LIB	:=
+
+STONE_JOB_FORMATMEDIA_CHCKSUM_FILE	:= libjob-formatmedia.chcksum
+
+BIN_SYMS							+= STONE_JOB_FORMATMEDIA
