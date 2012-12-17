@@ -22,43 +22,54 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 16 Dec 2012 15:07:55 +0100                         *
+*  Last modified: Sun, 16 Dec 2012 18:53:53 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONED_LIBRARY_CHANGER_H__
-#define __STONED_LIBRARY_CHANGER_H__
+#ifndef __STONE_JOB_RESTOREARCHIVE_H__
+#define __STONE_JOB_RESTOREARCHIVE_H__
 
-#include <libstone/library/changer.h>
+// pthread_cond_t
+#include <pthread.h>
+// size_t
+#include <sys/types.h>
 
-struct st_media;
-struct st_media_format;
-struct st_pool;
+#include <libstone/database.h>
+#include <libstone/library/archive.h>
 
-struct st_slot * st_changer_find_free_media_by_format(struct st_media_format * format);
+struct st_slot;
 
-/**
- * \brief Select a \a media by his \a pool
- *
- * This function will select a media from \a pool. But it will also exclude medias contained into \a previous_media.
- *
- * \param[in] pool : \a pool, should not be null
- * \param[in] previous_medias : previous medias returned by this function
- * \param[in] nb_medias : number of medias
- * \returns a locked slot which contains a media from \a pool
- */
-struct st_slot * st_changer_find_media_by_pool(struct st_pool * pool, struct st_media ** previous_medias, unsigned int nb_medias);
+struct st_job_restore_archive_private {
+	struct st_job * job;
+	struct st_database_connection * connect;
 
-/**
- * \brief Retreive slot which contains \a media
- *
- * \param[in] media : a media
- * \returns a locked slot or NULL if \a media is not found or the slot which contains \e media is already locked
- */
-struct st_slot * st_changer_find_slot_by_media(struct st_media * media);
+	struct st_archive * archive;
 
-ssize_t st_changer_get_online_size(struct st_pool * pool);
+	struct st_job_restore_archive_data_worker {
+		struct st_job_restore_archive_private * jp;
 
-int st_changer_setup(void);
+		ssize_t total_restored;
+
+		struct st_drive * drive;
+		struct st_slot * slot;
+		struct st_media * media;
+
+		pthread_mutex_t lock;
+		pthread_cond_t wait;
+		volatile bool running;
+
+		struct st_job_restore_archive_data_worker * next;
+	} * first_worker, * last_worker;
+
+	struct st_job_restore_archive_checks_worker {
+		struct st_job_restore_archive_checks_worker_ops {
+		} * ops;
+		void * data;
+	} * checks;
+};
+
+void st_job_restore_archive_data_worker_free(struct st_job_restore_archive_data_worker * worker);
+struct st_job_restore_archive_data_worker * st_job_restore_archive_data_worker_new(struct st_job_restore_archive_private * self, struct st_drive * drive, struct st_slot * slot);
+void st_job_restore_archive_data_worker_wait(struct st_job_restore_archive_data_worker * worker);
 
 #endif
 

@@ -22,43 +22,8 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 16 Dec 2012 15:07:55 +0100                         *
+*  Last modified: Fri, 14 Dec 2012 23:32:37 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONED_LIBRARY_CHANGER_H__
-#define __STONED_LIBRARY_CHANGER_H__
-
-#include <libstone/library/changer.h>
-
-struct st_media;
-struct st_media_format;
-struct st_pool;
-
-struct st_slot * st_changer_find_free_media_by_format(struct st_media_format * format);
-
-/**
- * \brief Select a \a media by his \a pool
- *
- * This function will select a media from \a pool. But it will also exclude medias contained into \a previous_media.
- *
- * \param[in] pool : \a pool, should not be null
- * \param[in] previous_medias : previous medias returned by this function
- * \param[in] nb_medias : number of medias
- * \returns a locked slot which contains a media from \a pool
- */
-struct st_slot * st_changer_find_media_by_pool(struct st_pool * pool, struct st_media ** previous_medias, unsigned int nb_medias);
-
-/**
- * \brief Retreive slot which contains \a media
- *
- * \param[in] media : a media
- * \returns a locked slot or NULL if \a media is not found or the slot which contains \e media is already locked
- */
-struct st_slot * st_changer_find_slot_by_media(struct st_media * media);
-
-ssize_t st_changer_get_online_size(struct st_pool * pool);
-
-int st_changer_setup(void);
-
-#endif
+#include "restore_archive.h"
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 11 Dec 2012 21:58:03 +0100                         *
+*  Last modified: Sun, 16 Dec 2012 18:21:09 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -34,6 +34,7 @@
 #include "plugin.h"
 
 struct st_archive;
+struct st_archive_volume;
 struct st_changer;
 struct st_drive;
 struct st_hashtable;
@@ -180,22 +181,9 @@ struct st_database_connection {
 		int (*sync_user)(struct st_database_connection * connect, struct st_user * user);
 
 		struct st_archive * (*get_archive_by_job)(struct st_database_connection * connect, struct st_job * job);
+		int (*get_archive_files_by_job_and_archive_volume)(struct st_database_connection * connect, struct st_job * job, struct st_archive_volume * volume);
+		struct st_archive * (*get_archive_volumes_by_job)(struct st_database_connection * connect, struct st_job * job);
 		int (*sync_archive)(struct st_database_connection * connect, struct st_archive * archive, char ** checksums);
-
-
-
-		/*
-		int (*create_pool)(struct st_database_connection * db, struct st_pool * pool);
-		int (*sync_pool)(struct st_database_connection * db, struct st_pool * pool);
-
-		int (*file_add_checksum)(struct st_database_connection * db, struct st_archive_file * file);
-		int (*file_link_to_volume)(struct st_database_connection * db, struct st_archive_file * file, struct st_archive_volume * volume);
-		int (*new_archive)(struct st_database_connection * db, struct st_archive * archive);
-		int (*new_file)(struct st_database_connection * db, struct st_archive_file * file);
-		int (*new_volume)(struct st_database_connection * db, struct st_archive_volume * volume);
-		int (*update_archive)(struct st_database_connection * db, struct st_archive * archive);
-		int (*update_volume)(struct st_database_connection * db, struct st_archive_volume * volume);
-		*/
 	} * ops;
 
 	/**

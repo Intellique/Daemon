@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 11 Dec 2012 23:00:43 +0100                         *
+*  Last modified: Sun, 16 Dec 2012 23:08:17 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -141,6 +141,9 @@ static int st_db_postgresql_sync_user(struct st_database_connection * connect, s
 
 static int st_db_postgresql_add_checksum_result(struct st_database_connection * connect, char * checksum, char * result, char ** checksum_result_id);
 static struct st_archive * st_db_postgresql_get_archive_by_job(struct st_database_connection * connect, struct st_job * job);
+static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct st_database_connection * connect, struct st_job * job, struct st_archive_volume * volume);
+static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st_database_connection * connect, struct st_job * job);
+static bool st_db_postgresql_has_selected_files_by_job(struct st_database_connection * connect, struct st_job * job);
 static int st_db_postgresql_sync_archive(struct st_database_connection * connect, struct st_archive * archive, char ** checksums);
 static int st_db_postgresql_sync_file(struct st_database_connection * connect, struct st_archive_file * file, char ** checksums, char ** file_id);
 static int st_db_postgresql_sync_volume(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_volume * volume, char ** checksums);
@@ -177,8 +180,10 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.get_user  = st_db_postgresql_get_user,
 	.sync_user = st_db_postgresql_sync_user,
 
-	.get_archive_by_job = st_db_postgresql_get_archive_by_job,
-	.sync_archive       = st_db_postgresql_sync_archive,
+	.get_archive_by_job                          = st_db_postgresql_get_archive_by_job,
+	.get_archive_files_by_job_and_archive_volume = st_db_postgresql_get_archive_files_by_job_and_archive_volume,
+	.get_archive_volumes_by_job                  = st_db_postgresql_get_archive_volumes_by_job,
+	.sync_archive                                = st_db_postgresql_sync_archive,
 };
 
 
@@ -2053,6 +2058,233 @@ static struct st_archive * st_db_postgresql_get_archive_by_job(struct st_databas
 	return archive;
 }
 
+static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct st_database_connection * connect, struct st_job * job, struct st_archive_volume * volume) {
+	if (connect == NULL || job == NULL || volume == NULL)
+		return 1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_job_data * job_data = job->db_data;
+	struct st_db_postgresql_archive_volume_data * archive_volume_data = volume->db_data;
+	if (self == NULL || job_data == NULL || job_data->id < 0 || archive_volume_data == NULL || archive_volume_data->id < 0)
+		return 2;
+
+	bool has_selected_files = st_db_postgresql_has_selected_files_by_job(connect, job);
+	bool has_restore_to = false;
+
+	const char * query = "select_has_restore_to";
+	st_db_postgresql_prepare(self, query, "SELECT COUNT(*) > 0 FROM restoreto WHERE job = $1");
+
+	char * jobid, * archivevolumeid;
+	asprintf(&jobid, "%ld", job_data->id);
+	asprintf(&archivevolumeid, "%ld", archive_volume_data->id);
+
+	const char * param[] = { jobid, archivevolumeid };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		st_db_postgresql_get_bool(result, 0, 0, &has_restore_to);
+
+	PQclear(result);
+
+	if (has_selected_files) {
+		if (has_restore_to) {
+			query = "select_archive_files_by_job_and_archive_volume_with_selected_files_and_restore_to";
+			st_db_postgresql_prepare(self, query, "SELECT af.id, rt.path || SUBSTRING(af.name FROM CHAR_LENGTH(SUBSTRING(sf.path FROM '(.+/)[^/]+'))) AS name, af.type, mimetype, ownerid, groupid, perm, af.ctime, af.size FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id LEFT JOIN selectedfile sf ON af.parent = sf.id LEFT JOIN restoreto rt ON rt.job = j.id, (SELECT path, CHAR_LENGTH(path) AS length FROM selectedfile ssf2 LEFT JOIN jobtoselectedfile sjsf ON ssf2.id = sjsf.selectedfile WHERE sjsf.job = $1) AS ssf WHERE j.id = $1 AND av.id = $2 AND SUBSTR(af.name, 0, ssf.length + 1) = ssf.path ORDER BY afv.blocknumber");
+		} else {
+			query = "select_archive_files_by_job_and_archive_volume_with_selected_files";
+			st_db_postgresql_prepare(self, query, "SELECT af.id, af.name, af.type, mimetype, ownerid, groupid, perm, af.ctime, af.size FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id, (SELECT path, CHAR_LENGTH(path) AS length FROM selectedfile ssf2 LEFT JOIN jobtoselectedfile sjsf ON ssf2.id = sjsf.selectedfile WHERE sjsf.job = $1) AS ssf WHERE j.id = $1 AND av.id = $2 AND SUBSTR(af.name, 0, ssf.length + 1) = ssf.path ORDER BY afv.blocknumber");
+		}
+	} else {
+		if (has_restore_to) {
+			query = "select_archive_files_by_job_and_archive_volume_with_restore_to";
+			st_db_postgresql_prepare(self, query, "SELECT af.id, rt.path || SUBSTRING(af.name FROM CHAR_LENGTH(SUBSTRING(sf.path FROM '(.+/)[^/]+'))) AS name, af.type, mimetype, ownerid, groupid, perm, af.ctime, af.size FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id LEFT JOIN selectedfile sf ON af.parent = sf.id LEFT JOIN restoreto rt ON j.id = rt.job WHERE j.id = $1 AND av.id = $2 ORDER BY afv.blocknumber");
+		} else {
+			query = "select_archive_files_by_job_and_archive_volume";
+			st_db_postgresql_prepare(self, query, "SELECT af.id, af.name, af.type, mimetype, ownerid, groupid, perm, af.ctime, af.size FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id WHERE j.id = $1 AND av.id = $2 ORDER BY afv.blocknumber");
+		}
+	}
+
+	result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	status = PQresultStatus(result);
+	int nb_tuples = PQntuples(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && nb_tuples > 0) {
+		volume->files = calloc(nb_tuples, sizeof(struct st_archive_files));
+		volume->nb_files = nb_tuples;
+
+		unsigned i;
+		for (i = 0; i < volume->nb_files; i++) {
+			struct st_archive_file * file = malloc(sizeof(struct st_archive_file));
+			st_db_postgresql_get_string_dup(result, i, 1, &file->name);
+			file->type = st_archive_file_string_to_type(PQgetvalue(result, i, 2));
+			st_db_postgresql_get_string_dup(result, i, 3, &file->mime_type);
+
+			st_db_postgresql_get_uint(result, i, 4, &file->ownerid);
+			st_db_postgresql_get_uint(result, i, 5, &file->groupid);
+			st_db_postgresql_get_uint(result, i, 6, &file->perm);
+			st_db_postgresql_get_time(result, i, 7, &file->ctime);
+			st_db_postgresql_get_ssize(result, i, 8, &file->size);
+
+			file->owner[0] = file->group[0] = '\0';
+			file->mtime = file->ctime;
+
+			file->digests = NULL;
+			file->nb_digests = 0;
+
+			file->archive = volume->archive;
+			file->selected_path = NULL;
+
+			struct st_db_postgresql_archive_file_data * file_data = file->db_data = malloc(sizeof(struct st_db_postgresql_archive_file_data));
+			st_db_postgresql_get_long(result, i, 0, &file_data->id);
+
+			struct st_archive_files * f = volume->files + i;
+			f->file = file;
+			f->position = 0;
+		}
+	}
+
+	PQclear(result);
+	free(jobid);
+	free(archivevolumeid);
+
+	return 0;
+}
+
+static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st_database_connection * connect, struct st_job * job) {
+	if (connect == NULL || job == NULL)
+		return NULL;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_job_data * job_data = job->db_data;
+	if (job_data == NULL || job_data->id < 0)
+		return NULL;
+
+	const char * query = "select_archive_by_job";
+	st_db_postgresql_prepare(self, query, "SELECT a.id, name, ctime, endtime, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
+
+	char * jobid;
+	asprintf(&jobid, "%ld", job_data->id);
+
+	const char * param[] = { jobid };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	struct st_archive * archive = NULL;
+	char * archiveid;
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		archive = malloc(sizeof(struct st_archive));
+
+		st_db_postgresql_get_string_dup(result, 0, 0, &archiveid);
+		st_db_postgresql_get_string_dup(result, 0, 1, &archive->name);
+		st_db_postgresql_get_time(result, 0, 2, &archive->ctime);
+		st_db_postgresql_get_time(result, 0, 3, &archive->endtime);
+
+		archive->volumes = NULL;
+		archive->nb_volumes = 0;
+
+		archive->user = st_user_get(PQgetvalue(result, 0, 4));
+
+		archive->copy_of = NULL;
+
+		struct st_db_postgresql_archive_data * archive_data = archive->db_data = malloc(sizeof(struct st_db_postgresql_archive_data));
+		st_db_postgresql_get_long(result, 0, 0, &archive_data->id);
+	}
+
+	PQclear(result);
+
+	if (archive == NULL) {
+		free(jobid);
+		return NULL;
+	}
+
+	if (st_db_postgresql_has_selected_files_by_job(connect, job)) {
+		query = "select_archive_volumes_by_job_with_selected_files";
+		st_db_postgresql_prepare(self, query, "SELECT DISTINCT av.id, av.sequence, av.size, t.uuid, av.tapeposition FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id LEFT JOIN tape t ON av.tape = t.id, (SELECT DISTINCT path, CHAR_LENGTH(path) AS length FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1)) AS sf WHERE j.id = $1 AND SUBSTR(af.name, 0, sf.length + 1) = sf.path ORDER BY sequence");
+	} else {
+		query = "select_archive_volumes_by_job";
+		st_db_postgresql_prepare(self, query, "SELECT av.id, av.sequence, av.size, t.uuid, av.tapeposition FROM job j LEFT JOIN archive a ON j.archive = a.id LEFT JOIN archivevolume av ON a.id = av.archive LEFT JOIN tape t ON av.tape = t.id WHERE j.id = $1 ORDER BY sequence");
+	}
+
+	result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	status = PQresultStatus(result);
+	int nb_tuples = PQntuples(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && nb_tuples > 0) {
+		archive->volumes = calloc(nb_tuples, sizeof(struct st_archive_volume));
+		archive->nb_volumes = nb_tuples;
+
+		unsigned i;
+		for (i = 0; i < archive->nb_volumes; i++) {
+			struct st_archive_volume * volume = archive->volumes + i;
+
+			st_db_postgresql_get_long(result, i, 1, &volume->sequence);
+			st_db_postgresql_get_long(result, i, 2, &volume->size);
+			volume->archive = archive;
+
+			char uuid[37];
+			st_db_postgresql_get_string(result, i, 3, uuid, 37);
+			volume->media = st_media_get_by_uuid(uuid);
+			st_db_postgresql_get_long(result, i, 4, &volume->media_position);
+
+			volume->digests = NULL;
+			volume->nb_digests = 9;
+
+			volume->files = NULL;
+			volume->nb_files = 0;
+
+			struct st_db_postgresql_archive_volume_data * archive_volume_data = volume->db_data = malloc(sizeof(struct st_db_postgresql_archive_volume_data));
+			st_db_postgresql_get_long(result, i, 0, &archive_volume_data->id);
+		}
+	}
+
+	free(jobid);
+	PQclear(result);
+
+	return archive;
+}
+
+static bool st_db_postgresql_has_selected_files_by_job(struct st_database_connection * connect, struct st_job * job) {
+	if (connect == NULL || job == NULL)
+		return false;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_job_data * job_data = job->db_data;
+	if (job_data == NULL || job_data->id < 0)
+		return false;
+
+	const char * query = "select_has_selected_files_from_restore_archive";
+	st_db_postgresql_prepare(self, query, "SELECT COUNT(*) > 0 FROM jobtoselectedfile WHERE job = $1");
+
+	bool has_selected_files = false;
+
+	char * jobid;
+	asprintf(&jobid, "%ld", job_data->id);
+
+	const char * param0[] = { jobid };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param0, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		st_db_postgresql_get_bool(result, 0, 0, &has_selected_files);
+
+	PQclear(result);
+	free(jobid);
+
+	return has_selected_files;
+}
+
 static int st_db_postgresql_sync_archive(struct st_database_connection * connect, struct st_archive * archive, char ** checksums) {
 	if (connect == NULL || archive == NULL)
 		return 1;
@@ -2147,7 +2379,7 @@ static int st_db_postgresql_sync_file(struct st_database_connection * connect, s
 	st_db_postgresql_prepare(self, query, "INSERT INTO archivefile(name, type, mimetype, ownerid, owner, groupid, groups, perm, ctime, mtime, size, parent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id");
 
 	char * perm, * ownerid, * groupid, * size, * parent;
-	asprintf(&perm, "%o", file->perm & 0x7777);
+	asprintf(&perm, "%d", file->perm & 0x7777);
 	asprintf(&ownerid, "%d", file->ownerid);
 	asprintf(&groupid, "%d", file->groupid);
 	asprintf(&size, "%zd", file->size);
