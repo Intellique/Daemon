@@ -22,12 +22,25 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 16 Dec 2012 18:54:17 +0100                         *
+*  Last modified: Thu, 20 Dec 2012 21:39:46 +0100                         *
 \*************************************************************************/
 
+// mknod, open
+#include <fcntl.h>
 // free, malloc
 #include <stdlib.h>
+// strcmp, strdup
+#include <string.h>
+// S_*, mknod, open
+#include <sys/stat.h>
+// futimes, utimes
+#include <sys/time.h>
+// S_*, lseek, open, mknod
+#include <sys/types.h>
+// chmod, chown, fchmod, fchown, lseek, mknod, write
+#include <unistd.h>
 
+#include <libstone/format.h>
 #include <libstone/library/changer.h>
 #include <libstone/library/drive.h>
 #include <libstone/library/slot.h>
@@ -38,14 +51,18 @@
 static void st_job_restore_archive_data_worker_work(void * arg);
 
 void st_job_restore_archive_data_worker_free(struct st_job_restore_archive_data_worker * worker) {
+	pthread_mutex_destroy(&worker->lock);
+	pthread_cond_destroy(&worker->wait);
+
 	free(worker);
 }
 
-struct st_job_restore_archive_data_worker * st_job_restore_archive_data_worker_new(struct st_job_restore_archive_private * self, struct st_drive * drive, struct st_slot * slot) {
+struct st_job_restore_archive_data_worker * st_job_restore_archive_data_worker_new(struct st_job_restore_archive_private * self, struct st_drive * drive, struct st_slot * slot, struct st_job_restore_archive_path * restore_to) {
 	struct st_job_restore_archive_data_worker * worker = malloc(sizeof(struct st_job_restore_archive_data_worker));
 	worker->jp = self;
 
 	worker->total_restored = 0;
+	worker->restore_to = restore_to;
 
 	worker->drive = drive;
 	worker->slot = slot;
@@ -63,9 +80,7 @@ struct st_job_restore_archive_data_worker * st_job_restore_archive_data_worker_n
 }
 
 void st_job_restore_archive_data_worker_wait(struct st_job_restore_archive_data_worker * worker) {
-	struct st_job_restore_archive_data_worker * self = worker;
-
-	if (!self->running)
+	if (!worker->running)
 		return;
 
 	pthread_mutex_lock(&worker->lock);
@@ -91,6 +106,7 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 	}
 
 	struct st_archive * archive = self->jp->archive;
+	bool has_restore_to = connect->ops->has_restore_to_by_job(connect, self->jp->job);
 
 	unsigned int i;
 	for (i = 0; i < archive->nb_volumes; i++) {
@@ -101,8 +117,73 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 
 		connect->ops->get_archive_files_by_job_and_archive_volume(connect, self->jp->job, vol);
 
+		struct st_format_reader * reader = dr->ops->get_reader(dr, vol->media_position);
+
 		unsigned int j;
 		for (j = 0; j < vol->nb_files; j++) {
+			struct st_archive_files * f = vol->files + j;
+			struct st_archive_file * file = f->file;
+
+			enum st_format_reader_header_status status = reader->ops->forward(reader, f->position);
+
+			struct st_format_file header;
+			status = reader->ops->get_header(reader, &header);
+
+			while (strcmp(header.filename, file->name + 1)) {
+				reader->ops->skip_file(reader);
+				st_format_file_free(&header);
+				status = reader->ops->get_header(reader, &header);
+			}
+
+			char * restore_to = st_job_restore_archive_path_get(self->restore_to, connect, self->jp->job, file, has_restore_to);
+
+			if (S_ISREG(header.mode)) {
+				int fd = open(restore_to, O_CREAT | O_WRONLY, header.mode & 07777);
+
+				if (header.position > 0) {
+					lseek(fd, header.position, SEEK_SET);
+				}
+
+				ssize_t nb_read;
+				char buffer[4096];
+				while (nb_read = reader->ops->read(reader, buffer, 4096), nb_read > 0) {
+					ssize_t nb_write = write(fd, buffer, nb_read);
+				}
+
+				fchown(fd, file->ownerid, file->groupid);
+				fchmod(fd, file->perm);
+
+				struct timeval tv[] = {
+					{ file->mtime, 0 },
+					{ file->mtime, 0 },
+				};
+				futimes(fd, tv);
+
+				close(fd);
+			} else if (S_ISDIR(header.mode)) {
+				// do nothing because directory is already created
+			} else if (S_ISLNK(header.mode)) {
+				symlink(header.link, header.filename);
+			} else if (S_ISFIFO(header.mode)) {
+				mknod(file->name, S_IFIFO, 0);
+			} else if (S_ISCHR(header.mode)) {
+				mknod(file->name, S_IFCHR, header.dev);
+			} else if (S_ISBLK(header.mode)) {
+				mknod(file->name, S_IFBLK, header.dev);
+			}
+
+			if (!(S_ISREG(header.mode) || S_ISDIR(header.mode))) {
+				chown(header.filename, file->ownerid, file->groupid);
+				chmod(header.filename, file->perm);
+
+				struct timeval tv[] = {
+					{ file->mtime, 0 },
+					{ file->mtime, 0 },
+				};
+				utimes(header.filename, tv);
+			}
+
+			st_format_file_free(&header);
 		}
 	}
 }

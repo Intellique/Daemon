@@ -22,12 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 16 Dec 2012 17:40:42 +0100                         *
+*  Last modified: Thu, 20 Dec 2012 21:11:49 +0100                         *
 \*************************************************************************/
 
 // free, malloc
 #include <stdlib.h>
-// sleep
+// chmod
+#include <sys/stat.h>
+// chown, sleep
 #include <unistd.h>
 
 #include <libstone/job.h>
@@ -36,6 +38,7 @@
 #include <libstone/library/slot.h>
 #include <libstone/log.h>
 #include <libstone/user.h>
+#include <libstone/util/file.h>
 #include <stoned/library/changer.h>
 
 #include "restore_archive.h"
@@ -118,7 +121,19 @@ static int st_job_restore_archive_run(struct st_job * job) {
 
 	job->done = 0.01;
 
+	unsigned int nb_directories;
+	struct st_archive_file * directories = self->connect->ops->get_archive_file_for_restore_directory(self->connect, job, &nb_directories);
+
 	unsigned int i;
+	for (i = 0; i < nb_directories; i++) {
+		struct st_archive_file * directory = directories + i;
+		st_util_file_mkdir(directory->name, directory->perm);
+	}
+
+	job->done = 0.02;
+
+	self->restore_path = st_job_restore_archive_path_new();
+
 	for (i = 0; i < archive->nb_volumes; i++) {
 		struct st_archive_volume * vol = archive->volumes + i;
 
@@ -149,20 +164,16 @@ static int st_job_restore_archive_run(struct st_job * job) {
 			}
 
 			struct st_changer * changer = slot->changer;
-			struct st_drive * drive = slot->drive;
+			drive = slot->drive;
 
 			if (drive != NULL) {
-				if (drive->lock->ops->try_lock(drive->lock)) {
-					sleep(5);
+				if (drive->lock->ops->timed_lock(drive->lock, 5000))
 					continue;
-				}
 
 				stop = true;
 			} else {
-				if (slot->lock->ops->try_lock(slot->lock)) {
-					sleep(5);
+				if (slot->lock->ops->timed_lock(slot->lock, 5000))
 					continue;
-				}
 
 				drive = changer->ops->find_free_drive(changer);
 
@@ -175,7 +186,7 @@ static int st_job_restore_archive_run(struct st_job * job) {
 			}
 		}
 
-		worker = st_job_restore_archive_data_worker_new(self, drive, slot);
+		worker = st_job_restore_archive_data_worker_new(self, drive, slot, self->restore_path);
 		if (self->first_worker == NULL)
 			self->first_worker = self->last_worker = worker;
 		else
@@ -192,6 +203,28 @@ static int st_job_restore_archive_run(struct st_job * job) {
 		worker = next;
 	}
 	self->first_worker = self->last_worker = NULL;
+
+	job->done = 0.99;
+
+	for (i = 1; i <= nb_directories; i++) {
+		struct st_archive_file * directory = directories + (nb_directories - i);
+
+		chown(directory->name, directory->ownerid, directory->groupid);
+		chmod(directory->name, directory->perm);
+
+		struct timeval tv[] = {
+			{ directory->mtime, 0 },
+			{ directory->mtime, 0 },
+		};
+		utimes(directory->name, tv);
+
+		free(directory->name);
+		free(directory->mime_type);
+		free(directory->db_data);
+	}
+	free(directories);
+
+	job->done = 1;
 
 	return 0;
 }

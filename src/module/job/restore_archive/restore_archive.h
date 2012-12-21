@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 16 Dec 2012 18:53:53 +0100                         *
+*  Last modified: Tue, 18 Dec 2012 21:51:13 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_RESTOREARCHIVE_H__
@@ -48,6 +48,7 @@ struct st_job_restore_archive_private {
 		struct st_job_restore_archive_private * jp;
 
 		ssize_t total_restored;
+		struct st_job_restore_archive_path * restore_to;
 
 		struct st_drive * drive;
 		struct st_slot * slot;
@@ -60,6 +61,11 @@ struct st_job_restore_archive_private {
 		struct st_job_restore_archive_data_worker * next;
 	} * first_worker, * last_worker;
 
+	struct st_job_restore_archive_path {
+		struct st_hashtable * paths;
+		pthread_mutex_t lock;
+	} * restore_path;
+
 	struct st_job_restore_archive_checks_worker {
 		struct st_job_restore_archive_checks_worker_ops {
 		} * ops;
@@ -68,8 +74,12 @@ struct st_job_restore_archive_private {
 };
 
 void st_job_restore_archive_data_worker_free(struct st_job_restore_archive_data_worker * worker);
-struct st_job_restore_archive_data_worker * st_job_restore_archive_data_worker_new(struct st_job_restore_archive_private * self, struct st_drive * drive, struct st_slot * slot);
+struct st_job_restore_archive_data_worker * st_job_restore_archive_data_worker_new(struct st_job_restore_archive_private * self, struct st_drive * drive, struct st_slot * slot, struct st_job_restore_archive_path * restore_to);
 void st_job_restore_archive_data_worker_wait(struct st_job_restore_archive_data_worker * worker);
+
+void st_job_restore_archive_path_free(struct st_job_restore_archive_path * restore_path);
+char * st_job_restore_archive_path_get(struct st_job_restore_archive_path * restore_path, struct st_database_connection * connect, struct st_job * job, struct st_archive_file * file, bool has_restore_to);
+struct st_job_restore_archive_path * st_job_restore_archive_path_new(void);
 
 #endif
 

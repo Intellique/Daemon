@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 10 Dec 2012 20:26:00 +0100                         *
+*  Last modified: Mon, 17 Dec 2012 22:52:05 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_FORMAT_H__
@@ -73,13 +73,14 @@ struct st_format_reader {
 	struct st_format_reader_ops {
 		int (*close)(struct st_format_reader * fr);
 		bool (*end_of_file)(struct st_format_reader * fr);
-		void (*free)(struct st_format_reader * sf);
-		ssize_t (*get_block_size)(struct st_format_reader * sf);
-		enum st_format_reader_header_status (*get_header)(struct st_format_reader * sf, struct st_format_file * file);
-		int (*last_errno)(struct st_format_reader * sf);
-		ssize_t (*position)(struct st_format_reader * io);
-		ssize_t (*read)(struct st_format_reader * sf, void * buffer, ssize_t length);
-		enum st_format_reader_header_status (*skip_file)(struct st_format_reader * sf);
+		enum st_format_reader_header_status (*forward)(struct st_format_reader * fr, ssize_t block_position);
+		void (*free)(struct st_format_reader * fr);
+		ssize_t (*get_block_size)(struct st_format_reader * fr);
+		enum st_format_reader_header_status (*get_header)(struct st_format_reader * fr, struct st_format_file * file);
+		int (*last_errno)(struct st_format_reader * fr);
+		ssize_t (*position)(struct st_format_reader * fr);
+		ssize_t (*read)(struct st_format_reader * fr, void * buffer, ssize_t length);
+		enum st_format_reader_header_status (*skip_file)(struct st_format_reader * fr);
 	} * ops;
 	void * data;
 };

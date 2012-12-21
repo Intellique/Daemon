@@ -22,14 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 22:54:02 +0200                         *
+*  Last modified: Thu, 20 Dec 2012 23:19:24 +0100                         *
 \*************************************************************************/
 
 // sscanf, snprintf
 #include <stdio.h>
 // free, malloc, realloc
 #include <stdlib.h>
-// memcpy, memmove, strncpy, strncmp
+// memcpy, memmove, memset, strncpy, strncmp
 #include <string.h>
 // bzero
 #include <string.h>
@@ -62,6 +62,7 @@ static ssize_t st_tar_reader_convert_size(const char * size);
 static time_t st_tar_reader_convert_time(struct st_tar * header);
 static uid_t st_tar_reader_convert_uid(struct st_tar * header);
 static bool st_tar_reader_end_of_file(struct st_format_reader * sfr);
+static enum st_format_reader_header_status st_tar_reader_forward(struct st_format_reader * fr, ssize_t block_position);
 static void st_tar_reader_free(struct st_format_reader * sfr);
 static ssize_t st_tar_reader_get_block_size(struct st_format_reader * sfr);
 static enum st_format_reader_header_status st_tar_reader_get_header(struct st_format_reader * sfr, struct st_format_file * header);
@@ -72,6 +73,7 @@ static enum st_format_reader_header_status st_tar_reader_skip_file(struct st_for
 
 static struct st_format_reader_ops st_tar_reader_ops = {
 	.close          = st_tar_reader_close,
+	.forward        = st_tar_reader_forward,
 	.free           = st_tar_reader_free,
 	.end_of_file    = st_tar_reader_end_of_file,
 	.get_block_size = st_tar_reader_get_block_size,
@@ -83,12 +85,12 @@ static struct st_format_reader_ops st_tar_reader_ops = {
 };
 
 
-struct st_format_reader * st_tar_get_reader(struct st_stream_reader * io) {
-	if (io == NULL)
+struct st_format_reader * st_tar_get_reader(struct st_stream_reader * sfr) {
+	if (sfr == NULL)
 		return NULL;
 
 	struct st_tar_reader_private * data = malloc(sizeof(struct st_tar_reader_private));
-	data->io = io;
+	data->io = sfr;
 	data->position = 0;
 	data->buffer = malloc(512);
 	data->buffer_size = 512;
@@ -106,7 +108,7 @@ struct st_format_reader * st_tar_get_reader(struct st_stream_reader * io) {
 static int st_tar_reader_check_header(struct st_tar * header) {
 	char checksum[8];
 	strncpy(checksum, header->checksum, 8);
-	bzero(header->checksum, 8);
+	memset(header->checksum, ' ', 8);
 
 	unsigned char * ptr = (unsigned char *) header;
 	unsigned int i, sum = 0;
@@ -169,6 +171,27 @@ static uid_t st_tar_reader_convert_uid(struct st_tar * header) {
 static bool st_tar_reader_end_of_file(struct st_format_reader * sfr) {
 	struct st_tar_reader_private * self = sfr->data;
 	return self->io->ops->end_of_file(self->io);
+}
+
+static enum st_format_reader_header_status st_tar_reader_forward(struct st_format_reader * sfr, ssize_t block_position) {
+	struct st_tar_reader_private * self = sfr->data;
+
+	ssize_t current_position = self->io->ops->position(self->io);
+	ssize_t block_size = self->io->ops->get_block_size(self->io);
+	ssize_t current_block = current_position / block_size;
+	if (current_block > block_position)
+		return st_format_reader_header_not_found;
+
+	if (current_block == block_position)
+		return st_format_reader_header_ok;
+
+	off_t next_position = block_position * block_size - current_position;
+	off_t new_position = self->io->ops->forward(self->io, next_position);
+
+	if (next_position != new_position)
+		return st_format_reader_header_not_found;
+
+	return st_format_reader_header_ok;
 }
 
 static void st_tar_reader_free(struct st_format_reader * sfr) {

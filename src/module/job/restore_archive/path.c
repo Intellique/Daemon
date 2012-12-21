@@ -22,21 +22,61 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 20 Dec 2012 23:27:22 +0100                         *
+*  Last modified: Tue, 18 Dec 2012 22:48:49 +0100                         *
 \*************************************************************************/
 
-// free
+// free, malloc
 #include <stdlib.h>
+// strdup
+#include <string.h>
 
-#include <libstone/format.h>
+#include <libstone/util/file.h>
+#include <libstone/util/hashtable.h>
+#include <libstone/util/string.h>
+#include <libstone/util/util.h>
 
-void st_format_file_free(struct st_format_file * file) {
-	if (file == NULL)
-		return;
+#include "restore_archive.h"
 
-	free(file->filename);
-	free(file->link);
-	free(file->user);
-	free(file->group);
+void st_job_restore_archive_path_free(struct st_job_restore_archive_path * restore_path) {
+	st_hashtable_free(restore_path->paths);
+	pthread_mutex_destroy(&restore_path->lock);
+	free(restore_path);
+}
+
+char * st_job_restore_archive_path_get(struct st_job_restore_archive_path * restore_path, struct st_database_connection * connect, struct st_job * job, struct st_archive_file * file, bool has_restore_to) {
+	pthread_mutex_lock(&restore_path->lock);
+
+	struct st_hashtable_value val = st_hashtable_get(restore_path->paths, file->name);
+
+	char * path;
+	if (val.type == st_hashtable_value_null) {
+		if (has_restore_to) {
+			char * tmp_path = connect->ops->get_restore_path_from_file(connect, job, file);
+			if (file->type != st_archive_file_type_directory) {
+				path = st_util_file_rename(tmp_path);
+				free(tmp_path);
+			} else
+				path = tmp_path;
+		} else {
+			if (file->type != st_archive_file_type_directory)
+				path = st_util_file_rename(file->name);
+			else
+				path = strdup(file->name);
+		}
+
+		st_hashtable_put(restore_path->paths, strdup(file->name), st_hashtable_val_string(strdup(path)));
+	} else
+		path = strdup(val.value.string);
+
+	pthread_mutex_unlock(&restore_path->lock);
+
+	return path;
+}
+
+struct st_job_restore_archive_path * st_job_restore_archive_path_new() {
+	struct st_job_restore_archive_path * restore_path = malloc(sizeof(struct st_job_restore_archive_path));
+	restore_path->paths = st_hashtable_new2(st_util_string_compute_hash, st_util_basic_free);
+	pthread_mutex_init(&restore_path->lock, NULL);
+	return restore_path;
 }
 

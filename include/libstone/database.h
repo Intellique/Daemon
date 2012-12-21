@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 16 Dec 2012 18:21:09 +0100                         *
+*  Last modified: Thu, 20 Dec 2012 20:41:30 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -35,6 +35,7 @@
 
 struct st_archive;
 struct st_archive_volume;
+struct st_archive_file;
 struct st_changer;
 struct st_drive;
 struct st_hashtable;
@@ -181,8 +182,11 @@ struct st_database_connection {
 		int (*sync_user)(struct st_database_connection * connect, struct st_user * user);
 
 		struct st_archive * (*get_archive_by_job)(struct st_database_connection * connect, struct st_job * job);
+		struct st_archive_file * (*get_archive_file_for_restore_directory)(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_files);
 		int (*get_archive_files_by_job_and_archive_volume)(struct st_database_connection * connect, struct st_job * job, struct st_archive_volume * volume);
 		struct st_archive * (*get_archive_volumes_by_job)(struct st_database_connection * connect, struct st_job * job);
+		char * (*get_restore_path_from_file)(struct st_database_connection * connect, struct st_job * job, struct st_archive_file * file);
+		bool (*has_restore_to_by_job)(struct st_database_connection * connect, struct st_job * job);
 		int (*sync_archive)(struct st_database_connection * connect, struct st_archive * archive, char ** checksums);
 	} * ops;
 

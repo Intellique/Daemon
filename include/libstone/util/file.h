@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 20 Jul 2012 10:36:00 +0200                         *
+*  Last modified: Tue, 18 Dec 2012 22:31:33 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_UTIL_FILE_H__
@@ -71,6 +71,8 @@ void st_util_file_gid2name(char * name, ssize_t length, gid_t gid);
  * \returns 0 if ok or read errno
  */
 int st_util_file_mkdir(const char * dirname, mode_t mode);
+
+char * st_util_file_rename(const char * filename);
 
 /**
  * \brief Remove recursively path

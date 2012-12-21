@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 11 Dec 2012 09:22:58 +0100                         *
+*  Last modified: Fri, 21 Dec 2012 00:12:40 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -456,7 +456,7 @@ static void st_scsi_tape_drive_on_failed(struct st_drive * drive, int verbose, i
 }
 
 static int st_scsi_tape_drive_rewind(struct st_drive * drive) {
-	return st_scsi_tape_drive_set_file_position(drive, -1);
+	return st_scsi_tape_drive_set_file_position(drive, 0);
 }
 
 static int st_scsi_tape_drive_set_file_position(struct st_drive * drive, int file_position) {

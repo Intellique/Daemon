@@ -22,20 +22,21 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 19:45:36 +0200                         *
+*  Last modified: Thu, 20 Dec 2012 22:08:42 +0100                         *
 \*************************************************************************/
 
+#define _GNU_SOURCE
 // scandir
 #include <dirent.h>
 // getgrgid_r
 #include <grp.h>
 // getpwuid_r
 #include <pwd.h>
-// snprintf
+// asprintf, snprintf
 #include <stdio.h>
 // free, malloc
 #include <stdlib.h>
-// memmove, strdup, strchr, strcpy, strlen, strncpy
+// memmove, strdup, strchr, strcpy, strlen, strncpy, strrchr
 #include <string.h>
 // lstat, mkdir
 #include <sys/stat.h>
@@ -119,6 +120,7 @@ int st_util_file_mkdir(const char * dirname, mode_t mode) {
 
 	char * dir = strdup(dirname);
 	st_util_string_delete_double_char(dir, '/');
+	st_util_string_rtrim(dir, '/');
 
 	char * ptr = strrchr(dir, '/');
 	if (ptr == NULL) {
@@ -148,6 +150,30 @@ int st_util_file_mkdir(const char * dirname, mode_t mode) {
 	free(dir);
 
 	return failed;
+}
+
+char * st_util_file_rename(const char * filename) {
+	char * path = strdup(filename);
+	size_t path_length = strlen(filename);
+
+	char * extension = strrchr(filename, '.');
+	size_t extension_length = 0;
+	if (extension != NULL)
+		extension_length = strlen(extension);
+
+	unsigned int next = 0;
+	while (!access(path, F_OK)) {
+		free(path);
+
+		if (extension != NULL)
+			asprintf(&path, "%.*s_%u%s", (int) (path_length - extension_length), path, next, extension);
+		else
+			asprintf(&path, "%.*s_%u", (int) (path_length - extension_length), path, next);
+
+		next++;
+	}
+
+	return path;
 }
 
 int st_util_file_rm(const char * path) {
