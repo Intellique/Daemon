@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 15:24:13 +0100                         *
+*  Last modified: Mon, 24 Dec 2012 18:56:16 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -85,6 +85,7 @@ static void st_log_postgresql_module_free(struct st_log_module * module) {
 	struct st_log_postgresql_private * self = module->data;
 
 	PQfinish(self->connection);
+	free(self->hostid);
 	free(self);
 
 	free(module->alias);

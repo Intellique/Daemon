@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 14 Oct 2012 21:32:02 +0200                         *
+*  Last modified: Tue, 25 Dec 2012 20:32:59 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -59,12 +59,31 @@ struct st_thread_pool_thread {
 	} state;
 };
 
-static void * st_thread_pool_work(void * arg);
-
 static struct st_thread_pool_thread ** st_thread_pool_threads = NULL;
 static unsigned int st_thread_pool_nb_threads = 0;
 static pthread_mutex_t st_thread_pool_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
+static void st_thread_pool_exit(void) __attribute__((destructor));
+static void * st_thread_pool_work(void * arg);
+
+
+static void st_thread_pool_exit() {
+	unsigned int i;
+	for (i = 0; i < st_thread_pool_nb_threads; i++) {
+		struct st_thread_pool_thread * th = st_thread_pool_threads[i];
+
+		pthread_mutex_lock(&th->lock);
+		if (th->state == st_thread_pool_state_waiting)
+			pthread_cond_signal(&th->wait);
+		pthread_mutex_unlock(&th->lock);
+
+		free(th);
+	}
+
+	free(st_thread_pool_threads);
+	st_thread_pool_threads = NULL;
+	st_thread_pool_nb_threads = 0;
+}
 
 int st_thread_pool_run(void (*function)(void * arg), void * arg) {
 	return st_thread_pool_run2(function, arg, 0);

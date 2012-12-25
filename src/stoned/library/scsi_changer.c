@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 11:49:39 +0100                         *
+*  Last modified: Tue, 25 Dec 2012 12:41:00 +0100                         *
 \*************************************************************************/
 
 // open
@@ -30,7 +30,7 @@
 // pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate,
 // pthread_create, pthread_join
 #include <pthread.h>
-// malloc
+// free, malloc
 #include <stdlib.h>
 // strncpy
 #include <string.h>
@@ -38,7 +38,7 @@
 #include <sys/stat.h>
 // open
 #include <sys/types.h>
-// exit
+// close, exit
 #include <unistd.h>
 
 #include <libstone/log.h>
@@ -55,6 +55,7 @@ struct st_scsi_changer_private {
 };
 
 static struct st_drive * st_scsi_changer_find_free_drive(struct st_changer * ch);
+static void st_scsi_changer_free(struct st_changer * ch);
 static int st_scsi_changer_load_media(struct st_changer * ch, struct st_media * from, struct st_drive * to);
 static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
 static void * st_scsi_changer_setup2(void * drive);
@@ -63,6 +64,7 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 
 static struct st_changer_ops st_scsi_changer_ops = {
 	.find_free_drive = st_scsi_changer_find_free_drive,
+	.free            = st_scsi_changer_free,
 	.load_media      = st_scsi_changer_load_media,
 	.load_slot       = st_scsi_changer_load_slot,
 	.shut_down       = st_scsi_changer_shut_down,
@@ -86,6 +88,47 @@ static struct st_drive * st_scsi_changer_find_free_drive(struct st_changer * ch)
 	}
 
 	return NULL;
+}
+
+static void st_scsi_changer_free(struct st_changer * ch) {
+	struct st_scsi_changer_private * self = ch->data;
+	close(self->fd);
+	self->lock->ops->free(self->lock);
+	free(self);
+	ch->data = NULL;
+	free(ch->db_data);
+
+	free(ch->device);
+	free(ch->model);
+	free(ch->vendor);
+	free(ch->revision);
+	free(ch->serial_number);
+
+	unsigned int i;
+	for (i = 0; i < ch->nb_drives; i++) {
+		struct st_drive * dr = ch->drives + i;
+		dr->ops->free(dr);
+	}
+	free(ch->drives);
+	ch->drives = NULL;
+	ch->nb_drives = 0;
+
+	for (i = 0; i < ch->nb_slots; i++) {
+		struct st_slot * sl = ch->slots + i;
+
+		sl->changer = NULL;
+		sl->drive = NULL;
+		sl->media = NULL;
+
+		free(sl->volume_name);
+		if (sl->lock != NULL)
+			sl->lock->ops->free(sl->lock);
+
+		free(sl->data);
+		free(sl->db_data);
+	}
+	free(ch->slots);
+	ch->nb_slots = 0;
 }
 
 static int st_scsi_changer_load_media(struct st_changer * ch, struct st_media * from, struct st_drive * to) {

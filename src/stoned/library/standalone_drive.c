@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 09:23:04 +0200                         *
+*  Last modified: Tue, 25 Dec 2012 13:01:31 +0100                         *
 \*************************************************************************/
 
 // malloc
@@ -39,6 +39,7 @@
 #include "scsi.h"
 
 static struct st_drive * st_standalone_drive_find_free_drive(struct st_changer * ch);
+static void st_standalone_drive_free(struct st_changer * ch);
 static int st_standalone_drive_load_media(struct st_changer * ch, struct st_media * from, struct st_drive * to);
 static int st_standalone_drive_load_slot(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
 static int st_standalone_drive_shut_down(struct st_changer * ch);
@@ -46,6 +47,7 @@ static int st_standalone_drive_unload(struct st_changer * ch, struct st_drive * 
 
 static struct st_changer_ops st_standalone_drive_ops = {
 	.find_free_drive = st_standalone_drive_find_free_drive,
+	.free            = st_standalone_drive_free,
 	.load_media      = st_standalone_drive_load_media,
 	.load_slot       = st_standalone_drive_load_slot,
 	.shut_down       = st_standalone_drive_shut_down,
@@ -65,6 +67,23 @@ static struct st_drive * st_standalone_drive_find_free_drive(struct st_changer *
 		return dr;
 
 	return NULL;
+}
+
+static void st_standalone_drive_free(struct st_changer * ch) {
+	free(ch->device);
+	free(ch->model);
+	free(ch->vendor);
+	free(ch->revision);
+	free(ch->serial_number);
+
+	ch->drives->ops->free(ch->drives);
+	free(ch->drives);
+	ch->drives = NULL;
+	ch->nb_drives = 0;
+
+	free(ch->slots->db_data);
+	free(ch->slots);
+	ch->slots = NULL;
 }
 
 static int st_standalone_drive_load_media(struct st_changer * ch __attribute__((unused)), struct st_media * from __attribute__((unused)), struct st_drive * to __attribute__((unused))) {

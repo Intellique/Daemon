@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 20 Dec 2012 20:54:35 +0100                         *
+*  Last modified: Tue, 25 Dec 2012 20:26:40 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1150,6 +1150,8 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 					media->pool = NULL;
 					media->status = st_media_status_new;
 				}
+
+				free(uuid);
 			}
 
 			PQclear(result);
@@ -1187,6 +1189,8 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		free(write);
 		free(nbfiles);
 		free(blocksize);
+		free(availableblock);
+		free(totalblock);
 		free(mediaid);
 		free(mediaformatid);
 		free(poolid);
@@ -1500,10 +1504,12 @@ static int st_db_postgresql_get_media_format(struct st_database_connection * con
 		st_db_postgresql_get_bool(result, 0, 10, &media_format->support_mam);
 
 		PQclear(result);
+		free(c_density_code);
 		return 0;
 	}
 
 	PQclear(result);
+	free(c_density_code);
 	return 1;
 }
 
@@ -1734,6 +1740,7 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 		if (status == PGRES_FATAL_ERROR)
 			st_db_postgresql_get_error(result, query);
 
+		free(job_id);
 		free(repetition);
 		free(done);
 		PQclear(result);

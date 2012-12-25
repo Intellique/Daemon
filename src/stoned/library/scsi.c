@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 04 Dec 2012 23:44:21 +0100                         *
+*  Last modified: Fri, 21 Dec 2012 23:08:41 +0100                         *
 \*************************************************************************/
 
 // htobe16
@@ -51,7 +51,7 @@
 
 struct scsi_inquiry {
 	unsigned char operation_code;
-	unsigned char enable_vital_product_data:1;
+	bool enable_vital_product_data:1;
 	unsigned char reserved0:4;
 	unsigned char obsolete:3;
 	unsigned char page_code;
@@ -71,8 +71,8 @@ enum scsi_loader_element_type {
 struct scsi_loader_element_status {
     enum scsi_loader_element_type type:8;
     unsigned char reserved0:6;
-    unsigned alternate_volume_tag:1;
-    unsigned primary_volume_tag:1;
+    bool alternate_volume_tag:1;
+    bool primary_volume_tag:1;
     unsigned short element_descriptor_length;
     unsigned char reserved1;
     unsigned int byte_count_of_descriptor_data_available:24;
@@ -80,24 +80,24 @@ struct scsi_loader_element_status {
 
 struct scsi_loader_data_transfer_element {
     unsigned short element_address;
-    unsigned char full:1;
-    unsigned char reserved0:1;
-    unsigned char execpt:1;
-    unsigned char access:1;
+    bool full:1;
+    bool reserved0:1;
+    bool execpt:1;
+    bool access:1;
     unsigned char reserved1:4;
     unsigned char reserved2;
     unsigned char additional_sense_code;
     unsigned char additional_sense_code_qualifier;
     unsigned char logical_unit_number:3;
-    unsigned char reserved3:1;
-    unsigned char logical_unit_valid:1;
-    unsigned char id_valid:1;
+    bool reserved3:1;
+    bool logical_unit_valid:1;
+    bool id_valid:1;
     unsigned char reserved4:2;
     unsigned char scsi_bus_address;
     unsigned char reserved5;
     unsigned char reserved6:6;
-    unsigned char invert:1;
-    unsigned char source_valid:1;
+    bool invert:1;
+    bool source_valid:1;
     unsigned short source_storage_element_address;
     char primary_volume_tag_information[36];
     unsigned char code_set_1:4;
@@ -119,20 +119,20 @@ struct scsi_loader_data_transfer_element {
 
 struct scsi_loader_import_export_element {
     unsigned short element_address;
-    unsigned char full:1;
-    unsigned char import_export:1;
-    unsigned char execpt:1;
-    unsigned char access:1;
-    unsigned char export_enable:1;
-    unsigned char import_enable:1;
+    bool full:1;
+    bool import_export:1;
+    bool execpt:1;
+    bool access:1;
+    bool export_enable:1;
+    bool import_enable:1;
     unsigned char reserved0:2;
     unsigned char reserved1;
     unsigned char additional_sense_code;
     unsigned char additional_sense_code_qualifier;
     unsigned char reserved2[3];
     unsigned char reserved3:6;
-    unsigned char invert:1;
-    unsigned char source_valid:1;
+    bool invert:1;
+    bool source_valid:1;
     unsigned short source_storage_element_address;
     char primary_volume_tag_information[36];
     unsigned char reserved4[4];
@@ -140,17 +140,17 @@ struct scsi_loader_import_export_element {
 
 struct scsi_loader_medium_transport_element {
     unsigned short element_address;
-    unsigned char full:1;
-    unsigned char reserved0:1;
-    unsigned char execpt:1;
+    bool full:1;
+    bool reserved0:1;
+    bool execpt:1;
     unsigned char reserved1:5;
     unsigned char reserved2;
     unsigned char additional_sense_code;
     unsigned char additional_sense_code_qualifier;
     unsigned char reserved3[3];
     unsigned char reserved4:6;
-    unsigned char invert:1;
-    unsigned char source_valid:1;
+    bool invert:1;
+    bool source_valid:1;
     unsigned short source_storage_element_address;
     unsigned char primary_volume_tag_information[36];
     unsigned char reserved5[4];
@@ -158,18 +158,18 @@ struct scsi_loader_medium_transport_element {
 
 struct scsi_loader_storage_element {
     unsigned short element_address;
-    unsigned char full:1;
-    unsigned char reserved0:1;
-    unsigned char execpt:1;
-    unsigned char access:1;
+    bool full:1;
+    bool reserved0:1;
+    bool execpt:1;
+    bool access:1;
     unsigned char reserved1:4;
     unsigned char reserved2;
     unsigned char additional_sense_code;
     unsigned char additional_sense_code_qualifier;
     unsigned char reserved3[3];
     unsigned char reserved4:6;
-    unsigned char invert:1;
-    unsigned char source_valid:1;
+    bool invert:1;
+    bool source_valid:1;
     unsigned short source_storage_element_address;
     char primary_volume_tag_information[36];
     unsigned char reserved5[4];
@@ -212,13 +212,13 @@ enum scsi_mam_attribute {
 
 struct scsi_request_sense {
 	unsigned char error_code:7;						/* Byte 0 Bits 0-6 */
-	unsigned char valid:1;							/* Byte 0 Bit 7 */
+	bool valid:1;									/* Byte 0 Bit 7 */
 	unsigned char segment_number;					/* Byte 1 */
 	unsigned char sense_key:4;						/* Byte 2 Bits 0-3 */
-	unsigned char :1;								/* Byte 2 Bit 4 */
-	unsigned char ili:1;							/* Byte 2 Bit 5 */
-	unsigned char eom:1;							/* Byte 2 Bit 6 */
-	unsigned char filemark:1;						/* Byte 2 Bit 7 */
+	bool :1;										/* Byte 2 Bit 4 */
+	bool ili:1;										/* Byte 2 Bit 5 */
+	bool eom:1;										/* Byte 2 Bit 6 */
+	bool filemark:1;								/* Byte 2 Bit 7 */
 	unsigned char information[4];					/* Bytes 3-6 */
 	unsigned char additional_sense_length;			/* Byte 7 */
 	unsigned char command_specific_information[4];	/* Bytes 8-11 */
@@ -226,10 +226,10 @@ struct scsi_request_sense {
 	unsigned char additional_sense_code_qualifier;	/* Byte 13 */
 	unsigned char :8;								/* Byte 14 */
 	unsigned char bit_pointer:3;					/* Byte 15 */
-	unsigned char bpv:1;
+	bool bpv:1;
 	unsigned char :2;
-	unsigned char command_data :1;
-	unsigned char sksv:1;
+	bool command_data:1;
+	bool sksv:1;
 	unsigned char field_data[2];					/* Byte 16,17 */
 };
 
@@ -259,8 +259,8 @@ bool st_scsi_loader_has_drive(struct st_changer * changer, struct st_drive * dri
 		unsigned char reserved0[3];
 
 		unsigned char page_code:6;
-		unsigned char reserved1:1;
-		unsigned char page_saved:1;
+		bool reserved1:1;
+		bool page_saved:1;
 		unsigned char parameter_length;
 		unsigned short medium_transport_element_address;
 		unsigned short number_of_medium_transport_elements;
@@ -275,7 +275,7 @@ bool st_scsi_loader_has_drive(struct st_changer * changer, struct st_drive * dri
 	struct {
 		unsigned char operation_code;
 		unsigned char reserved0:3;
-		unsigned char disable_block_descriptors:1;
+		bool disable_block_descriptors:1;
 		unsigned char reserved1:4;
 		enum {
 			page_code_element_address_assignement_page = 0x1D,
@@ -299,7 +299,7 @@ bool st_scsi_loader_has_drive(struct st_changer * changer, struct st_drive * dri
 	} __attribute__((packed)) command = {
 		.operation_code = 0x1A, // Mode sense
 		.reserved0 = 0,
-		.disable_block_descriptors = 0,
+		.disable_block_descriptors = false,
 		.reserved1 = 0,
 		.code_page = page_code_element_address_assignement_page,
 		.page_control = page_control_current_value,
@@ -311,6 +311,7 @@ bool st_scsi_loader_has_drive(struct st_changer * changer, struct st_drive * dri
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
+	memset(&result, 0, sizeof(result));
 
 	header.interface_id = 'S';
 	header.cmd_len = sizeof(command);
@@ -351,12 +352,12 @@ static bool st_scsi_loader_has_drive2(int fd, struct st_changer * changer, int s
 	struct {
 		unsigned char operation_code;
 		enum scsi_loader_element_type type:4;
-		unsigned char volume_tag:1;
+		bool volume_tag:1;
 		unsigned char reserved0:3;
 		unsigned short starting_element_address;
 		unsigned short number_of_elements;
-		unsigned char device_id:1;
-		unsigned char current_data:1;
+		bool device_id:1;
+		bool current_data:1;
 		unsigned char reserved1:6;
 		unsigned char allocation_length[3];
 		unsigned char reserved2;
@@ -365,12 +366,12 @@ static bool st_scsi_loader_has_drive2(int fd, struct st_changer * changer, int s
 	} __attribute__((packed)) command = {
 		.operation_code = 0xB8,
 		.type = scsi_loader_element_type_data_transfer,
-		.volume_tag = changer->barcode ? 1 : 0,
+		.volume_tag = changer->barcode,
 		.reserved0 = 0,
 		.starting_element_address = htobe16(start_element),
 		.number_of_elements = htobe16(nb_elements),
-		.device_id = 1,
-		.current_data = 0,
+		.device_id = true,
+		.current_data = false,
 		.reserved1 = 0,
 		.allocation_length = { size_needed >> 16, size_needed >> 8, size_needed & 0xFF, },
 		.reserved2 = 0,
@@ -449,39 +450,39 @@ void st_scsi_loader_info(int fd, struct st_changer * changer) {
 		unsigned char peripheral_device_type:5;
 		unsigned char peripheral_device_qualifier:3;
 		unsigned char reserved0:7;
-		unsigned char removable_medium_bit:1;
+		bool removable_medium_bit:1;
 		unsigned char version;
 		unsigned char response_data_format:4;
-		unsigned char hi_sup:1;
-		unsigned char norm_aca:1;
-		unsigned char reserved1:1;
-		unsigned char asynchronous_event_reporting_capability:1;
+		bool hi_sup:1;
+		bool norm_aca:1;
+		bool reserved1:1;
+		bool asynchronous_event_reporting_capability:1;
 		unsigned char additional_length;
 		unsigned char reserved2:7;
-		unsigned char scc_supported:1;
-		unsigned char addr16:1;
+		bool scc_supported:1;
+		bool addr16:1;
 		unsigned char reserved3:2;
-		unsigned char medium_changer:1;
-		unsigned char multi_port:1;
-		unsigned char reserved4:1;
-		unsigned char enclosure_service:1;
-		unsigned char basic_queuing:1;
-		unsigned char reserved5:1;
-		unsigned char command_queuing:1;
-		unsigned char reserved6:1;
-		unsigned char linked_command:1;
-		unsigned char synchonous_transfer:1;
-		unsigned char wide_bus_16:1;
-		unsigned char reserved7:1;
-		unsigned char relative_addressing:1;
+		bool medium_changer:1;
+		bool multi_port:1;
+		bool reserved4:1;
+		bool enclosure_service:1;
+		bool basic_queuing:1;
+		bool reserved5:1;
+		bool command_queuing:1;
+		bool reserved6:1;
+		bool linked_command:1;
+		bool synchonous_transfer:1;
+		bool wide_bus_16:1;
+		bool reserved7:1;
+		bool relative_addressing:1;
 		char vendor_identification[8];
 		char product_identification[16];
 		char product_revision_level[4];
 		unsigned char full_firmware_revision_level[19];
-		unsigned char bar_code:1;
+		bool bar_code:1;
 		unsigned char reserved8:7;
-		unsigned char information_units_supported:1;
-		unsigned char quick_arbitration_supported:1;
+		bool information_units_supported:1;
+		bool quick_arbitration_supported:1;
 		unsigned char clocking:2;
 		unsigned char reserved9:4;
 		unsigned char reserved10;
@@ -492,7 +493,7 @@ void st_scsi_loader_info(int fd, struct st_changer * changer) {
 
 	struct scsi_inquiry command_inquiry = {
 		.operation_code = 0x12,
-		.enable_vital_product_data = 0,
+		.enable_vital_product_data = false,
 		.page_code = 0,
 		.allocation_length = sizeof(result_inquiry),
 	};
@@ -551,7 +552,7 @@ void st_scsi_loader_info(int fd, struct st_changer * changer) {
 
 	struct scsi_inquiry command_serial_number = {
 		.operation_code = 0x12,
-		.enable_vital_product_data = 1,
+		.enable_vital_product_data = true,
 		.page_code = 0x80,
 		.allocation_length = sizeof(result_serial_number),
 	};
@@ -628,7 +629,7 @@ int st_scsi_loader_move(int fd, int transport_address, struct st_slot * from, st
 		unsigned short source_address;
 		unsigned short destination_address;
 		unsigned char reserved1[2];
-		unsigned char invert:1;
+		bool invert:1;
 		unsigned char reserved2:7;
 		unsigned char reserved3;
 	} __attribute__((packed)) command = {
@@ -638,7 +639,7 @@ int st_scsi_loader_move(int fd, int transport_address, struct st_slot * from, st
 		.source_address = htobe16(sf->address),
 		.destination_address = htobe16(st->address),
 		.reserved1 = { 0, 0 },
-		.invert = 0,
+		.invert = false,
 		.reserved2 = 0,
 		.reserved3 = 0,
 	};
@@ -698,8 +699,8 @@ void st_scsi_loader_status_new(int fd, struct st_changer * changer, int * transp
 		unsigned char reserved0[3];
 
 		unsigned char page_code:6;
-		unsigned char reserved1:1;
-		unsigned char page_saved:1;
+		bool reserved1:1;
+		bool page_saved:1;
 		unsigned char parameter_length;
 		unsigned short medium_transport_element_address;
 		unsigned short number_of_medium_transport_elements;
@@ -714,7 +715,7 @@ void st_scsi_loader_status_new(int fd, struct st_changer * changer, int * transp
 	struct {
 		unsigned char operation_code;
 		unsigned char reserved0:3;
-		unsigned char disable_block_descriptors:1;
+		bool disable_block_descriptors:1;
 		unsigned char reserved1:4;
 		enum {
 			page_code_element_address_assignement_page = 0x1D,
@@ -738,7 +739,7 @@ void st_scsi_loader_status_new(int fd, struct st_changer * changer, int * transp
 	} __attribute__((packed)) command = {
 		.operation_code = 0x1A,
 		.reserved0 = 0,
-		.disable_block_descriptors = 0,
+		.disable_block_descriptors = false,
 		.reserved1 = 0,
 		.code_page = page_code_element_address_assignement_page,
 		.page_control = page_control_current_value,
@@ -797,7 +798,7 @@ void st_scsi_loader_status_new(int fd, struct st_changer * changer, int * transp
 		}
 
 		slot->volume_name = NULL;
-		slot->full = 0;
+		slot->full = false;
 
 		struct st_scsislot * sp = slot->data = malloc(sizeof(struct st_scsislot));
 		sp->address = sp->src_address = 0;
@@ -836,26 +837,26 @@ static void st_scsi_loader_status_update_slot(int fd, struct st_changer * change
 	struct {
 		unsigned char operation_code;
 		enum scsi_loader_element_type type:4;
-		unsigned char volume_tag:1;
+		bool volume_tag:1;
 		unsigned char reserved0:3;
 		unsigned short starting_element_address;
 		unsigned short number_of_elements;
-		unsigned char device_id:1;
-		unsigned char current_data:1;
+		bool device_id:1;
+		bool current_data:1;
 		unsigned char reserved1:6;
 		unsigned char allocation_length[3];
 		unsigned char reserved2;
 		unsigned char reserved3:7;
-		unsigned char serial_number_request:1;
+		bool serial_number_request:1;
 	} __attribute__((packed)) command = {
 		.operation_code = 0xB8,
 		.type = type,
-		.volume_tag = changer->barcode ? 1 : 0,
+		.volume_tag = changer->barcode,
 		.reserved0 = 0,
 		.starting_element_address = htobe16(start_element),
 		.number_of_elements = htobe16(nb_elements),
-		.device_id = 0,
-		.current_data = 0,
+		.device_id = false,
+		.current_data = false,
 		.reserved1 = 0,
 		.allocation_length = { size_needed >> 16, size_needed >> 8, size_needed & 0xFF, },
 		.reserved2 = 0,
@@ -1018,16 +1019,16 @@ static void st_scsi_loader_status_update_slot(int fd, struct st_changer * change
 int st_scsi_tape_format(int fd, bool quick) {
 	struct {
 		unsigned char op_code;
-		unsigned char long_mode:1;
-		unsigned char immed:1;
+		bool long_mode:1;
+		bool immed:1;
 		unsigned char reserved0:3;
 		unsigned char obsolete:3;
 		unsigned char reserved1[3];
 		unsigned char control;
 	} __attribute__((packed)) command = {
 		.op_code = 0x19, // ERASE
-		.long_mode = quick == false,
-		.immed = 0,
+		.long_mode = !quick,
+		.immed = false,
 	};
 
 	struct scsi_request_sense sense;
@@ -1057,38 +1058,38 @@ void st_scsi_tape_info(int fd, struct st_drive * drive) {
 		unsigned char peripheral_device_type:5;
 		unsigned char peripheral_device_qualifier:3;
 		unsigned char reserved0:7;
-		unsigned char removable_medium_bit:1;
+		bool removable_medium_bit:1;
 		unsigned char version:3;
 		unsigned char ecma_version:3;
 		unsigned char iso_version:2;
 		unsigned char response_data_format:4;
-		unsigned char hi_sup:1;
-		unsigned char norm_aca:1;
-		unsigned char obsolete0:1;
-		unsigned char asynchronous_event_reporting_capability:1;
+		bool hi_sup:1;
+		bool norm_aca:1;
+		bool obsolete0:1;
+		bool asynchronous_event_reporting_capability:1;
 		unsigned char additional_length;
 		unsigned char reserved1:7;
-		unsigned char scc_supported:1;
-		unsigned char addr16:1;
-		unsigned char addr32:1;
-		unsigned char obsolete1:1;
-		unsigned char medium_changer:1;
-		unsigned char multi_port:1;
-		unsigned char vs:1;
-		unsigned char enclosure_service:1;
-		unsigned char basic_queuing:1;
-		unsigned char reserved2:1;
-		unsigned char command_queuing:1;
-		unsigned char trans_dis:1;
-		unsigned char linked_command:1;
-		unsigned char synchonous_transfer:1;
-		unsigned char wide_bus_16:1;
-		unsigned char obsolete2:1;
-		unsigned char relative_addressing:1;
+		bool scc_supported:1;
+		bool addr16:1;
+		bool addr32:1;
+		bool obsolete1:1;
+		bool medium_changer:1;
+		bool multi_port:1;
+		bool vs:1;
+		bool enclosure_service:1;
+		bool basic_queuing:1;
+		bool reserved2:1;
+		bool command_queuing:1;
+		bool trans_dis:1;
+		bool linked_command:1;
+		bool synchonous_transfer:1;
+		bool wide_bus_16:1;
+		bool obsolete2:1;
+		bool relative_addressing:1;
 		char vendor_identification[8];
 		char product_identification[16];
 		char product_revision_level[4];
-		unsigned char aut_dis:1;
+		bool aut_dis:1;
 		unsigned char performance_limit;
 		unsigned char reserved3[3];
 		unsigned char oem_specific;
@@ -1096,7 +1097,7 @@ void st_scsi_tape_info(int fd, struct st_drive * drive) {
 
 	struct scsi_inquiry command_inquiry = {
 		.operation_code = 0x12, // INQUIRY
-		.enable_vital_product_data = 0,
+		.enable_vital_product_data = false,
 		.page_code = 0,
 		.allocation_length = sizeof(result_inquiry),
 	};
@@ -1150,7 +1151,7 @@ void st_scsi_tape_info(int fd, struct st_drive * drive) {
 
 	struct scsi_inquiry command_serial_number = {
 		.operation_code = 0x12, // INQUIRY
-		.enable_vital_product_data = 1,
+		.enable_vital_product_data = true,
 		.page_code = 0x80, // UNIT SERIAL NUMBER
 		.allocation_length = sizeof(result_serial_number),
 	};
@@ -1181,8 +1182,8 @@ int st_scsi_tape_locate(int fd, off_t position) {
 	struct {
 		unsigned char op_code;
 		unsigned char immed:1;
-		unsigned char cp:1;
-		unsigned char bt:1;
+		bool cp:1;
+		bool bt:1;
 		unsigned char reserved0:2;
 		unsigned char obsolete:3;
 		unsigned char reserved1;
@@ -1192,8 +1193,8 @@ int st_scsi_tape_locate(int fd, off_t position) {
 		unsigned char control;
 	} __attribute__((packed)) command = {
 		.op_code = 0x2B, // LOCATE(10)
-		.cp = 0,
-		.bt = 0,
+		.cp = false,
+		.bt = false,
 		.block_address = htobe32(position),
 		.partition = 0,
 	};
@@ -1239,14 +1240,14 @@ int st_scsi_tape_read_position(int fd, off_t * position) {
 	};
 
 	struct {
-		unsigned char reserved0:1;
-		unsigned char perr:1;
-		unsigned char block_position_unknown:1;
-		unsigned char reserved1:1;
-		unsigned char byte_count_unknown:1;
-		unsigned char block_count_unknown:1;
-		unsigned char end_of_partition:1;
-		unsigned char begin_of_partition:1;
+		bool reserved0:1;
+		bool perr:1;
+		bool block_position_unknown:1;
+		bool reserved1:1;
+		bool byte_count_unknown:1;
+		bool block_count_unknown:1;
+		bool end_of_partition:1;
+		bool begin_of_partition:1;
 		unsigned char partition_number;
 		unsigned char reserved2[2];
 		unsigned int first_block_location;
@@ -1260,6 +1261,7 @@ int st_scsi_tape_read_position(int fd, off_t * position) {
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
+	memset(&result, 0, sizeof(result));
 
 	header.interface_id = 'S';
 	header.cmd_len = sizeof(command);
@@ -1333,7 +1335,7 @@ int st_scsi_tape_read_mam(int fd, struct st_media * media) {
 		enum scsi_mam_attribute attribute_identifier:16;
 		unsigned char format:2;
 		unsigned char reserved:5;
-		unsigned char read_only:1;
+		bool read_only:1;
 		unsigned short attribute_length;
 		union {
 			unsigned char int8;
@@ -1451,7 +1453,7 @@ int st_scsi_tape_read_medium_serial_number(int fd, char * medium_serial_number, 
 		enum scsi_mam_attribute attribute_identifier:16;
 		unsigned char format:2;
 		unsigned char reserved:5;
-		unsigned char read_only:1;
+		bool read_only:1;
 		unsigned short attribute_length;
 		union {
 			unsigned char int8;
@@ -1499,13 +1501,13 @@ int st_scsi_tape_size_available(int fd, struct st_media * media) {
 		unsigned short page_length;
 		struct {
 			unsigned short parameter_code;
-			unsigned char lp:1;
-			unsigned char lbin:1;
+			bool lp:1;
+			bool lbin:1;
 			unsigned char tmc:2;
-			unsigned char etc:1;
-			unsigned char tsd:1;
-			unsigned char ds:1;
-			unsigned char du:1;
+			bool etc:1;
+			bool tsd:1;
+			bool ds:1;
+			bool du:1;
 			unsigned char parameter_length;
 			unsigned int value;
 		} values[4];
@@ -1513,8 +1515,8 @@ int st_scsi_tape_size_available(int fd, struct st_media * media) {
 
 	struct {
 		unsigned char operation_code;
-		unsigned char saved_paged:1;
-		unsigned char parameter_pointer_control:1;
+		bool saved_paged:1;
+		bool parameter_pointer_control:1;
 		unsigned char reserved0:3;
 		unsigned char obsolete:3;
 		unsigned char page_code:6;
@@ -1530,8 +1532,8 @@ int st_scsi_tape_size_available(int fd, struct st_media * media) {
 		unsigned char control;
 	} __attribute__((packed)) command = {
 		.operation_code = 0x4D,
-		.saved_paged = 0,
-		.parameter_pointer_control = 0,
+		.saved_paged = false,
+		.parameter_pointer_control = false,
 		.page_code = 0x31,
 		.page_control = page_control_current_value,
 		.parameter_pointer = 0,

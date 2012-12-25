@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 03 Dec 2012 21:24:41 +0100                         *
+*  Last modified: Tue, 25 Dec 2012 20:21:21 +0100                         *
 \*************************************************************************/
 
 #define _XOPEN_SOURCE 500
@@ -42,7 +42,7 @@ int st_db_postgresql_get_bool(PGresult * result, int row, int column, bool * val
 		return -1;
 
 	char * value = PQgetvalue(result, row, column);
-	if (value)
+	if (value != NULL)
 		*val = strcmp(value, "t") ? false : true;
 
 	return value != NULL;
@@ -53,7 +53,7 @@ int st_db_postgresql_get_double(PGresult * result, int row, int column, double *
 		return -1;
 
 	char * value = PQgetvalue(result, row, column);
-	if (value && sscanf(value, "%lg", val) == 1)
+	if (value != NULL && sscanf(value, "%lg", val) == 1)
 		return 0;
 
 	return value != NULL;
@@ -64,7 +64,7 @@ int st_db_postgresql_get_float(PGresult * result, int row, int column, float * v
 		return -1;
 
 	char * value = PQgetvalue(result, row, column);
-	if (value && sscanf(value, "%g", val) == 1)
+	if (value != NULL && sscanf(value, "%g", val) == 1)
 		return 0;
 
 	return value != NULL;
@@ -75,7 +75,7 @@ int st_db_postgresql_get_long(PGresult * result, int row, int column, long * val
 		return -1;
 
 	char * value = PQgetvalue(result, row, column);
-	if (value && sscanf(value, "%ld", val) == 1)
+	if (value != NULL && sscanf(value, "%ld", val) == 1)
 		return 0;
 
 	return value != NULL;
@@ -86,7 +86,7 @@ int st_db_postgresql_get_ssize(PGresult * result, int row, int column, ssize_t *
 		return -1;
 
 	char * value = PQgetvalue(result, row, column);
-	if (value && sscanf(value, "%zd", val) == 1)
+	if (value != NULL && sscanf(value, "%zd", val) == 1)
 		return 0;
 
 	return value != NULL;
@@ -97,8 +97,10 @@ int st_db_postgresql_get_string(PGresult * result, int row, int column, char * s
 		return -1;
 
 	char * value = PQgetvalue(result, row, column);
-	if (value)
+	if (value != NULL) {
 		strncpy(string, value, length);
+		string[length] = '\0';
+	}
 
 	return value != NULL;
 }
@@ -111,7 +113,7 @@ int st_db_postgresql_get_string_dup(PGresult * result, int row, int column, char
 		return 1;
 
 	char * value = PQgetvalue(result, row, column);
-	if (value)
+	if (value != NULL)
 		*string = strdup(value);
 
 	return value != NULL;
@@ -141,7 +143,7 @@ int st_db_postgresql_get_uchar(PGresult * result, int row, int column, unsigned 
 		return -1;
 
 	char * value = PQgetvalue(result, row, column);
-	if (value && sscanf(value, "%hhu", val) == 1)
+	if (value != NULL && sscanf(value, "%hhu", val) == 1)
 		return 0;
 
 	return value != NULL;
@@ -152,7 +154,7 @@ int st_db_postgresql_get_uint(PGresult * result, int row, int column, unsigned i
 		return -1;
 
 	char * value = PQgetvalue(result, row, column);
-	if (value && sscanf(value, "%u", val) == 1)
+	if (value != NULL && sscanf(value, "%u", val) == 1)
 		return 0;
 
 	return value != NULL;

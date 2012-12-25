@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 03 Dec 2012 21:36:04 +0100                         *
+*  Last modified: Tue, 25 Dec 2012 13:06:43 +0100                         *
 \*************************************************************************/
 
 // pthread_mutex_lock, pthread_mutex_unlock
@@ -40,6 +40,26 @@
 
 static struct st_user ** st_users = NULL;
 static unsigned int st_user_nb_users = 0;
+
+static void st_user_free(void) __attribute__((destructor));
+
+
+static void st_user_free() {
+	unsigned int i;
+	for (i = 0; i < st_user_nb_users; i++) {
+		struct st_user * user = st_users[i];
+		free(user->login);
+		free(user->password);
+		free(user->salt);
+		free(user->fullname);
+		free(user->email);
+		free(user->db_data);
+		free(user);
+	}
+	free(st_users);
+	st_users = NULL;
+	st_user_nb_users = 0;
+}
 
 struct st_user * st_user_get(const char * login) {
 	if (login == NULL)

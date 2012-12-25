@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 09:36:12 +0200                         *
+*  Last modified: Tue, 25 Dec 2012 20:13:18 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -42,6 +42,7 @@
 
 #include "checksum/stoned.chcksum"
 #include "config.h"
+#include "library/common.h"
 #include "stone.version"
 #include "scheduler.h"
 
@@ -195,9 +196,16 @@ int main(int argc, char ** argv) {
 	// remove pid file
 	st_util_file_rm(pid_file);
 
+	// stop libraries
+	st_changer_stop();
+
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone exit");
 
 	st_log_stop_logger();
+
+	connect->ops->free(connect);
+
+	usleep(250);
 
 	return 0;
 }

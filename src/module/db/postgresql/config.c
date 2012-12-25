@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 15:20:56 +0100                         *
+*  Last modified: Mon, 24 Dec 2012 19:20:27 +0100                         *
 \*************************************************************************/
 
 // PQfinish, PQsetdbLogin, PQstatus
@@ -50,11 +50,13 @@ struct st_db_postgresql_config_private {
 static struct st_stream_reader * st_db_postgresql_backup_db(struct st_database_config * db_config);
 static int st_db_postgresql_check_db(PGconn * connect);
 static struct st_database_connection * st_db_postgresql_connect(struct st_database_config * db_config);
+static void st_db_postgresql_config_free(struct st_database_config * db_config);
 static int st_db_postgresql_ping(struct st_database_config * db_config);
 
 static struct st_database_config_ops st_db_postgresql_config_ops = {
 	.backup_db = st_db_postgresql_backup_db,
 	.connect   = st_db_postgresql_connect,
+	.free      = st_db_postgresql_config_free,
 	.ping      = st_db_postgresql_ping,
 };
 
@@ -147,6 +149,20 @@ static struct st_database_connection * st_db_postgresql_connect(struct st_databa
 	return connection;
 }
 
+static void st_db_postgresql_config_free(struct st_database_config * config) {
+	struct st_db_postgresql_config_private * self = config->data;
+	free(self->user);
+	free(self->password);
+	free(self->db);
+	free(self->host);
+	free(self->port);
+	free(self);
+
+	free(config->name);
+	config->name = NULL;
+	config->ops = NULL;
+}
+
 int st_db_postgresql_config_init(struct st_database_config * config, const struct st_hashtable * params) {
 	struct st_db_postgresql_config_private * self = malloc(sizeof(struct st_db_postgresql_config_private));
 	bzero(self, sizeof(struct st_db_postgresql_config_private));
@@ -198,6 +214,8 @@ static int st_db_postgresql_ping(struct st_database_config * db_config) {
 	server_version_major /= 100;
 
 	st_log_write_all(st_log_level_info, st_log_type_plugin_db, "Ping postgresql v.%d.%d.%d (using protocol version %d)", server_version_major, server_version_minor, server_version_rev, protocol_version);
+
+	PQfinish(connect);
 
 	return 1;
 }

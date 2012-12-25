@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 20 Dec 2012 20:41:30 +0100                         *
+*  Last modified: Mon, 24 Dec 2012 19:04:54 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -233,6 +233,7 @@ struct st_database_config {
 		 * \returns a database connection
 		 */
 		struct st_database_connection * (*connect)(struct st_database_config * db_config);
+		void (*free)(struct st_database_config * db_config);
 		/**
 		 * \brief Check if database is online
 		 */

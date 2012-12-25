@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 20 Dec 2012 21:39:46 +0100                         *
+*  Last modified: Fri, 21 Dec 2012 21:10:26 +0100                         *
 \*************************************************************************/
 
 // mknod, open
@@ -40,10 +40,12 @@
 // chmod, chown, fchmod, fchown, lseek, mknod, write
 #include <unistd.h>
 
+#include <libstone/job.h>
 #include <libstone/format.h>
 #include <libstone/library/changer.h>
 #include <libstone/library/drive.h>
 #include <libstone/library/slot.h>
+#include <libstone/log.h>
 #include <libstone/thread_pool.h>
 
 #include "restore_archive.h"
@@ -139,6 +141,9 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 
 			if (S_ISREG(header.mode)) {
 				int fd = open(restore_to, O_CREAT | O_WRONLY, header.mode & 07777);
+				if (fd < 0) {
+					st_job_add_record(connect, st_log_level_error, self->jp->job, "Error while opening file (%s) for writing because %m", restore_to);
+				}
 
 				if (header.position > 0) {
 					lseek(fd, header.position, SEEK_SET);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 10:02:19 +0200                         *
+*  Last modified: Mon, 24 Dec 2012 23:39:04 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_CHANGER_H__
@@ -116,6 +116,7 @@ struct st_changer {
 		 * \attention Do not forget to unlock drive after using it
 		 */
 		struct st_drive * (*find_free_drive)(struct st_changer * ch);
+		void (*free)(struct st_changer * ch);
 		/**
 		 * \brief Load a media
 		 *

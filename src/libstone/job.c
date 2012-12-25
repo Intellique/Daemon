@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 14:04:33 +0200                         *
+*  Last modified: Tue, 25 Dec 2012 16:02:37 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -69,6 +69,8 @@ static const struct st_job_status2 {
 	{ "unknown", st_job_status_unknown },
 };
 
+static void st_job_exit(void) __attribute__((destructor));
+
 
 void st_job_add_record(struct st_database_connection * connect, enum st_log_level level, struct st_job * job, const char * format, ...) {
 	char * message = NULL;
@@ -81,6 +83,12 @@ void st_job_add_record(struct st_database_connection * connect, enum st_log_leve
 	st_log_write_all2(level, st_log_type_job, job->user, message);
 
 	connect->ops->add_job_record(connect, job, message);
+}
+
+static void st_job_exit() {
+	free(st_job_drivers);
+	st_job_drivers = NULL;
+	st_job_nb_drivers = 0;
 }
 
 struct st_job_driver * st_job_get_driver(const char * driver) {

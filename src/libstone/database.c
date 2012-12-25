@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 14:04:10 +0200                         *
+*  Last modified: Tue, 25 Dec 2012 14:21:22 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -41,6 +41,27 @@
 static struct st_database ** st_database_drivers = NULL;
 static unsigned int st_database_nb_databases = 0;
 
+static void st_database_exit(void) __attribute__((destructor));
+
+
+static void st_database_exit() {
+	unsigned int i;
+	for (i = 0; i < st_database_nb_databases; i++) {
+		struct st_database * db = st_database_drivers[i];
+		unsigned int j;
+		for (j = 0; j < db->nb_configurations; j++) {
+			struct st_database_config * conf = db->configurations + j;
+			conf->ops->free(conf);
+		}
+		free(db->configurations);
+		db->configurations = NULL;
+		db->nb_configurations = 0;
+	}
+
+	free(st_database_drivers);
+	st_database_drivers = 0;
+	st_database_nb_databases = 0;
+}
 
 struct st_database_config * st_database_get_config_by_name(const char * name) {
 	if (name == NULL) {

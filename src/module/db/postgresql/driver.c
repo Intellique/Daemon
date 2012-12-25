@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 00:07:19 +0200                         *
+*  Last modified: Mon, 24 Dec 2012 19:12:05 +0100                         *
 \*************************************************************************/
 
 // realloc
@@ -65,11 +65,18 @@ static struct st_database_config * st_db_postgresql_add(const struct st_hashtabl
 	if (params == NULL)
 		return NULL;
 
-	st_db_postgresql_driver.configurations = realloc(st_db_postgresql_driver.configurations, (st_db_postgresql_driver.nb_configurations + 1) * sizeof(struct st_database_config));
+	void * new_addr = realloc(st_db_postgresql_driver.configurations, (st_db_postgresql_driver.nb_configurations + 1) * sizeof(struct st_database_config));
+	if (new_addr == NULL) {
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Not enought memory to add new config");
+		return NULL;
+	}
+
+	st_db_postgresql_driver.configurations = new_addr;
 	struct st_database_config * config = st_db_postgresql_driver.configurations + st_db_postgresql_driver.nb_configurations;
 
 	if (st_db_postgresql_config_init(config, params)) {
 		st_db_postgresql_driver.configurations = realloc(st_db_postgresql_driver.configurations, st_db_postgresql_driver.nb_configurations * sizeof(struct st_database_config));
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Not enought memory to add new config");
 		return NULL;
 	} else {
 		st_db_postgresql_driver.nb_configurations++;

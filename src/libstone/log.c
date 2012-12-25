@@ -22,10 +22,12 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 14 Oct 2012 20:31:22 +0200                         *
+*  Last modified: Tue, 25 Dec 2012 19:55:51 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
+// bool
+#include <stdbool.h>
 // pthread_mutex_lock, pthread_mutex_unlock, pthread_setcancelstate
 #include <pthread.h>
 // va_end, va_start
@@ -48,8 +50,8 @@
 static void st_log_exit(void) __attribute__((destructor));
 static void st_log_sent_message(void * arg);
 
-static short st_log_display_at_exit = 1;
-static volatile unsigned short st_log_logger_running = 0;
+static bool st_log_display_at_exit = true;
+static volatile bool st_log_logger_running = false;
 
 static struct st_log_driver ** st_log_drivers = NULL;
 static unsigned int st_log_nb_drivers = 0;
@@ -106,6 +108,36 @@ static void st_log_exit(void) {
 		struct st_log_message_unsent * mes;
 		for (mes = st_log_message_first; mes != NULL; mes = mes->next)
 			printf("%c: %s\n", st_log_level_to_string(mes->data.level)[0], mes->data.message);
+	}
+
+	unsigned int i;
+	for (i = 0; i < st_log_nb_drivers; i++) {
+		struct st_log_driver * driver = st_log_drivers[i];
+		unsigned int j;
+		for (j = 0; j < driver->nb_modules; j++) {
+			struct st_log_module * mod = driver->modules + j;
+			mod->ops->free(mod);
+		}
+		free(driver->modules);
+		driver->modules = NULL;
+		driver->nb_modules = 0;
+	}
+
+	free(st_log_drivers);
+	st_log_drivers = NULL;
+	st_log_nb_drivers = 0;
+
+	struct st_log_message_unsent * message = st_log_message_first;
+	st_log_message_first = st_log_message_last = NULL;
+
+	while (message != NULL) {
+		struct st_log_message * mes = &message->data;
+		free(mes->message);
+
+		struct st_log_message_unsent * next = message->next;
+		free(message);
+
+		message = next;
 	}
 }
 
@@ -192,7 +224,7 @@ void st_log_register_driver(struct st_log_driver * driver) {
 static void st_log_sent_message(void * arg __attribute__((unused))) {
 	for (;;) {
 		pthread_mutex_lock(&st_log_lock);
-		if (!st_log_logger_running)
+		if (!st_log_logger_running && st_log_message_first == NULL)
 			break;
 		if (st_log_message_first == NULL)
 			pthread_cond_wait(&st_log_wait, &st_log_lock);
@@ -241,7 +273,7 @@ void st_log_stop_logger(void) {
 	pthread_mutex_lock(&st_log_lock);
 
 	if (st_log_logger_running) {
-		st_log_logger_running = 0;
+		st_log_logger_running = false;
 		pthread_cond_signal(&st_log_wait);
 		pthread_cond_wait(&st_log_wait, &st_log_lock);
 	}

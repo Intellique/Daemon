@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 11 Dec 2012 22:21:29 +0100                         *
+*  Last modified: Tue, 25 Dec 2012 20:41:16 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -65,6 +65,7 @@ static struct st_pool ** st_pools = NULL;
 static unsigned int st_pool_nb_pools = 0;
 
 static void st_media_add(struct st_media * media);
+static void st_media_free(void) __attribute__((destructor));
 static struct st_media * st_media_retrieve(struct st_database_connection * connection, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label);
 
 static int st_media_format_retrieve(struct st_media_format ** media_format, unsigned char density_code, enum st_media_format_mode mode);
@@ -343,6 +344,38 @@ bool st_media_check_header(struct st_drive * drive) {
 	}
 
 	return false;
+}
+
+static void st_media_free() {
+	unsigned int i;
+	for (i = 0; i < st_media_nb_medias; i++) {
+		struct st_media * media = st_medias[i];
+		free(media->label);
+		free(media->medium_serial_number);
+		free(media->name);
+
+		media->lock->ops->free(media->lock);
+		free(media->db_data);
+		free(media);
+	}
+	free(st_medias);
+	st_medias = NULL;
+	st_media_nb_medias = 0;
+
+	for (i = 0; i < st_pool_nb_pools; i++) {
+		struct st_pool * pool = st_pools[i];
+		free(pool->name);
+		free(pool);
+	}
+	free(st_pools);
+	st_pools = NULL;
+	st_pool_nb_pools = 0;
+
+	for (i = 0; i < st_media_format_nb_formats; i++)
+		free(st_media_formats[i]);
+	free(st_media_formats);
+	st_media_formats = NULL;
+	st_media_format_nb_formats = 0;
 }
 
 ssize_t st_media_get_available_size(struct st_media * media) {

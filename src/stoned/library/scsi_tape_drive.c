@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 21 Dec 2012 00:12:40 +0100                         *
+*  Last modified: Tue, 25 Dec 2012 13:01:08 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -106,6 +106,7 @@ struct st_scsi_tape_drive_io_writer {
 static void st_scsi_tape_drive_create_media(struct st_drive * drive);
 static int st_scsi_tape_drive_eject(struct st_drive * drive);
 static int st_scsi_tape_drive_format(struct st_drive * drive, int file_position, bool quick_mode);
+static void st_scsi_tape_drive_free(struct st_drive * drive);
 static ssize_t st_scsi_tape_drive_get_block_size(struct st_drive * drive);
 static int st_scsi_tape_drive_get_position(struct st_drive * drive);
 static struct st_stream_reader * st_scsi_tape_drive_get_raw_reader(struct st_drive * drive, int file_position);
@@ -141,6 +142,7 @@ static ssize_t st_scsi_tape_drive_io_writer_write(struct st_stream_writer * io, 
 static struct st_drive_ops st_scsi_tape_drive_ops = {
 	.eject             = st_scsi_tape_drive_eject,
 	.format            = st_scsi_tape_drive_format,
+	.free              = st_scsi_tape_drive_free,
 	.get_position      = st_scsi_tape_drive_get_position,
 	.get_raw_reader    = st_scsi_tape_drive_get_raw_reader,
 	.get_raw_writer    = st_scsi_tape_drive_get_raw_writer,
@@ -255,6 +257,26 @@ static int st_scsi_tape_drive_format(struct st_drive * drive, int file_position,
 	}
 
 	return failed;
+}
+
+static void st_scsi_tape_drive_free(struct st_drive * dr) {
+	struct st_scsi_tape_drive_private * self = dr->data;
+	close(self->fd_nst);
+	free(self);
+
+	free(dr->device);
+	free(dr->scsi_device);
+
+	free(dr->model);
+	free(dr->vendor);
+	free(dr->revision);
+	free(dr->serial_number);
+
+	dr->lock->ops->free(dr->lock);
+
+	dr->data = NULL;
+	free(dr->db_data);
+	dr->db_data = NULL;
 }
 
 static ssize_t st_scsi_tape_drive_get_block_size(struct st_drive * drive) {

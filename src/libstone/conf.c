@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 15:18:31 +0100                         *
+*  Last modified: Mon, 24 Dec 2012 19:26:38 +0100                         *
 \*************************************************************************/
 
 // strerror
@@ -52,6 +52,7 @@
 
 #include "log.h"
 
+static void st_conf_exit(void) __attribute__((destructor));
 static void st_conf_free_key(void * key, void * value);
 static void st_conf_init(void) __attribute__((constructor));
 /**
@@ -165,6 +166,11 @@ int st_conf_write_pid(const char * pid_file, int pid) {
 	return nb_write < 1;
 }
 
+
+static void st_conf_exit() {
+	st_hashtable_free(st_conf_callback);
+	st_conf_callback = NULL;
+}
 
 static void st_conf_free_key(void * key, void * value __attribute__((unused))) {
 	free(key);
