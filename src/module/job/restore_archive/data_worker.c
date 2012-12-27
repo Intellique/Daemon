@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 27 Dec 2012 13:20:33 +0100                         *
+*  Last modified: Thu, 27 Dec 2012 22:35:28 +0100                         *
 \*************************************************************************/
 
 // mknod, open
@@ -88,7 +88,8 @@ bool st_job_restore_archive_data_worker_wait(struct st_job_restore_archive_data_
 	struct timeval now;
 	struct timespec ts_timeout;
 	gettimeofday(&now, NULL);
-	ts_timeout.tv_sec += 2;
+	ts_timeout.tv_sec = now.tv_sec + 5;
+	ts_timeout.tv_nsec = now.tv_usec * 1000;
 
 	pthread_mutex_lock(&worker->lock);
 	if (worker->running)

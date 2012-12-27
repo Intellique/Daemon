@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 27 Dec 2012 10:06:50 +0100                         *
+*  Last modified: Thu, 27 Dec 2012 22:05:05 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -2097,7 +2097,7 @@ static struct st_archive_file * st_db_postgresql_get_archive_file_for_restore_di
 	if (status == PGRES_FATAL_ERROR)
 		st_db_postgresql_get_error(result, query);
 	else if (status == PGRES_TUPLES_OK && nb_tuples > 0) {
-		files = calloc(nb_tuples, sizeof(struct st_archive_files));
+		files = calloc(nb_tuples, sizeof(struct st_archive_file));
 		*nb_files = nb_tuples;
 
 		unsigned int i;

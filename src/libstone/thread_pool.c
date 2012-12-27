@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 22:55:36 +0100                         *
+*  Last modified: Thu, 27 Dec 2012 20:47:07 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -72,12 +72,12 @@ static void st_thread_pool_exit() {
 	for (i = 0; i < st_thread_pool_nb_threads; i++) {
 		struct st_thread_pool_thread * th = st_thread_pool_threads[i];
 
-		pthread_join(th->thread, NULL);
-
 		pthread_mutex_lock(&th->lock);
 		if (th->state == st_thread_pool_state_waiting)
 			pthread_cond_signal(&th->wait);
 		pthread_mutex_unlock(&th->lock);
+
+		pthread_join(th->thread, NULL);
 
 		free(th);
 	}
