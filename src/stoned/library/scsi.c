@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 21 Dec 2012 23:08:41 +0100                         *
+*  Last modified: Tue, 25 Dec 2012 22:24:18 +0100                         *
 \*************************************************************************/
 
 // htobe16
@@ -751,6 +751,7 @@ void st_scsi_loader_status_new(int fd, struct st_changer * changer, int * transp
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
+	memset(&result, 0, sizeof(result));
 
 	header.interface_id = 'S';
 	header.cmd_len = sizeof(command);
@@ -1146,7 +1147,7 @@ void st_scsi_tape_info(int fd, struct st_drive * drive) {
 		unsigned char page_code;
 		unsigned char reserved;
 		unsigned char page_length;
-		char unit_serial_number[10];
+		char unit_serial_number[12];
 	} __attribute__((packed)) result_serial_number;
 
 	struct scsi_inquiry command_serial_number = {
@@ -1316,6 +1317,7 @@ int st_scsi_tape_read_mam(int fd, struct st_media * media) {
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
+	memset(buffer, 0, 1024);
 
 	header.interface_id = 'S';
 	header.cmd_len = sizeof(command);
@@ -1434,6 +1436,7 @@ int st_scsi_tape_read_medium_serial_number(int fd, char * medium_serial_number, 
 	sg_io_hdr_t header;
 	memset(&header, 0, sizeof(header));
 	memset(&sense, 0, sizeof(sense));
+	memset(buffer, 0, 1024);
 
 	header.interface_id = 'S';
 	header.cmd_len = sizeof(command);

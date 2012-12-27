@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 13:01:08 +0100                         *
+*  Last modified: Tue, 25 Dec 2012 22:42:34 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -707,6 +707,8 @@ static void st_scsi_tape_drive_io_reader_free(struct st_stream_reader * io) {
 	}
 	io->data = NULL;
 	io->ops = NULL;
+
+	free(io);
 }
 
 static ssize_t st_scsi_tape_drive_io_reader_get_block_size(struct st_stream_reader * io) {
@@ -890,6 +892,8 @@ static void st_scsi_tape_drive_io_writer_free(struct st_stream_writer * io) {
 	}
 	io->data = NULL;
 	io->ops = NULL;
+
+	free(io);
 }
 
 static ssize_t st_scsi_tape_drive_io_writer_get_available_size(struct st_stream_writer * io) {

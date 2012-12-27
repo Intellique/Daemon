@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 14 Dec 2012 23:09:27 +0100                         *
+*  Last modified: Tue, 25 Dec 2012 23:00:23 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -415,7 +415,7 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 					}
 				} else {
 					if (drive == NULL)
-						drive = changer->ops->find_free_drive(changer);
+						drive = changer->ops->find_free_drive(changer, self->pool->format, false, true);
 
 					if (drive == NULL) {
 						slot->lock->ops->unlock(slot->lock);

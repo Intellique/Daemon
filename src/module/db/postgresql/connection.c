@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 20:26:40 +0100                         *
+*  Last modified: Thu, 27 Dec 2012 10:06:50 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -145,6 +145,7 @@ static struct st_archive * st_db_postgresql_get_archive_by_job(struct st_databas
 static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct st_database_connection * connect, struct st_job * job, struct st_archive_volume * volume);
 static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st_database_connection * connect, struct st_job * job);
 static char * st_db_postgresql_get_restore_path_from_file(struct st_database_connection * connect, struct st_job * job, struct st_archive_file * file);
+static ssize_t st_db_postgresql_get_restore_size_by_job(struct st_database_connection * connect, struct st_job * job);
 static bool st_db_postgresql_has_restore_to_by_job(struct st_database_connection * connect, struct st_job * job);
 static bool st_db_postgresql_has_selected_files_by_job(struct st_database_connection * connect, struct st_job * job);
 static int st_db_postgresql_sync_archive(struct st_database_connection * connect, struct st_archive * archive, char ** checksums);
@@ -188,6 +189,7 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.get_archive_files_by_job_and_archive_volume = st_db_postgresql_get_archive_files_by_job_and_archive_volume,
 	.get_archive_volumes_by_job                  = st_db_postgresql_get_archive_volumes_by_job,
 	.get_restore_path_from_file                  = st_db_postgresql_get_restore_path_from_file,
+	.get_restore_size_by_job                     = st_db_postgresql_get_restore_size_by_job,
 	.has_restore_to_by_job                       = st_db_postgresql_has_restore_to_by_job,
 	.sync_archive                                = st_db_postgresql_sync_archive,
 };
@@ -2333,6 +2335,37 @@ static char * st_db_postgresql_get_restore_path_from_file(struct st_database_con
 	free(fileid);
 
 	return path;
+}
+
+static ssize_t st_db_postgresql_get_restore_size_by_job(struct st_database_connection * connect, struct st_job * job) {
+	if (connect == NULL || job == NULL)
+		return false;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_job_data * job_data = job->db_data;
+	if (job_data == NULL || job_data->id < 0)
+		return -1;
+
+	const char * query = "select_size_of_archive_for_restore";
+	st_db_postgresql_prepare(self, query, "SELECT SUM(af.size) AS size FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id, (SELECT path, CHAR_LENGTH(path) AS length FROM selectedfile ssf2 LEFT JOIN jobtoselectedfile sjsf ON ssf2.id = sjsf.selectedfile WHERE sjsf.job = $1) AS ssf WHERE j.id = $1 AND av.archive = j.archive AND SUBSTR(af.name, 0, ssf.length + 1) = ssf.path AND af.type = 'regular file'");
+
+	char * jobid;
+	asprintf(&jobid, "%ld", job_data->id);
+
+	const char * param[] = { jobid };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	ssize_t size = -1;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		st_db_postgresql_get_ssize(result, 0, 0, &size);
+
+	PQclear(result);
+	free(jobid);
+
+	return size;
 }
 
 static bool st_db_postgresql_has_restore_to_by_job(struct st_database_connection * connect, struct st_job * job) {

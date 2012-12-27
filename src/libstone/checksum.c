@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 14:03:46 +0200                         *
+*  Last modified: Tue, 25 Dec 2012 22:37:24 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -49,6 +49,8 @@
 
 static struct st_checksum_driver ** st_checksum_drivers = NULL;
 static unsigned int st_checksum_nb_drivers = 0;
+
+static void st_checksum_exit(void) __attribute__((destructor));
 
 
 char * st_checksum_compute(const char * checksum, const char * data, ssize_t length) {
@@ -99,6 +101,12 @@ void st_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * h
 	hex_digest[i << 1] = '\0';
 
 	st_log_write_all(st_log_level_debug, st_log_type_checksum, "computed => '%s'", hex_digest);
+}
+
+static void st_checksum_exit() {
+	free(st_checksum_drivers);
+	st_checksum_drivers = NULL;
+	st_checksum_nb_drivers = 0;
 }
 
 struct st_checksum_driver * st_checksum_get_driver(const char * driver) {

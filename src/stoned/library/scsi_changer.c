@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 12:41:00 +0100                         *
+*  Last modified: Tue, 25 Dec 2012 22:59:32 +0100                         *
 \*************************************************************************/
 
 // open
@@ -54,7 +54,7 @@ struct st_scsi_changer_private {
 	struct st_ressource * lock;
 };
 
-static struct st_drive * st_scsi_changer_find_free_drive(struct st_changer * ch);
+static struct st_drive * st_scsi_changer_find_free_drive(struct st_changer * ch, struct st_media_format * format, bool for_reading, bool for_writing);
 static void st_scsi_changer_free(struct st_changer * ch);
 static int st_scsi_changer_load_media(struct st_changer * ch, struct st_media * from, struct st_drive * to);
 static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
@@ -72,7 +72,7 @@ static struct st_changer_ops st_scsi_changer_ops = {
 };
 
 
-static struct st_drive * st_scsi_changer_find_free_drive(struct st_changer * ch) {
+static struct st_drive * st_scsi_changer_find_free_drive(struct st_changer * ch, struct st_media_format * format, bool for_reading, bool for_writing) {
 	if (ch == NULL || !ch->enabled)
 		return NULL;
 

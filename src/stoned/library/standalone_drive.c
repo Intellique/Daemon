@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 13:01:31 +0100                         *
+*  Last modified: Tue, 25 Dec 2012 22:59:35 +0100                         *
 \*************************************************************************/
 
 // malloc
@@ -38,7 +38,7 @@
 #include "common.h"
 #include "scsi.h"
 
-static struct st_drive * st_standalone_drive_find_free_drive(struct st_changer * ch);
+static struct st_drive * st_standalone_drive_find_free_drive(struct st_changer * ch, struct st_media_format * format, bool for_reading, bool for_writing);
 static void st_standalone_drive_free(struct st_changer * ch);
 static int st_standalone_drive_load_media(struct st_changer * ch, struct st_media * from, struct st_drive * to);
 static int st_standalone_drive_load_slot(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
@@ -55,7 +55,7 @@ static struct st_changer_ops st_standalone_drive_ops = {
 };
 
 
-static struct st_drive * st_standalone_drive_find_free_drive(struct st_changer * ch) {
+static struct st_drive * st_standalone_drive_find_free_drive(struct st_changer * ch, struct st_media_format * format, bool for_reading, bool for_writing) {
 	if (ch == NULL || !ch->enabled)
 		return NULL;
 

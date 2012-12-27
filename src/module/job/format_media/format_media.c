@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 14 Dec 2012 23:18:10 +0100                         *
+*  Last modified: Tue, 25 Dec 2012 23:10:39 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -123,7 +123,7 @@ static bool st_job_format_media_check(struct st_job * job) {
 
 			case changer_has_free_drive:
 				// if drive is not NULL, we own also a lock on it
-				drive = slot->changer->ops->find_free_drive(slot->changer);
+				drive = slot->changer->ops->find_free_drive(slot->changer, pool->format, true, true);
 				if (drive != NULL) {
 					has_lock_on_drive = true;
 					stop = true;
@@ -393,7 +393,7 @@ int st_job_format_media_run(struct st_job * job) {
 
 			case changer_has_free_drive:
 				// if drive is not NULL, we own also a lock on it
-				drive = slot->changer->ops->find_free_drive(slot->changer);
+				drive = slot->changer->ops->find_free_drive(slot->changer, pool->format, true, true);
 				if (drive != NULL) {
 					has_lock_on_drive = true;
 					stop = true;

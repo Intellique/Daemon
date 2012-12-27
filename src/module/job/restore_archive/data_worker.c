@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 21 Dec 2012 21:10:26 +0100                         *
+*  Last modified: Thu, 27 Dec 2012 13:20:33 +0100                         *
 \*************************************************************************/
 
 // mknod, open
@@ -44,6 +44,7 @@
 #include <libstone/format.h>
 #include <libstone/library/changer.h>
 #include <libstone/library/drive.h>
+#include <libstone/library/ressource.h>
 #include <libstone/library/slot.h>
 #include <libstone/log.h>
 #include <libstone/thread_pool.h>
@@ -81,13 +82,22 @@ struct st_job_restore_archive_data_worker * st_job_restore_archive_data_worker_n
 	return worker;
 }
 
-void st_job_restore_archive_data_worker_wait(struct st_job_restore_archive_data_worker * worker) {
-	if (!worker->running)
-		return;
+bool st_job_restore_archive_data_worker_wait(struct st_job_restore_archive_data_worker * worker) {
+	bool finished = false;
+
+	struct timeval now;
+	struct timespec ts_timeout;
+	gettimeofday(&now, NULL);
+	ts_timeout.tv_sec += 2;
 
 	pthread_mutex_lock(&worker->lock);
-	pthread_cond_wait(&worker->wait, &worker->lock);
+	if (worker->running)
+		finished = pthread_cond_timedwait(&worker->wait, &worker->lock, &ts_timeout) ? false : true;
+	else
+		finished = true;
 	pthread_mutex_unlock(&worker->lock);
+
+	return finished;
 }
 
 static void st_job_restore_archive_data_worker_work(void * arg) {
@@ -153,6 +163,9 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 				char buffer[4096];
 				while (nb_read = reader->ops->read(reader, buffer, 4096), nb_read > 0) {
 					ssize_t nb_write = write(fd, buffer, nb_read);
+
+					if (nb_write > 0)
+						self->total_restored += nb_write;
 				}
 
 				fchown(fd, file->ownerid, file->groupid);
@@ -190,6 +203,18 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 
 			st_format_file_free(&header);
 		}
+
+		reader->ops->close(reader);
+		reader->ops->free(reader);
 	}
+
+	dr->lock->ops->unlock(dr->lock);
+
+	connect->ops->free(connect);
+
+	pthread_mutex_lock(&self->lock);
+	self->running = false;
+	pthread_cond_signal(&self->wait);
+	pthread_mutex_unlock(&self->lock);
 }
 

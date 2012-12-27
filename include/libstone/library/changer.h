@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 24 Dec 2012 23:39:04 +0100                         *
+*  Last modified: Tue, 25 Dec 2012 22:58:15 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_CHANGER_H__
@@ -34,6 +34,7 @@
 struct st_database_connection;
 struct st_drive;
 struct st_media;
+struct st_media_format;
 struct st_slot;
 
 enum st_changer_status {
@@ -115,7 +116,7 @@ struct st_changer {
 		 * \returns a locked drive
 		 * \attention Do not forget to unlock drive after using it
 		 */
-		struct st_drive * (*find_free_drive)(struct st_changer * ch);
+		struct st_drive * (*find_free_drive)(struct st_changer * ch, struct st_media_format * format, bool for_reading, bool for_writing);
 		void (*free)(struct st_changer * ch);
 		/**
 		 * \brief Load a media

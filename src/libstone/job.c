@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 16:02:37 +0100                         *
+*  Last modified: Tue, 25 Dec 2012 22:43:24 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -83,6 +83,8 @@ void st_job_add_record(struct st_database_connection * connect, enum st_log_leve
 	st_log_write_all2(level, st_log_type_job, job->user, message);
 
 	connect->ops->add_job_record(connect, job, message);
+
+	free(message);
 }
 
 static void st_job_exit() {

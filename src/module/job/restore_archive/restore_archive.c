@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 20 Dec 2012 21:11:49 +0100                         *
+*  Last modified: Thu, 27 Dec 2012 13:21:28 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -123,11 +123,13 @@ static int st_job_restore_archive_run(struct st_job * job) {
 
 	unsigned int nb_directories;
 	struct st_archive_file * directories = self->connect->ops->get_archive_file_for_restore_directory(self->connect, job, &nb_directories);
+	ssize_t size = self->connect->ops->get_restore_size_by_job(self->connect, job);
 
 	unsigned int i;
 	for (i = 0; i < nb_directories; i++) {
 		struct st_archive_file * directory = directories + i;
 		st_util_file_mkdir(directory->name, directory->perm);
+		chmod(directory->name, directory->perm);
 	}
 
 	job->done = 0.02;
@@ -153,6 +155,18 @@ static int st_job_restore_archive_run(struct st_job * job) {
 		struct st_slot * slot = NULL;
 		struct st_drive * drive = NULL;
 		while (!stop) {
+			// compute progression
+			ssize_t total_done = 0;
+			struct st_job_restore_archive_data_worker * w1 = self->first_worker;
+			while (w1 != NULL) {
+				total_done += w1->total_restored;
+				w1 = w1->next;
+			}
+			float done = total_done;
+			done *= 0.97;
+			done /= size;
+			job->done = 0.02 + done;
+
 			slot = st_changer_find_slot_by_media(vol->media);
 			if (slot == NULL) {
 				// slot not found
@@ -175,7 +189,7 @@ static int st_job_restore_archive_run(struct st_job * job) {
 				if (slot->lock->ops->timed_lock(slot->lock, 5000))
 					continue;
 
-				drive = changer->ops->find_free_drive(changer);
+				drive = changer->ops->find_free_drive(changer, slot->media->format, true, false);
 
 				if (drive == NULL) {
 					sleep(5);
@@ -195,11 +209,28 @@ static int st_job_restore_archive_run(struct st_job * job) {
 
 	struct st_job_restore_archive_data_worker * worker = self->first_worker;
 	while (worker != NULL) {
-		st_job_restore_archive_data_worker_wait(worker);
+		while (!st_job_restore_archive_data_worker_wait(worker)) {
+			// compute progression
+			ssize_t total_done = 0;
+			struct st_job_restore_archive_data_worker * w1 = self->first_worker;
+			while (w1 != NULL) {
+				total_done += w1->total_restored;
+				w1 = w1->next;
+			}
+			float done = total_done;
+			done *= 0.97;
+			done /= size;
+			job->done = 0.02 + done;
+		}
 
 		struct st_job_restore_archive_data_worker * next = worker->next;
-		st_job_restore_archive_data_worker_free(worker);
+		worker = next;
+	}
 
+	worker = self->first_worker;
+	while (worker != NULL) {
+		struct st_job_restore_archive_data_worker * next = worker->next;
+		st_job_restore_archive_data_worker_free(worker);
 		worker = next;
 	}
 	self->first_worker = self->last_worker = NULL;
