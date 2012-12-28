@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 27 Dec 2012 22:35:28 +0100                         *
+*  Last modified: Fri, 28 Dec 2012 22:04:41 +0100                         *
 \*************************************************************************/
 
 // mknod, open
@@ -60,12 +60,11 @@ void st_job_restore_archive_data_worker_free(struct st_job_restore_archive_data_
 	free(worker);
 }
 
-struct st_job_restore_archive_data_worker * st_job_restore_archive_data_worker_new(struct st_job_restore_archive_private * self, struct st_drive * drive, struct st_slot * slot, struct st_job_restore_archive_path * restore_to) {
+struct st_job_restore_archive_data_worker * st_job_restore_archive_data_worker_new(struct st_job_restore_archive_private * self, struct st_drive * drive, struct st_slot * slot) {
 	struct st_job_restore_archive_data_worker * worker = malloc(sizeof(struct st_job_restore_archive_data_worker));
 	worker->jp = self;
 
 	worker->total_restored = 0;
-	worker->restore_to = restore_to;
 
 	worker->drive = drive;
 	worker->slot = slot;
@@ -148,7 +147,7 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 				status = reader->ops->get_header(reader, &header);
 			}
 
-			char * restore_to = st_job_restore_archive_path_get(self->restore_to, connect, self->jp->job, file, has_restore_to);
+			char * restore_to = st_job_restore_archive_path_get(self->jp->restore_path, connect, self->jp->job, file, has_restore_to);
 
 			if (S_ISREG(header.mode)) {
 				int fd = open(restore_to, O_CREAT | O_WRONLY, header.mode & 07777);
@@ -203,6 +202,8 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 			}
 
 			st_format_file_free(&header);
+
+			st_job_restore_archive_checks_worker_add_file(self->jp->checks, file);
 		}
 
 		reader->ops->close(reader);

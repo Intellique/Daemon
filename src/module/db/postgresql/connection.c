@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 27 Dec 2012 22:05:05 +0100                         *
+*  Last modified: Fri, 28 Dec 2012 21:21:14 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -139,11 +139,14 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 static int st_db_postgresql_get_user(struct st_database_connection * connect, struct st_user * user, const char * login);
 static int st_db_postgresql_sync_user(struct st_database_connection * connect, struct st_user * user);
 
+static bool st_db_postgresql_check_checksums_of_file(struct st_database_connection * connect, struct st_archive_file * file, char ** checksums, char ** checksum_results, unsigned int nb_checksums);
 static int st_db_postgresql_add_checksum_result(struct st_database_connection * connect, char * checksum, char * result, char ** checksum_result_id);
 static struct st_archive_file * st_db_postgresql_get_archive_file_for_restore_directory(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_files);
 static struct st_archive * st_db_postgresql_get_archive_by_job(struct st_database_connection * connect, struct st_job * job);
 static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct st_database_connection * connect, struct st_job * job, struct st_archive_volume * volume);
 static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st_database_connection * connect, struct st_job * job);
+static char ** st_db_postgresql_get_checksums_of_file(struct st_database_connection * connect, struct st_archive_file * file, unsigned int * nb_checksums);
+static unsigned int st_db_postgresql_get_nb_volume_of_file(struct st_database_connection * connect, struct st_job * job, struct st_archive_file * file);
 static char * st_db_postgresql_get_restore_path_from_file(struct st_database_connection * connect, struct st_job * job, struct st_archive_file * file);
 static ssize_t st_db_postgresql_get_restore_size_by_job(struct st_database_connection * connect, struct st_job * job);
 static bool st_db_postgresql_has_restore_to_by_job(struct st_database_connection * connect, struct st_job * job);
@@ -184,10 +187,13 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.get_user  = st_db_postgresql_get_user,
 	.sync_user = st_db_postgresql_sync_user,
 
+	.check_checksums_of_file                     = st_db_postgresql_check_checksums_of_file,
 	.get_archive_by_job                          = st_db_postgresql_get_archive_by_job,
 	.get_archive_file_for_restore_directory      = st_db_postgresql_get_archive_file_for_restore_directory,
 	.get_archive_files_by_job_and_archive_volume = st_db_postgresql_get_archive_files_by_job_and_archive_volume,
 	.get_archive_volumes_by_job                  = st_db_postgresql_get_archive_volumes_by_job,
+	.get_checksums_of_file                       = st_db_postgresql_get_checksums_of_file,
+	.get_nb_volume_of_file                       = st_db_postgresql_get_nb_volume_of_file,
 	.get_restore_path_from_file                  = st_db_postgresql_get_restore_path_from_file,
 	.get_restore_size_by_job                     = st_db_postgresql_get_restore_size_by_job,
 	.has_restore_to_by_job                       = st_db_postgresql_has_restore_to_by_job,
@@ -1960,6 +1966,44 @@ static int st_db_postgresql_sync_user(struct st_database_connection * connect, s
 }
 
 
+static bool st_db_postgresql_check_checksums_of_file(struct st_database_connection * connect, struct st_archive_file * file, char ** checksums, char ** checksum_results, unsigned int nb_checksums) {
+	if (connect == NULL || file == NULL || checksums == NULL || checksum_results == NULL)
+		return false;
+
+	if (nb_checksums == 0)
+		return true;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_archive_file_data * file_data = file->db_data;
+	if (file_data == NULL || file_data->id < 0)
+		return false;
+
+	const char * query = "select_checksum_of_file";
+	st_db_postgresql_prepare(self, query, "SELECT COUNT(*) > 0 FROM archivefiletochecksumresult afcr LEFT JOIN checksumresult cr ON afcr.checksumresult = cr.id LEFT JOIN checksum c ON cr.checksum = c.id WHERE afcr.archivefile = $1 AND cr.result = $2 AND c.name = $3");
+
+	char * fileid;
+	asprintf(&fileid, "%ld", file_data->id);
+
+	unsigned int i;
+	bool ok = true;
+	for (i = 0; i < nb_checksums && ok; i++) {
+		const char * param[] = { fileid, checksum_results[i], checksums[i] };
+		PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+			st_db_postgresql_get_bool(result, 0, 0, &ok);
+
+		PQclear(result);
+	}
+
+	free(fileid);
+
+	return ok;
+}
+
 static int st_db_postgresql_add_checksum_result(struct st_database_connection * connect, char * checksum, char * checksum_result, char ** checksum_result_id) {
 	struct st_db_postgresql_connection_private * self = connect->data;
 
@@ -2301,6 +2345,77 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 	PQclear(result);
 
 	return archive;
+}
+
+static char ** st_db_postgresql_get_checksums_of_file(struct st_database_connection * connect, struct st_archive_file * file, unsigned int * nb_checksums) {
+	if (connect == NULL || file == NULL || nb_checksums == NULL)
+		return NULL;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_archive_file_data * file_data = file->db_data;
+	if (file_data == NULL || file_data->id < 0)
+		return NULL;
+
+	const char * query = "select_checksum_of_file";
+	st_db_postgresql_prepare(self, query, "SELECT c.name FROM archivefiletochecksumresult afcr LEFT JOIN checksumresult cr ON afcr.checksumresult = cr.id LEFT JOIN checksum c ON cr.checksum = c.id WHERE archivefile = $1");
+
+	char * fileid;
+	asprintf(&fileid, "%ld", file_data->id);
+
+	const char * param[] = { fileid };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+	*nb_checksums = PQntuples(result);
+
+	char ** checksums = NULL;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && *nb_checksums > 0) {
+		checksums = calloc(*nb_checksums, sizeof(char *));
+
+		unsigned int i;
+		for (i = 0; i < *nb_checksums; i++)
+			st_db_postgresql_get_string_dup(result, i, 0, checksums + i);
+	}
+
+	PQclear(result);
+	free(fileid);
+
+	return checksums;
+}
+
+static unsigned int st_db_postgresql_get_nb_volume_of_file(struct st_database_connection * connect, struct st_job * job, struct st_archive_file * file) {
+	if (connect == NULL || job == NULL || file == NULL)
+		return 0;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_job_data * job_data = job->db_data;
+	struct st_db_postgresql_archive_file_data * file_data = file->db_data;
+	if (job_data == NULL || job_data->id < 0 || file_data == NULL || file_data->id < 0)
+		return 0;
+
+	const char * query = "select_nb_volume_of_file";
+	st_db_postgresql_prepare(self, query, "SELECT COUNT(*) FROM archivefiletoarchivevolume afv LEFT JOIN archivevolume av ON afv.archivevolume = av.id LEFT JOIN job j ON j.archive = av.archive WHERE j.id = $1 AND afv.archivefile = $2");
+
+	char * jobid, * fileid;
+	asprintf(&jobid, "%ld", job_data->id);
+	asprintf(&fileid, "%ld", file_data->id);
+
+	const char * param[] = { jobid, fileid };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	unsigned int nb_volume = 0;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		st_db_postgresql_get_uint(result, 0, 0, &nb_volume);
+
+	PQclear(result);
+	free(jobid);
+	free(fileid);
+
+	return nb_volume;
 }
 
 static char * st_db_postgresql_get_restore_path_from_file(struct st_database_connection * connect, struct st_job * job, struct st_archive_file * file) {

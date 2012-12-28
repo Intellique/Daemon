@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 27 Dec 2012 13:21:28 +0100                         *
+*  Last modified: Fri, 28 Dec 2012 21:23:46 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -119,6 +119,8 @@ static int st_job_restore_archive_run(struct st_job * job) {
 		return 2;
 	}
 
+	self->checks = st_job_restore_archive_checks_worker_new(self);
+
 	job->done = 0.01;
 
 	unsigned int nb_directories;
@@ -200,7 +202,7 @@ static int st_job_restore_archive_run(struct st_job * job) {
 			}
 		}
 
-		worker = st_job_restore_archive_data_worker_new(self, drive, slot, self->restore_path);
+		worker = st_job_restore_archive_data_worker_new(self, drive, slot);
 		if (self->first_worker == NULL)
 			self->first_worker = self->last_worker = worker;
 		else
@@ -254,6 +256,8 @@ static int st_job_restore_archive_run(struct st_job * job) {
 		free(directory->db_data);
 	}
 	free(directories);
+
+	st_job_restore_archive_checks_worker_free(self->checks);
 
 	job->done = 1;
 
