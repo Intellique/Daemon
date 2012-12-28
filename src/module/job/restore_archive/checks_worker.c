@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 28 Dec 2012 22:03:36 +0100                         *
+*  Last modified: Fri, 28 Dec 2012 22:16:54 +0100                         *
 \*************************************************************************/
 
 // open
@@ -111,6 +111,8 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 		free(checksums);
 		free(results);
 	}
+
+	free(restore_to);
 }
 
 void st_job_restore_archive_checks_worker_free(struct st_job_restore_archive_checks_worker * check) {
@@ -169,7 +171,7 @@ static void st_job_restore_archive_checks_worker_work(void * arg) {
 				pthread_mutex_unlock(&self->lock);
 
 				st_job_restore_archive_checks_worker_check(self, elt->file);
-				checked = true;
+				elt->checked = checked = true;
 
 				pthread_mutex_lock(&self->lock);
 			}

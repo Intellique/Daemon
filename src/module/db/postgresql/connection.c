@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 28 Dec 2012 21:21:14 +0100                         *
+*  Last modified: Fri, 28 Dec 2012 22:19:50 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1978,7 +1978,7 @@ static bool st_db_postgresql_check_checksums_of_file(struct st_database_connecti
 	if (file_data == NULL || file_data->id < 0)
 		return false;
 
-	const char * query = "select_checksum_of_file";
+	const char * query = "select_compare_checksum_of_file";
 	st_db_postgresql_prepare(self, query, "SELECT COUNT(*) > 0 FROM archivefiletochecksumresult afcr LEFT JOIN checksumresult cr ON afcr.checksumresult = cr.id LEFT JOIN checksum c ON cr.checksum = c.id WHERE afcr.archivefile = $1 AND cr.result = $2 AND c.name = $3");
 
 	char * fileid;
