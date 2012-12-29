@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 28 Dec 2012 22:04:41 +0100                         *
+*  Last modified: Sat, 29 Dec 2012 12:40:58 +0100                         *
 \*************************************************************************/
 
 // mknod, open
@@ -63,6 +63,8 @@ void st_job_restore_archive_data_worker_free(struct st_job_restore_archive_data_
 struct st_job_restore_archive_data_worker * st_job_restore_archive_data_worker_new(struct st_job_restore_archive_private * self, struct st_drive * drive, struct st_slot * slot) {
 	struct st_job_restore_archive_data_worker * worker = malloc(sizeof(struct st_job_restore_archive_data_worker));
 	worker->jp = self;
+	worker->nb_warnings = 0;
+	worker->nb_errors = 0;
 
 	worker->total_restored = 0;
 
@@ -110,11 +112,23 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 	struct st_slot * sl = self->slot;
 
 	if (dr->slot->media != NULL && dr->slot != sl) {
-		dr->changer->ops->unload(dr->changer, dr);
+		st_job_add_record(connect, st_log_level_info, self->jp->job, "Unloading media (%s)", dr->slot->media->name);
+		int failed = dr->changer->ops->unload(dr->changer, dr);
+		if (failed) {
+			st_job_add_record(connect, st_log_level_info, self->jp->job, "Unloading media (%s) has failed", dr->slot->media->name);
+			self->nb_errors++;
+			goto end_of_work;
+		}
 	}
 
 	if (dr->slot->media == NULL) {
-		dr->changer->ops->load_slot(dr->changer, sl, dr);
+		st_job_add_record(connect, st_log_level_info, self->jp->job, "Loading media (%s)", sl->media->name);
+		int failed = dr->changer->ops->load_slot(dr->changer, sl, dr);
+		if (failed) {
+			st_job_add_record(connect, st_log_level_info, self->jp->job, "Loading media (%s) has failed", sl->media->name);
+			self->nb_errors++;
+			goto end_of_work;
+		}
 	}
 
 	struct st_archive * archive = self->jp->archive;
@@ -137,14 +151,39 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 			struct st_archive_file * file = f->file;
 
 			enum st_format_reader_header_status status = reader->ops->forward(reader, f->position);
+			if (status != st_format_reader_header_ok) {
+				st_job_add_record(connect, st_log_level_error, self->jp->job, "Error while seeking to file (%s)", file->name);
+				self->nb_errors++;
+
+				st_archive_file_free(file);
+				break;
+			}
 
 			struct st_format_file header;
 			status = reader->ops->get_header(reader, &header);
+			if (status != st_format_reader_header_ok) {
+				st_job_add_record(connect, st_log_level_error, self->jp->job, "Error while reading header of file (%s)", file->name);
+				self->nb_errors++;
+
+				st_archive_file_free(file);
+				break;
+			}
 
 			while (strcmp(header.filename, file->name + 1)) {
 				reader->ops->skip_file(reader);
 				st_format_file_free(&header);
 				status = reader->ops->get_header(reader, &header);
+
+				if (status != st_format_reader_header_ok)
+					break;
+			}
+
+			if (status != st_format_reader_header_ok) {
+				st_job_add_record(connect, st_log_level_error, self->jp->job, "Error while reading header of file (%s)", file->name);
+				self->nb_errors++;
+
+				st_archive_file_free(file);
+				break;
 			}
 
 			char * restore_to = st_job_restore_archive_path_get(self->jp->restore_path, connect, self->jp->job, file, has_restore_to);
@@ -153,31 +192,69 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 				int fd = open(restore_to, O_CREAT | O_WRONLY, header.mode & 07777);
 				if (fd < 0) {
 					st_job_add_record(connect, st_log_level_error, self->jp->job, "Error while opening file (%s) for writing because %m", restore_to);
+					self->nb_errors++;
+
+					st_archive_file_free(file);
+					break;
 				}
 
 				if (header.position > 0) {
-					lseek(fd, header.position, SEEK_SET);
+					if (lseek(fd, header.position, SEEK_SET) != header.position) {
+						st_job_add_record(connect, st_log_level_error, self->jp->job, "Error while seeking into file (%s) because %m", restore_to);
+						self->nb_errors++;
+						close(fd);
+
+						st_archive_file_free(file);
+						break;
+					}
 				}
 
-				ssize_t nb_read;
+				ssize_t nb_read, nb_write = 0;
 				char buffer[4096];
 				while (nb_read = reader->ops->read(reader, buffer, 4096), nb_read > 0) {
-					ssize_t nb_write = write(fd, buffer, nb_read);
+					nb_write = write(fd, buffer, nb_read);
 
 					if (nb_write > 0)
 						self->total_restored += nb_write;
+					else {
+						st_job_add_record(connect, st_log_level_error, self->jp->job, "Error while writing to file (%s) because %m", restore_to);
+						self->nb_errors++;
+
+						st_archive_file_free(file);
+						break;
+					}
 				}
 
-				fchown(fd, file->ownerid, file->groupid);
-				fchmod(fd, file->perm);
+				if (nb_read < 0) {
+					st_job_add_record(connect, st_log_level_error, self->jp->job, "Error while reading from media (%s) because %m", vol->media->name);
+					self->nb_errors++;
 
-				struct timeval tv[] = {
-					{ file->mtime, 0 },
-					{ file->mtime, 0 },
-				};
-				futimes(fd, tv);
+					st_archive_file_free(file);
+					break;
+				} else if (nb_write >= 0) {
+					if (fchown(fd, file->ownerid, file->groupid)) {
+						st_job_add_record(connect, st_log_level_warning, self->jp->job, "Error while restoring user of file (%s) because %m", restore_to);
+						self->nb_warnings++;
+					}
+
+					if (fchmod(fd, file->perm)) {
+						st_job_add_record(connect, st_log_level_warning, self->jp->job, "Error while restoring permission of file (%s) because %m", restore_to);
+						self->nb_warnings++;
+					}
+
+					struct timeval tv[] = {
+						{ file->mtime, 0 },
+						{ file->mtime, 0 },
+					};
+					if (futimes(fd, tv)) {
+						st_job_add_record(connect, st_log_level_warning, self->jp->job, "Error while motification time of file (%s) because %m", restore_to);
+						self->nb_warnings++;
+					}
+				}
 
 				close(fd);
+
+				st_job_restore_archive_checks_worker_add_file(self->jp->checks, file);
 			} else if (S_ISDIR(header.mode)) {
 				// do nothing because directory is already created
 			} else if (S_ISLNK(header.mode)) {
@@ -191,25 +268,35 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 			}
 
 			if (!(S_ISREG(header.mode) || S_ISDIR(header.mode))) {
-				chown(header.filename, file->ownerid, file->groupid);
-				chmod(header.filename, file->perm);
+				if (chown(header.filename, file->ownerid, file->groupid)) {
+					st_job_add_record(connect, st_log_level_warning, self->jp->job, "Error while restoring user of file (%s) because %m", header.filename);
+					self->nb_warnings++;
+				}
+
+				if (chmod(header.filename, file->perm)) {
+					st_job_add_record(connect, st_log_level_warning, self->jp->job, "Error while restoring permission of file (%s) because %m", header.filename);
+					self->nb_warnings++;
+				}
 
 				struct timeval tv[] = {
 					{ file->mtime, 0 },
 					{ file->mtime, 0 },
 				};
-				utimes(header.filename, tv);
+				if (utimes(header.filename, tv)) {
+					st_job_add_record(connect, st_log_level_warning, self->jp->job, "Error while motification time of file (%s) because %m", header.filename);
+					self->nb_warnings++;
+				}
 			}
 
+			free(restore_to);
 			st_format_file_free(&header);
-
-			st_job_restore_archive_checks_worker_add_file(self->jp->checks, file);
 		}
 
 		reader->ops->close(reader);
 		reader->ops->free(reader);
 	}
 
+end_of_work:
 	dr->lock->ops->unlock(dr->lock);
 
 	connect->ops->free(connect);

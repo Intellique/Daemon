@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 28 Dec 2012 22:16:54 +0100                         *
+*  Last modified: Sat, 29 Dec 2012 12:53:51 +0100                         *
 \*************************************************************************/
 
 // open
@@ -38,7 +38,9 @@
 // close, read
 #include <unistd.h>
 
+#include <libstone/job.h>
 #include <libstone/io.h>
+#include <libstone/log.h>
 #include <libstone/thread_pool.h>
 
 #include "restore_archive.h"
@@ -86,30 +88,82 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 	char ** checksums = check->connect->ops->get_checksums_of_file(check->connect, file, &nb_checksum);
 
 	if (nb_checksum > 0 && checksums != NULL) {
-		struct st_stream_writer * writer = st_checksum_writer_new(NULL, checksums, nb_checksum, false);
+		bool is_error = false;
+
 		int fd = open(restore_to, O_RDONLY);
+		if (fd < 0) {
+			st_job_add_record(check->connect, st_log_level_info, check->jp->job, "Error while opening file (%s) because %m", restore_to);
+			check->nb_errors++;
+			is_error = true;
+		}
+
+		struct st_stream_writer * writer = NULL;
+		if (!is_error) {
+			writer = st_checksum_writer_new(NULL, checksums, nb_checksum, false);
+			if (writer == NULL) {
+				st_job_add_record(check->connect, st_log_level_info, check->jp->job, "Error while getting handler of checksums");
+				check->nb_errors++;
+				is_error = true;
+			}
+		}
+
 		char buffer[4096];
 		ssize_t nb_read;
 
-		while (nb_read = read(fd, buffer, 4096), nb_read > 0)
-			writer->ops->write(writer, buffer, nb_read);
+		if (!is_error) {
+			nb_read = read(fd, buffer, 4096);
+			if (nb_read < 0) {
+				st_job_add_record(check->connect, st_log_level_info, check->jp->job, "Error while reading from file (%s) because %m", restore_to);
+				check->nb_errors++;
+				is_error = true;
+			}
 
-		close(fd);
-		writer->ops->close(writer);
+			while (!is_error && nb_read > 0) {
+				writer->ops->write(writer, buffer, nb_read);
 
-		char ** results = st_checksum_writer_get_checksums(writer);
-
-		bool ok = check->connect->ops->check_checksums_of_file(check->connect, file, checksums, results, nb_checksum);
-
-		writer->ops->free(writer);
-
-		unsigned int i;
-		for (i = 0; i < nb_checksum; i++) {
-			free(checksums[i]);
-			free(results[i]);
+				nb_read = read(fd, buffer, 4096);
+				if (nb_read < 0) {
+					st_job_add_record(check->connect, st_log_level_info, check->jp->job, "Error while reading from file (%s) because %m", restore_to);
+					check->nb_errors++;
+					is_error = true;
+				}
+			}
 		}
-		free(checksums);
-		free(results);
+
+		if (fd >= 0)
+			close(fd);
+		if (writer != NULL)
+			writer->ops->close(writer);
+
+		if (is_error) {
+			st_job_add_record(check->connect, st_log_level_info, check->jp->job, "There was some error while checking file (%s)", restore_to);
+
+			if (writer != NULL)
+				writer->ops->free(writer);
+
+			unsigned int i;
+			for (i = 0; i < nb_checksum; i++)
+				free(checksums[i]);
+			free(checksums);
+		} else {
+			char ** results = st_checksum_writer_get_checksums(writer);
+
+			bool ok = check->connect->ops->check_checksums_of_file(check->connect, file, checksums, results, nb_checksum);
+			if (ok)
+				st_job_add_record(check->connect, st_log_level_info, check->jp->job, "Checking restored file (%s), status: OK", restore_to);
+			else
+				st_job_add_record(check->connect, st_log_level_error, check->jp->job, "Checking restored file (%s), status: checksum mismatch", restore_to);
+
+			writer->ops->free(writer);
+
+			unsigned int i;
+			for (i = 0; i < nb_checksum; i++) {
+				free(checksums[i]);
+				free(results[i]);
+			}
+			free(checksums);
+			free(results);
+		}
 	}
 
 	free(restore_to);
@@ -145,6 +199,7 @@ void st_job_restore_archive_checks_worker_free(struct st_job_restore_archive_che
 struct st_job_restore_archive_checks_worker * st_job_restore_archive_checks_worker_new(struct st_job_restore_archive_private * jp) {
 	struct st_job_restore_archive_checks_worker * check = malloc(sizeof(struct st_job_restore_archive_checks_worker));
 	check->jp = jp;
+	check->nb_errors = check->nb_warnings = 0;
 	check->first_file = check->last_file = NULL;
 	pthread_mutex_init(&check->lock, NULL);
 	pthread_cond_init(&check->wait, NULL);

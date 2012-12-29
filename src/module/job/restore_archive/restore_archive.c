@@ -22,15 +22,21 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 28 Dec 2012 21:23:46 +0100                         *
+*  Last modified: Sat, 29 Dec 2012 13:08:29 +0100                         *
 \*************************************************************************/
 
 // free, malloc
 #include <stdlib.h>
 // chmod
 #include <sys/stat.h>
+// utimes
+#include <sys/time.h>
+// utimes
+#include <sys/types.h>
 // chown, sleep
 #include <unistd.h>
+// utimes
+#include <utime.h>
 
 #include <libstone/job.h>
 #include <libstone/library/drive.h>
@@ -128,10 +134,20 @@ static int st_job_restore_archive_run(struct st_job * job) {
 	ssize_t size = self->connect->ops->get_restore_size_by_job(self->connect, job);
 
 	unsigned int i;
+	unsigned int nb_errors = 0, nb_warnings = 0;
 	for (i = 0; i < nb_directories; i++) {
 		struct st_archive_file * directory = directories + i;
 		st_util_file_mkdir(directory->name, directory->perm);
-		chmod(directory->name, directory->perm);
+
+		if (chown(directory->name, directory->ownerid, directory->groupid)) {
+			st_job_add_record(self->connect, st_log_level_warning, job, "Warning, failed to restore owner of directory (%s) because %m", directory->name);
+			nb_warnings++;
+		}
+
+		if (chmod(directory->name, directory->perm)) {
+			st_job_add_record(self->connect, st_log_level_warning, job, "Warning, failed to restore permission of directory (%s) because %m", directory->name);
+			nb_warnings++;
+		}
 	}
 
 	job->done = 0.02;
@@ -153,7 +169,7 @@ static int st_job_restore_archive_run(struct st_job * job) {
 		if (found)
 			continue;
 
-		bool stop = false;
+		bool stop = false, has_alerted_user = false;
 		struct st_slot * slot = NULL;
 		struct st_drive * drive = NULL;
 		while (!stop) {
@@ -173,6 +189,9 @@ static int st_job_restore_archive_run(struct st_job * job) {
 			if (slot == NULL) {
 				// slot not found
 				// TODO: alert user
+				if (!has_alerted_user)
+					st_job_add_record(self->connect, st_log_level_warning, job, "Warning, media named (%s) is not found, please insert it", vol->media->name);
+				has_alerted_user = true;
 
 				sleep(5);
 
@@ -231,6 +250,9 @@ static int st_job_restore_archive_run(struct st_job * job) {
 
 	worker = self->first_worker;
 	while (worker != NULL) {
+		nb_errors += worker->nb_errors;
+		nb_warnings += worker->nb_warnings;
+
 		struct st_job_restore_archive_data_worker * next = worker->next;
 		st_job_restore_archive_data_worker_free(worker);
 		worker = next;
@@ -242,14 +264,14 @@ static int st_job_restore_archive_run(struct st_job * job) {
 	for (i = 1; i <= nb_directories; i++) {
 		struct st_archive_file * directory = directories + (nb_directories - i);
 
-		chown(directory->name, directory->ownerid, directory->groupid);
-		chmod(directory->name, directory->perm);
-
 		struct timeval tv[] = {
 			{ directory->mtime, 0 },
 			{ directory->mtime, 0 },
 		};
-		utimes(directory->name, tv);
+		if (utimes(directory->name, tv)) {
+			st_job_add_record(self->connect, st_log_level_warning, job, "Warning, failed to restore motification time of directory (%s) because %m", directory->name);
+			nb_warnings++;
+		}
 
 		free(directory->name);
 		free(directory->mime_type);
@@ -260,6 +282,8 @@ static int st_job_restore_archive_run(struct st_job * job) {
 	st_job_restore_archive_checks_worker_free(self->checks);
 
 	job->done = 1;
+
+	st_job_add_record(self->connect, st_log_level_info, job, "Job restore-archive is finised (named: %s) with %d warning(%c) and %d error(%c)", job->name, nb_warnings, nb_warnings != 1 ? 's' : '\0', nb_errors, nb_errors != 1 ? 's' : '\0');
 
 	return 0;
 }

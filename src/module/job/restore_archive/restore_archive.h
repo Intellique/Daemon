@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 28 Dec 2012 18:36:33 +0100                         *
+*  Last modified: Sat, 29 Dec 2012 12:44:54 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_RESTOREARCHIVE_H__
@@ -46,6 +46,8 @@ struct st_job_restore_archive_private {
 
 	struct st_job_restore_archive_data_worker {
 		struct st_job_restore_archive_private * jp;
+		unsigned int nb_warnings;
+		unsigned int nb_errors;
 
 		ssize_t total_restored;
 
@@ -67,6 +69,8 @@ struct st_job_restore_archive_private {
 
 	struct st_job_restore_archive_checks_worker {
 		struct st_job_restore_archive_private * jp;
+		unsigned int nb_warnings;
+		unsigned int nb_errors;
 
 		struct st_job_restore_archive_checks_files {
 			struct st_archive_file * file;
