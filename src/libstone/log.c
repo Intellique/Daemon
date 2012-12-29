@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 19:55:51 +0100                         *
+*  Last modified: Sat, 29 Dec 2012 16:21:05 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -52,6 +52,7 @@ static void st_log_sent_message(void * arg);
 
 static bool st_log_display_at_exit = true;
 static volatile bool st_log_logger_running = false;
+static bool st_log_finished = false;
 
 static struct st_log_driver ** st_log_drivers = NULL;
 static unsigned int st_log_nb_drivers = 0;
@@ -139,6 +140,8 @@ static void st_log_exit(void) {
 
 		message = next;
 	}
+
+	st_log_finished = true;
 }
 
 struct st_log_driver * st_log_get_driver(const char * driver) {
@@ -315,6 +318,9 @@ const char * st_log_type_to_string(enum st_log_type type) {
 }
 
 void st_log_write_all(enum st_log_level level, enum st_log_type type, const char * format, ...) {
+	if (st_log_finished)
+		return;
+
 	char * message = NULL;
 
 	va_list va;
@@ -343,6 +349,9 @@ void st_log_write_all(enum st_log_level level, enum st_log_type type, const char
 }
 
 void st_log_write_all2(enum st_log_level level, enum st_log_type type, struct st_user * user, const char * format, ...) {
+	if (st_log_finished)
+		return;
+
 	char * message = NULL;
 
 	va_list va;

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 22:45:26 +0100                         *
+*  Last modified: Sat, 29 Dec 2012 16:31:04 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -400,6 +400,7 @@ struct st_media * st_media_get_by_job(struct st_job * job, struct st_database_co
 			free(media->medium_serial_number);
 			free(media->name);
 			free(media->db_data);
+			media->lock->ops->free(media->lock);
 			free(media);
 
 			media = st_medias[i];
