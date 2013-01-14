@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 11 Dec 2012 21:05:42 +0100                         *
+*  Last modified: Mon, 14 Jan 2013 18:38:16 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -112,6 +112,13 @@ struct st_archive * st_archive_new(const char * name, struct st_user * user) {
 void st_archive_file_free(struct st_archive_file * file) {
 	free(file->name);
 	free(file->mime_type);
+
+	unsigned int i;
+	for (i = 0; i < file->nb_digests; i++)
+		free(file->digests[i]);
+	free(file->digests);
+	file->nb_digests = 0;
+
 	free(file->db_data);
 	free(file);
 }
