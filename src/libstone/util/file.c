@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 20 Dec 2012 22:08:42 +0100                         *
+*  Last modified: Tue, 15 Jan 2013 18:53:25 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -154,23 +154,28 @@ int st_util_file_mkdir(const char * dirname, mode_t mode) {
 
 char * st_util_file_rename(const char * filename) {
 	char * path = strdup(filename);
-	size_t path_length = strlen(filename);
-
-	char * extension = strrchr(filename, '.');
-	size_t extension_length = 0;
-	if (extension != NULL)
-		extension_length = strlen(extension);
+	char * extension = strrchr(path, '.');
 
 	unsigned int next = 0;
-	while (!access(path, F_OK)) {
-		free(path);
+	if (!access(path, F_OK)) {
+		char * old_path = path;
+		path = NULL;
 
 		if (extension != NULL)
-			asprintf(&path, "%.*s_%u%s", (int) (path_length - extension_length), path, next, extension);
-		else
-			asprintf(&path, "%.*s_%u", (int) (path_length - extension_length), path, next);
+			*extension = '\0';
 
-		next++;
+		do {
+			free(path);
+
+			if (extension != NULL)
+				asprintf(&path, "%s_%u.%s", old_path, next, extension + 1);
+			else
+				asprintf(&path, "%s_%u", old_path, next);
+
+			next++;
+		} while (!access(path, F_OK));
+
+		free(old_path);
 	}
 
 	return path;
