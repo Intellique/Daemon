@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 29 Dec 2012 13:08:29 +0100                         *
+*  Last modified: Tue, 15 Jan 2013 20:59:11 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -280,6 +280,8 @@ static int st_job_restore_archive_run(struct st_job * job) {
 	free(directories);
 
 	st_job_restore_archive_checks_worker_free(self->checks);
+	st_job_restore_archive_path_free(self->restore_path);
+	st_archive_free(archive);
 
 	job->done = 1;
 
