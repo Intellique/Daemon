@@ -22,10 +22,12 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 01 Jan 2013 17:23:51 +0100                         *
+*  Last modified: Wed, 16 Jan 2013 11:04:53 +0100                         *
 \*************************************************************************/
 
 #include <errno.h>
+// fstatat
+#include <fcntl.h>
 // getgrgid_r
 #include <grp.h>
 // getpwuid_r
@@ -40,7 +42,7 @@
 #include <strings.h>
 // lstat, stat
 #include <sys/stat.h>
-// getgrgid_r, getpwuid_r, lstat, stat
+// getgrgid_r, getpwuid_r, fstatat, lstat, stat
 #include <sys/types.h>
 // time
 #include <time.h>
@@ -65,6 +67,8 @@ struct st_tar_writer_private {
 
 static enum st_format_writer_status st_tar_writer_add(struct st_format_writer * sfw, struct st_format_file * file);
 static enum st_format_writer_status st_tar_writer_add_file(struct st_format_writer * sfw, const char * file);
+static enum st_format_writer_status st_tar_writer_add_file_at(struct st_format_writer * sf, int dir_fd, const char * file);
+static enum st_format_writer_status st_tar_writer_add_file_private(struct st_format_writer * sfw, const char * file, struct stat * sfile);
 static enum st_format_writer_status st_tar_writer_add_label(struct st_format_writer * sfw, const char * label);
 static int st_tar_writer_close(struct st_format_writer * sfw);
 static void st_tar_writer_compute_checksum(const void * header, char * checksum);
@@ -87,6 +91,7 @@ static enum st_format_writer_status st_tar_writer_write_header(struct st_tar_wri
 static struct st_format_writer_ops st_tar_writer_ops = {
 	.add                = st_tar_writer_add,
 	.add_file           = st_tar_writer_add_file,
+	.add_file_at        = st_tar_writer_add_file_at,
 	.add_label          = st_tar_writer_add_label,
 	.close              = st_tar_writer_close,
 	.end_of_file        = st_tar_writer_end_of_file,
@@ -199,18 +204,30 @@ static enum st_format_writer_status st_tar_writer_add(struct st_format_writer * 
 	return st_tar_writer_write_header(format, header, block_size);
 }
 
-static enum st_format_writer_status st_tar_writer_add_file(struct st_format_writer * f, const char * file) {
+static enum st_format_writer_status st_tar_writer_add_file(struct st_format_writer * sf, const char * file) {
 	struct stat sfile;
 	if (lstat(file, &sfile))
 		return st_format_writer_error;
 
+	return st_tar_writer_add_file_private(sf, file, &sfile);
+}
+
+static enum st_format_writer_status st_tar_writer_add_file_at(struct st_format_writer * sf, int dir_fd, const char * file) {
+	struct stat sfile;
+	if (fstatat(dir_fd, file, &sfile, AT_SYMLINK_NOFOLLOW))
+		return st_format_writer_error;
+
+	return st_tar_writer_add_file_private(sf, file, &sfile);
+}
+
+static enum st_format_writer_status st_tar_writer_add_file_private(struct st_format_writer * sfw, const char * file, struct stat * sfile) {
 	ssize_t block_size = 512;
 	struct st_tar * header = malloc(block_size);
 	struct st_tar * current_header = header;
 
 	const char * filename2 = st_tar_writer_skip_leading_slash(file);
 	int filename_length = strlen(filename2);
-	if (S_ISLNK(sfile.st_mode)) {
+	if (S_ISLNK(sfile->st_mode)) {
 		char link[257];
 		ssize_t link_length = readlink(file, link, 256);
 		link[link_length] = '\0';
@@ -220,8 +237,8 @@ static enum st_format_writer_status st_tar_writer_add_file(struct st_format_writ
 			current_header = header = realloc(header, block_size);
 
 			bzero(current_header, block_size - 512);
-			st_tar_writer_compute_link(current_header, (char *) (current_header + 1), link, link_length, 'K', &sfile, NULL);
-			st_tar_writer_compute_link(current_header + 2, (char *) (current_header + 3), filename2, filename_length, 'L', &sfile, NULL);
+			st_tar_writer_compute_link(current_header, (char *) (current_header + 1), link, link_length, 'K', sfile, NULL);
+			st_tar_writer_compute_link(current_header + 2, (char *) (current_header + 3), filename2, filename_length, 'L', sfile, NULL);
 
 			current_header += 4;
 		} else if (filename_length > 100) {
@@ -229,7 +246,7 @@ static enum st_format_writer_status st_tar_writer_add_file(struct st_format_writ
 			current_header = header = realloc(header, block_size);
 
 			bzero(current_header, block_size - 512);
-			st_tar_writer_compute_link(current_header, (char *) (current_header + 1), filename2, filename_length, 'L', &sfile, NULL);
+			st_tar_writer_compute_link(current_header, (char *) (current_header + 1), filename2, filename_length, 'L', sfile, NULL);
 
 			current_header += 2;
 		} else if (link_length > 100) {
@@ -237,7 +254,7 @@ static enum st_format_writer_status st_tar_writer_add_file(struct st_format_writ
 			current_header = header = realloc(header, block_size);
 
 			bzero(current_header, block_size - 512);
-			st_tar_writer_compute_link(current_header, (char *) (current_header + 1), link, link_length, 'K', &sfile, NULL);
+			st_tar_writer_compute_link(current_header, (char *) (current_header + 1), link, link_length, 'K', sfile, NULL);
 
 			current_header += 2;
 		}
@@ -246,48 +263,48 @@ static enum st_format_writer_status st_tar_writer_add_file(struct st_format_writ
 		current_header = header = realloc(header, block_size);
 
 		bzero(current_header, 1024);
-		st_tar_writer_compute_link(current_header, (char *) (current_header + 1), filename2, filename_length, 'L', &sfile, NULL);
+		st_tar_writer_compute_link(current_header, (char *) (current_header + 1), filename2, filename_length, 'L', sfile, NULL);
 
 		current_header += 2;
 	}
 
-	struct st_tar_writer_private * format = f->data;
+	struct st_tar_writer_private * format = sfw->data;
 	bzero(current_header, 512);
 	strncpy(current_header->filename, filename2, 100);
-	snprintf(current_header->filemode, 8, "%07o", sfile.st_mode & 07777);
-	snprintf(current_header->uid, 8, "%07o", sfile.st_uid);
-	snprintf(current_header->gid, 8, "%07o", sfile.st_gid);
-	snprintf(current_header->mtime, 12, "%0*o", 11, (unsigned int) sfile.st_mtime);
+	snprintf(current_header->filemode, 8, "%07o", sfile->st_mode & 07777);
+	snprintf(current_header->uid, 8, "%07o", sfile->st_uid);
+	snprintf(current_header->gid, 8, "%07o", sfile->st_gid);
+	snprintf(current_header->mtime, 12, "%0*o", 11, (unsigned int) sfile->st_mtime);
 
-	if (S_ISREG(sfile.st_mode)) {
-		st_tar_writer_compute_size(current_header->size, sfile.st_size);
+	if (S_ISREG(sfile->st_mode)) {
+		st_tar_writer_compute_size(current_header->size, sfile->st_size);
 		current_header->flag = '0';
-		format->size = sfile.st_size;
-	} else if (S_ISLNK(sfile.st_mode)) {
+		format->size = sfile->st_size;
+	} else if (S_ISLNK(sfile->st_mode)) {
 		current_header->flag = '2';
 		readlink(file, current_header->linkname, 100);
 		format->size = 0;
-	} else if (S_ISCHR(sfile.st_mode)) {
+	} else if (S_ISCHR(sfile->st_mode)) {
 		current_header->flag = '3';
-		snprintf(current_header->devmajor, 8, "%07o", (unsigned int) (sfile.st_rdev >> 8));
-		snprintf(current_header->devminor, 8, "%07o", (unsigned int) (sfile.st_rdev & 0xFF));
+		snprintf(current_header->devmajor, 8, "%07o", (unsigned int) (sfile->st_rdev >> 8));
+		snprintf(current_header->devminor, 8, "%07o", (unsigned int) (sfile->st_rdev & 0xFF));
 		format->size = 0;
-	} else if (S_ISBLK(sfile.st_mode)) {
+	} else if (S_ISBLK(sfile->st_mode)) {
 		current_header->flag = '4';
-		snprintf(current_header->devmajor, 8, "%07o", (unsigned int) (sfile.st_rdev >> 8));
-		snprintf(current_header->devminor, 8, "%07o", (unsigned int) (sfile.st_rdev & 0xFF));
+		snprintf(current_header->devmajor, 8, "%07o", (unsigned int) (sfile->st_rdev >> 8));
+		snprintf(current_header->devminor, 8, "%07o", (unsigned int) (sfile->st_rdev & 0xFF));
 		format->size = 0;
-	} else if (S_ISDIR(sfile.st_mode)) {
+	} else if (S_ISDIR(sfile->st_mode)) {
 		current_header->flag = '5';
 		format->size = 0;
-	} else if (S_ISFIFO(sfile.st_mode)) {
+	} else if (S_ISFIFO(sfile->st_mode)) {
 		current_header->flag = '6';
 		format->size = 0;
 	}
 
 	strcpy(current_header->magic, "ustar  ");
-	st_tar_writer_uid2name(current_header->uname, 32, sfile.st_uid);
-	st_tar_writer_gid2name(current_header->gname, 32, sfile.st_gid);
+	st_tar_writer_uid2name(current_header->uname, 32, sfile->st_uid);
+	st_tar_writer_gid2name(current_header->gname, 32, sfile->st_gid);
 
 	st_tar_writer_compute_checksum(current_header, current_header->checksum);
 
