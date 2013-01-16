@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 31 Dec 2012 23:11:23 +0100                         *
+*  Last modified: Wed, 16 Jan 2013 12:02:44 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_COPYARCHIVE_H__
@@ -49,6 +49,7 @@ struct st_job_copy_archive_private {
 };
 
 int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self);
+int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self);
 bool st_job_copy_archive_select_input_media(struct st_job_copy_archive_private * self, struct st_media * media);
 bool st_job_copy_archive_select_output_media(struct st_job_copy_archive_private * self, bool load_media);
 

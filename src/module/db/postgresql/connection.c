@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 29 Dec 2012 13:25:03 +0100                         *
+*  Last modified: Tue, 15 Jan 2013 22:38:15 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1646,6 +1646,7 @@ static char ** st_db_postgresql_get_checksums_by_job(struct st_database_connecti
 	}
 
 	PQclear(result);
+	free(jobid);
 
 	return checksums;
 }
@@ -1684,6 +1685,7 @@ static struct st_job_selected_path * st_db_postgresql_get_selected_paths(struct 
 	}
 
 	PQclear(result);
+	free(jobid);
 
 	return paths;
 }
@@ -2269,14 +2271,12 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 	ExecStatusType status = PQresultStatus(result);
 
 	struct st_archive * archive = NULL;
-	char * archiveid;
 
 	if (status == PGRES_FATAL_ERROR)
 		st_db_postgresql_get_error(result, query);
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 		archive = malloc(sizeof(struct st_archive));
 
-		st_db_postgresql_get_string_dup(result, 0, 0, &archiveid);
 		st_db_postgresql_get_string_dup(result, 0, 1, &archive->name);
 		st_db_postgresql_get_time(result, 0, 2, &archive->ctime);
 		st_db_postgresql_get_time(result, 0, 3, &archive->endtime);
@@ -2331,7 +2331,7 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 			st_db_postgresql_get_long(result, i, 4, &volume->media_position);
 
 			volume->digests = NULL;
-			volume->nb_digests = 9;
+			volume->nb_digests = 0;
 
 			volume->files = NULL;
 			volume->nb_files = 0;
@@ -2757,6 +2757,12 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 			st_db_postgresql_get_long(result, 0, 0, &archive_volume_data->id);
 			st_db_postgresql_get_string_dup(result, 0, 0, &volumeid);
 		}
+
+		free(sequence);
+		free(size);
+		free(archiveid);
+		free(mediaid);
+		free(mediaposition);
 
 		PQclear(result);
 
