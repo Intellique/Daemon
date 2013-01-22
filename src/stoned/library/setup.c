@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 24 Dec 2012 23:40:52 +0100                         *
+*  Last modified: Thu, 17 Jan 2013 20:13:51 +0100                         *
 \*************************************************************************/
 
 // open
@@ -176,8 +176,7 @@ ssize_t st_changer_get_online_size(struct st_pool * pool) {
 
 int st_changer_setup(void) {
 	glob_t gl;
-	gl.gl_offs = 0;
-	glob("/sys/class/scsi_device/*/device/scsi_tape", GLOB_DOOFFS, NULL, &gl);
+	glob("/sys/class/scsi_device/*/device/scsi_tape", 0, NULL, &gl);
 
 	if (gl.gl_pathc == 0) {
 		st_log_write_all(st_log_level_error, st_log_type_user_message, "Panic: There is drive found, exit now !!!");
@@ -239,8 +238,7 @@ int st_changer_setup(void) {
 	}
 	globfree(&gl);
 
-	gl.gl_offs = 0;
-	glob("/sys/class/scsi_changer/*/device", GLOB_DOOFFS, NULL, &gl);
+	glob("/sys/class/scsi_changer/*/device", 0, NULL, &gl);
 
 	/**
 	 * In the worst case, we have nb_drives changers,
@@ -421,7 +419,7 @@ int st_changer_setup(void) {
 	for (i = st_nb_real_changers; i < nb_drives; i++) {
 		unsigned j;
 		for (j = 0; j < nb_drives; j++) {
-			if (drives[j].changer != NULL) {
+			if (drives[j].changer == NULL) {
 				drives[j].changer = st_changers + i;
 
 				st_changers[i].drives = malloc(sizeof(struct st_drive));

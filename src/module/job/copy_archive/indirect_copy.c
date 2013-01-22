@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 16 Jan 2013 22:19:36 +0100                         *
+*  Last modified: Thu, 17 Jan 2013 10:00:16 +0100                         *
 \*************************************************************************/
 
 // mknod, open
@@ -186,6 +186,12 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 
 		reader->ops->close(reader);
 		reader->ops->free(reader);
+	}
+
+	bool ok = st_job_copy_archive_select_output_media(self, true);
+
+	if (ok) {
+		struct st_format_writer * writer = self->drive_output->ops->get_writer(self->drive_output, true, NULL, NULL);
 	}
 
 	return 0;

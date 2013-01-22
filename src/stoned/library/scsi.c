@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 22:24:18 +0100                         *
+*  Last modified: Fri, 18 Jan 2013 09:49:03 +0100                         *
 \*************************************************************************/
 
 // htobe16
@@ -234,6 +234,7 @@ struct scsi_request_sense {
 };
 
 static bool st_scsi_loader_has_drive2(int fd, struct st_changer * changer, int start_element, int nb_elements, struct st_drive * drive);
+static void st_scsi_loader_sort_drive(int fd, struct st_changer * changer, int start_element);
 static void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, struct st_slot * slot_base, int start_element, int nb_elements, enum scsi_loader_element_type type);
 
 
@@ -812,6 +813,127 @@ void st_scsi_loader_status_new(int fd, struct st_changer * changer, int * transp
 
 	if (transport_address)
 		*transport_address = result.medium_transport_element_address;
+
+	if (changer->nb_drives > 1)
+		st_scsi_loader_sort_drive(fd, changer, result.first_data_transfer_element_address);
+}
+
+static void st_scsi_loader_sort_drive(int fd, struct st_changer * changer, int start_element) {
+	size_t size_needed = 16 + changer->nb_drives * sizeof(struct scsi_loader_data_transfer_element);
+
+	struct scsi_request_sense sense;
+	struct {
+		unsigned short first_element_address;
+		unsigned short number_of_elements;
+		unsigned char reserved;
+		unsigned int byte_count_of_report:24;
+	} __attribute__((packed)) * result = malloc(size_needed);
+	struct {
+		unsigned char operation_code;
+		enum scsi_loader_element_type type:4;
+		bool volume_tag:1;
+		unsigned char reserved0:3;
+		unsigned short starting_element_address;
+		unsigned short number_of_elements;
+		bool device_id:1;
+		bool current_data:1;
+		unsigned char reserved1:6;
+		unsigned char allocation_length[3];
+		unsigned char reserved2;
+		unsigned char reserved3:7;
+		unsigned char serial_number_request:1;
+	} __attribute__((packed)) command = {
+		.operation_code = 0xB8,
+		.type = scsi_loader_element_type_data_transfer,
+		.volume_tag = changer->barcode,
+		.reserved0 = 0,
+		.starting_element_address = htobe16(start_element),
+		.number_of_elements = htobe16(changer->nb_drives),
+		.device_id = true,
+		.current_data = false,
+		.reserved1 = 0,
+		.allocation_length = { size_needed >> 16, size_needed >> 8, size_needed & 0xFF, },
+		.reserved2 = 0,
+		.reserved3 = 0,
+		.serial_number_request = 1,
+	};
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(result, 0, size_needed);
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = size_needed;
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) result;
+	header.timeout = 1200000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	unsigned char * ptr;
+	struct scsi_loader_element_status * element_header;
+	do {
+		int failed = ioctl(fd, SG_IO, &header);
+		if (failed) {
+			free(result);
+			return;
+		}
+
+		result->number_of_elements = be16toh(result->number_of_elements);
+
+		ptr = (unsigned char *) (result + 1);
+
+		element_header = (struct scsi_loader_element_status *) (ptr);
+		element_header->element_descriptor_length = be16toh(element_header->element_descriptor_length);
+		element_header->byte_count_of_descriptor_data_available = be32toh(element_header->byte_count_of_descriptor_data_available);
+		ptr += sizeof(struct scsi_loader_element_status);
+
+		if (element_header->type != scsi_loader_element_type_data_transfer) {
+			sleep(1);
+			st_scsi_loader_ready(fd);
+		}
+	} while (element_header->type != scsi_loader_element_type_data_transfer);
+
+	unsigned short i;
+	for (i = 0; i < result->number_of_elements - 1; i++) {
+		struct scsi_loader_data_transfer_element * data_transfer_element = (struct scsi_loader_data_transfer_element *) ptr;
+		data_transfer_element->element_address = be16toh(data_transfer_element->element_address);
+
+		unsigned int j;
+		for (j = i; j < changer->nb_drives; j++) {
+			struct st_drive * dr = changer->drives + j;
+
+			char dev[35];
+			memset(dev, ' ', 35);
+			dev[34] = '\0';
+			strncpy(dev, dr->vendor, strlen(dr->vendor));
+			dev[7] = ' ';
+			strncpy(dev + 8, dr->model, strlen(dr->model));
+			dev[23] = ' ';
+			strcpy(dev + 24, dr->serial_number);
+
+			if (!strncmp(data_transfer_element->device_identifier_1, dev, 34)) {
+				if (i != j) {
+					struct st_drive * dr_i = changer->drives + i;
+					struct st_drive * dr_j = changer->drives + j;
+
+					struct st_drive tmp_dr;
+					memcpy(&tmp_dr, dr_i, sizeof(struct st_drive));
+					memcpy(dr_i, dr_j, sizeof(struct st_drive));
+					memcpy(dr_j, &tmp_dr, sizeof(struct st_drive));
+
+					struct st_slot * sl = dr_i->slot;
+					dr_i->slot = dr_j->slot;
+					dr_j->slot = sl;
+				}
+
+				break;
+			}
+		}
+	}
 }
 
 static void st_scsi_loader_status_update_slot(int fd, struct st_changer * changer, struct st_slot * slot_base, int start_element, int nb_elements, enum scsi_loader_element_type type) {
