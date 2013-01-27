@@ -1,8 +1,8 @@
 -- Types
 CREATE TYPE ChangerSlotType AS ENUM (
-    'default',
     'drive',
-    'import / export'
+    'import / export',
+    'storage'
 );
 
 CREATE TYPE ChangerStatus AS ENUM (
@@ -43,10 +43,12 @@ CREATE TYPE FileType AS ENUM (
 CREATE TYPE JobStatus AS ENUM (
     'disable',
     'error',
-    'idle',
+    'finished',
     'pause',
     'running',
+    'scheduled',
     'stopped',
+    'unknown',
     'waiting'
 );
 
@@ -72,26 +74,26 @@ CREATE TYPE LogType AS ENUM (
     'user message'
 );
 
-CREATE TYPE TapeFormatDataType AS ENUM (
+CREATE TYPE MediaFormatDataType AS ENUM (
     'audio',
     'cleaning',
     'data',
     'video'
 );
 
-CREATE TYPE TapeFormatMode AS ENUM (
+CREATE TYPE MediaFormatMode AS ENUM (
     'disk',
     'linear',
     'optical'
 );
 
-CREATE TYPE TapeLocation AS ENUM (
+CREATE TYPE MediaLocation AS ENUM (
     'offline',
     'online',
     'in drive'
 );
 
-CREATE TYPE TapeStatus AS ENUM (
+CREATE TYPE MediaStatus AS ENUM (
     'erasable',
     'error',
     'foreign',
@@ -103,14 +105,20 @@ CREATE TYPE TapeStatus AS ENUM (
     'unknown'
 );
 
+CREATE TYPE UnbreakableLevel AS ENUM (
+    'archive',
+    'file',
+    'none'
+);
+
 
 -- Tables
-CREATE TABLE TapeFormat (
+CREATE TABLE MediaFormat (
     id SERIAL PRIMARY KEY,
 
     name VARCHAR(64) NOT NULL UNIQUE,
-    dataType TapeFormatDataType NOT NULL,
-    mode TapeFormatMode NOT NULL,
+    dataType MediaFormatDataType NOT NULL,
+    mode MediaFormatMode NOT NULL,
 
     maxLoadCount INTEGER NOT NULL CHECK (maxLoadCount > 0),
     maxReadCount INTEGER NOT NULL CHECK (maxReadCount > 0),
@@ -133,15 +141,16 @@ CREATE TABLE Pool (
     uuid UUID NOT NULL UNIQUE,
     name VARCHAR(64) NOT NULL,
 
-    tapeFormat INTEGER NOT NULL REFERENCES TapeFormat(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    mediaFormat INTEGER NOT NULL REFERENCES MediaFormat(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
     growable BOOLEAN NOT NULL DEFAULT FALSE,
+    unbreakableLevel UnbreakableLevel NOT NULL DEFAULT 'none',
     rewritable BOOLEAN NOT NULL DEFAULT TRUE,
 
     metadata TEXT NOT NULL DEFAULT ''
 );
 
-CREATE TABLE Tape (
+CREATE TABLE Media (
     id SERIAL PRIMARY KEY,
 
     uuid UUID NULL UNIQUE,
@@ -149,8 +158,8 @@ CREATE TABLE Tape (
     mediumSerialNumber VARCHAR(32) UNIQUE,
     name VARCHAR(255) NULL,
 
-    status TapeStatus NOT NULL,
-    location TapeLocation NOT NULL,
+    status MediaStatus NOT NULL,
+    location MediaLocation NOT NULL,
 
     firstUsed TIMESTAMP(0) NOT NULL,
     useBefore TIMESTAMP(0) NOT NULL,
@@ -165,10 +174,17 @@ CREATE TABLE Tape (
 
     hasPartition BOOLEAN NOT NULL DEFAULT FALSE,
 
-    tapeFormat INTEGER NOT NULL REFERENCES TapeFormat(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    mediaFormat INTEGER NOT NULL REFERENCES MediaFormat(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     pool INTEGER NULL REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE SET NULL,
 
     CHECK (firstUsed < useBefore)
+);
+
+CREATE TABLE MediaLable (
+    id BIGSERIAL PRIMARY KEY,
+
+    name TEXT NOT NULL,
+    media INTEGER NOT NULL REFERENCES Media(id) ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
 CREATE TABLE DriveFormat (
@@ -182,12 +198,12 @@ CREATE TABLE DriveFormat (
 
 CREATE TABLE DriveFormatSupport (
     driveFormat INTEGER NOT NULL REFERENCES DriveFormat(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    tapeFormat INTEGER NOT NULL REFERENCES TapeFormat(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    mediaFormat INTEGER NOT NULL REFERENCES MediaFormat(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
     read BOOLEAN NOT NULL DEFAULT TRUE,
     write BOOLEAN NOT NULL DEFAULT TRUE,
 
-    PRIMARY KEY (driveFormat, tapeFormat)
+    PRIMARY KEY (driveFormat, mediaFormat)
 );
 
 CREATE TABLE Host (
@@ -196,7 +212,7 @@ CREATE TABLE Host (
     name VARCHAR(255) NOT NULL,
     domaine VARCHAR(255) NULL,
 
-    description TEXT NOT NULL DEFAULT '',
+    description TEXT,
 
     UNIQUE (name, domaine)
 );
@@ -244,15 +260,15 @@ CREATE TABLE ChangerSlot (
 
     index INTEGER NOT NULL,
     changer INTEGER NOT NULL REFERENCES Changer(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    tape INTEGER REFERENCES Tape(id) ON UPDATE CASCADE ON DELETE SET NULL,
-    type ChangerSlotType NOT NULL DEFAULT 'default',
+    media INTEGER REFERENCES Media(id) ON UPDATE CASCADE ON DELETE SET NULL,
+    type ChangerSlotType NOT NULL DEFAULT 'storage',
 
     CONSTRAINT unique_slot UNIQUE (index, changer)
 );
 
 CREATE TABLE SelectedFile (
     id BIGSERIAL PRIMARY KEY,
-    path VARCHAR(255) NOT NULL
+    path TEXT NOT NULL
 );
 
 CREATE TABLE Users (
@@ -291,6 +307,7 @@ CREATE TABLE UserLog (
 CREATE TABLE Archive (
     id BIGSERIAL PRIMARY KEY,
 
+    uuid UUID NULL UNIQUE,
     name TEXT NOT NULL,
 
     ctime TIMESTAMP(0) NOT NULL,
@@ -300,7 +317,7 @@ CREATE TABLE Archive (
     owner INTEGER NOT NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
     metadata hstore NOT NULL,
-	copyOf BIGINT NULL REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    copyOf BIGINT NULL REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
     CONSTRAINT archive_time CHECK (ctime <= endtime)
 );
@@ -322,7 +339,9 @@ CREATE TABLE ArchiveFile (
     ctime TIMESTAMP(0) NOT NULL,
     mtime TIMESTAMP(0) NOT NULL,
 
-    size BIGINT NOT NULL CHECK (size >= 0)
+    size BIGINT NOT NULL CHECK (size >= 0),
+
+    parent BIGINT NOT NULL REFERENCES SelectedFile(id) ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
 CREATE TABLE ArchiveVolume (
@@ -335,8 +354,9 @@ CREATE TABLE ArchiveVolume (
     endtime TIMESTAMP(0),
 
     archive BIGINT NOT NULL REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    tape INTEGER NOT NULL REFERENCES Tape(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    tapePosition INTEGER NOT NULL DEFAULT 0 CHECK (tapePosition >= 0),
+    media INTEGER NOT NULL REFERENCES Media(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    mediaPosition INTEGER NOT NULL DEFAULT 0 CHECK (mediaPosition >= 0),
+    host INTEGER NOT NULL REFERENCES Host(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
     CONSTRAINT archiveVolume_time CHECK (ctime <= endtime)
 );
@@ -351,21 +371,21 @@ CREATE TABLE ArchiveFileToArchiveVolume (
 );
 
 CREATE TABLE Backup (
-	id BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
 
-	timestamp TIMESTAMP(0) NOT NULL DEFAULT now(),
+    timestamp TIMESTAMP(0) NOT NULL DEFAULT now(),
 
-	nbTape INTEGER NOT NULL DEFAULT 0 CHECK (nbTape >= 0),
-	nbArchive INTEGER NOT NULL DEFAULT 0 CHECK (nbArchive >= 0)
+    nbMedia INTEGER NOT NULL DEFAULT 0 CHECK (nbMedia >= 0),
+    nbArchive INTEGER NOT NULL DEFAULT 0 CHECK (nbArchive >= 0)
 );
 
 CREATE TABLE BackupVolume (
-	id BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
 
     sequence INTEGER NOT NULL DEFAULT 0 CHECK (sequence >= 0),
     backup BIGINT NOT NULL REFERENCES Backup(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    tape INTEGER NOT NULL REFERENCES Tape(id) ON DELETE RESTRICT ON UPDATE CASCADE,
-    tapePosition INTEGER NOT NULL DEFAULT 0 CHECK (tapePosition >= 0)
+    media INTEGER NOT NULL REFERENCES Media(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    mediaPosition INTEGER NOT NULL DEFAULT 0 CHECK (mediaPosition >= 0)
 );
 
 CREATE TABLE Checksum (
@@ -408,12 +428,12 @@ CREATE TABLE Job (
     interval INTERVAL DEFAULT NULL,
     repetition INTEGER NOT NULL DEFAULT 1,
     done FLOAT NOT NULL DEFAULT 0,
-    status JobStatus NOT NULL DEFAULT 'idle',
+    status JobStatus NOT NULL DEFAULT 'scheduled',
     update TIMESTAMP(0) NOT NULL DEFAULT NOW(),
 
     archive BIGINT DEFAULT NULL REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE CASCADE,
     backup BIGINT DEFAULT NULL REFERENCES Backup(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    tape INTEGER NULL DEFAULT NULL REFERENCES Tape(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    media INTEGER NULL DEFAULT NULL REFERENCES Media(id) ON UPDATE CASCADE ON DELETE CASCADE,
     pool INTEGER NULL DEFAULT NULL REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE SET NULL,
 
     host INTEGER NOT NULL REFERENCES Host(id) ON UPDATE CASCADE ON DELETE RESTRICT,
@@ -460,7 +480,6 @@ CREATE TABLE RestoreTo (
     id BIGSERIAL PRIMARY KEY,
 
     path VARCHAR(255) NOT NULL DEFAULT '/',
-    nbTruncPath INTEGER NOT NULL DEFAULT 0 CHECK (nbTruncPath >= 0),
     job BIGINT NOT NULL REFERENCES Job(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
@@ -472,11 +491,11 @@ COMMENT ON TABLE Checksum IS 'Contains only checksum available';
 
 COMMENT ON COLUMN DriveFormat.cleaningInterval IS 'Interval between two cleaning in days';
 
-COMMENT ON TYPE JobStatus IS E'disable => disabled,\nerror => error while running,\nidle => not yet started or completed,\npause => waiting for user action,\nrunning => running,\nstopped => stopped by user,\nwaiting => waiting for a resource';
+COMMENT ON TYPE JobStatus IS E'disable => disabled,\nerror => error while running,\nfinished => task finished,\npause => waiting for user action,\nrunning => running,\nscheduled => not yet started or completed,\nstopped => stopped by user,\nwaiting => waiting for a resource';
 
-COMMENT ON COLUMN Tape.label IS 'Contains an UUID';
+COMMENT ON COLUMN Media.label IS 'Contains an UUID';
 
-COMMENT ON COLUMN TapeFormat.blockSize IS 'Default block size';
-COMMENT ON COLUMN TapeFormat.supportPartition IS 'Is the tape can be partitionned';
-COMMENT ON COLUMN TapeFormat.supportMAM IS 'MAM: Medium Axiliary Memory, contains some usefull data';
+COMMENT ON COLUMN MediaFormat.blockSize IS 'Default block size';
+COMMENT ON COLUMN MediaFormat.supportPartition IS 'Is the media can be partitionned';
+COMMENT ON COLUMN MediaFormat.supportMAM IS 'MAM: Medium Axiliary Memory, contains some usefull data';
 
