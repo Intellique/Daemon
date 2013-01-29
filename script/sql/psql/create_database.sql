@@ -291,6 +291,7 @@ CREATE TABLE Users (
 
     fullname VARCHAR(255),
     email VARCHAR(255) NOT NULL,
+    homeDirectory TEXT NOT NULL,
 
     isAdmin BOOLEAN NOT NULL DEFAULT FALSE,
     canArchive BOOLEAN NOT NULL DEFAULT FALSE,
