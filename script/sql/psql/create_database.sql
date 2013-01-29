@@ -105,6 +105,12 @@ CREATE TYPE MediaStatus AS ENUM (
     'unknown'
 );
 
+CREATE TYPE MediaType AS ENUM (
+    'cleaning',
+    'readonly',
+    'rewritable'
+);
+
 CREATE TYPE UnbreakableLevel AS ENUM (
     'archive',
     'file',
@@ -167,13 +173,17 @@ CREATE TABLE Media (
     loadCount INTEGER NOT NULL DEFAULT 0 CHECK (loadCount >= 0),
     readCount INTEGER NOT NULL DEFAULT 0 CHECK (readCount >= 0),
     writeCount INTEGER NOT NULL DEFAULT 0 CHECK (writeCount >= 0),
-    endPos INTEGER NOT NULL DEFAULT 0 CHECK (endPos >= 0),
+    operationCount INTEGER NOT NULL DEFAULT 0 CHECK (operationCount >= 0),
 
     nbFiles INTEGER NOT NULL DEFAULT 0 CHECK (nbFiles >= 0),
     blockSize INTEGER NOT NULL DEFAULT 0 CHECK (blockSize >= 0),
+    freeBlock INTEGER NOT NULL CHECK (freeblock >= 0),
+    totalBlock INTEGER NOT NULL CHECK (totalBlock >= 0),
 
     hasPartition BOOLEAN NOT NULL DEFAULT FALSE,
 
+    locked BOOLEAN NOT NULL DEFAULT FALSE,
+    type MediaType NOT NULL DEFAULT 'rewritable',
     mediaFormat INTEGER NOT NULL REFERENCES MediaFormat(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     pool INTEGER NULL REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE SET NULL,
 
@@ -192,6 +202,7 @@ CREATE TABLE DriveFormat (
 
     name VARCHAR(64) NOT NULL UNIQUE,
     densityCode SMALLINT NOT NULL CHECK (densityCode > 0),
+    mode MediaFormatMode NOT NULL,
 
     cleaningInterval INTERVAL NOT NULL CHECK (cleaningInterval >= INTERVAL 'P1W')
 );
@@ -317,8 +328,9 @@ CREATE TABLE Archive (
     owner INTEGER NOT NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
     metadata hstore NOT NULL,
-    copyOf BIGINT NULL REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    copyOf BIGINT REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
+    CONSTRAINT archive_id CHECK (id != copyOf),
     CONSTRAINT archive_time CHECK (ctime <= endtime)
 );
 
@@ -385,7 +397,8 @@ CREATE TABLE BackupVolume (
     sequence INTEGER NOT NULL DEFAULT 0 CHECK (sequence >= 0),
     backup BIGINT NOT NULL REFERENCES Backup(id) ON DELETE CASCADE ON UPDATE CASCADE,
     media INTEGER NOT NULL REFERENCES Media(id) ON DELETE RESTRICT ON UPDATE CASCADE,
-    mediaPosition INTEGER NOT NULL DEFAULT 0 CHECK (mediaPosition >= 0)
+    mediaPosition INTEGER NOT NULL DEFAULT 0 CHECK (mediaPosition >= 0),
+    host INTEGER NOT NULL REFERENCES Host(id) ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
 CREATE TABLE Checksum (

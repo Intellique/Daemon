@@ -13,13 +13,13 @@ INSERT INTO MediaFormat(name, dataType, mode, maxLoadCount, maxReadCount, maxWri
 	('X23', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P6Y', 153691136, 1024, 130, FALSE, FALSE),
 	('DLT', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P6Y', 153691136, 1024, 129, FALSE, FALSE);
 
-INSERT INTO DriveFormat(name, densityCode, cleaningInterval) VALUES
-	('LTO-5', 88, INTERVAL 'P1W'),
-	('LTO-4', 70, INTERVAL 'P1W'),
-	('LTO-3', 68, INTERVAL 'P1W'),
-	('LTO-2', 66, INTERVAL 'P1W'),
-	('VXA-3', 130, INTERVAL 'P1W'),
-	('DLT', 129, INTERVAL 'P1W');
+INSERT INTO DriveFormat(name, densityCode, mode, cleaningInterval) VALUES
+	('LTO-5', 88, 'linear', INTERVAL 'P1W'),
+	('LTO-4', 70, 'linear', INTERVAL 'P1W'),
+	('LTO-3', 68, 'linear', INTERVAL 'P1W'),
+	('LTO-2', 66, 'linear', INTERVAL 'P1W'),
+	('VXA-3', 130, 'linear', INTERVAL 'P1W'),
+	('DLT', 129, 'linear', INTERVAL 'P1W');
 
 INSERT INTO DriveFormatSupport(driveFormat, mediaFormat, read, write) VALUES
 	(1, 1, TRUE, TRUE),
