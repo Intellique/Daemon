@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 15 Jan 2013 20:59:11 +0100                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Tue, 29 Jan 2013 22:34:16 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -74,7 +74,7 @@ static struct st_job_driver st_job_restore_archive_driver = {
 
 
 static bool st_job_restore_archive_check(struct st_job * job) {
-	job->sched_status = st_job_status_idle;
+	job->sched_status = st_job_status_scheduled;
 	job->repetition = 1;
 	return true;
 }

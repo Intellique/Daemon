@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 17 Jan 2013 10:29:47 +0100                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Tue, 29 Jan 2013 22:25:15 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -119,6 +119,8 @@ static int st_db_postgresql_start_transaction(struct st_database_connection * co
 static int st_db_postgresql_sync_plugin_checksum(struct st_database_connection * connect, const char * name);
 static int st_db_postgresql_sync_plugin_job(struct st_database_connection * connect, const char * plugin);
 
+static bool st_db_postgresql_changer_is_enabled(struct st_database_connection * connect, struct st_changer * changer);
+static bool st_db_postgresql_drive_is_enabled(struct st_database_connection * connect, struct st_drive * drive);
 static char * st_db_postgresql_get_host(struct st_database_connection * connect);
 static int st_db_postgresql_is_changer_contain_drive(struct st_database_connection * connect, struct st_changer * changer, struct st_drive * drive);
 static int st_db_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer);
@@ -170,6 +172,8 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.sync_plugin_checksum = st_db_postgresql_sync_plugin_checksum,
 	.sync_plugin_job      = st_db_postgresql_sync_plugin_job,
 
+	.changer_is_enabled       = st_db_postgresql_changer_is_enabled,
+	.drive_is_enabled         = st_db_postgresql_drive_is_enabled,
 	.is_changer_contain_drive = st_db_postgresql_is_changer_contain_drive,
 	.sync_changer             = st_db_postgresql_sync_changer,
 	.sync_drive               = st_db_postgresql_sync_drive,
@@ -460,6 +464,54 @@ static int st_db_postgresql_sync_plugin_job(struct st_database_connection * conn
 	return status == PGRES_FATAL_ERROR;
 }
 
+
+static bool st_db_postgresql_changer_is_enabled(struct st_database_connection * connect, struct st_changer * changer) {
+	if (connect == NULL || changer == NULL)
+		return false;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	const char * query = "select_enabled_from_changer";
+	st_db_postgresql_prepare(self, query, "SELECT enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 LIMIT 1");
+
+	const char * param[] = { changer->model, changer->vendor, changer->serial_number };
+	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	bool enabled = false;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		st_db_postgresql_get_bool(result, 0, 0, &enabled);
+	else
+		enabled = true;
+
+	PQclear(result);
+	return changer->enabled = enabled;
+}
+
+static bool st_db_postgresql_drive_is_enabled(struct st_database_connection * connect, struct st_drive * drive) {
+	if (connect == NULL || drive == NULL)
+		return false;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	const char * query = "select_enabled_from_drive";
+	st_db_postgresql_prepare(self, query, "SELECT enable FROM drive WHERE model = $1 AND vendor = $2 AND serialnumber = $3 LIMIT 1");
+
+	const char * param[] = { drive->model, drive->vendor, drive->serial_number };
+	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	bool enabled = false;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		st_db_postgresql_get_bool(result, 0, 0, &enabled);
+	else
+		enabled = true;
+
+	PQclear(result);
+	return drive->enabled = enabled;
+}
 
 static char * st_db_postgresql_get_host(struct st_database_connection * connect) {
 	struct st_db_postgresql_connection_private * self = connect->data;
@@ -912,7 +964,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 	char * mediaid = NULL, * mediaformatid = NULL, * poolid = NULL;
 	if (media_data->id < 0 && media->medium_serial_number != NULL) {
 		const char * query = "select_media_by_medium_serial_number";
-		st_db_postgresql_prepare(self, query, "SELECT id, uuid, label, name, firstused, usebefore, loadcount, readcount, writecount, type, blocksize, tapeformat, pool FROM tape WHERE mediumserialnumber = $1 FOR UPDATE NOWAIT");
+		st_db_postgresql_prepare(self, query, "SELECT id, uuid, label, name, firstused, usebefore, loadcount, readcount, writecount, type, blocksize, mediaformat, pool FROM media WHERE mediumserialnumber = $1 FOR UPDATE NOWAIT");
 
 		const char * param[] = { media->medium_serial_number };
 		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -955,7 +1007,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 
 	if (media_data->id < 0 && media->uuid[0] != '\0') {
 		const char * query = "select_media_by_uuid";
-		st_db_postgresql_prepare(self, query, "SELECT id, label, name, firstused, usebefore, loadcount, readcount, writecount, type, blocksize, tapeformat, pool FROM tape WHERE uuid = $1 FOR UPDATE NOWAIT");
+		st_db_postgresql_prepare(self, query, "SELECT id, label, name, firstused, usebefore, loadcount, readcount, writecount, type, blocksize, mediaformat, pool FROM media WHERE uuid = $1 FOR UPDATE NOWAIT");
 
 		const char * param[] = { media->uuid };
 		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -997,7 +1049,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 
 	if (media_data->id < 0 && media->label != NULL) {
 		const char * query = "select_media_by_label";
-		st_db_postgresql_prepare(self, query, "SELECT id, name, firstused, usebefore, loadcount, readcount, writecount, type, blocksize, tapeformat, pool FROM tape WHERE label = $1 FOR UPDATE NOWAIT");
+		st_db_postgresql_prepare(self, query, "SELECT id, name, firstused, usebefore, loadcount, readcount, writecount, type, blocksize, mediaformat, pool FROM media WHERE label = $1 FOR UPDATE NOWAIT");
 
 		const char * param[] = { media->label };
 		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -1038,7 +1090,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 
 	if (media_data->id < 0 && mediaformatid == NULL) {
 		const char * query = "select_media_format_by_density";
-		st_db_postgresql_prepare(self, query, "SELECT id FROM tapeformat WHERE densitycode = $1 AND mode = $2 FOR SHARE NOWAIT");
+		st_db_postgresql_prepare(self, query, "SELECT id FROM mediaformat WHERE densitycode = $1 AND mode = $2 FOR SHARE NOWAIT");
 
 		char * densitycode = NULL;
 		asprintf(&densitycode, "%hhu", media->format->density_code);
@@ -1077,7 +1129,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 
 	if (media_data->id < 0) {
 		const char * query = "insert_media";
-		st_db_postgresql_prepare(self, query, "INSERT INTO tape(uuid, label, mediumserialnumber, name, status, location, firstused, usebefore, loadcount, readcount, writecount, type, nbfiles, blocksize, availableblock, totalblock, tapeformat, pool) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id");
+		st_db_postgresql_prepare(self, query, "INSERT INTO media(uuid, label, mediumserialnumber, name, status, location, firstused, usebefore, loadcount, readcount, writecount, type, nbfiles, blocksize, availableblock, totalblock, mediaformat, pool) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id");
 
 		char buffer_first_used[32];
 		char buffer_use_before[32];
@@ -1089,13 +1141,13 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		localtime_r(&media->use_before, &tv);
 		strftime(buffer_use_before, 32, "%F %T", &tv);
 
-		char * load, * read, * write, * nbfiles, * blocksize, * availableblock, * totalblock;
+		char * load, * read, * write, * nbfiles, * blocksize, * freeblock, * totalblock;
 		asprintf(&load, "%ld", media->load_count);
 		asprintf(&read, "%ld", media->read_count);
 		asprintf(&write, "%ld", media->write_count);
 		asprintf(&nbfiles, "%u", media->nb_volumes);
 		asprintf(&blocksize, "%zd", media->block_size);
-		asprintf(&availableblock, "%zd", media->available_block);
+		asprintf(&freeblock, "%zd", media->free_block);
 		asprintf(&totalblock, "%zd", media->total_block);
 
 		const char * param[] = {
@@ -1105,7 +1157,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 			st_media_location_to_string(media->location),
 			buffer_first_used, buffer_use_before,
 			load, read, write, st_media_type_to_string(media->type),
-			nbfiles, blocksize, availableblock, totalblock,
+			nbfiles, blocksize, freeblock, totalblock,
 			mediaformatid, poolid
 		};
 		PGresult * result = PQexecPrepared(self->connect, query, 18, param, NULL, NULL, 0);
@@ -1135,7 +1187,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 			locked = false;
 
 			const char * query = "select_media_before_update";
-			st_db_postgresql_prepare(self, query, "SELECT t.name, t.label, p.uuid FROM tape t LEFT JOIN pool p ON t.pool = p.id WHERE t.id = $1");
+			st_db_postgresql_prepare(self, query, "SELECT m.name, m.label, p.uuid FROM media m LEFT JOIN pool p ON m.pool = p.id WHERE m.id = $1");
 			const char * param1[] = { mediaid };
 
 			PGresult * result = PQexecPrepared(self->connect, query, 1, param1, NULL, NULL, 0);
@@ -1170,21 +1222,21 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		}
 
 		const char * query = "update_media";
-		st_db_postgresql_prepare(self, query, "UPDATE tape SET uuid = $1, name = $2, status = $3, location = $4, loadcount = $5, readcount = $6, writecount = $7, nbfiles = $8, blocksize = $9, availableblock = $10, totalblock = $11, pool = $12, locked = $13 WHERE id = $14");
+		st_db_postgresql_prepare(self, query, "UPDATE media SET uuid = $1, name = $2, status = $3, location = $4, loadcount = $5, readcount = $6, writecount = $7, nbfiles = $8, blocksize = $9, availableblock = $10, totalblock = $11, pool = $12, locked = $13 WHERE id = $14");
 
-		char * load, * read, * write, * nbfiles, * blocksize, * availableblock, * totalblock;
+		char * load, * read, * write, * nbfiles, * blocksize, * freeblock, * totalblock;
 		asprintf(&load, "%ld", media->load_count);
 		asprintf(&read, "%ld", media->read_count);
 		asprintf(&write, "%ld", media->write_count);
 		asprintf(&nbfiles, "%u", media->nb_volumes);
 		asprintf(&blocksize, "%zd", media->block_size);
-		asprintf(&availableblock, "%zd", media->available_block);
+		asprintf(&freeblock, "%zd", media->free_block);
 		asprintf(&totalblock, "%zd", media->total_block);
 
 		const char * param2[] = {
 			*media->uuid ? media->uuid : NULL, media->name, st_media_status_to_string(media->status),
 			st_media_location_to_string(media->location),
-			load, read, write, nbfiles, blocksize, availableblock, totalblock,
+			load, read, write, nbfiles, blocksize, freeblock, totalblock,
 			poolid, locked ? "true" : "false", mediaid
 		};
 		PGresult * result = PQexecPrepared(self->connect, query, 14, param2, NULL, NULL, 0);
@@ -1199,7 +1251,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		free(write);
 		free(nbfiles);
 		free(blocksize);
-		free(availableblock);
+		free(freeblock);
 		free(totalblock);
 		free(mediaid);
 		free(mediaformatid);
@@ -1236,7 +1288,7 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 
 	if (slot_data->id >= 0) {
 		const char * query = "select_slot_by_id";
-		st_db_postgresql_prepare(self, query, "SELECT tape FROM changerslot WHERE id = $1 FOR UPDATE NOWAIT");
+		st_db_postgresql_prepare(self, query, "SELECT media FROM changerslot WHERE id = $1 FOR UPDATE NOWAIT");
 
 		const char * param[] = { slot_id };
 		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -1256,7 +1308,7 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 		}
 	} else {
 		const char * query = "select_slot_by_index_changer";
-		st_db_postgresql_prepare(self, query, "SELECT id, tape FROM changerslot WHERE index = $1 AND changer = $2 FOR UPDATE NOWAIT");
+		st_db_postgresql_prepare(self, query, "SELECT id, media FROM changerslot WHERE index = $1 AND changer = $2 FOR UPDATE NOWAIT");
 
 		char * slot_index = NULL;
 		asprintf(&slot_index, "%td", slot - slot->changer->slots);
@@ -1289,7 +1341,7 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 
 		if (media_data == NULL || mediaid != media_data->id) {
 			const char * query = "update_media_offline";
-			st_db_postgresql_prepare(self, query, "UPDATE tape SET location = 'offline' WHERE id = $1");
+			st_db_postgresql_prepare(self, query, "UPDATE media SET location = 'offline' WHERE id = $1");
 
 			const char * param[] = { media_id };
 			PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -1310,7 +1362,7 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 
 	if (slot_data->id >= 0) {
 		const char * query = "update_slot";
-		st_db_postgresql_prepare(self, query, "UPDATE changerslot SET tape = $1 WHERE id = $2");
+		st_db_postgresql_prepare(self, query, "UPDATE changerslot SET media = $1 WHERE id = $2");
 
 		const char * param[] = { media_id, slot_id };
 		PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
@@ -1327,7 +1379,7 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 		return status == PGRES_FATAL_ERROR;
 	} else {
 		const char * query = "insert_slot";
-		st_db_postgresql_prepare(self, query, "INSERT INTO changerslot(index, changer, tape, type) VALUES ($1, $2, $3, $4) RETURNING id");
+		st_db_postgresql_prepare(self, query, "INSERT INTO changerslot(index, changer, media, type) VALUES ($1, $2, $3, $4) RETURNING id");
 
 		char * slot_index = NULL;
 		asprintf(&slot_index, "%td", slot - slot->changer->slots);
@@ -1372,7 +1424,7 @@ static ssize_t st_db_postgresql_get_available_size_of_offline_media_from_pool(st
 	struct st_db_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_available_offline_size_by_pool";
-	st_db_postgresql_prepare(self, query, "SELECT SUM(tf.capacity - t.endpos * t.blocksize::BIGINT) AS total FROM tape t LEFT JOIN tapeformat tf ON t.tapeformat = tf.id WHERE location = 'offline' AND pool IN (SELECT id FROM pool WHERE uuid = $1 LIMIT 1)");
+	st_db_postgresql_prepare(self, query, "SELECT SUM(m.freeblock * m.blocksize::BIGINT) AS total FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id WHERE location = 'offline' AND pool IN (SELECT id FROM pool WHERE uuid = $1 LIMIT 1)");
 
 	const char * param[] = { pool->uuid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -1399,7 +1451,7 @@ static struct st_media * st_db_postgresql_get_media(struct st_database_connectio
 
 	if (job != NULL) {
 		query = "select_media_by_job";
-		st_db_postgresql_prepare(self, query, "SELECT t.id, t.uuid, label, mediumserialnumber, t.name, t.status, location, firstused, usebefore, loadcount, readcount, writecount, t.blocksize, availableblock, totalblock, t.type, nbfiles, densitycode, mode, p.uuid FROM tape t LEFT JOIN tapeformat tf ON t.tapeformat = tf.id LEFT JOIN pool p ON t.pool = p.id LEFT JOIN job j ON j.tape = t.id WHERE j.id = $1 LIMIT 1");
+		st_db_postgresql_prepare(self, query, "SELECT m.id, m.uuid, label, mediumserialnumber, m.name, m.status, location, firstused, usebefore, loadcount, readcount, writecount, m.blocksize, freeblock, totalblock, m.type, nbfiles, densitycode, mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id LEFT JOIN job j ON j.media = m.id WHERE j.id = $1 LIMIT 1");
 
 		struct st_db_postgresql_job_data * job_data = job->db_data;
 		char * jobid;
@@ -1411,19 +1463,19 @@ static struct st_media * st_db_postgresql_get_media(struct st_database_connectio
 		free(jobid);
 	} else if (uuid != NULL) {
 		query = "select_media_by_uuid";
-		st_db_postgresql_prepare(self, query, "SELECT t.id, t.uuid, label, mediumserialnumber, t.name, status, location, firstused, usebefore, loadcount, readcount, writecount, t.blocksize, availableblock, totalblock, type, nbfiles, densitycode, mode, p.uuid FROM tape t LEFT JOIN tapeformat tf ON t.tapeformat = tf.id LEFT JOIN pool p ON t.pool = p.id WHERE uuid = $1 LIMIT 1");
+		st_db_postgresql_prepare(self, query, "SELECT m.id, m.uuid, label, mediumserialnumber, m.name, m.status, location, firstused, usebefore, loadcount, readcount, writecount, m.blocksize, freeblock, totalblock, m.type, nbfiles, densitycode, mode, p.uuid FROM media t LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE uuid = $1 LIMIT 1");
 
 		const char * param[] = { uuid };
 		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 	} else if (medium_serial_number != NULL) {
 		query = "select_media_by_medium_serial_number";
-		st_db_postgresql_prepare(self, query, "SELECT t.id, t.uuid, label, mediumserialnumber, t.name, status, location, firstused, usebefore, loadcount, readcount, writecount, t.blocksize, availableblock, totalblock, type, nbfiles, densitycode, mode, p.uuid FROM tape t LEFT JOIN tapeformat tf ON t.tapeformat = tf.id LEFT JOIN pool p ON t.pool = p.id WHERE mediumserialnumber = $1 LIMIT 1");
+		st_db_postgresql_prepare(self, query, "SELECT m.id, m.uuid, label, mediumserialnumber, m.name, m.status, location, firstused, usebefore, loadcount, readcount, writecount, m.blocksize, freeblock, totalblock, m.type, nbfiles, densitycode, mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE mediumserialnumber = $1 LIMIT 1");
 
 		const char * param[] = { medium_serial_number };
 		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 	} else {
 		query = "select_media_by_label";
-		st_db_postgresql_prepare(self, query, "SELECT t.id, t.uuid, label, mediumserialnumber, t.name, status, location, firstused, usebefore, loadcount, readcount, writecount, t.blocksize, availableblock, totalblock, type, nbfiles, densitycode, mode, p.uuid FROM tape t LEFT JOIN tapeformat tf ON t.tapeformat = tf.id LEFT JOIN pool p ON t.pool = p.id WHERE label = $1 LIMIT 1");
+		st_db_postgresql_prepare(self, query, "SELECT m.id, m.uuid, label, mediumserialnumber, m.name, m.status, location, firstused, usebefore, loadcount, readcount, writecount, m.blocksize, freeblock, totalblock, m.type, nbfiles, densitycode, mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE label = $1 LIMIT 1");
 
 		const char * param[] = { label };
 		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -1458,7 +1510,7 @@ static struct st_media * st_db_postgresql_get_media(struct st_database_connectio
 		// st_db_postgresql_get_long(result, 0, 12, &media->operation_count);
 
 		st_db_postgresql_get_ssize(result, 0, 12, &media->block_size);
-		st_db_postgresql_get_ssize(result, 0, 13, &media->available_block);
+		st_db_postgresql_get_ssize(result, 0, 13, &media->free_block);
 		st_db_postgresql_get_ssize(result, 0, 14, &media->total_block);
 
 		media->type = st_media_string_to_type(PQgetvalue(result, 0, 15));
@@ -1486,7 +1538,7 @@ static int st_db_postgresql_get_media_format(struct st_database_connection * con
 	asprintf(&c_density_code, "%d", density_code);
 
 	const char * query = "select_media_format";
-	st_db_postgresql_prepare(self, query, "SELECT name, datatype, maxloadcount, maxreadcount, maxwritecount, maxopcount, EXTRACT('epoch' FROM lifespan), capacity, blocksize, supportpartition, supportmam FROM tapeformat WHERE densitycode = $1 AND mode = $2 LIMIT 1");
+	st_db_postgresql_prepare(self, query, "SELECT name, datatype, maxloadcount, maxreadcount, maxwritecount, maxopcount, EXTRACT('epoch' FROM lifespan), capacity, blocksize, supportpartition, supportmam FROM mediaformat WHERE densitycode = $1 AND mode = $2 LIMIT 1");
 
 	const char * param[] = { c_density_code, st_media_format_mode_to_string(mode) };
 	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
@@ -1533,7 +1585,7 @@ static struct st_pool * st_db_postgresql_get_pool(struct st_database_connection 
 
 	if (archive != NULL) {
 		query = "select_pool_by_archive";
-		st_db_postgresql_prepare(self, query, "SELECT DISTINCT p.uuid, p.name, growable, rewritable, densitycode, mode, deleted FROM pool p LEFT JOIN tapeformat tf ON p.tapeformat = tf.id LEFT JOIN tape t ON t.pool = p.id LEFT JOIN archivevolume av ON av.tape = t.id WHERE av.archive = $1");
+		st_db_postgresql_prepare(self, query, "SELECT DISTINCT p.uuid, p.name, growable, rewritable, densitycode, mode, deleted FROM pool p LEFT JOIN mediaformat mf ON p.mediaformat = mf.id LEFT JOIN media m ON m.pool = p.id LEFT JOIN archivevolume av ON av.media = m.id WHERE av.archive = $1");
 
 		struct st_db_postgresql_archive_data * archive_data = archive->db_data;
 		char * archiveid;
@@ -1545,7 +1597,7 @@ static struct st_pool * st_db_postgresql_get_pool(struct st_database_connection 
 		free(archiveid);
 	} else if (job != NULL) {
 		query = "select_pool_by_job";
-		st_db_postgresql_prepare(self, query, "SELECT uuid, p.name, growable, rewritable, densitycode, mode, deleted FROM job j RIGHT JOIN pool p ON j.pool = p.id LEFT JOIN tapeformat tf ON p.tapeformat = tf.id WHERE j.id = $1 LIMIT 1");
+		st_db_postgresql_prepare(self, query, "SELECT uuid, p.name, growable, rewritable, densitycode, mode, deleted FROM job j RIGHT JOIN pool p ON j.pool = p.id LEFT JOIN mediaformat mf ON p.mediaformat = mf.id WHERE j.id = $1 LIMIT 1");
 
 		struct st_db_postgresql_job_data * job_data = job->db_data;
 		char * jobid;
@@ -1557,7 +1609,7 @@ static struct st_pool * st_db_postgresql_get_pool(struct st_database_connection 
 		free(jobid);
 	} else {
 		query = "select_pool_by_uuid";
-		st_db_postgresql_prepare(self, query, "SELECT uuid, p.name, growable, rewritable, densitycode, mode, deleted FROM pool p LEFT JOIN tapeformat tf ON p.tapeformat = tf.id WHERE uuid = $1 LIMIT 1");
+		st_db_postgresql_prepare(self, query, "SELECT uuid, p.name, growable, rewritable, densitycode, mode, deleted FROM pool p LEFT JOIN mediaformat mf ON p.mediaformat = mf.id WHERE uuid = $1 LIMIT 1");
 
 		const char * param[] = { uuid };
 		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -1811,7 +1863,7 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 
 			st_db_postgresql_get_float(result, i, 5, &job->done);
 			job->db_status = st_job_string_to_status(PQgetvalue(result, i, 6));
-			job->sched_status = st_job_status_idle;
+			job->sched_status = st_job_status_scheduled;
 			job->updated = time(NULL);
 
 			// login
@@ -2303,10 +2355,10 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 
 	if (st_db_postgresql_has_selected_files_by_job(connect, job)) {
 		query = "select_archive_volumes_by_job_with_selected_files";
-		st_db_postgresql_prepare(self, query, "SELECT DISTINCT av.id, av.sequence, av.size, t.uuid, av.tapeposition FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id LEFT JOIN tape t ON av.tape = t.id, (SELECT DISTINCT path, CHAR_LENGTH(path) AS length FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1)) AS sf WHERE j.id = $1 AND SUBSTR(af.name, 0, sf.length + 1) = sf.path ORDER BY sequence");
+		st_db_postgresql_prepare(self, query, "SELECT DISTINCT av.id, av.sequence, av.size, m.uuid, av.mediaposition FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id LEFT JOIN media m ON av.media = m.id, (SELECT DISTINCT path, CHAR_LENGTH(path) AS length FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1)) AS sf WHERE j.id = $1 AND SUBSTR(af.name, 0, sf.length + 1) = sf.path ORDER BY sequence");
 	} else {
 		query = "select_archive_volumes_by_job";
-		st_db_postgresql_prepare(self, query, "SELECT av.id, av.sequence, av.size, t.uuid, av.tapeposition FROM job j LEFT JOIN archive a ON j.archive = a.id LEFT JOIN archivevolume av ON a.id = av.archive LEFT JOIN tape t ON av.tape = t.id WHERE j.id = $1 ORDER BY sequence");
+		st_db_postgresql_prepare(self, query, "SELECT av.id, av.sequence, av.size, m.uuid, av.mediaposition FROM job j LEFT JOIN archive a ON j.archive = a.id LEFT JOIN archivevolume av ON a.id = av.archive LEFT JOIN media m ON av.media = m.id WHERE j.id = $1 ORDER BY sequence");
 	}
 
 	result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -2759,7 +2811,7 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 
 	if (archive_volume_data->id < 0) {
 		const char * query = "insert_archive_volume";
-		st_db_postgresql_prepare(self, query, "INSERT INTO archivevolume(sequence, size, ctime, endtime, archive, tape, tapeposition) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id");
+		st_db_postgresql_prepare(self, query, "INSERT INTO archivevolume(sequence, size, ctime, endtime, archive, media, mediaposition) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id");
 
 		char buffer_ctime[32];
 		char buffer_endtime[32];

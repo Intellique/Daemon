@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Sep 2012 23:03:05 +0200                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Tue, 29 Jan 2013 19:56:11 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_USER_H__
@@ -39,6 +39,7 @@ struct st_user {
 	char * salt;
 	char * fullname;
 	char * email;
+	char * home_directory;
 
 	bool is_admin;
 	bool can_archive;

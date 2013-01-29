@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 17 Jan 2013 20:13:51 +0100                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Tue, 29 Jan 2013 12:40:36 +0100                         *
 \*************************************************************************/
 
 // open
@@ -167,7 +167,7 @@ ssize_t st_changer_get_online_size(struct st_pool * pool) {
 				continue;
 
 			if (media != NULL)
-				total += media->available_block * media->block_size;
+				total += media->free_block * media->block_size;
 		}
 	}
 
@@ -223,7 +223,7 @@ int st_changer_setup(void) {
 		drives[i].device = strdup(device);
 		drives[i].scsi_device = strdup(scsi_device);
 		drives[i].status = st_drive_unknown;
-		drives[i].enabled = 1;
+		drives[i].enabled = true;
 
 		drives[i].model = NULL;
 		drives[i].vendor = NULL;
@@ -269,13 +269,13 @@ int st_changer_setup(void) {
 
 		st_changers[i].device = strdup(device);
 		st_changers[i].status = st_changer_unknown;
-		st_changers[i].enabled = 1;
+		st_changers[i].enabled = true;
 
 		st_changers[i].model = NULL;
 		st_changers[i].vendor = NULL;
 		st_changers[i].revision = NULL;
 		st_changers[i].serial_number = NULL;
-		st_changers[i].barcode = 0;
+		st_changers[i].barcode = false;
 
 		st_changers[i].drives = NULL;
 		st_changers[i].nb_drives = 0;
@@ -436,11 +436,44 @@ int st_changer_setup(void) {
 	if (drives)
 		free(drives);
 
-	for (i = 0; i < st_nb_real_changers; i++)
-		st_scsi_changer_setup(st_changers + i);
+	// check enabled devices
+	struct st_database * db = st_database_get_default_driver();
+	struct st_database_config * config = NULL;
+	struct st_database_connection * connect = NULL;
 
-	for (i = st_nb_real_changers; i < st_nb_fake_changers + st_nb_real_changers; i++)
-		st_standalone_drive_setup(st_changers + i);
+	if (db != NULL)
+		config = db->ops->get_default_config();
+	if (config != NULL)
+		connect = config->ops->connect(config);
+
+	for (i = 0; i < st_nb_real_changers + st_nb_real_changers && connect != NULL; i++) {
+		struct st_changer * ch = st_changers + i;
+
+		if (!connect->ops->changer_is_enabled(connect, ch))
+			continue;
+
+		unsigned int j;
+		for (j = 0; j < ch->nb_drives; j++)
+			connect->ops->drive_is_enabled(connect, ch->drives + j);
+	}
+
+	if (connect != NULL)
+		connect->ops->free(connect);
+
+	// start setup of enabled devices
+	for (i = 0; i < st_nb_real_changers; i++) {
+		struct st_changer * ch = st_changers + i;
+
+		if (ch->enabled)
+			st_scsi_changer_setup(st_changers + i);
+	}
+
+	for (i = st_nb_real_changers; i < st_nb_fake_changers + st_nb_real_changers; i++) {
+		struct st_changer * ch = st_changers + i;
+
+		if (ch->enabled)
+			st_standalone_drive_setup(st_changers + i);
+	}
 
 	return 0;
 }

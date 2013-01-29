@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 22:43:24 +0100                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Tue, 29 Jan 2013 19:46:27 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -57,14 +57,14 @@ static const struct st_job_status2 {
 	char * name;
 	enum st_job_status status;
 } st_job_status[] = {
-	{ "disable",  st_job_status_disable },
-	{ "finished", st_job_status_finished },
-	{ "error",    st_job_status_error },
-	{ "idle",     st_job_status_idle },
-	{ "pause",    st_job_status_pause },
-	{ "running",  st_job_status_running },
-	{ "stopped",  st_job_status_stopped },
-	{ "waiting",  st_job_status_waiting },
+	{ "disable",   st_job_status_disable },
+	{ "error",     st_job_status_error },
+	{ "finished",  st_job_status_finished },
+	{ "pause",     st_job_status_pause },
+	{ "running",   st_job_status_running },
+	{ "scheduled", st_job_status_scheduled },
+	{ "stopped",   st_job_status_stopped },
+	{ "waiting",   st_job_status_waiting },
 
 	{ "unknown", st_job_status_unknown },
 };
@@ -191,8 +191,7 @@ void st_job_sync_plugins(struct st_database_connection * connection) {
 		return;
 
 	glob_t gl;
-	gl.gl_offs = 0;
-	glob(MODULE_PATH "/libjob-*.so", GLOB_DOOFFS, NULL, &gl);
+	glob(MODULE_PATH "/libjob-*.so", 0, NULL, &gl);
 
 	unsigned int i;
 	for (i = 0; i < gl.gl_pathc; i++) {

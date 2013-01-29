@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 13 Dec 2012 22:25:06 +0100                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Tue, 29 Jan 2013 22:17:17 +0100                         *
 \*************************************************************************/
 
 // json_array, json_array_append_new, json_decref, json_dumps, json_integer,
@@ -34,6 +34,8 @@
 #include <string.h>
 // localtime_r, strftime
 #include <time.h>
+// uname
+#include <sys/utsname.h>
 
 #include <libstone/library/archive.h>
 #include <libstone/user.h>
@@ -41,14 +43,18 @@
 
 #include "stone.version"
 
+static struct utsname st_io_json_uname;
+
 static json_t * st_io_json_archive(struct st_archive * archive, char ** checksums);
 static json_t * st_io_json_file(struct st_archive_file * file, char ** checksums);
 static json_t * st_io_json_volume(struct st_archive_volume * volume, char ** checksums);
+static void st_io_json_volume_init(void) __attribute__((constructor));
 
 
 static json_t * st_io_json_archive(struct st_archive * archive, char ** checksums) {
 	json_t * jarchive = json_object();
 
+	json_object_set_new(jarchive, "uuid", json_string(archive->uuid));
 	json_object_set_new(jarchive, "name", json_string(archive->name));
 
 	char ctime[32];
@@ -111,6 +117,7 @@ static json_t * st_io_json_file(struct st_archive_file * file, char ** checksums
 static json_t * st_io_json_volume(struct st_archive_volume * volume, char ** checksums) {
 	json_t * jvolume = json_object();
 
+	json_object_set_new(jvolume, "host", json_string(st_io_json_uname.nodename));
 	json_object_set_new(jvolume, "sequence", json_integer(volume->sequence));
 	json_object_set_new(jvolume, "size", json_integer(volume->size));
 
@@ -166,5 +173,9 @@ ssize_t st_io_json_writer(struct st_stream_writer * writer, struct st_archive * 
 	json_decref(root);
 
 	return nb_write;
+}
+
+static void st_io_json_volume_init() {
+	uname(&st_io_json_uname);
 }
 

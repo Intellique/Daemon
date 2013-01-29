@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 23:00:23 +0100                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Tue, 29 Jan 2013 12:42:12 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -382,10 +382,10 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 						slot = iter->ops->next(iter);
 
 						struct st_media * media = slot->media;
-						if (self->archive_size - self->total_done < media->available_block * media->block_size)
+						if (self->archive_size - self->total_done < media->free_block * media->block_size)
 							break;
 
-						if (10 * media->available_block < media->total_block)
+						if (10 * media->free_block < media->total_block)
 							break;
 
 						slot->lock->ops->unlock(slot->lock);

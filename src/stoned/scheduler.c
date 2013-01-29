@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 20:39:32 +0100                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Tue, 29 Jan 2013 21:13:18 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -91,7 +91,7 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 		for (i = 0; i < nb_jobs; i++) {
 			struct st_job * job = jobs[i];
 
-			if (job->repetition != 0 && job->next_start < update && job->db_status == st_job_status_idle && job->sched_status == st_job_status_idle) {
+			if (job->repetition != 0 && job->next_start < update && job->db_status == st_job_status_scheduled && job->sched_status == st_job_status_scheduled) {
 				connection->ops->sync_user(connection, job->user);
 
 				job->driver->new_job(job, connection);
@@ -156,7 +156,7 @@ static void st_sched_run_job(void * arg) {
 	}
 
 	if (job->sched_status == st_job_status_running)
-		job->sched_status = job->repetition != 0 ? st_job_status_idle : st_job_status_finished;
+		job->sched_status = job->repetition != 0 ? st_job_status_scheduled : st_job_status_finished;
 
 	st_log_write_all(st_log_level_info, st_log_type_scheduler, "Job %s finished, with exited code = %d", job->name, status);
 }

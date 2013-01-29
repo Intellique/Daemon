@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 11 Dec 2012 21:05:05 +0100                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Tue, 29 Jan 2013 16:37:30 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -54,6 +54,7 @@ enum st_archive_file_type {
 };
 
 struct st_archive {
+	char uuid[37];
 	char * name;
 	time_t ctime;
 	time_t endtime;

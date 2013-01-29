@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 18 Jan 2013 09:49:03 +0100                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Tue, 29 Jan 2013 22:18:16 +0100                         *
 \*************************************************************************/
 
 // htobe16
@@ -1485,9 +1485,9 @@ int st_scsi_tape_read_mam(int fd, struct st_media * media) {
 		char * space;
 		switch (attr->attribute_identifier) {
 			case scsi_mam_remaining_capacity:
-				media->available_block = be64toh(attr->attribute_value.be64);
-				media->available_block <<= 10;
-				media->available_block /= (media->block_size >> 10);
+				media->free_block = be64toh(attr->attribute_value.be64);
+				media->free_block <<= 10;
+				media->free_block /= (media->block_size >> 10);
 				break;
 
 			case scsi_mam_load_count:
@@ -1693,8 +1693,8 @@ int st_scsi_tape_size_available(int fd, struct st_media * media) {
 		result.values[i].value = be32toh(result.values[i].value);
 	}
 
-	media->available_block = result.values[0].value << 10;
-	media->available_block /= (media->block_size >> 10);
+	media->free_block = result.values[0].value << 10;
+	media->free_block /= (media->block_size >> 10);
 
 	media->total_block = result.values[2].value << 10;
 	media->total_block /= (media->block_size >> 10);

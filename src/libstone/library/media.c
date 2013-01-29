@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 15 Jan 2013 22:43:42 +0100                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Tue, 29 Jan 2013 16:16:37 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -134,6 +134,17 @@ static const struct st_media_type2 {
 	{ "unknown", st_media_type_unknown },
 };
 
+static const struct st_pool_unbreakable_level2 {
+	char * name;
+	enum st_pool_unbreakable_level level;
+} st_pool_unbreakable_levels[] = {
+	{ "archive", st_pool_unbreakable_level_archive },
+	{ "file",    st_pool_unbreakable_level_file },
+	{ "none",    st_pool_unbreakable_level_none },
+
+	{ "unknown", st_pool_unbreakable_level_unknown },
+};
+
 
 const char * st_media_format_data_to_string(enum st_media_format_data_type type) {
 	unsigned int i;
@@ -238,6 +249,27 @@ enum st_media_type st_media_string_to_type(const char * type) {
 			return st_media_types[i].type;
 
 	return st_media_types[i].type;
+}
+
+const char * st_pool_unbreakable_level_to_string(enum st_pool_unbreakable_level level) {
+	unsigned int i;
+	for (i = 0; st_pool_unbreakable_levels[i].level != st_pool_unbreakable_level_unknown; i++)
+		if (st_pool_unbreakable_levels[i].level == level)
+			return st_pool_unbreakable_levels[i].name;
+
+	return st_pool_unbreakable_levels[i].name;
+}
+
+enum st_pool_unbreakable_level st_pool_unbreakable_string_to_level(const char * level) {
+	if (level == NULL)
+		return st_pool_unbreakable_level_unknown;
+
+	unsigned int i;
+	for (i = 0; st_pool_unbreakable_levels[i].level != st_pool_unbreakable_level_unknown; i++)
+		if (!strcasecmp(level, st_pool_unbreakable_levels[i].name))
+			return st_pool_unbreakable_levels[i].level;
+
+	return st_pool_unbreakable_levels[i].level;
 }
 
 
@@ -382,7 +414,7 @@ ssize_t st_media_get_available_size(struct st_media * media) {
 	if (media == NULL || media->format == NULL)
 		return 0;
 
-	return media->available_block * media->block_size;
+	return media->free_block * media->block_size;
 }
 
 struct st_media * st_media_get_by_job(struct st_job * job, struct st_database_connection * connection) {

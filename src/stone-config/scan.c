@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 12 Oct 2012 12:53:33 +0200                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Fri, 25 Jan 2013 09:52:18 +0100                         *
 \*************************************************************************/
 
 // glob, globfree
@@ -44,8 +44,7 @@
 
 int stcfg_scan(void) {
 	glob_t gl;
-	gl.gl_offs = 0;
-	glob("/sys/class/scsi_device/*/device/scsi_tape", GLOB_DOOFFS, NULL, &gl);
+	glob("/sys/class/scsi_device/*/device/scsi_tape", 0, NULL, &gl);
 
 	if (gl.gl_pathc == 0) {
 		st_log_write_all(st_log_level_error, st_log_type_user_message, "Panic: There is drive found, exit now !!!");
@@ -93,6 +92,8 @@ int stcfg_scan(void) {
 		drives[i].device = strdup(device);
 		drives[i].scsi_device = strdup(scsi_device);
 		drives[i].status = st_drive_unknown;
+		drives[i].enabled = true;
+
 		drives[i].model = NULL;
 		drives[i].vendor = NULL;
 		drives[i].revision = NULL;
@@ -106,8 +107,7 @@ int stcfg_scan(void) {
 	}
 	globfree(&gl);
 
-	gl.gl_offs = 0;
-	glob("/sys/class/scsi_changer/*/device", GLOB_DOOFFS, NULL, &gl);
+	glob("/sys/class/scsi_changer/*/device", 0, NULL, &gl);
 
 	/**
 	 * In the worst case, we have nb_drives changers,
@@ -139,11 +139,13 @@ int stcfg_scan(void) {
 
 		changers[i].device = strdup(device);
 		changers[i].status = st_changer_unknown;
+		changers[i].enabled = true;
+
 		changers[i].model = NULL;
 		changers[i].vendor = NULL;
 		changers[i].revision = NULL;
 		changers[i].serial_number = NULL;
-		changers[i].barcode = 0;
+		changers[i].barcode = false;
 
 		changers[i].drives = NULL;
 		changers[i].nb_drives = 0;
@@ -186,7 +188,7 @@ int stcfg_scan(void) {
 	for (i = nb_real_changers; i < nb_drives; i++) {
 		unsigned j;
 		for (j = 0; j < nb_drives; j++) {
-			if (!drives[j].changer) {
+			if (drives[j].changer == NULL) {
 				drives[j].changer = changers + i;
 
 				changers[i].device = strdup("");
@@ -195,7 +197,7 @@ int stcfg_scan(void) {
 				changers[i].vendor = strdup(drives[j].vendor);
 				changers[i].revision = strdup(drives[j].revision);
 				changers[i].serial_number = strdup(drives[j].serial_number);
-				changers[i].barcode = 0;
+				changers[i].barcode = false;
 
 				changers[i].drives = malloc(sizeof(struct st_drive));
 				*changers[i].drives = drives[j];

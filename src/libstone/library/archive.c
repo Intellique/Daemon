@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 14 Jan 2013 18:38:16 +0100                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Tue, 29 Jan 2013 20:58:52 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -33,6 +33,8 @@
 #include <sys/stat.h>
 // time
 #include <time.h>
+// uuid_generate, uuid_unparse_lower
+#include <uuid/uuid.h>
 
 #include <libstone/library/archive.h>
 #include <libstone/util/file.h>
@@ -93,7 +95,11 @@ void st_archive_free(struct st_archive * archive) {
 }
 
 struct st_archive * st_archive_new(const char * name, struct st_user * user) {
+	uuid_t id;
+	uuid_generate(id);
+
 	struct st_archive * archive = malloc(sizeof(struct st_archive));
+	uuid_unparse_lower(id, archive->uuid);
 	archive->name = strdup(name);
 	archive->ctime = time(NULL);
 	archive->endtime = 0;

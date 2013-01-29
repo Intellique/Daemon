@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 25 Nov 2012 15:17:49 +0100                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Tue, 29 Jan 2013 19:45:46 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -42,11 +42,11 @@ struct st_user;
 
 enum st_job_status {
 	st_job_status_disable,
-	st_job_status_finished,
 	st_job_status_error,
-	st_job_status_idle,
+	st_job_status_finished,
 	st_job_status_pause,
 	st_job_status_running,
+	st_job_status_scheduled,
 	st_job_status_stopped,
 	st_job_status_waiting,
 

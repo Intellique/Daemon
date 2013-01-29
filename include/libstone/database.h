@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 17 Jan 2013 10:13:07 +0100                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Thu, 24 Jan 2013 22:43:07 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -141,6 +141,8 @@ struct st_database_connection {
 		 */
 		int (*sync_plugin_job)(struct st_database_connection * connect, const char * plugin);
 
+		bool (*changer_is_enabled)(struct st_database_connection * connect, struct st_changer * changer);
+		bool (*drive_is_enabled)(struct st_database_connection * connect, struct st_drive * drive);
 		/**
 		 * \brief Check if \a drive is a part of \a changer
 		 *

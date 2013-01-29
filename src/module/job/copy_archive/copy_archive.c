@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
 *  Last modified: Mon, 31 Dec 2012 23:13:14 +0100                         *
 \*************************************************************************/
 
@@ -199,10 +199,10 @@ bool st_job_copy_archive_select_output_media(struct st_job_copy_archive_private 
 						slot = iter->ops->next(iter);
 
 						struct st_media * media = slot->media;
-						if (self->archive_size - self->total_done < media->available_block * media->block_size)
+						if (self->archive_size - self->total_done < media->free_block * media->block_size)
 							break;
 
-						if (10 * media->available_block < media->total_block)
+						if (10 * media->free_block < media->total_block)
 							break;
 
 						slot->lock->ops->unlock(slot->lock);

@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2011, Clercin guillaume <gclercin@intellique.com>        *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
 *  Last modified: Tue, 10 Jul 2012 13:36:56 +0200                         *
 \*************************************************************************/
 

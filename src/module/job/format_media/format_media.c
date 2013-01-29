@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 23:10:39 +0100                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Tue, 29 Jan 2013 22:29:59 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -231,7 +231,7 @@ static bool st_job_format_media_check(struct st_job * job) {
 
 		job->repetition = 1;
 		job->done = 0;
-		job->db_status = job->sched_status = st_job_status_idle;
+		job->db_status = job->sched_status = st_job_status_scheduled;
 
 		return false;
 	}
@@ -297,7 +297,7 @@ static bool st_job_format_media_check(struct st_job * job) {
 
 			job->repetition = 0;
 			job->done = 0;
-			job->db_status = job->sched_status = st_job_status_idle;
+			job->db_status = job->sched_status = st_job_status_finished;
 
 			return true;
 		} else {
@@ -305,7 +305,7 @@ static bool st_job_format_media_check(struct st_job * job) {
 
 			job->repetition = 1;
 			job->done = 0;
-			job->db_status = job->sched_status = st_job_status_idle;
+			job->db_status = job->sched_status = st_job_status_scheduled;
 
 			return true;
 		}
@@ -314,7 +314,7 @@ static bool st_job_format_media_check(struct st_job * job) {
 
 		job->repetition = 1;
 		job->done = 0;
-		job->db_status = job->sched_status = st_job_status_idle;
+		job->db_status = job->sched_status = st_job_status_scheduled;
 
 		return true;
 	}

@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 11 Dec 2012 21:48:33 +0100                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Tue, 29 Jan 2013 15:28:56 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -87,6 +87,14 @@ enum st_media_format_mode {
 	st_media_format_mode_unknown,
 };
 
+enum st_pool_unbreakable_level {
+	st_pool_unbreakable_level_archive,
+	st_pool_unbreakable_level_file,
+	st_pool_unbreakable_level_none,
+
+	st_pool_unbreakable_level_unknown,
+};
+
 
 struct st_media {
 	char uuid[37];
@@ -106,8 +114,8 @@ struct st_media {
 	long operation_count;
 
 	ssize_t block_size;
-	ssize_t available_block; // in block size, not in bytes
-	ssize_t total_block;
+	ssize_t free_block; // in block size, not in bytes
+	ssize_t total_block; // size in block
 
 	unsigned int nb_volumes;
 	enum st_media_type type;
@@ -145,7 +153,9 @@ struct st_media_format {
 struct st_pool {
 	char uuid[37];
 	char * name;
+
 	bool growable;
+	enum st_pool_unbreakable_level unbreakable_level;
 	bool rewritable;
 	bool deleted;
 
@@ -163,6 +173,8 @@ enum st_media_status st_media_string_to_status(const char * status);
 enum st_media_format_data_type st_media_string_to_format_data(const char * type);
 enum st_media_format_mode st_media_string_to_format_mode(const char * mode);
 enum st_media_type st_media_string_to_type(const char * type);
+const char * st_pool_unbreakable_level_to_string(enum st_pool_unbreakable_level level);
+enum st_pool_unbreakable_level st_pool_unbreakable_string_to_level(const char * level);
 
 bool st_media_check_header(struct st_drive * dr);
 ssize_t st_media_get_available_size(struct st_media * media);

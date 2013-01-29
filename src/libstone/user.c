@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 13:06:43 +0100                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Tue, 29 Jan 2013 19:57:02 +0100                         *
 \*************************************************************************/
 
 // pthread_mutex_lock, pthread_mutex_unlock
@@ -53,6 +53,7 @@ static void st_user_free() {
 		free(user->salt);
 		free(user->fullname);
 		free(user->email);
+		free(user->home_directory);
 		free(user->db_data);
 		free(user);
 	}
@@ -102,6 +103,7 @@ struct st_user * st_user_get(const char * login) {
 					free(user2.salt);
 					free(user2.fullname);
 					free(user2.email);
+					free(user2.home_directory);
 					free(user2.db_data);
 
 					st_log_write_all(st_log_level_info, st_log_type_daemon, "Not enough memory to get user '%s'", login);

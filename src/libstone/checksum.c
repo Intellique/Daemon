@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 22:37:24 +0100                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Tue, 29 Jan 2013 19:46:37 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -193,8 +193,7 @@ void st_checksum_sync_plugins(struct st_database_connection * connection) {
 	}
 
 	glob_t gl;
-	gl.gl_offs = 0;
-	glob(MODULE_PATH "/libchecksum-*.so", GLOB_DOOFFS, NULL, &gl);
+	glob(MODULE_PATH "/libchecksum-*.so", 0, NULL, &gl);
 
 	unsigned int i;
 	for (i = 0; i < gl.gl_pathc; i++) {
