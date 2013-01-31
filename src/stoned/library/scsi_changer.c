@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 22:59:32 +0100                         *
+*  Last modified: Wed, 30 Jan 2013 22:30:32 +0100                         *
 \*************************************************************************/
 
 // open
@@ -41,6 +41,7 @@
 // close, exit
 #include <unistd.h>
 
+#include <libstone/database.h>
 #include <libstone/log.h>
 #include <libstone/library/media.h>
 #include <libstone/library/ressource.h>
@@ -203,20 +204,23 @@ static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * fr
 	return failed;
 }
 
-void st_scsi_changer_setup(struct st_changer * changer) {
+void st_scsi_changer_setup(struct st_changer * changer, struct st_database_connection * connection) {
 	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: starting setup", changer->vendor, changer->model);
 
 	int fd = open(changer->device, O_RDWR);
 
 	st_scsi_loader_ready(fd);
 
-	st_scsi_loader_medium_removal(fd, false);
+	// st_scsi_loader_medium_removal(fd, false);
+	st_scsi_loader_medium_removal(fd, true);
 
 	struct st_scsi_changer_private * ch = malloc(sizeof(struct st_scsi_changer_private));
 	ch->fd = fd;
 	ch->lock = st_ressource_new();
 
 	st_scsi_loader_status_new(fd, changer, &ch->transport_address);
+
+	connection->ops->slots_are_enabled(connection, changer);
 
 	changer->status = st_changer_idle;
 	changer->ops = &st_scsi_changer_ops;

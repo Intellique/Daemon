@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 29 Dec 2012 12:40:58 +0100                         *
+*  Last modified: Wed, 30 Jan 2013 19:24:53 +0100                         *
 \*************************************************************************/
 
 // mknod, open
@@ -243,8 +243,8 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 					}
 
 					struct timeval tv[] = {
-						{ file->mtime, 0 },
-						{ file->mtime, 0 },
+						{ file->modify_time, 0 },
+						{ file->modify_time, 0 },
 					};
 					if (futimes(fd, tv)) {
 						st_job_add_record(connect, st_log_level_warning, self->jp->job, "Error while motification time of file (%s) because %m", restore_to);
@@ -279,8 +279,8 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 				}
 
 				struct timeval tv[] = {
-					{ file->mtime, 0 },
-					{ file->mtime, 0 },
+					{ file->modify_time, 0 },
+					{ file->modify_time, 0 },
 				};
 				if (utimes(header.filename, tv)) {
 					st_job_add_record(connect, st_log_level_warning, self->jp->job, "Error while motification time of file (%s) because %m", header.filename);

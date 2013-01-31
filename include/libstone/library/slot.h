@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 07 Dec 2012 17:01:16 +0100                         *
+*  Last modified: Wed, 30 Jan 2013 21:32:39 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_SLOT_H__
@@ -52,6 +52,7 @@ struct st_slot {
 	char * volume_name;
 	bool full;
 	enum st_slot_type type;
+	bool enable;
 
 	struct st_ressource * lock;
 

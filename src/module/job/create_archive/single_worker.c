@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 29 Jan 2013 12:42:12 +0100                         *
+*  Last modified: Wed, 30 Jan 2013 19:23:40 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -200,7 +200,7 @@ static int st_job_create_archive_single_worker_change_volume(struct st_job_creat
 	self->writer->ops->close(self->writer);
 
 	struct st_archive_volume * last_volume = self->archive->volumes + (self->archive->nb_volumes - 1);
-	last_volume->endtime = self->archive->endtime = time(NULL);
+	last_volume->end_time = self->archive->end_time = time(NULL);
 	last_volume->size = self->writer->ops->position(self->writer);
 
 	last_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
@@ -258,7 +258,7 @@ static void st_job_create_archive_single_worker_close(struct st_job_create_archi
 	self->writer->ops->close(self->writer);
 
 	struct st_archive_volume * last_volume = self->archive->volumes + (self->archive->nb_volumes - 1);
-	last_volume->endtime = self->archive->endtime = time(NULL);
+	last_volume->end_time = self->archive->end_time = time(NULL);
 	last_volume->size = self->writer->ops->position(self->writer);
 
 	last_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);

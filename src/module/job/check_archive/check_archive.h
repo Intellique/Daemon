@@ -22,31 +22,21 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Jan 2013 22:26:26 +0100                         *
+*  Last modified: Sat, 29 Dec 2012 12:44:54 +0100                         *
 \*************************************************************************/
 
-#ifndef __STONE_LIBRARY_COMMON_H__
-#define __STONE_LIBRARY_COMMON_H__
+#ifndef __STONE_JOB_CHECKARCHIVE_H__
+#define __STONE_JOB_CHECKARCHIVE_H__
 
-#include <libstone/library/changer.h>
-#include <stoned/library/slot.h>
+#include <libstone/database.h>
+#include <libstone/library/archive.h>
 
-struct st_changer;
-struct st_drive;
-struct st_database_connection;
-struct st_media_format;
-struct st_pool;
+struct st_job_check_archive_private {
+	struct st_job * job;
+	struct st_database_connection * connect;
 
-void st_scsi_tape_drive_setup(struct st_drive * drive);
-
-void st_standalone_drive_setup(struct st_changer * changer);
-void st_scsi_changer_setup(struct st_changer * changer, struct st_database_connection * connection);
-
-void st_changer_stop(void);
-void st_changer_sync(struct st_database_connection * connection);
-
-struct st_slot_iterator * st_slot_iterator_by_new_media2(struct st_media_format * format, struct st_changer * changers, unsigned int nb_changers);
-struct st_slot_iterator * st_slot_iterator_by_pool2(struct st_pool * pool, struct st_changer * changers, unsigned int nb_changers);
+	struct st_archive * archive;
+};
 
 #endif
 

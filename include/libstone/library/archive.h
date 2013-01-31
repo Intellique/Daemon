@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 29 Jan 2013 16:37:30 +0100                         *
+*  Last modified: Wed, 30 Jan 2013 18:50:32 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -56,14 +56,16 @@ enum st_archive_file_type {
 struct st_archive {
 	char uuid[37];
 	char * name;
-	time_t ctime;
-	time_t endtime;
-	struct st_user * user;
+
+	time_t start_time;
+	time_t end_time;
+	time_t check_time;
 
 	struct st_archive_volume * volumes;
 	unsigned int nb_volumes;
 
 	struct st_archive * copy_of;
+	struct st_user * user;
 
 	void * db_data;
 };
@@ -71,8 +73,10 @@ struct st_archive {
 struct st_archive_volume {
 	long sequence;
 	ssize_t size;
-	time_t ctime;
-	time_t endtime;
+
+	time_t start_time;
+	time_t end_time;
+	time_t check_time;
 
 	struct st_archive * archive;
 	struct st_media * media;
@@ -98,8 +102,10 @@ struct st_archive_file {
 	char owner[32];
 	gid_t groupid;
 	char group[32];
-	time_t ctime;
-	time_t mtime;
+
+	time_t create_time;
+	time_t modify_time;
+	time_t check_time;
 	ssize_t size;
 
 	char * mime_type;

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 17 Jan 2013 10:00:16 +0100                         *
+*  Last modified: Wed, 30 Jan 2013 19:23:16 +0100                         *
 \*************************************************************************/
 
 // mknod, open
@@ -141,8 +141,8 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 					}
 
 					struct timeval tv[] = {
-						{ file->mtime, 0 },
-						{ file->mtime, 0 },
+						{ file->modify_time, 0 },
+						{ file->modify_time, 0 },
 					};
 					if (futimes(fd, tv)) {
 						st_job_add_record(self->connect, st_log_level_warning, self->job, "Error while motification time of file (%s) because %m", restore_to);
@@ -172,8 +172,8 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 				}
 
 				struct timeval tv[] = {
-					{ file->mtime, 0 },
-					{ file->mtime, 0 },
+					{ file->modify_time, 0 },
+					{ file->modify_time, 0 },
 				};
 				if (utimes(header.filename, tv)) {
 					st_job_add_record(self->connect, st_log_level_warning, self->job, "Error while motification time of file (%s) because %m", header.filename);

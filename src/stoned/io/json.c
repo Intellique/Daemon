@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 29 Jan 2013 22:17:17 +0100                         *
+*  Last modified: Wed, 30 Jan 2013 18:55:44 +0100                         *
 \*************************************************************************/
 
 // json_array, json_array_append_new, json_decref, json_dumps, json_integer,
@@ -59,11 +59,11 @@ static json_t * st_io_json_archive(struct st_archive * archive, char ** checksum
 
 	char ctime[32];
 	struct tm local_current;
-	localtime_r(&archive->ctime, &local_current);
+	localtime_r(&archive->start_time, &local_current);
 	strftime(ctime, 32, "%F %T", &local_current);
 	json_object_set_new(jarchive, "created time", json_string(ctime));
 
-	localtime_r(&archive->endtime, &local_current);
+	localtime_r(&archive->end_time, &local_current);
 	strftime(ctime, 32, "%F %T", &local_current);
 	json_object_set_new(jarchive, "finish time", json_string(ctime));
 
@@ -94,11 +94,11 @@ static json_t * st_io_json_file(struct st_archive_file * file, char ** checksums
 
 	char ctime[32];
 	struct tm local_current;
-	localtime_r(&file->ctime, &local_current);
+	localtime_r(&file->create_time, &local_current);
 	strftime(ctime, 32, "%F %T", &local_current);
 	json_object_set_new(jfile, "created time", json_string(ctime));
 
-	localtime_r(&file->mtime, &local_current);
+	localtime_r(&file->modify_time, &local_current);
 	strftime(ctime, 32, "%F %T", &local_current);
 	json_object_set_new(jfile, "modified time", json_string(ctime));
 
@@ -123,11 +123,11 @@ static json_t * st_io_json_volume(struct st_archive_volume * volume, char ** che
 
 	char ctime[32];
 	struct tm local_current;
-	localtime_r(&volume->ctime, &local_current);
+	localtime_r(&volume->start_time, &local_current);
 	strftime(ctime, 32, "%F %T", &local_current);
 	json_object_set_new(jvolume, "created time", json_string(ctime));
 
-	localtime_r(&volume->endtime, &local_current);
+	localtime_r(&volume->end_time, &local_current);
 	strftime(ctime, 32, "%F %T", &local_current);
 	json_object_set_new(jvolume, "finish time", json_string(ctime));
 

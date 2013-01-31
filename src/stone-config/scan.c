@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 25 Jan 2013 09:52:18 +0100                         *
+*  Last modified: Wed, 30 Jan 2013 22:09:35 +0100                         *
 \*************************************************************************/
 
 // glob, globfree
@@ -170,7 +170,7 @@ int stcfg_scan(void) {
 	for (i = 0; i < nb_real_changers; i++) {
 		unsigned j;
 		for (j = 0; j < nb_drives; j++) {
-			if (stcfg_scsi_drive_in_changer(drives + j, changers + i)) {
+			if (drives[j].changer == NULL && stcfg_scsi_drive_in_changer(drives + j, changers + i)) {
 				drives[j].changer = changers + i;
 
 				changers[i].drives = realloc(changers[i].drives, (changers[i].nb_drives + 1) * sizeof(struct st_drive));
@@ -181,6 +181,10 @@ int stcfg_scan(void) {
 
 		if (changers[i].nb_drives == 0)
 			nb_changer_without_drive++;
+		else {
+			struct st_changer * ch = changers + i;
+			stcfg_scsi_loader_status_new(ch->device, ch);
+		}
 	}
 
 	// link stand-alone drive to fake changer

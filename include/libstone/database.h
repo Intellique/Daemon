@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 24 Jan 2013 22:43:07 +0100                         *
+*  Last modified: Wed, 30 Jan 2013 22:31:23 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -152,6 +152,7 @@ struct st_database_connection {
 		 * \returns 1 if \a true
 		 */
 		int (*is_changer_contain_drive)(struct st_database_connection * connect, struct st_changer * changer, struct st_drive * drive);
+		void (*slots_are_enabled)(struct st_database_connection * connect, struct st_changer * changer);
 		/**
 		 * \brief Synchronize \a changer with database
 		 *

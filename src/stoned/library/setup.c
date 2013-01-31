@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 29 Jan 2013 12:40:36 +0100                         *
+*  Last modified: Wed, 30 Jan 2013 22:13:30 +0100                         *
 \*************************************************************************/
 
 // open
@@ -307,7 +307,7 @@ int st_changer_setup(void) {
 	for (i = 0; i < st_nb_real_changers; i++) {
 		unsigned j;
 		for (j = 0; j < nb_drives; j++) {
-			if (st_scsi_loader_has_drive(st_changers + i, drives + j)) {
+			if (drives[j].changer == NULL && st_scsi_loader_has_drive(st_changers + i, drives + j)) {
 				drives[j].changer = st_changers + i;
 
 				st_changers[i].drives = realloc(st_changers[i].drives, (st_changers[i].nb_drives + 1) * sizeof(struct st_drive));
@@ -422,6 +422,14 @@ int st_changer_setup(void) {
 			if (drives[j].changer == NULL) {
 				drives[j].changer = st_changers + i;
 
+				st_changers[i].device = strdup("");
+				st_changers[i].status = st_changer_unknown;
+				st_changers[i].model = strdup(drives[j].model);
+				st_changers[i].vendor = strdup(drives[j].vendor);
+				st_changers[i].revision = strdup(drives[j].revision);
+				st_changers[i].serial_number = strdup(drives[j].serial_number);
+				st_changers[i].barcode = false;
+
 				st_changers[i].drives = malloc(sizeof(struct st_drive));
 				*st_changers[i].drives = drives[j];
 				st_changers[i].nb_drives = 1;
@@ -446,7 +454,7 @@ int st_changer_setup(void) {
 	if (config != NULL)
 		connect = config->ops->connect(config);
 
-	for (i = 0; i < st_nb_real_changers + st_nb_real_changers && connect != NULL; i++) {
+	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers && connect != NULL; i++) {
 		struct st_changer * ch = st_changers + i;
 
 		if (!connect->ops->changer_is_enabled(connect, ch))
@@ -457,16 +465,16 @@ int st_changer_setup(void) {
 			connect->ops->drive_is_enabled(connect, ch->drives + j);
 	}
 
-	if (connect != NULL)
-		connect->ops->free(connect);
-
 	// start setup of enabled devices
 	for (i = 0; i < st_nb_real_changers; i++) {
 		struct st_changer * ch = st_changers + i;
 
 		if (ch->enabled)
-			st_scsi_changer_setup(st_changers + i);
+			st_scsi_changer_setup(st_changers + i, connect);
 	}
+
+	if (connect != NULL)
+		connect->ops->free(connect);
 
 	for (i = st_nb_real_changers; i < st_nb_fake_changers + st_nb_real_changers; i++) {
 		struct st_changer * ch = st_changers + i;

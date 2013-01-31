@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 29 Jan 2013 22:34:16 +0100                         *
+*  Last modified: Wed, 30 Jan 2013 19:25:13 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -265,8 +265,8 @@ static int st_job_restore_archive_run(struct st_job * job) {
 		struct st_archive_file * directory = directories + (nb_directories - i);
 
 		struct timeval tv[] = {
-			{ directory->mtime, 0 },
-			{ directory->mtime, 0 },
+			{ directory->modify_time, 0 },
+			{ directory->modify_time, 0 },
 		};
 		if (utimes(directory->name, tv)) {
 			st_job_add_record(self->connect, st_log_level_warning, job, "Warning, failed to restore motification time of directory (%s) because %m", directory->name);

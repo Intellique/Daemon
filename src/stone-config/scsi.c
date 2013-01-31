@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 12 Oct 2012 12:36:19 +0200                         *
+*  Last modified: Thu, 31 Jan 2013 10:51:50 +0100                         *
 \*************************************************************************/
 
 // be*toh, htobe*
@@ -45,6 +45,9 @@
 #include <sys/types.h>
 // close
 #include <unistd.h>
+
+#include <libstone/library/slot.h>
+#include <libstone/util/string.h>
 
 #include "scsi.h"
 
@@ -95,7 +98,7 @@ struct scsi_loader_data_transfer_element {
     unsigned char reserved8:4;
     unsigned char reserved9;
     unsigned char identifier_length_1;
-    unsigned char device_identifier_1[34];
+    char device_identifier_1[34];
     unsigned char code_set_2:4;
     unsigned char reserved10:4;
     unsigned char identifier_type_2:4;
@@ -141,6 +144,7 @@ struct scsi_request_sense {
 
 
 static bool stcfg_scsi_drive_in_changer2(int fd, struct st_changer * changer, int start_element, int nb_elements, struct st_drive * drive);
+static void stcfg_scsi_loader_sort_drives(int fd, struct st_changer * changer, int start_element);
 static int stcfg_scsi_loader_ready(int fd);
 
 
@@ -420,28 +424,24 @@ int stcfg_scsi_loaderinfo(const char * filename, struct st_changer * changer) {
 		return 2;
 	}
 
-	ssize_t length;
 	changer->vendor = malloc(9);
 	strncpy(changer->vendor, result_inquiry.vendor_identification, 8);
 	changer->vendor[8] = '\0';
-	for (length = 7; length >= 0 && changer->vendor[length] == ' '; length--)
-		changer->vendor[length] = '\0';
+	st_util_string_rtrim(changer->vendor, ' ');
 
 	changer->model = malloc(17);
 	strncpy(changer->model, result_inquiry.product_identification, 16);
 	changer->model[16] = '\0';
-	for (length = 15; length >= 0 && changer->model[length] == ' '; length--)
-		changer->model[length] = '\0';
+	st_util_string_rtrim(changer->model, ' ');
 
 	changer->revision = malloc(5);
 	strncpy(changer->revision, result_inquiry.product_revision_level, 4);
 	changer->revision[4] = '\0';
-	for (length = 3; length >= 0 && changer->revision[length] == ' '; length--)
-		changer->revision[length] = '\0';
+	st_util_string_rtrim(changer->revision, ' ');
 
-	changer->barcode = 0;
+	changer->barcode = false;
 	if (result_inquiry.bar_code)
-		changer->barcode = 1;
+		changer->barcode = true;
 
 
 	struct {
@@ -484,8 +484,257 @@ int stcfg_scsi_loaderinfo(const char * filename, struct st_changer * changer) {
 	changer->serial_number = malloc(13);
 	strncpy(changer->serial_number, result_serial_number.unit_serial_number, 12);
 	changer->serial_number[12] = '\0';
+	st_util_string_rtrim(changer->serial_number, ' ');
 
 	return 0;
+}
+
+static void stcfg_scsi_loader_sort_drives(int fd, struct st_changer * changer, int start_element) {
+	size_t size_needed = 16 + changer->nb_drives * sizeof(struct scsi_loader_data_transfer_element);
+
+	struct scsi_request_sense sense;
+	struct {
+		unsigned short first_element_address;
+		unsigned short number_of_elements;
+		unsigned char reserved;
+		unsigned int byte_count_of_report:24;
+	} __attribute__((packed)) * result = malloc(size_needed);
+	struct {
+		unsigned char operation_code;
+		enum scsi_loader_element_type type:4;
+		bool volume_tag:1;
+		unsigned char reserved0:3;
+		unsigned short starting_element_address;
+		unsigned short number_of_elements;
+		bool device_id:1;
+		bool current_data:1;
+		unsigned char reserved1:6;
+		unsigned char allocation_length[3];
+		unsigned char reserved2;
+		unsigned char reserved3:7;
+		unsigned char serial_number_request:1;
+	} __attribute__((packed)) command = {
+		.operation_code = 0xB8,
+		.type = scsi_loader_element_type_data_transfer,
+		.volume_tag = changer->barcode,
+		.reserved0 = 0,
+		.starting_element_address = htobe16(start_element),
+		.number_of_elements = htobe16(changer->nb_drives),
+		.device_id = true,
+		.current_data = false,
+		.reserved1 = 0,
+		.allocation_length = { size_needed >> 16, size_needed >> 8, size_needed & 0xFF, },
+		.reserved2 = 0,
+		.reserved3 = 0,
+		.serial_number_request = 1,
+	};
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(result, 0, size_needed);
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = size_needed;
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) result;
+	header.timeout = 1200000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	unsigned char * ptr;
+	struct scsi_loader_element_status * element_header;
+	do {
+		int failed = ioctl(fd, SG_IO, &header);
+		if (failed) {
+			free(result);
+			return;
+		}
+
+		result->number_of_elements = be16toh(result->number_of_elements);
+
+		ptr = (unsigned char *) (result + 1);
+
+		element_header = (struct scsi_loader_element_status *) (ptr);
+		element_header->element_descriptor_length = be16toh(element_header->element_descriptor_length);
+		element_header->byte_count_of_descriptor_data_available = be32toh(element_header->byte_count_of_descriptor_data_available);
+		ptr += sizeof(struct scsi_loader_element_status);
+
+		if (element_header->type != scsi_loader_element_type_data_transfer) {
+			sleep(1);
+			stcfg_scsi_loader_ready(fd);
+		}
+	} while (element_header->type != scsi_loader_element_type_data_transfer);
+
+	unsigned short i;
+	for (i = 0; i < result->number_of_elements - 1; i++) {
+		struct scsi_loader_data_transfer_element * data_transfer_element = (struct scsi_loader_data_transfer_element *) ptr;
+		data_transfer_element->element_address = be16toh(data_transfer_element->element_address);
+
+		unsigned int j;
+		for (j = i; j < changer->nb_drives; j++) {
+			struct st_drive * dr = changer->drives + j;
+
+			char dev[35];
+			memset(dev, ' ', 35);
+			dev[34] = '\0';
+			strncpy(dev, dr->vendor, strlen(dr->vendor));
+			dev[7] = ' ';
+			strncpy(dev + 8, dr->model, strlen(dr->model));
+			dev[23] = ' ';
+			strcpy(dev + 24, dr->serial_number);
+
+			if (!strncmp(data_transfer_element->device_identifier_1, dev, 34)) {
+				if (i != j) {
+					struct st_drive * dr_i = changer->drives + i;
+					struct st_drive * dr_j = changer->drives + j;
+
+					struct st_drive tmp_dr;
+					memcpy(&tmp_dr, dr_i, sizeof(struct st_drive));
+					memcpy(dr_i, dr_j, sizeof(struct st_drive));
+					memcpy(dr_j, &tmp_dr, sizeof(struct st_drive));
+
+					struct st_slot * sl = dr_i->slot;
+					dr_i->slot = dr_j->slot;
+					dr_j->slot = sl;
+				}
+
+				break;
+			}
+		}
+	}
+}
+
+void stcfg_scsi_loader_status_new(const char * filename, struct st_changer * changer) {
+	int fd = open(filename, O_RDWR);
+	if (fd < 0)
+		return;
+
+	struct scsi_request_sense sense;
+	struct {
+		unsigned char mode_data_length;
+		unsigned char reserved0[3];
+
+		unsigned char page_code:6;
+		bool reserved1:1;
+		bool page_saved:1;
+		unsigned char parameter_length;
+		unsigned short medium_transport_element_address;
+		unsigned short number_of_medium_transport_elements;
+		unsigned short first_storage_element_address;
+		unsigned short number_of_storage_elements;
+		unsigned short first_import_export_element_address;
+		unsigned short number_of_import_export_elements;
+		unsigned short first_data_transfer_element_address;
+		unsigned short number_of_data_transfer_elements;
+		unsigned char reserved2[2];
+	} __attribute__((packed)) result;
+	struct {
+		unsigned char operation_code;
+		unsigned char reserved0:3;
+		bool disable_block_descriptors:1;
+		unsigned char reserved1:4;
+		enum {
+			page_code_element_address_assignement_page = 0x1D,
+			page_code_transport_geometry_descriptor_page = 0x1E,
+			page_code_device_capabilities_page = 0x1F,
+			page_code_unique_properties_page = 0x21,
+			page_code_lcd_mode_page = 0x22,
+			page_code_cleaning_configuration_page = 0x25,
+			page_code_operating_mode_page = 0x26,
+			page_code_all_pages = 0x3F,
+		} code_page:6;
+		enum {
+			page_control_current_value = 0x00,
+			page_control_changeable_value = 0x01,
+			page_control_default_value = 0x02,
+			page_control_saved_value = 0x03,
+		} page_control:2;
+		unsigned char reserved2;
+		unsigned char allocation_length;
+		unsigned char reserved3;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x1A,
+		.reserved0 = 0,
+		.disable_block_descriptors = false,
+		.reserved1 = 0,
+		.code_page = page_code_element_address_assignement_page,
+		.page_control = page_control_current_value,
+		.reserved2 = 0,
+		.allocation_length = sizeof(result),
+		.reserved3 = 0,
+	};
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(&result, 0, sizeof(result));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result);
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &result;
+	header.timeout = 1200000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int failed = ioctl(fd, SG_IO, &header);
+	if (failed) {
+		close(fd);
+		return;
+	}
+
+	result.medium_transport_element_address = be16toh(result.medium_transport_element_address);
+	result.number_of_medium_transport_elements = be16toh(result.number_of_medium_transport_elements);
+	result.first_storage_element_address = be16toh(result.first_storage_element_address);
+	result.number_of_storage_elements = be16toh(result.number_of_storage_elements);
+	result.first_import_export_element_address = be16toh(result.first_import_export_element_address);
+	result.number_of_import_export_elements = be16toh(result.number_of_import_export_elements);
+	result.first_data_transfer_element_address = be16toh(result.first_data_transfer_element_address);
+	result.number_of_data_transfer_elements = be16toh(result.number_of_data_transfer_elements);
+
+	changer->nb_slots = result.number_of_storage_elements;
+	unsigned short nb_io_slots = result.number_of_import_export_elements;
+	if (nb_io_slots > 0)
+		changer->nb_slots += nb_io_slots;
+	changer->nb_slots += changer->nb_drives;
+
+	if (changer->nb_slots > 0)
+		changer->slots = calloc(sizeof(struct st_slot), changer->nb_slots);
+
+	unsigned int i;
+	for (i = 0; i < changer->nb_slots; i++) {
+		struct st_slot * slot = changer->slots + i;
+
+		slot->changer = changer;
+		slot->drive = NULL;
+		slot->media = NULL;
+
+		slot->volume_name = NULL;
+		slot->full = false;
+
+		if (i < changer->nb_drives) {
+			slot->drive = changer->drives + i;
+			changer->drives[i].slot = slot;
+
+			slot->type = st_slot_type_drive;
+		} else if (i >= changer->nb_slots - result.number_of_import_export_elements) {
+			slot->type = st_slot_type_import_export;
+		} else {
+			slot->type = st_slot_type_storage;
+		}
+
+		slot->enable = true;
+	}
+
+	if (changer->nb_drives > 1)
+		stcfg_scsi_loader_sort_drives(fd, changer, result.first_data_transfer_element_address);
+
+	close(fd);
 }
 
 static int stcfg_scsi_loader_ready(int fd) {
@@ -593,24 +842,20 @@ int stcfg_scsi_tapeinfo(const char * filename, struct st_drive * drive) {
 		return 2;
 	}
 
-	ssize_t length;
 	drive->vendor = malloc(9);
 	strncpy(drive->vendor, result_inquiry.vendor_identification, 8);
 	drive->vendor[8] = '\0';
-	for (length = 7; length >= 0 && drive->vendor[length] == ' '; length--)
-		drive->vendor[length] = '\0';
+	st_util_string_rtrim(drive->vendor, ' ');
 
 	drive->model = malloc(17);
 	strncpy(drive->model, result_inquiry.product_identification, 16);
 	drive->model[16] = '\0';
-	for (length = 15; length >= 0 && drive->model[length] == ' '; length--)
-		drive->model[length] = '\0';
+	st_util_string_rtrim(drive->model, ' ');
 
 	drive->revision = malloc(5);
 	strncpy(drive->revision, result_inquiry.product_revision_level, 4);
 	drive->revision[4] = '\0';
-	for (length = 3; length >= 0 && drive->revision[length] == ' '; length--)
-		drive->revision[length] = '\0';
+	st_util_string_rtrim(drive->revision, ' ');
 
 	struct {
 		unsigned char peripheral_device_type:5;
@@ -652,6 +897,7 @@ int stcfg_scsi_tapeinfo(const char * filename, struct st_drive * drive) {
 	drive->serial_number = malloc(13);
 	strncpy(drive->serial_number, result_serial_number.unit_serial_number, 12);
 	drive->serial_number[12] = '\0';
+	st_util_string_rtrim(drive->serial_number, ' ');
 
 	return 0;
 }

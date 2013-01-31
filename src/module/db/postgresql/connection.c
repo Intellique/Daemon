@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 29 Jan 2013 23:18:27 +0100                         *
+*  Last modified: Thu, 31 Jan 2013 10:14:10 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -123,6 +123,7 @@ static bool st_db_postgresql_changer_is_enabled(struct st_database_connection * 
 static bool st_db_postgresql_drive_is_enabled(struct st_database_connection * connect, struct st_drive * drive);
 static char * st_db_postgresql_get_host(struct st_database_connection * connect);
 static int st_db_postgresql_is_changer_contain_drive(struct st_database_connection * connect, struct st_changer * changer, struct st_drive * drive);
+static void st_db_postgresql_slots_are_enabled(struct st_database_connection * connect, struct st_changer * changer);
 static int st_db_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer);
 static int st_db_postgresql_sync_drive(struct st_database_connection * connect, struct st_drive * drive);
 static int st_db_postgresql_sync_media(struct st_database_connection * connect, struct st_media * media);
@@ -175,6 +176,7 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.changer_is_enabled       = st_db_postgresql_changer_is_enabled,
 	.drive_is_enabled         = st_db_postgresql_drive_is_enabled,
 	.is_changer_contain_drive = st_db_postgresql_is_changer_contain_drive,
+	.slots_are_enabled        = st_db_postgresql_slots_are_enabled,
 	.sync_changer             = st_db_postgresql_sync_changer,
 	.sync_drive               = st_db_postgresql_sync_drive,
 
@@ -470,8 +472,14 @@ static bool st_db_postgresql_changer_is_enabled(struct st_database_connection * 
 		return false;
 
 	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_changer_data * changer_data = changer->db_data;
+	if (changer_data == NULL) {
+		changer_data = changer->db_data = malloc(sizeof(struct st_db_postgresql_changer_data));
+		changer_data->id = -1;
+	}
+
 	const char * query = "select_enabled_from_changer";
-	st_db_postgresql_prepare(self, query, "SELECT enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 LIMIT 1");
+	st_db_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 LIMIT 1");
 
 	const char * param[] = { changer->model, changer->vendor, changer->serial_number };
 	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
@@ -480,9 +488,10 @@ static bool st_db_postgresql_changer_is_enabled(struct st_database_connection * 
 	bool enabled = false;
 	if (status == PGRES_FATAL_ERROR)
 		st_db_postgresql_get_error(result, query);
-	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
-		st_db_postgresql_get_bool(result, 0, 0, &enabled);
-	else
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		st_db_postgresql_get_long(result, 0, 0, &changer_data->id);
+		st_db_postgresql_get_bool(result, 0, 1, &enabled);
+	} else
 		enabled = true;
 
 	PQclear(result);
@@ -494,8 +503,14 @@ static bool st_db_postgresql_drive_is_enabled(struct st_database_connection * co
 		return false;
 
 	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_drive_data * drive_data = drive->db_data;
+	if (drive_data == NULL) {
+		drive_data = drive->db_data = malloc(sizeof(struct st_db_postgresql_drive_data));
+		drive_data->id = -1;
+	}
+
 	const char * query = "select_enabled_from_drive";
-	st_db_postgresql_prepare(self, query, "SELECT enable FROM drive WHERE model = $1 AND vendor = $2 AND serialnumber = $3 LIMIT 1");
+	st_db_postgresql_prepare(self, query, "SELECT id, enable FROM drive WHERE model = $1 AND vendor = $2 AND serialnumber = $3 LIMIT 1");
 
 	const char * param[] = { drive->model, drive->vendor, drive->serial_number };
 	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
@@ -504,9 +519,10 @@ static bool st_db_postgresql_drive_is_enabled(struct st_database_connection * co
 	bool enabled = false;
 	if (status == PGRES_FATAL_ERROR)
 		st_db_postgresql_get_error(result, query);
-	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
-		st_db_postgresql_get_bool(result, 0, 0, &enabled);
-	else
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		st_db_postgresql_get_long(result, 0, 0, &drive_data->id);
+		st_db_postgresql_get_bool(result, 0, 1, &enabled);
+	} else
 		enabled = true;
 
 	PQclear(result);
@@ -584,6 +600,49 @@ static int st_db_postgresql_is_changer_contain_drive(struct st_database_connecti
 	free(changerid);
 
 	return ok;
+}
+
+static void st_db_postgresql_slots_are_enabled(struct st_database_connection * connect, struct st_changer * changer) {
+	if (connect == NULL || changer == NULL)
+		return;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_changer_data * changer_data = changer->db_data;
+
+	const char * query = "select_enable_from_changerslot";
+	st_db_postgresql_prepare(self, query, "SELECT id, enable FROM changerslot WHERE changer = $1 AND index = $2 LIMIT 1");
+
+	char * changerid;
+	asprintf(&changerid, "%ld", changer_data->id);
+
+	unsigned int i;
+	for (i = 0; i < changer->nb_slots; i++) {
+		struct st_slot * sl = changer->slots + i;
+		struct st_db_postgresql_slot_data * sl_data = sl->db_data;
+		if (sl_data == NULL) {
+			sl->db_data = sl_data = malloc(sizeof(struct st_db_postgresql_slot_data));
+			sl_data->id = -1;
+		}
+
+		char * index;
+		asprintf(&index, "%u", i);
+
+		const char * param[] = { changerid, index };
+		PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+			st_db_postgresql_get_long(result, 0, 0, &sl_data->id);
+			st_db_postgresql_get_bool(result, 0, 1, &sl->enable);
+		}
+
+		PQclear(result);
+		free(index);
+	}
+
+	free(changerid);
 }
 
 static int st_db_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer) {
@@ -876,10 +935,14 @@ static int st_db_postgresql_sync_drive(struct st_database_connection * connect, 
 		char * op_duration = NULL;
 		asprintf(&op_duration, "%.3Lf", drive->operation_duration);
 
-		char last_clean[24];
-		struct tm tm_last_clean;
-		localtime_r(&drive->last_clean, &tm_last_clean);
-		strftime(last_clean, 23, "%F %T", &tm_last_clean);
+		char * last_clean = NULL;
+		if (drive->last_clean > 0) {
+			last_clean = malloc(24);
+
+			struct tm tm_last_clean;
+			localtime_r(&drive->last_clean, &tm_last_clean);
+			strftime(last_clean, 23, "%F %T", &tm_last_clean);
+		}
 
 		const char * param[] = {
 			drive->device, drive->scsi_device, st_drive_status_to_string(drive->status),
@@ -894,6 +957,7 @@ static int st_db_postgresql_sync_drive(struct st_database_connection * connect, 
 		PQclear(result);
 		free(changerid);
 		free(driveid);
+		free(last_clean);
 		free(driveformatid);
 		free(op_duration);
 
@@ -904,23 +968,26 @@ static int st_db_postgresql_sync_drive(struct st_database_connection * connect, 
 		}
 	} else {
 		const char * query = "insert_drive";
-		st_db_postgresql_prepare(self, query, "INSERT INTO drive(device, scsidevice, status, changernum, operationduration, lastclean, model, vendor, firmwarerev, serialnumber, changer, driveformat) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id");
-		char * changer_num = NULL, * op_duration = NULL;
-		if (drive->changer)
-			asprintf(&changer_num, "%td", drive - drive->changer->drives);
-		else
-			changer_num = strdup("0");
+		st_db_postgresql_prepare(self, query, "INSERT INTO drive(device, scsidevice, status, operationduration, lastclean, model, vendor, firmwarerev, serialnumber, changer, driveformat) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id");
+
+		char * op_duration = NULL;
 		asprintf(&op_duration, "%.3Lf", drive->operation_duration);
-		char last_clean[24];
-		struct tm tm_last_clean;
-		localtime_r(&drive->last_clean, &tm_last_clean);
-		strftime(last_clean, 23, "%F %T", &tm_last_clean);
+
+		char * last_clean = NULL;
+		if (drive->last_clean > 0) {
+			last_clean = malloc(24);
+
+			struct tm tm_last_clean;
+			localtime_r(&drive->last_clean, &tm_last_clean);
+			strftime(last_clean, 23, "%F %T", &tm_last_clean);
+		}
+
 
 		const char * param[] = {
-			drive->device, drive->scsi_device, st_drive_status_to_string(drive->status), changer_num, op_duration, last_clean,
+			drive->device, drive->scsi_device, st_drive_status_to_string(drive->status), op_duration, last_clean,
 			drive->model, drive->vendor, drive->revision, drive->serial_number, changerid, driveformatid,
 		};
-		PGresult * result = PQexecPrepared(self->connect, query, 12, param, NULL, NULL, 0);
+		PGresult * result = PQexecPrepared(self->connect, query, 11, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -930,7 +997,7 @@ static int st_db_postgresql_sync_drive(struct st_database_connection * connect, 
 
 		PQclear(result);
 		free(changerid);
-		free(changer_num);
+		free(last_clean);
 		free(driveformatid);
 		free(op_duration);
 
@@ -1378,8 +1445,16 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 
 		return status == PGRES_FATAL_ERROR;
 	} else {
+		struct st_db_postgresql_drive_data * drive_data = NULL;
+		if (slot->drive != NULL)
+			drive_data = slot->drive->db_data;
+
+		char * drive_id = NULL;
+		if (drive_data != NULL && drive_data->id >= 0)
+			asprintf(&drive_id, "%ld", drive_data->id);
+
 		const char * query = "insert_slot";
-		st_db_postgresql_prepare(self, query, "INSERT INTO changerslot(index, changer, media, type) VALUES ($1, $2, $3, $4) RETURNING id");
+		st_db_postgresql_prepare(self, query, "INSERT INTO changerslot(index, changer, drive, media, type) VALUES ($1, $2, $3, $4, $5) RETURNING id");
 
 		char * slot_index = NULL;
 		asprintf(&slot_index, "%td", slot - slot->changer->slots);
@@ -1398,8 +1473,8 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 				break;
 		}
 
-		const char * param[] = { slot_index, changer_id, media_id, type };
-		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+		const char * param[] = { slot_index, changer_id, drive_id, media_id, type };
+		PGresult * result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -1409,6 +1484,7 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 
 		PQclear(result);
 		free(changer_id);
+		free(drive_id);
 		free(media_id);
 		free(slot_index);
 
@@ -2141,7 +2217,7 @@ static struct st_archive * st_db_postgresql_get_archive_by_job(struct st_databas
 		return NULL;
 
 	const char * query = "select_archive_by_job";
-	st_db_postgresql_prepare(self, query, "SELECT a.id, name, ctime, endtime, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
+	st_db_postgresql_prepare(self, query, "SELECT a.id, name, starttime, endtime, checktime, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
 
 	char * jobid;
 	asprintf(&jobid, "%ld", job_data->id);
@@ -2158,13 +2234,14 @@ static struct st_archive * st_db_postgresql_get_archive_by_job(struct st_databas
 		archive = malloc(sizeof(struct st_archive));
 
 		st_db_postgresql_get_string_dup(result, 0, 1, &archive->name);
-		st_db_postgresql_get_time(result, 0, 2, &archive->ctime);
-		st_db_postgresql_get_time(result, 0, 3, &archive->endtime);
+		st_db_postgresql_get_time(result, 0, 2, &archive->start_time);
+		st_db_postgresql_get_time(result, 0, 3, &archive->end_time);
+		st_db_postgresql_get_time(result, 0, 4, &archive->check_time);
 
 		archive->volumes = NULL;
 		archive->nb_volumes = 0;
 
-		archive->user = st_user_get(PQgetvalue(result, 0, 4));
+		archive->user = st_user_get(PQgetvalue(result, 0, 5));
 
 		archive->copy_of = NULL;
 
@@ -2215,11 +2292,13 @@ static struct st_archive_file * st_db_postgresql_get_archive_file_for_restore_di
 			st_db_postgresql_get_uint(result, i, 4, &file->ownerid);
 			st_db_postgresql_get_uint(result, i, 5, &file->groupid);
 			st_db_postgresql_get_uint(result, i, 6, &file->perm);
-			st_db_postgresql_get_time(result, i, 7, &file->ctime);
+			st_db_postgresql_get_time(result, i, 7, &file->create_time);
+			file->modify_time = 0;
+			file->check_time = 0;
 			st_db_postgresql_get_ssize(result, i, 8, &file->size);
 
 			file->owner[0] = file->group[0] = '\0';
-			file->mtime = file->ctime;
+			file->modify_time = file->create_time;
 
 			file->digests = NULL;
 			file->nb_digests = 0;
@@ -2282,11 +2361,12 @@ static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct s
 			st_db_postgresql_get_uint(result, i, 4, &file->ownerid);
 			st_db_postgresql_get_uint(result, i, 5, &file->groupid);
 			st_db_postgresql_get_uint(result, i, 6, &file->perm);
-			st_db_postgresql_get_time(result, i, 7, &file->ctime);
+			st_db_postgresql_get_time(result, i, 7, &file->create_time);
 			st_db_postgresql_get_ssize(result, i, 8, &file->size);
 
 			file->owner[0] = file->group[0] = '\0';
-			file->mtime = file->ctime;
+			file->modify_time = file->create_time;
+			file->check_time = 0;
 
 			file->digests = NULL;
 			file->nb_digests = 0;
@@ -2338,8 +2418,8 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 
 		st_db_postgresql_get_string(result, 0, 1, archive->uuid, 36);
 		st_db_postgresql_get_string_dup(result, 0, 2, &archive->name);
-		st_db_postgresql_get_time(result, 0, 3, &archive->ctime);
-		st_db_postgresql_get_time(result, 0, 4, &archive->endtime);
+		st_db_postgresql_get_time(result, 0, 3, &archive->start_time);
+		st_db_postgresql_get_time(result, 0, 4, &archive->end_time);
 
 		archive->volumes = NULL;
 		archive->nb_volumes = 0;
@@ -2664,10 +2744,10 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 		asprintf(&userid, "%ld", user_data->id);
 
 		struct tm tv;
-		localtime_r(&archive->ctime, &tv);
+		localtime_r(&archive->start_time, &tv);
 		strftime(buffer_ctime, 32, "%F %T", &tv);
 
-		localtime_r(&archive->endtime, &tv);
+		localtime_r(&archive->end_time, &tv);
 		strftime(buffer_endtime, 32, "%F %T", &tv);
 
 		const char * param[] = {
@@ -2740,11 +2820,11 @@ static int st_db_postgresql_sync_file(struct st_database_connection * connect, s
 
 	char ctime[32];
 	struct tm local_current;
-	localtime_r(&file->ctime, &local_current);
+	localtime_r(&file->create_time, &local_current);
 	strftime(ctime, 32, "%F %T", &local_current);
 
 	char mtime[32];
-	localtime_r(&file->ctime, &local_current);
+	localtime_r(&file->modify_time, &local_current);
 	strftime(mtime, 32, "%F %T", &local_current);
 
 	const char * param[] = {
@@ -2823,10 +2903,10 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 		char buffer_endtime[32];
 
 		struct tm tv;
-		localtime_r(&volume->ctime, &tv);
+		localtime_r(&volume->start_time, &tv);
 		strftime(buffer_ctime, 32, "%F %T", &tv);
 
-		localtime_r(&volume->endtime, &tv);
+		localtime_r(&volume->end_time, &tv);
 		strftime(buffer_endtime, 32, "%F %T", &tv);
 
 		char * sequence, * size, * archiveid, * mediaid, * mediaposition;

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 12 Oct 2012 10:24:56 +0200                         *
+*  Last modified: Thu, 31 Jan 2013 10:36:41 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONECONFIG_SCSI_H__
@@ -47,6 +47,8 @@ bool stcfg_scsi_drive_in_changer(struct st_drive * drive, struct st_changer * ch
  * \returns 0 if ok
  */
 int stcfg_scsi_loaderinfo(const char * filename, struct st_changer * changer);
+
+void stcfg_scsi_loader_status_new(const char * filename, struct st_changer * changer);
 
 /**
  * \brief Inquiry the drive

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 22:59:35 +0100                         *
+*  Last modified: Wed, 30 Jan 2013 10:50:35 +0100                         *
 \*************************************************************************/
 
 // malloc
@@ -97,7 +97,6 @@ static int st_standalone_drive_load_slot(struct st_changer * ch __attribute__((u
 void st_standalone_drive_setup(struct st_changer * changer) {
 	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: starting setup", changer->vendor, changer->model);
 
-	changer->device = strdup("");
 	changer->status = st_changer_idle;
 	changer->ops = &st_standalone_drive_ops;
 	changer->data = NULL;
@@ -112,16 +111,10 @@ void st_standalone_drive_setup(struct st_changer * changer) {
 	drive->slot = slot;
 
 	slot->volume_name = NULL;
-	slot->full = 0;
+	slot->full = false;
 	slot->type = st_slot_type_drive;
 
 	st_scsi_tape_drive_setup(changer->drives);
-
-	changer->model = strdup(drive->model);
-	changer->vendor = strdup(drive->vendor);
-	changer->revision = strdup(drive->revision);
-	changer->serial_number = strdup(drive->serial_number);
-	changer->barcode = 0;
 
 	drive->ops->update_media_info(drive);
 

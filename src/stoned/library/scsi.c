@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 29 Jan 2013 22:18:16 +0100                         *
+*  Last modified: Thu, 31 Jan 2013 10:55:11 +0100                         *
 \*************************************************************************/
 
 // htobe16
@@ -45,6 +45,8 @@
 #include <sys/types.h>
 // sleep
 #include <unistd.h>
+
+#include <libstone/util/string.h>
 
 #include "scsi.h"
 
@@ -518,28 +520,24 @@ void st_scsi_loader_info(int fd, struct st_changer * changer) {
 	if (ioctl(fd, SG_IO, &header))
 		return;
 
-	ssize_t length;
 	changer->vendor = malloc(9);
 	strncpy(changer->vendor, result_inquiry.vendor_identification, 8);
 	changer->vendor[8] = '\0';
-	for (length = 7; length >= 0 && changer->vendor[length] == ' '; length--)
-		changer->vendor[length] = '\0';
+	st_util_string_rtrim(changer->vendor, ' ');
 
 	changer->model = malloc(17);
 	strncpy(changer->model, result_inquiry.product_identification, 16);
 	changer->model[16] = '\0';
-	for (length = 15; length >= 0 && changer->model[length] == ' '; length--)
-		changer->model[length] = '\0';
+	st_util_string_rtrim(changer->model, ' ');
 
 	changer->revision = malloc(5);
 	strncpy(changer->revision, result_inquiry.product_revision_level, 4);
 	changer->revision[4] = '\0';
-	for (length = 3; length >= 0 && changer->revision[length] == ' '; length--)
-		changer->revision[length] = '\0';
+	st_util_string_rtrim(changer->revision, ' ');
 
-	changer->barcode = 0;
+	changer->barcode = false;
 	if (result_inquiry.bar_code)
-		changer->barcode = 1;
+		changer->barcode = true;
 
 
 	struct {
@@ -578,6 +576,7 @@ void st_scsi_loader_info(int fd, struct st_changer * changer) {
 	changer->serial_number = malloc(13);
 	strncpy(changer->serial_number, result_serial_number.unit_serial_number, 12);
 	changer->serial_number[12] = '\0';
+	st_util_string_rtrim(changer->serial_number, ' ');
 }
 
 int st_scsi_loader_medium_removal(int fd, bool allow) {
@@ -1244,24 +1243,20 @@ void st_scsi_tape_info(int fd, struct st_drive * drive) {
 	if (ioctl(fd, SG_IO, &header))
 		return;
 
-	ssize_t length;
 	drive->vendor = malloc(9);
 	strncpy(drive->vendor, result_inquiry.vendor_identification, 8);
 	drive->vendor[8] = '\0';
-	for (length = 7; length >= 0 && drive->vendor[length] == ' '; length--)
-		drive->vendor[length] = '\0';
+	st_util_string_rtrim(drive->vendor, ' ');
 
 	drive->model = malloc(17);
 	strncpy(drive->model, result_inquiry.product_identification, 16);
 	drive->model[16] = '\0';
-	for (length = 15; length >= 0 && drive->model[length] == ' '; length--)
-		drive->model[length] = '\0';
+	st_util_string_rtrim(drive->model, ' ');
 
 	drive->revision = malloc(5);
 	strncpy(drive->revision, result_inquiry.product_revision_level, 4);
 	drive->revision[4] = '\0';
-	for (length = 3; length >= 0 && drive->revision[length] == ' '; length--)
-		drive->revision[length] = '\0';
+	st_util_string_rtrim(drive->revision, ' ');
 
 	struct {
 		unsigned char peripheral_device_type:5;
@@ -1299,6 +1294,7 @@ void st_scsi_tape_info(int fd, struct st_drive * drive) {
 	drive->serial_number = malloc(13);
 	strncpy(drive->serial_number, result_serial_number.unit_serial_number, 12);
 	drive->serial_number[12] = '\0';
+	st_util_string_rtrim(drive->serial_number, ' ');
 }
 
 int st_scsi_tape_locate(int fd, off_t position) {
