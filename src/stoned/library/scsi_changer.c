@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 31 Jan 2013 15:52:32 +0100                         *
+*  Last modified: Thu, 31 Jan 2013 16:19:04 +0100                         *
 \*************************************************************************/
 
 // open
@@ -74,7 +74,7 @@ static struct st_changer_ops st_scsi_changer_ops = {
 
 
 static struct st_drive * st_scsi_changer_find_free_drive(struct st_changer * ch, struct st_media_format * format, bool for_reading, bool for_writing) {
-	if (ch == NULL || !ch->enabled)
+	if (ch == NULL)
 		return NULL;
 
 	unsigned int i;
@@ -165,6 +165,7 @@ static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * fr
 	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: loading media '%s' from slot #%td to drive #%td", ch->vendor, ch->model, from->volume_name, from - ch->slots, to - ch->drives);
 
 	struct st_scsi_changer_private * self = ch->data;
+	self->lock->ops->lock(self->lock);
 	st_scsi_loader_ready(self->fd);
 
 	int failed = st_scsi_loader_move(self->fd, self->transport_address, from, to->slot);
@@ -201,6 +202,8 @@ static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * fr
 		to->ops->update_media_info(to);
 	} else
 		st_log_write_all(st_log_level_error, st_log_type_changer, "[%s | %s]: loading media '%s' from slot #%td to drive #%td finished with code = %d", ch->vendor, ch->model, to->slot->volume_name, from - ch->slots, to - ch->drives, failed);
+
+	self->lock->ops->unlock(to->lock);
 
 	return failed;
 }

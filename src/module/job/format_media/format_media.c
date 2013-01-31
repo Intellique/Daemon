@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 29 Jan 2013 22:29:59 +0100                         *
+*  Last modified: Thu, 31 Jan 2013 16:09:41 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -366,6 +366,10 @@ int st_job_format_media_run(struct st_job * job) {
 	if (pool == NULL) {
 		pool = job->user->pool;
 		st_job_add_record(self->connect, st_log_level_warning, job, "Using default pool '%s' of user '%s'", pool->name, job->user->login);
+	}
+	if (pool->deleted) {
+		st_job_add_record(self->connect, st_log_level_error, job, "Try to format to a pool which is deleted");
+		return 1;
 	}
 
 	enum {

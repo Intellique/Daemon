@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 22:42:34 +0100                         *
+*  Last modified: Thu, 31 Jan 2013 16:34:25 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -181,8 +181,10 @@ static void st_scsi_tape_drive_create_media(struct st_drive * drive) {
 	bzero(media, sizeof(struct st_media));
 	drive->slot->media = media;
 
-	if (drive->slot->volume_name != NULL)
+	if (drive->slot->volume_name != NULL) {
 		media->label = strdup(drive->slot->volume_name);
+		media->name = strdup(media->label);
+	}
 
 	media->format = st_media_format_get_by_density_code((self->status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT, st_media_format_mode_linear);
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 31 Jan 2013 10:14:10 +0100                         *
+*  Last modified: Thu, 31 Jan 2013 17:35:48 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -2734,7 +2734,7 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 
 	if (archive_data->id < 0) {
 		const char * query = "insert_archive";
-		st_db_postgresql_prepare(self, query, "INSERT INTO archive(uuid, name, ctime, endtime, creator, owner, metadata) VALUES ($1, $2, $3, $4, $4, $5, $6) RETURNING id");
+		st_db_postgresql_prepare(self, query, "INSERT INTO archive(uuid, name, starttime, endtime, creator, owner, metadata) VALUES ($1, $2, $3, $4, $5, $5, $6) RETURNING id");
 
 		char buffer_ctime[32];
 		char buffer_endtime[32];
@@ -2897,7 +2897,7 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 
 	if (archive_volume_data->id < 0) {
 		const char * query = "insert_archive_volume";
-		st_db_postgresql_prepare(self, query, "INSERT INTO archivevolume(sequence, size, ctime, endtime, archive, media, mediaposition, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id");
+		st_db_postgresql_prepare(self, query, "INSERT INTO archivevolume(sequence, size, starttime, endtime, archive, media, mediaposition, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id");
 
 		char buffer_ctime[32];
 		char buffer_endtime[32];

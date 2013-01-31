@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 07 Dec 2012 20:54:43 +0100                         *
+*  Last modified: Thu, 31 Jan 2013 17:25:23 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -110,10 +110,17 @@ static bool st_slot_iterator_private_has_next_new_media(struct st_slot_iterator 
 
 	for (; self->i_changer < self->nb_changers; self->i_changer++) {
 		struct st_changer * ch = self->changers + self->i_changer;
+		if (!ch->enabled)
+			continue;
 
 		for (; self->i_slot < ch->nb_slots; self->i_slot++) {
 			struct st_slot * sl = ch->slots + self->i_slot;
+			if (!sl->enable)
+				continue;
+
 			struct st_drive * dr = sl->drive;
+			if (dr != NULL && !dr->enabled)
+				continue;
 
 			if (dr != NULL && dr->lock->ops->try_lock(dr->lock))
 				continue;
@@ -144,10 +151,17 @@ static bool st_slot_iterator_private_has_next_by_pool(struct st_slot_iterator * 
 
 	for (; self->i_changer < self->nb_changers; self->i_changer++) {
 		struct st_changer * ch = self->changers + self->i_changer;
+		if (!ch->enabled)
+			continue;
 
 		for (; self->i_slot < ch->nb_slots; self->i_slot++) {
 			struct st_slot * sl = ch->slots + self->i_slot;
+			if (!sl->enable)
+				continue;
+
 			struct st_drive * dr = sl->drive;
+			if (dr != NULL && !dr->enabled)
+				continue;
 
 			if (dr != NULL && dr->lock->ops->try_lock(dr->lock))
 				continue;
