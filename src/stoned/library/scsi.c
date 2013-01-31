@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 31 Jan 2013 10:55:11 +0100                         *
+*  Last modified: Thu, 31 Jan 2013 12:53:47 +0100                         *
 \*************************************************************************/
 
 // htobe16
@@ -808,7 +808,7 @@ void st_scsi_loader_status_new(int fd, struct st_changer * changer, int * transp
 	st_scsi_loader_status_update_slot(fd, changer, changer->slots + changer->nb_drives, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element);
 	st_scsi_loader_status_update_slot(fd, changer, changer->slots, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer);
 	if (result.number_of_import_export_elements > 0)
-		st_scsi_loader_status_update_slot(fd, changer, changer->slots + result.number_of_medium_transport_elements + result.number_of_storage_elements, result.first_import_export_element_address, result.number_of_import_export_elements, scsi_loader_element_type_import_export_element);
+		st_scsi_loader_status_update_slot(fd, changer, changer->slots + (changer->nb_slots - nb_io_slots), result.first_import_export_element_address, result.number_of_import_export_elements, scsi_loader_element_type_import_export_element);
 
 	if (transport_address)
 		*transport_address = result.medium_transport_element_address;

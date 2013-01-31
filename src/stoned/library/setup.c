@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Jan 2013 22:13:30 +0100                         *
+*  Last modified: Thu, 31 Jan 2013 15:53:39 +0100                         *
 \*************************************************************************/
 
 // open
@@ -490,8 +490,10 @@ void st_changer_stop() {
 	unsigned int i;
 	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers; i++) {
 		struct st_changer * ch = st_changers + i;
-		ch->ops->shut_down(ch);
-		ch->ops->free(ch);
+		if (ch->enabled) {
+			ch->ops->shut_down(ch);
+			ch->ops->free(ch);
+		}
 	}
 
 	free(st_changers);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Jan 2013 22:30:32 +0100                         *
+*  Last modified: Thu, 31 Jan 2013 15:52:32 +0100                         *
 \*************************************************************************/
 
 // open
@@ -108,7 +108,8 @@ static void st_scsi_changer_free(struct st_changer * ch) {
 	unsigned int i;
 	for (i = 0; i < ch->nb_drives; i++) {
 		struct st_drive * dr = ch->drives + i;
-		dr->ops->free(dr);
+		if (dr->enabled)
+			dr->ops->free(dr);
 	}
 	free(ch->drives);
 	ch->drives = NULL;
@@ -152,7 +153,7 @@ static int st_scsi_changer_load_media(struct st_changer * ch, struct st_media * 
 }
 
 static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * from, struct st_drive * to) {
-	if (ch == NULL || from == NULL || to == NULL || !ch->enabled)
+	if (ch == NULL || from == NULL || to == NULL || !ch->enabled || !from->enable)
 		return 1;
 
 	if (to->slot == from)
@@ -211,6 +212,7 @@ void st_scsi_changer_setup(struct st_changer * changer, struct st_database_conne
 
 	st_scsi_loader_ready(fd);
 
+	// TODO: change this
 	// st_scsi_loader_medium_removal(fd, false);
 	st_scsi_loader_medium_removal(fd, true);
 
@@ -228,11 +230,18 @@ void st_scsi_changer_setup(struct st_changer * changer, struct st_database_conne
 
 	unsigned int i;
 	for (i = changer->nb_drives; i < changer->nb_slots; i++)
-		changer->slots[i].lock = st_ressource_new();
+		if (changer->slots[i].enable)
+			changer->slots[i].lock = st_ressource_new();
 
+	unsigned int nb_enabled_drives = 0;
 	for (i = 0; i < changer->nb_drives; i++) {
 		struct st_drive * dr = changer->drives + i;
 		dr->slot->drive = dr;
+
+		if (!dr->enabled)
+			continue;
+		nb_enabled_drives++;
+
 		st_scsi_tape_drive_setup(dr);
 
 		if (dr->is_empty && dr->slot->full) {
@@ -289,24 +298,35 @@ void st_scsi_changer_setup(struct st_changer * changer, struct st_database_conne
 		}
 	}
 
+	struct st_drive * first_enabled_dr = NULL;
+	for (i = 0; i < changer->nb_drives && first_enabled_dr == NULL; i++)
+		if (changer->drives[i].enabled)
+			first_enabled_dr = changer->drives + i;
+
 	pthread_t * workers = NULL;
-	if (changer->nb_drives > 1) {
-		workers = calloc(changer->nb_drives - 1, sizeof(pthread_t));
+	unsigned int j;
+	if (nb_enabled_drives > 1) {
+		workers = calloc(nb_enabled_drives - 1, sizeof(pthread_t));
 
 		pthread_attr_t attr;
 		pthread_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-		for (i = 1; i < changer->nb_drives; i++)
-			pthread_create(workers + (i - 1), &attr, st_scsi_changer_setup2, changer->drives + i);
+		for (j = 0; i < changer->nb_drives; i++) {
+			struct st_drive * dr = changer->drives + i;
+			if (dr->enabled) {
+				pthread_create(workers + j, &attr, st_scsi_changer_setup2, dr);
+				j++;
+			}
+		}
 
 		pthread_attr_destroy(&attr);
 	}
 
-	st_scsi_changer_setup2(changer->drives);
+	st_scsi_changer_setup2(first_enabled_dr);
 
-	for (i = 1; i < changer->nb_drives; i++)
-		pthread_join(workers[i - 1], NULL);
+	for (j = 0; i < nb_enabled_drives; i++)
+		pthread_join(workers[j], NULL);
 
 	free(workers);
 
@@ -326,7 +346,8 @@ static void * st_scsi_changer_setup2(void * drive) {
 	unsigned int i;
 	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
 		struct st_slot * sl = ch->slots + i;
-		if (sl->lock->ops->try_lock(sl->lock))
+
+		if (!sl->enable || sl->lock->ops->try_lock(sl->lock))
 			continue;
 
 		if (sl->media != NULL || !sl->full) {
@@ -379,6 +400,11 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 	for (i = ch->nb_drives; i < ch->nb_slots && to == NULL; i++) {
 		to = ch->slots + i;
 
+		if (!to->enable) {
+			to = NULL;
+			continue;
+		}
+
 		struct st_scsislot * sto = to->data;
 		if (slot_from->src_address != sto->address) {
 			to = NULL;
@@ -397,7 +423,7 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 	for (i = ch->nb_drives; i < ch->nb_slots && to == NULL; i++) {
 		to = ch->slots + i;
 
-		if (to->media != NULL) {
+		if (!to->enable && to->media != NULL) {
 			to = NULL;
 			continue;
 		}
