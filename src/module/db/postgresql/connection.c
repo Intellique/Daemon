@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 31 Jan 2013 17:35:48 +0100                         *
+*  Last modified: Thu, 31 Jan 2013 18:49:56 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1888,12 +1888,10 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 
 	const char * query0 = "select_new_jobs";
 	st_db_postgresql_prepare(self, query0, "SELECT j.id, j.name, nextstart, EXTRACT('epoch' FROM interval), repetition, done, status, u.login, metadata, options, jt.name FROM job j LEFT JOIN jobtype jt ON j.type = jt.id LEFT JOIN users u ON j.login = u.id WHERE host = $1 AND j.id > $2 ORDER BY j.id");
-	const char * query1 = "select_job_meta";
-	st_db_postgresql_prepare(self, query1, "SELECT * FROM each((SELECT metadata FROM job WHERE id = $1 LIMIT 1))");
-	const char * query2 = "select_job_option";
-	st_db_postgresql_prepare(self, query2, "SELECT * FROM each((SELECT options FROM job WHERE id = $1 LIMIT 1))");
-	const char * query3 = "select_num_runs";
-	st_db_postgresql_prepare(self, query3, "SELECT MAX(numrun) AS max FROM jobrecord WHERE job = $1");
+	const char * query1 = "select_job_option";
+	st_db_postgresql_prepare(self, query1, "SELECT * FROM each((SELECT options FROM job WHERE id = $1 LIMIT 1))");
+	const char * query2 = "select_num_runs";
+	st_db_postgresql_prepare(self, query2, "SELECT MAX(numrun) AS max FROM jobrecord WHERE job = $1");
 
 	char * hostid = st_db_postgresql_get_host(connect);
 	char * job_id;
@@ -1946,45 +1944,33 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 			job->user = st_user_get(PQgetvalue(result, i, 7));
 
 			// meta
-			const char * param2[] = { job_id };
-			job->meta = st_hashtable_new2(st_util_string_compute_hash, st_util_basic_free);
-			PGresult * result2 = PQexecPrepared(self->connect, query1, 1, param2, NULL, NULL, 0);
-			ExecStatusType status2 = PQresultStatus(result);
-
-			if (status2 == PGRES_FATAL_ERROR)
-				st_db_postgresql_get_error(result2, query1);
-			else if (PQresultStatus(result2) == PGRES_TUPLES_OK) {
-				unsigned int j, nb_metadatas = PQntuples(result2);
-				for (j = 0; j < nb_metadatas; j++)
-					st_hashtable_put(job->meta, strdup(PQgetvalue(result2, j, 0)), st_hashtable_val_string(strdup(PQgetvalue(result2, j, 1))));
-			}
-
-			PQclear(result2);
+			st_db_postgresql_get_string_dup(result, i, 8, &job->meta);
 
 			// options
 			job->option = st_hashtable_new2(st_util_string_compute_hash, st_util_basic_free);
-			result2 = PQexecPrepared(self->connect, query2, 1, param2, NULL, NULL, 0);
-			status2 = PQresultStatus(result);
+			const char * param1[] = { job_id };
+			PGresult * result1 = PQexecPrepared(self->connect, query1, 1, param1, NULL, NULL, 0);
+			ExecStatusType status1 = PQresultStatus(result);
 
-			if (status2 == PGRES_FATAL_ERROR)
-				st_db_postgresql_get_error(result2, query2);
-			else if (PQresultStatus(result2) == PGRES_TUPLES_OK) {
-				unsigned int j, nb_metadatas = PQntuples(result2);
+			if (status1 == PGRES_FATAL_ERROR)
+				st_db_postgresql_get_error(result1, query1);
+			else if (PQresultStatus(result1) == PGRES_TUPLES_OK) {
+				unsigned int j, nb_metadatas = PQntuples(result1);
 				for (j = 0; j < nb_metadatas; j++)
-					st_hashtable_put(job->option, strdup(PQgetvalue(result2, j, 0)), st_hashtable_val_string(strdup(PQgetvalue(result2, j, 1))));
+					st_hashtable_put(job->option, strdup(PQgetvalue(result1, j, 0)), st_hashtable_val_string(strdup(PQgetvalue(result1, j, 1))));
 			}
 
-			PQclear(result2);
+			PQclear(result1);
 
 			// num_runs
-			result2 = PQexecPrepared(self->connect, query3, 1, param2, NULL, NULL, 0);
-			status2 = PQresultStatus(result2);
+			result1 = PQexecPrepared(self->connect, query2, 1, param1, NULL, NULL, 0);
+			status1 = PQresultStatus(result1);
 
-			if (status2 == PGRES_FATAL_ERROR)
-				st_db_postgresql_get_error(result2, query3);
-			else if (status == PGRES_TUPLES_OK && PQntuples(result2) == 1 && !PQgetisnull(result2, 0, 0))
-				st_db_postgresql_get_long(result2, 0, 0, &job->num_runs);
-			PQclear(result2);
+			if (status1 == PGRES_FATAL_ERROR)
+				st_db_postgresql_get_error(result1, query2);
+			else if (status == PGRES_TUPLES_OK && PQntuples(result1) == 1 && !PQgetisnull(result1, 0, 0))
+				st_db_postgresql_get_long(result1, 0, 0, &job->num_runs);
+			PQclear(result1);
 
 			// driver
 			job->driver = st_job_get_driver(PQgetvalue(result, i, 10));
@@ -2217,7 +2203,7 @@ static struct st_archive * st_db_postgresql_get_archive_by_job(struct st_databas
 		return NULL;
 
 	const char * query = "select_archive_by_job";
-	st_db_postgresql_prepare(self, query, "SELECT a.id, name, starttime, endtime, checktime, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
+	st_db_postgresql_prepare(self, query, "SELECT a.id, name, starttime, endtime, checktime, metadata, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
 
 	char * jobid;
 	asprintf(&jobid, "%ld", job_data->id);
@@ -2237,11 +2223,12 @@ static struct st_archive * st_db_postgresql_get_archive_by_job(struct st_databas
 		st_db_postgresql_get_time(result, 0, 2, &archive->start_time);
 		st_db_postgresql_get_time(result, 0, 3, &archive->end_time);
 		st_db_postgresql_get_time(result, 0, 4, &archive->check_time);
+		st_db_postgresql_get_string_dup(result, 0, 5, &archive->metadatas);
 
 		archive->volumes = NULL;
 		archive->nb_volumes = 0;
 
-		archive->user = st_user_get(PQgetvalue(result, 0, 5));
+		archive->user = st_user_get(PQgetvalue(result, 0, 6));
 
 		archive->copy_of = NULL;
 
@@ -2751,7 +2738,7 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 		strftime(buffer_endtime, 32, "%F %T", &tv);
 
 		const char * param[] = {
-			archive->uuid, archive->name, buffer_ctime, buffer_endtime, userid, ""
+			archive->uuid, archive->name, buffer_ctime, buffer_endtime, userid, archive->metadatas,
 		};
 		PGresult * result = PQexecPrepared(self->connect, query, 6, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);

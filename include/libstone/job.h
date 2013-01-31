@@ -67,7 +67,7 @@ struct st_job {
 
 	struct st_user * user;
 
-	struct st_hashtable * meta;
+	char * meta;
 	struct st_hashtable * option;
 
 	struct st_job_ops {

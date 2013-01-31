@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Jan 2013 19:23:40 +0100                         *
+*  Last modified: Thu, 31 Jan 2013 18:50:36 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -112,8 +112,10 @@ struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(s
 	self->connect = connect;
 
 	self->archive = jp->connect->ops->get_archive_by_job(jp->connect, job);
-	if (self->archive == NULL)
+	if (self->archive == NULL) {
 		self->archive = st_archive_new(job->name, job->user);
+		self->archive->metadatas = strdup(job->meta);
+	}
 
 	self->pool = st_pool_get_by_job(job, connect);
 

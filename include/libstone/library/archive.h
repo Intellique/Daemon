@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Jan 2013 18:50:32 +0100                         *
+*  Last modified: Thu, 31 Jan 2013 18:09:40 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -66,6 +66,8 @@ struct st_archive {
 
 	struct st_archive * copy_of;
 	struct st_user * user;
+
+	char * metadatas;
 
 	void * db_data;
 };

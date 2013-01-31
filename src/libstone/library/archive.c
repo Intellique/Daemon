@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Jan 2013 18:51:09 +0100                         *
+*  Last modified: Thu, 31 Jan 2013 18:10:32 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -113,6 +113,7 @@ struct st_archive * st_archive_new(const char * name, struct st_user * user) {
 
 	archive->copy_of = NULL;
 	archive->user = user;
+	archive->metadatas = NULL;
 
 	archive->db_data = NULL;
 

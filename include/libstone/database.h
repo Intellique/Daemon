@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Jan 2013 22:31:23 +0100                         *
+*  Last modified: Thu, 31 Jan 2013 18:50:05 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
