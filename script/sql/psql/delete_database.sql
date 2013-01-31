@@ -41,4 +41,5 @@ DROP TYPE IF EXISTS MediaFormatDataType;
 DROP TYPE IF EXISTS MediaFormatMode;
 DROP TYPE IF EXISTS MediaLocation;
 DROP TYPE IF EXISTS MediaStatus;
+DROP TYPE IF EXISTS MediaType;
 DROP TYPE IF EXISTS UnbreakableLevel;

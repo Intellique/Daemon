@@ -247,7 +247,6 @@ CREATE TABLE Changer (
 
 CREATE TABLE Drive (
     id SERIAL PRIMARY KEY,
-    changerNum INTEGER NOT NULL CHECK (changerNum >= 0),
 
     device VARCHAR(64) NOT NULL,
     scsiDevice VARCHAR(64) NOT NULL,
@@ -259,7 +258,7 @@ CREATE TABLE Drive (
 
     status DriveStatus NOT NULL,
     operationDuration FLOAT(3) NOT NULL DEFAULT 0 CHECK (operationDuration >= 0),
-    lastClean TIMESTAMP(0) NOT NULL,
+    lastClean TIMESTAMP(0),
     enable BOOLEAN NOT NULL DEFAULT TRUE,
 
     changer INTEGER NULL REFERENCES Changer(id) ON UPDATE CASCADE ON DELETE CASCADE,
@@ -271,8 +270,10 @@ CREATE TABLE ChangerSlot (
 
     index INTEGER NOT NULL,
     changer INTEGER NOT NULL REFERENCES Changer(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    drive INTEGER UNIQUE REFERENCES Drive(id) ON UPDATE CASCADE ON DELETE SET NULL,
     media INTEGER REFERENCES Media(id) ON UPDATE CASCADE ON DELETE SET NULL,
     type ChangerSlotType NOT NULL DEFAULT 'storage',
+    enable BOOLEAN NOT NULL DEFAULT TRUE,
 
     CONSTRAINT unique_slot UNIQUE (index, changer)
 );
@@ -322,8 +323,9 @@ CREATE TABLE Archive (
     uuid UUID NULL UNIQUE,
     name TEXT NOT NULL,
 
-    ctime TIMESTAMP(0) NOT NULL,
+    starttime TIMESTAMP(0) NOT NULL,
     endtime TIMESTAMP(0),
+    checktime TIMESTAMP(0),
 
     creator INTEGER NOT NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     owner INTEGER NOT NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE RESTRICT,
@@ -332,7 +334,7 @@ CREATE TABLE Archive (
     copyOf BIGINT REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
     CONSTRAINT archive_id CHECK (id != copyOf),
-    CONSTRAINT archive_time CHECK (ctime <= endtime)
+    CONSTRAINT archive_time CHECK (starttime <= endtime)
 );
 
 CREATE TABLE ArchiveFile (
@@ -351,6 +353,7 @@ CREATE TABLE ArchiveFile (
 
     ctime TIMESTAMP(0) NOT NULL,
     mtime TIMESTAMP(0) NOT NULL,
+    checktime TIMESTAMP(0),
 
     size BIGINT NOT NULL CHECK (size >= 0),
 
@@ -363,15 +366,16 @@ CREATE TABLE ArchiveVolume (
     sequence INTEGER NOT NULL DEFAULT 0 CHECK (sequence >= 0),
     size BIGINT NOT NULL DEFAULT 0 CHECK (size >= 0),
 
-    ctime TIMESTAMP(0) NOT NULL,
+    starttime TIMESTAMP(0) NOT NULL,
     endtime TIMESTAMP(0),
+    checktime TIMESTAMP(0),
 
     archive BIGINT NOT NULL REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE CASCADE,
     media INTEGER NOT NULL REFERENCES Media(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     mediaPosition INTEGER NOT NULL DEFAULT 0 CHECK (mediaPosition >= 0),
     host INTEGER NOT NULL REFERENCES Host(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
-    CONSTRAINT archiveVolume_time CHECK (ctime <= endtime)
+    CONSTRAINT archiveVolume_time CHECK (starttime <= endtime)
 );
 
 CREATE TABLE ArchiveFileToArchiveVolume (
@@ -498,8 +502,13 @@ CREATE TABLE RestoreTo (
 );
 
 -- Comments
-COMMENT ON COLUMN Archive.ctime IS 'Start time of archive creation';
+COMMENT ON COLUMN Archive.starttime IS 'Start time of archive creation';
 COMMENT ON COLUMN Archive.endtime IS 'End time of archive creation';
+COMMENT ON COLUMN Archive.checktime IS 'Last time of checked time';
+
+COMMENT ON COLUMN ArchiveVolume.starttime IS 'Start time of archive volume creation';
+COMMENT ON COLUMN ArchiveVolume.endtime IS 'End time of archive volume creation';
+COMMENT ON COLUMN ArchiveVolume.checktime IS 'Last time of checked time';
 
 COMMENT ON TABLE Checksum IS 'Contains only checksum available';
 
