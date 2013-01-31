@@ -152,6 +152,7 @@ CREATE TABLE Pool (
     growable BOOLEAN NOT NULL DEFAULT FALSE,
     unbreakableLevel UnbreakableLevel NOT NULL DEFAULT 'none',
     rewritable BOOLEAN NOT NULL DEFAULT TRUE,
+    deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
     metadata TEXT NOT NULL DEFAULT ''
 );
