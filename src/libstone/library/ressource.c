@@ -22,8 +22,8 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 09:20:59 +0200                         *
-\*************************************************************************/
+*  Last modified: Fri, 01 Feb 2013 17:12:28 +0100                         *
+*************************************************************************/
 
 #define _GNU_SOURCE
 #include <errno.h>
@@ -130,7 +130,7 @@ static int st_ressource_private_lock(struct st_ressource * res) {
 	struct st_ressource_private * self = res->data;
 	int failed = pthread_mutex_lock(&self->lock);
 	if (!failed)
-		res->locked = 1;
+		res->locked++;
 	return failed;
 }
 
@@ -174,6 +174,6 @@ static void st_ressource_private_unlock(struct st_ressource * res) {
 
 	struct st_ressource_private * self = res->data;
 	if (!pthread_mutex_unlock(&self->lock))
-		res->locked = 0;
+		res->locked--;
 }
 

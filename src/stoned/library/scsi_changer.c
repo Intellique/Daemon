@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 31 Jan 2013 16:19:04 +0100                         *
+*  Last modified: Fri, 01 Feb 2013 17:08:13 +0100                         *
 \*************************************************************************/
 
 // open
@@ -203,7 +203,7 @@ static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * fr
 	} else
 		st_log_write_all(st_log_level_error, st_log_type_changer, "[%s | %s]: loading media '%s' from slot #%td to drive #%td finished with code = %d", ch->vendor, ch->model, to->slot->volume_name, from - ch->slots, to - ch->drives, failed);
 
-	self->lock->ops->unlock(to->lock);
+	self->lock->ops->unlock(self->lock);
 
 	return failed;
 }
@@ -476,6 +476,7 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 	}
 
 	to->lock->ops->unlock(to->lock);
+	self->lock->ops->unlock(self->lock);
 
 	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading media '%s' from drive #%td to slot #%td finished with code = %d", ch->vendor, ch->model, to->volume_name, from - ch->drives, to - ch->slots, failed);
 
