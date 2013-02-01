@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 31 Jan 2013 18:50:05 +0100                         *
+*  Last modified: Fri, 01 Feb 2013 10:22:19 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -184,17 +184,22 @@ struct st_database_connection {
 		int (*get_user)(struct st_database_connection * connect, struct st_user * user, const char * login);
 		int (*sync_user)(struct st_database_connection * connect, struct st_user * user);
 
+		bool (*check_checksums_of_archive_volume)(struct st_database_connection * connect, struct st_archive_volume * volume, char ** checksums, char ** checksum_results, unsigned int nb_checksums);
 		bool (*check_checksums_of_file)(struct st_database_connection * connect, struct st_archive_file * file, char ** checksums, char ** checksum_results, unsigned int nb_checksums);
 		struct st_archive * (*get_archive_by_job)(struct st_database_connection * connect, struct st_job * job);
 		struct st_archive_file * (*get_archive_file_for_restore_directory)(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_files);
 		int (*get_archive_files_by_job_and_archive_volume)(struct st_database_connection * connect, struct st_job * job, struct st_archive_volume * volume);
 		struct st_archive * (*get_archive_volumes_by_job)(struct st_database_connection * connect, struct st_job * job);
+		char ** (*get_checksums_of_archive_volume)(struct st_database_connection * connect, struct st_archive_volume * volume, unsigned int * nb_checksums);
 		char ** (*get_checksums_of_file)(struct st_database_connection * connect, struct st_archive_file * file, unsigned int * nb_checksums);
 		unsigned int (*get_nb_volume_of_file)(struct st_database_connection * connect, struct st_job * job, struct st_archive_file * file);
 		char * (*get_restore_path_from_file)(struct st_database_connection * connect, struct st_job * job, struct st_archive_file * file);
 		char * (*get_restore_path_of_job)(struct st_database_connection * connect, struct st_job * job);
 		ssize_t (*get_restore_size_by_job)(struct st_database_connection * connect, struct st_job * job);
 		bool (*has_restore_to_by_job)(struct st_database_connection * connect, struct st_job * job);
+		bool (*mark_archive_as_checked)(struct st_database_connection * connect, struct st_archive * archive);
+		bool (*mark_archive_file_as_checked)(struct st_database_connection * connect, struct st_archive_volume * volume, struct st_archive_file * file);
+		bool (*mark_archive_volume_as_checked)(struct st_database_connection * connect, struct st_archive_volume * volume);
 		int (*sync_archive)(struct st_database_connection * connect, struct st_archive * archive, char ** checksums);
 	} * ops;
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 29 Dec 2012 12:44:54 +0100                         *
+*  Last modified: Thu, 31 Jan 2013 19:08:37 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_CHECKARCHIVE_H__
@@ -37,6 +37,8 @@ struct st_job_check_archive_private {
 
 	struct st_archive * archive;
 };
+
+int st_job_check_archive_quick_mode(struct st_job_check_archive_private * self);
 
 #endif
 

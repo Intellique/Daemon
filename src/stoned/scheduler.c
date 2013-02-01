@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 29 Jan 2013 21:13:18 +0100                         *
+*  Last modified: Fri, 01 Feb 2013 09:36:45 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -115,8 +115,7 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 		struct st_job * job = jobs[i];
 
 		free(job->name);
-		if (job->meta)
-			st_hashtable_free(job->meta);
+		free(job->meta);
 		if (job->option)
 			st_hashtable_free(job->option);
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Jan 2013 19:28:04 +0100                         *
+*  Last modified: Fri, 01 Feb 2013 12:49:46 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -100,6 +100,10 @@ static int st_job_check_archive_run(struct st_job * job) {
 		job->sched_status = st_job_status_error;
 		return 2;
 	}
+
+	job->done = 0.01;
+
+	st_job_check_archive_quick_mode(self);
 
 	return 0;
 }
