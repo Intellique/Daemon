@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 25 Dec 2012 20:13:18 +0100                         *
+*  Last modified: Sun, 03 Feb 2013 16:00:04 +0100                         *
 \*************************************************************************/
 
 // getopt_long
@@ -119,6 +119,8 @@ int main(int argc, char ** argv) {
 	} while (opt > -1);
 
 	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Parsing option: ok");
+
+	st_conf_register_callback("vtl", st_vtl_add);
 
 	// check pid file
 	int pid = st_conf_read_pid(pid_file);

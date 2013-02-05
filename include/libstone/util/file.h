@@ -22,12 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 18 Dec 2012 22:31:33 +0100                         *
+*  Last modified: Mon, 04 Feb 2013 12:14:33 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_UTIL_FILE_H__
 #define __STONE_UTIL_FILE_H__
 
+// bool
+#include <stdbool.h>
 // gid_t, mode_t, ssize_t
 #include <sys/types.h>
 
@@ -43,6 +45,8 @@ struct dirent;
  */
 int st_util_file_basic_scandir_filter(const struct dirent * d);
 
+bool st_util_file_check_link(const char * file);
+
 /**
  * \brief Convert \a size to humain readeable format (i.e. 30KB)
  *
@@ -51,6 +55,8 @@ int st_util_file_basic_scandir_filter(const struct dirent * d);
  * \param[in] str_len : length of \a str in bytes
  */
 void st_util_file_convert_size_to_string(ssize_t size, char * str, ssize_t str_len);
+
+char * st_util_file_get_serial(const char * filename);
 
 /**
  * \brief Convert group's name from \a gid
@@ -71,6 +77,8 @@ void st_util_file_gid2name(char * name, ssize_t length, gid_t gid);
  * \returns 0 if ok or read errno
  */
 int st_util_file_mkdir(const char * dirname, mode_t mode);
+
+char * st_util_file_read_all_from(const char * filename);
 
 char * st_util_file_rename(const char * filename);
 
@@ -101,6 +109,8 @@ char * st_util_file_trunc_path(char * path, int nb_trunc_path);
  * \note if \a uid is not found, write uid number into \a name
  */
 void st_util_file_uid2name(char * name, ssize_t length, uid_t uid);
+
+bool st_util_file_write_to(const char * filename, const char * data, ssize_t length);
 
 #endif
 

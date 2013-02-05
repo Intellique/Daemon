@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 01 Feb 2013 13:00:08 +0100                         *
+*  Last modified: Tue, 05 Feb 2013 10:14:06 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -131,7 +131,7 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 
 static ssize_t st_db_postgresql_get_available_size_of_offline_media_from_pool(struct st_database_connection * connect, struct st_pool * pool);
 static struct st_media * st_db_postgresql_get_media(struct st_database_connection * connect, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label);
-static int st_db_postgresql_get_media_format(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, enum st_media_format_mode mode);
+static int st_db_postgresql_get_media_format(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, const char * name, enum st_media_format_mode mode);
 static struct st_pool * st_db_postgresql_get_pool(struct st_database_connection * connect, struct st_archive * archive, struct st_job * job, const char * uuid);
 
 static int st_db_postgresql_add_job_record(struct st_database_connection * connect, struct st_job * job, const char * message);
@@ -1615,19 +1615,34 @@ static struct st_media * st_db_postgresql_get_media(struct st_database_connectio
 	return media;
 }
 
-static int st_db_postgresql_get_media_format(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, enum st_media_format_mode mode) {
+static int st_db_postgresql_get_media_format(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, const char * name, enum st_media_format_mode mode) {
 	if (connect == NULL || media_format == NULL)
 		return 1;
 
 	struct st_db_postgresql_connection_private * self = connect->data;
-	char * c_density_code = NULL;
-	asprintf(&c_density_code, "%d", density_code);
 
-	const char * query = "select_media_format";
-	st_db_postgresql_prepare(self, query, "SELECT name, datatype, maxloadcount, maxreadcount, maxwritecount, maxopcount, EXTRACT('epoch' FROM lifespan), capacity, blocksize, supportpartition, supportmam FROM mediaformat WHERE densitycode = $1 AND mode = $2 LIMIT 1");
+	const char * query;
+	PGresult * result;
 
-	const char * param[] = { c_density_code, st_media_format_mode_to_string(mode) };
-	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	if (name != NULL) {
+		query = "select_media_format_by_name";
+		st_db_postgresql_prepare(self, query, "SELECT name, datatype, maxloadcount, maxreadcount, maxwritecount, maxopcount, EXTRACT('epoch' FROM lifespan), capacity, blocksize, densitycode, supportpartition, supportmam FROM mediaformat WHERE name = $1 AND mode = $2 LIMIT 1");
+
+		const char * param[] = { name, st_media_format_mode_to_string(mode) };
+		result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	} else {
+		query = "select_media_format_by_density_code";
+		st_db_postgresql_prepare(self, query, "SELECT name, datatype, maxloadcount, maxreadcount, maxwritecount, maxopcount, EXTRACT('epoch' FROM lifespan), capacity, blocksize, densitycode, supportpartition, supportmam FROM mediaformat WHERE densitycode = $1 AND mode = $2 LIMIT 1");
+
+		char * c_density_code = NULL;
+		asprintf(&c_density_code, "%d", density_code);
+
+		const char * param[] = { c_density_code, st_media_format_mode_to_string(mode) };
+		result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+
+		free(c_density_code);
+	}
+
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)
@@ -1647,17 +1662,16 @@ static int st_db_postgresql_get_media_format(struct st_database_connection * con
 
 		st_db_postgresql_get_ssize(result, 0, 7, &media_format->capacity);
 		st_db_postgresql_get_ssize(result, 0, 8, &media_format->block_size);
+		st_db_postgresql_get_uchar(result, 0, 9, &media_format->density_code);
 
-		st_db_postgresql_get_bool(result, 0, 9, &media_format->support_partition);
-		st_db_postgresql_get_bool(result, 0, 10, &media_format->support_mam);
+		st_db_postgresql_get_bool(result, 0, 10, &media_format->support_partition);
+		st_db_postgresql_get_bool(result, 0, 11, &media_format->support_mam);
 
 		PQclear(result);
-		free(c_density_code);
 		return 0;
 	}
 
 	PQclear(result);
-	free(c_density_code);
 	return 1;
 }
 

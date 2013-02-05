@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 29 Jan 2013 16:16:37 +0100                         *
+*  Last modified: Mon, 04 Feb 2013 13:17:58 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -68,7 +68,7 @@ static void st_media_add(struct st_media * media);
 static void st_media_exit(void) __attribute__((destructor));
 static struct st_media * st_media_retrieve(struct st_database_connection * connection, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label);
 
-static int st_media_format_retrieve(struct st_media_format ** media_format, unsigned char density_code, enum st_media_format_mode mode);
+static int st_media_format_retrieve(struct st_media_format ** media_format, unsigned char density_code, const char * name, enum st_media_format_mode mode);
 
 static struct st_pool * st_pool_retreive(struct st_database_connection * connection, struct st_archive * archive, struct st_job * job, const char * uuid);
 
@@ -757,6 +757,9 @@ int st_media_write_header(struct st_drive * drive, struct st_pool * pool) {
 
 
 struct st_media_format * st_media_format_get_by_density_code(unsigned char density_code, enum st_media_format_mode mode) {
+	if (density_code == 0 || mode == st_media_format_mode_unknown)
+		return NULL;
+
 	pthread_mutex_lock(&st_media_format_lock);
 
 	struct st_media_format * media_format = NULL;
@@ -765,7 +768,7 @@ struct st_media_format * st_media_format_get_by_density_code(unsigned char densi
 		if (st_media_formats[i]->density_code == density_code && st_media_formats[i]->mode == mode)
 			media_format = st_media_formats[i];
 
-	if (media_format == NULL && st_media_format_retrieve(&media_format, density_code, mode)) {
+	if (media_format == NULL && st_media_format_retrieve(&media_format, density_code, NULL, mode)) {
 		void * new_addr = realloc(st_media_formats, (st_media_format_nb_formats + 1) * sizeof(struct st_media_format *));
 		if (new_addr != NULL) {
 			st_media_formats = new_addr;
@@ -779,7 +782,33 @@ struct st_media_format * st_media_format_get_by_density_code(unsigned char densi
 	return media_format;
 }
 
-static int st_media_format_retrieve(struct st_media_format ** media_format, unsigned char density_code, enum st_media_format_mode mode) {
+struct st_media_format * st_media_format_get_by_name(const char * format, enum st_media_format_mode mode) {
+	if (format == NULL || mode == st_media_format_mode_unknown)
+		return NULL;
+
+	pthread_mutex_lock(&st_media_format_lock);
+
+	struct st_media_format * media_format = NULL;
+	unsigned int i;
+	for (i = 0; i < st_media_format_nb_formats && media_format == NULL; i++)
+		if (!strcmp(format, st_media_formats[i]->name))
+			media_format = st_media_formats[i];
+
+	if (media_format == NULL && st_media_format_retrieve(&media_format, 0, format, mode)) {
+		void * new_addr = realloc(st_media_formats, (st_media_format_nb_formats + 1) * sizeof(struct st_media_format *));
+		if (new_addr != NULL) {
+			st_media_formats = new_addr;
+			st_media_formats[st_media_format_nb_formats] = media_format;
+			st_media_format_nb_formats++;
+		}
+	}
+
+	pthread_mutex_unlock(&st_media_format_lock);
+
+	return media_format;
+}
+
+static int st_media_format_retrieve(struct st_media_format ** media_format, unsigned char density_code, const char * name, enum st_media_format_mode mode) {
 	struct st_database * db = st_database_get_default_driver();
 	struct st_database_config * config = NULL;
 	struct st_database_connection * connect = NULL;
@@ -795,7 +824,7 @@ static int st_media_format_retrieve(struct st_media_format ** media_format, unsi
 		bzero(&format, sizeof(struct st_media_format));
 
 		short ok = 0;
-		if (!connect->ops->get_media_format(connect, &format, density_code, mode)) {
+		if (!connect->ops->get_media_format(connect, &format, density_code, name, mode)) {
 			if (!*media_format)
 				*media_format = malloc(sizeof(struct st_media_format));
 			memcpy(*media_format, &format, sizeof(struct st_media_format));

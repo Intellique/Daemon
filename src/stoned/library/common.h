@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Jan 2013 22:26:26 +0100                         *
+*  Last modified: Sun, 03 Feb 2013 10:30:58 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_COMMON_H__
@@ -34,6 +34,7 @@
 struct st_changer;
 struct st_drive;
 struct st_database_connection;
+struct st_hashtable;
 struct st_media_format;
 struct st_pool;
 
@@ -42,11 +43,14 @@ void st_scsi_tape_drive_setup(struct st_drive * drive);
 void st_standalone_drive_setup(struct st_changer * changer);
 void st_scsi_changer_setup(struct st_changer * changer, struct st_database_connection * connection);
 
+void st_changer_add(struct st_changer * vtl);
 void st_changer_stop(void);
 void st_changer_sync(struct st_database_connection * connection);
 
 struct st_slot_iterator * st_slot_iterator_by_new_media2(struct st_media_format * format, struct st_changer * changers, unsigned int nb_changers);
 struct st_slot_iterator * st_slot_iterator_by_pool2(struct st_pool * pool, struct st_changer * changers, unsigned int nb_changers);
+
+void st_vtl_add(const struct st_hashtable * params);
 
 #endif
 

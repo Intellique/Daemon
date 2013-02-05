@@ -22,12 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 15 Jan 2013 18:53:25 +0100                         *
+*  Last modified: Mon, 04 Feb 2013 21:02:38 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
 // scandir
 #include <dirent.h>
+// open
+#include <fcntl.h>
 // getgrgid_r
 #include <grp.h>
 // getpwuid_r
@@ -36,14 +38,17 @@
 #include <stdio.h>
 // free, malloc
 #include <stdlib.h>
-// memmove, strdup, strchr, strcpy, strlen, strncpy, strrchr
+// memmove, strchr, strcpy, strdup, strlen, strncpy, strrchr
 #include <string.h>
-// lstat, mkdir
+// lstat, mkdir, open
 #include <sys/stat.h>
-// getgrgid_r, getpwuid_r, lstat, mkdir
+// getgrgid_r, getpwuid_r, lstat, mkdir, open
 #include <sys/types.h>
-// access, lstat, rmdir, unlink
+// access, close, fstat, lstat, readlink, rmdir, unlink
 #include <unistd.h>
+// uuid_generate, uuid_unparse_lower
+#include <uuid/uuid.h>
+
 
 #include <libstone/util/file.h>
 #include <libstone/util/string.h>
@@ -57,6 +62,19 @@ int st_util_file_basic_scandir_filter(const struct dirent * d) {
 		return 0;
 
 	return d->d_name[1] != '.' || d->d_name[2] != '\0';
+}
+
+bool st_util_file_check_link(const char * file) {
+	if (access(file, F_OK))
+		return false;
+
+	char link[256];
+	ssize_t link_lenght = readlink(file, link, 256);
+
+	if (link_lenght < 0)
+		return false;
+
+	return !access(link, F_OK);
 }
 
 void st_util_file_convert_size_to_string(ssize_t size, char * str, ssize_t str_len) {
@@ -96,6 +114,23 @@ void st_util_file_convert_size_to_string(ssize_t size, char * str, ssize_t str_l
 		if (ptrBegin + 1 < ptrEnd)
 			memmove(ptrBegin + 1, ptrEnd, strlen(ptrEnd) + 1);
 	}
+}
+
+char * st_util_file_get_serial(const char * filename) {
+	char * serial = st_util_file_read_all_from(filename);
+	if (serial == NULL) {
+		uuid_t id;
+		uuid_generate(id);
+
+		char uuid[37];
+		uuid_unparse_lower(id, uuid);
+
+		serial = strdup(uuid);
+
+		st_util_file_write_to(filename, serial, 36);
+	}
+
+	return serial;
 }
 
 void st_util_file_gid2name(char * name, ssize_t length, gid_t gid) {
@@ -150,6 +185,33 @@ int st_util_file_mkdir(const char * dirname, mode_t mode) {
 	free(dir);
 
 	return failed;
+}
+
+char * st_util_file_read_all_from(const char * filename) {
+	int fd = open(filename, O_RDONLY);
+	if (fd < 0)
+		return NULL;
+
+	struct stat st;
+	int failed = fstat(fd, &st);
+	if (failed != 0 || st.st_size == 0) {
+		close(fd);
+		return NULL;
+	}
+
+	char * data = malloc(st.st_size + 1);
+
+	ssize_t nb_read = read(fd, data, st.st_size);
+	data[st.st_size] = '\0';
+
+	close(fd);
+
+	if (nb_read < 0) {
+		free(data);
+		data = NULL;
+	}
+
+	return data;
 }
 
 char * st_util_file_rename(const char * filename) {
@@ -251,5 +313,16 @@ void st_util_file_uid2name(char * name, ssize_t length, uid_t uid) {
 	}
 
 	free(buffer);
+}
+
+bool st_util_file_write_to(const char * filename, const char * data, ssize_t length) {
+	int fd = open(filename, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+	if (fd < 0)
+		return false;
+
+	ssize_t nb_write = write(fd, data, length);
+	close(fd);
+
+	return nb_write == length;
 }
 

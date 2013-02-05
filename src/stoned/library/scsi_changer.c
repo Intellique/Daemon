@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 01 Feb 2013 17:08:13 +0100                         *
+*  Last modified: Mon, 04 Feb 2013 22:25:13 +0100                         *
 \*************************************************************************/
 
 // open
@@ -215,9 +215,7 @@ void st_scsi_changer_setup(struct st_changer * changer, struct st_database_conne
 
 	st_scsi_loader_ready(fd);
 
-	// TODO: change this
-	// st_scsi_loader_medium_removal(fd, false);
-	st_scsi_loader_medium_removal(fd, true);
+	st_scsi_loader_medium_removal(fd, false);
 
 	struct st_scsi_changer_private * ch = malloc(sizeof(struct st_scsi_changer_private));
 	ch->fd = fd;

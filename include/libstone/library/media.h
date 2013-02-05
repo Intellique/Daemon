@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 29 Jan 2013 15:28:56 +0100                         *
+*  Last modified: Mon, 04 Feb 2013 18:49:09 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -126,6 +126,7 @@ struct st_media {
 	struct st_ressource * lock;
 	volatile bool locked;
 
+	void * data;
 	void * db_data;
 };
 
@@ -186,6 +187,7 @@ int st_media_read_header(struct st_drive * dr);
 int st_media_write_header(struct st_drive * dr, struct st_pool * pool);
 
 struct st_media_format * st_media_format_get_by_density_code(unsigned char density_code, enum st_media_format_mode mode);
+struct st_media_format * st_media_format_get_by_name(const char * format, enum st_media_format_mode mode);
 
 struct st_pool * st_pool_get_by_archive(struct st_archive * archive, struct st_database_connection * connection);
 struct st_pool * st_pool_get_by_job(struct st_job * job, struct st_database_connection * connection);

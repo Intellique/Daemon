@@ -22,12 +22,12 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 31 Jan 2013 15:53:39 +0100                         *
+*  Last modified: Tue, 05 Feb 2013 11:31:48 +0100                         *
 \*************************************************************************/
 
 // open
 #include <fcntl.h>
-// glob
+// glob, globfree
 #include <glob.h>
 // calloc, realloc
 #include <stdlib.h>
@@ -55,6 +55,21 @@
 static struct st_changer * st_changers = NULL;
 static unsigned int st_nb_fake_changers = 0;
 static unsigned int st_nb_real_changers = 0;
+static struct st_changer ** st_vtls = NULL;
+static unsigned int st_nb_vtls = 0;
+
+
+void st_changer_add(struct st_changer * vtl) {
+	void * new_addr = realloc(st_vtls, (st_nb_vtls + 1) * sizeof(struct st_changer *));
+	if (new_addr == NULL) {
+		st_log_write_all(st_log_level_error, st_log_type_user_message, "Panic: There is not enought memory for vtl !!!");
+		return;
+	}
+
+	st_vtls = new_addr;
+	st_vtls[st_nb_vtls] = vtl;
+	st_nb_vtls++;
+}
 
 struct st_slot * st_changer_find_free_media_by_format(struct st_media_format * format) {
 	unsigned int i;
@@ -178,7 +193,7 @@ int st_changer_setup(void) {
 	glob_t gl;
 	glob("/sys/class/scsi_device/*/device/scsi_tape", 0, NULL, &gl);
 
-	if (gl.gl_pathc == 0) {
+	if (gl.gl_pathc == 0 && st_nb_vtls == 0) {
 		st_log_write_all(st_log_level_error, st_log_type_user_message, "Panic: There is drive found, exit now !!!");
 		return 1;
 	}
@@ -244,10 +259,11 @@ int st_changer_setup(void) {
 	 * In the worst case, we have nb_drives changers,
 	 * so we alloc enough memory for this worst case.
 	 */
-	st_changers = calloc(nb_drives, sizeof(struct st_changer));
+	st_changers = calloc(nb_drives + st_nb_vtls, sizeof(struct st_changer));
 	st_nb_real_changers = gl.gl_pathc;
 
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd changer%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %u virtual changer%s", st_nb_vtls, st_nb_vtls != 1 ? "s" : "");
 
 	for (i = 0; i < gl.gl_pathc; i++) {
 		char link[256];
@@ -439,10 +455,36 @@ int st_changer_setup(void) {
 		}
 	}
 
+	// add vtls
+	if (st_nb_vtls > 0) {
+		for (i = 0; i < st_nb_vtls; i++) {
+			struct st_changer * from = st_vtls[i];
+			struct st_changer * to = st_changers + st_nb_real_changers + st_nb_fake_changers + i;
+
+			*to = *from;
+
+			// update pointers
+			unsigned int j;
+			for (j = 0; j < to->nb_drives; j++) {
+				struct st_drive * dr = to->drives + j;
+				dr->changer = to;
+			}
+
+			for (j = 0; j < to->nb_slots; j++) {
+				struct st_slot * sl = to->slots + j;
+				sl->changer = to;
+			}
+
+			free(from);
+		}
+
+		free(st_vtls);
+		st_vtls = NULL;
+	}
+
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %u stand-alone drive%s", st_nb_fake_changers, st_nb_fake_changers != 1 ? "s" : "");
 
-	if (drives)
-		free(drives);
+	free(drives);
 
 	// check enabled devices
 	struct st_database * db = st_database_get_default_driver();
@@ -454,7 +496,7 @@ int st_changer_setup(void) {
 	if (config != NULL)
 		connect = config->ops->connect(config);
 
-	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers && connect != NULL; i++) {
+	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers + st_nb_vtls && connect != NULL; i++) {
 		struct st_changer * ch = st_changers + i;
 
 		if (!connect->ops->changer_is_enabled(connect, ch))
@@ -503,7 +545,7 @@ void st_changer_stop() {
 
 void st_changer_sync(struct st_database_connection * connection) {
 	unsigned int i;
-	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers; i++)
+	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers + st_nb_vtls; i++)
 		connection->ops->sync_changer(connection, st_changers + i);
 }
 

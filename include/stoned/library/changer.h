@@ -22,11 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 16 Dec 2012 15:07:55 +0100                         *
+*  Last modified: Mon, 04 Feb 2013 15:26:40 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONED_LIBRARY_CHANGER_H__
 #define __STONED_LIBRARY_CHANGER_H__
+
+// ssize_t
+#include <sys/types.h>
 
 #include <libstone/library/changer.h>
 
