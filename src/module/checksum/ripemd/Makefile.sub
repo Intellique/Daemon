@@ -1,0 +1,11 @@
+STONE_CHECKSUM_RIPEMD_SRC_DIR		:= src/module/checksum/ripemd
+
+STONE_CHECKSUM_RIPEMD_BIN			:= lib/libchecksum-ripemd.so
+STONE_CHECKSUM_RIPEMD_CFLAG			:= -pthread -fPIC -fvisibility=hidden
+STONE_CHECKSUM_RIPEMD_LD			:= -pthread -shared -lcrypto
+
+STONE_CHECKSUM_RIPEMD_DEPEND_LIB	:=
+
+STONE_CHECKSUM_RIPEMD_CHCKSUM_FILE	:= libchecksum-ripemd.chcksum
+
+BIN_SYMS							+= STONE_CHECKSUM_RIPEMD
