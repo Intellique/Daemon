@@ -22,11 +22,11 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 05 Feb 2013 11:17:55 +0100                         *
+*  Last modified: Tue, 05 Feb 2013 22:27:16 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
-// asprintf
+// asprintf, rename
 #include <stdio.h>
 // calloc, malloc
 #include <stdlib.h>
@@ -39,6 +39,7 @@
 #include <libstone/library/drive.h>
 #include <libstone/library/ressource.h>
 #include <libstone/library/slot.h>
+#include <libstone/log.h>
 #include <libstone/util/file.h>
 
 #include "common.h"
@@ -61,9 +62,51 @@ static struct st_changer_ops st_vtl_changer_ops = {
 
 
 static struct st_drive * st_vtl_changer_find_free_drive(struct st_changer * ch, struct st_media_format * format, bool for_reading, bool for_writing) {
+	if (ch == NULL)
+		return NULL;
+
+	unsigned int i;
+	for (i = 0; i < ch->nb_drives; i++) {
+		struct st_drive * dr = ch->drives + i;
+
+		if (!dr->lock->ops->try_lock(dr->lock))
+			return dr;
+	}
+
+	return NULL;
 }
 
 static void st_vtl_changer_free(struct st_changer * ch) {
+	struct st_vtl_changer * vch = ch->data;
+	free(vch->path);
+	free(vch->medias);
+	vch->lock->ops->free(vch->lock);
+	free(vch);
+
+	free(ch->model);
+	free(ch->vendor);
+	free(ch->revision);
+	free(ch->serial_number);
+
+	unsigned int i;
+	for (i = 0; i < ch->nb_drives; i++) {
+		struct st_drive * dr = ch->drives + i;
+		dr->ops->free(dr);
+	}
+	free(ch->drives);
+
+	for (i = 0; i < ch->nb_slots; i++) {
+		struct st_slot * sl = ch->slots + i;
+		free(sl->volume_name);
+		if (sl->lock != NULL)
+			sl->lock->ops->free(sl->lock);
+
+		struct st_vtl_slot * vsl = sl->data;
+		if (vsl != NULL) {
+			free(vsl->path);
+			free(vsl);
+		}
+	}
 }
 
 struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_slots, const char * path, const char * prefix, struct st_media_format * format) {
@@ -77,6 +120,7 @@ struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_
 	self->path = strdup(path);
 	self->medias = calloc(nb_slots, sizeof(struct st_media *));
 	self->nb_medias = nb_slots;
+	self->lock = st_ressource_new();
 
 	unsigned int i;
 	for (i = 0; i < nb_slots; i++) {
@@ -148,15 +192,15 @@ struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_
 
 		sl->lock = st_ressource_new();
 
-		sl->data = NULL;
 		sl->db_data = NULL;
 
 		char * sl_dir;
 		asprintf(&sl_dir, "%s/slots/%u", path, i);
 
-		sl->media = st_vtl_slot_get_media(ch, sl_dir);
+		struct st_vtl_slot * vsl = sl->data = malloc(sizeof(struct st_vtl_slot));
+		vsl->path = sl_dir;
 
-		free(sl_dir);
+		sl->media = st_vtl_slot_get_media(ch, sl_dir);
 
 		if (sl->media != NULL) {
 			sl->volume_name = strdup(sl->media->label);
@@ -196,14 +240,137 @@ struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_
 }
 
 static int st_vtl_changer_load_media(struct st_changer * ch, struct st_media * from, struct st_drive * to) {
+	if (!ch->enabled)
+		return 1;
+
+	unsigned int i;
+	struct st_slot * slot = NULL;
+	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
+		slot = ch->slots + i;
+
+		if (slot->media == from && !slot->lock->ops->try_lock(slot->lock)) {
+			int failed = st_vtl_changer_load_slot(ch, slot, to);
+			slot->lock->ops->unlock(slot->lock);
+			return failed;
+		}
+	}
+
+	return 1;
 }
 
 static int st_vtl_changer_load_slot(struct st_changer * ch, struct st_slot * from, struct st_drive * to) {
+	if (!ch->enabled)
+		return 1;
+
+	if (to->slot == from)
+		return 0;
+
+	if (from->changer != ch || to->changer != ch)
+		return 1;
+
+	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: loading media '%s' from slot #%td to drive #%td", ch->vendor, ch->model, from->volume_name, from - ch->slots, to - ch->drives);
+
+	struct st_vtl_changer * self = ch->data;
+	self->lock->ops->lock(self->lock);
+
+	struct st_vtl_slot * vsl = from->data;
+	struct st_vtl_drive * vdr = to->data;
+
+	char * vsl_path, * vdr_path;
+	asprintf(&vsl_path, "%s/media", vsl->path);
+	asprintf(&vdr_path, "%s/media", vdr->path);
+
+	int failed = rename(vsl_path, vdr_path);
+	free(vsl_path);
+	free(vdr_path);
+
+	if (!failed) {
+		struct st_slot * sto = to->slot;
+
+		struct st_media * media = sto->media = from->media;
+		from->media = NULL;
+		sto->volume_name = from->volume_name;
+		from->volume_name = NULL;
+		sto->full = true;
+		from->full = false;
+
+		to->status = st_drive_loaded_idle;
+		to->is_empty = false;
+
+		struct st_vtl_media * vmd = media->data;
+		vmd->slot = from;
+	}
+
+	self->lock->ops->unlock(self->lock);
+
+	return failed;
 }
 
-static int st_vtl_changer_shut_down(struct st_changer * ch) {
+static int st_vtl_changer_shut_down(struct st_changer * ch __attribute__((unused))) {
+	return 0;
 }
 
 static int st_vtl_changer_unload(struct st_changer * ch, struct st_drive * from) {
+	if (ch == NULL || from == NULL || !ch->enabled)
+		return 1;
+
+	if (from->slot->media == NULL)
+		return 0;
+
+	struct st_vtl_changer * self = ch->data;
+	self->lock->ops->lock(self->lock);
+
+	st_log_write_all(st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading media, step 1 : looking for slot", ch->vendor, ch->model);
+
+	struct st_media * media = from->slot->media;
+	struct st_vtl_media * vmd = media->data;
+
+	struct st_slot * sl_to = vmd->slot;
+	if (sl_to != NULL && sl_to->lock->ops->try_lock(sl_to->lock))
+		sl_to = NULL;
+
+	unsigned int i;
+	for (i = ch->nb_drives; i < ch->nb_slots && sl_to == NULL; i++) {
+		sl_to = ch->slots + i;
+
+		if (sl_to->media != NULL) {
+			sl_to = NULL;
+			continue;
+		}
+
+		if (sl_to->lock->ops->try_lock(sl_to->lock))
+			sl_to = NULL;
+		else
+			st_log_write_all(st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading media, step 1 : found free slot '#%td' of media '%s'", ch->vendor, ch->model, sl_to - ch->slots, from->slot->volume_name);
+	}
+
+	int failed = 1;
+	if (sl_to != NULL) {
+		st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: unloading media '%s' from drive #%td to slot #%td", ch->vendor, ch->model, from->slot->volume_name, from - ch->drives, sl_to - ch->slots);
+
+		struct st_vtl_drive * vdr = from->data;
+		struct st_vtl_slot * vsl = sl_to->data;
+
+		char * vdr_path, * vsl_path;
+		asprintf(&vdr_path, "%s/media", vdr->path);
+		asprintf(&vsl_path, "%s/media", vsl->path);
+
+		failed = rename(vdr_path, vsl_path);
+		free(vdr_path);
+		free(vsl_path);
+
+		if (!failed) {
+			struct st_slot * sl_from = from->slot;
+			sl_to->media = sl_from->media;
+			sl_from->media = NULL;
+			sl_to->volume_name = sl_from->volume_name;
+			sl_from->volume_name = NULL;
+			sl_to->full = true;
+			sl_from->full = false;
+		}
+	}
+
+	self->lock->ops->unlock(self->lock);
+	return failed;
 }
 

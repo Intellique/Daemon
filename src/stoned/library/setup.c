@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 05 Feb 2013 11:31:48 +0100                         *
+*  Last modified: Tue, 05 Feb 2013 22:09:38 +0100                         *
 \*************************************************************************/
 
 // open
@@ -72,8 +72,8 @@ void st_changer_add(struct st_changer * vtl) {
 }
 
 struct st_slot * st_changer_find_free_media_by_format(struct st_media_format * format) {
-	unsigned int i;
-	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers; i++) {
+	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers + st_nb_vtls;
+	for (i = 0; i < nb_changers; i++) {
 		struct st_changer * changer = st_changers + i;
 
 		unsigned int j;
@@ -109,8 +109,8 @@ struct st_slot * st_changer_find_free_media_by_format(struct st_media_format * f
 }
 
 struct st_slot * st_changer_find_media_by_pool(struct st_pool * pool, struct st_media ** previous_medias, unsigned int nb_medias) {
-	unsigned int i;
-	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers; i++) {
+	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers + st_nb_vtls;
+	for (i = 0; i < nb_changers; i++) {
 		struct st_changer * changer = st_changers + i;
 
 		unsigned int j;
@@ -151,8 +151,8 @@ struct st_slot * st_changer_find_media_by_pool(struct st_pool * pool, struct st_
 }
 
 struct st_slot * st_changer_find_slot_by_media(struct st_media * media) {
-	unsigned int i;
-	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers; i++) {
+	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers + st_nb_vtls;
+	for (i = 0; i < nb_changers; i++) {
 		struct st_changer * changer = st_changers + i;
 
 		unsigned int j;
@@ -550,10 +550,10 @@ void st_changer_sync(struct st_database_connection * connection) {
 }
 
 struct st_slot_iterator * st_slot_iterator_by_new_media(struct st_media_format * format) {
-	return st_slot_iterator_by_new_media2(format, st_changers, st_nb_fake_changers + st_nb_real_changers);
+	return st_slot_iterator_by_new_media2(format, st_changers, st_nb_fake_changers + st_nb_real_changers + st_nb_vtls);
 }
 
 struct st_slot_iterator * st_slot_iterator_by_pool(struct st_pool * pool) {
-	return st_slot_iterator_by_pool2(pool, st_changers, st_nb_fake_changers + st_nb_real_changers);
+	return st_slot_iterator_by_pool2(pool, st_changers, st_nb_fake_changers + st_nb_real_changers + st_nb_vtls);
 }
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 05 Feb 2013 10:05:02 +0100                         *
+*  Last modified: Tue, 05 Feb 2013 18:19:43 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONED_LIBRARY_VTL_H__
@@ -34,28 +34,38 @@
 struct st_changer;
 struct st_drive;
 struct st_media_format;
+struct st_ressource;
 struct st_slot;
 
 struct st_vtl_changer {
-	const char * path;
+	char * path;
 
 	struct st_media ** medias;
 	unsigned int nb_medias;
+
+	struct st_ressource * lock;
 };
 
 struct st_vtl_drive {
-	const char * path;
+	char * path;
 	char * media_path;
+	unsigned int file_position;
+	struct st_media_format * format;
 };
 
 struct st_vtl_media {
 	const char * path;
+	struct st_slot * slot;
 	const char * prefix;
 	bool used;
 };
 
+struct st_vtl_slot {
+	char * path;
+};
+
 struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_slots, const char * path, const char * prefix, struct st_media_format * format);
-void st_vtl_drive_init(struct st_drive * drive, struct st_slot * slot, const char * base_dir, struct st_media_format * format);
+void st_vtl_drive_init(struct st_drive * drive, struct st_slot * slot, char * base_dir, struct st_media_format * format);
 struct st_media * st_vtl_media_init(const char * base_dir, const char * prefix, unsigned int index, struct st_media_format * format);
 struct st_media * st_vtl_slot_get_media(struct st_changer * changer, const char * base_dir);
 void st_vtl_slot_init(struct st_slot * sl, const char * base_dir);
