@@ -34,6 +34,8 @@
 
 #include <libstone/checksum.h>
 
+#include <libchecksum-sha1.chcksum>
+
 struct st_checksum_sha1_private {
 	SHA_CTX sha1;
 	char digest[SHA_DIGEST_LENGTH * 2 + 1];
@@ -54,6 +56,7 @@ static struct st_checksum_driver st_checksum_sha1_driver = {
 		.database = 0,
 		.job      = 0,
 	},
+	.src_checksum   = STONE_CHECKSUM_SHA1_SRCSUM,
 };
 
 static struct st_checksum_ops st_checksum_sha1_ops = {

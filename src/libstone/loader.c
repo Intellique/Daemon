@@ -22,10 +22,12 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 16 Aug 2012 19:58:58 +0200                         *
+*  Last modified: Tue, 05 Feb 2013 12:17:47 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
+// bool
+#include <stdbool.h>
 // pthread_mutex_lock, pthread_mutex_unlock,
 #include <pthread.h>
 // dlclose, dlerror, dlopen
@@ -46,7 +48,7 @@
 
 static void * st_loader_load_file(const char * filename);
 
-static short st_loader_loaded = 0;
+static bool st_loader_loaded = false;
 
 
 void * st_loader_load(const char * module, const char * name) {
@@ -72,7 +74,7 @@ static void * st_loader_load_file(const char * filename) {
 	static pthread_mutex_t lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 	pthread_mutex_lock(&lock);
 
-	st_loader_loaded = 0;
+	st_loader_loaded = false;
 
 	void * cookie = dlopen(filename, RTLD_NOW);
 	if (cookie == NULL) {
@@ -87,6 +89,6 @@ static void * st_loader_load_file(const char * filename) {
 }
 
 void st_loader_register_ok(void) {
-	st_loader_loaded = 1;
+	st_loader_loaded = true;
 }
 

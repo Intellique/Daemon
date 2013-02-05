@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Jan 2013 19:25:13 +0100                         *
+*  Last modified: Tue, 05 Feb 2013 12:38:59 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -47,6 +47,8 @@
 #include <libstone/util/file.h>
 #include <stoned/library/changer.h>
 
+#include <libjob-restore-archive.chcksum>
+
 #include "restore_archive.h"
 
 static bool st_job_restore_archive_check(struct st_job * job);
@@ -70,6 +72,7 @@ static struct st_job_driver st_job_restore_archive_driver = {
 		.database = 0,
 		.job      = STONE_JOB_API_LEVEL,
 	},
+	.src_checksum   = STONE_JOB_RESTOREARCHIVE_SRCSUM,
 };
 
 

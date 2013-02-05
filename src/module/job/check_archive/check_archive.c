@@ -31,6 +31,8 @@
 #include <libstone/job.h>
 #include <libstone/log.h>
 
+#include <libjob-check-archive.chcksum>
+
 #include "check_archive.h"
 
 static bool st_job_check_archive_check(struct st_job * job);
@@ -54,6 +56,7 @@ static struct st_job_driver st_job_check_archive_driver = {
 		.database = 0,
 		.job      = STONE_JOB_API_LEVEL,
 	},
+	.src_checksum   = STONE_JOB_CHECKARCHIVE_SRCSUM,
 };
 
 

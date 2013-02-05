@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 29 Dec 2012 16:21:05 +0100                         *
+*  Last modified: Tue, 05 Feb 2013 12:39:38 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -171,6 +171,8 @@ struct st_log_driver * st_log_get_driver(const char * driver) {
 			if (!strcmp(driver, st_log_drivers[i]->name)) {
 				dr = st_log_drivers[i];
 				dr->cookie = cookie;
+
+				st_log_write_all(st_log_level_debug, st_log_type_checksum, "Driver '%s' is now registred, src checksum: %s", driver, dr->src_checksum);
 			}
 
 		if (dr == NULL)

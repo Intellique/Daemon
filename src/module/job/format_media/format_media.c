@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 31 Jan 2013 16:09:41 +0100                         *
+*  Last modified: Tue, 05 Feb 2013 12:38:00 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -48,6 +48,8 @@
 #include <libstone/user.h>
 #include <libstone/util/hashtable.h>
 #include <stoned/library/changer.h>
+
+#include <libjob-format-media.chcksum>
 
 
 struct st_job_format_media_private {
@@ -75,6 +77,7 @@ static struct st_job_driver st_job_format_media_driver = {
 		.database = STONE_DATABASE_API_LEVEL,
 		.job      = STONE_JOB_API_LEVEL,
 	},
+	.src_checksum   = STONE_JOB_FORMATMEDIA_SRCSUM,
 };
 
 

@@ -6,6 +6,6 @@ STONE_JOB_FORMATMEDIA_LD			:= -pthread -shared
 
 STONE_JOB_FORMATMEDIA_DEPEND_LIB	:=
 
-STONE_JOB_FORMATMEDIA_CHCKSUM_FILE	:= libjob-formatmedia.chcksum
+STONE_JOB_FORMATMEDIA_CHCKSUM_FILE	:= libjob-format-media.chcksum
 
 BIN_SYMS							+= STONE_JOB_FORMATMEDIA

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 29 Jan 2013 19:46:37 +0100                         *
+*  Last modified: Tue, 05 Feb 2013 12:22:14 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -137,6 +137,8 @@ struct st_checksum_driver * st_checksum_get_driver(const char * driver) {
 			if (!strcmp(driver, st_checksum_drivers[i]->name)) {
 				dr = st_checksum_drivers[i];
 				dr->cookie = cookie;
+
+				st_log_write_all(st_log_level_debug, st_log_type_checksum, "Driver '%s' is now registred, src checksum: %s", driver, dr->src_checksum);
 			}
 
 		if (dr == NULL)

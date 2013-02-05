@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 12 Oct 2012 23:40:04 +0200                         *
+*  Last modified: Tue, 05 Feb 2013 12:19:44 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_CHECKSUM_H__
@@ -267,6 +267,7 @@ struct st_checksum_driver {
 	 * \brief Check if the driver have an up to date api level
 	 */
 	const struct st_plugin api_level;
+	const char * src_checksum;
 };
 
 /**

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 24 Dec 2012 19:12:05 +0100                         *
+*  Last modified: Tue, 05 Feb 2013 12:27:38 +0100                         *
 \*************************************************************************/
 
 // realloc
@@ -31,6 +31,8 @@
 #include <string.h>
 
 #include <libstone/log.h>
+
+#include <libdb-postgresql.chcksum>
 
 #include "common.h"
 
@@ -58,6 +60,7 @@ static struct st_database st_db_postgresql_driver = {
 		.database = STONE_DATABASE_API_LEVEL,
 		.job      = 0,
 	},
+	.src_checksum   = STONE_DB_POSTGRESQL_SRCSUM,
 };
 
 

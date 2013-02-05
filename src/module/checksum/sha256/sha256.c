@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 22:57:51 +0100                         *
+*  Last modified: Tue, 05 Feb 2013 12:24:12 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -33,6 +33,8 @@
 #include <string.h>
 
 #include <libstone/checksum.h>
+
+#include <libchecksum-sha256.chcksum>
 
 struct st_checksum_sha256_private {
 	SHA256_CTX sha256;
@@ -54,6 +56,7 @@ static struct st_checksum_driver st_checksum_sha256_driver = {
 		.database = 0,
 		.job      = 0,
 	},
+	.src_checksum   = STONE_CHECKSUM_SHA256_SRCSUM,
 };
 
 static struct st_checksum_ops st_checksum_sha256_ops = {

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 15:23:48 +0100                         *
+*  Last modified: Tue, 05 Feb 2013 12:41:16 +0100                         *
 \*************************************************************************/
 
 // realloc
@@ -30,6 +30,8 @@
 
 #include <libstone/log.h>
 #include <libstone/util/hashtable.h>
+
+#include <liblog-file.chcksum>
 
 #include "common.h"
 
@@ -43,6 +45,7 @@ static struct st_log_driver st_log_file_driver = {
 
 	.cookie = NULL,
 	.api_level = STONE_LOG_API_LEVEL,
+	.src_checksum = STONE_LOG_FILE_SRCSUM,
 
 	.modules = NULL,
 	.nb_modules = 0,

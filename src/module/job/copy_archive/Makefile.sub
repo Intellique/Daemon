@@ -6,6 +6,6 @@ STONE_JOB_COPYARCHIVE_LD			:= -pthread -shared
 
 STONE_JOB_COPYARCHIVE_DEPEND_LIB	:=
 
-STONE_JOB_COPYARCHIVE_CHCKSUM_FILE	:= libjob-copyarchive.chcksum
+STONE_JOB_COPYARCHIVE_CHCKSUM_FILE	:= libjob-copy-archive.chcksum
 
 BIN_SYMS							+= STONE_JOB_COPYARCHIVE

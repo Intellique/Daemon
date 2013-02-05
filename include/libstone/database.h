@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Feb 2013 13:17:35 +0100                         *
+*  Last modified: Tue, 05 Feb 2013 12:26:19 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -318,6 +318,7 @@ struct st_database {
 	 * Should be define by using STONE_DATABASE_API_LEVEL only
 	 */
 	const struct st_plugin api_level;
+	const char * src_checksum;
 };
 
 /**

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 00:06:42 +0200                         *
+*  Last modified: Tue, 05 Feb 2013 12:21:09 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -33,6 +33,8 @@
 #include <zlib.h>
 
 #include <libstone/checksum.h>
+
+#include <libchecksum-crc32.chcksum>
 
 struct st_checksum_crc32_private {
 	uLong crc32;
@@ -54,6 +56,7 @@ static struct st_checksum_driver st_checksum_crc32_driver = {
 		.database = 0,
 		.job      = 0,
 	},
+	.src_checksum   = STONE_CHECKSUM_CRC32_SRCSUM,
 };
 
 static struct st_checksum_ops st_checksum_crc32_ops = {

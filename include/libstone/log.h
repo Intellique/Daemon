@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 10 Jul 2012 13:36:56 +0200                         *
+*  Last modified: Tue, 05 Feb 2013 12:39:59 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LOG_H__
@@ -209,6 +209,7 @@ struct st_log_driver {
 	 * Should be define by using STONE_LOG_API_LEVEL only
 	 */
 	const unsigned int api_level;
+	const char * src_checksum;
 
 	/**
 	 * \struct st_log_module

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 31 Dec 2012 23:13:14 +0100                         *
+*  Last modified: Tue, 05 Feb 2013 12:34:45 +0100                         *
 \*************************************************************************/
 
 // malloc
@@ -38,6 +38,8 @@
 #include <libstone/log.h>
 #include <stoned/library/changer.h>
 #include <stoned/library/slot.h>
+
+#include <libjob-copy-archive.chcksum>
 
 #include "copy_archive.h"
 

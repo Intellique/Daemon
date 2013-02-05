@@ -22,11 +22,13 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 17 Aug 2012 00:09:19 +0200                         *
+*  Last modified: Tue, 05 Feb 2013 12:42:02 +0100                         *
 \*************************************************************************/
 
 // realloc
 #include <malloc.h>
+
+#include <liblog-postgresql.chcksum>
 
 #include "common.h"
 
@@ -41,6 +43,7 @@ static struct st_log_driver st_log_postgresql_driver = {
 
 	.cookie    = NULL,
 	.api_level = STONE_LOG_API_LEVEL,
+	.src_checksum = STONE_LOG_POSTGRESQL_SRCSUM,
 
 	.modules    = NULL,
 	.nb_modules = 0,

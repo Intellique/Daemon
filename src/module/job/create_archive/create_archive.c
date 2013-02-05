@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 14 Dec 2012 23:07:48 +0100                         *
+*  Last modified: Tue, 05 Feb 2013 12:35:52 +0100                         *
 \*************************************************************************/
 
 // asprintf, versionsort
@@ -50,6 +50,8 @@
 #include <libstone/util/file.h>
 #include <libstone/util/string.h>
 
+#include <libjob-create-archive.chcksum>
+
 #include "create_archive.h"
 
 static int st_job_create_archive_archive(struct st_job * job, struct st_job_selected_path * selected_path, const char * path);
@@ -74,6 +76,7 @@ static struct st_job_driver st_job_create_archive_driver = {
 		.database = 0,
 		.job      = STONE_JOB_API_LEVEL,
 	},
+	.src_checksum   = STONE_JOB_CREATEARCHIVE_SRCSUM,
 };
 
 
