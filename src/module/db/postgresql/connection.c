@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 05 Feb 2013 10:14:06 +0100                         *
+*  Last modified: Wed, 06 Feb 2013 17:09:56 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -2126,7 +2126,7 @@ static bool st_db_postgresql_check_checksums_of_archive_volume(struct st_databas
 		return false;
 
 	const char * query = "select_compare_checksum_of_archive_volume";
-	st_db_postgresql_prepare(self, query, "SELECT COUNT(*) > 0 FROM archivevolumetochecksumresult avcr LEFT JOIN checksumresult cr ON avcr.checksumresult = cr.id LEFT JOIN checksum c ON cr.checksum = c.id WHERE avcr.archivefile = $1 AND cr.result = $2 AND c.name = $3");
+	st_db_postgresql_prepare(self, query, "SELECT COUNT(*) > 0 FROM archivevolumetochecksumresult avcr LEFT JOIN checksumresult cr ON avcr.checksumresult = cr.id LEFT JOIN checksum c ON cr.checksum = c.id WHERE avcr.archivevolume = $1 AND cr.result = $2 AND c.name = $3");
 
 	char * volumeid;
 	asprintf(&volumeid, "%ld", volume_data->id);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 31 Jan 2013 18:50:36 +0100                         *
+*  Last modified: Thu, 07 Feb 2013 10:42:45 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -157,6 +157,8 @@ struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(s
 static int st_job_create_archive_single_worker_add_file(struct st_job_create_archive_data_worker * worker, const char * path) {
 	struct st_job_create_archive_single_worker_private * self = worker->data;
 
+	ssize_t position = self->writer->ops->position(self->writer) / self->writer->ops->get_block_size(self->writer);
+
 	enum st_format_writer_status status = self->writer->ops->add_file(self->writer, path);
 	int failed;
 	switch (status) {
@@ -176,7 +178,7 @@ static int st_job_create_archive_single_worker_add_file(struct st_job_create_arc
 
 	struct st_linked_list_files * f = malloc(sizeof(struct st_linked_list_files));
 	f->path = strdup(path);
-	f->block_position = self->writer->ops->position(self->writer) / self->writer->ops->get_block_size(self->writer);
+	f->block_position = position;
 	f->next = NULL;
 
 	if (self->first_file == NULL)

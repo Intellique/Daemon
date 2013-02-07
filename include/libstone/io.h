@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Feb 2013 17:22:13 +0100                         *
+*  Last modified: Thu, 07 Feb 2013 11:32:09 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_IO_H__
@@ -118,7 +118,9 @@ struct st_stream_writer {
 	void * data;
 };
 
+struct st_stream_reader * st_checksum_reader_new(struct st_stream_reader * stream, char ** checksums, unsigned int nb_checksums, bool thread_helper);
 struct st_stream_writer * st_checksum_writer_new(struct st_stream_writer * stream, char ** checksums, unsigned int nb_checksums, bool thread_helper);
+char ** st_checksum_reader_get_checksums(struct st_stream_reader * stream);
 char ** st_checksum_writer_get_checksums(struct st_stream_writer * stream);
 
 ssize_t st_stream_writer_printf(struct st_stream_writer * writer, const char * format, ...) __attribute__ ((format (printf, 2, 3)));

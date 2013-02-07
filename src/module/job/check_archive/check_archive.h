@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 31 Jan 2013 19:08:37 +0100                         *
+*  Last modified: Thu, 07 Feb 2013 11:25:39 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_CHECKARCHIVE_H__
@@ -36,9 +36,15 @@ struct st_job_check_archive_private {
 	struct st_database_connection * connect;
 
 	struct st_archive * archive;
+
+	char ** vol_checksums;
+	unsigned int nb_vol_checksums;
+
+	struct st_stream_reader * checksum_reader;
 };
 
 int st_job_check_archive_quick_mode(struct st_job_check_archive_private * self);
+int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * self);
 
 #endif
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 16:09:46 +0100                         *
+*  Last modified: Thu, 07 Feb 2013 19:01:01 +0100                         *
 \*************************************************************************/
 
 // pthread_cond_destroy, pthread_cond_init, pthread_cond_signal, pthread_cond_wait
@@ -39,19 +39,28 @@
 #include <libstone/io.h>
 #include <libstone/thread_pool.h>
 
-struct st_stream_checksum_private {
+struct st_stream_checksum_reader_private {
+	struct st_stream_reader * in;
+	bool closed;
+
+	struct st_stream_checksum_backend * worker;
+};
+
+struct st_stream_checksum_writer_private {
 	struct st_stream_writer * out;
 	bool closed;
 
-	struct st_stream_checksum_backend {
-		struct st_stream_checksum_backend_ops {
-			char ** (*digest)(struct st_stream_checksum_backend * worker);
-			void (*finish)(struct st_stream_checksum_backend * worker);
-			void (*free)(struct st_stream_checksum_backend * worker);
-			void (*update)(struct st_stream_checksum_backend * worker, const void * buffer, ssize_t length);
-		} * ops;
-		void * data;
-	} * worker;
+	struct st_stream_checksum_backend * worker;
+};
+
+struct st_stream_checksum_backend {
+	struct st_stream_checksum_backend_ops {
+		char ** (*digest)(struct st_stream_checksum_backend * worker);
+		void (*finish)(struct st_stream_checksum_backend * worker);
+		void (*free)(struct st_stream_checksum_backend * worker);
+		void (*update)(struct st_stream_checksum_backend * worker, const void * buffer, ssize_t length);
+	} * ops;
+	void * data;
 };
 
 struct st_stream_checksum_backend_private {
@@ -76,13 +85,23 @@ struct st_stream_checksum_threaded_backend_private {
 	struct st_stream_checksum_backend * backend;
 };
 
-static int st_stream_checksum_close(struct st_stream_writer * sfw);
-static void st_stream_checksum_free(struct st_stream_writer * sfw);
-static ssize_t st_stream_checksum_get_available_size(struct st_stream_writer * sfw);
-static ssize_t st_stream_checksum_get_block_size(struct st_stream_writer * sfw);
-static int st_stream_checksum_last_errno(struct st_stream_writer * sfw);
-static ssize_t st_stream_checksum_position(struct st_stream_writer * sfw);
-static ssize_t st_stream_checksum_write(struct st_stream_writer * sfw, const void * buffer, ssize_t length);
+static int st_stream_checksum_reader_close(struct st_stream_reader * sr);
+static bool st_stream_checksum_reader_end_of_file(struct st_stream_reader * sr);
+static off_t st_stream_checksum_reader_forward(struct st_stream_reader * sr, off_t offset);
+static void st_stream_checksum_reader_free(struct st_stream_reader * sr);
+static ssize_t st_stream_checksum_reader_get_block_size(struct st_stream_reader * sr);
+static int st_stream_checksum_reader_last_errno(struct st_stream_reader * sr);
+static ssize_t st_stream_checksum_reader_position(struct st_stream_reader * sr);
+static ssize_t st_stream_checksum_reader_read(struct st_stream_reader * sr, void * buffer, ssize_t length);
+
+static ssize_t st_stream_checksum_writer_before_close(struct st_stream_writer * sfw, void * buffer, ssize_t length);
+static int st_stream_checksum_writer_close(struct st_stream_writer * sfw);
+static void st_stream_checksum_writer_free(struct st_stream_writer * sfw);
+static ssize_t st_stream_checksum_writer_get_available_size(struct st_stream_writer * sfw);
+static ssize_t st_stream_checksum_writer_get_block_size(struct st_stream_writer * sfw);
+static int st_stream_checksum_writer_last_errno(struct st_stream_writer * sfw);
+static ssize_t st_stream_checksum_writer_position(struct st_stream_writer * sfw);
+static ssize_t st_stream_checksum_writer_write(struct st_stream_writer * sfw, const void * buffer, ssize_t length);
 
 static char ** st_stream_checksum_backend_digest(struct st_stream_checksum_backend * worker);
 static void st_stream_checksum_backend_finish(struct st_stream_checksum_backend * worker);
@@ -97,14 +116,26 @@ static struct st_stream_checksum_backend * st_stream_checksum_threaded_backend_n
 static void st_stream_checksum_threaded_backend_update(struct st_stream_checksum_backend * worker, const void * buffer, ssize_t length);
 static void st_stream_checksum_threaded_backend_work(void * arg);
 
-static struct st_stream_writer_ops st_stream_checksum_ops = {
-	.close              = st_stream_checksum_close,
-	.free               = st_stream_checksum_free,
-	.get_available_size = st_stream_checksum_get_available_size,
-	.get_block_size     = st_stream_checksum_get_block_size,
-	.last_errno         = st_stream_checksum_last_errno,
-	.position           = st_stream_checksum_position,
-	.write              = st_stream_checksum_write,
+static struct st_stream_reader_ops st_stream_checksum_reader_ops = {
+	.close          = st_stream_checksum_reader_close,
+	.end_of_file    = st_stream_checksum_reader_end_of_file,
+	.forward        = st_stream_checksum_reader_forward,
+	.free           = st_stream_checksum_reader_free,
+	.get_block_size = st_stream_checksum_reader_get_block_size,
+	.last_errno     = st_stream_checksum_reader_last_errno,
+	.position       = st_stream_checksum_reader_position,
+	.read           = st_stream_checksum_reader_read,
+};
+
+static struct st_stream_writer_ops st_stream_checksum_writer_ops = {
+	.before_close       = st_stream_checksum_writer_before_close,
+	.close              = st_stream_checksum_writer_close,
+	.free               = st_stream_checksum_writer_free,
+	.get_available_size = st_stream_checksum_writer_get_available_size,
+	.get_block_size     = st_stream_checksum_writer_get_block_size,
+	.last_errno         = st_stream_checksum_writer_last_errno,
+	.position           = st_stream_checksum_writer_position,
+	.write              = st_stream_checksum_writer_write,
 };
 
 static struct st_stream_checksum_backend_ops st_stream_checksum_backend_ops = {
@@ -122,15 +153,16 @@ static struct st_stream_checksum_backend_ops st_stream_checksum_threaded_backend
 };
 
 
-static int st_stream_checksum_close(struct st_stream_writer * sfw) {
-	struct st_stream_checksum_private * self = sfw->data;
+static int st_stream_checksum_reader_close(struct st_stream_reader * sr) {
+	struct st_stream_checksum_reader_private * self = sr->data;
 
 	if (self->closed)
 		return 0;
 
 	int failed = 0;
-	if (self->out != NULL)
-		failed = self->out->ops->close(self->out);
+	if (self->in != NULL) {
+		failed = self->in->ops->close(self->in);
+	}
 
 	if (!failed) {
 		self->closed = true;
@@ -140,8 +172,116 @@ static int st_stream_checksum_close(struct st_stream_writer * sfw) {
 	return failed;
 }
 
-static void st_stream_checksum_free(struct st_stream_writer * sfw) {
-	struct st_stream_checksum_private * self = sfw->data;
+static bool st_stream_checksum_reader_end_of_file(struct st_stream_reader * sr) {
+	struct st_stream_checksum_reader_private * self = sr->data;
+	return self->in->ops->end_of_file(self->in);
+}
+
+static off_t st_stream_checksum_reader_forward(struct st_stream_reader * sr, off_t offset) {
+	struct st_stream_checksum_reader_private * self = sr->data;
+	off_t nb_total_read = 0;
+	while (nb_total_read < offset) {
+		ssize_t will_read = nb_total_read + 4096 > offset ? offset - nb_total_read : 4096;
+		char buffer[4096];
+
+		ssize_t nb_read = self->in->ops->read(self->in, buffer, will_read);
+		if (nb_read < 0)
+			return -1;
+
+		if (nb_read == 0)
+			break;
+
+		self->worker->ops->update(self->worker, buffer, nb_read);
+		nb_total_read += nb_read;
+	}
+
+	return self->in->ops->position(self->in);
+}
+
+static void st_stream_checksum_reader_free(struct st_stream_reader * sr) {
+	struct st_stream_checksum_reader_private * self = sr->data;
+
+	if (!self->closed)
+		self->in->ops->close(self->in);
+
+	if (self->in != NULL)
+		self->in->ops->free(self->in);
+
+	self->worker->ops->free(self->worker);
+	free(self);
+	free(sr);
+}
+
+static ssize_t st_stream_checksum_reader_get_block_size(struct st_stream_reader * sr) {
+	struct st_stream_checksum_reader_private * self = sr->data;
+	return self->in->ops->get_block_size(self->in);
+}
+
+static int st_stream_checksum_reader_last_errno(struct st_stream_reader * sr) {
+	struct st_stream_checksum_reader_private * self = sr->data;
+	return self->in->ops->last_errno(self->in);
+}
+
+static ssize_t st_stream_checksum_reader_position(struct st_stream_reader * sr) {
+	struct st_stream_checksum_reader_private * self = sr->data;
+	return self->in->ops->position(self->in);
+}
+
+static ssize_t st_stream_checksum_reader_read(struct st_stream_reader * sr, void * buffer, ssize_t length) {
+	struct st_stream_checksum_reader_private * self = sr->data;
+
+	if (self->closed)
+		return 0;
+
+	ssize_t nb_read = self->in->ops->read(self->in, buffer, length);
+
+	if (nb_read > 0)
+		self->worker->ops->update(self->worker, buffer, nb_read);
+
+	return nb_read;
+}
+
+
+static ssize_t st_stream_checksum_writer_before_close(struct st_stream_writer * sfw, void * buffer, ssize_t length) {
+	struct st_stream_checksum_writer_private * self = sfw->data;
+
+	ssize_t nb_read = self->out->ops->before_close(self->out, buffer, length);
+
+	if (nb_read > 0)
+		self->worker->ops->update(self->worker, buffer, nb_read);
+
+	return nb_read;
+}
+
+static int st_stream_checksum_writer_close(struct st_stream_writer * sfw) {
+	struct st_stream_checksum_writer_private * self = sfw->data;
+
+	if (self->closed)
+		return 0;
+
+	int failed = 0;
+	if (self->out != NULL) {
+		char buffer[4096];
+		ssize_t nb_read;
+		while (nb_read = self->out->ops->before_close(self->out, buffer, 4096), nb_read > 0)
+			self->worker->ops->update(self->worker, buffer, nb_read);
+
+		if (nb_read < 0)
+			return -1;
+
+		failed = self->out->ops->close(self->out);
+	}
+
+	if (!failed) {
+		self->closed = true;
+		self->worker->ops->finish(self->worker);
+	}
+
+	return failed;
+}
+
+static void st_stream_checksum_writer_free(struct st_stream_writer * sfw) {
+	struct st_stream_checksum_writer_private * self = sfw->data;
 
 	if (!self->closed)
 		self->out->ops->close(self->out);
@@ -154,36 +294,36 @@ static void st_stream_checksum_free(struct st_stream_writer * sfw) {
 	free(sfw);
 }
 
-static ssize_t st_stream_checksum_get_available_size(struct st_stream_writer * sfw) {
-	struct st_stream_checksum_private * self = sfw->data;
+static ssize_t st_stream_checksum_writer_get_available_size(struct st_stream_writer * sfw) {
+	struct st_stream_checksum_writer_private * self = sfw->data;
 	if (self->out != NULL)
 		return self->out->ops->get_available_size(self->out);
 	return 0;
 }
 
-static ssize_t st_stream_checksum_get_block_size(struct st_stream_writer * sfw) {
-	struct st_stream_checksum_private * self = sfw->data;
+static ssize_t st_stream_checksum_writer_get_block_size(struct st_stream_writer * sfw) {
+	struct st_stream_checksum_writer_private * self = sfw->data;
 	if (self->out != NULL)
 		return self->out->ops->get_block_size(self->out);
 	return 0;
 }
 
-static int st_stream_checksum_last_errno(struct st_stream_writer * sfw) {
-	struct st_stream_checksum_private * self = sfw->data;
+static int st_stream_checksum_writer_last_errno(struct st_stream_writer * sfw) {
+	struct st_stream_checksum_writer_private * self = sfw->data;
 	if (self->out != NULL)
 		return self->out->ops->last_errno(self->out);
 	return 0;
 }
 
-static ssize_t st_stream_checksum_position(struct st_stream_writer * sfw) {
-	struct st_stream_checksum_private * self = sfw->data;
+static ssize_t st_stream_checksum_writer_position(struct st_stream_writer * sfw) {
+	struct st_stream_checksum_writer_private * self = sfw->data;
 	if (self->out != NULL)
 		return self->out->ops->position(self->out);
 	return 0;
 }
 
-static ssize_t st_stream_checksum_write(struct st_stream_writer * sfw, const void * buffer, ssize_t length) {
-	struct st_stream_checksum_private * self = sfw->data;
+static ssize_t st_stream_checksum_writer_write(struct st_stream_writer * sfw, const void * buffer, ssize_t length) {
+	struct st_stream_checksum_writer_private * self = sfw->data;
 
 	if (self->closed)
 		return -1;
@@ -361,13 +501,35 @@ static void st_stream_checksum_threaded_backend_work(void * arg) {
 }
 
 
-char ** st_checksum_writer_get_checksums(struct st_stream_writer * sfw) {
-	struct st_stream_checksum_private * self = sfw->data;
+char ** st_checksum_reader_get_checksums(struct st_stream_reader * sfw) {
+	struct st_stream_checksum_reader_private * self = sfw->data;
 	return self->worker->ops->digest(self->worker);
 }
 
+char ** st_checksum_writer_get_checksums(struct st_stream_writer * sfw) {
+	struct st_stream_checksum_writer_private * self = sfw->data;
+	return self->worker->ops->digest(self->worker);
+}
+
+struct st_stream_reader * st_checksum_reader_new(struct st_stream_reader * stream, char ** checksums, unsigned int nb_checksums, bool thread_helper) {
+	struct st_stream_checksum_reader_private * self = malloc(sizeof(struct st_stream_checksum_reader_private));
+	self->in = stream;
+	self->closed = false;
+
+	if (thread_helper)
+		self->worker = st_stream_checksum_threaded_backend_new(checksums, nb_checksums);
+	else
+		self->worker = st_stream_checksum_backend_new(checksums, nb_checksums);
+
+	struct st_stream_reader * reader = malloc(sizeof(struct st_stream_reader));
+	reader->ops = &st_stream_checksum_reader_ops;
+	reader->data = self;
+
+	return reader;
+}
+
 struct st_stream_writer * st_checksum_writer_new(struct st_stream_writer * stream, char ** checksums, unsigned int nb_checksums, bool thread_helper) {
-	struct st_stream_checksum_private * self = malloc(sizeof(struct st_stream_checksum_private));
+	struct st_stream_checksum_writer_private * self = malloc(sizeof(struct st_stream_checksum_writer_private));
 	self->out = stream;
 	self->closed = false;
 
@@ -377,7 +539,7 @@ struct st_stream_writer * st_checksum_writer_new(struct st_stream_writer * strea
 		self->worker = st_stream_checksum_backend_new(checksums, nb_checksums);
 
 	struct st_stream_writer * writer = malloc(sizeof(struct st_stream_writer));
-	writer->ops = &st_stream_checksum_ops;
+	writer->ops = &st_stream_checksum_writer_ops;
 	writer->data = self;
 
 	return writer;

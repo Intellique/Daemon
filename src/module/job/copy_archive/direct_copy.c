@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 01 Jan 2013 18:07:24 +0100                         *
+*  Last modified: Mon, 04 Feb 2013 17:45:58 +0100                         *
 \*************************************************************************/
 
 // S_ISREG
@@ -74,7 +74,7 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 			self->slot_input = NULL;
 		}
 
-		struct st_format_reader * reader = self->drive_input->ops->get_reader(self->drive_input, vol->media_position);
+		struct st_format_reader * reader = self->drive_input->ops->get_reader(self->drive_input, vol->media_position, NULL, NULL);
 
 		struct st_format_file header;
 		enum st_format_reader_header_status sr = reader->ops->get_header(reader, &header);

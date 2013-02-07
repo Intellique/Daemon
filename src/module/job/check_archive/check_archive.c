@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 01 Feb 2013 12:49:46 +0100                         *
+*  Last modified: Thu, 07 Feb 2013 11:26:11 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -73,6 +73,15 @@ static void st_job_check_archive_free(struct st_job * job) {
 		self->connect->ops->free(self->connect);
 	}
 
+	unsigned int i;
+	for (i = 0; i < self->nb_vol_checksums; i++)
+		free(self->vol_checksums[i]);
+	free(self->vol_checksums);
+	self->vol_checksums = NULL;
+	self->nb_vol_checksums = 0;
+
+	self->checksum_reader = NULL;
+
 	free(self);
 	job->data = NULL;
 }
@@ -87,6 +96,8 @@ static void st_job_check_archive_new_job(struct st_job * job, struct st_database
 	self->connect = db->config->ops->connect(db->config);
 
 	self->archive = NULL;
+	self->vol_checksums = NULL;
+	self->nb_vol_checksums = 0;
 
 	job->data = self;
 	job->ops = &st_job_check_archive_ops;
@@ -106,7 +117,7 @@ static int st_job_check_archive_run(struct st_job * job) {
 
 	job->done = 0.01;
 
-	st_job_check_archive_quick_mode(self);
+	st_job_check_archive_thorough_mode(self);
 
 	return 0;
 }

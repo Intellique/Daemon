@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Jan 2013 19:23:16 +0100                         *
+*  Last modified: Mon, 04 Feb 2013 17:46:40 +0100                         *
 \*************************************************************************/
 
 // mknod, open
@@ -67,7 +67,7 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 			self->slot_input = NULL;
 		}
 
-		struct st_format_reader * reader = self->drive_input->ops->get_reader(self->drive_input, vol->media_position);
+		struct st_format_reader * reader = self->drive_input->ops->get_reader(self->drive_input, vol->media_position, NULL, NULL);
 
 		unsigned int j;
 		for (j = 0; j < vol->nb_files; j++) {

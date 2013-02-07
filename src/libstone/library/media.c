@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Feb 2013 13:17:58 +0100                         *
+*  Last modified: Thu, 07 Feb 2013 10:52:35 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -639,7 +639,7 @@ static struct st_media * st_media_retrieve(struct st_database_connection * conne
 	if (connection != NULL)
 		media = connection->ops->get_media(connection, job, uuid, medium_serial_number, label);
 
-	if (db != NULL) {
+	if (db != NULL && connection != NULL) {
 		connection->ops->close(connection);
 		connection->ops->free(connection);
 	}
@@ -962,7 +962,7 @@ static struct st_pool * st_pool_retreive(struct st_database_connection * connect
 	if (connection != NULL)
 		pool = connection->ops->get_pool(connection, archive, job, uuid);
 
-	if (db != NULL) {
+	if (db != NULL && connection != NULL) {
 		connection->ops->close(connection);
 		connection->ops->free(connection);
 	}

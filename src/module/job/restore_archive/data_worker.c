@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Jan 2013 19:24:53 +0100                         *
+*  Last modified: Mon, 04 Feb 2013 17:47:00 +0100                         *
 \*************************************************************************/
 
 // mknod, open
@@ -143,7 +143,7 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 
 		connect->ops->get_archive_files_by_job_and_archive_volume(connect, self->jp->job, vol);
 
-		struct st_format_reader * reader = dr->ops->get_reader(dr, vol->media_position);
+		struct st_format_reader * reader = dr->ops->get_reader(dr, vol->media_position, NULL, NULL);
 
 		unsigned int j;
 		for (j = 0; j < vol->nb_files; j++) {

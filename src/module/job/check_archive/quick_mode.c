@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 01 Feb 2013 12:27:00 +0100                         *
+*  Last modified: Wed, 06 Feb 2013 17:23:47 +0100                         *
 \*************************************************************************/
 
 // pthread_cond_t
@@ -48,7 +48,7 @@ struct st_job_check_archive_quick_mode_private {
 	unsigned int nb_warnings;
 	unsigned int nb_errors;
 
-	ssize_t total_restored;
+	ssize_t total_read;
 
 	struct st_drive * drive;
 	struct st_slot * slot;
@@ -98,7 +98,7 @@ int st_job_check_archive_quick_mode(struct st_job_check_archive_private * self) 
 			ssize_t total_done = 0;
 			worker = first_worker;
 			while (worker != NULL) {
-				total_done += worker->total_restored;
+				total_done += worker->total_read;
 				worker = worker->next;
 			}
 			float done = total_done;
@@ -162,7 +162,7 @@ int st_job_check_archive_quick_mode(struct st_job_check_archive_private * self) 
 			nb_errors += worker->nb_errors;
 			nb_warnings += worker->nb_warnings;
 
-			total_done += worker->total_restored;
+			total_done += worker->total_read;
 
 			worker = worker->next;
 		}
@@ -202,7 +202,7 @@ static struct st_job_check_archive_quick_mode_private * st_job_check_archive_qui
 	struct st_job_check_archive_quick_mode_private * qm = malloc(sizeof(struct st_job_check_archive_quick_mode_private));
 	qm->jp = self;
 	qm->nb_warnings = qm->nb_errors = 0;
-	qm->total_restored = 0;
+	qm->total_read = 0;
 
 	qm->drive = drive;
 	qm->slot = sl;
@@ -279,7 +279,7 @@ static void st_job_check_archive_quick_mode_work(void * arg) {
 		unsigned int nb_checksums;
 		char ** checksums = connect->ops->get_checksums_of_archive_volume(connect, vol, &nb_checksums);
 
-		struct st_stream_writer * writer = st_checksum_writer_new(NULL, checksums, nb_checksums, false);
+		struct st_stream_writer * writer = st_checksum_writer_new(NULL, checksums, nb_checksums, true);
 
 		struct st_stream_reader * reader = dr->ops->get_raw_reader(dr, vol->media_position);
 
@@ -288,6 +288,8 @@ static void st_job_check_archive_quick_mode_work(void * arg) {
 
 		while (nb_read = reader->ops->read(reader, buffer, 4096), nb_read > 0) {
 			writer->ops->write(writer, buffer, nb_read);
+
+			qm->total_read += nb_read;
 		}
 
 		bool ok = true;
