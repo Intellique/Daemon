@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Feb 2013 21:57:34 +0100                         *
+*  Last modified: Thu, 07 Feb 2013 10:21:37 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -56,6 +56,8 @@ struct st_media * st_vtl_slot_get_media(struct st_changer * changer, const char 
 	char label[7];
 	if (sscanf(link, "../../medias/%6c", label) < 1)
 		return NULL;
+
+	label[6] = '\0';
 
 	struct st_vtl_changer * ch_data = changer->data;
 	unsigned int i;

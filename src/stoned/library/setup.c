@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 05 Feb 2013 22:09:38 +0100                         *
+*  Last modified: Wed, 06 Feb 2013 09:50:49 +0100                         *
 \*************************************************************************/
 
 // open
@@ -168,9 +168,9 @@ struct st_slot * st_changer_find_slot_by_media(struct st_media * media) {
 }
 
 ssize_t st_changer_get_online_size(struct st_pool * pool) {
-	unsigned int i;
+	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers + st_nb_vtls;
 	ssize_t total = 0;
-	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers; i++) {
+	for (i = 0; i < nb_changers; i++) {
 		struct st_changer * changer = st_changers + i;
 
 		unsigned int j;

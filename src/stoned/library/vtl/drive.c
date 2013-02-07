@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 05 Feb 2013 23:18:42 +0100                         *
+*  Last modified: Wed, 06 Feb 2013 12:43:14 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -80,6 +80,9 @@ struct st_vtl_drive_writer {
 	bool eof_reached;
 
 	int last_errno;
+
+	struct st_drive * drive;
+	struct st_media * media;
 };
 
 static bool st_vtl_drive_check_media(struct st_vtl_drive * dr);
@@ -238,6 +241,8 @@ static struct st_stream_writer * st_vtl_drive_get_raw_writer(struct st_drive * d
 		unsigned int i;
 		for (i = vdr->file_position; i < gl.gl_pathc; i++)
 			unlink(gl.gl_pathv[i]);
+	} else if (append) {
+		vdr->file_position = gl.gl_pathc;
 	}
 
 	asprintf(&filename, "%s/file_%d", vdr->media_path, vdr->file_position);
@@ -595,6 +600,9 @@ static int st_vtl_drive_writer_close(struct st_stream_writer * io) {
 		}
 
 		self->fd = -1;
+
+		struct st_vtl_drive * vdr = self->drive->data;
+		vdr->file_position++;
 	}
 
 	return 0;
@@ -617,7 +625,11 @@ static void st_vtl_drive_writer_free(struct st_stream_writer * io) {
 }
 
 static ssize_t st_vtl_drive_writer_get_available_size(struct st_stream_writer * io) {
-	return 1073741824;
+	if (io == NULL)
+		return -1;
+
+	struct st_vtl_drive_writer * self = io->data;
+	return self->media->free_block * self->block_size - self->buffer_used;
 }
 
 static ssize_t st_vtl_drive_writer_get_block_size(struct st_stream_writer * io) {
@@ -648,6 +660,8 @@ static struct st_stream_writer * st_vtl_drive_writer_new(struct st_drive * drive
 	writer->position = 0;
 	writer->eof_reached = false;
 	writer->last_errno = 0;
+	writer->drive = drive;
+	writer->media = drive->slot->media;
 
 	struct st_stream_writer * sw = malloc(sizeof(struct st_stream_writer));
 	sw->ops = &st_vtl_drive_writer_ops;
@@ -686,6 +700,8 @@ static ssize_t st_vtl_drive_writer_write(struct st_stream_writer * io, const voi
 		return -1;
 	}
 
+	self->media->free_block--;
+
 	ssize_t nb_total_write = buffer_available;
 	self->buffer_used = 0;
 	self->position += buffer_available;
@@ -701,6 +717,7 @@ static ssize_t st_vtl_drive_writer_write(struct st_stream_writer * io, const voi
 
 		nb_total_write += nb_write;
 		self->position += nb_write;
+		self->media->free_block--;
 	}
 
 	if (length == nb_total_write)
