@@ -162,7 +162,7 @@ CREATE TABLE Media (
 
     uuid UUID NULL UNIQUE,
     label VARCHAR(64),
-    mediumSerialNumber VARCHAR(32) UNIQUE,
+    mediumSerialNumber VARCHAR(36) UNIQUE,
     name VARCHAR(255) NULL,
 
     status MediaStatus NOT NULL,
@@ -354,7 +354,6 @@ CREATE TABLE ArchiveFile (
 
     ctime TIMESTAMP(0) NOT NULL,
     mtime TIMESTAMP(0) NOT NULL,
-    checktime TIMESTAMP(0),
 
     size BIGINT NOT NULL CHECK (size >= 0),
 
@@ -384,6 +383,7 @@ CREATE TABLE ArchiveFileToArchiveVolume (
     archiveFile BIGINT NOT NULL REFERENCES ArchiveFile(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
     blockNumber BIGINT CHECK (blockNumber >= 0),
+    checktime TIMESTAMP(0),
 
     PRIMARY KEY (archiveVolume, archiveFile)
 );
