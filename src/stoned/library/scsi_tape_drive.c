@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Feb 2013 16:45:51 +0100                         *
+*  Last modified: Thu, 07 Feb 2013 21:43:47 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -74,7 +74,7 @@ struct st_scsi_tape_drive_io_reader {
 	int fd;
 
 	char * buffer;
-	unsigned int block_size;
+	ssize_t block_size;
 	char * buffer_pos;
 
 	ssize_t position;

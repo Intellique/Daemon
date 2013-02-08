@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 20 Dec 2012 23:19:24 +0100                         *
+*  Last modified: Thu, 07 Feb 2013 21:45:50 +0100                         *
 \*************************************************************************/
 
 // sscanf, snprintf
@@ -45,8 +45,8 @@ struct st_tar_reader_private {
 	struct st_stream_reader * io;
 
 	char * buffer;
-	unsigned int buffer_size;
-	unsigned int buffer_used;
+	ssize_t buffer_size;
+	ssize_t buffer_used;
 	off_t position;
 
 	ssize_t file_size;
@@ -69,19 +69,21 @@ static enum st_format_reader_header_status st_tar_reader_get_header(struct st_fo
 static int st_tar_reader_last_errno(struct st_format_reader * sfr);
 static ssize_t st_tar_reader_position(struct st_format_reader * sfr);
 static ssize_t st_tar_reader_read(struct st_format_reader * sfr, void * data, ssize_t length);
+static ssize_t st_tar_reader_read_to_end_of_data(struct st_format_reader * sfr);
 static enum st_format_reader_header_status st_tar_reader_skip_file(struct st_format_reader * sfr);
 
 static struct st_format_reader_ops st_tar_reader_ops = {
-	.close          = st_tar_reader_close,
-	.forward        = st_tar_reader_forward,
-	.free           = st_tar_reader_free,
-	.end_of_file    = st_tar_reader_end_of_file,
-	.get_block_size = st_tar_reader_get_block_size,
-	.get_header     = st_tar_reader_get_header,
-	.last_errno     = st_tar_reader_last_errno,
-	.position       = st_tar_reader_position,
-	.read           = st_tar_reader_read,
-	.skip_file      = st_tar_reader_skip_file,
+	.close               = st_tar_reader_close,
+	.forward             = st_tar_reader_forward,
+	.free                = st_tar_reader_free,
+	.end_of_file         = st_tar_reader_end_of_file,
+	.get_block_size      = st_tar_reader_get_block_size,
+	.get_header          = st_tar_reader_get_header,
+	.last_errno          = st_tar_reader_last_errno,
+	.position            = st_tar_reader_position,
+	.read                = st_tar_reader_read,
+	.read_to_end_of_data = st_tar_reader_read_to_end_of_data,
+	.skip_file           = st_tar_reader_skip_file,
 };
 
 
@@ -397,6 +399,22 @@ static ssize_t st_tar_reader_read(struct st_format_reader * sfr, void * data, ss
 		st_tar_reader_skip_file(sfr);
 
 	return nb_read;
+}
+
+static ssize_t st_tar_reader_read_to_end_of_data(struct st_format_reader * sfr) {
+	if (sfr == NULL)
+		return -1;
+
+	struct st_tar_reader_private * self = sfr->data;
+	char buffer[4096];
+	ssize_t nb_total_read = 0, nb_read;
+	while (nb_read = self->io->ops->read(self->io, buffer, 4096), nb_read > 0)
+		nb_total_read += nb_read;
+
+	if (nb_read < 0)
+		return -1;
+
+	return nb_total_read;
 }
 
 static enum st_format_reader_header_status st_tar_reader_skip_file(struct st_format_reader * sfr) {

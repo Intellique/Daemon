@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 07 Feb 2013 11:59:00 +0100                         *
+*  Last modified: Fri, 08 Feb 2013 09:50:23 +0100                         *
 \*************************************************************************/
 
 // free
@@ -171,8 +171,10 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 			if (error)
 				break;
 
-			if (!S_ISREG(header.mode))
+			if (file->type != st_archive_file_type_regular_file) {
+				st_format_file_free(&header);
 				continue;
+			}
 
 			if (file_check == NULL) {
 				file_checksums = self->connect->ops->get_checksums_of_file(self->connect, file, &nb_checksum);
@@ -199,10 +201,10 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 
 				char ** results = st_checksum_writer_get_checksums(file_check);
 
+				bool ok = self->connect->ops->check_checksums_of_file(self->connect, file, file_checksums, results, nb_checksum);
+
 				file_check->ops->free(file_check);
 				file_check = NULL;
-
-				bool ok = self->connect->ops->check_checksums_of_file(self->connect, file, file_checksums, results, nb_checksum);
 
 				unsigned int k;
 				for (k = 0; k < nb_checksum; k++) {
@@ -217,13 +219,17 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 
 				if (ok) {
 					self->connect->ops->mark_archive_file_as_checked(self->connect, vol, file);
-					st_job_add_record(self->connect, st_log_level_info, self->job, "Checking restored file (%s), status: OK", file->name);
+					st_job_add_record(self->connect, st_log_level_info, self->job, "Checking file (%s), status: OK", file->name);
 				} else
-					st_job_add_record(self->connect, st_log_level_error, self->job, "Checking restored file (%s), status: checksum mismatch", file->name);
+					st_job_add_record(self->connect, st_log_level_error, self->job, "Checking file (%s), status: checksum mismatch", file->name);
 			}
+
+			st_format_file_free(&header);
 		}
 
 		total_read += total_read_vol;
+
+		reader->ops->read_to_end_of_data(reader);
 
 		reader->ops->close(reader);
 

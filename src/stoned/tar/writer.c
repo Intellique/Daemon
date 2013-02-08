@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 16 Jan 2013 11:04:53 +0100                         *
+*  Last modified: Thu, 07 Feb 2013 21:48:34 +0100                         *
 \*************************************************************************/
 
 #include <errno.h>
@@ -73,7 +73,7 @@ static enum st_format_writer_status st_tar_writer_add_label(struct st_format_wri
 static int st_tar_writer_close(struct st_format_writer * sfw);
 static void st_tar_writer_compute_checksum(const void * header, char * checksum);
 static void st_tar_writer_compute_link(struct st_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile, struct st_format_file * file);
-static void st_tar_writer_compute_size(char * csize, ssize_t size);
+static void st_tar_writer_compute_size(char * csize, long long size);
 static ssize_t st_tar_writer_end_of_file(struct st_format_writer * sfw);
 static void st_tar_writer_free(struct st_format_writer * sfw);
 static ssize_t st_tar_writer_get_available_size(struct st_format_writer * sfw);
@@ -371,7 +371,7 @@ static void st_tar_writer_compute_link(struct st_tar * header, char * link, cons
 	strcpy(link, filename);
 }
 
-static void st_tar_writer_compute_size(char * csize, ssize_t size) {
+static void st_tar_writer_compute_size(char * csize, long long size) {
 	if (size > 077777777777) {
 		*csize = (char) 0x80;
 		unsigned int i;
@@ -380,7 +380,7 @@ static void st_tar_writer_compute_size(char * csize, ssize_t size) {
 			size >>= 8;
 		}
 	} else {
-		snprintf(csize, 12, "%0*zo", 11, size);
+		snprintf(csize, 12, "%0*llo", 11, size);
 	}
 }
 

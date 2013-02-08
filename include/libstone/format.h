@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 16 Jan 2013 10:51:03 +0100                         *
+*  Last modified: Thu, 07 Feb 2013 19:44:17 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_FORMAT_H__
@@ -81,6 +81,7 @@ struct st_format_reader {
 		int (*last_errno)(struct st_format_reader * fr);
 		ssize_t (*position)(struct st_format_reader * fr);
 		ssize_t (*read)(struct st_format_reader * fr, void * buffer, ssize_t length);
+		ssize_t (*read_to_end_of_data)(struct st_format_reader * fr);
 		enum st_format_reader_header_status (*skip_file)(struct st_format_reader * fr);
 	} * ops;
 	void * data;

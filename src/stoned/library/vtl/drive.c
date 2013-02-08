@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 06 Feb 2013 12:43:14 +0100                         *
+*  Last modified: Thu, 07 Feb 2013 21:44:51 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -60,7 +60,7 @@ struct st_vtl_drive_reader {
 	int fd;
 
 	char * buffer;
-	unsigned int block_size;
+	ssize_t block_size;
 	char * buffer_pos;
 
 	ssize_t position;
