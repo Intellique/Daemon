@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 08 Dec 2012 14:38:59 +0100                         *
+*  Last modified: Fri, 08 Feb 2013 13:03:00 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_UTIL_HASHTABLE_H__
@@ -53,16 +53,18 @@ typedef uint64_t (*st_hashtable_compute_hash_f)(const void * key);
  */
 typedef void (*st_hashtable_free_f)(void * key, void * value);
 
+enum st_hashtable_type {
+	st_hashtable_value_null,
+	st_hashtable_value_boolean,
+	st_hashtable_value_signed_integer,
+	st_hashtable_value_unsigned_integer,
+	st_hashtable_value_float,
+	st_hashtable_value_string,
+	st_hashtable_value_custom,
+};
+
 struct st_hashtable_value {
-	enum {
-		st_hashtable_value_null,
-		st_hashtable_value_boolean,
-		st_hashtable_value_signed_integer,
-		st_hashtable_value_unsigned_integer,
-		st_hashtable_value_float,
-		st_hashtable_value_string,
-		st_hashtable_value_custom,
-	} type;
+	enum st_hashtable_type type;
 	union {
 		bool boolean;
 		int64_t signed_integer;
@@ -128,6 +130,13 @@ struct st_hashtable_value st_hashtable_val_null(void);
 struct st_hashtable_value st_hashtable_val_signed_integer(int64_t val);
 struct st_hashtable_value st_hashtable_val_string(char * string);
 struct st_hashtable_value st_hashtable_val_unsigned_integer(uint64_t val);
+
+bool st_hashtable_val_can_convert(struct st_hashtable_value * val, enum st_hashtable_type type);
+bool st_hashtable_val_convert_to_bool(struct st_hashtable_value * val);
+double st_hashtable_val_convert_to_float(struct st_hashtable_value * val);
+int64_t st_hashtable_val_convert_to_signed_integer(struct st_hashtable_value * val);
+char * st_hashtable_val_convert_to_string(struct st_hashtable_value * val);
+uint64_t st_hashtable_val_convert_to_unsigned_integer(struct st_hashtable_value * val);
 
 
 /**

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 08 Feb 2013 09:50:23 +0100                         *
+*  Last modified: Fri, 08 Feb 2013 10:10:52 +0100                         *
 \*************************************************************************/
 
 // free
@@ -259,11 +259,13 @@ end_of_work:
 		self->job->done = 0.99;
 
 		self->connect->ops->mark_archive_as_checked(self->connect, archive);
+
+		self->job->done = 1;
 	}
 
 	st_archive_free(archive);
 
-	return 0;
+	return error;
 }
 
 static struct st_stream_reader * st_job_check_archive_thorough_mode_add_filter(struct st_stream_reader * reader, void * param) {

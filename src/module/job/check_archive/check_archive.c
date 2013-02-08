@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 07 Feb 2013 11:26:11 +0100                         *
+*  Last modified: Fri, 08 Feb 2013 16:39:39 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -30,6 +30,7 @@
 
 #include <libstone/job.h>
 #include <libstone/log.h>
+#include <libstone/util/hashtable.h>
 
 #include <libjob-check-archive.chcksum>
 
@@ -117,8 +118,23 @@ static int st_job_check_archive_run(struct st_job * job) {
 
 	job->done = 0.01;
 
-	st_job_check_archive_thorough_mode(self);
+	bool quick_mode = false;
+	if (st_hashtable_has_key(job->option, "quick_mode")) {
+		struct st_hashtable_value qm = st_hashtable_get(job->option, "quick_mode");
 
-	return 0;
+		if (st_hashtable_val_can_convert(&qm, st_hashtable_value_boolean))
+			quick_mode = st_hashtable_val_convert_to_bool(&qm);
+		else if (st_hashtable_val_can_convert(&qm, st_hashtable_value_signed_integer))
+			quick_mode = st_hashtable_val_convert_to_signed_integer(&qm) != 0;
+	}
+
+	int failed;
+
+	if (quick_mode)
+		failed = st_job_check_archive_quick_mode(self);
+	else
+		failed = st_job_check_archive_thorough_mode(self);
+
+	return failed;
 }
 

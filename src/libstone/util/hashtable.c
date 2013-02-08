@@ -22,11 +22,20 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 09 Dec 2012 11:33:25 +0100                         *
+*  Last modified: Fri, 08 Feb 2013 15:35:43 +0100                         *
 \*************************************************************************/
 
+#define _GNU_SOURCE
+// PRI*64
+#include <inttypes.h>
 // calloc, free, malloc
 #include <malloc.h>
+// NAN
+#include <math.h>
+// asprintf, sscanf
+#include <stdio.h>
+// strcasecmp, strdup
+#include <string.h>
 
 #include <libstone/util/hashtable.h>
 
@@ -89,6 +98,235 @@ struct st_hashtable_value st_hashtable_val_unsigned_integer(uint64_t val) {
 		.value.unsigned_integer = val,
 	};
 	return v;
+}
+
+
+bool st_hashtable_val_can_convert(struct st_hashtable_value * val, enum st_hashtable_type type) {
+	if (val == NULL)
+		return false;
+
+	unsigned int i;
+	int64_t signed_integer;
+	uint64_t unsigned_integer;
+	double floating;
+	static const struct {
+		char * str;
+		bool val;
+	} string_to_boolean[] = {
+		{ "f", false },
+		{ "false", false },
+		{ "t", true },
+		{ "true", true },
+
+		{ NULL, false },
+	};
+
+	switch (type) {
+		case st_hashtable_value_boolean:
+			switch (val->type) {
+				case st_hashtable_value_boolean:
+					return true;
+
+				case st_hashtable_value_string:
+					for (i = 0; string_to_boolean[i].str != NULL; i++)
+						if (!strcasecmp(val->value.string, string_to_boolean[i].str))
+							return string_to_boolean[i].val;
+
+				default:
+					return false;
+			}
+
+		case st_hashtable_value_custom:
+			return val->type == st_hashtable_value_custom;
+
+		case st_hashtable_value_float:
+			switch (val->type) {
+				case st_hashtable_value_float:
+				case st_hashtable_value_signed_integer:
+				case st_hashtable_value_unsigned_integer:
+					return true;
+
+				case st_hashtable_value_string:
+					return sscanf(val->value.string, "%lf", &floating) == 1;
+
+				default:
+					return false;
+			}
+
+		case st_hashtable_value_null:
+			switch (val->type) {
+				case st_hashtable_value_null:
+					return true;
+
+				case st_hashtable_value_string:
+					return val->value.string == NULL;
+
+				case st_hashtable_value_custom:
+					return val->value.custom == NULL;
+
+				default:
+					return false;
+			}
+
+		case st_hashtable_value_signed_integer:
+			switch (val->type) {
+				case st_hashtable_value_signed_integer:
+				case st_hashtable_value_unsigned_integer:
+					return true;
+
+				case st_hashtable_value_string:
+					return sscanf(val->value.string, "%" PRId64, &signed_integer) == 1;
+
+				default:
+					return false;
+			}
+
+		case st_hashtable_value_string:
+			return val->type != st_hashtable_value_custom;
+
+		case st_hashtable_value_unsigned_integer:
+			switch (val->type) {
+				case st_hashtable_value_signed_integer:
+				case st_hashtable_value_unsigned_integer:
+					return true;
+
+				case st_hashtable_value_string:
+					return sscanf(val->value.string, "%" PRIu64, &unsigned_integer) == 1;
+
+				default:
+					return false;
+			}
+	}
+
+	return false;
+}
+
+bool st_hashtable_val_convert_to_bool(struct st_hashtable_value * val) {
+	if (val == NULL)
+		return false;
+
+	unsigned int i;
+	static const struct {
+		char * str;
+		bool val;
+	} string_to_boolean[] = {
+		{ "f", false },
+		{ "false", false },
+		{ "t", true },
+		{ "true", true },
+
+		{ NULL, false },
+	};
+	switch (val->type) {
+		case st_hashtable_value_boolean:
+			return true;
+
+		case st_hashtable_value_string:
+			for (i = 0; string_to_boolean[i].str != NULL; i++)
+				if (!strcasecmp(val->value.string, string_to_boolean[i].str))
+					return string_to_boolean[i].val;
+
+		default:
+			return false;
+	}
+}
+
+double st_hashtable_val_convert_to_float(struct st_hashtable_value * val) {
+	if (val == NULL)
+		return NAN;
+
+	double floating;
+	switch (val->type) {
+		case st_hashtable_value_float:
+			return val->value.floating;
+
+		case st_hashtable_value_signed_integer:
+			return val->value.signed_integer;
+
+		case st_hashtable_value_unsigned_integer:
+			return val->value.unsigned_integer;
+
+		case st_hashtable_value_string:
+			if (sscanf(val->value.string, "%lf", &floating) == 1)
+				return floating;
+
+		default:
+			return NAN;
+	}
+}
+
+int64_t st_hashtable_val_convert_to_signed_integer(struct st_hashtable_value * val) {
+	if (val == NULL)
+		return 0;
+
+	int64_t signed_integer;
+	switch (val->type) {
+		case st_hashtable_value_signed_integer:
+			return val->value.signed_integer;
+
+		case st_hashtable_value_unsigned_integer:
+			return val->value.unsigned_integer;
+
+		case st_hashtable_value_string:
+			if (sscanf(val->value.string, "%" PRId64, &signed_integer) == 1)
+				return signed_integer;
+
+		default:
+			return 0;
+	}
+}
+
+char * st_hashtable_val_convert_to_string(struct st_hashtable_value * val) {
+	if (val == NULL)
+		return NULL;
+
+	char * value;
+	switch (val->type) {
+		case st_hashtable_value_boolean:
+			if (val->value.boolean)
+				return strdup("true");
+			else
+				return strdup("false");
+
+		case st_hashtable_value_float:
+			asprintf(&value, "%lg", val->value.floating);
+			return value;
+
+		case st_hashtable_value_signed_integer:
+			asprintf(&value, "%" PRId64, val->value.signed_integer);
+			return value;
+
+		case st_hashtable_value_string:
+			return strdup(val->value.string);
+
+		case st_hashtable_value_unsigned_integer:
+			asprintf(&value, "%" PRIu64, val->value.unsigned_integer);
+			return value;
+
+		default:
+			return NULL;
+	}
+}
+
+uint64_t st_hashtable_val_convert_to_unsigned_integer(struct st_hashtable_value * val) {
+	if (val == NULL)
+		return 0;
+
+	uint64_t unsigned_integer;
+	switch (val->type) {
+		case st_hashtable_value_signed_integer:
+			return val->value.signed_integer;
+
+		case st_hashtable_value_unsigned_integer:
+			return val->value.unsigned_integer;
+
+		case st_hashtable_value_string:
+			if (sscanf(val->value.string, "%" PRIu64, &unsigned_integer) == 1)
+				return unsigned_integer;
+
+		default:
+			return 0;
+	}
 }
 
 
