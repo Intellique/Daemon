@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 05 Feb 2013 12:26:19 +0100                         *
+*  Last modified: Sat, 09 Feb 2013 12:22:24 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -176,6 +176,7 @@ struct st_database_connection {
 		struct st_pool * (*get_pool)(struct st_database_connection * connect, struct st_archive * archive, struct st_job * job, const char * uuid);
 		int (*sync_media)(struct st_database_connection * connnect, struct st_media * media);
 
+		int (*add_check_archive_job)(struct st_database_connection * connect, struct st_job * job, struct st_archive * archive, time_t starttime, bool quick_mode);
 		int (*add_job_record)(struct st_database_connection * connect, struct st_job * job, const char * message);
 		char ** (*get_checksums_by_job)(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_checksums);
 		struct st_job_selected_path * (*get_selected_paths)(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_paths);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 08 Feb 2013 09:20:35 +0100                         *
+*  Last modified: Sat, 09 Feb 2013 19:08:20 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -134,6 +134,7 @@ static struct st_media * st_db_postgresql_get_media(struct st_database_connectio
 static int st_db_postgresql_get_media_format(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, const char * name, enum st_media_format_mode mode);
 static struct st_pool * st_db_postgresql_get_pool(struct st_database_connection * connect, struct st_archive * archive, struct st_job * job, const char * uuid);
 
+static int st_db_postgresql_add_check_archive_job(struct st_database_connection * connect, struct st_job * job, struct st_archive * archive, time_t starttime, bool quick_mode);
 static int st_db_postgresql_add_job_record(struct st_database_connection * connect, struct st_job * job, const char * message);
 static char ** st_db_postgresql_get_checksums_by_job(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_checksums);
 static struct st_job_selected_path * st_db_postgresql_get_selected_paths(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_paths);
@@ -191,10 +192,11 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.get_pool                                      = st_db_postgresql_get_pool,
 	.sync_media                                    = st_db_postgresql_sync_media,
 
-	.add_job_record       = st_db_postgresql_add_job_record,
-	.get_checksums_by_job = st_db_postgresql_get_checksums_by_job,
-	.get_selected_paths   = st_db_postgresql_get_selected_paths,
-	.sync_job             = st_db_postgresql_sync_job,
+	.add_check_archive_job = st_db_postgresql_add_check_archive_job,
+	.add_job_record        = st_db_postgresql_add_job_record,
+	.get_checksums_by_job  = st_db_postgresql_get_checksums_by_job,
+	.get_selected_paths    = st_db_postgresql_get_selected_paths,
+	.sync_job              = st_db_postgresql_sync_job,
 
 	.get_user  = st_db_postgresql_get_user,
 	.sync_user = st_db_postgresql_sync_user,
@@ -1742,6 +1744,93 @@ static struct st_pool * st_db_postgresql_get_pool(struct st_database_connection 
 	return pool;
 }
 
+
+static int st_db_postgresql_add_check_archive_job(struct st_database_connection * connect, struct st_job * job, struct st_archive * archive, time_t starttime, bool quick_mode) {
+	if (connect == NULL || job == NULL || archive == NULL)
+		return 1;
+
+	struct st_db_postgresql_job_data * job_data = job->db_data;
+	if (job_data == NULL || job_data->id < 1)
+		return 2;
+
+	struct st_db_postgresql_archive_data * archive_data = archive->db_data;
+	if (archive_data == NULL || archive_data->id < 1)
+		return 2;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	const char * query = "select_job_type";
+	st_db_postgresql_prepare(self, query, "SELECT id FROM jobtype WHERE name = 'check-archive' LIMIT 1");
+	PGresult * result = PQexecPrepared(self->connect, query, 0, NULL, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	char * jobtypeid;
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		st_db_postgresql_get_string_dup(result, 0, 0, &jobtypeid);
+
+	PQclear(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		return 3;
+
+	query = "select_host_and_login_from_job";
+	st_db_postgresql_prepare(self, query, "SELECT host, login FROM job WHERE id = $1");
+
+	char * jobid;
+	asprintf(&jobid, "%ld", job_data->id);
+
+	const char * param1[] = { jobid };
+	result = PQexecPrepared(self->connect, query, 1, param1, 0, 0, 0);
+	status = PQresultStatus(result);
+
+	char * hostid, * loginid;
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		st_db_postgresql_get_string_dup(result, 0, 0, &hostid);
+		st_db_postgresql_get_string_dup(result, 0, 1, &loginid);
+	}
+
+	PQclear(result);
+
+	if (status == PGRES_FATAL_ERROR) {
+		free(jobtypeid);
+		return 3;
+	}
+
+	query = "insert_check_archive_job";
+	st_db_postgresql_prepare(self, query, "INSERT INTO job(name, type, nextstart, archive, host, login) VALUES ($1, $2, $3, $4, $5, $6)");
+
+	char * name, * archiveid;
+	asprintf(&name, "check %s", archive->name);
+	asprintf(&archiveid, "%ld", archive_data->id);
+
+	struct tm tm_starttime;
+	char sstarttime[20];
+	localtime_r(&starttime, &tm_starttime);
+	strftime(sstarttime, 20, "%F %T", &tm_starttime);
+
+	const char * param2[] = {
+		name, jobtypeid, sstarttime, archiveid, hostid, loginid
+	};
+	result = PQexecPrepared(self->connect, query, 6, param2, 0, 0, 0);
+	status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+
+	PQclear(result);
+	free(name);
+	free(jobtypeid);
+	free(archiveid);
+	free(hostid);
+	free(loginid);
+
+	return status == PGRES_FATAL_ERROR;
+}
 
 static int st_db_postgresql_add_job_record(struct st_database_connection * connect, struct st_job * job, const char * message) {
 	if (connect == NULL || job == NULL || message == NULL)
