@@ -232,7 +232,7 @@ CREATE TABLE Host (
 CREATE TABLE Changer (
     id SERIAL PRIMARY KEY,
 
-    device VARCHAR(64) NOT NULL,
+    device VARCHAR(64),
 
     model VARCHAR(64) NOT NULL,
     vendor VARCHAR(64) NOT NULL,
@@ -249,8 +249,8 @@ CREATE TABLE Changer (
 CREATE TABLE Drive (
     id SERIAL PRIMARY KEY,
 
-    device VARCHAR(64) NOT NULL,
-    scsiDevice VARCHAR(64) NOT NULL,
+    device VARCHAR(64),
+    scsiDevice VARCHAR(64),
 
     model VARCHAR(64) NOT NULL,
     vendor VARCHAR(64) NOT NULL,

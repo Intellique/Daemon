@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 24 Dec 2012 18:56:16 +0100                         *
+*  Last modified: Sun, 10 Feb 2013 13:08:08 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -102,6 +102,12 @@ int st_log_postgresql_new(struct st_log_module * module, enum st_log_level level
 	const char * password = st_hashtable_get(params, "password").value.string;
 
 	PGconn * connect = PQsetdbLogin(host, port, NULL, NULL, db, user, password);
+	ConnStatusType status = PQstatus(connect);
+
+	if (status == CONNECTION_BAD) {
+		PQfinish(connect);
+		return -1;
+	}
 
 	char * hostid = NULL;
 	struct utsname name;
