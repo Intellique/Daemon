@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 05 Feb 2013 12:35:52 +0100                         *
+*  Last modified: Sun, 10 Feb 2013 12:20:48 +0100                         *
 \*************************************************************************/
 
 // asprintf, versionsort
@@ -41,6 +41,8 @@
 #include <sys/stat.h>
 // lstat, open
 #include <sys/types.h>
+// time
+#include <time.h>
 // access, lstat
 #include <unistd.h>
 
@@ -48,6 +50,7 @@
 #include <libstone/log.h>
 #include <libstone/user.h>
 #include <libstone/util/file.h>
+#include <libstone/util/hashtable.h>
 #include <libstone/util/string.h>
 
 #include <libjob-create-archive.chcksum>
@@ -280,6 +283,30 @@ static int st_job_create_archive_run(struct st_job * job) {
 		job->done = 0.99;
 		st_job_add_record(self->connect, st_log_level_info, job, "Writing index file");
 		self->worker->ops->write_meta(self->worker);
+
+		if (st_hashtable_has_key(job->option, "check_archive")) {
+			bool check_archive = false, quick_mode = false;
+			struct st_hashtable_value ca = st_hashtable_get(job->option, "check_archive");
+
+			if (st_hashtable_val_can_convert(&ca, st_hashtable_value_boolean))
+				check_archive = st_hashtable_val_convert_to_bool(&ca);
+			else if (st_hashtable_val_can_convert(&ca, st_hashtable_value_signed_integer))
+				check_archive = st_hashtable_val_convert_to_signed_integer(&ca) != 0;
+
+			if (st_hashtable_has_key(job->option, "check_archive_mode")) {
+				ca = st_hashtable_get(job->option, "check_archive_mode");
+
+				if (st_hashtable_val_can_convert(&ca, st_hashtable_value_boolean))
+					quick_mode = st_hashtable_val_convert_to_bool(&ca);
+				else if (st_hashtable_val_can_convert(&ca, st_hashtable_value_signed_integer))
+					quick_mode = st_hashtable_val_convert_to_signed_integer(&ca) != 0;
+			}
+
+			if (check_archive) {
+				time_t start_check_archive = time(NULL);
+				self->worker->ops->schedule_check_archive(self->worker, start_check_archive, quick_mode);
+			}
+		}
 
 		if (stopped)
 			st_job_add_record(self->connect, st_log_level_warning, job, "Job stopped by user request");

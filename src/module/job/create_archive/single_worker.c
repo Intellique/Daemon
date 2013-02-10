@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 07 Feb 2013 10:42:45 +0100                         *
+*  Last modified: Sun, 10 Feb 2013 12:18:26 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -87,20 +87,22 @@ static void st_job_create_archive_single_worker_close(struct st_job_create_archi
 static int st_job_create_archive_single_worker_end_file(struct st_job_create_archive_data_worker * worker);
 static void st_job_create_archive_single_worker_free(struct st_job_create_archive_data_worker * worker);
 static int st_job_create_archive_single_worker_load_media(struct st_job_create_archive_data_worker * worker);
+static int st_job_create_archive_single_worker_schedule_check_archive(struct st_job_create_archive_data_worker * worker, time_t start_time, bool quick_mode);
 static bool st_job_create_archive_single_worker_select_media(struct st_job_create_archive_single_worker_private * self);
 static int st_job_create_archive_single_worker_sync_db(struct st_job_create_archive_data_worker * worker);
 static ssize_t st_job_create_archive_single_worker_write(struct st_job_create_archive_data_worker * worker, void * buffer, ssize_t length);
 static int st_job_create_archive_single_worker_write_meta(struct st_job_create_archive_data_worker * worker);
 
 static struct st_job_create_archive_data_worker_ops st_job_create_archive_single_worker_ops = {
-	.add_file   = st_job_create_archive_single_worker_add_file,
-	.close      = st_job_create_archive_single_worker_close,
-	.end_file   = st_job_create_archive_single_worker_end_file,
-	.free       = st_job_create_archive_single_worker_free,
-	.load_media = st_job_create_archive_single_worker_load_media,
-	.sync_db    = st_job_create_archive_single_worker_sync_db,
-	.write      = st_job_create_archive_single_worker_write,
-	.write_meta = st_job_create_archive_single_worker_write_meta,
+	.add_file               = st_job_create_archive_single_worker_add_file,
+	.close                  = st_job_create_archive_single_worker_close,
+	.end_file               = st_job_create_archive_single_worker_end_file,
+	.free                   = st_job_create_archive_single_worker_free,
+	.load_media             = st_job_create_archive_single_worker_load_media,
+	.schedule_check_archive = st_job_create_archive_single_worker_schedule_check_archive,
+	.sync_db                = st_job_create_archive_single_worker_sync_db,
+	.write                  = st_job_create_archive_single_worker_write,
+	.write_meta             = st_job_create_archive_single_worker_write_meta,
 };
 
 
@@ -331,6 +333,11 @@ static int st_job_create_archive_single_worker_load_media(struct st_job_create_a
 	}
 
 	return 1;
+}
+
+static int st_job_create_archive_single_worker_schedule_check_archive(struct st_job_create_archive_data_worker * worker, time_t start_time, bool quick_mode) {
+	struct st_job_create_archive_single_worker_private * self = worker->data;
+	return self->connect->ops->add_check_archive_job(self->connect, self->job, self->archive, start_time, quick_mode);
 }
 
 static bool st_job_create_archive_single_worker_select_media(struct st_job_create_archive_single_worker_private * self) {
