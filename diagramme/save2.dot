@@ -1,0 +1,58 @@
+digraph Save {
+	start [shape=diamond, label="Début"];
+	end [shape=diamond, label="Fin"];
+
+	ArchiveBande [shape=box, label="Archive > Bande ?"];
+	PlaceOnline [shape=box, label="Place online ?"];
+	Plus10PctLibreOuArchiveInferieurBande [shape=box, label="Plus 10% d'espace libre ou\nl'archive plus petite que l'espace libre \nde la bande ?"];
+	BonPool [shape=box, label="Bon pool ?"];
+	PoolExtensible1 [shape=box, label="Pool extensible ?"];
+	ViergesOnline [shape=box, label="Bandes vierges online ?"];
+	PlaceOffline [shape=box, label="Place offline > 10% ou archive\nplus petite que l'espace libre ?"];
+	PoolExtensible2 [shape=box, label="Pool extensible ?"];
+
+	MessageMauvaiseBande [shape=oval, label="Message:\nmauvaise bande ?"];
+	Formater [shape=oval, label="Formater bande"];
+	MessageChargerBande [shape=oval, label="Message:\ncharger bande"];
+	Attendre [shape=oval, label="Attendre"];
+	MessageChargerBandeVierge [shape=oval, label="Message:\ncharger bande vierge"];
+	MessageEtendrePool [shape=oval, label="Message:\nétendre pool"];
+
+	start -> ArchiveBande;
+
+	ArchiveBande -> Plus10PctLibreOuArchiveInferieurBande [label="oui"];
+	ArchiveBande -> PlaceOnline [label="non"];
+
+	Plus10PctLibreOuArchiveInferieurBande -> end [label="oui"];
+	Plus10PctLibreOuArchiveInferieurBande -> PoolExtensible1 [label="non"];
+
+	PlaceOnline -> end [label="oui"];
+	PlaceOnline -> BonPool [label="non"];
+
+	PoolExtensible1 -> ViergesOnline [label="oui"];
+	PoolExtensible1 -> PlaceOffline [label="non"];
+
+	BonPool -> PoolExtensible1 [label="oui"];
+	BonPool -> MessageMauvaiseBande [label="non"];
+
+	ViergesOnline -> Formater [label="oui"];
+	ViergesOnline -> PlaceOffline [label="non"];
+
+	PlaceOffline -> MessageChargerBande [label="oui"];
+	PlaceOffline -> PoolExtensible2 [label="non"];
+
+	MessageMauvaiseBande -> Attendre;
+
+	Formater -> end;
+
+	MessageChargerBande -> Attendre;
+
+	PoolExtensible2 -> MessageChargerBandeVierge [label="oui"];
+	PoolExtensible2 -> MessageEtendrePool [label="non"];
+
+	Attendre -> ArchiveBande;
+
+	MessageChargerBandeVierge -> Attendre;
+
+	MessageEtendrePool -> Attendre;
+}
