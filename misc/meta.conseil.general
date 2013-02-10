@@ -1,0 +1,194 @@
+{
+   "Livré le " : {
+      "minDate" : null,
+      "maxDate" : null,
+      "mandatory" : true,
+      "type" : "date"
+   },
+   "Montage" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "En ligne" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Fichier web" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Durée en secondes" : {
+      "maxInteger" : null,
+      "minInteger" : null,
+      "mandatory" : true,
+      "type" : "integer"
+   },
+   "Personnages évoqués" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Rubrique" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Crédits équipe" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Chemin" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Sujet évoqué" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Format de tournage" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Utilisation de" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Commanditaire" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Version" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Format de production" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Forme" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Format de diffusion" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Images" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Voix" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Ville" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Public" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Thème" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Production" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Diffusion" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Date du sujet" : {
+      "minDate" : null,
+      "maxDate" : null,
+      "mandatory" : true,
+      "type" : "date"
+   },
+   "Ingénieur du son" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Sous-titre" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Export 16 9e" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Date de dépot" : {
+      "minDate" : null,
+      "maxDate" : null,
+      "mandatory" : true,
+      "type" : "date"
+   },
+   "Titre dossier" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Titre internet" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Remarque" : {
+      "mandatory" : true,
+      "type" : "text"
+   },
+   "Fichier de montage" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Durée" : {
+      "maxInteger" : null,
+      "minInteger" : null,
+      "mandatory" : true,
+      "type" : "integer"
+   },
+   "Genre" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "oui" : {
+      "option" : [
+         "oui",
+         "non"
+      ],
+      "mandatory" : true,
+      "type" : "radio"
+   },
+   "Personnages" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Journaliste" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Ratio" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Déposé aux archives" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Réalisation" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Titre provisoire" : {
+      "mandatory" : true,
+      "type" : "label"
+   },
+   "Résumé" : {
+      "mandatory" : true,
+      "type" : "text"
+   },
+   "Date sujet évoqué" : {
+      "minDate" : null,
+      "maxDate" : null,
+      "mandatory" : true,
+      "type" : "date"
+   }
+}
