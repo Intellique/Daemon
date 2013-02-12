@@ -1,4 +1,10 @@
 -- Types
+CREATE TYPE AutoCheckMode AS ENUM (
+    'quick mode',
+    'thorough mode',
+    'none'
+);
+
 CREATE TYPE ChangerSlotType AS ENUM (
     'drive',
     'import / export',
@@ -149,7 +155,7 @@ CREATE TABLE Pool (
 
     mediaFormat INTEGER NOT NULL REFERENCES MediaFormat(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
-    autocheck BOOLEAN NOT NULL DEFAULT FALSE,
+    autocheck AutoCheckMode NOT NULL DEFAULT 'none',
     growable BOOLEAN NOT NULL DEFAULT FALSE,
     unbreakableLevel UnbreakableLevel NOT NULL DEFAULT 'none',
     rewritable BOOLEAN NOT NULL DEFAULT TRUE,
