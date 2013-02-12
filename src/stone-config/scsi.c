@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 31 Jan 2013 10:51:50 +0100                         *
+*  Last modified: Tue, 12 Feb 2013 23:18:45 +0100                         *
 \*************************************************************************/
 
 // be*toh, htobe*
@@ -71,38 +71,38 @@ struct scsi_inquiry {
 } __attribute__((packed));
 
 struct scsi_loader_data_transfer_element {
-    unsigned short element_address;
-    unsigned char full:1;
-    unsigned char reserved0:1;
-    unsigned char execpt:1;
-    unsigned char access:1;
-    unsigned char reserved1:4;
-    unsigned char reserved2;
-    unsigned char additional_sense_code;
-    unsigned char additional_sense_code_qualifier;
-    unsigned char logical_unit_number:3;
-    unsigned char reserved3:1;
-    unsigned char logical_unit_valid:1;
-    unsigned char id_valid:1;
-    unsigned char reserved4:2;
-    unsigned char scsi_bus_address;
-    unsigned char reserved5;
-    unsigned char reserved6:6;
-    unsigned char invert:1;
-    unsigned char source_valid:1;
-    unsigned short source_storage_element_address;
-    char primary_volume_tag_information[36];
-    unsigned char code_set_1:4;
-    unsigned char reserved7:4;
-    unsigned char identifier_type_1:4;
-    unsigned char reserved8:4;
-    unsigned char reserved9;
-    unsigned char identifier_length_1;
-    char device_identifier_1[34];
-    unsigned char code_set_2:4;
-    unsigned char reserved10:4;
-    unsigned char identifier_type_2:4;
-    unsigned char reserved11:4;
+	unsigned short element_address;
+	unsigned char full:1;
+	unsigned char reserved0:1;
+	unsigned char execpt:1;
+	unsigned char access:1;
+	unsigned char reserved1:4;
+	unsigned char reserved2;
+	unsigned char additional_sense_code;
+	unsigned char additional_sense_code_qualifier;
+	unsigned char logical_unit_number:3;
+	unsigned char reserved3:1;
+	unsigned char logical_unit_valid:1;
+	unsigned char id_valid:1;
+	unsigned char reserved4:2;
+	unsigned char scsi_bus_address;
+	unsigned char reserved5;
+	unsigned char reserved6:6;
+	unsigned char invert:1;
+	unsigned char source_valid:1;
+	unsigned short source_storage_element_address;
+	char primary_volume_tag_information[36];
+	unsigned char code_set_1:4;
+	unsigned char reserved7:4;
+	unsigned char identifier_type_1:4;
+	unsigned char reserved8:4;
+	unsigned char reserved9;
+	unsigned char identifier_length_1;
+	char device_identifier_1[34];
+	unsigned char code_set_2:4;
+	unsigned char reserved10:4;
+	unsigned char identifier_type_2:4;
+	unsigned char reserved11:4;
 	unsigned char reserved12;
 	unsigned char identifier_length_2;
 	unsigned char device_identifier_2[8];
@@ -110,13 +110,13 @@ struct scsi_loader_data_transfer_element {
 } __attribute__((packed));
 
 struct scsi_loader_element_status {
-    enum scsi_loader_element_type type:8;
-    unsigned char reserved0:6;
-    unsigned alternate_volume_tag:1;
-    unsigned primary_volume_tag:1;
-    unsigned short element_descriptor_length;
-    unsigned char reserved1;
-    unsigned int byte_count_of_descriptor_data_available:24;
+	enum scsi_loader_element_type type:8;
+	unsigned char reserved0:6;
+	unsigned alternate_volume_tag:1;
+	unsigned primary_volume_tag:1;
+	unsigned short element_descriptor_length;
+	unsigned char reserved1;
+	unsigned int byte_count_of_descriptor_data_available:24;
 } __attribute__((packed));
 
 struct scsi_request_sense {

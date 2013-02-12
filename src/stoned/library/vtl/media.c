@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 05 Feb 2013 15:11:22 +0100                         *
+*  Last modified: Mon, 11 Feb 2013 14:55:00 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -100,7 +100,7 @@ struct st_media * st_vtl_media_init(const char * base_dir, const char * prefix, 
 		media->format = format;
 		media->pool = NULL;
 
-		media->lock = st_ressource_new();
+		media->lock = st_ressource_new(true);
 		media->locked = false;
 
 		media->db_data = NULL;

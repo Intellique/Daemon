@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 09 Feb 2013 12:22:24 +0100                         *
+*  Last modified: Tue, 12 Feb 2013 22:43:42 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -171,6 +171,7 @@ struct st_database_connection {
 		int (*sync_drive)(struct st_database_connection * connect, struct st_drive * drive);
 
 		ssize_t (*get_available_size_of_offline_media_from_pool)(struct st_database_connection * connect, struct st_pool * pool);
+		char ** (*get_checksums_by_pool)(struct st_database_connection * connect, struct st_pool * pool, unsigned int * nb_checksums);
 		struct st_media * (*get_media)(struct st_database_connection * connect, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label);
 		int (*get_media_format)(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, const char * name, enum st_media_format_mode mode);
 		struct st_pool * (*get_pool)(struct st_database_connection * connect, struct st_archive * archive, struct st_job * job, const char * uuid);
@@ -178,7 +179,6 @@ struct st_database_connection {
 
 		int (*add_check_archive_job)(struct st_database_connection * connect, struct st_job * job, struct st_archive * archive, time_t starttime, bool quick_mode);
 		int (*add_job_record)(struct st_database_connection * connect, struct st_job * job, const char * message);
-		char ** (*get_checksums_by_job)(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_checksums);
 		struct st_job_selected_path * (*get_selected_paths)(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_paths);
 		int (*sync_job)(struct st_database_connection * connect, struct st_job *** jobs, unsigned int * nb_jobs);
 
@@ -198,9 +198,9 @@ struct st_database_connection {
 		char * (*get_restore_path_of_job)(struct st_database_connection * connect, struct st_job * job);
 		ssize_t (*get_restore_size_by_job)(struct st_database_connection * connect, struct st_job * job);
 		bool (*has_restore_to_by_job)(struct st_database_connection * connect, struct st_job * job);
-		bool (*mark_archive_as_checked)(struct st_database_connection * connect, struct st_archive * archive);
-		bool (*mark_archive_file_as_checked)(struct st_database_connection * connect, struct st_archive_volume * volume, struct st_archive_file * file);
-		bool (*mark_archive_volume_as_checked)(struct st_database_connection * connect, struct st_archive_volume * volume);
+		bool (*mark_archive_as_checked)(struct st_database_connection * connect, struct st_archive * archive, bool ok);
+		bool (*mark_archive_file_as_checked)(struct st_database_connection * connect, struct st_archive_volume * volume, struct st_archive_file * file, bool ok);
+		bool (*mark_archive_volume_as_checked)(struct st_database_connection * connect, struct st_archive_volume * volume, bool ok);
 		int (*sync_archive)(struct st_database_connection * connect, struct st_archive * archive, char ** checksums);
 	} * ops;
 

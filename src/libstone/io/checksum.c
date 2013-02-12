@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 07 Feb 2013 19:01:01 +0100                         *
+*  Last modified: Tue, 12 Feb 2013 23:17:22 +0100                         *
 \*************************************************************************/
 
 // pthread_cond_destroy, pthread_cond_init, pthread_cond_signal, pthread_cond_wait
@@ -65,8 +65,8 @@ struct st_stream_checksum_backend {
 
 struct st_stream_checksum_backend_private {
 	struct st_checksum ** checksums;
-    char ** digests;
-    unsigned int nb_checksums;
+	char ** digests;
+	unsigned int nb_checksums;
 	bool computed;
 };
 

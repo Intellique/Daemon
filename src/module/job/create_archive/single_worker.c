@@ -22,11 +22,15 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 10 Feb 2013 12:18:26 +0100                         *
+*  Last modified: Tue, 12 Feb 2013 23:29:39 +0100                         *
 \*************************************************************************/
 
+// asprintf
+#define _GNU_SOURCE
 // bool
 #include <stdbool.h>
+// asprintf
+#include <stdio.h>
 // free, malloc
 #include <stdlib.h>
 // strdup
@@ -87,6 +91,7 @@ static void st_job_create_archive_single_worker_close(struct st_job_create_archi
 static int st_job_create_archive_single_worker_end_file(struct st_job_create_archive_data_worker * worker);
 static void st_job_create_archive_single_worker_free(struct st_job_create_archive_data_worker * worker);
 static int st_job_create_archive_single_worker_load_media(struct st_job_create_archive_data_worker * worker);
+static int st_job_create_archive_single_schedule_auto_check_archive(struct st_job_create_archive_data_worker * worker);
 static int st_job_create_archive_single_worker_schedule_check_archive(struct st_job_create_archive_data_worker * worker, time_t start_time, bool quick_mode);
 static bool st_job_create_archive_single_worker_select_media(struct st_job_create_archive_single_worker_private * self);
 static int st_job_create_archive_single_worker_sync_db(struct st_job_create_archive_data_worker * worker);
@@ -94,15 +99,16 @@ static ssize_t st_job_create_archive_single_worker_write(struct st_job_create_ar
 static int st_job_create_archive_single_worker_write_meta(struct st_job_create_archive_data_worker * worker);
 
 static struct st_job_create_archive_data_worker_ops st_job_create_archive_single_worker_ops = {
-	.add_file               = st_job_create_archive_single_worker_add_file,
-	.close                  = st_job_create_archive_single_worker_close,
-	.end_file               = st_job_create_archive_single_worker_end_file,
-	.free                   = st_job_create_archive_single_worker_free,
-	.load_media             = st_job_create_archive_single_worker_load_media,
-	.schedule_check_archive = st_job_create_archive_single_worker_schedule_check_archive,
-	.sync_db                = st_job_create_archive_single_worker_sync_db,
-	.write                  = st_job_create_archive_single_worker_write,
-	.write_meta             = st_job_create_archive_single_worker_write_meta,
+	.add_file                    = st_job_create_archive_single_worker_add_file,
+	.close                       = st_job_create_archive_single_worker_close,
+	.end_file                    = st_job_create_archive_single_worker_end_file,
+	.free                        = st_job_create_archive_single_worker_free,
+	.load_media                  = st_job_create_archive_single_worker_load_media,
+	.schedule_auto_check_archive = st_job_create_archive_single_schedule_auto_check_archive,
+	.schedule_check_archive      = st_job_create_archive_single_worker_schedule_check_archive,
+	.sync_db                     = st_job_create_archive_single_worker_sync_db,
+	.write                       = st_job_create_archive_single_worker_write,
+	.write_meta                  = st_job_create_archive_single_worker_write_meta,
 };
 
 
@@ -139,7 +145,7 @@ struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(s
 	self->drive = NULL;
 	self->writer = NULL;
 
-	self->checksums = jp->connect->ops->get_checksums_by_job(jp->connect, job, &self->nb_checksums);
+	self->checksums = jp->connect->ops->get_checksums_by_pool(jp->connect, self->pool, &self->nb_checksums);
 
 	self->checksum_writer = NULL;
 	self->meta_worker = meta_worker;
@@ -160,6 +166,14 @@ static int st_job_create_archive_single_worker_add_file(struct st_job_create_arc
 	struct st_job_create_archive_single_worker_private * self = worker->data;
 
 	ssize_t position = self->writer->ops->position(self->writer) / self->writer->ops->get_block_size(self->writer);
+
+	if (self->pool->unbreakable_level == st_pool_unbreakable_level_file) {
+		ssize_t available_size = self->writer->ops->get_available_size(self->writer);
+		ssize_t file_size = self->writer->ops->compute_size_of_file(self->writer, path, false);
+
+		if (available_size < file_size && st_job_create_archive_single_worker_change_volume(self))
+			return 1;
+	}
 
 	enum st_format_writer_status status = self->writer->ops->add_file(self->writer, path);
 	int failed;
@@ -218,7 +232,11 @@ static int st_job_create_archive_single_worker_change_volume(struct st_job_creat
 	unsigned int i;
 	struct st_linked_list_files * from_file = self->first_file;
 	for (i = 0; i < self->nb_files && from_file != NULL; i++) {
-		struct st_archive_file * f = st_hashtable_get(self->meta_worker->meta_files, from_file->path).value.custom;
+		char * hash;
+		asprintf(&hash, "%s:%s", self->pool->uuid, from_file->path);
+		struct st_archive_file * f = st_hashtable_get(self->meta_worker->meta_files, hash).value.custom;
+
+		free(hash);
 
 		struct st_archive_files * to_file = last_volume->files + i;
 		to_file->file = f;
@@ -335,6 +353,15 @@ static int st_job_create_archive_single_worker_load_media(struct st_job_create_a
 	return 1;
 }
 
+static int st_job_create_archive_single_schedule_auto_check_archive(struct st_job_create_archive_data_worker * worker) {
+	struct st_job_create_archive_single_worker_private * self = worker->data;
+
+	if (self->pool->auto_check == st_pool_autocheck_quick_mode || self->pool->auto_check == st_pool_autocheck_thorough_mode)
+		return self->connect->ops->add_check_archive_job(self->connect, self->job, self->archive, time(NULL), self->pool->auto_check == st_pool_autocheck_quick_mode);
+
+	return 0;
+}
+
 static int st_job_create_archive_single_worker_schedule_check_archive(struct st_job_create_archive_data_worker * worker, time_t start_time, bool quick_mode) {
 	struct st_job_create_archive_single_worker_private * self = worker->data;
 	return self->connect->ops->add_check_archive_job(self->connect, self->job, self->archive, start_time, quick_mode);
@@ -357,6 +384,7 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 	struct st_slot * slot = NULL;
 
 	ssize_t total_size = 0;
+	// ssize_t archive_size = 0;
 
 	while (!stop) {
 		switch (state) {

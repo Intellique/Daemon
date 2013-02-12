@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 06 Feb 2013 17:23:47 +0100                         *
+*  Last modified: Tue, 12 Feb 2013 18:49:27 +0100                         *
 \*************************************************************************/
 
 // pthread_cond_t
@@ -178,8 +178,7 @@ int st_job_check_archive_quick_mode(struct st_job_check_archive_private * self) 
 
 	self->job->done = 0.99;
 
-	if (nb_errors == 0 && nb_warnings == 0)
-		self->connect->ops->mark_archive_as_checked(self->connect, archive);
+	self->connect->ops->mark_archive_as_checked(self->connect, archive, nb_errors == 0 && nb_warnings == 0);
 
 	self->job->done = 1;
 
@@ -307,10 +306,12 @@ static void st_job_check_archive_quick_mode_work(void * arg) {
 
 			bool ok = connect->ops->check_checksums_of_archive_volume(connect, vol, checksums, results, nb_checksums);
 			if (ok) {
-				connect->ops->mark_archive_volume_as_checked(connect, vol);
+				connect->ops->mark_archive_volume_as_checked(connect, vol, true);
 				st_job_add_record(connect, st_log_level_info, qm->jp->job, "Checking volume #%lu, status: OK", vol->sequence);
-			} else
+			} else {
+				connect->ops->mark_archive_volume_as_checked(connect, vol, false);
 				st_job_add_record(connect, st_log_level_error, qm->jp->job, "Checking volume #%lu, status: checksum mismatch", vol->sequence);
+			}
 
 			unsigned int j;
 			for (j = 0; j < nb_checksums; j++)

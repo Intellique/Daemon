@@ -22,11 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 13 Oct 2012 09:21:36 +0200                         *
+*  Last modified: Mon, 11 Feb 2013 13:49:53 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_RESSOURCE_H__
 #define __STONE_LIBRARY_RESSOURCE_H__
+
+// bool
+#include <stdbool.h>
 
 struct st_ressource {
 	struct st_ressource_ops {
@@ -41,7 +44,7 @@ struct st_ressource {
 };
 
 int st_ressource_lock(int nb_res, struct st_ressource * res1, struct st_ressource * res2, ...);
-struct st_ressource * st_ressource_new(void);
+struct st_ressource * st_ressource_new(bool recursive_lock);
 
 #endif
 

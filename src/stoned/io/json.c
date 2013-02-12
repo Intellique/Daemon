@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 30 Jan 2013 18:55:44 +0100                         *
+*  Last modified: Mon, 11 Feb 2013 10:08:22 +0100                         *
 \*************************************************************************/
 
 // json_array, json_array_append_new, json_decref, json_dumps, json_integer,
@@ -84,7 +84,7 @@ static json_t * st_io_json_file(struct st_archive_file * file, char ** checksums
 	json_object_set_new(jfile, "name", json_string(file->name));
 
 	char perm[5];
-	snprintf(perm, 5, "%04o", file->perm & 0x7777);
+	snprintf(perm, 5, "%03o", file->perm & 0x7777);
 	json_object_set_new(jfile, "permission", json_string(perm));
 	json_object_set_new(jfile, "type", json_string(st_archive_file_type_to_string(file->type)));
 	json_object_set_new(jfile, "owner id", json_integer(file->ownerid));

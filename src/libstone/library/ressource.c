@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Feb 2013 19:30:08 +0100                         *
+*  Last modified: Mon, 11 Feb 2013 13:48:13 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -88,10 +88,13 @@ int st_ressource_lock(int nb_res, struct st_ressource * res1, struct st_ressourc
 	return failed;
 }
 
-struct st_ressource * st_ressource_new(void) {
+struct st_ressource * st_ressource_new(bool recursive_lock) {
 	pthread_mutexattr_t attr;
 	pthread_mutexattr_init(&attr);
-	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+	if (recursive_lock)
+		pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+	else
+		pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_FAST_NP);
 
 	struct st_ressource_private * self = malloc(sizeof(struct st_ressource_private));
 	pthread_mutex_init(&self->lock, &attr);

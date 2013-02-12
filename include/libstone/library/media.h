@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Feb 2013 18:49:09 +0100                         *
+*  Last modified: Tue, 12 Feb 2013 22:46:46 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -85,6 +85,14 @@ enum st_media_format_mode {
 	st_media_format_mode_optical,
 
 	st_media_format_mode_unknown,
+};
+
+enum st_pool_autocheck_mode {
+	st_pool_autocheck_quick_mode,
+	st_pool_autocheck_thorough_mode,
+	st_pool_autocheck_mode_none,
+
+	st_pool_autocheck_mode_unknown,
 };
 
 enum st_pool_unbreakable_level {
@@ -155,12 +163,15 @@ struct st_pool {
 	char uuid[37];
 	char * name;
 
+	enum st_pool_autocheck_mode auto_check;
 	bool growable;
 	enum st_pool_unbreakable_level unbreakable_level;
 	bool rewritable;
 	bool deleted;
 
 	struct st_media_format * format;
+
+	void * db_data;
 };
 
 
@@ -174,6 +185,8 @@ enum st_media_status st_media_string_to_status(const char * status);
 enum st_media_format_data_type st_media_string_to_format_data(const char * type);
 enum st_media_format_mode st_media_string_to_format_mode(const char * mode);
 enum st_media_type st_media_string_to_type(const char * type);
+const char * st_pool_autocheck_mode_to_string(enum st_pool_autocheck_mode mode);
+enum st_pool_autocheck_mode st_pool_autocheck_string_to_mode(const char * mode);
 const char * st_pool_unbreakable_level_to_string(enum st_pool_unbreakable_level level);
 enum st_pool_unbreakable_level st_pool_unbreakable_string_to_level(const char * level);
 

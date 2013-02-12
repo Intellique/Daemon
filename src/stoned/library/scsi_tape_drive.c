@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 07 Feb 2013 21:43:47 +0100                         *
+*  Last modified: Mon, 11 Feb 2013 13:51:15 +0100                         *
 \*************************************************************************/
 
 // errno
@@ -199,7 +199,7 @@ static void st_scsi_tape_drive_create_media(struct st_drive * drive) {
 
 	media->block_size = st_scsi_tape_drive_get_block_size(drive);
 
-	media->lock = st_ressource_new();
+	media->lock = st_ressource_new(true);
 	media->locked = false;
 
 	if (media->format != NULL && media->format->support_mam) {
@@ -450,7 +450,7 @@ void st_scsi_tape_drive_setup(struct st_drive * drive) {
 	drive->operation_duration = 0;
 	drive->last_clean = 0;
 
-	drive->lock = st_ressource_new();
+	drive->lock = st_ressource_new(false);
 
 	struct mtget status;
 	st_scsi_tape_drive_operation_start(self);

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 08 Feb 2013 10:10:52 +0100                         *
+*  Last modified: Tue, 12 Feb 2013 18:51:11 +0100                         *
 \*************************************************************************/
 
 // free
@@ -218,10 +218,12 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 				nb_checksum = 0;
 
 				if (ok) {
-					self->connect->ops->mark_archive_file_as_checked(self->connect, vol, file);
+					self->connect->ops->mark_archive_file_as_checked(self->connect, vol, file, true);
 					st_job_add_record(self->connect, st_log_level_info, self->job, "Checking file (%s), status: OK", file->name);
-				} else
+				} else {
+					self->connect->ops->mark_archive_file_as_checked(self->connect, vol, file, false);
 					st_job_add_record(self->connect, st_log_level_error, self->job, "Checking file (%s), status: checksum mismatch", file->name);
+				}
 			}
 
 			st_format_file_free(&header);
@@ -238,10 +240,12 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 
 			bool ok = self->connect->ops->check_checksums_of_archive_volume(self->connect, vol, self->vol_checksums, results, self->nb_vol_checksums);
 			if (ok) {
-				self->connect->ops->mark_archive_volume_as_checked(self->connect, vol);
+				self->connect->ops->mark_archive_volume_as_checked(self->connect, vol, true);
 				st_job_add_record(self->connect, st_log_level_info, self->job, "Checking volume #%lu, status: OK", vol->sequence);
-			} else
+			} else {
+				self->connect->ops->mark_archive_volume_as_checked(self->connect, vol, false);
 				st_job_add_record(self->connect, st_log_level_error, self->job, "Checking volume #%lu, status: checksum mismatch", vol->sequence);
+			}
 
 			unsigned int j;
 			for (j = 0; j < self->nb_vol_checksums; j++)
@@ -258,9 +262,12 @@ end_of_work:
 	if (!error) {
 		self->job->done = 0.99;
 
-		self->connect->ops->mark_archive_as_checked(self->connect, archive);
+		self->connect->ops->mark_archive_as_checked(self->connect, archive, true);
 
 		self->job->done = 1;
+	} else {
+		self->connect->ops->mark_archive_as_checked(self->connect, archive, false);
+		self->job->sched_status = st_job_status_error;
 	}
 
 	st_archive_free(archive);

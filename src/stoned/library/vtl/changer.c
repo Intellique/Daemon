@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 05 Feb 2013 22:27:16 +0100                         *
+*  Last modified: Mon, 11 Feb 2013 14:54:35 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -120,7 +120,7 @@ struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_
 	self->path = strdup(path);
 	self->medias = calloc(nb_slots, sizeof(struct st_media *));
 	self->nb_medias = nb_slots;
-	self->lock = st_ressource_new();
+	self->lock = st_ressource_new(false);
 
 	unsigned int i;
 	for (i = 0; i < nb_slots; i++) {
@@ -190,7 +190,7 @@ struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_
 		sl->type = st_slot_type_storage;
 		sl->enable = true;
 
-		sl->lock = st_ressource_new();
+		sl->lock = st_ressource_new(false);
 
 		sl->db_data = NULL;
 

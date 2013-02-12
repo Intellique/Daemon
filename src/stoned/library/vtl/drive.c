@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 07 Feb 2013 21:44:51 +0100                         *
+*  Last modified: Mon, 11 Feb 2013 14:54:49 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -324,7 +324,7 @@ void st_vtl_drive_init(struct st_drive * drive, struct st_slot * slot, char * ba
 	drive->data = self;
 	drive->db_data = NULL;
 
-	drive->lock = st_ressource_new();
+	drive->lock = st_ressource_new(false);
 }
 
 static int st_vtl_drive_rewind(struct st_drive * drive) {

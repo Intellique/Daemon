@@ -22,9 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 07 Feb 2013 21:48:34 +0100                         *
+*  Last modified: Mon, 11 Feb 2013 16:45:42 +0100                         *
 \*************************************************************************/
 
+// asprintf, versionsort
+#define _GNU_SOURCE
+// scandir
+#include <dirent.h>
+// errno
 #include <errno.h>
 // fstatat
 #include <fcntl.h>
@@ -51,6 +56,7 @@
 
 #include <libstone/format.h>
 #include <libstone/io.h>
+#include <libstone/util/file.h>
 
 #include "common.h"
 
@@ -74,6 +80,7 @@ static int st_tar_writer_close(struct st_format_writer * sfw);
 static void st_tar_writer_compute_checksum(const void * header, char * checksum);
 static void st_tar_writer_compute_link(struct st_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile, struct st_format_file * file);
 static void st_tar_writer_compute_size(char * csize, long long size);
+static ssize_t st_tar_writer_compute_size_of_file(struct st_format_writer * sf, const char * file, bool recursive);
 static ssize_t st_tar_writer_end_of_file(struct st_format_writer * sfw);
 static void st_tar_writer_free(struct st_format_writer * sfw);
 static ssize_t st_tar_writer_get_available_size(struct st_format_writer * sfw);
@@ -89,20 +96,21 @@ static ssize_t st_tar_writer_write(struct st_format_writer * f, const void * dat
 static enum st_format_writer_status st_tar_writer_write_header(struct st_tar_writer_private * f, void * data, ssize_t length);
 
 static struct st_format_writer_ops st_tar_writer_ops = {
-	.add                = st_tar_writer_add,
-	.add_file           = st_tar_writer_add_file,
-	.add_file_at        = st_tar_writer_add_file_at,
-	.add_label          = st_tar_writer_add_label,
-	.close              = st_tar_writer_close,
-	.end_of_file        = st_tar_writer_end_of_file,
-	.free               = st_tar_writer_free,
-	.get_available_size = st_tar_writer_get_available_size,
-	.get_block_size     = st_tar_writer_get_block_size,
-	.last_errno         = st_tar_writer_last_errno,
-	.new_volume         = st_tar_writer_new_volume,
-	.position           = st_tar_writer_position,
-	.restart_file       = st_tar_writer_restart_file,
-	.write              = st_tar_writer_write,
+	.add                  = st_tar_writer_add,
+	.add_file             = st_tar_writer_add_file,
+	.add_file_at          = st_tar_writer_add_file_at,
+	.add_label            = st_tar_writer_add_label,
+	.close                = st_tar_writer_close,
+	.compute_size_of_file = st_tar_writer_compute_size_of_file,
+	.end_of_file          = st_tar_writer_end_of_file,
+	.free                 = st_tar_writer_free,
+	.get_available_size   = st_tar_writer_get_available_size,
+	.get_block_size       = st_tar_writer_get_block_size,
+	.last_errno           = st_tar_writer_last_errno,
+	.new_volume           = st_tar_writer_new_volume,
+	.position             = st_tar_writer_position,
+	.restart_file         = st_tar_writer_restart_file,
+	.write                = st_tar_writer_write,
 };
 
 
@@ -382,6 +390,55 @@ static void st_tar_writer_compute_size(char * csize, long long size) {
 	} else {
 		snprintf(csize, 12, "%0*llo", 11, size);
 	}
+}
+
+static ssize_t st_tar_writer_compute_size_of_file(struct st_format_writer * sf, const char * file, bool recursive) {
+	struct stat sfile;
+	if (lstat(file, &sfile))
+		return -1;
+
+	const char * filename2 = st_tar_writer_skip_leading_slash(file);
+	int filename_length = strlen(filename2);
+
+	ssize_t file_size = 512;
+	if (S_ISLNK(sfile.st_mode)) {
+		char link[257];
+		ssize_t link_length = readlink(file, link, 256);
+		link[link_length] = '\0';
+
+		if (filename_length > 100 && link_length > 100) {
+			file_size += 2048 + filename_length - filename_length % 512 + link_length - link_length % 512;
+		} else if (filename_length > 100) {
+			file_size += 1024 + filename_length - filename_length % 512;
+		} else if (link_length > 100) {
+			file_size += 1024 + link_length - link_length % 512;
+		}
+	} else if (filename_length > 100) {
+		file_size += 512 + filename_length - filename_length % 512;
+	}
+
+	if (S_ISREG(sfile.st_mode))
+		file_size += 512 + sfile.st_size - sfile.st_size % 512;
+	else if (recursive && S_ISDIR(sfile.st_mode)) {
+		file_size += st_tar_writer_compute_size_of_file(sf, file, recursive);
+
+		struct dirent ** dl = NULL;
+		int nb_files = scandir(file, &dl, st_util_file_basic_scandir_filter, versionsort);
+		int i;
+		for (i = 0; i < nb_files; i++) {
+			char * subpath = NULL;
+			asprintf(&subpath, "%s/%s", file, dl[i]->d_name);
+
+			file_size += st_tar_writer_compute_size_of_file(sf, subpath, recursive);
+
+			free(subpath);
+			free(dl[i]);
+		}
+
+		free(dl);
+	}
+
+	return file_size;
 }
 
 static ssize_t st_tar_writer_end_of_file(struct st_format_writer * sfw) {

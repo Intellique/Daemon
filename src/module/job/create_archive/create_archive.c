@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 10 Feb 2013 12:20:48 +0100                         *
+*  Last modified: Tue, 12 Feb 2013 23:06:23 +0100                         *
 \*************************************************************************/
 
 // asprintf, versionsort
@@ -111,8 +111,6 @@ static int st_job_create_archive_archive(struct st_job * job, struct st_job_sele
 			st_job_add_record(self->connect, st_log_level_warning, job, "Error while adding file: '%s'", path);
 		return failed;
 	}
-
-	self->meta->ops->add_file(self->meta, selected_path, path);
 
 	if (S_ISREG(st.st_mode)) {
 		int fd = open(path, O_RDONLY);
@@ -306,7 +304,8 @@ static int st_job_create_archive_run(struct st_job * job) {
 				time_t start_check_archive = time(NULL);
 				self->worker->ops->schedule_check_archive(self->worker, start_check_archive, quick_mode);
 			}
-		}
+		} else
+			self->worker->ops->schedule_auto_check_archive(self->worker);
 
 		if (stopped)
 			st_job_add_record(self->connect, st_log_level_warning, job, "Job stopped by user request");

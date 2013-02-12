@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 07 Feb 2013 10:52:35 +0100                         *
+*  Last modified: Tue, 12 Feb 2013 22:53:30 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -132,6 +132,17 @@ static const struct st_media_type2 {
 	{ "rewritable", st_media_type_rewritable },
 
 	{ "unknown", st_media_type_unknown },
+};
+
+static const struct st_pool_autocheck_mode2 {
+	char * name;
+	enum st_pool_autocheck_mode mode;
+} st_pool_autocheck_modes[] = {
+	{ "quick mode",    st_pool_autocheck_quick_mode },
+	{ "thorough mode", st_pool_autocheck_thorough_mode },
+	{ "none",          st_pool_autocheck_mode_none },
+
+	{ "unknown", st_pool_autocheck_mode_unknown },
 };
 
 static const struct st_pool_unbreakable_level2 {
@@ -249,6 +260,27 @@ enum st_media_type st_media_string_to_type(const char * type) {
 			return st_media_types[i].type;
 
 	return st_media_types[i].type;
+}
+
+const char * st_pool_autocheck_mode_to_string(enum st_pool_autocheck_mode mode) {
+	unsigned int i;
+	for (i = 0; st_pool_autocheck_modes[i].mode != st_pool_autocheck_mode_unknown; i++)
+		if (st_pool_autocheck_modes[i].mode == mode)
+			return st_pool_autocheck_modes[i].name;
+
+	return st_pool_autocheck_modes[i].name;
+}
+
+enum st_pool_autocheck_mode st_pool_autocheck_string_to_mode(const char * mode) {
+	if (mode == NULL)
+		return st_pool_autocheck_mode_unknown;
+
+	unsigned int i;
+	for (i = 0; st_pool_autocheck_modes[i].mode != st_pool_autocheck_mode_unknown; i++)
+		if (!strcasecmp(mode, st_pool_autocheck_modes[i].name))
+			return st_pool_autocheck_modes[i].mode;
+
+	return st_pool_autocheck_modes[i].mode;
 }
 
 const char * st_pool_unbreakable_level_to_string(enum st_pool_unbreakable_level level) {
@@ -645,7 +677,7 @@ static struct st_media * st_media_retrieve(struct st_database_connection * conne
 	}
 
 	if (media != NULL && media->lock == NULL) {
-		media->lock = st_ressource_new();
+		media->lock = st_ressource_new(true);
 		media->locked = false;
 	}
 
@@ -857,6 +889,7 @@ struct st_pool * st_pool_get_by_archive(struct st_archive * archive, struct st_d
 	for (i = 0; i < st_pool_nb_pools; i++)
 		if (!strcmp(pool->uuid, st_pools[i]->uuid)) {
 			free(pool->name);
+			free(pool->db_data);
 			free(pool);
 
 			pool = st_pools[i];
@@ -895,6 +928,7 @@ struct st_pool * st_pool_get_by_job(struct st_job * job, struct st_database_conn
 	for (i = 0; i < st_pool_nb_pools; i++)
 		if (!strcmp(pool->uuid, st_pools[i]->uuid)) {
 			free(pool->name);
+			free(pool->db_data);
 			free(pool);
 
 			pool = st_pools[i];

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 05 Feb 2013 12:34:45 +0100                         *
+*  Last modified: Mon, 11 Feb 2013 11:23:48 +0100                         *
 \*************************************************************************/
 
 // malloc
@@ -298,6 +298,7 @@ bool st_job_copy_archive_select_output_media(struct st_job_copy_archive_private 
 	}
 
 	if (!load_media) {
+		self->drive_output = drive;
 		self->slot_output = slot;
 		return ok;
 	}
