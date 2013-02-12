@@ -149,12 +149,14 @@ CREATE TABLE Pool (
 
     mediaFormat INTEGER NOT NULL REFERENCES MediaFormat(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
+    autocheck BOOLEAN NOT NULL DEFAULT FALSE,
     growable BOOLEAN NOT NULL DEFAULT FALSE,
     unbreakableLevel UnbreakableLevel NOT NULL DEFAULT 'none',
     rewritable BOOLEAN NOT NULL DEFAULT TRUE,
-    deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
-    metadata TEXT NOT NULL DEFAULT ''
+    metadata TEXT NOT NULL DEFAULT '',
+
+    deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE Media (
@@ -326,6 +328,8 @@ CREATE TABLE Archive (
 
     starttime TIMESTAMP(0) NOT NULL,
     endtime TIMESTAMP(0),
+
+    checksumok BOOLEAN NOT NULL DEFAULT FALSE,
     checktime TIMESTAMP(0),
 
     creator INTEGER NOT NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE RESTRICT,
@@ -368,6 +372,8 @@ CREATE TABLE ArchiveVolume (
 
     starttime TIMESTAMP(0) NOT NULL,
     endtime TIMESTAMP(0),
+
+    checksumok BOOLEAN NOT NULL DEFAULT FALSE,
     checktime TIMESTAMP(0),
 
     archive BIGINT NOT NULL REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE CASCADE,
@@ -383,6 +389,8 @@ CREATE TABLE ArchiveFileToArchiveVolume (
     archiveFile BIGINT NOT NULL REFERENCES ArchiveFile(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
     blockNumber BIGINT CHECK (blockNumber >= 0),
+
+    checksumok BOOLEAN NOT NULL DEFAULT FALSE,
     checktime TIMESTAMP(0),
 
     PRIMARY KEY (archiveVolume, archiveFile)
@@ -419,6 +427,12 @@ CREATE TABLE ChecksumResult (
     result TEXT NOT NULL,
 
     CONSTRAINT ChecksumResult_checksum_invalid UNIQUE (checksum, result)
+);
+
+CREATE TABLE PoolToChecksum (
+    pool INTEGER NOT NULL REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    checksum INTEGER NOT NULL REFERENCES Checksum(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    PRIMARY KEY (pool, checksum)
 );
 
 CREATE TABLE ArchiveFileToChecksumResult (
@@ -460,12 +474,6 @@ CREATE TABLE Job (
 
     metadata TEXT NOT NULL DEFAULT '',
     options hstore NOT NULL DEFAULT ''
-);
-
-CREATE TABLE JobToChecksum (
-    job BIGINT NOT NULL REFERENCES Job(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    checksum INTEGER NOT NULL REFERENCES Checksum(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    PRIMARY KEY (job, checksum)
 );
 
 CREATE TABLE JobRecord (
