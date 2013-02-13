@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 13 Feb 2013 16:26:27 +0100                         *
+*  Last modified: Wed, 13 Feb 2013 17:56:38 +0100                         *
 \*************************************************************************/
 
 // asprintf, versionsort
@@ -257,12 +257,13 @@ static int st_job_create_archive_run(struct st_job * job) {
 
 	self->worker = st_job_create_archive_single_worker(job, self->total_size, self->connect, self->meta);
 
+	bool ok = false;
 	if (job->db_status != st_job_status_stopped) {
 		job->done = 0.01;
-		self->worker->ops->load_media(self->worker);
+		ok = self->worker->ops->load_media(self->worker);
 	}
 
-	if (job->db_status != st_job_status_stopped) {
+	if (job->db_status != st_job_status_stopped && ok) {
 		job->done = 0.02;
 
 		int failed = 0;

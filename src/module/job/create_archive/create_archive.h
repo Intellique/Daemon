@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 13 Feb 2013 16:27:39 +0100                         *
+*  Last modified: Wed, 13 Feb 2013 18:02:18 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_CREATEARCHIVE_H__
@@ -51,7 +51,7 @@ struct st_job_create_archive_private {
 			void (*close)(struct st_job_create_archive_data_worker * worker);
 			int (*end_file)(struct st_job_create_archive_data_worker * worker);
 			void (*free)(struct st_job_create_archive_data_worker * worker);
-			int (*load_media)(struct st_job_create_archive_data_worker * worker);
+			bool (*load_media)(struct st_job_create_archive_data_worker * worker);
 			int (*schedule_auto_check_archive)(struct st_job_create_archive_data_worker * worker);
 			int (*schedule_check_archive)(struct st_job_create_archive_data_worker * worker, time_t start_time, bool quick_mode);
 			int (*sync_db)(struct st_job_create_archive_data_worker * worker);

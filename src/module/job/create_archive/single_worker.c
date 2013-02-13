@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 13 Feb 2013 11:10:53 +0100                         *
+*  Last modified: Wed, 13 Feb 2013 18:02:46 +0100                         *
 \*************************************************************************/
 
 // asprintf
@@ -46,6 +46,7 @@
 #include <libstone/library/drive.h>
 #include <libstone/library/ressource.h>
 #include <libstone/log.h>
+#include <libstone/util/file.h>
 #include <libstone/util/hashtable.h>
 #include <libstone/user.h>
 #include <stoned/io.h>
@@ -90,7 +91,7 @@ static int st_job_create_archive_single_worker_change_volume(struct st_job_creat
 static void st_job_create_archive_single_worker_close(struct st_job_create_archive_data_worker * worker);
 static int st_job_create_archive_single_worker_end_file(struct st_job_create_archive_data_worker * worker);
 static void st_job_create_archive_single_worker_free(struct st_job_create_archive_data_worker * worker);
-static int st_job_create_archive_single_worker_load_media(struct st_job_create_archive_data_worker * worker);
+static bool st_job_create_archive_single_worker_load_media(struct st_job_create_archive_data_worker * worker);
 static int st_job_create_archive_single_schedule_auto_check_archive(struct st_job_create_archive_data_worker * worker);
 static int st_job_create_archive_single_worker_schedule_check_archive(struct st_job_create_archive_data_worker * worker, time_t start_time, bool quick_mode);
 static bool st_job_create_archive_single_worker_select_media(struct st_job_create_archive_single_worker_private * self);
@@ -342,7 +343,7 @@ static void st_job_create_archive_single_worker_free(struct st_job_create_archiv
 	free(worker);
 }
 
-static int st_job_create_archive_single_worker_load_media(struct st_job_create_archive_data_worker * worker) {
+static bool st_job_create_archive_single_worker_load_media(struct st_job_create_archive_data_worker * worker) {
 	struct st_job_create_archive_single_worker_private * self = worker->data;
 
 	if (st_job_create_archive_single_worker_select_media(self)) {
@@ -351,10 +352,10 @@ static int st_job_create_archive_single_worker_load_media(struct st_job_create_a
 		int position = self->drive->ops->get_position(self->drive);
 		st_archive_add_volume(self->archive, self->drive->slot->media, position);
 
-		return self->writer == NULL;
+		return self->writer != NULL;
 	}
 
-	return 1;
+	return false;
 }
 
 static int st_job_create_archive_single_schedule_auto_check_archive(struct st_job_create_archive_data_worker * worker) {
@@ -385,10 +386,19 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 
 	struct st_changer * changer = NULL;
 	struct st_drive * drive = NULL;
+	enum st_pool_unbreakable_level unbreakable_level = self->pool->unbreakable_level;
 	struct st_slot * slot = NULL;
 
 	ssize_t total_size = 0;
-	// ssize_t archive_size = 0;
+
+	if (unbreakable_level == st_pool_unbreakable_level_archive && self->archive_size > self->pool->format->capacity) {
+		char buf_archive_size[32], buf_media_size[32];
+		st_util_file_convert_size_to_string(self->archive_size, buf_archive_size, 32);
+		st_util_file_convert_size_to_string(self->pool->format->capacity, buf_media_size, 32);
+
+		st_job_add_record(self->connect, st_log_level_warning, self->job, "Fatal error, archive's size (%s) is greater than a media (media size: %s) and the unbreakable level is archive", buf_archive_size, buf_media_size);
+		return false;
+	}
 
 	while (!stop) {
 		switch (state) {
@@ -425,10 +435,16 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 						slot = iter->ops->next(iter);
 
 						struct st_media * media = slot->media;
+						if (unbreakable_level == st_pool_unbreakable_level_archive && self->archive_size > media->free_block * media->block_size) {
+							slot->lock->ops->unlock(slot->lock);
+							slot = NULL;
+							continue;
+						}
+
 						if (self->archive_size - self->total_done < media->free_block * media->block_size)
 							break;
 
-						if (10 * media->free_block < media->total_block)
+						if (10 * media->free_block > media->total_block)
 							break;
 
 						slot->lock->ops->unlock(slot->lock);
