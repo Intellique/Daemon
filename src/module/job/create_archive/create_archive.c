@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 12 Feb 2013 23:06:23 +0100                         *
+*  Last modified: Wed, 13 Feb 2013 11:11:16 +0100                         *
 \*************************************************************************/
 
 // asprintf, versionsort
@@ -105,7 +105,7 @@ static int st_job_create_archive_archive(struct st_job * job, struct st_job_sele
 	if (S_ISSOCK(st.st_mode))
 		return 0;
 
-	int failed = self->worker->ops->add_file(self->worker, path);
+	int failed = self->worker->ops->add_file(self->worker, selected_path, path);
 	if (failed) {
 		if (failed < 0)
 			st_job_add_record(self->connect, st_log_level_warning, job, "Error while adding file: '%s'", path);

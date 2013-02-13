@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 12 Feb 2013 23:31:16 +0100                         *
+*  Last modified: Wed, 13 Feb 2013 12:20:17 +0100                         *
 \*************************************************************************/
 
 // asprintf
@@ -286,6 +286,5 @@ static void st_job_create_archive_meta_worker_work2(struct st_job_create_archive
 	char * hash;
 	asprintf(&hash, "%s:%s", f->pool->uuid, f->file);
 	st_hashtable_put(self->meta_files, hash, st_hashtable_val_custom(file));
-	free(hash);
 }
 

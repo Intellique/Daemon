@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 12 Feb 2013 22:52:12 +0100                         *
+*  Last modified: Wed, 13 Feb 2013 10:00:37 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -1537,8 +1537,8 @@ static char ** st_db_postgresql_get_checksums_by_pool(struct st_database_connect
 		return NULL;
 
 	struct st_db_postgresql_connection_private * self = connect->data;
-	const char * query = "select_checksums_by_job";
-	st_db_postgresql_prepare(self, query, "SELECT name FROM checksum WHERE id IN (SELECT checksum FROM jobtochecksum WHERE job = $1) ORDER BY id");
+	const char * query = "select_checksums_by_pool";
+	st_db_postgresql_prepare(self, query, "SELECT name FROM checksum WHERE id IN (SELECT checksum FROM pooltochecksum WHERE pool = $1) ORDER BY id");
 
 	struct st_db_postgresql_pool_data * pool_data = pool->db_data;
 	char * poolid;

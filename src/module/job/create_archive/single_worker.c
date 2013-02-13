@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 12 Feb 2013 23:29:39 +0100                         *
+*  Last modified: Wed, 13 Feb 2013 11:10:53 +0100                         *
 \*************************************************************************/
 
 // asprintf
@@ -84,7 +84,7 @@ struct st_job_create_archive_single_worker_private {
 	struct st_job_create_archive_meta_worker * meta_worker;
 };
 
-static int st_job_create_archive_single_worker_add_file(struct st_job_create_archive_data_worker * worker, const char * path);
+static int st_job_create_archive_single_worker_add_file(struct st_job_create_archive_data_worker * worker, struct st_job_selected_path * selected_path, const char * path);
 static struct st_stream_writer * st_job_create_archive_single_worker_add_filter(struct st_stream_writer * writer, void * param);
 static int st_job_create_archive_single_worker_change_volume(struct st_job_create_archive_single_worker_private * self);
 static void st_job_create_archive_single_worker_close(struct st_job_create_archive_data_worker * worker);
@@ -162,7 +162,7 @@ struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(s
 	return worker;
 }
 
-static int st_job_create_archive_single_worker_add_file(struct st_job_create_archive_data_worker * worker, const char * path) {
+static int st_job_create_archive_single_worker_add_file(struct st_job_create_archive_data_worker * worker, struct st_job_selected_path * selected_path, const char * path) {
 	struct st_job_create_archive_single_worker_private * self = worker->data;
 
 	ssize_t position = self->writer->ops->position(self->writer) / self->writer->ops->get_block_size(self->writer);
@@ -204,6 +204,8 @@ static int st_job_create_archive_single_worker_add_file(struct st_job_create_arc
 	self->nb_files++;
 	self->file_position = 0;
 
+	self->meta_worker->ops->add_file(self->meta_worker, selected_path, path, self->pool);
+
 	return 0;
 }
 
@@ -235,7 +237,6 @@ static int st_job_create_archive_single_worker_change_volume(struct st_job_creat
 		char * hash;
 		asprintf(&hash, "%s:%s", self->pool->uuid, from_file->path);
 		struct st_archive_file * f = st_hashtable_get(self->meta_worker->meta_files, hash).value.custom;
-
 		free(hash);
 
 		struct st_archive_files * to_file = last_volume->files + i;
@@ -294,7 +295,10 @@ static void st_job_create_archive_single_worker_close(struct st_job_create_archi
 	unsigned int i;
 	struct st_linked_list_files * from_file = self->first_file;
 	for (i = 0; i < self->nb_files && from_file != NULL; i++) {
-		struct st_archive_file * f = st_hashtable_get(self->meta_worker->meta_files, from_file->path).value.custom;
+		char * hash;
+		asprintf(&hash, "%s:%s", self->pool->uuid, from_file->path);
+		struct st_archive_file * f = st_hashtable_get(self->meta_worker->meta_files, hash).value.custom;
+		free(hash);
 
 		struct st_archive_files * to_file = last_volume->files + i;
 		to_file->file = f;
