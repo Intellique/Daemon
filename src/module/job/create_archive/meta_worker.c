@@ -22,13 +22,11 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 13 Feb 2013 12:20:17 +0100                         *
+*  Last modified: Wed, 13 Feb 2013 16:28:50 +0100                         *
 \*************************************************************************/
 
 // asprintf
 #define _GNU_SOURCE
-// scandir
-#include <dirent.h>
 // magic_file, magic_open
 #include <magic.h>
 // open
@@ -46,7 +44,7 @@
 #include <sys/stat.h>
 // lstat, open
 #include <sys/types.h>
-// access, lstat
+// lstat
 #include <unistd.h>
 
 #include <libstone/io.h>
@@ -94,44 +92,6 @@ static struct st_job_create_archive_meta_worker_ops st_job_create_archive_meta_w
 	.free     = st_job_create_archive_meta_worker_free,
 	.wait     = st_job_create_archive_meta_worker_wait,
 };
-
-
-ssize_t st_job_create_archive_compute_size(const char * path) {
-	if (path == NULL)
-		return 0;
-
-	struct stat st;
-	if (lstat(path, &st))
-		return 0;
-
-	if (S_ISREG(st.st_mode))
-		return st.st_size;
-
-	if (S_ISDIR(st.st_mode)) {
-		if (access(path, R_OK | X_OK))
-			return 0;
-
-		struct dirent ** dl = 0;
-		int nb_files = scandir(path, &dl, st_util_file_basic_scandir_filter, 0);
-
-		int i;
-		ssize_t total = 0;
-		for (i = 0; i < nb_files; i++) {
-			char * subpath = 0;
-			asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
-
-			total += st_job_create_archive_compute_size(subpath);
-
-			free(subpath);
-			free(dl[i]);
-		}
-		free(dl);
-
-		return total;
-	}
-
-	return 0;
-}
 
 
 static void st_job_create_archive_free_meta_file(void * key, void * val) {

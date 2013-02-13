@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 11 Feb 2013 14:54:49 +0100                         *
+*  Last modified: Wed, 13 Feb 2013 16:14:40 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -264,7 +264,8 @@ static struct st_format_reader * st_vtl_drive_get_reader(struct st_drive * drive
 				return NULL;
 			}
 		}
-		return st_tar_get_reader(reader);
+
+		return st_format_get_reader(reader, drive->slot->media->format);
 	}
 	return NULL;
 }
@@ -281,7 +282,8 @@ static struct st_format_writer * st_vtl_drive_get_writer(struct st_drive * drive
 				return NULL;
 			}
 		}
-		return st_tar_get_writer(writer);
+
+		return st_format_get_writer(writer, drive->slot->media->format);
 	}
 	return NULL;
 }

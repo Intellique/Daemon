@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 11 Feb 2013 16:38:31 +0100                         *
+*  Last modified: Wed, 13 Feb 2013 16:02:08 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_FORMAT_H__
@@ -33,6 +33,7 @@
 // dev_t, gid_t, mode_t, ssize_t, time_t, uid_t
 #include <sys/types.h>
 
+struct st_media_format;
 struct st_stream_reader;
 struct st_stream_writer;
 
@@ -108,10 +109,11 @@ struct st_format_writer {
 	void * data;
 };
 
-void st_format_file_free(struct st_format_file * file);
+struct st_format_reader * st_format_get_reader(struct st_stream_reader * reader, struct st_media_format * format);
+ssize_t st_format_get_size(const char * path, bool recursive, struct st_media_format * format);
+struct st_format_writer * st_format_get_writer(struct st_stream_writer * writer, struct st_media_format * format);
 
-struct st_format_reader * st_tar_get_reader(struct st_stream_reader * reader);
-struct st_format_writer * st_tar_get_writer(struct st_stream_writer * writer);
+void st_format_file_free(struct st_format_file * file);
 
 #endif
 

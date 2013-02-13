@@ -21,34 +21,18 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 13 Feb 2013 16:29:57 +0100                         *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
+*  Last modified: Wed, 13 Feb 2013 16:29:49 +0100                         *
 \*************************************************************************/
 
-// free
-#include <stdlib.h>
+#ifndef __STONE_FORMAT_P_H__
+#define __STONE_FORMAT_P_H__
 
-#include "format.h"
+#include <libstone/format.h>
 
-void st_format_file_free(struct st_format_file * file) {
-	if (file == NULL)
-		return;
+struct st_format_reader * st_format_tar_get_reader(struct st_stream_reader * reader);
+ssize_t st_format_tar_get_size(const char * path, bool recursive);
+struct st_format_writer * st_format_tar_get_writer(struct st_stream_writer * writer);
 
-	free(file->filename);
-	free(file->link);
-	free(file->user);
-	free(file->group);
-}
-
-struct st_format_reader * st_format_get_reader(struct st_stream_reader * reader, struct st_media_format * format __attribute__((unused))) {
-	return st_format_tar_get_reader(reader);
-}
-
-ssize_t st_format_get_size(const char * path, bool recursive, struct st_media_format * format __attribute__((unused))) {
-	return st_format_tar_get_size(path, recursive);
-}
-
-struct st_format_writer * st_format_get_writer(struct st_stream_writer * writer, struct st_media_format * format __attribute__((unused))) {
-	return st_format_tar_get_writer(writer);
-}
+#endif
 

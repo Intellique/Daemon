@@ -22,15 +22,15 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 21 Aug 2012 20:41:12 +0200                         *
+*  Last modified: Wed, 13 Feb 2013 16:30:23 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_TAR_H__
 #define __STONE_TAR_H__
 
-#include <libstone/format.h>
+#include "../../format.h"
 
-struct st_tar {
+struct st_format_tar {
 	char filename[100];
 	char filemode[8];
 	char uid[8];

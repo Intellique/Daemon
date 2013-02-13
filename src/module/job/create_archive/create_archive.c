@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 13 Feb 2013 11:11:16 +0100                         *
+*  Last modified: Wed, 13 Feb 2013 16:26:27 +0100                         *
 \*************************************************************************/
 
 // asprintf, versionsort
@@ -46,6 +46,7 @@
 // access, lstat
 #include <unistd.h>
 
+#include <libstone/format.h>
 #include <libstone/library/media.h>
 #include <libstone/log.h>
 #include <libstone/user.h>
@@ -230,6 +231,8 @@ static int st_job_create_archive_run(struct st_job * job) {
 
 	self->selected_paths = self->connect->ops->get_selected_paths(self->connect, job, &self->nb_selected_paths);
 
+	struct st_pool * pool = st_pool_get_by_job(job, self->connect);
+
 	unsigned int i;
 	for (i = 0; i < self->nb_selected_paths; i++) {
 		struct st_job_selected_path * p = self->selected_paths + i;
@@ -238,7 +241,7 @@ static int st_job_create_archive_run(struct st_job * job) {
 		// remove trailing '/'
 		st_util_string_rtrim(p->path, '/');
 
-		self->total_size += st_job_create_archive_compute_size(p->path);
+		self->total_size += st_format_get_size(p->path, true, pool->format);
 	}
 
 	char bufsize[32];

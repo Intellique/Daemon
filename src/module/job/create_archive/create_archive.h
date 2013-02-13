@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 13 Feb 2013 11:10:18 +0100                         *
+*  Last modified: Wed, 13 Feb 2013 16:27:39 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_CREATEARCHIVE_H__
@@ -72,8 +72,6 @@ struct st_job_create_archive_private {
 		struct st_hashtable * meta_files;
 	} * meta;
 };
-
-ssize_t st_job_create_archive_compute_size(const char * path);
 
 struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(struct st_job * job, ssize_t archive_size, struct st_database_connection * connect, struct st_job_create_archive_meta_worker * meta_worker);
 
