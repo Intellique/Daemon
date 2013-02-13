@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 12 Feb 2013 22:43:42 +0100                         *
+*  Last modified: Wed, 13 Feb 2013 20:43:13 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -199,7 +199,7 @@ struct st_database_connection {
 		ssize_t (*get_restore_size_by_job)(struct st_database_connection * connect, struct st_job * job);
 		bool (*has_restore_to_by_job)(struct st_database_connection * connect, struct st_job * job);
 		bool (*mark_archive_as_checked)(struct st_database_connection * connect, struct st_archive * archive, bool ok);
-		bool (*mark_archive_file_as_checked)(struct st_database_connection * connect, struct st_archive_volume * volume, struct st_archive_file * file, bool ok);
+		bool (*mark_archive_file_as_checked)(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_file * file, bool ok);
 		bool (*mark_archive_volume_as_checked)(struct st_database_connection * connect, struct st_archive_volume * volume, bool ok);
 		int (*sync_archive)(struct st_database_connection * connect, struct st_archive * archive, char ** checksums);
 	} * ops;

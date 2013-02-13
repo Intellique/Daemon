@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 13 Feb 2013 10:00:37 +0100                         *
+*  Last modified: Wed, 13 Feb 2013 20:44:18 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -163,7 +163,7 @@ static ssize_t st_db_postgresql_get_restore_size_by_job(struct st_database_conne
 static bool st_db_postgresql_has_restore_to_by_job(struct st_database_connection * connect, struct st_job * job);
 static bool st_db_postgresql_has_selected_files_by_job(struct st_database_connection * connect, struct st_job * job);
 static bool st_db_postgresql_mark_archive_as_checked(struct st_database_connection * connect, struct st_archive * archive, bool ok);
-static bool st_db_postgresql_mark_archive_file_as_checked(struct st_database_connection * connect, struct st_archive_volume * volume, struct st_archive_file * file, bool ok);
+static bool st_db_postgresql_mark_archive_file_as_checked(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_file * file, bool ok);
 static bool st_db_postgresql_mark_archive_volume_as_checked(struct st_database_connection * connect, struct st_archive_volume * volume, bool ok);
 static int st_db_postgresql_sync_archive(struct st_database_connection * connect, struct st_archive * archive, char ** checksums);
 static int st_db_postgresql_sync_file(struct st_database_connection * connect, struct st_archive_file * file, char ** checksums, char ** file_id);
@@ -2938,12 +2938,12 @@ static bool st_db_postgresql_mark_archive_as_checked(struct st_database_connecti
 	return query_ok;
 }
 
-static bool st_db_postgresql_mark_archive_file_as_checked(struct st_database_connection * connect, struct st_archive_volume * volume, struct st_archive_file * file, bool ok) {
-	if (connect == NULL || volume == NULL || file == NULL)
+static bool st_db_postgresql_mark_archive_file_as_checked(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_file * file, bool ok) {
+	if (connect == NULL || archive == NULL || file == NULL)
 		return 1;
 
-	struct st_db_postgresql_archive_volume_data * volume_data = volume->db_data;
-	if (volume_data->id < 0)
+	struct st_db_postgresql_archive_data * archive_data = archive->db_data;
+	if (archive_data->id < 0)
 		return false;
 
 	struct st_db_postgresql_archive_file_data * file_data = file->db_data;
@@ -2952,14 +2952,14 @@ static bool st_db_postgresql_mark_archive_file_as_checked(struct st_database_con
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 
-	char * fileid = NULL, * volumeid = NULL;
+	char * fileid = NULL, * archiveid = NULL;
 	asprintf(&fileid, "%ld", file_data->id);
-	asprintf(&volumeid, "%ld", volume_data->id);
+	asprintf(&archiveid, "%ld", archive_data->id);
 
 	const char * query = "mark_archive_file_as_checked";
-	st_db_postgresql_prepare(self, query, "UPDATE archivefiletoarchivevolume SET checksumok = $3, checktime = NOW() WHERE archivevolume = $1 AND archivefile = $2");
+	st_db_postgresql_prepare(self, query, "UPDATE archivefiletoarchivevolume SET checksumok = $3, checktime = NOW() WHERE archivevolume IN (SELECT id FROM archivevolume WHERE archive = $1) AND archivefile = $2");
 
-	const char * param[] = { volumeid, fileid, ok ? "true" : "false" };
+	const char * param[] = { archiveid, fileid, ok ? "true" : "false" };
 	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
@@ -2970,7 +2970,7 @@ static bool st_db_postgresql_mark_archive_file_as_checked(struct st_database_con
 		query_ok = true;
 
 	PQclear(result);
-	free(volumeid);
+	free(archiveid);
 	free(fileid);
 
 	return query_ok;

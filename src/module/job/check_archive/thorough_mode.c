@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 12 Feb 2013 18:51:11 +0100                         *
+*  Last modified: Wed, 13 Feb 2013 20:45:53 +0100                         *
 \*************************************************************************/
 
 // free
@@ -218,10 +218,10 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 				nb_checksum = 0;
 
 				if (ok) {
-					self->connect->ops->mark_archive_file_as_checked(self->connect, vol, file, true);
+					self->connect->ops->mark_archive_file_as_checked(self->connect, self->archive, file, true);
 					st_job_add_record(self->connect, st_log_level_info, self->job, "Checking file (%s), status: OK", file->name);
 				} else {
-					self->connect->ops->mark_archive_file_as_checked(self->connect, vol, file, false);
+					self->connect->ops->mark_archive_file_as_checked(self->connect, self->archive, file, false);
 					st_job_add_record(self->connect, st_log_level_error, self->job, "Checking file (%s), status: checksum mismatch", file->name);
 				}
 			}

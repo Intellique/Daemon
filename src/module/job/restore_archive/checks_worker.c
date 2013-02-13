@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sat, 29 Dec 2012 12:53:51 +0100                         *
+*  Last modified: Wed, 13 Feb 2013 20:49:45 +0100                         *
 \*************************************************************************/
 
 // open
@@ -111,22 +111,13 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 		ssize_t nb_read;
 
 		if (!is_error) {
-			nb_read = read(fd, buffer, 4096);
+			while (nb_read = read(fd, buffer, 4096), nb_read > 0)
+				writer->ops->write(writer, buffer, nb_read);
+
 			if (nb_read < 0) {
 				st_job_add_record(check->connect, st_log_level_info, check->jp->job, "Error while reading from file (%s) because %m", restore_to);
 				check->nb_errors++;
 				is_error = true;
-			}
-
-			while (!is_error && nb_read > 0) {
-				writer->ops->write(writer, buffer, nb_read);
-
-				nb_read = read(fd, buffer, 4096);
-				if (nb_read < 0) {
-					st_job_add_record(check->connect, st_log_level_info, check->jp->job, "Error while reading from file (%s) because %m", restore_to);
-					check->nb_errors++;
-					is_error = true;
-				}
 			}
 		}
 
@@ -149,9 +140,10 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 			char ** results = st_checksum_writer_get_checksums(writer);
 
 			bool ok = check->connect->ops->check_checksums_of_file(check->connect, file, checksums, results, nb_checksum);
-			if (ok)
+			if (ok) {
+				check->connect->ops->mark_archive_file_as_checked(check->connect, check->jp->archive, file, true);
 				st_job_add_record(check->connect, st_log_level_info, check->jp->job, "Checking restored file (%s), status: OK", restore_to);
-			else
+			} else
 				st_job_add_record(check->connect, st_log_level_error, check->jp->job, "Checking restored file (%s), status: checksum mismatch", restore_to);
 
 			writer->ops->free(writer);

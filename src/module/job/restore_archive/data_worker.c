@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Feb 2013 17:47:00 +0100                         *
+*  Last modified: Wed, 13 Feb 2013 22:32:04 +0100                         *
 \*************************************************************************/
 
 // mknod, open
@@ -227,6 +227,7 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 
 				if (nb_read < 0) {
 					st_job_add_record(connect, st_log_level_error, self->jp->job, "Error while reading from media (%s) because %m", vol->media->name);
+					connect->ops->mark_archive_file_as_checked(connect, archive, file, false);
 					self->nb_errors++;
 
 					st_archive_file_free(file);
