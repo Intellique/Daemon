@@ -256,6 +256,8 @@ static int st_job_create_archive_single_worker_change_volume(struct st_job_creat
 	self->first_file = NULL;
 	last_volume->nb_files = self->nb_files;
 
+	// need to free self->writer
+
 	if (!st_job_create_archive_single_worker_select_media(self))
 		return 1;
 

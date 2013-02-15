@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 13 Feb 2013 20:44:18 +0100                         *
+*  Last modified: Fri, 15 Feb 2013 16:10:36 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -2363,7 +2363,7 @@ static struct st_archive * st_db_postgresql_get_archive_by_job(struct st_databas
 		return NULL;
 
 	const char * query = "select_archive_by_job";
-	st_db_postgresql_prepare(self, query, "SELECT a.id, name, starttime, endtime, checktime, metadata, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
+	st_db_postgresql_prepare(self, query, "SELECT a.id, name, starttime, endtime, checksumok, checktime, metadata, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
 
 	char * jobid;
 	asprintf(&jobid, "%ld", job_data->id);
@@ -2382,13 +2382,16 @@ static struct st_archive * st_db_postgresql_get_archive_by_job(struct st_databas
 		st_db_postgresql_get_string_dup(result, 0, 1, &archive->name);
 		st_db_postgresql_get_time(result, 0, 2, &archive->start_time);
 		st_db_postgresql_get_time(result, 0, 3, &archive->end_time);
-		st_db_postgresql_get_time(result, 0, 4, &archive->check_time);
-		st_db_postgresql_get_string_dup(result, 0, 5, &archive->metadatas);
+		st_db_postgresql_get_bool(result, 0, 4, &archive->check_ok);
+		archive->check_time = 0;
+		if (!PQgetisnull(result, 0, 5))
+			st_db_postgresql_get_time(result, 0, 5, &archive->check_time);
+		st_db_postgresql_get_string_dup(result, 0, 6, &archive->metadatas);
 
 		archive->volumes = NULL;
 		archive->nb_volumes = 0;
 
-		archive->user = st_user_get(PQgetvalue(result, 0, 6));
+		archive->user = st_user_get(PQgetvalue(result, 0, 7));
 
 		archive->copy_of = NULL;
 
@@ -2412,7 +2415,7 @@ static struct st_archive_file * st_db_postgresql_get_archive_file_for_restore_di
 		return NULL;
 
 	const char * query = "select_archive_file_for_restore_directory";
-	st_db_postgresql_prepare(self, query, "SELECT af.id, CASE WHEN rt.path IS NOT NULL THEN rt.path || SUBSTRING(af.name FROM CHAR_LENGTH(SUBSTRING(sf.path FROM '(.+/)[^/]+'))) ELSE af.name END AS name, af.type, af.mimetype, af.ownerid, af.groupid, af.perm, af.ctime, af.size FROM job j LEFT JOIN archive a ON j.archive = a.id LEFT JOIN archivevolume av ON a.id = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON af.id = afv.archivefile LEFT JOIN selectedfile sf ON af.parent = sf.id LEFT JOIN restoreto rt ON rt.job = j.id WHERE j.id = $1 AND af.type = 'directory'");
+	st_db_postgresql_prepare(self, query, "SELECT af.id, CASE WHEN rt.path IS NOT NULL THEN rt.path || SUBSTRING(af.name FROM CHAR_LENGTH(SUBSTRING(sf.path FROM '(.+/)[^/]+'))) ELSE af.name END AS name, af.type, af.mimetype, af.ownerid, af.owner, af.groupid, af.groups, af.perm, af.ctime, af.mtime, af.size FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON af.id = afv.archivefile LEFT JOIN selectedfile sf ON af.parent = sf.id LEFT JOIN restoreto rt ON rt.job = j.id WHERE j.id = $1 AND af.type = 'directory'");
 
 	char * jobid;
 	asprintf(&jobid, "%ld", job_data->id);
@@ -2437,12 +2440,15 @@ static struct st_archive_file * st_db_postgresql_get_archive_file_for_restore_di
 			st_db_postgresql_get_string_dup(result, i, 3, &file->mime_type);
 
 			st_db_postgresql_get_uint(result, i, 4, &file->ownerid);
-			st_db_postgresql_get_uint(result, i, 5, &file->groupid);
-			st_db_postgresql_get_uint(result, i, 6, &file->perm);
-			st_db_postgresql_get_time(result, i, 7, &file->create_time);
-			file->modify_time = 0;
+			st_db_postgresql_get_string(result, i, 5, file->owner, 32);
+			st_db_postgresql_get_uint(result, i, 6, &file->groupid);
+			st_db_postgresql_get_string(result, i, 7, file->group, 32);
+			st_db_postgresql_get_uint(result, i, 8, &file->perm);
+			st_db_postgresql_get_time(result, i, 9, &file->create_time);
+			st_db_postgresql_get_time(result, i, 10, &file->modify_time);
+			file->check_ok = false;
 			file->check_time = 0;
-			st_db_postgresql_get_ssize(result, i, 8, &file->size);
+			st_db_postgresql_get_ssize(result, i, 11, &file->size);
 
 			file->owner[0] = file->group[0] = '\0';
 			file->modify_time = file->create_time;
@@ -2477,10 +2483,10 @@ static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct s
 	const char * query;
 	if (st_db_postgresql_has_selected_files_by_job(connect, job)) {
 		query = "select_archive_files_by_job_and_archive_volume_with_selected_files";
-		st_db_postgresql_prepare(self, query, "SELECT af.id, af.name, af.type, mimetype, ownerid, groupid, perm, af.ctime, af.size, afv.blocknumber FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id, (SELECT path, CHAR_LENGTH(path) AS length FROM selectedfile ssf2 LEFT JOIN jobtoselectedfile sjsf ON ssf2.id = sjsf.selectedfile WHERE sjsf.job = $1) AS ssf WHERE j.id = $1 AND av.id = $2 AND SUBSTR(af.name, 0, ssf.length + 1) = ssf.path ORDER BY af.id");
+		st_db_postgresql_prepare(self, query, "SELECT af.id, af.name, af.type, mimetype, ownerid, owner, groupid, groups, perm, af.ctime, af.mtime, afv.checksumok, afv.checktime, af.size, afv.blocknumber FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id, (SELECT path, CHAR_LENGTH(path) AS length FROM selectedfile ssf2 LEFT JOIN jobtoselectedfile sjsf ON ssf2.id = sjsf.selectedfile WHERE sjsf.job = $1) AS ssf WHERE j.id = $1 AND av.id = $2 AND SUBSTR(af.name, 0, ssf.length + 1) = ssf.path ORDER BY af.id");
 	} else {
 		query = "select_archive_files_by_job_and_archive_volume";
-		st_db_postgresql_prepare(self, query, "SELECT af.id, af.name, af.type, mimetype, ownerid, groupid, perm, af.ctime, af.size, afv.blocknumber FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id WHERE j.id = $1 AND av.id = $2 ORDER BY af.id");
+		st_db_postgresql_prepare(self, query, "SELECT af.id, af.name, af.type, mimetype, ownerid, owner, groupid, groups, perm, af.ctime, af.mtime, afv.checksumok, afv.checktime, af.size, afv.blocknumber FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id WHERE j.id = $1 AND av.id = $2 ORDER BY af.id");
 	}
 
 	char * jobid, * archivevolumeid;
@@ -2506,14 +2512,16 @@ static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct s
 			st_db_postgresql_get_string_dup(result, i, 3, &file->mime_type);
 
 			st_db_postgresql_get_uint(result, i, 4, &file->ownerid);
-			st_db_postgresql_get_uint(result, i, 5, &file->groupid);
-			st_db_postgresql_get_uint(result, i, 6, &file->perm);
-			st_db_postgresql_get_time(result, i, 7, &file->create_time);
-			st_db_postgresql_get_ssize(result, i, 8, &file->size);
-
-			file->owner[0] = file->group[0] = '\0';
-			file->modify_time = file->create_time;
-			file->check_time = 0;
+			st_db_postgresql_get_string(result, i, 5, file->owner, 32);
+			st_db_postgresql_get_uint(result, i, 6, &file->groupid);
+			st_db_postgresql_get_string(result, i, 7, file->group, 32);
+			st_db_postgresql_get_uint(result, i, 8, &file->perm);
+			st_db_postgresql_get_time(result, i, 9, &file->create_time);
+			st_db_postgresql_get_time(result, i, 10, &file->modify_time);
+			st_db_postgresql_get_bool(result, i, 11, &file->check_ok);
+			if (PQgetisnull(result, i, 12))
+				st_db_postgresql_get_time(result, i, 12, &file->check_time);
+			st_db_postgresql_get_ssize(result, i, 13, &file->size);
 
 			file->digests = NULL;
 			file->nb_digests = 0;
@@ -2547,7 +2555,7 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 		return NULL;
 
 	const char * query = "select_archive_by_job";
-	st_db_postgresql_prepare(self, query, "SELECT a.id, a.uuid, name, starttime, endtime, checktime, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
+	st_db_postgresql_prepare(self, query, "SELECT a.id, a.uuid, name, starttime, endtime, checksumok, checktime, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
 
 	char * jobid;
 	asprintf(&jobid, "%ld", job_data->id);
@@ -2567,14 +2575,15 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 		st_db_postgresql_get_string_dup(result, 0, 2, &archive->name);
 		st_db_postgresql_get_time(result, 0, 3, &archive->start_time);
 		st_db_postgresql_get_time(result, 0, 4, &archive->end_time);
+		st_db_postgresql_get_bool(result, 0, 5, &archive->check_ok);
 		archive->check_time = 0;
-		if (!PQgetisnull(result, 0, 5))
-			st_db_postgresql_get_time(result, 0, 5, &archive->check_time);
+		if (!PQgetisnull(result, 0, 6))
+			st_db_postgresql_get_time(result, 0, 6, &archive->check_time);
 
 		archive->volumes = NULL;
 		archive->nb_volumes = 0;
 
-		archive->user = st_user_get(PQgetvalue(result, 0, 6));
+		archive->user = st_user_get(PQgetvalue(result, 0, 7));
 
 		archive->copy_of = NULL;
 		archive->metadatas = NULL;
@@ -2592,10 +2601,10 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 
 	if (st_db_postgresql_has_selected_files_by_job(connect, job)) {
 		query = "select_archive_volumes_by_job_with_selected_files";
-		st_db_postgresql_prepare(self, query, "SELECT DISTINCT av.id, av.sequence, av.size, m.uuid, av.mediaposition FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id LEFT JOIN media m ON av.media = m.id, (SELECT DISTINCT path, CHAR_LENGTH(path) AS length FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1)) AS sf WHERE j.id = $1 AND SUBSTR(af.name, 0, sf.length + 1) = sf.path ORDER BY sequence");
+		st_db_postgresql_prepare(self, query, "SELECT DISTINCT av.id, av.sequence, av.starttime, av.endtime, av.checksumok, av.checktime, av.size, m.uuid, av.mediaposition FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id LEFT JOIN media m ON av.media = m.id, (SELECT DISTINCT path, CHAR_LENGTH(path) AS length FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1)) AS sf WHERE j.id = $1 AND SUBSTR(af.name, 0, sf.length + 1) = sf.path ORDER BY sequence");
 	} else {
 		query = "select_archive_volumes_by_job";
-		st_db_postgresql_prepare(self, query, "SELECT av.id, av.sequence, av.size, m.uuid, av.mediaposition FROM job j LEFT JOIN archive a ON j.archive = a.id LEFT JOIN archivevolume av ON a.id = av.archive LEFT JOIN media m ON av.media = m.id WHERE j.id = $1 ORDER BY sequence");
+		st_db_postgresql_prepare(self, query, "SELECT av.id, av.sequence, av.starttime, av.endtime, av.checksumok, av.checktime, av.size, m.uuid, av.mediaposition FROM job j LEFT JOIN archive a ON j.archive = a.id LEFT JOIN archivevolume av ON a.id = av.archive LEFT JOIN media m ON av.media = m.id WHERE j.id = $1 ORDER BY sequence");
 	}
 
 	result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -2613,13 +2622,20 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 			struct st_archive_volume * volume = archive->volumes + i;
 
 			st_db_postgresql_get_long(result, i, 1, &volume->sequence);
-			st_db_postgresql_get_ssize(result, i, 2, &volume->size);
+			st_db_postgresql_get_time(result, i, 2, &volume->start_time);
+			st_db_postgresql_get_time(result, i, 3, &volume->end_time);
+			st_db_postgresql_get_bool(result, i, 4, &volume->check_ok);
+			volume->check_time = 0;
+			if (PQgetisnull(result, i, 5))
+				st_db_postgresql_get_time(result, i, 5, &volume->check_time);
+
+			st_db_postgresql_get_ssize(result, i, 6, &volume->size);
 			volume->archive = archive;
 
 			char uuid[37];
-			st_db_postgresql_get_string(result, i, 3, uuid, 37);
+			st_db_postgresql_get_string(result, i, 7, uuid, 37);
 			volume->media = st_media_get_by_uuid(uuid);
-			st_db_postgresql_get_long(result, i, 4, &volume->media_position);
+			st_db_postgresql_get_long(result, i, 8, &volume->media_position);
 
 			volume->digests = NULL;
 			volume->nb_digests = 0;
@@ -2629,6 +2645,8 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 
 			struct st_db_postgresql_archive_volume_data * archive_volume_data = volume->db_data = malloc(sizeof(struct st_db_postgresql_archive_volume_data));
 			st_db_postgresql_get_long(result, i, 0, &archive_volume_data->id);
+
+			st_db_postgresql_get_checksums_of_archive_volume(connect, volume, &volume->nb_digests);
 		}
 	}
 

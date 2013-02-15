@@ -22,28 +22,30 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 12 Feb 2013 09:54:23 +0100                         *
+*  Last modified: Fri, 15 Feb 2013 13:56:25 +0100                         *
 \*************************************************************************/
 
+// calloc
+#include <stdlib.h>
 // S_ISREG
 #include <sys/stat.h>
 // S_ISREG
 #include <sys/types.h>
+// time
+#include <time.h>
 // S_ISREG
 #include <unistd.h>
 
 #include <libstone/database.h>
 #include <libstone/format.h>
-#include <libstone/io.h>
 #include <libstone/library/archive.h>
 #include <libstone/library/changer.h>
 #include <libstone/library/drive.h>
 #include <libstone/library/ressource.h>
 #include <libstone/library/slot.h>
+#include <stoned/io.h>
 
 #include "copy_archive.h"
-
-static struct st_stream_writer * st_job_copy_archive_direct_copy_add_filter(struct st_stream_writer * writer, void * param);
 
 
 int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
@@ -60,9 +62,15 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 		self->slot_output = NULL;
 	}
 
-	struct st_format_writer * writer = self->drive_output->ops->get_writer(self->drive_output, true, st_job_copy_archive_direct_copy_add_filter, self);
+	self->writer = self->drive_output->ops->get_writer(self->drive_output, true, st_job_copy_archive_add_filter, self);
 
 	unsigned int i;
+	int position = self->drive_output->ops->get_position(self->drive_output);
+	st_archive_add_volume(self->copy, self->drive_output->slot->media, position);
+
+	self->current_volume = self->copy->volumes;
+	self->current_volume->files = calloc(self->nb_remain_files, sizeof(struct st_archive_files));
+
 	for (i = 0; i < self->archive->nb_volumes; i++) {
 		struct st_archive_volume * vol = self->archive->volumes + i;
 
@@ -79,8 +87,6 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 			self->slot_input = NULL;
 		}
 
-		self->connect->ops->get_archive_files_by_job_and_archive_volume(self->connect, self->job, vol);
-
 		struct st_format_reader * reader = self->drive_input->ops->get_reader(self->drive_input, vol->media_position, NULL, NULL);
 
 		unsigned int j;
@@ -88,18 +94,26 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 			struct st_archive_files * f = vol->files + j;
 			struct st_archive_file * file = f->file;
 
+			ssize_t position = self->writer->ops->position(self->writer) / self->writer->ops->get_block_size(self->writer);
+
+			struct st_archive_files * copy_f = self->current_volume->files + self->current_volume->nb_files;
+			self->current_volume->nb_files++;
+			copy_f->file = file;
+			copy_f->position = position;
+
 			struct st_format_file header;
 			enum st_format_reader_header_status sr = reader->ops->get_header(reader, &header);
 			enum st_format_writer_status sw;
 			switch (sr) {
 				case st_format_reader_header_ok:
-					sw = writer->ops->add(writer, &header);
+					sw = self->writer->ops->add(self->writer, &header);
 					if (sw == st_format_writer_end_of_volume) {
-						st_job_copy_archive_select_output_media(self, true);
+						st_job_copy_archive_change_ouput_media(self);
 
-						struct st_stream_writer * stw = self->drive_output->ops->get_raw_writer(self->drive_output, true);
-						stw = st_job_copy_archive_direct_copy_add_filter(stw, self);
-						writer->ops->new_volume(writer, stw);
+						copy_f = self->current_volume->files + self->current_volume->nb_files;
+						self->current_volume->nb_files++;
+						copy_f->file = file;
+						copy_f->position = 0;
 					}
 
 					if (S_ISREG(header.mode)) {
@@ -107,10 +121,10 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 
 						ssize_t nb_read;
 						while (nb_read = reader->ops->read(reader, buffer, 4096), nb_read > 0) {
-							writer->ops->write(writer, buffer, nb_read);
+							self->writer->ops->write(self->writer, buffer, nb_read);
 						}
 
-						writer->ops->end_of_file(writer);
+						self->writer->ops->end_of_file(self->writer);
 					}
 					break;
 
@@ -125,16 +139,24 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 		reader->ops->free(reader);
 	}
 
-	writer->ops->close(writer);
+	self->writer->ops->close(self->writer);
 
+	self->current_volume->end_time = self->copy->end_time = time(NULL);
+	self->current_volume->size = self->writer->ops->position(self->writer);
+
+	self->current_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
+	self->current_volume->nb_digests = self->nb_checksums;
+
+	self->writer->ops->free(self->writer);
+	self->writer = NULL;
+
+
+	// write metadatas
+	struct st_stream_writer * writer = self->drive_output->ops->get_raw_writer(self->drive_output, true);
+	st_io_json_writer(writer, self->copy, self->checksums);
+	writer->ops->close(writer);
 	writer->ops->free(writer);
 
 	return 0;
-}
-
-static struct st_stream_writer * st_job_copy_archive_direct_copy_add_filter(struct st_stream_writer * writer, void * param) {
-	struct st_job_copy_archive_private * self = param;
-
-	return writer;
 }
 

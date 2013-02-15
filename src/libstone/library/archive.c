@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 31 Jan 2013 18:10:32 +0100                         *
+*  Last modified: Fri, 15 Feb 2013 15:23:35 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -67,6 +67,8 @@ struct st_archive_volume * st_archive_add_volume(struct st_archive * archive, st
 
 	volume->start_time = time(NULL);
 	volume->end_time = 0;
+
+	volume->check_ok = false;
 	volume->check_time = 0;
 
 	volume->archive = archive;
@@ -106,6 +108,8 @@ struct st_archive * st_archive_new(const char * name, struct st_user * user) {
 
 	archive->start_time = time(NULL);
 	archive->end_time = 0;
+
+	archive->check_ok = false;
 	archive->check_time = 0;
 
 	archive->volumes = NULL;
@@ -160,6 +164,7 @@ struct st_archive_file * st_archive_file_new(struct stat * file, const char * fi
 	st_util_file_gid2name(f->group, 32, file->st_gid);
 	f->create_time = file->st_ctime;
 	f->modify_time = file->st_mtime;
+	f->check_ok = false;
 	f->check_time = 0;
 	f->size = file->st_size;
 

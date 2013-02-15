@@ -22,11 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 16 Jan 2013 12:02:44 +0100                         *
+*  Last modified: Fri, 15 Feb 2013 13:04:32 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_JOB_COPYARCHIVE_H__
 #define __STONE_JOB_COPYARCHIVE_H__
+
+// ssize_t
+#include <sys/types.h>
 
 #include <libstone/job.h>
 
@@ -39,15 +42,25 @@ struct st_job_copy_archive_private {
 	ssize_t total_done;
 	ssize_t archive_size;
 	struct st_archive * archive;
+	struct st_archive * copy;
 
 	struct st_drive * drive_input;
 	struct st_slot * slot_input;
+	unsigned int nb_remain_files;
 
-	struct st_pool * pool;
+	struct st_archive_volume * current_volume;
 	struct st_drive * drive_output;
 	struct st_slot * slot_output;
+	struct st_pool * pool;
+	struct st_format_writer * writer;
+
+	struct st_stream_writer * checksum_writer;
+	unsigned int nb_checksums;
+	char ** checksums;
 };
 
+struct st_stream_writer * st_job_copy_archive_add_filter(struct st_stream_writer * writer, void * param);
+bool st_job_copy_archive_change_ouput_media(struct st_job_copy_archive_private * self);
 int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self);
 int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self);
 bool st_job_copy_archive_select_input_media(struct st_job_copy_archive_private * self, struct st_media * media);

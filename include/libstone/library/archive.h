@@ -22,12 +22,14 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 31 Jan 2013 18:09:40 +0100                         *
+*  Last modified: Fri, 15 Feb 2013 15:22:40 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
 #define __STONE_ARCHIVE_H__
 
+// bool
+#include <stdbool.h>
 // time_t
 #include <sys/time.h>
 // ssize_t
@@ -59,6 +61,8 @@ struct st_archive {
 
 	time_t start_time;
 	time_t end_time;
+
+	bool check_ok;
 	time_t check_time;
 
 	struct st_archive_volume * volumes;
@@ -78,6 +82,8 @@ struct st_archive_volume {
 
 	time_t start_time;
 	time_t end_time;
+
+	bool check_ok;
 	time_t check_time;
 
 	struct st_archive * archive;
@@ -107,7 +113,10 @@ struct st_archive_file {
 
 	time_t create_time;
 	time_t modify_time;
+
+	bool check_ok;
 	time_t check_time;
+
 	ssize_t size;
 
 	char * mime_type;
