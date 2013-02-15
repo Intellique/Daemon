@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 05 Feb 2013 12:38:00 +0100                         *
+*  Last modified: Fri, 15 Feb 2013 23:12:19 +0100                         *
 \*************************************************************************/
 
 // bool
@@ -582,6 +582,7 @@ int st_job_format_media_run(struct st_job * job) {
 		st_job_add_record(self->connect, st_log_level_warning, job, "Job: format media aborted by user before formatting media");
 	}
 
+	self->connect->ops->sync_media(self->connect, media);
 	media->locked = false;
 	media->lock->ops->unlock(media->lock);
 	self->connect->ops->sync_media(self->connect, media);
