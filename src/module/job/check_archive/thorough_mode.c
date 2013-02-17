@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 13 Feb 2013 20:45:53 +0100                         *
+*  Last modified: Sun, 17 Feb 2013 18:38:37 +0100                         *
 \*************************************************************************/
 
 // free
@@ -42,6 +42,7 @@
 #include <libstone/library/ressource.h>
 #include <libstone/library/slot.h>
 #include <libstone/log.h>
+#include <libstone/util/hashtable.h>
 #include <stoned/library/changer.h>
 
 #include "check_archive.h"
@@ -58,9 +59,6 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 		total_size += archive->volumes[i].size;
 
 	unsigned int nb_errors = 0;
-
-	char ** file_checksums = NULL;
-	unsigned int nb_checksum = 0;
 
 	struct st_stream_writer * file_check = NULL;
 	bool error = false;
@@ -130,7 +128,8 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 
 		self->connect->ops->get_archive_files_by_job_and_archive_volume(self->connect, self->job, vol);
 
-		self->vol_checksums = self->connect->ops->get_checksums_of_archive_volume(self->connect, vol, &self->nb_vol_checksums);
+		self->nb_vol_checksums = self->connect->ops->get_checksums_of_archive_volume(self->connect, vol);
+		self->vol_checksums = (char **) st_hashtable_keys(vol->digests, NULL);
 
 		struct st_format_reader * reader = drive->ops->get_reader(drive, vol->media_position, st_job_check_archive_thorough_mode_add_filter, self);
 		ssize_t block_size = reader->ops->get_block_size(reader);
@@ -177,9 +176,12 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 			}
 
 			if (file_check == NULL) {
-				file_checksums = self->connect->ops->get_checksums_of_file(self->connect, file, &nb_checksum);
+				unsigned int nb_file_checksum = self->connect->ops->get_checksums_of_file(self->connect, file);
+				const void ** file_checksums = st_hashtable_keys(file->digests, NULL);
 
-				file_check = st_checksum_writer_new(NULL, file_checksums, nb_checksum, true);
+				file_check = st_checksum_writer_new(NULL, (char **) file_checksums, nb_file_checksum, true);
+
+				free(file_checksums);
 			}
 
 			char buffer[4096];
@@ -199,23 +201,12 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 			if (total_read_file == header.size) {
 				file_check->ops->close(file_check);
 
-				char ** results = st_checksum_writer_get_checksums(file_check);
-
-				bool ok = self->connect->ops->check_checksums_of_file(self->connect, file, file_checksums, results, nb_checksum);
+				struct st_hashtable * results = st_checksum_writer_get_checksums(file_check);
+				bool ok = st_hashtable_equals(file->digests, results);
+				st_hashtable_free(results);
 
 				file_check->ops->free(file_check);
 				file_check = NULL;
-
-				unsigned int k;
-				for (k = 0; k < nb_checksum; k++) {
-					free(file_checksums[i]);
-					free(results[i]);
-				}
-				free(file_checksums);
-				free(results);
-
-				file_checksums = NULL;
-				nb_checksum = 0;
 
 				if (ok) {
 					self->connect->ops->mark_archive_file_as_checked(self->connect, self->archive, file, true);
@@ -236,9 +227,10 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 		reader->ops->close(reader);
 
 		if (!error) {
-			char ** results = st_checksum_reader_get_checksums(self->checksum_reader);
+			struct st_hashtable * results = st_checksum_reader_get_checksums(self->checksum_reader);
+			bool ok = st_hashtable_equals(vol->digests, results);
+			st_hashtable_free(results);
 
-			bool ok = self->connect->ops->check_checksums_of_archive_volume(self->connect, vol, self->vol_checksums, results, self->nb_vol_checksums);
 			if (ok) {
 				self->connect->ops->mark_archive_volume_as_checked(self->connect, vol, true);
 				st_job_add_record(self->connect, st_log_level_info, self->job, "Checking volume #%lu, status: OK", vol->sequence);
@@ -246,11 +238,6 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 				self->connect->ops->mark_archive_volume_as_checked(self->connect, vol, false);
 				st_job_add_record(self->connect, st_log_level_error, self->job, "Checking volume #%lu, status: checksum mismatch", vol->sequence);
 			}
-
-			unsigned int j;
-			for (j = 0; j < self->nb_vol_checksums; j++)
-				free(results[j]);
-			free(results);
 		}
 
 		reader->ops->free(reader);

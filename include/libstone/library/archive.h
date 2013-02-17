@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 15 Feb 2013 15:22:40 +0100                         *
+*  Last modified: Sun, 17 Feb 2013 11:54:18 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -37,6 +37,7 @@
 
 struct st_archive_file;
 struct st_archive_volume;
+struct st_hashtable;
 struct st_job;
 struct st_media;
 struct st_job_selected_path;
@@ -90,8 +91,7 @@ struct st_archive_volume {
 	struct st_media * media;
 	long media_position;
 
-	char ** digests;
-	unsigned int nb_digests;
+	struct st_hashtable * digests;
 
 	struct st_archive_files {
 		struct st_archive_file * file;
@@ -121,8 +121,7 @@ struct st_archive_file {
 
 	char * mime_type;
 
-	char ** digests;
-	unsigned int nb_digests;
+	struct st_hashtable * digests;
 
 	struct st_archive * archive;
 	struct st_job_selected_path * selected_path;

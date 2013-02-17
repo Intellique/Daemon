@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 13 Feb 2013 16:28:50 +0100                         *
+*  Last modified: Sun, 17 Feb 2013 18:50:04 +0100                         *
 \*************************************************************************/
 
 // asprintf
@@ -233,7 +233,6 @@ static void st_job_create_archive_meta_worker_work2(struct st_job_create_archive
 		writer->ops->close(writer);
 
 		file->digests = st_checksum_writer_get_checksums(writer);
-		file->nb_digests = nb_checksums;
 
 		writer->ops->free(writer);
 

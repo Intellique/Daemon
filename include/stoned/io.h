@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Thu, 13 Dec 2012 20:56:34 +0100                         *
+*  Last modified: Sun, 17 Feb 2013 12:26:57 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONED_IO_H__
@@ -32,7 +32,7 @@
 
 struct st_archive;
 
-ssize_t st_io_json_writer(struct st_stream_writer * writer, struct st_archive * archive, char ** checksums);
+ssize_t st_io_json_writer(struct st_stream_writer * writer, struct st_archive * archive);
 
 #endif
 

@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 11 Feb 2013 10:08:22 +0100                         *
+*  Last modified: Sun, 17 Feb 2013 12:36:02 +0100                         *
 \*************************************************************************/
 
 // json_array, json_array_append_new, json_decref, json_dumps, json_integer,
@@ -39,19 +39,20 @@
 
 #include <libstone/library/archive.h>
 #include <libstone/user.h>
+#include <libstone/util/hashtable.h>
 #include <stoned/io.h>
 
 #include "stone.version"
 
 static struct utsname st_io_json_uname;
 
-static json_t * st_io_json_archive(struct st_archive * archive, char ** checksums);
-static json_t * st_io_json_file(struct st_archive_file * file, char ** checksums);
-static json_t * st_io_json_volume(struct st_archive_volume * volume, char ** checksums);
+static json_t * st_io_json_archive(struct st_archive * archive);
+static json_t * st_io_json_file(struct st_archive_file * file);
+static json_t * st_io_json_volume(struct st_archive_volume * volume);
 static void st_io_json_volume_init(void) __attribute__((constructor));
 
 
-static json_t * st_io_json_archive(struct st_archive * archive, char ** checksums) {
+static json_t * st_io_json_archive(struct st_archive * archive) {
 	json_t * jarchive = json_object();
 
 	json_object_set_new(jarchive, "uuid", json_string(archive->uuid));
@@ -72,13 +73,13 @@ static json_t * st_io_json_archive(struct st_archive * archive, char ** checksum
 	json_t * volumes = json_array();
 	unsigned int i;
 	for (i = 0; i < archive->nb_volumes; i++)
-		json_array_append_new(volumes, st_io_json_volume(archive->volumes + i, checksums));
+		json_array_append_new(volumes, st_io_json_volume(archive->volumes + i));
 	json_object_set_new(jarchive, "volumes", volumes);
 
 	return jarchive;
 }
 
-static json_t * st_io_json_file(struct st_archive_file * file, char ** checksums) {
+static json_t * st_io_json_file(struct st_archive_file * file) {
 	json_t * jfile = json_object();
 
 	json_object_set_new(jfile, "name", json_string(file->name));
@@ -106,15 +107,19 @@ static json_t * st_io_json_file(struct st_archive_file * file, char ** checksums
 	json_object_set_new(jfile, "mime type", json_string(file->mime_type));
 
 	json_t * jchecksums = json_object();
-	unsigned int i;
-	for (i = 0; i < file->nb_digests; i++)
-		json_object_set_new(jchecksums, checksums[i], json_string(file->digests[i]));
+	unsigned int i, nb_digests;
+	const void ** checksums = st_hashtable_keys(file->digests, &nb_digests);
+	for (i = 0; i < nb_digests; i++) {
+		struct st_hashtable_value digest = st_hashtable_get(file->digests, checksums[i]);
+		json_object_set_new(jchecksums, checksums[i], json_string(digest.value.string));
+	}
 	json_object_set_new(jfile, "checksums", jchecksums);
+	free(checksums);
 
 	return jfile;
 }
 
-static json_t * st_io_json_volume(struct st_archive_volume * volume, char ** checksums) {
+static json_t * st_io_json_volume(struct st_archive_volume * volume) {
 	json_t * jvolume = json_object();
 
 	json_object_set_new(jvolume, "host", json_string(st_io_json_uname.nodename));
@@ -132,10 +137,14 @@ static json_t * st_io_json_volume(struct st_archive_volume * volume, char ** che
 	json_object_set_new(jvolume, "finish time", json_string(ctime));
 
 	json_t * jchecksums = json_object();
-	unsigned int i;
-	for (i = 0; i < volume->nb_digests; i++)
-		json_object_set_new(jchecksums, checksums[i], json_string(volume->digests[i]));
+	unsigned int i, nb_digests;
+	const void ** checksums = st_hashtable_keys(volume->digests, &nb_digests);
+	for (i = 0; i < nb_digests; i++) {
+		struct st_hashtable_value digest = st_hashtable_get(volume->digests, checksums[i]);
+		json_object_set_new(jchecksums, checksums[i], json_string(digest.value.string));
+	}
 	json_object_set_new(jvolume, "checksums", jchecksums);
+	free(checksums);
 
 	json_t * files = json_array();
 	for (i = 0; i < volume->nb_files; i++) {
@@ -143,7 +152,7 @@ static json_t * st_io_json_volume(struct st_archive_volume * volume, char ** che
 
 		json_t * jblock = json_object();
 		json_object_set_new(jblock, "block position", json_integer(file->position));
-		json_object_set_new(jblock, "file", st_io_json_file(file->file, checksums));
+		json_object_set_new(jblock, "file", st_io_json_file(file->file));
 
 		json_array_append_new(files, jblock);
 	}
@@ -154,14 +163,14 @@ static json_t * st_io_json_volume(struct st_archive_volume * volume, char ** che
 	return jvolume;
 }
 
-ssize_t st_io_json_writer(struct st_stream_writer * writer, struct st_archive * archive, char ** checksums) {
+ssize_t st_io_json_writer(struct st_stream_writer * writer, struct st_archive * archive) {
 	json_t * stone = json_object();
 	json_object_set_new(stone, "version", json_string(STONE_VERSION));
 	json_object_set_new(stone, "build", json_string(__DATE__ " " __TIME__));
 
 	json_t * root = json_object();
 	json_object_set_new(root, "stone", stone);
-	json_object_set_new(root, "archive", st_io_json_archive(archive, checksums));
+	json_object_set_new(root, "archive", st_io_json_archive(archive));
 
 	char * cjson = json_dumps(root, JSON_COMPACT);
 	ssize_t cjson_length = strlen(cjson);

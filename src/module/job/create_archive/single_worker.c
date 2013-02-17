@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 13 Feb 2013 18:02:46 +0100                         *
+*  Last modified: Sun, 17 Feb 2013 18:50:47 +0100                         *
 \*************************************************************************/
 
 // asprintf
@@ -227,7 +227,6 @@ static int st_job_create_archive_single_worker_change_volume(struct st_job_creat
 	last_volume->size = self->writer->ops->position(self->writer);
 
 	last_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
-	last_volume->nb_digests = self->nb_checksums;
 
 	self->meta_worker->ops->wait(self->meta_worker, false);
 
@@ -290,7 +289,6 @@ static void st_job_create_archive_single_worker_close(struct st_job_create_archi
 	last_volume->size = self->writer->ops->position(self->writer);
 
 	last_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
-	last_volume->nb_digests = self->nb_checksums;
 
 	self->meta_worker->ops->wait(self->meta_worker, false);
 
@@ -593,7 +591,7 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 static int st_job_create_archive_single_worker_sync_db(struct st_job_create_archive_data_worker * worker) {
 	struct st_job_create_archive_single_worker_private * self = worker->data;
 
-	return self->connect->ops->sync_archive(self->connect, self->archive, self->checksums);
+	return self->connect->ops->sync_archive(self->connect, self->archive);
 }
 
 static ssize_t st_job_create_archive_single_worker_write(struct st_job_create_archive_data_worker * worker, void * buffer, ssize_t length) {
@@ -630,7 +628,7 @@ static int st_job_create_archive_single_worker_write_meta(struct st_job_create_a
 	struct st_job_create_archive_single_worker_private * self = worker->data;
 	struct st_stream_writer * writer = self->drive->ops->get_raw_writer(self->drive, true);
 
-	ssize_t nb_write = st_io_json_writer(writer, self->archive, self->checksums);
+	ssize_t nb_write = st_io_json_writer(writer, self->archive);
 
 	writer->ops->close(writer);
 	writer->ops->free(writer);

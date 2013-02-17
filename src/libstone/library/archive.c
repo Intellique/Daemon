@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 15 Feb 2013 15:23:35 +0100                         *
+*  Last modified: Sun, 17 Feb 2013 12:26:19 +0100                         *
 \*************************************************************************/
 
 // free, malloc
@@ -38,6 +38,7 @@
 
 #include <libstone/library/archive.h>
 #include <libstone/util/file.h>
+#include <libstone/util/hashtable.h>
 
 static struct st_archive_file_type2 {
 	char * name;
@@ -76,7 +77,6 @@ struct st_archive_volume * st_archive_add_volume(struct st_archive * archive, st
 	volume->media_position = media_position;
 
 	volume->digests = NULL;
-	volume->nb_digests = 0;
 
 	volume->files = NULL;
 	volume->nb_files = 0;
@@ -127,13 +127,7 @@ struct st_archive * st_archive_new(const char * name, struct st_user * user) {
 void st_archive_file_free(struct st_archive_file * file) {
 	free(file->name);
 	free(file->mime_type);
-
-	unsigned int i;
-	for (i = 0; i < file->nb_digests; i++)
-		free(file->digests[i]);
-	free(file->digests);
-	file->nb_digests = 0;
-
+	st_hashtable_free(file->digests);
 	free(file->db_data);
 	free(file);
 }
@@ -171,7 +165,6 @@ struct st_archive_file * st_archive_file_new(struct stat * file, const char * fi
 	f->mime_type = NULL;
 
 	f->digests = NULL;
-	f->nb_digests = 0;
 
 	f->archive = NULL;
 	f->selected_path = NULL;
@@ -198,11 +191,7 @@ const char * st_archive_file_type_to_string(enum st_archive_file_type type) {
 }
 
 void st_archive_volume_free(struct st_archive_volume * volume) {
-	unsigned int i;
-	for (i = 0; i < volume->nb_digests; i++)
-		free(volume->digests[i]);
-	free(volume->digests);
-
+	st_hashtable_free(volume->digests);
 	free(volume->files);
 	free(volume->db_data);
 }

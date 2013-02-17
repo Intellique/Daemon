@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 12 Feb 2013 18:49:27 +0100                         *
+*  Last modified: Sun, 17 Feb 2013 16:39:01 +0100                         *
 \*************************************************************************/
 
 // pthread_cond_t
@@ -39,6 +39,7 @@
 #include <libstone/library/slot.h>
 #include <libstone/log.h>
 #include <libstone/thread_pool.h>
+#include <libstone/util/hashtable.h>
 #include <stoned/library/changer.h>
 
 #include "check_archive.h"
@@ -275,12 +276,14 @@ static void st_job_check_archive_quick_mode_work(void * arg) {
 		if (vol->media != qm->media)
 			continue;
 
-		unsigned int nb_checksums;
-		char ** checksums = connect->ops->get_checksums_of_archive_volume(connect, vol, &nb_checksums);
+		unsigned int nb_checksums = connect->ops->get_checksums_of_archive_volume(connect, vol);
+		const void ** checksums = st_hashtable_keys(vol->digests, NULL);
 
-		struct st_stream_writer * writer = st_checksum_writer_new(NULL, checksums, nb_checksums, true);
-
+		struct st_stream_writer * writer = st_checksum_writer_new(NULL, (char **) checksums, nb_checksums, true);
 		struct st_stream_reader * reader = dr->ops->get_raw_reader(dr, vol->media_position);
+
+		free(checksums);
+		checksums = NULL;
 
 		char buffer[4096];
 		ssize_t nb_read;
@@ -302,9 +305,10 @@ static void st_job_check_archive_quick_mode_work(void * arg) {
 		writer->ops->close(writer);
 
 		if (ok) {
-			char ** results = st_checksum_writer_get_checksums(writer);
+			struct st_hashtable * results = st_checksum_writer_get_checksums(writer);
+			bool ok = st_hashtable_equals(vol->digests, results);
+			st_hashtable_free(results);
 
-			bool ok = connect->ops->check_checksums_of_archive_volume(connect, vol, checksums, results, nb_checksums);
 			if (ok) {
 				connect->ops->mark_archive_volume_as_checked(connect, vol, true);
 				st_job_add_record(connect, st_log_level_info, qm->jp->job, "Checking volume #%lu, status: OK", vol->sequence);
@@ -312,20 +316,10 @@ static void st_job_check_archive_quick_mode_work(void * arg) {
 				connect->ops->mark_archive_volume_as_checked(connect, vol, false);
 				st_job_add_record(connect, st_log_level_error, qm->jp->job, "Checking volume #%lu, status: checksum mismatch", vol->sequence);
 			}
-
-			unsigned int j;
-			for (j = 0; j < nb_checksums; j++)
-				free(results[j]);
-			free(results);
 		}
 
 		reader->ops->free(reader);
 		writer->ops->free(writer);
-
-		unsigned int j;
-		for (j = 0; j < nb_checksums; j++)
-			free(checksums[j]);
-		free(checksums);
 	}
 
 end_of_work:

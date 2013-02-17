@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 12 Feb 2013 23:17:22 +0100                         *
+*  Last modified: Sun, 17 Feb 2013 12:18:04 +0100                         *
 \*************************************************************************/
 
 // pthread_cond_destroy, pthread_cond_init, pthread_cond_signal, pthread_cond_wait
@@ -38,6 +38,9 @@
 #include <libstone/checksum.h>
 #include <libstone/io.h>
 #include <libstone/thread_pool.h>
+#include <libstone/util/hashtable.h>
+#include <libstone/util/string.h>
+#include <libstone/util/util.h>
 
 struct st_stream_checksum_reader_private {
 	struct st_stream_reader * in;
@@ -55,7 +58,7 @@ struct st_stream_checksum_writer_private {
 
 struct st_stream_checksum_backend {
 	struct st_stream_checksum_backend_ops {
-		char ** (*digest)(struct st_stream_checksum_backend * worker);
+		struct st_hashtable * (*digest)(struct st_stream_checksum_backend * worker);
 		void (*finish)(struct st_stream_checksum_backend * worker);
 		void (*free)(struct st_stream_checksum_backend * worker);
 		void (*update)(struct st_stream_checksum_backend * worker, const void * buffer, ssize_t length);
@@ -103,13 +106,13 @@ static int st_stream_checksum_writer_last_errno(struct st_stream_writer * sfw);
 static ssize_t st_stream_checksum_writer_position(struct st_stream_writer * sfw);
 static ssize_t st_stream_checksum_writer_write(struct st_stream_writer * sfw, const void * buffer, ssize_t length);
 
-static char ** st_stream_checksum_backend_digest(struct st_stream_checksum_backend * worker);
+static struct st_hashtable * st_stream_checksum_backend_digest(struct st_stream_checksum_backend * worker);
 static void st_stream_checksum_backend_finish(struct st_stream_checksum_backend * worker);
 static void st_stream_checksum_backend_free(struct st_stream_checksum_backend * worker);
 static struct st_stream_checksum_backend * st_stream_checksum_backend_new(char ** checksums, unsigned int nb_checksums);
 static void st_stream_checksum_backend_update(struct st_stream_checksum_backend * worker, const void * buffer, ssize_t length);
 
-static char ** st_stream_checksum_threaded_backend_digest(struct st_stream_checksum_backend * worker);
+static struct st_hashtable * st_stream_checksum_threaded_backend_digest(struct st_stream_checksum_backend * worker);
 static void st_stream_checksum_threaded_backend_finish(struct st_stream_checksum_backend * worker);
 static void st_stream_checksum_threaded_backend_free(struct st_stream_checksum_backend * worker);
 static struct st_stream_checksum_backend * st_stream_checksum_threaded_backend_new(char ** checksums, unsigned int nb_checksums);
@@ -339,13 +342,15 @@ static ssize_t st_stream_checksum_writer_write(struct st_stream_writer * sfw, co
 }
 
 
-static char ** st_stream_checksum_backend_digest(struct st_stream_checksum_backend * worker) {
+static struct st_hashtable * st_stream_checksum_backend_digest(struct st_stream_checksum_backend * worker) {
 	struct st_stream_checksum_backend_private * self = worker->data;
 
-	char ** digest = calloc(self->nb_checksums, sizeof(char *));
+	struct st_hashtable * digest = st_hashtable_new2(st_util_string_compute_hash, st_util_basic_free);
 	unsigned int i;
-	for (i = 0; i < self->nb_checksums; i++)
-		digest[i] = strdup(self->digests[i]);
+	for (i = 0; i < self->nb_checksums; i++) {
+		struct st_checksum * ck = self->checksums[i];
+		st_hashtable_put(digest, strdup(ck->driver->name), st_hashtable_val_string(strdup(self->digests[i])));
+	}
 
 	return digest;
 }
@@ -409,7 +414,7 @@ static void st_stream_checksum_backend_update(struct st_stream_checksum_backend 
 }
 
 
-static char ** st_stream_checksum_threaded_backend_digest(struct st_stream_checksum_backend * worker) {
+static struct st_hashtable * st_stream_checksum_threaded_backend_digest(struct st_stream_checksum_backend * worker) {
 	struct st_stream_checksum_threaded_backend_private * self = worker->data;
 	return self->backend->ops->digest(self->backend);
 }
@@ -476,6 +481,7 @@ static void st_stream_checksum_threaded_backend_work(void * arg) {
 		pthread_mutex_lock(&self->lock);
 		if (self->stop && self->first_block == NULL)
 			break;
+
 		if (self->first_block == NULL)
 			pthread_cond_wait(&self->wait, &self->lock);
 
@@ -501,12 +507,12 @@ static void st_stream_checksum_threaded_backend_work(void * arg) {
 }
 
 
-char ** st_checksum_reader_get_checksums(struct st_stream_reader * sfw) {
+struct st_hashtable * st_checksum_reader_get_checksums(struct st_stream_reader * sfw) {
 	struct st_stream_checksum_reader_private * self = sfw->data;
 	return self->worker->ops->digest(self->worker);
 }
 
-char ** st_checksum_writer_get_checksums(struct st_stream_writer * sfw) {
+struct st_hashtable * st_checksum_writer_get_checksums(struct st_stream_writer * sfw) {
 	struct st_stream_checksum_writer_private * self = sfw->data;
 	return self->worker->ops->digest(self->worker);
 }

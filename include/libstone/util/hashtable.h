@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 08 Feb 2013 13:03:00 +0100                         *
+*  Last modified: Sun, 17 Feb 2013 16:21:38 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONE_UTIL_HASHTABLE_H__
@@ -137,6 +137,7 @@ double st_hashtable_val_convert_to_float(struct st_hashtable_value * val);
 int64_t st_hashtable_val_convert_to_signed_integer(struct st_hashtable_value * val);
 char * st_hashtable_val_convert_to_string(struct st_hashtable_value * val);
 uint64_t st_hashtable_val_convert_to_unsigned_integer(struct st_hashtable_value * val);
+bool st_hashtable_val_equals(struct st_hashtable_value * val_a, struct st_hashtable_value * val_b);
 
 
 /**
@@ -156,6 +157,8 @@ void st_hashtable_clear(struct st_hashtable * hashtable);
  * \see st_hashtable_clear
  */
 void st_hashtable_free(struct st_hashtable * hashtable);
+
+bool st_hashtable_equals(struct st_hashtable * table_a, struct st_hashtable * table_b);
 
 /**
  * \brief Get a value associated with this \a key

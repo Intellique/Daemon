@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 13 Feb 2013 20:49:45 +0100                         *
+*  Last modified: Sun, 17 Feb 2013 19:04:47 +0100                         *
 \*************************************************************************/
 
 // open
@@ -42,6 +42,7 @@
 #include <libstone/io.h>
 #include <libstone/log.h>
 #include <libstone/thread_pool.h>
+#include <libstone/util/hashtable.h>
 
 #include "restore_archive.h"
 
@@ -84,10 +85,9 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 	bool has_restore_to = check->connect->ops->has_restore_to_by_job(check->connect, check->jp->job);
 	char * restore_to = st_job_restore_archive_path_get(check->jp->restore_path, check->connect, check->jp->job, file, has_restore_to);
 
-	unsigned int nb_checksum = 0;
-	char ** checksums = check->connect->ops->get_checksums_of_file(check->connect, file, &nb_checksum);
+	unsigned int nb_checksum = check->connect->ops->get_checksums_of_file(check->connect, file);
 
-	if (nb_checksum > 0 && checksums != NULL) {
+	if (nb_checksum > 0 && file->digests != NULL) {
 		bool is_error = false;
 
 		int fd = open(restore_to, O_RDONLY);
@@ -99,7 +99,10 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 
 		struct st_stream_writer * writer = NULL;
 		if (!is_error) {
+			char ** checksums = (char **) st_hashtable_keys(file->digests, NULL);
 			writer = st_checksum_writer_new(NULL, checksums, nb_checksum, false);
+			free(checksums);
+
 			if (writer == NULL) {
 				st_job_add_record(check->connect, st_log_level_info, check->jp->job, "Error while getting handler of checksums");
 				check->nb_errors++;
@@ -131,15 +134,11 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 
 			if (writer != NULL)
 				writer->ops->free(writer);
-
-			unsigned int i;
-			for (i = 0; i < nb_checksum; i++)
-				free(checksums[i]);
-			free(checksums);
 		} else {
-			char ** results = st_checksum_writer_get_checksums(writer);
+			struct st_hashtable * results = st_checksum_writer_get_checksums(writer);
+			bool ok = st_hashtable_equals(file->digests, results);
+			st_hashtable_free(results);
 
-			bool ok = check->connect->ops->check_checksums_of_file(check->connect, file, checksums, results, nb_checksum);
 			if (ok) {
 				check->connect->ops->mark_archive_file_as_checked(check->connect, check->jp->archive, file, true);
 				st_job_add_record(check->connect, st_log_level_info, check->jp->job, "Checking restored file (%s), status: OK", restore_to);
@@ -147,14 +146,6 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 				st_job_add_record(check->connect, st_log_level_error, check->jp->job, "Checking restored file (%s), status: checksum mismatch", restore_to);
 
 			writer->ops->free(writer);
-
-			unsigned int i;
-			for (i = 0; i < nb_checksum; i++) {
-				free(checksums[i]);
-				free(results[i]);
-			}
-			free(checksums);
-			free(results);
 		}
 	}
 

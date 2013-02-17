@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Sun, 17 Feb 2013 11:33:25 +0100                         *
+*  Last modified: Sun, 17 Feb 2013 16:36:56 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -335,6 +335,39 @@ uint64_t st_hashtable_val_convert_to_unsigned_integer(struct st_hashtable_value 
 	}
 }
 
+bool st_hashtable_val_equals(struct st_hashtable_value * val_a, struct st_hashtable_value * val_b) {
+	if (val_a == NULL || val_b == NULL)
+		return false;
+
+	if (val_a->type != val_b->type)
+		return false;
+
+	switch (val_a->type) {
+		case st_hashtable_value_null:
+			return val_b->type == st_hashtable_value_null;
+
+		case st_hashtable_value_boolean:
+			return val_a->value.boolean == val_b->value.boolean;
+
+		case st_hashtable_value_custom:
+			return val_a->value.custom == val_b->value.custom;
+
+		case st_hashtable_value_float:
+			return val_a->value.floating == val_b->value.floating;
+
+		case st_hashtable_value_signed_integer:
+			return val_a->value.signed_integer == val_b->value.signed_integer;
+
+		case st_hashtable_value_string:
+			return !strcmp(val_a->value.string, val_b->value.string);
+
+		case st_hashtable_value_unsigned_integer:
+			return val_a->value.unsigned_integer == val_b->value.unsigned_integer;
+	}
+
+	return false;
+}
+
 
 void st_hashtable_clear(struct st_hashtable * hashtable) {
 	if (hashtable == NULL)
@@ -368,6 +401,29 @@ void st_hashtable_free(struct st_hashtable * hashtable) {
 	hashtable->release_key_value = NULL;
 
 	free(hashtable);
+}
+
+bool st_hashtable_equals(struct st_hashtable * table_a, struct st_hashtable * table_b) {
+	if (table_a == NULL || table_b == NULL || table_a->nb_elements != table_b->nb_elements)
+		return false;
+
+	if (table_a->nb_elements == 0)
+		return true;
+
+	const void ** keys = st_hashtable_keys(table_a, NULL);
+
+	uint32_t i;
+	bool ok = true;
+	for (i = 0; i < table_a->nb_elements; i++) {
+		struct st_hashtable_value val_a = st_hashtable_get(table_a, keys[i]);
+		struct st_hashtable_value val_b = st_hashtable_get(table_b, keys[i]);
+
+		ok = st_hashtable_val_equals(&val_a, &val_b);
+	}
+
+	free(keys);
+
+	return ok;
 }
 
 struct st_hashtable_value st_hashtable_get(const struct st_hashtable * hashtable, const void * key) {
