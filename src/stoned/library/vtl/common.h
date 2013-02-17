@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Tue, 05 Feb 2013 18:19:43 +0100                         *
+*  Last modified: Sat, 16 Feb 2013 23:27:03 +0100                         *
 \*************************************************************************/
 
 #ifndef __STONED_LIBRARY_VTL_H__
@@ -30,6 +30,8 @@
 
 // bool
 #include <stdbool.h>
+// timeval
+#include <sys/time.h>
 
 struct st_changer;
 struct st_drive;
@@ -51,6 +53,7 @@ struct st_vtl_drive {
 	char * media_path;
 	unsigned int file_position;
 	struct st_media_format * format;
+	struct timeval last_start;
 };
 
 struct st_vtl_media {
