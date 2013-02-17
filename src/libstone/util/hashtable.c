@@ -22,7 +22,7 @@
 *                                                                         *
 *  ---------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Fri, 08 Feb 2013 15:35:43 +0100                         *
+*  Last modified: Sun, 17 Feb 2013 11:33:25 +0100                         *
 \*************************************************************************/
 
 #define _GNU_SOURCE
@@ -43,6 +43,7 @@ static struct st_hashtable_value mhv_null = { .type = st_hashtable_value_null };
 
 static void st_hashtable_put2(struct st_hashtable * hashtable, unsigned int index, struct st_hashtable_node * new_node);
 static void st_hashtable_rehash(struct st_hashtable * hashtable);
+static void st_hashtable_release_value(st_hashtable_free_f release, struct st_hashtable_node * node);
 
 
 struct st_hashtable_value st_hashtable_val_boolean(bool val) {
@@ -125,6 +126,8 @@ bool st_hashtable_val_can_convert(struct st_hashtable_value * val, enum st_hasht
 		case st_hashtable_value_boolean:
 			switch (val->type) {
 				case st_hashtable_value_boolean:
+				case st_hashtable_value_signed_integer:
+				case st_hashtable_value_unsigned_integer:
 					return true;
 
 				case st_hashtable_value_string:
@@ -156,13 +159,9 @@ bool st_hashtable_val_can_convert(struct st_hashtable_value * val, enum st_hasht
 		case st_hashtable_value_null:
 			switch (val->type) {
 				case st_hashtable_value_null:
-					return true;
-
 				case st_hashtable_value_string:
-					return val->value.string == NULL;
-
 				case st_hashtable_value_custom:
-					return val->value.custom == NULL;
+					return true;
 
 				default:
 					return false;
@@ -217,14 +216,21 @@ bool st_hashtable_val_convert_to_bool(struct st_hashtable_value * val) {
 
 		{ NULL, false },
 	};
+
 	switch (val->type) {
 		case st_hashtable_value_boolean:
 			return true;
+
+		case st_hashtable_value_signed_integer:
+			return val->value.signed_integer != 0;
 
 		case st_hashtable_value_string:
 			for (i = 0; string_to_boolean[i].str != NULL; i++)
 				if (!strcasecmp(val->value.string, string_to_boolean[i].str))
 					return string_to_boolean[i].val;
+
+		case st_hashtable_value_unsigned_integer:
+			return val->value.unsigned_integer != 0;
 
 		default:
 			return false;
@@ -343,19 +349,7 @@ void st_hashtable_clear(struct st_hashtable * hashtable) {
 			struct st_hashtable_node * tmp = ptr;
 			ptr = ptr->next;
 
-			if (hashtable->release_key_value) {
-				if (tmp->value.type == st_hashtable_value_custom)
-					hashtable->release_key_value(tmp->key, tmp->value.value.custom);
-				else if (tmp->value.type == st_hashtable_value_string)
-					hashtable->release_key_value(tmp->key, tmp->value.value.string);
-				else
-					hashtable->release_key_value(tmp->key, NULL);
-
-				tmp->value.value.floating = 0;
-			}
-
-			tmp->key = tmp->next = NULL;
-			free(tmp);
+			st_hashtable_release_value(hashtable->release_key_value, tmp);
 		}
 	}
 
@@ -476,25 +470,20 @@ static void st_hashtable_put2(struct st_hashtable * hashtable, unsigned int inde
 	struct st_hashtable_node * node = hashtable->nodes[index];
 	if (node != NULL) {
 		if (node->hash == new_node->hash) {
-			if (hashtable->release_key_value != NULL)
-				hashtable->release_key_value(node->key, node->value.type == st_hashtable_value_custom ? node->value.value.custom : NULL);
-
 			hashtable->nodes[index] = new_node;
 			new_node->next = node->next;
-			free(node);
+
+			st_hashtable_release_value(hashtable->release_key_value, node);
 			hashtable->nb_elements--;
 		} else {
-			short nb_element = 1;
+			uint16_t nb_element = 1;
 			while (node->next != NULL) {
 				if (node->next->hash == new_node->hash) {
-					struct st_hashtable_node * next = node->next;
-
-					if (hashtable->release_key_value != NULL)
-						hashtable->release_key_value(node->key, node->value.type == st_hashtable_value_custom ? node->value.value.custom : NULL);
-
-					new_node->next = next->next;
+					struct st_hashtable_node * old = node->next;
 					node->next = new_node;
-					free(next);
+					new_node->next = old->next;
+
+					st_hashtable_release_value(hashtable->release_key_value, node);
 					hashtable->nb_elements--;
 					return;
 				}
@@ -514,14 +503,15 @@ static void st_hashtable_rehash(struct st_hashtable * hashtable) {
 	if (!hashtable->allow_rehash)
 		return;
 
-	hashtable->allow_rehash = 0;
+	hashtable->allow_rehash = false;
 
-	unsigned int old_size_node = hashtable->size_node;
+	uint32_t old_size_node = hashtable->size_node;
 	struct st_hashtable_node ** old_nodes = hashtable->nodes;
-	hashtable->nodes = calloc(sizeof(struct st_hashtable_node *), hashtable->size_node << 1);
-	hashtable->size_node <<= 1;
 
-	unsigned int i;
+	hashtable->size_node <<= 1;
+	hashtable->nodes = calloc(sizeof(struct st_hashtable_node *), hashtable->size_node);
+
+	uint32_t i;
 	for (i = 0; i < old_size_node; i++) {
 		struct st_hashtable_node * node = old_nodes[i];
 		while (node != NULL) {
@@ -529,13 +519,29 @@ static void st_hashtable_rehash(struct st_hashtable * hashtable) {
 			node = node->next;
 			current_node->next = NULL;
 
-			unsigned int index = current_node->hash % hashtable->size_node;
+			uint32_t index = current_node->hash % hashtable->size_node;
 			st_hashtable_put2(hashtable, index, current_node);
 		}
 	}
 	free(old_nodes);
 
-	hashtable->allow_rehash = 1;
+	hashtable->allow_rehash = true;
+}
+
+static void st_hashtable_release_value(st_hashtable_free_f release, struct st_hashtable_node * node) {
+	if (release != NULL) {
+		if (node->value.type == st_hashtable_value_custom)
+			release(node->key, node->value.value.custom);
+		else if (node->value.type == st_hashtable_value_string)
+			release(node->key, node->value.value.string);
+		else
+			release(node->key, NULL);
+
+		node->value.value.floating = 0;
+	}
+
+	node->key = node->next = NULL;
+	free(node);
 }
 
 void st_hashtable_remove(struct st_hashtable * hashtable, const void * key) {
@@ -552,16 +558,7 @@ void st_hashtable_remove(struct st_hashtable * hashtable, const void * key) {
 	if (node->hash == hash) {
 		hashtable->nodes[index] = node->next;
 
-		if (node->value.type == st_hashtable_value_custom)
-			hashtable->release_key_value(node->key, node->value.value.custom);
-		else if (node->value.type == st_hashtable_value_string)
-			hashtable->release_key_value(node->key, node->value.value.string);
-		else
-			hashtable->release_key_value(node->key, NULL);
-
-		node->key = node->next = NULL;
-		free(node);
-
+		st_hashtable_release_value(hashtable->release_key_value, node);
 		hashtable->nb_elements--;
 		return;
 	}
@@ -571,11 +568,7 @@ void st_hashtable_remove(struct st_hashtable * hashtable, const void * key) {
 			struct st_hashtable_node * current_node = node->next;
 			node->next = current_node->next;
 
-			if (hashtable->release_key_value)
-				hashtable->release_key_value(current_node->key, current_node->value.type == st_hashtable_value_custom ? current_node->value.value.custom : NULL);
-			current_node->key = current_node->next = NULL;
-			free(current_node);
-
+			st_hashtable_release_value(hashtable->release_key_value, current_node);
 			hashtable->nb_elements--;
 			return;
 		}
