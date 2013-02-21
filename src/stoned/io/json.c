@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 17 Feb 2013 12:36:02 +0100                            *
+*  Last modified: Thu, 21 Feb 2013 16:43:04 +0100                            *
 \****************************************************************************/
 
 // json_array, json_array_append_new, json_decref, json_dumps, json_integer,
@@ -107,14 +107,16 @@ static json_t * st_io_json_file(struct st_archive_file * file) {
 	json_object_set_new(jfile, "mime type", json_string(file->mime_type));
 
 	json_t * jchecksums = json_object();
-	unsigned int i, nb_digests;
-	const void ** checksums = st_hashtable_keys(file->digests, &nb_digests);
-	for (i = 0; i < nb_digests; i++) {
-		struct st_hashtable_value digest = st_hashtable_get(file->digests, checksums[i]);
-		json_object_set_new(jchecksums, checksums[i], json_string(digest.value.string));
+	if (file->digests != NULL) {
+		unsigned int i, nb_digests;
+		const void ** checksums = st_hashtable_keys(file->digests, &nb_digests);
+		for (i = 0; i < nb_digests; i++) {
+			struct st_hashtable_value digest = st_hashtable_get(file->digests, checksums[i]);
+			json_object_set_new(jchecksums, checksums[i], json_string(digest.value.string));
+		}
+		free(checksums);
 	}
 	json_object_set_new(jfile, "checksums", jchecksums);
-	free(checksums);
 
 	return jfile;
 }

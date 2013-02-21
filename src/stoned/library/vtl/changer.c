@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 11 Feb 2013 14:54:35 +0100                            *
+*  Last modified: Tue, 19 Feb 2013 18:03:28 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -107,6 +107,9 @@ static void st_vtl_changer_free(struct st_changer * ch) {
 			free(vsl);
 		}
 	}
+	free(ch->slots);
+
+	free(ch->db_data);
 }
 
 struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_slots, const char * path, const char * prefix, struct st_media_format * format) {

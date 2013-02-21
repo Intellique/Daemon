@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 06 Feb 2013 09:50:49 +0100                            *
+*  Last modified: Tue, 19 Feb 2013 17:39:49 +0100                            *
 \****************************************************************************/
 
 // open
@@ -529,9 +529,10 @@ int st_changer_setup(void) {
 }
 
 void st_changer_stop() {
-	unsigned int i;
-	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers; i++) {
+	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers + st_nb_vtls;
+	for (i = 0; i < nb_changers; i++) {
 		struct st_changer * ch = st_changers + i;
+
 		if (ch->enabled) {
 			ch->ops->shut_down(ch);
 			ch->ops->free(ch);
@@ -540,12 +541,12 @@ void st_changer_stop() {
 
 	free(st_changers);
 	st_changers = NULL;
-	st_nb_fake_changers = st_nb_real_changers = 0;
+	st_nb_fake_changers = st_nb_real_changers = st_nb_vtls = 0;
 }
 
 void st_changer_sync(struct st_database_connection * connection) {
-	unsigned int i;
-	for (i = 0; i < st_nb_real_changers + st_nb_fake_changers + st_nb_vtls; i++)
+	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers + st_nb_vtls;
+	for (i = 0; i < nb_changers; i++)
 		connection->ops->sync_changer(connection, st_changers + i);
 }
 
