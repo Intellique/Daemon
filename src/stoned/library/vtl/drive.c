@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sat, 16 Feb 2013 23:34:57 +0100                            *
+*  Last modified: Thu, 21 Feb 2013 18:33:02 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -494,6 +494,8 @@ static struct st_stream_reader * st_vtl_drive_reader_new(struct st_drive * drive
 	sr->ops = &st_vtl_drive_reader_ops;
 	sr->data = reader;
 
+	drive->slot->media->read_count++;
+
 	return sr;
 }
 
@@ -705,6 +707,9 @@ static struct st_stream_writer * st_vtl_drive_writer_new(struct st_drive * drive
 	struct st_stream_writer * sw = malloc(sizeof(struct st_stream_writer));
 	sw->ops = &st_vtl_drive_writer_ops;
 	sw->data = writer;
+
+	writer->media->nb_volumes++;
+	writer->media->write_count++;
 
 	return sw;
 }

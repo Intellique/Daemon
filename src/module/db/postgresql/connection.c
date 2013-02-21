@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 17 Feb 2013 15:56:45 +0100                            *
+*  Last modified: Thu, 21 Feb 2013 19:21:17 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2560,7 +2560,7 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 		return NULL;
 
 	const char * query = "select_archive_by_job";
-	st_db_postgresql_prepare(self, query, "SELECT a.id, a.uuid, name, starttime, endtime, checksumok, checktime, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
+	st_db_postgresql_prepare(self, query, "SELECT a.id, a.uuid, name, starttime, endtime, checksumok, checktime, metadata, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
 
 	char * jobid;
 	asprintf(&jobid, "%ld", job_data->id);
@@ -2584,14 +2584,14 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 		archive->check_time = 0;
 		if (!PQgetisnull(result, 0, 6))
 			st_db_postgresql_get_time(result, 0, 6, &archive->check_time);
+		st_db_postgresql_get_string_dup(result, 0, 7, &archive->metadatas);
 
 		archive->volumes = NULL;
 		archive->nb_volumes = 0;
 
-		archive->user = st_user_get(PQgetvalue(result, 0, 7));
+		archive->user = st_user_get(PQgetvalue(result, 0, 8));
 
 		archive->copy_of = NULL;
-		archive->metadatas = NULL;
 
 		struct st_db_postgresql_archive_data * archive_data = archive->db_data = malloc(sizeof(struct st_db_postgresql_archive_data));
 		st_db_postgresql_get_long(result, 0, 0, &archive_data->id);
@@ -3052,17 +3052,23 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	struct st_db_postgresql_archive_data * archive_data = archive->db_data;
+	struct st_db_postgresql_archive_data * copy_data = NULL;
 
-	char * archiveid = NULL;
+	char * archiveid = NULL, * copyid = NULL;
 	if (archive_data == NULL) {
 		archive->db_data = archive_data = malloc(sizeof(struct st_db_postgresql_archive_data));
 		archive_data->id = -1;
 	} else
 		asprintf(&archiveid, "%ld", archive_data->id);
 
+	if (archive->copy_of != NULL) {
+		copy_data = archive->copy_of->db_data;
+		asprintf(&copyid, "%ld", copy_data->id);
+	}
+
 	if (archive_data->id < 0) {
 		const char * query = "insert_archive";
-		st_db_postgresql_prepare(self, query, "INSERT INTO archive(uuid, name, starttime, endtime, creator, owner, metadata) VALUES ($1, $2, $3, $4, $5, $5, $6) RETURNING id");
+		st_db_postgresql_prepare(self, query, "INSERT INTO archive(uuid, name, starttime, endtime, creator, owner, metadata, copyof) VALUES ($1, $2, $3, $4, $5, $5, $6, $7) RETURNING id");
 
 		char buffer_ctime[32];
 		char buffer_endtime[32];
@@ -3079,9 +3085,9 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 		strftime(buffer_endtime, 32, "%F %T", &tv);
 
 		const char * param[] = {
-			archive->uuid, archive->name, buffer_ctime, buffer_endtime, userid, archive->metadatas,
+			archive->uuid, archive->name, buffer_ctime, buffer_endtime, userid, archive->metadatas, copyid
 		};
-		PGresult * result = PQexecPrepared(self->connect, query, 6, param, NULL, NULL, 0);
+		PGresult * result = PQexecPrepared(self->connect, query, 7, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -3110,6 +3116,7 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 
 	PQclear(result);
 	free(archiveid);
+	free(copyid);
 
 	unsigned int i;
 	int failed = 0;

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 13 Feb 2013 16:13:59 +0100                            *
+*  Last modified: Thu, 21 Feb 2013 17:30:41 +0100                            *
 \****************************************************************************/
 
 // errno
@@ -762,6 +762,8 @@ static struct st_stream_reader * st_scsi_tape_drive_io_reader_new(struct st_driv
 	reader->ops = &st_scsi_tape_drive_io_reader_ops;
 	reader->data = self;
 
+	drive->slot->media->read_count++;
+
 	return reader;
 }
 
@@ -1000,6 +1002,8 @@ static struct st_stream_writer * st_scsi_tape_drive_io_writer_new(struct st_driv
 	struct st_stream_writer * writer = malloc(sizeof(struct st_stream_writer));
 	writer->ops = &st_scsi_tape_drive_io_writer_ops;
 	writer->data = self;
+
+	drive->slot->media->write_count++;
 
 	return writer;
 }

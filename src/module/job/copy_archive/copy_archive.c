@@ -22,11 +22,13 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 15 Feb 2013 13:38:35 +0100                            *
+*  Last modified: Thu, 21 Feb 2013 19:12:32 +0100                            *
 \****************************************************************************/
 
 // malloc
 #include <stdlib.h>
+// strdup
+#include <string.h>
 
 #include <libstone/database.h>
 #include <libstone/library/archive.h>
@@ -122,6 +124,7 @@ static int st_job_copy_archive_run(struct st_job * job) {
 
 	self->copy = st_archive_new(self->job->name, self->job->user);
 	self->copy->copy_of = self->archive;
+	self->copy->metadatas = strdup(self->archive->metadatas);
 
 	self->checksums = self->connect->ops->get_checksums_by_pool(self->connect, self->pool, &self->nb_checksums);
 

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 19 Feb 2013 18:03:28 +0100                            *
+*  Last modified: Thu, 21 Feb 2013 17:18:45 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -296,6 +296,8 @@ static int st_vtl_changer_load_slot(struct st_changer * ch, struct st_slot * fro
 		from->volume_name = NULL;
 		sto->full = true;
 		from->full = false;
+
+		media->load_count++;
 
 		to->status = st_drive_loaded_idle;
 		to->is_empty = false;

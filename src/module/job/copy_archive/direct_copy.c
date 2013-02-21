@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 17 Feb 2013 18:41:00 +0100                            *
+*  Last modified: Thu, 21 Feb 2013 18:42:29 +0100                            *
 \****************************************************************************/
 
 // calloc
@@ -144,15 +144,17 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 	self->current_volume->end_time = self->copy->end_time = time(NULL);
 	self->current_volume->size = self->writer->ops->position(self->writer);
 
-	//self->current_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
+	self->current_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
 
 	self->writer->ops->free(self->writer);
 	self->writer = NULL;
 
+	// sync with database
+	self->connect->ops->sync_archive(self->connect, self->copy);
 
 	// write metadatas
 	struct st_stream_writer * writer = self->drive_output->ops->get_raw_writer(self->drive_output, true);
-	// st_io_json_writer(writer, self->copy, self->checksums);
+	st_io_json_writer(writer, self->copy);
 	writer->ops->close(writer);
 	writer->ops->free(writer);
 
