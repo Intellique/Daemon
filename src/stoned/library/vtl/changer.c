@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 21 Feb 2013 17:18:45 +0100                            *
+*  Last modified: Fri, 22 Feb 2013 11:53:05 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -78,6 +78,22 @@ static struct st_drive * st_vtl_changer_find_free_drive(struct st_changer * ch, 
 
 static void st_vtl_changer_free(struct st_changer * ch) {
 	struct st_vtl_changer * vch = ch->data;
+
+	unsigned int i;
+	for (i = 0; i < vch->nb_medias; i++) {
+		struct st_media * media = vch->medias[i];
+		struct st_vtl_media * vm = media->data;
+
+		free(vm->path);
+		vm->path = NULL;
+		vm->slot = NULL;
+		free(vm->prefix);
+		vm->prefix = NULL;
+		free(vm);
+
+		media->data = NULL;
+	}
+
 	free(vch->path);
 	free(vch->medias);
 	vch->lock->ops->free(vch->lock);
@@ -88,7 +104,6 @@ static void st_vtl_changer_free(struct st_changer * ch) {
 	free(ch->revision);
 	free(ch->serial_number);
 
-	unsigned int i;
 	for (i = 0; i < ch->nb_drives; i++) {
 		struct st_drive * dr = ch->drives + i;
 		dr->ops->free(dr);
@@ -106,13 +121,15 @@ static void st_vtl_changer_free(struct st_changer * ch) {
 			free(vsl->path);
 			free(vsl);
 		}
+
+		free(sl->db_data);
 	}
 	free(ch->slots);
 
 	free(ch->db_data);
 }
 
-struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_slots, const char * path, const char * prefix, struct st_media_format * format) {
+struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_slots, const char * path, char * prefix, struct st_media_format * format) {
 	char * serial_file;
 	asprintf(&serial_file, "%s/serial_number", path);
 

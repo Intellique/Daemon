@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 11 Feb 2013 14:55:00 +0100                            *
+*  Last modified: Fri, 22 Feb 2013 12:19:02 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -60,7 +60,7 @@ static unsigned int st_vtl_media_count_files(const char * base_dir) {
 	return nb_files;
 }
 
-struct st_media * st_vtl_media_init(const char * base_dir, const char * prefix, unsigned int index, struct st_media_format * format) {
+struct st_media * st_vtl_media_init(char * base_dir, char * prefix, unsigned int index, struct st_media_format * format) {
 	char * serial_file;
 	asprintf(&serial_file, "%s/serial_number", base_dir);
 
@@ -69,7 +69,7 @@ struct st_media * st_vtl_media_init(const char * base_dir, const char * prefix, 
 
 	struct st_media * media = st_media_get_by_medium_serial_number(serial);
 	if (media != NULL) {
-		// ?
+		free(serial);
 	} else {
 		media = malloc(sizeof(struct st_media));
 		media->uuid[0] = '\0';

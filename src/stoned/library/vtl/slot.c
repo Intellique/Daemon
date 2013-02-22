@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 19 Feb 2013 16:15:29 +0100                            *
+*  Last modified: Fri, 22 Feb 2013 11:54:24 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -76,7 +76,7 @@ struct st_media * st_vtl_slot_get_media(struct st_changer * changer, const char 
 	return NULL;
 }
 
-void st_vtl_slot_init(struct st_slot * sl, const char * base_dir) {
+void st_vtl_slot_init(struct st_slot * sl) {
 	sl->media = NULL;
 
 	sl->volume_name = NULL;

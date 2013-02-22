@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 21 Feb 2013 18:33:02 +0100                            *
+*  Last modified: Fri, 22 Feb 2013 12:15:05 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -190,6 +190,8 @@ static void st_vtl_drive_free(struct st_drive * drive) {
 	free(drive->vendor);
 	free(drive->revision);
 	free(drive->serial_number);
+	free(drive->db_data);
+	drive->lock->ops->free(drive->lock);
 
 	struct st_vtl_drive * vdr = drive->data;
 	free(vdr->path);

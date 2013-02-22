@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 21 Feb 2013 18:42:29 +0100                            *
+*  Last modified: Fri, 22 Feb 2013 13:08:52 +0100                            *
 \****************************************************************************/
 
 // calloc
@@ -147,6 +147,7 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 	self->current_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
 
 	self->writer->ops->free(self->writer);
+	self->checksum_writer = NULL;
 	self->writer = NULL;
 
 	// sync with database

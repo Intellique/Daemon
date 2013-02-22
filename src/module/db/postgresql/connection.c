@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 21 Feb 2013 19:21:17 +0100                            *
+*  Last modified: Fri, 22 Feb 2013 15:35:07 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2495,6 +2495,9 @@ static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct s
 		st_db_postgresql_prepare(self, query, "SELECT af.id, af.name, af.type, mimetype, ownerid, owner, groupid, groups, perm, af.ctime, af.mtime, afv.checksumok, afv.checktime, af.size, afv.blocknumber FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id WHERE j.id = $1 AND av.id = $2 ORDER BY af.id");
 	}
 
+	const char * query2 = "select_checksumresult_of_file";
+	st_db_postgresql_prepare(self, query2, "SELECT c.name, cr.result FROM archivefiletochecksumresult afcr LEFT JOIN checksumresult cr ON afcr.checksumresult = cr.id LEFT JOIN checksum c ON cr.checksum = c.id WHERE afcr.archivefile = $1");
+
 	char * jobid, * archivevolumeid;
 	asprintf(&jobid, "%ld", job_data->id);
 	asprintf(&archivevolumeid, "%ld", archive_volume_data->id);
@@ -2529,8 +2532,6 @@ static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct s
 				st_db_postgresql_get_time(result, i, 12, &file->check_time);
 			st_db_postgresql_get_ssize(result, i, 13, &file->size);
 
-			file->digests = NULL;
-
 			file->archive = volume->archive;
 			file->selected_path = NULL;
 
@@ -2540,6 +2541,33 @@ static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct s
 			struct st_archive_files * f = volume->files + i;
 			f->file = file;
 			st_db_postgresql_get_ssize(result, i, 9, &f->position);
+
+			char * fileid;
+			st_db_postgresql_get_string_dup(result, i, 0, &fileid);
+
+			const char * param2[] = { fileid };
+			PGresult * result2 = PQexecPrepared(self->connect, query2, 1, param2, NULL, NULL, 0);
+			ExecStatusType status2 = PQresultStatus(result2);
+			unsigned int nb_digest = PQntuples(result2);
+
+			if (status2 == PGRES_FATAL_ERROR)
+				st_db_postgresql_get_error(result, query2);
+			else if (status2 == PGRES_TUPLES_OK && nb_digest > 0) {
+				file->digests = st_hashtable_new2(st_util_string_compute_hash, st_util_basic_free);
+
+				unsigned int j;
+				for (j = 0; j < nb_digest; j++) {
+					char * checksum, * result;
+
+					st_db_postgresql_get_string_dup(result2, j, 0, &checksum);
+					st_db_postgresql_get_string_dup(result2, j, 1, &result);
+
+					st_hashtable_put(file->digests, checksum, st_hashtable_val_string(result));
+				}
+			}
+
+			PQclear(result2);
+			free(fileid);
 		}
 	}
 

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 21 Feb 2013 19:12:32 +0100                            *
+*  Last modified: Fri, 22 Feb 2013 13:21:22 +0100                            *
 \****************************************************************************/
 
 // malloc
@@ -32,7 +32,9 @@
 
 #include <libstone/database.h>
 #include <libstone/library/archive.h>
+#include <libstone/library/drive.h>
 #include <libstone/library/media.h>
+#include <libstone/library/ressource.h>
 #include <libstone/log.h>
 
 #include <libjob-copy-archive.chcksum>
@@ -134,6 +136,34 @@ static int st_job_copy_archive_run(struct st_job * job) {
 	int failed = 0;
 	if (self->drive_input != NULL)
 		failed = st_job_copy_archive_direct_copy(self);
+
+	// release memory
+	for (i = 0; i < self->copy->nb_volumes; i++) {
+		struct st_archive_volume * vol = self->copy->volumes + i;
+		free(vol->files);
+		vol->files = NULL;
+		vol->nb_files = 0;
+	}
+
+	self->copy->copy_of = NULL;
+	st_archive_free(self->archive);
+	st_archive_free(self->copy);
+
+	self->connect->ops->free(self->connect);
+	self->connect = NULL;
+
+	if (self->drive_input != NULL) {
+		self->drive_input->lock->ops->unlock(self->drive_input->lock);
+		self->drive_input = NULL;
+	}
+
+	self->drive_output->lock->ops->unlock(self->drive_output->lock);
+	self->drive_output = NULL;
+
+	for (i = 0; i < self->nb_checksums; i++)
+		free(self->checksums[i]);
+	free(self->checksums);
+	self->checksums = NULL;
 
 	return failed;
 }

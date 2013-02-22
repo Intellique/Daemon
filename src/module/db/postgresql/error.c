@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 14 Oct 2012 20:21:06 +0200                            *
+*  Last modified: Fri, 22 Feb 2013 15:28:55 +0100                            *
 \****************************************************************************/
 
 // PQresultErrorField
@@ -38,7 +38,7 @@
 
 void st_db_postgresql_get_error(PGresult * result, const char * prepared_query) {
 	char * error_code = PQresultErrorField(result, PG_DIAG_SQLSTATE);
-	if (!strcmp("55P03", error_code))
+	if (error_code != NULL && !strcmp("55P03", error_code))
 		return;
 
 	char * error = PQresultErrorField(result, PG_DIAG_MESSAGE_PRIMARY);

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 12 Feb 2013 22:53:30 +0100                            *
+*  Last modified: Fri, 22 Feb 2013 11:23:41 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -429,6 +429,7 @@ static void st_media_exit() {
 	for (i = 0; i < st_pool_nb_pools; i++) {
 		struct st_pool * pool = st_pools[i];
 		free(pool->name);
+		free(pool->db_data);
 		free(pool);
 	}
 	free(st_pools);
