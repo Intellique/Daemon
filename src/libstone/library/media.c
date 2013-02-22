@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 22 Feb 2013 11:23:41 +0100                            *
+*  Last modified: Fri, 22 Feb 2013 17:14:28 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -64,7 +64,6 @@ static pthread_mutex_t st_pool_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct st_pool ** st_pools = NULL;
 static unsigned int st_pool_nb_pools = 0;
 
-static void st_media_add(struct st_media * media);
 static void st_media_exit(void) __attribute__((destructor));
 static struct st_media * st_media_retrieve(struct st_database_connection * connection, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label);
 
@@ -305,7 +304,7 @@ enum st_pool_unbreakable_level st_pool_unbreakable_string_to_level(const char * 
 }
 
 
-static void st_media_add(struct st_media * media) {
+void st_media_add(struct st_media * media) {
 	void * new_addr = realloc(st_medias, (st_media_nb_medias + 1) * sizeof(struct st_media *));
 	if (new_addr != NULL) {
 		st_medias = new_addr;

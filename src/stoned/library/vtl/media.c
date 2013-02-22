@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 22 Feb 2013 12:19:02 +0100                            *
+*  Last modified: Fri, 22 Feb 2013 17:15:29 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -104,6 +104,8 @@ struct st_media * st_vtl_media_init(char * base_dir, char * prefix, unsigned int
 		media->locked = false;
 
 		media->db_data = NULL;
+
+		st_media_add(media);
 	}
 
 	struct st_vtl_media * self = media->data = malloc(sizeof(struct st_vtl_media));

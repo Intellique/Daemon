@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 12 Feb 2013 22:46:46 +0100                            *
+*  Last modified: Fri, 22 Feb 2013 17:14:16 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -190,6 +190,7 @@ enum st_pool_autocheck_mode st_pool_autocheck_string_to_mode(const char * mode);
 const char * st_pool_unbreakable_level_to_string(enum st_pool_unbreakable_level level);
 enum st_pool_unbreakable_level st_pool_unbreakable_string_to_level(const char * level);
 
+void st_media_add(struct st_media * media);
 bool st_media_check_header(struct st_drive * dr);
 ssize_t st_media_get_available_size(struct st_media * media);
 struct st_media * st_media_get_by_job(struct st_job * job, struct st_database_connection * connection);
