@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 12 Feb 2013 23:18:45 +0100                            *
+*  Last modified: Thu, 28 Feb 2013 19:03:17 +0100                            *
 \****************************************************************************/
 
 // be*toh, htobe*
@@ -251,17 +251,17 @@ static bool stcfg_scsi_drive_in_changer2(int fd, struct st_changer * changer, in
 	struct {
 		unsigned char operation_code;
 		enum scsi_loader_element_type type:4;
-		unsigned char volume_tag:1;
+		bool volume_tag:1;
 		unsigned char reserved0:3;
 		unsigned short starting_element_address;
 		unsigned short number_of_elements;
-		unsigned char device_id:1;
-		unsigned char current_data:1;
+		bool device_id:1;
+		bool current_data:1;
 		unsigned char reserved1:6;
 		unsigned char allocation_length[3];
 		unsigned char reserved2;
 		unsigned char reserved3:7;
-		unsigned char serial_number_request:1;
+		bool serial_number_request:1;
 	} __attribute__((packed)) command = {
 		.operation_code = 0xB8,
 		.type = scsi_loader_element_type_data_transfer,
@@ -269,13 +269,13 @@ static bool stcfg_scsi_drive_in_changer2(int fd, struct st_changer * changer, in
 		.reserved0 = 0,
 		.starting_element_address = htobe16(start_element),
 		.number_of_elements = htobe16(nb_elements),
-		.device_id = 1,
-		.current_data = 0,
+		.device_id = true,
+		.current_data = false,
 		.reserved1 = 0,
-		.allocation_length = { size_needed >> 16, size_needed >> 8, size_needed & 0xFF, },
+		.allocation_length = { (size_needed & 0xFF0000) >> 16, (size_needed & 0xFF00) >> 8, size_needed & 0xFF, },
 		.reserved2 = 0,
 		.reserved3 = 0,
-		.serial_number_request = 1,
+		.serial_number_request = false,
 	};
 
 	sg_io_hdr_t header;

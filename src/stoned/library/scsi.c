@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 12 Feb 2013 23:19:52 +0100                            *
+*  Last modified: Thu, 28 Feb 2013 19:20:23 +0100                            *
 \****************************************************************************/
 
 // htobe16
@@ -365,7 +365,7 @@ static bool st_scsi_loader_has_drive2(int fd, struct st_changer * changer, int s
 		unsigned char allocation_length[3];
 		unsigned char reserved2;
 		unsigned char reserved3:7;
-		unsigned char serial_number_request:1;
+		bool serial_number_request:1;
 	} __attribute__((packed)) command = {
 		.operation_code = 0xB8,
 		.type = scsi_loader_element_type_data_transfer,
@@ -376,10 +376,10 @@ static bool st_scsi_loader_has_drive2(int fd, struct st_changer * changer, int s
 		.device_id = true,
 		.current_data = false,
 		.reserved1 = 0,
-		.allocation_length = { size_needed >> 16, size_needed >> 8, size_needed & 0xFF, },
+		.allocation_length = { (size_needed & 0xFF0000) >> 16, (size_needed & 0xFF00) >> 8, size_needed & 0xFF, },
 		.reserved2 = 0,
 		.reserved3 = 0,
-		.serial_number_request = 1,
+		.serial_number_request = false,
 	};
 
 	sg_io_hdr_t header;
@@ -1046,9 +1046,7 @@ static void st_scsi_loader_status_update_slot(int fd, struct st_changer * change
 						strncpy(slot->volume_name, data_transfer_element->primary_volume_tag_information, 36);
 						slot->volume_name[36] = '\0';
 
-						int j;
-						for (j = 35; j >= 0 && slot->volume_name[j] == ' '; j--)
-							slot->volume_name[j] = '\0';
+						st_util_string_rtrim(slot->volume_name, ' ');
 					} else {
 						free(slot->volume_name);
 						slot->volume_name = NULL;
@@ -1077,9 +1075,7 @@ static void st_scsi_loader_status_update_slot(int fd, struct st_changer * change
 						strncpy(slot->volume_name, import_export_element->primary_volume_tag_information, 36);
 						slot->volume_name[36] = '\0';
 
-						int j;
-						for (j = 35; j >= 0 && slot->volume_name[j] == ' '; j--)
-							slot->volume_name[j] = '\0';
+						st_util_string_rtrim(slot->volume_name, ' ');
 					} else {
 						free(slot->volume_name);
 						slot->volume_name = NULL;
@@ -1115,9 +1111,7 @@ static void st_scsi_loader_status_update_slot(int fd, struct st_changer * change
 						strncpy(slot->volume_name, storage_element->primary_volume_tag_information, 36);
 						slot->volume_name[36] = '\0';
 
-						int j;
-						for (j = 35; j >= 0 && slot->volume_name[j] == ' '; j--)
-							slot->volume_name[j] = '\0';
+						st_util_string_rtrim(slot->volume_name, ' ');
 					} else {
 						free(slot->volume_name);
 						slot->volume_name = NULL;

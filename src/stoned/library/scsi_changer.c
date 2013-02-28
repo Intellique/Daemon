@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 11 Feb 2013 13:50:41 +0100                            *
+*  Last modified: Thu, 28 Feb 2013 19:43:34 +0100                            *
 \****************************************************************************/
 
 // open
@@ -232,7 +232,7 @@ void st_scsi_changer_setup(struct st_changer * changer, struct st_database_conne
 	unsigned int i;
 	for (i = changer->nb_drives; i < changer->nb_slots; i++)
 		if (changer->slots[i].enable)
-			changer->slots[i].lock = st_ressource_new(false);
+			changer->slots[i].lock = st_ressource_new(true);
 
 	unsigned int nb_enabled_drives = 0;
 	for (i = 0; i < changer->nb_drives; i++) {
