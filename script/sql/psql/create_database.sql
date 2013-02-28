@@ -331,11 +331,11 @@ CREATE TABLE UserLog (
 CREATE TABLE Archive (
     id BIGSERIAL PRIMARY KEY,
 
-    uuid UUID NULL UNIQUE,
+    uuid UUID NOT NULL UNIQUE,
     name TEXT NOT NULL,
 
     starttime TIMESTAMP(0) NOT NULL,
-    endtime TIMESTAMP(0),
+    endtime TIMESTAMP(0) NOT NULL,
 
     checksumok BOOLEAN NOT NULL DEFAULT FALSE,
     checktime TIMESTAMP(0),
@@ -379,7 +379,7 @@ CREATE TABLE ArchiveVolume (
     size BIGINT NOT NULL DEFAULT 0 CHECK (size >= 0),
 
     starttime TIMESTAMP(0) NOT NULL,
-    endtime TIMESTAMP(0),
+    endtime TIMESTAMP(0) NOT NULL,
 
     checksumok BOOLEAN NOT NULL DEFAULT FALSE,
     checktime TIMESTAMP(0),
