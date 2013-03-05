@@ -343,7 +343,6 @@ CREATE TABLE Archive (
     creator INTEGER NOT NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     owner INTEGER NOT NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
-    metadata TEXT NOT NULL,
     copyOf BIGINT REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
     CONSTRAINT archive_id CHECK (id != copyOf),
@@ -402,6 +401,13 @@ CREATE TABLE ArchiveFileToArchiveVolume (
     checktime TIMESTAMP(0),
 
     PRIMARY KEY (archiveVolume, archiveFile)
+);
+
+CREATE TABLE Metadata (
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,
+
+    archive BIGINT NOT NULL REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE Backup (
