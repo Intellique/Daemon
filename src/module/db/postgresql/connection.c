@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 22 Feb 2013 15:35:07 +0100                            *
+*  Last modified: Wed, 06 Mar 2013 18:38:00 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -56,6 +56,7 @@
 #include <libstone/log.h>
 #include <libstone/user.h>
 #include <libstone/util/hashtable.h>
+#include <libstone/util/json.h>
 #include <libstone/util/string.h>
 #include <libstone/util/util.h>
 
@@ -3096,7 +3097,7 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 
 	if (archive_data->id < 0) {
 		const char * query = "insert_archive";
-		st_db_postgresql_prepare(self, query, "INSERT INTO archive(uuid, name, starttime, endtime, creator, owner, metadata, copyof) VALUES ($1, $2, $3, $4, $5, $5, $6, $7) RETURNING id");
+		st_db_postgresql_prepare(self, query, "INSERT INTO archive(uuid, name, starttime, endtime, creator, owner, copyof) VALUES ($1, $2, $3, $4, $5, $5, $6) RETURNING id");
 
 		char buffer_ctime[32];
 		char buffer_endtime[32];
@@ -3113,9 +3114,9 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 		strftime(buffer_endtime, 32, "%F %T", &tv);
 
 		const char * param[] = {
-			archive->uuid, archive->name, buffer_ctime, buffer_endtime, userid, archive->metadatas, copyid
+			archive->uuid, archive->name, buffer_ctime, buffer_endtime, userid, copyid
 		};
-		PGresult * result = PQexecPrepared(self->connect, query, 7, param, NULL, NULL, 0);
+		PGresult * result = PQexecPrepared(self->connect, query, 6, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -3127,6 +3128,35 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 
 		PQclear(result);
 		free(userid);
+
+		struct st_hashtable * metadatas = st_util_json_from_string(archive->metadatas);
+		if (metadatas != NULL) {
+			const char * query2 = "insert_metadata";
+			st_db_postgresql_prepare(self, query2, "INSERT INTO metadata(key, value, archive) VALUES ($1, $2, $3)");
+
+			unsigned int nb_keys = 0;
+			const void ** keys = st_hashtable_keys(metadatas, &nb_keys);
+
+			unsigned int i;
+			for (i = 0; i < nb_keys; i++) {
+				struct st_hashtable_value val = st_hashtable_get(metadatas, keys[i]);
+				char * value = NULL;
+				if (val.type == st_hashtable_value_string)
+					value = val.value.string;
+
+				const char * param2[] = { keys[i], value, archiveid };
+				PGresult * result2 = PQexecPrepared(self->connect, query2, 3, param2, NULL, NULL, 0);
+				ExecStatusType status2 = PQresultStatus(result2);
+
+				if (status2 == PGRES_FATAL_ERROR)
+					st_db_postgresql_get_error(result2, query2);
+
+				PQclear(result2);
+			}
+
+			free(keys);
+			st_hashtable_free(metadatas);
+		}
 	}
 
 	const char * query = "select_last_volume_of_archive";

@@ -2,7 +2,7 @@ LIBSTONE_SRC_DIR		:= src/libstone
 
 LIBSTONE_CFLAG			:= -fPIC -pthread
 LIBSTONE_LIB			:= lib/libstone.so
-LIBSTONE_LD				:= -shared -pthread -ldl -luuid
+LIBSTONE_LD				:= -shared -pthread -ldl -luuid -ljansson
 LIBSTONE_SONAME			:= libstone.so.0
 LIBSTONE_LIB_VERSION	:= 0.1
 

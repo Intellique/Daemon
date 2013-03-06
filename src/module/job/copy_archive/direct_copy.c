@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 22 Feb 2013 13:08:52 +0100                            *
+*  Last modified: Fri, 01 Mar 2013 12:11:40 +0100                            *
 \****************************************************************************/
 
 // calloc
@@ -54,6 +54,8 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 		changer->ops->unload(changer, self->drive_output);
 	}
 
+	self->job->done = 0.02;
+
 	if (self->drive_output->slot->media == NULL) {
 		struct st_changer * changer = self->drive_output->changer;
 		changer->ops->load_slot(changer, self->slot_output, self->drive_output);
@@ -61,6 +63,8 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 		self->slot_output->lock->ops->unlock(self->slot_output->lock);
 		self->slot_output = NULL;
 	}
+
+	self->job->done = 0.03;
 
 	self->writer = self->drive_output->ops->get_writer(self->drive_output, true, st_job_copy_archive_add_filter, self);
 

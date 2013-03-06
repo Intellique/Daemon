@@ -2,7 +2,7 @@ STONED_SRC_DIR		:= src/stoned
 
 STONED_BIN			:= bin/stoned
 STONED_CFLAG		:=
-STONED_LD			:= -rdynamic -lstone -ljansson -Llib
+STONED_LD			:= -rdynamic -lstone -Llib
 
 STONED_DEPEND_LIB	:= lib/libstone.so
 

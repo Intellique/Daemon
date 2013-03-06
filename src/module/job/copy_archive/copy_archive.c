@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 22 Feb 2013 13:21:22 +0100                            *
+*  Last modified: Fri, 01 Mar 2013 11:33:20 +0100                            *
 \****************************************************************************/
 
 // malloc
@@ -112,6 +112,8 @@ static void st_job_copy_archive_new_job(struct st_job * job, struct st_database_
 static int st_job_copy_archive_run(struct st_job * job) {
 	struct st_job_copy_archive_private * self = job->data;
 
+	st_job_add_record(self->connect, st_log_level_info, job, "Start copy archive job (named: %s), num runs %ld", job->name, job->num_runs);
+
 	self->archive = self->connect->ops->get_archive_volumes_by_job(self->connect, job);
 	self->pool = st_pool_get_by_job(job, self->connect);
 
@@ -134,8 +136,14 @@ static int st_job_copy_archive_run(struct st_job * job) {
 	st_job_copy_archive_select_input_media(self, self->archive->volumes->media);
 
 	int failed = 0;
-	if (self->drive_input != NULL)
-		failed = st_job_copy_archive_direct_copy(self);
+	if (job->db_status != st_job_status_stopped) {
+		job->done = 0.01;
+
+		if (self->drive_input != NULL)
+			failed = st_job_copy_archive_direct_copy(self);
+
+		job->done = 0.99;
+	}
 
 	// release memory
 	for (i = 0; i < self->copy->nb_volumes; i++) {
@@ -164,6 +172,10 @@ static int st_job_copy_archive_run(struct st_job * job) {
 		free(self->checksums[i]);
 	free(self->checksums);
 	self->checksums = NULL;
+
+	if (job->sched_status == st_job_status_running) {
+		job->done = 1;
+	}
 
 	return failed;
 }
