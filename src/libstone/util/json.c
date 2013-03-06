@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 06 Mar 2013 15:08:09 +0100                            *
+*  Last modified: Wed, 06 Mar 2013 19:01:59 +0100                            *
 \****************************************************************************/
 
 // json
@@ -49,7 +49,10 @@ struct st_hashtable * st_util_json_from_string(const char * string) {
 	const char * key;
 	json_t * value;
 	json_object_foreach(obj, key, value) {
-		st_hashtable_put(values, strdup(key), st_hashtable_val_string(json_dumps(value, JSON_COMPACT | JSON_ENCODE_ANY)));
+		if (json_is_string(value))
+			st_hashtable_put(values, strdup(key), st_hashtable_val_string(strdup(json_string_value(value))));
+		else
+			st_hashtable_put(values, strdup(key), st_hashtable_val_string(json_dumps(value, JSON_COMPACT | JSON_ENCODE_ANY)));
 	}
 
 	json_decref(obj);
