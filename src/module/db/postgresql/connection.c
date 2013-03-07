@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 06 Mar 2013 18:38:00 +0100                            *
+*  Last modified: Wed, 06 Mar 2013 19:11:30 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2370,7 +2370,7 @@ static struct st_archive * st_db_postgresql_get_archive_by_job(struct st_databas
 		return NULL;
 
 	const char * query = "select_archive_by_job";
-	st_db_postgresql_prepare(self, query, "SELECT a.id, name, starttime, endtime, checksumok, checktime, metadata, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
+	st_db_postgresql_prepare(self, query, "SELECT a.id, name, starttime, endtime, checksumok, checktime, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
 
 	char * jobid;
 	asprintf(&jobid, "%ld", job_data->id);
@@ -2393,12 +2393,11 @@ static struct st_archive * st_db_postgresql_get_archive_by_job(struct st_databas
 		archive->check_time = 0;
 		if (!PQgetisnull(result, 0, 5))
 			st_db_postgresql_get_time(result, 0, 5, &archive->check_time);
-		st_db_postgresql_get_string_dup(result, 0, 6, &archive->metadatas);
 
 		archive->volumes = NULL;
 		archive->nb_volumes = 0;
 
-		archive->user = st_user_get(PQgetvalue(result, 0, 7));
+		archive->user = st_user_get(PQgetvalue(result, 0, 6));
 
 		archive->copy_of = NULL;
 
