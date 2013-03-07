@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 01 Mar 2013 12:11:40 +0100                            *
+*  Last modified: Thu, 07 Mar 2013 10:08:00 +0100                            *
 \****************************************************************************/
 
 // calloc
@@ -38,12 +38,12 @@
 
 #include <libstone/database.h>
 #include <libstone/format.h>
+#include <libstone/io.h>
 #include <libstone/library/archive.h>
 #include <libstone/library/changer.h>
 #include <libstone/library/drive.h>
 #include <libstone/library/ressource.h>
 #include <libstone/library/slot.h>
-#include <stoned/io.h>
 
 #include "copy_archive.h"
 

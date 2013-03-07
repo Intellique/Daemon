@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 17 Feb 2013 11:55:46 +0100                            *
+*  Last modified: Thu, 07 Mar 2013 10:04:48 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_IO_H__
@@ -33,6 +33,7 @@
 // off_t, ssize_t
 #include <sys/types.h>
 
+struct st_archive;
 struct st_hashtable;
 
 /**
@@ -126,6 +127,8 @@ struct st_hashtable * st_checksum_reader_get_checksums(struct st_stream_reader *
 struct st_hashtable * st_checksum_writer_get_checksums(struct st_stream_writer * stream);
 
 ssize_t st_stream_writer_printf(struct st_stream_writer * writer, const char * format, ...) __attribute__ ((format (printf, 2, 3)));
+
+ssize_t st_io_json_writer(struct st_stream_writer * writer, struct st_archive * archive);
 
 #endif
 

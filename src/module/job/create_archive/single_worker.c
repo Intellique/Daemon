@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 17 Feb 2013 18:50:47 +0100                            *
+*  Last modified: Thu, 07 Mar 2013 10:08:58 +0100                            *
 \****************************************************************************/
 
 // asprintf
@@ -49,7 +49,6 @@
 #include <libstone/util/file.h>
 #include <libstone/util/hashtable.h>
 #include <libstone/user.h>
-#include <stoned/io.h>
 #include <stoned/library/changer.h>
 #include <stoned/library/slot.h>
 

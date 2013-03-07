@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 21 Feb 2013 16:43:04 +0100                            *
+*  Last modified: Thu, 07 Mar 2013 10:34:38 +0100                            *
 \****************************************************************************/
 
 // json_array, json_array_append_new, json_decref, json_dumps, json_integer,
@@ -37,10 +37,11 @@
 // uname
 #include <sys/utsname.h>
 
+#include <libstone/io.h>
 #include <libstone/library/archive.h>
+#include <libstone/library/media.h>
 #include <libstone/user.h>
 #include <libstone/util/hashtable.h>
-#include <stoned/io.h>
 
 #include "stone.version"
 
@@ -48,6 +49,7 @@ static struct utsname st_io_json_uname;
 
 static json_t * st_io_json_archive(struct st_archive * archive);
 static json_t * st_io_json_file(struct st_archive_file * file);
+static json_t * st_io_json_media(struct st_media * media);
 static json_t * st_io_json_volume(struct st_archive_volume * volume);
 static void st_io_json_volume_init(void) __attribute__((constructor));
 
@@ -75,6 +77,12 @@ static json_t * st_io_json_archive(struct st_archive * archive) {
 	for (i = 0; i < archive->nb_volumes; i++)
 		json_array_append_new(volumes, st_io_json_volume(archive->volumes + i));
 	json_object_set_new(jarchive, "volumes", volumes);
+
+	json_error_t error;
+	json_t * meta = json_loads(archive->metadatas, JSON_REJECT_DUPLICATES | JSON_DECODE_ANY, &error);
+
+	if (meta != NULL)
+		json_object_set_new(jarchive, "metadatas", meta);
 
 	return jarchive;
 }
@@ -121,10 +129,24 @@ static json_t * st_io_json_file(struct st_archive_file * file) {
 	return jfile;
 }
 
+static json_t * st_io_json_media(struct st_media * media) {
+	json_t * jmedia = json_object();
+
+	json_object_set_new(jmedia, "uuid", json_string(media->uuid));
+	json_object_set_new(jmedia, "label", json_string(media->label));
+	json_object_set_new(jmedia, "medium serial number", json_string(media->medium_serial_number));
+	json_object_set_new(jmedia, "name", json_string(media->name));
+
+	json_object_set_new(jmedia, "block size", json_integer(media->block_size));
+
+	return jmedia;
+}
+
 static json_t * st_io_json_volume(struct st_archive_volume * volume) {
 	json_t * jvolume = json_object();
 
 	json_object_set_new(jvolume, "host", json_string(st_io_json_uname.nodename));
+	json_object_set_new(jvolume, "media", st_io_json_media(volume->media));
 	json_object_set_new(jvolume, "sequence", json_integer(volume->sequence));
 	json_object_set_new(jvolume, "size", json_integer(volume->size));
 
@@ -174,7 +196,7 @@ ssize_t st_io_json_writer(struct st_stream_writer * writer, struct st_archive * 
 	json_object_set_new(root, "stone", stone);
 	json_object_set_new(root, "archive", st_io_json_archive(archive));
 
-	char * cjson = json_dumps(root, JSON_COMPACT);
+	char * cjson = json_dumps(root, JSON_COMPACT | JSON_SORT_KEYS);
 	ssize_t cjson_length = strlen(cjson);
 
 	ssize_t nb_write = writer->ops->write(writer, cjson, cjson_length);
