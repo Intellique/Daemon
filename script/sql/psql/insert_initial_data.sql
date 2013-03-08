@@ -43,3 +43,6 @@ INSERT INTO Pool(uuid, name, mediaFormat) VALUES
 INSERT INTO Users(login, password, salt, fullname, email, homedirectory, isAdmin, canArchive, canRestore, pool, meta) VALUES
 	('storiq', '8a6eb1d3b4fecbf8a1d6528a6aecb064e801b1e0', 'cd8c63688e0c2cff', 'storiq', 'storiq@localhost', '/mnt/raid', TRUE, TRUE, TRUE, 1, hstore('step', '0') || hstore('showHelp', '1'));
 
+INSERT INTO UserEvent(event) VALUES
+	('connection'),
+	('deconnection');
