@@ -201,7 +201,7 @@ CREATE TABLE Media (
     CHECK (firstUsed < useBefore)
 );
 
-CREATE TABLE MediaLable (
+CREATE TABLE MediaLabel (
     id BIGSERIAL PRIMARY KEY,
 
     name TEXT NOT NULL,
