@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sat, 08 Dec 2012 22:57:26 +0100                            *
+*  Last modified: Thu, 14 Mar 2013 18:59:27 +0100                            *
 \****************************************************************************/
 
 // free, malloc
@@ -48,15 +48,16 @@ static void st_checksum_sha1_init(void) __attribute__((constructor));
 static ssize_t st_checksum_sha1_update(struct st_checksum * checksum, const void * data, ssize_t length);
 
 static struct st_checksum_driver st_checksum_sha1_driver = {
-	.name			= "sha1",
-	.new_checksum	= st_checksum_sha1_new_checksum,
-	.cookie			= NULL,
-	.api_level      = {
+	.name			  = "sha1",
+	.default_checksum = true,
+	.new_checksum	  = st_checksum_sha1_new_checksum,
+	.cookie			  = NULL,
+	.api_level        = {
 		.checksum = STONE_CHECKSUM_API_LEVEL,
 		.database = 0,
 		.job      = 0,
 	},
-	.src_checksum   = STONE_CHECKSUM_SHA1_SRCSUM,
+	.src_checksum     = STONE_CHECKSUM_SHA1_SRCSUM,
 };
 
 static struct st_checksum_ops st_checksum_sha1_ops = {

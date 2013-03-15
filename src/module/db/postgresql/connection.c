@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 06 Mar 2013 19:11:30 +0100                            *
+*  Last modified: Fri, 15 Mar 2013 10:29:04 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -46,6 +46,7 @@
 // localtime_r, strftime, time
 #include <time.h>
 
+#include <libstone/checksum.h>
 #include <libstone/job.h>
 #include <libstone/library/archive.h>
 #include <libstone/library/changer.h>
@@ -415,27 +416,30 @@ static int st_db_postgresql_sync_plugin_checksum(struct st_database_connection *
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	const char * query = "select_checksum_by_name";
-	st_db_postgresql_prepare(self, query, "SELECT name FROM checksum WHERE name = $1 LIMIT 1");
+	st_db_postgresql_prepare(self, query, "SELECT deflt FROM checksum WHERE name = $1 LIMIT 1");
 
-	const char * param[] = { name};
+	const char * param[] = { name };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
-	int found = 0;
+	bool found = false;
 	if (status == PGRES_FATAL_ERROR)
 		st_db_postgresql_get_error(result, query);
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
-		found = 1;
+		found = true;
 
 	PQclear(result);
 
 	if (found)
 		return 0;
 
-	query = "insert_checksum";
-	st_db_postgresql_prepare(self, query, "INSERT INTO checksum(name) VALUES ($1)");
+	struct st_checksum_driver * driver = st_checksum_get_driver(name);
+	const char * param2[] = { name, driver->default_checksum ? "TRUE" : "FALSE" };
 
-	result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	query = "insert_checksum";
+	st_db_postgresql_prepare(self, query, "INSERT INTO checksum(name, deflt) VALUES ($1, $2)");
+
+	result = PQexecPrepared(self->connect, query, 2, param2, NULL, NULL, 0);
 	status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)
@@ -2587,8 +2591,8 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 	if (job_data == NULL || job_data->id < 0)
 		return NULL;
 
-	const char * query = "select_archive_by_job";
-	st_db_postgresql_prepare(self, query, "SELECT a.id, a.uuid, name, starttime, endtime, checksumok, checktime, metadata, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
+	const char * query = "select_archive_volume_by_job";
+	st_db_postgresql_prepare(self, query, "SELECT a.id, a.uuid, name, starttime, endtime, checksumok, checktime, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
 
 	char * jobid;
 	asprintf(&jobid, "%ld", job_data->id);
@@ -2612,12 +2616,12 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 		archive->check_time = 0;
 		if (!PQgetisnull(result, 0, 6))
 			st_db_postgresql_get_time(result, 0, 6, &archive->check_time);
-		st_db_postgresql_get_string_dup(result, 0, 7, &archive->metadatas);
+		archive->metadatas = NULL;
 
 		archive->volumes = NULL;
 		archive->nb_volumes = 0;
 
-		archive->user = st_user_get(PQgetvalue(result, 0, 8));
+		archive->user = st_user_get(PQgetvalue(result, 0, 7));
 
 		archive->copy_of = NULL;
 

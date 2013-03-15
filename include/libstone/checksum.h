@@ -22,11 +22,13 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 05 Feb 2013 12:19:44 +0100                            *
+*  Last modified: Thu, 14 Mar 2013 18:56:45 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_CHECKSUM_H__
 #define __STONE_CHECKSUM_H__
+
+#include <stdbool.h>
 
 struct st_database_connection;
 
@@ -251,6 +253,8 @@ struct st_checksum_driver {
 	 * \brief Name of the driver
 	 */
 	const char * name;
+
+	bool default_checksum;
 	/**
 	 * \brief Get a new checksum handler
 	 *

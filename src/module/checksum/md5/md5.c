@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 05 Feb 2013 12:22:59 +0100                            *
+*  Last modified: Thu, 14 Mar 2013 18:58:17 +0100                            *
 \****************************************************************************/
 
 // free, malloc
@@ -48,15 +48,16 @@ static void st_checksum_md5_init(void) __attribute__((constructor));
 static ssize_t st_checksum_md5_update(struct st_checksum * checksum, const void * data, ssize_t length);
 
 static struct st_checksum_driver st_checksum_md5_driver = {
-	.name			= "md5",
-	.new_checksum	= st_checksum_md5_new_checksum,
-	.cookie			= NULL,
-	.api_level      = {
+	.name			  = "md5",
+	.default_checksum = false,
+	.new_checksum	  = st_checksum_md5_new_checksum,
+	.cookie			  = NULL,
+	.api_level        = {
 		.checksum = STONE_CHECKSUM_API_LEVEL,
 		.database = 0,
 		.job      = 0,
 	},
-	.src_checksum   = STONE_CHECKSUM_MD5_SRCSUM,
+	.src_checksum     = STONE_CHECKSUM_MD5_SRCSUM,
 };
 
 static struct st_checksum_ops st_checksum_md5_ops = {
