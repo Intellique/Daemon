@@ -345,6 +345,8 @@ CREATE TABLE Archive (
 
     copyOf BIGINT REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
+    deleted BOOLEAN NOT NULL DEFAULT FALSE,
+
     CONSTRAINT archive_id CHECK (id != copyOf),
     CONSTRAINT archive_time CHECK (starttime <= endtime)
 );
