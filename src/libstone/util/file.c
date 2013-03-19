@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 04 Feb 2013 21:02:38 +0100                            *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Tue, 19 Mar 2013 13:12:42 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -81,9 +81,18 @@ void st_util_file_convert_size_to_string(ssize_t size, char * str, ssize_t str_l
 	unsigned short mult = 0;
 	double tsize = size;
 
-	while (tsize >= 1024 && mult < 4) {
+	while (tsize >= 1000 && mult < 4) {
 		tsize /= 1024;
 		mult++;
+	}
+
+	int fixed = 0;
+	if (tsize < 0) {
+		fixed = 3;
+	} else if (tsize < 10) {
+		fixed = 2;
+	} else if (tsize < 100) {
+		fixed = 1;
 	}
 
 	switch (mult) {
@@ -91,16 +100,16 @@ void st_util_file_convert_size_to_string(ssize_t size, char * str, ssize_t str_l
 			snprintf(str, str_len, "%zd Bytes", size);
 			break;
 		case 1:
-			snprintf(str, str_len, "%.1f KBytes", tsize);
+			snprintf(str, str_len, "%.*f KBytes", fixed, tsize);
 			break;
 		case 2:
-			snprintf(str, str_len, "%.2f MBytes", tsize);
+			snprintf(str, str_len, "%.*f MBytes", fixed, tsize);
 			break;
 		case 3:
-			snprintf(str, str_len, "%.3f GBytes", tsize);
+			snprintf(str, str_len, "%.*f GBytes", fixed, tsize);
 			break;
 		default:
-			snprintf(str, str_len, "%.4f TBytes", tsize);
+			snprintf(str, str_len, "%.*f TBytes", fixed, tsize);
 	}
 
 	if (strchr(str, '.')) {
