@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 15 Mar 2013 10:29:04 +0100                            *
+*  Last modified: Tue, 19 Mar 2013 21:39:38 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -159,7 +159,7 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 static unsigned int st_db_postgresql_get_checksums_of_archive_volume(struct st_database_connection * connect, struct st_archive_volume * volume);
 static unsigned int  st_db_postgresql_get_checksums_of_file(struct st_database_connection * connect, struct st_archive_file * file);
 static unsigned int st_db_postgresql_get_nb_volume_of_file(struct st_database_connection * connect, struct st_job * job, struct st_archive_file * file);
-static char * st_db_postgresql_get_restore_path_from_file(struct st_database_connection * connect, struct st_job * job, struct st_archive_file * file);
+static char * st_db_postgresql_get_restore_path_from_file(struct st_database_connection * connect, struct st_job * job, struct st_archive_file * file, const char * alternate_root);
 static char * st_db_postgresql_get_restore_path_of_job(struct st_database_connection * connect, struct st_job * job);
 static ssize_t st_db_postgresql_get_restore_size_by_job(struct st_database_connection * connect, struct st_job * job);
 static bool st_db_postgresql_has_restore_to_by_job(struct st_database_connection * connect, struct st_job * job);
@@ -1136,7 +1136,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 	}
 
 	if (media_data->id < 0 && media->label != NULL) {
-		const char * query = "select_media_by_label";
+		const char * query = "select_media_by_label_for_sync";
 		st_db_postgresql_prepare(self, query, "SELECT id, name, firstused, usebefore, loadcount, readcount, writecount, type, blocksize, mediaformat, pool FROM media WHERE label = $1 FOR UPDATE NOWAIT");
 
 		const char * param[] = { media->label };
@@ -1153,24 +1153,24 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 			st_db_postgresql_get_time(result, 0, 3, &media->use_before);
 
 			long old_value = media->load_count;
-			st_db_postgresql_get_long(result, 0, 5, &media->load_count);
+			st_db_postgresql_get_long(result, 0, 4, &media->load_count);
 			media->load_count += old_value;
 
 			old_value = media->read_count;
-			st_db_postgresql_get_long(result, 0, 6, &media->read_count);
+			st_db_postgresql_get_long(result, 0, 5, &media->read_count);
 			media->read_count += old_value;
 
 			old_value = media->write_count;
-			st_db_postgresql_get_long(result, 0, 7, &media->write_count);
+			st_db_postgresql_get_long(result, 0, 6, &media->write_count);
 			media->write_count += old_value;
 
-			media->type = st_media_string_to_type(PQgetvalue(result, 0, 8));
-			st_db_postgresql_get_ssize(result, 0, 9, &media->block_size);
+			media->type = st_media_string_to_type(PQgetvalue(result, 0, 7));
+			st_db_postgresql_get_ssize(result, 0, 8, &media->block_size);
 
-			st_db_postgresql_get_string_dup(result, 0, 11, &mediaformatid);
+			st_db_postgresql_get_string_dup(result, 0, 9, &mediaformatid);
 
-			if (!PQgetisnull(result, 0, 12))
-				st_db_postgresql_get_string_dup(result, 0, 12, &poolid);
+			if (!PQgetisnull(result, 0, 10))
+				st_db_postgresql_get_string_dup(result, 0, 10, &poolid);
 		}
 
 		PQclear(result);
@@ -2816,7 +2816,7 @@ static unsigned int st_db_postgresql_get_nb_volume_of_file(struct st_database_co
 	return nb_volume;
 }
 
-static char * st_db_postgresql_get_restore_path_from_file(struct st_database_connection * connect, struct st_job * job, struct st_archive_file * file) {
+static char * st_db_postgresql_get_restore_path_from_file(struct st_database_connection * connect, struct st_job * job, struct st_archive_file * file, const char * alternate_root) {
 	if (connect == NULL || job == NULL || file == NULL)
 		return NULL;
 
@@ -2826,15 +2826,34 @@ static char * st_db_postgresql_get_restore_path_from_file(struct st_database_con
 	if (job_data == NULL || job_data->id < 0 || file_data == NULL || file_data->id < 0)
 		return NULL;
 
-	const char * query = "select_get_restore_path_from_job_and_file";
-	st_db_postgresql_prepare(self, query, "SELECT rt.path || SUBSTRING(af.name FROM CHAR_LENGTH(SUBSTRING(sf.path FROM '(.+/)[^/]+'))) AS name FROM archivefile af LEFT JOIN selectedfile sf ON af.parent = sf.id, restoreto rt WHERE rt.job = $1 AND af.id = $2 LIMIT 1");
+	const char * query;
+	PGresult * result;
+	if (alternate_root != NULL) {
+		query = "select_get_restore_path_from_job_and_file_alternate";
+		st_db_postgresql_prepare(self, query, "SELECT $1 || SUBSTRING(af.name FROM CHAR_LENGTH(SUBSTRING(sf.path FROM '(.+/)[^/]+'))) AS name FROM archivefile af LEFT JOIN selectedfile sf ON af.parent = sf.id WHERE af.id = $2 LIMIT 1");
 
-	char * jobid, * fileid;
-	asprintf(&jobid, "%ld", job_data->id);
-	asprintf(&fileid, "%ld", file_data->id);
+		char * fileid;
+		asprintf(&fileid, "%ld", file_data->id);
 
-	const char * param[] = { jobid, fileid };
-	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+		const char * param[] = { alternate_root, fileid };
+		result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+
+		free(fileid);
+	} else {
+		query = "select_get_restore_path_from_job_and_file";
+		st_db_postgresql_prepare(self, query, "SELECT rt.path || SUBSTRING(af.name FROM CHAR_LENGTH(SUBSTRING(sf.path FROM '(.+/)[^/]+'))) AS name FROM archivefile af LEFT JOIN selectedfile sf ON af.parent = sf.id, restoreto rt WHERE rt.job = $1 AND af.id = $2 LIMIT 1");
+
+		char * jobid, * fileid;
+		asprintf(&jobid, "%ld", job_data->id);
+		asprintf(&fileid, "%ld", file_data->id);
+
+		const char * param[] = { jobid, fileid };
+		result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+
+		free(jobid);
+		free(fileid);
+	}
+
 	ExecStatusType status = PQresultStatus(result);
 
 	char * path = NULL;
@@ -2844,8 +2863,6 @@ static char * st_db_postgresql_get_restore_path_from_file(struct st_database_con
 		st_db_postgresql_get_string_dup(result, 0, 0, &path);
 
 	PQclear(result);
-	free(jobid);
-	free(fileid);
 
 	return path;
 }

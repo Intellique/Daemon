@@ -22,19 +22,20 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 16 Aug 2012 15:08:07 +0200                            *
+*  Last modified: Wed, 20 Mar 2013 13:02:18 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
 // va_end, va_start
 #include <stdarg.h>
-// free
+// free, mkstemps
 #include <stdlib.h>
 // vasprintf
 #include <stdio.h>
 
-#include <libstone/io.h>
 #include <libstone/log.h>
+
+#include "io.h"
 
 
 ssize_t st_stream_writer_printf(struct st_stream_writer * writer, const char * format, ...) {
@@ -59,5 +60,16 @@ ssize_t st_stream_writer_printf(struct st_stream_writer * writer, const char * f
 	free(message);
 
 	return nb_write;
+}
+
+struct st_stream_writer * st_io_temp_writer(char * filename, int sufixlength) {
+	if (filename == NULL)
+		return NULL;
+
+	int fd = mkstemps(filename, sufixlength);
+	if (fd < 0)
+		return NULL;
+
+	return st_io_file_writer2(fd);
 }
 

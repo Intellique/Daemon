@@ -22,37 +22,67 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 04 Feb 2013 17:46:40 +0100                            *
+*  Last modified: Wed, 20 Mar 2013 15:18:12 +0100                            *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // mknod, open
 #include <fcntl.h>
+// asprintf
+#include <stdio.h>
 // free, malloc
 #include <stdlib.h>
 // S_*, mknod, open
 #include <sys/stat.h>
 // S_*, lseek, open, mknod
 #include <sys/types.h>
+// statfs
+#include <sys/statvfs.h>
 // chmod, chown, fchmod, fchown, lseek, mknod, write
 #include <unistd.h>
 
 #include <libstone/database.h>
 #include <libstone/format.h>
+#include <libstone/io.h>
 #include <libstone/library/archive.h>
 #include <libstone/library/changer.h>
 #include <libstone/library/drive.h>
 #include <libstone/library/ressource.h>
 #include <libstone/library/slot.h>
 #include <libstone/log.h>
+#include <libstone/user.h>
+#include <libstone/util/file.h>
 
 #include "copy_archive.h"
 
 int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self) {
+	struct statvfs st;
+	int failed = statvfs(self->job->user->home_directory, &st);
+	if (failed) {
+		self->job->sched_status = st_job_status_error;
+		return failed;
+	}
+
+	if ((ssize_t) (st.f_bsize * st.f_favail * 0.95) < self->archive_size) {
+		self->job->sched_status = st_job_status_error;
+
+		char bufSize[16];
+		st_util_file_convert_size_to_string(self->archive_size, bufSize, 16);
+
+		st_job_add_record(self->connect, st_log_level_error, self->job, "Error, indirect copy require at least %s", bufSize);
+		self->job->sched_status = st_job_status_error;
+		return 2;
+	}
+
+	char * temp_filename;
+	asprintf(&temp_filename, "%s/copy-archive_XXXXXX.tar", self->job->user->home_directory);
+	struct st_stream_writer * temp_writer = st_io_temp_writer(temp_filename, 4);
+	struct st_format_writer * writer = st_format_get_writer(temp_writer, self->pool->format);
+
 	unsigned int i;
+	ssize_t total_done = 0;
 	for (i = 0; i < self->archive->nb_volumes; i++) {
 		struct st_archive_volume * vol = self->archive->volumes + i;
-
-		self->connect->ops->get_archive_files_by_job_and_archive_volume(self->connect, self->job, vol);
 
 		if (self->drive_input->slot != self->slot_input) {
 			struct st_changer * changer = self->drive_input->changer;
@@ -71,116 +101,34 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 
 		unsigned int j;
 		for (j = 0; j < vol->nb_files; j++) {
-			struct st_archive_files * f = vol->files + j;
-			struct st_archive_file * file = f->file;
-
 			struct st_format_file header;
-			enum st_format_reader_header_status status = reader->ops->get_header(reader, &header);
-			if (status != st_format_reader_header_ok) {
-				st_job_add_record(self->connect, st_log_level_error, self->job, "Error while reading header of file (%s)", file->name);
+			enum st_format_reader_header_status sr = reader->ops->get_header(reader, &header);
+			switch (sr) {
+				case st_format_reader_header_ok:
+					writer->ops->add(writer, &header);
 
-				st_archive_file_free(file);
-				break;
-			}
+					if (S_ISREG(header.mode)) {
+						char buffer[4096];
 
-			if (status != st_format_reader_header_ok) {
-				st_job_add_record(self->connect, st_log_level_error, self->job, "Error while reading header of file (%s)", file->name);
+						ssize_t nb_read;
+						while (nb_read = reader->ops->read(reader, buffer, 4096), nb_read > 0) {
+							writer->ops->write(writer, buffer, nb_read);
 
-				st_archive_file_free(file);
-				break;
-			}
+							total_done = reader->ops->position(reader);
+							float done = self->total_done + total_done;
+							done /= self->archive_size << 1;
 
-			char * restore_to = self->connect->ops->get_restore_path_from_file(self->connect, self->job, file);
+							self->job->done = done;
+						}
 
-			if (S_ISREG(header.mode)) {
-				int fd = open(restore_to, O_CREAT | O_WRONLY, header.mode & 07777);
-				if (fd < 0) {
-					st_job_add_record(self->connect, st_log_level_error, self->job, "Error while opening file (%s) for writing because %m", restore_to);
-
-					st_archive_file_free(file);
+						writer->ops->end_of_file(writer);
+					}
 					break;
-				}
 
-				if (header.position > 0) {
-					if (lseek(fd, header.position, SEEK_SET) != header.position) {
-						st_job_add_record(self->connect, st_log_level_error, self->job, "Error while seeking into file (%s) because %m", restore_to);
-						close(fd);
-
-						st_archive_file_free(file);
-						break;
-					}
-				}
-
-				ssize_t nb_read, nb_write = 0;
-				char buffer[4096];
-				while (nb_read = reader->ops->read(reader, buffer, 4096), nb_read > 0) {
-					nb_write = write(fd, buffer, nb_read);
-
-					if (nb_write > 0) {
-						// self->total_restored += nb_write;
-					} else {
-						st_job_add_record(self->connect, st_log_level_error, self->job, "Error while writing to file (%s) because %m", restore_to);
-
-						st_archive_file_free(file);
-						break;
-					}
-				}
-
-				if (nb_read < 0) {
-					st_job_add_record(self->connect, st_log_level_error, self->job, "Error while reading from media (%s) because %m", vol->media->name);
-
-					st_archive_file_free(file);
+				default:
 					break;
-				} else if (nb_write >= 0) {
-					if (fchown(fd, file->ownerid, file->groupid)) {
-						st_job_add_record(self->connect, st_log_level_warning, self->job, "Error while restoring user of file (%s) because %m", restore_to);
-					}
-
-					if (fchmod(fd, file->perm)) {
-						st_job_add_record(self->connect, st_log_level_warning, self->job, "Error while restoring permission of file (%s) because %m", restore_to);
-					}
-
-					struct timeval tv[] = {
-						{ file->modify_time, 0 },
-						{ file->modify_time, 0 },
-					};
-					if (futimes(fd, tv)) {
-						st_job_add_record(self->connect, st_log_level_warning, self->job, "Error while motification time of file (%s) because %m", restore_to);
-					}
-				}
-
-				close(fd);
-			} else if (S_ISDIR(header.mode)) {
-				// do nothing because directory is already created
-			} else if (S_ISLNK(header.mode)) {
-				symlink(header.link, header.filename);
-			} else if (S_ISFIFO(header.mode)) {
-				mknod(file->name, S_IFIFO, 0);
-			} else if (S_ISCHR(header.mode)) {
-				mknod(file->name, S_IFCHR, header.dev);
-			} else if (S_ISBLK(header.mode)) {
-				mknod(file->name, S_IFBLK, header.dev);
 			}
 
-			if (!(S_ISREG(header.mode) || S_ISDIR(header.mode))) {
-				if (chown(header.filename, file->ownerid, file->groupid)) {
-					st_job_add_record(self->connect, st_log_level_warning, self->job, "Error while restoring user of file (%s) because %m", header.filename);
-				}
-
-				if (chmod(header.filename, file->perm)) {
-					st_job_add_record(self->connect, st_log_level_warning, self->job, "Error while restoring permission of file (%s) because %m", header.filename);
-				}
-
-				struct timeval tv[] = {
-					{ file->modify_time, 0 },
-					{ file->modify_time, 0 },
-				};
-				if (utimes(header.filename, tv)) {
-					st_job_add_record(self->connect, st_log_level_warning, self->job, "Error while motification time of file (%s) because %m", header.filename);
-				}
-			}
-
-			free(restore_to);
 			st_format_file_free(&header);
 		}
 
@@ -188,10 +136,76 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 		reader->ops->free(reader);
 	}
 
-	bool ok = st_job_copy_archive_select_output_media(self, true);
+	writer->ops->close(writer);
+	writer->ops->free(writer);
 
-	if (ok) {
-		struct st_format_writer * writer = self->drive_output->ops->get_writer(self->drive_output, true, NULL, NULL);
+	self->drive_output = self->drive_input;
+	self->drive_input = NULL;
+
+	st_job_copy_archive_select_output_media(self, true);
+
+	struct st_stream_reader * temp_reader = st_io_file_reader(temp_filename);
+	struct st_format_reader * reader = st_format_get_reader(temp_reader, self->pool->format);
+
+	self->writer = self->drive_output->ops->get_writer(self->drive_output, true, st_job_copy_archive_add_filter, self);
+
+	for (i = 0; i < self->archive->nb_volumes; i++) {
+		struct st_archive_volume * vol = self->archive->volumes + i;
+
+		unsigned int j;
+		for (j = 0; j < vol->nb_files; j++) {
+			struct st_archive_files * f = vol->files + j;
+			struct st_archive_file * file = f->file;
+
+			ssize_t position = self->writer->ops->position(self->writer) / self->writer->ops->get_block_size(self->writer);
+
+			struct st_archive_files * copy_f = self->current_volume->files + self->current_volume->nb_files;
+			self->current_volume->nb_files++;
+			copy_f->file = file;
+			copy_f->position = position;
+
+			struct st_format_file header;
+			enum st_format_reader_header_status sr = reader->ops->get_header(reader, &header);
+			enum st_format_writer_status sw;
+			switch (sr) {
+				case st_format_reader_header_ok:
+					sw = self->writer->ops->add(self->writer, &header);
+					if (sw == st_format_writer_end_of_volume) {
+						st_job_copy_archive_change_ouput_media(self);
+
+						copy_f = self->current_volume->files + self->current_volume->nb_files;
+						self->current_volume->nb_files++;
+						copy_f->file = file;
+						copy_f->position = 0;
+					}
+
+					if (S_ISREG(header.mode)) {
+						char buffer[4096];
+
+						ssize_t nb_read;
+						while (nb_read = reader->ops->read(reader, buffer, 4096), nb_read > 0) {
+							self->writer->ops->write(self->writer, buffer, nb_read);
+
+							total_done = reader->ops->position(reader);
+							float done = self->total_done + total_done;
+							done /= self->archive_size;
+
+							self->job->done = done;
+						}
+
+						self->writer->ops->end_of_file(self->writer);
+					}
+					break;
+
+				default:
+					break;
+			}
+
+			st_format_file_free(&header);
+		}
+
+		reader->ops->close(reader);
+		reader->ops->free(reader);
 	}
 
 	return 0;

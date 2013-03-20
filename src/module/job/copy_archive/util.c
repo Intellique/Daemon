@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 15 Feb 2013 13:48:54 +0100                            *
+*  Last modified: Wed, 20 Mar 2013 13:24:59 +0100                            *
 \****************************************************************************/
 
 // time
@@ -58,7 +58,6 @@ bool st_job_copy_archive_change_ouput_media(struct st_job_copy_archive_private *
 	self->current_volume->size = self->writer->ops->position(self->writer);
 
 	self->current_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
-	// self->current_volume->nb_digests = self->nb_checksums;
 
 	self->writer->ops->free(self->writer);
 	self->writer = NULL;

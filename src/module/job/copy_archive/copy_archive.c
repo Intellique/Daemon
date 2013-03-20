@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 01 Mar 2013 11:33:20 +0100                            *
+*  Last modified: Tue, 19 Mar 2013 16:23:16 +0100                            *
 \****************************************************************************/
 
 // malloc
@@ -54,15 +54,15 @@ static struct st_job_ops st_job_copy_archive_ops = {
 };
 
 static struct st_job_driver st_job_copy_archive_driver = {
-	.name        = "copy-archive",
-	.new_job     = st_job_copy_archive_new_job,
-	.cookie      = NULL,
-	.api_level   = {
+	.name         = "copy-archive",
+	.new_job      = st_job_copy_archive_new_job,
+	.cookie       = NULL,
+	.api_level    = {
 		.checksum = 0,
 		.database = 0,
 		.job      = STONE_JOB_API_LEVEL,
 	},
-	.src_checksum   = STONE_JOB_COPYARCHIVE_SRCSUM,
+	.src_checksum = STONE_JOB_COPYARCHIVE_SRCSUM,
 };
 
 
@@ -128,21 +128,23 @@ static int st_job_copy_archive_run(struct st_job * job) {
 
 	self->copy = st_archive_new(self->job->name, self->job->user);
 	self->copy->copy_of = self->archive;
-	self->copy->metadatas = strdup(self->archive->metadatas);
+	self->copy->metadatas = NULL;
+	if (self->archive->metadatas != NULL)
+		self->copy->metadatas = strdup(self->archive->metadatas);
 
 	self->checksums = self->connect->ops->get_checksums_by_pool(self->connect, self->pool, &self->nb_checksums);
 
-	st_job_copy_archive_select_output_media(self, false);
+	// st_job_copy_archive_select_output_media(self, false);
 	st_job_copy_archive_select_input_media(self, self->archive->volumes->media);
 
 	int failed = 0;
 	if (job->db_status != st_job_status_stopped) {
 		job->done = 0.01;
 
-		if (self->drive_input != NULL)
-			failed = st_job_copy_archive_direct_copy(self);
+		//if (self->drive_input != NULL)
+		//	failed = st_job_copy_archive_direct_copy(self);
 
-		job->done = 0.99;
+		failed = st_job_copy_archive_indirect_copy(self);
 	}
 
 	// release memory

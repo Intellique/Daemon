@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 07 Mar 2013 10:08:00 +0100                            *
+*  Last modified: Fri, 08 Mar 2013 16:31:52 +0100                            *
 \****************************************************************************/
 
 // calloc
@@ -39,6 +39,7 @@
 #include <libstone/database.h>
 #include <libstone/format.h>
 #include <libstone/io.h>
+#include <libstone/log.h>
 #include <libstone/library/archive.h>
 #include <libstone/library/changer.h>
 #include <libstone/library/drive.h>
@@ -75,6 +76,7 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 	self->current_volume = self->copy->volumes;
 	self->current_volume->files = calloc(self->nb_remain_files, sizeof(struct st_archive_files));
 
+	ssize_t total_done = 0;
 	for (i = 0; i < self->archive->nb_volumes; i++) {
 		struct st_archive_volume * vol = self->archive->volumes + i;
 
@@ -126,6 +128,12 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 						ssize_t nb_read;
 						while (nb_read = reader->ops->read(reader, buffer, 4096), nb_read > 0) {
 							self->writer->ops->write(self->writer, buffer, nb_read);
+
+							total_done = reader->ops->position(reader);
+							float done = self->total_done + total_done;
+							done /= self->archive_size;
+
+							self->job->done = done;
 						}
 
 						self->writer->ops->end_of_file(self->writer);
@@ -154,8 +162,14 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 	self->checksum_writer = NULL;
 	self->writer = NULL;
 
+	self->job->done = 0.98;
+	st_job_add_record(self->connect, st_log_level_info, self->job, "Synchronize data with database");
+
 	// sync with database
 	self->connect->ops->sync_archive(self->connect, self->copy);
+
+	st_job_add_record(self->connect, st_log_level_info, self->job, "Write metadatas on media");
+	self->job->done = 0.99;
 
 	// write metadatas
 	struct st_stream_writer * writer = self->drive_output->ops->get_raw_writer(self->drive_output, true);

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 18 Dec 2012 22:48:49 +0100                            *
+*  Last modified: Tue, 19 Mar 2013 21:41:43 +0100                            *
 \****************************************************************************/
 
 // free, malloc
@@ -51,7 +51,7 @@ char * st_job_restore_archive_path_get(struct st_job_restore_archive_path * rest
 	char * path;
 	if (val.type == st_hashtable_value_null) {
 		if (has_restore_to) {
-			char * tmp_path = connect->ops->get_restore_path_from_file(connect, job, file);
+			char * tmp_path = connect->ops->get_restore_path_from_file(connect, job, file, NULL);
 			if (file->type != st_archive_file_type_directory) {
 				path = st_util_file_rename(tmp_path);
 				free(tmp_path);
