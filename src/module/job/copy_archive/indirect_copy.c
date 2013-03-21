@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 20 Mar 2013 15:18:12 +0100                            *
+*  Last modified: Wed, 20 Mar 2013 19:16:07 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -38,6 +38,8 @@
 #include <sys/types.h>
 // statfs
 #include <sys/statvfs.h>
+// time
+#include <time.h>
 // chmod, chown, fchmod, fchown, lseek, mknod, write
 #include <unistd.h>
 
@@ -138,16 +140,23 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 
 	writer->ops->close(writer);
 	writer->ops->free(writer);
+	writer = NULL;
 
 	self->drive_output = self->drive_input;
 	self->drive_input = NULL;
 
-	st_job_copy_archive_select_output_media(self, true);
-
 	struct st_stream_reader * temp_reader = st_io_file_reader(temp_filename);
 	struct st_format_reader * reader = st_format_get_reader(temp_reader, self->pool->format);
 
+	st_job_copy_archive_select_output_media(self, true);
+
 	self->writer = self->drive_output->ops->get_writer(self->drive_output, true, st_job_copy_archive_add_filter, self);
+
+	int position = self->drive_output->ops->get_position(self->drive_output);
+	st_archive_add_volume(self->copy, self->drive_output->slot->media, position);
+
+	self->current_volume = self->copy->volumes;
+	self->current_volume->files = calloc(self->nb_remain_files, sizeof(struct st_archive_files));
 
 	for (i = 0; i < self->archive->nb_volumes; i++) {
 		struct st_archive_volume * vol = self->archive->volumes + i;
@@ -188,7 +197,7 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 
 							total_done = reader->ops->position(reader);
 							float done = self->total_done + total_done;
-							done /= self->archive_size;
+							done /= self->archive_size << 1;
 
 							self->job->done = done;
 						}
@@ -207,6 +216,31 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 		reader->ops->close(reader);
 		reader->ops->free(reader);
 	}
+	self->writer->ops->close(self->writer);
+
+	self->current_volume->end_time = self->copy->end_time = time(NULL);
+	self->current_volume->size = self->writer->ops->position(self->writer);
+
+	self->current_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
+
+	self->writer->ops->free(self->writer);
+	self->checksum_writer = NULL;
+	self->writer = NULL;
+
+	self->job->done = 0.98;
+	st_job_add_record(self->connect, st_log_level_info, self->job, "Synchronize data with database");
+
+	// sync with database
+	self->connect->ops->sync_archive(self->connect, self->copy);
+
+	st_job_add_record(self->connect, st_log_level_info, self->job, "Write metadatas on media");
+	self->job->done = 0.99;
+
+	// write metadatas
+	struct st_stream_writer * meta_writer = self->drive_output->ops->get_raw_writer(self->drive_output, true);
+	st_io_json_writer(meta_writer, self->copy);
+	meta_writer->ops->close(meta_writer);
+	meta_writer->ops->free(meta_writer);
 
 	return 0;
 }
