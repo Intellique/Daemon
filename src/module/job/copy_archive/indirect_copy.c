@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 20 Mar 2013 19:16:07 +0100                            *
+*  Last modified: Thu, 21 Mar 2013 12:41:43 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -142,8 +142,14 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 	writer->ops->free(writer);
 	writer = NULL;
 
+	if (self->slot_input != self->drive_input->slot)
+		self->slot_input->lock->ops->unlock(self->slot_input->lock);
+	self->slot_input = NULL;
+
 	self->drive_output = self->drive_input;
 	self->drive_input = NULL;
+
+	self->total_done = 0;
 
 	struct st_stream_reader * temp_reader = st_io_file_reader(temp_filename);
 	struct st_format_reader * reader = st_format_get_reader(temp_reader, self->pool->format);
@@ -198,6 +204,7 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 							total_done = reader->ops->position(reader);
 							float done = self->total_done + total_done;
 							done /= self->archive_size << 1;
+							done += 0.5;
 
 							self->job->done = done;
 						}
@@ -211,6 +218,8 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 			}
 
 			st_format_file_free(&header);
+
+			self->nb_remain_files--;
 		}
 
 		reader->ops->close(reader);
@@ -241,6 +250,9 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 	st_io_json_writer(meta_writer, self->copy);
 	meta_writer->ops->close(meta_writer);
 	meta_writer->ops->free(meta_writer);
+
+	st_util_file_rm(temp_filename);
+	free(temp_filename);
 
 	return 0;
 }
