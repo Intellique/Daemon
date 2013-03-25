@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 20 Mar 2013 13:24:59 +0100                            *
+*  Last modified: Fri, 22 Mar 2013 16:55:43 +0100                            *
 \****************************************************************************/
 
 // time
@@ -86,18 +86,30 @@ bool st_job_copy_archive_select_input_media(struct st_job_copy_archive_private *
 	struct st_drive * drive = slot->drive;
 
 	if (drive != NULL) {
-		if (drive->lock->ops->timed_lock(drive->lock, 5000))
+		if (drive == self->drive_input) {
+			self->slot_input = slot;
+			return true;
+		} else if (drive->lock->ops->timed_lock(drive->lock, 5000))
 			return false;
 	} else {
 		if (slot->lock->ops->timed_lock(slot->lock, 5000))
 			return false;
 
-		drive = changer->ops->find_free_drive(changer, slot->media->format, true, false);
-		if (drive == NULL)
-			return false;
+		if (self->drive_input != NULL) {
+			if (self->drive_input->changer != changer) {
+				// TODO:
+			}
+		} else {
+			drive = changer->ops->find_free_drive(changer, slot->media->format, true, false);
+			if (drive == NULL) {
+				slot->lock->ops->unlock(slot->lock);
+				return false;
+			}
+		}
 	}
 
-	self->drive_input = drive;
+	if (self->drive_input == NULL)
+		self->drive_input = drive;
 	self->slot_input = slot;
 
 	return true;

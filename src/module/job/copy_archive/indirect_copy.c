@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 21 Mar 2013 12:41:43 +0100                            *
+*  Last modified: Fri, 22 Mar 2013 17:11:52 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -86,7 +86,7 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 	for (i = 0; i < self->archive->nb_volumes; i++) {
 		struct st_archive_volume * vol = self->archive->volumes + i;
 
-		if (self->drive_input->slot != self->slot_input) {
+		if (self->drive_input->slot->media != NULL && self->drive_input->slot != self->slot_input) {
 			struct st_changer * changer = self->drive_input->changer;
 			changer->ops->unload(changer, self->drive_input);
 		}
@@ -95,7 +95,8 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 			struct st_changer * changer = self->drive_input->changer;
 			changer->ops->load_slot(changer, self->slot_input, self->drive_input);
 
-			self->slot_input->lock->ops->unlock(self->slot_input->lock);
+			if (self->slot_input != NULL)
+				self->slot_input->lock->ops->unlock(self->slot_input->lock);
 			self->slot_input = NULL;
 		}
 
@@ -141,10 +142,6 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 	writer->ops->close(writer);
 	writer->ops->free(writer);
 	writer = NULL;
-
-	if (self->slot_input != self->drive_input->slot)
-		self->slot_input->lock->ops->unlock(self->slot_input->lock);
-	self->slot_input = NULL;
 
 	self->drive_output = self->drive_input;
 	self->drive_input = NULL;

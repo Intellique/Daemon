@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 19 Mar 2013 16:23:16 +0100                            *
+*  Last modified: Thu, 21 Mar 2013 18:49:00 +0100                            *
 \****************************************************************************/
 
 // malloc
@@ -35,6 +35,7 @@
 #include <libstone/library/drive.h>
 #include <libstone/library/media.h>
 #include <libstone/library/ressource.h>
+#include <libstone/library/slot.h>
 #include <libstone/log.h>
 
 #include <libjob-copy-archive.chcksum>
@@ -134,17 +135,28 @@ static int st_job_copy_archive_run(struct st_job * job) {
 
 	self->checksums = self->connect->ops->get_checksums_by_pool(self->connect, self->pool, &self->nb_checksums);
 
-	// st_job_copy_archive_select_output_media(self, false);
+	st_job_copy_archive_select_output_media(self, false);
 	st_job_copy_archive_select_input_media(self, self->archive->volumes->media);
 
 	int failed = 0;
 	if (job->db_status != st_job_status_stopped) {
 		job->done = 0.01;
 
-		//if (self->drive_input != NULL)
-		//	failed = st_job_copy_archive_direct_copy(self);
+		if (self->drive_input != NULL)
+			failed = st_job_copy_archive_direct_copy(self);
+		else {
+			if (self->slot_output != NULL && self->slot_output->drive != self->drive_output) {
+				self->slot_output->lock->ops->unlock(self->slot_output->lock);
+				self->slot_output = NULL;
+			}
 
-		failed = st_job_copy_archive_indirect_copy(self);
+			self->drive_input = self->drive_output;
+			self->drive_output = NULL;
+
+			st_job_copy_archive_select_input_media(self, self->archive->volumes->media);
+
+			failed = st_job_copy_archive_indirect_copy(self);
+		}
 	}
 
 	// release memory
