@@ -22,50 +22,38 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 09 Sep 2012 23:00:01 +0200                            *
+*  Last modified: Mon, 25 Mar 2013 23:49:43 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
-// PQfreemem, PQgetCopyData
-#include <postgresql/libpq-fe.h>
 // bool
 #include <stdbool.h>
-// free
+// free, mkstemp
 #include <stdlib.h>
-// asprintf
+// asprintf, dprintf
 #include <stdio.h>
-// memcpy
+// memcpy, strcpy
 #include <string.h>
+// ioctl
+#include <sys/ioctl.h>
+// fstat
+#include <sys/stat.h>
+// fstat
+#include <sys/types.h>
+// close, fstat, read
+#include <unistd.h>
 
 #include <libstone/io.h>
+#include <libstone/util/command.h>
+#include <libstone/util/file.h>
 
 #include "common.h"
 
 struct st_db_postgresql_stream_backup_private {
-	PGconn * con;
-
-	PGresult * c_result;
-	const char ** c_table;
-	char * c_header;
-	char * c_line;
-
-	enum {
-		BACKUP_STATUS_END,
-		BACKUP_STATUS_FOOTER,
-		BACKUP_STATUS_HEADER,
-		BACKUP_STATUS_LINE,
-	} status;
-
+	struct st_util_command pg_dump;
+	char pgpass[19];
+	int pg_out;
 	ssize_t position;
-};
-
-static const char * tables[] = {
-	"tapeformat", "pool", "tape", "driveformat", "driveformatsupport", "host", "changer", "drive", "changerslot", 
-	"selectedfile", "users", "userlog", "archive", "archivefile", "archivevolume", "archivefiletoarchivevolume", 
-	"checksum", "checksumresult", "archivefiletochecksumresult", "archivevolumetochecksumresult", "jobtype", 
-	"job", "jobtochecksum", "jobrecord", "jobtoselectedfile", "log", "restoreto", 
-
-	NULL,
 };
 
 static int st_db_postgresql_stream_backup_close(struct st_stream_reader * io);
@@ -89,23 +77,28 @@ static struct st_stream_reader_ops st_db_postgresql_stream_backup_ops = {
 };
 
 
-struct st_stream_reader * st_db_postgresql_backup_init(PGconn * pg_connect) {
+struct st_stream_reader * st_db_postgresql_backup_init(struct st_db_postgresql_config_private * config) {
+	if (config == NULL)
+		return NULL;
+
+	const char * port = "5432";
+	if (config->port != NULL)
+		port = config->port;
+
 	struct st_db_postgresql_stream_backup_private * self = malloc(sizeof(struct st_db_postgresql_stream_backup_private));
-	self->con = pg_connect;
-	self->c_result = NULL;
-	self->c_table = tables;
-	self->c_header = NULL;
-	self->c_line = NULL;
-	self->status = BACKUP_STATUS_HEADER;
 	self->position = 0;
 
-	PGresult * result = PQexec(self->con, "BEGIN ISOLATION LEVEL SERIALIZABLE READ ONLY");
-	PQclear(result);
+	strcpy(self->pgpass, "/tmp/pgpass_XXXXXX");
+	int fd = mkstemp(self->pgpass);
 
-	char * query;
-	asprintf(&query, "COPY %s TO STDOUT WITH CSV HEADER", *self->c_table);
-	self->c_result = PQexec(self->con, query);
-	free(query);
+	dprintf(fd, "%s:%s:*:%s:%s", config->host, port, config->user, config->password);
+	close(fd);
+
+	const char * params[] = { "-Fc", "-Z9", "-C", "-h", config->host, "-p", port, "-U", config->user, "-w", config->db, NULL };
+	st_util_command_new(&self->pg_dump, "pg_dump", params, 11);
+	st_util_command_put_environment(&self->pg_dump, "PGPASSFILE", self->pgpass);
+	self->pg_out = st_util_command_pipe_from(&self->pg_dump, st_util_command_stdout);
+	st_util_command_start(&self->pg_dump, 1);
 
 	struct st_stream_reader * reader = malloc(sizeof(struct st_stream_reader));
 	reader->ops = &st_db_postgresql_stream_backup_ops;
@@ -117,27 +110,31 @@ struct st_stream_reader * st_db_postgresql_backup_init(PGconn * pg_connect) {
 static int st_db_postgresql_stream_backup_close(struct st_stream_reader * io) {
 	struct st_db_postgresql_stream_backup_private * self = io->data;
 
-	if (self->con != NULL) {
-		PGresult * result = PQexec(self->con, "ROLLBACK");
-		PQclear(result);
-		PQfinish(self->con);
-	}
-	self->con = NULL;
+	if (self->pg_out < -1)
+		return 0;
 
-	self->c_table = NULL;
-	if (self->c_header)
-		free(self->c_header);
-	self->c_header = NULL;
-	if (self->c_line)
-		PQfreemem(self->c_line);
-	self->c_line = NULL;
+	close(self->pg_out);
+	self->pg_out = -1;
+
+	st_util_command_wait(&self->pg_dump, 1);
+	st_util_file_rm(self->pgpass);
 
 	return 0;
 }
 
 static bool st_db_postgresql_stream_backup_end_of_file(struct st_stream_reader * io) {
+	if (io == NULL)
+		return false;
+
 	struct st_db_postgresql_stream_backup_private * self = io->data;
-	return self->c_table != NULL ? true : false;
+	if (self->pg_out < 0)
+		return true;
+
+	int available;
+	if (!ioctl(self->pg_out, FIONREAD, &available))
+		return available == 0;
+
+	return false;
 }
 
 static off_t st_db_postgresql_stream_backup_forward(struct st_stream_reader * io __attribute__((unused)), off_t offset __attribute__((unused))) {
@@ -147,16 +144,23 @@ static off_t st_db_postgresql_stream_backup_forward(struct st_stream_reader * io
 static void st_db_postgresql_stream_backup_free(struct st_stream_reader * io) {
 	struct st_db_postgresql_stream_backup_private * self = io->data;
 
-	if (self->con == NULL)
-		PQfinish(self->con);
-	self->con = NULL;
+	if (self->pg_out >= 0)
+		st_db_postgresql_stream_backup_close(io);
+
+	st_util_command_free(&self->pg_dump, 1);
 
 	free(self);
 	free(io);
 }
 
-static ssize_t st_db_postgresql_stream_backup_get_block_size(struct st_stream_reader * io __attribute__((unused))) {
-	return 4096;
+static ssize_t st_db_postgresql_stream_backup_get_block_size(struct st_stream_reader * io) {
+	struct st_db_postgresql_stream_backup_private * self = io->data;
+
+	struct stat st;
+	if (fstat(self->pg_out, &st))
+		return -1;
+
+	return st.st_blksize;
 }
 
 static int st_db_postgresql_stream_backup_last_errno(struct st_stream_reader * io __attribute__((unused))) {
@@ -169,106 +173,17 @@ static ssize_t st_db_postgresql_stream_backup_position(struct st_stream_reader *
 }
 
 static ssize_t st_db_postgresql_stream_backup_read(struct st_stream_reader * io, void * buffer, ssize_t length) {
+	if (io == NULL || buffer == NULL)
+		return -1;
+
 	if (length < 1)
 		return 0;
 
 	struct st_db_postgresql_stream_backup_private * self = io->data;
+	ssize_t nb_read = read(self->pg_out, buffer, length);
+	if (nb_read > 0)
+		self->position += nb_read;
 
-	ssize_t nb_total_read = 0;
-	char * c_buffer = buffer;
-
-	ssize_t c_length;
-	int status = 0;
-
-	while (status > -2) {
-		switch (self->status) {
-			case BACKUP_STATUS_END:
-				return nb_total_read;
-
-			case BACKUP_STATUS_FOOTER:
-				if (1 <= length - nb_total_read)
-					memcpy(c_buffer, "\n", 1);
-				else
-					return nb_total_read;
-
-				self->position++;
-				c_buffer++;
-				nb_total_read++;
-
-				PQclear(self->c_result);
-				self->c_result = NULL;
-
-				self->c_table++;
-				if (!*self->c_table) {
-					self->status = BACKUP_STATUS_END;
-					return nb_total_read;
-				}
-
-				char * query;
-				asprintf(&query, "COPY %s TO STDOUT WITH CSV HEADER", *self->c_table);
-
-				self->c_result = PQexec(self->con, query);
-				free(query);
-
-				self->status = BACKUP_STATUS_HEADER;
-
-				break;
-
-			case BACKUP_STATUS_HEADER:
-				status = PQgetCopyData(self->con, &self->c_line, 0);
-
-				if (status < 0)
-					return nb_total_read;
-
-				asprintf(&self->c_header, "%s %s", *self->c_table, self->c_line);
-				PQfreemem(self->c_line);
-				self->c_line = NULL;
-
-				c_length = strlen(self->c_header);
-
-				if (c_length <= length - nb_total_read) {
-					memcpy(c_buffer, self->c_header, c_length);
-					free(self->c_header);
-					self->c_header = NULL;
-				} else
-					return nb_total_read;
-
-				self->position += c_length;
-				c_buffer += c_length;
-				nb_total_read += c_length;
-
-				status = PQgetCopyData(self->con, &self->c_line, 0);
-
-				if (status == -1)
-					self->status = BACKUP_STATUS_FOOTER;
-				else
-					self->status = BACKUP_STATUS_LINE;
-
-				break;
-
-			case BACKUP_STATUS_LINE:
-				c_length = strlen(self->c_line);
-
-				if (c_length <= length - nb_total_read) {
-					memcpy(c_buffer, self->c_line, c_length);
-					PQfreemem(self->c_line);
-					self->c_line = NULL;
-				} else
-					return nb_total_read;
-
-				self->position += c_length;
-				c_buffer += c_length;
-				nb_total_read += c_length;
-
-				status = PQgetCopyData(self->con, &self->c_line, 0);
-
-				if (status == -1)
-					self->status = BACKUP_STATUS_FOOTER;
-
-				break;
-		}
-	}
-
-	return nb_total_read;
+	return nb_read;
 }
 

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 24 Dec 2012 19:20:27 +0100                            *
+*  Last modified: Mon, 25 Mar 2013 16:35:26 +0100                            *
 \****************************************************************************/
 
 // PQfinish, PQsetdbLogin, PQstatus
@@ -39,14 +39,6 @@
 
 #include "common.h"
 
-struct st_db_postgresql_config_private {
-	char * user;
-	char * password;
-	char * db;
-	char * host;
-	char * port;
-};
-
 static struct st_stream_reader * st_db_postgresql_backup_db(struct st_database_config * db_config);
 static int st_db_postgresql_check_db(PGconn * connect);
 static struct st_database_connection * st_db_postgresql_connect(struct st_database_config * db_config);
@@ -62,21 +54,7 @@ static struct st_database_config_ops st_db_postgresql_config_ops = {
 
 
 static struct st_stream_reader * st_db_postgresql_backup_db(struct st_database_config * db_config) {
-	struct st_db_postgresql_config_private * self = db_config->data;
-
-	PGconn * connect = PQsetdbLogin(self->host, self->port, NULL, NULL, self->db, self->user, self->password);
-	ConnStatusType status = PQstatus(connect);
-
-	if (status == CONNECTION_BAD) {
-		PQfinish(connect);
-		return NULL;
-	}
-
-	struct st_stream_reader * backup = st_db_postgresql_backup_init(connect);
-	if (!backup)
-		PQfinish(connect);
-
-	return backup;
+	return st_db_postgresql_backup_init(db_config->data);
 }
 
 static int st_db_postgresql_check_db(PGconn * connect) {
