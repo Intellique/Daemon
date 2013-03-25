@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 17 Feb 2013 16:36:56 +0100                            *
+*  Last modified: Mon, 25 Mar 2013 22:03:43 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -655,5 +655,47 @@ struct st_hashtable_value * st_hashtable_values(struct st_hashtable * hashtable,
 		*nb_value = hashtable->nb_elements;
 
 	return values;
+}
+
+
+void st_hashtable_iterator_free(struct st_hashtable_iterator * iterator) {
+	free(iterator);
+}
+
+bool st_hashtable_iterator_has_next(struct st_hashtable_iterator * iterator) {
+	if (iterator == NULL)
+		return false;
+
+	return iterator->current_node != NULL;
+}
+
+void * st_hashtable_iterator_next(struct st_hashtable_iterator * iterator) {
+	if (iterator == NULL || iterator->current_node == NULL)
+		return NULL;
+
+	struct st_hashtable_node * cn = iterator->current_node;
+	if (cn == NULL)
+		return NULL;
+
+	void * key = cn->key;
+
+	for (iterator->current_node = cn->next; iterator->index < iterator->hashtable->size_node && iterator->current_node == NULL; iterator->index++)
+		iterator->current_node = iterator->hashtable->nodes[iterator->index];
+
+	return key;
+}
+
+struct st_hashtable_iterator * st_hashtable_iterator_new(struct st_hashtable * hashtable) {
+	if (hashtable == NULL)
+		return NULL;
+
+	struct st_hashtable_iterator * iter = malloc(sizeof(struct st_hashtable_iterator));
+	iter->hashtable = hashtable;
+	iter->current_node = NULL;
+
+	for (iter->index = 0; iter->index < hashtable->size_node && iter->current_node == NULL; iter->index++)
+		iter->current_node = hashtable->nodes[iter->index];
+
+	return iter;
 }
 

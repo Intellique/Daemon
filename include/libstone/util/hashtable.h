@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 17 Feb 2013 16:21:38 +0100                            *
+*  Last modified: Mon, 25 Mar 2013 21:52:36 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_UTIL_HASHTABLE_H__
@@ -120,6 +120,13 @@ struct st_hashtable {
 	 * \see st_release_key_value_f
 	 */
 	st_hashtable_free_f release_key_value;
+};
+
+struct st_hashtable_iterator {
+	struct st_hashtable * hashtable;
+
+	uint32_t index;
+	struct st_hashtable_node * current_node;
 };
 
 
@@ -277,6 +284,12 @@ void st_hashtable_remove(struct st_hashtable * hashtable, const void * key);
  * \see st_hashtable_keys
  */
 struct st_hashtable_value * st_hashtable_values(struct st_hashtable * hashtable, uint32_t * nb_value);
+
+
+void st_hashtable_iterator_free(struct st_hashtable_iterator * iterator);
+bool st_hashtable_iterator_has_next(struct st_hashtable_iterator * iterator);
+void * st_hashtable_iterator_next(struct st_hashtable_iterator * iterator);
+struct st_hashtable_iterator * st_hashtable_iterator_new(struct st_hashtable * hashtable);
 
 #endif
 
