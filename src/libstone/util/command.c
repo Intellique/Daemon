@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 25 Mar 2013 13:27:01 +0100                            *
+*  Last modified: Mon, 25 Mar 2013 22:35:21 +0100                            *
 \****************************************************************************/
 
 // fcntl
@@ -31,6 +31,8 @@
 #include <stdbool.h>
 // calloc, free, getenv
 #include <stdlib.h>
+// strdup
+#include <string.h>
 // waitpid
 #include <sys/types.h>
 // waitpid
@@ -41,9 +43,22 @@
 #include <unistd.h>
 
 #include <libstone/util/command.h>
+#include <libstone/util/hashtable.h>
+#include <libstone/util/string.h>
+#include <libstone/util/util.h>
 
 static void st_util_command_set_close_exe_flag(int fd, bool on);
 
+
+void st_util_command_drop_environment(struct st_util_command * command, const char * key) {
+	if (command == NULL || key == NULL)
+		return;
+
+	if (command->environment == NULL)
+		command->environment = st_hashtable_new2(st_util_string_compute_hash, st_util_basic_free);
+
+	st_hashtable_put(command->environment, strdup(key), st_hashtable_val_null());
+}
 
 void st_util_command_free(struct st_util_command * command, unsigned int nb_command) {
 	if (command == NULL || nb_command < 1)
@@ -101,6 +116,8 @@ void st_util_command_new(struct st_util_command * command, const char * command_
 	command->params = calloc(nb_params + 2, sizeof(char *));
 	command->nb_parameters = nb_params;
 
+	command->environment = NULL;
+
 	command->params[0] = strdup(command_name);
 	unsigned int i;
 	for (i = 0; i < nb_params; i++)
@@ -151,6 +168,16 @@ int st_util_command_pipe_to(struct st_util_command * command_in) {
 	return fd_pipe[1];
 }
 
+void st_util_command_put_environment(struct st_util_command * command, const char * key, const char * value) {
+	if (command == NULL || key == NULL || value == NULL)
+		return;
+
+	if (command->environment == NULL)
+		command->environment = st_hashtable_new2(st_util_string_compute_hash, st_util_basic_free);
+
+	st_hashtable_put(command->environment, strdup(key), st_hashtable_val_string(strdup(value)));
+}
+
 void st_util_command_redir_err_to_out(struct st_util_command * command) {
 	if (command == NULL)
 		return;
@@ -167,8 +194,18 @@ void st_util_command_redir_out_to_err(struct st_util_command * command) {
 	command->fds[1].type = st_util_command_fd_type_dup;
 }
 
+void st_util_command_set_environment(struct st_util_command * command, struct st_hashtable * environment) {
+	if (command == NULL || environment == NULL)
+		return;
+
+	if (command->environment != NULL)
+		st_hashtable_free(command->environment);
+
+	command->environment = environment;
+}
+
 void st_util_command_set_fd(struct st_util_command * command, enum st_util_command_std fd_command, int new_fd) {
-	if (command || fd_command >= 3)
+	if (command == NULL || fd_command >= 3)
 		return;
 
 	if (command->fds[fd_command].type == st_util_command_fd_type_set)
@@ -211,7 +248,9 @@ void st_util_command_start(struct st_util_command * command, unsigned int nb_com
 			for (j = 0; j < 3; j++) {
 				if (command[i].fds[j].type == st_util_command_fd_type_default)
 					continue;
+
 				close(j);
+
 				if (command[i].fds[j].type == st_util_command_fd_type_set) {
 					dup2(command[i].fds[j].fd, j);
 					close(command[i].fds[j].fd);
@@ -220,8 +259,23 @@ void st_util_command_start(struct st_util_command * command, unsigned int nb_com
 			for (j = 0; j < 3; j++) {
 				if (command[i].fds[j].type == st_util_command_fd_type_dup)
 					dup2(j, command[i].fds[j].fd);
+
 				if (command[i].fds[j].type != st_util_command_fd_type_close)
 					st_util_command_set_close_exe_flag(j, false);
+			}
+
+			if (command->environment != NULL) {
+				struct st_hashtable_iterator * iter = st_hashtable_iterator_new(command->environment);
+				while (st_hashtable_iterator_has_next(iter)) {
+					const char * key = st_hashtable_iterator_next(iter);
+					struct st_hashtable_value val = st_hashtable_get(command->environment, key);
+
+					if (val.type == st_hashtable_value_null)
+						unsetenv(key);
+					else if (val.type == st_hashtable_value_string)
+						setenv(key, val.value.string, true);
+				}
+				st_hashtable_iterator_free(iter);
 			}
 
 			execv(command[i].command, command[i].params);
