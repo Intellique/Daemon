@@ -22,10 +22,12 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 25 Mar 2013 23:49:43 +0100                            *
+*  Last modified: Wed, 27 Mar 2013 10:52:57 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
+// poll
+#include <poll.h>
 // bool
 #include <stdbool.h>
 // free, mkstemp
@@ -34,8 +36,6 @@
 #include <stdio.h>
 // memcpy, strcpy
 #include <string.h>
-// ioctl
-#include <sys/ioctl.h>
 // fstat
 #include <sys/stat.h>
 // fstat
@@ -51,7 +51,7 @@
 
 struct st_db_postgresql_stream_backup_private {
 	struct st_util_command pg_dump;
-	char pgpass[19];
+	char pgpass[20];
 	int pg_out;
 	ssize_t position;
 };
@@ -88,7 +88,7 @@ struct st_stream_reader * st_db_postgresql_backup_init(struct st_db_postgresql_c
 	struct st_db_postgresql_stream_backup_private * self = malloc(sizeof(struct st_db_postgresql_stream_backup_private));
 	self->position = 0;
 
-	strcpy(self->pgpass, "/tmp/pgpass_XXXXXX");
+	strcpy(self->pgpass, "/tmp/.pgpass_XXXXXX");
 	int fd = mkstemp(self->pgpass);
 
 	dprintf(fd, "%s:%s:*:%s:%s", config->host, port, config->user, config->password);
@@ -130,9 +130,14 @@ static bool st_db_postgresql_stream_backup_end_of_file(struct st_stream_reader *
 	if (self->pg_out < 0)
 		return true;
 
-	int available;
-	if (!ioctl(self->pg_out, FIONREAD, &available))
-		return available == 0;
+	struct pollfd pfd = {
+		.fd = self->pg_out,
+		.events = POLLIN | POLLHUP,
+	};
+
+	int failed = poll(&pfd, 1, -1);
+	if (!failed)
+		return (pfd.revents & ~POLLIN) && (pfd.revents & POLLOUT);
 
 	return false;
 }

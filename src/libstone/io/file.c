@@ -1,29 +1,29 @@
-/*************************************************************************\
-*                            __________                                   *
-*                           / __/_  __/__  ___  ___                       *
-*                          _\ \  / / / _ \/ _ \/ -_)                      *
-*                         /___/ /_/  \___/_//_/\__/                       *
-*                                                                         *
-*  ---------------------------------------------------------------------  *
-*  This file is a part of STone                                           *
-*                                                                         *
-*  STone is free software; you can redistribute it and/or                 *
-*  modify it under the terms of the GNU General Public License            *
-*  as published by the Free Software Foundation; either version 3         *
-*  of the License, or (at your option) any later version.                 *
-*                                                                         *
-*  This program is distributed in the hope that it will be useful,        *
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of         *
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          *
-*  GNU General Public License for more details.                           *
-*                                                                         *
-*  You should have received a copy of the GNU General Public License      *
-*  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
-*                                                                         *
-*  ---------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Wed, 20 Mar 2013 12:30:16 +0100                         *
-\*************************************************************************/
+/****************************************************************************\
+*                             __________                                     *
+*                            / __/_  __/__  ___  ___                         *
+*                           _\ \  / / / _ \/ _ \/ -_)                        *
+*                          /___/ /_/  \___/_//_/\__/                         *
+*                                                                            *
+*  ------------------------------------------------------------------------  *
+*  This file is a part of STone                                              *
+*                                                                            *
+*  STone is free software; you can redistribute it and/or modify             *
+*  it under the terms of the GNU Affero General Public License               *
+*  as published by the Free Software Foundation; either version 3            *
+*  of the License, or (at your option) any later version.                    *
+*                                                                            *
+*  This program is distributed in the hope that it will be useful,           *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of            *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             *
+*  GNU Affero General Public License for more details.                       *
+*                                                                            *
+*  You should have received a copy of the GNU Affero General Public License  *
+*  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
+*                                                                            *
+*  ------------------------------------------------------------------------  *
+*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Thu, 04 Apr 2013 15:42:51 +0200                            *
+\****************************************************************************/
 
 // errno
 #include <errno.h>
@@ -37,9 +37,9 @@
 #include <sys/stat.h>
 // fstatvfs
 #include <sys/statvfs.h>
-// fstat, open
+// fstat, lseek, open
 #include <sys/types.h>
-// close, fstat, read, write
+// close, fstat, lseek, read, write
 #include <unistd.h>
 
 
@@ -55,6 +55,7 @@ struct st_io_file_private {
 static int st_io_file_close(struct st_io_file_private * self);
 static ssize_t st_io_file_get_block_size(struct st_io_file_private * self);
 
+static struct st_stream_reader * st_io_file_reader2(int fd);
 static int st_io_file_reader_close(struct st_stream_reader * sfr);
 static bool st_io_file_reader_end_of_file(struct st_stream_reader * sfr);
 static off_t st_io_file_reader_forward(struct st_stream_reader * sfr, off_t offset);
@@ -71,6 +72,7 @@ static ssize_t st_io_file_writer_get_available_size(struct st_stream_writer * sf
 static ssize_t st_io_file_writer_get_block_size(struct st_stream_writer * sfw);
 static int st_io_file_writer_last_errno(struct st_stream_writer * sfw);
 static ssize_t st_io_file_writer_position(struct st_stream_writer * sfw);
+static struct st_stream_reader * st_io_file_writer_reopen(struct st_stream_writer * sfw);
 static ssize_t st_io_file_writer_write(struct st_stream_writer * sfw, const void * buffer, ssize_t length);
 
 static struct st_stream_reader_ops st_io_file_reader_ops = {
@@ -92,6 +94,7 @@ static struct st_stream_writer_ops st_io_file_writer_ops = {
 	.get_block_size     = st_io_file_writer_get_block_size,
 	.last_errno         = st_io_file_writer_last_errno,
 	.position           = st_io_file_writer_position,
+	.reopen             = st_io_file_writer_reopen,
 	.write              = st_io_file_writer_write,
 };
 
@@ -131,6 +134,10 @@ struct st_stream_reader * st_io_file_reader(const char * filename) {
 	if (fd < 0)
 		return NULL;
 
+	return st_io_file_reader2(fd);
+}
+
+static struct st_stream_reader * st_io_file_reader2(int fd) {
 	struct st_io_file_private * self = malloc(sizeof(struct st_io_file_private));
 	self->fd = fd;
 	self->end_of_file = false;
@@ -232,7 +239,7 @@ struct st_stream_writer * st_io_file_writer(const char * filename) {
 	if (filename == NULL)
 		return NULL;
 
-	int fd = open(filename, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+	int fd = open(filename, O_RDWR | O_TRUNC | O_CREAT, 0644);
 	if (fd < 0)
 		return NULL;
 
@@ -300,6 +307,20 @@ static int st_io_file_writer_last_errno(struct st_stream_writer * sfw) {
 static ssize_t st_io_file_writer_position(struct st_stream_writer * sfw) {
 	struct st_io_file_private * self = sfw->data;
 	return self->position;
+}
+
+static struct st_stream_reader * st_io_file_writer_reopen(struct st_stream_writer * sfw) {
+	struct st_io_file_private * self = sfw->data;
+
+	if (self->fd < 0)
+		return NULL;
+
+	lseek(self->fd, 0, SEEK_SET);
+
+	struct st_stream_reader * reader = st_io_file_reader2(self->fd);
+	self->fd = -1;
+
+	return reader;
 }
 
 static ssize_t st_io_file_writer_write(struct st_stream_writer * sfw, const void * buffer, ssize_t length) {

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 20 Mar 2013 13:01:45 +0100                            *
+*  Last modified: Thu, 04 Apr 2013 15:38:52 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_IO_H__
@@ -116,6 +116,7 @@ struct st_stream_writer {
 		ssize_t (*get_block_size)(struct st_stream_writer * sfw);
 		int (*last_errno)(struct st_stream_writer * sfw);
 		ssize_t (*position)(struct st_stream_writer * sfw);
+		struct st_stream_reader * (*reopen)(struct st_stream_writer * sfw);
 		ssize_t (*write)(struct st_stream_writer * sfw, const void * buffer, ssize_t length);
 	} * ops;
 	void * data;

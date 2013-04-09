@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 22 Feb 2013 12:15:05 +0100                            *
+*  Last modified: Thu, 04 Apr 2013 19:44:25 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -73,6 +73,8 @@ struct st_vtl_drive_reader {
 
 struct st_vtl_drive_writer {
 	int fd;
+	char * filename;
+	int file_position;
 
 	char * buffer;
 	ssize_t buffer_used;
@@ -101,25 +103,26 @@ static void st_vtl_drive_operation_stop(struct st_drive * dr);
 static int st_vtl_drive_rewind(struct st_drive * drive);
 static int st_vtl_drive_update_media_info(struct st_drive * drive);
 
-static int st_vtl_drive_reader_close(struct st_stream_reader * io);
-static bool st_vtl_drive_reader_end_of_file(struct st_stream_reader * io);
-static off_t st_vtl_drive_reader_forward(struct st_stream_reader * io, off_t offset);
-static void st_vtl_drive_reader_free(struct st_stream_reader * io);
-static ssize_t st_vtl_drive_reader_get_block_size(struct st_stream_reader * io);
-static int st_vtl_drive_reader_last_errno(struct st_stream_reader * io);
-static struct st_stream_reader * st_vtl_drive_reader_new(struct st_drive * drive, char * filename, int file_position);
-static ssize_t st_vtl_drive_reader_position(struct st_stream_reader * io);
-static ssize_t st_vtl_drive_reader_read(struct st_stream_reader * io, void * buffer, ssize_t length);
+static int st_vtl_drive_reader_close(struct st_stream_reader * sr);
+static bool st_vtl_drive_reader_end_of_file(struct st_stream_reader * sr);
+static off_t st_vtl_drive_reader_forward(struct st_stream_reader * sr, off_t offset);
+static void st_vtl_drive_reader_free(struct st_stream_reader * sr);
+static ssize_t st_vtl_drive_reader_get_block_size(struct st_stream_reader * sr);
+static int st_vtl_drive_reader_last_errno(struct st_stream_reader * sr);
+static struct st_stream_reader * st_vtl_drive_reader_new(struct st_drive * drive, char * filename, int file_positsrn);
+static ssize_t st_vtl_drive_reader_position(struct st_stream_reader * sr);
+static ssize_t st_vtl_drive_reader_read(struct st_stream_reader * sr, void * buffer, ssize_t length);
 
-static ssize_t st_vtl_drive_writer_before_close(struct st_stream_writer * io, void * buffer, ssize_t length);
-static int st_vtl_drive_writer_close(struct st_stream_writer * io);
-static void st_vtl_drive_writer_free(struct st_stream_writer * io);
-static ssize_t st_vtl_drive_writer_get_available_size(struct st_stream_writer * io);
-static ssize_t st_vtl_drive_writer_get_block_size(struct st_stream_writer * io);
-static int st_vtl_drive_writer_last_errno(struct st_stream_writer * io);
+static ssize_t st_vtl_drive_writer_before_close(struct st_stream_writer * sw, void * buffer, ssize_t length);
+static int st_vtl_drive_writer_close(struct st_stream_writer * sw);
+static void st_vtl_drive_writer_free(struct st_stream_writer * sw);
+static ssize_t st_vtl_drive_writer_get_available_size(struct st_stream_writer * sw);
+static ssize_t st_vtl_drive_writer_get_block_size(struct st_stream_writer * sw);
+static int st_vtl_drive_writer_last_errno(struct st_stream_writer * sw);
 static struct st_stream_writer * st_vtl_drive_writer_new(struct st_drive * drive, char * filename, int file_position);
-static ssize_t st_vtl_drive_writer_position(struct st_stream_writer * io);
-static ssize_t st_vtl_drive_writer_write(struct st_stream_writer * io, const void * buffer, ssize_t length);
+static ssize_t st_vtl_drive_writer_position(struct st_stream_writer * sw);
+static struct st_stream_reader * st_vtl_drive_writer_reopen(struct st_stream_writer * sw);
+static ssize_t st_vtl_drive_writer_write(struct st_stream_writer * sw, const void * buffer, ssize_t length);
 
 static struct st_drive_ops st_vtl_drive_ops = {
 	.eject             = st_vtl_drive_eject,
@@ -153,6 +156,7 @@ static struct st_stream_writer_ops st_vtl_drive_writer_ops = {
 	.get_block_size     = st_vtl_drive_writer_get_block_size,
 	.last_errno         = st_vtl_drive_writer_last_errno,
 	.position           = st_vtl_drive_writer_position,
+	.reopen             = st_vtl_drive_writer_reopen,
 	.write              = st_vtl_drive_writer_write,
 };
 
@@ -363,8 +367,8 @@ static int st_vtl_drive_update_media_info(struct st_drive * drive __attribute__(
 }
 
 
-static int st_vtl_drive_reader_close(struct st_stream_reader * io) {
-	struct st_vtl_drive_reader * reader = io->data;
+static int st_vtl_drive_reader_close(struct st_stream_reader * sr) {
+	struct st_vtl_drive_reader * reader = sr->data;
 
 	if (reader->fd < 0)
 		return 0;
@@ -384,13 +388,13 @@ static int st_vtl_drive_reader_close(struct st_stream_reader * io) {
 	return failed;
 }
 
-static bool st_vtl_drive_reader_end_of_file(struct st_stream_reader * io) {
-	struct st_vtl_drive_reader * reader = io->data;
+static bool st_vtl_drive_reader_end_of_file(struct st_stream_reader * sr) {
+	struct st_vtl_drive_reader * reader = sr->data;
 	return reader->end_of_file;
 }
 
-static off_t st_vtl_drive_reader_forward(struct st_stream_reader * io, off_t offset) {
-	struct st_vtl_drive_reader * reader = io->data;
+static off_t st_vtl_drive_reader_forward(struct st_stream_reader * sr, off_t offset) {
+	struct st_vtl_drive_reader * reader = sr->data;
 	if (reader->fd < 0)
 		return -1;
 
@@ -452,23 +456,23 @@ static off_t st_vtl_drive_reader_forward(struct st_stream_reader * io, off_t off
 	return reader->position;
 }
 
-static void st_vtl_drive_reader_free(struct st_stream_reader * io) {
-	struct st_vtl_drive_reader * reader = io->data;
+static void st_vtl_drive_reader_free(struct st_stream_reader * sr) {
+	struct st_vtl_drive_reader * reader = sr->data;
 
 	if (reader->fd > -1)
-		st_vtl_drive_reader_close(io);
+		st_vtl_drive_reader_close(sr);
 
 	free(reader);
-	free(io);
+	free(sr);
 }
 
-static ssize_t st_vtl_drive_reader_get_block_size(struct st_stream_reader * io) {
-	struct st_vtl_drive_reader * reader = io->data;
+static ssize_t st_vtl_drive_reader_get_block_size(struct st_stream_reader * sr) {
+	struct st_vtl_drive_reader * reader = sr->data;
 	return reader->block_size;
 }
 
-static int st_vtl_drive_reader_last_errno(struct st_stream_reader * io) {
-	struct st_vtl_drive_reader * reader = io->data;
+static int st_vtl_drive_reader_last_errno(struct st_stream_reader * sr) {
+	struct st_vtl_drive_reader * reader = sr->data;
 	return reader->last_errno;
 }
 
@@ -501,16 +505,16 @@ static struct st_stream_reader * st_vtl_drive_reader_new(struct st_drive * drive
 	return sr;
 }
 
-static ssize_t st_vtl_drive_reader_position(struct st_stream_reader * io) {
-	struct st_vtl_drive_reader * reader = io->data;
+static ssize_t st_vtl_drive_reader_position(struct st_stream_reader * sr) {
+	struct st_vtl_drive_reader * reader = sr->data;
 	return reader->position;
 }
 
-static ssize_t st_vtl_drive_reader_read(struct st_stream_reader * io, void * buffer, ssize_t length) {
-	if (io == NULL || buffer == NULL || length < 0)
+static ssize_t st_vtl_drive_reader_read(struct st_stream_reader * sr, void * buffer, ssize_t length) {
+	if (sr == NULL || buffer == NULL || length < 0)
 		return -1;
 
-	struct st_vtl_drive_reader * reader = io->data;
+	struct st_vtl_drive_reader * reader = sr->data;
 	reader->last_errno = 0;
 
 	if (reader->fd < 0)
@@ -572,11 +576,11 @@ static ssize_t st_vtl_drive_reader_read(struct st_stream_reader * io, void * buf
 }
 
 
-static ssize_t st_vtl_drive_writer_before_close(struct st_stream_writer * io, void * buffer, ssize_t length) {
-	if (io == NULL || buffer == NULL || length < 0)
+static ssize_t st_vtl_drive_writer_before_close(struct st_stream_writer * sw, void * buffer, ssize_t length) {
+	if (sw == NULL || buffer == NULL || length < 0)
 		return -1;
 
-	struct st_vtl_drive_writer * self = io->data;
+	struct st_vtl_drive_writer * self = sw->data;
 	if (self->buffer_used > 0 && self->buffer_used < self->block_size) {
 		ssize_t will_copy = self->block_size - self->buffer_used;
 		if (will_copy > length)
@@ -608,11 +612,11 @@ static ssize_t st_vtl_drive_writer_before_close(struct st_stream_writer * io, vo
 	return 0;
 }
 
-static int st_vtl_drive_writer_close(struct st_stream_writer * io) {
-	if (io == NULL || io->data == NULL)
+static int st_vtl_drive_writer_close(struct st_stream_writer * sw) {
+	if (sw == NULL || sw->data == NULL)
 		return -1;
 
-	struct st_vtl_drive_writer * self = io->data;
+	struct st_vtl_drive_writer * self = sw->data;
 	self->last_errno = 0;
 
 	if (self->buffer_used > 0) {
@@ -651,52 +655,57 @@ static int st_vtl_drive_writer_close(struct st_stream_writer * io) {
 	return 0;
 }
 
-static void st_vtl_drive_writer_free(struct st_stream_writer * io) {
-	if (io == NULL)
+static void st_vtl_drive_writer_free(struct st_stream_writer * sw) {
+	if (sw == NULL)
 		return;
 
-	struct st_vtl_drive_writer * self = io->data;
-	if (self) {
+	struct st_vtl_drive_writer * self = sw->data;
+	if (self != NULL) {
 		self->fd = -1;
+		free(self->filename);
 		free(self->buffer);
 		free(self);
 	}
-	io->data = NULL;
-	io->ops = NULL;
 
-	free(io);
+	sw->data = NULL;
+	sw->ops = NULL;
+
+	free(sw);
 }
 
-static ssize_t st_vtl_drive_writer_get_available_size(struct st_stream_writer * io) {
-	if (io == NULL)
+static ssize_t st_vtl_drive_writer_get_available_size(struct st_stream_writer * sw) {
+	if (sw == NULL)
 		return -1;
 
-	struct st_vtl_drive_writer * self = io->data;
+	struct st_vtl_drive_writer * self = sw->data;
 	return self->media->free_block * self->block_size - self->buffer_used;
 }
 
-static ssize_t st_vtl_drive_writer_get_block_size(struct st_stream_writer * io) {
-	struct st_vtl_drive_writer * self = io->data;
+static ssize_t st_vtl_drive_writer_get_block_size(struct st_stream_writer * sw) {
+	struct st_vtl_drive_writer * self = sw->data;
 	return self->block_size;
 }
 
-static int st_vtl_drive_writer_last_errno(struct st_stream_writer * io) {
-	struct st_vtl_drive_writer * self = io->data;
+static int st_vtl_drive_writer_last_errno(struct st_stream_writer * sw) {
+	struct st_vtl_drive_writer * self = sw->data;
 	return self->last_errno;
 }
 
 static struct st_stream_writer * st_vtl_drive_writer_new(struct st_drive * drive, char * filename, int file_position) {
 	int fd = open(filename, O_WRONLY | O_TRUNC | O_CREAT, 0600);
-	free(filename);
 
-	if (fd < 0)
+	if (fd < 0) {
+		free(filename);
 		return NULL;
+	}
 
 	struct st_vtl_drive * vdr = drive->data;
 	vdr->file_position = file_position;
 
 	struct st_vtl_drive_writer * writer = malloc(sizeof(struct st_vtl_drive_writer));
 	writer->fd = fd;
+	writer->filename = filename;
+	writer->file_position = file_position;
 	writer->buffer = malloc(vdr->format->block_size);
 	writer->buffer_used = 0;
 	writer->block_size = vdr->format->block_size;
@@ -716,16 +725,26 @@ static struct st_stream_writer * st_vtl_drive_writer_new(struct st_drive * drive
 	return sw;
 }
 
-static ssize_t st_vtl_drive_writer_position(struct st_stream_writer * io) {
-	struct st_vtl_drive_writer * self = io->data;
+static ssize_t st_vtl_drive_writer_position(struct st_stream_writer * sw) {
+	struct st_vtl_drive_writer * self = sw->data;
 	return self->position;
 }
 
-static ssize_t st_vtl_drive_writer_write(struct st_stream_writer * io, const void * buffer, ssize_t length) {
-	if (io == NULL || buffer == NULL || length < 0)
+static struct st_stream_reader * st_vtl_drive_writer_reopen(struct st_stream_writer * sw) {
+	if (sw == NULL || sw->data == NULL)
+		return NULL;
+
+	st_vtl_drive_writer_close(sw);
+
+	struct st_vtl_drive_writer * self = sw->data;
+	return st_vtl_drive_reader_new(self->drive, strdup(self->filename), self->file_position);
+}
+
+static ssize_t st_vtl_drive_writer_write(struct st_stream_writer * sw, const void * buffer, ssize_t length) {
+	if (sw == NULL || buffer == NULL || length < 0)
 		return -1;
 
-	struct st_vtl_drive_writer * self = io->data;
+	struct st_vtl_drive_writer * self = sw->data;
 	self->last_errno = 0;
 
 	ssize_t buffer_available = self->block_size - self->buffer_used;
