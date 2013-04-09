@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 15 Feb 2013 23:12:19 +0100                            *
+*  Last modified: Tue, 09 Apr 2013 23:59:29 +0200                            *
 \****************************************************************************/
 
 // bool
@@ -372,6 +372,11 @@ int st_job_format_media_run(struct st_job * job) {
 	}
 	if (pool->deleted) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Try to format to a pool which is deleted");
+		return 1;
+	}
+
+	if (media->format != pool->format) {
+		st_job_add_record(self->connect, st_log_level_error, job, "Try to format a media whose type does not match the format of pool");
 		return 1;
 	}
 
