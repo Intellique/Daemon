@@ -1354,7 +1354,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 static int st_db_postgresql_sync_slot(struct st_database_connection * connect, struct st_slot * slot) {
 	struct st_db_postgresql_connection_private * self = connect->data;
 
-	if (slot->media && st_db_postgresql_sync_media(connect, slot->media))
+	if (slot->media != NULL && st_db_postgresql_sync_media(connect, slot->media))
 		return 1;
 
 	struct st_db_postgresql_changer_data * changer_data = slot->changer->db_data;

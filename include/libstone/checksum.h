@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 14 Mar 2013 18:56:45 +0100                            *
+*  Last modified: Mon, 15 Apr 2013 00:08:34 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_CHECKSUM_H__
@@ -292,7 +292,7 @@ struct st_checksum_driver {
  * \return a malloc allocated string which contains checksum or \b NULL if failed
  * \note Returned value should be release with \a free
  */
-char * st_checksum_compute(const char * checksum, const char * data, ssize_t length);
+char * st_checksum_compute(const char * checksum, const void * data, ssize_t length);
 
 /**
  * \brief This function converts a digest into hexadecimal form

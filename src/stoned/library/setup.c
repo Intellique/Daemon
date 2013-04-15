@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 19 Feb 2013 17:39:49 +0100                            *
+*  Last modified: Mon, 15 Apr 2013 18:58:59 +0200                            *
 \****************************************************************************/
 
 // open
@@ -95,7 +95,7 @@ struct st_slot * st_changer_find_free_media_by_format(struct st_media_format * f
 				continue;
 			}
 
-			if (media != NULL)
+			if (media != NULL && media->status == st_media_status_new && media->pool == NULL)
 				return slot;
 
 			if (drive != NULL)
@@ -178,7 +178,7 @@ ssize_t st_changer_get_online_size(struct st_pool * pool) {
 			struct st_slot * slot = changer->slots + j;
 
 			struct st_media * media = slot->media;
-			if (media == NULL || media->pool != pool)
+			if (media == NULL || media->pool != pool || media->status != st_media_status_in_use)
 				continue;
 
 			if (media != NULL)

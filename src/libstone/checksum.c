@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 05 Feb 2013 12:22:14 +0100                            *
+*  Last modified: Mon, 15 Apr 2013 00:08:53 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -53,7 +53,7 @@ static unsigned int st_checksum_nb_drivers = 0;
 static void st_checksum_exit(void) __attribute__((destructor));
 
 
-char * st_checksum_compute(const char * checksum, const char * data, ssize_t length) {
+char * st_checksum_compute(const char * checksum, const void * data, ssize_t length) {
 	if (checksum == NULL || data == NULL || length < 0) {
 		st_log_write_all(st_log_level_error, st_log_type_checksum, "compute error");
 		if (checksum == NULL)

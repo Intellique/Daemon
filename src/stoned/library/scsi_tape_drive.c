@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 04 Apr 2013 18:28:15 +0200                            *
+*  Last modified: Mon, 15 Apr 2013 16:14:37 +0200                            *
 \****************************************************************************/
 
 // errno
@@ -214,6 +214,8 @@ static void st_scsi_tape_drive_create_media(struct st_drive * drive) {
 	}
 
 	st_media_read_header(drive);
+
+	st_media_add(media);
 }
 
 static int st_scsi_tape_drive_eject(struct st_drive * drive) {
