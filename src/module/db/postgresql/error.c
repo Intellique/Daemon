@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 22 Feb 2013 15:28:55 +0100                            *
+*  Last modified: Mon, 15 Apr 2013 22:56:08 +0200                            *
 \****************************************************************************/
 
 // PQresultErrorField
@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include <libstone/log.h>
+#include <libstone/util/debug.h>
 
 #include "common.h"
 
@@ -70,5 +71,7 @@ void st_db_postgresql_get_error(PGresult * result, const char * prepared_query) 
 		}
 		free(error);
 	}
+
+	st_debug_log_stack(16);
 }
 
