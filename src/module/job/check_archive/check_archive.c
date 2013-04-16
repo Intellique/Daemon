@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 08 Feb 2013 16:39:39 +0100                            *
+*  Last modified: Tue, 16 Apr 2013 12:23:36 +0200                            *
 \****************************************************************************/
 
 // free, malloc
@@ -107,7 +107,7 @@ static void st_job_check_archive_new_job(struct st_job * job, struct st_database
 static int st_job_check_archive_run(struct st_job * job) {
 	struct st_job_check_archive_private * self = job->data;
 
-	st_job_add_record(self->connect, st_log_level_info, job, "Start restore job (named: %s), num runs %ld", job->name, job->num_runs);
+	st_job_add_record(self->connect, st_log_level_info, job, "Start check-archive job (named: %s), num runs %ld", job->name, job->num_runs);
 
 	struct st_archive * archive = self->archive = self->connect->ops->get_archive_volumes_by_job(self->connect, job);
 	if (archive == NULL) {

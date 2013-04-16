@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 20 Mar 2013 23:17:15 +0100                            *
+*  Last modified: Tue, 16 Apr 2013 12:24:50 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2544,7 +2544,7 @@ static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct s
 
 			struct st_archive_files * f = volume->files + i;
 			f->file = file;
-			st_db_postgresql_get_ssize(result, i, 9, &f->position);
+			st_db_postgresql_get_ssize(result, i, 14, &f->position);
 
 			char * fileid;
 			st_db_postgresql_get_string_dup(result, i, 0, &fileid);
