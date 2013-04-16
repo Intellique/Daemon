@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 16 Apr 2013 12:24:50 +0200                            *
+*  Last modified: Tue, 16 Apr 2013 18:20:09 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -1521,7 +1521,7 @@ static ssize_t st_db_postgresql_get_available_size_of_offline_media_from_pool(st
 	struct st_db_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_available_offline_size_by_pool";
-	st_db_postgresql_prepare(self, query, "SELECT SUM(m.freeblock * m.blocksize::BIGINT) AS total FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id WHERE location = 'offline' AND pool IN (SELECT id FROM pool WHERE uuid = $1 LIMIT 1)");
+	st_db_postgresql_prepare(self, query, "SELECT SUM(m.freeblock * m.blocksize::BIGINT) AS total FROM media m LEFT JOIN pool p ON m.pool = p.id WHERE m.location = 'offline' AND m.status = 'in use' AND p.uuid = $1");
 
 	const char * param[] = { pool->uuid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
