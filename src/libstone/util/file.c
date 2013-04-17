@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 19 Mar 2013 13:12:42 +0100                            *
+*  Last modified: Wed, 17 Apr 2013 14:10:19 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -50,6 +50,7 @@
 #include <uuid/uuid.h>
 
 
+#include <libstone/log.h>
 #include <libstone/util/file.h>
 #include <libstone/util/string.h>
 
@@ -167,9 +168,15 @@ int st_util_file_mkdir(const char * dirname, mode_t mode) {
 	st_util_string_rtrim(dir, '/');
 
 	char * ptr = strrchr(dir, '/');
+	int failed = 0;
 	if (ptr == NULL) {
 		free(dir);
-		return mkdir(dirname, mode);
+		failed = mkdir(dirname, mode);
+
+		if (failed)
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "Error while create directory '%s' because %m", dirname);
+
+		return failed;
 	}
 
 	unsigned short nb = 0;
@@ -179,9 +186,11 @@ int st_util_file_mkdir(const char * dirname, mode_t mode) {
 		ptr = strrchr(dir, '/');
 	} while (ptr != NULL && access(dir, F_OK));
 
-	int failed = 0;
 	if (access(dir, F_OK))
 		failed = mkdir(dir, mode);
+
+	if (failed)
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Error while create directory '%s' because %m", dirname);
 
 	unsigned short i;
 	for (i = 0; i < nb && !failed; i++) {
@@ -189,6 +198,9 @@ int st_util_file_mkdir(const char * dirname, mode_t mode) {
 		dir[length] = '/';
 
 		failed = mkdir(dir, mode);
+
+		if (failed)
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "Error while create directory '%s' because %m", dirname);
 	}
 
 	free(dir);
