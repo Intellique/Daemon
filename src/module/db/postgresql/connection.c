@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 16 Apr 2013 18:20:09 +0200                            *
+*  Last modified: Wed, 17 Apr 2013 12:46:41 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2890,8 +2890,14 @@ static ssize_t st_db_postgresql_get_restore_size_by_job(struct st_database_conne
 	if (job_data == NULL || job_data->id < 0)
 		return -1;
 
-	const char * query = "select_size_of_archive_for_restore";
-	st_db_postgresql_prepare(self, query, "SELECT SUM(af.size) AS size FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id, (SELECT path, CHAR_LENGTH(path) AS length FROM selectedfile ssf2 LEFT JOIN jobtoselectedfile sjsf ON ssf2.id = sjsf.selectedfile WHERE sjsf.job = $1) AS ssf WHERE j.id = $1 AND av.archive = j.archive AND SUBSTR(af.name, 0, ssf.length + 1) = ssf.path AND af.type = 'regular file'");
+	const char * query;
+	if (st_db_postgresql_has_selected_files_by_job(connect, job)) {
+		query = "select_size_of_archive_for_restore_with_selected_files";
+		st_db_postgresql_prepare(self, query, "SELECT SUM(af.size) AS size FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id, (SELECT path, CHAR_LENGTH(path) AS length FROM selectedfile ssf2 LEFT JOIN jobtoselectedfile sjsf ON ssf2.id = sjsf.selectedfile WHERE sjsf.job = $1) AS ssf WHERE j.id = $1 AND SUBSTR(af.name, 0, ssf.length + 1) = ssf.path AND af.type = 'regular file'");
+	} else {
+		query = "select_size_of_archive_for_restore";
+		st_db_postgresql_prepare(self, query, "SELECT SUM(af.size) AS size FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id WHERE j.id = $1 AND af.type = 'regular file'");
+	}
 
 	char * jobid;
 	asprintf(&jobid, "%ld", job_data->id);
