@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 16 Apr 2013 12:23:36 +0200                            *
+*  Last modified: Wed, 17 Apr 2013 21:58:05 +0200                            *
 \****************************************************************************/
 
 // free, malloc
@@ -74,10 +74,6 @@ static void st_job_check_archive_free(struct st_job * job) {
 		self->connect->ops->free(self->connect);
 	}
 
-	unsigned int i;
-	for (i = 0; i < self->nb_vol_checksums; i++)
-		free(self->vol_checksums[i]);
-	free(self->vol_checksums);
 	self->vol_checksums = NULL;
 	self->nb_vol_checksums = 0;
 
