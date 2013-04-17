@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 22 Feb 2013 17:14:28 +0100                            *
+*  Last modified: Wed, 17 Apr 2013 14:14:59 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -358,12 +358,12 @@ bool st_media_check_header(struct st_drive * drive) {
 			has_label = true;
 		}
 
-		if (ok && sscanf(buffer + nb_parsed, "Tape id: uuid=%37s\n%n", uuid, &nb_parsed2) == 1)
+		if (ok && sscanf(buffer + nb_parsed, "Tape id: uuid=%36s\n%n", uuid, &nb_parsed2) == 1)
 			nb_parsed += nb_parsed2;
 		else
 			ok = 0;
 
-		if (ok && sscanf(buffer + nb_parsed, "Pool: name=%65[^,], uuid=%36s\n%n", pool_name, pool_id, &nb_parsed2) == 2)
+		if (ok && sscanf(buffer + nb_parsed, "Pool: name=%64[^,], uuid=%36s\n%n", pool_name, pool_id, &nb_parsed2) == 2)
 			nb_parsed += nb_parsed2;
 		else
 			ok = 0;
@@ -374,7 +374,7 @@ bool st_media_check_header(struct st_drive * drive) {
 			ok = 0;
 
 		if (ok)
-			ok = sscanf(buffer + nb_parsed, "Checksum: %11[^=]=%64s\n", checksum_name, checksum_value) == 2;
+			ok = sscanf(buffer + nb_parsed, "Checksum: %11[^=]=%63s\n", checksum_name, checksum_value) == 2;
 
 		if (ok) {
 			char * digest = st_checksum_compute(checksum_name, buffer, nb_parsed);
@@ -606,7 +606,7 @@ int st_media_read_header(struct st_drive * drive) {
 			has_label = true;
 		}
 
-		if (ok && sscanf(buffer + nb_parsed, "Tape id: uuid=%37s\n%n", uuid, &nb_parsed2) == 1)
+		if (ok && sscanf(buffer + nb_parsed, "Tape id: uuid=%36s\n%n", uuid, &nb_parsed2) == 1)
 			nb_parsed += nb_parsed2;
 		else
 			ok = 0;
@@ -622,7 +622,7 @@ int st_media_read_header(struct st_drive * drive) {
 			ok = 0;
 
 		if (ok)
-			ok = sscanf(buffer + nb_parsed, "Checksum: %11[^=]=%64s\n", checksum_name, checksum_value) == 2;
+			ok = sscanf(buffer + nb_parsed, "Checksum: %11[^=]=%63s\n", checksum_name, checksum_value) == 2;
 
 		if (ok) {
 			char * digest = st_checksum_compute(checksum_name, buffer, nb_parsed);
