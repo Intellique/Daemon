@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 17 Apr 2013 12:46:41 +0200                            *
+*  Last modified: Wed, 17 Apr 2013 16:49:44 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -3214,7 +3214,7 @@ static int st_db_postgresql_sync_file(struct st_database_connection * connect, s
 	st_db_postgresql_prepare(self, query, "INSERT INTO archivefile(name, type, mimetype, ownerid, owner, groupid, groups, perm, ctime, mtime, size, parent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id");
 
 	char * perm, * ownerid, * groupid, * size, * parent;
-	asprintf(&perm, "%d", file->perm & 0x7777);
+	asprintf(&perm, "%d", file->perm & 07777);
 	asprintf(&ownerid, "%d", file->ownerid);
 	asprintf(&groupid, "%d", file->groupid);
 	asprintf(&size, "%zd", file->size);
