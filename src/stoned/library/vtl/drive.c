@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 04 Apr 2013 19:44:25 +0200                            *
+*  Last modified: Thu, 18 Apr 2013 09:53:05 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -241,10 +241,10 @@ static struct st_stream_writer * st_vtl_drive_get_raw_writer(struct st_drive * d
 
 	glob_t gl;
 	int failed = glob(path, 0, NULL, &gl);
-	if (failed > 0 && failed != GLOB_NOMATCH) {
-		free(path);
+	free(path);
+
+	if (failed > 0 && failed != GLOB_NOMATCH)
 		return NULL;
-	}
 
 	char * filename;
 	if (!append && failed != GLOB_NOMATCH) {

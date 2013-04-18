@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 25 Mar 2013 16:35:26 +0100                            *
+*  Last modified: Thu, 18 Apr 2013 09:56:12 +0200                            *
 \****************************************************************************/
 
 // PQfinish, PQsetdbLogin, PQstatus
@@ -117,7 +117,7 @@ static struct st_database_connection * st_db_postgresql_connect(struct st_databa
 	}
 
 	struct st_database_connection * connection = st_db_postgresql_connnect_init(connect);
-	if (!connection) {
+	if (connection == NULL) {
 		PQfinish(connect);
 		return NULL;
 	}
