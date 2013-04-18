@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 27 Dec 2012 20:47:07 +0100                            *
+*  Last modified: Thu, 18 Apr 2013 11:29:32 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -180,7 +180,7 @@ static void * st_thread_pool_work(void * arg) {
 
 		th->function(th->arg);
 
-		st_log_write_all(st_log_level_debug, st_log_type_daemon, "Thread #%ld is going to sleep", th->thread);
+		st_log_write_all(st_log_level_debug, st_log_type_daemon, "Thread #%ld (pid: %d) is going to sleep", th->thread, tid);
 
 		pthread_mutex_lock(&th->lock);
 
@@ -202,7 +202,7 @@ static void * st_thread_pool_work(void * arg) {
 		pthread_mutex_unlock(&th->lock);
 
 		if (th->state == st_thread_pool_state_running)
-			st_log_write_all(st_log_level_debug, st_log_type_daemon, "Restarting thread #%ld to function: %p with parameter: %p", th->thread, th->function, th->arg);
+			st_log_write_all(st_log_level_debug, st_log_type_daemon, "Restarting thread #%ld (pid: %d) to function: %p with parameter: %p", th->thread, tid, th->function, th->arg);
 
 	} while (th->state == st_thread_pool_state_running);
 
