@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 15 Apr 2013 18:58:59 +0200                            *
+*  Last modified: Fri, 19 Apr 2013 16:42:21 +0200                            *
 \****************************************************************************/
 
 // open
@@ -546,8 +546,12 @@ void st_changer_stop() {
 
 void st_changer_sync(struct st_database_connection * connection) {
 	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers + st_nb_vtls;
-	for (i = 0; i < nb_changers; i++)
-		connection->ops->sync_changer(connection, st_changers + i);
+	for (i = 0; i < nb_changers; i++) {
+		struct st_changer * ch = st_changers + i;
+		ch->ops->update_status(ch);
+
+		connection->ops->sync_changer(connection, ch);
+	}
 }
 
 struct st_slot_iterator * st_slot_iterator_by_new_media(struct st_media_format * format) {

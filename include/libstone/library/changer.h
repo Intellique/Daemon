@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 25 Dec 2012 22:58:15 +0100                            *
+*  Last modified: Fri, 19 Apr 2013 16:43:02 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_LIBRARY_CHANGER_H__
@@ -145,6 +145,7 @@ struct st_changer {
 		 * \returns 0 if ok
 		 */
 		int (*unload)(struct st_changer * ch, struct st_drive * from);
+		int (*update_status)(struct st_changer * ch);
 	} * ops;
 	void * data;
 

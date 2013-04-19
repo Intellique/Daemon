@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 30 Jan 2013 10:50:35 +0100                            *
+*  Last modified: Fri, 19 Apr 2013 16:51:46 +0200                            *
 \****************************************************************************/
 
 // malloc
@@ -44,6 +44,7 @@ static int st_standalone_drive_load_media(struct st_changer * ch, struct st_medi
 static int st_standalone_drive_load_slot(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
 static int st_standalone_drive_shut_down(struct st_changer * ch);
 static int st_standalone_drive_unload(struct st_changer * ch, struct st_drive * from);
+static int st_standalone_drive_update_status(struct st_changer * ch);
 
 static struct st_changer_ops st_standalone_drive_ops = {
 	.find_free_drive = st_standalone_drive_find_free_drive,
@@ -52,6 +53,7 @@ static struct st_changer_ops st_standalone_drive_ops = {
 	.load_slot       = st_standalone_drive_load_slot,
 	.shut_down       = st_standalone_drive_shut_down,
 	.unload          = st_standalone_drive_unload,
+	.update_status   = st_standalone_drive_update_status,
 };
 
 
@@ -132,6 +134,19 @@ static int st_standalone_drive_unload(struct st_changer * ch, struct st_drive * 
 	from->ops->update_media_info(from);
 	if (!from->is_empty)
 		from->ops->eject(from);
+
+	return 0;
+}
+
+static int st_standalone_drive_update_status(struct st_changer * ch) {
+	struct st_drive * dr = ch->drives;
+
+	if (dr->lock->ops->try_lock(dr->lock))
+		return 0;
+
+	dr->ops->update_media_info(dr);
+
+	dr->lock->ops->unlock(dr->lock);
 
 	return 0;
 }

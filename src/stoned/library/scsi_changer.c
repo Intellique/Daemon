@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 28 Feb 2013 19:43:34 +0100                            *
+*  Last modified: Fri, 19 Apr 2013 16:44:40 +0200                            *
 \****************************************************************************/
 
 // open
@@ -62,6 +62,7 @@ static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * fr
 static void * st_scsi_changer_setup2(void * drive);
 static int st_scsi_changer_shut_down(struct st_changer * ch);
 static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from);
+static int st_scsi_changer_update_status(struct st_changer * ch);
 
 static struct st_changer_ops st_scsi_changer_ops = {
 	.find_free_drive = st_scsi_changer_find_free_drive,
@@ -70,6 +71,7 @@ static struct st_changer_ops st_scsi_changer_ops = {
 	.load_slot       = st_scsi_changer_load_slot,
 	.shut_down       = st_scsi_changer_shut_down,
 	.unload          = st_scsi_changer_unload,
+	.update_status   = st_scsi_changer_update_status,
 };
 
 
@@ -479,5 +481,9 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading media '%s' from drive #%td to slot #%td finished with code = %d", ch->vendor, ch->model, to->volume_name, from - ch->drives, to - ch->slots, failed);
 
 	return failed;
+}
+
+static int st_scsi_changer_update_status(struct st_changer * ch __attribute__((unused))) {
+	return 0;
 }
 

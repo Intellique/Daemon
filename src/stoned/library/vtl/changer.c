@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 22 Feb 2013 11:53:05 +0100                            *
+*  Last modified: Fri, 19 Apr 2013 16:52:48 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -50,6 +50,7 @@ static int st_vtl_changer_load_media(struct st_changer * ch, struct st_media * f
 static int st_vtl_changer_load_slot(struct st_changer * ch, struct st_slot * from, struct st_drive * to);
 static int st_vtl_changer_shut_down(struct st_changer * ch);
 static int st_vtl_changer_unload(struct st_changer * ch, struct st_drive * from);
+static int st_vtl_changer_update_status(struct st_changer * ch);
 
 static struct st_changer_ops st_vtl_changer_ops = {
 	.find_free_drive = st_vtl_changer_find_free_drive,
@@ -58,6 +59,7 @@ static struct st_changer_ops st_vtl_changer_ops = {
 	.load_slot       = st_vtl_changer_load_slot,
 	.shut_down       = st_vtl_changer_shut_down,
 	.unload          = st_vtl_changer_unload,
+	.update_status   = st_vtl_changer_update_status,
 };
 
 
@@ -394,5 +396,9 @@ static int st_vtl_changer_unload(struct st_changer * ch, struct st_drive * from)
 
 	self->lock->ops->unlock(self->lock);
 	return failed;
+}
+
+static int st_vtl_changer_update_status(struct st_changer * ch __attribute__((unused))) {
+	return 0;
 }
 
