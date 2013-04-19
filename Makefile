@@ -180,6 +180,17 @@ doc: Doxyfile ${LIBOBJECT_SRC_FILES} ${HEAD_FILES}
 	@echo ' DOXYGEN'
 	@${DOXYGEN}
 
+install:
+	@echo ' MKDIR     ${DESTDIR}'
+	@mkdir -p ${DESTDIR}/etc/storiq ${DESTDIR}/usr/bin ${DESTDIR}/usr/sbin ${DESTDIR}/usr/lib/stone ${DESTDIR}/var/www
+	@echo ' CP'
+	@cp bin/stoned ${DESTDIR}/usr/sbin
+	@cp bin/stone-config ${DESTDIR}/usr/sbin
+	@cp lib/lib*.so ${DESTDIR}/usr/lib/stone
+	@mv ${DESTDIR}/usr/lib/stone/libstone.so ${DESTDIR}/usr/lib
+	@cp script/stone.conf ${DESTDIR}/etc/storiq/stone.conf
+	@cp -a www ${DESTDIR}/var/www/stone
+
 prepare: ${BIN_DIRS} ${CHCKSUM_DIR} ${DEP_DIRS} ${OBJ_DIRS} $(addprefix prepare_,${BIN_SYMS}) $(addprefix prepare_,${TEST_BIN_SYMS})
 	@./script/version.pl ${VERSION_OPT}
 
