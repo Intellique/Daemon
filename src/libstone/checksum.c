@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 21 Apr 2013 00:06:42 +0200                            *
+*  Last modified: Sun, 21 Apr 2013 00:16:18 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -128,21 +128,23 @@ struct st_checksum_driver * st_checksum_get_driver(const char * driver) {
 		void * cookie = st_loader_load("checksum", driver);
 
 		if (cookie == NULL) {
-			st_log_write_all(st_log_level_error, st_log_type_checksum, "Failed to load driver '%s'", driver);
+			st_log_write_all(st_log_level_error, st_log_type_checksum, "Failed to load checksum driver '%s'", driver);
 			pthread_mutex_unlock(&lock);
 			return NULL;
 		}
 
-		for (i = 0; i < st_checksum_nb_drivers && dr == NULL; i++)
+		for (i = 0; i < st_checksum_nb_drivers; i++)
 			if (!strcmp(driver, st_checksum_drivers[i]->name)) {
 				dr = st_checksum_drivers[i];
 				dr->cookie = cookie;
 
-				st_log_write_all(st_log_level_debug, st_log_type_checksum, "Driver '%s' is now registred, src checksum: %s", driver, dr->src_checksum);
+				st_log_write_all(st_log_level_debug, st_log_type_checksum, "Checksum driver '%s' is now registred, src checksum: %s", driver, dr->src_checksum);
+
+				break;
 			}
 
 		if (dr == NULL)
-			st_log_write_all(st_log_level_error, st_log_type_checksum, "Driver '%s' not found", driver);
+			st_log_write_all(st_log_level_error, st_log_type_checksum, "Checksum driver '%s' not found", driver);
 	}
 
 	pthread_mutex_unlock(&lock);
@@ -164,13 +166,13 @@ void st_checksum_register_driver(struct st_checksum_driver * driver) {
 	unsigned int i;
 	for (i = 0; i < st_checksum_nb_drivers; i++)
 		if (st_checksum_drivers[i] == driver || !strcmp(driver->name, st_checksum_drivers[i]->name)) {
-			st_log_write_all(st_log_level_warning, st_log_type_checksum, "Driver '%s' is already registred", driver->name);
+			st_log_write_all(st_log_level_warning, st_log_type_checksum, "Checksum driver '%s' is already registred", driver->name);
 			return;
 		}
 
 	void * new_addr = realloc(st_checksum_drivers, (st_checksum_nb_drivers + 1) * sizeof(struct st_checksum_driver *));
 	if (new_addr == NULL) {
-		st_log_write_all(st_log_level_error, st_log_type_checksum, "Driver '%s' cannot be registred because there is not enough memory", driver->name);
+		st_log_write_all(st_log_level_error, st_log_type_checksum, "Checksum driver '%s' cannot be registred because there is not enough memory", driver->name);
 		return;
 	}
 
@@ -180,7 +182,7 @@ void st_checksum_register_driver(struct st_checksum_driver * driver) {
 
 	st_loader_register_ok();
 
-	st_log_write_all(st_log_level_info, st_log_type_checksum, "Driver '%s' is now registred", driver->name);
+	st_log_write_all(st_log_level_info, st_log_type_checksum, "Checksum driver '%s' is now registred", driver->name);
 }
 
 void st_checksum_sync_plugins(struct st_database_connection * connection) {

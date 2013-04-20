@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 15 Apr 2013 00:08:34 +0200                            *
+*  Last modified: Sun, 21 Apr 2013 00:57:52 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_CHECKSUM_H__
@@ -103,6 +103,8 @@ struct st_database_connection;
  *
  * #include <libstone/checksum.h>
  *
+ * #include <libchecksum-md5.chcksum>
+ *
  * struct st_checksum_md5_private {
  * 	  MD5_CTX md5;
  * 	  char digest[MD5_DIGEST_LENGTH * 2 + 1];
@@ -115,10 +117,16 @@ struct st_database_connection;
  * static ssize_t st_checksum_md5_update(struct st_checksum * checksum, const void * data, ssize_t length);
  *
  * static struct st_checksum_driver st_checksum_md5_driver = {
- *    .name         = "md5",
- *    .new_checksum = st_checksum_md5_new_checksum,
- *    .cookie       = 0,
- *    .api_level    = STONE_CHECKSUM_API_LEVEL,
+ *    .name             = "md5",
+ *    .default_checksum = false,
+ *    .new_checksum     = st_checksum_md5_new_checksum,
+ *    .cookie           = NULL,
+ *    .api_level        = {
+ *        .checksum = STONE_CHECKSUM_API_LEVEL,
+ *        .database = 0,
+ *        .job      = 0,
+ *    },
+ *    .src_checksum     = STONE_CHECKSUM_MD5_SRCSUM,
  * };
  *
  * static struct st_checksum_ops st_checksum_md5_ops = {
@@ -129,8 +137,8 @@ struct st_database_connection;
  *
  *
  * char * st_checksum_md5_digest(struct st_checksum * checksum) {
- *    if (!checksum)
- *       return 0;
+ *    if (checksum == NULL)
+ *       return NULL;
  *
  *    struct st_checksum_md5_private * self = checksum->data;
  *    if (self->digest[0] != '\0')
@@ -139,7 +147,7 @@ struct st_database_connection;
  *    MD5_CTX md5 = self->md5;
  *    unsigned char digest[MD5_DIGEST_LENGTH];
  *    if (!MD5_Final(digest, &md5))
- *       return 0;
+ *       return NULL;
  *
  *    st_checksum_convert_to_hex(digest, MD5_DIGEST_LENGTH, self->digest);
  *
@@ -147,7 +155,7 @@ struct st_database_connection;
  * }
  *
  * void st_checksum_md5_free(struct st_checksum * checksum) {
- *    if (!checksum)
+ *    if (checksum == NULL)
  *       return;
  *
  *    struct st_checksum_md5_private * self = checksum->data;
@@ -157,9 +165,11 @@ struct st_database_connection;
  *
  *    free(self);
  *
- *    checksum->data = 0;
- *    checksum->ops = 0;
- *    checksum->driver = 0;
+ *    checksum->data = NULL;
+ *    checksum->ops = NULL;
+ *    checksum->driver = NULL;
+ *
+ *    free(checksum);
  * }
  *
  * void st_checksum_md5_init() {
@@ -208,22 +218,22 @@ struct st_checksum {
 		/**
 		 * \brief Compute digest and return it
 		 *
-		 * \param[in] checksum : a checksum handler
+		 * \param[in] checksum a checksum handler
 		 * \return a malloc allocated string which contains a digest in hexadecimal form
 		 */
-		char * (*digest)(struct st_checksum * checksum);
+		char * (*digest)(struct st_checksum * checksum) __attribute__((warn_unused_result));
 		/**
 		 * \brief This function releases all memory associated to ckecksum
 		 *
-		 * \param[in] checksum : a checksum handler
+		 * \param[in] checksum a checksum handler
 		 */
 		void (*free)(struct st_checksum * checksum);
 		/**
 		 * \brief This function reads some data
 		 *
-		 * \param[in] checksum : a checksum handler
-		 * \param[in] data : some or full data
-		 * \param[in] length : length of data
+		 * \param[in] checksum a checksum handler
+		 * \param[in] data some or full data
+		 * \param[in] length length of data
 		 * \return < 0 if error
 		 * \li -1 if param error
 		 * \li \a length is ok
@@ -253,14 +263,16 @@ struct st_checksum_driver {
 	 * \brief Name of the driver
 	 */
 	const char * name;
-
+	/**
+	 * \brief Is this checksum should be used by default
+	 */
 	bool default_checksum;
 	/**
 	 * \brief Get a new checksum handler
 	 *
 	 * \return a structure which allows to compute checksum
 	 */
-	struct st_checksum * (*new_checksum)(void);
+	struct st_checksum * (*new_checksum)(void) __attribute__((warn_unused_result));
 	/**
 	 * \brief Private data used by st_checksum_get_driver
 	 *
@@ -271,6 +283,9 @@ struct st_checksum_driver {
 	 * \brief Check if the driver have an up to date api level
 	 */
 	const struct st_plugin api_level;
+	/**
+	 * \brief Sha1 sum of plugins source code
+	 */
 	const char * src_checksum;
 };
 
@@ -286,20 +301,20 @@ struct st_checksum_driver {
 /**
  * \brief Simple function to compute checksum provided for convenience.
  *
- * \param[in] checksum : name of checksum plugin
- * \param[in] data : compute with this \a data
- * \param[in] length : length of \a data
+ * \param[in] checksum name of checksum plugin
+ * \param[in] data compute with this \a data
+ * \param[in] length length of \a data
  * \return a malloc allocated string which contains checksum or \b NULL if failed
  * \note Returned value should be release with \a free
  */
-char * st_checksum_compute(const char * checksum, const void * data, ssize_t length);
+char * st_checksum_compute(const char * checksum, const void * data, ssize_t length) __attribute__((warn_unused_result));
 
 /**
  * \brief This function converts a digest into hexadecimal form
  *
- * \param[in] digest : a digest
- * \param[in] length : length of digest in bytes
- * \param[out] hex_digest : result of conversion
+ * \param[in] digest a digest
+ * \param[in] length length of digest in bytes
+ * \param[out] hex_digest result of conversion
  *
  * \note this function suppose that \a hexDigest is already allocated
  * and its size is, at least, \f$ 2 length + 1 \f$
@@ -309,8 +324,8 @@ void st_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * h
 /**
  * \brief Get a checksum driver
  *
- * \param[in] driver : driver's name
- * \return 0 if failed
+ * \param[in] driver driver's name
+ * \return NULL if failed
  *
  * \note if this driver is not loaded, we try to load it
  * \warning the returned value <b>SHALL NOT BE RELEASE</b> with \a free
@@ -320,11 +335,11 @@ struct st_checksum_driver * st_checksum_get_driver(const char * driver);
 /**
  * \brief Register a checksum driver
  *
- * \param[in] driver : a statically allocated <c>struct checksum_driver</c>
+ * \param[in] driver a statically allocated <c>struct checksum_driver</c>
  *
  * \note Each checksum driver should call this function only one time
  * \code
- * static void mychecksum_init() \_\_attribute\_\_((constructor)) {
+ * static void mychecksum_init() __attribute__((constructor)) {
  *    checksum_registerDriver(&mychecksum_driver);
  * }
  * \endcode
@@ -334,7 +349,7 @@ void st_checksum_register_driver(struct st_checksum_driver * driver);
 /**
  * \brief Synchronise checksum plugin to database
  *
- * \param[in] connection : an already connected link to database
+ * \param[in] connection an already connected link to database
  */
 void st_checksum_sync_plugins(struct st_database_connection * connection);
 
