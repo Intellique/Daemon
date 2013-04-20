@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 15 Apr 2013 00:08:53 +0200                            *
+*  Last modified: Sun, 21 Apr 2013 00:06:42 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -54,11 +54,11 @@ static void st_checksum_exit(void) __attribute__((destructor));
 
 
 char * st_checksum_compute(const char * checksum, const void * data, ssize_t length) {
-	if (checksum == NULL || data == NULL || length < 0) {
+	if (checksum == NULL || (data == NULL && length > 0) || length < 0) {
 		st_log_write_all(st_log_level_error, st_log_type_checksum, "compute error");
 		if (checksum == NULL)
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "because checksum is null");
-		if (checksum == NULL)
+		if (data == NULL && length > 0)
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "because data is null");
 		if (length < 0)
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "because length is lower than 0 (length=%zd)", length);
