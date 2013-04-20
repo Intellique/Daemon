@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 28 Feb 2013 19:03:17 +0100                            *
+*  Last modified: Sat, 20 Apr 2013 23:26:32 +0200                            *
 \****************************************************************************/
 
 // be*toh, htobe*
@@ -863,7 +863,7 @@ int stcfg_scsi_tapeinfo(const char * filename, struct st_drive * drive) {
 		unsigned char page_code;
 		unsigned char reserved;
 		unsigned char page_length;
-		char unit_serial_number[10];
+		char unit_serial_number[12];
 	} __attribute__((packed)) result_serial_number;
 
 	struct scsi_inquiry command_serial_number = {
