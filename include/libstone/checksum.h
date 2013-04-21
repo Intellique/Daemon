@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 21 Apr 2013 00:57:52 +0200                            *
+*  Last modified: Sun, 21 Apr 2013 16:44:44 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_CHECKSUM_H__
@@ -223,7 +223,7 @@ struct st_checksum {
 		 */
 		char * (*digest)(struct st_checksum * checksum) __attribute__((warn_unused_result));
 		/**
-		 * \brief This function releases all memory associated to ckecksum
+		 * \brief This function releases all memory associated to checksum
 		 *
 		 * \param[in] checksum a checksum handler
 		 */

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 24 Dec 2012 19:26:38 +0100                            *
+*  Last modified: Sun, 21 Apr 2013 17:11:51 +0200                            *
 \****************************************************************************/
 
 // strerror
@@ -46,6 +46,7 @@
 
 #include <libstone/conf.h>
 #include <libstone/database.h>
+#include <libstone/util/debug.h>
 #include <libstone/util/hashtable.h>
 #include <libstone/util/string.h>
 #include <libstone/util/util.h>
@@ -77,6 +78,8 @@ int st_conf_check_pid(const char * prog_name, int pid) {
 			st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: check_pid: prog_name should not be null");
 		if (pid < 1)
 			st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: check_pid: pid contains a wrong value (pid=%d)", pid);
+
+		st_debug_log_stack(16);
 		return 0;
 	}
 
@@ -108,6 +111,7 @@ int st_conf_check_pid(const char * prog_name, int pid) {
 int st_conf_read_pid(const char * pid_file) {
 	if (pid_file == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: read_pid: pid_file is null");
+		st_debug_log_stack(16);
 		return -1;
 	}
 
@@ -147,14 +151,18 @@ int st_conf_write_pid(const char * pid_file, int pid) {
 	if (pid_file == NULL || pid < 1) {
 		if (pid_file == NULL)
 			st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: write_pid: pid_file is null");
+
 		if (pid < 1)
 			st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: write_pid: pid should be greater than 0 (pid=%d)", pid);
+
+		st_debug_log_stack(16);
 		return 1;
 	}
 
 	int fd = open(pid_file, O_WRONLY | O_TRUNC | O_CREAT, 0644);
 	if (fd < 0) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: write_pid: failed to open '%s' => %s", pid_file, strerror(errno));
+		st_debug_log_stack(16);
 		return 1;
 	}
 
@@ -180,7 +188,7 @@ static void st_conf_init(void) {
 	st_conf_callback = st_hashtable_new2(st_util_string_compute_hash, st_conf_free_key);
 
 	st_hashtable_put(st_conf_callback, strdup("database"), st_hashtable_val_custom(st_conf_load_db));
-	st_hashtable_put(st_conf_callback, strdup("log"), st_hashtable_val_custom( st_conf_load_log));
+	st_hashtable_put(st_conf_callback, strdup("log"), st_hashtable_val_custom(st_conf_load_log));
 }
 
 static void st_conf_load_db(const struct st_hashtable * params) {
@@ -239,6 +247,7 @@ static void st_conf_load_log(const struct st_hashtable * params) {
 int st_conf_read_config(const char * conf_file) {
 	if (conf_file == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Conf: read_config: conf_file is NULL");
+		st_debug_log_stack(16);
 		return -1;
 	}
 
@@ -325,10 +334,14 @@ int st_conf_read_config(const char * conf_file) {
 void st_conf_register_callback(const char * section, st_conf_callback_f callback) {
 	if (section == NULL || callback == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Register callback function: error because");
+
 		if (section == NULL)
 			st_log_write_all(st_log_level_error, st_log_type_daemon, "section is NULL");
+
 		if (callback == NULL)
 			st_log_write_all(st_log_level_error, st_log_type_daemon, "callback function is NULL");
+
+		st_debug_log_stack(16);
 		return;
 	}
 

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 21 Apr 2013 00:16:18 +0200                            *
+*  Last modified: Sun, 21 Apr 2013 17:05:41 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -42,6 +42,7 @@
 #include <libstone/checksum.h>
 #include <libstone/database.h>
 #include <libstone/log.h>
+#include <libstone/util/debug.h>
 
 #include "config.h"
 #include "loader.h"
@@ -62,6 +63,8 @@ char * st_checksum_compute(const char * checksum, const void * data, ssize_t len
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "because data is null");
 		if (length < 0)
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "because length is lower than 0 (length=%zd)", length);
+
+		st_debug_log_stack(16);
 		return NULL;
 	}
 
@@ -92,6 +95,8 @@ void st_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * h
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "because length is lower than 1 (length=%zd)", length);
 		if (hex_digest == NULL)
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "because hexDigest is null");
+
+		st_debug_log_stack(16);
 		return;
 	}
 
@@ -112,6 +117,7 @@ static void st_checksum_exit() {
 struct st_checksum_driver * st_checksum_get_driver(const char * driver) {
 	if (driver == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_checksum, "Get checksum driver with driver's name is NULL");
+		st_debug_log_stack(16);
 		return NULL;
 	}
 
@@ -155,6 +161,7 @@ struct st_checksum_driver * st_checksum_get_driver(const char * driver) {
 void st_checksum_register_driver(struct st_checksum_driver * driver) {
 	if (driver == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_checksum, "Try to register with null driver");
+		st_debug_log_stack(16);
 		return;
 	}
 
@@ -167,12 +174,14 @@ void st_checksum_register_driver(struct st_checksum_driver * driver) {
 	for (i = 0; i < st_checksum_nb_drivers; i++)
 		if (st_checksum_drivers[i] == driver || !strcmp(driver->name, st_checksum_drivers[i]->name)) {
 			st_log_write_all(st_log_level_warning, st_log_type_checksum, "Checksum driver '%s' is already registred", driver->name);
+			st_debug_log_stack(16);
 			return;
 		}
 
 	void * new_addr = realloc(st_checksum_drivers, (st_checksum_nb_drivers + 1) * sizeof(struct st_checksum_driver *));
 	if (new_addr == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_checksum, "Checksum driver '%s' cannot be registred because there is not enough memory", driver->name);
+		st_debug_log_stack(16);
 		return;
 	}
 
@@ -188,11 +197,13 @@ void st_checksum_register_driver(struct st_checksum_driver * driver) {
 void st_checksum_sync_plugins(struct st_database_connection * connection) {
 	if (connection == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_checksum, "Try to synchronize checksum's plugins without database connection");
+		st_debug_log_stack(16);
 		return;
 	}
 
 	if (connection->ops->is_connection_closed(connection)) {
 		st_log_write_all(st_log_level_error, st_log_type_checksum, "Try to synchronize checksum's plugins with closed connection to database");
+		st_debug_log_stack(16);
 		return;
 	}
 
