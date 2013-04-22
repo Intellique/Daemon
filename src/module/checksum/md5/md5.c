@@ -22,11 +22,11 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 14 Mar 2013 18:58:17 +0100                            *
+*  Last modified: Mon, 22 Apr 2013 13:26:02 +0200                            *
 \****************************************************************************/
 
 // free, malloc
-#include <malloc.h>
+#include <stdlib.h>
 // MD5_Final, MD5_Init, MD5_Update
 #include <openssl/md5.h>
 // strdup

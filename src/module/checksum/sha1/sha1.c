@@ -22,11 +22,11 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 14 Mar 2013 18:59:27 +0100                            *
+*  Last modified: Mon, 22 Apr 2013 13:26:21 +0200                            *
 \****************************************************************************/
 
 // free, malloc
-#include <malloc.h>
+#include <stdlib.h>
 // SHA1_Final, SHA1_Init, SHA1_Update
 #include <openssl/sha.h>
 // strdup

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 21 Apr 2013 16:44:44 +0200                            *
+*  Last modified: Mon, 22 Apr 2013 13:39:44 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_CHECKSUM_H__
@@ -95,7 +95,7 @@ struct st_database_connection;
  * This example show you how the md5 checksum is implemeted
  * \code
  * // free, malloc
- * #include <malloc.h>
+ * #include <stdlib.h>
  * // MD5_Final, MD5_Init, MD5_Update
  * #include <openssl/md5.h>
  * // strdup
@@ -113,7 +113,7 @@ struct st_database_connection;
  * static char * st_checksum_md5_digest(struct st_checksum * checksum);
  * static void st_checksum_md5_free(struct st_checksum * checksum);
  * static struct st_checksum * st_checksum_md5_new_checksum(void);
- * static void st_checksum_md5_init(void) \_\_attribute\_\_((constructor));
+ * static void st_checksum_md5_init(void) __attribute__((constructor));
  * static ssize_t st_checksum_md5_update(struct st_checksum * checksum, const void * data, ssize_t length);
  *
  * static struct st_checksum_driver st_checksum_md5_driver = {
@@ -274,13 +274,11 @@ struct st_checksum_driver {
 	 */
 	struct st_checksum * (*new_checksum)(void) __attribute__((warn_unused_result));
 	/**
-	 * \brief Private data used by st_checksum_get_driver
-	 *
-	 * \note <b>SHOULD NOT be MODIFIED</b>
+	 * \brief Private data used by each checksum handler
 	 */
 	void * cookie;
 	/**
-	 * \brief Check if the driver have an up to date api level
+	 * \brief Check if the driver use the correct api level
 	 */
 	const struct st_plugin api_level;
 	/**
@@ -327,7 +325,7 @@ void st_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * h
  * \param[in] driver driver's name
  * \return NULL if failed
  *
- * \note if this driver is not loaded, we try to load it
+ * \note if this driver is not loaded, this function will load it
  * \warning the returned value <b>SHALL NOT BE RELEASE</b> with \a free
  */
 struct st_checksum_driver * st_checksum_get_driver(const char * driver);
@@ -347,7 +345,7 @@ struct st_checksum_driver * st_checksum_get_driver(const char * driver);
 void st_checksum_register_driver(struct st_checksum_driver * driver);
 
 /**
- * \brief Synchronise checksum plugin to database
+ * \brief Synchronize checksum plugin to database
  *
  * \param[in] connection an already connected link to database
  */

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 05 Feb 2013 12:26:03 +0100                            *
+*  Last modified: Sun, 21 Apr 2013 23:28:42 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -35,6 +35,7 @@
 
 #include <libstone/database.h>
 #include <libstone/log.h>
+#include <libstone/util/debug.h>
 
 #include "loader.h"
 
@@ -66,6 +67,7 @@ static void st_database_exit() {
 struct st_database_config * st_database_get_config_by_name(const char * name) {
 	if (name == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_database, "Try to get a database configuration with name is NULL");
+		st_debug_log_stack(16);
 		return NULL;
 	}
 
@@ -84,7 +86,7 @@ struct st_database_config * st_database_get_config_by_name(const char * name) {
 	return NULL;
 }
 
-struct st_database * st_database_get_default_driver(void) {
+struct st_database * st_database_get_default_driver() {
 	if (st_database_nb_databases > 0)
 		return *st_database_drivers;
 
@@ -94,6 +96,7 @@ struct st_database * st_database_get_default_driver(void) {
 struct st_database * st_database_get_driver(const char * driver) {
 	if (driver == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_database, "Try to get a database driver with driver is NULL");
+		st_debug_log_stack(16);
 		return NULL;
 	}
 
@@ -111,6 +114,7 @@ struct st_database * st_database_get_driver(const char * driver) {
 
 		if (cookie == NULL) {
 			st_log_write_all(st_log_level_error, st_log_type_database, "Failed to load driver %s", driver);
+			st_debug_log_stack(16);
 			pthread_mutex_unlock(&lock);
 			return NULL;
 		}
@@ -134,12 +138,14 @@ struct st_database * st_database_get_driver(const char * driver) {
 
 void st_database_register_driver(struct st_database * driver) {
 	if (driver == NULL) {
-		st_log_write_all(st_log_level_error, st_log_type_database, "Try to register with driver=0");
+		st_log_write_all(st_log_level_error, st_log_type_database, "Try to register with a NULL driver");
+		st_debug_log_stack(16);
 		return;
 	}
 
 	if (st_plugin_check(&driver->api_level) == false) {
 		st_log_write_all(st_log_level_error, st_log_type_database, "Driver '%s' has not the correct api version", driver->name);
+		st_debug_log_stack(16);
 		return;
 	}
 

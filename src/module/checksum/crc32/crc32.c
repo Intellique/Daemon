@@ -22,11 +22,11 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 14 Mar 2013 18:57:37 +0100                            *
+*  Last modified: Mon, 22 Apr 2013 13:25:59 +0200                            *
 \****************************************************************************/
 
 // free, malloc
-#include <malloc.h>
+#include <stdlib.h>
 // strdup
 #include <string.h>
 // crc32

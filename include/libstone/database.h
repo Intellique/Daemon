@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 20 Mar 2013 23:15:12 +0100                            *
+*  Last modified: Sun, 21 Apr 2013 23:24:39 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -344,7 +344,7 @@ struct st_database_config * st_database_get_config_by_name(const char * name);
 /**
  * \brief get the default database driver
  *
- * \return 0 if failed
+ * \return NULL if failed
  *
  * \note if \a database is not loaded then we try to load it
  */
@@ -354,20 +354,20 @@ struct st_database * st_database_get_default_driver(void);
  * \brief get a database driver
  *
  * \param[in] database : database name
- * \return 0 if failed
+ * \return NULL if failed
  *
  * \note if \a database is not loaded then we try to load it
  */
 struct st_database * st_database_get_driver(const char * database);
 
 /**
- * \brief Each database driver should call this function only one time
+ * \brief Register a database driver
  *
  * \param[in] database : a statically allocated struct st_database
  *
+ * \note Each database driver should call this function only one time
  * \code
- * \_\_attribute\_\_((constructor))
- * static void database_myDb_init() {
+ * static void database_myDb_init() __attribute__((constructor)) {
  *    st_database_register_driver(&database_myDb_module);
  * }
  * \endcode
