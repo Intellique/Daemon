@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 09 Apr 2013 23:59:29 +0200                            *
+*  Last modified: Mon, 22 Apr 2013 14:55:07 +0200                            *
 \****************************************************************************/
 
 // bool
@@ -256,7 +256,7 @@ static bool st_job_format_media_check(struct st_job * job) {
 		char pool_name[65];
 		ssize_t block_size;
 		char checksum_name[12];
-		char checksum_value[64];
+		char checksum_value[65];
 
 		int nb_parsed2 = 0;
 		int ok = 1;
@@ -264,7 +264,7 @@ static bool st_job_format_media_check(struct st_job * job) {
 		if (sscanf(buffer + nb_parsed, "Label: %36s\n%n", name, &nb_parsed2) == 1)
 			nb_parsed += nb_parsed2;
 
-		if (ok && sscanf(buffer + nb_parsed, "Tape id: uuid=%37s\n%n", uuid, &nb_parsed2) == 1)
+		if (ok && sscanf(buffer + nb_parsed, "Tape id: uuid=%36s\n%n", uuid, &nb_parsed2) == 1)
 			nb_parsed += nb_parsed2;
 		else
 			ok = 0;
