@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 13 Feb 2013 22:32:04 +0100                            *
+*  Last modified: Wed, 24 Apr 2013 01:38:15 +0200                            *
 \****************************************************************************/
 
 // mknod, open
@@ -48,6 +48,7 @@
 #include <libstone/library/slot.h>
 #include <libstone/log.h>
 #include <libstone/thread_pool.h>
+#include <libstone/util/string.h>
 
 #include "restore_archive.h"
 
@@ -163,23 +164,33 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 			status = reader->ops->get_header(reader, &header);
 			if (status != st_format_reader_header_ok) {
 				st_job_add_record(connect, st_log_level_error, self->jp->job, "Error while reading header of file (%s)", file->name);
+				st_log_write_all(st_log_level_debug, st_log_type_job, "Error while reading header file, line %d", __LINE__);
 				self->nb_errors++;
 
 				st_archive_file_free(file);
 				break;
 			}
 
+			st_util_string_delete_double_char(header.filename, '/');
+			st_util_string_rtrim(header.filename, '/');
+
 			while (strcmp(header.filename, file->name + 1)) {
+				st_job_add_record(connect, st_log_level_debug, self->jp->job, "Skipping file '%s'", header.filename);
+
 				reader->ops->skip_file(reader);
 				st_format_file_free(&header);
 				status = reader->ops->get_header(reader, &header);
 
 				if (status != st_format_reader_header_ok)
 					break;
+
+				st_util_string_delete_double_char(header.filename, '/');
+				st_util_string_rtrim(header.filename, '/');
 			}
 
 			if (status != st_format_reader_header_ok) {
 				st_job_add_record(connect, st_log_level_error, self->jp->job, "Error while reading header of file (%s)", file->name);
+				st_log_write_all(st_log_level_debug, st_log_type_job, "Error while reading header file, line %d", __LINE__);
 				self->nb_errors++;
 
 				st_archive_file_free(file);
