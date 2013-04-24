@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 17 Feb 2013 19:04:47 +0100                            *
+*  Last modified: Wed, 24 Apr 2013 15:17:16 +0200                            *
 \****************************************************************************/
 
 // open
@@ -89,6 +89,8 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 
 	if (nb_checksum > 0 && file->digests != NULL) {
 		bool is_error = false;
+
+		st_job_add_record(check->connect, st_log_level_info, check->jp->job, "Start checking restored file '%s'", file->name);
 
 		int fd = open(restore_to, O_RDONLY);
 		if (fd < 0) {
