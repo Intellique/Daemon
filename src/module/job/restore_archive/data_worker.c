@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 24 Apr 2013 01:38:15 +0200                            *
+*  Last modified: Wed, 24 Apr 2013 12:44:17 +0200                            *
 \****************************************************************************/
 
 // mknod, open
@@ -161,7 +161,10 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 			}
 
 			struct st_format_file header;
-			status = reader->ops->get_header(reader, &header);
+			do {
+				status = reader->ops->get_header(reader, &header);
+			} while (status == st_format_reader_header_bad_header);
+
 			if (status != st_format_reader_header_ok) {
 				st_job_add_record(connect, st_log_level_error, self->jp->job, "Error while reading header of file (%s)", file->name);
 				st_log_write_all(st_log_level_debug, st_log_type_job, "Error while reading header file, line %d", __LINE__);

@@ -229,9 +229,6 @@ static enum st_format_reader_header_status st_format_tar_reader_get_header(struc
 
 	struct st_format_tar * raw_header = (struct st_format_tar *) self->buffer;
 
-	if (raw_header->filename[0] == '\0')
-		return st_format_reader_header_not_found;
-
 	if (st_format_tar_reader_check_header(raw_header))
 		return st_format_reader_header_bad_header;
 
