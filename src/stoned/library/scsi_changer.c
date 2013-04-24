@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 19 Apr 2013 16:44:40 +0200                            *
+*  Last modified: Wed, 24 Apr 2013 17:13:11 +0200                            *
 \****************************************************************************/
 
 // open
@@ -403,7 +403,7 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 	for (i = ch->nb_drives; i < ch->nb_slots && to == NULL; i++) {
 		to = ch->slots + i;
 
-		if (!to->enable) {
+		if (!to->enable || to->media != NULL) {
 			to = NULL;
 			continue;
 		}
@@ -426,7 +426,7 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 	for (i = ch->nb_drives; i < ch->nb_slots && to == NULL; i++) {
 		to = ch->slots + i;
 
-		if (!to->enable && to->media != NULL) {
+		if (!to->enable || to->media != NULL) {
 			to = NULL;
 			continue;
 		}
