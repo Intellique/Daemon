@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 17 Apr 2013 16:49:44 +0200                            *
+*  Last modified: Wed, 24 Apr 2013 12:06:48 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2433,17 +2433,16 @@ static struct st_archive_file * st_db_postgresql_get_archive_file_for_restore_di
 	const char * param[] = { jobid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
-	unsigned int nb_tuples = PQntuples(result);
+	*nb_files = PQntuples(result);
 
 	struct st_archive_file * files = NULL;
 	if (status == PGRES_FATAL_ERROR)
 		st_db_postgresql_get_error(result, query);
-	else if (status == PGRES_TUPLES_OK && nb_tuples > 0) {
-		files = calloc(nb_tuples, sizeof(struct st_archive_file));
-		*nb_files = nb_tuples;
+	else if (status == PGRES_TUPLES_OK && *nb_files > 0) {
+		files = calloc(*nb_files, sizeof(struct st_archive_file));
 
 		unsigned int i;
-		for (i = 0; i < nb_tuples; i++) {
+		for (i = 0; i < *nb_files; i++) {
 			struct st_archive_file * file = files + i;
 			st_db_postgresql_get_string_dup(result, i, 1, &file->name);
 			file->type = st_archive_file_string_to_type(PQgetvalue(result, i, 2));
