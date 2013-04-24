@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 15 Apr 2013 16:14:37 +0200                            *
+*  Last modified: Wed, 24 Apr 2013 01:26:20 +0200                            *
 \****************************************************************************/
 
 // errno
@@ -680,6 +680,8 @@ static off_t st_scsi_tape_drive_io_reader_forward(struct st_stream_reader * sr, 
 		while (nb_records > 0) {
 			int next_forward = nb_records > 8388607 ? 8388607 : nb_records;
 
+			st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: forward (#record %ld)", self->drive->vendor, self->drive->model, self->drive - self->drive->changer->drives, nb_records);
+
 			struct mtop forward = { MTFSR, next_forward };
 			st_scsi_tape_drive_operation_start(self->drive_private);
 			int failed = ioctl(self->fd, MTIOCTOP, &forward);
@@ -688,12 +690,12 @@ static off_t st_scsi_tape_drive_io_reader_forward(struct st_stream_reader * sr, 
 			if (failed) {
 				self->last_errno = errno;
 				return failed;
-			} else
-				nb_records -= next_forward;
-		}
+			}
 
-		self->position += nb_records * self->block_size;
-		nb_total_read += nb_records * self->block_size;
+			nb_records -= next_forward;
+			self->position += next_forward * self->block_size;
+			nb_total_read += next_forward * self->block_size;
+		}
 	}
 
 	if (nb_total_read == offset)
