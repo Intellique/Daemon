@@ -22,14 +22,14 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 24 Apr 2013 12:44:17 +0200                            *
+*  Last modified: Wed, 24 Apr 2013 13:20:02 +0200                            *
 \****************************************************************************/
 
 // mknod, open
 #include <fcntl.h>
 // free, malloc
 #include <stdlib.h>
-// strcmp, strdup
+// strcmp, strdup, strrchr
 #include <string.h>
 // S_*, mknod, open
 #include <sys/stat.h>
@@ -37,7 +37,7 @@
 #include <sys/time.h>
 // S_*, lseek, open, mknod
 #include <sys/types.h>
-// chmod, chown, fchmod, fchown, lseek, mknod, write
+// access, chmod, chown, fchmod, fchown, lseek, mknod, write
 #include <unistd.h>
 
 #include <libstone/job.h>
@@ -48,6 +48,7 @@
 #include <libstone/library/slot.h>
 #include <libstone/log.h>
 #include <libstone/thread_pool.h>
+#include <libstone/util/file.h>
 #include <libstone/util/string.h>
 
 #include "restore_archive.h"
@@ -201,6 +202,21 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 			}
 
 			char * restore_to = st_job_restore_archive_path_get(self->jp->restore_path, connect, self->jp->job, file, has_restore_to);
+
+			/*/
+			 * Check and create if needed the path of file to be restored
+			 */
+			char * ptr = strrchr(restore_to, '/');
+			if (ptr != NULL) {
+				*ptr = '\0';
+				if (access(restore_to, R_OK | W_OK | X_OK)) {
+					st_job_add_record(connect, st_log_level_info, self->jp->job, "Create missing directory '%s' with permission 0777", restore_to);
+					st_util_file_mkdir(restore_to, 0777);
+				}
+				*ptr = '/';
+			}
+
+			st_job_add_record(connect, st_log_level_info, self->jp->job, "Start restoring file '%s'", restore_to);
 
 			if (S_ISREG(header.mode)) {
 				int fd = open(restore_to, O_CREAT | O_WRONLY, header.mode & 07777);
