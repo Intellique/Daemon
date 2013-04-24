@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 13 Feb 2013 16:30:51 +0100                            *
+*  Last modified: Wed, 24 Apr 2013 19:23:38 +0200                            *
 \****************************************************************************/
 
 // sscanf, snprintf
@@ -183,11 +183,11 @@ static enum st_format_reader_header_status st_format_tar_reader_forward(struct s
 	if (current_block > block_position)
 		return st_format_reader_header_not_found;
 
-	if (current_block == block_position)
+	if (block_position - current_block < 2)
 		return st_format_reader_header_ok;
 
-	off_t next_position = block_position * block_size - current_position;
-	off_t new_position = self->io->ops->forward(self->io, next_position);
+	off_t next_position = block_position * block_size;
+	off_t new_position = self->io->ops->forward(self->io, next_position - current_position);
 
 	if (next_position != new_position)
 		return st_format_reader_header_not_found;

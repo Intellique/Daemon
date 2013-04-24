@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 05 Feb 2013 12:38:59 +0100                            *
+*  Last modified: Wed, 24 Apr 2013 18:48:16 +0200                            *
 \****************************************************************************/
 
 // free, malloc
@@ -288,7 +288,7 @@ static int st_job_restore_archive_run(struct st_job * job) {
 
 	job->done = 1;
 
-	st_job_add_record(self->connect, st_log_level_info, job, "Job restore-archive is finised (named: %s) with %d warning(%c) and %d error(%c)", job->name, nb_warnings, nb_warnings != 1 ? 's' : '\0', nb_errors, nb_errors != 1 ? 's' : '\0');
+	st_job_add_record(self->connect, st_log_level_info, job, "Job restore-archive is finished (named: %s) with %d warning(%c) and %d error(%c)", job->name, nb_warnings, nb_warnings != 1 ? 's' : '\0', nb_errors, nb_errors != 1 ? 's' : '\0');
 
 	return 0;
 }
