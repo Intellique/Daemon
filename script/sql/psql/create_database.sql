@@ -117,6 +117,13 @@ CREATE TYPE MediaType AS ENUM (
     'rewritable'
 );
 
+CREATE TYPE ProxyStatus AS ENUM (
+    'todo',
+    'running',
+    'done',
+    'error'
+);
+
 CREATE TYPE UnbreakableLevel AS ENUM (
     'archive',
     'file',
@@ -161,6 +168,7 @@ CREATE TABLE Pool (
     rewritable BOOLEAN NOT NULL DEFAULT TRUE,
 
     metadata TEXT NOT NULL DEFAULT '',
+    needproxy BOOLEAN NOT NULL DEFAULT FALSE,
 
     poolOriginal INTEGER REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
@@ -410,6 +418,12 @@ CREATE TABLE Metadata (
     value TEXT NOT NULL,
 
     archive BIGINT NOT NULL REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE Proxy (
+    id BIGSERIAL PRIMARY KEY,
+    archivefile BIGINT NOT NULL REFERENCES ArchiveFile(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    status ProxyStatus NOT NULL DEFAULT 'todo'
 );
 
 CREATE TABLE Backup (
