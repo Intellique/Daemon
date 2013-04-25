@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 17 Feb 2013 18:50:04 +0100                            *
+*  Last modified: Thu, 25 Apr 2013 14:55:34 +0200                            *
 \****************************************************************************/
 
 // asprintf
@@ -214,6 +214,7 @@ static void st_job_create_archive_meta_worker_work2(struct st_job_create_archive
 		st_job_add_record(self->connect, st_log_level_info, self->job, "File (%s) has not mime type", f->file);
 	} else {
 		file->mime_type = strdup(mime_type);
+		st_job_add_record(self->connect, st_log_level_info, self->job, "Mime type of file '%s' is '%s'", f->file, mime_type);
 	}
 
 	if (S_ISREG(st.st_mode)) {

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 07 Mar 2013 10:08:58 +0100                            *
+*  Last modified: Thu, 25 Apr 2013 17:04:38 +0200                            *
 \****************************************************************************/
 
 // asprintf
@@ -603,11 +603,16 @@ static ssize_t st_job_create_archive_single_worker_write(struct st_job_create_ar
 			return failed;
 
 		self->writer->ops->restart_file(self->writer, self->last_file->path, self->file_position);
+
+		available = self->writer->ops->get_available_size(self->writer);
 	}
 
 	ssize_t will_write = available > length ? length : available;
 
 	ssize_t nb_write = self->writer->ops->write(self->writer, buffer, will_write);
+	if (nb_write < 0)
+		return nb_write;
+
 	if (nb_write > 0) {
 		self->total_done += nb_write;
 		self->file_position += nb_write;
@@ -618,6 +623,16 @@ static ssize_t st_job_create_archive_single_worker_write(struct st_job_create_ar
 			return 1;
 
 		self->writer->ops->restart_file(self->writer, self->last_file->path, self->file_position);
+
+		ssize_t nb_write2 = self->writer->ops->write(self->writer, buffer + nb_write, length - nb_write);
+		if (nb_write2 < 0)
+			return nb_write2;
+
+		if (nb_write2 > 0) {
+			self->total_done += nb_write2;
+			self->file_position += nb_write2;
+			nb_write += nb_write2;
+		}
 	}
 
 	return nb_write;
