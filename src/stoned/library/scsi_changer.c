@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 24 Apr 2013 17:13:11 +0200                            *
+*  Last modified: Thu, 25 Apr 2013 11:36:06 +0200                            *
 \****************************************************************************/
 
 // open
@@ -80,6 +80,16 @@ static struct st_drive * st_scsi_changer_find_free_drive(struct st_changer * ch,
 		return NULL;
 
 	unsigned int i;
+	for (i = 0; i < ch->nb_drives; i++) {
+		struct st_drive * dr = ch->drives + i;
+
+		if (!dr->enabled || dr->slot->media != NULL)
+			continue;
+
+		if (!dr->lock->ops->try_lock(dr->lock))
+			return dr;
+	}
+
 	for (i = 0; i < ch->nb_drives; i++) {
 		struct st_drive * dr = ch->drives + i;
 

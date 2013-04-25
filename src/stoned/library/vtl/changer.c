@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 19 Apr 2013 16:52:48 +0200                            *
+*  Last modified: Thu, 25 Apr 2013 11:36:09 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -71,9 +71,23 @@ static struct st_drive * st_vtl_changer_find_free_drive(struct st_changer * ch, 
 	for (i = 0; i < ch->nb_drives; i++) {
 		struct st_drive * dr = ch->drives + i;
 
+		if (!dr->enabled || dr->slot->media != NULL)
+			continue;
+
 		if (!dr->lock->ops->try_lock(dr->lock))
 			return dr;
 	}
+
+	for (i = 0; i < ch->nb_drives; i++) {
+		struct st_drive * dr = ch->drives + i;
+
+		if (!dr->enabled)
+			continue;
+
+		if (!dr->lock->ops->try_lock(dr->lock))
+			return dr;
+	}
+
 
 	return NULL;
 }
