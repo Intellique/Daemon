@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 21 Apr 2013 23:24:39 +0200                            *
+*  Last modified: Thu, 25 Apr 2013 23:20:42 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -65,7 +65,7 @@ struct st_database_connection {
 		/**
 		 * \brief close \a db connection
 		 *
-		 * \param[in] db : a database connection
+		 * \param[in] db a database connection
 		 * \return a value which correspond to
 		 * \li 0 if ok
 		 * \li < 0 if error
@@ -74,7 +74,7 @@ struct st_database_connection {
 		/**
 		 * \brief free memory associated with database connection
 		 *
-		 * \param[in] db : a database connection
+		 * \param[in] db a database connection
 		 * \return a value which correspond to
 		 * \li 0 if ok
 		 * \li < 0 if error
@@ -88,7 +88,7 @@ struct st_database_connection {
 		/**
 		 * \brief check if the connection to database is closed
 		 *
-		 * \param[in] db : a database connection
+		 * \param[in] db a database connection
 		 * \return 0 if the connection is not closed
 		 */
 		int (*is_connection_closed)(struct st_database_connection * connect);
@@ -96,7 +96,7 @@ struct st_database_connection {
 		/**
 		 * \brief Rool back a transaction
 		 *
-		 * \param[in] db : a database connection
+		 * \param[in] db a database connection
 		 * \li 0 if ok
 		 * \li 1 if noop
 		 * \li < 0 if error
@@ -105,7 +105,7 @@ struct st_database_connection {
 		/**
 		 * \brief Finish a transaction
 		 *
-		 * \param[in] db : a database connection
+		 * \param[in] db a database connection
 		 * \return a value which correspond to
 		 * \li 0 if ok
 		 * \li 1 if noop
@@ -115,8 +115,8 @@ struct st_database_connection {
 		/**
 		 * \brief Starts a transaction
 		 *
-		 * \param[in] connection : a database connection
-		 * \param[in] readOnly : is a read only transaction
+		 * \param[in] connection a database connection
+		 * \param[in] readOnly is a read only transaction
 		 * \return a value which correspond to
 		 * \li 0 if ok
 		 * \li 1 if noop
@@ -127,28 +127,42 @@ struct st_database_connection {
 		/**
 		 * \brief Synchronise checksum plugin with database
 		 *
-		 * \param[in] connection : a database connection
-		 * \param[in] name : name of plugin
+		 * \param[in] connection a database connection
+		 * \param[in] name name of plugin
 		 * \returns 0 if ok
 		 */
 		int (*sync_plugin_checksum)(struct st_database_connection * connect, const char * name);
 		/**
 		 * \brief Synchronise job plugin with database
 		 *
-		 * \param[in] connection : a database connection
-		 * \param[in] name : name of plugin
+		 * \param[in] connection a database connection
+		 * \param[in] name name of plugin
 		 * \returns 0 if ok
 		 */
 		int (*sync_plugin_job)(struct st_database_connection * connect, const char * plugin);
 
+		/**
+		 * \brief Check if \a changer is enable
+		 *
+		 * \param[in] connect a database connection
+		 * \param[in] changer a \a changer
+		 * \return \a true if enabled
+		 */
 		bool (*changer_is_enabled)(struct st_database_connection * connect, struct st_changer * changer);
+		/**
+		 * \brief Check if \a drive is enable
+		 *
+		 * \param[in] connect a database connection
+		 * \param[in] drive a \a drive
+		 * \return \a true if enabled
+		 */
 		bool (*drive_is_enabled)(struct st_database_connection * connect, struct st_drive * drive);
 		/**
 		 * \brief Check if \a drive is a part of \a changer
 		 *
-		 * \param[in] connect : a database connection
-		 * \param[in] changer : a \a changer
-		 * \param[in] drive : a \a drive
+		 * \param[in] connect a database connection
+		 * \param[in] changer a \a changer
+		 * \param[in] drive a \a drive
 		 * \returns 1 if \a true
 		 */
 		int (*is_changer_contain_drive)(struct st_database_connection * connect, struct st_changer * changer, struct st_drive * drive);
@@ -156,22 +170,37 @@ struct st_database_connection {
 		/**
 		 * \brief Synchronize \a changer with database
 		 *
-		 * \param[in] connect : a database connection
-		 * \param[in] changer : a \a changer
+		 * \param[in] connect a database connection
+		 * \param[in] changer a \a changer
 		 * \returns 0 if OK
 		 */
 		int (*sync_changer)(struct st_database_connection * connect, struct st_changer * changer);
 		/**
 		 * \brief Synchronize \a drive with database
 		 *
-		 * \param[in] connect : a database connection
-		 * \param[in] drive : a \a drive
+		 * \param[in] connect a database connection
+		 * \param[in] drive a \a drive
 		 * \returns 0 if OK
 		 */
 		int (*sync_drive)(struct st_database_connection * connect, struct st_drive * drive);
 
+		/**
+		 * \brief Get the available size of \a pool based on offline media
+		 *
+		 * \param[in] connect a database connection
+		 * \param[in] pool a \a pool
+		 * \return available size
+		 */
 		ssize_t (*get_available_size_of_offline_media_from_pool)(struct st_database_connection * connect, struct st_pool * pool);
-		char ** (*get_checksums_by_pool)(struct st_database_connection * connect, struct st_pool * pool, unsigned int * nb_checksums);
+		/**
+		 * \brief Get checksums linked to \a pool
+		 *
+		 * \param[in] connect a database connection
+		 * \param[in] pool a \a pool
+		 * \param[out] nb_checksums number of checksums returned
+		 * \return a calloc allocated array of *nb_checksums + 1 elements, *nb_checksums first elements are string mallocated and the last element is always equals to NULL
+		 */
+		char ** (*get_checksums_by_pool)(struct st_database_connection * connect, struct st_pool * pool, unsigned int * nb_checksums) __attribute__((warn_unused_result));
 		struct st_media * (*get_media)(struct st_database_connection * connect, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label);
 		int (*get_media_format)(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, const char * name, enum st_media_format_mode mode);
 		struct st_pool * (*get_pool)(struct st_database_connection * connect, struct st_archive * archive, struct st_job * job, const char * uuid);
@@ -247,6 +276,11 @@ struct st_database_config {
 		 * \returns a database connection
 		 */
 		struct st_database_connection * (*connect)(struct st_database_config * db_config);
+		/**
+		 * \brief This function releases all memory associated to database configuration
+		 *
+		 * \param[in] database configuration
+		 */
 		void (*free)(struct st_database_config * db_config);
 		/**
 		 * \brief Check if database is online
@@ -288,7 +322,7 @@ struct st_database {
 		/**
 		 * \brief Add configure to this database driver
 		 *
-		 * \param[in] params : hashtable which contains parameters
+		 * \param[in] params hashtable which contains parameters
 		 * \returns \b 0 if ok
 		 */
 		struct st_database_config * (*add)(const struct st_hashtable * params);
@@ -319,6 +353,9 @@ struct st_database {
 	 * Should be define by using STONE_DATABASE_API_LEVEL only
 	 */
 	const struct st_plugin api_level;
+	/**
+	 * \brief Sha1 sum of plugins source code
+	 */
 	const char * src_checksum;
 };
 
@@ -336,7 +373,7 @@ struct st_database {
  *
  * This configuration should be previous loaded.
  *
- * \param[in] name : name of config
+ * \param[in] name name of config
  * \returns \b NULL if not found
  */
 struct st_database_config * st_database_get_config_by_name(const char * name);
@@ -345,25 +382,24 @@ struct st_database_config * st_database_get_config_by_name(const char * name);
  * \brief get the default database driver
  *
  * \return NULL if failed
- *
- * \note if \a database is not loaded then we try to load it
  */
 struct st_database * st_database_get_default_driver(void);
 
 /**
  * \brief get a database driver
  *
- * \param[in] database : database name
+ * \param[in] database database name
  * \return NULL if failed
  *
- * \note if \a database is not loaded then we try to load it
+ * \note if this driver is not loaded, this function will load it
+ * \warning the returned value <b>SHALL NOT BE RELEASE</b> with \a free
  */
 struct st_database * st_database_get_driver(const char * database);
 
 /**
  * \brief Register a database driver
  *
- * \param[in] database : a statically allocated struct st_database
+ * \param[in] database a statically allocated struct st_database
  *
  * \note Each database driver should call this function only one time
  * \code

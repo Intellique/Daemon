@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 25 Apr 2013 17:08:38 +0200                            *
+*  Last modified: Thu, 25 Apr 2013 23:09:30 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -1538,7 +1538,7 @@ static ssize_t st_db_postgresql_get_available_size_of_offline_media_from_pool(st
 }
 
 static char ** st_db_postgresql_get_checksums_by_pool(struct st_database_connection * connect, struct st_pool * pool, unsigned int * nb_checksums) {
-	if (connect == NULL || pool == NULL || nb_checksums == NULL)
+	if (connect == NULL || pool == NULL)
 		return NULL;
 
 	struct st_db_postgresql_connection_private * self = connect->data;
@@ -1552,17 +1552,22 @@ static char ** st_db_postgresql_get_checksums_by_pool(struct st_database_connect
 	const char * param[] = { poolid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
+	if (nb_checksums != NULL)
+		*nb_checksums = 0;
 
 	char ** checksums = NULL;
 	if (status == PGRES_FATAL_ERROR)
 		st_db_postgresql_get_error(result, query);
 	else {
-		*nb_checksums = PQntuples(result);
-		checksums = calloc(*nb_checksums, sizeof(char *));
+		unsigned int nb_tuples = PQntuples(result);
+		if (nb_checksums != NULL)
+			*nb_checksums = nb_tuples;
+		checksums = calloc(nb_tuples + 1, sizeof(char *));
 
 		unsigned int i;
-		for (i = 0; i < *nb_checksums; i++)
+		for (i = 0; i < nb_tuples; i++)
 			st_db_postgresql_get_string_dup(result, i, 0, checksums + i);
+		checksums[i] = NULL;
 	}
 
 	PQclear(result);

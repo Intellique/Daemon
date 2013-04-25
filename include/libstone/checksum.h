@@ -261,6 +261,8 @@ struct st_checksum {
 struct st_checksum_driver {
 	/**
 	 * \brief Name of the driver
+	 *
+	 * \note Should be unique and equals to libchecksum-name.so where name is the name of driver.
 	 */
 	const char * name;
 	/**
