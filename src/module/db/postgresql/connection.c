@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 24 Apr 2013 12:06:48 +0200                            *
+*  Last modified: Thu, 25 Apr 2013 17:08:38 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -1915,7 +1915,7 @@ static struct st_job_selected_path * st_db_postgresql_get_selected_paths(struct 
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	const char * query = "select_selected_paths_by_job";
-	st_db_postgresql_prepare(self, query, "SELECT id, path FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1)");
+	st_db_postgresql_prepare(self, query, "SELECT id, path FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1) ORDER BY id");
 
 	struct st_db_postgresql_job_data * job_data = job->db_data;
 	char * jobid;
