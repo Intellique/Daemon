@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 22 Apr 2013 13:39:44 +0200                            *
+*  Last modified: Fri, 26 Apr 2013 11:42:23 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_CHECKSUM_H__
@@ -238,7 +238,7 @@ struct st_checksum {
 		 * \li -1 if param error
 		 * \li \a length is ok
 		 *
-		 * \note this function can be called one or many times until function digest is called
+		 * \note this function can be called after function digest
 		 */
 		ssize_t (*update)(struct st_checksum * checksum, const void * data, ssize_t length);
 	} * ops;
