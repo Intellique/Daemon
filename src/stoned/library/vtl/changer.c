@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 25 Apr 2013 11:36:09 +0200                            *
+*  Last modified: Fri, 26 Apr 2013 15:57:37 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -247,6 +247,7 @@ struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_
 	for (i = 0; i < nb_slots; i++) {
 		struct st_media * md = self->medias[i];
 		struct st_vtl_media * vmd = md->data;
+		struct st_slot * sl = ch->slots + ch->nb_drives + i;
 
 		if (!vmd->used) {
 			unsigned int j;
@@ -266,6 +267,16 @@ struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_
 
 				free(media_file);
 				free(link_file);
+
+				char * sl_dir;
+				asprintf(&sl_dir, "%s/slots/%u", path, i);
+				sl->media = st_vtl_slot_get_media(ch, sl_dir);
+				free(sl_dir);
+
+				if (sl->media != NULL) {
+					sl->volume_name = strdup(sl->media->label);
+					sl->full = true;
+				}
 
 				break;
 			}
