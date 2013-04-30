@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 24 Apr 2013 15:17:16 +0200                            *
+*  Last modified: Tue, 30 Apr 2013 22:03:17 +0200                            *
 \****************************************************************************/
 
 // open
@@ -90,7 +90,7 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 	if (nb_checksum > 0 && file->digests != NULL) {
 		bool is_error = false;
 
-		st_job_add_record(check->connect, st_log_level_info, check->jp->job, "Start checking restored file '%s'", file->name);
+		st_job_add_record(check->connect, st_log_level_info, check->jp->job, "Start checking restored file '%s'", restore_to);
 
 		int fd = open(restore_to, O_RDONLY);
 		if (fd < 0) {
@@ -211,9 +211,10 @@ static void st_job_restore_archive_checks_worker_work(void * arg) {
 				pthread_mutex_unlock(&self->lock);
 
 				st_job_restore_archive_checks_worker_check(self, elt->file);
-				elt->checked = checked = true;
 
 				pthread_mutex_lock(&self->lock);
+
+				elt->checked = checked = true;
 			}
 			elt = elt->next;
 		}
