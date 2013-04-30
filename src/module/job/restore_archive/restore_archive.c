@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 24 Apr 2013 18:48:16 +0200                            *
+*  Last modified: Tue, 30 Apr 2013 23:45:13 +0200                            *
 \****************************************************************************/
 
 // free, malloc
@@ -216,6 +216,7 @@ static int st_job_restore_archive_run(struct st_job * job) {
 				drive = changer->ops->find_free_drive(changer, slot->media->format, true, false);
 
 				if (drive == NULL) {
+					slot->lock->ops->unlock(slot->lock);
 					sleep(5);
 					continue;
 				}

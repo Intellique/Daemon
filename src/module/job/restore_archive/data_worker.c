@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 30 Apr 2013 21:25:38 +0200                            *
+*  Last modified: Wed, 01 May 2013 00:04:03 +0200                            *
 \****************************************************************************/
 
 // mknod, open
@@ -114,6 +114,11 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 	struct st_drive * dr = self->drive;
 	struct st_slot * sl = self->slot;
 
+	bool has_slot_lock = dr->slot != sl;
+
+	if (job->db_status != st_job_status_stopped)
+		goto end_of_work;
+
 	if (dr->slot->media != NULL && dr->slot != sl) {
 		st_job_add_record(connect, st_log_level_info, job, "Unloading media (%s)", dr->slot->media->name);
 		int failed = dr->changer->ops->unload(dr->changer, dr);
@@ -124,6 +129,9 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 		}
 	}
 
+	if (job->db_status != st_job_status_stopped)
+		goto end_of_work;
+
 	if (dr->slot->media == NULL) {
 		st_job_add_record(connect, st_log_level_info, job, "Loading media (%s)", sl->media->name);
 		int failed = dr->changer->ops->load_slot(dr->changer, sl, dr);
@@ -131,6 +139,9 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 			st_job_add_record(connect, st_log_level_info, job, "Loading media (%s) has failed", sl->media->name);
 			self->nb_errors++;
 			goto end_of_work;
+		} else {
+			sl->lock->ops->unlock(sl->lock);
+			has_slot_lock = false;
 		}
 	}
 
@@ -329,6 +340,9 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 	}
 
 end_of_work:
+	if (has_slot_lock)
+		sl->lock->ops->unlock(sl->lock);
+
 	dr->lock->ops->unlock(dr->lock);
 
 	connect->ops->free(connect);
