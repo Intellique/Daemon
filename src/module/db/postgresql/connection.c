@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 25 Apr 2013 23:09:30 +0200                            *
+*  Last modified: Wed, 01 May 2013 00:54:45 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2524,6 +2524,8 @@ static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct s
 		unsigned int i;
 		for (i = 0; i < volume->nb_files; i++) {
 			struct st_archive_file * file = malloc(sizeof(struct st_archive_file));
+			bzero(file, sizeof(struct st_archive_file));
+
 			st_db_postgresql_get_string_dup(result, i, 1, &file->name);
 			file->type = st_archive_file_string_to_type(PQgetvalue(result, i, 2));
 			st_db_postgresql_get_string_dup(result, i, 3, &file->mime_type);

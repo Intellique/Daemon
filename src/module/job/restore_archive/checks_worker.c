@@ -85,7 +85,11 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 	bool has_restore_to = check->connect->ops->has_restore_to_by_job(check->connect, check->jp->job);
 	char * restore_to = st_job_restore_archive_path_get(check->jp->restore_path, check->connect, check->jp->job, file, has_restore_to);
 
-	unsigned int nb_checksum = check->connect->ops->get_checksums_of_file(check->connect, file);
+	unsigned int nb_checksum = 0;
+	if (file->digests != NULL)
+		nb_checksum = file->digests->nb_elements;
+	else
+		nb_checksum = check->connect->ops->get_checksums_of_file(check->connect, file);
 
 	if (nb_checksum > 0 && file->digests != NULL) {
 		bool is_error = false;
