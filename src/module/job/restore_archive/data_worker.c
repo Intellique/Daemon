@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 01 May 2013 00:04:03 +0200                            *
+*  Last modified: Wed, 01 May 2013 00:24:52 +0200                            *
 \****************************************************************************/
 
 // mknod, open
@@ -116,7 +116,7 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 
 	bool has_slot_lock = dr->slot != sl;
 
-	if (job->db_status != st_job_status_stopped)
+	if (job->db_status == st_job_status_stopped)
 		goto end_of_work;
 
 	if (dr->slot->media != NULL && dr->slot != sl) {
@@ -129,7 +129,7 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 		}
 	}
 
-	if (job->db_status != st_job_status_stopped)
+	if (job->db_status == st_job_status_stopped)
 		goto end_of_work;
 
 	if (dr->slot->media == NULL) {
