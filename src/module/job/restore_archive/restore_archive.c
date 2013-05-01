@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 30 Apr 2013 23:45:13 +0200                            *
+*  Last modified: Wed, 01 May 2013 13:01:26 +0200                            *
 \****************************************************************************/
 
 // free, malloc
@@ -176,13 +176,20 @@ static int st_job_restore_archive_run(struct st_job * job) {
 		struct st_slot * slot = NULL;
 		struct st_drive * drive = NULL;
 		while (!stop) {
+			unsigned int nb_running_worker = 0;
+
 			// compute progression
 			ssize_t total_done = 0;
 			struct st_job_restore_archive_data_worker * w1 = self->first_worker;
 			while (w1 != NULL) {
 				total_done += w1->total_restored;
+
+				if (w1->running)
+					nb_running_worker++;
+
 				w1 = w1->next;
 			}
+
 			float done = total_done;
 			done *= 0.97;
 			done /= size;
@@ -196,6 +203,9 @@ static int st_job_restore_archive_run(struct st_job * job) {
 					st_job_add_record(self->connect, st_log_level_warning, job, "Warning, media named (%s) is not found, please insert it", vol->media->name);
 				has_alerted_user = true;
 
+				if (nb_running_worker == 0)
+					job->sched_status = st_job_status_pause;
+
 				sleep(5);
 
 				continue;
@@ -205,18 +215,30 @@ static int st_job_restore_archive_run(struct st_job * job) {
 			drive = slot->drive;
 
 			if (drive != NULL) {
-				if (drive->lock->ops->timed_lock(drive->lock, 5000))
+				if (drive->lock->ops->timed_lock(drive->lock, 5000)) {
+					if (nb_running_worker == 0)
+						job->sched_status = st_job_status_pause;
+
 					continue;
+				}
 
 				stop = true;
 			} else {
-				if (slot->lock->ops->timed_lock(slot->lock, 5000))
+				if (slot->lock->ops->timed_lock(slot->lock, 5000)) {
+					if (nb_running_worker == 0)
+						job->sched_status = st_job_status_pause;
+
 					continue;
+				}
 
 				drive = changer->ops->find_free_drive(changer, slot->media->format, true, false);
 
 				if (drive == NULL) {
 					slot->lock->ops->unlock(slot->lock);
+
+					if (nb_running_worker == 0)
+						job->sched_status = st_job_status_pause;
+
 					sleep(5);
 					continue;
 				}
@@ -224,6 +246,8 @@ static int st_job_restore_archive_run(struct st_job * job) {
 				stop = true;
 			}
 		}
+
+		job->sched_status = st_job_status_running;
 
 		worker = st_job_restore_archive_data_worker_new(self, drive, slot);
 		if (self->first_worker == NULL)
