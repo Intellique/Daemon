@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 22 Apr 2013 14:55:07 +0200                            *
+*  Last modified: Thu, 02 May 2013 13:57:48 +0200                            *
 \****************************************************************************/
 
 // bool
@@ -91,7 +91,7 @@ static bool st_job_format_media_check(struct st_job * job) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Media not found");
 		return false;
 	}
-	if (media->type == st_media_type_cleanning) {
+	if (media->type == st_media_type_cleaning) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Try to format a cleaning media");
 		return false;
 	}
@@ -354,16 +354,21 @@ int st_job_format_media_run(struct st_job * job) {
 	struct st_media * media = st_media_get_by_job(job, self->connect);
 	if (media == NULL) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Media not found");
+		job->sched_status = st_job_status_error;
 		return 1;
 	}
-	if (media->type == st_media_type_cleanning) {
+	if (media->type == st_media_type_cleaning) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Try to format a cleaning media");
+		job->sched_status = st_job_status_error;
 		return 1;
 	}
-	if (media->type == st_media_type_readonly && media->nb_volumes > 0) {
+	if (media->type == st_media_type_worm && media->nb_volumes > 0) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Try to format a worm media with data");
+		job->sched_status = st_job_status_error;
 		return 1;
 	}
+	if (media->status == st_media_status_error)
+		st_job_add_record(self->connect, st_log_level_warning, job, "Try to format a media with error status");
 
 	struct st_pool * pool = st_pool_get_by_job(job, self->connect);
 	if (pool == NULL) {
@@ -372,11 +377,13 @@ int st_job_format_media_run(struct st_job * job) {
 	}
 	if (pool->deleted) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Try to format to a pool which is deleted");
+		job->sched_status = st_job_status_error;
 		return 1;
 	}
 
 	if (media->format != pool->format) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Try to format a media whose type does not match the format of pool");
+		job->sched_status = st_job_status_error;
 		return 1;
 	}
 
@@ -482,6 +489,8 @@ int st_job_format_media_run(struct st_job * job) {
 			media->lock->ops->unlock(media->lock);
 			self->connect->ops->sync_media(self->connect, media);
 
+			job->sched_status = st_job_status_error;
+
 			return 2;
 		}
 	}
@@ -509,12 +518,30 @@ int st_job_format_media_run(struct st_job * job) {
 			media->lock->ops->unlock(media->lock);
 			self->connect->ops->sync_media(self->connect, media);
 
+			job->sched_status = st_job_status_error;
+
 			return 3;
 		}
 	}
 
-	if (job->db_status != st_job_status_stopped)
+	if (job->db_status != st_job_status_stopped) {
 		job->done = 0.6;
+
+		if (media->type == st_media_type_readonly) {
+			st_job_add_record(self->connect, st_log_level_error, job, "Try to format a write protected media");
+			job->sched_status = st_job_status_error;
+
+			self->connect->ops->sync_media(self->connect, media);
+			media->locked = false;
+			media->lock->ops->unlock(media->lock);
+			self->connect->ops->sync_media(self->connect, media);
+
+			if (drive != NULL && has_lock_on_drive)
+				drive->lock->ops->unlock(drive->lock);
+
+			return 1;
+		}
+	}
 
 	// check blocksize
 	enum update_blocksize {
@@ -577,9 +604,11 @@ int st_job_format_media_run(struct st_job * job) {
 			status = !st_media_check_header(drive);
 		}
 
-		if (status)
+		if (status) {
 			st_job_add_record(self->connect, st_log_level_info, job, "Job: format media finished with code = %d, num runs %ld", status, job->num_runs);
-		else {
+			job->sched_status = st_job_status_error;
+			status = 1;
+		} else {
 			job->done = 1;
 			st_job_add_record(self->connect, st_log_level_info, job, "Job: format media finished with code = OK, num runs %ld", job->num_runs);
 		}
@@ -595,6 +624,6 @@ int st_job_format_media_run(struct st_job * job) {
 	if (drive != NULL && has_lock_on_drive)
 		drive->lock->ops->unlock(drive->lock);
 
-	return 0;
+	return status;
 }
 

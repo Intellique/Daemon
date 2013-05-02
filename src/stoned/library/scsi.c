@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 28 Feb 2013 19:20:23 +0100                            *
+*  Last modified: Thu, 02 May 2013 13:56:54 +0200                            *
 \****************************************************************************/
 
 // htobe16
@@ -1494,7 +1494,7 @@ int st_scsi_tape_read_mam(int fd, struct st_media * media) {
 			case scsi_mam_medium_type:
 				switch (attr->attribute_value.int8) {
 					case 0x01:
-						media->type = st_media_type_cleanning;
+						media->type = st_media_type_cleaning;
 						break;
 
 					case 0x80:

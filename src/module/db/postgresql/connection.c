@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 01 May 2013 00:54:45 +0200                            *
+*  Last modified: Thu, 02 May 2013 13:40:28 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -1310,7 +1310,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		}
 
 		const char * query = "update_media";
-		st_db_postgresql_prepare(self, query, "UPDATE media SET uuid = $1, name = $2, status = $3, location = $4, loadcount = $5, readcount = $6, writecount = $7, nbfiles = $8, blocksize = $9, freeblock = $10, totalblock = $11, pool = $12, locked = $13 WHERE id = $14");
+		st_db_postgresql_prepare(self, query, "UPDATE media SET uuid = $1, name = $2, status = $3, location = $4, loadcount = $5, readcount = $6, writecount = $7, nbfiles = $8, blocksize = $9, freeblock = $10, totalblock = $11, pool = $12, locked = $13, type = $14 WHERE id = $15");
 
 		char * load, * read, * write, * nbfiles, * blocksize, * freeblock, * totalblock;
 		asprintf(&load, "%ld", media->load_count);
@@ -1325,9 +1325,9 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 			*media->uuid ? media->uuid : NULL, media->name, st_media_status_to_string(media->status),
 			st_media_location_to_string(media->location),
 			load, read, write, nbfiles, blocksize, freeblock, totalblock,
-			poolid, locked ? "true" : "false", mediaid
+			poolid, locked ? "true" : "false", st_media_type_to_string(media->type), mediaid
 		};
-		PGresult * result = PQexecPrepared(self->connect, query, 14, param2, NULL, NULL, 0);
+		PGresult * result = PQexecPrepared(self->connect, query, 15, param2, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)

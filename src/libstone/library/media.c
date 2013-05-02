@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 17 Apr 2013 14:14:59 +0200                            *
+*  Last modified: Thu, 02 May 2013 13:56:47 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -126,9 +126,10 @@ static const struct st_media_type2 {
 	char * name;
 	enum st_media_type type;
 } st_media_types[] = {
-	{ "cleaning",   st_media_type_cleanning },
-	{ "read only",  st_media_type_readonly },
+	{ "cleaning",   st_media_type_cleaning },
+	{ "readonly",   st_media_type_readonly },
 	{ "rewritable", st_media_type_rewritable },
+	{ "worm",       st_media_type_worm },
 
 	{ "unknown", st_media_type_unknown },
 };

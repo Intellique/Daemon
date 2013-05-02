@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 22 Feb 2013 17:14:16 +0100                            *
+*  Last modified: Thu, 02 May 2013 13:56:29 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -63,9 +63,10 @@ enum st_media_status {
 };
 
 enum st_media_type {
-	st_media_type_cleanning,
+	st_media_type_cleaning,
 	st_media_type_readonly,
 	st_media_type_rewritable,
+	st_media_type_worm, //TODO: à ajouter dans la base de données
 
 	st_media_type_unknown,
 };

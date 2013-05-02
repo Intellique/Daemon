@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 25 Apr 2013 17:46:30 +0200                            *
+*  Last modified: Thu, 02 May 2013 13:11:41 +0200                            *
 \****************************************************************************/
 
 // errno
@@ -216,6 +216,8 @@ static void st_scsi_tape_drive_create_media(struct st_drive * drive) {
 	st_media_read_header(drive);
 
 	st_media_add(media);
+
+	drive->slot->media = media;
 }
 
 static int st_scsi_tape_drive_eject(struct st_drive * drive) {
@@ -614,6 +616,8 @@ static int st_scsi_tape_drive_update_media_info(struct st_drive * drive) {
 			int fd = open(drive->scsi_device, O_RDWR);
 			st_scsi_tape_size_available(fd, drive->slot->media);
 			close(fd);
+
+			drive->slot->media->type = GMT_WR_PROT(self->status.mt_gstat) ? st_media_type_readonly : st_media_type_rewritable;
 		}
 	} else {
 		drive->status = st_drive_error;
