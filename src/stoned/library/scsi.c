@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 02 May 2013 13:56:54 +0200                            *
+*  Last modified: Sat, 04 May 2013 18:04:10 +0200                            *
 \****************************************************************************/
 
 // htobe16
@@ -803,10 +803,11 @@ void st_scsi_loader_status_new(int fd, struct st_changer * changer, int * transp
 
 		struct st_scsislot * sp = slot->data = malloc(sizeof(struct st_scsislot));
 		sp->address = sp->src_address = 0;
+		sp->src_slot = NULL;
 	}
 
-	st_scsi_loader_status_update_slot(fd, changer, changer->slots + changer->nb_drives, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element);
 	st_scsi_loader_status_update_slot(fd, changer, changer->slots, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer);
+	st_scsi_loader_status_update_slot(fd, changer, changer->slots + changer->nb_drives, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element);
 	if (result.number_of_import_export_elements > 0)
 		st_scsi_loader_status_update_slot(fd, changer, changer->slots + (changer->nb_slots - nb_io_slots), result.first_import_export_element_address, result.number_of_import_export_elements, scsi_loader_element_type_import_export_element);
 
@@ -815,6 +816,26 @@ void st_scsi_loader_status_new(int fd, struct st_changer * changer, int * transp
 
 	if (changer->nb_drives > 1)
 		st_scsi_loader_sort_drive(fd, changer, result.first_data_transfer_element_address);
+
+	for (i = 0; i < changer->nb_drives; i++) {
+		struct st_drive * dr = changer->drives + i;
+		struct st_slot * dr_sl = dr->slot;
+		struct st_scsislot * dr_scsi_sl = dr_sl->data;
+
+		if (dr_scsi_sl->src_address == 0)
+			continue;
+
+		unsigned j;
+		for (j = changer->nb_drives; changer->nb_slots; j++) {
+			struct st_slot * sl = changer->slots + j;
+			struct st_scsislot * scsi_sl = sl->data;
+
+			if (dr_scsi_sl->src_address == scsi_sl->address) {
+				dr_scsi_sl->src_slot = sl;
+				break;
+			}
+		}
+	}
 }
 
 static void st_scsi_loader_sort_drive(int fd, struct st_changer * changer, int start_element) {

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 04 Dec 2012 23:14:00 +0100                            *
+*  Last modified: Sat, 04 May 2013 16:52:16 +0200                            *
 \****************************************************************************/
 
 #ifndef __ST_STONED_LIBRARY_SCSI_H__
@@ -39,6 +39,8 @@
 struct st_scsislot {
 	int address;
 	int src_address;
+
+	struct st_slot * src_slot;
 };
 
 void st_scsi_loader_check_slot(int fd, struct st_changer * changer, struct st_slot * slot);

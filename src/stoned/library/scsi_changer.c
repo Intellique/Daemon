@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sat, 04 May 2013 13:08:08 +0200                            *
+*  Last modified: Sat, 04 May 2013 18:40:20 +0200                            *
 \****************************************************************************/
 
 // open
@@ -154,7 +154,7 @@ static int st_scsi_changer_load_media(struct st_changer * ch, struct st_media * 
 	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
 		slot = ch->slots + i;
 
-		if (slot->media == from && !slot->lock->ops->try_lock(slot->lock)) {
+		if (slot->media == from && !slot->lock->ops->lock(slot->lock)) {
 			int failed = st_scsi_changer_load_slot(ch, slot, to);
 			slot->lock->ops->unlock(slot->lock);
 			return failed;
@@ -208,6 +208,7 @@ static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * fr
 		struct st_scsislot * sfrom = from->data;
 		struct st_scsislot * sto = to->slot->data;
 		sto->src_address = sfrom->address;
+		sto->src_slot = from;
 
 		st_log_write_all(st_log_level_debug, st_log_type_changer, "[%s | %s]: loading media '%s' from slot #%td to drive #%td finished with code = OK", ch->vendor, ch->model, to->slot->volume_name, from - ch->slots, to - ch->drives);
 
@@ -408,32 +409,18 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 	st_log_write_all(st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading media, step 1 : looking for slot", ch->vendor, ch->model);
 
 	struct st_scsislot * slot_from = from->slot->data;
-	struct st_slot * to = NULL;
+	struct st_slot * to = slot_from->src_slot;
 
-	unsigned int i;
-	for (i = ch->nb_drives; i < ch->nb_slots && to == NULL; i++) {
-		to = ch->slots + i;
-
-		if (!to->enable || to->media != NULL) {
+	if (to != NULL && to->enable) {
+		if (!to->lock->ops->timed_lock(to->lock, 2000)) {
+			st_log_write_all(st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading media, step 1 : found origin slot '#%td' of media '%s'", ch->vendor, ch->model, to - ch->slots, from->slot->volume_name);
+		} else {
+			st_log_write_all(st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading media, step 1 : origin slot '#%td' is already locked", ch->vendor, ch->model, to - ch->slots);
 			to = NULL;
-			continue;
 		}
-
-		struct st_scsislot * sto = to->data;
-		if (slot_from->src_address != sto->address) {
-			to = NULL;
-			continue;
-		}
-
-		if (to->lock->ops->try_lock(to->lock)) {
-			to = NULL;
-			break;
-		}
-
-		st_log_write_all(st_log_level_debug, st_log_type_changer, "[%s | %s]: unloading media, step 1 : found origin slot '#%td' of media '%s'", ch->vendor, ch->model, to - ch->slots, from->slot->volume_name);
 	}
 
-	unsigned int nb_free_slots = 0;
+	unsigned int i, nb_free_slots = 0;
 	for (i = ch->nb_drives; i < ch->nb_slots && to == NULL; i++) {
 		to = ch->slots + i;
 
