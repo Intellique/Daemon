@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 02 May 2013 13:11:41 +0200                            *
+*  Last modified: Sat, 04 May 2013 15:02:25 +0200                            *
 \****************************************************************************/
 
 // errno
@@ -582,6 +582,22 @@ static int st_scsi_tape_drive_update_media_info(struct st_drive * drive) {
 			failed = ioctl(self->fd_nst, MTIOCGET, &self->status);
 			st_scsi_tape_drive_operation_stop(drive);
 		}
+	}
+
+	/**
+	 * Make sure that we have the correct status of tape
+	 */
+	while (!failed && !GMT_DR_OPEN(self->status.mt_gstat)) {
+		unsigned char density_code = (self->status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT;
+
+		if (density_code != 0)
+			break;
+
+		// get the tape status again
+		st_scsi_tape_drive_on_failed(drive, 1, 20);
+		st_scsi_tape_drive_operation_start(self);
+		failed = ioctl(self->fd_nst, MTIOCGET, &self->status);
+		st_scsi_tape_drive_operation_stop(drive);
 	}
 
 	if (!failed) {

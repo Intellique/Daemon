@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 25 Apr 2013 11:36:06 +0200                            *
+*  Last modified: Sat, 04 May 2013 13:08:08 +0200                            *
 \****************************************************************************/
 
 // open
@@ -396,6 +396,7 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 		return 1;
 
 	from->ops->update_media_info(from);
+	struct st_media * loaded_media = from->slot->media;
 	if (!from->is_empty)
 		from->ops->eject(from);
 
@@ -473,7 +474,7 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 	}
 
 	if (!failed) {
-		struct st_media * media = to->media = from->slot->media;
+		to->media = loaded_media;
 		from->slot->media = NULL;
 		to->volume_name = from->slot->volume_name;
 		from->slot->volume_name = NULL;
@@ -481,8 +482,11 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 		to->full = true;
 		slot_from->src_address = 0;
 
-		if (media != NULL)
-			media->location = st_media_location_online;
+		/**
+		 * while setup of changer, loaded_media can be NULL
+		 */
+		if (loaded_media != NULL)
+			loaded_media->location = st_media_location_online;
 	}
 
 	to->lock->ops->unlock(to->lock);

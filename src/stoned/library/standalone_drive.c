@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 19 Apr 2013 16:51:46 +0200                            *
+*  Last modified: Sat, 04 May 2013 15:41:54 +0200                            *
 \****************************************************************************/
 
 // malloc
@@ -128,12 +128,26 @@ static int st_standalone_drive_shut_down(struct st_changer * ch __attribute__((u
 }
 
 static int st_standalone_drive_unload(struct st_changer * ch, struct st_drive * from) {
-	if (ch == NULL || from == NULL || !ch->enabled)
+	if (ch == NULL || from == NULL || !ch->enabled || ch->drives != from)
 		return 1;
 
 	from->ops->update_media_info(from);
 	if (!from->is_empty)
 		from->ops->eject(from);
+
+	struct st_slot * sl = from->slot;
+	if (from->is_empty) {
+		if (sl->media != NULL)
+			sl->media->location = st_media_location_offline;
+
+		sl->full = false;
+		sl->media = NULL;
+	} else {
+		sl->full = true;
+
+		if (sl->media != NULL)
+			sl->media->location = st_media_location_indrive;
+	}
 
 	return 0;
 }
@@ -145,6 +159,20 @@ static int st_standalone_drive_update_status(struct st_changer * ch) {
 		return 0;
 
 	dr->ops->update_media_info(dr);
+
+	struct st_slot * sl = dr->slot;
+	if (dr->is_empty) {
+		if (sl->media != NULL)
+			sl->media->location = st_media_location_offline;
+
+		sl->full = false;
+		sl->media = NULL;
+	} else {
+		sl->full = true;
+
+		if (sl->media != NULL)
+			sl->media->location = st_media_location_indrive;
+	}
 
 	dr->lock->ops->unlock(dr->lock);
 
