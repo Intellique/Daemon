@@ -10,7 +10,7 @@ my ($version) = qx/git describe/;
 chomp $version;
 my ($branch) = grep {s/^\* (?:.*\/)?(\w+)/$1/} qx/git branch/;
 chomp $branch;
-$version .= '-' . $branch if $branch ne 'stable';
+$version .= '-' . $branch if $branch ne 'master';
 
 my ($git_commit) = qx/git log -1 --format=%H/;
 chomp $git_commit;
