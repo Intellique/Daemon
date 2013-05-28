@@ -22,9 +22,11 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sat, 20 Apr 2013 23:26:32 +0200                            *
+*  Last modified: Tue, 28 May 2013 18:16:42 +0200                            *
 \****************************************************************************/
 
+// open, size_t
+#include <sys/types.h>
 // be*toh, htobe*
 #include <endian.h>
 // open
@@ -39,10 +41,6 @@
 #include <string.h>
 // ioctl
 #include <sys/ioctl.h>
-// open
-#include <sys/stat.h>
-// open
-#include <sys/types.h>
 // close
 #include <unistd.h>
 

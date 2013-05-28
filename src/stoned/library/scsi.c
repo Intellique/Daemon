@@ -22,8 +22,11 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sat, 04 May 2013 18:04:10 +0200                            *
+*  Last modified: Tue, 28 May 2013 18:18:42 +0200                            *
 \****************************************************************************/
+
+// open, size_t
+#include <sys/types.h>
 
 // htobe16
 #include <endian.h>
@@ -41,8 +44,6 @@
 #include <sys/ioctl.h>
 // open
 #include <sys/stat.h>
-// open, ssize_t
-#include <sys/types.h>
 // sleep
 #include <unistd.h>
 
