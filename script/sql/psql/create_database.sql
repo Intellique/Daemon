@@ -405,10 +405,11 @@ CREATE TABLE ArchiveFileToArchiveVolume (
     archiveVolume BIGINT NOT NULL REFERENCES ArchiveVolume(id) ON UPDATE CASCADE ON DELETE CASCADE,
     archiveFile BIGINT NOT NULL REFERENCES ArchiveFile(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
-    blockNumber BIGINT CHECK (blockNumber >= 0),
+    blockNumber BIGINT CHECK (blockNumber >= 0) NOT NULL,
+    archivetime TIMESTAMP(0) NOT NULL,
 
-    checksumok BOOLEAN NOT NULL DEFAULT FALSE,
     checktime TIMESTAMP(0),
+    checksumok BOOLEAN NOT NULL DEFAULT FALSE,
 
     PRIMARY KEY (archiveVolume, archiveFile)
 );
