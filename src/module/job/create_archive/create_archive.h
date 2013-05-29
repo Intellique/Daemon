@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 13 Feb 2013 18:02:18 +0100                            *
+*  Last modified: Tue, 28 May 2013 19:13:12 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_CREATEARCHIVE_H__
@@ -44,10 +44,11 @@ struct st_job_create_archive_private {
 
 	ssize_t total_done;
 	ssize_t total_size;
+	struct st_pool * pool;
 
 	struct st_job_create_archive_data_worker {
 		struct st_job_create_archive_data_worker_ops {
-			int (*add_file)(struct st_job_create_archive_data_worker * worker, struct st_job_selected_path * selected_path, const char * path);
+			int (*add_file)(struct st_job_create_archive_data_worker * worker, const char * path);
 			void (*close)(struct st_job_create_archive_data_worker * worker);
 			int (*end_file)(struct st_job_create_archive_data_worker * worker);
 			void (*free)(struct st_job_create_archive_data_worker * worker);

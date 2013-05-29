@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 02 May 2013 13:40:28 +0200                            *
+*  Last modified: Tue, 28 May 2013 22:42:24 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -3394,7 +3394,7 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 	}
 
 	query = "insert_archivefiletoarchivevolume";
-	st_db_postgresql_prepare(self, query, "INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile, blocknumber) VALUES ($1, $2, $3)");
+	st_db_postgresql_prepare(self, query, "INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile, blocknumber, archivetime) VALUES ($1, $2, $3, $4)");
 
 	for (i = 0; i < volume->nb_files && !failed; i++) {
 		struct st_archive_files * f = volume->files + i;
@@ -3405,8 +3405,13 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 		char * block_number;
 		asprintf(&block_number, "%zd", f->position);
 
-		const char * param[] = { volumeid, file_id, block_number };
-		PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+		char atime[32];
+		struct tm local_current;
+		localtime_r(&f->file->create_time, &local_current);
+		strftime(atime, 32, "%F %T", &local_current);
+
+		const char * param[] = { volumeid, file_id, block_number, atime };
+		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)

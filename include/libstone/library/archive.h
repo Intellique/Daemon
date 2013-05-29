@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 17 Feb 2013 11:54:18 +0100                            *
+*  Last modified: Tue, 28 May 2013 18:24:13 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -113,6 +113,7 @@ struct st_archive_file {
 
 	time_t create_time;
 	time_t modify_time;
+	time_t archived_time;
 
 	bool check_ok;
 	time_t check_time;

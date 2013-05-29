@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 13 Feb 2013 17:56:38 +0100                            *
+*  Last modified: Tue, 28 May 2013 19:13:14 +0200                            *
 \****************************************************************************/
 
 // asprintf, versionsort
@@ -106,12 +106,14 @@ static int st_job_create_archive_archive(struct st_job * job, struct st_job_sele
 	if (S_ISSOCK(st.st_mode))
 		return 0;
 
-	int failed = self->worker->ops->add_file(self->worker, selected_path, path);
+	int failed = self->worker->ops->add_file(self->worker, path);
 	if (failed) {
 		if (failed < 0)
 			st_job_add_record(self->connect, st_log_level_warning, job, "Error while adding file: '%s'", path);
 		return failed;
 	}
+
+	self->meta->ops->add_file(self->meta, selected_path, path, self->pool);
 
 	if (S_ISREG(st.st_mode)) {
 		int fd = open(path, O_RDONLY);
@@ -231,7 +233,7 @@ static int st_job_create_archive_run(struct st_job * job) {
 
 	self->selected_paths = self->connect->ops->get_selected_paths(self->connect, job, &self->nb_selected_paths);
 
-	struct st_pool * pool = st_pool_get_by_job(job, self->connect);
+	self->pool = st_pool_get_by_job(job, self->connect);
 
 	unsigned int i;
 	for (i = 0; i < self->nb_selected_paths; i++) {
@@ -241,7 +243,11 @@ static int st_job_create_archive_run(struct st_job * job) {
 		// remove trailing '/'
 		st_util_string_rtrim(p->path, '/');
 
-		self->total_size += st_format_get_size(p->path, true, pool->format);
+		ssize_t size = st_format_get_size(p->path, true, self->pool->format);
+		if (size >= 0)
+			self->total_size += size;
+		else
+			st_job_add_record(self->connect, st_log_level_error, job, "Error while computing size of '%s'", p->path);
 	}
 
 	char bufsize[32];

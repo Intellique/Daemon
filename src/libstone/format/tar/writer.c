@@ -22,10 +22,10 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 13 Feb 2013 16:31:06 +0100                            *
+*  Last modified: Tue, 07 May 2013 10:31:18 +0200                            *
 \****************************************************************************/
 
-// asprintf, versionsort
+// asprintf
 #define _GNU_SOURCE
 // scandir
 #include <dirent.h>
@@ -142,13 +142,15 @@ ssize_t st_format_tar_get_size(const char * path, bool recursive) {
 		file_size += 512 + sfile.st_size - sfile.st_size % 512;
 	else if (recursive && S_ISDIR(sfile.st_mode)) {
 		struct dirent ** dl = NULL;
-		int nb_paths = scandir(path, &dl, st_util_file_basic_scandir_filter, versionsort);
+		int nb_paths = scandir(path, &dl, st_util_file_basic_scandir_filter, NULL);
 		int i;
 		for (i = 0; i < nb_paths; i++) {
 			char * subpath = NULL;
 			asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
 
-			file_size += st_format_tar_get_size(subpath, recursive);
+			ssize_t size = st_format_tar_get_size(subpath, recursive);
+			if (size > 0)
+				file_size += size;
 
 			free(subpath);
 			free(dl[i]);
