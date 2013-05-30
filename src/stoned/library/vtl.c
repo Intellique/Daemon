@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 04 Feb 2013 19:23:11 +0100                            *
+*  Last modified: Thu, 30 May 2013 21:18:06 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -89,7 +89,7 @@ void st_vtl_add(const struct st_hashtable * params) {
 	free(drive_dir);
 
 	// media format
-	struct st_media_format * format = st_media_format_get_by_name(media_format, st_media_format_mode_linear);
+	struct st_media_format * format = st_media_format_get_by_name(media_format, st_media_format_mode_disk);
 
 	// media
 	char * media_dir;
