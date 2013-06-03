@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sat, 04 May 2013 15:02:25 +0200                            *
+*  Last modified: Mon, 03 Jun 2013 19:42:36 +0200                            *
 \****************************************************************************/
 
 // errno
@@ -66,6 +66,7 @@
 struct st_scsi_tape_drive_private {
 	int fd_nst;
 	bool used_by_io;
+	bool allow_update_media;
 	struct timeval last_start;
 	struct mtget status;
 };
@@ -451,6 +452,7 @@ void st_scsi_tape_drive_setup(struct st_drive * drive) {
 	bzero(self, sizeof(struct st_scsi_tape_drive_private));
 	self->fd_nst = fd;
 	self->used_by_io = false;
+	self->allow_update_media = true;
 
 	drive->mode = st_media_format_mode_linear;
 	drive->ops = &st_scsi_tape_drive_ops;
@@ -555,6 +557,10 @@ static int st_scsi_tape_drive_update_media_info(struct st_drive * drive) {
 
 	struct st_scsi_tape_drive_private * self = drive->data;
 
+	if (!self->allow_update_media)
+		return 0;
+	self->allow_update_media = false;
+
 	st_scsi_tape_drive_on_failed(drive, 0, 1);
 
 	st_scsi_tape_drive_operation_start(self);
@@ -601,6 +607,8 @@ static int st_scsi_tape_drive_update_media_info(struct st_drive * drive) {
 	}
 
 	if (!failed) {
+		bool is_empty = drive->is_empty;
+
 		if (GMT_DR_OPEN(self->status.mt_gstat)) {
 			drive->status = st_drive_empty_idle;
 			drive->is_empty = true;
@@ -634,11 +642,22 @@ static int st_scsi_tape_drive_update_media_info(struct st_drive * drive) {
 			close(fd);
 
 			drive->slot->media->type = GMT_WR_PROT(self->status.mt_gstat) ? st_media_type_readonly : st_media_type_rewritable;
+
+			if (is_empty) {
+				st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Checking media header", drive->vendor, drive->model, drive - drive->changer->drives);
+				if (!st_media_check_header(drive)) {
+					drive->slot->media->status = st_media_status_error;
+					st_log_write_all(st_log_level_error, st_log_type_drive, "[%s | %s | #%td]: Error while checking media header", drive->vendor, drive->model, drive - drive->changer->drives);
+					self->allow_update_media = true;
+					return 1;
+				}
+			}
 		}
 	} else {
 		drive->status = st_drive_error;
 	}
 
+	self->allow_update_media = true;
 	return failed;
 }
 

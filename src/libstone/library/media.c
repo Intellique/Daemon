@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 02 May 2013 13:56:47 +0200                            *
+*  Last modified: Mon, 03 Jun 2013 19:05:40 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -352,12 +352,9 @@ bool st_media_check_header(struct st_drive * drive) {
 
 		int nb_parsed2 = 0;
 		int ok = 1;
-		bool has_label = false;
 
-		if (sscanf(buffer + nb_parsed, "Label: %36s\n%n", name, &nb_parsed2) == 1) {
+		if (sscanf(buffer + nb_parsed, "Label: %36s\n%n", name, &nb_parsed2) == 1)
 			nb_parsed += nb_parsed2;
-			has_label = true;
-		}
 
 		if (ok && sscanf(buffer + nb_parsed, "Tape id: uuid=%36s\n%n", uuid, &nb_parsed2) == 1)
 			nb_parsed += nb_parsed2;
@@ -386,24 +383,12 @@ bool st_media_check_header(struct st_drive * drive) {
 		}
 
 		if (ok) {
-			bool differ = false;
-
 			if (strcmp(media->uuid, uuid)) {
 				st_log_write_all(st_log_level_debug, st_log_type_daemon, "[%s | %s | #%td]: media has different uuid (%s vs %s)", drive->vendor, drive->model, drive - drive->changer->drives, uuid, media->uuid);
-				differ = true;
+				return false;
 			}
 
-			if ((has_label && media->label == NULL) || (!has_label && media->label == NULL) || (has_label && media->label && strcmp(name, media->label))) {
-				st_log_write_all(st_log_level_debug, st_log_type_daemon, "[%s | %s | #%td]: media has different label", drive->vendor, drive->model, drive - drive->changer->drives);
-				differ = true;
-			}
-
-			if (strcmp(media->name, name)) {
-				st_log_write_all(st_log_level_debug, st_log_type_daemon, "[%s | %s | #%td]: media has different name (%s vs %s)", drive->vendor, drive->model, drive - drive->changer->drives, name, media->name);
-				differ = true;
-			}
-
-			return !differ;
+			return true;
 		}
 	}
 
