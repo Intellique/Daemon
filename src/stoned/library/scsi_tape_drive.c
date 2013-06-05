@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 03 Jun 2013 19:42:36 +0200                            *
+*  Last modified: Tue, 04 Jun 2013 13:27:02 +0200                            *
 \****************************************************************************/
 
 // errno
@@ -637,16 +637,18 @@ static int st_scsi_tape_drive_update_media_info(struct st_drive * drive) {
 		}
 
 		if (drive->slot->media != NULL && !drive->is_empty) {
+			struct st_media * media = drive->slot->media;
+
 			int fd = open(drive->scsi_device, O_RDWR);
-			st_scsi_tape_size_available(fd, drive->slot->media);
+			st_scsi_tape_size_available(fd, media);
 			close(fd);
 
-			drive->slot->media->type = GMT_WR_PROT(self->status.mt_gstat) ? st_media_type_readonly : st_media_type_rewritable;
+			media->type = GMT_WR_PROT(self->status.mt_gstat) ? st_media_type_readonly : st_media_type_rewritable;
 
-			if (is_empty) {
+			if (is_empty && media->status == st_media_status_in_use) {
 				st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Checking media header", drive->vendor, drive->model, drive - drive->changer->drives);
 				if (!st_media_check_header(drive)) {
-					drive->slot->media->status = st_media_status_error;
+					media->status = st_media_status_error;
 					st_log_write_all(st_log_level_error, st_log_type_drive, "[%s | %s | #%td]: Error while checking media header", drive->vendor, drive->model, drive - drive->changer->drives);
 					self->allow_update_media = true;
 					return 1;

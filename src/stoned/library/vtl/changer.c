@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 26 Apr 2013 15:57:37 +0200                            *
+*  Last modified: Tue, 04 Jun 2013 13:21:48 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -87,7 +87,6 @@ static struct st_drive * st_vtl_changer_find_free_drive(struct st_changer * ch, 
 		if (!dr->lock->ops->try_lock(dr->lock))
 			return dr;
 	}
-
 
 	return NULL;
 }
@@ -343,8 +342,7 @@ static int st_vtl_changer_load_slot(struct st_changer * ch, struct st_slot * fro
 
 		media->load_count++;
 
-		to->status = st_drive_loaded_idle;
-		to->is_empty = false;
+		to->ops->update_media_info(to);
 
 		struct st_vtl_media * vmd = media->data;
 		vmd->slot = from;

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 18 Apr 2013 09:53:05 +0200                            *
+*  Last modified: Wed, 05 Jun 2013 10:06:02 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -362,7 +362,24 @@ static int st_vtl_drive_rewind(struct st_drive * drive) {
 	return 0;
 }
 
-static int st_vtl_drive_update_media_info(struct st_drive * drive __attribute__((unused))) {
+static int st_vtl_drive_update_media_info(struct st_drive * drive) {
+	if (drive->is_empty && drive->slot->media != NULL) {
+		drive->status = st_drive_loaded_idle;
+		drive->is_empty = false;
+
+		struct st_media * media = drive->slot->media;
+		if (media->status != st_media_status_in_use)
+			return 0;
+
+		st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Checking media header", drive->vendor, drive->model, drive - drive->changer->drives);
+
+		if (media->status == st_media_status_in_use && !st_media_check_header(drive)) {
+			media->status = st_media_status_error;
+			st_log_write_all(st_log_level_error, st_log_type_drive, "[%s | %s | #%td]: Error while checking media header", drive->vendor, drive->model, drive - drive->changer->drives);
+			return 1;
+		}
+	}
+
 	return 0;
 }
 
