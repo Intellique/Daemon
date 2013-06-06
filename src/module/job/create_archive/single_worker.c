@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 29 May 2013 17:34:18 +0200                            *
+*  Last modified: Thu, 06 Jun 2013 23:53:11 +0200                            *
 \****************************************************************************/
 
 // asprintf
@@ -540,6 +540,8 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 					st_job_add_record(self->connect, st_log_level_info, self->job, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ]", media->name, slot - changer->slots, self->drive - changer->drives, changer->vendor, changer->model);
 
 					int failed = changer->ops->load_slot(changer, slot, self->drive);
+					slot->lock->ops->unlock(slot->lock);
+
 					if (failed) {
 						st_job_add_record(self->connect, st_log_level_error, self->job, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ] finished with code = %d", media->name, slot - changer->slots, self->drive - changer->drives, changer->vendor, changer->model, failed);
 						return false;
@@ -623,8 +625,8 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 				break;
 
 			case media_is_read_only:
-				if (drive->slot->media->type == st_media_type_readonly) {
-					st_job_create_archive_single_worker_add_media(self, drive->slot->media);
+				if (self->drive->slot->media->type == st_media_type_readonly) {
+					st_job_create_archive_single_worker_add_media(self, self->drive->slot->media);
 					state = check_online_free_size_left;
 				} else
 					state = is_media_formatted;
