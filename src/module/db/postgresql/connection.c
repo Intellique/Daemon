@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 28 May 2013 22:42:24 +0200                            *
+*  Last modified: Thu, 06 Jun 2013 11:51:22 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2497,10 +2497,10 @@ static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct s
 	const char * query;
 	if (st_db_postgresql_has_selected_files_by_job(connect, job)) {
 		query = "select_archive_files_by_job_and_archive_volume_with_selected_files";
-		st_db_postgresql_prepare(self, query, "SELECT af.id, af.name, af.type, mimetype, ownerid, owner, groupid, groups, perm, af.ctime, af.mtime, afv.checksumok, afv.checktime, af.size, afv.blocknumber FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id, (SELECT path, CHAR_LENGTH(path) AS length FROM selectedfile ssf2 LEFT JOIN jobtoselectedfile sjsf ON ssf2.id = sjsf.selectedfile WHERE sjsf.job = $1) AS ssf WHERE j.id = $1 AND av.id = $2 AND SUBSTR(af.name, 0, ssf.length + 1) = ssf.path ORDER BY af.id");
+		st_db_postgresql_prepare(self, query, "SELECT af.id, af.name, af.type, mimetype, ownerid, owner, groupid, groups, perm, af.ctime, af.mtime, afv.create_time, afv.checksumok, afv.checktime, af.size, afv.blocknumber FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id, (SELECT path, CHAR_LENGTH(path) AS length FROM selectedfile ssf2 LEFT JOIN jobtoselectedfile sjsf ON ssf2.id = sjsf.selectedfile WHERE sjsf.job = $1) AS ssf WHERE j.id = $1 AND av.id = $2 AND SUBSTR(af.name, 0, ssf.length + 1) = ssf.path ORDER BY af.id");
 	} else {
 		query = "select_archive_files_by_job_and_archive_volume";
-		st_db_postgresql_prepare(self, query, "SELECT af.id, af.name, af.type, mimetype, ownerid, owner, groupid, groups, perm, af.ctime, af.mtime, afv.checksumok, afv.checktime, af.size, afv.blocknumber FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id WHERE j.id = $1 AND av.id = $2 ORDER BY af.id");
+		st_db_postgresql_prepare(self, query, "SELECT af.id, af.name, af.type, mimetype, ownerid, owner, groupid, groups, perm, af.ctime, af.mtime, afv.create_time, afv.checksumok, afv.checktime, af.size, afv.blocknumber FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id WHERE j.id = $1 AND av.id = $2 ORDER BY af.id");
 	}
 
 	const char * query2 = "select_checksumresult_of_file";
@@ -2537,10 +2537,11 @@ static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct s
 			st_db_postgresql_get_uint(result, i, 8, &file->perm);
 			st_db_postgresql_get_time(result, i, 9, &file->create_time);
 			st_db_postgresql_get_time(result, i, 10, &file->modify_time);
-			st_db_postgresql_get_bool(result, i, 11, &file->check_ok);
-			if (PQgetisnull(result, i, 12))
-				st_db_postgresql_get_time(result, i, 12, &file->check_time);
-			st_db_postgresql_get_ssize(result, i, 13, &file->size);
+			st_db_postgresql_get_time(result, i, 11, &file->archived_time);
+			st_db_postgresql_get_bool(result, i, 12, &file->check_ok);
+			if (PQgetisnull(result, i, 13))
+				st_db_postgresql_get_time(result, i, 13, &file->check_time);
+			st_db_postgresql_get_ssize(result, i, 14, &file->size);
 
 			file->archive = volume->archive;
 			file->selected_path = NULL;
@@ -2550,7 +2551,7 @@ static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct s
 
 			struct st_archive_files * f = volume->files + i;
 			f->file = file;
-			st_db_postgresql_get_ssize(result, i, 14, &f->position);
+			st_db_postgresql_get_ssize(result, i, 15, &f->position);
 
 			char * fileid;
 			st_db_postgresql_get_string_dup(result, i, 0, &fileid);
