@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 17 Feb 2013 18:38:37 +0100                            *
+*  Last modified: Fri, 07 Jun 2013 11:09:06 +0200                            *
 \****************************************************************************/
 
 // free
@@ -77,6 +77,7 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 				if (!has_alerted_user)
 					st_job_add_record(self->connect, st_log_level_warning, self->job, "Warning, media named (%s) is not found, please insert it", vol->media->name);
 				has_alerted_user = true;
+				self->job->sched_status = st_job_status_pause;
 
 				sleep(5);
 
@@ -85,6 +86,8 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 
 			struct st_changer * changer = slot->changer;
 			drive = slot->drive;
+
+			self->job->sched_status = st_job_status_pause;
 
 			if (drive != NULL) {
 				if (drive->lock->ops->timed_lock(drive->lock, 5000))
@@ -98,6 +101,8 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 				drive = changer->ops->find_free_drive(changer, slot->media->format, true, false);
 
 				if (drive == NULL) {
+					slot->lock->ops->unlock(slot->lock);
+
 					sleep(5);
 					continue;
 				}
@@ -105,6 +110,8 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 				stop = true;
 			}
 		}
+
+		self->job->sched_status = st_job_status_running;
 
 		if (drive->slot->media != NULL && drive->slot != slot) {
 			st_job_add_record(self->connect, st_log_level_info, self->job, "Unloading media (%s)", drive->slot->media->name);
@@ -124,6 +131,8 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 				nb_errors++;
 				goto end_of_work;
 			}
+
+			slot->lock->ops->unlock(slot->lock);
 		}
 
 		self->connect->ops->get_archive_files_by_job_and_archive_volume(self->connect, self->job, vol);
