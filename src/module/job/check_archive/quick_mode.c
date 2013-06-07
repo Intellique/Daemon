@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 17 Feb 2013 16:39:01 +0100                            *
+*  Last modified: Fri, 07 Jun 2013 09:50:22 +0200                            *
 \****************************************************************************/
 
 // pthread_cond_t
@@ -97,9 +97,16 @@ int st_job_check_archive_quick_mode(struct st_job_check_archive_private * self) 
 		struct st_drive * drive = NULL;
 		while (!stop) {
 			ssize_t total_done = 0;
+			unsigned int nb_running_worker = 0;
+
+			// compute progression
 			worker = first_worker;
 			while (worker != NULL) {
 				total_done += worker->total_read;
+
+				if (worker->running)
+					nb_running_worker++;
+
 				worker = worker->next;
 			}
 			float done = total_done;
@@ -115,26 +122,44 @@ int st_job_check_archive_quick_mode(struct st_job_check_archive_private * self) 
 					st_job_add_record(self->connect, st_log_level_warning, self->job, "Warning, media named (%s) is not found, please insert it", vol->media->name);
 				has_alerted_user = true;
 
+				if (nb_running_worker == 0)
+					self->job->sched_status = st_job_status_pause;
+
 				sleep(5);
 
 				continue;
 			}
 
+			self->job->sched_status = st_job_status_running;
+
 			struct st_changer * changer = slot->changer;
 			drive = slot->drive;
 
 			if (drive != NULL) {
-				if (drive->lock->ops->timed_lock(drive->lock, 5000))
+				if (drive->lock->ops->timed_lock(drive->lock, 5000)) {
+					if (nb_running_worker == 0)
+						self->job->sched_status = st_job_status_pause;
+
 					continue;
+				}
 
 				stop = true;
 			} else {
-				if (slot->lock->ops->timed_lock(slot->lock, 5000))
+				if (slot->lock->ops->timed_lock(slot->lock, 5000)) {
+					if (nb_running_worker == 0)
+						self->job->sched_status = st_job_status_pause;
+
 					continue;
+				}
 
 				drive = changer->ops->find_free_drive(changer, slot->media->format, true, false);
 
 				if (drive == NULL) {
+					slot->lock->ops->unlock(slot->lock);
+
+					if (nb_running_worker == 0)
+						self->job->sched_status = st_job_status_pause;
+
 					sleep(5);
 					continue;
 				}
@@ -142,6 +167,8 @@ int st_job_check_archive_quick_mode(struct st_job_check_archive_private * self) 
 				stop = true;
 			}
 		}
+
+		self->job->sched_status = st_job_status_running;
 
 		worker = st_job_check_archive_quick_mode_new(self, drive, slot);
 		if (first_worker == NULL)
@@ -247,6 +274,8 @@ static void st_job_check_archive_quick_mode_work(void * arg) {
 	struct st_drive * dr = qm->drive;
 	struct st_slot * sl = qm->slot;
 
+	bool has_slot_lock = dr->slot != sl;
+
 	if (dr->slot->media != NULL && dr->slot != sl) {
 		st_job_add_record(connect, st_log_level_info, qm->jp->job, "Unloading media (%s)", dr->slot->media->name);
 		int failed = dr->changer->ops->unload(dr->changer, dr);
@@ -264,6 +293,9 @@ static void st_job_check_archive_quick_mode_work(void * arg) {
 			st_job_add_record(connect, st_log_level_info, qm->jp->job, "Loading media (%s) has failed", sl->media->name);
 			qm->nb_errors++;
 			goto end_of_work;
+		} else {
+			sl->lock->ops->unlock(sl->lock);
+			has_slot_lock = false;
 		}
 	}
 
@@ -323,6 +355,9 @@ static void st_job_check_archive_quick_mode_work(void * arg) {
 	}
 
 end_of_work:
+	if (has_slot_lock)
+		sl->lock->ops->unlock(sl->lock);
+
 	dr->lock->ops->unlock(dr->lock);
 
 	connect->ops->free(connect);
