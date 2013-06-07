@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 06 Jun 2013 11:51:22 +0200                            *
+*  Last modified: Fri, 07 Jun 2013 10:30:55 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2497,10 +2497,10 @@ static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct s
 	const char * query;
 	if (st_db_postgresql_has_selected_files_by_job(connect, job)) {
 		query = "select_archive_files_by_job_and_archive_volume_with_selected_files";
-		st_db_postgresql_prepare(self, query, "SELECT af.id, af.name, af.type, mimetype, ownerid, owner, groupid, groups, perm, af.ctime, af.mtime, afv.create_time, afv.checksumok, afv.checktime, af.size, afv.blocknumber FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id, (SELECT path, CHAR_LENGTH(path) AS length FROM selectedfile ssf2 LEFT JOIN jobtoselectedfile sjsf ON ssf2.id = sjsf.selectedfile WHERE sjsf.job = $1) AS ssf WHERE j.id = $1 AND av.id = $2 AND SUBSTR(af.name, 0, ssf.length + 1) = ssf.path ORDER BY af.id");
+		st_db_postgresql_prepare(self, query, "SELECT af.id, af.name, af.type, mimetype, ownerid, owner, groupid, groups, perm, af.ctime, af.mtime, afv.archivetime, afv.checksumok, afv.checktime, af.size, afv.blocknumber FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id, (SELECT path, CHAR_LENGTH(path) AS length FROM selectedfile ssf2 LEFT JOIN jobtoselectedfile sjsf ON ssf2.id = sjsf.selectedfile WHERE sjsf.job = $1) AS ssf WHERE j.id = $1 AND av.id = $2 AND SUBSTR(af.name, 0, ssf.length + 1) = ssf.path ORDER BY af.id");
 	} else {
 		query = "select_archive_files_by_job_and_archive_volume";
-		st_db_postgresql_prepare(self, query, "SELECT af.id, af.name, af.type, mimetype, ownerid, owner, groupid, groups, perm, af.ctime, af.mtime, afv.create_time, afv.checksumok, afv.checktime, af.size, afv.blocknumber FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id WHERE j.id = $1 AND av.id = $2 ORDER BY af.id");
+		st_db_postgresql_prepare(self, query, "SELECT af.id, af.name, af.type, mimetype, ownerid, owner, groupid, groups, perm, af.ctime, af.mtime, afv.archivetime, afv.checksumok, afv.checktime, af.size, afv.blocknumber FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON afv.archivefile = af.id WHERE j.id = $1 AND av.id = $2 ORDER BY af.id");
 	}
 
 	const char * query2 = "select_checksumresult_of_file";
