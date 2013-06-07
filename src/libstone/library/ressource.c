@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 11 Feb 2013 13:48:13 +0100                            *
+*  Last modified: Fri, 07 Jun 2013 09:42:31 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -39,6 +39,7 @@
 #include <sys/time.h>
 
 #include <libstone/library/ressource.h>
+#include <libstone/log.h>
 
 
 struct st_ressource_private {
@@ -134,6 +135,9 @@ static int st_ressource_private_lock(struct st_ressource * res) {
 	int failed = pthread_mutex_lock(&self->lock);
 	if (!failed)
 		res->locked++;
+
+	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Locking mutex %p: %d", &self->lock, failed);
+
 	return failed;
 }
 
@@ -155,7 +159,9 @@ static int st_ressource_private_timed_lock(struct st_ressource * res, unsigned i
 	struct st_ressource_private * self = res->data;
 	int failed = pthread_mutex_timedlock(&self->lock, &ts_timeout);
 	if (!failed)
-		res->locked = 1;
+		res->locked++;
+
+	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Locking mutex %p (timeout: %dms): %d", &self->lock, timeout, failed);
 
 	return failed;
 }
@@ -167,7 +173,10 @@ static int st_ressource_private_try_lock(struct st_ressource * res) {
 	struct st_ressource_private * self = res->data;
 	int failed = pthread_mutex_trylock(&self->lock);
 	if (!failed)
-		res->locked = 1;
+		res->locked++;
+
+	st_log_write_all(st_log_level_debug, st_log_type_daemon, "(Try) locking mutex %p: %d", &self->lock, failed);
+
 	return failed;
 }
 
@@ -176,7 +185,10 @@ static void st_ressource_private_unlock(struct st_ressource * res) {
 		return;
 
 	struct st_ressource_private * self = res->data;
-	if (!pthread_mutex_unlock(&self->lock))
+	int failed = pthread_mutex_unlock(&self->lock);
+	if (!failed)
 		res->locked--;
+
+	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Unocking mutex %p: %d", &self->lock, failed);
 }
 
