@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 28 May 2013 18:18:42 +0200                            *
+*  Last modified: Wed, 03 Jul 2013 17:42:56 +0200                            *
 \****************************************************************************/
 
 // open, size_t
@@ -47,6 +47,7 @@
 // sleep
 #include <unistd.h>
 
+#include <libstone/log.h>
 #include <libstone/util/string.h>
 
 #include "scsi.h"
@@ -896,6 +897,8 @@ static void st_scsi_loader_sort_drive(int fd, struct st_changer * changer, int s
 
 	unsigned char * ptr;
 	struct scsi_loader_element_status * element_header;
+	unsigned short i = 0;
+
 	do {
 		int failed = ioctl(fd, SG_IO, &header);
 		if (failed) {
@@ -916,9 +919,15 @@ static void st_scsi_loader_sort_drive(int fd, struct st_changer * changer, int s
 			sleep(1);
 			st_scsi_loader_ready(fd);
 		}
-	} while (element_header->type != scsi_loader_element_type_data_transfer);
 
-	unsigned short i;
+		i++;
+	} while (element_header->type != scsi_loader_element_type_data_transfer && i < 5);
+
+	if (element_header->type != scsi_loader_element_type_data_transfer) {
+		st_log_write_all(st_log_level_warning, st_log_type_daemon, "Could not sort drives");
+		return;
+	}
+
 	for (i = 0; i < result->number_of_elements - 1; i++) {
 		struct scsi_loader_data_transfer_element * data_transfer_element = (struct scsi_loader_data_transfer_element *) ptr;
 		data_transfer_element->element_address = be16toh(data_transfer_element->element_address);
