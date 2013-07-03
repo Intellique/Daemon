@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 04 Jun 2013 13:27:02 +0200                            *
+*  Last modified: Wed, 03 Jul 2013 22:47:27 +0200                            *
 \****************************************************************************/
 
 // errno
@@ -468,12 +468,12 @@ void st_scsi_tape_drive_setup(struct st_drive * drive) {
 	st_scsi_tape_drive_operation_stop(drive);
 
 	if (!failed) {
-		if (GMT_DR_OPEN(status.mt_gstat)) {
-			drive->status = st_drive_empty_idle;
-			drive->is_empty = 1;
-		} else {
+		if (GMT_ONLINE(status.mt_gstat)) {
 			drive->status = st_drive_loaded_idle;
-			drive->is_empty = 0;
+			drive->is_empty = false;
+		} else {
+			drive->status = st_drive_empty_idle;
+			drive->is_empty = true;
 		}
 	}
 }
@@ -593,7 +593,7 @@ static int st_scsi_tape_drive_update_media_info(struct st_drive * drive) {
 	/**
 	 * Make sure that we have the correct status of tape
 	 */
-	while (!failed && !GMT_DR_OPEN(self->status.mt_gstat)) {
+	while (!failed && GMT_ONLINE(self->status.mt_gstat)) {
 		unsigned char density_code = (self->status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT;
 
 		if (density_code != 0)
@@ -609,16 +609,16 @@ static int st_scsi_tape_drive_update_media_info(struct st_drive * drive) {
 	if (!failed) {
 		bool is_empty = drive->is_empty;
 
-		if (GMT_DR_OPEN(self->status.mt_gstat)) {
-			drive->status = st_drive_empty_idle;
-			drive->is_empty = true;
-		} else {
+		if (GMT_ONLINE(self->status.mt_gstat)) {
 			drive->status = st_drive_loaded_idle;
 			drive->is_empty = false;
 
 			unsigned char density_code = (self->status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT;
 			if (drive->density_code < density_code)
 				drive->density_code = density_code;
+		} else {
+			drive->status = st_drive_empty_idle;
+			drive->is_empty = true;
 		}
 
 		if (drive->slot->media == NULL && !drive->is_empty) {

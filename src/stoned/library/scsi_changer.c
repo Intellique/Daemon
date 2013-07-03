@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sat, 04 May 2013 18:40:20 +0200                            *
+*  Last modified: Wed, 03 Jul 2013 23:06:42 +0200                            *
 \****************************************************************************/
 
 // open
@@ -302,11 +302,11 @@ void st_scsi_changer_setup(struct st_changer * changer, struct st_database_conne
 				dr->slot->media = NULL;
 				slot_to->volume_name = dr->slot->volume_name;
 				dr->slot->volume_name = NULL;
-				dr->slot->full = 0;
-				slot_to->full = 1;
+				dr->slot->full = false;
+				slot_to->full = true;
 				slot_from_data->src_address = 0;
 
-				if (slot_to->media)
+				if (slot_to->media != NULL)
 					slot_to->media->location = st_media_location_online;
 			}
 		}
