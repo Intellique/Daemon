@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 03 Jul 2013 23:06:42 +0200                            *
+*  Last modified: Thu, 04 Jul 2013 11:41:22 +0200                            *
 \****************************************************************************/
 
 // open
@@ -318,7 +318,6 @@ void st_scsi_changer_setup(struct st_changer * changer, struct st_database_conne
 			first_enabled_dr = changer->drives + i;
 
 	pthread_t * workers = NULL;
-	unsigned int j;
 	if (nb_enabled_drives > 1) {
 		workers = calloc(nb_enabled_drives - 1, sizeof(pthread_t));
 
@@ -326,6 +325,7 @@ void st_scsi_changer_setup(struct st_changer * changer, struct st_database_conne
 		pthread_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
+		unsigned int j;
 		for (j = 0; i < changer->nb_drives; i++) {
 			struct st_drive * dr = changer->drives + i;
 			if (dr->enabled) {
@@ -339,8 +339,8 @@ void st_scsi_changer_setup(struct st_changer * changer, struct st_database_conne
 
 	st_scsi_changer_setup2(first_enabled_dr);
 
-	for (j = 0; i < nb_enabled_drives; i++)
-		pthread_join(workers[j], NULL);
+	for (i = 0; i < nb_enabled_drives - 1; i++)
+		pthread_join(workers[i], NULL);
 
 	free(workers);
 
