@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 20 Aug 2013 12:15:53 +0200                            *
+*  Last modified: Tue, 20 Aug 2013 18:51:06 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -235,6 +235,7 @@ struct st_database_connection {
 		int (*sync_archive)(struct st_database_connection * connect, struct st_archive * archive);
 
 		struct st_vtl_config * (*get_vtls)(struct st_database_connection * connect, unsigned int * nb_vtls);
+		int (*delete_vtl)(struct st_database_connection * connect, struct st_vtl_config * config);
 	} * ops;
 
 	/**

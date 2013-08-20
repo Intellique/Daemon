@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 20 Aug 2013 15:22:39 +0200                            *
+*  Last modified: Tue, 20 Aug 2013 18:56:31 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -209,6 +209,8 @@ void st_vtl_sync(struct st_database_connection * connect) {
 
 				st_changer_remove(ch);
 			}
+
+			connect->ops->delete_vtl(connect, cfg);
 
 			st_util_file_rm(cfg->path);
 		}

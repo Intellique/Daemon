@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 20 Aug 2013 17:30:01 +0200                            *
+*  Last modified: Tue, 20 Aug 2013 19:00:12 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -174,6 +174,7 @@ static int st_db_postgresql_sync_file(struct st_database_connection * connect, s
 static int st_db_postgresql_sync_volume(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_volume * volume);
 
 static struct st_vtl_config * st_db_postgresql_get_vtls(struct st_database_connection * connect, unsigned int * nb_vtls);
+static int st_db_postgresql_delete_vtl(struct st_database_connection * connect, struct st_vtl_config * config);
 
 static void st_db_postgresql_prepare(struct st_db_postgresql_connection_private * self, const char * statement_name, const char * query);
 
@@ -230,7 +231,8 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.mark_archive_volume_as_checked              = st_db_postgresql_mark_archive_volume_as_checked,
 	.sync_archive                                = st_db_postgresql_sync_archive,
 
-	.get_vtls = st_db_postgresql_get_vtls,
+	.get_vtls   = st_db_postgresql_get_vtls,
+	.delete_vtl = st_db_postgresql_delete_vtl,
 };
 
 
@@ -3505,6 +3507,31 @@ static struct st_vtl_config * st_db_postgresql_get_vtls(struct st_database_conne
 	PQclear(result);
 
 	return cfg;
+}
+
+static int st_db_postgresql_delete_vtl(struct st_database_connection * connect, struct st_vtl_config * config) {
+	if (connect == NULL || config == NULL)
+		return 1;
+
+	char * host_id = st_db_postgresql_get_host(connect);
+	if (host_id == NULL)
+		return 1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+
+	const char * query = "delete_vtl";
+	st_db_postgresql_prepare(self, query, "DELETE FROM vtl WHERE path = $1 AND host = $2");
+
+	const char * params[] = { config->path, host_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, params, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+
+	PQclear(result);
+
+	return status != PGRES_COMMAND_OK;
 }
 
 
