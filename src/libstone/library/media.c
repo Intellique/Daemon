@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 20 Aug 2013 15:24:24 +0200                            *
+*  Last modified: Tue, 20 Aug 2013 17:29:34 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -233,7 +233,7 @@ enum st_media_format_data_type st_media_string_to_format_data(const char * type)
 
 	unsigned int i;
 	for (i = 0; st_media_format_data_types[i].type != st_media_format_data_unknown; i++)
-		if (st_media_format_data_types[i].name == type)
+		if (!strcasecmp(st_media_format_data_types[i].name, type))
 			return st_media_format_data_types[i].type;
 
 	return st_media_format_data_types[i].type;

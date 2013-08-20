@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 20 Aug 2013 12:27:09 +0200                            *
+*  Last modified: Tue, 20 Aug 2013 17:30:01 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -3498,6 +3498,8 @@ static struct st_vtl_config * st_db_postgresql_get_vtls(struct st_database_conne
 			const char * format = PQgetvalue(result, i, 4);
 			conf->format = st_media_format_get_by_name(format, st_media_format_mode_disk);
 		}
+	} else if (status == PGRES_TUPLES_OK && nb_result == 0) {
+		cfg = malloc(0);
 	}
 
 	PQclear(result);

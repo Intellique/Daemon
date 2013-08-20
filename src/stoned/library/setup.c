@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 16 Aug 2013 14:05:58 +0200                            *
+*  Last modified: Tue, 20 Aug 2013 17:47:04 +0200                            *
 \****************************************************************************/
 
 // open
@@ -74,6 +74,8 @@ void st_changer_add(struct st_changer * vtl) {
 		st_vtls = st_last_vtl = node;
 	else
 		st_last_vtl = st_last_vtl->next = node;
+
+	st_nb_vtls++;
 }
 
 struct st_slot * st_changer_find_free_media_by_format(struct st_media_format * format) {
@@ -257,6 +259,8 @@ void st_changer_remove(struct st_changer * vtl) {
 		v = NULL;
 
 		ch->ops->free(ch);
+
+		st_nb_vtls--;
 	}
 }
 
@@ -264,9 +268,10 @@ int st_changer_setup(void) {
 	glob_t gl;
 	glob("/sys/class/scsi_device/*/device/scsi_tape", 0, NULL, &gl);
 
-	if (gl.gl_pathc == 0 && st_nb_vtls == 0) {
-		st_log_write_all(st_log_level_error, st_log_type_user_message, "Panic: There is drive found, exit now !!!");
-		return 1;
+	if (gl.gl_pathc == 0) {
+		globfree(&gl);
+		st_log_write_all(st_log_level_warning, st_log_type_user_message, "There is drive found !!!");
+		return 0;
 	}
 
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");

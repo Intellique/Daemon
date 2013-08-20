@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 13 Aug 2013 19:37:31 +0200                            *
+*  Last modified: Tue, 20 Aug 2013 17:30:18 +0200                            *
 \****************************************************************************/
 
 // getopt_long
@@ -184,6 +184,8 @@ int main(int argc, char ** argv) {
 
 	// synchronize job plugins
 	st_job_sync_plugins(connect);
+
+	st_vtl_sync(connect);
 
 	if (st_changer_setup())
 		return 6;
