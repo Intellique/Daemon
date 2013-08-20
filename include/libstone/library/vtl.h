@@ -22,38 +22,32 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 16 Aug 2013 14:01:34 +0200                            *
+*  Last modified: Fri, 16 Aug 2013 13:55:42 +0200                            *
 \****************************************************************************/
 
-#ifndef __STONE_LIBRARY_COMMON_H__
-#define __STONE_LIBRARY_COMMON_H__
+#ifndef __STONE_LIBRARY_VTL_H__
+#define __STONE_LIBRARY_VTL_H__
 
-#include <libstone/library/changer.h>
-#include <stoned/library/slot.h>
+// bool
+#include <stdbool.h>
 
 struct st_changer;
-struct st_drive;
-struct st_database_connection;
-struct st_hashtable;
-struct st_media_format;
-struct st_ressource;
-struct st_pool;
-struct st_vtl_list;
 
-void st_scsi_tape_drive_setup(struct st_drive * drive);
+struct st_vtl_config {
+	char * path;
+	char * prefix;
+	unsigned int nb_slots;
+	unsigned int nb_drives;
+	struct st_media_format * format;
+	bool deleted;
+};
 
-void st_standalone_drive_setup(struct st_changer * changer);
-void st_scsi_changer_setup(struct st_changer * changer, struct st_database_connection * connection);
+struct st_vtl_list {
+	struct st_changer * changer;
+	struct st_vtl_list * next;
+};
 
-void st_changer_add(struct st_changer * vtl);
-void st_changer_stop(void);
-void st_changer_sync(struct st_database_connection * connection);
-void st_changer_remove(struct st_changer * vtl);
-
-struct st_slot_iterator * st_slot_iterator_by_new_media2(struct st_media_format * format, struct st_changer * changers, unsigned int nb_changers, struct st_vtl_list * vtls);
-struct st_slot_iterator * st_slot_iterator_by_pool2(struct st_pool * pool, struct st_changer * changers, unsigned int nb_changers, struct st_vtl_list * vtls);
-
-void st_vtl_sync(struct st_database_connection * connect);
+void st_vtl_config_free(struct st_vtl_config * config, unsigned int nb_config);
 
 #endif
 

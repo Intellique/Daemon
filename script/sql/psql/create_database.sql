@@ -554,6 +554,20 @@ CREATE TABLE Report (
     data TEXT NOT NULL
 );
 
+CREATE TABLE Vtl (
+	id SERIAL PRIMARY KEY,
+
+	path VARCHAR(255) NOT NULL,
+	prefix VARCHAR(255) NOT NULL,
+	nbslots INTEGER NOT NULL CHECK (nbslots > 0),
+	nbdrives INTEGER NOT NULL CHECK (nbdrives > 0),
+
+	mediaformat INTEGER NOT NULL REFERENCES MediaFormat(id) ON UPDATE CASCADE ON DELETE CASCADE,
+	host INTEGER NOT NULL REFERENCES Host(id) ON UPDATE CASCADE ON DELETE CASCADE,
+
+	deleted BOOLEAN NOT NULL DEFAULT FALSE
+);
+
 -- Comments
 COMMENT ON COLUMN Archive.starttime IS 'Start time of archive creation';
 COMMENT ON COLUMN Archive.endtime IS 'End time of archive creation';

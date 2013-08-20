@@ -22,38 +22,21 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 16 Aug 2013 14:01:34 +0200                            *
+*  Last modified: Tue, 13 Aug 2013 10:51:13 +0200                            *
 \****************************************************************************/
 
-#ifndef __STONE_LIBRARY_COMMON_H__
-#define __STONE_LIBRARY_COMMON_H__
+// free
+#include <stdlib.h>
 
-#include <libstone/library/changer.h>
-#include <stoned/library/slot.h>
+#include <libstone/library/vtl.h>
 
-struct st_changer;
-struct st_drive;
-struct st_database_connection;
-struct st_hashtable;
-struct st_media_format;
-struct st_ressource;
-struct st_pool;
-struct st_vtl_list;
-
-void st_scsi_tape_drive_setup(struct st_drive * drive);
-
-void st_standalone_drive_setup(struct st_changer * changer);
-void st_scsi_changer_setup(struct st_changer * changer, struct st_database_connection * connection);
-
-void st_changer_add(struct st_changer * vtl);
-void st_changer_stop(void);
-void st_changer_sync(struct st_database_connection * connection);
-void st_changer_remove(struct st_changer * vtl);
-
-struct st_slot_iterator * st_slot_iterator_by_new_media2(struct st_media_format * format, struct st_changer * changers, unsigned int nb_changers, struct st_vtl_list * vtls);
-struct st_slot_iterator * st_slot_iterator_by_pool2(struct st_pool * pool, struct st_changer * changers, unsigned int nb_changers, struct st_vtl_list * vtls);
-
-void st_vtl_sync(struct st_database_connection * connect);
-
-#endif
+void st_vtl_config_free(struct st_vtl_config * config, unsigned int nb_config) {
+	unsigned int i;
+	for (i = 0; i < nb_config; i++) {
+		struct st_vtl_config * cfg = config + i;
+		free(cfg->path);
+		free(cfg->prefix);
+	}
+	free(config);
+}
 

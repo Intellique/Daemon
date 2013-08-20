@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 04 Jun 2013 13:21:48 +0200                            *
+*  Last modified: Tue, 20 Aug 2013 15:22:52 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -39,6 +39,7 @@
 #include <libstone/library/drive.h>
 #include <libstone/library/ressource.h>
 #include <libstone/library/slot.h>
+#include <libstone/library/vtl.h>
 #include <libstone/log.h>
 #include <libstone/util/file.h>
 
@@ -63,32 +64,32 @@ static struct st_changer_ops st_vtl_changer_ops = {
 };
 
 
-static struct st_drive * st_vtl_changer_find_free_drive(struct st_changer * ch, struct st_media_format * format, bool for_reading, bool for_writing) {
+static struct st_drive * st_vtl_changer_find_free_drive(struct st_changer * ch, struct st_media_format * format __attribute__((unused)), bool for_reading __attribute__((unused)), bool for_writing __attribute__((unused))) {
 	if (ch == NULL)
 		return NULL;
 
 	unsigned int i;
-	for (i = 0; i < ch->nb_drives; i++) {
-		struct st_drive * dr = ch->drives + i;
+	struct st_drive * dr = NULL;
+	for (i = 0; dr == NULL && i < ch->nb_drives; i++) {
+		dr = ch->drives + i;
 
-		if (!dr->enabled || dr->slot->media != NULL)
+		if (!dr->enabled || dr->slot->media != NULL) {
+			dr = NULL;
 			continue;
+		}
 
-		if (!dr->lock->ops->try_lock(dr->lock))
-			return dr;
+		if (dr->lock->ops->try_lock(dr->lock))
+			dr = NULL;
 	}
 
-	for (i = 0; i < ch->nb_drives; i++) {
-		struct st_drive * dr = ch->drives + i;
+	for (i = 0; dr == NULL && i < ch->nb_drives; i++) {
+		dr = ch->drives + i;
 
-		if (!dr->enabled)
-			continue;
-
-		if (!dr->lock->ops->try_lock(dr->lock))
-			return dr;
+		if (!dr->enabled || dr->lock->ops->try_lock(dr->lock))
+			dr = NULL;
 	}
 
-	return NULL;
+	return dr;
 }
 
 static void st_vtl_changer_free(struct st_changer * ch) {
@@ -144,25 +145,25 @@ static void st_vtl_changer_free(struct st_changer * ch) {
 	free(ch->db_data);
 }
 
-struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_slots, const char * path, char * prefix, struct st_media_format * format) {
+struct st_changer * st_vtl_changer_init(struct st_vtl_config * cfg) {
 	char * serial_file;
-	asprintf(&serial_file, "%s/serial_number", path);
+	asprintf(&serial_file, "%s/serial_number", cfg->path);
 
 	char * serial = st_util_file_get_serial(serial_file);
 	free(serial_file);
 
 	struct st_vtl_changer * self = malloc(sizeof(struct st_vtl_changer));
-	self->path = strdup(path);
-	self->medias = calloc(nb_slots, sizeof(struct st_media *));
-	self->nb_medias = nb_slots;
+	self->path = strdup(cfg->path);
+	self->medias = calloc(cfg->nb_slots, sizeof(struct st_media *));
+	self->nb_medias = cfg->nb_slots;
 	self->lock = st_ressource_new(false);
 
 	unsigned int i;
-	for (i = 0; i < nb_slots; i++) {
+	for (i = 0; i < cfg->nb_slots; i++) {
 		char * md_dir;
-		asprintf(&md_dir, "%s/medias/%s%03u", path, prefix, i);
+		asprintf(&md_dir, "%s/medias/%s%03u", cfg->path, cfg->prefix, i);
 
-		self->medias[i] = st_vtl_media_init(md_dir, prefix, i, format);
+		self->medias[i] = st_vtl_media_init(md_dir, cfg->prefix, i, cfg->format);
 	}
 
 	struct st_changer * ch = malloc(sizeof(struct st_changer));
@@ -176,10 +177,10 @@ struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_
 	ch->serial_number = serial;
 	ch->barcode = true;
 
-	ch->drives = calloc(nb_drives, sizeof(struct st_drive));
-	ch->nb_drives = nb_drives;
+	ch->drives = calloc(cfg->nb_drives, sizeof(struct st_drive));
+	ch->nb_drives = cfg->nb_drives;
 
-	ch->nb_slots = nb_slots + nb_drives;
+	ch->nb_slots = cfg->nb_slots + cfg->nb_drives;
 	ch->slots = calloc(ch->nb_slots, sizeof(struct st_slot));
 
 	ch->ops = &st_vtl_changer_ops;
@@ -203,10 +204,10 @@ struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_
 		sl->db_data = NULL;
 
 		char * dr_dir;
-		asprintf(&dr_dir, "%s/drives/%u", path, i);
+		asprintf(&dr_dir, "%s/drives/%u", cfg->path, i);
 
 		sl->media = st_vtl_slot_get_media(ch, dr_dir);
-		st_vtl_drive_init(ch->drives + i, sl, dr_dir, format);
+		st_vtl_drive_init(ch->drives + i, sl, dr_dir, cfg->format);
 
 		if (sl->media != NULL) {
 			sl->volume_name = strdup(sl->media->label);
@@ -214,7 +215,7 @@ struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_
 		}
 	}
 
-	for (i = 0; i < nb_slots; i++) {
+	for (i = 0; i < cfg->nb_slots; i++) {
 		struct st_slot * sl = ch->slots + ch->nb_drives + i;
 		sl->changer = ch;
 		sl->drive = NULL;
@@ -230,7 +231,7 @@ struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_
 		sl->db_data = NULL;
 
 		char * sl_dir;
-		asprintf(&sl_dir, "%s/slots/%u", path, i);
+		asprintf(&sl_dir, "%s/slots/%u", cfg->path, i);
 
 		struct st_vtl_slot * vsl = sl->data = malloc(sizeof(struct st_vtl_slot));
 		vsl->path = sl_dir;
@@ -243,16 +244,16 @@ struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_
 		}
 	}
 
-	for (i = 0; i < nb_slots; i++) {
+	for (i = 0; i < cfg->nb_slots; i++) {
 		struct st_media * md = self->medias[i];
 		struct st_vtl_media * vmd = md->data;
 		struct st_slot * sl = ch->slots + ch->nb_drives + i;
 
 		if (!vmd->used) {
 			unsigned int j;
-			for (j = 0; j < nb_slots; j++) {
+			for (j = 0; j < cfg->nb_slots; j++) {
 				char * link_file;
-				asprintf(&link_file, "%s/slots/%u/media", path, j);
+				asprintf(&link_file, "%s/slots/%u/media", cfg->path, j);
 
 				if (!access(link_file, F_OK)) {
 					free(link_file);
@@ -260,7 +261,7 @@ struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_
 				}
 
 				char * media_file;
-				asprintf(&media_file, "../../medias/%s%03u", prefix, i);
+				asprintf(&media_file, "../../medias/%s%03u", cfg->prefix, i);
 
 				symlink(media_file, link_file);
 
@@ -268,7 +269,7 @@ struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_
 				free(link_file);
 
 				char * sl_dir;
-				asprintf(&sl_dir, "%s/slots/%u", path, i);
+				asprintf(&sl_dir, "%s/slots/%u", cfg->path, i);
 				sl->media = st_vtl_slot_get_media(ch, sl_dir);
 				free(sl_dir);
 

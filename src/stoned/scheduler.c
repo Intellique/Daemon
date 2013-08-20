@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 01 Feb 2013 09:36:45 +0100                            *
+*  Last modified: Mon, 19 Aug 2013 17:59:23 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -44,6 +44,7 @@
 
 #include <libstone/database.h>
 #include <libstone/job.h>
+#include <libstone/library/ressource.h>
 #include <libstone/log.h>
 #include <libstone/thread_pool.h>
 #include <libstone/util/hashtable.h>
@@ -54,11 +55,15 @@
 static void st_sched_exit(int signal);
 static void st_sched_run_job(void * arg);
 
+static struct st_ressource * st_sched_lock = NULL;
+static volatile unsigned int st_sched_nb_running_jobs = 0;
 static bool st_sched_stop_request = false;
 
 
 void st_sched_do_loop(struct st_database_connection * connection) {
 	signal(SIGINT, st_sched_exit);
+
+	st_sched_lock = st_ressource_new(false);
 
 	st_log_write_all(st_log_level_info, st_log_type_scheduler, "starting main loop");
 
@@ -101,14 +106,19 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 
 		st_changer_sync(connection);
 
+		st_sched_lock->ops->lock(st_sched_lock);
+		if (st_sched_nb_running_jobs == 0)
+			st_vtl_sync(connection);
+		st_sched_lock->ops->unlock(st_sched_lock);
+
 		time_t now = time(NULL);
 		if (now - update < 5) {
 			struct tm current;
-			update = now;
 			localtime_r(&update, &current);
 			sleep(5 - current.tm_sec % 5);
-		} else
-			update = now;
+		}
+
+		update = now;
 	}
 
 	for (i = 0; i < nb_jobs; i++) {
@@ -137,6 +147,10 @@ static void st_sched_run_job(void * arg) {
 
 	st_log_write_all(st_log_level_info, st_log_type_scheduler, "Starting job: %s", job->name);
 
+	st_sched_lock->ops->lock(st_sched_lock);
+	st_sched_nb_running_jobs++;
+	st_sched_lock->ops->unlock(st_sched_lock);
+
 	job->sched_status = st_job_status_running;
 	if (job->repetition > 0)
 		job->repetition--;
@@ -145,6 +159,10 @@ static void st_sched_run_job(void * arg) {
 	int status = job->ops->run(job);
 
 	job->ops->free(job);
+
+	st_sched_lock->ops->lock(st_sched_lock);
+	st_sched_nb_running_jobs--;
+	st_sched_lock->ops->unlock(st_sched_lock);
 
 	if (job->interval > 0) {
 		time_t now = time(NULL);

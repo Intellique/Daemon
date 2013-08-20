@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 22 Feb 2013 11:54:28 +0100                            *
+*  Last modified: Tue, 20 Aug 2013 15:22:23 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONED_LIBRARY_VTL_H__
@@ -38,6 +38,7 @@ struct st_drive;
 struct st_media_format;
 struct st_ressource;
 struct st_slot;
+struct st_vtl_config;
 
 struct st_vtl_changer {
 	char * path;
@@ -67,7 +68,8 @@ struct st_vtl_slot {
 	char * path;
 };
 
-struct st_changer * st_vtl_changer_init(unsigned int nb_drives, unsigned int nb_slots, const char * path, char * prefix, struct st_media_format * format);
+struct st_changer * st_vtl_changer_init(struct st_vtl_config * cfg);
+void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg);
 void st_vtl_drive_init(struct st_drive * drive, struct st_slot * slot, char * base_dir, struct st_media_format * format);
 struct st_media * st_vtl_media_init(char * base_dir, char * prefix, unsigned int index, struct st_media_format * format);
 struct st_media * st_vtl_slot_get_media(struct st_changer * changer, const char * base_dir);

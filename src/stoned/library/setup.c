@@ -22,14 +22,14 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 19 Apr 2013 16:42:21 +0200                            *
+*  Last modified: Fri, 16 Aug 2013 14:05:58 +0200                            *
 \****************************************************************************/
 
 // open
 #include <fcntl.h>
 // glob, globfree
 #include <glob.h>
-// calloc, realloc
+// free, calloc, malloc, realloc
 #include <stdlib.h>
 // sscanf
 #include <stdio.h>
@@ -41,11 +41,12 @@
 #include <sys/types.h>
 // time
 #include <time.h>
-// readlink
+// readlink, sleep
 #include <unistd.h>
 
 #include <libstone/database.h>
 #include <libstone/library/ressource.h>
+#include <libstone/library/vtl.h>
 #include <libstone/log.h>
 #include <stoned/library/changer.h>
 
@@ -55,138 +56,208 @@
 static struct st_changer * st_changers = NULL;
 static unsigned int st_nb_fake_changers = 0;
 static unsigned int st_nb_real_changers = 0;
-static struct st_changer ** st_vtls = NULL;
+static struct st_vtl_list * st_vtls = NULL, * st_last_vtl = NULL;
 static unsigned int st_nb_vtls = 0;
+
+static struct st_slot * st_changer_find_free_media_by_format2(struct st_changer * changer, struct st_media_format * format);
+static struct st_slot * st_changer_find_media_by_pool2(struct st_changer * changer, struct st_pool * pool, struct st_media ** previous_medias, unsigned int nb_medias);
+static struct st_slot * st_changer_find_slot_by_media2(struct st_changer * changer, struct st_media * media);
+static ssize_t st_changer_get_online_size2(struct st_changer * changer, struct st_pool * pool);
 
 
 void st_changer_add(struct st_changer * vtl) {
-	void * new_addr = realloc(st_vtls, (st_nb_vtls + 1) * sizeof(struct st_changer *));
-	if (new_addr == NULL) {
-		st_log_write_all(st_log_level_error, st_log_type_user_message, "Panic: There is not enought memory for vtl !!!");
-		return;
-	}
+	struct st_vtl_list * node = malloc(sizeof(struct st_vtl_list));
+	node->changer = vtl;
+	node->next = NULL;
 
-	st_vtls = new_addr;
-	st_vtls[st_nb_vtls] = vtl;
-	st_nb_vtls++;
+	if (st_vtls == NULL)
+		st_vtls = st_last_vtl = node;
+	else
+		st_last_vtl = st_last_vtl->next = node;
 }
 
 struct st_slot * st_changer_find_free_media_by_format(struct st_media_format * format) {
-	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers + st_nb_vtls;
-	for (i = 0; i < nb_changers; i++) {
-		struct st_changer * changer = st_changers + i;
+	struct st_slot * slot = NULL;
+	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers;
+	for (i = 0; slot == NULL && i < nb_changers; i++)
+		slot = st_changer_find_free_media_by_format2(st_changers + i, format);
 
-		unsigned int j;
-		for (j = 0; j < changer->nb_slots; j++) {
-			struct st_slot * slot = changer->slots + j;
-			struct st_drive * drive = slot->drive;
+	struct st_vtl_list * vtl;
+	for (vtl = st_vtls; slot == NULL && vtl != NULL; vtl = vtl->next)
+		slot = st_changer_find_free_media_by_format2(vtl->changer, format);
 
-			if (drive != NULL && drive->lock->ops->try_lock(drive->lock))
-				continue;
-			else if (drive == NULL && slot->lock->ops->try_lock(slot->lock))
-				continue;
+	return slot;
+}
 
-			struct st_media * media = slot->media;
-			if (media == NULL || media->format != format) {
-				if (drive != NULL)
-					drive->lock->ops->unlock(drive->lock);
-				else
-					slot->lock->ops->unlock(slot->lock);
-				continue;
-			}
+static struct st_slot * st_changer_find_free_media_by_format2(struct st_changer * changer, struct st_media_format * format) {
+	unsigned int j;
+	for (j = 0; j < changer->nb_slots; j++) {
+		struct st_slot * slot = changer->slots + j;
+		struct st_drive * drive = slot->drive;
 
-			if (media != NULL && media->status == st_media_status_new && media->pool == NULL)
-				return slot;
+		if (drive != NULL && drive->lock->ops->try_lock(drive->lock))
+			continue;
+		else if (drive == NULL && slot->lock->ops->try_lock(slot->lock))
+			continue;
 
+		struct st_media * media = slot->media;
+		if (media == NULL || media->format != format) {
 			if (drive != NULL)
 				drive->lock->ops->unlock(drive->lock);
 			else
 				slot->lock->ops->unlock(slot->lock);
+			continue;
 		}
+
+		if (media != NULL && media->status == st_media_status_new && media->pool == NULL)
+			return slot;
+
+		if (drive != NULL)
+			drive->lock->ops->unlock(drive->lock);
+		else
+			slot->lock->ops->unlock(slot->lock);
 	}
 
 	return NULL;
 }
 
 struct st_slot * st_changer_find_media_by_pool(struct st_pool * pool, struct st_media ** previous_medias, unsigned int nb_medias) {
-	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers + st_nb_vtls;
-	for (i = 0; i < nb_changers; i++) {
-		struct st_changer * changer = st_changers + i;
+	struct st_slot * slot = NULL;
+	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers;
+	for (i = 0; slot == NULL && i < nb_changers; i++)
+		slot = st_changer_find_media_by_pool2(st_changers + i, pool, previous_medias, nb_medias);
 
-		unsigned int j;
-		for (j = 0; j < changer->nb_slots; j++) {
-			struct st_slot * slot = changer->slots + j;
-			struct st_drive * drive = slot->drive;
+	struct st_vtl_list * vtl;
+	for (vtl = st_vtls; slot == NULL && vtl != NULL; vtl = vtl->next)
+		slot = st_changer_find_media_by_pool2(vtl->changer, pool, previous_medias, nb_medias);
 
-			if (drive != NULL && drive->lock->ops->try_lock(drive->lock))
-				continue;
-			else if (drive == NULL && slot->lock->ops->try_lock(slot->lock))
-				continue;
+	return slot;
+}
 
-			struct st_media * media = slot->media;
-			if (media == NULL || media->pool != pool) {
-				if (drive != NULL)
-					drive->lock->ops->unlock(drive->lock);
-				else
-					slot->lock->ops->unlock(slot->lock);
-				continue;
-			}
+static struct st_slot * st_changer_find_media_by_pool2(struct st_changer * changer, struct st_pool * pool, struct st_media ** previous_medias, unsigned int nb_medias) {
+	unsigned int j;
+	for (j = 0; j < changer->nb_slots; j++) {
+		struct st_slot * slot = changer->slots + j;
+		struct st_drive * drive = slot->drive;
 
-			unsigned int k;
-			for (k = 0; media != NULL && k < nb_medias; k++)
-				if (media == previous_medias[k])
-					media = NULL;
+		if (drive != NULL && drive->lock->ops->try_lock(drive->lock))
+			continue;
+		else if (drive == NULL && slot->lock->ops->try_lock(slot->lock))
+			continue;
 
-			if (media != NULL)
-				return slot;
-
+		struct st_media * media = slot->media;
+		if (media == NULL || media->pool != pool) {
 			if (drive != NULL)
 				drive->lock->ops->unlock(drive->lock);
 			else
 				slot->lock->ops->unlock(slot->lock);
+			continue;
 		}
+
+		unsigned int k;
+		for (k = 0; media != NULL && k < nb_medias; k++)
+			if (media == previous_medias[k])
+				media = NULL;
+
+		if (media != NULL)
+			return slot;
+
+		if (drive != NULL)
+			drive->lock->ops->unlock(drive->lock);
+		else
+			slot->lock->ops->unlock(slot->lock);
 	}
 
 	return NULL;
 }
 
 struct st_slot * st_changer_find_slot_by_media(struct st_media * media) {
-	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers + st_nb_vtls;
-	for (i = 0; i < nb_changers; i++) {
-		struct st_changer * changer = st_changers + i;
+	struct st_slot * slot = NULL;
+	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers;
+	for (i = 0; slot == NULL && i < nb_changers; i++)
+		slot = st_changer_find_slot_by_media2(st_changers + i, media);
 
-		unsigned int j;
-		for (j = 0; j < changer->nb_slots; j++) {
-			struct st_slot * slot = changer->slots + j;
+	struct st_vtl_list * vtl;
+	for (vtl = st_vtls; slot == NULL && vtl != NULL; vtl = vtl->next)
+		slot = st_changer_find_slot_by_media2(vtl->changer, media);
 
-			if (media == slot->media)
-				return slot;
-		}
+	return slot;
+}
+
+static struct st_slot * st_changer_find_slot_by_media2(struct st_changer * changer, struct st_media * media) {
+	unsigned int j;
+	for (j = 0; j < changer->nb_slots; j++) {
+		struct st_slot * slot = changer->slots + j;
+
+		if (media == slot->media)
+			return slot;
 	}
 
 	return NULL;
 }
 
 ssize_t st_changer_get_online_size(struct st_pool * pool) {
-	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers + st_nb_vtls;
 	ssize_t total = 0;
-	for (i = 0; i < nb_changers; i++) {
-		struct st_changer * changer = st_changers + i;
+	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers;
+	for (i = 0; i < nb_changers; i++)
+		total += st_changer_get_online_size2(st_changers + i, pool);
 
-		unsigned int j;
-		for (j = 0; j < changer->nb_slots; j++) {
-			struct st_slot * slot = changer->slots + j;
+	struct st_vtl_list * vtl;
+	for (vtl = st_vtls; vtl != NULL; vtl = vtl->next)
+		total += st_changer_get_online_size2(vtl->changer, pool);
 
-			struct st_media * media = slot->media;
-			if (media == NULL || media->pool != pool || media->status != st_media_status_in_use)
-				continue;
+	return total;
+}
 
-			if (media != NULL)
-				total += media->free_block * media->block_size;
-		}
+static ssize_t st_changer_get_online_size2(struct st_changer * changer, struct st_pool * pool) {
+	ssize_t total = 0;
+	unsigned int j;
+	for (j = 0; j < changer->nb_slots; j++) {
+		struct st_slot * slot = changer->slots + j;
+
+		struct st_media * media = slot->media;
+		if (media == NULL || media->pool != pool || media->status != st_media_status_in_use)
+			continue;
+
+		if (media != NULL)
+			total += media->free_block * media->block_size;
 	}
 
 	return total;
+}
+
+void st_changer_remove(struct st_changer * vtl) {
+	if (st_vtls == NULL)
+		return;
+
+	struct st_vtl_list * v = NULL;
+
+	if (st_vtls->changer == vtl) {
+		v = st_vtls;
+		st_vtls = st_vtls->next;
+		if (st_vtls == NULL)
+			st_last_vtl = NULL;
+	} else {
+		struct st_vtl_list * prev;
+		for (prev = st_vtls; prev->next != NULL; prev = prev->next) {
+			v = prev->next;
+			if (v->changer == vtl) {
+				prev->next = v->next;
+				if (v->next == NULL)
+					st_last_vtl = prev;
+				break;
+			}
+		}
+	}
+
+	if (v != NULL) {
+		// stop vtl
+		struct st_changer * ch = v->changer;
+		free(v);
+		v = NULL;
+
+		ch->ops->free(ch);
+	}
 }
 
 int st_changer_setup(void) {
@@ -455,33 +526,6 @@ int st_changer_setup(void) {
 		}
 	}
 
-	// add vtls
-	if (st_nb_vtls > 0) {
-		for (i = 0; i < st_nb_vtls; i++) {
-			struct st_changer * from = st_vtls[i];
-			struct st_changer * to = st_changers + st_nb_real_changers + st_nb_fake_changers + i;
-
-			*to = *from;
-
-			// update pointers
-			unsigned int j;
-			for (j = 0; j < to->nb_drives; j++) {
-				struct st_drive * dr = to->drives + j;
-				dr->changer = to;
-			}
-
-			for (j = 0; j < to->nb_slots; j++) {
-				struct st_slot * sl = to->slots + j;
-				sl->changer = to;
-			}
-
-			free(from);
-		}
-
-		free(st_vtls);
-		st_vtls = NULL;
-	}
-
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %u stand-alone drive%s", st_nb_fake_changers, st_nb_fake_changers != 1 ? "s" : "");
 
 	free(drives);
@@ -529,9 +573,19 @@ int st_changer_setup(void) {
 }
 
 void st_changer_stop() {
-	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers + st_nb_vtls;
+	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers;
 	for (i = 0; i < nb_changers; i++) {
 		struct st_changer * ch = st_changers + i;
+
+		if (ch->enabled) {
+			ch->ops->shut_down(ch);
+			ch->ops->free(ch);
+		}
+	}
+
+	struct st_vtl_list * vtl;
+	for (vtl = st_vtls; vtl != NULL; vtl = vtl->next) {
+		struct st_changer * ch = vtl->changer;
 
 		if (ch->enabled) {
 			ch->ops->shut_down(ch);
@@ -545,9 +599,17 @@ void st_changer_stop() {
 }
 
 void st_changer_sync(struct st_database_connection * connection) {
-	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers + st_nb_vtls;
+	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers;
 	for (i = 0; i < nb_changers; i++) {
 		struct st_changer * ch = st_changers + i;
+		ch->ops->update_status(ch);
+
+		connection->ops->sync_changer(connection, ch);
+	}
+
+	struct st_vtl_list * vtl;
+	for (vtl = st_vtls; vtl != NULL; vtl = vtl->next) {
+		struct st_changer * ch = vtl->changer;
 		ch->ops->update_status(ch);
 
 		connection->ops->sync_changer(connection, ch);
@@ -555,10 +617,10 @@ void st_changer_sync(struct st_database_connection * connection) {
 }
 
 struct st_slot_iterator * st_slot_iterator_by_new_media(struct st_media_format * format) {
-	return st_slot_iterator_by_new_media2(format, st_changers, st_nb_fake_changers + st_nb_real_changers + st_nb_vtls);
+	return st_slot_iterator_by_new_media2(format, st_changers, st_nb_fake_changers + st_nb_real_changers, st_vtls);
 }
 
 struct st_slot_iterator * st_slot_iterator_by_pool(struct st_pool * pool) {
-	return st_slot_iterator_by_pool2(pool, st_changers, st_nb_fake_changers + st_nb_real_changers + st_nb_vtls);
+	return st_slot_iterator_by_pool2(pool, st_changers, st_nb_fake_changers + st_nb_real_changers, st_vtls);
 }
 

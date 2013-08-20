@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 03 Jun 2013 19:05:40 +0200                            *
+*  Last modified: Tue, 20 Aug 2013 15:24:24 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -68,6 +68,7 @@ static void st_media_exit(void) __attribute__((destructor));
 static struct st_media * st_media_retrieve(struct st_database_connection * connection, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label);
 
 static int st_media_format_retrieve(struct st_media_format ** media_format, unsigned char density_code, const char * name, enum st_media_format_mode mode);
+static int st_media_format_sync(struct st_media_format * format);
 
 static struct st_pool * st_pool_retreive(struct st_database_connection * connection, struct st_archive * archive, struct st_job * job, const char * uuid);
 
@@ -786,6 +787,9 @@ struct st_media_format * st_media_format_get_by_density_code(unsigned char densi
 		if (st_media_formats[i]->density_code == density_code && st_media_formats[i]->mode == mode)
 			media_format = st_media_formats[i];
 
+	if (media_format != NULL)
+		st_media_format_sync(media_format);
+
 	if (media_format == NULL && st_media_format_retrieve(&media_format, density_code, NULL, mode)) {
 		void * new_addr = realloc(st_media_formats, (st_media_format_nb_formats + 1) * sizeof(struct st_media_format *));
 		if (new_addr != NULL) {
@@ -811,6 +815,9 @@ struct st_media_format * st_media_format_get_by_name(const char * format, enum s
 	for (i = 0; i < st_media_format_nb_formats && media_format == NULL; i++)
 		if (!strcmp(format, st_media_formats[i]->name))
 			media_format = st_media_formats[i];
+
+	if (media_format != NULL)
+		st_media_format_sync(media_format);
 
 	if (media_format == NULL && st_media_format_retrieve(&media_format, 0, format, mode)) {
 		void * new_addr = realloc(st_media_formats, (st_media_format_nb_formats + 1) * sizeof(struct st_media_format *));
@@ -856,6 +863,26 @@ static int st_media_format_retrieve(struct st_media_format ** media_format, unsi
 	}
 
 	return 0;
+}
+
+static int st_media_format_sync(struct st_media_format * format) {
+	struct st_database * db = st_database_get_default_driver();
+	struct st_database_config * config = NULL;
+	struct st_database_connection * connect = NULL;
+
+	if (db != NULL)
+		config = db->ops->get_default_config();
+
+	if (config != NULL)
+		connect = config->ops->connect(config);
+
+	int failed = 1;
+	if (connect != NULL) {
+		failed = connect->ops->sync_media_format(connect, format);
+		connect->ops->free(connect);
+	}
+
+	return failed;
 }
 
 

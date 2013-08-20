@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 25 Apr 2013 23:20:42 +0200                            *
+*  Last modified: Tue, 20 Aug 2013 12:15:53 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -47,6 +47,7 @@ enum st_media_format_mode;
 struct st_pool;
 struct st_stream_reader;
 struct st_user;
+struct st_vtl_config;
 
 
 /**
@@ -205,6 +206,7 @@ struct st_database_connection {
 		int (*get_media_format)(struct st_database_connection * connect, struct st_media_format * media_format, unsigned char density_code, const char * name, enum st_media_format_mode mode);
 		struct st_pool * (*get_pool)(struct st_database_connection * connect, struct st_archive * archive, struct st_job * job, const char * uuid);
 		int (*sync_media)(struct st_database_connection * connnect, struct st_media * media);
+		int (*sync_media_format)(struct st_database_connection * connect, struct st_media_format * format);
 
 		int (*add_check_archive_job)(struct st_database_connection * connect, struct st_job * job, struct st_archive * archive, time_t starttime, bool quick_mode);
 		int (*add_job_record)(struct st_database_connection * connect, struct st_job * job, const char * message);
@@ -231,6 +233,8 @@ struct st_database_connection {
 		bool (*mark_archive_file_as_checked)(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_file * file, bool ok);
 		bool (*mark_archive_volume_as_checked)(struct st_database_connection * connect, struct st_archive_volume * volume, bool ok);
 		int (*sync_archive)(struct st_database_connection * connect, struct st_archive * archive);
+
+		struct st_vtl_config * (*get_vtls)(struct st_database_connection * connect, unsigned int * nb_vtls);
 	} * ops;
 
 	/**

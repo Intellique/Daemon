@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 30 May 2013 21:18:06 +0200                            *
+*  Last modified: Tue, 20 Aug 2013 15:22:39 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -35,77 +35,79 @@
 // access
 #include <unistd.h>
 
+#include <libstone/database.h>
 #include <libstone/library/media.h>
+#include <libstone/library/vtl.h>
+#include <libstone/log.h>
 #include <libstone/util/file.h>
 #include <libstone/util/hashtable.h>
+#include <libstone/util/string.h>
 
 #include "common.h"
 #include "vtl/common.h"
 
 
-void st_vtl_add(const struct st_hashtable * params) {
-	char * path = st_hashtable_get(params, "path").value.string;
-	char * nb_drives = st_hashtable_get(params, "nb_drives").value.string;
-	char * prefix = st_hashtable_get(params, "prefix_slot").value.string;
-	char * nb_slots = st_hashtable_get(params, "nb_slots").value.string;
-	char * media_format = st_hashtable_get(params, "media_format").value.string;
+static struct st_hashtable * st_vtl_changers = NULL;
 
-	if (path == NULL || nb_drives == NULL || prefix == NULL || nb_slots == NULL || media_format == NULL)
-		return;
+static bool st_vtl_create(struct st_vtl_config * cfg);
+static void st_vtl_exit(void) __attribute__((destructor));
+static void st_vtl_hash_free(void * key, void * value);
+static void st_vtl_init(void) __attribute__((constructor));
 
-	unsigned int nb_drs = 0, nb_slts = 0;
-	if (sscanf(nb_drives, "%u", &nb_drs) < 1) {
-		return;
+
+static bool st_vtl_create(struct st_vtl_config * cfg) {
+	st_log_write_all(st_log_level_info, st_log_type_daemon, "VTL: Create new vtl");
+
+	if (st_util_file_mkdir(cfg->path, 0700)) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "VTL: Failed to create root directory: %s", cfg->path);
+		return false;
 	}
 
-	if (sscanf(nb_slots, "%u", &nb_slts) < 1) {
-		return;
-	}
-
-	if (access(path, F_OK | R_OK | W_OK | X_OK) && st_util_file_mkdir(path, 0700)) {
-		return;
-	}
-
-	// drives
 	char * drive_dir;
-	asprintf(&drive_dir, "%s/drives", path);
+	asprintf(&drive_dir, "%s/drives", cfg->path);
 
 	if (access(drive_dir, F_OK | R_OK | W_OK | X_OK) && st_util_file_mkdir(drive_dir, 0700)) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "VTL: Failed to create drives directory: %s", drive_dir);
 		free(drive_dir);
-		return;
+		return false;
 	}
 
 	unsigned int i;
-	for (i = 0; i < nb_drs; i++) {
+	for (i = 0; i < cfg->nb_drives; i++) {
 		char * dr_dir;
 		asprintf(&dr_dir, "%s/%u", drive_dir, i);
 
-		if (access(dr_dir, F_OK | R_OK | W_OK | X_OK) && st_util_file_mkdir(dr_dir, 0700))
-			return;
+		if (access(dr_dir, F_OK | R_OK | W_OK | X_OK) && st_util_file_mkdir(dr_dir, 0700)) {
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "VTL: Failed to create drive directory #%u: %s", i, dr_dir);
+			free(dr_dir);
+			free(drive_dir);
+			return false;
+		}
 
 		free(dr_dir);
 	}
 
 	free(drive_dir);
 
-	// media format
-	struct st_media_format * format = st_media_format_get_by_name(media_format, st_media_format_mode_disk);
-
-	// media
 	char * media_dir;
-	asprintf(&media_dir, "%s/medias", path);
+	asprintf(&media_dir, "%s/medias", cfg->path);
 
 	if (access(media_dir, F_OK | R_OK | W_OK | X_OK) && st_util_file_mkdir(media_dir, 0700)) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "VTL: Failed to create medias directory: %s", media_dir);
 		free(media_dir);
-		return;
+		return false;
 	}
 
-	for (i = 0; i < nb_slts; i++) {
+	for (i = 0; i < cfg->nb_slots; i++) {
 		char * md_dir;
-		asprintf(&md_dir, "%s/%s%03u", media_dir, prefix, i);
+		asprintf(&md_dir, "%s/%s%03u", media_dir, cfg->prefix, i);
 
-		if (access(md_dir, F_OK | R_OK | W_OK | X_OK) && st_util_file_mkdir(md_dir, 0700))
-			return;
+		if (access(md_dir, F_OK | R_OK | W_OK | X_OK) && st_util_file_mkdir(md_dir, 0700)) {
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "VTL: Failed to create media directory #%u: %s", i, md_dir);
+			free(md_dir);
+			free(media_dir);
+			return false;
+		}
 
 		free(md_dir);
 	}
@@ -114,27 +116,104 @@ void st_vtl_add(const struct st_hashtable * params) {
 
 	// slots
 	char * slot_dir;
-	asprintf(&slot_dir, "%s/slots", path);
+	asprintf(&slot_dir, "%s/slots", cfg->path);
 
 	if (access(slot_dir, F_OK | R_OK | W_OK | X_OK) && st_util_file_mkdir(slot_dir, 0700)) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "VTL: Failed to create slots directory: %s", slot_dir);
 		free(slot_dir);
-		return;
+		return false;
 	}
 
-	for (i = 0; i < nb_slts; i++) {
+	for (i = 0; i < cfg->nb_slots; i++) {
 		char * sl_dir;
 		asprintf(&sl_dir, "%s/%u", slot_dir, i);
 
-		if (access(sl_dir, F_OK | R_OK | W_OK | X_OK) && st_util_file_mkdir(sl_dir, 0700))
-			return;
+		if (access(sl_dir, F_OK | R_OK | W_OK | X_OK) && st_util_file_mkdir(sl_dir, 0700)) {
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "VTL: Failed to create slot directory #%u: %s", i, sl_dir);
+			free(sl_dir);
+			free(slot_dir);
+			return false;
+		}
 
 		free(sl_dir);
 	}
 
 	free(slot_dir);
 
-	struct st_changer * ch = st_vtl_changer_init(nb_drs, nb_slts, path, prefix, format);
-	if (ch != NULL)
-		st_changer_add(ch);
+	struct st_changer * ch = st_vtl_changer_init(cfg);
+	if (ch == NULL)
+		return false;
+
+	st_changer_add(ch);
+	st_hashtable_put(st_vtl_changers, strdup(cfg->path), st_hashtable_val_custom(ch));
+
+	return true;
+}
+
+static void st_vtl_exit() {
+	st_hashtable_free(st_vtl_changers);
+	st_vtl_changers = NULL;
+}
+
+static void st_vtl_hash_free(void * key, void * value __attribute__((unused))) {
+	free(key);
+}
+
+static void st_vtl_init() {
+	st_vtl_changers = st_hashtable_new2(st_util_string_compute_hash, st_vtl_hash_free);
+}
+
+void st_vtl_sync(struct st_database_connection * connect) {
+	unsigned int nb_vtls = 0;
+	struct st_vtl_config * configs = connect->ops->get_vtls(connect, &nb_vtls);
+
+	if (configs == NULL) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Failed to get vtls configurations");
+		return;
+	}
+
+	unsigned int i;
+	for (i = 0; i < nb_vtls; i++) {
+		struct st_vtl_config * cfg = configs + i;
+
+		bool exists = !access(cfg->path, F_OK | R_OK | W_OK | X_OK);
+
+		/**
+		 * Note: if !exists && cfg->deleted means that the vtl is already deleted
+		 * and should not be used anymore
+		 */
+		if (!exists && !cfg->deleted) {
+			bool ok = st_vtl_create(cfg);
+			if (!ok)
+				st_log_write_all(st_log_level_error, st_log_type_daemon, "Failed to create vtl { path: %s, prefix: %s }", cfg->path, cfg->prefix);
+		} else if (exists && !cfg->deleted) {
+			// check for non-running vtl & if vtl need update
+			if (!st_hashtable_has_key(st_vtl_changers, cfg->path)) {
+				struct st_changer * ch = st_vtl_changer_init(cfg);
+
+				if (ch != NULL) {
+					st_changer_add(ch);
+					st_hashtable_put(st_vtl_changers, strdup(cfg->path), st_hashtable_val_custom(ch));
+				} else {
+					st_log_write_all(st_log_level_error, st_log_type_daemon, "Failed to restart vtl { path: %s, prefix: %s }", cfg->path, cfg->prefix);
+				}
+			}
+		} else if (exists && cfg->deleted) {
+			// remove and delete vtl
+			if (st_hashtable_has_key(st_vtl_changers, cfg->path)) {
+				// remove the vtl
+				struct st_hashtable_value chv = st_hashtable_get(st_vtl_changers, cfg->path);
+				struct st_changer * ch = chv.value.custom;
+
+				st_hashtable_remove(st_vtl_changers, cfg->path);
+
+				st_changer_remove(ch);
+			}
+
+			st_util_file_rm(cfg->path);
+		}
+	}
+
+	st_vtl_config_free(configs, nb_vtls);
 }
 
