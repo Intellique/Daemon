@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 04 Feb 2013 12:14:33 +0100                            *
+*  Last modified: Wed, 21 Aug 2013 09:48:00 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_UTIL_FILE_H__
@@ -56,6 +56,8 @@ bool st_util_file_check_link(const char * file);
  */
 void st_util_file_convert_size_to_string(ssize_t size, char * str, ssize_t str_len);
 
+int st_util_file_cp(const char * src, const char * dst);
+
 char * st_util_file_get_serial(const char * filename);
 
 /**
@@ -77,6 +79,8 @@ void st_util_file_gid2name(char * name, ssize_t length, gid_t gid);
  * \returns 0 if ok or read errno
  */
 int st_util_file_mkdir(const char * dirname, mode_t mode);
+
+int st_util_file_mv(const char * src, const char * dst);
 
 char * st_util_file_read_all_from(const char * filename);
 
