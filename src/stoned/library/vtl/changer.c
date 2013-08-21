@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 20 Aug 2013 15:22:52 +0200                            *
+*  Last modified: Wed, 21 Aug 2013 19:32:05 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -30,7 +30,7 @@
 #include <stdio.h>
 // calloc, malloc
 #include <stdlib.h>
-// strdup
+// memmove, strcmp, strdup
 #include <string.h>
 // sleep, symlink
 #include <unistd.h>
@@ -356,6 +356,231 @@ static int st_vtl_changer_load_slot(struct st_changer * ch, struct st_slot * fro
 
 static int st_vtl_changer_shut_down(struct st_changer * ch __attribute__((unused))) {
 	return 0;
+}
+
+void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg) {
+	struct st_vtl_changer * self = ch->data;
+
+	if (strcmp(self->path, cfg->path)) {
+		st_util_file_mkdir(cfg->path, 0755);
+		st_util_file_rm(cfg->path);
+		st_util_file_mv(self->path, cfg->path);
+
+		free(self->path);
+		self->path = strdup(cfg->path);
+	}
+
+	unsigned int i;
+	void * new_addr;
+	// add new medias & slots
+	if (ch->nb_slots < cfg->nb_slots) {
+		new_addr = realloc(self->medias, cfg->nb_slots * sizeof(struct st_media *));
+		if (new_addr == NULL) {
+			st_log_write_all(st_log_level_debug, st_log_type_changer, "[%s | %s]: Not enough memory to grow vtl with %u slots", ch->vendor, ch->model, cfg->nb_slots);
+			return;
+		}
+
+		self->medias = new_addr;
+
+		// create new medias
+		for (i = self->nb_medias; i < cfg->nb_slots; i++) {
+			char * md_dir;
+			asprintf(&md_dir, "%s/medias/%s%03u", cfg->path, cfg->prefix, i);
+
+			if (access(md_dir, F_OK | R_OK | W_OK | X_OK) && st_util_file_mkdir(md_dir, 0700)) {
+				st_log_write_all(st_log_level_error, st_log_type_daemon, "VTL: Failed to create media directory #%u: %s", i, md_dir);
+				free(md_dir);
+			}
+
+			self->medias[i] = st_vtl_media_init(md_dir, cfg->prefix, i, cfg->format);
+
+			free(md_dir);
+		}
+
+		new_addr = realloc(ch->slots, (cfg->nb_slots + ch->nb_drives) * sizeof(struct st_slot));
+
+		if (new_addr == NULL) {
+			st_log_write_all(st_log_level_debug, st_log_type_changer, "[%s | %s]: Not enough memory to grow vtl with %u slots", ch->vendor, ch->model, cfg->nb_slots);
+			return;
+		}
+
+		ch->slots = new_addr;
+
+		// re-link drive to slot
+		for (i = 0; i < ch->nb_drives; i++) {
+			struct st_drive * dr = ch->drives + i;
+			dr->slot = ch->slots + i;
+		}
+
+		// create new slots
+		for (i = ch->nb_slots; i < cfg->nb_slots; i++) {
+			char * sl_dir;
+			asprintf(&sl_dir, "%s/slots/%u", cfg->path, i);
+
+			if (access(sl_dir, F_OK | R_OK | W_OK | X_OK) && st_util_file_mkdir(sl_dir, 0700)) {
+				st_log_write_all(st_log_level_error, st_log_type_daemon, "VTL: Failed to create slot directory #%u: %s", i, sl_dir);
+				free(sl_dir);
+				return;
+			}
+
+			struct st_slot * sl = ch->slots + ch->nb_drives + i;
+			sl->changer = ch;
+			sl->drive = NULL;
+			sl->media = NULL;
+
+			sl->volume_name = NULL;
+			sl->full = false;
+			sl->type = st_slot_type_storage;
+			sl->enable = true;
+
+			sl->lock = st_ressource_new(false);
+
+			sl->db_data = NULL;
+
+			struct st_vtl_slot * vsl = sl->data = malloc(sizeof(struct st_vtl_slot));
+			vsl->path = sl_dir;
+
+			char * link_file;
+			asprintf(&link_file, "%s/slots/%u/media", cfg->path, i);
+
+			char * media_file;
+			asprintf(&media_file, "../../medias/%s%03u", cfg->prefix, i);
+
+			symlink(media_file, link_file);
+
+			free(media_file);
+			free(link_file);
+
+			sl->media = st_vtl_slot_get_media(ch, sl_dir);
+			free(sl_dir);
+
+			if (sl->media != NULL) {
+				sl->volume_name = strdup(sl->media->label);
+				sl->full = true;
+			}
+		}
+
+		ch->nb_slots = cfg->nb_slots + ch->nb_drives;
+	}
+
+	// add & remove drives
+	if (ch->nb_drives < cfg->nb_drives) {
+		new_addr = realloc(ch->slots, (cfg->nb_slots + cfg->nb_drives) * sizeof(struct st_slot));
+
+		if (new_addr == NULL) {
+			st_log_write_all(st_log_level_debug, st_log_type_changer, "[%s | %s]: Not enough memory to grow vtl with %u drives", ch->vendor, ch->model, cfg->nb_drives);
+			return;
+		}
+
+		ch->slots = new_addr;
+
+		// re-link drive to slot
+		for (i = 0; i < ch->nb_drives; i++) {
+			struct st_drive * dr = ch->drives + i;
+			dr->slot = ch->slots + i;
+		}
+
+		memmove(ch->slots + cfg->nb_drives, ch->slots + ch->nb_drives, (ch->nb_slots - ch->nb_drives) * sizeof(struct st_slot));
+
+		// create new drives
+		for (i = ch->nb_drives; i < cfg->nb_drives; i++) {
+			char * dr_dir;
+			asprintf(&dr_dir, "%s/drives/%u", self->path, i);
+
+			if (access(dr_dir, F_OK | R_OK | W_OK | X_OK) && st_util_file_mkdir(dr_dir, 0700)) {
+				st_log_write_all(st_log_level_error, st_log_type_daemon, "VTL: Failed to create drive directory #%u: %s", i, dr_dir);
+				free(dr_dir);
+				return;
+			}
+
+			struct st_slot * sl = ch->slots + i;
+			sl->changer = ch;
+			sl->drive = ch->drives + i;
+			sl->media = NULL;
+
+			sl->volume_name = NULL;
+			sl->full = false;
+			sl->type = st_slot_type_drive;
+			sl->enable = true;
+
+			sl->lock = NULL;
+
+			sl->data = NULL;
+			sl->db_data = NULL;
+
+			sl->media = st_vtl_slot_get_media(ch, dr_dir);
+			st_vtl_drive_init(ch->drives + i, sl, dr_dir, cfg->format);
+
+			if (sl->media != NULL) {
+				sl->volume_name = strdup(sl->media->label);
+				sl->full = true;
+			}
+		}
+
+		ch->nb_drives = cfg->nb_drives;
+	} else if (ch->nb_drives > cfg->nb_drives) {
+		// remove old drives
+		for (i = ch->nb_drives - 1; i >= cfg->nb_drives; i--) {
+			struct st_drive * dr = ch->drives + i;
+			if (dr->slot->media != NULL)
+				st_vtl_changer_unload(ch, dr);
+
+			dr->ops->free(dr);
+
+			char * dr_dir;
+			asprintf(&dr_dir, "%s/drives/%u", self->path, i);
+
+			st_util_file_rm(dr_dir);
+
+			free(dr_dir);
+		}
+
+		void * new_addr = realloc(ch->drives, cfg->nb_drives * sizeof(struct st_drive));
+		if (new_addr != NULL)
+			ch->drives = new_addr;
+		ch->nb_drives = cfg->nb_drives;
+
+		memmove(ch->slots + cfg->nb_drives, ch->slots + ch->nb_drives, (ch->nb_slots - ch->nb_drives));
+		new_addr = realloc(ch->slots, (cfg->nb_slots + cfg->nb_drives) * sizeof(struct st_slot));
+		if (new_addr)
+			ch->slots = new_addr;
+
+		// re-link drive to slot
+		for (i = 0; i < ch->nb_drives; i++) {
+			struct st_drive * dr = ch->drives + i;
+			dr->slot = ch->slots + i;
+		}
+	}
+
+	// remove media & slot
+	if (ch->nb_slots > cfg->nb_slots) {
+		for (i = 0; i < ch->nb_drives; i++) {
+			struct st_drive * dr = ch->drives + i;
+			if (dr->slot->media != NULL)
+				st_vtl_changer_unload(ch, dr);
+		}
+
+		for (i = cfg->nb_slots; i < ch->nb_slots; i++) {
+			struct st_slot * sl = ch->slots + ch->nb_drives + i;
+			free(sl->volume_name);
+			if (sl->lock != NULL)
+				sl->lock->ops->free(sl->lock);
+
+			struct st_vtl_slot * vsl = sl->data;
+			if (vsl != NULL) {
+				free(vsl->path);
+				free(vsl);
+			}
+
+			free(sl->db_data);
+		}
+
+		new_addr = realloc(ch->slots, (ch->nb_drives + cfg->nb_slots) * sizeof(struct st_slot));
+		if (new_addr)
+			ch->slots = new_addr;
+
+		ch->nb_slots = cfg->nb_slots;
+	}
 }
 
 static int st_vtl_changer_unload(struct st_changer * ch, struct st_drive * from) {

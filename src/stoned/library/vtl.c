@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 20 Aug 2013 18:56:31 +0200                            *
+*  Last modified: Wed, 21 Aug 2013 13:16:55 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -188,7 +188,12 @@ void st_vtl_sync(struct st_database_connection * connect) {
 				st_log_write_all(st_log_level_error, st_log_type_daemon, "Failed to create vtl { path: %s, prefix: %s }", cfg->path, cfg->prefix);
 		} else if (exists && !cfg->deleted) {
 			// check for non-running vtl & if vtl need update
-			if (!st_hashtable_has_key(st_vtl_changers, cfg->path)) {
+			if (st_hashtable_has_key(st_vtl_changers, cfg->path)) {
+				struct st_hashtable_value chv = st_hashtable_get(st_vtl_changers, cfg->path);
+				struct st_changer * ch = chv.value.custom;
+
+				st_vtl_changer_sync(ch, cfg);
+			} else {
 				struct st_changer * ch = st_vtl_changer_init(cfg);
 
 				if (ch != NULL) {
