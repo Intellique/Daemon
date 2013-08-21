@@ -17,6 +17,8 @@ NAME		:= STone
 DIR_NAME	:= $(lastword $(subst /, , $(realpath .)))
 
 
+GIT_HEAD	:= $(shell ./script/git-head.pl)
+
 BINS		:=
 BIN_SYMS	:=
 
@@ -48,7 +50,8 @@ LDFLAGS		:=
 CSCOPE_OPT	:= -b -R -s src -U -I include
 CTAGS_OPT	:= -R src
 
-VERSION_OPT		:= STONE stone.version
+VERSION_FILE	:= stone.version
+VERSION_OPT		:= STONE ${VERSION_FILE}
 
 
 # sub makefiles
@@ -191,8 +194,7 @@ install:
 	@cp script/stone.conf ${DESTDIR}/etc/storiq/stone.conf
 	@cp -a www ${DESTDIR}/var/www/stone
 
-prepare: ${BIN_DIRS} ${CHCKSUM_DIR} ${DEP_DIRS} ${OBJ_DIRS} $(addprefix prepare_,${BIN_SYMS}) $(addprefix prepare_,${TEST_BIN_SYMS})
-	@./script/version.pl ${VERSION_OPT}
+prepare: ${BIN_DIRS} ${CHCKSUM_DIR} ${DEP_DIRS} ${OBJ_DIRS} $(addprefix prepare_,${BIN_SYMS}) $(addprefix prepare_,${TEST_BIN_SYMS}) ${VERSION_FILE}
 
 rebuild: clean all
 
@@ -216,6 +218,9 @@ ${BIN_DIRS} ${CHCKSUM_DIR} ${DEP_DIRS} ${OBJ_DIRS}:
 
 ${NAME}.tar.bz2:
 	${GIT} archive --format=tar --prefix=${DIR_NAME}/ master | bzip2 -9c > $@
+
+${VERSION_FILE}: ${GIT_HEAD}
+	@./script/version.pl ${VERSION_OPT}
 
 cscope.out: ${SRC_FILES} ${HEAD_FILES}
 	@echo " CSCOPE"
