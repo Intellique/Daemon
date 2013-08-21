@@ -220,6 +220,7 @@ ${NAME}.tar.bz2:
 	${GIT} archive --format=tar --prefix=${DIR_NAME}/ master | bzip2 -9c > $@
 
 ${VERSION_FILE}: ${GIT_HEAD}
+	@echo ' GEN      stone.version'
 	@./script/version.pl ${VERSION_OPT}
 
 cscope.out: ${SRC_FILES} ${HEAD_FILES}

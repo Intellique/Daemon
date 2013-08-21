@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sat, 04 May 2013 15:41:54 +0200                            *
+*  Last modified: Wed, 21 Aug 2013 19:40:13 +0200                            *
 \****************************************************************************/
 
 // malloc
@@ -57,7 +57,7 @@ static struct st_changer_ops st_standalone_drive_ops = {
 };
 
 
-static struct st_drive * st_standalone_drive_find_free_drive(struct st_changer * ch, struct st_media_format * format, bool for_reading, bool for_writing) {
+static struct st_drive * st_standalone_drive_find_free_drive(struct st_changer * ch, struct st_media_format * format __attribute__((unused)), bool for_reading __attribute__((unused)), bool for_writing __attribute__((unused))) {
 	if (ch == NULL || !ch->enabled)
 		return NULL;
 
