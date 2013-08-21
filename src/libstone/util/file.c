@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 21 Aug 2013 12:31:34 +0200                            *
+*  Last modified: Wed, 21 Aug 2013 13:11:22 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -141,26 +141,49 @@ int st_util_file_cp(const char * src, const char * dst) {
 		return 0;
 	}
 
-	struct stat stdst;
-	failed = lstat(dst, &stdst);
-	if (failed) {
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Copy files: Can't get information of '%s' because %m", dst);
-		return failed;
-	}
-
-	if (!S_ISDIR(stdst.st_mode)) {
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Copy files: '%s' should be a directory", dst);
-		return 2;
-	}
-
-	char * cpsrc = strdup(src);
-	char * basename_src = basename(cpsrc);
-
 	char * dst_file;
-	asprintf(&dst_file, "%s/%s", dst, basename_src);
+	if (!access(dst, F_OK)) {
+		struct stat stdst;
+		failed = lstat(dst, &stdst);
+		if (failed) {
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "Copy files: Can't get information of '%s' because %m", dst);
+			return failed;
+		}
 
-	free(cpsrc);
-	cpsrc = basename_src = NULL;
+		if (!S_ISDIR(stdst.st_mode)) {
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "Copy files: '%s' should be a directory", dst);
+			return 2;
+		}
+
+		char * cpsrc = strdup(src);
+		char * basename_src = basename(cpsrc);
+
+		asprintf(&dst_file, "%s/%s", dst, basename_src);
+
+		free(cpsrc);
+		cpsrc = basename_src = NULL;
+	} else {
+		char * cpdst = strdup(dst);
+		char * dirname_dst = dirname(cpdst);
+
+		struct stat stdst;
+		failed = lstat(dirname_dst, &stdst);
+		if (failed) {
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "Copy files: Can't get information of '%s' because %m", dirname_dst);
+			free(cpdst);
+			return 2;
+		}
+
+		if (!S_ISDIR(stdst.st_mode)) {
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "Copy files: '%s' should be a directory", dirname_dst);
+			free(cpdst);
+			return 2;
+		}
+
+		free(cpdst);
+
+		dst_file = strdup(dst);
+	}
 
 	if (S_ISDIR(stsrc.st_mode)) {
 		failed = st_util_file_mkdir(dst_file, stsrc.st_mode);
