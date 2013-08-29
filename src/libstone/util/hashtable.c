@@ -414,7 +414,7 @@ bool st_hashtable_equals(struct st_hashtable * table_a, struct st_hashtable * ta
 
 	uint32_t i;
 	bool ok = true;
-	for (i = 0; i < table_a->nb_elements; i++) {
+	for (i = 0; ok && i < table_a->nb_elements; i++) {
 		struct st_hashtable_value val_a = st_hashtable_get(table_a, keys[i]);
 		struct st_hashtable_value val_b = st_hashtable_get(table_b, keys[i]);
 
