@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 20 Aug 2013 19:00:12 +0200                            *
+*  Last modified: Mon, 09 Sep 2013 13:23:26 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -3539,13 +3539,12 @@ static void st_db_postgresql_prepare(struct st_db_postgresql_connection_private 
 	if (!st_hashtable_has_key(self->cached_query, statement_name)) {
 		PGresult * prepare = PQprepare(self->connect, statement_name, query, 0, NULL);
 		ExecStatusType status = PQresultStatus(prepare);
-		if (status == PGRES_FATAL_ERROR)
+		if (status == PGRES_FATAL_ERROR) {
 			st_db_postgresql_get_error(prepare, statement_name);
-		else
+			st_log_write_all(status == PGRES_COMMAND_OK ? st_log_level_debug : st_log_level_error, st_log_type_plugin_db, "Postgresql: new query prepared (%s) => {%s}, status: %s", statement_name, query, PQresStatus(status));
+		} else
 			st_hashtable_put(self->cached_query, strdup(statement_name), st_hashtable_val_null());
 		PQclear(prepare);
-
-		st_log_write_all(status == PGRES_COMMAND_OK ? st_log_level_debug : st_log_level_error, st_log_type_plugin_db, "Postgresql: new query prepared (%s) => {%s}, status: %s", statement_name, query, PQresStatus(status));
 	}
 }
 

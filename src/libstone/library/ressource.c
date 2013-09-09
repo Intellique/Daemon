@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 07 Jun 2013 09:42:31 +0200                            *
+*  Last modified: Mon, 09 Sep 2013 12:24:32 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -136,7 +136,7 @@ static int st_ressource_private_lock(struct st_ressource * res) {
 	if (!failed)
 		res->locked++;
 
-	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Locking mutex %p: %d", &self->lock, failed);
+	// st_log_write_all(st_log_level_debug, st_log_type_daemon, "Locking mutex %p: %d", &self->lock, failed);
 
 	return failed;
 }
@@ -161,7 +161,7 @@ static int st_ressource_private_timed_lock(struct st_ressource * res, unsigned i
 	if (!failed)
 		res->locked++;
 
-	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Locking mutex %p (timeout: %dms): %d", &self->lock, timeout, failed);
+	// st_log_write_all(st_log_level_debug, st_log_type_daemon, "Locking mutex %p (timeout: %dms): %d", &self->lock, timeout, failed);
 
 	return failed;
 }
@@ -175,7 +175,7 @@ static int st_ressource_private_try_lock(struct st_ressource * res) {
 	if (!failed)
 		res->locked++;
 
-	st_log_write_all(st_log_level_debug, st_log_type_daemon, "(Try) locking mutex %p: %d", &self->lock, failed);
+	// st_log_write_all(st_log_level_debug, st_log_type_daemon, "(Try) locking mutex %p: %d", &self->lock, failed);
 
 	return failed;
 }
@@ -189,6 +189,6 @@ static void st_ressource_private_unlock(struct st_ressource * res) {
 	if (!failed)
 		res->locked--;
 
-	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Unocking mutex %p: %d", &self->lock, failed);
+	// st_log_write_all(st_log_level_debug, st_log_type_daemon, "Unocking mutex %p: %d", &self->lock, failed);
 }
 
