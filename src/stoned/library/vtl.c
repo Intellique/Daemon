@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 21 Aug 2013 13:16:55 +0200                            *
+*  Last modified: Mon, 09 Sep 2013 15:17:19 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -145,7 +145,7 @@ static bool st_vtl_create(struct st_vtl_config * cfg) {
 		return false;
 
 	st_changer_add(ch);
-	st_hashtable_put(st_vtl_changers, strdup(cfg->path), st_hashtable_val_custom(ch));
+	st_hashtable_put(st_vtl_changers, strdup(cfg->uuid), st_hashtable_val_custom(ch));
 
 	return true;
 }
@@ -183,13 +183,21 @@ void st_vtl_sync(struct st_database_connection * connect) {
 		 * and should not be used anymore
 		 */
 		if (!exists && !cfg->deleted) {
-			bool ok = st_vtl_create(cfg);
-			if (!ok)
-				st_log_write_all(st_log_level_error, st_log_type_daemon, "Failed to create vtl { path: %s, prefix: %s }", cfg->path, cfg->prefix);
+			// check if we have to move the vtl
+			if (st_hashtable_has_key(st_vtl_changers, cfg->uuid)) {
+				struct st_hashtable_value chv = st_hashtable_get(st_vtl_changers, cfg->uuid);
+				struct st_changer * ch = chv.value.custom;
+
+				st_vtl_changer_sync(ch, cfg);
+			} else {
+				bool ok = st_vtl_create(cfg);
+				if (!ok)
+					st_log_write_all(st_log_level_error, st_log_type_daemon, "Failed to create vtl { path: %s, prefix: %s }", cfg->path, cfg->prefix);
+			}
 		} else if (exists && !cfg->deleted) {
 			// check for non-running vtl & if vtl need update
-			if (st_hashtable_has_key(st_vtl_changers, cfg->path)) {
-				struct st_hashtable_value chv = st_hashtable_get(st_vtl_changers, cfg->path);
+			if (st_hashtable_has_key(st_vtl_changers, cfg->uuid)) {
+				struct st_hashtable_value chv = st_hashtable_get(st_vtl_changers, cfg->uuid);
 				struct st_changer * ch = chv.value.custom;
 
 				st_vtl_changer_sync(ch, cfg);
@@ -198,7 +206,7 @@ void st_vtl_sync(struct st_database_connection * connect) {
 
 				if (ch != NULL) {
 					st_changer_add(ch);
-					st_hashtable_put(st_vtl_changers, strdup(cfg->path), st_hashtable_val_custom(ch));
+					st_hashtable_put(st_vtl_changers, strdup(cfg->uuid), st_hashtable_val_custom(ch));
 				} else {
 					st_log_write_all(st_log_level_error, st_log_type_daemon, "Failed to restart vtl { path: %s, prefix: %s }", cfg->path, cfg->prefix);
 				}
