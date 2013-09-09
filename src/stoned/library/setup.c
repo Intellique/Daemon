@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 20 Aug 2013 17:47:04 +0200                            *
+*  Last modified: Mon, 09 Sep 2013 13:31:54 +0200                            *
 \****************************************************************************/
 
 // open
@@ -268,16 +268,22 @@ int st_changer_setup(void) {
 	glob_t gl;
 	glob("/sys/class/scsi_device/*/device/scsi_tape", 0, NULL, &gl);
 
-	if (gl.gl_pathc == 0) {
+	if (gl.gl_pathc == 0 && st_nb_vtls == 0) {
 		globfree(&gl);
-		st_log_write_all(st_log_level_warning, st_log_type_user_message, "There is drive found !!!");
+		st_log_write_all(st_log_level_warning, st_log_type_user_message, "There is no drive found !!!");
 		return 0;
 	}
 
-	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+	unsigned int nb_drives = gl.gl_pathc + st_nb_vtls;
+	st_log_write_all(st_log_level_info, st_log_type_daemon, "Library: Found %u drive%s", nb_drives, nb_drives != 1 ? "s" : "");
+
+	if (gl.gl_pathc == 0) {
+		globfree(&gl);
+		return 0;
+	}
 
 	struct st_drive * drives = calloc(gl.gl_pathc, sizeof(struct st_drive));
-	unsigned int nb_drives = gl.gl_pathc;
+	nb_drives = gl.gl_pathc;
 
 	unsigned int i;
 	for (i = 0; i < gl.gl_pathc; i++) {

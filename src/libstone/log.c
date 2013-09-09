@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 05 Feb 2013 12:39:38 +0100                            *
+*  Last modified: Mon, 09 Sep 2013 12:21:49 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -100,11 +100,11 @@ static struct st_log_type2 {
 };
 
 
-void st_log_disable_display_log(void) {
-	st_log_display_at_exit = 0;
+void st_log_disable_display_log() {
+	st_log_display_at_exit = false;
 }
 
-static void st_log_exit(void) {
+static void st_log_exit() {
 	if (st_log_display_at_exit) {
 		struct st_log_message_unsent * mes;
 		for (mes = st_log_message_first; mes != NULL; mes = mes->next)
@@ -260,7 +260,7 @@ static void st_log_sent_message(void * arg __attribute__((unused))) {
 	pthread_mutex_unlock(&st_log_lock);
 }
 
-void st_log_start_logger(void) {
+void st_log_start_logger() {
 	pthread_mutex_lock(&st_log_lock);
 
 	if (st_log_nb_drivers == 0) {
@@ -274,7 +274,7 @@ void st_log_start_logger(void) {
 	pthread_mutex_unlock(&st_log_lock);
 }
 
-void st_log_stop_logger(void) {
+void st_log_stop_logger() {
 	pthread_mutex_lock(&st_log_lock);
 
 	if (st_log_logger_running) {
