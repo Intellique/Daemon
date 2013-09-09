@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 09 Sep 2013 13:23:26 +0200                            *
+*  Last modified: Mon, 09 Sep 2013 15:00:24 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -3468,7 +3468,7 @@ static struct st_vtl_config * st_db_postgresql_get_vtls(struct st_database_conne
 	struct st_db_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_vtls";
-	st_db_postgresql_prepare(self, query, "SELECT path, prefix, nbslots, nbdrives, name, deleted FROM vtl v LEFT JOIN mediaformat mf ON v.mediaformat = mf.id WHERE host = $1");
+	st_db_postgresql_prepare(self, query, "SELECT uuid, path, prefix, nbslots, nbdrives, name, deleted FROM vtl v LEFT JOIN mediaformat mf ON v.mediaformat = mf.id WHERE host = $1");
 
 	const char * params[] = { host_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, params, NULL, NULL, 0);
@@ -3491,13 +3491,14 @@ static struct st_vtl_config * st_db_postgresql_get_vtls(struct st_database_conne
 		int i;
 		for (i = 0; i < nb_result; i++) {
 			struct st_vtl_config * conf = cfg + i;
-			st_db_postgresql_get_string_dup(result, i, 0, &conf->path);
-			st_db_postgresql_get_string_dup(result, i, 1, &conf->prefix);
-			st_db_postgresql_get_uint(result, i, 2, &conf->nb_slots);
-			st_db_postgresql_get_uint(result, i, 3, &conf->nb_drives);
-			st_db_postgresql_get_bool(result, i, 5, &conf->deleted);
+			st_db_postgresql_get_string_dup(result, i, 0, &conf->uuid);
+			st_db_postgresql_get_string_dup(result, i, 1, &conf->path);
+			st_db_postgresql_get_string_dup(result, i, 2, &conf->prefix);
+			st_db_postgresql_get_uint(result, i, 3, &conf->nb_slots);
+			st_db_postgresql_get_uint(result, i, 4, &conf->nb_drives);
+			st_db_postgresql_get_bool(result, i, 6, &conf->deleted);
 
-			const char * format = PQgetvalue(result, i, 4);
+			const char * format = PQgetvalue(result, i, 5);
 			conf->format = st_media_format_get_by_name(format, st_media_format_mode_disk);
 		}
 	} else if (status == PGRES_TUPLES_OK && nb_result == 0) {

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 16 Aug 2013 13:55:42 +0200                            *
+*  Last modified: Mon, 09 Sep 2013 14:59:30 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_LIBRARY_VTL_H__
@@ -34,6 +34,7 @@
 struct st_changer;
 
 struct st_vtl_config {
+	char * uuid;
 	char * path;
 	char * prefix;
 	unsigned int nb_slots;

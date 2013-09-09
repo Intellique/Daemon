@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 13 Aug 2013 10:51:13 +0200                            *
+*  Last modified: Mon, 09 Sep 2013 14:59:50 +0200                            *
 \****************************************************************************/
 
 // free
@@ -34,6 +34,7 @@ void st_vtl_config_free(struct st_vtl_config * config, unsigned int nb_config) {
 	unsigned int i;
 	for (i = 0; i < nb_config; i++) {
 		struct st_vtl_config * cfg = config + i;
+		free(cfg->uuid);
 		free(cfg->path);
 		free(cfg->prefix);
 	}
