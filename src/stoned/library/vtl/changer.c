@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 09 Sep 2013 12:56:14 +0200                            *
+*  Last modified: Mon, 09 Sep 2013 16:49:57 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -538,12 +538,14 @@ void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg) {
 		void * new_addr = realloc(ch->drives, cfg->nb_drives * sizeof(struct st_drive));
 		if (new_addr != NULL)
 			ch->drives = new_addr;
-		ch->nb_drives = cfg->nb_drives;
 
 		memmove(ch->slots + cfg->nb_drives, ch->slots + ch->nb_drives, (ch->nb_slots - ch->nb_drives));
-		new_addr = realloc(ch->slots, (cfg->nb_slots + cfg->nb_drives) * sizeof(struct st_slot));
+
+		new_addr = realloc(ch->slots, (ch->nb_slots + cfg->nb_drives - ch->nb_drives) * sizeof(struct st_slot));
 		if (new_addr)
 			ch->slots = new_addr;
+		ch->nb_slots -= ch->nb_drives - cfg->nb_drives;
+		ch->nb_drives = cfg->nb_drives;
 
 		// re-link drive to slot
 		for (i = 0; i < ch->nb_drives; i++) {
