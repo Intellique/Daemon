@@ -176,8 +176,8 @@ debug: binaries
 	${GDB} bin/stone
 
 distclean realclean: clean
-	@echo ' RM       -Rf cscope.out doc ${CHCKSUM_DIR} ${DEPEND_DIR} tags'
-	@rm -Rf cscope.out doc ${CHCKSUM_DIR} ${DEPEND_DIR} tags
+	@echo ' RM       -Rf cscope.out doc ${CHCKSUM_DIR} ${DEPEND_DIR} tags ${VERSION_FILE}'
+	@rm -Rf cscope.out doc ${CHCKSUM_DIR} ${DEPEND_DIR} tags ${VERSION_FILE}
 
 doc: Doxyfile ${LIBOBJECT_SRC_FILES} ${HEAD_FILES}
 	@echo ' DOXYGEN'
