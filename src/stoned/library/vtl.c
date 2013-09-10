@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 09 Sep 2013 15:17:19 +0200                            *
+*  Last modified: Tue, 10 Sep 2013 19:47:15 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -190,6 +190,7 @@ void st_vtl_sync(struct st_database_connection * connect) {
 
 				st_vtl_changer_sync(ch, cfg);
 			} else {
+				st_log_write_all(st_log_level_info, st_log_type_daemon, "Create new vtl { path: %s, prefix: %s, nb drives: %u, nb slots: %u }", cfg->path, cfg->prefix, cfg->nb_drives, cfg->nb_slots);
 				bool ok = st_vtl_create(cfg);
 				if (!ok)
 					st_log_write_all(st_log_level_error, st_log_type_daemon, "Failed to create vtl { path: %s, prefix: %s }", cfg->path, cfg->prefix);
@@ -202,6 +203,8 @@ void st_vtl_sync(struct st_database_connection * connect) {
 
 				st_vtl_changer_sync(ch, cfg);
 			} else {
+				st_log_write_all(st_log_level_info, st_log_type_daemon, "Restart vtl { path: %s, prefix: %s, nb drives: %u, nb slots: %u }", cfg->path, cfg->prefix, cfg->nb_drives, cfg->nb_slots);
+
 				struct st_changer * ch = st_vtl_changer_init(cfg);
 
 				if (ch != NULL) {
@@ -212,6 +215,8 @@ void st_vtl_sync(struct st_database_connection * connect) {
 				}
 			}
 		} else if (exists && cfg->deleted) {
+			st_log_write_all(st_log_level_info, st_log_type_daemon, "Delete vtl { path: %s, prefix: %s }", cfg->path, cfg->prefix);
+
 			// remove and delete vtl
 			if (st_hashtable_has_key(st_vtl_changers, cfg->path)) {
 				// remove the vtl

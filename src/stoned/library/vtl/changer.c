@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 10 Sep 2013 16:41:16 +0200                            *
+*  Last modified: Tue, 10 Sep 2013 19:50:28 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -374,6 +374,8 @@ void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg) {
 	void * new_addr;
 	// add new medias & slots
 	if (ch->nb_slots - ch->nb_drives < cfg->nb_slots) {
+		st_log_write_all(st_log_level_info, st_log_type_daemon, "Vtl: add new slots { before: %u, now: %u }", ch->nb_slots - ch->nb_drives, cfg->nb_slots);
+
 		new_addr = realloc(self->medias, cfg->nb_slots * sizeof(struct st_media *));
 		if (new_addr == NULL) {
 			st_log_write_all(st_log_level_debug, st_log_type_changer, "[%s | %s]: Not enough memory to grow vtl with %u slots", ch->vendor, ch->model, cfg->nb_slots);
@@ -466,6 +468,8 @@ void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg) {
 
 	// add & remove drives
 	if (ch->nb_drives < cfg->nb_drives) {
+		st_log_write_all(st_log_level_info, st_log_type_daemon, "Vtl: add new drive { before: %u, now: %u }", ch->nb_drives, cfg->nb_drives);
+
 		new_addr = realloc(ch->slots, (ch->nb_slots + cfg->nb_drives - ch->nb_drives) * sizeof(struct st_slot));
 
 		if (new_addr == NULL) {
@@ -533,6 +537,8 @@ void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg) {
 
 		ch->nb_drives = cfg->nb_drives;
 	} else if (ch->nb_drives > cfg->nb_drives) {
+		st_log_write_all(st_log_level_info, st_log_type_daemon, "Vtl: remove new drive { before: %u, now: %u }", ch->nb_drives, cfg->nb_drives);
+
 		// remove old drives
 		for (i = ch->nb_drives - 1; i >= cfg->nb_drives; i--) {
 			struct st_drive * dr = ch->drives + i;
@@ -570,6 +576,8 @@ void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg) {
 
 	// remove media & slot
 	if (ch->nb_slots - ch->nb_drives > cfg->nb_slots) {
+		st_log_write_all(st_log_level_info, st_log_type_daemon, "Vtl: remove slots { before: %u, now: %u }", ch->nb_slots - ch->nb_drives, cfg->nb_slots);
+
 		for (i = 0; i < ch->nb_drives; i++) {
 			struct st_drive * dr = ch->drives + i;
 			if (dr->slot->media != NULL)
