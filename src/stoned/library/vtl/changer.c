@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 10 Sep 2013 11:08:51 +0200                            *
+*  Last modified: Tue, 10 Sep 2013 12:36:42 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -373,7 +373,7 @@ void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg) {
 	unsigned int i;
 	void * new_addr;
 	// add new medias & slots
-	if (ch->nb_slots < cfg->nb_slots) {
+	if (ch->nb_slots - ch->nb_drives < cfg->nb_slots) {
 		new_addr = realloc(self->medias, cfg->nb_slots * sizeof(struct st_media *));
 		if (new_addr == NULL) {
 			st_log_write_all(st_log_level_debug, st_log_type_changer, "[%s | %s]: Not enough memory to grow vtl with %u slots", ch->vendor, ch->model, cfg->nb_slots);
@@ -396,6 +396,7 @@ void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg) {
 
 			free(md_dir);
 		}
+		self->nb_medias = cfg->nb_slots;
 
 		new_addr = realloc(ch->slots, (cfg->nb_slots + ch->nb_drives) * sizeof(struct st_slot));
 
@@ -413,7 +414,7 @@ void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg) {
 		}
 
 		// create new slots
-		for (i = ch->nb_slots; i < cfg->nb_slots; i++) {
+		for (i = ch->nb_slots - ch->nb_drives; i < cfg->nb_slots; i++) {
 			char * sl_dir;
 			asprintf(&sl_dir, "%s/slots/%u", cfg->path, i);
 
@@ -591,8 +592,15 @@ void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg) {
 		}
 
 		new_addr = realloc(ch->slots, (ch->nb_drives + cfg->nb_slots) * sizeof(struct st_slot));
-		if (new_addr)
+		if (new_addr) {
 			ch->slots = new_addr;
+
+			// re-link slot to drive
+			for (i = 0; i < ch->nb_drives; i++) {
+				struct st_slot * sl = ch->slots + i;
+				sl->drive = ch->drives + i;
+			}
+		}
 
 		ch->nb_slots = cfg->nb_slots;
 	}
