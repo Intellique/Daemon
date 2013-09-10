@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 09 Sep 2013 16:49:57 +0200                            *
+*  Last modified: Tue, 10 Sep 2013 11:08:51 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -465,7 +465,7 @@ void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg) {
 
 	// add & remove drives
 	if (ch->nb_drives < cfg->nb_drives) {
-		new_addr = realloc(ch->slots, (cfg->nb_slots + cfg->nb_drives) * sizeof(struct st_slot));
+		new_addr = realloc(ch->slots, (ch->nb_slots + cfg->nb_drives - ch->nb_drives) * sizeof(struct st_slot));
 
 		if (new_addr == NULL) {
 			st_log_write_all(st_log_level_debug, st_log_type_changer, "[%s | %s]: Not enough memory to grow vtl with %u drives", ch->vendor, ch->model, cfg->nb_drives);
@@ -473,6 +473,7 @@ void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg) {
 		}
 
 		ch->slots = new_addr;
+		ch->nb_slots += cfg->nb_drives - ch->nb_drives;
 
 		// re-link drive to slot
 		for (i = 0; i < ch->nb_drives; i++) {
@@ -480,7 +481,20 @@ void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg) {
 			dr->slot = ch->slots + i;
 		}
 
-		memmove(ch->slots + cfg->nb_drives, ch->slots + ch->nb_drives, (ch->nb_slots - ch->nb_drives) * sizeof(struct st_slot));
+		memmove(ch->slots + cfg->nb_drives, ch->slots + ch->nb_drives, (ch->nb_slots - cfg->nb_drives) * sizeof(struct st_slot));
+
+		new_addr = realloc(ch->drives, cfg->nb_drives * sizeof(struct st_drive));
+		if (new_addr == NULL) {
+			st_log_write_all(st_log_level_debug, st_log_type_changer, "[%s | %s]: Not enough memory to grow vtl with %u drives", ch->vendor, ch->model, cfg->nb_drives);
+			return;
+		}
+		ch->drives = new_addr;
+
+		// re-link slot to drive
+		for (i = 0; i < ch->nb_drives; i++) {
+			struct st_slot * sl = ch->slots + i;
+			sl->drive = ch->drives + i;
+		}
 
 		// create new drives
 		for (i = ch->nb_drives; i < cfg->nb_drives; i++) {
@@ -508,7 +522,6 @@ void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg) {
 			sl->data = NULL;
 			sl->db_data = NULL;
 
-			sl->media = st_vtl_slot_get_media(ch, dr_dir);
 			st_vtl_drive_init(ch->drives + i, sl, dr_dir, cfg->format);
 
 			if (sl->media != NULL) {
@@ -535,7 +548,7 @@ void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg) {
 			free(dr_dir);
 		}
 
-		void * new_addr = realloc(ch->drives, cfg->nb_drives * sizeof(struct st_drive));
+		new_addr = realloc(ch->drives, cfg->nb_drives * sizeof(struct st_drive));
 		if (new_addr != NULL)
 			ch->drives = new_addr;
 
