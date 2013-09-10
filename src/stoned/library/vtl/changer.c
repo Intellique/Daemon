@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 10 Sep 2013 12:36:42 +0200                            *
+*  Last modified: Tue, 10 Sep 2013 15:30:27 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -576,8 +576,8 @@ void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg) {
 				st_vtl_changer_unload(ch, dr);
 		}
 
-		for (i = cfg->nb_slots; i < ch->nb_slots; i++) {
-			struct st_slot * sl = ch->slots + ch->nb_drives + i;
+		for (i = cfg->nb_slots + ch->nb_drives; i < ch->nb_slots; i++) {
+			struct st_slot * sl = ch->slots + i;
 			free(sl->volume_name);
 			if (sl->lock != NULL)
 				sl->lock->ops->free(sl->lock);
@@ -592,17 +592,17 @@ void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg) {
 		}
 
 		new_addr = realloc(ch->slots, (ch->nb_drives + cfg->nb_slots) * sizeof(struct st_slot));
-		if (new_addr) {
+		if (new_addr != NULL) {
 			ch->slots = new_addr;
 
-			// re-link slot to drive
+			// re-link drive to slot
 			for (i = 0; i < ch->nb_drives; i++) {
-				struct st_slot * sl = ch->slots + i;
-				sl->drive = ch->drives + i;
+				struct st_drive * dr = ch->drives + i;
+				dr->slot = ch->slots + i;
 			}
 		}
 
-		ch->nb_slots = cfg->nb_slots;
+		ch->nb_slots = cfg->nb_slots + ch->nb_drives;
 	}
 }
 
