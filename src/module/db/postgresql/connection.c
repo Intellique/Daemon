@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 09 Sep 2013 15:00:24 +0200                            *
+*  Last modified: Fri, 20 Sep 2013 15:32:53 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -1555,10 +1555,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		if (mediaid == NULL)
 			asprintf(&mediaid, "%ld", media_data->id);
 
-		bool locked = true;
 		if (!media->locked && !media->lock->ops->try_lock(media->lock)) {
-			locked = false;
-
 			const char * query = "select_media_before_update";
 			st_db_postgresql_prepare(self, query, "SELECT m.name, m.label, p.uuid FROM media m LEFT JOIN pool p ON m.pool = p.id WHERE m.id = $1");
 			const char * param1[] = { mediaid };
@@ -1610,7 +1607,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 			*media->uuid ? media->uuid : NULL, media->name, st_media_status_to_string(media->status),
 			st_media_location_to_string(media->location),
 			load, read, write, nbfiles, blocksize, freeblock, totalblock,
-			poolid, locked ? "true" : "false", st_media_type_to_string(media->type), mediaid
+			poolid, media->locked ? "true" : "false", st_media_type_to_string(media->type), mediaid
 		};
 		PGresult * result = PQexecPrepared(self->connect, query, 15, param2, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
