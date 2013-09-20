@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 09 Apr 2013 15:52:36 +0200                            *
+*  Last modified: Wed, 18 Sep 2013 10:50:56 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -363,7 +363,7 @@ static bool st_job_backup_db_select_media(struct st_job * job, struct st_job_bac
 
 			st_job_add_record(self->connect, st_log_level_info, job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ]", media->name, changer->drives - self->drive, changer->vendor, changer->model);
 
-			int failed = st_media_write_header(self->drive, self->pool);
+			int failed = st_media_write_header(self->drive, self->pool, self->connect);
 			if (failed) {
 				st_job_add_record(self->connect, st_log_level_error, job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", media->name, changer->drives - self->drive, changer->vendor, changer->model, failed);
 				ok = false;

@@ -578,7 +578,7 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 
 					st_job_add_record(self->connect, st_log_level_info, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ]", media->name, changer->drives - self->drive, changer->vendor, changer->model);
 
-					int failed = st_media_write_header(self->drive, self->pool);
+					int failed = st_media_write_header(self->drive, self->pool, self->connect);
 					if (failed) {
 						st_job_add_record(self->connect, st_log_level_error, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", media->name, changer->drives - self->drive, changer->vendor, changer->model, failed);
 						return false;

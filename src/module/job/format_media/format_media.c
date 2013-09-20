@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 02 May 2013 13:57:48 +0200                            *
+*  Last modified: Wed, 18 Sep 2013 10:51:58 +0200                            *
 \****************************************************************************/
 
 // bool
@@ -469,11 +469,6 @@ int st_job_format_media_run(struct st_job * job) {
 	if (job->db_status != st_job_status_stopped)
 		job->done = 0.2;
 
-	// lock media and sync it with database
-	media->locked = true;
-	media->lock->ops->lock(media->lock);
-	self->connect->ops->sync_media(self->connect, media);
-
 	if (job->db_status != st_job_status_stopped && drive->slot->media != NULL && drive->slot->media != media) {
 		st_job_add_record(self->connect, st_log_level_info, job, "unloading media: %s from drive: { %s, %s, #%td }", drive->slot->media->name, drive->vendor, drive->model, drive - drive->changer->drives);
 		int failed = slot->changer->ops->unload(slot->changer, drive);
@@ -595,7 +590,7 @@ int st_job_format_media_run(struct st_job * job) {
 	int status = 0;
 	if (job->db_status != st_job_status_stopped) {
 		st_job_add_record(self->connect, st_log_level_info, job, "Formatting media in progress");
-		status = st_media_write_header(drive, pool);
+		status = st_media_write_header(drive, pool, self->connect);
 
 		if (!status) {
 			job->done = 0.8;
@@ -614,11 +609,6 @@ int st_job_format_media_run(struct st_job * job) {
 	} else {
 		st_job_add_record(self->connect, st_log_level_warning, job, "Job: format media aborted by user before formatting media");
 	}
-
-	self->connect->ops->sync_media(self->connect, media);
-	media->locked = false;
-	media->lock->ops->unlock(media->lock);
-	self->connect->ops->sync_media(self->connect, media);
 
 	if (drive != NULL && has_lock_on_drive)
 		drive->lock->ops->unlock(drive->lock);
