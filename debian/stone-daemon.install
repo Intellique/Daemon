@@ -1,0 +1,11 @@
+script/stone.conf etc/storiq
+script/stoned etc/init.d
+bin/stoned usr/sbin
+bin/stone-config usr/sbin
+lib/libjob-backup-db.so usr/lib/stone
+lib/libjob-check-archive.so usr/lib/stone
+lib/libjob-copy-archive.so usr/lib/stone
+lib/libjob-create-archive.so usr/lib/stone
+lib/libjob-format-media.so usr/lib/stone
+lib/libjob-restore-archive.so usr/lib/stone
+lib/liblog-file.so usr/lib/stone

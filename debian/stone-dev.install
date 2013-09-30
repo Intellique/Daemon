@@ -1,0 +1,2 @@
+include/libstone/* usr/include/libstone
+lib/libstone.so usr/lib

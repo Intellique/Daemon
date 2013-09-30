@@ -1,0 +1,2 @@
+lib/libdb-postgresql.so usr/lib/stone
+script/sql/psql/* usr/share/stone-plugin-db-postgresql

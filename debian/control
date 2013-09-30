@@ -1,0 +1,53 @@
+Source: stone
+Section: utils
+Priority: extra
+Maintainer: guillaume clercin <gclercin@intellique.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.2
+Homepage: http://www.intellique.com
+#Vcs-Git: git://git.debian.org/collab-maint/stone.git
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/stone.git;a=summary
+
+Package: libstone-1.1
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: STone (libs)
+
+Package: stone-daemon
+Section: utils
+Architecture: any
+Depends: stone-plugin-checksums, stone-plugin-db, ${shlibs:Depends}, ${misc:Depends}
+Description: STone
+ STone daemon
+
+Package: stone-dev
+Section: devel
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: STone (dev files)
+
+Package: stone-plugin-checksums
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: STone (db-plugin)
+ Contains plugins to compute checksums.
+ Checksums supported: crc32, md5, sha1, sha256, sha512
+
+Package: stone-plugin-db-postgresl
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: postgresql-8.4-hstore-new
+Suggests: postgresql
+Provides: stone-plugin-db
+Description: STone (db-plugin)
+ Contains plugin to connect to postresql database
+
+Package: stone-plugin-log-postgresql
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: STone (log-plugin)
+ Contains plugin to connect to postresql database
