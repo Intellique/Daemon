@@ -17,6 +17,7 @@ NAME		:= STone
 DIR_NAME	:= $(lastword $(subst /, , $(realpath .)))
 
 
+GIT_ARCHIVE := stone_1.1.orig.tar
 GIT_HEAD	:= $(shell ./script/git-head.pl)
 
 BINS		:=
@@ -151,7 +152,7 @@ DEP_DIRS	:= $(patsubst ${BUILD_DIR}/%,${DEPEND_DIR}/%,${OBJ_DIRS})
 
 # phony target
 .DEFAULT_GOAL	:= all
-.PHONY: all binaries clean cscope ctags debug distclean lib prepare realclean stat stat-extra TAGS tar test
+.PHONY: all binaries clean cscope ctags debug distclean lib package prepare realclean stat stat-extra TAGS tar test
 .NOTPARALLEL: prepare
 
 all: binaries cscope tags
@@ -185,14 +186,21 @@ doc: Doxyfile ${LIBOBJECT_SRC_FILES} ${HEAD_FILES}
 
 install:
 	@echo ' MKDIR     ${DESTDIR}'
-	@mkdir -p ${DESTDIR}/etc/storiq ${DESTDIR}/usr/bin ${DESTDIR}/usr/sbin ${DESTDIR}/usr/lib/stone ${DESTDIR}/var/www
+	@mkdir -p ${DESTDIR}/etc/storiq ${DESTDIR}/usr/bin ${DESTDIR}/usr/sbin ${DESTDIR}/usr/lib/stone
 	@echo ' CP'
-	@cp bin/stoned ${DESTDIR}/usr/sbin
-	@cp bin/stone-config ${DESTDIR}/usr/sbin
+	@cp bin/stoned bin/stone-config ${DESTDIR}/usr/sbin
 	@cp lib/lib*.so ${DESTDIR}/usr/lib/stone
 	@mv ${DESTDIR}/usr/lib/stone/libstone.so ${DESTDIR}/usr/lib
 	@cp script/stone.conf ${DESTDIR}/etc/storiq/stone.conf
-	@cp -a www ${DESTDIR}/var/www/stone
+
+package:
+	@echo ' CLEAN'
+	@dh_clean
+	@echo ' UPDATE src'
+	@${GIT} archive --format=tar -o ../${GIT_ARCHIVE} deb
+	@gzip -9vf ../${GIT_ARCHIVE}
+	@echo ' BUILD package'
+	@dpkg-buildpackage -us -uc -rfakeroot
 
 prepare: ${BIN_DIRS} ${CHCKSUM_DIR} ${DEP_DIRS} ${OBJ_DIRS} $(addprefix prepare_,${BIN_SYMS}) $(addprefix prepare_,${TEST_BIN_SYMS}) ${VERSION_FILE}
 
