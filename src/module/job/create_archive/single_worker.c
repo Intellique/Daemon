@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 06 Jun 2013 23:53:11 +0200                            *
+*  Last modified: Wed, 02 Oct 2013 10:14:06 +0200                            *
 \****************************************************************************/
 
 // asprintf
@@ -626,6 +626,7 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 
 			case media_is_read_only:
 				if (self->drive->slot->media->type == st_media_type_readonly) {
+					st_job_add_record(self->connect, st_log_level_warning, self->job, "Media '%s' is currently read only ", self->drive->slot->media->name);
 					st_job_create_archive_single_worker_add_media(self, self->drive->slot->media);
 					state = check_online_free_size_left;
 				} else
