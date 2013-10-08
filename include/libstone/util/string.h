@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sat, 08 Dec 2012 15:13:27 +0100                            *
+*  Last modified: Sun, 09 Jun 2013 10:44:37 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_UTIL_STRING_H__
@@ -66,6 +66,8 @@ void st_util_string_delete_double_char(char * str, char delete_char);
  */
 void st_util_string_fix_invalid_utf8(char * string);
 
+void st_util_string_middle_elipsis(char * string, size_t length);
+
 /**
  * \brief Remove characters \a trim at the beginning and at the end of \a str
  *
@@ -83,6 +85,14 @@ void st_util_string_trim(char * str, char trim);
  * \see st_util_string_trim
  */
 void st_util_string_rtrim(char * str, char trim);
+
+/**
+ * \brief Compute length in characters (not in bytes)
+ * \param[in] str valid utf8 string
+ * \return length in characters
+ * \note to compute length in bytes, use strlen
+ */
+size_t st_util_string_strlen(const char * str);
 
 #endif
 

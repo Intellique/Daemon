@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sat, 01 Jun 2013 00:14:05 +0200                            *
+*  Last modified: Sun, 09 Jun 2013 16:33:38 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -32,9 +32,9 @@
 #include <pthread.h>
 // free, malloc, realloc
 #include <stdlib.h>
-// snprintf
+// asprintf
 #include <stdio.h>
-// strdup, strlen
+// strdup
 #include <string.h>
 // setpriority
 #include <sys/resource.h>
@@ -51,6 +51,7 @@
 
 #include <libstone/log.h>
 #include <libstone/thread_pool.h>
+#include <libstone/util/string.h>
 
 struct st_thread_pool_thread {
 	pthread_t thread;
@@ -195,17 +196,20 @@ int st_thread_pool_run2(const char * thread_name, void (*function)(void * arg), 
 }
 
 static void st_thread_pool_set_name(pid_t tid, const char * name) {
-	char path[32];
-	snprintf(path, 32, "/proc/%d/task/%d/comm", st_thread_pool_pid, tid);
+	char * th_name = strdup(name);
+	st_util_string_middle_elipsis(th_name, 15);
+
+	char * path;
+	asprintf(&path, "/proc/%d/task/%d/comm", st_thread_pool_pid, tid);
 
 	int fd = open(path, O_WRONLY);
 	if (fd < 0)
 		return;
 
-	size_t length = strlen(name);
-
-	write(fd, name, length > 15 ? 15 : length + 1);
+	write(fd, th_name, strlen(th_name) + 1);
 	close(fd);
+	free(path);
+	free(th_name);
 }
 
 static void * st_thread_pool_work(void * arg) {
