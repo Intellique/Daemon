@@ -22,26 +22,31 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 30 May 2013 18:10:41 +0200                            *
+*  Last modified: Sat, 01 Jun 2013 00:14:05 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
+// open
+#include <fcntl.h>
+// pthread_*
 #include <pthread.h>
 // free, malloc, realloc
 #include <stdlib.h>
 // snprintf
 #include <stdio.h>
-// strdup
+// strdup, strlen
 #include <string.h>
 // setpriority
 #include <sys/resource.h>
 // syscall
 #include <sys/syscall.h>
+// open
+#include <sys/stat.h>
 // gettimeofday, setpriority
 #include <sys/time.h>
-// pid
+// pid_t, open
 #include <sys/types.h>
-// syscall
+// close, getpid, syscall, write
 #include <unistd.h>
 
 #include <libstone/log.h>
@@ -67,8 +72,11 @@ struct st_thread_pool_thread {
 static struct st_thread_pool_thread ** st_thread_pool_threads = NULL;
 static unsigned int st_thread_pool_nb_threads = 0;
 static pthread_mutex_t st_thread_pool_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+static pid_t st_thread_pool_pid = -1;
 
 static void st_thread_pool_exit(void) __attribute__((destructor));
+static void st_thread_pool_init(void) __attribute__((constructor));
+static void st_thread_pool_set_name(pid_t tid, const char * name);
 static void * st_thread_pool_work(void * arg);
 
 
@@ -90,6 +98,10 @@ static void st_thread_pool_exit() {
 	free(st_thread_pool_threads);
 	st_thread_pool_threads = NULL;
 	st_thread_pool_nb_threads = 0;
+}
+
+static void st_thread_pool_init() {
+	st_thread_pool_pid = getpid();
 }
 
 int st_thread_pool_run(const char * thread_name, void (*function)(void * arg), void * arg) {
@@ -182,6 +194,20 @@ int st_thread_pool_run2(const char * thread_name, void (*function)(void * arg), 
 	return 0;
 }
 
+static void st_thread_pool_set_name(pid_t tid, const char * name) {
+	char path[32];
+	snprintf(path, 32, "/proc/%d/task/%d/comm", st_thread_pool_pid, tid);
+
+	int fd = open(path, O_WRONLY);
+	if (fd < 0)
+		return;
+
+	size_t length = strlen(name);
+
+	write(fd, name, length > 15 ? 15 : length + 1);
+	close(fd);
+}
+
 static void * st_thread_pool_work(void * arg) {
 	struct st_thread_pool_thread * th = arg;
 
@@ -193,16 +219,16 @@ static void * st_thread_pool_work(void * arg) {
 		setpriority(PRIO_PROCESS, tid, th->nice);
 
 		if (th->name != NULL)
-			pthread_setname_np(th->thread, th->name);
+			st_thread_pool_set_name(tid, th->name);
 		else {
-			char buffer[64];
-			snprintf(buffer, 64, "thread %p", th->function);
-			pthread_setname_np(th->thread, buffer);
+			char buffer[16];
+			snprintf(buffer, 16, "thread %p", th->function);
+			st_thread_pool_set_name(tid, buffer);
 		}
 
 		th->function(th->arg);
 
-		pthread_setname_np(th->thread, "ThreadIdle");
+		st_thread_pool_set_name(tid, "ThreadIdle");
 
 		free(th->name);
 		th->name = NULL;

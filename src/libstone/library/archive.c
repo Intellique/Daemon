@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 28 May 2013 22:26:35 +0200                            *
+*  Last modified: Fri, 31 May 2013 11:35:09 +0200                            *
 \****************************************************************************/
 
 // free, malloc
@@ -158,7 +158,7 @@ struct st_archive_file * st_archive_file_new(struct stat * file, const char * fi
 	st_util_file_gid2name(f->group, 32, file->st_gid);
 	f->create_time = file->st_ctime;
 	f->modify_time = file->st_mtime;
-	f->archived_time = time(0);
+	f->archived_time = time(NULL);
 	f->check_ok = false;
 	f->check_time = 0;
 	f->size = file->st_size;
