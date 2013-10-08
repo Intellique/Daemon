@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 06 Jun 2013 19:37:43 +0200                            *
+*  Last modified: Fri, 07 Jun 2013 13:33:35 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -194,6 +194,7 @@ struct st_job_restore_archive_report * st_job_restore_archive_report_new(struct 
 	json_object_set_new(self->root, "archive", self->archive);
 	json_object_set_new(self->root, "pool", jpool);
 
+	self->volumes = json_object();
 	self->files = json_object();
 
 	pthread_mutex_init(&self->lock, NULL);
