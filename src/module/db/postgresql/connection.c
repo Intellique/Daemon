@@ -43,7 +43,7 @@
 #include <strings.h>
 // uname
 #include <sys/utsname.h>
-// localtime_r, strftime, time
+// time
 #include <time.h>
 
 #include <libstone/checksum.h>
@@ -60,6 +60,7 @@
 #include <libstone/util/hashtable.h>
 #include <libstone/util/json.h>
 #include <libstone/util/string.h>
+#include <libstone/util/time.h>
 #include <libstone/util/util.h>
 
 #include "common.h"
@@ -970,10 +971,7 @@ static int st_db_postgresql_sync_drive(struct st_database_connection * connect, 
 		char * last_clean = NULL;
 		if (drive->last_clean > 0) {
 			last_clean = malloc(24);
-
-			struct tm tm_last_clean;
-			localtime_r(&drive->last_clean, &tm_last_clean);
-			strftime(last_clean, 23, "%F %T", &tm_last_clean);
+			st_util_time_convert(&drive->last_clean, "%F %T", last_clean, 24);
 		}
 
 		const char * param[] = {
@@ -1008,10 +1006,7 @@ static int st_db_postgresql_sync_drive(struct st_database_connection * connect, 
 		char * last_clean = NULL;
 		if (drive->last_clean > 0) {
 			last_clean = malloc(24);
-
-			struct tm tm_last_clean;
-			localtime_r(&drive->last_clean, &tm_last_clean);
-			strftime(last_clean, 23, "%F %T", &tm_last_clean);
+			st_util_time_convert(&drive->last_clean, "%F %T", last_clean, 24);
 		}
 
 
@@ -1516,13 +1511,8 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 
 		char buffer_first_used[32];
 		char buffer_use_before[32];
-
-		struct tm tv;
-		localtime_r(&media->first_used, &tv);
-		strftime(buffer_first_used, 32, "%F %T", &tv);
-
-		localtime_r(&media->use_before, &tv);
-		strftime(buffer_use_before, 32, "%F %T", &tv);
+		st_util_time_convert(&media->first_used, "%F %T", buffer_first_used, 32);
+		st_util_time_convert(&media->use_before, "%F %T", buffer_use_before, 32);
 
 		char * load, * read, * write, * nbfiles, * blocksize, * freeblock, * totalblock;
 		asprintf(&load, "%ld", media->load_count);
@@ -1894,10 +1884,8 @@ static int st_db_postgresql_add_check_archive_job(struct st_database_connection 
 	asprintf(&name, "check %s", archive->name);
 	asprintf(&archiveid, "%ld", archive_data->id);
 
-	struct tm tm_starttime;
 	char sstarttime[20];
-	localtime_r(&starttime, &tm_starttime);
-	strftime(sstarttime, 20, "%F %T", &tm_starttime);
+	st_util_time_convert(&starttime, "%F %T", sstarttime, 20);
 
 	const char * param2[] = {
 		name, jobtypeid, sstarttime, archiveid, hostid, loginid,
@@ -2031,9 +2019,7 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 		st_db_postgresql_prepare(self, query, "UPDATE job SET nextstart = $1, repetition = $2, done = $3, status = $4, update = NOW() WHERE id = $5");
 
 		char next_start[24];
-		struct tm tm_next_start;
-		localtime_r(&job->next_start, &tm_next_start);
-		strftime(next_start, 23, "%F %T", &tm_next_start);
+		st_util_time_convert(&job->next_start, "%F %T", next_start, 24);
 
 		char * repetition, * done;
 		asprintf(&repetition, "%ld", job->repetition);
@@ -3185,12 +3171,8 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 		struct st_db_postgresql_user_data * user_data = archive->user->db_data;
 		asprintf(&userid, "%ld", user_data->id);
 
-		struct tm tv;
-		localtime_r(&archive->start_time, &tv);
-		strftime(buffer_ctime, 32, "%F %T", &tv);
-
-		localtime_r(&archive->end_time, &tv);
-		strftime(buffer_endtime, 32, "%F %T", &tv);
+		st_util_time_convert(&archive->start_time, "%F %T", buffer_ctime, 32);
+		st_util_time_convert(&archive->end_time, "%F %T", buffer_endtime, 32);
 
 		const char * param[] = {
 			archive->uuid, archive->name, buffer_ctime, buffer_endtime, userid, copyid
@@ -3290,14 +3272,9 @@ static int st_db_postgresql_sync_file(struct st_database_connection * connect, s
 	asprintf(&size, "%zd", file->size);
 	asprintf(&parent, "%ld", selected_data->id);
 
-	char ctime[32];
-	struct tm local_current;
-	localtime_r(&file->create_time, &local_current);
-	strftime(ctime, 32, "%F %T", &local_current);
-
-	char mtime[32];
-	localtime_r(&file->modify_time, &local_current);
-	strftime(mtime, 32, "%F %T", &local_current);
+	char ctime[32], mtime[32];
+	st_util_time_convert(&file->create_time, "%F %T", ctime, 32);
+	st_util_time_convert(&file->modify_time, "%F %T", mtime, 32);
 
 	const char * param[] = {
 		file->name, st_archive_file_type_to_string(file->type),
@@ -3378,15 +3355,9 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 		const char * query = "insert_archive_volume";
 		st_db_postgresql_prepare(self, query, "INSERT INTO archivevolume(sequence, size, starttime, endtime, archive, media, mediaposition, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id");
 
-		char buffer_ctime[32];
-		char buffer_endtime[32];
-
-		struct tm tv;
-		localtime_r(&volume->start_time, &tv);
-		strftime(buffer_ctime, 32, "%F %T", &tv);
-
-		localtime_r(&volume->end_time, &tv);
-		strftime(buffer_endtime, 32, "%F %T", &tv);
+		char buffer_ctime[32], buffer_endtime[32];
+		st_util_time_convert(&volume->start_time, "%F %T", buffer_ctime, 32);
+		st_util_time_convert(&volume->end_time, "%F %T", buffer_endtime, 32);
 
 		char * sequence, * size, * archiveid, * mediaid, * mediaposition;
 		asprintf(&sequence, "%ld", volume->sequence);
@@ -3470,9 +3441,7 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 		asprintf(&block_number, "%zd", f->position);
 
 		char atime[32];
-		struct tm local_current;
-		localtime_r(&f->file->create_time, &local_current);
-		strftime(atime, 32, "%F %T", &local_current);
+		st_util_time_convert(&f->file->create_time, "%F %T", atime, 32);
 
 		const char * param[] = { volumeid, file_id, block_number, atime };
 		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
