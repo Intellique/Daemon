@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 07 Jun 2013 11:09:06 +0200                            *
+*  Last modified: Fri, 07 Jun 2013 12:54:36 +0200                            *
 \****************************************************************************/
 
 // free
@@ -125,14 +125,16 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 
 		if (drive->slot->media == NULL) {
 			st_job_add_record(self->connect, st_log_level_info, self->job, "Loading media (%s)", slot->media->name);
+
 			int failed = drive->changer->ops->load_slot(drive->changer, slot, drive);
+
+			slot->lock->ops->unlock(slot->lock);
+
 			if (failed) {
 				st_job_add_record(self->connect, st_log_level_info, self->job, "Loading media (%s) has failed", slot->media->name);
 				nb_errors++;
 				goto end_of_work;
 			}
-
-			slot->lock->ops->unlock(slot->lock);
 		}
 
 		st_job_check_archive_report_add_volume(self->report, vol);

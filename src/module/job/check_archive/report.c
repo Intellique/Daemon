@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 06 Jun 2013 11:15:29 +0200                            *
+*  Last modified: Fri, 07 Jun 2013 12:35:13 +0200                            *
 \****************************************************************************/
 
 // json_*
@@ -31,6 +31,8 @@
 #include <pthread.h>
 // free, malloc
 #include <stdlib.h>
+// strcmp
+#include <string.h>
 
 #include <libstone/job.h>
 #include <libstone/library/archive.h>
@@ -57,6 +59,15 @@ void st_job_check_archive_report_add_file(struct st_job_check_archive_report * r
 	pthread_mutex_lock(&report->lock);
 
 	struct st_archive_file * file = f->file;
+	if (report->current_file != NULL) {
+		json_t * filename = json_object_get(report->current_file, "filename");
+
+		if (!strcmp(json_string_value(filename), file->name)) {
+			pthread_mutex_unlock(&report->lock);
+			return;
+		}
+	}
+
 	report->current_file = json_object();
 	json_object_set_new(report->current_file, "filename", json_string(file->name));
 	json_object_set_new(report->current_file, "filetype", json_string(st_archive_file_type_to_string(file->type)));
