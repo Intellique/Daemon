@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 05 Jun 2013 20:04:36 +0200                            *
+*  Last modified: Thu, 06 Jun 2013 11:15:29 +0200                            *
 \****************************************************************************/
 
 // json_*
@@ -38,7 +38,7 @@
 #include <libstone/user.h>
 #include <libstone/util/time.h>
 
-#include "check_archive.h"
+#include "common.h"
 
 struct st_job_check_archive_report {
 	json_t * root;
@@ -46,28 +46,89 @@ struct st_job_check_archive_report {
 	json_t * archive;
 	json_t * volumes;
 
+	json_t * current_file;
+	json_t * current_volume;
+
 	pthread_mutex_t lock;
 };
 
 
-void st_job_check_archive_report_check_volume(struct st_job_check_archive_report * report, struct st_archive_volume * volume, bool ok) {
+void st_job_check_archive_report_add_file(struct st_job_check_archive_report * report, struct st_archive_files * f) {
+	pthread_mutex_lock(&report->lock);
+
+	struct st_archive_file * file = f->file;
+	report->current_file = json_object();
+	json_object_set_new(report->current_file, "filename", json_string(file->name));
+	json_object_set_new(report->current_file, "filetype", json_string(st_archive_file_type_to_string(file->type)));
+	json_object_set_new(report->current_file, "mime type", json_string(file->mime_type));
+	json_object_set_new(report->current_file, "owner", json_string(file->owner));
+	json_object_set_new(report->current_file, "owner id", json_integer(file->ownerid));
+	json_object_set_new(report->current_file, "group", json_string(file->group));
+	json_object_set_new(report->current_file, "group id", json_integer(file->groupid));
+	json_object_set_new(report->current_file, "size", json_integer(file->size));
+
+	char buffer[20];
+	st_util_time_convert(&file->create_time, "%F %T", buffer, 20);
+	json_object_set_new(report->current_file, "create time", json_string(buffer));
+
+	st_util_time_convert(&file->modify_time, "%F %T", buffer, 20);
+	json_object_set_new(report->current_file, "modify time", json_string(buffer));
+
+	st_util_time_convert(&file->archived_time, "%F %T", buffer, 20);
+	json_object_set_new(report->current_file, "archived time", json_string(buffer));
+
+	json_t * files = json_object_get(report->current_volume, "files");
+	json_array_append_new(files, report->current_file);
+
+	pthread_mutex_unlock(&report->lock);
+}
+
+void st_job_check_archive_report_add_volume(struct st_job_check_archive_report * report, struct st_archive_volume * volume) {
+	pthread_mutex_lock(&report->lock);
+
 	json_t * jmedia = json_object();
 	json_object_set_new(jmedia, "uuid", json_string(volume->media->uuid));
 	json_object_set_new(jmedia, "medium serial number", json_string(volume->media->medium_serial_number));
 	json_object_set_new(jmedia, "status", json_string(st_media_status_to_string(volume->media->status)));
 
-	json_t * jvol = json_object();
-	json_object_set_new(jvol, "sequence", json_integer(volume->sequence));
-	json_object_set_new(jvol, "size", json_integer(volume->size));
-	json_object_set_new(jvol, "media", jmedia);
-	json_object_set_new(jvol, "checksum ok", json_boolean(ok));
+	report->current_volume = json_object();
+	json_object_set_new(report->current_volume, "sequence", json_integer(volume->sequence));
+	json_object_set_new(report->current_volume, "size", json_integer(volume->size));
+	json_object_set_new(report->current_volume, "media", jmedia);
+
+	json_t * files = json_array();
+	json_object_set_new(report->current_volume, "files", files);
+
+	if (report->current_file != NULL)
+		json_array_append(files, report->current_file);
+
+	json_array_append_new(report->volumes, report->current_volume);
+
+	pthread_mutex_unlock(&report->lock);
+}
+
+void st_job_check_archive_report_check_file(struct st_job_check_archive_report * report, bool ok) {
+	pthread_mutex_lock(&report->lock);
 
 	char buffer[20];
 	st_util_time_convert(NULL, "%F %T", buffer, 20);
-	json_object_set_new(jvol, "checktime", json_string(buffer));
+	json_object_set_new(report->current_file, "checktime", json_string(buffer));
+	json_object_set_new(report->current_file, "checksum ok", json_boolean(ok));
+	report->current_file = NULL;
 
+	pthread_mutex_unlock(&report->lock);
+}
+
+void st_job_check_archive_report_check_volume(struct st_job_check_archive_report * report, bool ok) {
 	pthread_mutex_lock(&report->lock);
-	json_array_append_new(report->volumes, jvol);
+
+	char buffer[20];
+	st_util_time_convert(NULL, "%F %T", buffer, 20);
+	json_object_set_new(report->current_volume, "checktime", json_string(buffer));
+	json_object_set_new(report->current_volume, "checksum ok", json_boolean(ok));
+
+	report->current_volume = NULL;
+
 	pthread_mutex_unlock(&report->lock);
 }
 
@@ -125,6 +186,9 @@ struct st_job_check_archive_report * st_job_check_archive_report_new(struct st_j
 	json_object_set_new(self->root, "user", juser);
 	json_object_set_new(self->root, "archive", self->archive);
 	json_object_set_new(self->root, "pool", jpool);
+
+	self->current_file = NULL;
+	self->current_volume = NULL;
 
 	pthread_mutex_init(&self->lock, NULL);
 

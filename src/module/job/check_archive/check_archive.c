@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 05 Jun 2013 19:20:13 +0200                            *
+*  Last modified: Thu, 06 Jun 2013 10:21:05 +0200                            *
 \****************************************************************************/
 
 // free, malloc
@@ -34,7 +34,7 @@
 
 #include <libjob-check-archive.chcksum>
 
-#include "check_archive.h"
+#include "common.h"
 
 static bool st_job_check_archive_check(struct st_job * job);
 static void st_job_check_archive_free(struct st_job * job);

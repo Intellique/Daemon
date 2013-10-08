@@ -45,7 +45,7 @@
 #include <libstone/util/hashtable.h>
 #include <stoned/library/changer.h>
 
-#include "check_archive.h"
+#include "common.h"
 
 struct st_job_check_archive_quick_mode_private {
 	struct st_job_check_archive_private * jp;
@@ -316,6 +316,8 @@ static void st_job_check_archive_quick_mode_work(void * arg) {
 		if (vol->media != qm->media)
 			continue;
 
+		st_job_check_archive_report_add_volume(qm->jp->report, vol);
+
 		unsigned int nb_checksums = connect->ops->get_checksums_of_archive_volume(connect, vol);
 		const void ** checksums = st_hashtable_keys(vol->digests, NULL);
 
@@ -349,7 +351,7 @@ static void st_job_check_archive_quick_mode_work(void * arg) {
 			bool ok = st_hashtable_equals(vol->digests, results);
 			st_hashtable_free(results);
 
-			st_job_check_archive_report_check_volume(qm->jp->report, vol, ok);
+			st_job_check_archive_report_check_volume(qm->jp->report, ok);
 
 			if (ok) {
 				connect->ops->mark_archive_volume_as_checked(connect, vol, true);

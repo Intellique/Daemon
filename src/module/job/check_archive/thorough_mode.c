@@ -45,7 +45,7 @@
 #include <libstone/util/hashtable.h>
 #include <stoned/library/changer.h>
 
-#include "check_archive.h"
+#include "common.h"
 
 static struct st_stream_reader * st_job_check_archive_thorough_mode_add_filter(struct st_stream_reader * reader, void * param);
 
@@ -135,6 +135,8 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 			slot->lock->ops->unlock(slot->lock);
 		}
 
+		st_job_check_archive_report_add_volume(self->report, vol);
+
 		self->connect->ops->get_archive_files_by_job_and_archive_volume(self->connect, self->job, vol);
 
 		self->nb_vol_checksums = self->connect->ops->get_checksums_of_archive_volume(self->connect, vol);
@@ -147,6 +149,8 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 		for (j = 0; j < vol->nb_files && !error; j++) {
 			struct st_archive_files * f = vol->files + j;
 			struct st_archive_file * file = f->file;
+
+			st_job_check_archive_report_add_file(self->report, f);
 
 			ssize_t position = reader->ops->position(reader) / block_size;
 			if (position != f->position) {
@@ -217,6 +221,8 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 				file_check->ops->free(file_check);
 				file_check = NULL;
 
+				st_job_check_archive_report_check_file(self->report, ok);
+
 				if (ok) {
 					self->connect->ops->mark_archive_file_as_checked(self->connect, self->archive, file, true);
 					st_job_add_record(self->connect, st_log_level_info, self->job, "Checking file (%s), status: OK", file->name);
@@ -239,6 +245,8 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 			struct st_hashtable * results = st_checksum_reader_get_checksums(self->checksum_reader);
 			bool ok = st_hashtable_equals(vol->digests, results);
 			st_hashtable_free(results);
+
+			st_job_check_archive_report_check_volume(self->report, ok);
 
 			if (ok) {
 				self->connect->ops->mark_archive_volume_as_checked(self->connect, vol, true);
