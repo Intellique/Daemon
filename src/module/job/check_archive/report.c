@@ -132,6 +132,27 @@ void st_job_check_archive_report_check_volume(struct st_job_check_archive_report
 	pthread_mutex_unlock(&report->lock);
 }
 
+void st_job_check_archive_report_check_volume2(struct st_job_check_archive_report * report, struct st_archive_volume * volume, bool ok) {
+	json_t * jmedia = json_object();
+	json_object_set_new(jmedia, "uuid", json_string(volume->media->uuid));
+	json_object_set_new(jmedia, "medium serial number", json_string(volume->media->medium_serial_number));
+	json_object_set_new(jmedia, "status", json_string(st_media_status_to_string(volume->media->status)));
+
+	json_t * jvol = json_object();
+	json_object_set_new(jvol, "sequence", json_integer(volume->sequence));
+	json_object_set_new(jvol, "size", json_integer(volume->size));
+	json_object_set_new(jvol, "media", jmedia);
+
+	char buffer[20];
+	st_util_time_convert(NULL, "%F %T", buffer, 20);
+	json_object_set_new(jvol, "checktime", json_string(buffer));
+	json_object_set_new(jvol, "checksum ok", json_boolean(ok));
+
+	pthread_mutex_lock(&report->lock);
+	json_array_append_new(report->volumes, jvol);
+	pthread_mutex_unlock(&report->lock);
+}
+
 void st_job_check_archive_report_free(struct st_job_check_archive_report * report) {
 	pthread_mutex_destroy(&report->lock);
 	json_decref(report->root);

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 06 Jun 2013 10:41:51 +0200                            *
+*  Last modified: Thu, 06 Jun 2013 14:48:46 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_CHECKARCHIVE_H__
@@ -52,6 +52,7 @@ void st_job_check_archive_report_add_file(struct st_job_check_archive_report * r
 void st_job_check_archive_report_add_volume(struct st_job_check_archive_report * report, struct st_archive_volume * volume);
 void st_job_check_archive_report_check_file(struct st_job_check_archive_report * report, bool ok);
 void st_job_check_archive_report_check_volume(struct st_job_check_archive_report * report, bool ok);
+void st_job_check_archive_report_check_volume2(struct st_job_check_archive_report * report, struct st_archive_volume * volume, bool ok);
 void st_job_check_archive_report_free(struct st_job_check_archive_report * report);
 char * st_job_check_archive_report_make(struct st_job_check_archive_report * report);
 struct st_job_check_archive_report * st_job_check_archive_report_new(struct st_job * job, struct st_archive * archive, bool quick_mode);
