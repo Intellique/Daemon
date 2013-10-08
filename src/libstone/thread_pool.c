@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 09 Jun 2013 16:33:38 +0200                            *
+*  Last modified: Tue, 08 Oct 2013 11:27:14 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -232,7 +232,7 @@ static void * st_thread_pool_work(void * arg) {
 
 		th->function(th->arg);
 
-		st_thread_pool_set_name(tid, "ThreadIdle");
+		st_thread_pool_set_name(tid, "idle");
 
 		free(th->name);
 		th->name = NULL;

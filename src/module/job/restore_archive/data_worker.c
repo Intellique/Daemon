@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 30 May 2013 17:59:04 +0200                            *
+*  Last modified: Tue, 08 Oct 2013 11:16:03 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -84,7 +84,7 @@ struct st_job_restore_archive_data_worker * st_job_restore_archive_data_worker_n
 	worker->next = NULL;
 
 	char * th_name;
-	asprintf(&th_name, "RestoreArchiveWorker: %s", self->archive->name);
+	asprintf(&th_name, "restore archive worker: %s", self->archive->name);
 
 	st_thread_pool_run(th_name, st_job_restore_archive_data_worker_work, worker);
 

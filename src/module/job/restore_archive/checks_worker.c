@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 30 May 2013 17:57:40 +0200                            *
+*  Last modified: Tue, 08 Oct 2013 11:15:15 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -199,7 +199,7 @@ struct st_job_restore_archive_checks_worker * st_job_restore_archive_checks_work
 	check->connect = jp->connect->config->ops->connect(jp->connect->config);
 
 	char * th_name;
-	asprintf(&th_name, "CheckFileWorker: %s", jp->archive->name);
+	asprintf(&th_name, "check file worker: %s", jp->archive->name);
 
 	st_thread_pool_run2(th_name, st_job_restore_archive_checks_worker_work, check, 8);
 

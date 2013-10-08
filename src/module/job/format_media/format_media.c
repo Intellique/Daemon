@@ -568,8 +568,7 @@ int st_job_format_media_run(struct st_job * job) {
 				// ignore block size because bad value
 				st_job_add_record(self->connect, st_log_level_info, job, "Wrong value of block size: %zd", block_size);
 			}
-		}
-		else if (!strcmp(blocksize, "default"))
+		} else if (!strcmp(blocksize, "default"))
 			do_update_block_size = blocksize_set_default;
 	}
 

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 30 May 2013 17:53:35 +0200                            *
+*  Last modified: Tue, 08 Oct 2013 11:14:51 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -245,7 +245,7 @@ static struct st_job_check_archive_quick_mode_private * st_job_check_archive_qui
 	qm->next = NULL;
 
 	char * th_name;
-	asprintf(&th_name, "CheckArchiveQuickMode: %s", self->archive->name);
+	asprintf(&th_name, "check archive quick mode: %s", self->archive->name);
 
 	st_thread_pool_run(th_name, st_job_check_archive_quick_mode_work, qm);
 
