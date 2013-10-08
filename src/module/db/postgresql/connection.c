@@ -151,6 +151,7 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 static int st_db_postgresql_get_user(struct st_database_connection * connect, struct st_user * user, const char * login);
 static int st_db_postgresql_sync_user(struct st_database_connection * connect, struct st_user * user);
 
+static bool st_db_postgresql_add_report(struct st_database_connection * connect, struct st_job * job, struct st_archive * archive, const char * report);
 static bool st_db_postgresql_check_checksums_of_archive_volume(struct st_database_connection * connect, struct st_archive_volume * volume);
 static bool st_db_postgresql_check_checksums_of_file(struct st_database_connection * connect, struct st_archive_file * file);
 static int st_db_postgresql_add_checksum_result(struct st_database_connection * connect, const char * checksum, char * result, char ** checksum_result_id);
@@ -213,6 +214,7 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.get_user  = st_db_postgresql_get_user,
 	.sync_user = st_db_postgresql_sync_user,
 
+	.add_report                                  = st_db_postgresql_add_report,
 	.check_checksums_of_archive_volume           = st_db_postgresql_check_checksums_of_archive_volume,
 	.check_checksums_of_file                     = st_db_postgresql_check_checksums_of_file,
 	.get_archive_by_job                          = st_db_postgresql_get_archive_by_job,
@@ -2251,6 +2253,36 @@ static int st_db_postgresql_sync_user(struct st_database_connection * connect, s
 	return status == PGRES_TUPLES_OK;
 }
 
+
+static bool st_db_postgresql_add_report(struct st_database_connection * connect, struct st_job * job, struct st_archive * archive, const char * report) {
+	if (connect == NULL || job == NULL || archive == NULL || report == NULL)
+		return false;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_archive_data * archive_data = archive->db_data;
+	struct st_db_postgresql_job_data * job_data = job->db_data;
+
+	if (archive_data == NULL || job_data == NULL)
+		return false;
+
+	const char * query = "insert_report";
+	st_db_postgresql_prepare(self, query, "INSERT INTO report(archive, job, data) VALUES ($1, $2, $3)");
+
+	char * jobid, * archiveid;
+	asprintf(&jobid, "%ld", job_data->id);
+	asprintf(&archiveid, "%ld", archive_data->id);
+
+	const char * param[] = { archiveid, jobid, report };
+	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+
+	PQclear(result);
+
+	return status == PGRES_COMMAND_OK;
+}
 
 static bool st_db_postgresql_check_checksums_of_archive_volume(struct st_database_connection * connect, struct st_archive_volume * volume) {
 	if (connect == NULL || volume == NULL || volume->digests == NULL)

@@ -349,6 +349,8 @@ static void st_job_check_archive_quick_mode_work(void * arg) {
 			bool ok = st_hashtable_equals(vol->digests, results);
 			st_hashtable_free(results);
 
+			st_job_check_archive_report_check_volume(qm->jp->report, vol, ok);
+
 			if (ok) {
 				connect->ops->mark_archive_volume_as_checked(connect, vol, true);
 				st_job_add_record(connect, st_log_level_info, qm->jp->job, "Checking volume #%lu, status: OK", vol->sequence);
