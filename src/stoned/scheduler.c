@@ -100,7 +100,13 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 				connection->ops->sync_user(connection, job->user);
 
 				job->driver->new_job(job, connection);
-				st_thread_pool_run(st_sched_run_job, job);
+
+				char * th_name;
+				asprintf(&th_name, "job: %s", job->name);
+
+				st_thread_pool_run(th_name, st_sched_run_job, job);
+
+				free(th_name);
 			}
 		}
 

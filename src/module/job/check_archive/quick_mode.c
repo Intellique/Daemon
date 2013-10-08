@@ -22,11 +22,14 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 07 Jun 2013 09:50:22 +0200                            *
+*  Last modified: Thu, 30 May 2013 17:53:35 +0200                            *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // pthread_cond_t
 #include <pthread.h>
+// asprintf
+#include <stdio.h>
 // free, malloc
 #include <stdlib.h>
 // sleep
@@ -241,7 +244,12 @@ static struct st_job_check_archive_quick_mode_private * st_job_check_archive_qui
 	qm->running = true;
 	qm->next = NULL;
 
-	st_thread_pool_run(st_job_check_archive_quick_mode_work, qm);
+	char * th_name;
+	asprintf(&th_name, "CheckArchiveQuickMode: %s", self->archive->name);
+
+	st_thread_pool_run(th_name, st_job_check_archive_quick_mode_work, qm);
+
+	free(th_name);
 
 	return qm;
 }

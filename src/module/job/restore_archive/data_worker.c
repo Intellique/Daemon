@@ -22,13 +22,16 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 01 May 2013 00:24:52 +0200                            *
+*  Last modified: Thu, 30 May 2013 17:59:04 +0200                            *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // mknod, open
 #include <fcntl.h>
 // free, malloc
 #include <stdlib.h>
+// asprintf
+#include <stdio.h>
 // strcmp, strdup, strrchr
 #include <string.h>
 // S_*, mknod, open
@@ -80,7 +83,12 @@ struct st_job_restore_archive_data_worker * st_job_restore_archive_data_worker_n
 	worker->running = true;
 	worker->next = NULL;
 
-	st_thread_pool_run(st_job_restore_archive_data_worker_work, worker);
+	char * th_name;
+	asprintf(&th_name, "RestoreArchiveWorker: %s", self->archive->name);
+
+	st_thread_pool_run(th_name, st_job_restore_archive_data_worker_work, worker);
+
+	free(th_name);
 
 	return worker;
 }

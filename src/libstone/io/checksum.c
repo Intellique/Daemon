@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 17 Feb 2013 12:18:04 +0100                            *
+*  Last modified: Thu, 30 May 2013 18:01:03 +0200                            *
 \****************************************************************************/
 
 // pthread_cond_destroy, pthread_cond_init, pthread_cond_signal, pthread_cond_wait
@@ -447,7 +447,7 @@ static struct st_stream_checksum_backend * st_stream_checksum_threaded_backend_n
 
 	self->backend = st_stream_checksum_backend_new(checksums, nb_checksums);
 
-	st_thread_pool_run2(st_stream_checksum_threaded_backend_work, self, 8);
+	st_thread_pool_run2("ChecksumWorker", st_stream_checksum_threaded_backend_work, self, 8);
 
 	struct st_stream_checksum_backend * backend = malloc(sizeof(struct st_stream_checksum_backend));
 	backend->ops = &st_stream_checksum_threaded_backend_ops;

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 14 Oct 2012 21:30:38 +0200                            *
+*  Last modified: Thu, 30 May 2013 17:17:19 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_THREADPOOL_H__
@@ -39,7 +39,7 @@
  *
  * \note All threads which are not used while 5 minutes are stopped
  */
-int st_thread_pool_run(void (*function)(void * arg), void * arg);
+int st_thread_pool_run(const char * thread_name, void (*function)(void * arg), void * arg);
 
 /**
  * \brief Run this function into another thread with specified
@@ -54,7 +54,7 @@ int st_thread_pool_run(void (*function)(void * arg), void * arg);
  *
  * \note All threads which are not used while 5 minutes are stopped
  */
-int st_thread_pool_run2(void (*function)(void * arg), void * arg, int nice);
+int st_thread_pool_run2(const char * thread_name, void (*function)(void * arg), void * arg, int nice);
 
 #endif
 

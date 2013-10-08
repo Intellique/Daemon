@@ -22,13 +22,16 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 30 Apr 2013 22:03:17 +0200                            *
+*  Last modified: Thu, 30 May 2013 17:57:40 +0200                            *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // open
 #include <fcntl.h>
 // free, malloc
 #include <stdlib.h>
+// asprintf
+#include <stdio.h>
 // strcmp
 #include <string.h>
 // open
@@ -195,7 +198,12 @@ struct st_job_restore_archive_checks_worker * st_job_restore_archive_checks_work
 	check->running = true;
 	check->connect = jp->connect->config->ops->connect(jp->connect->config);
 
-	st_thread_pool_run2(st_job_restore_archive_checks_worker_work, check, 8);
+	char * th_name;
+	asprintf(&th_name, "CheckFileWorker: %s", jp->archive->name);
+
+	st_thread_pool_run2(th_name, st_job_restore_archive_checks_worker_work, check, 8);
+
+	free(th_name);
 
 	return check;
 }
