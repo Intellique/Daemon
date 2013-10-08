@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 01 May 2013 13:01:26 +0200                            *
+*  Last modified: Thu, 06 Jun 2013 12:46:48 +0200                            *
 \****************************************************************************/
 
 // free, malloc
@@ -49,7 +49,7 @@
 
 #include <libjob-restore-archive.chcksum>
 
-#include "restore_archive.h"
+#include "common.h"
 
 static bool st_job_restore_archive_check(struct st_job * job);
 static void st_job_restore_archive_free(struct st_job * job);
@@ -127,6 +127,8 @@ static int st_job_restore_archive_run(struct st_job * job) {
 		job->sched_status = st_job_status_error;
 		return 2;
 	}
+
+	self->report = st_job_restore_archive_report_new(job, archive);
 
 	self->checks = st_job_restore_archive_checks_worker_new(self);
 

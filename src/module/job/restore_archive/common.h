@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sat, 29 Dec 2012 12:44:54 +0100                            *
+*  Last modified: Thu, 06 Jun 2013 19:37:35 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_RESTOREARCHIVE_H__
@@ -86,6 +86,8 @@ struct st_job_restore_archive_private {
 		volatile bool running;
 		struct st_database_connection * connect;
 	} * checks;
+
+	struct st_job_restore_archive_report * report;
 };
 
 void st_job_restore_archive_checks_worker_add_file(struct st_job_restore_archive_checks_worker * check, struct st_archive_file * file);
@@ -99,6 +101,13 @@ bool st_job_restore_archive_data_worker_wait(struct st_job_restore_archive_data_
 void st_job_restore_archive_path_free(struct st_job_restore_archive_path * restore_path);
 char * st_job_restore_archive_path_get(struct st_job_restore_archive_path * restore_path, struct st_database_connection * connect, struct st_job * job, struct st_archive_file * file, bool has_restore_to);
 struct st_job_restore_archive_path * st_job_restore_archive_path_new(void);
+
+void st_job_restore_archive_report_add_file(struct st_job_restore_archive_report * report, struct st_archive_volume * volume, struct st_archive_files * file, const char * restore_to);
+void st_job_restore_archive_report_add_volume(struct st_job_restore_archive_report * report, struct st_archive_volume * volume, struct st_archive_file * file);
+void st_job_restore_archive_report_check_file(struct st_job_restore_archive_report * report, struct st_archive_file * file, bool ok);
+void st_job_restore_archive_report_free(struct st_job_restore_archive_report * report);
+char * st_job_restore_archive_report_make(struct st_job_restore_archive_report * report);
+struct st_job_restore_archive_report * st_job_restore_archive_report_new(struct st_job * job, struct st_archive * archive);
 
 #endif
 

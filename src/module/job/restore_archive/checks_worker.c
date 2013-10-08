@@ -47,7 +47,7 @@
 #include <libstone/thread_pool.h>
 #include <libstone/util/hashtable.h>
 
-#include "restore_archive.h"
+#include "common.h"
 
 static void st_job_restore_archive_checks_worker_check(struct st_job_restore_archive_checks_worker * check, struct st_archive_file * file);
 static void st_job_restore_archive_checks_worker_work(void * arg);
@@ -143,6 +143,8 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 
 			if (writer != NULL)
 				writer->ops->free(writer);
+
+			st_job_restore_archive_report_check_file(check->jp->report, file, false);
 		} else {
 			struct st_hashtable * results = st_checksum_writer_get_checksums(writer);
 			bool ok = st_hashtable_equals(file->digests, results);
@@ -155,6 +157,8 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 				st_job_add_record(check->connect, st_log_level_error, check->jp->job, "Checking restored file (%s), status: checksum mismatch", restore_to);
 
 			writer->ops->free(writer);
+
+			st_job_restore_archive_report_check_file(check->jp->report, file, ok);
 		}
 	}
 

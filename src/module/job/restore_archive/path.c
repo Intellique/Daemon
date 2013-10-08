@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 20 Mar 2013 23:17:23 +0100                            *
+*  Last modified: Thu, 06 Jun 2013 12:46:35 +0200                            *
 \****************************************************************************/
 
 // free, malloc
@@ -35,7 +35,7 @@
 #include <libstone/util/string.h>
 #include <libstone/util/util.h>
 
-#include "restore_archive.h"
+#include "common.h"
 
 void st_job_restore_archive_path_free(struct st_job_restore_archive_path * restore_path) {
 	st_hashtable_free(restore_path->paths);

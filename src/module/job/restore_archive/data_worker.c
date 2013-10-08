@@ -54,7 +54,7 @@
 #include <libstone/util/file.h>
 #include <libstone/util/string.h>
 
-#include "restore_archive.h"
+#include "common.h"
 
 static void st_job_restore_archive_data_worker_work(void * arg);
 
@@ -163,6 +163,8 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 		if (vol->media != self->media)
 			continue;
 
+		st_job_restore_archive_report_add_volume(self->jp->report, vol, NULL);
+
 		connect->ops->get_archive_files_by_job_and_archive_volume(connect, job, vol);
 
 		struct st_format_reader * reader = dr->ops->get_reader(dr, vol->media_position, NULL, NULL);
@@ -222,6 +224,8 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 			}
 
 			char * restore_to = st_job_restore_archive_path_get(self->jp->restore_path, connect, job, file, has_restore_to);
+
+			st_job_restore_archive_report_add_file(self->jp->report, vol, f, restore_to);
 
 			/*/
 			 * Check and create if needed the path of file to be restored
