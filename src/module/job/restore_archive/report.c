@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 07 Jun 2013 13:33:35 +0200                            *
+*  Last modified: Mon, 14 Oct 2013 12:28:00 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -135,7 +135,7 @@ void st_job_restore_archive_report_check_file(struct st_job_restore_archive_repo
 		json_object_del(jfile, "checksum ok");
 
 	json_object_set_new(jfile, "checktime", json_string(buffer));
-	json_object_set_new(jfile, "checksum ok", json_boolean(ok));
+	json_object_set_new(jfile, "checksum ok", ok ? json_true() : json_false());
 
 	pthread_mutex_unlock(&report->lock);
 }

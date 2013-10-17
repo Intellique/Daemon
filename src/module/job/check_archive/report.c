@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 07 Jun 2013 12:35:13 +0200                            *
+*  Last modified: Mon, 14 Oct 2013 12:23:34 +0200                            *
 \****************************************************************************/
 
 // json_*
@@ -124,7 +124,7 @@ void st_job_check_archive_report_check_file(struct st_job_check_archive_report *
 	char buffer[20];
 	st_util_time_convert(NULL, "%F %T", buffer, 20);
 	json_object_set_new(report->current_file, "checktime", json_string(buffer));
-	json_object_set_new(report->current_file, "checksum ok", json_boolean(ok));
+	json_object_set_new(report->current_file, "checksum ok", ok ? json_true() : json_false());
 	report->current_file = NULL;
 
 	pthread_mutex_unlock(&report->lock);
@@ -136,7 +136,7 @@ void st_job_check_archive_report_check_volume(struct st_job_check_archive_report
 	char buffer[20];
 	st_util_time_convert(NULL, "%F %T", buffer, 20);
 	json_object_set_new(report->current_volume, "checktime", json_string(buffer));
-	json_object_set_new(report->current_volume, "checksum ok", json_boolean(ok));
+	json_object_set_new(report->current_volume, "checksum ok", ok ? json_true() : json_false());
 
 	report->current_volume = NULL;
 
@@ -157,7 +157,7 @@ void st_job_check_archive_report_check_volume2(struct st_job_check_archive_repor
 	char buffer[20];
 	st_util_time_convert(NULL, "%F %T", buffer, 20);
 	json_object_set_new(jvol, "checktime", json_string(buffer));
-	json_object_set_new(jvol, "checksum ok", json_boolean(ok));
+	json_object_set_new(jvol, "checksum ok", ok ? json_true() : json_false());
 
 	pthread_mutex_lock(&report->lock);
 	json_array_append_new(report->volumes, jvol);
@@ -186,7 +186,7 @@ struct st_job_check_archive_report * st_job_check_archive_report_new(struct st_j
 	char buffer[20];
 	st_util_time_convert(NULL, "%F %T", buffer, 20);
 	json_object_set_new(self->job, "start time", json_string(buffer));
-	json_object_set_new(self->job, "quick mode", json_boolean(quick_mode));
+	json_object_set_new(self->job, "quick mode", quick_mode ? json_true() : json_false());
 
 	struct st_user * user = job->user;
 	json_t * juser = json_object();
