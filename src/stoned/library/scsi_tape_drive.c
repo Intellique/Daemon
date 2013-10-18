@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 03 Jul 2013 22:47:27 +0200                            *
+*  Last modified: Fri, 18 Oct 2013 18:42:05 +0200                            *
 \****************************************************************************/
 
 // errno
@@ -832,7 +832,7 @@ static ssize_t st_scsi_tape_drive_io_reader_read(struct st_stream_reader * sr, v
 	if (self->fd < 0)
 		return -1;
 
-	if (length < 1)
+	if (self->end_of_file || length < 1)
 		return 0;
 
 	ssize_t nb_total_read = self->block_size - (self->buffer_pos - self->buffer);
