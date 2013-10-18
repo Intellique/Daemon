@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 20 Sep 2013 15:32:53 +0200                            *
+*  Last modified: Fri, 18 Oct 2013 12:53:29 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -1132,7 +1132,7 @@ static struct st_media * st_db_postgresql_get_media(struct st_database_connectio
 		free(jobid);
 	} else if (uuid != NULL) {
 		query = "select_media_by_uuid";
-		st_db_postgresql_prepare(self, query, "SELECT m.id, m.uuid, label, mediumserialnumber, m.name, m.status, location, firstused, usebefore, loadcount, readcount, writecount, operationcount, m.blocksize, freeblock, totalblock, m.type, nbfiles, densitycode, mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE uuid = $1 LIMIT 1");
+		st_db_postgresql_prepare(self, query, "SELECT m.id, m.uuid, label, mediumserialnumber, m.name, m.status, location, firstused, usebefore, loadcount, readcount, writecount, operationcount, m.blocksize, freeblock, totalblock, m.type, nbfiles, densitycode, mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE m.uuid = $1 LIMIT 1");
 
 		const char * param[] = { uuid };
 		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
