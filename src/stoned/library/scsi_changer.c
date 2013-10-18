@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 17 Oct 2013 09:10:48 +0200                            *
+*  Last modified: Fri, 18 Oct 2013 17:25:59 +0200                            *
 \****************************************************************************/
 
 // open
@@ -318,7 +318,7 @@ void st_scsi_changer_setup(struct st_changer * changer, struct st_database_conne
 			first_enabled_dr = changer->drives + i;
 
 	bool need_init = false;
-	for (i = changer->nb_drives; i < changer->nb_slots; i++) {
+	for (i = 0; i < changer->nb_slots; i++) {
 		struct st_slot * sl = changer->slots + i;
 
 		if (!sl->enable || !sl->full)
