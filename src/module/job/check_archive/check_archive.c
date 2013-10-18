@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 06 Jun 2013 10:21:05 +0200                            *
+*  Last modified: Fri, 18 Oct 2013 19:03:10 +0200                            *
 \****************************************************************************/
 
 // free, malloc
@@ -136,7 +136,7 @@ static int st_job_check_archive_run(struct st_job * job) {
 	if (failed)
 		st_job_add_record(self->connect, st_log_level_error, job, "Check-archive job (named: %s) finished with status %d", job->name, failed);
 	else
-		st_job_add_record(self->connect, st_log_level_error, job, "Check-archive job (named: %s) finished with status OK", job->name);
+		st_job_add_record(self->connect, st_log_level_info, job, "Check-archive job (named: %s) finished with status OK", job->name);
 
 	char * report = st_job_check_archive_report_make(self->report);
 	if (report != NULL)
