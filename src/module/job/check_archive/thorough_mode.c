@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 07 Jun 2013 12:54:36 +0200                            *
+*  Last modified: Tue, 22 Oct 2013 11:42:46 +0200                            *
 \****************************************************************************/
 
 // free
@@ -243,7 +243,7 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 
 		reader->ops->close(reader);
 
-		if (!error) {
+		if (!error && self->checksum_reader != NULL) {
 			struct st_hashtable * results = st_checksum_reader_get_checksums(self->checksum_reader);
 			bool ok = st_hashtable_equals(vol->digests, results);
 			st_hashtable_free(results);

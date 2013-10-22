@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 18 Oct 2013 19:03:10 +0200                            *
+*  Last modified: Tue, 22 Oct 2013 11:51:17 +0200                            *
 \****************************************************************************/
 
 // free, malloc
@@ -95,6 +95,8 @@ static void st_job_check_archive_new_job(struct st_job * job, struct st_database
 	self->archive = NULL;
 	self->vol_checksums = NULL;
 	self->nb_vol_checksums = 0;
+	self->checksum_reader = NULL;
+	self->report = NULL;
 
 	job->data = self;
 	job->ops = &st_job_check_archive_ops;
