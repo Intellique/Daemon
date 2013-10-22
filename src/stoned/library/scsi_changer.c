@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 18 Oct 2013 17:25:59 +0200                            *
+*  Last modified: Tue, 22 Oct 2013 14:11:46 +0200                            *
 \****************************************************************************/
 
 // open
@@ -327,6 +327,8 @@ void st_scsi_changer_setup(struct st_changer * changer, struct st_database_conne
 		sl->media = st_media_get_by_label(sl->volume_name);
 		if (sl->media == NULL)
 			need_init = true;
+		else
+			sl->media->location = sl->drive != NULL ? st_media_location_indrive : st_media_location_online;
 	}
 
 	if (need_init) {
