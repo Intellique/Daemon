@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 18 Oct 2013 12:53:29 +0200                            *
+*  Last modified: Tue, 22 Oct 2013 10:25:57 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -3394,31 +3394,35 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 	const char * query = "insert_archive_volume_to_checksum";
 	st_db_postgresql_prepare(self, query, "INSERT INTO archivevolumetochecksumresult VALUES ($1, $2)");
 
-	unsigned int i, nb_digests;
-	const void ** checksums = st_hashtable_keys(volume->digests, &nb_digests);
+	unsigned int i;
 	int failed = 0;
-	for (i = 0; i < nb_digests; i++) {
-		char * checksum_result = NULL;
-		struct st_hashtable_value digest = st_hashtable_get(volume->digests, checksums[i]);
 
-		failed = st_db_postgresql_add_checksum_result(connect, checksums[i], digest.value.string, &checksum_result);
-		if (failed)
-			break;
+	if (volume->digests != NULL) {
+		unsigned int nb_digests;
+		const void ** checksums = st_hashtable_keys(volume->digests, &nb_digests);
+		for (i = 0; i < nb_digests; i++) {
+			char * checksum_result = NULL;
+			struct st_hashtable_value digest = st_hashtable_get(volume->digests, checksums[i]);
 
-		const char * param[] = { volumeid, checksum_result };
-		PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
-		ExecStatusType status = PQresultStatus(result);
+			failed = st_db_postgresql_add_checksum_result(connect, checksums[i], digest.value.string, &checksum_result);
+			if (failed)
+				break;
 
-		if (status == PGRES_FATAL_ERROR) {
-			st_db_postgresql_get_error(result, query);
-			failed = 1;
+			const char * param[] = { volumeid, checksum_result };
+			PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+			ExecStatusType status = PQresultStatus(result);
+
+			if (status == PGRES_FATAL_ERROR) {
+				st_db_postgresql_get_error(result, query);
+				failed = 1;
+			}
+
+			PQclear(result);
+
+			free(checksum_result);
 		}
-
-		PQclear(result);
-
-		free(checksum_result);
+		free(checksums);
 	}
-	free(checksums);
 
 	if (failed) {
 		free(volumeid);
