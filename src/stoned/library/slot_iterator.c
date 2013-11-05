@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 16 Aug 2013 14:02:21 +0200                            *
+*  Last modified: Tue, 05 Nov 2013 15:58:53 +0100                            *
 \****************************************************************************/
 
 // free, malloc
@@ -118,6 +118,20 @@ struct st_slot_iterator * st_slot_iterator_by_pool2(struct st_pool * pool, struc
 }
 
 static void st_slot_iterator_private_free(struct st_slot_iterator * iterator) {
+	if (iterator == NULL)
+		return;
+
+	struct st_slot_iterator_private * self = iterator->data;
+	if (self != NULL) {
+		struct st_slot * sl = self->next_media;
+		if (sl != NULL) {
+			if (sl->drive != NULL)
+				sl->drive->lock->ops->unlock(sl->drive->lock);
+			else
+				sl->lock->ops->unlock(sl->lock);
+		}
+	}
+
 	free(iterator->data);
 	free(iterator);
 }
@@ -235,6 +249,7 @@ static struct st_slot * st_slot_iterator_private_next(struct st_slot_iterator * 
 	struct st_slot_iterator_private * self = iterator->data;
 	struct st_slot * sl = self->next_media;
 
+	self->next_media = NULL;
 	self->move_to_next(self);
 
 	return sl;
