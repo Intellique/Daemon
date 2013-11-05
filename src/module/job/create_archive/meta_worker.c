@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 25 Apr 2013 14:55:34 +0200                            *
+*  Last modified: Tue, 08 Oct 2013 11:15:04 +0200                            *
 \****************************************************************************/
 
 // asprintf
@@ -152,7 +152,12 @@ struct st_job_create_archive_meta_worker * st_job_create_archive_meta_worker_new
 	meta->data = self;
 	meta->meta_files = self->meta_files;
 
-	st_thread_pool_run2(st_job_create_archive_meta_worker_work, self, 8);
+	char * th_name;
+	asprintf(&th_name, "meta worker: %s", job->name);
+
+	st_thread_pool_run2(th_name, st_job_create_archive_meta_worker_work, self, 8);
+
+	free(th_name);
 
 	return meta;
 }

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 20 Aug 2013 17:29:34 +0200                            *
+*  Last modified: Fri, 20 Sep 2013 13:37:03 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -671,7 +671,7 @@ static struct st_media * st_media_retrieve(struct st_database_connection * conne
 	return media;
 }
 
-int st_media_write_header(struct st_drive * drive, struct st_pool * pool) {
+int st_media_write_header(struct st_drive * drive, struct st_pool * pool, struct st_database_connection * db_connect) {
 	if (drive == NULL)
 		return 1;
 
@@ -680,6 +680,11 @@ int st_media_write_header(struct st_drive * drive, struct st_pool * pool) {
 		st_log_write_all(st_log_level_warning, st_log_type_drive, "Try to write a tape header to a drive without tape");
 		return 1;
 	}
+
+	// lock media and sync it with database
+	media->lock->ops->lock(media->lock);
+	media->locked = true;
+	db_connect->ops->sync_media(db_connect, media);
 
 	if (*media->uuid == '\0') {
 		uuid_t id;
@@ -770,6 +775,12 @@ int st_media_write_header(struct st_drive * drive, struct st_pool * pool) {
 
 		st_log_write_all(st_log_level_info, st_log_type_drive, "Write a media header: failed");
 	}
+
+	// unlock media and sync it with database
+	db_connect->ops->sync_media(db_connect, media);
+	media->locked = false;
+	media->lock->ops->lock(media->lock);
+	db_connect->ops->sync_media(db_connect, media);
 
 	return failed;
 }

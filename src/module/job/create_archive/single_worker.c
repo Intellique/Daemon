@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 06 Jun 2013 23:53:11 +0200                            *
+*  Last modified: Tue, 05 Nov 2013 11:55:57 +0100                            *
 \****************************************************************************/
 
 // asprintf
@@ -473,7 +473,10 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 
 						struct st_media * media = slot->media;
 						if ((unbreakable_level == st_pool_unbreakable_level_archive && self->archive_size > media->free_block * media->block_size) || st_job_create_archive_single_worker_has_media(self, media)) {
-							slot->lock->ops->unlock(slot->lock);
+							if (self->drive != slot->drive && slot->drive != NULL)
+								slot->drive->lock->ops->unlock(slot->drive->lock);
+							else if (slot->drive == NULL)
+								slot->lock->ops->unlock(slot->lock);
 							slot = NULL;
 							continue;
 						}
@@ -484,7 +487,10 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 						if (10 * media->free_block > media->total_block)
 							break;
 
-						slot->lock->ops->unlock(slot->lock);
+						if (self->drive != slot->drive && slot->drive != NULL)
+							slot->drive->lock->ops->unlock(slot->drive->lock);
+						else if (slot->drive == NULL)
+							slot->lock->ops->unlock(slot->lock);
 						slot = NULL;
 					}
 
@@ -578,7 +584,7 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 
 					st_job_add_record(self->connect, st_log_level_info, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ]", media->name, changer->drives - self->drive, changer->vendor, changer->model);
 
-					int failed = st_media_write_header(self->drive, self->pool);
+					int failed = st_media_write_header(self->drive, self->pool, self->connect);
 					if (failed) {
 						st_job_add_record(self->connect, st_log_level_error, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", media->name, changer->drives - self->drive, changer->vendor, changer->model, failed);
 						return false;
@@ -626,6 +632,7 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 
 			case media_is_read_only:
 				if (self->drive->slot->media->type == st_media_type_readonly) {
+					st_job_add_record(self->connect, st_log_level_warning, self->job, "Media '%s' is currently read only ", self->drive->slot->media->name);
 					st_job_create_archive_single_worker_add_media(self, self->drive->slot->media);
 					state = check_online_free_size_left;
 				} else

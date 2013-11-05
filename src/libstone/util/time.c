@@ -22,39 +22,23 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 30 May 2013 17:17:19 +0200                            *
+*  Last modified: Wed, 05 Jun 2013 14:58:08 +0200                            *
 \****************************************************************************/
 
-#ifndef __STONE_THREADPOOL_H__
-#define __STONE_THREADPOOL_H__
+// localtime_r, time
+#include <time.h>
 
-/**
- * \brief Run this function into another thread
- *
- * \param[in] function : call this function from another thread
- * \param[in] arg : call this function by passing this argument
- * \returns 0 if OK
- *
- * \note this function reuse an unused thread or create new one
- *
- * \note All threads which are not used while 5 minutes are stopped
- */
-int st_thread_pool_run(const char * thread_name, void (*function)(void * arg), void * arg);
+#include <libstone/util/time.h>
 
-/**
- * \brief Run this function into another thread with specified
- * \a nice priority.
- *
- * \param[in] function : call this function from another thread
- * \param[in] arg : call this function by passing this argument
- * \param[in] nice : call nice(2) before call \a function
- * \returns 0 if OK
- *
- * \note this function reuse an unused thread or create new one
- *
- * \note All threads which are not used while 5 minutes are stopped
- */
-int st_thread_pool_run2(const char * thread_name, void (*function)(void * arg), void * arg, int nice);
+size_t st_util_time_convert(time_t * clock, const char * format, char * buffer, size_t buffer_length) {
+	struct tm lnow;
+	if (clock == NULL) {
+		time_t lclock = time(NULL);
+		localtime_r(&lclock, &lnow);
+	} else {
+		localtime_r(clock, &lnow);
+	}
 
-#endif
+	return strftime(buffer, buffer_length, format, &lnow);
+}
 

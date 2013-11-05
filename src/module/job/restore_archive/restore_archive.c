@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 01 May 2013 13:01:26 +0200                            *
+*  Last modified: Fri, 07 Jun 2013 13:44:31 +0200                            *
 \****************************************************************************/
 
 // free, malloc
@@ -49,7 +49,7 @@
 
 #include <libjob-restore-archive.chcksum>
 
-#include "restore_archive.h"
+#include "common.h"
 
 static bool st_job_restore_archive_check(struct st_job * job);
 static void st_job_restore_archive_free(struct st_job * job);
@@ -127,6 +127,8 @@ static int st_job_restore_archive_run(struct st_job * job) {
 		job->sched_status = st_job_status_error;
 		return 2;
 	}
+
+	self->report = st_job_restore_archive_report_new(job, archive);
 
 	self->checks = st_job_restore_archive_checks_worker_new(self);
 
@@ -307,13 +309,19 @@ static int st_job_restore_archive_run(struct st_job * job) {
 	}
 	free(directories);
 
-	st_job_restore_archive_checks_worker_free(self->checks);
-	st_job_restore_archive_path_free(self->restore_path);
-	st_archive_free(archive);
+	char * report = st_job_restore_archive_report_make(self->report);
+	if (report != NULL)
+		self->connect->ops->add_report(self->connect, job, archive, report);
+	free(report);
 
 	job->done = 1;
 
 	st_job_add_record(self->connect, st_log_level_info, job, "Job restore-archive is finished (named: %s) with %d warning(%c) and %d error(%c)", job->name, nb_warnings, nb_warnings != 1 ? 's' : '\0', nb_errors, nb_errors != 1 ? 's' : '\0');
+
+	st_job_restore_archive_report_free(self->report);
+	st_job_restore_archive_checks_worker_free(self->checks);
+	st_job_restore_archive_path_free(self->restore_path);
+	st_archive_free(archive);
 
 	return 0;
 }

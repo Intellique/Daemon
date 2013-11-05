@@ -22,11 +22,14 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 07 Feb 2013 11:25:39 +0100                            *
+*  Last modified: Thu, 06 Jun 2013 14:48:46 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_CHECKARCHIVE_H__
 #define __STONE_JOB_CHECKARCHIVE_H__
+
+// bool
+#include <stdbool.h>
 
 #include <libstone/database.h>
 #include <libstone/library/archive.h>
@@ -41,8 +44,18 @@ struct st_job_check_archive_private {
 	unsigned int nb_vol_checksums;
 
 	struct st_stream_reader * checksum_reader;
+
+	struct st_job_check_archive_report * report;
 };
 
+void st_job_check_archive_report_add_file(struct st_job_check_archive_report * report, struct st_archive_files * file);
+void st_job_check_archive_report_add_volume(struct st_job_check_archive_report * report, struct st_archive_volume * volume);
+void st_job_check_archive_report_check_file(struct st_job_check_archive_report * report, bool ok);
+void st_job_check_archive_report_check_volume(struct st_job_check_archive_report * report, bool ok);
+void st_job_check_archive_report_check_volume2(struct st_job_check_archive_report * report, struct st_archive_volume * volume, bool ok);
+void st_job_check_archive_report_free(struct st_job_check_archive_report * report);
+char * st_job_check_archive_report_make(struct st_job_check_archive_report * report);
+struct st_job_check_archive_report * st_job_check_archive_report_new(struct st_job * job, struct st_archive * archive, bool quick_mode);
 int st_job_check_archive_quick_mode(struct st_job_check_archive_private * self);
 int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * self);
 

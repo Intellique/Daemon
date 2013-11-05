@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 19 Aug 2013 17:59:23 +0200                            *
+*  Last modified: Tue, 08 Oct 2013 11:21:04 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -99,8 +99,13 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 			if (job->repetition != 0 && job->next_start < update && job->db_status == st_job_status_scheduled && job->sched_status == st_job_status_scheduled) {
 				connection->ops->sync_user(connection, job->user);
 
+				char * jobname;
+				asprintf(&jobname, "job: %s", job->name);
+
 				job->driver->new_job(job, connection);
-				st_thread_pool_run(st_sched_run_job, job);
+				st_thread_pool_run(jobname, st_sched_run_job, job);
+
+				free(jobname);
 			}
 		}
 

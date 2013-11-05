@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 24 Apr 2013 19:23:38 +0200                            *
+*  Last modified: Fri, 18 Oct 2013 11:42:38 +0200                            *
 \****************************************************************************/
 
 // sscanf, snprintf
@@ -424,9 +424,10 @@ static enum st_format_reader_header_status st_format_tar_reader_skip_file(struct
 		off_t new_pos = self->io->ops->forward(self->io, self->skip_size);
 		if (new_pos == (off_t) -1)
 			return st_format_reader_header_not_found;
+
 		self->position += self->skip_size;
 		self->file_size = self->skip_size = 0;
-		return new_pos != next_pos;
+		return new_pos == next_pos ? st_format_reader_header_ok : st_format_reader_header_not_found;
 	}
 
 	return st_format_reader_header_ok;

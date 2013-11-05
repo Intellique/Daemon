@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 02 May 2013 13:56:29 +0200                            *
+*  Last modified: Wed, 18 Sep 2013 10:41:58 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -199,7 +199,7 @@ struct st_media * st_media_get_by_label(const char * label);
 struct st_media * st_media_get_by_medium_serial_number(const char * medium_serial_number);
 struct st_media * st_media_get_by_uuid(const char * uuid);
 int st_media_read_header(struct st_drive * dr);
-int st_media_write_header(struct st_drive * dr, struct st_pool * pool);
+int st_media_write_header(struct st_drive * dr, struct st_pool * pool, struct st_database_connection * db_connect);
 
 struct st_media_format * st_media_format_get_by_density_code(unsigned char density_code, enum st_media_format_mode mode);
 struct st_media_format * st_media_format_get_by_name(const char * format, enum st_media_format_mode mode);

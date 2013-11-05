@@ -216,6 +216,7 @@ struct st_database_connection {
 		int (*get_user)(struct st_database_connection * connect, struct st_user * user, const char * login);
 		int (*sync_user)(struct st_database_connection * connect, struct st_user * user);
 
+		bool (*add_report)(struct st_database_connection * connect, struct st_job * job, struct st_archive * archive, const char * report);
 		bool (*check_checksums_of_archive_volume)(struct st_database_connection * connect, struct st_archive_volume * volume);
 		bool (*check_checksums_of_file)(struct st_database_connection * connect, struct st_archive_file * file);
 		struct st_archive * (*get_archive_by_job)(struct st_database_connection * connect, struct st_job * job);

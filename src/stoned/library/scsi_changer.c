@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 20 Aug 2013 12:16:37 +0200                            *
+*  Last modified: Tue, 22 Oct 2013 14:11:46 +0200                            *
 \****************************************************************************/
 
 // open
@@ -317,32 +317,48 @@ void st_scsi_changer_setup(struct st_changer * changer, struct st_database_conne
 		if (changer->drives[i].enabled)
 			first_enabled_dr = changer->drives + i;
 
-	pthread_t * workers = NULL;
-	if (nb_enabled_drives > 1) {
-		workers = calloc(nb_enabled_drives - 1, sizeof(pthread_t));
+	bool need_init = false;
+	for (i = 0; i < changer->nb_slots; i++) {
+		struct st_slot * sl = changer->slots + i;
 
-		pthread_attr_t attr;
-		pthread_attr_init(&attr);
-		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+		if (!sl->enable || !sl->full)
+			continue;
 
-		unsigned int j;
-		for (j = 0; i < changer->nb_drives; i++) {
-			struct st_drive * dr = changer->drives + i;
-			if (dr->enabled) {
-				pthread_create(workers + j, &attr, st_scsi_changer_setup2, dr);
-				j++;
-			}
-		}
-
-		pthread_attr_destroy(&attr);
+		sl->media = st_media_get_by_label(sl->volume_name);
+		if (sl->media == NULL)
+			need_init = true;
+		else
+			sl->media->location = sl->drive != NULL ? st_media_location_indrive : st_media_location_online;
 	}
 
-	st_scsi_changer_setup2(first_enabled_dr);
+	if (need_init) {
+		pthread_t * workers = NULL;
+		if (nb_enabled_drives > 1) {
+			workers = calloc(nb_enabled_drives - 1, sizeof(pthread_t));
 
-	for (i = 0; i < nb_enabled_drives - 1; i++)
-		pthread_join(workers[i], NULL);
+			pthread_attr_t attr;
+			pthread_attr_init(&attr);
+			pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-	free(workers);
+			unsigned int j;
+			for (j = 0; i < changer->nb_drives; i++) {
+				struct st_drive * dr = changer->drives + i;
+				if (dr->enabled) {
+					pthread_create(workers + j, &attr, st_scsi_changer_setup2, dr);
+					j++;
+				}
+			}
+
+			pthread_attr_destroy(&attr);
+		}
+
+		st_scsi_changer_setup2(first_enabled_dr);
+
+		for (i = 0; i < nb_enabled_drives - 1; i++)
+			pthread_join(workers[i], NULL);
+
+		free(workers);
+	}
 
 	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: setup terminated", changer->vendor, changer->model);
 }

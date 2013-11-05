@@ -22,11 +22,14 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 07 Jun 2013 09:50:22 +0200                            *
+*  Last modified: Tue, 08 Oct 2013 11:14:51 +0200                            *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // pthread_cond_t
 #include <pthread.h>
+// asprintf
+#include <stdio.h>
 // free, malloc
 #include <stdlib.h>
 // sleep
@@ -42,7 +45,7 @@
 #include <libstone/util/hashtable.h>
 #include <stoned/library/changer.h>
 
-#include "check_archive.h"
+#include "common.h"
 
 struct st_job_check_archive_quick_mode_private {
 	struct st_job_check_archive_private * jp;
@@ -241,7 +244,12 @@ static struct st_job_check_archive_quick_mode_private * st_job_check_archive_qui
 	qm->running = true;
 	qm->next = NULL;
 
-	st_thread_pool_run(st_job_check_archive_quick_mode_work, qm);
+	char * th_name;
+	asprintf(&th_name, "check archive quick mode: %s", self->archive->name);
+
+	st_thread_pool_run(th_name, st_job_check_archive_quick_mode_work, qm);
+
+	free(th_name);
 
 	return qm;
 }
@@ -340,6 +348,8 @@ static void st_job_check_archive_quick_mode_work(void * arg) {
 			struct st_hashtable * results = st_checksum_writer_get_checksums(writer);
 			bool ok = st_hashtable_equals(vol->digests, results);
 			st_hashtable_free(results);
+
+			st_job_check_archive_report_check_volume2(qm->jp->report, vol, ok);
 
 			if (ok) {
 				connect->ops->mark_archive_volume_as_checked(connect, vol, true);

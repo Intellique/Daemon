@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 10 Sep 2013 19:50:28 +0200                            *
+*  Last modified: Thu, 24 Oct 2013 16:19:38 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -341,6 +341,7 @@ static int st_vtl_changer_load_slot(struct st_changer * ch, struct st_slot * fro
 		sto->full = true;
 		from->full = false;
 
+		media->location = st_media_location_indrive;
 		media->load_count++;
 
 		to->ops->update_media_info(to);

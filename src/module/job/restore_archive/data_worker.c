@@ -22,13 +22,16 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 01 May 2013 00:24:52 +0200                            *
+*  Last modified: Tue, 08 Oct 2013 11:16:03 +0200                            *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // mknod, open
 #include <fcntl.h>
 // free, malloc
 #include <stdlib.h>
+// asprintf
+#include <stdio.h>
 // strcmp, strdup, strrchr
 #include <string.h>
 // S_*, mknod, open
@@ -51,7 +54,7 @@
 #include <libstone/util/file.h>
 #include <libstone/util/string.h>
 
-#include "restore_archive.h"
+#include "common.h"
 
 static void st_job_restore_archive_data_worker_work(void * arg);
 
@@ -80,7 +83,12 @@ struct st_job_restore_archive_data_worker * st_job_restore_archive_data_worker_n
 	worker->running = true;
 	worker->next = NULL;
 
-	st_thread_pool_run(st_job_restore_archive_data_worker_work, worker);
+	char * th_name;
+	asprintf(&th_name, "restore archive worker: %s", self->archive->name);
+
+	st_thread_pool_run(th_name, st_job_restore_archive_data_worker_work, worker);
+
+	free(th_name);
 
 	return worker;
 }
@@ -155,6 +163,8 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 		if (vol->media != self->media)
 			continue;
 
+		st_job_restore_archive_report_add_volume(self->jp->report, vol, NULL);
+
 		connect->ops->get_archive_files_by_job_and_archive_volume(connect, job, vol);
 
 		struct st_format_reader * reader = dr->ops->get_reader(dr, vol->media_position, NULL, NULL);
@@ -214,6 +224,8 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 			}
 
 			char * restore_to = st_job_restore_archive_path_get(self->jp->restore_path, connect, job, file, has_restore_to);
+
+			st_job_restore_archive_report_add_file(self->jp->report, vol, f, restore_to);
 
 			/*/
 			 * Check and create if needed the path of file to be restored

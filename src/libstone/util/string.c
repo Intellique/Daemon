@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sat, 08 Dec 2012 15:18:59 +0100                            *
+*  Last modified: Sun, 09 Jun 2013 16:21:20 +0200                            *
 \****************************************************************************/
 
 // free, realloc
@@ -110,6 +110,45 @@ void st_util_string_fix_invalid_utf8(char * string) {
 	}
 }
 
+void st_util_string_middle_elipsis(char * string, size_t length) {
+	size_t str_length = strlen(string);
+	if (str_length <= length)
+		return;
+
+	length--;
+
+	size_t used = 0;
+	char * ptrA = string;
+	char * ptrB = string + str_length;
+	while (used < length) {
+		int char_length = st_util_string_valid_utf8_char(ptrA);
+		if (char_length == 0)
+			return;
+
+		if (used + char_length > length)
+			break;
+
+		used += char_length;
+		ptrA += char_length;
+
+		int offset = 1;
+		while (char_length = st_util_string_valid_utf8_char(ptrB - offset), ptrA < ptrB - offset && char_length == 0)
+			offset++;
+
+		if (char_length == 0)
+			return;
+
+		if (used + char_length > length)
+			break;
+
+		used += char_length;
+		ptrB -= char_length;
+	}
+
+	*ptrA = '~';
+	memmove(ptrA + 1, ptrB, strlen(ptrB) + 1);
+}
+
 void st_util_string_trim(char * str, char trim) {
 	size_t length = strlen(str);
 
@@ -139,6 +178,22 @@ void st_util_string_rtrim(char * str, char trim) {
 
 	if (ptr[1] != '\0')
 		ptr[1] = '\0';
+}
+
+size_t st_util_string_strlen(const char * str) {
+	size_t length = 0;
+	size_t offset = 0;
+
+	while (str[offset] != '\0') {
+		int char_length = st_util_string_valid_utf8_char(str + offset);
+		if (char_length == 0)
+			break;
+
+		length++;
+		offset += char_length;
+	}
+
+	return length;
 }
 
 static int st_util_string_valid_utf8_char(const char * string) {

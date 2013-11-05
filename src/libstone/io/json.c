@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 07 Mar 2013 10:34:38 +0100                            *
+*  Last modified: Tue, 22 Oct 2013 10:59:52 +0200                            *
 \****************************************************************************/
 
 // json_array, json_array_append_new, json_decref, json_dumps, json_integer,
@@ -161,14 +161,17 @@ static json_t * st_io_json_volume(struct st_archive_volume * volume) {
 	json_object_set_new(jvolume, "finish time", json_string(ctime));
 
 	json_t * jchecksums = json_object();
-	unsigned int i, nb_digests;
-	const void ** checksums = st_hashtable_keys(volume->digests, &nb_digests);
-	for (i = 0; i < nb_digests; i++) {
-		struct st_hashtable_value digest = st_hashtable_get(volume->digests, checksums[i]);
-		json_object_set_new(jchecksums, checksums[i], json_string(digest.value.string));
+	unsigned int i;
+	if (volume->digests != NULL) {
+		unsigned int nb_digests;
+		const void ** checksums = st_hashtable_keys(volume->digests, &nb_digests);
+		for (i = 0; i < nb_digests; i++) {
+			struct st_hashtable_value digest = st_hashtable_get(volume->digests, checksums[i]);
+			json_object_set_new(jchecksums, checksums[i], json_string(digest.value.string));
+		}
+		json_object_set_new(jvolume, "checksums", jchecksums);
+		free(checksums);
 	}
-	json_object_set_new(jvolume, "checksums", jchecksums);
-	free(checksums);
 
 	json_t * files = json_array();
 	for (i = 0; i < volume->nb_files; i++) {

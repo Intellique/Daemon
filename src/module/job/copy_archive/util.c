@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 22 Mar 2013 16:55:43 +0100                            *
+*  Last modified: Wed, 18 Sep 2013 10:51:16 +0200                            *
 \****************************************************************************/
 
 // time
@@ -309,7 +309,7 @@ bool st_job_copy_archive_select_output_media(struct st_job_copy_archive_private 
 
 			st_job_add_record(self->connect, st_log_level_info, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ]", media->name, changer->drives - self->drive_output, changer->vendor, changer->model);
 
-			int failed = st_media_write_header(self->drive_output, self->pool);
+			int failed = st_media_write_header(self->drive_output, self->pool, self->connect);
 			if (failed) {
 				st_job_add_record(self->connect, st_log_level_error, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", media->name, changer->drives - self->drive_output, changer->vendor, changer->model, failed);
 				ok = false;

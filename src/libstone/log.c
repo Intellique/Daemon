@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 09 Sep 2013 12:21:49 +0200                            *
+*  Last modified: Tue, 08 Oct 2013 11:10:33 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -267,7 +267,7 @@ void st_log_start_logger() {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Start logger without log modules loaded");
 	} else if (!st_log_logger_running) {
 		st_log_logger_running = 1;
-		st_thread_pool_run2(st_log_sent_message, NULL, 4);
+		st_thread_pool_run2("logger", st_log_sent_message, NULL, 4);
 		st_log_display_at_exit = 0;
 	}
 

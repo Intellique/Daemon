@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 17 Apr 2013 21:58:05 +0200                            *
+*  Last modified: Tue, 22 Oct 2013 11:51:17 +0200                            *
 \****************************************************************************/
 
 // free, malloc
@@ -34,7 +34,7 @@
 
 #include <libjob-check-archive.chcksum>
 
-#include "check_archive.h"
+#include "common.h"
 
 static bool st_job_check_archive_check(struct st_job * job);
 static void st_job_check_archive_free(struct st_job * job);
@@ -95,6 +95,8 @@ static void st_job_check_archive_new_job(struct st_job * job, struct st_database
 	self->archive = NULL;
 	self->vol_checksums = NULL;
 	self->nb_vol_checksums = 0;
+	self->checksum_reader = NULL;
+	self->report = NULL;
 
 	job->data = self;
 	job->ops = &st_job_check_archive_ops;
@@ -124,12 +126,27 @@ static int st_job_check_archive_run(struct st_job * job) {
 			quick_mode = st_hashtable_val_convert_to_signed_integer(&qm) != 0;
 	}
 
+	self->report = st_job_check_archive_report_new(job, archive, quick_mode);
+
 	int failed;
 
 	if (quick_mode)
 		failed = st_job_check_archive_quick_mode(self);
 	else
 		failed = st_job_check_archive_thorough_mode(self);
+
+	if (failed)
+		st_job_add_record(self->connect, st_log_level_error, job, "Check-archive job (named: %s) finished with status %d", job->name, failed);
+	else
+		st_job_add_record(self->connect, st_log_level_info, job, "Check-archive job (named: %s) finished with status OK", job->name);
+
+	char * report = st_job_check_archive_report_make(self->report);
+	if (report != NULL)
+		self->connect->ops->add_report(self->connect, job, archive, report);
+	free(report);
+
+	st_job_check_archive_report_free(self->report);
+	self->report = NULL;
 
 	return failed;
 }

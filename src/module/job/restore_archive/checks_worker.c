@@ -22,13 +22,16 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 30 Apr 2013 22:03:17 +0200                            *
+*  Last modified: Tue, 08 Oct 2013 11:15:15 +0200                            *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // open
 #include <fcntl.h>
 // free, malloc
 #include <stdlib.h>
+// asprintf
+#include <stdio.h>
 // strcmp
 #include <string.h>
 // open
@@ -44,7 +47,7 @@
 #include <libstone/thread_pool.h>
 #include <libstone/util/hashtable.h>
 
-#include "restore_archive.h"
+#include "common.h"
 
 static void st_job_restore_archive_checks_worker_check(struct st_job_restore_archive_checks_worker * check, struct st_archive_file * file);
 static void st_job_restore_archive_checks_worker_work(void * arg);
@@ -140,6 +143,8 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 
 			if (writer != NULL)
 				writer->ops->free(writer);
+
+			st_job_restore_archive_report_check_file(check->jp->report, file, false);
 		} else {
 			struct st_hashtable * results = st_checksum_writer_get_checksums(writer);
 			bool ok = st_hashtable_equals(file->digests, results);
@@ -152,6 +157,8 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 				st_job_add_record(check->connect, st_log_level_error, check->jp->job, "Checking restored file (%s), status: checksum mismatch", restore_to);
 
 			writer->ops->free(writer);
+
+			st_job_restore_archive_report_check_file(check->jp->report, file, ok);
 		}
 	}
 
@@ -195,7 +202,12 @@ struct st_job_restore_archive_checks_worker * st_job_restore_archive_checks_work
 	check->running = true;
 	check->connect = jp->connect->config->ops->connect(jp->connect->config);
 
-	st_thread_pool_run2(st_job_restore_archive_checks_worker_work, check, 8);
+	char * th_name;
+	asprintf(&th_name, "check file worker: %s", jp->archive->name);
+
+	st_thread_pool_run2(th_name, st_job_restore_archive_checks_worker_work, check, 8);
+
+	free(th_name);
 
 	return check;
 }

@@ -22,32 +22,43 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 18 Apr 2013 11:29:32 +0200                            *
+*  Last modified: Tue, 08 Oct 2013 11:27:14 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
+// open
+#include <fcntl.h>
+// pthread_*
 #include <pthread.h>
 // free, malloc, realloc
 #include <stdlib.h>
+// asprintf
+#include <stdio.h>
+// strdup
+#include <string.h>
 // setpriority
 #include <sys/resource.h>
 // syscall
 #include <sys/syscall.h>
+// open
+#include <sys/stat.h>
 // gettimeofday, setpriority
 #include <sys/time.h>
-// pid
+// pid_t, open
 #include <sys/types.h>
-// syscall
+// close, getpid, syscall, write
 #include <unistd.h>
 
 #include <libstone/log.h>
 #include <libstone/thread_pool.h>
+#include <libstone/util/string.h>
 
 struct st_thread_pool_thread {
 	pthread_t thread;
 	pthread_mutex_t lock;
 	pthread_cond_t wait;
 
+	char * name;
 	void (*function)(void * arg);
 	void * arg;
 	int nice;
@@ -62,8 +73,11 @@ struct st_thread_pool_thread {
 static struct st_thread_pool_thread ** st_thread_pool_threads = NULL;
 static unsigned int st_thread_pool_nb_threads = 0;
 static pthread_mutex_t st_thread_pool_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+static pid_t st_thread_pool_pid = -1;
 
 static void st_thread_pool_exit(void) __attribute__((destructor));
+static void st_thread_pool_init(void) __attribute__((constructor));
+static void st_thread_pool_set_name(pid_t tid, const char * name);
 static void * st_thread_pool_work(void * arg);
 
 
@@ -87,11 +101,15 @@ static void st_thread_pool_exit() {
 	st_thread_pool_nb_threads = 0;
 }
 
-int st_thread_pool_run(void (*function)(void * arg), void * arg) {
-	return st_thread_pool_run2(function, arg, 0);
+static void st_thread_pool_init() {
+	st_thread_pool_pid = getpid();
 }
 
-int st_thread_pool_run2(void (*function)(void * arg), void * arg, int nice) {
+int st_thread_pool_run(const char * thread_name, void (*function)(void * arg), void * arg) {
+	return st_thread_pool_run2(thread_name, function, arg, 0);
+}
+
+int st_thread_pool_run2(const char * thread_name, void (*function)(void * arg), void * arg, int nice) {
 	pthread_mutex_lock(&st_thread_pool_lock);
 	unsigned int i;
 	for (i = 0; i < st_thread_pool_nb_threads; i++) {
@@ -100,6 +118,9 @@ int st_thread_pool_run2(void (*function)(void * arg), void * arg, int nice) {
 		if (th->state == st_thread_pool_state_waiting) {
 			pthread_mutex_lock(&th->lock);
 
+			th->name = NULL;
+			if (thread_name != NULL)
+				th->name = strdup(thread_name);
 			th->function = function;
 			th->arg = arg;
 			th->nice = nice;
@@ -118,6 +139,9 @@ int st_thread_pool_run2(void (*function)(void * arg), void * arg, int nice) {
 		struct st_thread_pool_thread * th = st_thread_pool_threads[i];
 
 		if (th->state == st_thread_pool_state_exited) {
+			th->name = NULL;
+			if (thread_name != NULL)
+				th->name = strdup(thread_name);
 			th->function = function;
 			th->arg = arg;
 			th->nice = nice;
@@ -147,6 +171,9 @@ int st_thread_pool_run2(void (*function)(void * arg), void * arg, int nice) {
 	struct st_thread_pool_thread * th = st_thread_pool_threads[st_thread_pool_nb_threads] = malloc(sizeof(struct st_thread_pool_thread));
 	st_thread_pool_nb_threads++;
 
+	th->name = NULL;
+	if (thread_name != NULL)
+		th->name = strdup(thread_name);
 	th->function = function;
 	th->arg = arg;
 	th->nice = nice;
@@ -168,6 +195,23 @@ int st_thread_pool_run2(void (*function)(void * arg), void * arg, int nice) {
 	return 0;
 }
 
+static void st_thread_pool_set_name(pid_t tid, const char * name) {
+	char * th_name = strdup(name);
+	st_util_string_middle_elipsis(th_name, 15);
+
+	char * path;
+	asprintf(&path, "/proc/%d/task/%d/comm", st_thread_pool_pid, tid);
+
+	int fd = open(path, O_WRONLY);
+	if (fd < 0)
+		return;
+
+	write(fd, th_name, strlen(th_name) + 1);
+	close(fd);
+	free(path);
+	free(th_name);
+}
+
 static void * st_thread_pool_work(void * arg) {
 	struct st_thread_pool_thread * th = arg;
 
@@ -178,7 +222,20 @@ static void * st_thread_pool_work(void * arg) {
 	do {
 		setpriority(PRIO_PROCESS, tid, th->nice);
 
+		if (th->name != NULL)
+			st_thread_pool_set_name(tid, th->name);
+		else {
+			char buffer[16];
+			snprintf(buffer, 16, "thread %p", th->function);
+			st_thread_pool_set_name(tid, buffer);
+		}
+
 		th->function(th->arg);
+
+		st_thread_pool_set_name(tid, "idle");
+
+		free(th->name);
+		th->name = NULL;
 
 		st_log_write_all(st_log_level_debug, st_log_type_daemon, "Thread #%ld (pid: %d) is going to sleep", th->thread, tid);
 
