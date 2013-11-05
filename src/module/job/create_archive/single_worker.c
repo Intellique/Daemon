@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 02 Oct 2013 10:14:06 +0200                            *
+*  Last modified: Tue, 05 Nov 2013 11:55:57 +0100                            *
 \****************************************************************************/
 
 // asprintf
@@ -473,7 +473,10 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 
 						struct st_media * media = slot->media;
 						if ((unbreakable_level == st_pool_unbreakable_level_archive && self->archive_size > media->free_block * media->block_size) || st_job_create_archive_single_worker_has_media(self, media)) {
-							slot->lock->ops->unlock(slot->lock);
+							if (self->drive != slot->drive && slot->drive != NULL)
+								slot->drive->lock->ops->unlock(slot->drive->lock);
+							else if (slot->drive == NULL)
+								slot->lock->ops->unlock(slot->lock);
 							slot = NULL;
 							continue;
 						}
@@ -484,7 +487,10 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 						if (10 * media->free_block > media->total_block)
 							break;
 
-						slot->lock->ops->unlock(slot->lock);
+						if (self->drive != slot->drive && slot->drive != NULL)
+							slot->drive->lock->ops->unlock(slot->drive->lock);
+						else if (slot->drive == NULL)
+							slot->lock->ops->unlock(slot->lock);
 						slot = NULL;
 					}
 
