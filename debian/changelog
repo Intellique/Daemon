@@ -1,3 +1,11 @@
+stone (1.1-15) unstable; urgency=low
+
+  * New feature: report generation
+  * New feature: thread name
+  * Bug fixes: Crash on create archive with unbreakable archive
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 05 Nov 2013 13:00:48 +0100
+
 stone (1.1-14) unstable; urgency=low
 
   * Remove www part of stone
