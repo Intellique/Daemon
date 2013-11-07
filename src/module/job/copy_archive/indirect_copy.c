@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 22 Oct 2013 10:25:48 +0200                            *
+*  Last modified: Wed, 23 Oct 2013 11:26:42 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -151,7 +151,7 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 	struct st_stream_reader * temp_reader = st_io_file_reader(temp_filename);
 	struct st_format_reader * reader = st_format_get_reader(temp_reader, self->pool->format);
 
-	st_job_copy_archive_select_output_media(self, true);
+	st_job_copy_archive_select_output_media(self);
 
 	self->writer = self->drive_output->ops->get_writer(self->drive_output, true, st_job_copy_archive_add_filter, self);
 
@@ -173,6 +173,7 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 
 			struct st_archive_files * copy_f = self->current_volume->files + self->current_volume->nb_files;
 			self->current_volume->nb_files++;
+			file->archived_time = time(NULL);
 			copy_f->file = file;
 			copy_f->position = position;
 
@@ -196,6 +197,16 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 
 						ssize_t nb_read;
 						while (nb_read = reader->ops->read(reader, buffer, 4096), nb_read > 0) {
+							ssize_t available = self->writer->ops->get_available_size(self->writer);
+							if (available == 0) {
+								st_job_copy_archive_change_ouput_media(self);
+
+								copy_f = self->current_volume->files + self->current_volume->nb_files;
+								self->current_volume->nb_files++;
+								copy_f->file = file;
+								copy_f->position = 0;
+							}
+
 							self->writer->ops->write(self->writer, buffer, nb_read);
 
 							total_done = reader->ops->position(reader);

@@ -22,9 +22,11 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 18 Sep 2013 10:51:16 +0200                            *
+*  Last modified: Thu, 07 Nov 2013 15:56:16 +0100                            *
 \****************************************************************************/
 
+// free, malloc
+#include <stdlib.h>
 // time
 #include <time.h>
 // sleep
@@ -37,10 +39,15 @@
 #include <libstone/library/drive.h>
 #include <libstone/library/ressource.h>
 #include <libstone/log.h>
+#include <libstone/util/file.h>
 #include <stoned/library/changer.h>
 #include <stoned/library/slot.h>
 
 #include "copy_archive.h"
+
+static void st_job_copy_archive_add_media(struct st_job_copy_archive_private * self, struct st_media * media);
+static bool st_job_copy_archive_has_media(struct st_job_copy_archive_private * self, struct st_media * media);
+
 
 struct st_stream_writer * st_job_copy_archive_add_filter(struct st_stream_writer * writer, void * param) {
 	struct st_job_copy_archive_private * self = param;
@@ -49,6 +56,26 @@ struct st_stream_writer * st_job_copy_archive_add_filter(struct st_stream_writer
 		return self->checksum_writer = st_checksum_writer_new(writer, self->checksums, self->nb_checksums, true);
 
 	return writer;
+}
+
+static void st_job_copy_archive_add_media(struct st_job_copy_archive_private * self, struct st_media * media) {
+	struct st_linked_list_media * ml = malloc(sizeof(struct st_linked_list_media));
+	ml->media = media;
+	ml->next = NULL;
+
+	if (self->first_media == NULL)
+		self->first_media = self->last_media = ml;
+	else
+		self->last_media = self->last_media->next = ml;
+}
+
+static bool st_job_copy_archive_has_media(struct st_job_copy_archive_private * self, struct st_media * media) {
+	struct st_linked_list_media * lm;
+	for (lm = self->first_media; lm != NULL; lm = lm->next)
+		if (lm->media == media)
+			return true;
+
+	return false;
 }
 
 bool st_job_copy_archive_change_ouput_media(struct st_job_copy_archive_private * self) {
@@ -62,7 +89,7 @@ bool st_job_copy_archive_change_ouput_media(struct st_job_copy_archive_private *
 	self->writer->ops->free(self->writer);
 	self->writer = NULL;
 
-	if (!st_job_copy_archive_select_output_media(self, true))
+	if (!st_job_copy_archive_select_output_media(self))
 		return false;
 
 	self->writer = self->drive_output->ops->get_writer(self->drive_output, true, st_job_copy_archive_add_filter, self);
@@ -115,7 +142,7 @@ bool st_job_copy_archive_select_input_media(struct st_job_copy_archive_private *
 	return true;
 }
 
-bool st_job_copy_archive_select_output_media(struct st_job_copy_archive_private * self, bool load_media) {
+bool st_job_copy_archive_select_output_media(struct st_job_copy_archive_private * self) {
 	bool has_alerted_user = false;
 	bool ok = false;
 	bool stop = false;
@@ -123,15 +150,29 @@ bool st_job_copy_archive_select_output_media(struct st_job_copy_archive_private 
 		check_offline_free_size_left,
 		check_online_free_size_left,
 		find_free_drive,
+		has_wrong_media,
+		has_media,
+		is_media_formatted,
 		is_pool_growable1,
 		is_pool_growable2,
+		media_is_read_only,
 	} state = check_online_free_size_left;
 
 	struct st_changer * changer = NULL;
 	struct st_drive * drive = NULL;
+	enum st_pool_unbreakable_level unbreakable_level = self->pool->unbreakable_level;
 	struct st_slot * slot = NULL;
 
 	ssize_t total_size = 0;
+
+	if (unbreakable_level == st_pool_unbreakable_level_archive && self->archive_size > self->pool->format->capacity) {
+		char buf_archive_size[32], buf_media_size[32];
+		st_util_file_convert_size_to_string(self->archive_size, buf_archive_size, 32);
+		st_util_file_convert_size_to_string(self->pool->format->capacity, buf_media_size, 32);
+
+		st_job_add_record(self->connect, st_log_level_warning, self->job, "Fatal error, archive's size (%s) is greater than a media (media size: %s) and the unbreakable level is archive", buf_archive_size, buf_media_size);
+		return false;
+	}
 
 	while (!stop) {
 		switch (state) {
@@ -168,13 +209,25 @@ bool st_job_copy_archive_select_output_media(struct st_job_copy_archive_private 
 						slot = iter->ops->next(iter);
 
 						struct st_media * media = slot->media;
+						if ((unbreakable_level == st_pool_unbreakable_level_archive && self->archive_size > media->free_block * media->block_size) || st_job_copy_archive_has_media(self, media)) {
+							if (self->drive_output != slot->drive && slot->drive != NULL)
+								slot->drive->lock->ops->unlock(slot->drive->lock);
+							else if (slot->drive == NULL)
+								slot->lock->ops->unlock(slot->lock);
+							slot = NULL;
+							continue;
+						}
+
 						if (self->archive_size - self->total_done < media->free_block * media->block_size)
 							break;
 
 						if (10 * media->free_block < media->total_block)
 							break;
 
-						slot->lock->ops->unlock(slot->lock);
+						if (self->drive_output != slot->drive && slot->drive != NULL)
+							slot->drive->lock->ops->unlock(slot->drive->lock);
+						else if (slot->drive == NULL)
+							slot->lock->ops->unlock(slot->lock);
 						slot = NULL;
 					}
 
@@ -190,7 +243,6 @@ bool st_job_copy_archive_select_output_media(struct st_job_copy_archive_private 
 				}
 
 				state = is_pool_growable1;
-
 				break;
 
 			case find_free_drive:
@@ -221,9 +273,63 @@ bool st_job_copy_archive_select_output_media(struct st_job_copy_archive_private 
 					}
 				}
 
-				stop = true;
-				ok = true;
+				state = has_wrong_media;
 				break;
+
+			case has_media:
+				if (self->drive_output->slot->media == NULL) {
+					struct st_media * media = slot->media;
+
+					st_job_add_record(self->connect, st_log_level_info, self->job, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ]", media->name, slot - changer->slots, self->drive_output - changer->drives, changer->vendor, changer->model);
+
+					int failed = changer->ops->load_slot(changer, slot, self->drive_output);
+					slot->lock->ops->unlock(slot->lock);
+
+					if (failed) {
+						st_job_add_record(self->connect, st_log_level_error, self->job, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ] finished with code = %d", media->name, slot - changer->slots, self->drive_output - changer->drives, changer->vendor, changer->model, failed);
+						return false;
+					} else
+						st_job_add_record(self->connect, st_log_level_info, self->job, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ] finished with code = OK", media->name, slot - changer->slots, self->drive_output - changer->drives, changer->vendor, changer->model);
+				}
+
+				state = media_is_read_only;
+				break;
+
+			case has_wrong_media:
+				if (self->drive_output == NULL)
+					self->drive_output = drive;
+
+				if (self->drive_output->slot->media != NULL && self->drive_output->slot != slot) {
+					struct st_media * media = self->drive_output->slot->media;
+
+					st_job_add_record(self->connect, st_log_level_info, self->job, "Unloading media (%s) from drive #%td of changer [ %s | %s ]", media->name, self->drive_output - changer->drives, changer->vendor, changer->model);
+
+					int failed = changer->ops->unload(changer, self->drive_output);
+					if (failed) {
+						st_job_add_record(self->connect, st_log_level_error, self->job, "Unloading media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", media->name, self->drive_output - changer->drives, changer->vendor, changer->model, failed);
+						return false;
+					} else
+						st_job_add_record(self->connect, st_log_level_info, self->job, "Unloading media (%s) from drive #%td of changer [ %s | %s ] finished with code = OK", media->name, self->drive_output - changer->drives, changer->vendor, changer->model);
+				}
+
+				state = has_media;
+				break;
+
+			case is_media_formatted:
+				if (self->drive_output->slot->media->status == st_media_status_new) {
+					struct st_media * media = self->drive_output->slot->media;
+
+					st_job_add_record(self->connect, st_log_level_info, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ]", media->name, self->drive_output - changer->drives, changer->vendor, changer->model);
+
+					int failed = st_media_write_header(self->drive_output, self->pool, self->connect);
+					if (failed) {
+						st_job_add_record(self->connect, st_log_level_error, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", media->name, self->drive_output - changer->drives, changer->vendor, changer->model, failed);
+						return false;
+					} else
+						st_job_add_record(self->connect, st_log_level_info, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = OK", media->name, self->drive_output - changer->drives, changer->vendor, changer->model);
+				}
+
+				return true;
 
 			case is_pool_growable1:
 				if (self->pool->growable) {
@@ -261,60 +367,16 @@ bool st_job_copy_archive_select_output_media(struct st_job_copy_archive_private 
 
 				state = check_online_free_size_left;
 				break;
-		}
-	}
 
-	if (!load_media) {
-		self->drive_output = drive;
-		self->slot_output = slot;
-		return ok;
-	}
+			case media_is_read_only:
+				if (self->drive_output->slot->media->type == st_media_type_readonly) {
+					st_job_add_record(self->connect, st_log_level_warning, self->job, "Media '%s' is currently read only ", self->drive_output->slot->media->name);
+					st_job_copy_archive_add_media(self, self->drive_output->slot->media);
+					state = check_online_free_size_left;
+				} else
+					state = is_media_formatted;
 
-	if (ok) {
-		if (self->drive_output == NULL)
-			self->drive_output = drive;
-
-		if (self->drive_output->slot->media != NULL && self->drive_output->slot != slot) {
-			struct st_media * media = self->drive_output->slot->media;
-
-			st_job_add_record(self->connect, st_log_level_info, self->job, "Unloading media (%s) from drive #%td of changer [ %s | %s ]", media->name, self->drive_output - changer->drives, changer->vendor, changer->model);
-
-			int failed = changer->ops->unload(changer, self->drive_output);
-			if (failed) {
-				st_job_add_record(self->connect, st_log_level_error, self->job, "Unloading media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", media->name, self->drive_output - changer->drives, changer->vendor, changer->model, failed);
-				ok = false;
-			} else
-				st_job_add_record(self->connect, st_log_level_info, self->job, "Unloading media (%s) from drive #%td of changer [ %s | %s ] finished with code = OK", media->name, self->drive_output - changer->drives, changer->vendor, changer->model);
-		}
-	}
-
-	if (ok) {
-		if (self->drive_output->slot->media == NULL) {
-			struct st_media * media = slot->media;
-
-			st_job_add_record(self->connect, st_log_level_info, self->job, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ]", media->name, slot - changer->slots, self->drive_output - changer->drives, changer->vendor, changer->model);
-
-			int failed = changer->ops->load_slot(changer, slot, self->drive_output);
-			if (failed) {
-				st_job_add_record(self->connect, st_log_level_error, self->job, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ] finished with code = %d", media->name, slot - changer->slots, self->drive_output - changer->drives, changer->vendor, changer->model, failed);
-				ok = false;
-			} else
-				st_job_add_record(self->connect, st_log_level_info, self->job, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ] finished with code = OK", media->name, slot - changer->slots, self->drive_output - changer->drives, changer->vendor, changer->model);
-		}
-	}
-
-	if (ok) {
-		if (self->drive_output->slot->media->status == st_media_status_new) {
-			struct st_media * media = self->drive_output->slot->media;
-
-			st_job_add_record(self->connect, st_log_level_info, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ]", media->name, changer->drives - self->drive_output, changer->vendor, changer->model);
-
-			int failed = st_media_write_header(self->drive_output, self->pool, self->connect);
-			if (failed) {
-				st_job_add_record(self->connect, st_log_level_error, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", media->name, changer->drives - self->drive_output, changer->vendor, changer->model, failed);
-				ok = false;
-			} else
-				st_job_add_record(self->connect, st_log_level_info, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = OK", media->name, changer->drives - self->drive_output, changer->vendor, changer->model);
+				break;
 		}
 	}
 

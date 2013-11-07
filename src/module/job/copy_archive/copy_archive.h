@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 15 Feb 2013 13:04:32 +0100                            *
+*  Last modified: Thu, 07 Nov 2013 13:19:25 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_COPYARCHIVE_H__
@@ -50,9 +50,13 @@ struct st_job_copy_archive_private {
 
 	struct st_archive_volume * current_volume;
 	struct st_drive * drive_output;
-	struct st_slot * slot_output;
 	struct st_pool * pool;
 	struct st_format_writer * writer;
+
+	struct st_linked_list_media {
+		struct st_media * media;
+		struct st_linked_list_media * next;
+	} * first_media, * last_media;
 
 	struct st_stream_writer * checksum_writer;
 	unsigned int nb_checksums;
@@ -64,7 +68,7 @@ bool st_job_copy_archive_change_ouput_media(struct st_job_copy_archive_private *
 int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self);
 int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self);
 bool st_job_copy_archive_select_input_media(struct st_job_copy_archive_private * self, struct st_media * media);
-bool st_job_copy_archive_select_output_media(struct st_job_copy_archive_private * self, bool load_media);
+bool st_job_copy_archive_select_output_media(struct st_job_copy_archive_private * self);
 
 #endif
 

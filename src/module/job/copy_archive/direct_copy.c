@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 08 Mar 2013 16:31:52 +0100                            *
+*  Last modified: Thu, 07 Nov 2013 13:25:40 +0100                            *
 \****************************************************************************/
 
 // calloc
@@ -50,22 +50,12 @@
 
 
 int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
-	if (self->drive_output->slot != self->slot_output && self->drive_output->slot->media != NULL) {
+	if (self->drive_output->slot->media != NULL) {
 		struct st_changer * changer = self->drive_output->changer;
 		changer->ops->unload(changer, self->drive_output);
 	}
 
 	self->job->done = 0.02;
-
-	if (self->drive_output->slot->media == NULL) {
-		struct st_changer * changer = self->drive_output->changer;
-		changer->ops->load_slot(changer, self->slot_output, self->drive_output);
-
-		self->slot_output->lock->ops->unlock(self->slot_output->lock);
-		self->slot_output = NULL;
-	}
-
-	self->job->done = 0.03;
 
 	self->writer = self->drive_output->ops->get_writer(self->drive_output, true, st_job_copy_archive_add_filter, self);
 
@@ -132,8 +122,9 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 							total_done = reader->ops->position(reader);
 							float done = self->total_done + total_done;
 							done /= self->archive_size;
+							done *= 0.96;
 
-							self->job->done = done;
+							self->job->done = done + 0.02;
 						}
 
 						self->writer->ops->end_of_file(self->writer);
@@ -156,7 +147,9 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 	self->current_volume->end_time = self->copy->end_time = time(NULL);
 	self->current_volume->size = self->writer->ops->position(self->writer);
 
-	self->current_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
+	self->current_volume->digests = NULL;
+	if (self->checksum_writer != NULL)
+		self->current_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
 
 	self->writer->ops->free(self->writer);
 	self->checksum_writer = NULL;
