@@ -309,6 +309,8 @@ static int st_job_restore_archive_run(struct st_job * job) {
 	}
 	free(directories);
 
+	st_job_restore_archive_checks_worker_free(self->checks);
+
 	char * report = st_job_restore_archive_report_make(self->report);
 	if (report != NULL)
 		self->connect->ops->add_report(self->connect, job, archive, report);
@@ -319,7 +321,6 @@ static int st_job_restore_archive_run(struct st_job * job) {
 	st_job_add_record(self->connect, st_log_level_info, job, "Job restore-archive is finished (named: %s) with %d warning(%c) and %d error(%c)", job->name, nb_warnings, nb_warnings != 1 ? 's' : '\0', nb_errors, nb_errors != 1 ? 's' : '\0');
 
 	st_job_restore_archive_report_free(self->report);
-	st_job_restore_archive_checks_worker_free(self->checks);
 	st_job_restore_archive_path_free(self->restore_path);
 	st_archive_free(archive);
 
