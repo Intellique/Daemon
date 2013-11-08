@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 20 Aug 2013 18:51:06 +0200                            *
+*  Last modified: Fri, 08 Nov 2013 14:55:31 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -36,6 +36,7 @@
 struct st_archive;
 struct st_archive_volume;
 struct st_archive_file;
+struct st_backup;
 struct st_changer;
 struct st_drive;
 struct st_hashtable;
@@ -94,6 +95,7 @@ struct st_database_connection {
 		 */
 		int (*is_connection_closed)(struct st_database_connection * connect);
 
+		int (*add_backup)(struct st_database_connection * connect, struct st_backup * backup);
 		/**
 		 * \brief Rool back a transaction
 		 *

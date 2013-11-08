@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 22 Oct 2013 10:25:57 +0200                            *
+*  Last modified: Fri, 08 Nov 2013 15:52:52 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -46,6 +46,7 @@
 // time
 #include <time.h>
 
+#include <libstone/backup.h>
 #include <libstone/checksum.h>
 #include <libstone/job.h>
 #include <libstone/library/archive.h>
@@ -118,6 +119,7 @@ static int st_db_postgresql_close(struct st_database_connection * connect);
 static int st_db_postgresql_free(struct st_database_connection * connect);
 static int st_db_postgresql_is_connection_closed(struct st_database_connection * connect);
 
+static int st_db_postgresql_add_backup(struct st_database_connection * connect, struct st_backup * backup);
 static int st_db_postgresql_cancel_checkpoint(struct st_database_connection * connect, const char * checkpoint);
 static int st_db_postgresql_cancel_transaction(struct st_database_connection * connect);
 static int st_db_postgresql_create_checkpoint(struct st_database_connection * connect, const char * checkpoint);
@@ -185,6 +187,7 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.free                 = st_db_postgresql_free,
 	.is_connection_closed = st_db_postgresql_is_connection_closed,
 
+	.add_backup         = st_db_postgresql_add_backup,
 	.cancel_transaction = st_db_postgresql_cancel_transaction,
 	.finish_transaction = st_db_postgresql_finish_transaction,
 	.start_transaction  = st_db_postgresql_start_transaction,
@@ -286,6 +289,105 @@ static int st_db_postgresql_is_connection_closed(struct st_database_connection *
 	return self->connect == NULL;
 }
 
+
+static int st_db_postgresql_add_backup(struct st_database_connection * connect, struct st_backup * backup) {
+	if (connect == NULL || backup == NULL)
+		return -1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	char * query = "select_count_archives";
+	st_db_postgresql_prepare(self, query, "SELECT COUNT(*) FROM archive WHERE NOT deleted");
+
+	PGresult * result = PQexecPrepared(self->connect, query, 0, NULL, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK)
+		st_db_postgresql_get_long(result, 0, 0, &backup->nb_archives);
+	else
+		backup->nb_archives = 0;
+
+	PQclear(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		return -2;
+
+	query = "select_count_medias";
+	st_db_postgresql_prepare(self, query, "SELECT COUNT(*) FROM media");
+
+	result = PQexecPrepared(self->connect, query, 0, NULL, NULL, NULL, 0);
+	status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK)
+		st_db_postgresql_get_long(result, 0, 0, &backup->nb_medias);
+	else
+		backup->nb_medias = 0;
+
+	PQclear(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		return -3;
+
+	query = "insert_backup";
+	st_db_postgresql_prepare(self, query, "INSERT INTO backup(nbmedia, nbarchives) VALUES (?1, ?2) RETURNING id, timestamp");
+
+	char * backup_id = NULL, * nbmedia, * nbarchives;
+	asprintf(&nbmedia, "%ld", backup->nb_medias);
+	asprintf(&nbarchives, "%ld", backup->nb_archives);
+
+	const char * param[] = { nbmedia, nbarchives };
+	result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK) {
+		st_db_postgresql_get_string_dup(result, 0, 0, &backup_id);
+		st_db_postgresql_get_time(result, 0, 1, &backup->timestamp);
+	}
+
+	PQclear(result);
+
+	if (status == PGRES_FATAL_ERROR) {
+		free(backup_id);
+		return -4;
+	}
+
+	query = "insert_backup_volume";
+	st_db_postgresql_prepare(self, query, "INSERT INTO backupvolume(sequence, backup, media, mediaposition, host) VALUES (?1, ?2, ?3, ?4, ?5)");
+
+	char * host_id = st_db_postgresql_get_host(connect);
+
+	unsigned int i;
+	for (i = 0; i < backup->nb_volumes; i++) {
+		struct st_backup_volume * bv = backup->volumes + i;
+		struct st_db_postgresql_media_data * media_data = bv->media->db_data;
+
+		char * seq, * media_id, * media_position;
+		asprintf(&seq, "%u", i);
+		asprintf(&media_id, "%ld", media_data->id);
+		asprintf(&media_position, "%u", bv->position);
+
+		const char * param[] = { seq, backup_id, media_id, media_position, host_id };
+		result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);
+		status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(result, query);
+
+		free(media_position);
+		free(media_id);
+		free(seq);
+	}
+
+	free(host_id);
+	free(backup_id);
+
+	return status == PGRES_FATAL_ERROR ? -5 : 0;
+}
 
 static int st_db_postgresql_cancel_checkpoint(struct st_database_connection * connect, const char * checkpoint) {
 	if (connect == NULL || checkpoint == NULL)
