@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 08 Nov 2013 19:24:21 +0100                            *
+*  Last modified: Sat, 09 Nov 2013 11:03:44 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -152,7 +152,7 @@ static int st_job_backup_db_run(struct st_job * job) {
 	struct st_stream_writer * media_writer = self->drive->ops->get_raw_writer(self->drive, true);
 	st_backup_add_volume(backup, self->drive->slot->media, self->drive->ops->get_position(self->drive));
 
-	while (nb_read = temp_io_reader->ops->read(temp_io_reader, buffer, 4096), nb_read < 0) {
+	while (nb_read = temp_io_reader->ops->read(temp_io_reader, buffer, 4096), nb_read > 0) {
 		media_writer->ops->write(media_writer, buffer, nb_read);
 	}
 
@@ -161,6 +161,8 @@ static int st_job_backup_db_run(struct st_job * job) {
 
 	media_writer->ops->close(media_writer);
 	media_writer->ops->free(media_writer);
+
+	self->drive->lock->ops->unlock(self->drive->lock);
 
 	self->connect->ops->add_backup(self->connect, backup);
 
