@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 08 Nov 2013 12:14:51 +0100                            *
+*  Last modified: Fri, 08 Nov 2013 19:24:21 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -35,6 +35,7 @@
 // sleep
 #include <unistd.h>
 
+#include <libstone/backup.h>
 #include <libstone/database.h>
 #include <libstone/io.h>
 #include <libstone/job.h>
@@ -103,6 +104,7 @@ static void st_job_backup_db_new_job(struct st_job * job, struct st_database_con
 static int st_job_backup_db_run(struct st_job * job) {
 	struct st_job_backup_private * self = job->data;
 	self->drive = NULL;
+	struct st_backup * backup = st_backup_new();
 
 	st_job_add_record(self->connect, st_log_level_info, job, "Start backup job (job name: %s), num runs %ld", job->name, job->num_runs);
 
@@ -148,6 +150,7 @@ static int st_job_backup_db_run(struct st_job * job) {
 	temp_io_writer = NULL;
 
 	struct st_stream_writer * media_writer = self->drive->ops->get_raw_writer(self->drive, true);
+	st_backup_add_volume(backup, self->drive->slot->media, self->drive->ops->get_position(self->drive));
 
 	while (nb_read = temp_io_reader->ops->read(temp_io_reader, buffer, 4096), nb_read < 0) {
 		media_writer->ops->write(media_writer, buffer, nb_read);
@@ -158,6 +161,10 @@ static int st_job_backup_db_run(struct st_job * job) {
 
 	media_writer->ops->close(media_writer);
 	media_writer->ops->free(media_writer);
+
+	self->connect->ops->add_backup(self->connect, backup);
+
+	st_backup_free(backup);
 
 	self->connect->ops->close(self->connect);
 	self->connect->ops->free(self->connect);

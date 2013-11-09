@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 08 Nov 2013 15:52:52 +0100                            *
+*  Last modified: Sat, 09 Nov 2013 09:49:36 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -332,7 +332,7 @@ static int st_db_postgresql_add_backup(struct st_database_connection * connect, 
 		return -3;
 
 	query = "insert_backup";
-	st_db_postgresql_prepare(self, query, "INSERT INTO backup(nbmedia, nbarchives) VALUES (?1, ?2) RETURNING id, timestamp");
+	st_db_postgresql_prepare(self, query, "INSERT INTO backup(nbmedia, nbarchive) VALUES ($1, $2) RETURNING id, timestamp");
 
 	char * backup_id = NULL, * nbmedia, * nbarchives;
 	asprintf(&nbmedia, "%ld", backup->nb_medias);
@@ -357,7 +357,7 @@ static int st_db_postgresql_add_backup(struct st_database_connection * connect, 
 	}
 
 	query = "insert_backup_volume";
-	st_db_postgresql_prepare(self, query, "INSERT INTO backupvolume(sequence, backup, media, mediaposition, host) VALUES (?1, ?2, ?3, ?4, ?5)");
+	st_db_postgresql_prepare(self, query, "INSERT INTO backupvolume(sequence, backup, media, mediaposition, host) VALUES ($1, $2, $3, $4, $5)");
 
 	char * host_id = st_db_postgresql_get_host(connect);
 
