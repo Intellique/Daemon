@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sat, 09 Nov 2013 11:03:44 +0100                            *
+*  Last modified: Sat, 09 Nov 2013 11:12:04 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -122,9 +122,13 @@ static int st_job_backup_db_run(struct st_job * job) {
 	char * temp_filename;
 	asprintf(&temp_filename, "%s/backup_db_XXXXXX", job->user->home_directory);
 
+	job->done = 0.01;
+
 	struct st_stream_writer * temp_io_writer = st_io_temp_writer(temp_filename, 0);
 	st_util_file_rm(temp_filename);
 	free(temp_filename);
+
+	job->done = 0.02;
 
 	char buffer[4096];
 	ssize_t nb_read;
@@ -137,12 +141,16 @@ static int st_job_backup_db_run(struct st_job * job) {
 	db_reader->ops->free(db_reader);
 	db_reader = NULL;
 
+	job->done = 0.03;
+
 	if (!st_job_backup_db_select_media(job, self)) {
 		db_reader->ops->close(db_reader);
 		db_reader->ops->free(db_reader);
 
 		return 1;
 	}
+
+	job->done = 0.04;
 
 	struct st_stream_reader * temp_io_reader = temp_io_writer->ops->reopen(temp_io_writer);
 
@@ -152,8 +160,16 @@ static int st_job_backup_db_run(struct st_job * job) {
 	struct st_stream_writer * media_writer = self->drive->ops->get_raw_writer(self->drive, true);
 	st_backup_add_volume(backup, self->drive->slot->media, self->drive->ops->get_position(self->drive));
 
+	ssize_t total_writen = 0;
 	while (nb_read = temp_io_reader->ops->read(temp_io_reader, buffer, 4096), nb_read > 0) {
 		media_writer->ops->write(media_writer, buffer, nb_read);
+
+		total_writen += nb_read;
+		float done = total_writen;
+		done /= self->backup_size;
+		done *= 0.95;
+
+		job->done = done + 0.04;
 	}
 
 	temp_io_reader->ops->close(temp_io_reader);
@@ -164,6 +180,8 @@ static int st_job_backup_db_run(struct st_job * job) {
 
 	self->drive->lock->ops->unlock(self->drive->lock);
 
+	job->done = 0.99;
+
 	self->connect->ops->add_backup(self->connect, backup);
 
 	st_backup_free(backup);
@@ -171,6 +189,8 @@ static int st_job_backup_db_run(struct st_job * job) {
 	self->connect->ops->close(self->connect);
 	self->connect->ops->free(self->connect);
 	self->connect = NULL;
+
+	job->done = 1;
 
 	return 0;
 }
