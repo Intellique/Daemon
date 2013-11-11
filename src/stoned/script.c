@@ -22,21 +22,29 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 25 May 2012 18:44:57 +0200                            *
+*  Last modified: Mon, 11 Nov 2013 12:28:32 +0100                            *
 \****************************************************************************/
 
-#ifndef __STONE_CONFIG_H__
-#define __STONE_CONFIG_H__
+#include <stddef.h>
 
-#define DAEMON_CONFIG_FILE "/etc/storiq/stone.conf"
-#define DAEMON_PID_FILE "/var/run/stoned.pid"
+#define _GNU_SOURCE
+// glob, globfree
+#include <glob.h>
 
-#define MODULE_PATH "/usr/lib/stone"
+#include <libstone/database.h>
 
-#define SCRIPT_PATH "/var/lib/stoned"
+#include "config.h"
+#include "script.h"
 
-#define ADMIN_DEFAULT_HOST "localhost"
-#define ADMIN_DEFAULT_PORT 4862
+void st_script_sync(struct st_database_connection * connection) {
+	glob_t gl;
+	glob(SCRIPT_PATH "/*", 0, NULL, &gl);
 
-#endif
+	unsigned int i;
+	for (i = 0; i < gl.gl_pathc; i++) {
+		connection->ops->sync_script(connection, gl.gl_pathv[i]);
+	}
+
+	globfree(&gl);
+}
 

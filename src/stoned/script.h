@@ -22,21 +22,15 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 25 May 2012 18:44:57 +0200                            *
+*  Last modified: Mon, 11 Nov 2013 11:09:45 +0100                            *
 \****************************************************************************/
 
-#ifndef __STONE_CONFIG_H__
-#define __STONE_CONFIG_H__
+#ifndef __STONED_SCRIPT_H__
+#define __STONED_SCRIPT_H__
 
-#define DAEMON_CONFIG_FILE "/etc/storiq/stone.conf"
-#define DAEMON_PID_FILE "/var/run/stoned.pid"
+struct st_database_connection;
 
-#define MODULE_PATH "/usr/lib/stone"
-
-#define SCRIPT_PATH "/var/lib/stoned"
-
-#define ADMIN_DEFAULT_HOST "localhost"
-#define ADMIN_DEFAULT_PORT 4862
+void st_script_sync(struct st_database_connection * connection);
 
 #endif
 
