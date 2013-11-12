@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 08 Nov 2013 14:55:31 +0100                            *
+*  Last modified: Tue, 12 Nov 2013 13:23:44 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -143,6 +143,8 @@ struct st_database_connection {
 		 * \returns 0 if ok
 		 */
 		int (*sync_plugin_job)(struct st_database_connection * connect, const char * plugin);
+
+		int (*sync_script)(struct st_database_connection * connect, const char * script_path);
 
 		/**
 		 * \brief Check if \a changer is enable

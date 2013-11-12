@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sat, 09 Nov 2013 09:49:36 +0100                            *
+*  Last modified: Tue, 12 Nov 2013 15:59:14 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -129,6 +129,8 @@ static int st_db_postgresql_start_transaction(struct st_database_connection * co
 static int st_db_postgresql_sync_plugin_checksum(struct st_database_connection * connect, const char * name);
 static int st_db_postgresql_sync_plugin_job(struct st_database_connection * connect, const char * plugin);
 
+static int st_db_postgresql_sync_script(struct st_database_connection * connect, const char * script_path);
+
 static bool st_db_postgresql_changer_is_enabled(struct st_database_connection * connect, struct st_changer * changer);
 static bool st_db_postgresql_drive_is_enabled(struct st_database_connection * connect, struct st_drive * drive);
 static char * st_db_postgresql_get_host(struct st_database_connection * connect);
@@ -194,6 +196,8 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 
 	.sync_plugin_checksum = st_db_postgresql_sync_plugin_checksum,
 	.sync_plugin_job      = st_db_postgresql_sync_plugin_job,
+
+	.sync_script = st_db_postgresql_sync_script,
 
 	.changer_is_enabled       = st_db_postgresql_changer_is_enabled,
 	.drive_is_enabled         = st_db_postgresql_drive_is_enabled,
@@ -599,6 +603,41 @@ static int st_db_postgresql_sync_plugin_job(struct st_database_connection * conn
 	PQclear(result);
 
 	return status == PGRES_FATAL_ERROR;
+}
+
+
+static int st_db_postgresql_sync_script(struct st_database_connection * connect, const char * script_path) {
+	if (connect == NULL || script_path == NULL)
+		return -1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_id_from_script";
+	st_db_postgresql_prepare(self, query, "SELECT id FROM script WHERE path = $1 LIMIT 1");
+
+	const char * param[] = { script_path };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	bool found = false;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else
+		found = PQntuples(result) > 0;
+
+	PQclear(result);
+
+	if (found)
+		return 0;
+
+	query = "insert_script";
+	st_db_postgresql_prepare(self, query, "INSERT INTO script(path) VALUES ($1)");
+
+	result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	status = PQresultStatus(result);
+	PQclear(result);
+
+	return status != PGRES_FATAL_ERROR ? 0 : -2;
 }
 
 
