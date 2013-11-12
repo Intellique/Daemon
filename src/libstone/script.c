@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 12 Nov 2013 17:04:47 +0100                            *
+*  Last modified: Tue, 12 Nov 2013 17:21:12 +0100                            *
 \****************************************************************************/
 
 #include <stddef.h>
@@ -34,6 +34,8 @@
 #include <limits.h>
 // realpath
 #include <stdlib.h>
+// strcasecmp
+#include <string.h>
 // MAXPATHLEN
 #include <sys/param.h>
 
@@ -43,6 +45,30 @@
 #include <libstone/util/debug.h>
 
 #include "config.h"
+
+static const struct st_script_type2 {
+	char * name;
+	enum st_script_type type;
+} st_script_types[] = {
+	{ "on error", st_script_type_on_error, },
+	{ "post",     st_script_type_post, },
+	{ "pre",      st_script_type_pre, },
+
+	{ "unknown", st_script_type_unknown },
+};
+
+
+enum st_script_type st_script_string_to_type(const char * string) {
+	if (string == NULL)
+		return st_script_type_unknown;
+
+	unsigned int i;
+	for (i = 0; st_script_types[i].type != st_script_type_unknown; i++)
+		if (!strcasecmp(string, st_script_types[i].name))
+			return st_script_types[i].type;
+
+	return st_script_type_unknown;
+}
 
 void st_script_sync(struct st_database_connection * connection) {
 	if (connection == NULL) {
@@ -69,5 +95,14 @@ void st_script_sync(struct st_database_connection * connection) {
 	}
 
 	globfree(&gl);
+}
+
+const char * st_script_type_to_string(enum st_script_type type) {
+	unsigned int i;
+	for (i = 0; st_script_types[i].type != st_script_type_unknown; i++)
+		if (st_script_types[i].type == type)
+			return st_script_types[i].name;
+
+	return st_script_types[i].name;
 }
 

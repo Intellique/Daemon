@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 12 Nov 2013 17:04:24 +0100                            *
+*  Last modified: Tue, 12 Nov 2013 17:17:17 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_SCRIPT_H__
@@ -30,7 +30,17 @@
 
 struct st_database_connection;
 
+enum st_script_type {
+	st_script_type_on_error,
+	st_script_type_post,
+	st_script_type_pre,
+
+	st_script_type_unknown,
+};
+
+enum st_script_type st_script_string_to_type(const char * string);
 void st_script_sync(struct st_database_connection * connection);
+const char * st_script_type_to_string(enum st_script_type type);
 
 #endif
 
