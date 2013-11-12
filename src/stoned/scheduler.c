@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 08 Oct 2013 11:21:04 +0200                            *
+*  Last modified: Tue, 12 Nov 2013 16:11:42 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -51,6 +51,7 @@
 
 #include "library/common.h"
 #include "scheduler.h"
+#include "script.h"
 
 static void st_sched_exit(int signal);
 static void st_sched_run_job(void * arg);
@@ -68,6 +69,7 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 	st_log_write_all(st_log_level_info, st_log_type_scheduler, "starting main loop");
 
 	st_changer_sync(connection);
+	st_script_sync(connection);
 
 	struct st_job ** jobs = NULL;
 	unsigned int nb_jobs = 0;
@@ -110,6 +112,7 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 		}
 
 		st_changer_sync(connection);
+		st_script_sync(connection);
 
 		st_sched_lock->ops->lock(st_sched_lock);
 		if (st_sched_nb_running_jobs == 0)
