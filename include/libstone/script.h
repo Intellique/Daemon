@@ -22,52 +22,15 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 12 Nov 2013 16:58:52 +0100                            *
+*  Last modified: Tue, 12 Nov 2013 17:04:24 +0100                            *
 \****************************************************************************/
 
-#include <stddef.h>
+#ifndef __STONE_SCRIPT_H__
+#define __STONE_SCRIPT_H__
 
-#define _GNU_SOURCE
-// glob, globfree
-#include <glob.h>
-// realpath
-#include <limits.h>
-// realpath
-#include <stdlib.h>
-// MAXPATHLEN
-#include <sys/param.h>
+struct st_database_connection;
 
-#include <libstone/database.h>
-#include <libstone/log.h>
-#include <libstone/util/debug.h>
+void st_script_sync(struct st_database_connection * connection);
 
-#include "config.h"
-#include "script.h"
-
-void st_script_sync(struct st_database_connection * connection) {
-	if (connection == NULL) {
-		st_log_write_all(st_log_level_error, st_log_type_checksum, "Try to synchronize scripts without database connection");
-		st_debug_log_stack(16);
-		return;
-	}
-
-	if (connection->ops->is_connection_closed(connection)) {
-		st_log_write_all(st_log_level_error, st_log_type_checksum, "Try to synchronize scripts with closed connection to database");
-		st_debug_log_stack(16);
-		return;
-	}
-
-	glob_t gl;
-	glob(SCRIPT_PATH "/*", 0, NULL, &gl);
-
-	unsigned int i;
-	for (i = 0; i < gl.gl_pathc; i++) {
-		char resolved_path[MAXPATHLEN];
-
-		if (realpath(gl.gl_pathv[i], resolved_path) != NULL && connection->ops->sync_script(connection, resolved_path))
-			st_log_write_all(st_log_level_error, st_log_type_checksum, "Failed to synchronize script '%s'", resolved_path);
-	}
-
-	globfree(&gl);
-}
+#endif
 

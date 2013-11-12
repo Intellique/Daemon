@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 12 Nov 2013 16:11:42 +0100                            *
+*  Last modified: Tue, 12 Nov 2013 17:11:18 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -46,12 +46,12 @@
 #include <libstone/job.h>
 #include <libstone/library/ressource.h>
 #include <libstone/log.h>
+#include <libstone/script.h>
 #include <libstone/thread_pool.h>
 #include <libstone/util/hashtable.h>
 
 #include "library/common.h"
 #include "scheduler.h"
-#include "script.h"
 
 static void st_sched_exit(int signal);
 static void st_sched_run_job(void * arg);
