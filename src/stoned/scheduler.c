@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 12 Nov 2013 17:11:18 +0100                            *
+*  Last modified: Tue, 12 Nov 2013 19:16:49 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -164,7 +164,12 @@ static void st_sched_run_job(void * arg) {
 		job->repetition--;
 	job->num_runs++;
 
-	int status = job->ops->run(job);
+	int status = 0;
+	if (job->ops->pre_run_script(job)) {
+		status = job->ops->run(job);
+	} else {
+		// pre run script require to not run job
+	}
 
 	job->ops->free(job);
 

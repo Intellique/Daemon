@@ -36,6 +36,8 @@
 #include <time.h>
 // uname
 #include <sys/utsname.h>
+// close, write
+#include <unistd.h>
 
 #include <libstone/io.h>
 #include <libstone/library/archive.h>
@@ -188,6 +190,17 @@ static json_t * st_io_json_volume(struct st_archive_volume * volume) {
 	json_object_set_new(jvolume, "nb files", json_integer(volume->nb_files));
 
 	return jvolume;
+}
+
+void st_io_json_write_to(int fd, struct json_t * data, bool need_close) {
+	if (data == NULL)
+		return;
+
+	char * string = json_dumps(data, JSON_COMPACT);
+	write(fd, data, strlen(string));
+
+	if (need_close)
+		close(fd);
 }
 
 ssize_t st_io_json_writer(struct st_stream_writer * writer, struct st_archive * archive) {

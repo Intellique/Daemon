@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sat, 09 Nov 2013 11:12:04 +0100                            *
+*  Last modified: Wed, 13 Nov 2013 13:34:00 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -43,6 +43,7 @@
 #include <libstone/library/media.h>
 #include <libstone/library/ressource.h>
 #include <libstone/log.h>
+#include <libstone/script.h>
 #include <libstone/util/file.h>
 #include <libstone/user.h>
 #include <stoned/library/changer.h>
@@ -62,13 +63,15 @@ static bool st_job_backup_db_check(struct st_job * job);
 static void st_job_backup_db_free(struct st_job * job);
 static void st_job_backup_db_init(void) __attribute__((constructor));
 static void st_job_backup_db_new_job(struct st_job * job, struct st_database_connection * db);
+static bool st_job_backup_db_pre_run_script(struct st_job *j);
 static int st_job_backup_db_run(struct st_job * job);
 static bool st_job_backup_db_select_media(struct st_job * job, struct st_job_backup_private * self);
 
 struct st_job_ops st_job_backup_db_ops = {
-	.check = st_job_backup_db_check,
-	.free  = st_job_backup_db_free,
-	.run   = st_job_backup_db_run,
+	.check          = st_job_backup_db_check,
+	.free           = st_job_backup_db_free,
+	.pre_run_script = st_job_backup_db_pre_run_script,
+	.run            = st_job_backup_db_run,
 };
 
 struct st_job_driver st_job_backup_db_driver = {
@@ -96,9 +99,16 @@ static void st_job_backup_db_init() {
 static void st_job_backup_db_new_job(struct st_job * job, struct st_database_connection * db) {
 	struct st_job_backup_private * self = malloc(sizeof(struct st_job_backup_private));
 	self->connect = db->config->ops->connect(db->config);
+	self->pool = st_pool_get_by_uuid("d9f976d4-e087-4d0a-ab79-96267f6613f0"); // pool Stone_Db_Backup
 
 	job->ops = &st_job_backup_db_ops;
 	job->data = self;
+}
+
+static bool st_job_backup_db_pre_run_script(struct st_job *job) {
+	struct st_job_backup_private * self = job->data;
+	st_script_run(self->connect, st_script_type_pre, self->pool, NULL);
+	return true;
 }
 
 static int st_job_backup_db_run(struct st_job * job) {
@@ -113,8 +123,6 @@ static int st_job_backup_db_run(struct st_job * job) {
 		st_job_add_record(self->connect, st_log_level_error, job, "User (%s) is not allowed to backup database", job->user->fullname);
 		return 1;
 	}
-
-	self->pool = st_pool_get_by_uuid("d9f976d4-e087-4d0a-ab79-96267f6613f0"); // pool Stone_Db_Backup
 
 	struct st_database_config * db_config = self->connect->config;
 	struct st_stream_reader * db_reader = db_config->ops->backup_db(db_config);

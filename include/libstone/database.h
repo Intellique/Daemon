@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 12 Nov 2013 13:23:44 +0100                            *
+*  Last modified: Tue, 12 Nov 2013 18:23:27 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -46,6 +46,7 @@ struct st_media;
 struct st_media_format;
 enum st_media_format_mode;
 struct st_pool;
+enum st_script_type;
 struct st_stream_reader;
 struct st_user;
 struct st_vtl_config;
@@ -144,6 +145,8 @@ struct st_database_connection {
 		 */
 		int (*sync_plugin_job)(struct st_database_connection * connect, const char * plugin);
 
+		int (*get_nb_scripts)(struct st_database_connection * connect, enum st_script_type type, struct st_pool * pool);
+		char * (*get_script)(struct st_database_connection * connect, unsigned int sequence, enum st_script_type type, struct st_pool * pool);
 		int (*sync_script)(struct st_database_connection * connect, const char * script_path);
 
 		/**

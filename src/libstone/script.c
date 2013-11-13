@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 12 Nov 2013 17:21:12 +0100                            *
+*  Last modified: Tue, 12 Nov 2013 19:12:24 +0100                            *
 \****************************************************************************/
 
 #include <stddef.h>
@@ -30,9 +30,11 @@
 #define _GNU_SOURCE
 // glob, globfree
 #include <glob.h>
+// json_*
+#include <jansson.h>
 // realpath
 #include <limits.h>
-// realpath
+// free, realpath
 #include <stdlib.h>
 // strcasecmp
 #include <string.h>
@@ -42,6 +44,7 @@
 #include <libstone/database.h>
 #include <libstone/log.h>
 #include <libstone/script.h>
+#include <libstone/util/command.h>
 #include <libstone/util/debug.h>
 
 #include "config.h"
@@ -57,6 +60,37 @@ static const struct st_script_type2 {
 	{ "unknown", st_script_type_unknown },
 };
 
+
+json_t * st_script_run(struct st_database_connection * connect, enum st_script_type type, struct st_pool * pool, json_t * data) {
+	json_t * result = json_object();
+	json_object_set_new(result, "should run", json_false());
+
+	if (connect == NULL || pool == NULL) {
+		json_object_set_new(result, "error", json_string("connect or pool equals NULL"));
+		return result;
+	}
+
+	json_object_set_new(result, "should run", json_true());
+	int nb_scripts = connect->ops->get_nb_scripts(connect, type, pool);
+	if (nb_scripts < 0)
+		return result;
+
+	int i, status = 0;
+	for (i = 0; i < nb_scripts; i++) {
+		char * path = connect->ops->get_script(connect, i, type, pool);
+		if (path == NULL)
+			break;
+
+		// run command & wait result
+		struct st_util_command command;
+		const char * command_params[] = { st_script_type_to_string(type) };
+		st_util_command_new(&command, path, command_params, 1);
+
+		free(path);
+	}
+
+	return result;
+}
 
 enum st_script_type st_script_string_to_type(const char * string) {
 	if (string == NULL)

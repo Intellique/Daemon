@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 12 Nov 2013 15:59:14 +0100                            *
+*  Last modified: Tue, 12 Nov 2013 18:46:20 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -57,6 +57,7 @@
 #include <libstone/library/slot.h>
 #include <libstone/library/vtl.h>
 #include <libstone/log.h>
+#include <libstone/script.h>
 #include <libstone/user.h>
 #include <libstone/util/hashtable.h>
 #include <libstone/util/json.h>
@@ -129,6 +130,8 @@ static int st_db_postgresql_start_transaction(struct st_database_connection * co
 static int st_db_postgresql_sync_plugin_checksum(struct st_database_connection * connect, const char * name);
 static int st_db_postgresql_sync_plugin_job(struct st_database_connection * connect, const char * plugin);
 
+static int st_db_postgresql_get_nb_scripts(struct st_database_connection * connect, enum st_script_type type, struct st_pool * pool);
+static char * st_db_postgresql_get_script(struct st_database_connection * connect, unsigned int sequence, enum st_script_type type, struct st_pool * pool);
 static int st_db_postgresql_sync_script(struct st_database_connection * connect, const char * script_path);
 
 static bool st_db_postgresql_changer_is_enabled(struct st_database_connection * connect, struct st_changer * changer);
@@ -197,7 +200,9 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.sync_plugin_checksum = st_db_postgresql_sync_plugin_checksum,
 	.sync_plugin_job      = st_db_postgresql_sync_plugin_job,
 
-	.sync_script = st_db_postgresql_sync_script,
+	.get_nb_scripts = st_db_postgresql_get_nb_scripts,
+	.get_script     = st_db_postgresql_get_script,
+	.sync_script    = st_db_postgresql_sync_script,
 
 	.changer_is_enabled       = st_db_postgresql_changer_is_enabled,
 	.drive_is_enabled         = st_db_postgresql_drive_is_enabled,
@@ -605,6 +610,67 @@ static int st_db_postgresql_sync_plugin_job(struct st_database_connection * conn
 	return status == PGRES_FATAL_ERROR;
 }
 
+
+static int st_db_postgresql_get_nb_scripts(struct st_database_connection * connect, enum st_script_type type, struct st_pool * pool) {
+	if (connect == NULL || pool == NULL)
+		return -1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_pool_data * pool_data = pool->db_data;
+
+	const char * query = "select_nb_scripts_with_sequence_and_pool";
+	st_db_postgresql_prepare(self, query, "SELECT COUNT(*) FROM scripts WHERE type = $1 AND pool = $2");
+
+	char * pool_id;
+	asprintf(&pool_id, "%ld", pool_data->id);
+
+	const char * param[] = { st_script_type_to_string(type), pool_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	int nb_scripts = -1;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else
+		st_db_postgresql_get_int(result, 0, 0, &nb_scripts);
+
+	PQclear(result);
+	free(pool_id);
+
+	return nb_scripts;
+}
+
+static char * st_db_postgresql_get_script(struct st_database_connection * connect, unsigned int sequence, enum st_script_type type, struct st_pool * pool) {
+	if (connect == NULL || pool == NULL)
+		return NULL;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_pool_data * pool_data = pool->db_data;
+
+	const char * query = "select_script_with_sequence_and_pool";
+	st_db_postgresql_prepare(self, query, "SELECT s.path FROM scripts ss LEFT JOIN script s ON ss.script = s.id WHERE type = $1 AND pool = $2 ORDER BY sequence LIMIT 1 OFFSET $3");
+
+	char * seq, * pool_id;
+	asprintf(&seq, "%u", sequence);
+	asprintf(&pool_id, "%ld", pool_data->id);
+
+	const char * param[] = { st_script_type_to_string(type), pool_id, seq };
+	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	char * script = NULL;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (PQntuples(result) > 0)
+		st_db_postgresql_get_string_dup(result, 0, 0, &script);
+
+	PQclear(result);
+
+	free(seq);
+	free(pool_id);
+
+	return script;
+}
 
 static int st_db_postgresql_sync_script(struct st_database_connection * connect, const char * script_path) {
 	if (connect == NULL || script_path == NULL)

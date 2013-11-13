@@ -22,13 +22,15 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 12 Nov 2013 17:17:17 +0100                            *
+*  Last modified: Wed, 13 Nov 2013 16:01:11 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_SCRIPT_H__
 #define __STONE_SCRIPT_H__
 
 struct st_database_connection;
+struct json_t;
+struct st_pool;
 
 enum st_script_type {
 	st_script_type_on_error,
@@ -38,6 +40,7 @@ enum st_script_type {
 	st_script_type_unknown,
 };
 
+struct json_t * st_script_run(struct st_database_connection * connect, enum st_script_type type, struct st_pool * pool, struct json_t * data);
 enum st_script_type st_script_string_to_type(const char * string);
 void st_script_sync(struct st_database_connection * connection);
 const char * st_script_type_to_string(enum st_script_type type);
