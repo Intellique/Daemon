@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 14 Nov 2013 18:39:52 +0100                            *
+*  Last modified: Thu, 14 Nov 2013 19:11:14 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -109,9 +109,15 @@ static void st_job_backup_db_new_job(struct st_job * job, struct st_database_con
 
 static bool st_job_backup_db_pre_run_script(struct st_job * job) {
 	struct st_job_backup_private * self = job->data;
-	json_t * data = st_script_run(self->connect, st_script_type_pre, self->pool, NULL);
-	bool sr = st_io_json_should_run(data);
+
+	json_t * data = json_object();
+
+	json_t * returned_data = st_script_run(self->connect, st_script_type_pre, self->pool, data);
+	bool sr = st_io_json_should_run(returned_data);
+
+	json_decref(returned_data);
 	json_decref(data);
+
 	return sr;
 }
 

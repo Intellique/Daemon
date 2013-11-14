@@ -22,14 +22,19 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 22 Oct 2013 11:51:17 +0200                            *
+*  Last modified: Thu, 14 Nov 2013 20:28:52 +0100                            *
 \****************************************************************************/
 
+// json_*
+#include <jansson.h>
 // free, malloc
 #include <stdlib.h>
 
+#include <libstone/io.h>
 #include <libstone/job.h>
+#include <libstone/library/media.h>
 #include <libstone/log.h>
+#include <libstone/script.h>
 #include <libstone/util/hashtable.h>
 
 #include <libjob-check-archive.chcksum>
@@ -40,12 +45,14 @@ static bool st_job_check_archive_check(struct st_job * job);
 static void st_job_check_archive_free(struct st_job * job);
 static void st_job_check_archive_init(void) __attribute__((constructor));
 static void st_job_check_archive_new_job(struct st_job * job, struct st_database_connection * db);
+static bool st_job_check_archive_pre_run_script(struct st_job * j);
 static int st_job_check_archive_run(struct st_job * job);
 
 static struct st_job_ops st_job_check_archive_ops = {
-	.check = st_job_check_archive_check,
-	.free  = st_job_check_archive_free,
-	.run   = st_job_check_archive_run,
+	.check          = st_job_check_archive_check,
+	.free           = st_job_check_archive_free,
+	.pre_run_script = st_job_check_archive_pre_run_script,
+	.run            = st_job_check_archive_run,
 };
 
 static struct st_job_driver st_job_check_archive_driver = {
@@ -100,6 +107,22 @@ static void st_job_check_archive_new_job(struct st_job * job, struct st_database
 
 	job->data = self;
 	job->ops = &st_job_check_archive_ops;
+}
+
+static bool st_job_check_archive_pre_run_script(struct st_job * job) {
+	struct st_job_check_archive_private * self = job->data;
+
+	json_t * data = json_object();
+
+	struct st_pool * pool = st_pool_get_by_job(job, self->connect);
+
+	json_t * returned_data = st_script_run(self->connect, st_script_type_pre, pool, data);
+	bool sr = st_io_json_should_run(returned_data);
+
+	json_decref(returned_data);
+	json_decref(data);
+
+	return sr;
 }
 
 static int st_job_check_archive_run(struct st_job * job) {
