@@ -1,0 +1,73 @@
+Job:
+* backup db:
+  - pre: {
+	  'send': {
+      },
+      'received': {
+		  'data': { // données passées to job
+		  },
+		  'should run': bool, // false si on ne doit pas exécuter la tâche
+      },
+    }
+  - post:
+  - on error:
+* check-archive:
+  - pre: {
+	  'send': {
+      },
+      'received': {
+		  'data': { // données passées to job
+		  },
+		  'should run': bool, // false si on ne doit pas exécuter la tâche
+      },
+    }
+  - post:
+  - on error:
+* copy-archive:
+  - pre: {
+	  'send': {
+      },
+      'received': {
+		  'data': { // données passées to job
+		  },
+		  'should run': bool, // false si on ne doit pas exécuter la tâche
+      },
+    }
+  - post:
+  - on error:
+* create-archive:
+  - pre: {
+	  'send': {
+      },
+      'received': {
+		  'data': { // données passées to job
+		  },
+		  'should run': bool, // false si on ne doit pas exécuter la tâche
+      },
+    }
+  - post:
+  - on error:
+* format-media:
+  - pre: {
+	  'send': {
+      },
+      'received': {
+		  'data': { // données passées to job
+		  },
+		  'should run': bool, // false si on ne doit pas exécuter la tâche
+      },
+    }
+  - post:
+  - on error:
+* restore-archive:
+  - pre: {
+	  'send': {
+      },
+      'received': {
+		  'data': { // données passées to job
+		  },
+		  'should run': bool, // false si on ne doit pas exécuter la tâche
+      },
+    }
+  - post:
+  - on error:

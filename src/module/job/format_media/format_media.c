@@ -22,9 +22,11 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 18 Sep 2013 10:51:58 +0200                            *
+*  Last modified: Thu, 14 Nov 2013 18:43:55 +0100                            *
 \****************************************************************************/
 
+// json_*
+#include <jansson.h>
 // bool
 #include <stdbool.h>
 // sscanf
@@ -44,6 +46,7 @@
 #include <libstone/library/ressource.h>
 #include <libstone/library/slot.h>
 #include <libstone/log.h>
+#include <libstone/script.h>
 #include <libstone/job.h>
 #include <libstone/user.h>
 #include <libstone/util/hashtable.h>
@@ -54,18 +57,21 @@
 
 struct st_job_format_media_private {
 	struct st_database_connection * connect;
+	struct st_pool * pool;
 };
 
 static bool st_job_format_media_check(struct st_job * job);
 static void st_job_format_media_free(struct st_job * job);
 static void st_job_format_media_init(void) __attribute__((constructor));
 static void st_job_format_media_new_job(struct st_job * job, struct st_database_connection * db);
+static bool st_job_format_media_pre_run_script(struct st_job * j);
 static int st_job_format_media_run(struct st_job * job);
 
 static struct st_job_ops st_job_format_media_ops = {
-	.check = st_job_format_media_check,
-	.free  = st_job_format_media_free,
-	.run   = st_job_format_media_run,
+	.check          = st_job_format_media_check,
+	.free           = st_job_format_media_free,
+	.pre_run_script = st_job_format_media_pre_run_script,
+	.run            = st_job_format_media_run,
 };
 
 static struct st_job_driver st_job_format_media_driver = {
@@ -341,9 +347,18 @@ static void st_job_format_media_init(void) {
 static void st_job_format_media_new_job(struct st_job * job, struct st_database_connection * db) {
 	struct st_job_format_media_private * self = malloc(sizeof(struct st_job_format_media_private));
 	self->connect = db->config->ops->connect(db->config);
+	self->pool = st_pool_get_by_job(job, self->connect);
 
 	job->data = self;
 	job->ops = &st_job_format_media_ops;
+}
+
+static bool st_job_format_media_pre_run_script(struct st_job * job) {
+	struct st_job_format_media_private * self = job->data;
+	json_t * data = st_script_run(self->connect, st_script_type_pre, self->pool, NULL);
+	bool sr = st_io_json_should_run(data);
+	json_decref(data);
+	return sr;
 }
 
 int st_job_format_media_run(struct st_job * job) {
@@ -370,18 +385,17 @@ int st_job_format_media_run(struct st_job * job) {
 	if (media->status == st_media_status_error)
 		st_job_add_record(self->connect, st_log_level_warning, job, "Try to format a media with error status");
 
-	struct st_pool * pool = st_pool_get_by_job(job, self->connect);
-	if (pool == NULL) {
-		pool = job->user->pool;
-		st_job_add_record(self->connect, st_log_level_warning, job, "Using default pool '%s' of user '%s'", pool->name, job->user->login);
+	if (self->pool == NULL) {
+		self->pool = job->user->pool;
+		st_job_add_record(self->connect, st_log_level_warning, job, "Using default pool '%s' of user '%s'", self->pool->name, job->user->login);
 	}
-	if (pool->deleted) {
+	if (self->pool->deleted) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Try to format to a pool which is deleted");
 		job->sched_status = st_job_status_error;
 		return 1;
 	}
 
-	if (media->format != pool->format) {
+	if (media->format != self->pool->format) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Try to format a media whose type does not match the format of pool");
 		job->sched_status = st_job_status_error;
 		return 1;
@@ -412,7 +426,7 @@ int st_job_format_media_run(struct st_job * job) {
 
 			case changer_has_free_drive:
 				// if drive is not NULL, we own also a lock on it
-				drive = slot->changer->ops->find_free_drive(slot->changer, pool->format, true, true);
+				drive = slot->changer->ops->find_free_drive(slot->changer, self->pool->format, true, true);
 				if (drive != NULL) {
 					has_lock_on_drive = true;
 					stop = true;
@@ -590,7 +604,7 @@ int st_job_format_media_run(struct st_job * job) {
 	int status = 0;
 	if (job->db_status != st_job_status_stopped) {
 		st_job_add_record(self->connect, st_log_level_info, job, "Formatting media in progress");
-		status = st_media_write_header(drive, pool, self->connect);
+		status = st_media_write_header(drive, self->pool, self->connect);
 
 		if (!status) {
 			job->done = 0.8;

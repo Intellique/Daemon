@@ -22,10 +22,12 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 13 Nov 2013 13:34:00 +0100                            *
+*  Last modified: Thu, 14 Nov 2013 18:39:52 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
+// json_*
+#include <jansson.h>
 // asprintf
 #include <stdio.h>
 // malloc, realloc
@@ -63,7 +65,7 @@ static bool st_job_backup_db_check(struct st_job * job);
 static void st_job_backup_db_free(struct st_job * job);
 static void st_job_backup_db_init(void) __attribute__((constructor));
 static void st_job_backup_db_new_job(struct st_job * job, struct st_database_connection * db);
-static bool st_job_backup_db_pre_run_script(struct st_job *j);
+static bool st_job_backup_db_pre_run_script(struct st_job * j);
 static int st_job_backup_db_run(struct st_job * job);
 static bool st_job_backup_db_select_media(struct st_job * job, struct st_job_backup_private * self);
 
@@ -105,10 +107,12 @@ static void st_job_backup_db_new_job(struct st_job * job, struct st_database_con
 	job->data = self;
 }
 
-static bool st_job_backup_db_pre_run_script(struct st_job *job) {
+static bool st_job_backup_db_pre_run_script(struct st_job * job) {
 	struct st_job_backup_private * self = job->data;
-	st_script_run(self->connect, st_script_type_pre, self->pool, NULL);
-	return true;
+	json_t * data = st_script_run(self->connect, st_script_type_pre, self->pool, NULL);
+	bool sr = st_io_json_should_run(data);
+	json_decref(data);
+	return sr;
 }
 
 static int st_job_backup_db_run(struct st_job * job) {

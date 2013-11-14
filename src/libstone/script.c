@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 12 Nov 2013 19:12:24 +0100                            *
+*  Last modified: Thu, 14 Nov 2013 18:27:32 +0100                            *
 \****************************************************************************/
 
 #include <stddef.h>
@@ -42,6 +42,7 @@
 #include <sys/param.h>
 
 #include <libstone/database.h>
+#include <libstone/io.h>
 #include <libstone/log.h>
 #include <libstone/script.h>
 #include <libstone/util/command.h>
@@ -65,31 +66,88 @@ json_t * st_script_run(struct st_database_connection * connect, enum st_script_t
 	json_t * result = json_object();
 	json_object_set_new(result, "should run", json_false());
 
+	json_t * datas = json_array();
+	json_object_set_new(result, "data", datas);
+
 	if (connect == NULL || pool == NULL) {
 		json_object_set_new(result, "error", json_string("connect or pool equals NULL"));
 		return result;
 	}
 
-	json_object_set_new(result, "should run", json_true());
 	int nb_scripts = connect->ops->get_nb_scripts(connect, type, pool);
 	if (nb_scripts < 0)
 		return result;
 
 	int i, status = 0;
-	for (i = 0; i < nb_scripts; i++) {
+	for (i = 0; i < nb_scripts && status == 0; i++) {
 		char * path = connect->ops->get_script(connect, i, type, pool);
-		if (path == NULL)
+		if (path == NULL) {
+			status = 1;
 			break;
+		}
 
 		// run command & wait result
 		struct st_util_command command;
 		const char * command_params[] = { st_script_type_to_string(type) };
 		st_util_command_new(&command, path, command_params, 1);
 
+		int fd_write = st_util_command_pipe_to(&command);
+		int fd_read = st_util_command_pipe_from(&command, st_util_command_stdout);
+
+		st_util_command_start(&command, 1);
+
+		st_io_json_write_to(fd_write, data, true);
+		json_t * returned = st_io_json_read_from(fd_read, true);
+
+		st_util_command_wait(&command, 1);
+
+		status = command.exited_code;
+
+		st_util_command_free(&command, 1);
 		free(path);
+
+		if (returned == NULL) {
+			status = 1;
+			break;
+		}
+
+		json_t * shouldRun = json_object_get(returned, "should run");
+		if (shouldRun == NULL) {
+			json_decref(returned);
+			status = 1;
+			break;
+		}
+
+		json_t * data = json_object_get(returned, "data");
+		if (data != NULL)
+			json_array_append(datas, data);
+
+		if (json_is_false(shouldRun))
+			status = 1;
+
+		json_decref(returned);
 	}
 
+	if (status == 0)
+		json_object_set_new(result, "should run", json_true());
+
 	return result;
+}
+
+bool st_io_json_should_run(struct json_t * data) {
+	bool sr = false;
+
+	if (data == NULL)
+		return sr;
+
+	json_t * jsr = json_object_get(data, "should run");
+	if (jsr == NULL)
+		return sr;
+
+	if (json_is_true(jsr))
+		sr = true;
+
+	return sr;
 }
 
 enum st_script_type st_script_string_to_type(const char * string) {

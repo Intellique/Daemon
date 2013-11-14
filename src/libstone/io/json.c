@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 22 Oct 2013 10:59:52 +0200                            *
+*  Last modified: Thu, 14 Nov 2013 13:03:20 +0100                            *
 \****************************************************************************/
 
 // json_array, json_array_append_new, json_decref, json_dumps, json_integer,
@@ -36,7 +36,7 @@
 #include <time.h>
 // uname
 #include <sys/utsname.h>
-// close, write
+// close, read, write
 #include <unistd.h>
 
 #include <libstone/io.h>
@@ -144,6 +144,32 @@ static json_t * st_io_json_media(struct st_media * media) {
 	return jmedia;
 }
 
+json_t * st_io_json_read_from(int fd, bool need_close) {
+	ssize_t buffer_size = 4096, nb_total_read = 0, size;
+	char * buffer = malloc(buffer_size + 1);
+
+	while (size = read(fd, buffer + nb_total_read, buffer_size - nb_total_read), size > 0) {
+		nb_total_read += size;
+		buffer[nb_total_read] = '\0';
+
+		buffer_size += 4096;
+		void * addr = realloc(buffer, buffer_size + 1);
+		if (addr == NULL)
+			break;
+
+		buffer = addr;
+	}
+
+	if (need_close)
+		close(fd);
+
+	json_error_t error;
+	json_t * value = json_loadb(buffer, nb_total_read, 0, &error);
+	free(buffer);
+
+	return value;
+}
+
 static json_t * st_io_json_volume(struct st_archive_volume * volume) {
 	json_t * jvolume = json_object();
 
@@ -198,6 +224,7 @@ void st_io_json_write_to(int fd, struct json_t * data, bool need_close) {
 
 	char * string = json_dumps(data, JSON_COMPACT);
 	write(fd, data, strlen(string));
+	free(string);
 
 	if (need_close)
 		close(fd);
