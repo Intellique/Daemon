@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 12 Nov 2013 18:46:20 +0100                            *
+*  Last modified: Thu, 14 Nov 2013 19:01:34 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -624,7 +624,7 @@ static int st_db_postgresql_get_nb_scripts(struct st_database_connection * conne
 	char * pool_id;
 	asprintf(&pool_id, "%ld", pool_data->id);
 
-	const char * param[] = { st_script_type_to_string(type), pool_id };
+	const char * param[] = { st_db_postgresql_script_type_to_string(type), pool_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
@@ -654,7 +654,7 @@ static char * st_db_postgresql_get_script(struct st_database_connection * connec
 	asprintf(&seq, "%u", sequence);
 	asprintf(&pool_id, "%ld", pool_data->id);
 
-	const char * param[] = { st_script_type_to_string(type), pool_id, seq };
+	const char * param[] = { st_db_postgresql_script_type_to_string(type), pool_id, seq };
 	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
