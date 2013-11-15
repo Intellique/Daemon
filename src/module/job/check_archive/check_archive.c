@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 14 Nov 2013 20:28:52 +0100                            *
+*  Last modified: Fri, 15 Nov 2013 12:11:10 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -45,7 +45,7 @@ static bool st_job_check_archive_check(struct st_job * job);
 static void st_job_check_archive_free(struct st_job * job);
 static void st_job_check_archive_init(void) __attribute__((constructor));
 static void st_job_check_archive_new_job(struct st_job * job, struct st_database_connection * db);
-static bool st_job_check_archive_pre_run_script(struct st_job * j);
+static bool st_job_check_archive_pre_run_script(struct st_job * job);
 static int st_job_check_archive_run(struct st_job * job);
 
 static struct st_job_ops st_job_check_archive_ops = {
@@ -76,10 +76,15 @@ static bool st_job_check_archive_check(struct st_job * job) {
 
 static void st_job_check_archive_free(struct st_job * job) {
 	struct st_job_check_archive_private * self = job->data;
-	if (self != NULL) {
+	if (self->connect != NULL) {
 		self->connect->ops->close(self->connect);
 		self->connect->ops->free(self->connect);
+		self->connect = NULL;
 	}
+
+	if (self->archive != NULL)
+		st_archive_free(self->archive);
+	self->archive = NULL;
 
 	self->vol_checksums = NULL;
 	self->nb_vol_checksums = 0;
@@ -99,7 +104,7 @@ static void st_job_check_archive_new_job(struct st_job * job, struct st_database
 	self->job = job;
 	self->connect = db->config->ops->connect(db->config);
 
-	self->archive = NULL;
+	self->archive = self->connect->ops->get_archive_volumes_by_job(self->connect, job);
 	self->vol_checksums = NULL;
 	self->nb_vol_checksums = 0;
 	self->checksum_reader = NULL;
@@ -114,8 +119,7 @@ static bool st_job_check_archive_pre_run_script(struct st_job * job) {
 
 	json_t * data = json_object();
 
-	struct st_pool * pool = st_pool_get_by_job(job, self->connect);
-
+	struct st_pool * pool = st_pool_get_by_archive(self->archive, self->connect);
 	json_t * returned_data = st_script_run(self->connect, st_script_type_pre, pool, data);
 	bool sr = st_io_json_should_run(returned_data);
 
@@ -130,8 +134,7 @@ static int st_job_check_archive_run(struct st_job * job) {
 
 	st_job_add_record(self->connect, st_log_level_info, job, "Start check-archive job (named: %s), num runs %ld", job->name, job->num_runs);
 
-	struct st_archive * archive = self->archive = self->connect->ops->get_archive_volumes_by_job(self->connect, job);
-	if (archive == NULL) {
+	if (self->archive == NULL) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Error, no archive associated to this job were found");
 		job->sched_status = st_job_status_error;
 		return 2;
@@ -149,7 +152,7 @@ static int st_job_check_archive_run(struct st_job * job) {
 			quick_mode = st_hashtable_val_convert_to_signed_integer(&qm) != 0;
 	}
 
-	self->report = st_job_check_archive_report_new(job, archive, quick_mode);
+	self->report = st_job_check_archive_report_new(job, self->archive, quick_mode);
 
 	int failed;
 
@@ -165,7 +168,7 @@ static int st_job_check_archive_run(struct st_job * job) {
 
 	char * report = st_job_check_archive_report_make(self->report);
 	if (report != NULL)
-		self->connect->ops->add_report(self->connect, job, archive, report);
+		self->connect->ops->add_report(self->connect, job, self->archive, report);
 	free(report);
 
 	st_job_check_archive_report_free(self->report);

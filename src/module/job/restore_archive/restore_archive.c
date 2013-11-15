@@ -22,9 +22,11 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 07 Jun 2013 13:44:31 +0200                            *
+*  Last modified: Fri, 15 Nov 2013 12:33:36 +0100                            *
 \****************************************************************************/
 
+// json_*
+#include <jansson.h>
 // free, malloc
 #include <stdlib.h>
 // chmod
@@ -38,11 +40,13 @@
 // utimes
 #include <utime.h>
 
+#include <libstone/io.h>
 #include <libstone/job.h>
 #include <libstone/library/drive.h>
 #include <libstone/library/ressource.h>
 #include <libstone/library/slot.h>
 #include <libstone/log.h>
+#include <libstone/script.h>
 #include <libstone/user.h>
 #include <libstone/util/file.h>
 #include <stoned/library/changer.h>
@@ -55,12 +59,14 @@ static bool st_job_restore_archive_check(struct st_job * job);
 static void st_job_restore_archive_free(struct st_job * job);
 static void st_job_restore_archive_init(void) __attribute__((constructor));
 static void st_job_restore_archive_new_job(struct st_job * job, struct st_database_connection * db);
+static bool st_job_restore_archive_pre_run_script(struct st_job * job);
 static int st_job_restore_archive_run(struct st_job * job);
 
 static struct st_job_ops st_job_restore_archive_ops = {
-	.check = st_job_restore_archive_check,
-	.free  = st_job_restore_archive_free,
-	.run   = st_job_restore_archive_run,
+	.check          = st_job_restore_archive_check,
+	.free           = st_job_restore_archive_free,
+	.pre_run_script = st_job_restore_archive_pre_run_script,
+	.run            = st_job_restore_archive_run,
 };
 
 static struct st_job_driver st_job_restore_archive_driver = {
@@ -84,10 +90,15 @@ static bool st_job_restore_archive_check(struct st_job * job) {
 
 static void st_job_restore_archive_free(struct st_job * job) {
 	struct st_job_restore_archive_private * self = job->data;
-	if (self != NULL) {
+	if (self->connect != NULL) {
 		self->connect->ops->close(self->connect);
 		self->connect->ops->free(self->connect);
+		self->connect = NULL;
 	}
+
+	if (self->archive != NULL)
+		st_archive_free(self->archive);
+	self->archive = NULL;
 
 	free(self);
 	job->data = NULL;
@@ -102,13 +113,28 @@ static void st_job_restore_archive_new_job(struct st_job * job, struct st_databa
 	self->job = job;
 	self->connect = db->config->ops->connect(db->config);
 
-	self->archive = NULL;
+	self->archive = self->connect->ops->get_archive_volumes_by_job(self->connect, job);
 
 	self->first_worker = self->last_worker = NULL;
 	self->checks = NULL;
 
 	job->data = self;
 	job->ops = &st_job_restore_archive_ops;
+}
+
+static bool st_job_restore_archive_pre_run_script(struct st_job * job) {
+	struct st_job_restore_archive_private * self = job->data;
+
+	json_t * data = json_object();
+
+	struct st_pool * pool = st_pool_get_by_archive(self->archive, self->connect);
+	json_t * returned_data = st_script_run(self->connect, st_script_type_pre, pool, data);
+	bool sr = st_io_json_should_run(returned_data);
+
+	json_decref(returned_data);
+	json_decref(data);
+
+	return sr;
 }
 
 static int st_job_restore_archive_run(struct st_job * job) {
@@ -121,14 +147,13 @@ static int st_job_restore_archive_run(struct st_job * job) {
 		return 1;
 	}
 
-	struct st_archive * archive = self->archive = self->connect->ops->get_archive_volumes_by_job(self->connect, job);
-	if (archive == NULL) {
+	if (self->archive == NULL) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Error, no archive associated to this job were found");
 		job->sched_status = st_job_status_error;
 		return 2;
 	}
 
-	self->report = st_job_restore_archive_report_new(job, archive);
+	self->report = st_job_restore_archive_report_new(job, self->archive);
 
 	self->checks = st_job_restore_archive_checks_worker_new(self);
 
@@ -159,8 +184,8 @@ static int st_job_restore_archive_run(struct st_job * job) {
 
 	self->restore_path = st_job_restore_archive_path_new();
 
-	for (i = 0; i < archive->nb_volumes; i++) {
-		struct st_archive_volume * vol = archive->volumes + i;
+	for (i = 0; i < self->archive->nb_volumes; i++) {
+		struct st_archive_volume * vol = self->archive->volumes + i;
 
 		bool found = false;
 		struct st_job_restore_archive_data_worker * worker = self->first_worker;
@@ -313,7 +338,7 @@ static int st_job_restore_archive_run(struct st_job * job) {
 
 	char * report = st_job_restore_archive_report_make(self->report);
 	if (report != NULL)
-		self->connect->ops->add_report(self->connect, job, archive, report);
+		self->connect->ops->add_report(self->connect, job, self->archive, report);
 	free(report);
 
 	job->done = 1;
@@ -322,7 +347,6 @@ static int st_job_restore_archive_run(struct st_job * job) {
 
 	st_job_restore_archive_report_free(self->report);
 	st_job_restore_archive_path_free(self->restore_path);
-	st_archive_free(archive);
 
 	return 0;
 }

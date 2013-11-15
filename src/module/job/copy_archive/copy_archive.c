@@ -22,21 +22,25 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 07 Nov 2013 13:30:34 +0100                            *
+*  Last modified: Fri, 15 Nov 2013 12:22:07 +0100                            *
 \****************************************************************************/
 
+// json_*
+#include <jansson.h>
 // malloc
 #include <stdlib.h>
 // strdup
 #include <string.h>
 
 #include <libstone/database.h>
+#include <libstone/io.h>
 #include <libstone/library/archive.h>
 #include <libstone/library/drive.h>
 #include <libstone/library/media.h>
 #include <libstone/library/ressource.h>
 #include <libstone/library/slot.h>
 #include <libstone/log.h>
+#include <libstone/script.h>
 
 #include <libjob-copy-archive.chcksum>
 
@@ -46,12 +50,14 @@ static bool st_job_copy_archive_check(struct st_job * job);
 static void st_job_copy_archive_free(struct st_job * job);
 static void st_job_copy_archive_init(void) __attribute__((constructor));
 static void st_job_copy_archive_new_job(struct st_job * job, struct st_database_connection * db);
+static bool st_job_copy_archive_pre_run_script(struct st_job * job);
 static int st_job_copy_archive_run(struct st_job * job);
 
 static struct st_job_ops st_job_copy_archive_ops = {
-	.check = st_job_copy_archive_check,
-	.free  = st_job_copy_archive_free,
-	.run   = st_job_copy_archive_run,
+	.check          = st_job_copy_archive_check,
+	.free           = st_job_copy_archive_free,
+	.pre_run_script = st_job_copy_archive_pre_run_script,
+	.run            = st_job_copy_archive_run,
 };
 
 static struct st_job_driver st_job_copy_archive_driver = {
@@ -98,7 +104,7 @@ static void st_job_copy_archive_new_job(struct st_job * job, struct st_database_
 
 	self->current_volume = NULL;
 	self->drive_output = NULL;
-	self->pool = NULL;
+	self->pool = st_pool_get_by_job(job, self->connect);
 	self->writer = NULL;
 
 	self->first_media = self->last_media = NULL;
@@ -111,13 +117,26 @@ static void st_job_copy_archive_new_job(struct st_job * job, struct st_database_
 	job->ops = &st_job_copy_archive_ops;
 }
 
+static bool st_job_copy_archive_pre_run_script(struct st_job * job) {
+	struct st_job_copy_archive_private * self = job->data;
+
+	json_t * data = json_object();
+
+	json_t * returned_data = st_script_run(self->connect, st_script_type_pre, self->pool, data);
+	bool sr = st_io_json_should_run(returned_data);
+
+	json_decref(returned_data);
+	json_decref(data);
+
+	return sr;
+}
+
 static int st_job_copy_archive_run(struct st_job * job) {
 	struct st_job_copy_archive_private * self = job->data;
 
 	st_job_add_record(self->connect, st_log_level_info, job, "Start copy archive job (named: %s), num runs %ld", job->name, job->num_runs);
 
 	self->archive = self->connect->ops->get_archive_volumes_by_job(self->connect, job);
-	self->pool = st_pool_get_by_job(job, self->connect);
 
 	unsigned int i;
 	for (i = 0; i < self->archive->nb_volumes; i++) {

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 28 May 2013 19:13:14 +0200                            *
+*  Last modified: Fri, 15 Nov 2013 11:31:02 +0100                            *
 \****************************************************************************/
 
 // asprintf, versionsort
@@ -31,6 +31,8 @@
 #include <dirent.h>
 // open
 #include <fcntl.h>
+// json_*
+#include <jansson.h>
 // free, malloc
 #include <stdlib.h>
 // asprintf
@@ -47,8 +49,10 @@
 #include <unistd.h>
 
 #include <libstone/format.h>
+#include <libstone/io.h>
 #include <libstone/library/media.h>
 #include <libstone/log.h>
+#include <libstone/script.h>
 #include <libstone/user.h>
 #include <libstone/util/file.h>
 #include <libstone/util/hashtable.h>
@@ -63,12 +67,14 @@ static bool st_job_create_archive_check(struct st_job * job);
 static void st_job_create_archive_free(struct st_job * job);
 static void st_job_create_archive_init(void) __attribute__((constructor));
 static void st_job_create_archive_new_job(struct st_job * job, struct st_database_connection * db);
+static bool st_job_create_archive_pre_run_script(struct st_job * j);
 static int st_job_create_archive_run(struct st_job * job);
 
 static struct st_job_ops st_job_create_archive_ops = {
-	.check = st_job_create_archive_check,
-	.free  = st_job_create_archive_free,
-	.run   = st_job_create_archive_run,
+	.check          = st_job_create_archive_check,
+	.free           = st_job_create_archive_free,
+	.pre_run_script = st_job_create_archive_pre_run_script,
+	.run            = st_job_create_archive_run,
 };
 
 static struct st_job_driver st_job_create_archive_driver = {
@@ -213,12 +219,28 @@ static void st_job_create_archive_new_job(struct st_job * job, struct st_databas
 	self->selected_paths = NULL;
 	self->nb_selected_paths = 0;
 
+	self->pool = st_pool_get_by_job(job, self->connect);
+
 	self->total_done = self->total_size = 0;
 
 	self->worker = NULL;
 
 	job->data = self;
 	job->ops = &st_job_create_archive_ops;
+}
+
+static bool st_job_create_archive_pre_run_script(struct st_job * job) {
+	struct st_job_create_archive_private * self = job->data;
+
+	json_t * data = json_object();
+
+	json_t * returned_data = st_script_run(self->connect, st_script_type_pre, self->pool, data);
+	bool sr = st_io_json_should_run(returned_data);
+
+	json_decref(returned_data);
+	json_decref(data);
+
+	return sr;
 }
 
 static int st_job_create_archive_run(struct st_job * job) {
@@ -232,8 +254,6 @@ static int st_job_create_archive_run(struct st_job * job) {
 	}
 
 	self->selected_paths = self->connect->ops->get_selected_paths(self->connect, job, &self->nb_selected_paths);
-
-	self->pool = st_pool_get_by_job(job, self->connect);
 
 	unsigned int i;
 	for (i = 0; i < self->nb_selected_paths; i++) {

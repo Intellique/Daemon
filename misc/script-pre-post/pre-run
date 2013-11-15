@@ -41,6 +41,9 @@ Job:
       },
       'received': {
 		  'data': { // données passées to job
+			  'archive': {
+				  'uuid': string, // optionel, uuid qui est utilisé à la place d'un généré par le démon
+			  }
 		  },
 		  'should run': bool, // false si on ne doit pas exécuter la tâche
       },

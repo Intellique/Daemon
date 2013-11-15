@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 14 Nov 2013 19:11:14 +0100                            *
+*  Last modified: Fri, 15 Nov 2013 11:47:48 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -65,7 +65,7 @@ static bool st_job_backup_db_check(struct st_job * job);
 static void st_job_backup_db_free(struct st_job * job);
 static void st_job_backup_db_init(void) __attribute__((constructor));
 static void st_job_backup_db_new_job(struct st_job * job, struct st_database_connection * db);
-static bool st_job_backup_db_pre_run_script(struct st_job * j);
+static bool st_job_backup_db_pre_run_script(struct st_job * job);
 static int st_job_backup_db_run(struct st_job * job);
 static bool st_job_backup_db_select_media(struct st_job * job, struct st_job_backup_private * self);
 
