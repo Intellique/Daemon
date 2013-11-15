@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 14 Nov 2013 19:01:34 +0100                            *
+*  Last modified: Fri, 15 Nov 2013 20:35:10 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -130,8 +130,8 @@ static int st_db_postgresql_start_transaction(struct st_database_connection * co
 static int st_db_postgresql_sync_plugin_checksum(struct st_database_connection * connect, const char * name);
 static int st_db_postgresql_sync_plugin_job(struct st_database_connection * connect, const char * plugin);
 
-static int st_db_postgresql_get_nb_scripts(struct st_database_connection * connect, enum st_script_type type, struct st_pool * pool);
-static char * st_db_postgresql_get_script(struct st_database_connection * connect, unsigned int sequence, enum st_script_type type, struct st_pool * pool);
+static int st_db_postgresql_get_nb_scripts(struct st_database_connection * connect, const char * job_type, enum st_script_type type, struct st_pool * pool);
+static char * st_db_postgresql_get_script(struct st_database_connection * connect, const char * job_type, unsigned int sequence, enum st_script_type type, struct st_pool * pool);
 static int st_db_postgresql_sync_script(struct st_database_connection * connect, const char * script_path);
 
 static bool st_db_postgresql_changer_is_enabled(struct st_database_connection * connect, struct st_changer * changer);
@@ -611,7 +611,7 @@ static int st_db_postgresql_sync_plugin_job(struct st_database_connection * conn
 }
 
 
-static int st_db_postgresql_get_nb_scripts(struct st_database_connection * connect, enum st_script_type type, struct st_pool * pool) {
+static int st_db_postgresql_get_nb_scripts(struct st_database_connection * connect, const char * job_type, enum st_script_type type, struct st_pool * pool) {
 	if (connect == NULL || pool == NULL)
 		return -1;
 
@@ -619,13 +619,13 @@ static int st_db_postgresql_get_nb_scripts(struct st_database_connection * conne
 	struct st_db_postgresql_pool_data * pool_data = pool->db_data;
 
 	const char * query = "select_nb_scripts_with_sequence_and_pool";
-	st_db_postgresql_prepare(self, query, "SELECT COUNT(*) FROM scripts WHERE type = $1 AND pool = $2");
+	st_db_postgresql_prepare(self, query, "SELECT COUNT(*) FROM scripts ss LEFT JOIN jobtype jt ON ss.jobType = jt.id WHERE jt.name = $1 AND scriptType = $2 AND pool = $3");
 
 	char * pool_id;
 	asprintf(&pool_id, "%ld", pool_data->id);
 
-	const char * param[] = { st_db_postgresql_script_type_to_string(type), pool_id };
-	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	const char * param[] = { job_type, st_db_postgresql_script_type_to_string(type), pool_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	int nb_scripts = -1;
@@ -640,22 +640,22 @@ static int st_db_postgresql_get_nb_scripts(struct st_database_connection * conne
 	return nb_scripts;
 }
 
-static char * st_db_postgresql_get_script(struct st_database_connection * connect, unsigned int sequence, enum st_script_type type, struct st_pool * pool) {
-	if (connect == NULL || pool == NULL)
+static char * st_db_postgresql_get_script(struct st_database_connection * connect, const char * job_type, unsigned int sequence, enum st_script_type type, struct st_pool * pool) {
+	if (connect == NULL || job_type == NULL || pool == NULL)
 		return NULL;
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	struct st_db_postgresql_pool_data * pool_data = pool->db_data;
 
 	const char * query = "select_script_with_sequence_and_pool";
-	st_db_postgresql_prepare(self, query, "SELECT s.path FROM scripts ss LEFT JOIN script s ON ss.script = s.id WHERE type = $1 AND pool = $2 ORDER BY sequence LIMIT 1 OFFSET $3");
+	st_db_postgresql_prepare(self, query, "SELECT s.path FROM scripts ss LEFT JOIN jobtype jt ON ss.jobType = jt.id LEFT JOIN script s ON ss.script = s.id WHERE jt.name = $1 AND type = $2 AND pool = $3 ORDER BY sequence LIMIT 1 OFFSET $4");
 
 	char * seq, * pool_id;
 	asprintf(&seq, "%u", sequence);
 	asprintf(&pool_id, "%ld", pool_data->id);
 
-	const char * param[] = { st_db_postgresql_script_type_to_string(type), pool_id, seq };
-	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+	const char * param[] = { job_type, st_db_postgresql_script_type_to_string(type), pool_id, seq };
+	PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	char * script = NULL;

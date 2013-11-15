@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 15 Nov 2013 11:31:02 +0100                            *
+*  Last modified: Fri, 15 Nov 2013 16:56:30 +0100                            *
 \****************************************************************************/
 
 // asprintf, versionsort
@@ -234,7 +234,7 @@ static bool st_job_create_archive_pre_run_script(struct st_job * job) {
 
 	json_t * data = json_object();
 
-	json_t * returned_data = st_script_run(self->connect, st_script_type_pre, self->pool, data);
+	json_t * returned_data = st_script_run(self->connect, job->driver->name, st_script_type_pre, self->pool, data);
 	bool sr = st_io_json_should_run(returned_data);
 
 	json_decref(returned_data);

@@ -569,11 +569,12 @@ CREATE TABLE Scripts (
     id SERIAL PRIMARY KEY,
 
     sequence INTEGER NOT NULL CHECK (sequence >= 0),
+    jobType INTEGER NOT NULL REFERENCES JobType(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     script INTEGER REFERENCES Script(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    type ScriptType NOT NULL,
+    scriptType ScriptType NOT NULL,
     pool INTEGER REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
-    UNIQUE (sequence, script, type, pool)
+    UNIQUE (sequence, jobType, script, scriptType, pool)
 );
 
 CREATE TABLE Vtl (

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 12 Nov 2013 18:23:27 +0100                            *
+*  Last modified: Fri, 15 Nov 2013 16:04:19 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -145,8 +145,8 @@ struct st_database_connection {
 		 */
 		int (*sync_plugin_job)(struct st_database_connection * connect, const char * plugin);
 
-		int (*get_nb_scripts)(struct st_database_connection * connect, enum st_script_type type, struct st_pool * pool);
-		char * (*get_script)(struct st_database_connection * connect, unsigned int sequence, enum st_script_type type, struct st_pool * pool);
+		int (*get_nb_scripts)(struct st_database_connection * connect, const char * job_type, enum st_script_type type, struct st_pool * pool);
+		char * (*get_script)(struct st_database_connection * connect, const char * job_type, unsigned int sequence, enum st_script_type type, struct st_pool * pool);
 		int (*sync_script)(struct st_database_connection * connect, const char * script_path);
 
 		/**

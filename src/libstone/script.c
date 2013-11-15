@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 14 Nov 2013 18:27:32 +0100                            *
+*  Last modified: Fri, 15 Nov 2013 16:05:00 +0100                            *
 \****************************************************************************/
 
 #include <stddef.h>
@@ -62,25 +62,25 @@ static const struct st_script_type2 {
 };
 
 
-json_t * st_script_run(struct st_database_connection * connect, enum st_script_type type, struct st_pool * pool, json_t * data) {
+json_t * st_script_run(struct st_database_connection * connect, const char * job_type, enum st_script_type type, struct st_pool * pool, json_t * data) {
 	json_t * result = json_object();
 	json_object_set_new(result, "should run", json_false());
 
 	json_t * datas = json_array();
 	json_object_set_new(result, "data", datas);
 
-	if (connect == NULL || pool == NULL) {
-		json_object_set_new(result, "error", json_string("connect or pool equals NULL"));
+	if (connect == NULL || job_type == NULL || pool == NULL) {
+		json_object_set_new(result, "error", json_string("connect or job_type or pool equals NULL"));
 		return result;
 	}
 
-	int nb_scripts = connect->ops->get_nb_scripts(connect, type, pool);
+	int nb_scripts = connect->ops->get_nb_scripts(connect, job_type, type, pool);
 	if (nb_scripts < 0)
 		return result;
 
 	int i, status = 0;
 	for (i = 0; i < nb_scripts && status == 0; i++) {
-		char * path = connect->ops->get_script(connect, i, type, pool);
+		char * path = connect->ops->get_script(connect, job_type, i, type, pool);
 		if (path == NULL) {
 			status = 1;
 			break;
