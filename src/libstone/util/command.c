@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 25 Mar 2013 22:35:21 +0100                            *
+*  Last modified: Mon, 18 Nov 2013 15:46:52 +0100                            *
 \****************************************************************************/
 
 // fcntl
@@ -153,6 +153,7 @@ int st_util_command_pipe_from(struct st_util_command * command_out, enum st_util
 		return -2;
 
 	st_util_command_set_fd(command_out, out, fd_pipe[1]);
+	st_util_command_set_close_exe_flag(fd_pipe[0], true);
 	return fd_pipe[0];
 }
 
@@ -165,6 +166,7 @@ int st_util_command_pipe_to(struct st_util_command * command_in) {
 		return -2;
 
 	st_util_command_set_fd(command_in, st_util_command_stdin, fd_pipe[0]);
+	st_util_command_set_close_exe_flag(fd_pipe[1], true);
 	return fd_pipe[1];
 }
 
