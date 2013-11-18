@@ -9,9 +9,9 @@ Job:
       }, // information concernat la sauvegarde
     },
     'received': {
-        'data': { }, // données passées to job
-        'message': string, // optionel, message à insérer dans les logs
-        'should run': bool, // false si on ne doit pas exécuter la tâche
+      'data': { }, // données passées to job
+      'message': string, // optionel, message à insérer dans les logs
+      'should run': bool, // false si on ne doit pas exécuter la tâche
     },
   }
   - post: {
