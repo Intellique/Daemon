@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 15 Nov 2013 20:35:10 +0100                            *
+*  Last modified: Mon, 18 Nov 2013 11:33:23 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -648,7 +648,7 @@ static char * st_db_postgresql_get_script(struct st_database_connection * connec
 	struct st_db_postgresql_pool_data * pool_data = pool->db_data;
 
 	const char * query = "select_script_with_sequence_and_pool";
-	st_db_postgresql_prepare(self, query, "SELECT s.path FROM scripts ss LEFT JOIN jobtype jt ON ss.jobType = jt.id LEFT JOIN script s ON ss.script = s.id WHERE jt.name = $1 AND type = $2 AND pool = $3 ORDER BY sequence LIMIT 1 OFFSET $4");
+	st_db_postgresql_prepare(self, query, "SELECT s.path FROM scripts ss LEFT JOIN jobtype jt ON ss.jobType = jt.id LEFT JOIN script s ON ss.script = s.id WHERE jt.name = $1 AND scripttype = $2 AND pool = $3 ORDER BY sequence LIMIT 1 OFFSET $4");
 
 	char * seq, * pool_id;
 	asprintf(&seq, "%u", sequence);
