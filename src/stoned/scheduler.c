@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 12 Nov 2013 19:16:49 +0100                            *
+*  Last modified: Mon, 18 Nov 2013 16:39:07 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -165,10 +165,12 @@ static void st_sched_run_job(void * arg) {
 	job->num_runs++;
 
 	int status = 0;
-	if (job->ops->pre_run_script(job)) {
+	if (job->ops->pre_run(job)) {
 		status = job->ops->run(job);
+		st_log_write_all(st_log_level_info, st_log_type_scheduler, "Job %s finished, with exited code = %d", job->name, status);
 	} else {
-		// pre run script require to not run job
+		job->sched_status = st_job_status_error;
+		st_log_write_all(st_log_level_info, st_log_type_scheduler, "Job '%s' aborted by pre-script request", job->name);
 	}
 
 	job->ops->free(job);
@@ -187,7 +189,5 @@ static void st_sched_run_job(void * arg) {
 
 	if (job->sched_status == st_job_status_running)
 		job->sched_status = job->repetition != 0 ? st_job_status_scheduled : st_job_status_finished;
-
-	st_log_write_all(st_log_level_info, st_log_type_scheduler, "Job %s finished, with exited code = %d", job->name, status);
 }
 

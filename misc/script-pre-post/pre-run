@@ -2,15 +2,41 @@ Job:
 * backup db:
   - pre: {
     'send': {
+      'backup': {
+        'database': {
+          'name': string, // nom du pilote de la base de données
+        }, // information concernant la base de données
+      }, // information concernat la sauvegarde
     },
     'received': {
-        'data': { // données passées to job
-        },
+        'data': { }, // données passées to job
         'message': string, // optionel, message à insérer dans les logs
         'should run': bool, // false si on ne doit pas exécuter la tâche
     },
   }
-  - post:
+  - post: {
+    'send': {
+      'backup': {
+        'database': {
+          'name': string, // nom du pilote de la base de données
+        }, // information concernant la base de données
+        'timestamp': integer, // nombre de seconde écoulé depuis l'Epoch
+        'nb medias': integer, // nombre de médias connus au moment de sauvegarder la base de données
+        'nb archives': integer, // nombre d'archives faites au momen de sauvegarde la base de données
+        'volumes': [ {
+          'media': {
+            'uuid': string, // l'identifiant unique du média
+            'label': string ou null, // label du média si connu ou valeur nulle
+            'name': string, // nom du média défini par l'utilisateur
+          },
+          'position': integer, // position du volume sur le média
+        }, ... ], // volumes d'une sauvegarde
+        'nb volumes': integer, // nombres de volumes
+      }, // information concernat la sauvegarde
+    },
+    'received': {
+    }
+  }
   - on error:
 * check-archive:
   - pre: {
@@ -87,6 +113,7 @@ Job:
                 'media': {
                     'uuid': string, // l'identifiant unique du média
                     'label': string ou null, // label du média si connu ou valeur nulle
+                    'name': string, // nom du média défini par l'utilisateur
                 }, // information concernant le média
                 'media position': integer, // position du fichier dans le média
             }, ... ], // informations concernant les volumes de l'archive

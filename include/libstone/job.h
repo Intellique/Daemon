@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 13 Nov 2013 12:00:26 +0100                            *
+*  Last modified: Mon, 18 Nov 2013 16:38:58 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -73,7 +73,8 @@ struct st_job {
 	struct st_job_ops {
 		bool (*check)(struct st_job * j);
 		void (*free)(struct st_job * j);
-		bool (*pre_run_script)(struct st_job *j);
+		void (*post_run)(struct st_job * j);
+		bool (*pre_run)(struct st_job *j);
 		int (*run)(struct st_job * j);
 	} * ops;
 	void * data;

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 15 Nov 2013 16:05:00 +0100                            *
+*  Last modified: Mon, 18 Nov 2013 22:56:42 +0100                            *
 \****************************************************************************/
 
 #include <stddef.h>
@@ -43,6 +43,7 @@
 
 #include <libstone/database.h>
 #include <libstone/io.h>
+#include <libstone/job.h>
 #include <libstone/log.h>
 #include <libstone/script.h>
 #include <libstone/util/command.h>
@@ -62,19 +63,20 @@ static const struct st_script_type2 {
 };
 
 
-json_t * st_script_run(struct st_database_connection * connect, const char * job_type, enum st_script_type type, struct st_pool * pool, json_t * data) {
+json_t * st_script_run(struct st_database_connection * connect, struct st_job * job, const char * job_type, enum st_script_type type, struct st_pool * pool, json_t * data) {
 	json_t * result = json_object();
 	json_object_set_new(result, "should run", json_false());
 
 	json_t * datas = json_array();
 	json_object_set_new(result, "data", datas);
 
-	if (connect == NULL || job_type == NULL || pool == NULL) {
-		json_object_set_new(result, "error", json_string("connect or job_type or pool equals NULL"));
+	if (connect == NULL || job == NULL || job_type == NULL || pool == NULL) {
+		json_object_set_new(result, "error", json_string("connect or job or job_type or pool equals NULL"));
 		return result;
 	}
 
 	int nb_scripts = connect->ops->get_nb_scripts(connect, job_type, type, pool);
+	st_job_add_record(connect, nb_scripts > -1 ? st_log_level_debug : st_log_level_error, job, "script found: %d", nb_scripts);
 	if (nb_scripts < 0)
 		return result;
 
@@ -82,9 +84,12 @@ json_t * st_script_run(struct st_database_connection * connect, const char * job
 	for (i = 0; i < nb_scripts && status == 0; i++) {
 		char * path = connect->ops->get_script(connect, job_type, i, type, pool);
 		if (path == NULL) {
+			st_job_add_record(connect, st_log_level_error, job, "database has not found path, %s, %d/%d", st_script_type_to_string(type), i, nb_scripts);
 			status = 1;
 			break;
 		}
+
+		st_job_add_record(connect, st_log_level_debug, job, "running %s script: %s", st_script_type_to_string(type), path);
 
 		// run command & wait result
 		struct st_util_command command;
@@ -102,17 +107,20 @@ json_t * st_script_run(struct st_database_connection * connect, const char * job
 		st_util_command_wait(&command, 1);
 
 		status = command.exited_code;
+		st_job_add_record(connect, command.exited_code != 0 ? st_log_level_warning : st_log_level_debug, job, "script %s has exited with code %d", path, command.exited_code);
 
 		st_util_command_free(&command, 1);
 		free(path);
 
 		if (returned == NULL) {
+			st_job_add_record(connect, st_log_level_error, job, "job '%s' has not returned data", path);
 			status = 1;
 			break;
 		}
 
 		json_t * shouldRun = json_object_get(returned, "should run");
-		if (shouldRun == NULL) {
+		if (type == st_script_type_pre && shouldRun == NULL) {
+			st_job_add_record(connect, st_log_level_error, job, "job '%s' has not returned data 'should run'", path);
 			json_decref(returned);
 			status = 1;
 			break;
@@ -122,7 +130,7 @@ json_t * st_script_run(struct st_database_connection * connect, const char * job
 		if (data != NULL)
 			json_array_append(datas, data);
 
-		if (json_is_false(shouldRun))
+		if (type == st_script_type_pre && json_is_false(shouldRun))
 			status = 1;
 
 		json_decref(returned);
