@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 18 Nov 2013 22:56:42 +0100                            *
+*  Last modified: Tue, 19 Nov 2013 10:37:21 +0100                            *
 \****************************************************************************/
 
 #include <stddef.h>
@@ -110,11 +110,11 @@ json_t * st_script_run(struct st_database_connection * connect, struct st_job * 
 		st_job_add_record(connect, command.exited_code != 0 ? st_log_level_warning : st_log_level_debug, job, "script %s has exited with code %d", path, command.exited_code);
 
 		st_util_command_free(&command, 1);
-		free(path);
 
 		if (returned == NULL) {
 			st_job_add_record(connect, st_log_level_error, job, "job '%s' has not returned data", path);
 			status = 1;
+			free(path);
 			break;
 		}
 
@@ -123,6 +123,7 @@ json_t * st_script_run(struct st_database_connection * connect, struct st_job * 
 			st_job_add_record(connect, st_log_level_error, job, "job '%s' has not returned data 'should run'", path);
 			json_decref(returned);
 			status = 1;
+			free(path);
 			break;
 		}
 
@@ -130,10 +131,15 @@ json_t * st_script_run(struct st_database_connection * connect, struct st_job * 
 		if (data != NULL)
 			json_array_append(datas, data);
 
+		json_t * message = json_object_get(returned, "message");
+		if (message != NULL && json_is_string(message))
+			st_job_add_record(connect, st_log_level_info, job, "script '%s' return message: %s", path, json_string_value(message));
+
 		if (type == st_script_type_pre && json_is_false(shouldRun))
 			status = 1;
 
 		json_decref(returned);
+		free(path);
 	}
 
 	if (status == 0)
