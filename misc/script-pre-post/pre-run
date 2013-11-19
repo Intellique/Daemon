@@ -28,6 +28,7 @@ Job:
             'uuid': string, // l'identifiant unique du média
             'label': string ou null, // label du média si connu ou valeur nulle
             'name': string, // nom du média défini par l'utilisateur
+            'medium serial number': string, // numéro de série du média
           },
           'position': integer, // position du volume sur le média
         }, ... ], // volumes d'une sauvegarde
@@ -35,6 +36,7 @@ Job:
       }, // information concernat la sauvegarde
     },
     'received': {
+      'message': string, // optionel, message à insérer dans les logs
     }
   }
   - on error:

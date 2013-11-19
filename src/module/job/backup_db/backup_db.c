@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 19 Nov 2013 00:18:16 +0100                            *
+*  Last modified: Tue, 19 Nov 2013 10:10:35 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -150,6 +150,7 @@ static void st_job_backup_db_post_run(struct st_job * job) {
 		json_object_set_new(j_media, "name", json_string(media->name));
 	else
 		json_object_set_new(j_media, "name", json_null());
+	json_object_set_new(j_media, "medium serial number", json_string(media->medium_serial_number));
 
 	json_t * volume = json_object();
 	json_object_set_new(volume, "media", j_media);
