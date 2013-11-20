@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 05 Nov 2013 15:58:53 +0100                            *
+*  Last modified: Wed, 20 Nov 2013 17:00:48 +0100                            *
 \****************************************************************************/
 
 // free, malloc
@@ -170,7 +170,7 @@ static bool st_slot_iterator_private_move_to_next_new_media2(struct st_slot_iter
 		if (dr != NULL && !dr->enabled)
 			continue;
 
-		if (dr != NULL && dr->lock->ops->try_lock(dr->lock))
+		if (dr != NULL && dr->lock->ops->timed_lock(dr->lock, 2000))
 			continue;
 		if (dr == NULL && sl->lock->ops->try_lock(sl->lock))
 			continue;
@@ -222,7 +222,7 @@ static bool st_slot_iterator_private_move_to_next_by_pool2(struct st_slot_iterat
 		if (dr != NULL && !dr->enabled)
 			continue;
 
-		if (dr != NULL && dr->lock->ops->try_lock(dr->lock))
+		if (dr != NULL && dr->lock->ops->timed_lock(dr->lock, 2000))
 			continue;
 		if (dr == NULL && sl->lock->ops->try_lock(sl->lock))
 			continue;
