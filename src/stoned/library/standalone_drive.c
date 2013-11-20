@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 20 Nov 2013 18:17:04 +0100                            *
+*  Last modified: Wed, 20 Nov 2013 18:55:44 +0100                            *
 \****************************************************************************/
 
 // malloc
@@ -65,7 +65,7 @@ static struct st_drive * st_standalone_drive_find_free_drive(struct st_changer *
 	if (!dr->enabled)
 		return NULL;
 
-	if (!dr->lock->ops->try_lock(dr->lock))
+	if (!dr->lock->ops->timed_lock(dr->lock, 2000))
 		return dr;
 
 	return NULL;
@@ -156,7 +156,7 @@ static int st_standalone_drive_unload(struct st_changer * ch, struct st_drive * 
 static int st_standalone_drive_update_status(struct st_changer * ch) {
 	struct st_drive * dr = ch->drives;
 
-	if (dr->lock->ops->try_lock(dr->lock))
+	if (dr->lock->ops->timed_lock(dr->lock, 2000))
 		return 0;
 
 	dr->ops->update_media_info(dr);
