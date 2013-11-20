@@ -368,9 +368,9 @@ CREATE TABLE ArchiveFile (
     type FileType NOT NULL,
     mimeType VARCHAR(64) NOT NULL,
 
-    ownerId SMALLINT NOT NULL DEFAULT 0,
+    ownerId INTEGER NOT NULL DEFAULT 0,
     owner VARCHAR(255) NOT NULL,
-    groupId SMALLINT NOT NULL DEFAULT 0,
+    groupId INTEGER NOT NULL DEFAULT 0,
     groups VARCHAR(255) NOT NULL,
 
     perm SMALLINT NOT NULL CHECK (perm >= 0),

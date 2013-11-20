@@ -22,53 +22,42 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 07 Nov 2013 13:19:25 +0100                            *
+*  Last modified: Fri, 08 Nov 2013 16:21:36 +0100                            *
 \****************************************************************************/
 
-#ifndef __STONE_JOB_COPYARCHIVE_H__
-#define __STONE_JOB_COPYARCHIVE_H__
+// malloc, free, realloc
+#include <stdlib.h>
+// bzero
+#include <strings.h>
 
-// ssize_t
-#include <sys/types.h>
+#include <libstone/backup.h>
+#include <libstone/log.h>
 
-#include <libstone/job.h>
+void st_backup_add_volume(struct st_backup * backup, struct st_media * media, unsigned int position) {
+	void * addr = realloc(backup->volumes, (backup->nb_volumes + 1) * sizeof(struct st_backup_volume));
+	if (addr == NULL) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "failed to add volume to backup, because %m");
+		return;
+	}
 
-struct st_media;
+	backup->volumes = addr;
+	struct st_backup_volume * bv = backup->volumes + backup->nb_volumes;
+	backup->nb_volumes++;
+	bv->media = media;
+	bv->position = position;
+}
 
-struct st_job_copy_archive_private {
-	struct st_job * job;
-	struct st_database_connection * connect;
+void st_backup_free(struct st_backup * backup) {
+	if (backup == NULL)
+		return;
 
-	ssize_t total_done;
-	ssize_t archive_size;
-	struct st_archive * archive;
-	struct st_archive * copy;
+	free(backup->volumes);
+	free(backup);
+}
 
-	struct st_drive * drive_input;
-	struct st_slot * slot_input;
-	unsigned int nb_remain_files;
-
-	struct st_archive_volume * current_volume;
-	struct st_drive * drive_output;
-	struct st_pool * pool;
-	struct st_format_writer * writer;
-
-	struct st_linked_list_media {
-		struct st_media * media;
-		struct st_linked_list_media * next;
-	} * first_media, * last_media;
-
-	struct st_stream_writer * checksum_writer;
-	unsigned int nb_checksums;
-	char ** checksums;
-};
-
-struct st_stream_writer * st_job_copy_archive_add_filter(struct st_stream_writer * writer, void * param);
-bool st_job_copy_archive_change_ouput_media(struct st_job_copy_archive_private * self);
-int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self);
-int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self);
-bool st_job_copy_archive_select_input_media(struct st_job_copy_archive_private * self, struct st_media * media);
-bool st_job_copy_archive_select_output_media(struct st_job_copy_archive_private * self);
-
-#endif
+struct st_backup * st_backup_new() {
+	struct st_backup * bck = malloc(sizeof(struct st_backup));
+	bzero(bck, sizeof(struct st_backup));
+	return bck;
+}
 
