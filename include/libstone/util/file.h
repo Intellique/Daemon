@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 21 Aug 2013 09:48:00 +0200                            *
+*  Last modified: Wed, 20 Nov 2013 13:06:28 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_UTIL_FILE_H__
@@ -46,6 +46,13 @@ struct dirent;
 int st_util_file_basic_scandir_filter(const struct dirent * d);
 
 bool st_util_file_check_link(const char * file);
+
+/**
+ * \brief Convert a file mode to \b buffer with `ls -l` style
+ * \param[out] buffer : a 10 bytes already allocated buffer
+ * \param[in] mode : convert with this mode
+ */
+void st_util_file_convert_mode(char * buffer, mode_t mode);
 
 /**
  * \brief Convert \a size to humain readeable format (i.e. 30KB)
