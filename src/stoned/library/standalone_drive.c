@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 21 Aug 2013 19:40:13 +0200                            *
+*  Last modified: Wed, 20 Nov 2013 18:17:04 +0100                            *
 \****************************************************************************/
 
 // malloc
@@ -112,6 +112,7 @@ void st_standalone_drive_setup(struct st_changer * changer) {
 	slot->media = NULL;
 	drive->slot = slot;
 
+	slot->enable = true;
 	slot->volume_name = NULL;
 	slot->full = false;
 	slot->type = st_slot_type_drive;
