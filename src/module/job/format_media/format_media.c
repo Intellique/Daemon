@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 18 Sep 2013 10:51:58 +0200                            *
+*  Last modified: Wed, 20 Nov 2013 18:53:01 +0100                            *
 \****************************************************************************/
 
 // bool
@@ -137,7 +137,7 @@ static bool st_job_format_media_check(struct st_job * job) {
 				break;
 
 			case drive_is_free:
-				if (drive->lock->ops->try_lock(drive->lock)) {
+				if (drive->lock->ops->timed_lock(drive->lock, 2000)) {
 					sleep(5);
 					state = media_in_drive;
 				} else if (slot->media == media) {
@@ -424,7 +424,7 @@ int st_job_format_media_run(struct st_job * job) {
 				break;
 
 			case drive_is_free:
-				if (drive->lock->ops->try_lock(drive->lock)) {
+				if (drive->lock->ops->timed_lock(drive->lock, 2000)) {
 					job->sched_status = st_job_status_waiting;
 					sleep(5);
 					state = media_in_drive;
