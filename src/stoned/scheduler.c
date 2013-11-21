@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 18 Nov 2013 16:39:07 +0100                            *
+*  Last modified: Thu, 21 Nov 2013 12:45:54 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -153,8 +153,6 @@ static void st_sched_exit(int signal) {
 static void st_sched_run_job(void * arg) {
 	struct st_job * job = arg;
 
-	st_log_write_all(st_log_level_info, st_log_type_scheduler, "Starting job: %s", job->name);
-
 	st_sched_lock->ops->lock(st_sched_lock);
 	st_sched_nb_running_jobs++;
 	st_sched_lock->ops->unlock(st_sched_lock);
@@ -164,10 +162,20 @@ static void st_sched_run_job(void * arg) {
 		job->repetition--;
 	job->num_runs++;
 
+	st_log_write_all(st_log_level_info, st_log_type_scheduler, "Starting pre-script of job: %s", job->name);
+
 	int status = 0;
 	if (job->ops->pre_run(job)) {
+		st_log_write_all(st_log_level_info, st_log_type_scheduler, "Starting job: %s", job->name);
+
 		status = job->ops->run(job);
+
 		st_log_write_all(st_log_level_info, st_log_type_scheduler, "Job %s finished, with exited code = %d", job->name, status);
+		st_log_write_all(st_log_level_info, st_log_type_scheduler, "Starting post-script of job: %s", job->name);
+
+		job->ops->post_run(job);
+
+		st_log_write_all(st_log_level_info, st_log_type_scheduler, "Starting post-script of job: %s, finished", job->name);
 	} else {
 		job->sched_status = st_job_status_error;
 		st_log_write_all(st_log_level_info, st_log_type_scheduler, "Job '%s' aborted by pre-script request", job->name);

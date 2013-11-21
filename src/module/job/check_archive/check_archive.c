@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 15 Nov 2013 16:55:47 +0100                            *
+*  Last modified: Thu, 21 Nov 2013 12:50:56 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -35,7 +35,9 @@
 #include <libstone/library/media.h>
 #include <libstone/log.h>
 #include <libstone/script.h>
+#include <libstone/util/file.h>
 #include <libstone/util/hashtable.h>
+#include <libstone/user.h>
 
 #include <libjob-check-archive.chcksum>
 
@@ -45,14 +47,16 @@ static bool st_job_check_archive_check(struct st_job * job);
 static void st_job_check_archive_free(struct st_job * job);
 static void st_job_check_archive_init(void) __attribute__((constructor));
 static void st_job_check_archive_new_job(struct st_job * job, struct st_database_connection * db);
-static bool st_job_check_archive_pre_run_script(struct st_job * job);
+static void st_job_check_archive_post_run(struct st_job * job);
+static bool st_job_check_archive_pre_run(struct st_job * job);
 static int st_job_check_archive_run(struct st_job * job);
 
 static struct st_job_ops st_job_check_archive_ops = {
-	.check          = st_job_check_archive_check,
-	.free           = st_job_check_archive_free,
-	.pre_run_script = st_job_check_archive_pre_run_script,
-	.run            = st_job_check_archive_run,
+	.check    = st_job_check_archive_check,
+	.free     = st_job_check_archive_free,
+	.post_run = st_job_check_archive_post_run,
+	.pre_run  = st_job_check_archive_pre_run,
+	.run      = st_job_check_archive_run,
 };
 
 static struct st_job_driver st_job_check_archive_driver = {
@@ -85,6 +89,7 @@ static void st_job_check_archive_free(struct st_job * job) {
 	if (self->archive != NULL)
 		st_archive_free(self->archive);
 	self->archive = NULL;
+	self->pool = NULL;
 
 	self->vol_checksums = NULL;
 	self->nb_vol_checksums = 0;
@@ -104,7 +109,34 @@ static void st_job_check_archive_new_job(struct st_job * job, struct st_database
 	self->job = job;
 	self->connect = db->config->ops->connect(db->config);
 
+	self->quick_mode = false;
+	if (st_hashtable_has_key(job->option, "quick_mode")) {
+		struct st_hashtable_value qm = st_hashtable_get(job->option, "quick_mode");
+
+		if (st_hashtable_val_can_convert(&qm, st_hashtable_value_boolean))
+			self->quick_mode = st_hashtable_val_convert_to_bool(&qm);
+		else if (st_hashtable_val_can_convert(&qm, st_hashtable_value_signed_integer))
+			self->quick_mode = st_hashtable_val_convert_to_signed_integer(&qm) != 0;
+	}
+
 	self->archive = self->connect->ops->get_archive_volumes_by_job(self->connect, job);
+	self->archive_size = 0;
+	self->pool = st_pool_get_by_archive(self->archive, self->connect);
+
+	unsigned int i;
+	for (i = 0; i < self->archive->nb_volumes; i++) {
+		struct st_archive_volume * vol = self->archive->volumes + i;
+		self->connect->ops->get_archive_files_by_job_and_archive_volume(self->connect, self->job, vol);
+		self->archive_size += vol->size;
+
+		unsigned int j;
+		for (j = 0; j < vol->nb_files; j++) {
+			struct st_archive_files * ff = vol->files + j;
+			struct st_archive_file * file = ff->file;
+			self->connect->ops->get_checksums_of_file(self->connect, file);
+		}
+	}
+
 	self->vol_checksums = NULL;
 	self->nb_vol_checksums = 0;
 	self->checksum_reader = NULL;
@@ -114,13 +146,219 @@ static void st_job_check_archive_new_job(struct st_job * job, struct st_database
 	job->ops = &st_job_check_archive_ops;
 }
 
-static bool st_job_check_archive_pre_run_script(struct st_job * job) {
+static void st_job_check_archive_post_run(struct st_job * job) {
 	struct st_job_check_archive_private * self = job->data;
 
-	json_t * data = json_object();
+	json_t * user = json_object();
+	json_object_set_new(user, "login", json_string(job->user->login));
+	json_object_set_new(user, "name", json_string(job->user->fullname));
+	json_object_set_new(user, "email", json_string(job->user->email));
 
-	struct st_pool * pool = st_pool_get_by_archive(self->archive, self->connect);
-	json_t * returned_data = st_script_run(self->connect, job->driver->name, st_script_type_pre, pool, data);
+	json_t * archive = json_object();
+	json_object_set_new(archive, "name", json_string(self->archive->name));
+	json_object_set_new(archive, "uuid", json_string(self->archive->uuid));
+	json_object_set_new(archive, "size", json_integer(self->archive_size));
+
+	json_t * volumes = json_array();
+	json_object_set_new(archive, "volumes", volumes);
+	json_object_set_new(archive, "nb volumes", json_integer(self->archive->nb_volumes));
+
+	json_object_set_new(archive, "checksum ok", self->archive->check_ok ? json_true() : json_false());
+	json_object_set_new(archive, "check time", json_integer(self->archive->check_time));
+
+	unsigned int i;
+	for (i = 0; i < self->archive->nb_volumes; i++) {
+		json_t * volume = json_object();
+		struct st_archive_volume * vol = self->archive->volumes + i;
+
+		json_object_set_new(volume, "position", json_integer(i));
+		json_object_set_new(volume, "size", json_integer(vol->size));
+		json_object_set_new(volume, "start time", json_integer(vol->start_time));
+		json_object_set_new(volume, "end time", json_integer(vol->end_time));
+
+		json_t * checksum = json_object();
+		unsigned int nb_digests, j;
+		const void ** checksums = st_hashtable_keys(vol->digests, &nb_digests);
+		for (j = 0; j < nb_digests; j++) {
+			struct st_hashtable_value digest = st_hashtable_get(vol->digests, checksums[j]);
+			json_object_set_new(checksum, checksums[j], json_string(digest.value.string));
+		}
+		free(checksums);
+		json_object_set_new(volume, "checksums", checksum);
+		json_object_set_new(volume, "checksum ok", vol->check_ok ? json_true() : json_false());
+		json_object_set_new(volume, "check time", json_integer(vol->check_time));
+
+		json_t * jfiles = json_array();
+		for (j = 0; j < vol->nb_files; j++) {
+			struct st_archive_files * files = vol->files + j;
+			struct st_archive_file * file = files->file;
+			json_t * jfile = json_object();
+
+			json_object_set_new(jfile, "path", json_string(file->name));
+			json_object_set_new(jfile, "type", json_string(st_archive_file_type_to_string(file->type)));
+			json_object_set_new(jfile, "mime type", json_string(file->mime_type));
+
+			json_object_set_new(jfile, "owner id", json_integer(file->ownerid));
+			json_object_set_new(jfile, "owner", json_string(file->owner));
+			json_object_set_new(jfile, "group id", json_integer(file->groupid));
+			json_object_set_new(jfile, "group", json_string(file->group));
+
+			char perm[10];
+			st_util_file_convert_mode(perm, file->perm);
+			json_object_set_new(jfile, "perm", json_string(perm));
+			json_object_set_new(jfile, "size", json_integer(file->size));
+			json_object_set_new(jfile, "block position", json_integer(files->position));
+
+			unsigned int k;
+			checksum = json_object();
+			checksums = st_hashtable_keys(file->digests, &nb_digests);
+			for (k = 0; k < nb_digests; k++) {
+				struct st_hashtable_value digest = st_hashtable_get(file->digests, checksums[k]);
+				json_object_set_new(checksum, checksums[k], json_string(digest.value.string));
+			}
+			free(checksums);
+			json_object_set_new(jfile, "checksums", checksum);
+			if (!self->quick_mode) {
+				json_object_set_new(volume, "checksum ok", file->check_ok ? json_true() : json_false());
+				json_object_set_new(volume, "check time", json_integer(file->check_time));
+			}
+
+			json_array_append_new(jfiles, jfile);
+		}
+		json_object_set_new(volume, "files", jfiles);
+		json_object_set_new(volume, "nb files", json_integer(vol->nb_files));
+
+		json_t * media = json_object();
+		json_object_set_new(media, "uuid", json_string(vol->media->uuid));
+		if (vol->media->label != NULL)
+			json_object_set_new(media, "label", json_string(vol->media->label));
+		else
+			json_object_set_new(media, "label", json_null());
+		if (vol->media->name != NULL)
+			json_object_set_new(media, "name", json_string(vol->media->name));
+		else
+			json_object_set_new(media, "name", json_null());
+		json_object_set_new(media, "medium serial number", json_string(vol->media->medium_serial_number));
+		json_object_set_new(volume, "media", media);
+
+		json_array_append_new(volumes, volume);
+	}
+
+	json_t * jjob = json_object();
+	json_object_set_new(jjob, "quick mode", self->quick_mode ? json_true() : json_false());
+
+	json_t * data = json_object();
+	json_object_set_new(data, "user", user);
+	json_object_set_new(data, "archive", archive);
+	json_object_set_new(data, "job", jjob);
+
+	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_post, self->pool, data);
+
+	json_decref(returned_data);
+	json_decref(data);
+}
+
+static bool st_job_check_archive_pre_run(struct st_job * job) {
+	struct st_job_check_archive_private * self = job->data;
+
+	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_pre, self->pool) == 0)
+		return true;
+
+	json_t * user = json_object();
+	json_object_set_new(user, "login", json_string(job->user->login));
+	json_object_set_new(user, "name", json_string(job->user->fullname));
+	json_object_set_new(user, "email", json_string(job->user->email));
+
+	json_t * archive = json_object();
+	json_object_set_new(archive, "name", json_string(self->archive->name));
+	json_object_set_new(archive, "uuid", json_string(self->archive->uuid));
+	json_object_set_new(archive, "size", json_integer(self->archive_size));
+
+	json_t * volumes = json_array();
+	json_object_set_new(archive, "volumes", volumes);
+	json_object_set_new(archive, "nb volumes", json_integer(self->archive->nb_volumes));
+
+	unsigned int i;
+	for (i = 0; i < self->archive->nb_volumes; i++) {
+		json_t * volume = json_object();
+		struct st_archive_volume * vol = self->archive->volumes + i;
+
+		json_object_set_new(volume, "position", json_integer(i));
+		json_object_set_new(volume, "size", json_integer(vol->size));
+		json_object_set_new(volume, "start time", json_integer(vol->start_time));
+		json_object_set_new(volume, "end time", json_integer(vol->end_time));
+
+		json_t * checksum = json_object();
+		unsigned int nb_digests, j;
+		const void ** checksums = st_hashtable_keys(vol->digests, &nb_digests);
+		for (j = 0; j < nb_digests; j++) {
+			struct st_hashtable_value digest = st_hashtable_get(vol->digests, checksums[j]);
+			json_object_set_new(checksum, checksums[j], json_string(digest.value.string));
+		}
+		free(checksums);
+		json_object_set_new(volume, "checksums", checksum);
+
+		json_t * jfiles = json_array();
+		for (j = 0; j < vol->nb_files; j++) {
+			struct st_archive_files * files = vol->files + j;
+			struct st_archive_file * file = files->file;
+			json_t * jfile = json_object();
+
+			json_object_set_new(jfile, "path", json_string(file->name));
+			json_object_set_new(jfile, "type", json_string(st_archive_file_type_to_string(file->type)));
+			json_object_set_new(jfile, "mime type", json_string(file->mime_type));
+
+			json_object_set_new(jfile, "owner id", json_integer(file->ownerid));
+			json_object_set_new(jfile, "owner", json_string(file->owner));
+			json_object_set_new(jfile, "group id", json_integer(file->groupid));
+			json_object_set_new(jfile, "group", json_string(file->group));
+
+			char perm[10];
+			st_util_file_convert_mode(perm, file->perm);
+			json_object_set_new(jfile, "perm", json_string(perm));
+			json_object_set_new(jfile, "size", json_integer(file->size));
+			json_object_set_new(jfile, "block position", json_integer(files->position));
+
+			unsigned int k;
+			checksum = json_object();
+			checksums = st_hashtable_keys(file->digests, &nb_digests);
+			for (k = 0; k < nb_digests; k++) {
+				struct st_hashtable_value digest = st_hashtable_get(file->digests, checksums[k]);
+				json_object_set_new(checksum, checksums[k], json_string(digest.value.string));
+			}
+			free(checksums);
+			json_object_set_new(jfile, "checksums", checksum);
+
+			json_array_append_new(jfiles, jfile);
+		}
+		json_object_set_new(volume, "files", jfiles);
+		json_object_set_new(volume, "nb files", json_integer(vol->nb_files));
+
+		json_t * media = json_object();
+		json_object_set_new(media, "uuid", json_string(vol->media->uuid));
+		if (vol->media->label != NULL)
+			json_object_set_new(media, "label", json_string(vol->media->label));
+		else
+			json_object_set_new(media, "label", json_null());
+		if (vol->media->name != NULL)
+			json_object_set_new(media, "name", json_string(vol->media->name));
+		else
+			json_object_set_new(media, "name", json_null());
+		json_object_set_new(media, "medium serial number", json_string(vol->media->medium_serial_number));
+		json_object_set_new(volume, "media", media);
+
+		json_array_append_new(volumes, volume);
+	}
+
+	json_t * jjob = json_object();
+	json_object_set_new(jjob, "quick mode", self->quick_mode ? json_true() : json_false());
+
+	json_t * data = json_object();
+	json_object_set_new(data, "user", user);
+	json_object_set_new(data, "archive", archive);
+	json_object_set_new(data, "job", jjob);
+
+	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, data);
 	bool sr = st_io_json_should_run(returned_data);
 
 	json_decref(returned_data);
@@ -142,21 +380,10 @@ static int st_job_check_archive_run(struct st_job * job) {
 
 	job->done = 0.01;
 
-	bool quick_mode = false;
-	if (st_hashtable_has_key(job->option, "quick_mode")) {
-		struct st_hashtable_value qm = st_hashtable_get(job->option, "quick_mode");
-
-		if (st_hashtable_val_can_convert(&qm, st_hashtable_value_boolean))
-			quick_mode = st_hashtable_val_convert_to_bool(&qm);
-		else if (st_hashtable_val_can_convert(&qm, st_hashtable_value_signed_integer))
-			quick_mode = st_hashtable_val_convert_to_signed_integer(&qm) != 0;
-	}
-
-	self->report = st_job_check_archive_report_new(job, self->archive, quick_mode);
+	self->report = st_job_check_archive_report_new(job, self->archive, self->quick_mode);
 
 	int failed;
-
-	if (quick_mode)
+	if (self->quick_mode)
 		failed = st_job_check_archive_quick_mode(self);
 	else
 		failed = st_job_check_archive_thorough_mode(self);

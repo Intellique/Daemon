@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 14 Nov 2013 13:03:20 +0100                            *
+*  Last modified: Thu, 21 Nov 2013 11:42:53 +0100                            *
 \****************************************************************************/
 
 // json_array, json_array_append_new, json_decref, json_dumps, json_integer,
@@ -223,7 +223,7 @@ void st_io_json_write_to(int fd, struct json_t * data, bool need_close) {
 		return;
 
 	char * string = json_dumps(data, JSON_COMPACT);
-	write(fd, data, strlen(string));
+	write(fd, string, strlen(string));
 	free(string);
 
 	if (need_close)
