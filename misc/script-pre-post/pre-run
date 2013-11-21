@@ -51,6 +51,8 @@ Job:
         "name": string, // nom de l'archive
         "uuid": string, // l'identifiant de l'archive
         "size": integer, // taille de l'archive en octet
+		"checksum ok": bool, // true si la vérification a réussi
+		"checksum time": integer ou null, // l'heure de la vérification ou nulle si jamais vérifié
         "volumes": [ {
           "position": integer, // position du volume dans l'archive
           "size": integer, // taille du volume en octet
@@ -59,6 +61,8 @@ Job:
           "checksum": {
             "key": "value", ... // 'key' correspond à l'algorithme utilisé et 'value' à l'empreinte calculé
           }, // empreintes du volumes calculées lors de l'archivage
+		  "checksum ok": bool, // true si la vérification a réussi
+		  "checksum time": integer ou null, // l'heure de la vérification ou nulle si jamais vérifié
           "files": [ {
             "path": string, // chemin complet du fichier lors de l'archivage
             "type": string, // type du fichier (répertoire, ...)
@@ -73,6 +77,9 @@ Job:
             "checksum": {
               "key": "value", ... // 'key' correspond à l'algorithme utilisé et 'value' à l'empreinte calculé
             }, // empreintes du fichier calculées lors de l'archivage
+			"checksum ok": bool, // true si la vérification a réussi
+			"checksum time": integer ou null, // l'heure de la vérification ou nulle si jamais vérifié
+			"archived time": integer, // l'heure d'archivage
           }, ... ], // liste des fichiers présent dans le volume
           "nb files": integer, // nombre de fichiers dans le volume
           "media": {
@@ -136,6 +143,7 @@ Job:
             }, // empreintes du fichier calculées lors de l'archivage
 			"checksum ok": bool, // true si la vérification a réussi
 			"checksum time": integer, // l'heure de la vérification
+			"archived time": integer, // l'heure d'archivage
           }, ... ], // liste des fichiers présent dans le volume
           "media": {
             "uuid": string, // l'identifiant unique du média
@@ -165,6 +173,60 @@ Job:
 * copy-archive:
   - pre: {
     "send": {
+      "source archive": {
+        "name": string, // nom de l'archive
+        "uuid": string, // l'identifiant de l'archive
+        "size": integer, // taille de l'archive en octet
+		"checksum ok": bool, // true si la vérification a réussi
+		"checksum time": integer ou null, // l'heure de la vérification ou nulle si jamais vérifié
+        "volumes": [ {
+          "position": integer, // position du volume dans l'archive
+          "size": integer, // taille du volume en octet
+          "start time": integer, // l'heure de création du volume, en seconde depuis l'Epoch
+          "end time": integer, // l'heure de fin de création du volume, en seconde depuis l'Epoch
+          "checksum": {
+            "key": "value", ... // 'key' correspond à l'algorithme utilisé et 'value' à l'empreinte calculé
+          }, // empreintes du volumes calculées lors de l'archivage
+		  "checksum ok": bool, // true si la vérification a réussi
+		  "checksum time": integer ou null, // l'heure de la vérification ou nulle si jamais vérifié
+          "files": [ {
+            "name": string, // chemin complet du fichier lors de l'archivage
+            "type": string, // type du fichier (répertoire, ...)
+            "mime type": string, // type mime identique à 'file -i filename'
+            "owner id": integer, // uid du fichier
+            "owner": string, // propriétaire du fichier
+            "group id": integer, // gid du fichier
+            "group": string, // groupe du fichier
+            "perm": string, // permission du fichier
+            "size": integer, // taille du fichier
+            "block position": integer, // position du fichier dans le volume
+            "checksum": {
+              "key": "value", ... // 'key' correspond à l'algorithme utilisé et 'value' à l'empreinte calculé
+            }, // empreintes du fichier calculées lors de l'archivage
+			"checksum ok": bool, // true si la vérification a réussi
+			"checksum time": integer ou null, // l'heure de la vérification ou nulle si jamais vérifié
+          }, ... ], // liste des fichiers présent dans le volume
+          "media": {
+            "uuid": string, // l'identifiant unique du média
+            "label": string ou null, // label du média si connu ou valeur nulle
+            "name": string, // nom du média défini par l'utilisateur
+            "medium serial number": string, // numéro de série du média
+          }, // information concernant le média
+          "media position": integer, // position du fichier dans le média
+        }, ... ], // volumes de l'archive
+        "nb volumes": integer, // nombre de volumes
+		"pool": {
+		  "uuid": string, // l'identifiant du pool
+		  "name": string, // nom du pool
+		}, // information du pool
+      }, // information de l'archive
+	  "destination archive": {
+        "name": string, // nom de l'archive
+		"pool": {
+		  "uuid": string, // l'identifiant du pool
+		  "name": string, // nom du pool
+		}, // information du pool
+	  }, // information de l'archive de destination
     },
     "received": {
         "data": { // données passées to job

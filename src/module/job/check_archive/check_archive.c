@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 21 Nov 2013 12:50:56 +0100                            *
+*  Last modified: Thu, 21 Nov 2013 16:06:42 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -223,6 +223,8 @@ static void st_job_check_archive_post_run(struct st_job * job) {
 				json_object_set_new(volume, "check time", json_integer(file->check_time));
 			}
 
+			json_object_set_new(jfile, "archived time", json_integer(file->archived_time));
+
 			json_array_append_new(jfiles, jfile);
 		}
 		json_object_set_new(volume, "files", jfiles);
@@ -278,6 +280,11 @@ static bool st_job_check_archive_pre_run(struct st_job * job) {
 	json_object_set_new(archive, "volumes", volumes);
 	json_object_set_new(archive, "nb volumes", json_integer(self->archive->nb_volumes));
 
+	if (self->archive->check_time > 0) {
+		json_object_set_new(archive, "checksum ok", self->archive->check_ok ? json_true() : json_false());
+		json_object_set_new(archive, "check time", json_integer(self->archive->check_time));
+	}
+
 	unsigned int i;
 	for (i = 0; i < self->archive->nb_volumes; i++) {
 		json_t * volume = json_object();
@@ -297,6 +304,10 @@ static bool st_job_check_archive_pre_run(struct st_job * job) {
 		}
 		free(checksums);
 		json_object_set_new(volume, "checksums", checksum);
+		if (vol->check_time > 0) {
+			json_object_set_new(volume, "checksum ok", vol->check_ok ? json_true() : json_false());
+			json_object_set_new(volume, "check time", json_integer(vol->check_time));
+		}
 
 		json_t * jfiles = json_array();
 		for (j = 0; j < vol->nb_files; j++) {
@@ -328,6 +339,12 @@ static bool st_job_check_archive_pre_run(struct st_job * job) {
 			}
 			free(checksums);
 			json_object_set_new(jfile, "checksums", checksum);
+			if (file->check_time > 0) {
+				json_object_set_new(jfile, "checksum ok", file->check_ok ? json_true() : json_false());
+				json_object_set_new(jfile, "check time", json_integer(file->check_time));
+			}
+
+			json_object_set_new(jfile, "archived time", json_integer(file->archived_time));
 
 			json_array_append_new(jfiles, jfile);
 		}
