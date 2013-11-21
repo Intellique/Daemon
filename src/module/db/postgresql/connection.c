@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 18 Nov 2013 11:33:23 +0100                            *
+*  Last modified: Thu, 21 Nov 2013 15:51:28 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2792,7 +2792,7 @@ static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct s
 			st_db_postgresql_get_time(result, i, 10, &file->modify_time);
 			st_db_postgresql_get_time(result, i, 11, &file->archived_time);
 			st_db_postgresql_get_bool(result, i, 12, &file->check_ok);
-			if (PQgetisnull(result, i, 13))
+			if (!PQgetisnull(result, i, 13))
 				st_db_postgresql_get_time(result, i, 13, &file->check_time);
 			st_db_postgresql_get_ssize(result, i, 14, &file->size);
 
@@ -2923,7 +2923,7 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 			st_db_postgresql_get_time(result, i, 3, &volume->end_time);
 			st_db_postgresql_get_bool(result, i, 4, &volume->check_ok);
 			volume->check_time = 0;
-			if (PQgetisnull(result, i, 5))
+			if (!PQgetisnull(result, i, 5))
 				st_db_postgresql_get_time(result, i, 5, &volume->check_time);
 
 			st_db_postgresql_get_ssize(result, i, 6, &volume->size);
