@@ -5,7 +5,12 @@ use warnings;
 
 my $param = shift;
 
-my $data_in = join('\n', <>);
+my $data_in = do { local $/; <STDIN> };
+
+if (open my $fd, '>', 'script.json') {
+	print { $fd } $data_in;
+	close $fd;
+}
 
 # sleep 300;
 
