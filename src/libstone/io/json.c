@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 21 Nov 2013 11:42:53 +0100                            *
+*  Last modified: Fri, 22 Nov 2013 13:22:54 +0100                            *
 \****************************************************************************/
 
 // json_array, json_array_append_new, json_decref, json_dumps, json_integer,
@@ -218,7 +218,7 @@ static json_t * st_io_json_volume(struct st_archive_volume * volume) {
 	return jvolume;
 }
 
-void st_io_json_write_to(int fd, struct json_t * data, bool need_close) {
+void st_io_json_write_to(int fd, json_t * data, bool need_close) {
 	if (data == NULL)
 		return;
 

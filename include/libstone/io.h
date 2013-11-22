@@ -22,12 +22,14 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 14 Nov 2013 18:22:22 +0100                            *
+*  Last modified: Fri, 22 Nov 2013 13:21:36 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_IO_H__
 #define __STONE_IO_H__
 
+// json_t
+#include <jansson.h>
 // bool
 #include <stdbool.h>
 // off_t, ssize_t
@@ -35,7 +37,6 @@
 
 struct st_archive;
 struct st_hashtable;
-struct json_t;
 
 /**
  * \struct st_stream_reader
@@ -133,9 +134,9 @@ ssize_t st_stream_writer_printf(struct st_stream_writer * writer, const char * f
 struct st_stream_reader * st_io_file_reader(const char * filename);
 struct st_stream_writer * st_io_file_writer(const char * filename);
 
-struct json_t * st_io_json_read_from(int fd, bool close);
-bool st_io_json_should_run(struct json_t * data);
-void st_io_json_write_to(int fd, struct json_t * data, bool close);
+json_t * st_io_json_read_from(int fd, bool close);
+bool st_io_json_should_run(json_t * data);
+void st_io_json_write_to(int fd, json_t * data, bool close);
 ssize_t st_io_json_writer(struct st_stream_writer * writer, struct st_archive * archive);
 
 struct st_stream_writer * st_io_temp_writer(char * filename, int sufixlength);

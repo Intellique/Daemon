@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 19 Nov 2013 10:37:21 +0100                            *
+*  Last modified: Fri, 22 Nov 2013 13:27:24 +0100                            *
 \****************************************************************************/
 
 #include <stddef.h>
@@ -148,7 +148,7 @@ json_t * st_script_run(struct st_database_connection * connect, struct st_job * 
 	return result;
 }
 
-bool st_io_json_should_run(struct json_t * data) {
+bool st_io_json_should_run(json_t * data) {
 	bool sr = false;
 
 	if (data == NULL)
