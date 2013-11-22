@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 15 Nov 2013 16:56:13 +0100                            *
+*  Last modified: Thu, 21 Nov 2013 17:30:37 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -50,14 +50,16 @@ static bool st_job_copy_archive_check(struct st_job * job);
 static void st_job_copy_archive_free(struct st_job * job);
 static void st_job_copy_archive_init(void) __attribute__((constructor));
 static void st_job_copy_archive_new_job(struct st_job * job, struct st_database_connection * db);
-static bool st_job_copy_archive_pre_run_script(struct st_job * job);
+static void st_job_copy_archive_post_run(struct st_job * job);
+static bool st_job_copy_archive_pre_run(struct st_job * job);
 static int st_job_copy_archive_run(struct st_job * job);
 
 static struct st_job_ops st_job_copy_archive_ops = {
-	.check          = st_job_copy_archive_check,
-	.free           = st_job_copy_archive_free,
-	.pre_run_script = st_job_copy_archive_pre_run_script,
-	.run            = st_job_copy_archive_run,
+	.check    = st_job_copy_archive_check,
+	.free     = st_job_copy_archive_free,
+	.post_run = st_job_copy_archive_post_run,
+	.pre_run  = st_job_copy_archive_pre_run,
+	.run      = st_job_copy_archive_run,
 };
 
 static struct st_job_driver st_job_copy_archive_driver = {
@@ -80,6 +82,28 @@ static bool st_job_copy_archive_check(struct st_job * job) {
 }
 
 static void st_job_copy_archive_free(struct st_job * job) {
+	struct st_job_copy_archive_private * self = malloc(sizeof(struct st_job_copy_archive_private));
+
+	unsigned int i;
+	for (i = 0; i < self->copy->nb_volumes; i++) {
+		struct st_archive_volume * vol = self->copy->volumes + i;
+		free(vol->files);
+		vol->files = NULL;
+		vol->nb_files = 0;
+	}
+
+	self->copy->copy_of = NULL;
+	st_archive_free(self->archive);
+	st_archive_free(self->copy);
+
+	self->connect->ops->free(self->connect);
+	self->connect = NULL;
+
+	for (i = 0; i < self->nb_checksums; i++)
+		free(self->checksums[i]);
+	free(self->checksums);
+	self->checksums = NULL;
+
 	free(job->data);
 	job->data = NULL;
 }
@@ -95,8 +119,24 @@ static void st_job_copy_archive_new_job(struct st_job * job, struct st_database_
 
 	self->total_done = 0;
 	self->archive_size = 0;
-	self->archive = NULL;
-	self->copy = NULL;
+	self->archive = self->connect->ops->get_archive_volumes_by_job(self->connect, job);
+
+	unsigned int i;
+	for (i = 0; i < self->archive->nb_volumes; i++) {
+		struct st_archive_volume * vol = self->archive->volumes + i;
+
+		self->connect->ops->get_archive_files_by_job_and_archive_volume(self->connect, self->job, vol);
+		self->archive_size += self->archive->volumes[i].size;
+		self->nb_remain_files += vol->nb_files;
+	}
+
+	self->copy = st_archive_new(self->job->name, self->job->user);
+	self->copy->copy_of = self->archive;
+	self->copy->metadatas = NULL;
+	if (self->archive->metadatas != NULL)
+		self->copy->metadatas = strdup(self->archive->metadatas);
+
+	self->checksums = self->connect->ops->get_checksums_by_pool(self->connect, self->pool, &self->nb_checksums);
 
 	self->drive_input = NULL;
 	self->slot_input = NULL;
@@ -117,12 +157,15 @@ static void st_job_copy_archive_new_job(struct st_job * job, struct st_database_
 	job->ops = &st_job_copy_archive_ops;
 }
 
-static bool st_job_copy_archive_pre_run_script(struct st_job * job) {
+static void st_job_copy_archive_post_run(struct st_job * job) {
+}
+
+static bool st_job_copy_archive_pre_run(struct st_job * job) {
 	struct st_job_copy_archive_private * self = job->data;
 
 	json_t * data = json_object();
 
-	json_t * returned_data = st_script_run(self->connect, job->driver->name, st_script_type_pre, self->pool, data);
+	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, data);
 	bool sr = st_io_json_should_run(returned_data);
 
 	json_decref(returned_data);
@@ -135,25 +178,6 @@ static int st_job_copy_archive_run(struct st_job * job) {
 	struct st_job_copy_archive_private * self = job->data;
 
 	st_job_add_record(self->connect, st_log_level_info, job, "Start copy archive job (named: %s), num runs %ld", job->name, job->num_runs);
-
-	self->archive = self->connect->ops->get_archive_volumes_by_job(self->connect, job);
-
-	unsigned int i;
-	for (i = 0; i < self->archive->nb_volumes; i++) {
-		struct st_archive_volume * vol = self->archive->volumes + i;
-
-		self->connect->ops->get_archive_files_by_job_and_archive_volume(self->connect, self->job, vol);
-		self->archive_size += self->archive->volumes[i].size;
-		self->nb_remain_files += vol->nb_files;
-	}
-
-	self->copy = st_archive_new(self->job->name, self->job->user);
-	self->copy->copy_of = self->archive;
-	self->copy->metadatas = NULL;
-	if (self->archive->metadatas != NULL)
-		self->copy->metadatas = strdup(self->archive->metadatas);
-
-	self->checksums = self->connect->ops->get_checksums_by_pool(self->connect, self->pool, &self->nb_checksums);
 
 	job->done = 0.01;
 
@@ -175,20 +199,6 @@ static int st_job_copy_archive_run(struct st_job * job) {
 	}
 
 	// release memory
-	for (i = 0; i < self->copy->nb_volumes; i++) {
-		struct st_archive_volume * vol = self->copy->volumes + i;
-		free(vol->files);
-		vol->files = NULL;
-		vol->nb_files = 0;
-	}
-
-	self->copy->copy_of = NULL;
-	st_archive_free(self->archive);
-	st_archive_free(self->copy);
-
-	self->connect->ops->free(self->connect);
-	self->connect = NULL;
-
 	if (self->drive_input != NULL) {
 		self->drive_input->lock->ops->unlock(self->drive_input->lock);
 		self->drive_input = NULL;
@@ -196,11 +206,6 @@ static int st_job_copy_archive_run(struct st_job * job) {
 
 	self->drive_output->lock->ops->unlock(self->drive_output->lock);
 	self->drive_output = NULL;
-
-	for (i = 0; i < self->nb_checksums; i++)
-		free(self->checksums[i]);
-	free(self->checksums);
-	self->checksums = NULL;
 
 	if (job->sched_status == st_job_status_running) {
 		job->done = 1;
