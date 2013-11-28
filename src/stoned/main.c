@@ -22,13 +22,15 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 20 Aug 2013 17:30:18 +0200                            *
+*  Last modified: Fri, 29 Nov 2013 00:35:39 +0100                            *
 \****************************************************************************/
 
 // getopt_long
 #include <getopt.h>
 // printf
 #include <stdio.h>
+// uname
+#include <sys/utsname.h>
 // daemon
 #include <unistd.h>
 
@@ -175,8 +177,25 @@ int main(int argc, char ** argv) {
 		connect = config->ops->connect(config);
 
 	if (connect == NULL) {
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: Failed to connect to database ");
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: Failed to connect to database");
+
+		st_log_stop_logger();
+
 		return 5;
+	}
+
+	// check hostname in database
+	static struct utsname name;
+	uname(&name);
+
+	if (!connect->ops->find_host(connect, NULL, name.nodename)) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: Host '%s' not found into database", name.nodename);
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Please, run stone-config to fix it");
+
+		connect->ops->free(connect);
+		st_log_stop_logger();
+
+		return 6;
 	}
 
 	// synchronize checksum plugins
@@ -185,15 +204,23 @@ int main(int argc, char ** argv) {
 	// synchronize job plugins
 	st_job_sync_plugins(connect);
 
+	// synchronize vtls
 	st_vtl_sync(connect);
 
-	if (st_changer_setup())
-		return 6;
+	if (st_changer_setup()) {
+		connect->ops->free(connect);
+		st_log_stop_logger();
+
+		return 7;
+	}
 
 	// start remote admin
 	//st_admin_start();
 
+	// run scheduler loop
 	st_sched_do_loop(connect);
+
+	connect->ops->free(connect);
 
 	// remove pid file
 	st_util_file_rm(pid_file);
@@ -204,8 +231,6 @@ int main(int argc, char ** argv) {
 	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone exit");
 
 	st_log_stop_logger();
-
-	connect->ops->free(connect);
 
 	usleep(250);
 
