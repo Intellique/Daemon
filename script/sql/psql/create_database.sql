@@ -240,6 +240,7 @@ CREATE TABLE DriveFormatSupport (
 
 CREATE TABLE Host (
     id SERIAL PRIMARY KEY,
+    uuid UUID NOT NULL UNIQUE,
 
     name VARCHAR(255) NOT NULL,
     domaine VARCHAR(255) NULL,
