@@ -22,13 +22,19 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 15 Oct 2012 09:58:55 +0200                            *
+*  Last modified: Fri, 29 Nov 2013 00:14:20 +0100                            *
 \****************************************************************************/
 
 // getopt_long
 #include <getopt.h>
 // printf
 #include <stdio.h>
+// strchr
+#include <string.h>
+// uname
+#include <sys/utsname.h>
+// uuid_generate, uuid_unparse_lower
+#include <uuid/uuid.h>
 
 #include <libstone/conf.h>
 #include <libstone/database.h>
@@ -112,11 +118,60 @@ int main(int argc, char ** argv) {
 	}
 
 	// check if config file contains a database
-	if (!st_database_get_default_driver()) {
+	struct st_database * db = st_database_get_default_driver();
+	if (db == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: There is no database into config file '%s'", config_file);
 		printf("Fatal error: There is no database into config file '%s'", config_file);
 		return 5;
 	}
+
+	struct st_database_config * config = NULL;
+	struct st_database_connection * connect = NULL;
+
+	if (db != NULL)
+		config = db->ops->get_default_config();
+	if (config != NULL)
+		connect = config->ops->connect(config);
+
+	if (connect == NULL) {
+		st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: Failed to connect to database ");
+		return 6;
+	}
+
+	// check hostname in database
+	static struct utsname name;
+	uname(&name);
+
+	if (!connect->ops->find_host(connect, NULL, name.nodename)) {
+		st_log_write_all(st_log_level_warning, st_log_type_daemon, "Host '%s' not found into database", name.nodename);
+
+		uuid_t id;
+		static char uuid[37];
+
+		uuid_generate(id);
+		uuid_unparse_lower(id, uuid);
+
+		char * domaine = strchr(name.nodename, '.');
+		if (domaine != NULL) {
+			*domaine = '\0';
+			domaine++;
+		}
+
+		int failed = connect->ops->add_host(connect, uuid, name.nodename, domaine, NULL);
+
+		if (domaine != NULL) {
+			domaine--;
+			*domaine = '.';
+		}
+
+		if (failed != 0)
+			st_log_write_all(st_log_level_error, st_log_type_daemon, "Failed to add host '%s'", name.nodename);
+		else
+			st_log_write_all(st_log_level_warning, st_log_type_daemon, "Host '%s' has been inserted into database", name.nodename);
+	}
+
+	connect->ops->close(connect);
+	connect->ops->free(connect);
 
 	if (verbose > 0)
 		printf("Detect hardware configuration\n");

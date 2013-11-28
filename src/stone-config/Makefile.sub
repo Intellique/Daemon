@@ -2,7 +2,7 @@ STONECONFIG_SRC_DIR			:= src/stone-config
 
 STONECONFIG_BIN				:= bin/stone-config
 STONECONFIG_CFLAG			:=
-STONECONFIG_LD				:= -lstone -ldl -Llib
+STONECONFIG_LD				:= -lstone -luuid -ldl -Llib
 
 STONECONFIG_DEPEND_LIB		:= lib/libstone.so
 

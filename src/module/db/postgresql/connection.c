@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 28 Nov 2013 18:15:51 +0100                            *
+*  Last modified: Thu, 28 Nov 2013 19:15:19 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -661,7 +661,7 @@ static bool st_db_postgresql_find_host(struct st_database_connection * connect, 
 	struct st_db_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_host_by_name_or_uuid";
-	st_db_postgresql_prepare(self, query, "SELECT id FROM host WHERE uuid = $1 || name = $2 OR name || '.' || domaine = $2 LIMIT 1");
+	st_db_postgresql_prepare(self, query, "SELECT id FROM host WHERE uuid::TEXT = $1 OR name = $2 OR name || '.' || domaine = $2 LIMIT 1");
 
 	const char * param[] = { uuid, hostname };
 	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
