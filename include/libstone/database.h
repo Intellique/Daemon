@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 08 Nov 2013 14:55:31 +0100                            *
+*  Last modified: Thu, 28 Nov 2013 18:03:27 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -143,6 +143,9 @@ struct st_database_connection {
 		 * \returns 0 if ok
 		 */
 		int (*sync_plugin_job)(struct st_database_connection * connect, const char * plugin);
+
+		int (*add_host)(struct st_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description);
+		bool (*find_host)(struct st_database_connection * connect, const char * uuid, const char * hostname);
 
 		/**
 		 * \brief Check if \a changer is enable
