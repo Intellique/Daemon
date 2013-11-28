@@ -163,6 +163,27 @@ static void st_job_copy_archive_post_run(struct st_job * job) {
 static bool st_job_copy_archive_pre_run(struct st_job * job) {
 	struct st_job_copy_archive_private * self = job->data;
 
+
+	struct st_archive * archive = self->archive;
+	json_t * src_archive = json_object();
+	json_object_set_new(src_archive, "name", json_string(archive->name));
+	json_object_set_new(src_archive, "uuid", json_string(archive->uuid));
+	json_object_set_new(src_archive, "size", json_integer(self->archive_size));
+	json_object_set_new(src_archive, "checksum ok", archive->check_ok ? json_true() : json_false());
+	if (archive->check_time > 0)
+		json_object_set_new(src_archive, "check time", json_integer(archive->check_time));
+	else
+		json_object_set_new(src_archive, "check time", json_null());
+
+	json_t * volumes = json_array();
+	json_object_set_new(src_archive, "volumes", volumes);
+	json_object_set_new(src_archive, "nb volumes", json_integer(archive->nb_volumes));
+
+	unsigned int i;
+	for (i = 0; i < archive->nb_volumes; i++) {
+		struct st_archive_volume * vol = archive->volumes + i;
+	}
+
 	json_t * data = json_object();
 
 	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, data);
