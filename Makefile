@@ -169,6 +169,7 @@ clean:
 	@rm -Rf $(foreach dir,${BIN_DIRS},$(word 1,$(subst /, ,$(dir)))) ${BUILD_DIR}
 
 clean-depend:
+	@echo ' RM       -Rf depend'
 	@rm -Rf depend
 
 cscope: cscope.out
