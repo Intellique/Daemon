@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 20 Nov 2013 17:00:48 +0100                            *
+*  Last modified: Fri, 29 Nov 2013 18:18:32 +0100                            *
 \****************************************************************************/
 
 // free, malloc
@@ -149,6 +149,8 @@ static void st_slot_iterator_private_move_to_next_new_media(struct st_slot_itera
 
 		if (st_slot_iterator_private_move_to_next_new_media2(self, ch))
 			return;
+
+		self->i_slot = 0;
 	}
 
 	while (self->vtls != NULL) {
@@ -157,6 +159,7 @@ static void st_slot_iterator_private_move_to_next_new_media(struct st_slot_itera
 			return;
 
 		self->vtls = self->vtls->next;
+		self->i_slot = 0;
 	}
 }
 
@@ -201,6 +204,8 @@ static void st_slot_iterator_private_move_to_next_by_pool(struct st_slot_iterato
 
 		if (st_slot_iterator_private_move_to_next_by_pool2(self, ch))
 			return;
+
+		self->i_slot = 0;
 	}
 
 	while (self->vtls != NULL) {
@@ -209,6 +214,7 @@ static void st_slot_iterator_private_move_to_next_by_pool(struct st_slot_iterato
 			return;
 
 		self->vtls = self->vtls->next;
+		self->i_slot = 0;
 	}
 }
 
