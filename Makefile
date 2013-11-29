@@ -152,7 +152,7 @@ DEP_DIRS	:= $(patsubst ${BUILD_DIR}/%,${DEPEND_DIR}/%,${OBJ_DIRS})
 
 # phony target
 .DEFAULT_GOAL	:= all
-.PHONY: all binaries clean cscope ctags debug distclean lib package prepare realclean stat stat-extra TAGS tar test
+.PHONY: all binaries clean clean-depend cscope ctags debug distclean lib package prepare realclean stat stat-extra TAGS tar test
 .NOTPARALLEL: prepare
 
 all: binaries cscope tags
@@ -167,6 +167,9 @@ check:
 clean:
 	@echo ' RM       -Rf $(foreach dir,${BIN_DIRS},$(word 1,$(subst /, ,$(dir)))) ${BUILD_DIR}'
 	@rm -Rf $(foreach dir,${BIN_DIRS},$(word 1,$(subst /, ,$(dir)))) ${BUILD_DIR}
+
+clean-depend:
+	@rm -Rf depend
 
 cscope: cscope.out
 
