@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 02 Dec 2013 11:01:48 +0100                            *
+*  Last modified: Mon, 02 Dec 2013 11:58:09 +0100                            *
 \****************************************************************************/
 
 // calloc
@@ -91,6 +91,7 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 			self->current_volume->nb_files++;
 			copy_f->file = file;
 			copy_f->position = position;
+			file->archived_time = time(NULL);
 
 			struct st_format_file header;
 			enum st_format_reader_header_status sr = reader->ops->get_header(reader, &header);
@@ -105,7 +106,6 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 						self->current_volume->nb_files++;
 						copy_f->file = file;
 						copy_f->position = 0;
-						file->archived_time = time(NULL);
 					}
 
 					if (S_ISREG(header.mode)) {
