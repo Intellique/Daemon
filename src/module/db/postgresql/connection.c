@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 21 Nov 2013 15:51:28 +0100                            *
+*  Last modified: Mon, 02 Dec 2013 12:13:21 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -3649,7 +3649,7 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 		asprintf(&block_number, "%zd", f->position);
 
 		char atime[32];
-		st_util_time_convert(&f->file->create_time, "%F %T", atime, 32);
+		st_util_time_convert(&f->file->archived_time, "%F %T", atime, 32);
 
 		const char * param[] = { volumeid, file_id, block_number, atime };
 		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
