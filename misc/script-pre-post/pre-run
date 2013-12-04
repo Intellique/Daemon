@@ -7,8 +7,12 @@ Job:
           "name": string, // nom du pilote de la base de données
         }, // information concernant la base de données
       }, // information concernat la sauvegarde
+	  "host": {
+		"name": string, // nom de l'hôte
+		"domaine": string or null, // domaine de l'hôte, peut être nulle
+	  }, // information concernant l'hôte sur lequel s'execute la tâche
       "job": {
-      }, // information concernant la tâche de vérification
+      }, // information concernant la tâche de sauvegarde de la base de données
     },
     "received": {
       "data": { }, // données passées to job
@@ -36,8 +40,12 @@ Job:
         }, ... ], // volumes d'une sauvegarde
         "nb volumes": integer, // nombres de volumes
       }, // information concernat la sauvegarde
+	  "host": {
+		"name": string, // nom de l'hôte
+		"domaine": string or null, // domaine de l'hôte, peut être nulle
+	  }, // information concernant l'hôte sur lequel s'execute la tâche
       "job": {
-      }, // information concernant la tâche de vérification
+      }, // information concernant la tâche de sauvegarde de la base de données
     },
     "received": {
       "message": string, // optionel, message à insérer dans les logs
