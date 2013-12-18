@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 18 Dec 2013 18:06:36 +0100                            *
+*  Last modified: Wed, 18 Dec 2013 21:46:39 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -52,7 +52,6 @@
 #include <libstone/library/vtl.h>
 #include <libstone/log.h>
 #include <libstone/util/file.h>
-#include <libstone/util/string.h>
 #include <stoned/library/changer.h>
 
 #include "common.h"
@@ -397,7 +396,9 @@ int st_changer_setup(void) {
 				snprintf(path, sizeof(path), "/sys/class/sas_device/%s/sas_address", ptr);
 
 				char * data = st_util_file_read_all_from(path);
-				st_util_string_rtrim(data, '\n');
+				cp = strchr(data, '\n');
+				if (cp != NULL)
+					*cp = '\0';
 
 				asprintf(&st_changers[i].wwn, "sas:%s", data);
 				free(data);

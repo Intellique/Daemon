@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 18 Dec 2013 17:34:44 +0100                            *
+*  Last modified: Wed, 18 Dec 2013 21:45:54 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -46,7 +46,6 @@
 #include <libstone/database.h>
 #include <libstone/log.h>
 #include <libstone/util/file.h>
-#include <libstone/util/string.h>
 
 #include "scan.h"
 #include "scsi.h"
@@ -173,7 +172,9 @@ int stcfg_scan(void) {
 				snprintf(path, sizeof(path), "/sys/class/sas_device/%s/sas_address", ptr);
 
 				char * data = st_util_file_read_all_from(path);
-				st_util_string_rtrim(data, '\n');
+				cp = strchr(data, '\n');
+				if (cp != NULL)
+					*cp = '\0';
 
 				asprintf(&changers[i].wwn, "sas:%s", data);
 				free(data);
