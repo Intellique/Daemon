@@ -22,22 +22,30 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 30 Jan 2013 22:09:35 +0100                            *
+*  Last modified: Wed, 18 Dec 2013 21:45:54 +0100                            *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // glob, globfree
 #include <glob.h>
-// printf, sscanf
+// realpath
+#include <limits.h>
+// printf, sscanf, snprintf
 #include <stdio.h>
-// calloc, realloc
+// calloc, free, realloc, realpath
 #include <stdlib.h>
-// strcat, strchr, strcpy
+// strcat, strchr, strcpy, strstr
 #include <string.h>
-// readlink
+// stat
+#include <sys/stat.h>
+// stat
+#include <sys/types.h>
+// readlink, stat
 #include <unistd.h>
 
 #include <libstone/database.h>
 #include <libstone/log.h>
+#include <libstone/util/file.h>
 
 #include "scan.h"
 #include "scsi.h"
@@ -125,6 +133,8 @@ int stcfg_scan(void) {
 		link[length] = '\0';
 
 		char * ptr = strrchr(link, '/') + 1;
+		int host = 0, target = 0, channel = 0, bus = 0;
+		sscanf(ptr, "%d:%d:%d:%d", &host, &target, &channel, &bus);
 
 		char path[256];
 		strcpy(path, gl.gl_pathv[i]);
@@ -145,7 +155,31 @@ int stcfg_scan(void) {
 		changers[i].vendor = NULL;
 		changers[i].revision = NULL;
 		changers[i].serial_number = NULL;
+		changers[i].wwn = NULL;
 		changers[i].barcode = false;
+
+		snprintf(path, sizeof(path), "/sys/class/sas_host/host%d", host);
+		struct stat st;
+		if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
+			realpath(gl.gl_pathv[i], link);
+
+			ptr = strstr(link, "end_device-");
+			if (ptr != NULL) {
+				char * cp = strchr(ptr, '/');
+				if (cp != NULL)
+					*cp = '\0';
+
+				snprintf(path, sizeof(path), "/sys/class/sas_device/%s/sas_address", ptr);
+
+				char * data = st_util_file_read_all_from(path);
+				cp = strchr(data, '\n');
+				if (cp != NULL)
+					*cp = '\0';
+
+				asprintf(&changers[i].wwn, "sas:%s", data);
+				free(data);
+			}
+		}
 
 		changers[i].drives = NULL;
 		changers[i].nb_drives = 0;
