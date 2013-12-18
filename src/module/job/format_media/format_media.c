@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 20 Nov 2013 18:53:01 +0100                            *
+*  Last modified: Wed, 04 Dec 2013 23:37:49 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -37,6 +37,8 @@
 #include <string.h>
 // sleep
 #include <unistd.h>
+// uuid_generate, uuid_unparse_lower
+#include <uuid/uuid.h>
 
 #include <libstone/checksum.h>
 #include <libstone/database.h>
@@ -57,6 +59,7 @@
 
 struct st_job_format_media_private {
 	struct st_database_connection * connect;
+	struct st_media * media;
 	struct st_pool * pool;
 };
 
@@ -64,14 +67,16 @@ static bool st_job_format_media_check(struct st_job * job);
 static void st_job_format_media_free(struct st_job * job);
 static void st_job_format_media_init(void) __attribute__((constructor));
 static void st_job_format_media_new_job(struct st_job * job, struct st_database_connection * db);
-static bool st_job_format_media_pre_run_script(struct st_job * j);
+static void st_job_format_media_post_run(struct st_job * job);
+static bool st_job_format_media_pre_run(struct st_job * j);
 static int st_job_format_media_run(struct st_job * job);
 
 static struct st_job_ops st_job_format_media_ops = {
-	.check          = st_job_format_media_check,
-	.free           = st_job_format_media_free,
-	.pre_run_script = st_job_format_media_pre_run_script,
-	.run            = st_job_format_media_run,
+	.check    = st_job_format_media_check,
+	.free     = st_job_format_media_free,
+	.post_run = st_job_format_media_post_run,
+	.pre_run  = st_job_format_media_pre_run,
+	.run      = st_job_format_media_run,
 };
 
 static struct st_job_driver st_job_format_media_driver = {
@@ -92,12 +97,11 @@ static bool st_job_format_media_check(struct st_job * job) {
 
 	st_job_add_record(self->connect, st_log_level_info, job, "Start format media job (recover mode) (job name: %s), num runs %ld", job->name, job->num_runs);
 
-	struct st_media * media = st_media_get_by_job(job, self->connect);
-	if (media == NULL) {
+	if (self->media == NULL) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Media not found");
 		return false;
 	}
-	if (media->type == st_media_type_cleaning) {
+	if (self->media->type == st_media_type_cleaning) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Try to format a cleaning media");
 		return false;
 	}
@@ -124,7 +128,7 @@ static bool st_job_format_media_check(struct st_job * job) {
 		switch (state) {
 			case alert_user:
 				if (has_alert_user == false)
-					st_job_add_record(self->connect, st_log_level_warning, job, "Media not found (named: %s)", media->name);
+					st_job_add_record(self->connect, st_log_level_warning, job, "Media not found (named: %s)", self->media->name);
 				has_alert_user = true;
 				sleep(15);
 				state = look_for_media;
@@ -146,7 +150,7 @@ static bool st_job_format_media_check(struct st_job * job) {
 				if (drive->lock->ops->timed_lock(drive->lock, 2000)) {
 					sleep(5);
 					state = media_in_drive;
-				} else if (slot->media == media) {
+				} else if (slot->media == self->media) {
 					has_lock_on_drive = true;
 					stop = true;
 				} else {
@@ -160,7 +164,7 @@ static bool st_job_format_media_check(struct st_job * job) {
 
 			case look_for_media:
 				// lock of this slot can be owned by another job
-				slot = st_changer_find_slot_by_media(media);
+				slot = st_changer_find_slot_by_media(self->media);
 				state = slot != NULL ? media_in_drive : alert_user;
 				break;
 
@@ -181,7 +185,7 @@ static bool st_job_format_media_check(struct st_job * job) {
 		}
 	}
 
-	if (drive->slot->media != NULL && drive->slot->media != media) {
+	if (drive->slot->media != NULL && drive->slot->media != self->media) {
 		st_job_add_record(self->connect, st_log_level_info, job, "unloading media: %s from drive: { %s, %s, #%td }", drive->slot->media->name, drive->vendor, drive->model, drive - drive->changer->drives);
 		int failed = slot->changer->ops->unload(slot->changer, drive);
 		if (failed) {
@@ -197,7 +201,7 @@ static bool st_job_format_media_check(struct st_job * job) {
 	}
 
 	if (drive->slot->media == NULL) {
-		st_job_add_record(self->connect, st_log_level_info, job, "loading media: %s to drive: { %s, %s, #%td }", media->name, drive->vendor, drive->model, drive - drive->changer->drives);
+		st_job_add_record(self->connect, st_log_level_info, job, "loading media: %s to drive: { %s, %s, #%td }", self->media->name, drive->vendor, drive->model, drive - drive->changer->drives);
 		int failed = slot->changer->ops->load_slot(slot->changer, slot, drive);
 
 		if (has_lock_on_slot) {
@@ -207,7 +211,7 @@ static bool st_job_format_media_check(struct st_job * job) {
 		}
 
 		if (failed) {
-			st_job_add_record(self->connect, st_log_level_error, job, "failed to load media: %s from drive: { %s, %s, #%td }", media->name, drive->vendor, drive->model, drive - drive->changer->drives);
+			st_job_add_record(self->connect, st_log_level_error, job, "failed to load media: %s from drive: { %s, %s, #%td }", self->media->name, drive->vendor, drive->model, drive - drive->changer->drives);
 
 			if (has_lock_on_drive)
 				drive->lock->ops->unlock(drive->lock);
@@ -295,7 +299,7 @@ static bool st_job_format_media_check(struct st_job * job) {
 		}
 
 		// checking parsed value
-		if (ok && strcmp(uuid, media->uuid))
+		if (ok && strcmp(uuid, self->media->uuid))
 			ok = 0;
 
 		if (ok && strcmp(pool_id, pool->uuid))
@@ -347,19 +351,87 @@ static void st_job_format_media_init(void) {
 static void st_job_format_media_new_job(struct st_job * job, struct st_database_connection * db) {
 	struct st_job_format_media_private * self = malloc(sizeof(struct st_job_format_media_private));
 	self->connect = db->config->ops->connect(db->config);
+	self->media = st_media_get_by_job(job, self->connect);
 	self->pool = st_pool_get_by_job(job, self->connect);
 
 	job->data = self;
 	job->ops = &st_job_format_media_ops;
 }
 
-static bool st_job_format_media_pre_run_script(struct st_job * job) {
-	struct st_job_format_media_private * self = job->data;
+static void st_job_format_media_post_run(struct st_job * j) {
+	struct st_job_format_media_private * self = j->data;
+
+	json_t * job = json_object();
+
+	json_t * host = json_object();
+
+	json_t * media = json_object();
+	json_object_set_new(media, "uuid", json_string(self->media->uuid));
+	if (self->media->label != NULL)
+		json_object_set_new(media, "label", json_string(self->media->label));
+	else
+		json_object_set_new(media, "label", json_null());
+	json_object_set_new(media, "name", json_string(self->media->name));
+
+	json_t * pool = json_object();
+	json_object_set_new(pool, "uuid", json_string(self->pool->uuid));
+	json_object_set_new(pool, "name", json_string(self->pool->name));
 
 	json_t * data = json_object();
+	json_object_set_new(data, "job", job);
+	json_object_set_new(data, "host", host);
+	json_object_set_new(data, "media", media);
+	json_object_set_new(data, "pool", pool);
 
-	json_t * returned_data = st_script_run(self->connect, job->driver->name, st_script_type_pre, self->pool, data);
+	json_t * returned_data = st_script_run(self->connect, j, j->driver->name, st_script_type_post, self->pool, data);
+
+	json_decref(returned_data);
+	json_decref(data);
+}
+
+static bool st_job_format_media_pre_run(struct st_job * j) {
+	struct st_job_format_media_private * self = j->data;
+
+	json_t * job = json_object();
+
+	json_t * host = json_object();
+
+	json_t * media = json_object();
+	if (self->media->uuid[0] != '\0')
+		json_object_set_new(media, "uuid", json_string(self->media->uuid));
+	else
+		json_object_set_new(media, "uuid", json_null());
+	if (self->media->label != NULL)
+		json_object_set_new(media, "label", json_string(self->media->label));
+	else
+		json_object_set_new(media, "label", json_null());
+	json_object_set_new(media, "name", json_string(self->media->name));
+
+	json_t * pool = json_object();
+	json_object_set_new(pool, "uuid", json_string(self->pool->uuid));
+	json_object_set_new(pool, "name", json_string(self->pool->name));
+
+	json_t * data = json_object();
+	json_object_set_new(data, "job", job);
+	json_object_set_new(data, "host", host);
+	json_object_set_new(data, "media", media);
+	json_object_set_new(data, "pool", pool);
+
+	json_t * returned_data = st_script_run(self->connect, j, j->driver->name, st_script_type_pre, self->pool, data);
 	bool sr = st_io_json_should_run(returned_data);
+
+	media = json_object_get(returned_data, "media");
+	if (media != NULL) {
+		json_t * uuid = json_object_get(media, "uuid");
+
+		if (uuid != NULL && json_is_string(uuid)) {
+			const char * str_uuid = json_string_value(uuid);
+			uuid_t id;
+			if (uuid_parse(str_uuid, id) == 0) {
+			} else {
+			}
+		}
+	}
 
 	json_decref(returned_data);
 	json_decref(data);
@@ -372,23 +444,22 @@ int st_job_format_media_run(struct st_job * job) {
 
 	st_job_add_record(self->connect, st_log_level_info, job, "Start format media job (job name: %s), num runs %ld", job->name, job->num_runs);
 
-	struct st_media * media = st_media_get_by_job(job, self->connect);
-	if (media == NULL) {
+	if (self->media == NULL) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Media not found");
 		job->sched_status = st_job_status_error;
 		return 1;
 	}
-	if (media->type == st_media_type_cleaning) {
+	if (self->media->type == st_media_type_cleaning) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Try to format a cleaning media");
 		job->sched_status = st_job_status_error;
 		return 1;
 	}
-	if (media->type == st_media_type_worm && media->nb_volumes > 0) {
+	if (self->media->type == st_media_type_worm && self->media->nb_volumes > 0) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Try to format a worm media with data");
 		job->sched_status = st_job_status_error;
 		return 1;
 	}
-	if (media->status == st_media_status_error)
+	if (self->media->status == st_media_status_error)
 		st_job_add_record(self->connect, st_log_level_warning, job, "Try to format a media with error status");
 
 	if (self->pool == NULL) {
@@ -401,7 +472,7 @@ int st_job_format_media_run(struct st_job * job) {
 		return 1;
 	}
 
-	if (media->format != self->pool->format) {
+	if (self->media->format != self->pool->format) {
 		st_job_add_record(self->connect, st_log_level_error, job, "Try to format a media whose type does not match the format of pool");
 		job->sched_status = st_job_status_error;
 		return 1;
@@ -424,7 +495,7 @@ int st_job_format_media_run(struct st_job * job) {
 			case alert_user:
 				job->sched_status = st_job_status_waiting;
 				if (!has_alert_user)
-					st_job_add_record(self->connect, st_log_level_warning, job, "Media not found (named: %s)", media->name);
+					st_job_add_record(self->connect, st_log_level_warning, job, "Media not found (named: %s)", self->media->name);
 				has_alert_user = true;
 				sleep(15);
 				state = look_for_media;
@@ -448,7 +519,7 @@ int st_job_format_media_run(struct st_job * job) {
 					job->sched_status = st_job_status_waiting;
 					sleep(5);
 					state = media_in_drive;
-				} else if (slot->media == media) {
+				} else if (slot->media == self->media) {
 					has_lock_on_drive = true;
 					stop = true;
 				} else {
@@ -462,7 +533,7 @@ int st_job_format_media_run(struct st_job * job) {
 
 			case look_for_media:
 				// lock of this slot can be owned by another job
-				slot = st_changer_find_slot_by_media(media);
+				slot = st_changer_find_slot_by_media(self->media);
 				state = slot != NULL ? media_in_drive : alert_user;
 				break;
 
@@ -489,7 +560,7 @@ int st_job_format_media_run(struct st_job * job) {
 	if (job->db_status != st_job_status_stopped)
 		job->done = 0.2;
 
-	if (job->db_status != st_job_status_stopped && drive->slot->media != NULL && drive->slot->media != media) {
+	if (job->db_status != st_job_status_stopped && drive->slot->media != NULL && drive->slot->media != self->media) {
 		st_job_add_record(self->connect, st_log_level_info, job, "unloading media: %s from drive: { %s, %s, #%td }", drive->slot->media->name, drive->vendor, drive->model, drive - drive->changer->drives);
 		int failed = slot->changer->ops->unload(slot->changer, drive);
 		if (failed) {
@@ -500,9 +571,9 @@ int st_job_format_media_run(struct st_job * job) {
 			if (has_lock_on_drive)
 				drive->lock->ops->unlock(drive->lock);
 
-			media->locked = false;
-			media->lock->ops->unlock(media->lock);
-			self->connect->ops->sync_media(self->connect, media);
+			self->media->locked = false;
+			self->media->lock->ops->unlock(self->media->lock);
+			self->connect->ops->sync_media(self->connect, self->media);
 
 			job->sched_status = st_job_status_error;
 
@@ -514,7 +585,7 @@ int st_job_format_media_run(struct st_job * job) {
 		job->done = 0.4;
 
 	if (job->db_status != st_job_status_stopped && drive->slot->media == NULL) {
-		st_job_add_record(self->connect, st_log_level_info, job, "loading media: %s to drive: { %s, %s, #%td }", media->name, drive->vendor, drive->model, drive - drive->changer->drives);
+		st_job_add_record(self->connect, st_log_level_info, job, "loading media: %s to drive: { %s, %s, #%td }", self->media->name, drive->vendor, drive->model, drive - drive->changer->drives);
 		int failed = slot->changer->ops->load_slot(slot->changer, slot, drive);
 
 		if (has_lock_on_slot) {
@@ -524,14 +595,14 @@ int st_job_format_media_run(struct st_job * job) {
 		}
 
 		if (failed) {
-			st_job_add_record(self->connect, st_log_level_error, job, "failed to load media: %s from drive: { %s, %s, #%td }", media->name, drive->vendor, drive->model, drive - drive->changer->drives);
+			st_job_add_record(self->connect, st_log_level_error, job, "failed to load media: %s from drive: { %s, %s, #%td }", self->media->name, drive->vendor, drive->model, drive - drive->changer->drives);
 
 			if (has_lock_on_drive)
 				drive->lock->ops->unlock(drive->lock);
 
-			media->locked = false;
-			media->lock->ops->unlock(media->lock);
-			self->connect->ops->sync_media(self->connect, media);
+			self->media->locked = false;
+			self->media->lock->ops->unlock(self->media->lock);
+			self->connect->ops->sync_media(self->connect, self->media);
 
 			job->sched_status = st_job_status_error;
 
@@ -542,14 +613,14 @@ int st_job_format_media_run(struct st_job * job) {
 	if (job->db_status != st_job_status_stopped) {
 		job->done = 0.6;
 
-		if (media->type == st_media_type_readonly) {
+		if (self->media->type == st_media_type_readonly) {
 			st_job_add_record(self->connect, st_log_level_error, job, "Try to format a write protected media");
 			job->sched_status = st_job_status_error;
 
-			self->connect->ops->sync_media(self->connect, media);
-			media->locked = false;
-			media->lock->ops->unlock(media->lock);
-			self->connect->ops->sync_media(self->connect, media);
+			self->connect->ops->sync_media(self->connect, self->media);
+			self->media->locked = false;
+			self->media->lock->ops->unlock(self->media->lock);
+			self->connect->ops->sync_media(self->connect, self->media);
 
 			if (drive != NULL && has_lock_on_drive)
 				drive->lock->ops->unlock(drive->lock);
@@ -594,16 +665,16 @@ int st_job_format_media_run(struct st_job * job) {
 			break;
 
 		case blocksize_set:
-			if (media->block_size != block_size) {
-				st_job_add_record(self->connect, st_log_level_info, job, "Formatting new media (using block size: %zd bytes, previous value: %zd bytes)", block_size, media->block_size);
-				media->block_size = block_size;
+			if (self->media->block_size != block_size) {
+				st_job_add_record(self->connect, st_log_level_info, job, "Formatting new media (using block size: %zd bytes, previous value: %zd bytes)", block_size, self->media->block_size);
+				self->media->block_size = block_size;
 			} else
 				st_job_add_record(self->connect, st_log_level_info, job, "Formatting new media (using block size: %zd bytes)", block_size);
 			break;
 
 		case blocksize_set_default:
-			st_job_add_record(self->connect, st_log_level_info, job, "Formatting new media (using default block size: %zd bytes)", media->format->block_size);
-			media->block_size = media->format->block_size;
+			st_job_add_record(self->connect, st_log_level_info, job, "Formatting new media (using default block size: %zd bytes)", self->media->format->block_size);
+			self->media->block_size = self->media->format->block_size;
 			break;
 	}
 

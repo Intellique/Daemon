@@ -312,15 +312,49 @@ Job:
 * format-media:
   - pre: {
     "send": {
+      "job": {
+      }, // information concernant la tâche de sauvegarde de la base de données
+	  "host": {
+		"name": string, // nom de l'hôte
+		"domaine": string or null, // domaine de l'hôte, peut être nulle
+	  }, // information concernant l'hôte sur lequel s'execute la tâche
+	  "media": {
+		"uuid": string or null, // l'identifiant unique du média si existant
+		"label": string ou null, // label du média si connu ou valeur nulle
+		"name": string, // nom du média défini par l'utilisateur
+	  }, // information sur le média à formatter
+	  "pool": {
+		"uuid": string, // l'identifiant du pool
+		"name": string, // nom du pool
+	  }, // information sur le pool
     },
     "received": {
         "data": { // données passées to job
+		  "media": {
+			"uuid": l'identifiant que doit être utilisé
+		  }, // optionel
         },
         "message": string, // optionel, message à insérer dans les logs
         "should run": bool, // false si on ne doit pas exécuter la tâche
     },
   }
-  - post:
+  - post: {
+      "job": {
+      }, // information concernant la tâche de sauvegarde de la base de données
+	  "host": {
+		"name": string, // nom de l'hôte
+		"domaine": string or null, // domaine de l'hôte, peut être nulle
+	  }, // information concernant l'hôte sur lequel s'execute la tâche
+	  "media": {
+		"uuid": string, // nouvelle l'identifiant unique du média
+		"label": string ou null, // label du média si connu ou valeur nulle
+		"name": string, // nom du média défini par l'utilisateur
+	  }, // information sur le média à formatter
+	  "pool": {
+		"uuid": string, // l'identifiant du pool
+		"name": string, // nom du pool
+	  }, // information sur le pool
+  }
   - on error:
 * restore-archive:
   - pre: {
