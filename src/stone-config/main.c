@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 29 Nov 2013 00:14:20 +0100                            *
+*  Last modified: Wed, 18 Dec 2013 23:21:03 +0100                            *
 \****************************************************************************/
 
 // getopt_long
@@ -178,7 +178,7 @@ int main(int argc, char ** argv) {
 
 	stcfg_scan();
 
-	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone finished");
+	st_log_write_all(st_log_level_info, st_log_type_daemon, "stone-config finished");
 
 	st_log_stop_logger();
 
