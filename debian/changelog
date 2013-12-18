@@ -1,3 +1,9 @@
+stone (1.1-21) unstable; urgency=low
+
+  * Nouvelle fonctionnalité: support du wwn pour les librairies
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 18 Dec 2013 21:58:27 +0100
+
 stone (1.1-20) unstable; urgency=low
 
   * Bug fixes: copy archive
