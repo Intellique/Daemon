@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 24 Oct 2013 16:19:38 +0200                            *
+*  Last modified: Wed, 18 Dec 2013 21:31:25 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -175,6 +175,7 @@ struct st_changer * st_vtl_changer_init(struct st_vtl_config * cfg) {
 	ch->vendor = strdup("Intellique");
 	ch->revision = strdup("A00");
 	ch->serial_number = serial;
+	ch->wwn = NULL;
 	ch->barcode = true;
 
 	ch->drives = calloc(cfg->nb_drives, sizeof(struct st_drive));

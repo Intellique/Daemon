@@ -22,32 +22,36 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 09 Sep 2013 13:31:54 +0200                            *
+*  Last modified: Wed, 18 Dec 2013 21:46:39 +0100                            *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // open
 #include <fcntl.h>
 // glob, globfree
 #include <glob.h>
+// realpath
+#include <limits.h>
+// sscanf, snprintf
+#include <stdio.h>
 // free, calloc, malloc, realloc
 #include <stdlib.h>
-// sscanf
-#include <stdio.h>
-// strcat, strchr, strcpy
+// strcat, strchr, strcpy, strstr
 #include <string.h>
-// open
+// open, stat
 #include <sys/stat.h>
-// open
+// open, stat
 #include <sys/types.h>
 // time
 #include <time.h>
-// readlink, sleep
+// readlink, sleep, stat
 #include <unistd.h>
 
 #include <libstone/database.h>
 #include <libstone/library/ressource.h>
 #include <libstone/library/vtl.h>
 #include <libstone/log.h>
+#include <libstone/util/file.h>
 #include <stoned/library/changer.h>
 
 #include "common.h"
@@ -353,6 +357,8 @@ int st_changer_setup(void) {
 		link[length] = '\0';
 
 		char * ptr = strrchr(link, '/') + 1;
+		int host = 0, target = 0, channel = 0, bus = 0;
+		sscanf(ptr, "%d:%d:%d:%d", &host, &target, &channel, &bus);
 
 		char path[256];
 		strcpy(path, gl.gl_pathv[i]);
@@ -373,7 +379,31 @@ int st_changer_setup(void) {
 		st_changers[i].vendor = NULL;
 		st_changers[i].revision = NULL;
 		st_changers[i].serial_number = NULL;
+		st_changers[i].wwn = NULL;
 		st_changers[i].barcode = false;
+
+		snprintf(path, sizeof(path), "/sys/class/sas_host/host%d", host);
+		struct stat st;
+		if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
+			realpath(gl.gl_pathv[i], link);
+
+			ptr = strstr(link, "end_device-");
+			if (ptr != NULL) {
+				char * cp = strchr(ptr, '/');
+				if (cp != NULL)
+					*cp = '\0';
+
+				snprintf(path, sizeof(path), "/sys/class/sas_device/%s/sas_address", ptr);
+
+				char * data = st_util_file_read_all_from(path);
+				cp = strchr(data, '\n');
+				if (cp != NULL)
+					*cp = '\0';
+
+				asprintf(&st_changers[i].wwn, "sas:%s", data);
+				free(data);
+			}
+		}
 
 		st_changers[i].drives = NULL;
 		st_changers[i].nb_drives = 0;
