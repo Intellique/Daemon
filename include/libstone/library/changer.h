@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 19 Apr 2013 16:43:02 +0200                            *
+*  Last modified: Wed, 18 Dec 2013 13:44:29 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_LIBRARY_CHANGER_H__
@@ -81,6 +81,10 @@ struct st_changer {
 	 * \brief Serial number of this \a changer
 	 */
 	char * serial_number;
+	/**
+	 * \brief World Wide Name of device
+	 */
+	char * wwn;
 	/**
 	 * \brief This changer has got a barcode reader
 	 */

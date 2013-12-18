@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 28 Nov 2013 19:15:19 +0100                            *
+*  Last modified: Wed, 18 Dec 2013 18:26:58 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -691,10 +691,10 @@ static bool st_db_postgresql_changer_is_enabled(struct st_database_connection * 
 	}
 
 	const char * query = "select_enabled_from_changer";
-	st_db_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 LIMIT 1");
+	st_db_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn = $4 LIMIT 1");
 
-	const char * param[] = { changer->model, changer->vendor, changer->serial_number };
-	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+	const char * param[] = { changer->model, changer->vendor, changer->serial_number, changer->wwn };
+	PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	bool enabled = false;
@@ -767,11 +767,11 @@ static int st_db_postgresql_is_changer_contain_drive(struct st_database_connecti
 		return 0;
 	}
 
-	query = "select_changer_by_model_vendor_serialnumber_id";
-	st_db_postgresql_prepare(self, query, "SELECT id FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND id = $4 LIMIT 1");
+	query = "select_changer_by_model_vendor_serialnumber_wwn_id";
+	st_db_postgresql_prepare(self, query, "SELECT id FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn = $4 AND id = $5 LIMIT 1");
 
-	const char * params2[] = { changer->model, changer->vendor, changer->serial_number, changerid };
-	result = PQexecPrepared(self->connect, query, 4, params2, NULL, NULL, 0);
+	const char * params2[] = { changer->model, changer->vendor, changer->serial_number, changer->wwn, changerid };
+	result = PQexecPrepared(self->connect, query, 5, params2, NULL, NULL, 0);
 	status = PQresultStatus(result);
 
 	int ok = 0;
@@ -880,11 +880,11 @@ static int st_db_postgresql_sync_changer(struct st_database_connection * connect
 			return 3;
 		}
 	} else {
-		const char * query = "select_changer_by_model_vendor_serialnumber";
-		st_db_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 FOR UPDATE NOWAIT");
+		const char * query = "select_changer_by_model_vendor_serialnumber_wwn";
+		st_db_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn = $4 FOR UPDATE NOWAIT");
 
-		const char * param[] = { changer->model, changer->vendor, changer->serial_number };
-		PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+		const char * param[] = { changer->model, changer->vendor, changer->serial_number, changer->wwn };
+		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -929,14 +929,14 @@ static int st_db_postgresql_sync_changer(struct st_database_connection * connect
 		PQclear(result);
 	} else {
 		const char * query = "insert_changer";
-		st_db_postgresql_prepare(self, query, "INSERT INTO changer(device, status, barcode, model, vendor, firmwarerev, serialnumber, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id");
+		st_db_postgresql_prepare(self, query, "INSERT INTO changer(device, status, barcode, model, vendor, firmwarerev, serialnumber, wwn, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id");
 
 		const char * param[] = {
 			changer->device, st_changer_status_to_string(changer->status), changer->barcode ? "true" : "false",
-			changer->model, changer->vendor, changer->revision, changer->serial_number, hostid,
+			changer->model, changer->vendor, changer->revision, changer->serial_number, changer->wwn, hostid,
 		};
 
-		PGresult * result = PQexecPrepared(self->connect, query, 8, param, NULL, NULL, 0);
+		PGresult * result = PQexecPrepared(self->connect, query, 9, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -3593,7 +3593,7 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 		asprintf(&block_number, "%zd", f->position);
 
 		char atime[32];
-		st_util_time_convert(&f->file->create_time, "%F %T", atime, 32);
+		st_util_time_convert(&f->file->archived_time, "%F %T", atime, 32);
 
 		const char * param[] = { volumeid, file_id, block_number, atime };
 		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
