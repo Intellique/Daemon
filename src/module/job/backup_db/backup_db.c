@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 19 Nov 2013 10:10:35 +0100                            *
+*  Last modified: Fri, 20 Dec 2013 13:01:10 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -67,6 +67,7 @@ static bool st_job_backup_db_check(struct st_job * job);
 static void st_job_backup_db_free(struct st_job * job);
 static void st_job_backup_db_init(void) __attribute__((constructor));
 static void st_job_backup_db_new_job(struct st_job * job, struct st_database_connection * db);
+static void st_job_backup_db_on_error(struct st_job * job);
 static void st_job_backup_db_post_run(struct st_job * job);
 static bool st_job_backup_db_pre_run(struct st_job * job);
 static int st_job_backup_db_run(struct st_job * job);
@@ -75,6 +76,7 @@ static bool st_job_backup_db_select_media(struct st_job * job, struct st_job_bac
 struct st_job_ops st_job_backup_db_ops = {
 	.check    = st_job_backup_db_check,
 	.free     = st_job_backup_db_free,
+	.on_error = st_job_backup_db_on_error,
 	.post_run = st_job_backup_db_post_run,
 	.pre_run  = st_job_backup_db_pre_run,
 	.run      = st_job_backup_db_run,
@@ -128,6 +130,27 @@ static void st_job_backup_db_new_job(struct st_job * job, struct st_database_con
 
 	job->ops = &st_job_backup_db_ops;
 	job->data = self;
+}
+
+static void st_job_backup_db_on_error(struct st_job * job) {
+	struct st_job_backup_private * self = job->data;
+
+	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_post, self->pool) == 0)
+		return;
+
+	json_t * db = json_object();
+	json_object_set_new(db, "name", json_string(self->connect->driver->name));
+
+	json_t * backup = json_object();
+	json_object_set_new(backup, "database", db);
+
+	json_t * data = json_object();
+	json_object_set_new(data, "backup", backup);
+
+	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_post, self->pool, data);
+
+	json_decref(returned_data);
+	json_decref(data);
 }
 
 static void st_job_backup_db_post_run(struct st_job * job) {
