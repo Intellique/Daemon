@@ -1,0 +1,22 @@
+{
+   "backup" : {
+      "database" : {
+         "name" : "postgresql"
+      },
+      "nb archives" : 0,
+      "nb medias" : 10,
+      "nb volumes" : 1,
+      "timestamp" : 1387538510,
+      "volumes" : [
+         {
+            "media" : {
+               "label" : "VTL000",
+               "medium serial number" : "43869fba-3933-4688-806a-b612c00acb40",
+               "name" : "VTL000",
+               "uuid" : "b1c79d63-c2c0-4705-a258-45c57c504d5c"
+            },
+            "position" : 3
+         }
+      ]
+   }
+}

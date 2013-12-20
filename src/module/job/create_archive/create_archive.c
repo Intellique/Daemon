@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 15 Nov 2013 16:56:30 +0100                            *
+*  Last modified: Fri, 20 Dec 2013 16:47:58 +0100                            *
 \****************************************************************************/
 
 // asprintf, versionsort
@@ -67,14 +67,18 @@ static bool st_job_create_archive_check(struct st_job * job);
 static void st_job_create_archive_free(struct st_job * job);
 static void st_job_create_archive_init(void) __attribute__((constructor));
 static void st_job_create_archive_new_job(struct st_job * job, struct st_database_connection * db);
-static bool st_job_create_archive_pre_run_script(struct st_job * j);
+static void st_job_create_archive_on_error(struct st_job * job);
+static void st_job_create_archive_post_run(struct st_job * job);
+static bool st_job_create_archive_pre_run(struct st_job * j);
 static int st_job_create_archive_run(struct st_job * job);
 
 static struct st_job_ops st_job_create_archive_ops = {
-	.check          = st_job_create_archive_check,
-	.free           = st_job_create_archive_free,
-	.pre_run_script = st_job_create_archive_pre_run_script,
-	.run            = st_job_create_archive_run,
+	.check    = st_job_create_archive_check,
+	.free     = st_job_create_archive_free,
+	.on_error = st_job_create_archive_on_error,
+	.post_run = st_job_create_archive_post_run,
+	.pre_run  = st_job_create_archive_pre_run,
+	.run      = st_job_create_archive_run,
 };
 
 static struct st_job_driver st_job_create_archive_driver = {
@@ -216,44 +220,11 @@ static void st_job_create_archive_new_job(struct st_job * job, struct st_databas
 	struct st_job_create_archive_private * self = malloc(sizeof(struct st_job_create_archive_private));
 	self->connect = db->config->ops->connect(db->config);
 
-	self->selected_paths = NULL;
 	self->nb_selected_paths = 0;
-
+	self->selected_paths = self->connect->ops->get_selected_paths(self->connect, job, &self->nb_selected_paths);
 	self->pool = st_pool_get_by_job(job, self->connect);
 
 	self->total_done = self->total_size = 0;
-
-	self->worker = NULL;
-
-	job->data = self;
-	job->ops = &st_job_create_archive_ops;
-}
-
-static bool st_job_create_archive_pre_run_script(struct st_job * job) {
-	struct st_job_create_archive_private * self = job->data;
-
-	json_t * data = json_object();
-
-	json_t * returned_data = st_script_run(self->connect, job->driver->name, st_script_type_pre, self->pool, data);
-	bool sr = st_io_json_should_run(returned_data);
-
-	json_decref(returned_data);
-	json_decref(data);
-
-	return sr;
-}
-
-static int st_job_create_archive_run(struct st_job * job) {
-	struct st_job_create_archive_private * self = job->data;
-
-	st_job_add_record(self->connect, st_log_level_info, job, "Start archive job (named: %s), num runs %ld", job->name, job->num_runs);
-
-	if (!job->user->can_archive) {
-		st_job_add_record(self->connect, st_log_level_error, job, "Error, user (%s) cannot create archive", job->user->login);
-		return 1;
-	}
-
-	self->selected_paths = self->connect->ops->get_selected_paths(self->connect, job, &self->nb_selected_paths);
 
 	unsigned int i;
 	for (i = 0; i < self->nb_selected_paths; i++) {
@@ -270,6 +241,74 @@ static int st_job_create_archive_run(struct st_job * job) {
 			st_job_add_record(self->connect, st_log_level_error, job, "Error while computing size of '%s'", p->path);
 	}
 
+	self->worker = NULL;
+
+	job->data = self;
+	job->ops = &st_job_create_archive_ops;
+}
+
+static void st_job_create_archive_on_error(struct st_job * job) {
+}
+
+static void st_job_create_archive_post_run(struct st_job * job) {
+}
+
+static bool st_job_create_archive_pre_run(struct st_job * job) {
+	struct st_job_create_archive_private * self = job->data;
+
+	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_pre, self->pool) == 0)
+		return true;
+
+	json_t * pool = json_object();
+	json_object_set_new(pool, "uuid", json_string(self->pool->uuid));
+	json_object_set_new(pool, "name", json_string(self->pool->name));
+
+	json_t * archive = json_object();
+	json_object_set_new(archive, "name", json_string(job->name));
+
+	unsigned int i;
+	json_t * paths = json_array();
+	for (i = 0; i < self->nb_selected_paths; i++) {
+		struct st_job_selected_path * p = self->selected_paths + i;
+		json_array_append_new(paths, json_string(p->path));
+	}
+	json_object_set_new(archive, "paths", paths);
+	json_object_set_new(archive, "pool", pool);
+
+	if (job->meta != NULL) {
+		json_error_t error;
+		json_t * meta = json_loads(job->meta, 0, &error);
+		if (meta != NULL)
+			json_object_set_new(archive, "metadatas", meta);
+		else
+			json_object_set_new(archive, "metadatas", json_null());
+	} else
+		json_object_set_new(archive, "metadatas", json_null());
+
+	json_t * sdata = json_object();
+	json_object_set_new(sdata, "archive", archive);
+	json_object_set_new(sdata, "host", json_object());
+	json_object_set_new(sdata, "job", json_object());
+
+	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, sdata);
+	bool sr = st_io_json_should_run(returned_data);
+
+	json_decref(returned_data);
+	json_decref(sdata);
+
+	return sr;
+}
+
+static int st_job_create_archive_run(struct st_job * job) {
+	struct st_job_create_archive_private * self = job->data;
+
+	st_job_add_record(self->connect, st_log_level_info, job, "Start archive job (named: %s), num runs %ld", job->name, job->num_runs);
+
+	if (!job->user->can_archive) {
+		st_job_add_record(self->connect, st_log_level_error, job, "Error, user (%s) cannot create archive", job->user->login);
+		return 1;
+	}
+
 	char bufsize[32];
 	st_util_file_convert_size_to_string(self->total_size, bufsize, 32);
 	st_job_add_record(self->connect, st_log_level_info, job, "Will archive %s", bufsize);
@@ -280,7 +319,6 @@ static int st_job_create_archive_run(struct st_job * job) {
 	}
 
 	self->meta = st_job_create_archive_meta_worker_new(job, self->connect);
-
 	self->worker = st_job_create_archive_single_worker(job, self->total_size, self->connect, self->meta);
 
 	bool ok = false;
@@ -293,6 +331,7 @@ static int st_job_create_archive_run(struct st_job * job) {
 		job->done = 0.02;
 
 		int failed = 0;
+		unsigned int i;
 		for (i = 0; i < self->nb_selected_paths && job->db_status != st_job_status_stopped && failed >= 0; i++) {
 			struct st_job_selected_path * p = self->selected_paths + i;
 			st_job_add_record(self->connect, st_log_level_info, job, "Archiving file: %s", p->path);

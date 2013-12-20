@@ -1,0 +1,7 @@
+{
+   "backup" : {
+      "database" : {
+         "name" : "postgresql"
+      }
+   }
+}

@@ -253,12 +253,21 @@ Job:
 * create-archive:
   - pre: {
     "send": {
-        "archive name": string, // nom de l'archive par défaut
+      "archive": {
+        "name": string, // nom de l'archive par défaut
         "paths": [ string, ... ], // liste des chemins des fichiers à archiver
         "pool": {
             "name": string, // nom du pool
             "uuid": string, // l'identifiant unique du pool
         }, // information du pool
+        "metadatas": null or {...}, // méta-données de l'archive ou nulle
+      }, // information sur l'archive
+      "host": {
+        "name": string, // nom de l'hôte
+        "domaine": string or null, // domaine de l'hôte, peut être nulle
+      }, // information concernant l'hôte sur lequel s'execute la tâche
+      "job": {
+      }, // information concernant la tâche de sauvegarde de la base de données
     },
     "received": {
         "data": { // données passées to job
