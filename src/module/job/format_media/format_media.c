@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 04 Dec 2013 23:37:49 +0100                            *
+*  Last modified: Fri, 20 Dec 2013 12:21:02 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -33,7 +33,7 @@
 #include <stdio.h>
 // free, malloc
 #include <stdlib.h>
-// strcmp
+// strcmp, strdup
 #include <string.h>
 // sleep
 #include <unistd.h>
@@ -67,13 +67,15 @@ static bool st_job_format_media_check(struct st_job * job);
 static void st_job_format_media_free(struct st_job * job);
 static void st_job_format_media_init(void) __attribute__((constructor));
 static void st_job_format_media_new_job(struct st_job * job, struct st_database_connection * db);
+static void st_job_format_media_on_error(struct st_job * job);
 static void st_job_format_media_post_run(struct st_job * job);
-static bool st_job_format_media_pre_run(struct st_job * j);
+static bool st_job_format_media_pre_run(struct st_job * job);
 static int st_job_format_media_run(struct st_job * job);
 
 static struct st_job_ops st_job_format_media_ops = {
 	.check    = st_job_format_media_check,
 	.free     = st_job_format_media_free,
+	.on_error = st_job_format_media_on_error,
 	.post_run = st_job_format_media_post_run,
 	.pre_run  = st_job_format_media_pre_run,
 	.run      = st_job_format_media_run,
@@ -358,6 +360,37 @@ static void st_job_format_media_new_job(struct st_job * job, struct st_database_
 	job->ops = &st_job_format_media_ops;
 }
 
+static void st_job_format_media_on_error(struct st_job * j) {
+	struct st_job_format_media_private * self = j->data;
+
+	json_t * job = json_object();
+
+	json_t * host = json_object();
+
+	json_t * media = json_object();
+	json_object_set_new(media, "uuid", json_string(self->media->uuid));
+	if (self->media->label != NULL)
+		json_object_set_new(media, "label", json_string(self->media->label));
+	else
+		json_object_set_new(media, "label", json_null());
+	json_object_set_new(media, "name", json_string(self->media->name));
+
+	json_t * pool = json_object();
+	json_object_set_new(pool, "uuid", json_string(self->pool->uuid));
+	json_object_set_new(pool, "name", json_string(self->pool->name));
+
+	json_t * data = json_object();
+	json_object_set_new(data, "job", job);
+	json_object_set_new(data, "host", host);
+	json_object_set_new(data, "media", media);
+	json_object_set_new(data, "pool", pool);
+
+	json_t * returned_data = st_script_run(self->connect, j, j->driver->name, st_script_type_on_error, self->pool, data);
+
+	json_decref(returned_data);
+	json_decref(data);
+}
+
 static void st_job_format_media_post_run(struct st_job * j) {
 	struct st_job_format_media_private * self = j->data;
 
@@ -411,30 +444,61 @@ static bool st_job_format_media_pre_run(struct st_job * j) {
 	json_object_set_new(pool, "uuid", json_string(self->pool->uuid));
 	json_object_set_new(pool, "name", json_string(self->pool->name));
 
-	json_t * data = json_object();
-	json_object_set_new(data, "job", job);
-	json_object_set_new(data, "host", host);
-	json_object_set_new(data, "media", media);
-	json_object_set_new(data, "pool", pool);
+	json_t * sdata = json_object();
+	json_object_set_new(sdata, "job", job);
+	json_object_set_new(sdata, "host", host);
+	json_object_set_new(sdata, "media", media);
+	json_object_set_new(sdata, "pool", pool);
 
-	json_t * returned_data = st_script_run(self->connect, j, j->driver->name, st_script_type_pre, self->pool, data);
+	json_t * returned_data = st_script_run(self->connect, j, j->driver->name, st_script_type_pre, self->pool, sdata);
 	bool sr = st_io_json_should_run(returned_data);
 
-	media = json_object_get(returned_data, "media");
-	if (media != NULL) {
-		json_t * uuid = json_object_get(media, "uuid");
+	if (sr) {
+		json_t * rdata = json_object_get(returned_data, "data");
 
-		if (uuid != NULL && json_is_string(uuid)) {
-			const char * str_uuid = json_string_value(uuid);
-			uuid_t id;
-			if (uuid_parse(str_uuid, id) == 0) {
-			} else {
+		if (rdata != NULL) {
+			size_t i, length = json_array_size(rdata);
+
+			for (i = 0; i < length; i++) {
+				json_t * elt = json_array_get(rdata, i);
+				media = NULL;
+				if (rdata != NULL)
+					media = json_object_get(elt, "media");
+
+				json_t * uuid = NULL;
+				if (media != NULL)
+					uuid = json_object_get(media, "uuid");
+
+				if (uuid != NULL && json_is_string(uuid)) {
+					const char * str_uuid = json_string_value(uuid);
+					uuid_t id;
+					if (uuid_parse(str_uuid, id) == 0) {
+						st_job_add_record(self->connect, st_log_level_info, j, "script request to change uuid of media (old value: '%s') by '%s)", self->media->uuid, str_uuid);
+						uuid_unparse_lower(id, self->media->uuid);
+					} else {
+						st_job_add_record(self->connect, st_log_level_warning, j, "script send an invalid uuid");
+					}
+				}
+
+				json_t * name = NULL;
+				if (media != NULL)
+					name = json_object_get(media, "name");
+
+				if (name != NULL && json_is_string(name)) {
+					const char * str_name = json_string_value(name);
+					st_job_add_record(self->connect, st_log_level_info, j, "script request to change name of media (old value: '%s') by '%s)", self->media->name, str_name);
+
+					self->media->lock->ops->lock(self->media->lock);
+					free(self->media->name);
+					self->media->name = strdup(str_name);
+					self->media->lock->ops->unlock(self->media->lock);
+				}
 			}
 		}
 	}
 
 	json_decref(returned_data);
-	json_decref(data);
+	json_decref(sdata);
 
 	return sr;
 }

@@ -12,7 +12,11 @@ if (open my $fd, '>', 'script.json') {
 	close $fd;
 }
 
-# sleep 300;
+my $data = '{}';
+if (open my $fd, '<', 'script.data') {
+	$data = do { local $/; <$fd> };
+	close $fd;
+}
 
-print "{ \"data\": {}, \"message\": \"foo bar\", \"should run\": true, \"param\": \"$param\" }\n";
+print "{ \"data\": $data, \"message\": \"foo bar\", \"should run\": true, \"param\": \"$param\" }\n";
 

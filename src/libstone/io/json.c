@@ -22,7 +22,9 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 22 Nov 2013 13:22:54 +0100                            *
+*  Last modified: Thu, 19 Dec 2013 16:44:51 +0100
+
+// json_array, Dec 2013 16:44:51 +0100
 \****************************************************************************/
 
 // json_array, json_array_append_new, json_decref, json_dumps, json_integer,
@@ -147,6 +149,7 @@ static json_t * st_io_json_media(struct st_media * media) {
 json_t * st_io_json_read_from(int fd, bool need_close) {
 	ssize_t buffer_size = 4096, nb_total_read = 0, size;
 	char * buffer = malloc(buffer_size + 1);
+	buffer[0] = '\0';
 
 	while (size = read(fd, buffer + nb_total_read, buffer_size - nb_total_read), size > 0) {
 		nb_total_read += size;
