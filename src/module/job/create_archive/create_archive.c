@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 20 Dec 2013 16:47:58 +0100                            *
+*  Last modified: Fri, 20 Dec 2013 18:56:29 +0100                            *
 \****************************************************************************/
 
 // asprintf, versionsort
@@ -248,6 +248,46 @@ static void st_job_create_archive_new_job(struct st_job * job, struct st_databas
 }
 
 static void st_job_create_archive_on_error(struct st_job * job) {
+	struct st_job_create_archive_private * self = job->data;
+
+	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_on_error, self->pool) == 0)
+		return;
+
+	json_t * pool = json_object();
+	json_object_set_new(pool, "uuid", json_string(self->pool->uuid));
+	json_object_set_new(pool, "name", json_string(self->pool->name));
+
+	json_t * archive = json_object();
+	json_object_set_new(archive, "name", json_string(job->name));
+
+	unsigned int i;
+	json_t * paths = json_array();
+	for (i = 0; i < self->nb_selected_paths; i++) {
+		struct st_job_selected_path * p = self->selected_paths + i;
+		json_array_append_new(paths, json_string(p->path));
+	}
+	json_object_set_new(archive, "paths", paths);
+	json_object_set_new(archive, "pool", pool);
+
+	if (job->meta != NULL) {
+		json_error_t error;
+		json_t * meta = json_loads(job->meta, 0, &error);
+		if (meta != NULL)
+			json_object_set_new(archive, "metadatas", meta);
+		else
+			json_object_set_new(archive, "metadatas", json_null());
+	} else
+		json_object_set_new(archive, "metadatas", json_null());
+
+	json_t * sdata = json_object();
+	json_object_set_new(sdata, "archive", archive);
+	json_object_set_new(sdata, "host", json_object());
+	json_object_set_new(sdata, "job", json_object());
+
+	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_on_error, self->pool, sdata);
+
+	json_decref(returned_data);
+	json_decref(sdata);
 }
 
 static void st_job_create_archive_post_run(struct st_job * job) {

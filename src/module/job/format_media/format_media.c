@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 20 Dec 2013 15:53:40 +0100                            *
+*  Last modified: Fri, 20 Dec 2013 18:57:10 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -363,7 +363,7 @@ static void st_job_format_media_new_job(struct st_job * job, struct st_database_
 static void st_job_format_media_on_error(struct st_job * j) {
 	struct st_job_format_media_private * self = j->data;
 
-	if (self->connect->ops->get_nb_scripts(self->connect, j->driver->name, st_script_type_pre, self->pool) == 0)
+	if (self->connect->ops->get_nb_scripts(self->connect, j->driver->name, st_script_type_on_error, self->pool) == 0)
 		return;
 
 	json_t * job = json_object();
@@ -397,7 +397,7 @@ static void st_job_format_media_on_error(struct st_job * j) {
 static void st_job_format_media_post_run(struct st_job * j) {
 	struct st_job_format_media_private * self = j->data;
 
-	if (self->connect->ops->get_nb_scripts(self->connect, j->driver->name, st_script_type_pre, self->pool) == 0)
+	if (self->connect->ops->get_nb_scripts(self->connect, j->driver->name, st_script_type_post, self->pool) == 0)
 		return;
 
 	json_t * job = json_object();
