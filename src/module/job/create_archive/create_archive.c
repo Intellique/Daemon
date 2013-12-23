@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 20 Dec 2013 18:56:29 +0100                            *
+*  Last modified: Fri, 20 Dec 2013 19:13:07 +0100                            *
 \****************************************************************************/
 
 // asprintf, versionsort
@@ -31,8 +31,6 @@
 #include <dirent.h>
 // open
 #include <fcntl.h>
-// json_*
-#include <jansson.h>
 // free, malloc
 #include <stdlib.h>
 // asprintf
@@ -208,6 +206,9 @@ static void st_job_create_archive_free(struct st_job * job) {
 		self->nb_selected_paths = 0;
 	}
 
+	self->worker->ops->free(self->worker);
+	self->meta->ops->free(self->meta);
+
 	free(self);
 	job->data = NULL;
 }
@@ -291,6 +292,17 @@ static void st_job_create_archive_on_error(struct st_job * job) {
 }
 
 static void st_job_create_archive_post_run(struct st_job * job) {
+	struct st_job_create_archive_private * self = job->data;
+
+	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_post, self->pool) == 0)
+		return;
+
+	json_t * data = self->worker->ops->post_run(self->worker);
+
+	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_post, self->pool, data);
+
+	json_decref(returned_data);
+	json_decref(data);
 }
 
 static bool st_job_create_archive_pre_run(struct st_job * job) {
@@ -367,10 +379,10 @@ static int st_job_create_archive_run(struct st_job * job) {
 		ok = self->worker->ops->load_media(self->worker);
 	}
 
+	int failed = 0;
 	if (job->db_status != st_job_status_stopped && ok) {
 		job->done = 0.02;
 
-		int failed = 0;
 		unsigned int i;
 		for (i = 0; i < self->nb_selected_paths && job->db_status != st_job_status_stopped && failed >= 0; i++) {
 			struct st_job_selected_path * p = self->selected_paths + i;
@@ -429,9 +441,6 @@ static int st_job_create_archive_run(struct st_job * job) {
 		st_job_add_record(self->connect, st_log_level_info, job, "Archive job (named: %s) finished with status 'stopped'", job->name);
 	}
 
-	self->worker->ops->free(self->worker);
-	self->meta->ops->free(self->meta);
-
-	return 0;
+	return failed;
 }
 
