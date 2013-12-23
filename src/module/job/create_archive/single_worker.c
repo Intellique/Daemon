@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 20 Dec 2013 19:17:23 +0100                            *
+*  Last modified: Mon, 23 Dec 2013 11:39:32 +0100                            *
 \****************************************************************************/
 
 // asprintf
@@ -415,7 +415,7 @@ static json_t * st_job_create_archive_single_worker_post_run(struct st_job_creat
 		json_object_set_new(volume, "end time", json_integer(vol->end_time));
 
 		json_t * checksum = json_object();
-		unsigned int nb_digests, j;
+		unsigned int nb_digests = 0, j;
 		const void ** checksums = st_hashtable_keys(vol->digests, &nb_digests);
 		for (j = 0; j < nb_digests; j++) {
 			struct st_hashtable_value digest = st_hashtable_get(vol->digests, checksums[j]);
@@ -449,6 +449,7 @@ static json_t * st_job_create_archive_single_worker_post_run(struct st_job_creat
 
 			unsigned int k;
 			checksum = json_object();
+			nb_digests = 0;
 			checksums = st_hashtable_keys(file->digests, &nb_digests);
 			for (k = 0; k < nb_digests; k++) {
 				struct st_hashtable_value digest = st_hashtable_get(file->digests, checksums[k]);

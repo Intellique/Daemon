@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 25 Mar 2013 22:03:43 +0100                            *
+*  Last modified: Mon, 23 Dec 2013 11:47:01 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -462,8 +462,11 @@ bool st_hashtable_has_key(const struct st_hashtable * hashtable, const void * ke
 }
 
 const void ** st_hashtable_keys(struct st_hashtable * hashtable, uint32_t * nb_value) {
-	if (hashtable == NULL)
+	if (hashtable == NULL) {
+		if (nb_value != NULL)
+			*nb_value = 0;
 		return NULL;
+	}
 
 	const void ** keys = calloc(sizeof(void *), hashtable->nb_elements + 1);
 	uint32_t i_node = 0, index = 0;
@@ -635,8 +638,11 @@ void st_hashtable_remove(struct st_hashtable * hashtable, const void * key) {
 }
 
 struct st_hashtable_value * st_hashtable_values(struct st_hashtable * hashtable, uint32_t * nb_value) {
-	if (hashtable == NULL)
+	if (hashtable == NULL) {
+		if (nb_value != NULL)
+			*nb_value = 0;
 		return NULL;
+	}
 
 	struct st_hashtable_value * values = calloc(sizeof(struct st_hashtable_value), hashtable->nb_elements + 1);
 	uint32_t i_node = 0, index = 0;
