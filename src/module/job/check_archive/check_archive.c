@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 23 Dec 2013 09:29:15 +0100                            *
+*  Last modified: Mon, 23 Dec 2013 16:51:43 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -341,9 +341,9 @@ static void st_job_check_archive_post_run(struct st_job * job) {
 			}
 			free(checksums);
 			json_object_set_new(jfile, "checksums", checksum);
-			if (!self->quick_mode) {
-				json_object_set_new(volume, "checksum ok", file->check_ok ? json_true() : json_false());
-				json_object_set_new(volume, "check time", json_integer(file->check_time));
+			if (file->check_time > 0) {
+				json_object_set_new(jfile, "checksum ok", file->check_ok ? json_true() : json_false());
+				json_object_set_new(jfile, "check time", json_integer(file->check_time));
 			}
 
 			json_object_set_new(jfile, "archived time", json_integer(file->archived_time));
