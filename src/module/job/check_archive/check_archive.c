@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 21 Nov 2013 16:06:42 +0100                            *
+*  Last modified: Mon, 23 Dec 2013 09:29:15 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -47,6 +47,7 @@ static bool st_job_check_archive_check(struct st_job * job);
 static void st_job_check_archive_free(struct st_job * job);
 static void st_job_check_archive_init(void) __attribute__((constructor));
 static void st_job_check_archive_new_job(struct st_job * job, struct st_database_connection * db);
+static void st_job_check_archive_on_error(struct st_job * job);
 static void st_job_check_archive_post_run(struct st_job * job);
 static bool st_job_check_archive_pre_run(struct st_job * job);
 static int st_job_check_archive_run(struct st_job * job);
@@ -54,6 +55,7 @@ static int st_job_check_archive_run(struct st_job * job);
 static struct st_job_ops st_job_check_archive_ops = {
 	.check    = st_job_check_archive_check,
 	.free     = st_job_check_archive_free,
+	.on_error = st_job_check_archive_on_error,
 	.post_run = st_job_check_archive_post_run,
 	.pre_run  = st_job_check_archive_pre_run,
 	.run      = st_job_check_archive_run,
@@ -144,6 +146,127 @@ static void st_job_check_archive_new_job(struct st_job * job, struct st_database
 
 	job->data = self;
 	job->ops = &st_job_check_archive_ops;
+}
+
+static void st_job_check_archive_on_error(struct st_job * job) {
+	struct st_job_check_archive_private * self = job->data;
+
+	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_on_error, self->pool) == 0)
+		return;
+
+	json_t * user = json_object();
+	json_object_set_new(user, "login", json_string(job->user->login));
+	json_object_set_new(user, "name", json_string(job->user->fullname));
+	json_object_set_new(user, "email", json_string(job->user->email));
+
+	json_t * archive = json_object();
+	json_object_set_new(archive, "name", json_string(self->archive->name));
+	json_object_set_new(archive, "uuid", json_string(self->archive->uuid));
+	json_object_set_new(archive, "size", json_integer(self->archive_size));
+
+	json_t * volumes = json_array();
+	json_object_set_new(archive, "volumes", volumes);
+	json_object_set_new(archive, "nb volumes", json_integer(self->archive->nb_volumes));
+
+	if (self->archive->check_time > 0) {
+		json_object_set_new(archive, "checksum ok", self->archive->check_ok ? json_true() : json_false());
+		json_object_set_new(archive, "check time", json_integer(self->archive->check_time));
+	}
+
+	unsigned int i;
+	for (i = 0; i < self->archive->nb_volumes; i++) {
+		json_t * volume = json_object();
+		struct st_archive_volume * vol = self->archive->volumes + i;
+
+		json_object_set_new(volume, "position", json_integer(i));
+		json_object_set_new(volume, "size", json_integer(vol->size));
+		json_object_set_new(volume, "start time", json_integer(vol->start_time));
+		json_object_set_new(volume, "end time", json_integer(vol->end_time));
+
+		json_t * checksum = json_object();
+		unsigned int nb_digests, j;
+		const void ** checksums = st_hashtable_keys(vol->digests, &nb_digests);
+		for (j = 0; j < nb_digests; j++) {
+			struct st_hashtable_value digest = st_hashtable_get(vol->digests, checksums[j]);
+			json_object_set_new(checksum, checksums[j], json_string(digest.value.string));
+		}
+		free(checksums);
+		json_object_set_new(volume, "checksums", checksum);
+		if (vol->check_time > 0) {
+			json_object_set_new(volume, "checksum ok", vol->check_ok ? json_true() : json_false());
+			json_object_set_new(volume, "check time", json_integer(vol->check_time));
+		}
+
+		json_t * jfiles = json_array();
+		for (j = 0; j < vol->nb_files; j++) {
+			struct st_archive_files * files = vol->files + j;
+			struct st_archive_file * file = files->file;
+			json_t * jfile = json_object();
+
+			json_object_set_new(jfile, "path", json_string(file->name));
+			json_object_set_new(jfile, "type", json_string(st_archive_file_type_to_string(file->type)));
+			json_object_set_new(jfile, "mime type", json_string(file->mime_type));
+
+			json_object_set_new(jfile, "owner id", json_integer(file->ownerid));
+			json_object_set_new(jfile, "owner", json_string(file->owner));
+			json_object_set_new(jfile, "group id", json_integer(file->groupid));
+			json_object_set_new(jfile, "group", json_string(file->group));
+
+			char perm[10];
+			st_util_file_convert_mode(perm, file->perm);
+			json_object_set_new(jfile, "perm", json_string(perm));
+			json_object_set_new(jfile, "size", json_integer(file->size));
+			json_object_set_new(jfile, "block position", json_integer(files->position));
+
+			unsigned int k;
+			checksum = json_object();
+			checksums = st_hashtable_keys(file->digests, &nb_digests);
+			for (k = 0; k < nb_digests; k++) {
+				struct st_hashtable_value digest = st_hashtable_get(file->digests, checksums[k]);
+				json_object_set_new(checksum, checksums[k], json_string(digest.value.string));
+			}
+			free(checksums);
+			json_object_set_new(jfile, "checksums", checksum);
+			if (file->check_time > 0) {
+				json_object_set_new(jfile, "checksum ok", file->check_ok ? json_true() : json_false());
+				json_object_set_new(jfile, "check time", json_integer(file->check_time));
+			}
+
+			json_object_set_new(jfile, "archived time", json_integer(file->archived_time));
+
+			json_array_append_new(jfiles, jfile);
+		}
+		json_object_set_new(volume, "files", jfiles);
+		json_object_set_new(volume, "nb files", json_integer(vol->nb_files));
+
+		json_t * media = json_object();
+		json_object_set_new(media, "uuid", json_string(vol->media->uuid));
+		if (vol->media->label != NULL)
+			json_object_set_new(media, "label", json_string(vol->media->label));
+		else
+			json_object_set_new(media, "label", json_null());
+		if (vol->media->name != NULL)
+			json_object_set_new(media, "name", json_string(vol->media->name));
+		else
+			json_object_set_new(media, "name", json_null());
+		json_object_set_new(media, "medium serial number", json_string(vol->media->medium_serial_number));
+		json_object_set_new(volume, "media", media);
+
+		json_array_append_new(volumes, volume);
+	}
+
+	json_t * jjob = json_object();
+	json_object_set_new(jjob, "quick mode", self->quick_mode ? json_true() : json_false());
+
+	json_t * data = json_object();
+	json_object_set_new(data, "user", user);
+	json_object_set_new(data, "archive", archive);
+	json_object_set_new(data, "job", jjob);
+
+	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, data);
+
+	json_decref(returned_data);
+	json_decref(data);
 }
 
 static void st_job_check_archive_post_run(struct st_job * job) {
