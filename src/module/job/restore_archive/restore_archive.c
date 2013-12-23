@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 15 Nov 2013 16:57:06 +0100                            *
+*  Last modified: Mon, 23 Dec 2013 09:41:27 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -59,14 +59,18 @@ static bool st_job_restore_archive_check(struct st_job * job);
 static void st_job_restore_archive_free(struct st_job * job);
 static void st_job_restore_archive_init(void) __attribute__((constructor));
 static void st_job_restore_archive_new_job(struct st_job * job, struct st_database_connection * db);
-static bool st_job_restore_archive_pre_run_script(struct st_job * job);
+static void st_job_restore_archive_on_error(struct st_job * job);
+static void st_job_restore_archive_post_run(struct st_job * job);
+static bool st_job_restore_archive_pre_run(struct st_job * job);
 static int st_job_restore_archive_run(struct st_job * job);
 
 static struct st_job_ops st_job_restore_archive_ops = {
-	.check          = st_job_restore_archive_check,
-	.free           = st_job_restore_archive_free,
-	.pre_run_script = st_job_restore_archive_pre_run_script,
-	.run            = st_job_restore_archive_run,
+	.check    = st_job_restore_archive_check,
+	.free     = st_job_restore_archive_free,
+	.on_error = st_job_restore_archive_on_error,
+	.post_run = st_job_restore_archive_post_run,
+	.pre_run  = st_job_restore_archive_pre_run,
+	.run      = st_job_restore_archive_run,
 };
 
 static struct st_job_driver st_job_restore_archive_driver = {
@@ -122,13 +126,23 @@ static void st_job_restore_archive_new_job(struct st_job * job, struct st_databa
 	job->ops = &st_job_restore_archive_ops;
 }
 
-static bool st_job_restore_archive_pre_run_script(struct st_job * job) {
+static void st_job_restore_archive_on_error(struct st_job * job) {
+	struct st_job_restore_archive_private * self = job->data;
+
+	// if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_on_error, self->pool) == 0)
+	//	return;
+}
+
+static void st_job_restore_archive_post_run(struct st_job * job) {
+}
+
+static bool st_job_restore_archive_pre_run(struct st_job * job) {
 	struct st_job_restore_archive_private * self = job->data;
 
 	json_t * data = json_object();
 
 	struct st_pool * pool = st_pool_get_by_archive(self->archive, self->connect);
-	json_t * returned_data = st_script_run(self->connect, job->driver->name, st_script_type_pre, pool, data);
+	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, pool, data);
 	bool sr = st_io_json_should_run(returned_data);
 
 	json_decref(returned_data);
