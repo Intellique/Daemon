@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 26 Dec 2013 13:40:40 +0100                            *
+*  Last modified: Thu, 26 Dec 2013 17:54:01 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -657,7 +657,7 @@ static char * st_db_postgresql_get_host(struct st_database_connection * connect)
 	struct st_db_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_host_by_name";
-	st_db_postgresql_prepare(self, query, "SELECT id, uuid FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1");
+	st_db_postgresql_prepare(self, query, "SELECT id FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1");
 
 	struct utsname name;
 	uname(&name);
@@ -684,8 +684,8 @@ static char * st_db_postgresql_get_host(struct st_database_connection * connect)
 static int st_db_postgresql_get_host_by_name(struct st_database_connection * connect, const char * name, struct st_host * host) {
 	struct st_db_postgresql_connection_private * self = connect->data;
 
-	const char * query = "select_host_by_name";
-	st_db_postgresql_prepare(self, query, "SELECT id, uuid FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1");
+	const char * query = "select_host_by_name_by_name";
+	st_db_postgresql_prepare(self, query, "SELECT CASE WHEN domaine IS NULL THEN name ELSE name || '.' || domaine END, uuid FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1");
 
 	const char * param[] = { name };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
