@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 18 Dec 2013 18:26:58 +0100                            *
+*  Last modified: Thu, 26 Dec 2013 13:40:40 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -48,6 +48,7 @@
 
 #include <libstone/backup.h>
 #include <libstone/checksum.h>
+#include <libstone/host.h>
 #include <libstone/job.h>
 #include <libstone/library/archive.h>
 #include <libstone/library/changer.h>
@@ -130,8 +131,9 @@ static int st_db_postgresql_sync_plugin_checksum(struct st_database_connection *
 static int st_db_postgresql_sync_plugin_job(struct st_database_connection * connect, const char * plugin);
 
 static int st_db_postgresql_add_host(struct st_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description);
-static char * st_db_postgresql_get_host(struct st_database_connection * connect);
 static bool st_db_postgresql_find_host(struct st_database_connection * connect, const char * uuid, const char * hostname);
+static char * st_db_postgresql_get_host(struct st_database_connection * connect);
+static int st_db_postgresql_get_host_by_name(struct st_database_connection * connect, const char * name, struct st_host * host);
 
 static bool st_db_postgresql_changer_is_enabled(struct st_database_connection * connect, struct st_changer * changer);
 static bool st_db_postgresql_drive_is_enabled(struct st_database_connection * connect, struct st_drive * drive);
@@ -198,8 +200,9 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.sync_plugin_checksum = st_db_postgresql_sync_plugin_checksum,
 	.sync_plugin_job      = st_db_postgresql_sync_plugin_job,
 
-	.add_host  = st_db_postgresql_add_host,
-	.find_host = st_db_postgresql_find_host,
+	.add_host         = st_db_postgresql_add_host,
+	.find_host        = st_db_postgresql_find_host,
+	.get_host_by_name = st_db_postgresql_get_host_by_name,
 
 	.changer_is_enabled       = st_db_postgresql_changer_is_enabled,
 	.drive_is_enabled         = st_db_postgresql_drive_is_enabled,
@@ -629,11 +632,32 @@ static int st_db_postgresql_add_host(struct st_database_connection * connect, co
 	return status == PGRES_FATAL_ERROR;
 }
 
+static bool st_db_postgresql_find_host(struct st_database_connection * connect, const char * uuid, const char * hostname) {
+	struct st_db_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_host_by_name_or_uuid";
+	st_db_postgresql_prepare(self, query, "SELECT id FROM host WHERE uuid::TEXT = $1 OR name = $2 OR name || '.' || domaine = $2 LIMIT 1");
+
+	const char * param[] = { uuid, hostname };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	bool found = false;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (PQntuples(result) == 1)
+		found = true;
+
+	PQclear(result);
+
+	return found;
+}
+
 static char * st_db_postgresql_get_host(struct st_database_connection * connect) {
 	struct st_db_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_host_by_name";
-	st_db_postgresql_prepare(self, query, "SELECT id FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1");
+	st_db_postgresql_prepare(self, query, "SELECT id, uuid FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1");
 
 	struct utsname name;
 	uname(&name);
@@ -657,25 +681,35 @@ static char * st_db_postgresql_get_host(struct st_database_connection * connect)
 	return hostid;
 }
 
-static bool st_db_postgresql_find_host(struct st_database_connection * connect, const char * uuid, const char * hostname) {
+static int st_db_postgresql_get_host_by_name(struct st_database_connection * connect, const char * name, struct st_host * host) {
 	struct st_db_postgresql_connection_private * self = connect->data;
 
-	const char * query = "select_host_by_name_or_uuid";
-	st_db_postgresql_prepare(self, query, "SELECT id FROM host WHERE uuid::TEXT = $1 OR name = $2 OR name || '.' || domaine = $2 LIMIT 1");
+	const char * query = "select_host_by_name";
+	st_db_postgresql_prepare(self, query, "SELECT id, uuid FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1");
 
-	const char * param[] = { uuid, hostname };
-	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	const char * param[] = { name };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
-	bool found = false;
+	bool failed = true;
 	if (status == PGRES_FATAL_ERROR)
 		st_db_postgresql_get_error(result, query);
-	else if (PQntuples(result) == 1)
-		found = true;
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		if (host->hostname != NULL)
+			free(host->hostname);
+		if (host->uuid != NULL)
+			free(host->uuid);
+		host->hostname = host->uuid = NULL;
+
+		st_db_postgresql_get_string_dup(result, 0, 0, &host->hostname);
+		st_db_postgresql_get_string_dup(result, 0, 1, &host->uuid);
+
+		failed = false;
+	}
 
 	PQclear(result);
 
-	return found;
+	return failed;
 }
 
 

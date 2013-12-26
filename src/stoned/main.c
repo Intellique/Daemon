@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 29 Nov 2013 00:35:39 +0100                            *
+*  Last modified: Thu, 26 Dec 2013 13:49:05 +0100                            *
 \****************************************************************************/
 
 // getopt_long
@@ -37,6 +37,7 @@
 #include <libstone/checksum.h>
 #include <libstone/conf.h>
 #include <libstone/database.h>
+#include <libstone/host.h>
 #include <libstone/job.h>
 #include <libstone/log.h>
 #include <libstone/util/file.h>
@@ -185,10 +186,10 @@ int main(int argc, char ** argv) {
 	}
 
 	// check hostname in database
-	static struct utsname name;
-	uname(&name);
+	if (!st_host_init(connect)) {
+		static struct utsname name;
+		uname(&name);
 
-	if (!connect->ops->find_host(connect, NULL, name.nodename)) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: Host '%s' not found into database", name.nodename);
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "Please, run stone-config to fix it");
 

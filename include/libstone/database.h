@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 28 Nov 2013 18:03:27 +0100                            *
+*  Last modified: Thu, 26 Dec 2013 13:30:21 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -39,6 +39,7 @@ struct st_archive_file;
 struct st_backup;
 struct st_changer;
 struct st_drive;
+struct st_host;
 struct st_hashtable;
 struct st_job;
 struct st_job_selected_path;
@@ -146,6 +147,7 @@ struct st_database_connection {
 
 		int (*add_host)(struct st_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description);
 		bool (*find_host)(struct st_database_connection * connect, const char * uuid, const char * hostname);
+		int (*get_host_by_name)(struct st_database_connection * connect, const char * name, struct st_host * host);
 
 		/**
 		 * \brief Check if \a changer is enable
