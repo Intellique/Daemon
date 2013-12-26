@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 23 Dec 2013 09:35:24 +0100                            *
+*  Last modified: Tue, 24 Dec 2013 13:58:38 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -31,6 +31,8 @@
 #include <stdlib.h>
 // strdup
 #include <string.h>
+// bzero
+#include <strings.h>
 
 #include <libstone/database.h>
 #include <libstone/io.h>
@@ -86,7 +88,7 @@ static bool st_job_copy_archive_check(struct st_job * job) {
 }
 
 static void st_job_copy_archive_free(struct st_job * job) {
-	struct st_job_copy_archive_private * self = malloc(sizeof(struct st_job_copy_archive_private));
+	struct st_job_copy_archive_private * self = job->data;
 
 	unsigned int i;
 	for (i = 0; i < self->copy->nb_volumes; i++) {
@@ -118,12 +120,12 @@ static void st_job_copy_archive_init() {
 
 static void st_job_copy_archive_new_job(struct st_job * job, struct st_database_connection * db) {
 	struct st_job_copy_archive_private * self = malloc(sizeof(struct st_job_copy_archive_private));
+	bzero(self, sizeof(*self));
 	self->job = job;
 	self->connect = db->config->ops->connect(db->config);
 
-	self->total_done = 0;
-	self->archive_size = 0;
 	self->archive = self->connect->ops->get_archive_volumes_by_job(self->connect, job);
+	self->pool = st_pool_get_by_job(job, self->connect);
 
 	unsigned int i;
 	for (i = 0; i < self->archive->nb_volumes; i++) {
@@ -141,21 +143,6 @@ static void st_job_copy_archive_new_job(struct st_job * job, struct st_database_
 		self->copy->metadatas = strdup(self->archive->metadatas);
 
 	self->checksums = self->connect->ops->get_checksums_by_pool(self->connect, self->pool, &self->nb_checksums);
-
-	self->drive_input = NULL;
-	self->slot_input = NULL;
-	self->nb_remain_files = 0;
-
-	self->current_volume = NULL;
-	self->drive_output = NULL;
-	self->pool = st_pool_get_by_job(job, self->connect);
-	self->writer = NULL;
-
-	self->first_media = self->last_media = NULL;
-
-	self->checksum_writer = NULL;
-	self->nb_checksums = 0;
-	self->checksums = NULL;
 
 	job->data = self;
 	job->ops = &st_job_copy_archive_ops;
