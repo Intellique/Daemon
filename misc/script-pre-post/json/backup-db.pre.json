@@ -3,5 +3,7 @@
       "database" : {
          "name" : "postgresql"
       }
-   }
+   },
+   "host" : {},
+   "job" : {}
 }

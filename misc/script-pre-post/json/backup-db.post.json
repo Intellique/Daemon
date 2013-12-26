@@ -3,10 +3,10 @@
       "database" : {
          "name" : "postgresql"
       },
-      "nb archives" : 0,
+      "nb archives" : 9,
       "nb medias" : 10,
       "nb volumes" : 1,
-      "timestamp" : 1387538510,
+      "timestamp" : 1388054700,
       "volumes" : [
          {
             "media" : {
@@ -15,8 +15,10 @@
                "name" : "VTL000",
                "uuid" : "b1c79d63-c2c0-4705-a258-45c57c504d5c"
             },
-            "position" : 3
+            "position" : 8
          }
       ]
-   }
+   },
+   "host" : {},
+   "job" : {}
 }

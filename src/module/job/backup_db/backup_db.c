@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 20 Dec 2013 13:01:10 +0100                            *
+*  Last modified: Thu, 26 Dec 2013 12:23:37 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -146,6 +146,8 @@ static void st_job_backup_db_on_error(struct st_job * job) {
 
 	json_t * data = json_object();
 	json_object_set_new(data, "backup", backup);
+	json_object_set_new(data, "host", json_object());
+	json_object_set_new(data, "job", json_object());
 
 	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_post, self->pool, data);
 
@@ -192,6 +194,8 @@ static void st_job_backup_db_post_run(struct st_job * job) {
 
 	json_t * data = json_object();
 	json_object_set_new(data, "backup", backup);
+	json_object_set_new(data, "host", json_object());
+	json_object_set_new(data, "job", json_object());
 
 	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_post, self->pool, data);
 
@@ -213,6 +217,8 @@ static bool st_job_backup_db_pre_run(struct st_job * job) {
 
 	json_t * data = json_object();
 	json_object_set_new(data, "backup", backup);
+	json_object_set_new(data, "host", json_object());
+	json_object_set_new(data, "job", json_object());
 
 	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, data);
 	bool sr = st_io_json_should_run(returned_data);
