@@ -1,0 +1,109 @@
+#! /usr/bin/perl
+
+use strict;
+use warnings;
+
+my ($dir) = @ARGV;
+
+sub generate_uuid {
+    my ($filename) = @_;
+
+    my ($uuid) = qx/uuidgen/;
+    return 1 unless defined $uuid;
+    chomp $uuid;
+
+    open( my $fd, '>', $filename ) or return 2;
+    print $fd $uuid;
+    close $fd;
+
+    return 0;
+}
+
+unless ( -d $dir ) {
+    print "directory not found \"$dir\"\n";
+    exit 1;
+}
+
+print "checking serial number for vtl\n";
+my $filename = "$dir/serial_number";
+unless ( -e $filename ) {
+    print "generate serial number for vtl\n";
+    my $ret = generate_uuid($filename);
+    exit( 3 + $ret ) if $ret;
+}
+
+print "checking drives\n";
+opendir( my $fd_dir, "$dir/drives" ) or exit 6;
+my @files = sort map {int} grep {/^\d+$/} readdir $fd_dir;
+closedir $fd_dir;
+
+foreach my $drive (@files) {
+    $filename = "$dir/drives/$drive/media";
+    if ( -e $filename ) {
+        print "remove media from drive #$drive\n";
+        unlink $filename or exit 7;
+    }
+
+    $filename = "$dir/drives/$drive/serial_number";
+    unless ( -e $filename ) {
+        print "generate serial number for drive #$drive\n";
+        my $ret = generate_uuid($filename);
+        exit( 7 + $ret ) if $ret;
+    }
+}
+
+print "checking medias\n";
+opendir( $fd_dir, "$dir/medias" ) or exit 10;
+@files = sort grep { not /^\.{1,2}$/ } readdir $fd_dir;
+closedir $fd_dir;
+
+my $prefix;
+foreach my $media (@files) {
+    my $index;
+    if ( $media =~ /^(.+?)(\d+)$/ ) {
+        $prefix = $1;
+        $index  = $2;
+    }
+    else {
+        next;
+    }
+
+    opendir( my $fd_files, "$dir/medias/$media" ) or exit 11;
+    my @subfiles = grep {/^file_\d+$/} readdir $fd_files;
+    closedir $fd_files;
+
+    foreach my $file (@subfiles) {
+        print "remove media($media) file($file)\n";
+        unlink("$dir/medias/$media/$file") or exit 12;
+    }
+}
+
+exit 13 unless defined $prefix;
+
+print "checking slots\n";
+opendir( $fd_dir, "$dir/slots" ) or exit 14;
+@files = sort map {int} grep {/^\d+$/} readdir $fd_dir;
+closedir $fd_dir;
+
+foreach my $slot (@files) {
+    $filename = "$dir/slots/$slot/media";
+    if ( -e $filename and not -l $filename ) {
+        unlink($filename) or exit 15;
+    }
+
+    my $path = sprintf "../../medias/%s%03d", $prefix, $slot;
+    if ( -l $filename ) {
+        my $link = readlink $filename;
+        if ( $link ne $path ) {
+            print "relink slot($slot)\n";
+            unlink $filename;
+            symlink( $path, $filename ) or exit 16;
+        }
+    }
+    else {
+        print "create new link for slot($slot)\n";
+        symlink( $path, $filename ) or exit 16;
+    }
+
+}
+
