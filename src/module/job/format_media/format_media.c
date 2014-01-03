@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 20 Dec 2013 18:57:10 +0100                            *
+*  Last modified: Fri, 03 Jan 2014 18:20:01 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -42,6 +42,7 @@
 
 #include <libstone/checksum.h>
 #include <libstone/database.h>
+#include <libstone/host.h>
 #include <libstone/io.h>
 #include <libstone/library/drive.h>
 #include <libstone/library/media.h>
@@ -368,8 +369,6 @@ static void st_job_format_media_on_error(struct st_job * j) {
 
 	json_t * job = json_object();
 
-	json_t * host = json_object();
-
 	json_t * media = json_object();
 	json_object_set_new(media, "uuid", json_string(self->media->uuid));
 	if (self->media->label != NULL)
@@ -384,7 +383,7 @@ static void st_job_format_media_on_error(struct st_job * j) {
 
 	json_t * data = json_object();
 	json_object_set_new(data, "job", job);
-	json_object_set_new(data, "host", host);
+	json_object_set_new(data, "host", st_host_get_info());
 	json_object_set_new(data, "media", media);
 	json_object_set_new(data, "pool", pool);
 
@@ -402,8 +401,6 @@ static void st_job_format_media_post_run(struct st_job * j) {
 
 	json_t * job = json_object();
 
-	json_t * host = json_object();
-
 	json_t * media = json_object();
 	json_object_set_new(media, "uuid", json_string(self->media->uuid));
 	if (self->media->label != NULL)
@@ -418,7 +415,7 @@ static void st_job_format_media_post_run(struct st_job * j) {
 
 	json_t * data = json_object();
 	json_object_set_new(data, "job", job);
-	json_object_set_new(data, "host", host);
+	json_object_set_new(data, "host", st_host_get_info());
 	json_object_set_new(data, "media", media);
 	json_object_set_new(data, "pool", pool);
 
@@ -435,8 +432,6 @@ static bool st_job_format_media_pre_run(struct st_job * j) {
 		return true;
 
 	json_t * job = json_object();
-
-	json_t * host = json_object();
 
 	json_t * media = json_object();
 	if (self->media->uuid[0] != '\0')
@@ -455,7 +450,7 @@ static bool st_job_format_media_pre_run(struct st_job * j) {
 
 	json_t * sdata = json_object();
 	json_object_set_new(sdata, "job", job);
-	json_object_set_new(sdata, "host", host);
+	json_object_set_new(sdata, "host", st_host_get_info());
 	json_object_set_new(sdata, "media", media);
 	json_object_set_new(sdata, "pool", pool);
 
