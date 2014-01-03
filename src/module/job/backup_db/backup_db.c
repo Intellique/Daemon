@@ -22,10 +22,12 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sat, 09 Nov 2013 11:12:04 +0100                            *
+*  Last modified: Thu, 26 Dec 2013 12:23:37 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
+// json_*
+#include <jansson.h>
 // asprintf
 #include <stdio.h>
 // malloc, realloc
@@ -43,6 +45,7 @@
 #include <libstone/library/media.h>
 #include <libstone/library/ressource.h>
 #include <libstone/log.h>
+#include <libstone/script.h>
 #include <libstone/util/file.h>
 #include <libstone/user.h>
 #include <stoned/library/changer.h>
@@ -56,19 +59,27 @@ struct st_job_backup_private {
 	struct st_drive * drive;
 	struct st_pool * pool;
 	ssize_t backup_size;
+
+	struct st_backup * backup;
 };
 
 static bool st_job_backup_db_check(struct st_job * job);
 static void st_job_backup_db_free(struct st_job * job);
 static void st_job_backup_db_init(void) __attribute__((constructor));
 static void st_job_backup_db_new_job(struct st_job * job, struct st_database_connection * db);
+static void st_job_backup_db_on_error(struct st_job * job);
+static void st_job_backup_db_post_run(struct st_job * job);
+static bool st_job_backup_db_pre_run(struct st_job * job);
 static int st_job_backup_db_run(struct st_job * job);
 static bool st_job_backup_db_select_media(struct st_job * job, struct st_job_backup_private * self);
 
 struct st_job_ops st_job_backup_db_ops = {
-	.check = st_job_backup_db_check,
-	.free  = st_job_backup_db_free,
-	.run   = st_job_backup_db_run,
+	.check    = st_job_backup_db_check,
+	.free     = st_job_backup_db_free,
+	.on_error = st_job_backup_db_on_error,
+	.post_run = st_job_backup_db_post_run,
+	.pre_run  = st_job_backup_db_pre_run,
+	.run      = st_job_backup_db_run,
 };
 
 struct st_job_driver st_job_backup_db_driver = {
@@ -87,7 +98,21 @@ static bool st_job_backup_db_check(struct st_job * job __attribute__((unused))) 
 	return true;
 }
 
-static void st_job_backup_db_free(struct st_job * job __attribute__((unused))) {}
+static void st_job_backup_db_free(struct st_job * job) {
+	struct st_job_backup_private * self = job->data;
+
+	self->connect->ops->close(self->connect);
+	self->connect->ops->free(self->connect);
+	self->connect = NULL;
+
+	self->drive = NULL;
+	self->pool = NULL;
+	st_backup_free(self->backup);
+	self->backup = NULL;
+	free(self);
+
+	job->data = NULL;
+}
 
 static void st_job_backup_db_init() {
 	st_job_register_driver(&st_job_backup_db_driver);
@@ -97,14 +122,116 @@ static void st_job_backup_db_new_job(struct st_job * job, struct st_database_con
 	struct st_job_backup_private * self = malloc(sizeof(struct st_job_backup_private));
 	self->connect = db->config->ops->connect(db->config);
 
+	self->drive = NULL;
+	self->pool = st_pool_get_by_uuid("d9f976d4-e087-4d0a-ab79-96267f6613f0"); // pool Stone_Db_Backup
+	self->backup_size = 0;
+
+	self->backup = st_backup_new();
+
 	job->ops = &st_job_backup_db_ops;
 	job->data = self;
+}
+
+static void st_job_backup_db_on_error(struct st_job * job) {
+	struct st_job_backup_private * self = job->data;
+
+	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_post, self->pool) == 0)
+		return;
+
+	json_t * db = json_object();
+	json_object_set_new(db, "name", json_string(self->connect->driver->name));
+
+	json_t * backup = json_object();
+	json_object_set_new(backup, "database", db);
+
+	json_t * data = json_object();
+	json_object_set_new(data, "backup", backup);
+	json_object_set_new(data, "host", json_object());
+	json_object_set_new(data, "job", json_object());
+
+	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_post, self->pool, data);
+
+	json_decref(returned_data);
+	json_decref(data);
+}
+
+static void st_job_backup_db_post_run(struct st_job * job) {
+	struct st_job_backup_private * self = job->data;
+
+	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_post, self->pool) == 0)
+		return;
+
+	json_t * db = json_object();
+	json_object_set_new(db, "name", json_string(self->connect->driver->name));
+
+	struct st_media * media = self->backup->volumes->media;
+	json_t * j_media = json_object();
+	json_object_set_new(j_media, "uuid", json_string(media->uuid));
+	if (media->label != NULL)
+		json_object_set_new(j_media, "label", json_string(media->label));
+	else
+		json_object_set_new(j_media, "label", json_null());
+	if (media->name != NULL)
+		json_object_set_new(j_media, "name", json_string(media->name));
+	else
+		json_object_set_new(j_media, "name", json_null());
+	json_object_set_new(j_media, "medium serial number", json_string(media->medium_serial_number));
+
+	json_t * volume = json_object();
+	json_object_set_new(volume, "media", j_media);
+	json_object_set_new(volume, "position", json_integer(self->backup->volumes->position));
+
+	json_t * volumes = json_array();
+	json_array_append_new(volumes, volume);
+
+	json_t * backup = json_object();
+	json_object_set_new(backup, "database", db);
+	json_object_set_new(backup, "timestamp", json_integer(self->backup->timestamp));
+	json_object_set_new(backup, "nb medias", json_integer(self->backup->nb_medias));
+	json_object_set_new(backup, "nb archives", json_integer(self->backup->nb_archives));
+	json_object_set_new(backup, "volumes", volumes);
+	json_object_set_new(backup, "nb volumes", json_integer(1));
+
+	json_t * data = json_object();
+	json_object_set_new(data, "backup", backup);
+	json_object_set_new(data, "host", json_object());
+	json_object_set_new(data, "job", json_object());
+
+	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_post, self->pool, data);
+
+	json_decref(returned_data);
+	json_decref(data);
+}
+
+static bool st_job_backup_db_pre_run(struct st_job * job) {
+	struct st_job_backup_private * self = job->data;
+
+	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_pre, self->pool) == 0)
+		return true;
+
+	json_t * db = json_object();
+	json_object_set_new(db, "name", json_string(self->connect->driver->name));
+
+	json_t * backup = json_object();
+	json_object_set_new(backup, "database", db);
+
+	json_t * data = json_object();
+	json_object_set_new(data, "backup", backup);
+	json_object_set_new(data, "host", json_object());
+	json_object_set_new(data, "job", json_object());
+
+	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, data);
+	bool sr = st_io_json_should_run(returned_data);
+
+	json_decref(returned_data);
+	json_decref(data);
+
+	return sr;
 }
 
 static int st_job_backup_db_run(struct st_job * job) {
 	struct st_job_backup_private * self = job->data;
 	self->drive = NULL;
-	struct st_backup * backup = st_backup_new();
 
 	st_job_add_record(self->connect, st_log_level_info, job, "Start backup job (job name: %s), num runs %ld", job->name, job->num_runs);
 
@@ -113,8 +240,6 @@ static int st_job_backup_db_run(struct st_job * job) {
 		st_job_add_record(self->connect, st_log_level_error, job, "User (%s) is not allowed to backup database", job->user->fullname);
 		return 1;
 	}
-
-	self->pool = st_pool_get_by_uuid("d9f976d4-e087-4d0a-ab79-96267f6613f0"); // pool Stone_Db_Backup
 
 	struct st_database_config * db_config = self->connect->config;
 	struct st_stream_reader * db_reader = db_config->ops->backup_db(db_config);
@@ -158,7 +283,7 @@ static int st_job_backup_db_run(struct st_job * job) {
 	temp_io_writer = NULL;
 
 	struct st_stream_writer * media_writer = self->drive->ops->get_raw_writer(self->drive, true);
-	st_backup_add_volume(backup, self->drive->slot->media, self->drive->ops->get_position(self->drive));
+	st_backup_add_volume(self->backup, self->drive->slot->media, self->drive->ops->get_position(self->drive));
 
 	ssize_t total_writen = 0;
 	while (nb_read = temp_io_reader->ops->read(temp_io_reader, buffer, 4096), nb_read > 0) {
@@ -182,13 +307,7 @@ static int st_job_backup_db_run(struct st_job * job) {
 
 	job->done = 0.99;
 
-	self->connect->ops->add_backup(self->connect, backup);
-
-	st_backup_free(backup);
-
-	self->connect->ops->close(self->connect);
-	self->connect->ops->free(self->connect);
-	self->connect = NULL;
+	self->connect->ops->add_backup(self->connect, self->backup);
 
 	job->done = 1;
 

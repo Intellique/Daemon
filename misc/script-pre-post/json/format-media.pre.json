@@ -1,0 +1,13 @@
+{
+   "host" : {},
+   "job" : {},
+   "media" : {
+      "label" : "VTL000",
+      "name" : "VTL000",
+      "uuid" : "61bf2986-d492-4866-81e7-d1abdaad448d"
+   },
+   "pool" : {
+      "name" : "Stone_Db_Backup",
+      "uuid" : "d9f976d4-e087-4d0a-ab79-96267f6613f0"
+   }
+}

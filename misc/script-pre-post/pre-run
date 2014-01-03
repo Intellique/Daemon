@@ -1,0 +1,443 @@
+Job:
+* backup db:
+  - pre: {
+    "send": {
+      "backup": {
+        "database": {
+          "name": string, // nom du pilote de la base de données
+        }, // information concernant la base de données
+      }, // information concernat la sauvegarde
+      "host": {
+        "name": string, // nom de l'hôte
+        "domaine": string or null, // domaine de l'hôte, peut être nulle
+      }, // information concernant l'hôte sur lequel s'execute la tâche
+      "job": {
+      }, // information concernant la tâche de sauvegarde de la base de données
+    },
+    "received": {
+      "data": { }, // données passées to job
+      "message": string, // optionel, message à insérer dans les logs
+      "should run": bool, // false si on ne doit pas exécuter la tâche
+    },
+  }
+  - post: {
+    "send": {
+      "backup": {
+        "database": {
+          "name": string, // nom du pilote de la base de données
+        }, // information concernant la base de données
+        "timestamp": integer, // nombre de seconde écoulé depuis l"Epoch
+        "nb medias": integer, // nombre de médias connus au moment de sauvegarder la base de données
+        "nb archives": integer, // nombre d'archives faites au momen de sauvegarde la base de données
+        "volumes": [ {
+          "media": {
+            "uuid": string, // l'identifiant unique du média
+            "label": string ou null, // label du média si connu ou valeur nulle
+            "name": string, // nom du média défini par l'utilisateur
+            "medium serial number": string, // numéro de série du média
+          },
+          "position": integer, // position du volume sur le média
+        }, ... ], // volumes d'une sauvegarde
+        "nb volumes": integer, // nombres de volumes
+      }, // information concernat la sauvegarde
+      "host": {
+        "name": string, // nom de l'hôte
+        "domaine": string or null, // domaine de l'hôte, peut être nulle
+      }, // information concernant l'hôte sur lequel s'execute la tâche
+      "job": {
+      }, // information concernant la tâche de sauvegarde de la base de données
+    },
+    "received": {
+      "message": string, // optionel, message à insérer dans les logs
+    }
+  }
+  - on error:
+* check-archive:
+  - pre: {
+    "send": {
+      "archive": {
+        "name": string, // nom de l'archive
+        "uuid": string, // l'identifiant de l'archive
+        "size": integer, // taille de l'archive en octet
+        "checksum ok": bool, // true si la vérification a réussi
+        "check time": integer ou null, // l'heure de la vérification ou nulle si jamais vérifié
+        "volumes": [ {
+          "position": integer, // position du volume dans l'archive
+          "size": integer, // taille du volume en octet
+          "start time": integer, // l'heure de création du volume, en seconde depuis l'Epoch
+          "end time": integer, // l'heure de fin de création du volume, en seconde depuis l'Epoch
+          "checksum": {
+            "key": "value", ... // 'key' correspond à l'algorithme utilisé et 'value' à l'empreinte calculé
+          }, // empreintes du volumes calculées lors de l'archivage
+          "checksum ok": bool, // true si la vérification a réussi
+          "check time": integer ou null, // l'heure de la vérification ou nulle si jamais vérifié
+          "files": [ {
+            "path": string, // chemin complet du fichier lors de l'archivage
+            "type": string, // type du fichier (répertoire, ...)
+            "mime type": string, // type mime identique à 'file -i filename'
+            "owner id": integer, // uid du fichier
+            "owner": string, // propriétaire du fichier
+            "group id": integer, // gid du fichier
+            "group": string, // groupe du fichier
+            "perm": string, // permission du fichier
+            "size": integer, // taille du fichier
+            "block position": integer, // position du fichier dans le volume
+            "checksum": {
+              "key": "value", ... // 'key' correspond à l'algorithme utilisé et 'value' à l'empreinte calculé
+            }, // empreintes du fichier calculées lors de l'archivage
+            "checksum ok": bool, // true si la vérification a réussi
+            "check time": integer ou null, // l'heure de la vérification ou nulle si jamais vérifié
+            "archived time": integer, // l'heure d'archivage
+          }, ... ], // liste des fichiers présent dans le volume
+          "nb files": integer, // nombre de fichiers dans le volume
+          "media": {
+            "uuid": string, // l'identifiant unique du média
+            "label": string ou null, // label du média si connu ou valeur nulle
+            "name": string, // nom du média défini par l'utilisateur
+            "medium serial number": string, // numéro de série du média
+          }, // information concernant le média
+          "media position": integer, // position du fichier dans le média
+        }, ... ], // volumes de l'archive
+        "nb volumes": integer, // nombre de volumes
+        "nb files": integer, // nombre de fichiers distincts dans l'archive
+      }, // information de l'archive
+      "job": {
+        "quick mode": bool, // vrai si vérification rapide
+      }, // information concernant la tâche de vérification
+      "user": {
+        "login": string, // login de l'utilisateur
+        "name": string, // nom de l'utilisateur
+        "email": string, // adresse email de l'utilisateur
+      }, // information du créateur de l'archive
+    },
+    "received": {
+        "data": { // données passées to job
+        },
+        "message": string, // optionel, message à insérer dans les logs
+        "should run": bool, // false si on ne doit pas exécuter la tâche
+    },
+  }
+  - post:  {
+    "send": {
+      "archive": {
+        "name": string, // nom de l'archive
+        "uuid": string, // l'identifiant de l'archive
+        "size": integer, // taille de l'archive en octet
+        "checksum ok": bool, // true si la vérification a réussi
+        "check time": integer, // l'heure de la vérification
+        "volumes": [ {
+          "position": integer, // position du volume dans l'archive
+          "size": integer, // taille du volume en octet
+          "start time": integer, // l'heure de création du volume, en seconde depuis l'Epoch
+          "end time": integer, // l'heure de fin de création du volume, en seconde depuis l'Epoch
+          "checksum": {
+            "key": "value", ... // 'key' correspond à l'algorithme utilisé et 'value' à l'empreinte calculé
+          }, // empreintes du volumes calculées lors de l'archivage
+          "checksum ok": bool, // true si la vérification a réussi
+          "check time": integer, // l'heure de la vérification
+          "files": [ {
+            "name": string, // chemin complet du fichier lors de l'archivage
+            "type": string, // type du fichier (répertoire, ...)
+            "mime type": string, // type mime identique à 'file -i filename'
+            "owner id": integer, // uid du fichier
+            "owner": string, // propriétaire du fichier
+            "group id": integer, // gid du fichier
+            "group": string, // groupe du fichier
+            "perm": string, // permission du fichier
+            "size": integer, // taille du fichier
+            "block position": integer, // position du fichier dans le volume
+            "checksum": {
+              "key": "value", ... // 'key' correspond à l'algorithme utilisé et 'value' à l'empreinte calculé
+            }, // empreintes du fichier calculées lors de l'archivage
+            "checksum ok": bool, // true si la vérification a réussi
+            "check time": integer, // l'heure de la vérification
+            "archived time": integer, // l'heure d'archivage
+          }, ... ], // liste des fichiers présent dans le volume
+          "media": {
+            "uuid": string, // l'identifiant unique du média
+            "label": string ou null, // label du média si connu ou valeur nulle
+            "name": string, // nom du média défini par l'utilisateur
+            "medium serial number": string, // numéro de série du média
+          }, // information concernant le média
+          "media position": integer, // position du fichier dans le média
+        }, ... ], // volumes de l'archive
+        "nb volumes": integer, // nombre de volumes
+      }, // information de l'archive
+      "job": {
+        "quick mode": bool, // vrai si vérification rapide
+      }, // information concernant la tâche de vérification
+      "user": {
+        "login": string, // login de l'utilisateur
+        "name": string, // nom de l'utilisateur
+        "email": string, // adresse email de l'utilisateur
+      }, // information du créateur de l'archive
+    },
+    "received": {
+      "data": {} // données passées au job
+      "message": string, // optionel, message à insérer dans les logs
+    },
+  }
+  - on error:
+* copy-archive:
+  - pre: {
+    "send": {
+      "source archive": {
+        "name": string, // nom de l'archive
+        "uuid": string, // l'identifiant de l'archive
+        "size": integer, // taille de l'archive en octet
+        "checksum ok": bool, // true si la vérification a réussi
+        "check time": integer ou null, // l'heure de la vérification ou nulle si jamais vérifié
+        "volumes": [ {
+          "position": integer, // position du volume dans l'archive
+          "size": integer, // taille du volume en octet
+          "start time": integer, // l'heure de création du volume, en seconde depuis l'Epoch
+          "end time": integer, // l'heure de fin de création du volume, en seconde depuis l'Epoch
+          "checksum": {
+            "key": "value", ... // 'key' correspond à l'algorithme utilisé et 'value' à l'empreinte calculé
+          }, // empreintes du volumes calculées lors de l'archivage
+          "checksum ok": bool, // true si la vérification a réussi
+          "check time": integer ou null, // l'heure de la vérification ou nulle si jamais vérifié
+          "files": [ {
+            "name": string, // chemin complet du fichier lors de l'archivage
+            "type": string, // type du fichier (répertoire, ...)
+            "mime type": string, // type mime identique à 'file -i filename'
+            "owner id": integer, // uid du fichier
+            "owner": string, // propriétaire du fichier
+            "group id": integer, // gid du fichier
+            "group": string, // groupe du fichier
+            "perm": string, // permission du fichier
+            "size": integer, // taille du fichier
+            "block position": integer, // position du fichier dans le volume
+            "checksum": {
+              "key": "value", ... // 'key' correspond à l'algorithme utilisé et 'value' à l'empreinte calculé
+            }, // empreintes du fichier calculées lors de l'archivage
+            "checksum ok": bool, // true si la vérification a réussi
+            "check time": integer ou null, // l'heure de la vérification ou nulle si jamais vérifié
+          }, ... ], // liste des fichiers présent dans le volume
+          "media": {
+            "uuid": string, // l'identifiant unique du média
+            "label": string ou null, // label du média si connu ou valeur nulle
+            "name": string, // nom du média défini par l'utilisateur
+            "medium serial number": string, // numéro de série du média
+          }, // information concernant le média
+          "media position": integer, // position du fichier dans le média
+        }, ... ], // volumes de l'archive
+        "nb volumes": integer, // nombre de volumes
+        "pool": {
+          "uuid": string, // l'identifiant du pool
+          "name": string, // nom du pool
+        }, // information du pool
+      }, // information de l'archive
+      "destination archive": {
+        "name": string, // nom de l'archive
+        "pool": {
+          "uuid": string, // l'identifiant du pool
+          "name": string, // nom du pool
+        }, // information du pool
+      }, // information de l'archive de destination
+      "user": {
+        "login": string, // login de l'utilisateur
+        "name": string, // nom de l'utilisateur
+        "email": string, // adresse email de l'utilisateur
+      }, // information du créateur de l'archive
+    },
+    "received": {
+        "data": { // données passées to job
+        },
+        "message": string, // optionel, message à insérer dans les logs
+        "should run": bool, // false si on ne doit pas exécuter la tâche
+    },
+  }
+  - post:
+  - on error:
+* create-archive:
+  - pre: {
+    "send": {
+      "archive": {
+        "name": string, // nom de l'archive par défaut
+        "paths": [ string, ... ], // liste des chemins des fichiers à archiver
+        "pool": {
+            "name": string, // nom du pool
+            "uuid": string, // l'identifiant unique du pool
+        }, // information du pool
+        "metadatas": null or {...}, // méta-données de l'archive ou nulle
+      }, // information sur l'archive
+      "host": {
+        "name": string, // nom de l'hôte
+        "domaine": string or null, // domaine de l'hôte, peut être nulle
+      }, // information concernant l'hôte sur lequel s'execute la tâche
+      "job": {
+      }, // information concernant la tâche de sauvegarde de la base de données
+    },
+    "received": {
+        "data": { // données passées to job
+            "archive": {
+                "name": string, // optionel, nom de l'archive si différente du nom originel
+                "uuid": string, // optionel, l'identifiant unique qui est utilisé à la place d'un généré par le démon
+            }
+        },
+        "message": string, // optionel, message à insérer dans les logs
+        "should run": bool, // false si on ne doit pas exécuter la tâche
+    },
+  }
+  - post: {
+    "send": {
+        "archive": {
+            "name": string, // nom de l'archive faite
+            "creator": string, // login de l'utilisateur qui a créé l'archive
+            "size": integer, // taille de l'archive en octet
+            "volumes": [ {
+                "sequence": integer, // position du volume dans l'archive
+                "size": integer, // taille du volume en octet
+                "start time": integer, // l'heure de création du volume, en seconde depuis l'Epoch
+                "end time": integer, // l'heure de fin de création du volume, en seconde depuis l'Epoch
+                "checksum": {
+                    "key": "value", ... // 'key' correspond à l'algorithme utilisé et 'value' à l'empreinte calculé
+                }, // empreintes du volumes calculées lors de l'archivage
+                "files": [ {
+                    "name": string, // chemin complet du fichier lors de l'archivage
+                    "type": string, // type du fichier (répertoire, ...)
+                    "mime type": string, // type mime identique à 'file -i filename'
+                    "owner id": integer, // uid du fichier
+                    "owner": string, // propriétaire du fichier
+                    "group id": integer, // gid du fichier
+                    "group": string, // groupe du fichier
+                    "perm": string, // permission du fichier
+                    "size": integer, // taille du fichier
+                }, ... ], // liste des fichiers présent dans le volume
+                "media": {
+                    "uuid": string, // l'identifiant unique du média
+                    "label": string ou null, // label du média si connu ou valeur nulle
+                    "name": string, // nom du média défini par l'utilisateur
+                }, // information concernant le média
+                "media position": integer, // position du fichier dans le média
+            }, ... ], // informations concernant les volumes de l'archive
+        }, // information de l'archive
+    },
+    "received": {
+    }
+  }
+  - on error:
+* format-media:
+  - pre: {
+    "send": {
+      "job": {
+      }, // information concernant la tâche de sauvegarde de la base de données
+      "host": {
+        "name": string, // nom de l'hôte
+        "domaine": string or null, // domaine de l'hôte, peut être nulle
+      }, // information concernant l'hôte sur lequel s'execute la tâche
+      "media": {
+        "uuid": string or null, // l'identifiant unique du média si existant
+        "label": string ou null, // label du média si connu ou valeur nulle
+        "name": string, // nom du média défini par l'utilisateur
+      }, // information sur le média à formatter
+      "pool": {
+        "uuid": string, // l'identifiant du pool
+        "name": string, // nom du pool
+      }, // information sur le pool
+    },
+    "received": {
+        "data": { // données passées to job
+          "media": {
+            "uuid": string, // l'identifiant que doit être utilisé
+            "name": string, // nom du média qui doit être utilisé
+          }, // optionel
+        },
+        "message": string, // optionel, message à insérer dans les logs
+        "should run": bool, // false si on ne doit pas exécuter la tâche
+    },
+  }
+  - post: {
+      "job": {
+      }, // information concernant la tâche de sauvegarde de la base de données
+      "host": {
+        "name": string, // nom de l'hôte
+        "domaine": string or null, // domaine de l'hôte, peut être nulle
+      }, // information concernant l'hôte sur lequel s'execute la tâche
+      "media": {
+        "uuid": string, // nouvelle l'identifiant unique du média
+        "label": string ou null, // label du média si connu ou valeur nulle
+        "name": string, // nom du média défini par l'utilisateur
+      }, // information sur le média à formatter
+      "pool": {
+        "uuid": string, // l'identifiant du pool
+        "name": string, // nom du pool
+      }, // information sur le pool
+  }
+  - on error: {
+      "job": {
+      }, // information concernant la tâche de sauvegarde de la base de données
+      "host": {
+        "name": string, // nom de l'hôte
+        "domaine": string or null, // domaine de l'hôte, peut être nulle
+      }, // information concernant l'hôte sur lequel s'execute la tâche
+      "media": {
+        "uuid": string, // nouvelle l'identifiant unique du média
+        "label": string ou null, // label du média si connu ou valeur nulle
+        "name": string, // nom du média défini par l'utilisateur
+      }, // information sur le média à formatter
+      "pool": {
+        "uuid": string, // l'identifiant du pool
+        "name": string, // nom du pool
+      }, // information sur le pool
+  }
+
+* restore-archive:
+  - pre: {
+    "send": {
+      "archive": {
+        "name": string, // nom de l'archive
+        "uuid": string, // l'identifiant de l'archive
+        "size": integer, // taille de l'archive en octet
+        "checksum ok": bool, // true si la vérification a réussi
+        "check time": integer ou null, // l'heure de la vérification ou nulle si jamais vérifié
+        "volumes": [ {
+          "position": integer, // position du volume dans l'archive
+          "size": integer, // taille du volume en octet
+          "start time": integer, // l'heure de création du volume, en seconde depuis l'Epoch
+          "end time": integer, // l'heure de fin de création du volume, en seconde depuis l'Epoch
+          "checksum": {
+            "key": "value", ... // 'key' correspond à l'algorithme utilisé et 'value' à l'empreinte calculé
+          }, // empreintes du volumes calculées lors de l'archivage
+          "checksum ok": bool, // true si la vérification a réussi
+          "check time": integer ou null, // l'heure de la vérification ou nulle si jamais vérifié
+          "files": [ {
+            "path": string, // chemin complet du fichier lors de l'archivage
+            "type": string, // type du fichier (répertoire, ...)
+            "mime type": string, // type mime identique à 'file -i filename'
+            "owner id": integer, // uid du fichier
+            "owner": string, // propriétaire du fichier
+            "group id": integer, // gid du fichier
+            "group": string, // groupe du fichier
+            "perm": string, // permission du fichier
+            "size": integer, // taille du fichier
+            "block position": integer, // position du fichier dans le volume
+            "checksum": {
+              "key": "value", ... // 'key' correspond à l'algorithme utilisé et 'value' à l'empreinte calculé
+            }, // empreintes du fichier calculées lors de l'archivage
+            "checksum ok": bool, // true si la vérification a réussi
+            "check time": integer ou null, // l'heure de la vérification ou nulle si jamais vérifié
+            "archived time": integer, // l'heure d'archivage
+          }, ... ], // liste des fichiers présent dans le volume
+          "nb files": integer, // nombre de fichiers dans le volume
+          "media": {
+            "uuid": string, // l'identifiant unique du média
+            "label": string ou null, // label du média si connu ou valeur nulle
+            "name": string, // nom du média défini par l'utilisateur
+            "medium serial number": string, // numéro de série du média
+          }, // information concernant le média
+          "media position": integer, // position du fichier dans le média
+        }, ... ], // volumes de l'archive
+        "nb volumes": integer, // nombre de volumes
+        "nb files": integer, // nombre de fichiers distincts dans l'archive
+    },
+    "received": {
+        "data": { // données passées to job
+        },
+        "message": string, // optionel, message à insérer dans les logs
+        "should run": bool, // false si on ne doit pas exécuter la tâche
+    },
+  }
+  - post:
+  - on error:

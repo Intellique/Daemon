@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 06 Jun 2013 19:37:35 +0200                            *
+*  Last modified: Thu, 26 Dec 2013 10:23:26 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_RESTOREARCHIVE_H__
@@ -43,6 +43,8 @@ struct st_job_restore_archive_private {
 	struct st_database_connection * connect;
 
 	struct st_archive * archive;
+	size_t archive_size;
+	struct st_pool * pool;
 
 	struct st_job_restore_archive_data_worker {
 		struct st_job_restore_archive_private * jp;

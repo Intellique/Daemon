@@ -22,12 +22,14 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 28 May 2013 19:13:12 +0200                            *
+*  Last modified: Fri, 20 Dec 2013 19:04:53 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_CREATEARCHIVE_H__
 #define __STONE_JOB_CREATEARCHIVE_H__
 
+// json_*
+#include <jansson.h>
 // size_t
 #include <sys/types.h>
 
@@ -53,6 +55,7 @@ struct st_job_create_archive_private {
 			int (*end_file)(struct st_job_create_archive_data_worker * worker);
 			void (*free)(struct st_job_create_archive_data_worker * worker);
 			bool (*load_media)(struct st_job_create_archive_data_worker * worker);
+			json_t * (*post_run)(struct st_job_create_archive_data_worker * worker);
 			int (*schedule_auto_check_archive)(struct st_job_create_archive_data_worker * worker);
 			int (*schedule_check_archive)(struct st_job_create_archive_data_worker * worker, time_t start_time, bool quick_mode);
 			int (*sync_db)(struct st_job_create_archive_data_worker * worker);

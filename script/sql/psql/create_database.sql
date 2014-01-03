@@ -124,6 +124,12 @@ CREATE TYPE ProxyStatus AS ENUM (
     'error'
 );
 
+CREATE TYPE ScriptType AS ENUM (
+    'on error',
+    'pre job',
+    'post job'
+);
+
 CREATE TYPE UnbreakableLevel AS ENUM (
     'archive',
     'file',
@@ -554,6 +560,23 @@ CREATE TABLE Report (
     job BIGINT NOT NULL REFERENCES job(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
     data TEXT NOT NULL
+);
+
+CREATE TABLE Script (
+    id SERIAL PRIMARY KEY,
+    path TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE Scripts (
+    id SERIAL PRIMARY KEY,
+
+    sequence INTEGER NOT NULL CHECK (sequence >= 0),
+    jobType INTEGER NOT NULL REFERENCES JobType(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    script INTEGER REFERENCES Script(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    scriptType ScriptType NOT NULL,
+    pool INTEGER REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE CASCADE,
+
+    UNIQUE (sequence, jobType, script, scriptType, pool)
 );
 
 CREATE TABLE Vtl (

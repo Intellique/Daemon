@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 08 Oct 2013 11:16:03 +0200                            *
+*  Last modified: Thu, 26 Dec 2013 10:45:53 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -164,8 +164,6 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 			continue;
 
 		st_job_restore_archive_report_add_volume(self->jp->report, vol, NULL);
-
-		connect->ops->get_archive_files_by_job_and_archive_volume(connect, job, vol);
 
 		struct st_format_reader * reader = dr->ops->get_reader(dr, vol->media_position, NULL, NULL);
 
