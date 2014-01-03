@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 18 Dec 2013 18:26:58 +0100                            *
+*  Last modified: Fri, 03 Jan 2014 12:19:34 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -936,11 +936,22 @@ static int st_db_postgresql_sync_changer(struct st_database_connection * connect
 			return 3;
 		}
 	} else {
-		const char * query = "select_changer_by_model_vendor_serialnumber_wwn";
-		st_db_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn = $4 FOR UPDATE NOWAIT");
+		const char * query;
+		PGresult * result;
 
-		const char * param[] = { changer->model, changer->vendor, changer->serial_number, changer->wwn };
-		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+		if (changer->wwn != NULL) {
+			query = "select_changer_by_model_vendor_serialnumber_wwn";
+			st_db_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn = $4 FOR UPDATE NOWAIT");
+
+			const char * param[] = { changer->model, changer->vendor, changer->serial_number, changer->wwn };
+			result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+		} else {
+			query = "select_changer_by_model_vendor_serialnumber";
+			st_db_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn IS NULL FOR UPDATE NOWAIT");
+
+			const char * param[] = { changer->model, changer->vendor, changer->serial_number };
+			result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+		}
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
