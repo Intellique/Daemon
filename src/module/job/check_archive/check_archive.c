@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 23 Dec 2013 16:51:43 +0100                            *
+*  Last modified: Fri, 03 Jan 2014 16:54:06 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -30,6 +30,7 @@
 // free, malloc
 #include <stdlib.h>
 
+#include <libstone/host.h>
 #include <libstone/io.h>
 #include <libstone/job.h>
 #include <libstone/library/media.h>
@@ -261,6 +262,7 @@ static void st_job_check_archive_on_error(struct st_job * job) {
 	json_t * data = json_object();
 	json_object_set_new(data, "user", user);
 	json_object_set_new(data, "archive", archive);
+	json_object_set_new(data, "host", st_host_get_info());
 	json_object_set_new(data, "job", jjob);
 
 	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, data);
@@ -375,6 +377,7 @@ static void st_job_check_archive_post_run(struct st_job * job) {
 	json_t * data = json_object();
 	json_object_set_new(data, "user", user);
 	json_object_set_new(data, "archive", archive);
+	json_object_set_new(data, "host", st_host_get_info());
 	json_object_set_new(data, "job", jjob);
 
 	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_post, self->pool, data);
@@ -496,6 +499,7 @@ static bool st_job_check_archive_pre_run(struct st_job * job) {
 	json_t * data = json_object();
 	json_object_set_new(data, "user", user);
 	json_object_set_new(data, "archive", archive);
+	json_object_set_new(data, "host", st_host_get_info());
 	json_object_set_new(data, "job", jjob);
 
 	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, data);

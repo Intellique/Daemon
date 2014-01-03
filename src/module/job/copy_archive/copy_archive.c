@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 24 Dec 2013 13:58:38 +0100                            *
+*  Last modified: Fri, 03 Jan 2014 16:55:00 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -35,6 +35,7 @@
 #include <strings.h>
 
 #include <libstone/database.h>
+#include <libstone/host.h>
 #include <libstone/io.h>
 #include <libstone/library/archive.h>
 #include <libstone/library/drive.h>
@@ -259,6 +260,7 @@ static void st_job_copy_archive_on_error(struct st_job * job) {
 	json_t * data = json_object();
 	json_object_set_new(data, "source archive", src_archive);
 	json_object_set_new(data, "copy archive", copy_archive);
+	json_object_set_new(data, "host", st_host_get_info());
 
 	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, data);
 
@@ -464,6 +466,7 @@ static void st_job_copy_archive_post_run(struct st_job * job) {
 	json_t * data = json_object();
 	json_object_set_new(data, "source archive", src_archive);
 	json_object_set_new(data, "copy archive", copy_archive);
+	json_object_set_new(data, "host", st_host_get_info());
 
 	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_post, self->pool, data);
 
@@ -582,6 +585,7 @@ static bool st_job_copy_archive_pre_run(struct st_job * job) {
 	json_t * data = json_object();
 	json_object_set_new(data, "source archive", src_archive);
 	json_object_set_new(data, "copy archive", copy_archive);
+	json_object_set_new(data, "host", st_host_get_info());
 
 	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, data);
 	bool sr = st_io_json_should_run(returned_data);

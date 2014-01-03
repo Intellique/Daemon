@@ -22,9 +22,11 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 26 Dec 2013 13:45:39 +0100                            *
+*  Last modified: Fri, 03 Jan 2014 16:33:26 +0100                            *
 \****************************************************************************/
 
+// json_*
+#include <jansson.h>
 // NULL
 #include <stddef.h>
 // uname
@@ -49,5 +51,12 @@ bool st_host_init(struct st_database_connection * connect) {
 
 const struct st_host * st_host_get() {
 	return &host;
+}
+
+json_t * st_host_get_info() {
+	json_t * jhost = json_object();
+	json_object_set_new(jhost, "name", json_string(host.hostname));
+	json_object_set_new(jhost, "uuid", json_string(host.uuid));
+	return jhost;
 }
 

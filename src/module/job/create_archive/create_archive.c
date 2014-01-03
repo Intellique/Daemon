@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 20 Dec 2013 19:13:07 +0100                            *
+*  Last modified: Fri, 03 Jan 2014 16:56:30 +0100                            *
 \****************************************************************************/
 
 // asprintf, versionsort
@@ -47,6 +47,7 @@
 #include <unistd.h>
 
 #include <libstone/format.h>
+#include <libstone/host.h>
 #include <libstone/io.h>
 #include <libstone/library/media.h>
 #include <libstone/log.h>
@@ -282,7 +283,7 @@ static void st_job_create_archive_on_error(struct st_job * job) {
 
 	json_t * sdata = json_object();
 	json_object_set_new(sdata, "archive", archive);
-	json_object_set_new(sdata, "host", json_object());
+	json_object_set_new(sdata, "host", st_host_get_info());
 	json_object_set_new(sdata, "job", json_object());
 
 	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_on_error, self->pool, sdata);
@@ -339,7 +340,7 @@ static bool st_job_create_archive_pre_run(struct st_job * job) {
 
 	json_t * sdata = json_object();
 	json_object_set_new(sdata, "archive", archive);
-	json_object_set_new(sdata, "host", json_object());
+	json_object_set_new(sdata, "host", st_host_get_info());
 	json_object_set_new(sdata, "job", json_object());
 
 	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, sdata);

@@ -9,7 +9,7 @@ Job:
       }, // information concernat la sauvegarde
       "host": {
         "name": string, // nom de l'hôte
-        "domaine": string or null, // domaine de l'hôte, peut être nulle
+        "uuid": string, // identifiant unique de l'hôte
       }, // information concernant l'hôte sur lequel s'execute la tâche
       "job": {
       }, // information concernant la tâche de sauvegarde de la base de données
@@ -42,7 +42,7 @@ Job:
       }, // information concernat la sauvegarde
       "host": {
         "name": string, // nom de l'hôte
-        "domaine": string or null, // domaine de l'hôte, peut être nulle
+        "uuid": string, // identifiant unique de l'hôte
       }, // information concernant l'hôte sur lequel s'execute la tâche
       "job": {
       }, // information concernant la tâche de sauvegarde de la base de données
@@ -101,6 +101,10 @@ Job:
         "nb volumes": integer, // nombre de volumes
         "nb files": integer, // nombre de fichiers distincts dans l'archive
       }, // information de l'archive
+      "host": {
+        "name": string, // nom de l'hôte
+        "uuid": string, // identifiant unique de l'hôte
+      }, // information concernant l'hôte sur lequel s'execute la tâche
       "job": {
         "quick mode": bool, // vrai si vérification rapide
       }, // information concernant la tâche de vérification
@@ -163,6 +167,10 @@ Job:
         }, ... ], // volumes de l'archive
         "nb volumes": integer, // nombre de volumes
       }, // information de l'archive
+      "host": {
+        "name": string, // nom de l'hôte
+        "uuid": string, // identifiant unique de l'hôte
+      }, // information concernant l'hôte sur lequel s'execute la tâche
       "job": {
         "quick mode": bool, // vrai si vérification rapide
       }, // information concernant la tâche de vérification
