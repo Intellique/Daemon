@@ -243,6 +243,10 @@ Job:
           "name": string, // nom du pool
         }, // information du pool
       }, // information de l'archive de destination
+      "host": {
+        "name": string, // nom de l'hôte
+        "uuid": string, // identifiant unique de l'hôte
+      }, // information concernant l'hôte sur lequel s'execute la tâche
       "user": {
         "login": string, // login de l'utilisateur
         "name": string, // nom de l'utilisateur
@@ -272,7 +276,7 @@ Job:
       }, // information sur l'archive
       "host": {
         "name": string, // nom de l'hôte
-        "domaine": string or null, // domaine de l'hôte, peut être nulle
+        "uuid": string, // identifiant unique de l'hôte
       }, // information concernant l'hôte sur lequel s'execute la tâche
       "job": {
       }, // information concernant la tâche de sauvegarde de la base de données
@@ -321,6 +325,10 @@ Job:
                 "media position": integer, // position du fichier dans le média
             }, ... ], // informations concernant les volumes de l'archive
         }, // information de l'archive
+        "host": {
+          "name": string, // nom de l'hôte
+          "uuid": string, // identifiant unique de l'hôte
+        }, // information concernant l'hôte sur lequel s'execute la tâche
     },
     "received": {
     }
@@ -333,7 +341,7 @@ Job:
       }, // information concernant la tâche de sauvegarde de la base de données
       "host": {
         "name": string, // nom de l'hôte
-        "domaine": string or null, // domaine de l'hôte, peut être nulle
+        "uuid": string, // identifiant unique de l'hôte
       }, // information concernant l'hôte sur lequel s'execute la tâche
       "media": {
         "uuid": string or null, // l'identifiant unique du média si existant
@@ -361,7 +369,7 @@ Job:
       }, // information concernant la tâche de sauvegarde de la base de données
       "host": {
         "name": string, // nom de l'hôte
-        "domaine": string or null, // domaine de l'hôte, peut être nulle
+        "uuid": string, // identifiant unique de l'hôte
       }, // information concernant l'hôte sur lequel s'execute la tâche
       "media": {
         "uuid": string, // nouvelle l'identifiant unique du média
@@ -378,7 +386,7 @@ Job:
       }, // information concernant la tâche de sauvegarde de la base de données
       "host": {
         "name": string, // nom de l'hôte
-        "domaine": string or null, // domaine de l'hôte, peut être nulle
+        "uuid": string, // identifiant unique de l'hôte
       }, // information concernant l'hôte sur lequel s'execute la tâche
       "media": {
         "uuid": string, // nouvelle l'identifiant unique du média
