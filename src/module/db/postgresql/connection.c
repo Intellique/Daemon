@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 03 Jan 2014 12:19:34 +0100                            *
+*  Last modified: Tue, 07 Jan 2014 16:54:23 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -3491,7 +3491,7 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 		struct st_hashtable * metadatas = st_util_json_from_string(archive->metadatas);
 		if (metadatas != NULL) {
 			const char * query2 = "insert_metadata";
-			st_db_postgresql_prepare(self, query2, "INSERT INTO metadata(key, value, archive) VALUES ($1, $2, $3)");
+			st_db_postgresql_prepare(self, query2, "INSERT INTO metadata(key, value, id, type) VALUES ($1, $2, $3, 'archive')");
 
 			unsigned int nb_keys = 0;
 			const void ** keys = st_hashtable_keys(metadatas, &nb_keys);

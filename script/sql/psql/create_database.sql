@@ -117,6 +117,18 @@ CREATE TYPE MediaType AS ENUM (
     'rewritable'
 );
 
+CREATE TYPE MetaType AS ENUM (
+    'archive',
+    'archivefile',
+    'archivevolume',
+    'host',
+    'media',
+    'pool',
+    'report',
+    'users',
+    'vtl'
+);
+
 CREATE TYPE ProxyStatus AS ENUM (
     'todo',
     'running',
@@ -428,7 +440,10 @@ CREATE TABLE Metadata (
     key TEXT NOT NULL,
     value TEXT NOT NULL,
 
-    archive BIGINT NOT NULL REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE CASCADE
+    id BIGINT NOT NULL,
+    type MetaType NOT NULL,
+
+    PRIMARY KEY (id, type)
 );
 
 CREATE TABLE Proxy (
@@ -595,6 +610,61 @@ CREATE TABLE Vtl (
 
     CHECK (nbslots >= nbdrives)
 );
+
+-- Triggers
+CREATE FUNCTION check_metadata() RETURNS TRIGGER AS $body$
+    BEGIN
+        IF OLD.id != NEW.id THEN
+            CASE TG_OP
+                WHEN 'UPDATE' THEN
+                    UPDATE Metadata SET id = NEW.id WHERE id = OLD.id AND type = TG_TABLE_NAME::MetaType;
+                WHEN 'DELETE' THEN
+                    DELETE FROM Metadata WHERE id = OLD.id AND type = TG_TABLE_NAME::MetaType;
+            END CASE;
+        END IF;
+        RETURN NEW;
+    END;
+$body$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON Archive
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON ArchiveFile
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON ArchiveVolume
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON Host
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON Media
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON Media
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON Pool
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON Report
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON Users
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON Vtl
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
 
 -- Comments
 COMMENT ON COLUMN Archive.starttime IS 'Start time of archive creation';
