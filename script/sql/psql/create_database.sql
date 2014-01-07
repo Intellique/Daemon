@@ -443,7 +443,7 @@ CREATE TABLE Metadata (
     id BIGINT NOT NULL,
     type MetaType NOT NULL,
 
-    PRIMARY KEY (id, type)
+    PRIMARY KEY (id, type, key)
 );
 
 CREATE TABLE Proxy (
