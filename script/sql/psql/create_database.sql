@@ -614,14 +614,12 @@ CREATE TABLE Vtl (
 -- Triggers
 CREATE FUNCTION check_metadata() RETURNS TRIGGER AS $body$
     BEGIN
-        IF OLD.id != NEW.id THEN
-            CASE TG_OP
-                WHEN 'UPDATE' THEN
-                    UPDATE Metadata SET id = NEW.id WHERE id = OLD.id AND type = TG_TABLE_NAME::MetaType;
-                WHEN 'DELETE' THEN
-                    DELETE FROM Metadata WHERE id = OLD.id AND type = TG_TABLE_NAME::MetaType;
-            END CASE;
-        END IF;
+        CASE
+            WHEN TG_OP = 'UPDATE' AND OLD.id != NEW.id THEN
+                UPDATE Metadata SET id = NEW.id WHERE id = OLD.id AND type = TG_TABLE_NAME::MetaType;
+            WHEN TG_OP = 'DELETE' THEN
+                DELETE FROM Metadata WHERE id = OLD.id AND type = TG_TABLE_NAME::MetaType;
+        END CASE;
         RETURN NEW;
     END;
 $body$ LANGUAGE plpgsql;
