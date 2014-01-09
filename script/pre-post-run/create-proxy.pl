@@ -8,11 +8,7 @@ use JSON::PP;
 
 my $param = shift;
 
-# my $data_in = do { local $/; <STDIN> };
-open( my $fd, '<', 'misc/script-pre-post/json/create-archive.post.json' )
-    or die "Can't open file";
-my $data_in = do { local $/; <$fd> };
-close $fd;
+my $data_in = do { local $/; <STDIN> };
 
 my $encoder = undef;
 foreach my $dir ( split ':', $ENV{PATH} ) {
