@@ -298,6 +298,7 @@ Job:
             "name": string, // nom de l'archive faite
             "creator": string, // login de l'utilisateur qui a créé l'archive
             "size": integer, // taille de l'archive en octet
+            "uuid": string, // identifiant unique de l'archive
             "volumes": [ {
                 "sequence": integer, // position du volume dans l'archive
                 "size": integer, // taille du volume en octet

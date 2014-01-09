@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 23 Dec 2013 11:39:32 +0100                            *
+*  Last modified: Thu, 09 Jan 2014 15:02:36 +0100                            *
 \****************************************************************************/
 
 // asprintf
@@ -398,6 +398,7 @@ static json_t * st_job_create_archive_single_worker_post_run(struct st_job_creat
 
 	json_t * archive = json_object();
 	json_object_set_new(archive, "name", json_string(self->archive->name));
+	json_object_set_new(archive, "uuid", json_string(self->archive->uuid));
 	json_object_set_new(archive, "creator", json_string(self->archive->user->login));
 
 	json_t * volumes = json_array();
