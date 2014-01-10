@@ -6,6 +6,8 @@ use warnings;
 use Digest::MD5 qw(md5_hex);
 use JSON::PP;
 
+my $output_dir = '/var/www/stone/cache/movies/proxy';
+
 my $param = shift;
 
 my $data_in = do { local $/; <STDIN> };
@@ -45,7 +47,7 @@ foreach my $vol ( @{ $archive->{volumes} } ) {
         my $filename = md5_hex( $file->{path} ) . '.webm';
         my $status = system $encoder, '-v', 'quiet', '-i', $file->{path}, '-acodec',
             'libvorbis', '-ac', '2', '-ab', '96k', '-ar', '44100', '-b',
-            '500k', '-s', '320x240', "tmp/$filename";
+            '500k', '-s', '320x240', "$output_dir/$filename";
     }
 }
 
