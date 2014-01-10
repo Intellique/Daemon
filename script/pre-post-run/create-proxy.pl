@@ -47,7 +47,7 @@ foreach my $vol ( @{ $archive->{volumes} } ) {
         my $filename = md5_hex( $file->{path} ) . '.webm';
         my $status = system $encoder, '-v', 'quiet', '-i', $file->{path}, '-acodec',
             'libvorbis', '-ac', '2', '-ab', '96k', '-ar', '44100', '-b',
-            '500k', '-s', '320x240', "$output_dir/$filename";
+            '500k', '-s', '320x240', '-t', '0:0:30', "$output_dir/$filename";
     }
 }
 
