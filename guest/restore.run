@@ -1,0 +1,1 @@
+pg_restore -d stone-louvre-template -Fc -O -v -h taiko -U storiq guest/louvre/backup/stone_20140108.custom 
