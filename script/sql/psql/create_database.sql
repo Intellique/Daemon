@@ -46,6 +46,12 @@ CREATE TYPE FileType AS ENUM (
     'symbolic link'
 );
 
+CREATE TYPE JobRecordNotif AS ENUM (
+    'normal',
+    'important',
+    'read'
+);
+
 CREATE TYPE JobStatus AS ENUM (
     'disable',
     'error',
@@ -540,7 +546,8 @@ CREATE TABLE JobRecord (
     status JobStatus NOT NULL CHECK (status != 'disable'),
     numRun INTEGER NOT NULL DEFAULT 1 CHECK (numRun > 0),
     timestamp TIMESTAMP(0) NOT NULL DEFAULT NOW(),
-    message TEXT
+    message TEXT NOT NULL,
+    notif JobRecordNotif NOT NULL DEFAULT 'normal'
 );
 
 CREATE TABLE JobToSelectedFile (
