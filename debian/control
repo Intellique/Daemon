@@ -51,3 +51,10 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: STone (log-plugin)
  Contains plugin to connect to postresql database
+
+Package: stone-scripts
+Section: utils
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: STone (log-plugin)
+ Contains scripts that the daemon will run
