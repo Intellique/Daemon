@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 21 Aug 2013 13:11:22 +0200                            *
+*  Last modified: Wed, 20 Nov 2013 13:07:10 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -78,6 +78,54 @@ bool st_util_file_check_link(const char * file) {
 		return false;
 
 	return !access(link, F_OK);
+}
+
+void st_util_file_convert_mode(char * buffer, mode_t mode) {
+	strcpy(buffer, "----------");
+
+	// file type
+	if (S_ISDIR(mode))
+		buffer[0] = 'd';
+	else if (S_ISCHR(mode))
+		buffer[0] = 'c';
+	else if (S_ISBLK(mode))
+		buffer[0] = 'b';
+	else if (S_ISFIFO(mode))
+		buffer[0] = 'p';
+	else if (S_ISLNK(mode))
+		buffer[0] = 'l';
+	else if (S_ISSOCK(mode))
+		buffer[0] = 's';
+
+	// user field
+	if (mode & S_IRUSR)
+		buffer[1] = 'r';
+	if (mode & S_IWUSR)
+		buffer[2] = 'w';
+	if (mode & S_ISUID)
+		buffer[3] = 'S';
+	else if (mode & S_IXUSR)
+		buffer[3] = 'x';
+
+	// group field
+	if (mode & S_IRGRP)
+		buffer[4] = 'r';
+	if (mode & S_IWGRP)
+		buffer[5] = 'w';
+	if (mode & S_ISGID)
+		buffer[6] = 'S';
+	else if (mode & S_IXGRP)
+		buffer[6] = 'x';
+
+	// other field
+	if (mode & S_IROTH)
+		buffer[7] = 'r';
+	if (mode & S_IWOTH)
+		buffer[8] = 'w';
+	if (mode & S_ISVTX)
+		buffer[9] = 'T';
+	else if (mode & S_IXOTH)
+		buffer[9] = 'x';
 }
 
 void st_util_file_convert_size_to_string(ssize_t size, char * str, ssize_t str_len) {

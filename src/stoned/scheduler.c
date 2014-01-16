@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 08 Oct 2013 11:21:04 +0200                            *
+*  Last modified: Thu, 19 Dec 2013 15:32:18 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -46,6 +46,7 @@
 #include <libstone/job.h>
 #include <libstone/library/ressource.h>
 #include <libstone/log.h>
+#include <libstone/script.h>
 #include <libstone/thread_pool.h>
 #include <libstone/util/hashtable.h>
 
@@ -68,6 +69,7 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 	st_log_write_all(st_log_level_info, st_log_type_scheduler, "starting main loop");
 
 	st_changer_sync(connection);
+	st_script_sync(connection);
 
 	struct st_job ** jobs = NULL;
 	unsigned int nb_jobs = 0;
@@ -110,6 +112,7 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 		}
 
 		st_changer_sync(connection);
+		st_script_sync(connection);
 
 		st_sched_lock->ops->lock(st_sched_lock);
 		if (st_sched_nb_running_jobs == 0)
@@ -150,8 +153,6 @@ static void st_sched_exit(int signal) {
 static void st_sched_run_job(void * arg) {
 	struct st_job * job = arg;
 
-	st_log_write_all(st_log_level_info, st_log_type_scheduler, "Starting job: %s", job->name);
-
 	st_sched_lock->ops->lock(st_sched_lock);
 	st_sched_nb_running_jobs++;
 	st_sched_lock->ops->unlock(st_sched_lock);
@@ -161,7 +162,27 @@ static void st_sched_run_job(void * arg) {
 		job->repetition--;
 	job->num_runs++;
 
-	int status = job->ops->run(job);
+	st_log_write_all(st_log_level_info, st_log_type_scheduler, "Starting pre-script of job: %s", job->name);
+
+	int status = 0;
+	if (job->ops->pre_run(job)) {
+		st_log_write_all(st_log_level_info, st_log_type_scheduler, "Starting job: %s", job->name);
+		status = job->ops->run(job);
+		st_log_write_all(st_log_level_info, st_log_type_scheduler, "Job %s finished, with exited code = %d", job->name, status);
+
+		if (status == 0) {
+			st_log_write_all(st_log_level_info, st_log_type_scheduler, "Starting post-script of job: %s", job->name);
+			job->ops->post_run(job);
+			st_log_write_all(st_log_level_info, st_log_type_scheduler, "Starting post-script of job: %s, finished", job->name);
+		} else {
+			st_log_write_all(st_log_level_info, st_log_type_scheduler, "Starting on error script of job: %s", job->name);
+			job->ops->on_error(job);
+			st_log_write_all(st_log_level_info, st_log_type_scheduler, "Starting on error script of job: %s, finished", job->name);
+		}
+	} else {
+		job->sched_status = st_job_status_error;
+		st_log_write_all(st_log_level_info, st_log_type_scheduler, "Job '%s' aborted by pre-script request", job->name);
+	}
 
 	job->ops->free(job);
 
@@ -179,7 +200,5 @@ static void st_sched_run_job(void * arg) {
 
 	if (job->sched_status == st_job_status_running)
 		job->sched_status = job->repetition != 0 ? st_job_status_scheduled : st_job_status_finished;
-
-	st_log_write_all(st_log_level_info, st_log_type_scheduler, "Job %s finished, with exited code = %d", job->name, status);
 }
 

@@ -2,7 +2,7 @@ STONE_JOB_BACKUPDB_SRC_DIR		:= src/module/job/backup_db
 
 STONE_JOB_BACKUPDB_BIN			:= lib/libjob-backup-db.so
 STONE_JOB_BACKUPDB_CFLAG		:= -pthread -fPIC -fvisibility=hidden
-STONE_JOB_BACKUPDB_LD			:= -pthread -shared
+STONE_JOB_BACKUPDB_LD			:= -pthread -shared -ljansson
 
 STONE_JOB_BACKUPDB_DEPEND_LIB	:=
 

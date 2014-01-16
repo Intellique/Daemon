@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 18 Dec 2013 18:26:58 +0100                            *
+*  Last modified: Tue, 07 Jan 2014 16:54:23 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -48,6 +48,7 @@
 
 #include <libstone/backup.h>
 #include <libstone/checksum.h>
+#include <libstone/host.h>
 #include <libstone/job.h>
 #include <libstone/library/archive.h>
 #include <libstone/library/changer.h>
@@ -57,6 +58,7 @@
 #include <libstone/library/slot.h>
 #include <libstone/library/vtl.h>
 #include <libstone/log.h>
+#include <libstone/script.h>
 #include <libstone/user.h>
 #include <libstone/util/hashtable.h>
 #include <libstone/util/json.h>
@@ -129,9 +131,17 @@ static int st_db_postgresql_start_transaction(struct st_database_connection * co
 static int st_db_postgresql_sync_plugin_checksum(struct st_database_connection * connect, const char * name);
 static int st_db_postgresql_sync_plugin_job(struct st_database_connection * connect, const char * plugin);
 
+static int st_db_postgresql_add_host(struct st_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description);
+static bool st_db_postgresql_find_host(struct st_database_connection * connect, const char * uuid, const char * hostname);
+static char * st_db_postgresql_get_host(struct st_database_connection * connect);
+static int st_db_postgresql_get_host_by_name(struct st_database_connection * connect, const char * name, struct st_host * host);
+
+static int st_db_postgresql_get_nb_scripts(struct st_database_connection * connect, const char * job_type, enum st_script_type type, struct st_pool * pool);
+static char * st_db_postgresql_get_script(struct st_database_connection * connect, const char * job_type, unsigned int sequence, enum st_script_type type, struct st_pool * pool);
+static int st_db_postgresql_sync_script(struct st_database_connection * connect, const char * script_path);
+
 static bool st_db_postgresql_changer_is_enabled(struct st_database_connection * connect, struct st_changer * changer);
 static bool st_db_postgresql_drive_is_enabled(struct st_database_connection * connect, struct st_drive * drive);
-static char * st_db_postgresql_get_host(struct st_database_connection * connect);
 static int st_db_postgresql_is_changer_contain_drive(struct st_database_connection * connect, struct st_changer * changer, struct st_drive * drive);
 static void st_db_postgresql_slots_are_enabled(struct st_database_connection * connect, struct st_changer * changer);
 static int st_db_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer);
@@ -194,6 +204,14 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 
 	.sync_plugin_checksum = st_db_postgresql_sync_plugin_checksum,
 	.sync_plugin_job      = st_db_postgresql_sync_plugin_job,
+
+	.add_host         = st_db_postgresql_add_host,
+	.find_host        = st_db_postgresql_find_host,
+	.get_host_by_name = st_db_postgresql_get_host_by_name,
+
+	.get_nb_scripts = st_db_postgresql_get_nb_scripts,
+	.get_script     = st_db_postgresql_get_script,
+	.sync_script    = st_db_postgresql_sync_script,
 
 	.changer_is_enabled       = st_db_postgresql_changer_is_enabled,
 	.drive_is_enabled         = st_db_postgresql_drive_is_enabled,
@@ -602,6 +620,204 @@ static int st_db_postgresql_sync_plugin_job(struct st_database_connection * conn
 }
 
 
+static int st_db_postgresql_add_host(struct st_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description) {
+	if (connect == NULL || uuid == NULL || name == NULL)
+		return 1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+
+	const char * query = "insert_host";
+	st_db_postgresql_prepare(self, query, "INSERT INTO host(uuid, name, domaine, description) VALUES ($1, $2, $3, $4)");
+
+	const char * param[] = { uuid, name, domaine, description };
+	PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+
+	PQclear(result);
+
+	return status == PGRES_FATAL_ERROR;
+}
+
+static bool st_db_postgresql_find_host(struct st_database_connection * connect, const char * uuid, const char * hostname) {
+	struct st_db_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_host_by_name_or_uuid";
+	st_db_postgresql_prepare(self, query, "SELECT id FROM host WHERE uuid::TEXT = $1 OR name = $2 OR name || '.' || domaine = $2 LIMIT 1");
+
+	const char * param[] = { uuid, hostname };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	bool found = false;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (PQntuples(result) == 1)
+		found = true;
+
+	PQclear(result);
+
+	return found;
+}
+
+static char * st_db_postgresql_get_host(struct st_database_connection * connect) {
+	struct st_db_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_host_by_name";
+	st_db_postgresql_prepare(self, query, "SELECT id FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1");
+
+	struct utsname name;
+	uname(&name);
+
+	const char * param[] = { name.nodename };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+
+	char * hostid = NULL;
+
+	if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		st_db_postgresql_get_string_dup(result, 0, 0, &hostid);
+	else
+		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: Host not found into database (%s)", name.nodename);
+
+	PQclear(result);
+
+	return hostid;
+}
+
+static int st_db_postgresql_get_host_by_name(struct st_database_connection * connect, const char * name, struct st_host * host) {
+	struct st_db_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_host_by_name_by_name";
+	st_db_postgresql_prepare(self, query, "SELECT CASE WHEN domaine IS NULL THEN name ELSE name || '.' || domaine END, uuid FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1");
+
+	const char * param[] = { name };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	bool failed = true;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		if (host->hostname != NULL)
+			free(host->hostname);
+		if (host->uuid != NULL)
+			free(host->uuid);
+		host->hostname = host->uuid = NULL;
+
+		st_db_postgresql_get_string_dup(result, 0, 0, &host->hostname);
+		st_db_postgresql_get_string_dup(result, 0, 1, &host->uuid);
+
+		failed = false;
+	}
+
+	PQclear(result);
+
+	return failed;
+}
+
+
+static int st_db_postgresql_get_nb_scripts(struct st_database_connection * connect, const char * job_type, enum st_script_type type, struct st_pool * pool) {
+	if (connect == NULL || pool == NULL)
+		return -1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_pool_data * pool_data = pool->db_data;
+
+	const char * query = "select_nb_scripts_with_sequence_and_pool";
+	st_db_postgresql_prepare(self, query, "SELECT COUNT(*) FROM scripts ss LEFT JOIN jobtype jt ON ss.jobType = jt.id WHERE jt.name = $1 AND scriptType = $2 AND pool = $3");
+
+	char * pool_id;
+	asprintf(&pool_id, "%ld", pool_data->id);
+
+	const char * param[] = { job_type, st_db_postgresql_script_type_to_string(type), pool_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	int nb_scripts = -1;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else
+		st_db_postgresql_get_int(result, 0, 0, &nb_scripts);
+
+	PQclear(result);
+	free(pool_id);
+
+	return nb_scripts;
+}
+
+static char * st_db_postgresql_get_script(struct st_database_connection * connect, const char * job_type, unsigned int sequence, enum st_script_type type, struct st_pool * pool) {
+	if (connect == NULL || job_type == NULL || pool == NULL)
+		return NULL;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_pool_data * pool_data = pool->db_data;
+
+	const char * query = "select_script_with_sequence_and_pool";
+	st_db_postgresql_prepare(self, query, "SELECT s.path FROM scripts ss LEFT JOIN jobtype jt ON ss.jobType = jt.id LEFT JOIN script s ON ss.script = s.id WHERE jt.name = $1 AND scripttype = $2 AND pool = $3 ORDER BY sequence LIMIT 1 OFFSET $4");
+
+	char * seq, * pool_id;
+	asprintf(&seq, "%u", sequence);
+	asprintf(&pool_id, "%ld", pool_data->id);
+
+	const char * param[] = { job_type, st_db_postgresql_script_type_to_string(type), pool_id, seq };
+	PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	char * script = NULL;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (PQntuples(result) > 0)
+		st_db_postgresql_get_string_dup(result, 0, 0, &script);
+
+	PQclear(result);
+
+	free(seq);
+	free(pool_id);
+
+	return script;
+}
+
+static int st_db_postgresql_sync_script(struct st_database_connection * connect, const char * script_path) {
+	if (connect == NULL || script_path == NULL)
+		return -1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_id_from_script";
+	st_db_postgresql_prepare(self, query, "SELECT id FROM script WHERE path = $1 LIMIT 1");
+
+	const char * param[] = { script_path };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	bool found = false;
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else
+		found = PQntuples(result) > 0;
+
+	PQclear(result);
+
+	if (found)
+		return 0;
+
+	query = "insert_script";
+	st_db_postgresql_prepare(self, query, "INSERT INTO script(path) VALUES ($1)");
+
+	result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	status = PQresultStatus(result);
+	PQclear(result);
+
+	return status != PGRES_FATAL_ERROR ? 0 : -2;
+}
+
+
 static bool st_db_postgresql_changer_is_enabled(struct st_database_connection * connect, struct st_changer * changer) {
 	if (connect == NULL || changer == NULL)
 		return false;
@@ -662,34 +878,6 @@ static bool st_db_postgresql_drive_is_enabled(struct st_database_connection * co
 
 	PQclear(result);
 	return drive->enabled = enabled;
-}
-
-static char * st_db_postgresql_get_host(struct st_database_connection * connect) {
-	struct st_db_postgresql_connection_private * self = connect->data;
-
-	const char * query = "select_host_by_name";
-	st_db_postgresql_prepare(self, query, "SELECT id FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1");
-
-	struct utsname name;
-	uname(&name);
-
-	const char * param[] = { name.nodename };
-	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
-	ExecStatusType status = PQresultStatus(result);
-
-	if (status == PGRES_FATAL_ERROR)
-		st_db_postgresql_get_error(result, query);
-
-	char * hostid = NULL;
-
-	if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
-		st_db_postgresql_get_string_dup(result, 0, 0, &hostid);
-	else
-		st_log_write_all(st_log_level_error, st_log_type_plugin_db, "Postgresql: Host not found into database (%s)", name.nodename);
-
-	PQclear(result);
-
-	return hostid;
 }
 
 static int st_db_postgresql_is_changer_contain_drive(struct st_database_connection * connect, struct st_changer * changer, struct st_drive * drive) {
@@ -831,11 +1019,22 @@ static int st_db_postgresql_sync_changer(struct st_database_connection * connect
 			return 3;
 		}
 	} else {
-		const char * query = "select_changer_by_model_vendor_serialnumber_wwn";
-		st_db_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn = $4 FOR UPDATE NOWAIT");
+		const char * query;
+		PGresult * result;
 
-		const char * param[] = { changer->model, changer->vendor, changer->serial_number, changer->wwn };
-		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+		if (changer->wwn != NULL) {
+			query = "select_changer_by_model_vendor_serialnumber_wwn";
+			st_db_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn = $4 FOR UPDATE NOWAIT");
+
+			const char * param[] = { changer->model, changer->vendor, changer->serial_number, changer->wwn };
+			result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+		} else {
+			query = "select_changer_by_model_vendor_serialnumber";
+			st_db_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn IS NULL FOR UPDATE NOWAIT");
+
+			const char * param[] = { changer->model, changer->vendor, changer->serial_number };
+			result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+		}
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -2687,7 +2886,7 @@ static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct s
 			st_db_postgresql_get_time(result, i, 10, &file->modify_time);
 			st_db_postgresql_get_time(result, i, 11, &file->archived_time);
 			st_db_postgresql_get_bool(result, i, 12, &file->check_ok);
-			if (PQgetisnull(result, i, 13))
+			if (!PQgetisnull(result, i, 13))
 				st_db_postgresql_get_time(result, i, 13, &file->check_time);
 			st_db_postgresql_get_ssize(result, i, 14, &file->size);
 
@@ -2818,7 +3017,7 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 			st_db_postgresql_get_time(result, i, 3, &volume->end_time);
 			st_db_postgresql_get_bool(result, i, 4, &volume->check_ok);
 			volume->check_time = 0;
-			if (PQgetisnull(result, i, 5))
+			if (!PQgetisnull(result, i, 5))
 				st_db_postgresql_get_time(result, i, 5, &volume->check_time);
 
 			st_db_postgresql_get_ssize(result, i, 6, &volume->size);
@@ -3292,7 +3491,7 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 		struct st_hashtable * metadatas = st_util_json_from_string(archive->metadatas);
 		if (metadatas != NULL) {
 			const char * query2 = "insert_metadata";
-			st_db_postgresql_prepare(self, query2, "INSERT INTO metadata(key, value, archive) VALUES ($1, $2, $3)");
+			st_db_postgresql_prepare(self, query2, "INSERT INTO metadata(key, value, id, type) VALUES ($1, $2, $3, 'archive')");
 
 			unsigned int nb_keys = 0;
 			const void ** keys = st_hashtable_keys(metadatas, &nb_keys);

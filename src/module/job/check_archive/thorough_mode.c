@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 22 Oct 2013 11:42:46 +0200                            *
+*  Last modified: Tue, 19 Nov 2013 15:36:43 +0100                            *
 \****************************************************************************/
 
 // free
@@ -51,19 +51,14 @@ static struct st_stream_reader * st_job_check_archive_thorough_mode_add_filter(s
 
 
 int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * self) {
-	struct st_archive * archive = self->connect->ops->get_archive_volumes_by_job(self->connect, self->job);
-
 	unsigned int i;
-	ssize_t total_read = 0, total_size = 0;
-	for (i = 0; i < archive->nb_volumes; i++)
-		total_size += archive->volumes[i].size;
-
+	ssize_t total_read = 0;
 	unsigned int nb_errors = 0;
 
 	struct st_stream_writer * file_check = NULL;
 	bool error = false;
-	for (i = 0; i < archive->nb_volumes; i++) {
-		struct st_archive_volume * vol = archive->volumes + i;
+	for (i = 0; i < self->archive->nb_volumes; i++) {
+		struct st_archive_volume * vol = self->archive->volumes + i;
 		ssize_t total_read_vol = 0;
 
 		bool stop = false, has_alerted_user = false;
@@ -139,8 +134,6 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 
 		st_job_check_archive_report_add_volume(self->report, vol);
 
-		self->connect->ops->get_archive_files_by_job_and_archive_volume(self->connect, self->job, vol);
-
 		self->nb_vol_checksums = self->connect->ops->get_checksums_of_archive_volume(self->connect, vol);
 		self->vol_checksums = (char **) st_hashtable_keys(vol->digests, NULL);
 
@@ -209,7 +202,7 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 
 				float done = total_read_vol + total_read;
 				done *= 0.97;
-				done /= total_size;
+				done /= self->archive_size;
 				self->job->done = 0.02 + done;
 			}
 
@@ -268,15 +261,13 @@ end_of_work:
 	if (!error) {
 		self->job->done = 0.99;
 
-		self->connect->ops->mark_archive_as_checked(self->connect, archive, true);
+		self->connect->ops->mark_archive_as_checked(self->connect, self->archive, true);
 
 		self->job->done = 1;
 	} else {
-		self->connect->ops->mark_archive_as_checked(self->connect, archive, false);
+		self->connect->ops->mark_archive_as_checked(self->connect, self->archive, false);
 		self->job->sched_status = st_job_status_error;
 	}
-
-	st_archive_free(archive);
 
 	return error;
 }

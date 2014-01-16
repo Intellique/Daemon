@@ -1,9 +1,9 @@
-INSERT INTO Host(name, domaine, description) VALUES
-	('localhost', NULL, DEFAULT),
-	('d65', NULL, '3U test'),
-	('taiko', 'intellique.com', '5U court'),
-	('kazoo', 'intellique.com', 'shuttle'),
-	('storiq-stone', 'intellique.com', '2U Test stone');
+INSERT INTO Host(uuid, name, domaine, description) VALUES
+	('eea96c3b-3a5a-4d5b-9d09-da83625e9fde', 'localhost', NULL, DEFAULT),
+	('68a966ce-5e8e-494c-b196-260d8beb4851', 'd65', NULL, '3U test'),
+	('d47b4884-01b6-4593-9097-186dce77d4ff', 'taiko', 'intellique.com', '5U court'),
+	('40e576d7-cb14-42c2-95c5-edd14fbb638d', 'kazoo', 'intellique.com', 'shuttle'),
+	('23c10e70-ee6e-4ea5-a185-3ffcd6e10172', 'storiq-stone', 'intellique.com', '2U Test stone');
 
 INSERT INTO MediaFormat(name, dataType, mode, maxLoadCount, maxReadCount, maxWriteCount, maxOpCount, lifespan, capacity, blockSize, densityCode, supportPartition, supportMAM) VALUES
 	('LTO-5', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P10Y', 1529931104256, 32768, 88, TRUE, TRUE),

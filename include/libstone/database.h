@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 08 Nov 2013 14:55:31 +0100                            *
+*  Last modified: Fri, 15 Nov 2013 16:04:19 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -39,6 +39,7 @@ struct st_archive_file;
 struct st_backup;
 struct st_changer;
 struct st_drive;
+struct st_host;
 struct st_hashtable;
 struct st_job;
 struct st_job_selected_path;
@@ -46,6 +47,7 @@ struct st_media;
 struct st_media_format;
 enum st_media_format_mode;
 struct st_pool;
+enum st_script_type;
 struct st_stream_reader;
 struct st_user;
 struct st_vtl_config;
@@ -143,6 +145,14 @@ struct st_database_connection {
 		 * \returns 0 if ok
 		 */
 		int (*sync_plugin_job)(struct st_database_connection * connect, const char * plugin);
+
+		int (*add_host)(struct st_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description);
+		bool (*find_host)(struct st_database_connection * connect, const char * uuid, const char * hostname);
+		int (*get_host_by_name)(struct st_database_connection * connect, const char * name, struct st_host * host);
+
+		int (*get_nb_scripts)(struct st_database_connection * connect, const char * job_type, enum st_script_type type, struct st_pool * pool);
+		char * (*get_script)(struct st_database_connection * connect, const char * job_type, unsigned int sequence, enum st_script_type type, struct st_pool * pool);
+		int (*sync_script)(struct st_database_connection * connect, const char * script_path);
 
 		/**
 		 * \brief Check if \a changer is enable

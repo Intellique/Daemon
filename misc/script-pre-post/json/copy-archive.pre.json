@@ -1,0 +1,229 @@
+{
+   "copy archive" : {
+      "name" : "copy GoPro"
+   },
+   "source archive" : {
+      "check time" : 1387810441,
+      "checksum ok" : true,
+      "name" : "GoPro",
+      "nb volumes" : 1,
+      "size" : 200282112,
+      "uuid" : "3f7e2d15-c41c-4c68-b14f-8992673c3463",
+      "volumes" : [
+         {
+            "check time" : 1387810441,
+            "checksum ok" : true,
+            "checksums" : {
+               "sha1" : "a479f4c6d894a247e8ff2106702f7bc0e2936a4c"
+            },
+            "end time" : 1387795219,
+            "files" : [
+               {
+                  "archived time" : 1387795218,
+                  "block position" : 0,
+                  "checksums" : {},
+                  "group" : "guillaume",
+                  "group id" : 1000,
+                  "mime type" : "inode/directory",
+                  "owner" : "guillaume",
+                  "owner id" : 1000,
+                  "path" : "/home/guillaume/video/100GOPRO",
+                  "perm" : "-rwxr-xr-x",
+                  "size" : 4096,
+                  "type" : "directory"
+               },
+               {
+                  "archived time" : 1387795218,
+                  "block position" : 0,
+                  "check time" : 1387810439,
+                  "checksum ok" : true,
+                  "checksums" : {
+                     "sha1" : "6e9c74686e25f455135bd4938c26eaef679c8c89"
+                  },
+                  "group" : "guillaume",
+                  "group id" : 1000,
+                  "mime type" : "video/3gpp",
+                  "owner" : "guillaume",
+                  "owner id" : 1000,
+                  "path" : "/home/guillaume/video/100GOPRO/GOPR0001.MP4",
+                  "perm" : "-rw-r--r--",
+                  "size" : 51955410,
+                  "type" : "regular file"
+               },
+               {
+                  "archived time" : 1387795218,
+                  "block position" : 12684,
+                  "check time" : 1387810439,
+                  "checksum ok" : true,
+                  "checksums" : {
+                     "sha1" : "519523c6a27416429f78fa29216eb8474e588aee"
+                  },
+                  "group" : "guillaume",
+                  "group id" : 1000,
+                  "mime type" : "image/jpeg",
+                  "owner" : "guillaume",
+                  "owner id" : 1000,
+                  "path" : "/home/guillaume/video/100GOPRO/GOPR0001.THM",
+                  "perm" : "-rw-r--r--",
+                  "size" : 7912,
+                  "type" : "regular file"
+               },
+               {
+                  "archived time" : 1387795219,
+                  "block position" : 12686,
+                  "check time" : 1387810440,
+                  "checksum ok" : true,
+                  "checksums" : {
+                     "sha1" : "242318241f632a219c76fe6b7039c78e135558d8"
+                  },
+                  "group" : "guillaume",
+                  "group id" : 1000,
+                  "mime type" : "video/3gpp",
+                  "owner" : "guillaume",
+                  "owner id" : 1000,
+                  "path" : "/home/guillaume/video/100GOPRO/GOPR0002.MP4",
+                  "perm" : "-rw-r--r--",
+                  "size" : 23051925,
+                  "type" : "regular file"
+               },
+               {
+                  "archived time" : 1387795219,
+                  "block position" : 18315,
+                  "check time" : 1387810440,
+                  "checksum ok" : true,
+                  "checksums" : {
+                     "sha1" : "a7ce3dac850d69e14e64c74fd45c3d3795e88197"
+                  },
+                  "group" : "guillaume",
+                  "group id" : 1000,
+                  "mime type" : "image/jpeg",
+                  "owner" : "guillaume",
+                  "owner id" : 1000,
+                  "path" : "/home/guillaume/video/100GOPRO/GOPR0002.THM",
+                  "perm" : "-rw-r--r--",
+                  "size" : 7220,
+                  "type" : "regular file"
+               },
+               {
+                  "archived time" : 1387795219,
+                  "block position" : 18317,
+                  "check time" : 1387810440,
+                  "checksum ok" : true,
+                  "checksums" : {
+                     "sha1" : "c67f93a513f70b1a7936809a78e683f5b62b8e94"
+                  },
+                  "group" : "guillaume",
+                  "group id" : 1000,
+                  "mime type" : "video/3gpp",
+                  "owner" : "guillaume",
+                  "owner id" : 1000,
+                  "path" : "/home/guillaume/video/100GOPRO/GOPR0003.MP4",
+                  "perm" : "-rw-r--r--",
+                  "size" : 28072837,
+                  "type" : "regular file"
+               },
+               {
+                  "archived time" : 1387795219,
+                  "block position" : 25170,
+                  "check time" : 1387810440,
+                  "checksum ok" : true,
+                  "checksums" : {
+                     "sha1" : "bde7f0ec4c1bf263b82eab1e7deec8cda86ba39c"
+                  },
+                  "group" : "guillaume",
+                  "group id" : 1000,
+                  "mime type" : "image/jpeg",
+                  "owner" : "guillaume",
+                  "owner id" : 1000,
+                  "path" : "/home/guillaume/video/100GOPRO/GOPR0003.THM",
+                  "perm" : "-rw-r--r--",
+                  "size" : 7665,
+                  "type" : "regular file"
+               },
+               {
+                  "archived time" : 1387795219,
+                  "block position" : 25172,
+                  "check time" : 1387810441,
+                  "checksum ok" : true,
+                  "checksums" : {
+                     "sha1" : "4f138124526e7662890c3c371ce6c0f4c4bfd350"
+                  },
+                  "group" : "guillaume",
+                  "group id" : 1000,
+                  "mime type" : "video/3gpp",
+                  "owner" : "guillaume",
+                  "owner id" : 1000,
+                  "path" : "/home/guillaume/video/100GOPRO/GOPR0004.MP4",
+                  "perm" : "-rw-r--r--",
+                  "size" : 60806076,
+                  "type" : "regular file"
+               },
+               {
+                  "archived time" : 1387795219,
+                  "block position" : 40018,
+                  "check time" : 1387810441,
+                  "checksum ok" : true,
+                  "checksums" : {
+                     "sha1" : "5c7a357546f833cd888d40c543bc6a81c1d6fa7d"
+                  },
+                  "group" : "guillaume",
+                  "group id" : 1000,
+                  "mime type" : "image/jpeg",
+                  "owner" : "guillaume",
+                  "owner id" : 1000,
+                  "path" : "/home/guillaume/video/100GOPRO/GOPR0004.THM",
+                  "perm" : "-rw-r--r--",
+                  "size" : 5585,
+                  "type" : "regular file"
+               },
+               {
+                  "archived time" : 1387795219,
+                  "block position" : 40019,
+                  "check time" : 1387810441,
+                  "checksum ok" : true,
+                  "checksums" : {
+                     "sha1" : "d6ef11c794bfb49b2560aaee16ebce0d8b62eabb"
+                  },
+                  "group" : "guillaume",
+                  "group id" : 1000,
+                  "mime type" : "video/3gpp",
+                  "owner" : "guillaume",
+                  "owner id" : 1000,
+                  "path" : "/home/guillaume/video/100GOPRO/GOPR0005.MP4",
+                  "perm" : "-rw-r--r--",
+                  "size" : 36350824,
+                  "type" : "regular file"
+               },
+               {
+                  "archived time" : 1387795220,
+                  "block position" : 48894,
+                  "check time" : 1387810441,
+                  "checksum ok" : true,
+                  "checksums" : {
+                     "sha1" : "ff66e55f097df631c52eae6c4659e842f69e0319"
+                  },
+                  "group" : "guillaume",
+                  "group id" : 1000,
+                  "mime type" : "image/jpeg",
+                  "owner" : "guillaume",
+                  "owner id" : 1000,
+                  "path" : "/home/guillaume/video/100GOPRO/GOPR0005.THM",
+                  "perm" : "-rw-r--r--",
+                  "size" : 6020,
+                  "type" : "regular file"
+               }
+            ],
+            "media" : {
+               "label" : "VTL001",
+               "medium serial number" : "43facaf6-20e0-4fca-b13d-55043b7d4aa1",
+               "name" : "VTL001",
+               "uuid" : "df05153e-400d-4b3f-85d9-62e0ea917a3d"
+            },
+            "nb files" : 11,
+            "position" : 0,
+            "size" : 200282112,
+            "start time" : 1387795218
+         }
+      ]
+   }
+}

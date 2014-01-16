@@ -1,0 +1,18 @@
+{
+   "archive" : {
+      "metadatas" : {
+         "foo" : "bar",
+         "year" : 2013
+      },
+      "name" : "GoPro",
+      "paths" : [
+         "/home/guillaume/video/100GOPRO"
+      ],
+      "pool" : {
+         "name" : "MyVTL",
+         "uuid" : "c0773629-be59-4fbc-b047-06d0f88b336f"
+      }
+   },
+   "host" : {},
+   "job" : {}
+}

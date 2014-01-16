@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 25 Dec 2012 20:21:21 +0100                            *
+*  Last modified: Thu, 14 Nov 2013 19:05:02 +0100                            *
 \****************************************************************************/
 
 #define _XOPEN_SOURCE 500
@@ -35,7 +35,21 @@
 // mktime, strptime
 #include <time.h>
 
+#include <libstone/script.h>
+
 #include "common.h"
+
+static const struct st_db_postgresql_script_type {
+	char * name;
+	enum st_script_type type;
+} st_db_postgresql_script_types[] = {
+	{ "on error", st_script_type_on_error, },
+	{ "post job", st_script_type_post, },
+	{ "pre job",  st_script_type_pre, },
+
+	{ "unknown", st_script_type_unknown },
+};
+
 
 int st_db_postgresql_get_bool(PGresult * result, int row, int column, bool * val) {
 	if (column < 0)
@@ -65,6 +79,17 @@ int st_db_postgresql_get_float(PGresult * result, int row, int column, float * v
 
 	char * value = PQgetvalue(result, row, column);
 	if (value != NULL && sscanf(value, "%g", val) == 1)
+		return 0;
+
+	return value != NULL;
+}
+
+int st_db_postgresql_get_int(PGresult * result, int row, int column, int * val) {
+	if (column < 0)
+		return -1;
+
+	char * value = PQgetvalue(result, row, column);
+	if (value != NULL && sscanf(value, "%d", val) == 1)
 		return 0;
 
 	return value != NULL;
@@ -158,5 +183,14 @@ int st_db_postgresql_get_uint(PGresult * result, int row, int column, unsigned i
 		return 0;
 
 	return value != NULL;
+}
+
+const char * st_db_postgresql_script_type_to_string(enum st_script_type type) {
+	unsigned int i;
+	for (i = 0; st_db_postgresql_script_types[i].type != st_script_type_unknown; i++)
+		if (st_db_postgresql_script_types[i].type == type)
+			return st_db_postgresql_script_types[i].name;
+
+	return st_db_postgresql_script_types[i].name;
 }
 

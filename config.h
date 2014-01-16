@@ -29,12 +29,11 @@
 #define __STONE_CONFIG_H__
 
 #define DAEMON_CONFIG_FILE "/etc/storiq/stone.conf"
-//#define DAEMON_CONFIG_FILE "example-config.conf"
 #define DAEMON_PID_FILE "/var/run/stoned.pid"
-//#define DAEMON_PID_FILE "stone.pid"
 
 #define MODULE_PATH "/usr/lib/stone"
-//#define MODULE_PATH "lib"
+
+#define SCRIPT_PATH "/var/lib/stoned"
 
 #define ADMIN_DEFAULT_HOST "localhost"
 #define ADMIN_DEFAULT_PORT 4862

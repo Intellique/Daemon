@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 20 Sep 2013 13:37:03 +0200                            *
+*  Last modified: Thu, 26 Dec 2013 18:47:45 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -41,6 +41,7 @@
 
 #include <libstone/checksum.h>
 #include <libstone/database.h>
+#include <libstone/host.h>
 #include <libstone/io.h>
 #include <libstone/library/changer.h>
 #include <libstone/library/drive.h>
@@ -65,6 +66,8 @@ static struct st_pool ** st_pools = NULL;
 static unsigned int st_pool_nb_pools = 0;
 
 static void st_media_exit(void) __attribute__((destructor));
+static bool st_media_read_header_v1(struct st_media * media, const char * buffer, int nb_parsed, bool check);
+static bool st_media_read_header_v2(struct st_media * media, const char * buffer, int nb_parsed, bool check);
 static struct st_media * st_media_retrieve(struct st_database_connection * connection, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label);
 
 static int st_media_format_retrieve(struct st_media_format ** media_format, unsigned char density_code, const char * name, enum st_media_format_mode mode);
@@ -342,58 +345,21 @@ bool st_media_check_header(struct st_drive * drive) {
 	char stone_version[65];
 	int tape_format_version = 0;
 	int nb_parsed = 0;
+	bool ok = false;
+
 	if (sscanf(buffer, "STone (%64[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
-		char uuid[37];
-		char name[65];
-		char pool_id[37];
-		char pool_name[65];
-		ssize_t block_size;
-		char checksum_name[12];
-		char checksum_value[64];
+		switch (tape_format_version) {
+			case 1:
+				ok = st_media_read_header_v1(media, buffer, nb_parsed, true);
+				break;
 
-		int nb_parsed2 = 0;
-		int ok = 1;
-
-		if (sscanf(buffer + nb_parsed, "Label: %36s\n%n", name, &nb_parsed2) == 1)
-			nb_parsed += nb_parsed2;
-
-		if (ok && sscanf(buffer + nb_parsed, "Tape id: uuid=%36s\n%n", uuid, &nb_parsed2) == 1)
-			nb_parsed += nb_parsed2;
-		else
-			ok = 0;
-
-		if (ok && sscanf(buffer + nb_parsed, "Pool: name=%64[^,], uuid=%36s\n%n", pool_name, pool_id, &nb_parsed2) == 2)
-			nb_parsed += nb_parsed2;
-		else
-			ok = 0;
-
-		if (ok && sscanf(buffer + nb_parsed, "Block size: %zd\n%n", &block_size, &nb_parsed2) == 1)
-			nb_parsed += nb_parsed2;
-		else
-			ok = 0;
-
-		if (ok)
-			ok = sscanf(buffer + nb_parsed, "Checksum: %11[^=]=%63s\n", checksum_name, checksum_value) == 2;
-
-		if (ok) {
-			char * digest = st_checksum_compute(checksum_name, buffer, nb_parsed);
-			ok = digest != NULL && !strcmp(checksum_value, digest);
-			free(digest);
-
-			st_log_write_all(st_log_level_debug, st_log_type_daemon, "[%s | %s | #%td]: media has valid header", drive->vendor, drive->model, drive - drive->changer->drives);
-		}
-
-		if (ok) {
-			if (strcmp(media->uuid, uuid)) {
-				st_log_write_all(st_log_level_debug, st_log_type_daemon, "[%s | %s | #%td]: media has different uuid (%s vs %s)", drive->vendor, drive->model, drive - drive->changer->drives, uuid, media->uuid);
-				return false;
-			}
-
-			return true;
+			case 2:
+				ok = st_media_read_header_v2(media, buffer, nb_parsed, true);
+				break;
 		}
 	}
 
-	return false;
+	return ok;
 }
 
 static void st_media_exit() {
@@ -576,53 +542,84 @@ int st_media_read_header(struct st_drive * drive) {
 	int tape_format_version = 0;
 	int nb_parsed = 0;
 	if (sscanf(buffer, "STone (%64[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
-		char uuid[37];
-		char name[65];
-		char pool_id[37];
-		char pool_name[65];
-		ssize_t block_size;
-		char checksum_name[12];
-		char checksum_value[64];
+		switch (tape_format_version) {
+			case 1:
+				st_media_read_header_v1(media, buffer, nb_parsed, false);
+				break;
 
-		int nb_parsed2 = 0;
-		int ok = 1;
-		bool has_label = false;
-
-		if (sscanf(buffer + nb_parsed, "Label: %36s\n%n", name, &nb_parsed2) == 1) {
-			nb_parsed += nb_parsed2;
-			has_label = true;
+			case 2:
+				st_media_read_header_v2(media, buffer, nb_parsed, false);
+				break;
 		}
+	} else {
+		media->status = st_media_status_foreign;
+	}
 
-		if (ok && sscanf(buffer + nb_parsed, "Tape id: uuid=%36s\n%n", uuid, &nb_parsed2) == 1)
-			nb_parsed += nb_parsed2;
-		else
-			ok = 0;
+	return 0;
+}
 
-		if (ok && sscanf(buffer + nb_parsed, "Pool: name=%65[^,], uuid=%36s\n%n", pool_name, pool_id, &nb_parsed2) == 2)
-			nb_parsed += nb_parsed2;
-		else
-			ok = 0;
+static bool st_media_read_header_v1(struct st_media * media, const char * buffer, int nb_parsed2, bool check) {
+	// M | STone (v0.1)
+	// M | Tape format: version=1
+	// O | Label: A0000002
+	// M | Tape id: uuid=f680dd48-dd3e-4715-8ddc-a90d3e708914
+	// M | Pool: name=Foo, uuid=07117f1a-2b13-11e1-8bcb-80ee73001df6
+	// M | Block size: 32768
+	// M | Checksum: crc32=1eb6931d
 
-		if (ok && sscanf(buffer + nb_parsed, "Block size: %zd\n%n", &block_size, &nb_parsed2) == 1)
-			nb_parsed += nb_parsed2;
-		else
-			ok = 0;
+	char uuid[37];
+	char name[65];
+	char pool_id[37];
+	char pool_name[65];
+	ssize_t block_size;
+	char checksum_name[12];
+	char checksum_value[64];
 
-		if (ok)
-			ok = sscanf(buffer + nb_parsed, "Checksum: %11[^=]=%63s\n", checksum_name, checksum_value) == 2;
+	int nb_parsed = nb_parsed2;
+	bool ok = true;
+	bool has_label = false;
 
-		if (ok) {
-			char * digest = st_checksum_compute(checksum_name, buffer, nb_parsed);
-			ok = digest != NULL && !strcmp(checksum_value, digest);
-			free(digest);
+	if (sscanf(buffer + nb_parsed, "Label: %36s\n%n", name, &nb_parsed2) == 1) {
+		nb_parsed += nb_parsed2;
+		has_label = true;
+	}
 
-			media->pool = st_pool_get_by_uuid(pool_id);
-			// TODO: create pool
-			// if (media->pool == NULL)
-			//	media->pool = st_pool_create(pool_id, pool_name, media->format);
-		}
+	if (ok && sscanf(buffer + nb_parsed, "Tape id: uuid=%36s\n%n", uuid, &nb_parsed2) == 1)
+		nb_parsed += nb_parsed2;
+	else
+		ok = false;
 
-		if (ok) {
+	if (ok && sscanf(buffer + nb_parsed, "Pool: name=%65[^,], uuid=%36s\n%n", pool_name, pool_id, &nb_parsed2) == 2)
+		nb_parsed += nb_parsed2;
+	else
+		ok = false;
+
+	if (ok && sscanf(buffer + nb_parsed, "Block size: %zd\n%n", &block_size, &nb_parsed2) == 1)
+		nb_parsed += nb_parsed2;
+	else
+		ok = false;
+
+	if (ok)
+		ok = sscanf(buffer + nb_parsed, "Checksum: %11[^=]=%63s\n", checksum_name, checksum_value) == 2;
+
+	if (ok) {
+		char * digest = st_checksum_compute(checksum_name, buffer, nb_parsed);
+		ok = digest != NULL && !strcmp(checksum_value, digest);
+		free(digest);
+
+		media->pool = st_pool_get_by_uuid(pool_id);
+		// TODO: create pool
+		// if (media->pool == NULL)
+		//	media->pool = st_pool_create(pool_id, pool_name, media->format);
+	}
+
+	if (ok) {
+		if (check) {
+			ok = !strcmp(media->uuid, uuid);
+			ok = !strcmp(media->pool->uuid, pool_id);
+
+			st_log_write_all(st_log_level_info, st_log_type_drive, "Checking STone header in media: %s", ok ? "OK" : "Failed");
+		} else {
 			st_log_write_all(st_log_level_debug, st_log_type_drive, "Found STone header in media with (uuid=%s, label=%s, blocksize=%zd)", uuid, name, block_size);
 
 			strcpy(media->uuid, uuid);
@@ -634,13 +631,101 @@ int st_media_read_header(struct st_drive * drive) {
 			media->name = strdup(name);
 			media->status = st_media_status_in_use;
 			media->block_size = block_size;
-		} else
-			media->status = st_media_status_foreign;
-	} else {
+		}
+	} else if (check)
+		st_log_write_all(st_log_level_info, st_log_type_drive, "Checking STone header in media: Failed");
+	else
 		media->status = st_media_status_foreign;
+
+	return ok;
+}
+
+static bool st_media_read_header_v2(struct st_media * media, const char * buffer, int nb_parsed2, bool check) {
+	// M | STone (v0.1)
+	// M | Tape format: version=2
+	// M | Host: name=kazoo, uuid=40e576d7-cb14-42c2-95c5-edd14fbb638d
+	// O | Label: A0000002
+	// M | Tape id: uuid=f680dd48-dd3e-4715-8ddc-a90d3e708914
+	// M | Pool: name=Foo, uuid=07117f1a-2b13-11e1-8bcb-80ee73001df6
+	// M | Block size: 32768
+	// M | Checksum: crc32=1eb6931d
+
+	char uuid[37];
+	char name[65];
+	char pool_id[37];
+	char pool_name[65];
+	ssize_t block_size;
+	char checksum_name[12];
+	char checksum_value[64];
+
+	int nb_parsed = nb_parsed2;
+	bool ok = true;
+	bool has_label = false;
+
+	if (ok && sscanf(buffer + nb_parsed, "Host: name=%64[^,], uuid=%36s\n%n", name, uuid, &nb_parsed2) == 2)
+		nb_parsed += nb_parsed2;
+	else
+		ok = false;
+
+	if (sscanf(buffer + nb_parsed, "Label: %36s\n%n", name, &nb_parsed2) == 1) {
+		nb_parsed += nb_parsed2;
+		has_label = true;
 	}
 
-	return 0;
+	if (ok && sscanf(buffer + nb_parsed, "Tape id: uuid=%36s\n%n", uuid, &nb_parsed2) == 1)
+		nb_parsed += nb_parsed2;
+	else
+		ok = false;
+
+	if (ok && sscanf(buffer + nb_parsed, "Pool: name=%65[^,], uuid=%36s\n%n", pool_name, pool_id, &nb_parsed2) == 2)
+		nb_parsed += nb_parsed2;
+	else
+		ok = false;
+
+	if (ok && sscanf(buffer + nb_parsed, "Block size: %zd\n%n", &block_size, &nb_parsed2) == 1)
+		nb_parsed += nb_parsed2;
+	else
+		ok = false;
+
+	if (ok)
+		ok = sscanf(buffer + nb_parsed, "Checksum: %11[^=]=%63s\n", checksum_name, checksum_value) == 2;
+
+	if (ok) {
+		char * digest = st_checksum_compute(checksum_name, buffer, nb_parsed);
+		ok = digest != NULL && !strcmp(checksum_value, digest);
+		free(digest);
+
+		media->pool = st_pool_get_by_uuid(pool_id);
+		// TODO: create pool
+		// if (media->pool == NULL)
+		//	media->pool = st_pool_create(pool_id, pool_name, media->format);
+	}
+
+	if (ok) {
+		if (check) {
+			ok = !strcmp(media->uuid, uuid);
+			ok = !strcmp(media->pool->uuid, pool_id);
+
+			st_log_write_all(st_log_level_info, st_log_type_drive, "Checking STone header in media: %s", ok ? "OK" : "Failed");
+		} else {
+			st_log_write_all(st_log_level_debug, st_log_type_drive, "Found STone header in media with (uuid=%s, label=%s, blocksize=%zd)", uuid, name, block_size);
+
+			strcpy(media->uuid, uuid);
+			if (has_label) {
+				free(media->label);
+				media->label = strdup(name);
+			}
+			free(media->name);
+			media->name = strdup(name);
+			media->status = st_media_status_in_use;
+			media->block_size = block_size;
+		}
+	} else if (check)
+		st_log_write_all(st_log_level_info, st_log_type_drive, "Checking STone header in media: Failed");
+	else
+		media->status = st_media_status_foreign;
+
+	return ok;
 }
 
 static struct st_media * st_media_retrieve(struct st_database_connection * connection, struct st_job * job, const char * uuid, const char * medium_serial_number, const char * label) {
@@ -696,14 +781,18 @@ int st_media_write_header(struct st_drive * drive, struct st_pool * pool, struct
 	if (media->block_size == 0)
 		media->block_size = media->format->block_size;
 
+	const struct st_host * host = st_host_get();
+
 	// M | STone (v0.1)
-	// M | Tape format: version=1
+	// M | Tape format: version=2
+	// M | Host: name=kazoo, uuid=40e576d7-cb14-42c2-95c5-edd14fbb638d
 	// O | Label: A0000002
 	// M | Tape id: uuid=f680dd48-dd3e-4715-8ddc-a90d3e708914
 	// M | Pool: name=Foo, uuid=07117f1a-2b13-11e1-8bcb-80ee73001df6
 	// M | Block size: 32768
 	// M | Checksum: crc32=1eb6931d
-	char * hdr = strdup("STone (" STONE_VERSION ")\nTape format: version=1\n"), * hdr2;
+	char * hdr = NULL, * hdr2 = NULL;
+	asprintf(&hdr, "STone (" STONE_VERSION ")\nTape format: version=2\nHost: name=%s, uuid=%s\n", host->hostname, host->uuid);
 	ssize_t shdr = strlen(hdr), shdr2;
 
 	/**

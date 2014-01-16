@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 10 Feb 2013 13:08:08 +0100                            *
+*  Last modified: Fri, 29 Nov 2013 00:11:45 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -119,35 +119,9 @@ int st_log_postgresql_new(struct st_log_module * module, enum st_log_level level
 		hostid = strdup(PQgetvalue(result, 0, 0));
 	PQclear(result);
 
-	if (!hostid) {
-		char * domaine = strchr(name.nodename, '.');
-		if (domaine) {
-			*domaine = '\0';
-			domaine++;
-		}
-
-		const char * param2[] = { name.nodename, domaine };
-		result = PQexecParams(connect, "INSERT INTO host(name, domaine) VALUES ($1, $2) RETURNING id", 2, NULL, param2, NULL, NULL, 0);
-		ExecStatusType status = PQresultStatus(result);
-
-		if (domaine) {
-			domaine--;
-			*domaine = '.';
-		}
-
-		if (status == PGRES_FATAL_ERROR) {
-			st_log_write_all(st_log_level_error, st_log_type_plugin_log, "Error, while adding host (%s) to database", name.nodename);
-			st_log_write_all(st_log_level_error, st_log_type_plugin_log, "Postgresql: error => %s", PQresultErrorField(result, PG_DIAG_MESSAGE_PRIMARY));
-
-			PQclear(result);
-			PQfinish(connect);
-
-			return 1;
-		} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
-			hostid = strdup(PQgetvalue(result, 0, 0));
-		}
-
-		PQclear(result);
+	if (hostid == NULL) {
+		PQfinish(connect);
+		return -1;
 	}
 
 	PGresult * prepare = PQprepare(connect, "insert_log", "INSERT INTO log(type, level, time, message, host, login) VALUES ($1, $2, $3, $4, $5, $6)", 0, NULL);

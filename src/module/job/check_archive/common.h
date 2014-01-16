@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 06 Jun 2013 14:48:46 +0200                            *
+*  Last modified: Tue, 19 Nov 2013 15:32:22 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_CHECKARCHIVE_H__
@@ -38,7 +38,11 @@ struct st_job_check_archive_private {
 	struct st_job * job;
 	struct st_database_connection * connect;
 
+	bool quick_mode;
+
 	struct st_archive * archive;
+	struct st_pool * pool;
+	size_t archive_size;
 
 	char ** vol_checksums;
 	unsigned int nb_vol_checksums;

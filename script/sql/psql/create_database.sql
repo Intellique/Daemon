@@ -117,11 +117,29 @@ CREATE TYPE MediaType AS ENUM (
     'rewritable'
 );
 
+CREATE TYPE MetaType AS ENUM (
+    'archive',
+    'archivefile',
+    'archivevolume',
+    'host',
+    'media',
+    'pool',
+    'report',
+    'users',
+    'vtl'
+);
+
 CREATE TYPE ProxyStatus AS ENUM (
     'todo',
     'running',
     'done',
     'error'
+);
+
+CREATE TYPE ScriptType AS ENUM (
+    'on error',
+    'pre job',
+    'post job'
 );
 
 CREATE TYPE UnbreakableLevel AS ENUM (
@@ -240,6 +258,7 @@ CREATE TABLE DriveFormatSupport (
 
 CREATE TABLE Host (
     id SERIAL PRIMARY KEY,
+    uuid UUID NOT NULL UNIQUE,
 
     name VARCHAR(255) NOT NULL,
     domaine VARCHAR(255) NULL,
@@ -421,7 +440,10 @@ CREATE TABLE Metadata (
     key TEXT NOT NULL,
     value TEXT NOT NULL,
 
-    archive BIGINT NOT NULL REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE CASCADE
+    id BIGINT NOT NULL,
+    type MetaType NOT NULL,
+
+    PRIMARY KEY (id, type, key)
 );
 
 CREATE TABLE Proxy (
@@ -555,6 +577,23 @@ CREATE TABLE Report (
     data TEXT NOT NULL
 );
 
+CREATE TABLE Script (
+    id SERIAL PRIMARY KEY,
+    path TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE Scripts (
+    id SERIAL PRIMARY KEY,
+
+    sequence INTEGER NOT NULL CHECK (sequence >= 0),
+    jobType INTEGER NOT NULL REFERENCES JobType(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    script INTEGER REFERENCES Script(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    scriptType ScriptType NOT NULL,
+    pool INTEGER REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE CASCADE,
+
+    UNIQUE (sequence, jobType, script, scriptType, pool)
+);
+
 CREATE TABLE Vtl (
     id SERIAL PRIMARY KEY,
     uuid UUID NOT NULL UNIQUE,
@@ -571,6 +610,59 @@ CREATE TABLE Vtl (
 
     CHECK (nbslots >= nbdrives)
 );
+
+-- Triggers
+CREATE FUNCTION check_metadata() RETURNS TRIGGER AS $body$
+    BEGIN
+        CASE
+            WHEN TG_OP = 'UPDATE' AND OLD.id != NEW.id THEN
+                UPDATE Metadata SET id = NEW.id WHERE id = OLD.id AND type = TG_TABLE_NAME::MetaType;
+            WHEN TG_OP = 'DELETE' THEN
+                DELETE FROM Metadata WHERE id = OLD.id AND type = TG_TABLE_NAME::MetaType;
+        END CASE;
+        RETURN NEW;
+    END;
+$body$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON Archive
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON ArchiveFile
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON ArchiveVolume
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON Host
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON Media
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON Media
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON Pool
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON Report
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON Users
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
+
+CREATE TRIGGER update_metadata
+AFTER UPDATE OR DELETE ON Vtl
+FOR EACH ROW EXECUTE PROCEDURE check_metadata();
 
 -- Comments
 COMMENT ON COLUMN Archive.starttime IS 'Start time of archive creation';
