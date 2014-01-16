@@ -55,6 +55,6 @@ Description: STone (log-plugin)
 Package: stone-scripts
 Section: utils
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${perl:Depends}, ${misc:Depends}
 Description: STone (log-plugin)
  Contains scripts that the daemon will run
