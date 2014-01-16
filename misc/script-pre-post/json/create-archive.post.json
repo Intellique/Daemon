@@ -2,6 +2,7 @@
    "creator" : "storiq",
    "name" : "GoPro",
    "size" : 0,
+   "uuid" : "fbb7e8a6-bb7f-42b5-9f8f-e144ed9a8741",
    "volumes" : [
       {
          "check time" : 0,
@@ -9,10 +10,10 @@
          "checksums" : {
             "sha1" : "a479f4c6d894a247e8ff2106702f7bc0e2936a4c"
          },
-         "end time" : 1387795219,
+         "end time" : 1389277796,
          "files" : [
             {
-               "archived time" : 1387795218,
+               "archived time" : 1389277795,
                "block position" : 0,
                "checksums" : {},
                "group" : "guillaume",
@@ -26,7 +27,7 @@
                "type" : "directory"
             },
             {
-               "archived time" : 1387795218,
+               "archived time" : 1389277795,
                "block position" : 0,
                "checksums" : {
                   "sha1" : "6e9c74686e25f455135bd4938c26eaef679c8c89"
@@ -42,7 +43,7 @@
                "type" : "regular file"
             },
             {
-               "archived time" : 1387795218,
+               "archived time" : 1389277795,
                "block position" : 12684,
                "checksums" : {
                   "sha1" : "519523c6a27416429f78fa29216eb8474e588aee"
@@ -58,7 +59,7 @@
                "type" : "regular file"
             },
             {
-               "archived time" : 1387795219,
+               "archived time" : 1389277796,
                "block position" : 12686,
                "checksums" : {
                   "sha1" : "242318241f632a219c76fe6b7039c78e135558d8"
@@ -74,7 +75,7 @@
                "type" : "regular file"
             },
             {
-               "archived time" : 1387795219,
+               "archived time" : 1389277796,
                "block position" : 18315,
                "checksums" : {
                   "sha1" : "a7ce3dac850d69e14e64c74fd45c3d3795e88197"
@@ -90,7 +91,7 @@
                "type" : "regular file"
             },
             {
-               "archived time" : 1387795219,
+               "archived time" : 1389277796,
                "block position" : 18317,
                "checksums" : {
                   "sha1" : "c67f93a513f70b1a7936809a78e683f5b62b8e94"
@@ -106,7 +107,7 @@
                "type" : "regular file"
             },
             {
-               "archived time" : 1387795219,
+               "archived time" : 1389277796,
                "block position" : 25170,
                "checksums" : {
                   "sha1" : "bde7f0ec4c1bf263b82eab1e7deec8cda86ba39c"
@@ -122,7 +123,7 @@
                "type" : "regular file"
             },
             {
-               "archived time" : 1387795219,
+               "archived time" : 1389277796,
                "block position" : 25172,
                "checksums" : {
                   "sha1" : "4f138124526e7662890c3c371ce6c0f4c4bfd350"
@@ -138,7 +139,7 @@
                "type" : "regular file"
             },
             {
-               "archived time" : 1387795219,
+               "archived time" : 1389277796,
                "block position" : 40018,
                "checksums" : {
                   "sha1" : "5c7a357546f833cd888d40c543bc6a81c1d6fa7d"
@@ -154,7 +155,7 @@
                "type" : "regular file"
             },
             {
-               "archived time" : 1387795219,
+               "archived time" : 1389277796,
                "block position" : 40019,
                "checksums" : {
                   "sha1" : "d6ef11c794bfb49b2560aaee16ebce0d8b62eabb"
@@ -170,7 +171,7 @@
                "type" : "regular file"
             },
             {
-               "archived time" : 1387795220,
+               "archived time" : 1389277796,
                "block position" : 48894,
                "checksums" : {
                   "sha1" : "ff66e55f097df631c52eae6c4659e842f69e0319"
@@ -187,15 +188,15 @@
             }
          ],
          "media" : {
-            "label" : "VTL001",
-            "medium serial number" : "43facaf6-20e0-4fca-b13d-55043b7d4aa1",
-            "name" : "VTL001",
-            "uuid" : "df05153e-400d-4b3f-85d9-62e0ea917a3d"
+            "label" : "VTL000",
+            "medium serial number" : "43869fba-3933-4688-806a-b612c00acb40",
+            "name" : "VTL000",
+            "uuid" : "d71e95b5-2c63-4aec-a828-f4b75fb2befd"
          },
          "nb files" : 11,
          "position" : 0,
          "size" : 200282112,
-         "start time" : 1387795218
+         "start time" : 1389277795
       }
    ]
 }
