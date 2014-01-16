@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 03 Jan 2014 16:55:00 +0100                            *
+*  Last modified: Thu, 16 Jan 2014 10:38:26 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -173,7 +173,7 @@ static void st_job_copy_archive_on_error(struct st_job * job) {
 	unsigned int i;
 	for (i = 0; i < archive->nb_volumes; i++) {
 		struct st_archive_volume * vol = archive->volumes + i;
-		struct json_t * jvol = json_object();
+		json_t * jvol = json_object();
 
 		json_object_set_new(jvol, "position", json_integer(vol->sequence));
 		json_object_set_new(jvol, "size", json_integer(vol->size));
@@ -292,7 +292,7 @@ static void st_job_copy_archive_post_run(struct st_job * job) {
 	unsigned int i;
 	for (i = 0; i < archive->nb_volumes; i++) {
 		struct st_archive_volume * vol = archive->volumes + i;
-		struct json_t * jvol = json_object();
+		json_t * jvol = json_object();
 
 		json_object_set_new(jvol, "position", json_integer(vol->sequence));
 		json_object_set_new(jvol, "size", json_integer(vol->size));
@@ -386,7 +386,7 @@ static void st_job_copy_archive_post_run(struct st_job * job) {
 
 	for (i = 0; i < archive->nb_volumes; i++) {
 		struct st_archive_volume * vol = archive->volumes + i;
-		struct json_t * jvol = json_object();
+		json_t * jvol = json_object();
 
 		json_object_set_new(jvol, "position", json_integer(vol->sequence));
 		json_object_set_new(jvol, "size", json_integer(vol->size));
@@ -498,7 +498,7 @@ static bool st_job_copy_archive_pre_run(struct st_job * job) {
 	unsigned int i;
 	for (i = 0; i < archive->nb_volumes; i++) {
 		struct st_archive_volume * vol = archive->volumes + i;
-		struct json_t * jvol = json_object();
+		json_t * jvol = json_object();
 
 		json_object_set_new(jvol, "position", json_integer(vol->sequence));
 		json_object_set_new(jvol, "size", json_integer(vol->size));

@@ -22,11 +22,9 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 03 Jan 2014 16:33:26 +0100                            *
+*  Last modified: Thu, 16 Jan 2014 10:38:20 +0100                            *
 \****************************************************************************/
 
-// json_*
-#include <jansson.h>
 // NULL
 #include <stddef.h>
 // uname
