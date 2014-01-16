@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 16 Jan 2014 10:38:26 +0100                            *
+*  Last modified: Thu, 16 Jan 2014 16:32:33 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -599,7 +599,7 @@ static bool st_job_copy_archive_pre_run(struct st_job * job) {
 static int st_job_copy_archive_run(struct st_job * job) {
 	struct st_job_copy_archive_private * self = job->data;
 
-	st_job_add_record(self->connect, st_log_level_info, job, "Start copy archive job (named: %s), num runs %ld", job->name, job->num_runs);
+	st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_important, "Start copy archive job (named: %s), num runs %ld", job->name, job->num_runs);
 
 	job->done = 0.01;
 

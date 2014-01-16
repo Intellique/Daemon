@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 05 Feb 2013 12:29:03 +0100                            *
+*  Last modified: Thu, 16 Jan 2014 15:56:22 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -72,7 +72,7 @@ static const struct st_job_status2 {
 static void st_job_exit(void) __attribute__((destructor));
 
 
-void st_job_add_record(struct st_database_connection * connect, enum st_log_level level, struct st_job * job, const char * format, ...) {
+void st_job_add_record(struct st_database_connection * connect, enum st_log_level level, struct st_job * job, enum st_job_record_notif notif, const char * format, ...) {
 	char * message = NULL;
 
 	va_list va;
@@ -82,7 +82,7 @@ void st_job_add_record(struct st_database_connection * connect, enum st_log_leve
 
 	st_log_write_all2(level, st_log_type_job, job->user, message);
 
-	connect->ops->add_job_record(connect, job, message);
+	connect->ops->add_job_record(connect, job, message, notif);
 
 	free(message);
 }

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 03 Jan 2014 16:56:30 +0100                            *
+*  Last modified: Thu, 16 Jan 2014 16:39:09 +0100                            *
 \****************************************************************************/
 
 // asprintf, versionsort
@@ -100,7 +100,7 @@ static int st_job_create_archive_archive(struct st_job * job, struct st_job_sele
 		char * fixed_path = strdup(path);
 		st_util_string_fix_invalid_utf8(fixed_path);
 
-		st_job_add_record(self->connect, st_log_level_warning, job, "Path '%s' contains invalid utf8 characters", fixed_path);
+		st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_normal, "Path '%s' contains invalid utf8 characters", fixed_path);
 
 		free(fixed_path);
 		return 1;
@@ -108,7 +108,7 @@ static int st_job_create_archive_archive(struct st_job * job, struct st_job_sele
 
 	struct stat st;
 	if (lstat(path, &st)) {
-		st_job_add_record(self->connect, st_log_level_warning, job, "Error while getting information about: %s", path);
+		st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Error while getting information about: %s", path);
 		return 1;
 	}
 
@@ -118,7 +118,7 @@ static int st_job_create_archive_archive(struct st_job * job, struct st_job_sele
 	int failed = self->worker->ops->add_file(self->worker, path);
 	if (failed) {
 		if (failed < 0)
-			st_job_add_record(self->connect, st_log_level_warning, job, "Error while adding file: '%s'", path);
+			st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Error while adding file: '%s'", path);
 		return failed;
 	}
 
@@ -127,7 +127,7 @@ static int st_job_create_archive_archive(struct st_job * job, struct st_job_sele
 	if (S_ISREG(st.st_mode)) {
 		int fd = open(path, O_RDONLY);
 		if (fd < 0) {
-			st_job_add_record(self->connect, st_log_level_warning, job, "Error while opening file: '%s' because %m", path);
+			st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Error while opening file: '%s' because %m", path);
 			return -1;
 		}
 
@@ -145,7 +145,7 @@ static int st_job_create_archive_archive(struct st_job * job, struct st_job_sele
 		}
 
 		if (nb_read < 0) {
-			st_job_add_record(self->connect, st_log_level_error, job, "Unexpected error while reading from file '%s' because %m", path);
+			st_job_add_record(self->connect, st_log_level_error, job, st_job_record_notif_important, "Unexpected error while reading from file '%s' because %m", path);
 			failed = -1;
 		}
 
@@ -155,7 +155,7 @@ static int st_job_create_archive_archive(struct st_job * job, struct st_job_sele
 			self->worker->ops->end_file(self->worker);
 	} else if (S_ISDIR(st.st_mode)) {
 		if (access(path, F_OK | R_OK | X_OK)) {
-			st_job_add_record(self->connect, st_log_level_warning, job, "Can't access to directory %s", path);
+			st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Can't access to directory %s", path);
 			return 1;
 		}
 
@@ -240,7 +240,7 @@ static void st_job_create_archive_new_job(struct st_job * job, struct st_databas
 		if (size >= 0)
 			self->total_size += size;
 		else
-			st_job_add_record(self->connect, st_log_level_error, job, "Error while computing size of '%s'", p->path);
+			st_job_add_record(self->connect, st_log_level_error, job, st_job_record_notif_important, "Error while computing size of '%s'", p->path);
 	}
 
 	self->worker = NULL;
@@ -355,19 +355,19 @@ static bool st_job_create_archive_pre_run(struct st_job * job) {
 static int st_job_create_archive_run(struct st_job * job) {
 	struct st_job_create_archive_private * self = job->data;
 
-	st_job_add_record(self->connect, st_log_level_info, job, "Start archive job (named: %s), num runs %ld", job->name, job->num_runs);
+	st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_important, "Start archive job (named: %s), num runs %ld", job->name, job->num_runs);
 
 	if (!job->user->can_archive) {
-		st_job_add_record(self->connect, st_log_level_error, job, "Error, user (%s) cannot create archive", job->user->login);
+		st_job_add_record(self->connect, st_log_level_error, job, st_job_record_notif_important, "Error, user (%s) cannot create archive", job->user->login);
 		return 1;
 	}
 
 	char bufsize[32];
 	st_util_file_convert_size_to_string(self->total_size, bufsize, 32);
-	st_job_add_record(self->connect, st_log_level_info, job, "Will archive %s", bufsize);
+	st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_normal, "Will archive %s", bufsize);
 
 	if (job->db_status == st_job_status_stopped) {
-		st_job_add_record(self->connect, st_log_level_warning, job, "Job stopped by user request");
+		st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Job stopped by user request");
 		return 0;
 	}
 
@@ -387,7 +387,7 @@ static int st_job_create_archive_run(struct st_job * job) {
 		unsigned int i;
 		for (i = 0; i < self->nb_selected_paths && job->db_status != st_job_status_stopped && failed >= 0; i++) {
 			struct st_job_selected_path * p = self->selected_paths + i;
-			st_job_add_record(self->connect, st_log_level_info, job, "Archiving file: %s", p->path);
+			st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_normal, "Archiving file: %s", p->path);
 			failed = st_job_create_archive_archive(job, p, p->path);
 		}
 
@@ -397,11 +397,11 @@ static int st_job_create_archive_run(struct st_job * job) {
 		self->meta->ops->wait(self->meta, true);
 
 		job->done = 0.98;
-		st_job_add_record(self->connect, st_log_level_info, job, "Synchronize database");
+		st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_normal, "Synchronize database");
 		self->worker->ops->sync_db(self->worker);
 
 		job->done = 0.99;
-		st_job_add_record(self->connect, st_log_level_info, job, "Writing index file");
+		st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_normal, "Writing index file");
 		self->worker->ops->write_meta(self->worker);
 
 		if (st_hashtable_has_key(job->option, "check_archive")) {
@@ -430,16 +430,16 @@ static int st_job_create_archive_run(struct st_job * job) {
 			self->worker->ops->schedule_auto_check_archive(self->worker);
 
 		if (stopped)
-			st_job_add_record(self->connect, st_log_level_warning, job, "Job stopped by user request");
+			st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Job stopped by user request");
 
 		job->done = 1;
-		st_job_add_record(self->connect, st_log_level_info, job, "Archive job (named: %s) finished", job->name);
+		st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_important, "Archive job (named: %s) finished", job->name);
 	} else {
 		self->worker->ops->close(self->worker);
 		self->meta->ops->wait(self->meta, true);
 
-		st_job_add_record(self->connect, st_log_level_warning, job, "Job stopped by user request");
-		st_job_add_record(self->connect, st_log_level_info, job, "Archive job (named: %s) finished with status 'stopped'", job->name);
+		st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_normal, "Job stopped by user request");
+		st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_important, "Archive job (named: %s) finished with status 'stopped'", job->name);
 	}
 
 	return failed;

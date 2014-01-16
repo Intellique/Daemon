@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 26 Dec 2013 10:45:53 +0100                            *
+*  Last modified: Thu, 16 Jan 2014 16:54:33 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -128,10 +128,10 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 		goto end_of_work;
 
 	if (dr->slot->media != NULL && dr->slot != sl) {
-		st_job_add_record(connect, st_log_level_info, job, "Unloading media (%s)", dr->slot->media->name);
+		st_job_add_record(connect, st_log_level_info, job, st_job_record_notif_normal, "Unloading media (%s)", dr->slot->media->name);
 		int failed = dr->changer->ops->unload(dr->changer, dr);
 		if (failed) {
-			st_job_add_record(connect, st_log_level_info, job, "Unloading media (%s) has failed", dr->slot->media->name);
+			st_job_add_record(connect, st_log_level_info, job, st_job_record_notif_important, "Unloading media (%s) has failed", dr->slot->media->name);
 			self->nb_errors++;
 			goto end_of_work;
 		}
@@ -141,10 +141,10 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 		goto end_of_work;
 
 	if (dr->slot->media == NULL) {
-		st_job_add_record(connect, st_log_level_info, job, "Loading media (%s)", sl->media->name);
+		st_job_add_record(connect, st_log_level_info, job, st_job_record_notif_normal, "Loading media (%s)", sl->media->name);
 		int failed = dr->changer->ops->load_slot(dr->changer, sl, dr);
 		if (failed) {
-			st_job_add_record(connect, st_log_level_info, job, "Loading media (%s) has failed", sl->media->name);
+			st_job_add_record(connect, st_log_level_info, job, st_job_record_notif_important, "Loading media (%s) has failed", sl->media->name);
 			self->nb_errors++;
 			goto end_of_work;
 		} else {
@@ -174,7 +174,7 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 
 			enum st_format_reader_header_status status = reader->ops->forward(reader, f->position);
 			if (status != st_format_reader_header_ok) {
-				st_job_add_record(connect, st_log_level_error, job, "Error while seeking to file (%s)", file->name);
+				st_job_add_record(connect, st_log_level_error, job, st_job_record_notif_important, "Error while seeking to file (%s)", file->name);
 				self->nb_errors++;
 
 				st_archive_file_free(file);
@@ -187,7 +187,7 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 			} while (status == st_format_reader_header_bad_header);
 
 			if (status != st_format_reader_header_ok) {
-				st_job_add_record(connect, st_log_level_error, job, "Error while reading header of file (%s)", file->name);
+				st_job_add_record(connect, st_log_level_error, job, st_job_record_notif_important, "Error while reading header of file (%s)", file->name);
 				st_log_write_all(st_log_level_debug, st_log_type_job, "Error while reading header file, line %d", __LINE__);
 				self->nb_errors++;
 
@@ -199,7 +199,7 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 			st_util_string_rtrim(header.filename, '/');
 
 			while (strcmp(header.filename, file->name + 1)) {
-				st_job_add_record(connect, st_log_level_debug, job, "Skipping file '%s'", header.filename);
+				st_job_add_record(connect, st_log_level_debug, job, st_job_record_notif_normal, "Skipping file '%s'", header.filename);
 
 				reader->ops->skip_file(reader);
 				st_format_file_free(&header);
@@ -213,7 +213,7 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 			}
 
 			if (status != st_format_reader_header_ok) {
-				st_job_add_record(connect, st_log_level_error, job, "Error while reading header of file (%s)", file->name);
+				st_job_add_record(connect, st_log_level_error, job, st_job_record_notif_important, "Error while reading header of file (%s)", file->name);
 				st_log_write_all(st_log_level_debug, st_log_type_job, "Error while reading header file, line %d", __LINE__);
 				self->nb_errors++;
 
@@ -232,18 +232,18 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 			if (ptr != NULL) {
 				*ptr = '\0';
 				if (access(restore_to, R_OK | W_OK | X_OK)) {
-					st_job_add_record(connect, st_log_level_info, job, "Create missing directory '%s' with permission 0777", restore_to);
+					st_job_add_record(connect, st_log_level_info, job, st_job_record_notif_normal, "Create missing directory '%s' with permission 0777", restore_to);
 					st_util_file_mkdir(restore_to, 0777);
 				}
 				*ptr = '/';
 			}
 
-			st_job_add_record(connect, st_log_level_info, job, "Start restoring file '%s'", restore_to);
+			st_job_add_record(connect, st_log_level_info, job, st_job_record_notif_normal, "Start restoring file '%s'", restore_to);
 
 			if (S_ISREG(header.mode)) {
 				int fd = open(restore_to, O_CREAT | O_WRONLY, header.mode & 07777);
 				if (fd < 0) {
-					st_job_add_record(connect, st_log_level_error, job, "Error while opening file (%s) for writing because %m", restore_to);
+					st_job_add_record(connect, st_log_level_error, job, st_job_record_notif_important, "Error while opening file (%s) for writing because %m", restore_to);
 					self->nb_errors++;
 
 					st_archive_file_free(file);
@@ -252,7 +252,7 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 
 				if (header.position > 0) {
 					if (lseek(fd, header.position, SEEK_SET) != header.position) {
-						st_job_add_record(connect, st_log_level_error, job, "Error while seeking into file (%s) because %m", restore_to);
+						st_job_add_record(connect, st_log_level_error, job, st_job_record_notif_important, "Error while seeking into file (%s) because %m", restore_to);
 						self->nb_errors++;
 						close(fd);
 
@@ -269,7 +269,7 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 					if (nb_write > 0)
 						self->total_restored += nb_write;
 					else {
-						st_job_add_record(connect, st_log_level_error, job, "Error while writing to file (%s) because %m", restore_to);
+						st_job_add_record(connect, st_log_level_error, job, st_job_record_notif_important, "Error while writing to file (%s) because %m", restore_to);
 						self->nb_errors++;
 
 						st_archive_file_free(file);
@@ -278,7 +278,7 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 				}
 
 				if (nb_read < 0) {
-					st_job_add_record(connect, st_log_level_error, job, "Error while reading from media (%s) because %m", vol->media->name);
+					st_job_add_record(connect, st_log_level_error, job, st_job_record_notif_important, "Error while reading from media (%s) because %m", vol->media->name);
 					connect->ops->mark_archive_file_as_checked(connect, archive, file, false);
 					self->nb_errors++;
 
@@ -286,12 +286,12 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 					break;
 				} else if (nb_write >= 0) {
 					if (fchown(fd, file->ownerid, file->groupid)) {
-						st_job_add_record(connect, st_log_level_warning, job, "Error while restoring user of file (%s) because %m", restore_to);
+						st_job_add_record(connect, st_log_level_warning, job, st_job_record_notif_important, "Error while restoring user of file (%s) because %m", restore_to);
 						self->nb_warnings++;
 					}
 
 					if (fchmod(fd, file->perm)) {
-						st_job_add_record(connect, st_log_level_warning, job, "Error while restoring permission of file (%s) because %m", restore_to);
+						st_job_add_record(connect, st_log_level_warning, job, st_job_record_notif_important, "Error while restoring permission of file (%s) because %m", restore_to);
 						self->nb_warnings++;
 					}
 
@@ -300,7 +300,7 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 						{ file->modify_time, 0 },
 					};
 					if (futimes(fd, tv)) {
-						st_job_add_record(connect, st_log_level_warning, job, "Error while motification time of file (%s) because %m", restore_to);
+						st_job_add_record(connect, st_log_level_warning, job, st_job_record_notif_important, "Error while motification time of file (%s) because %m", restore_to);
 						self->nb_warnings++;
 					}
 				}
@@ -322,12 +322,12 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 
 			if (!(S_ISREG(header.mode) || S_ISDIR(header.mode))) {
 				if (chown(header.filename, file->ownerid, file->groupid)) {
-					st_job_add_record(connect, st_log_level_warning, job, "Error while restoring user of file (%s) because %m", header.filename);
+					st_job_add_record(connect, st_log_level_warning, job, st_job_record_notif_important, "Error while restoring user of file (%s) because %m", header.filename);
 					self->nb_warnings++;
 				}
 
 				if (chmod(header.filename, file->perm)) {
-					st_job_add_record(connect, st_log_level_warning, job, "Error while restoring permission of file (%s) because %m", header.filename);
+					st_job_add_record(connect, st_log_level_warning, job, st_job_record_notif_important, "Error while restoring permission of file (%s) because %m", header.filename);
 					self->nb_warnings++;
 				}
 
@@ -336,7 +336,7 @@ static void st_job_restore_archive_data_worker_work(void * arg) {
 					{ file->modify_time, 0 },
 				};
 				if (utimes(header.filename, tv)) {
-					st_job_add_record(connect, st_log_level_warning, job, "Error while motification time of file (%s) because %m", header.filename);
+					st_job_add_record(connect, st_log_level_warning, job, st_job_record_notif_important, "Error while motification time of file (%s) because %m", header.filename);
 					self->nb_warnings++;
 				}
 			}

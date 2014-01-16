@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 02 Dec 2013 11:58:09 +0100                            *
+*  Last modified: Thu, 16 Jan 2014 16:32:56 +0100                            *
 \****************************************************************************/
 
 // calloc
@@ -152,12 +152,12 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 	self->writer = NULL;
 
 	self->job->done = 0.98;
-	st_job_add_record(self->connect, st_log_level_info, self->job, "Synchronize data with database");
+	st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "Synchronize data with database");
 
 	// sync with database
 	self->connect->ops->sync_archive(self->connect, self->copy);
 
-	st_job_add_record(self->connect, st_log_level_info, self->job, "Write metadatas on media");
+	st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "Write metadatas on media");
 	self->job->done = 0.99;
 
 	// write metadatas

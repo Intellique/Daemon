@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 07 Jan 2014 16:54:23 +0100                            *
+*  Last modified: Thu, 16 Jan 2014 16:17:59 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -157,7 +157,7 @@ static int st_db_postgresql_sync_media_format(struct st_database_connection * co
 static int st_db_postgresql_sync_slot(struct st_database_connection * connect, struct st_slot * slot);
 
 static int st_db_postgresql_add_check_archive_job(struct st_database_connection * connect, struct st_job * job, struct st_archive * archive, time_t starttime, bool quick_mode);
-static int st_db_postgresql_add_job_record(struct st_database_connection * connect, struct st_job * job, const char * message);
+static int st_db_postgresql_add_job_record(struct st_database_connection * connect, struct st_job * job, const char * message, enum st_job_record_notif notif);
 static struct st_job_selected_path * st_db_postgresql_get_selected_paths(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_paths);
 static int st_db_postgresql_sync_job(struct st_database_connection * connect, struct st_job *** jobs, unsigned int * nb_jobs);
 
@@ -2205,13 +2205,13 @@ static int st_db_postgresql_add_check_archive_job(struct st_database_connection 
 	return status == PGRES_FATAL_ERROR;
 }
 
-static int st_db_postgresql_add_job_record(struct st_database_connection * connect, struct st_job * job, const char * message) {
+static int st_db_postgresql_add_job_record(struct st_database_connection * connect, struct st_job * job, const char * message, enum st_job_record_notif notif) {
 	if (connect == NULL || job == NULL || message == NULL)
 		return 1;
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	const char * query = "insert_job_record";
-	st_db_postgresql_prepare(self, query, "INSERT INTO jobrecord(job, status, numrun, message) VALUES ($1, $2, $3, $4)");
+	st_db_postgresql_prepare(self, query, "INSERT INTO jobrecord(job, status, numrun, message, notif) VALUES ($1, $2, $3, $4, $5)");
 
 	struct st_db_postgresql_job_data * job_data = job->db_data;
 
@@ -2219,7 +2219,7 @@ static int st_db_postgresql_add_job_record(struct st_database_connection * conne
 	asprintf(&jobid, "%ld", job_data->id);
 	asprintf(&numrun, "%ld", job->num_runs);
 
-	const char * param[] = { jobid, st_job_status_to_string(job->sched_status), numrun, message };
+	const char * param[] = { jobid, st_job_status_to_string(job->sched_status), numrun, message, st_db_postgresql_job_record_notif_to_string(notif) };
 	PGresult * result = PQexecPrepared(self->connect, query, 4, param, 0, 0, 0);
 	ExecStatusType status = PQresultStatus(result);
 

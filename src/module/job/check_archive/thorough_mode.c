@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 19 Nov 2013 15:36:43 +0100                            *
+*  Last modified: Thu, 16 Jan 2014 16:32:06 +0100                            *
 \****************************************************************************/
 
 // free
@@ -70,7 +70,7 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 				// slot not found
 				// TODO: alert user
 				if (!has_alerted_user)
-					st_job_add_record(self->connect, st_log_level_warning, self->job, "Warning, media named (%s) is not found, please insert it", vol->media->name);
+					st_job_add_record(self->connect, st_log_level_warning, self->job, st_job_record_notif_important, "Warning, media named (%s) is not found, please insert it", vol->media->name);
 				has_alerted_user = true;
 				self->job->sched_status = st_job_status_pause;
 
@@ -109,24 +109,24 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 		self->job->sched_status = st_job_status_running;
 
 		if (drive->slot->media != NULL && drive->slot != slot) {
-			st_job_add_record(self->connect, st_log_level_info, self->job, "Unloading media (%s)", drive->slot->media->name);
+			st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "Unloading media (%s)", drive->slot->media->name);
 			int failed = drive->changer->ops->unload(drive->changer, drive);
 			if (failed) {
-				st_job_add_record(self->connect, st_log_level_info, self->job, "Unloading media (%s) has failed", drive->slot->media->name);
+				st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_important, "Unloading media (%s) has failed", drive->slot->media->name);
 				nb_errors++;
 				goto end_of_work;
 			}
 		}
 
 		if (drive->slot->media == NULL) {
-			st_job_add_record(self->connect, st_log_level_info, self->job, "Loading media (%s)", slot->media->name);
+			st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "Loading media (%s)", slot->media->name);
 
 			int failed = drive->changer->ops->load_slot(drive->changer, slot, drive);
 
 			slot->lock->ops->unlock(slot->lock);
 
 			if (failed) {
-				st_job_add_record(self->connect, st_log_level_info, self->job, "Loading media (%s) has failed", slot->media->name);
+				st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_important, "Loading media (%s) has failed", slot->media->name);
 				nb_errors++;
 				goto end_of_work;
 			}
@@ -149,7 +149,7 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 
 			ssize_t position = reader->ops->position(reader) / block_size;
 			if (position != f->position) {
-				st_job_add_record(self->connect, st_log_level_error, self->job, "Position of file is invalid");
+				st_job_add_record(self->connect, st_log_level_error, self->job, st_job_record_notif_important, "Position of file is invalid");
 				nb_errors++;
 				error = true;
 				break;
@@ -160,13 +160,13 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 
 			switch (status) {
 				case st_format_reader_header_bad_header:
-					st_job_add_record(self->connect, st_log_level_error, self->job, "Error while reading header");
+					st_job_add_record(self->connect, st_log_level_error, self->job, st_job_record_notif_important, "Error while reading header");
 					nb_errors++;
 					error = true;
 					break;
 
 				case st_format_reader_header_not_found:
-					st_job_add_record(self->connect, st_log_level_error, self->job, "No header found but we expected one");
+					st_job_add_record(self->connect, st_log_level_error, self->job, st_job_record_notif_important, "No header found but we expected one");
 					nb_errors++;
 					error = true;
 					break;
@@ -220,10 +220,10 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 
 				if (ok) {
 					self->connect->ops->mark_archive_file_as_checked(self->connect, self->archive, file, true);
-					st_job_add_record(self->connect, st_log_level_info, self->job, "Checking file (%s), status: OK", file->name);
+					st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "Checking file (%s), status: OK", file->name);
 				} else {
 					self->connect->ops->mark_archive_file_as_checked(self->connect, self->archive, file, false);
-					st_job_add_record(self->connect, st_log_level_error, self->job, "Checking file (%s), status: checksum mismatch", file->name);
+					st_job_add_record(self->connect, st_log_level_error, self->job, st_job_record_notif_important, "Checking file (%s), status: checksum mismatch", file->name);
 				}
 			}
 
@@ -245,10 +245,10 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 
 			if (ok) {
 				self->connect->ops->mark_archive_volume_as_checked(self->connect, vol, true);
-				st_job_add_record(self->connect, st_log_level_info, self->job, "Checking volume #%lu, status: OK", vol->sequence);
+				st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "Checking volume #%lu, status: OK", vol->sequence);
 			} else {
 				self->connect->ops->mark_archive_volume_as_checked(self->connect, vol, false);
-				st_job_add_record(self->connect, st_log_level_error, self->job, "Checking volume #%lu, status: checksum mismatch", vol->sequence);
+				st_job_add_record(self->connect, st_log_level_error, self->job, st_job_record_notif_important, "Checking volume #%lu, status: checksum mismatch", vol->sequence);
 			}
 		}
 
