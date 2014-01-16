@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 16 Jan 2014 16:17:59 +0100                            *
+*  Last modified: Thu, 16 Jan 2014 17:46:17 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2220,7 +2220,7 @@ static int st_db_postgresql_add_job_record(struct st_database_connection * conne
 	asprintf(&numrun, "%ld", job->num_runs);
 
 	const char * param[] = { jobid, st_job_status_to_string(job->sched_status), numrun, message, st_db_postgresql_job_record_notif_to_string(notif) };
-	PGresult * result = PQexecPrepared(self->connect, query, 4, param, 0, 0, 0);
+	PGresult * result = PQexecPrepared(self->connect, query, 5, param, 0, 0, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)
