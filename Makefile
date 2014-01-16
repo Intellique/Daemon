@@ -190,12 +190,13 @@ doc: Doxyfile ${LIBOBJECT_SRC_FILES} ${HEAD_FILES}
 
 install:
 	@echo ' MKDIR     ${DESTDIR}'
-	@mkdir -p ${DESTDIR}/etc/storiq ${DESTDIR}/usr/bin ${DESTDIR}/usr/sbin ${DESTDIR}/usr/lib/stone
+	@mkdir -p ${DESTDIR}/etc/storiq ${DESTDIR}/usr/bin ${DESTDIR}/usr/sbin ${DESTDIR}/usr/lib/stone ${DESTDIR}/var/lib/stoned
 	@echo ' CP'
 	@cp bin/stoned bin/stone-config ${DESTDIR}/usr/sbin
 	@cp lib/lib*.so ${DESTDIR}/usr/lib/stone
 	@mv ${DESTDIR}/usr/lib/stone/libstone.so ${DESTDIR}/usr/lib
 	@cp script/stone.conf ${DESTDIR}/etc/storiq/stone.conf
+	@cp script/pre-post-run/* ${DESTDIR}/var/lib/stoned
 
 package:
 	@echo ' CLEAN'
