@@ -201,7 +201,7 @@ package:
 	@echo ' CLEAN'
 	@dh_clean
 	@echo ' UPDATE src'
-	@${GIT} archive --format=tar -o ../${GIT_ARCHIVE} deb
+	@${GIT} archive --format=tar -o ../${GIT_ARCHIVE} debian
 	@gzip -9vf ../${GIT_ARCHIVE}
 	@echo ' BUILD package'
 	@dpkg-buildpackage -us -uc -rfakeroot
