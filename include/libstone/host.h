@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 03 Jan 2014 16:30:20 +0100                            *
+*  Last modified: Thu, 16 Jan 2014 10:38:10 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_HOST_H__
@@ -30,8 +30,9 @@
 
 // bool
 #include <stdbool.h>
+// json_*
+#include <jansson.h>
 
-typedef struct json_t json_t;
 struct st_database_connection;
 
 struct st_host {
