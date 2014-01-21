@@ -1,3 +1,9 @@
+stone (1.1-22+squeeze) unstable; urgency=low
+
+  * Nouvelle numérotation de version
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 21 Jan 2014 22:20:02 +0100
+
 stone (1.1-22) unstable; urgency=low
 
   * Nouvelle fonctionnalité:
