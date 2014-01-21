@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 16 Jan 2014 16:36:10 +0100                            *
+*  Last modified: Tue, 21 Jan 2014 17:54:14 +0100                            *
 \****************************************************************************/
 
 // free, malloc
@@ -98,7 +98,7 @@ bool st_job_copy_archive_change_ouput_media(struct st_job_copy_archive_private *
 
 	int position = self->drive_output->ops->get_position(self->drive_output);
 
-	st_archive_add_volume(self->copy, self->drive_output->slot->media, position);
+	st_archive_add_volume(self->copy, self->drive_output->slot->media, position, self->job);
 	self->current_volume = self->copy->volumes + self->copy->nb_volumes;
 
 	return true;

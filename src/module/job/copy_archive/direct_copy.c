@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 16 Jan 2014 16:32:56 +0100                            *
+*  Last modified: Tue, 21 Jan 2014 17:53:37 +0100                            *
 \****************************************************************************/
 
 // calloc
@@ -56,7 +56,7 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 
 	unsigned int i;
 	int position = self->drive_output->ops->get_position(self->drive_output);
-	st_archive_add_volume(self->copy, self->drive_output->slot->media, position);
+	st_archive_add_volume(self->copy, self->drive_output->slot->media, position, self->job);
 
 	self->current_volume = self->copy->volumes;
 	self->current_volume->files = calloc(self->nb_remain_files, sizeof(struct st_archive_files));

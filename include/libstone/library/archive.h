@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 28 May 2013 18:24:13 +0200                            *
+*  Last modified: Tue, 21 Jan 2014 17:52:30 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -90,6 +90,7 @@ struct st_archive_volume {
 	struct st_archive * archive;
 	struct st_media * media;
 	long media_position;
+	struct st_job * job;
 
 	struct st_hashtable * digests;
 
@@ -130,7 +131,7 @@ struct st_archive_file {
 	void * db_data;
 };
 
-struct st_archive_volume * st_archive_add_volume(struct st_archive * archive, struct st_media * media, long media_position);
+struct st_archive_volume * st_archive_add_volume(struct st_archive * archive, struct st_media * media, long media_position, struct st_job * job);
 void st_archive_free(struct st_archive * archive);
 struct st_archive * st_archive_new(const char * name, struct st_user * user);
 void st_archive_file_free(struct st_archive_file * file);

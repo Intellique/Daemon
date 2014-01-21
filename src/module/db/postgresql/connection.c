@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 16 Jan 2014 17:46:17 +0100                            *
+*  Last modified: Tue, 21 Jan 2014 19:03:37 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -3022,6 +3022,7 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 
 			st_db_postgresql_get_ssize(result, i, 6, &volume->size);
 			volume->archive = archive;
+			volume->job = NULL;
 
 			char uuid[37];
 			st_db_postgresql_get_string(result, i, 7, uuid, 37);
@@ -3640,6 +3641,7 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 	struct st_db_postgresql_connection_private * self = connect->data;
 	struct st_db_postgresql_archive_data * archive_data = archive->db_data;
 	struct st_db_postgresql_archive_volume_data * archive_volume_data = volume->db_data;
+	struct st_db_postgresql_job_data * job_data = volume->job->db_data;
 	struct st_db_postgresql_media_data * media_data = volume->media->db_data;
 
 	if (archive_volume_data == NULL) {
@@ -3651,25 +3653,26 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 
 	if (archive_volume_data->id < 0) {
 		const char * query = "insert_archive_volume";
-		st_db_postgresql_prepare(self, query, "INSERT INTO archivevolume(sequence, size, starttime, endtime, archive, media, mediaposition, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id");
+		st_db_postgresql_prepare(self, query, "INSERT INTO archivevolume(sequence, size, starttime, endtime, archive, media, mediaposition, job, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id");
 
 		char buffer_ctime[32], buffer_endtime[32];
 		st_util_time_convert(&volume->start_time, "%F %T", buffer_ctime, 32);
 		st_util_time_convert(&volume->end_time, "%F %T", buffer_endtime, 32);
 
-		char * sequence, * size, * archiveid, * mediaid, * mediaposition;
+		char * sequence, * size, * archiveid, * mediaid, * jobid, * mediaposition;
 		asprintf(&sequence, "%ld", volume->sequence);
 		asprintf(&size, "%zd", volume->size);
 		asprintf(&archiveid, "%ld", archive_data->id);
 		asprintf(&mediaid, "%ld", media_data->id);
+		asprintf(&jobid, "%ld", job_data->id);
 		asprintf(&mediaposition, "%ld", volume->media_position);
 
 		char * host = st_db_postgresql_get_host(connect);
 
 		const char * param[] = {
-			sequence, size, buffer_ctime, buffer_endtime, archiveid, mediaid, mediaposition, host
+			sequence, size, buffer_ctime, buffer_endtime, archiveid, mediaid, mediaposition, jobid, host
 		};
-		PGresult * result = PQexecPrepared(self->connect, query, 8, param, NULL, NULL, 0);
+		PGresult * result = PQexecPrepared(self->connect, query, 9, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -3684,6 +3687,7 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 		free(archiveid);
 		free(mediaid);
 		free(mediaposition);
+		free(jobid);
 		free(host);
 
 		PQclear(result);

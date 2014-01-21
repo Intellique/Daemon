@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 16 Jan 2014 16:41:49 +0100                            *
+*  Last modified: Tue, 21 Jan 2014 17:54:50 +0100                            *
 \****************************************************************************/
 
 // asprintf
@@ -288,7 +288,7 @@ static int st_job_create_archive_single_worker_change_volume(struct st_job_creat
 
 	int position = self->drive->ops->get_position(self->drive);
 
-	st_archive_add_volume(self->archive, self->drive->slot->media, position);
+	st_archive_add_volume(self->archive, self->drive->slot->media, position, self->job);
 
 	struct st_linked_list_files * f = self->first_file = self->last_file;
 	f->block_position = 0;
@@ -385,7 +385,7 @@ static bool st_job_create_archive_single_worker_load_media(struct st_job_create_
 		self->writer = self->drive->ops->get_writer(self->drive, true, st_job_create_archive_single_worker_add_filter, self);
 
 		int position = self->drive->ops->get_position(self->drive);
-		st_archive_add_volume(self->archive, self->drive->slot->media, position);
+		st_archive_add_volume(self->archive, self->drive->slot->media, position, self->job);
 
 		return self->writer != NULL;
 	}
