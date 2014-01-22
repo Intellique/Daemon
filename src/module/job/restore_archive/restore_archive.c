@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 03 Jan 2014 18:21:04 +0100                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Thu, 16 Jan 2014 16:55:35 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -517,15 +517,15 @@ static bool st_job_restore_archive_pre_run(struct st_job * job) {
 static int st_job_restore_archive_run(struct st_job * job) {
 	struct st_job_restore_archive_private * self = job->data;
 
-	st_job_add_record(self->connect, st_log_level_info, job, "Start restore job (named: %s), num runs %ld", job->name, job->num_runs);
+	st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_important, "Start restore job (named: %s), num runs %ld", job->name, job->num_runs);
 
 	if (!job->user->can_restore) {
-		st_job_add_record(self->connect, st_log_level_error, job, "Error, user (%s) cannot restore archive", job->user->login);
+		st_job_add_record(self->connect, st_log_level_error, job, st_job_record_notif_important, "Error, user (%s) cannot restore archive", job->user->login);
 		return 1;
 	}
 
 	if (self->archive == NULL) {
-		st_job_add_record(self->connect, st_log_level_error, job, "Error, no archive associated to this job were found");
+		st_job_add_record(self->connect, st_log_level_error, job, st_job_record_notif_important, "Error, no archive associated to this job were found");
 		job->sched_status = st_job_status_error;
 		return 2;
 	}
@@ -547,12 +547,12 @@ static int st_job_restore_archive_run(struct st_job * job) {
 		st_util_file_mkdir(directory->name, directory->perm);
 
 		if (chown(directory->name, directory->ownerid, directory->groupid)) {
-			st_job_add_record(self->connect, st_log_level_warning, job, "Warning, failed to restore owner of directory (%s) because %m", directory->name);
+			st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Warning, failed to restore owner of directory (%s) because %m", directory->name);
 			nb_warnings++;
 		}
 
 		if (chmod(directory->name, directory->perm)) {
-			st_job_add_record(self->connect, st_log_level_warning, job, "Warning, failed to restore permission of directory (%s) because %m", directory->name);
+			st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Warning, failed to restore permission of directory (%s) because %m", directory->name);
 			nb_warnings++;
 		}
 	}
@@ -604,7 +604,7 @@ static int st_job_restore_archive_run(struct st_job * job) {
 				// slot not found
 				// TODO: alert user
 				if (!has_alerted_user)
-					st_job_add_record(self->connect, st_log_level_warning, job, "Warning, media named (%s) is not found, please insert it", vol->media->name);
+					st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Warning, media named (%s) is not found, please insert it", vol->media->name);
 				has_alerted_user = true;
 
 				if (nb_running_worker == 0)
@@ -701,7 +701,7 @@ static int st_job_restore_archive_run(struct st_job * job) {
 			{ directory->modify_time, 0 },
 		};
 		if (utimes(directory->name, tv)) {
-			st_job_add_record(self->connect, st_log_level_warning, job, "Warning, failed to restore motification time of directory (%s) because %m", directory->name);
+			st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Warning, failed to restore motification time of directory (%s) because %m", directory->name);
 			nb_warnings++;
 		}
 
@@ -718,7 +718,7 @@ static int st_job_restore_archive_run(struct st_job * job) {
 
 	job->done = 1;
 
-	st_job_add_record(self->connect, st_log_level_info, job, "Job restore-archive is finished (named: %s) with %d warning(%c) and %d error(%c)", job->name, nb_warnings, nb_warnings != 1 ? 's' : '\0', nb_errors, nb_errors != 1 ? 's' : '\0');
+	st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_important, "Job restore-archive is finished (named: %s) with %d warning(%c) and %d error(%c)", job->name, nb_warnings, nb_warnings != 1 ? 's' : '\0', nb_errors, nb_errors != 1 ? 's' : '\0');
 
 	return 0;
 }

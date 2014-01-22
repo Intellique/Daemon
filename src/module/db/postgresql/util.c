@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 14 Nov 2013 19:05:02 +0100                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Thu, 16 Jan 2014 16:19:32 +0100                            *
 \****************************************************************************/
 
 #define _XOPEN_SOURCE 500
@@ -35,9 +35,21 @@
 // mktime, strptime
 #include <time.h>
 
+#include <libstone/job.h>
 #include <libstone/script.h>
 
 #include "common.h"
+
+static const struct st_db_postgresql_job_record_notif {
+	char * name;
+	enum st_job_record_notif notif;
+} st_db_postgresql_job_record_notifs[] = {
+	{ "important", st_job_record_notif_important },
+	{ "normal",    st_job_record_notif_normal },
+	{ "read",      st_job_record_notif_read },
+
+	{ "unknwon", st_job_record_notif_unknown },
+};
 
 static const struct st_db_postgresql_script_type {
 	char * name;
@@ -183,6 +195,15 @@ int st_db_postgresql_get_uint(PGresult * result, int row, int column, unsigned i
 		return 0;
 
 	return value != NULL;
+}
+
+const char * st_db_postgresql_job_record_notif_to_string(enum st_job_record_notif notif) {
+	unsigned int i;
+	for (i = 0; st_db_postgresql_job_record_notifs[i].notif != st_job_record_notif_unknown; i++)
+		if (st_db_postgresql_job_record_notifs[i].notif == notif)
+			return st_db_postgresql_job_record_notifs[i].name;
+
+	return st_db_postgresql_job_record_notifs[i].name;
 }
 
 const char * st_db_postgresql_script_type_to_string(enum st_script_type type) {

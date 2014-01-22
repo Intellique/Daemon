@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 03 Jan 2014 16:54:06 +0100                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Thu, 16 Jan 2014 16:28:02 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -514,10 +514,10 @@ static bool st_job_check_archive_pre_run(struct st_job * job) {
 static int st_job_check_archive_run(struct st_job * job) {
 	struct st_job_check_archive_private * self = job->data;
 
-	st_job_add_record(self->connect, st_log_level_info, job, "Start check-archive job (named: %s), num runs %ld", job->name, job->num_runs);
+	st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_important, "Start check-archive job (named: %s), num runs %ld", job->name, job->num_runs);
 
 	if (self->archive == NULL) {
-		st_job_add_record(self->connect, st_log_level_error, job, "Error, no archive associated to this job were found");
+		st_job_add_record(self->connect, st_log_level_error, job, st_job_record_notif_important, "Error, no archive associated to this job were found");
 		job->sched_status = st_job_status_error;
 		return 2;
 	}
@@ -533,9 +533,9 @@ static int st_job_check_archive_run(struct st_job * job) {
 		failed = st_job_check_archive_thorough_mode(self);
 
 	if (failed)
-		st_job_add_record(self->connect, st_log_level_error, job, "Check-archive job (named: %s) finished with status %d", job->name, failed);
+		st_job_add_record(self->connect, st_log_level_error, job, st_job_record_notif_important, "Check-archive job (named: %s) finished with status %d", job->name, failed);
 	else
-		st_job_add_record(self->connect, st_log_level_info, job, "Check-archive job (named: %s) finished with status OK", job->name);
+		st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_important, "Check-archive job (named: %s) finished with status OK", job->name);
 
 	char * report = st_job_check_archive_report_make(self->report);
 	if (report != NULL)

@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 19 Dec 2013 15:29:57 +0100                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Thu, 16 Jan 2014 15:48:17 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -51,6 +51,14 @@ enum st_job_status {
 	st_job_status_waiting,
 
 	st_job_status_unknown,
+};
+
+enum st_job_record_notif {
+	st_job_record_notif_normal,
+	st_job_record_notif_important,
+	st_job_record_notif_read,
+
+	st_job_record_notif_unknown,
 };
 
 struct st_job {
@@ -100,7 +108,7 @@ struct st_job_selected_path {
 
 #define STONE_JOB_API_LEVEL 1
 
-void st_job_add_record(struct st_database_connection * connect, enum st_log_level level, struct st_job * job, const char * message, ...) __attribute__ ((format (printf, 4, 5)));
+void st_job_add_record(struct st_database_connection * connect, enum st_log_level level, struct st_job * job, enum st_job_record_notif notif, const char * message, ...) __attribute__ ((format (printf, 5, 6)));
 struct st_job_driver * st_job_get_driver(const char * driver);
 void st_job_register_driver(struct st_job_driver * driver);
 const char * st_job_status_to_string(enum st_job_status status);

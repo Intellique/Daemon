@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 08 Oct 2013 11:14:51 +0200                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Thu, 16 Jan 2014 16:29:48 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -122,7 +122,7 @@ int st_job_check_archive_quick_mode(struct st_job_check_archive_private * self) 
 				// slot not found
 				// TODO: alert user
 				if (!has_alerted_user)
-					st_job_add_record(self->connect, st_log_level_warning, self->job, "Warning, media named (%s) is not found, please insert it", vol->media->name);
+					st_job_add_record(self->connect, st_log_level_warning, self->job, st_job_record_notif_important, "Warning, media named (%s) is not found, please insert it", vol->media->name);
 				has_alerted_user = true;
 
 				if (nb_running_worker == 0)
@@ -285,20 +285,20 @@ static void st_job_check_archive_quick_mode_work(void * arg) {
 	bool has_slot_lock = dr->slot != sl;
 
 	if (dr->slot->media != NULL && dr->slot != sl) {
-		st_job_add_record(connect, st_log_level_info, qm->jp->job, "Unloading media (%s)", dr->slot->media->name);
+		st_job_add_record(connect, st_log_level_info, qm->jp->job, st_job_record_notif_normal, "Unloading media (%s)", dr->slot->media->name);
 		int failed = dr->changer->ops->unload(dr->changer, dr);
 		if (failed) {
-			st_job_add_record(connect, st_log_level_info, qm->jp->job, "Unloading media (%s) has failed", dr->slot->media->name);
+			st_job_add_record(connect, st_log_level_info, qm->jp->job, st_job_record_notif_important, "Unloading media (%s) has failed", dr->slot->media->name);
 			qm->nb_errors++;
 			goto end_of_work;
 		}
 	}
 
 	if (dr->slot->media == NULL) {
-		st_job_add_record(connect, st_log_level_info, qm->jp->job, "Loading media (%s)", sl->media->name);
+		st_job_add_record(connect, st_log_level_info, qm->jp->job, st_job_record_notif_normal, "Loading media (%s)", sl->media->name);
 		int failed = dr->changer->ops->load_slot(dr->changer, sl, dr);
 		if (failed) {
-			st_job_add_record(connect, st_log_level_info, qm->jp->job, "Loading media (%s) has failed", sl->media->name);
+			st_job_add_record(connect, st_log_level_info, qm->jp->job, st_job_record_notif_important, "Loading media (%s) has failed", sl->media->name);
 			qm->nb_errors++;
 			goto end_of_work;
 		} else {
@@ -336,7 +336,7 @@ static void st_job_check_archive_quick_mode_work(void * arg) {
 
 		bool ok = true;
 		if (nb_read < 0) {
-			st_job_add_record(connect, st_log_level_info, qm->jp->job, "Error while reading from volume #%lu of archive (%s) because %m", vol->sequence, archive->name);
+			st_job_add_record(connect, st_log_level_info, qm->jp->job, st_job_record_notif_important, "Error while reading from volume #%lu of archive (%s) because %m", vol->sequence, archive->name);
 			qm->nb_errors++;
 			ok = false;
 		}
@@ -353,10 +353,10 @@ static void st_job_check_archive_quick_mode_work(void * arg) {
 
 			if (ok) {
 				connect->ops->mark_archive_volume_as_checked(connect, vol, true);
-				st_job_add_record(connect, st_log_level_info, qm->jp->job, "Checking volume #%lu, status: OK", vol->sequence);
+				st_job_add_record(connect, st_log_level_info, qm->jp->job, st_job_record_notif_normal, "Checking volume #%lu, status: OK", vol->sequence);
 			} else {
 				connect->ops->mark_archive_volume_as_checked(connect, vol, false);
-				st_job_add_record(connect, st_log_level_error, qm->jp->job, "Checking volume #%lu, status: checksum mismatch", vol->sequence);
+				st_job_add_record(connect, st_log_level_error, qm->jp->job, st_job_record_notif_important, "Checking volume #%lu, status: checksum mismatch", vol->sequence);
 			}
 		}
 

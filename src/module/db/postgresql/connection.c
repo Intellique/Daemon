@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 07 Jan 2014 16:54:23 +0100                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Tue, 21 Jan 2014 19:03:37 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -157,7 +157,7 @@ static int st_db_postgresql_sync_media_format(struct st_database_connection * co
 static int st_db_postgresql_sync_slot(struct st_database_connection * connect, struct st_slot * slot);
 
 static int st_db_postgresql_add_check_archive_job(struct st_database_connection * connect, struct st_job * job, struct st_archive * archive, time_t starttime, bool quick_mode);
-static int st_db_postgresql_add_job_record(struct st_database_connection * connect, struct st_job * job, const char * message);
+static int st_db_postgresql_add_job_record(struct st_database_connection * connect, struct st_job * job, const char * message, enum st_job_record_notif notif);
 static struct st_job_selected_path * st_db_postgresql_get_selected_paths(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_paths);
 static int st_db_postgresql_sync_job(struct st_database_connection * connect, struct st_job *** jobs, unsigned int * nb_jobs);
 
@@ -2205,13 +2205,13 @@ static int st_db_postgresql_add_check_archive_job(struct st_database_connection 
 	return status == PGRES_FATAL_ERROR;
 }
 
-static int st_db_postgresql_add_job_record(struct st_database_connection * connect, struct st_job * job, const char * message) {
+static int st_db_postgresql_add_job_record(struct st_database_connection * connect, struct st_job * job, const char * message, enum st_job_record_notif notif) {
 	if (connect == NULL || job == NULL || message == NULL)
 		return 1;
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	const char * query = "insert_job_record";
-	st_db_postgresql_prepare(self, query, "INSERT INTO jobrecord(job, status, numrun, message) VALUES ($1, $2, $3, $4)");
+	st_db_postgresql_prepare(self, query, "INSERT INTO jobrecord(job, status, numrun, message, notif) VALUES ($1, $2, $3, $4, $5)");
 
 	struct st_db_postgresql_job_data * job_data = job->db_data;
 
@@ -2219,8 +2219,8 @@ static int st_db_postgresql_add_job_record(struct st_database_connection * conne
 	asprintf(&jobid, "%ld", job_data->id);
 	asprintf(&numrun, "%ld", job->num_runs);
 
-	const char * param[] = { jobid, st_job_status_to_string(job->sched_status), numrun, message };
-	PGresult * result = PQexecPrepared(self->connect, query, 4, param, 0, 0, 0);
+	const char * param[] = { jobid, st_job_status_to_string(job->sched_status), numrun, message, st_db_postgresql_job_record_notif_to_string(notif) };
+	PGresult * result = PQexecPrepared(self->connect, query, 5, param, 0, 0, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)
@@ -3022,6 +3022,7 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 
 			st_db_postgresql_get_ssize(result, i, 6, &volume->size);
 			volume->archive = archive;
+			volume->job = NULL;
 
 			char uuid[37];
 			st_db_postgresql_get_string(result, i, 7, uuid, 37);
@@ -3640,6 +3641,7 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 	struct st_db_postgresql_connection_private * self = connect->data;
 	struct st_db_postgresql_archive_data * archive_data = archive->db_data;
 	struct st_db_postgresql_archive_volume_data * archive_volume_data = volume->db_data;
+	struct st_db_postgresql_job_data * job_data = volume->job->db_data;
 	struct st_db_postgresql_media_data * media_data = volume->media->db_data;
 
 	if (archive_volume_data == NULL) {
@@ -3651,25 +3653,26 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 
 	if (archive_volume_data->id < 0) {
 		const char * query = "insert_archive_volume";
-		st_db_postgresql_prepare(self, query, "INSERT INTO archivevolume(sequence, size, starttime, endtime, archive, media, mediaposition, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id");
+		st_db_postgresql_prepare(self, query, "INSERT INTO archivevolume(sequence, size, starttime, endtime, archive, media, mediaposition, job, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id");
 
 		char buffer_ctime[32], buffer_endtime[32];
 		st_util_time_convert(&volume->start_time, "%F %T", buffer_ctime, 32);
 		st_util_time_convert(&volume->end_time, "%F %T", buffer_endtime, 32);
 
-		char * sequence, * size, * archiveid, * mediaid, * mediaposition;
+		char * sequence, * size, * archiveid, * mediaid, * jobid, * mediaposition;
 		asprintf(&sequence, "%ld", volume->sequence);
 		asprintf(&size, "%zd", volume->size);
 		asprintf(&archiveid, "%ld", archive_data->id);
 		asprintf(&mediaid, "%ld", media_data->id);
+		asprintf(&jobid, "%ld", job_data->id);
 		asprintf(&mediaposition, "%ld", volume->media_position);
 
 		char * host = st_db_postgresql_get_host(connect);
 
 		const char * param[] = {
-			sequence, size, buffer_ctime, buffer_endtime, archiveid, mediaid, mediaposition, host
+			sequence, size, buffer_ctime, buffer_endtime, archiveid, mediaid, mediaposition, jobid, host
 		};
-		PGresult * result = PQexecPrepared(self->connect, query, 8, param, NULL, NULL, 0);
+		PGresult * result = PQexecPrepared(self->connect, query, 9, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -3684,6 +3687,7 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 		free(archiveid);
 		free(mediaid);
 		free(mediaposition);
+		free(jobid);
 		free(host);
 
 		PQclear(result);

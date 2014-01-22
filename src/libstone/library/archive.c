@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 31 May 2013 11:35:09 +0200                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Tue, 21 Jan 2014 17:53:07 +0100                            *
 \****************************************************************************/
 
 // free, malloc
@@ -57,7 +57,7 @@ static struct st_archive_file_type2 {
 };
 
 
-struct st_archive_volume * st_archive_add_volume(struct st_archive * archive, struct st_media * media, long media_position) {
+struct st_archive_volume * st_archive_add_volume(struct st_archive * archive, struct st_media * media, long media_position, struct st_job * job) {
 	archive->volumes = realloc(archive->volumes, (archive->nb_volumes + 1) * sizeof(struct st_archive_volume));
 	struct st_archive_volume * volume = archive->volumes + archive->nb_volumes;
 	unsigned int index_volume = archive->nb_volumes;
@@ -75,6 +75,7 @@ struct st_archive_volume * st_archive_add_volume(struct st_archive * archive, st
 	volume->archive = archive;
 	volume->media = media;
 	volume->media_position = media_position;
+	volume->job = job;
 
 	volume->digests = NULL;
 

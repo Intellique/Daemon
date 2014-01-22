@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 08 Oct 2013 11:15:15 +0200                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Thu, 16 Jan 2014 16:51:40 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -97,11 +97,11 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 	if (nb_checksum > 0 && file->digests != NULL) {
 		bool is_error = false;
 
-		st_job_add_record(check->connect, st_log_level_info, check->jp->job, "Start checking restored file '%s'", restore_to);
+		st_job_add_record(check->connect, st_log_level_info, check->jp->job, st_job_record_notif_important, "Start checking restored file '%s'", restore_to);
 
 		int fd = open(restore_to, O_RDONLY);
 		if (fd < 0) {
-			st_job_add_record(check->connect, st_log_level_info, check->jp->job, "Error while opening file (%s) because %m", restore_to);
+			st_job_add_record(check->connect, st_log_level_info, check->jp->job, st_job_record_notif_important, "Error while opening file (%s) because %m", restore_to);
 			check->nb_errors++;
 			is_error = true;
 		}
@@ -113,7 +113,7 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 			free(checksums);
 
 			if (writer == NULL) {
-				st_job_add_record(check->connect, st_log_level_info, check->jp->job, "Error while getting handler of checksums");
+				st_job_add_record(check->connect, st_log_level_info, check->jp->job, st_job_record_notif_important, "Error while getting handler of checksums");
 				check->nb_errors++;
 				is_error = true;
 			}
@@ -127,7 +127,7 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 				writer->ops->write(writer, buffer, nb_read);
 
 			if (nb_read < 0) {
-				st_job_add_record(check->connect, st_log_level_info, check->jp->job, "Error while reading from file (%s) because %m", restore_to);
+				st_job_add_record(check->connect, st_log_level_info, check->jp->job, st_job_record_notif_important, "Error while reading from file (%s) because %m", restore_to);
 				check->nb_errors++;
 				is_error = true;
 			}
@@ -139,7 +139,7 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 			writer->ops->close(writer);
 
 		if (is_error) {
-			st_job_add_record(check->connect, st_log_level_info, check->jp->job, "There was some error while checking file (%s)", restore_to);
+			st_job_add_record(check->connect, st_log_level_info, check->jp->job, st_job_record_notif_important, "There was some error while checking file (%s)", restore_to);
 
 			if (writer != NULL)
 				writer->ops->free(writer);
@@ -152,9 +152,9 @@ static void st_job_restore_archive_checks_worker_check(struct st_job_restore_arc
 
 			if (ok) {
 				check->connect->ops->mark_archive_file_as_checked(check->connect, check->jp->archive, file, true);
-				st_job_add_record(check->connect, st_log_level_info, check->jp->job, "Checking restored file (%s), status: OK", restore_to);
+				st_job_add_record(check->connect, st_log_level_info, check->jp->job, st_job_record_notif_normal, "Checking restored file (%s), status: OK", restore_to);
 			} else
-				st_job_add_record(check->connect, st_log_level_error, check->jp->job, "Checking restored file (%s), status: checksum mismatch", restore_to);
+				st_job_add_record(check->connect, st_log_level_error, check->jp->job, st_job_record_notif_important, "Checking restored file (%s), status: checksum mismatch", restore_to);
 
 			writer->ops->free(writer);
 
