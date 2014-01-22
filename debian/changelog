@@ -1,8 +1,9 @@
-stone (1.1-22+squeeze) polisher; urgency=low
+stone-squeeze (1.1-22+squeeze) polisher; urgency=low
 
   * Nouvelle numérotation de version
+  * Nouveau nom de paquet source
 
- -- guillaume clercin <gclercin@intellique.com>  Tue, 21 Jan 2014 22:20:02 +0100
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 22 Jan 2014 11:33:33 +0100
 
 stone (1.1-22) unstable; urgency=low
 
