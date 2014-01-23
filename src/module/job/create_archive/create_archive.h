@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 20 Dec 2013 19:04:53 +0100                            *
+*  Last modified: Wed, 22 Jan 2014 16:57:08 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_CREATEARCHIVE_H__
@@ -43,6 +43,10 @@ struct st_job_create_archive_private {
 
 	struct st_job_selected_path * selected_paths;
 	unsigned int nb_selected_paths;
+
+	struct st_archive * archive;
+	ssize_t archive_size;
+	unsigned int nb_files;
 
 	ssize_t total_done;
 	ssize_t total_size;
@@ -75,11 +79,16 @@ struct st_job_create_archive_private {
 
 		struct st_hashtable * meta_files;
 	} * meta;
+
+	struct st_job_create_archive_report * report;
 };
 
-struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(struct st_job * job, ssize_t archive_size, struct st_database_connection * connect, struct st_job_create_archive_meta_worker * meta_worker);
+struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(struct st_job * job, struct st_archive * archive, ssize_t archive_size, struct st_database_connection * connect, struct st_job_create_archive_meta_worker * meta_worker);
 
 struct st_job_create_archive_meta_worker * st_job_create_archive_meta_worker_new(struct st_job * job, struct st_database_connection * connect);
+
+void st_job_create_archive_report_free(struct st_job_create_archive_report * report);
+struct st_job_create_archive_report * st_job_create_archive_report_new(struct st_job * job, struct st_archive * archive);
 
 #endif
 
