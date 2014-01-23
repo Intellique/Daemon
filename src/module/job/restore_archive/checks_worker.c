@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 16 Jan 2014 16:51:40 +0100                            *
+*  Last modified: Thu, 23 Jan 2014 13:37:56 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -200,7 +200,7 @@ struct st_job_restore_archive_checks_worker * st_job_restore_archive_checks_work
 	pthread_mutex_init(&check->lock, NULL);
 	pthread_cond_init(&check->wait, NULL);
 	check->running = true;
-	check->connect = jp->connect->config->ops->connect(jp->connect->config);
+	check->connect = jp->job->db_config->ops->connect(jp->job->db_config);
 
 	char * th_name;
 	asprintf(&th_name, "check file worker: %s", jp->archive->name);

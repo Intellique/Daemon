@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 16 Jan 2014 15:48:17 +0100                            *
+*  Last modified: Thu, 23 Jan 2014 12:58:04 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -35,6 +35,7 @@
 
 #include "plugin.h"
 
+struct st_database_config;
 struct st_database_connection;
 struct st_job_driver;
 enum st_log_level;
@@ -63,6 +64,7 @@ enum st_job_record_notif {
 
 struct st_job {
 	char * name;
+
 	time_t next_start;
 	long interval;
 	long repetition;
@@ -71,6 +73,7 @@ struct st_job {
 	float done;
 	volatile enum st_job_status db_status;
 	volatile enum st_job_status sched_status;
+	bool stoped_by_user;
 	time_t updated;
 
 	struct st_user * user;
@@ -88,6 +91,8 @@ struct st_job {
 	} * ops;
 	void * data;
 
+	struct st_database_config * db_config;
+	struct st_database_connection * db_connect;
 	void * db_data;
 
 	struct st_job_driver * driver;
@@ -95,7 +100,7 @@ struct st_job {
 
 struct st_job_driver {
 	const char * name;
-	void (*new_job)(struct st_job * job, struct st_database_connection * db);
+	void (*new_job)(struct st_job * job);
 	void * cookie;
 	const struct st_plugin api_level;
 	const char * src_checksum;

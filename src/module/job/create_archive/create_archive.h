@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 22 Jan 2014 16:57:08 +0100                            *
+*  Last modified: Thu, 23 Jan 2014 13:28:35 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_CREATEARCHIVE_H__
@@ -39,8 +39,6 @@
 struct st_hashtable;
 
 struct st_job_create_archive_private {
-	struct st_database_connection * connect;
-
 	struct st_job_selected_path * selected_paths;
 	unsigned int nb_selected_paths;
 
