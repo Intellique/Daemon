@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 22 Jan 2014 16:59:06 +0100                            *
+*  Last modified: Thu, 23 Jan 2014 13:32:12 +0100                            *
 \****************************************************************************/
 
 // asprintf
@@ -122,8 +122,6 @@ static struct st_job_create_archive_data_worker_ops st_job_create_archive_single
 
 
 struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(struct st_job * job, struct st_archive * archive, ssize_t archive_size, struct st_database_connection * connect, struct st_job_create_archive_meta_worker * meta_worker) {
-	struct st_job_create_archive_private * jp = job->data;
-
 	struct st_job_create_archive_single_worker_private * self = malloc(sizeof(struct st_job_create_archive_single_worker_private));
 	self->job = job;
 	self->connect = connect;
@@ -149,7 +147,7 @@ struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(s
 	self->drive = NULL;
 	self->writer = NULL;
 
-	self->checksums = jp->connect->ops->get_checksums_by_pool(jp->connect, self->pool, &self->nb_checksums);
+	self->checksums = self->job->db_connect->ops->get_checksums_by_pool(self->job->db_connect, self->pool, &self->nb_checksums);
 
 	self->checksum_writer = NULL;
 	self->meta_worker = meta_worker;
@@ -237,7 +235,7 @@ static int st_job_create_archive_single_worker_change_volume(struct st_job_creat
 	self->writer->ops->close(self->writer);
 
 	struct st_archive_volume * last_volume = self->archive->volumes + (self->archive->nb_volumes - 1);
-	last_volume->end_time = self->archive->end_time = time(NULL);
+	last_volume->end_time = time(NULL);
 	last_volume->size = self->writer->ops->position(self->writer);
 
 	last_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
@@ -299,7 +297,7 @@ static void st_job_create_archive_single_worker_close(struct st_job_create_archi
 	self->writer->ops->close(self->writer);
 
 	struct st_archive_volume * last_volume = self->archive->volumes + (self->archive->nb_volumes - 1);
-	last_volume->end_time = self->archive->end_time = time(NULL);
+	last_volume->end_time = time(NULL);
 	last_volume->size = self->writer->ops->position(self->writer);
 
 	last_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);

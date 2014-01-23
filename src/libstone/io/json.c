@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 19 Dec 2013 16:44:51 +0100                            *
+*  Last modified: Thu, 23 Jan 2014 11:39:32 +0100                            *
 \****************************************************************************/
 
 // json_array, json_array_append_new, json_decref, json_dumps, json_integer,
@@ -61,17 +61,6 @@ static json_t * st_io_json_archive(struct st_archive * archive) {
 
 	json_object_set_new(jarchive, "uuid", json_string(archive->uuid));
 	json_object_set_new(jarchive, "name", json_string(archive->name));
-
-	char ctime[32];
-	struct tm local_current;
-	localtime_r(&archive->start_time, &local_current);
-	strftime(ctime, 32, "%F %T", &local_current);
-	json_object_set_new(jarchive, "created time", json_string(ctime));
-
-	localtime_r(&archive->end_time, &local_current);
-	strftime(ctime, 32, "%F %T", &local_current);
-	json_object_set_new(jarchive, "finish time", json_string(ctime));
-
 	json_object_set_new(jarchive, "user", json_string(archive->user->login));
 
 	json_t * volumes = json_array();

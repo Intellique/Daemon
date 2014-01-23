@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 07 Nov 2013 13:19:25 +0100                            *
+*  Last modified: Thu, 23 Jan 2014 13:25:40 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_COPYARCHIVE_H__
@@ -37,7 +37,6 @@ struct st_media;
 
 struct st_job_copy_archive_private {
 	struct st_job * job;
-	struct st_database_connection * connect;
 
 	ssize_t total_done;
 	ssize_t archive_size;

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 16 Jan 2014 16:54:33 +0100                            *
+*  Last modified: Thu, 23 Jan 2014 13:40:04 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -114,7 +114,7 @@ bool st_job_restore_archive_data_worker_wait(struct st_job_restore_archive_data_
 
 static void st_job_restore_archive_data_worker_work(void * arg) {
 	struct st_job_restore_archive_data_worker * self = arg;
-	struct st_database_connection * connect = self->jp->connect->config->ops->connect(self->jp->connect->config);
+	struct st_database_connection * connect = self->jp->job->db_config->ops->connect(self->jp->job->db_config);
 
 	self->running = true;
 

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 16 Jan 2014 16:26:27 +0100                            *
+*  Last modified: Thu, 23 Jan 2014 13:08:37 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -55,8 +55,6 @@
 #include <libjob-backup-db.chcksum>
 
 struct st_job_backup_private {
-	struct st_database_connection * connect;
-
 	struct st_drive * drive;
 	struct st_pool * pool;
 	ssize_t backup_size;
@@ -67,7 +65,7 @@ struct st_job_backup_private {
 static bool st_job_backup_db_check(struct st_job * job);
 static void st_job_backup_db_free(struct st_job * job);
 static void st_job_backup_db_init(void) __attribute__((constructor));
-static void st_job_backup_db_new_job(struct st_job * job, struct st_database_connection * db);
+static void st_job_backup_db_new_job(struct st_job * job);
 static void st_job_backup_db_on_error(struct st_job * job);
 static void st_job_backup_db_post_run(struct st_job * job);
 static bool st_job_backup_db_pre_run(struct st_job * job);
@@ -102,9 +100,9 @@ static bool st_job_backup_db_check(struct st_job * job __attribute__((unused))) 
 static void st_job_backup_db_free(struct st_job * job) {
 	struct st_job_backup_private * self = job->data;
 
-	self->connect->ops->close(self->connect);
-	self->connect->ops->free(self->connect);
-	self->connect = NULL;
+	job->db_connect->ops->close(job->db_connect);
+	job->db_connect->ops->free(job->db_connect);
+	job->db_connect = NULL;
 
 	self->drive = NULL;
 	self->pool = NULL;
@@ -119,9 +117,9 @@ static void st_job_backup_db_init() {
 	st_job_register_driver(&st_job_backup_db_driver);
 }
 
-static void st_job_backup_db_new_job(struct st_job * job, struct st_database_connection * db) {
+static void st_job_backup_db_new_job(struct st_job * job) {
 	struct st_job_backup_private * self = malloc(sizeof(struct st_job_backup_private));
-	self->connect = db->config->ops->connect(db->config);
+	job->db_connect = job->db_config->ops->connect(job->db_config);
 
 	self->drive = NULL;
 	self->pool = st_pool_get_by_uuid("d9f976d4-e087-4d0a-ab79-96267f6613f0"); // pool Stone_Db_Backup
@@ -136,11 +134,11 @@ static void st_job_backup_db_new_job(struct st_job * job, struct st_database_con
 static void st_job_backup_db_on_error(struct st_job * job) {
 	struct st_job_backup_private * self = job->data;
 
-	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_post, self->pool) == 0)
+	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_post, self->pool) == 0)
 		return;
 
 	json_t * db = json_object();
-	json_object_set_new(db, "name", json_string(self->connect->driver->name));
+	json_object_set_new(db, "name", json_string(job->db_connect->driver->name));
 
 	json_t * backup = json_object();
 	json_object_set_new(backup, "database", db);
@@ -150,7 +148,7 @@ static void st_job_backup_db_on_error(struct st_job * job) {
 	json_object_set_new(data, "host", st_host_get_info());
 	json_object_set_new(data, "job", json_object());
 
-	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_post, self->pool, data);
+	json_t * returned_data = st_script_run(job->db_connect, job, job->driver->name, st_script_type_post, self->pool, data);
 
 	json_decref(returned_data);
 	json_decref(data);
@@ -159,11 +157,11 @@ static void st_job_backup_db_on_error(struct st_job * job) {
 static void st_job_backup_db_post_run(struct st_job * job) {
 	struct st_job_backup_private * self = job->data;
 
-	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_post, self->pool) == 0)
+	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_post, self->pool) == 0)
 		return;
 
 	json_t * db = json_object();
-	json_object_set_new(db, "name", json_string(self->connect->driver->name));
+	json_object_set_new(db, "name", json_string(job->db_connect->driver->name));
 
 	struct st_media * media = self->backup->volumes->media;
 	json_t * j_media = json_object();
@@ -198,7 +196,7 @@ static void st_job_backup_db_post_run(struct st_job * job) {
 	json_object_set_new(data, "host", st_host_get_info());
 	json_object_set_new(data, "job", json_object());
 
-	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_post, self->pool, data);
+	json_t * returned_data = st_script_run(job->db_connect, job, job->driver->name, st_script_type_post, self->pool, data);
 
 	json_decref(returned_data);
 	json_decref(data);
@@ -207,11 +205,11 @@ static void st_job_backup_db_post_run(struct st_job * job) {
 static bool st_job_backup_db_pre_run(struct st_job * job) {
 	struct st_job_backup_private * self = job->data;
 
-	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_pre, self->pool) == 0)
+	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_pre, self->pool) == 0)
 		return true;
 
 	json_t * db = json_object();
-	json_object_set_new(db, "name", json_string(self->connect->driver->name));
+	json_object_set_new(db, "name", json_string(job->db_connect->driver->name));
 
 	json_t * backup = json_object();
 	json_object_set_new(backup, "database", db);
@@ -221,7 +219,7 @@ static bool st_job_backup_db_pre_run(struct st_job * job) {
 	json_object_set_new(data, "host", st_host_get_info());
 	json_object_set_new(data, "job", json_object());
 
-	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, data);
+	json_t * returned_data = st_script_run(job->db_connect, job, job->driver->name, st_script_type_pre, self->pool, data);
 	bool sr = st_io_json_should_run(returned_data);
 
 	json_decref(returned_data);
@@ -234,15 +232,15 @@ static int st_job_backup_db_run(struct st_job * job) {
 	struct st_job_backup_private * self = job->data;
 	self->drive = NULL;
 
-	st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_important, "Start backup job (job name: %s), num runs %ld", job->name, job->num_runs);
+	st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_important, "Start backup job (job name: %s), num runs %ld", job->name, job->num_runs);
 
 	if (!job->user->is_admin) {
 		job->sched_status = st_job_status_error;
-		st_job_add_record(self->connect, st_log_level_error, job, st_job_record_notif_important, "User (%s) is not allowed to backup database", job->user->fullname);
+		st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "User (%s) is not allowed to backup database", job->user->fullname);
 		return 1;
 	}
 
-	struct st_database_config * db_config = self->connect->config;
+	struct st_database_config * db_config = job->db_connect->config;
 	struct st_stream_reader * db_reader = db_config->ops->backup_db(db_config);
 
 	char * temp_filename;
@@ -308,7 +306,7 @@ static int st_job_backup_db_run(struct st_job * job) {
 
 	job->done = 0.99;
 
-	self->connect->ops->add_backup(self->connect, self->backup);
+	job->db_connect->ops->add_backup(job->db_connect, self->backup);
 
 	job->done = 1;
 
@@ -340,12 +338,12 @@ static bool st_job_backup_db_select_media(struct st_job * job, struct st_job_bac
 	while (!stop) {
 		switch (state) {
 			case check_offline_free_size_left:
-				total_size += self->connect->ops->get_available_size_of_offline_media_from_pool(self->connect, self->pool);
+				total_size += job->db_connect->ops->get_available_size_of_offline_media_from_pool(job->db_connect, self->pool);
 
 				if (self->backup_size > total_size) {
 					// alert user
 					if (!has_alerted_user)
-						st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Please, insert media which is a part of pool named %s", self->pool->name);
+						st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Please, insert media which is a part of pool named %s", self->pool->name);
 					has_alerted_user = true;
 
 					job->sched_status = st_job_status_pause;
@@ -444,16 +442,16 @@ static bool st_job_backup_db_select_media(struct st_job * job, struct st_job_bac
 				if (self->drive->slot->media == NULL) {
 					struct st_media * media = slot->media;
 
-					st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_normal, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ]", media->name, slot - changer->slots, self->drive - changer->drives, changer->vendor, changer->model);
+					st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_normal, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ]", media->name, slot - changer->slots, self->drive - changer->drives, changer->vendor, changer->model);
 
 					int failed = changer->ops->load_slot(changer, slot, self->drive);
 					slot->lock->ops->unlock(slot->lock);
 
 					if (failed) {
-						st_job_add_record(self->connect, st_log_level_error, job, st_job_record_notif_important, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ] finished with code = %d", media->name, slot - changer->slots, self->drive - changer->drives, changer->vendor, changer->model, failed);
+						st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ] finished with code = %d", media->name, slot - changer->slots, self->drive - changer->drives, changer->vendor, changer->model, failed);
 						return false;
 					} else
-						st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_normal, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ] finished with code = OK", media->name, slot - changer->slots, self->drive - changer->drives, changer->vendor, changer->model);
+						st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_normal, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ] finished with code = OK", media->name, slot - changer->slots, self->drive - changer->drives, changer->vendor, changer->model);
 				}
 
 				state = media_is_read_only;
@@ -466,14 +464,14 @@ static bool st_job_backup_db_select_media(struct st_job * job, struct st_job_bac
 				if (self->drive->slot->media != NULL && self->drive->slot != slot) {
 					struct st_media * media = self->drive->slot->media;
 
-					st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_normal, "Unloading media (%s) from drive #%td of changer [ %s | %s ]", media->name, self->drive - changer->drives, changer->vendor, changer->model);
+					st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_normal, "Unloading media (%s) from drive #%td of changer [ %s | %s ]", media->name, self->drive - changer->drives, changer->vendor, changer->model);
 
 					int failed = changer->ops->unload(changer, self->drive);
 					if (failed) {
-						st_job_add_record(self->connect, st_log_level_error, job, st_job_record_notif_important, "Unloading media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", media->name, self->drive - changer->drives, changer->vendor, changer->model, failed);
+						st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Unloading media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", media->name, self->drive - changer->drives, changer->vendor, changer->model, failed);
 						return false;
 					} else
-						st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_normal, "Unloading media (%s) from drive #%td of changer [ %s | %s ] finished with code = OK", media->name, self->drive - changer->drives, changer->vendor, changer->model);
+						st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_normal, "Unloading media (%s) from drive #%td of changer [ %s | %s ] finished with code = OK", media->name, self->drive - changer->drives, changer->vendor, changer->model);
 				}
 
 				state = has_media;
@@ -483,14 +481,14 @@ static bool st_job_backup_db_select_media(struct st_job * job, struct st_job_bac
 				if (self->drive->slot->media->status == st_media_status_new) {
 					struct st_media * media = self->drive->slot->media;
 
-					st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_normal, "Formatting new media (%s) from drive #%td of changer [ %s | %s ]", media->name, changer->drives - self->drive, changer->vendor, changer->model);
+					st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_normal, "Formatting new media (%s) from drive #%td of changer [ %s | %s ]", media->name, changer->drives - self->drive, changer->vendor, changer->model);
 
-					int failed = st_media_write_header(self->drive, self->pool, self->connect);
+					int failed = st_media_write_header(self->drive, self->pool, job->db_connect);
 					if (failed) {
-						st_job_add_record(self->connect, st_log_level_error, job, st_job_record_notif_important, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", media->name, changer->drives - self->drive, changer->vendor, changer->model, failed);
+						st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", media->name, changer->drives - self->drive, changer->vendor, changer->model, failed);
 						return false;
 					} else
-						st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_normal, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = OK", media->name, changer->drives - self->drive, changer->vendor, changer->model);
+						st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_normal, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = OK", media->name, changer->drives - self->drive, changer->vendor, changer->model);
 				}
 				return true;
 
@@ -513,9 +511,9 @@ static bool st_job_backup_db_select_media(struct st_job * job, struct st_job_bac
 
 			case is_pool_growable2:
 				if (self->pool->growable && !has_alerted_user) {
-					st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Please, insert new media which will be a part of pool %s", self->pool->name);
+					st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Please, insert new media which will be a part of pool %s", self->pool->name);
 				} else if (!has_alerted_user) {
-					st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Please, you must to extent the pool (%s)", self->pool->name);
+					st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Please, you must to extent the pool (%s)", self->pool->name);
 				}
 
 				has_alerted_user = true;
@@ -533,7 +531,7 @@ static bool st_job_backup_db_select_media(struct st_job * job, struct st_job_bac
 
 			case media_is_read_only:
 				if (self->drive->slot->media->type == st_media_type_readonly) {
-					st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Media '%s' is currently read only ", self->drive->slot->media->name);
+					st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Media '%s' is currently read only ", self->drive->slot->media->name);
 					state = check_online_free_size_left;
 				} else
 					state = is_media_formatted;

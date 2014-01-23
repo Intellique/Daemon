@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 21 Jan 2014 17:53:54 +0100                            *
+*  Last modified: Thu, 23 Jan 2014 13:26:53 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -71,7 +71,7 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 		char bufSize[16];
 		st_util_file_convert_size_to_string(self->archive_size, bufSize, 16);
 
-		st_job_add_record(self->connect, st_log_level_error, self->job, st_job_record_notif_important, "Error, indirect copy require at least %s", bufSize);
+		st_job_add_record(self->job->db_connect, st_log_level_error, self->job, st_job_record_notif_important, "Error, indirect copy require at least %s", bufSize);
 		self->job->sched_status = st_job_status_error;
 		return 2;
 	}
@@ -235,7 +235,7 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 	}
 	self->writer->ops->close(self->writer);
 
-	self->current_volume->end_time = self->copy->end_time = time(NULL);
+	self->current_volume->end_time = time(NULL);
 	self->current_volume->size = self->writer->ops->position(self->writer);
 
 	self->current_volume->digests = NULL;
@@ -247,12 +247,12 @@ int st_job_copy_archive_indirect_copy(struct st_job_copy_archive_private * self)
 	self->writer = NULL;
 
 	self->job->done = 0.98;
-	st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "Synchronize data with database");
+	st_job_add_record(self->job->db_connect, st_log_level_info, self->job, st_job_record_notif_normal, "Synchronize data with database");
 
 	// sync with database
-	self->connect->ops->sync_archive(self->connect, self->copy);
+	self->job->db_connect->ops->sync_archive(self->job->db_connect, self->copy);
 
-	st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "Write metadatas on media");
+	st_job_add_record(self->job->db_connect, st_log_level_info, self->job, st_job_record_notif_normal, "Write metadatas on media");
 	self->job->done = 0.99;
 
 	// write metadatas

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 21 Jan 2014 19:03:37 +0100                            *
+*  Last modified: Thu, 23 Jan 2014 17:53:59 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -94,7 +94,8 @@ struct st_db_postgresql_drive_data {
 };
 
 struct st_db_postgresql_job_data {
-	long id;
+	long job_id;
+	long jobrun_id;
 };
 
 struct st_db_postgresql_media_data {
@@ -158,7 +159,9 @@ static int st_db_postgresql_sync_slot(struct st_database_connection * connect, s
 
 static int st_db_postgresql_add_check_archive_job(struct st_database_connection * connect, struct st_job * job, struct st_archive * archive, time_t starttime, bool quick_mode);
 static int st_db_postgresql_add_job_record(struct st_database_connection * connect, struct st_job * job, const char * message, enum st_job_record_notif notif);
+static int st_db_postgresql_finish_job_run(struct st_database_connection * connect, struct st_job * job, time_t endtime, int exitcode);
 static struct st_job_selected_path * st_db_postgresql_get_selected_paths(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_paths);
+static int st_db_postgresql_start_job_run(struct st_database_connection * connect, struct st_job * job, time_t starttime);
 static int st_db_postgresql_sync_job(struct st_database_connection * connect, struct st_job *** jobs, unsigned int * nb_jobs);
 
 static int st_db_postgresql_get_user(struct st_database_connection * connect, struct st_user * user, const char * login);
@@ -230,7 +233,9 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 
 	.add_check_archive_job = st_db_postgresql_add_check_archive_job,
 	.add_job_record        = st_db_postgresql_add_job_record,
+	.finish_job_run        = st_db_postgresql_finish_job_run,
 	.get_selected_paths    = st_db_postgresql_get_selected_paths,
+	.start_job_run         = st_db_postgresql_start_job_run,
 	.sync_job              = st_db_postgresql_sync_job,
 
 	.get_user  = st_db_postgresql_get_user,
@@ -1425,7 +1430,7 @@ static struct st_media * st_db_postgresql_get_media(struct st_database_connectio
 
 		struct st_db_postgresql_job_data * job_data = job->db_data;
 		char * jobid;
-		asprintf(&jobid, "%ld", job_data->id);
+		asprintf(&jobid, "%ld", job_data->job_id);
 
 		const char * param[] = { jobid };
 		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -1585,7 +1590,7 @@ static struct st_pool * st_db_postgresql_get_pool(struct st_database_connection 
 
 		struct st_db_postgresql_job_data * job_data = job->db_data;
 		char * jobid;
-		asprintf(&jobid, "%ld", job_data->id);
+		asprintf(&jobid, "%ld", job_data->job_id);
 
 		const char * param[] = { jobid };
 		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -2124,7 +2129,7 @@ static int st_db_postgresql_add_check_archive_job(struct st_database_connection 
 		return 1;
 
 	struct st_db_postgresql_job_data * job_data = job->db_data;
-	if (job_data == NULL || job_data->id < 1)
+	if (job_data == NULL || job_data->job_id < 1)
 		return 2;
 
 	struct st_db_postgresql_archive_data * archive_data = archive->db_data;
@@ -2153,7 +2158,7 @@ static int st_db_postgresql_add_check_archive_job(struct st_database_connection 
 	st_db_postgresql_prepare(self, query, "SELECT host, login FROM job WHERE id = $1");
 
 	char * jobid;
-	asprintf(&jobid, "%ld", job_data->id);
+	asprintf(&jobid, "%ld", job_data->job_id);
 
 	const char * param1[] = { jobid };
 	result = PQexecPrepared(self->connect, query, 1, param1, 0, 0, 0);
@@ -2211,16 +2216,16 @@ static int st_db_postgresql_add_job_record(struct st_database_connection * conne
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	const char * query = "insert_job_record";
-	st_db_postgresql_prepare(self, query, "INSERT INTO jobrecord(job, status, numrun, message, notif) VALUES ($1, $2, $3, $4, $5)");
+	st_db_postgresql_prepare(self, query, "INSERT INTO jobrecord(jobrun, status, message, notif) VALUES ($1, $2, $3, $4)");
 
 	struct st_db_postgresql_job_data * job_data = job->db_data;
 
-	char * jobid = 0, * numrun = 0;
-	asprintf(&jobid, "%ld", job_data->id);
+	char * jobrunid, * numrun;
+	asprintf(&jobrunid, "%ld", job_data->jobrun_id);
 	asprintf(&numrun, "%ld", job->num_runs);
 
-	const char * param[] = { jobid, st_job_status_to_string(job->sched_status), numrun, message, st_db_postgresql_job_record_notif_to_string(notif) };
-	PGresult * result = PQexecPrepared(self->connect, query, 5, param, 0, 0, 0);
+	const char * param[] = { jobrunid, st_job_status_to_string(job->sched_status), message, st_db_postgresql_job_record_notif_to_string(notif) };
+	PGresult * result = PQexecPrepared(self->connect, query, 4, param, 0, 0, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)
@@ -2228,7 +2233,37 @@ static int st_db_postgresql_add_job_record(struct st_database_connection * conne
 
 	PQclear(result);
 	free(numrun);
-	free(jobid);
+	free(jobrunid);
+
+	return status != PGRES_COMMAND_OK;
+}
+
+static int st_db_postgresql_finish_job_run(struct st_database_connection * connect, struct st_job * job, time_t endtime, int exitcode) {
+	if (connect == NULL || job == NULL)
+		return 1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	const char * query = "update_job_run";
+	st_db_postgresql_prepare(self, query, "UPDATE jobrun SET endtime = $1, status = $2, exitcode = $3, stoppedbyuser = $4 WHERE id = $5");
+
+	struct st_db_postgresql_job_data * job_data = job->db_data;
+
+	char * jobrunid, str_endtime[24], * str_exitcode, * stoppedbyuser;
+	asprintf(&jobrunid, "%ld", job_data->jobrun_id);
+	st_util_time_convert(&endtime, "%F %T", str_endtime, 24);
+	asprintf(&str_exitcode, "%d", exitcode);
+	stoppedbyuser = job->stoped_by_user ? "TRUE" : "FALSE";
+
+	const char * param[] = { str_endtime, st_job_status_to_string(job->sched_status), str_exitcode, stoppedbyuser, jobrunid };
+	PGresult * result = PQexecPrepared(self->connect, query, 5, param, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+
+	PQclear(result);
+	free(jobrunid);
+	free(str_exitcode);
 
 	return status != PGRES_COMMAND_OK;
 }
@@ -2243,7 +2278,7 @@ static struct st_job_selected_path * st_db_postgresql_get_selected_paths(struct 
 
 	struct st_db_postgresql_job_data * job_data = job->db_data;
 	char * jobid;
-	asprintf(&jobid, "%ld", job_data->id);
+	asprintf(&jobid, "%ld", job_data->job_id);
 
 	const char * param[] = { jobid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -2272,6 +2307,37 @@ static struct st_job_selected_path * st_db_postgresql_get_selected_paths(struct 
 	return paths;
 }
 
+static int st_db_postgresql_start_job_run(struct st_database_connection * connect, struct st_job * job, time_t starttime) {
+	if (connect == NULL || job == NULL)
+		return 1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	const char * query = "insert_job_run";
+	st_db_postgresql_prepare(self, query, "INSERT INTO jobrun(job, numrun, starttime) VALUES ($1, $2, $3) RETURNING id");
+
+	struct st_db_postgresql_job_data * job_data = job->db_data;
+
+	char * jobid, * numrun, sstarttime[24];
+	asprintf(&jobid, "%ld", job_data->job_id);
+	asprintf(&numrun, "%ld", job->num_runs);
+	st_util_time_convert(&starttime, "%F %T", sstarttime, 24);
+
+	const char * param[] = { jobid, numrun, sstarttime };
+	PGresult * result = PQexecPrepared(self->connect, query, 3, param, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		st_db_postgresql_get_long(result, 0, 0, &job_data->jobrun_id);
+
+	PQclear(result);
+	free(jobid);
+	free(numrun);
+
+	return status != PGRES_COMMAND_OK;
+}
+
 static int st_db_postgresql_sync_job(struct st_database_connection * connect, struct st_job *** jobs, unsigned int * nb_jobs) {
 	if (connect == NULL || jobs == NULL || nb_jobs == NULL)
 		return 1;
@@ -2287,10 +2353,10 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 		struct st_job * job = (*jobs)[i];
 		struct st_db_postgresql_job_data * job_data = job->db_data;
 		char * job_id;
-		asprintf(&job_id, "%ld", job_data->id);
+		asprintf(&job_id, "%ld", job_data->job_id);
 
-		if (max_id < job_data->id)
-			max_id = job_data->id;
+		if (max_id < job_data->job_id)
+			max_id = job_data->job_id;
 
 		const char * param1[] = { job_id };
 		PGresult * result = PQexecPrepared(self->connect, query, 1, param1, NULL, NULL, 0);
@@ -2341,7 +2407,7 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 	const char * query1 = "select_job_option";
 	st_db_postgresql_prepare(self, query1, "SELECT * FROM each((SELECT options FROM job WHERE id = $1 LIMIT 1))");
 	const char * query2 = "select_num_runs";
-	st_db_postgresql_prepare(self, query2, "SELECT MAX(numrun) AS max FROM jobrecord WHERE job = $1");
+	st_db_postgresql_prepare(self, query2, "SELECT MAX(numrun) AS max FROM jobrun WHERE job = $1");
 
 	char * hostid = st_db_postgresql_get_host(connect);
 	char * job_id;
@@ -2376,8 +2442,10 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 			struct st_db_postgresql_job_data * job_data = malloc(sizeof(struct st_db_postgresql_job_data));
 			char * job_id;
 
+			job->db_config = connect->config;
 			job->db_data = job_data;
-			st_db_postgresql_get_long(result, i, 0, &job_data->id);
+
+			st_db_postgresql_get_long(result, i, 0, &job_data->job_id);
 			st_db_postgresql_get_string_dup(result, i, 0, &job_id);
 			st_db_postgresql_get_string_dup(result, i, 1, &job->name);
 			st_db_postgresql_get_time(result, i, 2, &job->next_start);
@@ -2387,6 +2455,7 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 
 			st_db_postgresql_get_float(result, i, 5, &job->done);
 			job->sched_status = job->db_status = st_job_string_to_status(PQgetvalue(result, i, 6));
+			job->stoped_by_user = false;
 			job->updated = time(NULL);
 
 			// login
@@ -2553,7 +2622,7 @@ static bool st_db_postgresql_add_report(struct st_database_connection * connect,
 	st_db_postgresql_prepare(self, query, "INSERT INTO report(archive, job, data) VALUES ($1, $2, $3)");
 
 	char * jobid, * archiveid;
-	asprintf(&jobid, "%ld", job_data->id);
+	asprintf(&jobid, "%ld", job_data->job_id);
 	asprintf(&archiveid, "%ld", archive_data->id);
 
 	const char * param[] = { archiveid, jobid, report };
@@ -2722,14 +2791,14 @@ static struct st_archive * st_db_postgresql_get_archive_by_job(struct st_databas
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	struct st_db_postgresql_job_data * job_data = job->db_data;
-	if (job_data == NULL || job_data->id < 0)
+	if (job_data == NULL || job_data->job_id < 0)
 		return NULL;
 
 	const char * query = "select_archive_by_job";
-	st_db_postgresql_prepare(self, query, "SELECT a.id, name, starttime, endtime, checksumok, checktime, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
+	st_db_postgresql_prepare(self, query, "SELECT a.id, name, checksumok, checktime, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
 
 	char * jobid;
-	asprintf(&jobid, "%ld", job_data->id);
+	asprintf(&jobid, "%ld", job_data->job_id);
 
 	const char * param[] = { jobid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -2743,17 +2812,15 @@ static struct st_archive * st_db_postgresql_get_archive_by_job(struct st_databas
 		archive = malloc(sizeof(struct st_archive));
 
 		st_db_postgresql_get_string_dup(result, 0, 1, &archive->name);
-		st_db_postgresql_get_time(result, 0, 2, &archive->start_time);
-		st_db_postgresql_get_time(result, 0, 3, &archive->end_time);
-		st_db_postgresql_get_bool(result, 0, 4, &archive->check_ok);
+		st_db_postgresql_get_bool(result, 0, 2, &archive->check_ok);
 		archive->check_time = 0;
-		if (!PQgetisnull(result, 0, 5))
-			st_db_postgresql_get_time(result, 0, 5, &archive->check_time);
+		if (!PQgetisnull(result, 0, 3))
+			st_db_postgresql_get_time(result, 0, 3, &archive->check_time);
 
 		archive->volumes = NULL;
 		archive->nb_volumes = 0;
 
-		archive->user = st_user_get(PQgetvalue(result, 0, 6));
+		archive->user = st_user_get(PQgetvalue(result, 0, 4));
 
 		archive->copy_of = NULL;
 
@@ -2773,14 +2840,14 @@ static struct st_archive_file * st_db_postgresql_get_archive_file_for_restore_di
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	struct st_db_postgresql_job_data * job_data = job->db_data;
-	if (self == NULL || job_data == NULL || job_data->id < 0)
+	if (self == NULL || job_data == NULL || job_data->job_id < 0)
 		return NULL;
 
 	const char * query = "select_archive_file_for_restore_directory";
 	st_db_postgresql_prepare(self, query, "SELECT af.id, CASE WHEN rt.path IS NOT NULL THEN rt.path || SUBSTRING(af.name FROM CHAR_LENGTH(SUBSTRING(sf.path FROM '(.+/)[^/]+'))) ELSE af.name END AS name, af.type, af.mimetype, af.ownerid, af.owner, af.groupid, af.groups, af.perm, af.ctime, af.mtime, afv.checksumok, afv.checktime, af.size FROM job j LEFT JOIN archivevolume av ON j.archive = av.archive LEFT JOIN archivefiletoarchivevolume afv ON av.id = afv.archivevolume LEFT JOIN archivefile af ON af.id = afv.archivefile LEFT JOIN selectedfile sf ON af.parent = sf.id LEFT JOIN restoreto rt ON rt.job = j.id WHERE j.id = $1 AND af.type = 'directory'");
 
 	char * jobid;
-	asprintf(&jobid, "%ld", job_data->id);
+	asprintf(&jobid, "%ld", job_data->job_id);
 
 	const char * param[] = { jobid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -2838,7 +2905,8 @@ static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct s
 	struct st_db_postgresql_connection_private * self = connect->data;
 	struct st_db_postgresql_job_data * job_data = job->db_data;
 	struct st_db_postgresql_archive_volume_data * archive_volume_data = volume->db_data;
-	if (self == NULL || job_data == NULL || job_data->id < 0 || archive_volume_data == NULL || archive_volume_data->id < 0)
+
+	if (self == NULL || job_data == NULL || job_data->job_id < 0 || archive_volume_data == NULL || archive_volume_data->id < 0)
 		return 2;
 
 	const char * query;
@@ -2854,7 +2922,7 @@ static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct s
 	st_db_postgresql_prepare(self, query2, "SELECT c.name, cr.result FROM archivefiletochecksumresult afcr LEFT JOIN checksumresult cr ON afcr.checksumresult = cr.id LEFT JOIN checksum c ON cr.checksum = c.id WHERE afcr.archivefile = $1");
 
 	char * jobid, * archivevolumeid;
-	asprintf(&jobid, "%ld", job_data->id);
+	asprintf(&jobid, "%ld", job_data->job_id);
 	asprintf(&archivevolumeid, "%ld", archive_volume_data->id);
 
 	const char * param[] = { jobid, archivevolumeid };
@@ -2942,14 +3010,14 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	struct st_db_postgresql_job_data * job_data = job->db_data;
-	if (job_data == NULL || job_data->id < 0)
+	if (job_data == NULL || job_data->job_id < 0)
 		return NULL;
 
 	const char * query = "select_archive_volume_by_job";
-	st_db_postgresql_prepare(self, query, "SELECT a.id, a.uuid, name, starttime, endtime, checksumok, checktime, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
+	st_db_postgresql_prepare(self, query, "SELECT a.id, a.uuid, name, checksumok, checktime, u.login FROM archive a LEFT JOIN users u ON a.owner = u.id WHERE a.id IN (SELECT archive FROM job WHERE id = $1 LIMIT 1)");
 
 	char * jobid;
-	asprintf(&jobid, "%ld", job_data->id);
+	asprintf(&jobid, "%ld", job_data->job_id);
 
 	const char * param[] = { jobid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -2964,18 +3032,16 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 
 		st_db_postgresql_get_string(result, 0, 1, archive->uuid, 36);
 		st_db_postgresql_get_string_dup(result, 0, 2, &archive->name);
-		st_db_postgresql_get_time(result, 0, 3, &archive->start_time);
-		st_db_postgresql_get_time(result, 0, 4, &archive->end_time);
-		st_db_postgresql_get_bool(result, 0, 5, &archive->check_ok);
+		st_db_postgresql_get_bool(result, 0, 3, &archive->check_ok);
 		archive->check_time = 0;
-		if (!PQgetisnull(result, 0, 6))
-			st_db_postgresql_get_time(result, 0, 6, &archive->check_time);
+		if (!PQgetisnull(result, 0, 4))
+			st_db_postgresql_get_time(result, 0, 4, &archive->check_time);
 		archive->metadatas = NULL;
 
 		archive->volumes = NULL;
 		archive->nb_volumes = 0;
 
-		archive->user = st_user_get(PQgetvalue(result, 0, 7));
+		archive->user = st_user_get(PQgetvalue(result, 0, 5));
 
 		archive->copy_of = NULL;
 
@@ -3144,14 +3210,14 @@ static unsigned int st_db_postgresql_get_nb_volume_of_file(struct st_database_co
 	struct st_db_postgresql_connection_private * self = connect->data;
 	struct st_db_postgresql_job_data * job_data = job->db_data;
 	struct st_db_postgresql_archive_file_data * file_data = file->db_data;
-	if (job_data == NULL || job_data->id < 0 || file_data == NULL || file_data->id < 0)
+	if (job_data == NULL || job_data->job_id < 0 || file_data == NULL || file_data->id < 0)
 		return 0;
 
 	const char * query = "select_nb_volume_of_file";
 	st_db_postgresql_prepare(self, query, "SELECT COUNT(*) FROM archivefiletoarchivevolume afv LEFT JOIN archivevolume av ON afv.archivevolume = av.id LEFT JOIN job j ON j.archive = av.archive WHERE j.id = $1 AND afv.archivefile = $2");
 
 	char * jobid, * fileid;
-	asprintf(&jobid, "%ld", job_data->id);
+	asprintf(&jobid, "%ld", job_data->job_id);
 	asprintf(&fileid, "%ld", file_data->id);
 
 	const char * param[] = { jobid, fileid };
@@ -3178,14 +3244,14 @@ static char * st_db_postgresql_get_restore_path_from_file(struct st_database_con
 	struct st_db_postgresql_connection_private * self = connect->data;
 	struct st_db_postgresql_job_data * job_data = job->db_data;
 	struct st_db_postgresql_archive_file_data * file_data = file->db_data;
-	if (job_data == NULL || job_data->id < 0 || file_data == NULL || file_data->id < 0)
+	if (job_data == NULL || job_data->job_id < 0 || file_data == NULL || file_data->id < 0)
 		return NULL;
 
 	const char * query = "select_get_restore_path_from_job_and_file";
 	st_db_postgresql_prepare(self, query, "SELECT rt.path || SUBSTRING(af.name FROM CHAR_LENGTH(SUBSTRING(sf.path FROM '(.+/)[^/]+'))) AS name FROM archivefile af LEFT JOIN selectedfile sf ON af.parent = sf.id, restoreto rt WHERE rt.job = $1 AND af.id = $2 LIMIT 1");
 
 	char * jobid, * fileid;
-	asprintf(&jobid, "%ld", job_data->id);
+	asprintf(&jobid, "%ld", job_data->job_id);
 	asprintf(&fileid, "%ld", file_data->id);
 
 	const char * param[] = { jobid, fileid };
@@ -3211,14 +3277,14 @@ static char * st_db_postgresql_get_restore_path_of_job(struct st_database_connec
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	struct st_db_postgresql_job_data * job_data = job->db_data;
-	if (job_data == NULL || job_data->id < 0)
+	if (job_data == NULL || job_data->job_id < 0)
 		return NULL;
 
 	const char * query = "select_get_restore_path_of_job";
 	st_db_postgresql_prepare(self, query, "SELECT path FROM restoreto WHERE job = $1 LIMIT 1");
 
 	char * jobid;
-	asprintf(&jobid, "%ld", job_data->id);
+	asprintf(&jobid, "%ld", job_data->job_id);
 
 	const char * param[] = { jobid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -3242,7 +3308,7 @@ static ssize_t st_db_postgresql_get_restore_size_by_job(struct st_database_conne
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	struct st_db_postgresql_job_data * job_data = job->db_data;
-	if (job_data == NULL || job_data->id < 0)
+	if (job_data == NULL || job_data->job_id < 0)
 		return -1;
 
 	const char * query;
@@ -3255,7 +3321,7 @@ static ssize_t st_db_postgresql_get_restore_size_by_job(struct st_database_conne
 	}
 
 	char * jobid;
-	asprintf(&jobid, "%ld", job_data->id);
+	asprintf(&jobid, "%ld", job_data->job_id);
 
 	const char * param[] = { jobid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -3279,7 +3345,7 @@ static bool st_db_postgresql_has_restore_to_by_job(struct st_database_connection
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	struct st_db_postgresql_job_data * job_data = job->db_data;
-	if (job_data == NULL || job_data->id < 0)
+	if (job_data == NULL || job_data->job_id < 0)
 		return false;
 
 	const char * query = "select_has_restore_to_by_job";
@@ -3288,7 +3354,7 @@ static bool st_db_postgresql_has_restore_to_by_job(struct st_database_connection
 	bool has_restore_to = false;
 
 	char * jobid;
-	asprintf(&jobid, "%ld", job_data->id);
+	asprintf(&jobid, "%ld", job_data->job_id);
 
 	const char * param0[] = { jobid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param0, NULL, NULL, 0);
@@ -3311,7 +3377,7 @@ static bool st_db_postgresql_has_selected_files_by_job(struct st_database_connec
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	struct st_db_postgresql_job_data * job_data = job->db_data;
-	if (job_data == NULL || job_data->id < 0)
+	if (job_data == NULL || job_data->job_id < 0)
 		return false;
 
 	const char * query = "select_has_selected_files_from_restore_archive";
@@ -3320,7 +3386,7 @@ static bool st_db_postgresql_has_selected_files_by_job(struct st_database_connec
 	bool has_selected_files = false;
 
 	char * jobid;
-	asprintf(&jobid, "%ld", job_data->id);
+	asprintf(&jobid, "%ld", job_data->job_id);
 
 	const char * param0[] = { jobid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param0, NULL, NULL, 0);
@@ -3461,22 +3527,17 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 
 	if (archive_data->id < 0) {
 		const char * query = "insert_archive";
-		st_db_postgresql_prepare(self, query, "INSERT INTO archive(uuid, name, starttime, endtime, creator, owner, copyof) VALUES ($1, $2, $3, $4, $5, $5, $6) RETURNING id");
+		st_db_postgresql_prepare(self, query, "INSERT INTO archive(uuid, name, creator, owner, copyof) VALUES ($1, $2, $3, $3, $4) RETURNING id");
 
-		char buffer_ctime[32];
-		char buffer_endtime[32];
 		char * userid = NULL;
 
 		struct st_db_postgresql_user_data * user_data = archive->user->db_data;
 		asprintf(&userid, "%ld", user_data->id);
 
-		st_util_time_convert(&archive->start_time, "%F %T", buffer_ctime, 32);
-		st_util_time_convert(&archive->end_time, "%F %T", buffer_endtime, 32);
-
 		const char * param[] = {
-			archive->uuid, archive->name, buffer_ctime, buffer_endtime, userid, copyid
+			archive->uuid, archive->name, userid, copyid
 		};
-		PGresult * result = PQexecPrepared(self->connect, query, 6, param, NULL, NULL, 0);
+		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -3653,26 +3714,24 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 
 	if (archive_volume_data->id < 0) {
 		const char * query = "insert_archive_volume";
-		st_db_postgresql_prepare(self, query, "INSERT INTO archivevolume(sequence, size, starttime, endtime, archive, media, mediaposition, job, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id");
+		st_db_postgresql_prepare(self, query, "INSERT INTO archivevolume(sequence, size, starttime, endtime, archive, media, mediaposition, jobrun) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id");
 
 		char buffer_ctime[32], buffer_endtime[32];
 		st_util_time_convert(&volume->start_time, "%F %T", buffer_ctime, 32);
 		st_util_time_convert(&volume->end_time, "%F %T", buffer_endtime, 32);
 
-		char * sequence, * size, * archiveid, * mediaid, * jobid, * mediaposition;
+		char * sequence, * size, * archiveid, * mediaid, * jobrunid, * mediaposition;
 		asprintf(&sequence, "%ld", volume->sequence);
 		asprintf(&size, "%zd", volume->size);
 		asprintf(&archiveid, "%ld", archive_data->id);
 		asprintf(&mediaid, "%ld", media_data->id);
-		asprintf(&jobid, "%ld", job_data->id);
+		asprintf(&jobrunid, "%ld", job_data->jobrun_id);
 		asprintf(&mediaposition, "%ld", volume->media_position);
 
-		char * host = st_db_postgresql_get_host(connect);
-
 		const char * param[] = {
-			sequence, size, buffer_ctime, buffer_endtime, archiveid, mediaid, mediaposition, jobid, host
+			sequence, size, buffer_ctime, buffer_endtime, archiveid, mediaid, mediaposition, jobrunid
 		};
-		PGresult * result = PQexecPrepared(self->connect, query, 9, param, NULL, NULL, 0);
+		PGresult * result = PQexecPrepared(self->connect, query, 8, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -3687,8 +3746,7 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 		free(archiveid);
 		free(mediaid);
 		free(mediaposition);
-		free(jobid);
-		free(host);
+		free(jobrunid);
 
 		PQclear(result);
 

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 16 Jan 2014 16:29:48 +0100                            *
+*  Last modified: Thu, 23 Jan 2014 13:24:16 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -72,7 +72,7 @@ static bool st_job_check_archive_quick_mode_wait(struct st_job_check_archive_qui
 static void st_job_check_archive_quick_mode_work(void * arg);
 
 int st_job_check_archive_quick_mode(struct st_job_check_archive_private * self) {
-	struct st_archive * archive = self->archive = self->connect->ops->get_archive_volumes_by_job(self->connect, self->job);
+	struct st_archive * archive = self->archive = self->job->db_connect->ops->get_archive_volumes_by_job(self->job->db_connect, self->job);
 
 	unsigned int i;
 	ssize_t total_size = 0;
@@ -122,7 +122,7 @@ int st_job_check_archive_quick_mode(struct st_job_check_archive_private * self) 
 				// slot not found
 				// TODO: alert user
 				if (!has_alerted_user)
-					st_job_add_record(self->connect, st_log_level_warning, self->job, st_job_record_notif_important, "Warning, media named (%s) is not found, please insert it", vol->media->name);
+					st_job_add_record(self->job->db_connect, st_log_level_warning, self->job, st_job_record_notif_important, "Warning, media named (%s) is not found, please insert it", vol->media->name);
 				has_alerted_user = true;
 
 				if (nb_running_worker == 0)
@@ -209,7 +209,7 @@ int st_job_check_archive_quick_mode(struct st_job_check_archive_private * self) 
 
 	self->job->done = 0.99;
 
-	self->connect->ops->mark_archive_as_checked(self->connect, archive, nb_errors == 0 && nb_warnings == 0);
+	self->job->db_connect->ops->mark_archive_as_checked(self->job->db_connect, archive, nb_errors == 0 && nb_warnings == 0);
 
 	self->job->done = 1;
 
@@ -275,7 +275,7 @@ static bool st_job_check_archive_quick_mode_wait(struct st_job_check_archive_qui
 
 static void st_job_check_archive_quick_mode_work(void * arg) {
 	struct st_job_check_archive_quick_mode_private * qm = arg;
-	struct st_database_connection * connect = qm->jp->connect->config->ops->connect(qm->jp->connect->config);
+	struct st_database_connection * connect = qm->jp->job->db_connect->config->ops->connect(qm->jp->job->db_connect->config);
 
 	qm->running = true;
 

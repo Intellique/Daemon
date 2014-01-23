@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 21 Jan 2014 17:53:37 +0100                            *
+*  Last modified: Thu, 23 Jan 2014 13:26:44 +0100                            *
 \****************************************************************************/
 
 // calloc
@@ -140,7 +140,7 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 
 	self->writer->ops->close(self->writer);
 
-	self->current_volume->end_time = self->copy->end_time = time(NULL);
+	self->current_volume->end_time = time(NULL);
 	self->current_volume->size = self->writer->ops->position(self->writer);
 
 	self->current_volume->digests = NULL;
@@ -152,12 +152,12 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 	self->writer = NULL;
 
 	self->job->done = 0.98;
-	st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "Synchronize data with database");
+	st_job_add_record(self->job->db_connect, st_log_level_info, self->job, st_job_record_notif_normal, "Synchronize data with database");
 
 	// sync with database
-	self->connect->ops->sync_archive(self->connect, self->copy);
+	self->job->db_connect->ops->sync_archive(self->job->db_connect, self->copy);
 
-	st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "Write metadatas on media");
+	st_job_add_record(self->job->db_connect, st_log_level_info, self->job, st_job_record_notif_normal, "Write metadatas on media");
 	self->job->done = 0.99;
 
 	// write metadatas
