@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 21 Jan 2014 17:54:50 +0100                            *
+*  Last modified: Wed, 22 Jan 2014 16:59:06 +0100                            *
 \****************************************************************************/
 
 // asprintf
@@ -121,19 +121,14 @@ static struct st_job_create_archive_data_worker_ops st_job_create_archive_single
 };
 
 
-struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(struct st_job * job, ssize_t archive_size, struct st_database_connection * connect, struct st_job_create_archive_meta_worker * meta_worker) {
+struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(struct st_job * job, struct st_archive * archive, ssize_t archive_size, struct st_database_connection * connect, struct st_job_create_archive_meta_worker * meta_worker) {
 	struct st_job_create_archive_private * jp = job->data;
 
 	struct st_job_create_archive_single_worker_private * self = malloc(sizeof(struct st_job_create_archive_single_worker_private));
 	self->job = job;
 	self->connect = connect;
 
-	self->archive = jp->connect->ops->get_archive_by_job(jp->connect, job);
-	if (self->archive == NULL) {
-		self->archive = st_archive_new(job->name, job->user);
-		self->archive->metadatas = strdup(job->meta);
-	}
-
+	self->archive = archive;
 	self->pool = st_pool_get_by_job(job, connect);
 
 	if (self->pool == NULL && self->archive != NULL) {
@@ -350,8 +345,7 @@ static void st_job_create_archive_single_worker_free(struct st_job_create_archiv
 		self->drive->lock->ops->unlock(self->drive->lock);
 
 	self->writer->ops->free(self->writer);
-
-	st_archive_free(self->archive);
+	self->archive = NULL;
 
 	unsigned int i;
 	for (i = 0; i < self->nb_checksums; i++)
