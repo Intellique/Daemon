@@ -316,12 +316,13 @@ Job:
         "nb volumes": integer, // nombre de volumes
         "nb files": integer, // nombre de fichiers distincts dans l'archive
       }, // information sur l'archive
-      "host": {
-        "name": string, // nom de l'hôte
-        "uuid": string, // identifiant unique de l'hôte
-      }, // information concernant l'hôte sur lequel s'execute la tâche
       "job": {
         "name": string, // nom de la tâche
+        "num run": integer, // entier représentant le nombre de fois que la tâche s'est exécutée
+        "host": {
+          "name": string, // nom de l'hôte
+          "uuid": string, // identifiant unique de l'hôte
+        }, // information concernant l'hôte sur lequel s'execute la tâche
       }, // information concernant la tâche de création d'archive
     },
     "received": {

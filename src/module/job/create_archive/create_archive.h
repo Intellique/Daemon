@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 23 Jan 2014 13:28:35 +0100                            *
+*  Last modified: Fri, 24 Jan 2014 13:05:47 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_CREATEARCHIVE_H__
@@ -33,9 +33,11 @@
 // size_t
 #include <sys/types.h>
 
+#include <libstone/library/archive.h>
 #include <libstone/database.h>
 #include <libstone/job.h>
 
+struct st_job_create_archive_report;
 struct st_hashtable;
 
 struct st_job_create_archive_private {
@@ -77,16 +79,11 @@ struct st_job_create_archive_private {
 
 		struct st_hashtable * meta_files;
 	} * meta;
-
-	struct st_job_create_archive_report * report;
 };
 
 struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(struct st_job * job, struct st_archive * archive, ssize_t archive_size, struct st_database_connection * connect, struct st_job_create_archive_meta_worker * meta_worker);
 
 struct st_job_create_archive_meta_worker * st_job_create_archive_meta_worker_new(struct st_job * job, struct st_database_connection * connect);
-
-void st_job_create_archive_report_free(struct st_job_create_archive_report * report);
-struct st_job_create_archive_report * st_job_create_archive_report_new(struct st_job * job, struct st_archive * archive);
 
 #endif
 

@@ -1,0 +1,29 @@
+{
+   "archive" : {
+      "metadatas" : null,
+      "name" : "GoPro",
+      "nb files" : 0,
+      "nb volumes" : 0,
+      "paths" : [
+         {
+            "name" : "/home/guillaume/video/100GOPRO",
+            "size" : 200279040
+         }
+      ],
+      "pool" : {
+         "name" : "MyVTL",
+         "uuid" : "c0773629-be59-4fbc-b047-06d0f88b336f"
+      },
+      "size" : 0,
+      "uuid" : "96915240-fa37-49d4-8fef-2bb0e24d5be3",
+      "volumes" : []
+   },
+   "job" : {
+      "host" : {
+         "name" : "kazoo.intellique.com",
+         "uuid" : "40e576d7-cb14-42c2-95c5-edd14fbb638d"
+      },
+      "name" : "GoPro",
+      "num run" : 1
+   }
+}

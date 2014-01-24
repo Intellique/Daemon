@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 23 Jan 2014 13:29:38 +0100                            *
+*  Last modified: Fri, 24 Jan 2014 12:12:01 +0100                            *
 \****************************************************************************/
 
 // asprintf, versionsort
@@ -269,7 +269,6 @@ static void st_job_create_archive_new_job(struct st_job * job) {
 	}
 
 	self->worker = NULL;
-	self->report = NULL;
 
 	job->data = self;
 	job->ops = &st_job_create_archive_ops;
@@ -468,10 +467,11 @@ static bool st_job_create_archive_pre_run(struct st_job * job) {
 
 	json_t * jjob = json_object();
 	json_object_set_new(jjob, "name", json_string(job->name));
+	json_object_set_new(jjob, "host", st_host_get_info());
+	json_object_set_new(jjob, "num run", json_integer(job->num_runs));
 
 	json_t * sdata = json_object();
 	json_object_set_new(sdata, "archive", jarchive);
-	json_object_set_new(sdata, "host", st_host_get_info());
 	json_object_set_new(sdata, "job", jjob);
 
 	json_t * returned_data = st_script_run(job->db_connect, job, job->driver->name, st_script_type_pre, self->pool, sdata);
@@ -493,8 +493,8 @@ static int st_job_create_archive_run(struct st_job * job) {
 		return 1;
 	}
 
-	char bufsize[32];
-	st_util_file_convert_size_to_string(self->total_size, bufsize, 32);
+	char bufsize[16];
+	st_util_file_convert_size_to_string(self->total_size, bufsize, 16);
 	st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_normal, "Will archive %s", bufsize);
 
 	if (job->db_status == st_job_status_stopped) {
