@@ -22,15 +22,17 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 06 Mar 2013 12:04:46 +0100                            *
+*  Last modified: Fri, 24 Jan 2014 13:12:41 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_UTIL_JSON_H__
 #define __STONE_UTIL_JSON_H__
 
+struct st_archive;
 struct st_hashtable;
 
 struct st_hashtable * st_util_json_from_string(const char * string);
+char * st_util_json_archive_to_string(struct st_archive * archive);
 
 #endif
 

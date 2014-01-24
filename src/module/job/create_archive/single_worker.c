@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 23 Jan 2014 13:32:12 +0100                            *
+*  Last modified: Fri, 24 Jan 2014 13:28:18 +0100                            *
 \****************************************************************************/
 
 // asprintf
@@ -48,6 +48,7 @@
 #include <libstone/log.h>
 #include <libstone/util/file.h>
 #include <libstone/util/hashtable.h>
+#include <libstone/util/json.h>
 #include <libstone/user.h>
 #include <stoned/library/changer.h>
 #include <stoned/library/slot.h>
@@ -736,7 +737,14 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 static int st_job_create_archive_single_worker_sync_db(struct st_job_create_archive_data_worker * worker) {
 	struct st_job_create_archive_single_worker_private * self = worker->data;
 
-	return self->connect->ops->sync_archive(self->connect, self->archive);
+	int failed = self->connect->ops->sync_archive(self->connect, self->archive);
+
+	char * report = st_util_json_archive_to_string(self->archive);
+	if (report != NULL)
+		self->connect->ops->add_report(self->connect, self->job, self->archive, report);
+	free(report);
+
+	return failed;
 }
 
 static ssize_t st_job_create_archive_single_worker_write(struct st_job_create_archive_data_worker * worker, void * buffer, ssize_t length) {
