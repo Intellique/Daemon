@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 19 Aug 2013 18:21:08 +0200                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Fri, 17 Jan 2014 16:53:16 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -668,6 +668,8 @@ static int st_vtl_drive_writer_close(struct st_stream_writer * sw) {
 		struct st_vtl_drive * vdr = self->drive->data;
 		vdr->file_position++;
 	}
+
+	st_vtl_media_update(self->media);
 
 	return 0;
 }

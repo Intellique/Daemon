@@ -21,10 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 19 Dec 2013 16:44:51 +0100
-
-// json_array, Dec 2013 16:44:51 +0100
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Fri, 24 Jan 2014 13:14:42 +0100                            *
 \****************************************************************************/
 
 // json_array, json_array_append_new, json_decref, json_dumps, json_integer,
@@ -41,39 +39,28 @@
 // close, read, write
 #include <unistd.h>
 
-#include <libstone/io.h>
 #include <libstone/library/archive.h>
 #include <libstone/library/media.h>
 #include <libstone/user.h>
 #include <libstone/util/hashtable.h>
 
+#include "../io.h"
+
 #include "stone.version"
 
 static struct utsname st_io_json_uname;
 
-static json_t * st_io_json_archive(struct st_archive * archive);
 static json_t * st_io_json_file(struct st_archive_file * file);
 static json_t * st_io_json_media(struct st_media * media);
 static json_t * st_io_json_volume(struct st_archive_volume * volume);
 static void st_io_json_volume_init(void) __attribute__((constructor));
 
 
-static json_t * st_io_json_archive(struct st_archive * archive) {
+json_t * st_io_json_archive(struct st_archive * archive) {
 	json_t * jarchive = json_object();
 
 	json_object_set_new(jarchive, "uuid", json_string(archive->uuid));
 	json_object_set_new(jarchive, "name", json_string(archive->name));
-
-	char ctime[32];
-	struct tm local_current;
-	localtime_r(&archive->start_time, &local_current);
-	strftime(ctime, 32, "%F %T", &local_current);
-	json_object_set_new(jarchive, "created time", json_string(ctime));
-
-	localtime_r(&archive->end_time, &local_current);
-	strftime(ctime, 32, "%F %T", &local_current);
-	json_object_set_new(jarchive, "finish time", json_string(ctime));
-
 	json_object_set_new(jarchive, "user", json_string(archive->user->login));
 
 	json_t * volumes = json_array();

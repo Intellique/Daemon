@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 20 Dec 2013 19:04:53 +0100                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Fri, 24 Jan 2014 13:05:47 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_CREATEARCHIVE_H__
@@ -33,16 +33,20 @@
 // size_t
 #include <sys/types.h>
 
+#include <libstone/library/archive.h>
 #include <libstone/database.h>
 #include <libstone/job.h>
 
+struct st_job_create_archive_report;
 struct st_hashtable;
 
 struct st_job_create_archive_private {
-	struct st_database_connection * connect;
-
 	struct st_job_selected_path * selected_paths;
 	unsigned int nb_selected_paths;
+
+	struct st_archive * archive;
+	ssize_t archive_size;
+	unsigned int nb_files;
 
 	ssize_t total_done;
 	ssize_t total_size;
@@ -77,7 +81,7 @@ struct st_job_create_archive_private {
 	} * meta;
 };
 
-struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(struct st_job * job, ssize_t archive_size, struct st_database_connection * connect, struct st_job_create_archive_meta_worker * meta_worker);
+struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(struct st_job * job, struct st_archive * archive, ssize_t archive_size, struct st_database_connection * connect, struct st_job_create_archive_meta_worker * meta_worker);
 
 struct st_job_create_archive_meta_worker * st_job_create_archive_meta_worker_new(struct st_job * job, struct st_database_connection * connect);
 

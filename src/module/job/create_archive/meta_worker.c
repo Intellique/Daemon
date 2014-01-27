@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 08 Oct 2013 11:15:04 +0200                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Thu, 16 Jan 2014 16:39:39 +0100                            *
 \****************************************************************************/
 
 // asprintf
@@ -216,10 +216,10 @@ static void st_job_create_archive_meta_worker_work2(struct st_job_create_archive
 
 	if (mime_type == NULL) {
 		file->mime_type = strdup("");
-		st_job_add_record(self->connect, st_log_level_info, self->job, "File (%s) has not mime type", f->file);
+		st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "File (%s) has not mime type", f->file);
 	} else {
 		file->mime_type = strdup(mime_type);
-		st_job_add_record(self->connect, st_log_level_info, self->job, "Mime type of file '%s' is '%s'", f->file, mime_type);
+		st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "Mime type of file '%s' is '%s'", f->file, mime_type);
 	}
 
 	if (S_ISREG(st.st_mode)) {

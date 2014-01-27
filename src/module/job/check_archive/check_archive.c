@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 03 Jan 2014 16:54:06 +0100                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Thu, 23 Jan 2014 13:12:37 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -47,7 +47,7 @@
 static bool st_job_check_archive_check(struct st_job * job);
 static void st_job_check_archive_free(struct st_job * job);
 static void st_job_check_archive_init(void) __attribute__((constructor));
-static void st_job_check_archive_new_job(struct st_job * job, struct st_database_connection * db);
+static void st_job_check_archive_new_job(struct st_job * job);
 static void st_job_check_archive_on_error(struct st_job * job);
 static void st_job_check_archive_post_run(struct st_job * job);
 static bool st_job_check_archive_pre_run(struct st_job * job);
@@ -83,10 +83,10 @@ static bool st_job_check_archive_check(struct st_job * job) {
 
 static void st_job_check_archive_free(struct st_job * job) {
 	struct st_job_check_archive_private * self = job->data;
-	if (self->connect != NULL) {
-		self->connect->ops->close(self->connect);
-		self->connect->ops->free(self->connect);
-		self->connect = NULL;
+	if (job->db_connect != NULL) {
+		job->db_connect->ops->close(job->db_connect);
+		job->db_connect->ops->free(job->db_connect);
+		job->db_connect = NULL;
 	}
 
 	if (self->archive != NULL)
@@ -107,10 +107,10 @@ static void st_job_check_archive_init(void) {
 	st_job_register_driver(&st_job_check_archive_driver);
 }
 
-static void st_job_check_archive_new_job(struct st_job * job, struct st_database_connection * db) {
+static void st_job_check_archive_new_job(struct st_job * job) {
 	struct st_job_check_archive_private * self = malloc(sizeof(struct st_job_check_archive_private));
 	self->job = job;
-	self->connect = db->config->ops->connect(db->config);
+	job->db_connect = job->db_config->ops->connect(job->db_config);
 
 	self->quick_mode = false;
 	if (st_hashtable_has_key(job->option, "quick_mode")) {
@@ -122,21 +122,21 @@ static void st_job_check_archive_new_job(struct st_job * job, struct st_database
 			self->quick_mode = st_hashtable_val_convert_to_signed_integer(&qm) != 0;
 	}
 
-	self->archive = self->connect->ops->get_archive_volumes_by_job(self->connect, job);
+	self->archive = job->db_connect->ops->get_archive_volumes_by_job(job->db_connect, job);
 	self->archive_size = 0;
-	self->pool = st_pool_get_by_archive(self->archive, self->connect);
+	self->pool = st_pool_get_by_archive(self->archive, job->db_connect);
 
 	unsigned int i;
 	for (i = 0; i < self->archive->nb_volumes; i++) {
 		struct st_archive_volume * vol = self->archive->volumes + i;
-		self->connect->ops->get_archive_files_by_job_and_archive_volume(self->connect, self->job, vol);
+		job->db_connect->ops->get_archive_files_by_job_and_archive_volume(job->db_connect, self->job, vol);
 		self->archive_size += vol->size;
 
 		unsigned int j;
 		for (j = 0; j < vol->nb_files; j++) {
 			struct st_archive_files * ff = vol->files + j;
 			struct st_archive_file * file = ff->file;
-			self->connect->ops->get_checksums_of_file(self->connect, file);
+			job->db_connect->ops->get_checksums_of_file(job->db_connect, file);
 		}
 	}
 
@@ -152,7 +152,7 @@ static void st_job_check_archive_new_job(struct st_job * job, struct st_database
 static void st_job_check_archive_on_error(struct st_job * job) {
 	struct st_job_check_archive_private * self = job->data;
 
-	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_on_error, self->pool) == 0)
+	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_on_error, self->pool) == 0)
 		return;
 
 	json_t * user = json_object();
@@ -265,7 +265,7 @@ static void st_job_check_archive_on_error(struct st_job * job) {
 	json_object_set_new(data, "host", st_host_get_info());
 	json_object_set_new(data, "job", jjob);
 
-	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, data);
+	json_t * returned_data = st_script_run(job->db_connect, job, job->driver->name, st_script_type_pre, self->pool, data);
 
 	json_decref(returned_data);
 	json_decref(data);
@@ -380,7 +380,7 @@ static void st_job_check_archive_post_run(struct st_job * job) {
 	json_object_set_new(data, "host", st_host_get_info());
 	json_object_set_new(data, "job", jjob);
 
-	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_post, self->pool, data);
+	json_t * returned_data = st_script_run(job->db_connect, job, job->driver->name, st_script_type_post, self->pool, data);
 
 	json_decref(returned_data);
 	json_decref(data);
@@ -389,7 +389,7 @@ static void st_job_check_archive_post_run(struct st_job * job) {
 static bool st_job_check_archive_pre_run(struct st_job * job) {
 	struct st_job_check_archive_private * self = job->data;
 
-	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_pre, self->pool) == 0)
+	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_pre, self->pool) == 0)
 		return true;
 
 	json_t * user = json_object();
@@ -502,7 +502,7 @@ static bool st_job_check_archive_pre_run(struct st_job * job) {
 	json_object_set_new(data, "host", st_host_get_info());
 	json_object_set_new(data, "job", jjob);
 
-	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, data);
+	json_t * returned_data = st_script_run(job->db_connect, job, job->driver->name, st_script_type_pre, self->pool, data);
 	bool sr = st_io_json_should_run(returned_data);
 
 	json_decref(returned_data);
@@ -514,10 +514,10 @@ static bool st_job_check_archive_pre_run(struct st_job * job) {
 static int st_job_check_archive_run(struct st_job * job) {
 	struct st_job_check_archive_private * self = job->data;
 
-	st_job_add_record(self->connect, st_log_level_info, job, "Start check-archive job (named: %s), num runs %ld", job->name, job->num_runs);
+	st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_important, "Start check-archive job (named: %s), num runs %ld", job->name, job->num_runs);
 
 	if (self->archive == NULL) {
-		st_job_add_record(self->connect, st_log_level_error, job, "Error, no archive associated to this job were found");
+		st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Error, no archive associated to this job were found");
 		job->sched_status = st_job_status_error;
 		return 2;
 	}
@@ -533,13 +533,13 @@ static int st_job_check_archive_run(struct st_job * job) {
 		failed = st_job_check_archive_thorough_mode(self);
 
 	if (failed)
-		st_job_add_record(self->connect, st_log_level_error, job, "Check-archive job (named: %s) finished with status %d", job->name, failed);
+		st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Check-archive job (named: %s) finished with status %d", job->name, failed);
 	else
-		st_job_add_record(self->connect, st_log_level_info, job, "Check-archive job (named: %s) finished with status OK", job->name);
+		st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_important, "Check-archive job (named: %s) finished with status OK", job->name);
 
 	char * report = st_job_check_archive_report_make(self->report);
 	if (report != NULL)
-		self->connect->ops->add_report(self->connect, job, self->archive, report);
+		job->db_connect->ops->add_report(job->db_connect, job, self->archive, report);
 	free(report);
 
 	st_job_check_archive_report_free(self->report);

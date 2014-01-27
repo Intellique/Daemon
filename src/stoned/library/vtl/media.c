@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 22 Feb 2013 17:15:29 +0100                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Fri, 17 Jan 2014 16:49:11 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -34,8 +34,14 @@
 #include <string.h>
 // malloc
 #include <stdlib.h>
+// stat
+#include <sys/stat.h>
+// stat
+#include <sys/types.h>
 // time
 #include <time.h>
+// stat
+#include <unistd.h>
 
 #include <libstone/library/media.h>
 #include <libstone/library/ressource.h>
@@ -114,6 +120,30 @@ struct st_media * st_vtl_media_init(char * base_dir, char * prefix, unsigned int
 	self->prefix = strdup(prefix);
 	self->used = false;
 
+	st_vtl_media_update(media);
+
 	return media;
+}
+
+void st_vtl_media_update(struct st_media * media) {
+	struct st_vtl_media * self = media->data;
+
+	char * pattern;
+	asprintf(&pattern, "%s/file_*", self->path);
+
+	glob_t gl;
+	glob(pattern, 0, NULL, &gl);
+
+	unsigned int i;
+	size_t total_size = 0;
+	for (i = 0; i < gl.gl_pathc; i++) {
+		struct stat st;
+		stat(gl.gl_pathv[i], &st);
+		total_size += st.st_size;
+	}
+
+	media->free_block = media->total_block - total_size / media->block_size;
+
+	globfree(&gl);
 }
 

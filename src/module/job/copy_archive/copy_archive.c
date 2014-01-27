@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 16 Jan 2014 10:38:26 +0100                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Thu, 23 Jan 2014 13:26:32 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -54,7 +54,7 @@
 static bool st_job_copy_archive_check(struct st_job * job);
 static void st_job_copy_archive_free(struct st_job * job);
 static void st_job_copy_archive_init(void) __attribute__((constructor));
-static void st_job_copy_archive_new_job(struct st_job * job, struct st_database_connection * db);
+static void st_job_copy_archive_new_job(struct st_job * job);
 static void st_job_copy_archive_on_error(struct st_job * job);
 static void st_job_copy_archive_post_run(struct st_job * job);
 static bool st_job_copy_archive_pre_run(struct st_job * job);
@@ -103,8 +103,8 @@ static void st_job_copy_archive_free(struct st_job * job) {
 	st_archive_free(self->archive);
 	st_archive_free(self->copy);
 
-	self->connect->ops->free(self->connect);
-	self->connect = NULL;
+	self->job->db_connect->ops->free(self->job->db_connect);
+	self->job->db_connect = NULL;
 
 	for (i = 0; i < self->nb_checksums; i++)
 		free(self->checksums[i]);
@@ -119,20 +119,20 @@ static void st_job_copy_archive_init() {
 	st_job_register_driver(&st_job_copy_archive_driver);
 }
 
-static void st_job_copy_archive_new_job(struct st_job * job, struct st_database_connection * db) {
+static void st_job_copy_archive_new_job(struct st_job * job) {
 	struct st_job_copy_archive_private * self = malloc(sizeof(struct st_job_copy_archive_private));
 	bzero(self, sizeof(*self));
 	self->job = job;
-	self->connect = db->config->ops->connect(db->config);
+	job->db_connect = job->db_config->ops->connect(job->db_config);
 
-	self->archive = self->connect->ops->get_archive_volumes_by_job(self->connect, job);
-	self->pool = st_pool_get_by_job(job, self->connect);
+	self->archive = self->job->db_connect->ops->get_archive_volumes_by_job(self->job->db_connect, job);
+	self->pool = st_pool_get_by_job(job, self->job->db_connect);
 
 	unsigned int i;
 	for (i = 0; i < self->archive->nb_volumes; i++) {
 		struct st_archive_volume * vol = self->archive->volumes + i;
 
-		self->connect->ops->get_archive_files_by_job_and_archive_volume(self->connect, self->job, vol);
+		self->job->db_connect->ops->get_archive_files_by_job_and_archive_volume(self->job->db_connect, self->job, vol);
 		self->archive_size += self->archive->volumes[i].size;
 		self->nb_remain_files += vol->nb_files;
 	}
@@ -143,7 +143,7 @@ static void st_job_copy_archive_new_job(struct st_job * job, struct st_database_
 	if (self->archive->metadatas != NULL)
 		self->copy->metadatas = strdup(self->archive->metadatas);
 
-	self->checksums = self->connect->ops->get_checksums_by_pool(self->connect, self->pool, &self->nb_checksums);
+	self->checksums = self->job->db_connect->ops->get_checksums_by_pool(self->job->db_connect, self->pool, &self->nb_checksums);
 
 	job->data = self;
 	job->ops = &st_job_copy_archive_ops;
@@ -152,7 +152,7 @@ static void st_job_copy_archive_new_job(struct st_job * job, struct st_database_
 static void st_job_copy_archive_on_error(struct st_job * job) {
 	struct st_job_copy_archive_private * self = job->data;
 
-	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_on_error, self->pool) == 0)
+	if (self->job->db_connect->ops->get_nb_scripts(self->job->db_connect, job->driver->name, st_script_type_on_error, self->pool) == 0)
 		return;
 
 	struct st_archive * archive = self->archive;
@@ -262,7 +262,7 @@ static void st_job_copy_archive_on_error(struct st_job * job) {
 	json_object_set_new(data, "copy archive", copy_archive);
 	json_object_set_new(data, "host", st_host_get_info());
 
-	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, data);
+	json_t * returned_data = st_script_run(self->job->db_connect, job, job->driver->name, st_script_type_pre, self->pool, data);
 
 	json_decref(returned_data);
 	json_decref(data);
@@ -271,7 +271,7 @@ static void st_job_copy_archive_on_error(struct st_job * job) {
 static void st_job_copy_archive_post_run(struct st_job * job) {
 	struct st_job_copy_archive_private * self = job->data;
 
-	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_post, self->pool) == 0)
+	if (self->job->db_connect->ops->get_nb_scripts(self->job->db_connect, job->driver->name, st_script_type_post, self->pool) == 0)
 		return;
 
 	struct st_archive * archive = self->archive;
@@ -468,7 +468,7 @@ static void st_job_copy_archive_post_run(struct st_job * job) {
 	json_object_set_new(data, "copy archive", copy_archive);
 	json_object_set_new(data, "host", st_host_get_info());
 
-	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_post, self->pool, data);
+	json_t * returned_data = st_script_run(self->job->db_connect, job, job->driver->name, st_script_type_post, self->pool, data);
 
 	json_decref(returned_data);
 	json_decref(data);
@@ -477,7 +477,7 @@ static void st_job_copy_archive_post_run(struct st_job * job) {
 static bool st_job_copy_archive_pre_run(struct st_job * job) {
 	struct st_job_copy_archive_private * self = job->data;
 
-	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_pre, self->pool) == 0)
+	if (self->job->db_connect->ops->get_nb_scripts(self->job->db_connect, job->driver->name, st_script_type_pre, self->pool) == 0)
 		return true;
 
 	struct st_archive * archive = self->archive;
@@ -587,7 +587,7 @@ static bool st_job_copy_archive_pre_run(struct st_job * job) {
 	json_object_set_new(data, "copy archive", copy_archive);
 	json_object_set_new(data, "host", st_host_get_info());
 
-	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, data);
+	json_t * returned_data = st_script_run(self->job->db_connect, job, job->driver->name, st_script_type_pre, self->pool, data);
 	bool sr = st_io_json_should_run(returned_data);
 
 	json_decref(returned_data);
@@ -599,7 +599,7 @@ static bool st_job_copy_archive_pre_run(struct st_job * job) {
 static int st_job_copy_archive_run(struct st_job * job) {
 	struct st_job_copy_archive_private * self = job->data;
 
-	st_job_add_record(self->connect, st_log_level_info, job, "Start copy archive job (named: %s), num runs %ld", job->name, job->num_runs);
+	st_job_add_record(self->job->db_connect, st_log_level_info, job, st_job_record_notif_important, "Start copy archive job (named: %s), num runs %ld", job->name, job->num_runs);
 
 	job->done = 0.01;
 

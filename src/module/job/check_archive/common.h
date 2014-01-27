@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 19 Nov 2013 15:32:22 +0100                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Thu, 23 Jan 2014 13:09:49 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_CHECKARCHIVE_H__
@@ -36,7 +36,6 @@
 
 struct st_job_check_archive_private {
 	struct st_job * job;
-	struct st_database_connection * connect;
 
 	bool quick_mode;
 

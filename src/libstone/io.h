@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 20 Mar 2013 11:42:57 +0100                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Fri, 24 Jan 2014 13:14:31 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_IO_P_H__
@@ -31,6 +31,7 @@
 #include <libstone/io.h>
 
 struct st_stream_writer * st_io_file_writer2(int fd);
+json_t * st_io_json_archive(struct st_archive * archive);
 
 #endif
 

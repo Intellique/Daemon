@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 19 Dec 2013 15:32:18 +0100                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Thu, 23 Jan 2014 17:49:02 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -82,7 +82,7 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 		struct st_job * job = jobs[i];
 
 		if (job->db_status == st_job_status_running || job->db_status == st_job_status_waiting) {
-			job->driver->new_job(job, connection);
+			job->driver->new_job(job);
 
 			st_log_write_all(st_log_level_info, st_log_type_scheduler, "Checking job: %s", job->name);
 			bool ok = job->ops->check(job);
@@ -104,7 +104,7 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 				char * jobname;
 				asprintf(&jobname, "job: %s", job->name);
 
-				job->driver->new_job(job, connection);
+				job->driver->new_job(job);
 				st_thread_pool_run(jobname, st_sched_run_job, job);
 
 				free(jobname);
@@ -162,6 +162,9 @@ static void st_sched_run_job(void * arg) {
 		job->repetition--;
 	job->num_runs++;
 
+	time_t starttime = time(NULL);
+	job->db_connect->ops->start_job_run(job->db_connect, job, starttime);
+
 	st_log_write_all(st_log_level_info, st_log_type_scheduler, "Starting pre-script of job: %s", job->name);
 
 	int status = 0;
@@ -184,11 +187,7 @@ static void st_sched_run_job(void * arg) {
 		st_log_write_all(st_log_level_info, st_log_type_scheduler, "Job '%s' aborted by pre-script request", job->name);
 	}
 
-	job->ops->free(job);
-
-	st_sched_lock->ops->lock(st_sched_lock);
-	st_sched_nb_running_jobs--;
-	st_sched_lock->ops->unlock(st_sched_lock);
+	time_t endtime = time(NULL);
 
 	if (job->interval > 0) {
 		time_t now = time(NULL);
@@ -197,8 +196,15 @@ static void st_sched_run_job(void * arg) {
 			diff = job->next_start - now;
 		job->next_start += diff - (diff % job->interval) + job->interval;
 	}
-
 	if (job->sched_status == st_job_status_running)
 		job->sched_status = job->repetition != 0 ? st_job_status_scheduled : st_job_status_finished;
+
+	job->db_connect->ops->finish_job_run(job->db_connect, job, endtime, status);
+
+	job->ops->free(job);
+
+	st_sched_lock->ops->lock(st_sched_lock);
+	st_sched_nb_running_jobs--;
+	st_sched_lock->ops->unlock(st_sched_lock);
 }
 

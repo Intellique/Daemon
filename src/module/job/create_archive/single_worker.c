@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 09 Jan 2014 15:02:36 +0100                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Fri, 24 Jan 2014 13:28:18 +0100                            *
 \****************************************************************************/
 
 // asprintf
@@ -48,6 +48,7 @@
 #include <libstone/log.h>
 #include <libstone/util/file.h>
 #include <libstone/util/hashtable.h>
+#include <libstone/util/json.h>
 #include <libstone/user.h>
 #include <stoned/library/changer.h>
 #include <stoned/library/slot.h>
@@ -121,31 +122,24 @@ static struct st_job_create_archive_data_worker_ops st_job_create_archive_single
 };
 
 
-struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(struct st_job * job, ssize_t archive_size, struct st_database_connection * connect, struct st_job_create_archive_meta_worker * meta_worker) {
-	struct st_job_create_archive_private * jp = job->data;
-
+struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(struct st_job * job, struct st_archive * archive, ssize_t archive_size, struct st_database_connection * connect, struct st_job_create_archive_meta_worker * meta_worker) {
 	struct st_job_create_archive_single_worker_private * self = malloc(sizeof(struct st_job_create_archive_single_worker_private));
 	self->job = job;
 	self->connect = connect;
 
-	self->archive = jp->connect->ops->get_archive_by_job(jp->connect, job);
-	if (self->archive == NULL) {
-		self->archive = st_archive_new(job->name, job->user);
-		self->archive->metadatas = strdup(job->meta);
-	}
-
+	self->archive = archive;
 	self->pool = st_pool_get_by_job(job, connect);
 
 	if (self->pool == NULL && self->archive != NULL) {
 		self->pool = st_pool_get_by_archive(self->archive, connect);
 
 		if (self->pool != NULL)
-			st_job_add_record(connect, st_log_level_info, job, "Using pool (%s) of archive (%s)", self->pool->name, self->archive->name);
+			st_job_add_record(connect, st_log_level_info, job, st_job_record_notif_important, "Using pool (%s) of archive (%s)", self->pool->name, self->archive->name);
 	}
 
 	if (self->pool == NULL) {
 		self->pool = job->user->pool;
-		st_job_add_record(connect, st_log_level_info, job, "Using pool (%s) of user (%s)", self->pool->name, job->user->login);
+		st_job_add_record(connect, st_log_level_info, job, st_job_record_notif_important, "Using pool (%s) of user (%s)", self->pool->name, job->user->login);
 	}
 
 	self->total_done = 0;
@@ -154,7 +148,7 @@ struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(s
 	self->drive = NULL;
 	self->writer = NULL;
 
-	self->checksums = jp->connect->ops->get_checksums_by_pool(jp->connect, self->pool, &self->nb_checksums);
+	self->checksums = self->job->db_connect->ops->get_checksums_by_pool(self->job->db_connect, self->pool, &self->nb_checksums);
 
 	self->checksum_writer = NULL;
 	self->meta_worker = meta_worker;
@@ -242,7 +236,7 @@ static int st_job_create_archive_single_worker_change_volume(struct st_job_creat
 	self->writer->ops->close(self->writer);
 
 	struct st_archive_volume * last_volume = self->archive->volumes + (self->archive->nb_volumes - 1);
-	last_volume->end_time = self->archive->end_time = time(NULL);
+	last_volume->end_time = time(NULL);
 	last_volume->size = self->writer->ops->position(self->writer);
 
 	last_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
@@ -288,7 +282,7 @@ static int st_job_create_archive_single_worker_change_volume(struct st_job_creat
 
 	int position = self->drive->ops->get_position(self->drive);
 
-	st_archive_add_volume(self->archive, self->drive->slot->media, position);
+	st_archive_add_volume(self->archive, self->drive->slot->media, position, self->job);
 
 	struct st_linked_list_files * f = self->first_file = self->last_file;
 	f->block_position = 0;
@@ -304,7 +298,7 @@ static void st_job_create_archive_single_worker_close(struct st_job_create_archi
 	self->writer->ops->close(self->writer);
 
 	struct st_archive_volume * last_volume = self->archive->volumes + (self->archive->nb_volumes - 1);
-	last_volume->end_time = self->archive->end_time = time(NULL);
+	last_volume->end_time = time(NULL);
 	last_volume->size = self->writer->ops->position(self->writer);
 
 	last_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
@@ -350,8 +344,7 @@ static void st_job_create_archive_single_worker_free(struct st_job_create_archiv
 		self->drive->lock->ops->unlock(self->drive->lock);
 
 	self->writer->ops->free(self->writer);
-
-	st_archive_free(self->archive);
+	self->archive = NULL;
 
 	unsigned int i;
 	for (i = 0; i < self->nb_checksums; i++)
@@ -385,7 +378,7 @@ static bool st_job_create_archive_single_worker_load_media(struct st_job_create_
 		self->writer = self->drive->ops->get_writer(self->drive, true, st_job_create_archive_single_worker_add_filter, self);
 
 		int position = self->drive->ops->get_position(self->drive);
-		st_archive_add_volume(self->archive, self->drive->slot->media, position);
+		st_archive_add_volume(self->archive, self->drive->slot->media, position, self->job);
 
 		return self->writer != NULL;
 	}
@@ -529,7 +522,7 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 		st_util_file_convert_size_to_string(self->archive_size, buf_archive_size, 32);
 		st_util_file_convert_size_to_string(self->pool->format->capacity, buf_media_size, 32);
 
-		st_job_add_record(self->connect, st_log_level_warning, self->job, "Fatal error, archive's size (%s) is greater than a media (media size: %s) and the unbreakable level is archive", buf_archive_size, buf_media_size);
+		st_job_add_record(self->connect, st_log_level_warning, self->job, st_job_record_notif_important, "Fatal error, archive's size (%s) is greater than a media (media size: %s) and the unbreakable level is archive", buf_archive_size, buf_media_size);
 		return false;
 	}
 
@@ -541,7 +534,7 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 				if (self->archive_size - self->total_done > total_size) {
 					// alert user
 					if (!has_alerted_user)
-						st_job_add_record(self->connect, st_log_level_warning, self->job, "Please, insert media which is a part of pool named %s", self->pool->name);
+						st_job_add_record(self->connect, st_log_level_warning, self->job, st_job_record_notif_important, "Please, insert media which is a part of pool named %s", self->pool->name);
 					has_alerted_user = true;
 
 					self->job->sched_status = st_job_status_pause;
@@ -639,16 +632,16 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 				if (self->drive->slot->media == NULL) {
 					struct st_media * media = slot->media;
 
-					st_job_add_record(self->connect, st_log_level_info, self->job, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ]", media->name, slot - changer->slots, self->drive - changer->drives, changer->vendor, changer->model);
+					st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ]", media->name, slot - changer->slots, self->drive - changer->drives, changer->vendor, changer->model);
 
 					int failed = changer->ops->load_slot(changer, slot, self->drive);
 					slot->lock->ops->unlock(slot->lock);
 
 					if (failed) {
-						st_job_add_record(self->connect, st_log_level_error, self->job, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ] finished with code = %d", media->name, slot - changer->slots, self->drive - changer->drives, changer->vendor, changer->model, failed);
+						st_job_add_record(self->connect, st_log_level_error, self->job, st_job_record_notif_important, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ] finished with code = %d", media->name, slot - changer->slots, self->drive - changer->drives, changer->vendor, changer->model, failed);
 						return false;
 					} else
-						st_job_add_record(self->connect, st_log_level_info, self->job, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ] finished with code = OK", media->name, slot - changer->slots, self->drive - changer->drives, changer->vendor, changer->model);
+						st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "Loading media (%s) from slot #%td to drive #%td of changer [ %s | %s ] finished with code = OK", media->name, slot - changer->slots, self->drive - changer->drives, changer->vendor, changer->model);
 				}
 
 				state = media_is_read_only;
@@ -661,14 +654,14 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 				if (self->drive->slot->media != NULL && self->drive->slot != slot) {
 					struct st_media * media = self->drive->slot->media;
 
-					st_job_add_record(self->connect, st_log_level_info, self->job, "Unloading media (%s) from drive #%td of changer [ %s | %s ]", media->name, self->drive - changer->drives, changer->vendor, changer->model);
+					st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "Unloading media (%s) from drive #%td of changer [ %s | %s ]", media->name, self->drive - changer->drives, changer->vendor, changer->model);
 
 					int failed = changer->ops->unload(changer, self->drive);
 					if (failed) {
-						st_job_add_record(self->connect, st_log_level_error, self->job, "Unloading media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", media->name, self->drive - changer->drives, changer->vendor, changer->model, failed);
+						st_job_add_record(self->connect, st_log_level_error, self->job, st_job_record_notif_important, "Unloading media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", media->name, self->drive - changer->drives, changer->vendor, changer->model, failed);
 						return false;
 					} else
-						st_job_add_record(self->connect, st_log_level_info, self->job, "Unloading media (%s) from drive #%td of changer [ %s | %s ] finished with code = OK", media->name, self->drive - changer->drives, changer->vendor, changer->model);
+						st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "Unloading media (%s) from drive #%td of changer [ %s | %s ] finished with code = OK", media->name, self->drive - changer->drives, changer->vendor, changer->model);
 				}
 
 				state = has_media;
@@ -678,14 +671,14 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 				if (self->drive->slot->media->status == st_media_status_new) {
 					struct st_media * media = self->drive->slot->media;
 
-					st_job_add_record(self->connect, st_log_level_info, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ]", media->name, changer->drives - self->drive, changer->vendor, changer->model);
+					st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "Formatting new media (%s) from drive #%td of changer [ %s | %s ]", media->name, changer->drives - self->drive, changer->vendor, changer->model);
 
 					int failed = st_media_write_header(self->drive, self->pool, self->connect);
 					if (failed) {
-						st_job_add_record(self->connect, st_log_level_error, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", media->name, changer->drives - self->drive, changer->vendor, changer->model, failed);
+						st_job_add_record(self->connect, st_log_level_error, self->job, st_job_record_notif_important, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = %d", media->name, changer->drives - self->drive, changer->vendor, changer->model, failed);
 						return false;
 					} else
-						st_job_add_record(self->connect, st_log_level_info, self->job, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = OK", media->name, changer->drives - self->drive, changer->vendor, changer->model);
+						st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "Formatting new media (%s) from drive #%td of changer [ %s | %s ] finished with code = OK", media->name, changer->drives - self->drive, changer->vendor, changer->model);
 				}
 				return true;
 
@@ -708,9 +701,9 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 
 			case is_pool_growable2:
 				if (self->pool->growable && !has_alerted_user) {
-					st_job_add_record(self->connect, st_log_level_warning, self->job, "Please, insert new media which will be a part of pool %s", self->pool->name);
+					st_job_add_record(self->connect, st_log_level_warning, self->job, st_job_record_notif_important, "Please, insert new media which will be a part of pool %s", self->pool->name);
 				} else if (!has_alerted_user) {
-					st_job_add_record(self->connect, st_log_level_warning, self->job, "Please, you must to extent the pool (%s)", self->pool->name);
+					st_job_add_record(self->connect, st_log_level_warning, self->job, st_job_record_notif_important, "Please, you must to extent the pool (%s)", self->pool->name);
 				}
 
 				has_alerted_user = true;
@@ -728,7 +721,7 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 
 			case media_is_read_only:
 				if (self->drive->slot->media->type == st_media_type_readonly) {
-					st_job_add_record(self->connect, st_log_level_warning, self->job, "Media '%s' is currently read only ", self->drive->slot->media->name);
+					st_job_add_record(self->connect, st_log_level_warning, self->job, st_job_record_notif_important, "Media '%s' is currently read only ", self->drive->slot->media->name);
 					st_job_create_archive_single_worker_add_media(self, self->drive->slot->media);
 					state = check_online_free_size_left;
 				} else
@@ -744,7 +737,14 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 static int st_job_create_archive_single_worker_sync_db(struct st_job_create_archive_data_worker * worker) {
 	struct st_job_create_archive_single_worker_private * self = worker->data;
 
-	return self->connect->ops->sync_archive(self->connect, self->archive);
+	int failed = self->connect->ops->sync_archive(self->connect, self->archive);
+
+	char * report = st_util_json_archive_to_string(self->archive);
+	if (report != NULL)
+		self->connect->ops->add_report(self->connect, self->job, self->archive, report);
+	free(report);
+
+	return failed;
 }
 
 static ssize_t st_job_create_archive_single_worker_write(struct st_job_create_archive_data_worker * worker, void * buffer, ssize_t length) {

@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 14 Nov 2013 18:58:42 +0100                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Thu, 16 Jan 2014 16:14:05 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_DB_POSTGRESQL_CONNNECTION_H__
@@ -84,6 +84,7 @@ int st_db_postgresql_get_uchar(PGresult * result, int row, int column, unsigned 
 
 int st_db_postgresql_get_uint(PGresult * result, int row, int column, unsigned int * value);
 
+const char * st_db_postgresql_job_record_notif_to_string(enum st_job_record_notif notif);
 const char * st_db_postgresql_script_type_to_string(enum st_script_type type);
 
 #endif

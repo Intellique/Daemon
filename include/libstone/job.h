@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 19 Dec 2013 15:29:57 +0100                            *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Last modified: Thu, 23 Jan 2014 12:58:04 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_H__
@@ -35,6 +35,7 @@
 
 #include "plugin.h"
 
+struct st_database_config;
 struct st_database_connection;
 struct st_job_driver;
 enum st_log_level;
@@ -53,8 +54,17 @@ enum st_job_status {
 	st_job_status_unknown,
 };
 
+enum st_job_record_notif {
+	st_job_record_notif_normal,
+	st_job_record_notif_important,
+	st_job_record_notif_read,
+
+	st_job_record_notif_unknown,
+};
+
 struct st_job {
 	char * name;
+
 	time_t next_start;
 	long interval;
 	long repetition;
@@ -63,6 +73,7 @@ struct st_job {
 	float done;
 	volatile enum st_job_status db_status;
 	volatile enum st_job_status sched_status;
+	bool stoped_by_user;
 	time_t updated;
 
 	struct st_user * user;
@@ -80,6 +91,8 @@ struct st_job {
 	} * ops;
 	void * data;
 
+	struct st_database_config * db_config;
+	struct st_database_connection * db_connect;
 	void * db_data;
 
 	struct st_job_driver * driver;
@@ -87,7 +100,7 @@ struct st_job {
 
 struct st_job_driver {
 	const char * name;
-	void (*new_job)(struct st_job * job, struct st_database_connection * db);
+	void (*new_job)(struct st_job * job);
 	void * cookie;
 	const struct st_plugin api_level;
 	const char * src_checksum;
@@ -100,7 +113,7 @@ struct st_job_selected_path {
 
 #define STONE_JOB_API_LEVEL 1
 
-void st_job_add_record(struct st_database_connection * connect, enum st_log_level level, struct st_job * job, const char * message, ...) __attribute__ ((format (printf, 4, 5)));
+void st_job_add_record(struct st_database_connection * connect, enum st_log_level level, struct st_job * job, enum st_job_record_notif notif, const char * message, ...) __attribute__ ((format (printf, 5, 6)));
 struct st_job_driver * st_job_get_driver(const char * driver);
 void st_job_register_driver(struct st_job_driver * driver);
 const char * st_job_status_to_string(enum st_job_status status);
