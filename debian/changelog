@@ -1,3 +1,13 @@
+stone-squeeze (1.1.1-2+squeeze) polisher; urgency=low
+
+  * Nouveautés:
+    - Amélioration des notifs (jobrecord)
+    - Chaque archive volume sont liés à un job (ou non)
+  * Correctifs:
+    - taill des médias (vtl)
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 27 Jan 2014 11:32:59 +0100
+
 stone-squeeze (1.1-22+squeeze) polisher; urgency=low
 
   * Nouvelle numérotation de version
