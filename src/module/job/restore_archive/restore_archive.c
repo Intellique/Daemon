@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 16 Jan 2014 16:55:35 +0100                            *
+*  Last modified: Thu, 23 Jan 2014 13:36:10 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -60,7 +60,7 @@
 static bool st_job_restore_archive_check(struct st_job * job);
 static void st_job_restore_archive_free(struct st_job * job);
 static void st_job_restore_archive_init(void) __attribute__((constructor));
-static void st_job_restore_archive_new_job(struct st_job * job, struct st_database_connection * db);
+static void st_job_restore_archive_new_job(struct st_job * job);
 static void st_job_restore_archive_on_error(struct st_job * job);
 static void st_job_restore_archive_post_run(struct st_job * job);
 static bool st_job_restore_archive_pre_run(struct st_job * job);
@@ -96,10 +96,10 @@ static bool st_job_restore_archive_check(struct st_job * job) {
 
 static void st_job_restore_archive_free(struct st_job * job) {
 	struct st_job_restore_archive_private * self = job->data;
-	if (self->connect != NULL) {
-		self->connect->ops->close(self->connect);
-		self->connect->ops->free(self->connect);
-		self->connect = NULL;
+	if (job->db_connect != NULL) {
+		job->db_connect->ops->close(job->db_connect);
+		job->db_connect->ops->free(job->db_connect);
+		job->db_connect = NULL;
 	}
 
 	if (self->archive != NULL)
@@ -118,26 +118,26 @@ static void st_job_restore_archive_init(void) {
 	st_job_register_driver(&st_job_restore_archive_driver);
 }
 
-static void st_job_restore_archive_new_job(struct st_job * job, struct st_database_connection * db) {
+static void st_job_restore_archive_new_job(struct st_job * job) {
 	struct st_job_restore_archive_private * self = malloc(sizeof(struct st_job_restore_archive_private));
 	self->job = job;
-	self->connect = db->config->ops->connect(db->config);
+	job->db_connect = job->db_config->ops->connect(job->db_config);
 
-	self->archive = self->connect->ops->get_archive_volumes_by_job(self->connect, job);
+	self->archive = job->db_connect->ops->get_archive_volumes_by_job(job->db_connect, job);
 	self->archive_size = 0;
-	self->pool = st_pool_get_by_archive(self->archive, self->connect);
+	self->pool = st_pool_get_by_archive(self->archive, job->db_connect);
 
 	unsigned int i;
 	for (i = 0; i < self->archive->nb_volumes; i++) {
 		struct st_archive_volume * vol = self->archive->volumes + i;
-		self->connect->ops->get_archive_files_by_job_and_archive_volume(self->connect, self->job, vol);
+		job->db_connect->ops->get_archive_files_by_job_and_archive_volume(job->db_connect, self->job, vol);
 		self->archive_size += vol->size;
 
 		unsigned int j;
 		for (j = 0; j < vol->nb_files; j++) {
 			struct st_archive_files * ff = vol->files + j;
 			struct st_archive_file * file = ff->file;
-			self->connect->ops->get_checksums_of_file(self->connect, file);
+			job->db_connect->ops->get_checksums_of_file(job->db_connect, file);
 		}
 	}
 
@@ -151,7 +151,7 @@ static void st_job_restore_archive_new_job(struct st_job * job, struct st_databa
 static void st_job_restore_archive_on_error(struct st_job * job) {
 	struct st_job_restore_archive_private * self = job->data;
 
-	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_on_error, self->pool) == 0)
+	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_on_error, self->pool) == 0)
 		return;
 
 	json_t * user = json_object();
@@ -263,7 +263,7 @@ static void st_job_restore_archive_on_error(struct st_job * job) {
 	json_object_set_new(data, "host", st_host_get_info());
 	json_object_set_new(data, "job", jjob);
 
-	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, data);
+	json_t * returned_data = st_script_run(job->db_connect, job, job->driver->name, st_script_type_pre, self->pool, data);
 
 	json_decref(returned_data);
 	json_decref(data);
@@ -272,7 +272,7 @@ static void st_job_restore_archive_on_error(struct st_job * job) {
 static void st_job_restore_archive_post_run(struct st_job * job) {
 	struct st_job_restore_archive_private * self = job->data;
 
-	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_post, self->pool) == 0)
+	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_post, self->pool) == 0)
 		return;
 
 	json_t * user = json_object();
@@ -384,7 +384,7 @@ static void st_job_restore_archive_post_run(struct st_job * job) {
 	json_object_set_new(data, "host", st_host_get_info());
 	json_object_set_new(data, "job", jjob);
 
-	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, data);
+	json_t * returned_data = st_script_run(job->db_connect, job, job->driver->name, st_script_type_pre, self->pool, data);
 
 	json_decref(returned_data);
 	json_decref(data);
@@ -393,7 +393,7 @@ static void st_job_restore_archive_post_run(struct st_job * job) {
 static bool st_job_restore_archive_pre_run(struct st_job * job) {
 	struct st_job_restore_archive_private * self = job->data;
 
-	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_pre, self->pool) == 0)
+	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_pre, self->pool) == 0)
 		return true;
 
 	json_t * user = json_object();
@@ -505,7 +505,7 @@ static bool st_job_restore_archive_pre_run(struct st_job * job) {
 	json_object_set_new(data, "host", st_host_get_info());
 	json_object_set_new(data, "job", jjob);
 
-	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, data);
+	json_t * returned_data = st_script_run(job->db_connect, job, job->driver->name, st_script_type_pre, self->pool, data);
 	bool sr = st_io_json_should_run(returned_data);
 
 	json_decref(returned_data);
@@ -517,15 +517,15 @@ static bool st_job_restore_archive_pre_run(struct st_job * job) {
 static int st_job_restore_archive_run(struct st_job * job) {
 	struct st_job_restore_archive_private * self = job->data;
 
-	st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_important, "Start restore job (named: %s), num runs %ld", job->name, job->num_runs);
+	st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_important, "Start restore job (named: %s), num runs %ld", job->name, job->num_runs);
 
 	if (!job->user->can_restore) {
-		st_job_add_record(self->connect, st_log_level_error, job, st_job_record_notif_important, "Error, user (%s) cannot restore archive", job->user->login);
+		st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Error, user (%s) cannot restore archive", job->user->login);
 		return 1;
 	}
 
 	if (self->archive == NULL) {
-		st_job_add_record(self->connect, st_log_level_error, job, st_job_record_notif_important, "Error, no archive associated to this job were found");
+		st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Error, no archive associated to this job were found");
 		job->sched_status = st_job_status_error;
 		return 2;
 	}
@@ -537,8 +537,8 @@ static int st_job_restore_archive_run(struct st_job * job) {
 	job->done = 0.01;
 
 	unsigned int nb_directories;
-	struct st_archive_file * directories = self->connect->ops->get_archive_file_for_restore_directory(self->connect, job, &nb_directories);
-	ssize_t size = self->connect->ops->get_restore_size_by_job(self->connect, job);
+	struct st_archive_file * directories = job->db_connect->ops->get_archive_file_for_restore_directory(job->db_connect, job, &nb_directories);
+	ssize_t size = job->db_connect->ops->get_restore_size_by_job(job->db_connect, job);
 
 	unsigned int i;
 	unsigned int nb_errors = 0, nb_warnings = 0;
@@ -547,12 +547,12 @@ static int st_job_restore_archive_run(struct st_job * job) {
 		st_util_file_mkdir(directory->name, directory->perm);
 
 		if (chown(directory->name, directory->ownerid, directory->groupid)) {
-			st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Warning, failed to restore owner of directory (%s) because %m", directory->name);
+			st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Warning, failed to restore owner of directory (%s) because %m", directory->name);
 			nb_warnings++;
 		}
 
 		if (chmod(directory->name, directory->perm)) {
-			st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Warning, failed to restore permission of directory (%s) because %m", directory->name);
+			st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Warning, failed to restore permission of directory (%s) because %m", directory->name);
 			nb_warnings++;
 		}
 	}
@@ -604,7 +604,7 @@ static int st_job_restore_archive_run(struct st_job * job) {
 				// slot not found
 				// TODO: alert user
 				if (!has_alerted_user)
-					st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Warning, media named (%s) is not found, please insert it", vol->media->name);
+					st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Warning, media named (%s) is not found, please insert it", vol->media->name);
 				has_alerted_user = true;
 
 				if (nb_running_worker == 0)
@@ -701,7 +701,7 @@ static int st_job_restore_archive_run(struct st_job * job) {
 			{ directory->modify_time, 0 },
 		};
 		if (utimes(directory->name, tv)) {
-			st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Warning, failed to restore motification time of directory (%s) because %m", directory->name);
+			st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Warning, failed to restore motification time of directory (%s) because %m", directory->name);
 			nb_warnings++;
 		}
 
@@ -713,12 +713,12 @@ static int st_job_restore_archive_run(struct st_job * job) {
 
 	char * report = st_job_restore_archive_report_make(self->report);
 	if (report != NULL)
-		self->connect->ops->add_report(self->connect, job, self->archive, report);
+		job->db_connect->ops->add_report(job->db_connect, job, self->archive, report);
 	free(report);
 
 	job->done = 1;
 
-	st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_important, "Job restore-archive is finished (named: %s) with %d warning(%c) and %d error(%c)", job->name, nb_warnings, nb_warnings != 1 ? 's' : '\0', nb_errors, nb_errors != 1 ? 's' : '\0');
+	st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_important, "Job restore-archive is finished (named: %s) with %d warning(%c) and %d error(%c)", job->name, nb_warnings, nb_warnings != 1 ? 's' : '\0', nb_errors, nb_errors != 1 ? 's' : '\0');
 
 	return 0;
 }

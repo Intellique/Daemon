@@ -17,7 +17,7 @@ NAME		:= STone
 DIR_NAME	:= $(lastword $(subst /, , $(realpath .)))
 
 
-GIT_ARCHIVE := stone-wheezy_1.1.1.orig.tar
+GIT_ARCHIVE := $(shell ./script/git-archive.pl ${DIR_NAME}).orig.tar
 GIT_HEAD	:= $(shell ./script/git-head.pl)
 
 BINS		:=

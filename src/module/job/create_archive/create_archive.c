@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 16 Jan 2014 16:39:09 +0100                            *
+*  Last modified: Fri, 24 Jan 2014 12:12:01 +0100                            *
 \****************************************************************************/
 
 // asprintf, versionsort
@@ -49,6 +49,7 @@
 #include <libstone/format.h>
 #include <libstone/host.h>
 #include <libstone/io.h>
+#include <libstone/library/archive.h>
 #include <libstone/library/media.h>
 #include <libstone/log.h>
 #include <libstone/script.h>
@@ -65,7 +66,7 @@ static int st_job_create_archive_archive(struct st_job * job, struct st_job_sele
 static bool st_job_create_archive_check(struct st_job * job);
 static void st_job_create_archive_free(struct st_job * job);
 static void st_job_create_archive_init(void) __attribute__((constructor));
-static void st_job_create_archive_new_job(struct st_job * job, struct st_database_connection * db);
+static void st_job_create_archive_new_job(struct st_job * job);
 static void st_job_create_archive_on_error(struct st_job * job);
 static void st_job_create_archive_post_run(struct st_job * job);
 static bool st_job_create_archive_pre_run(struct st_job * j);
@@ -100,7 +101,7 @@ static int st_job_create_archive_archive(struct st_job * job, struct st_job_sele
 		char * fixed_path = strdup(path);
 		st_util_string_fix_invalid_utf8(fixed_path);
 
-		st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_normal, "Path '%s' contains invalid utf8 characters", fixed_path);
+		st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_normal, "Path '%s' contains invalid utf8 characters", fixed_path);
 
 		free(fixed_path);
 		return 1;
@@ -108,7 +109,7 @@ static int st_job_create_archive_archive(struct st_job * job, struct st_job_sele
 
 	struct stat st;
 	if (lstat(path, &st)) {
-		st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Error while getting information about: %s", path);
+		st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Error while getting information about: %s", path);
 		return 1;
 	}
 
@@ -118,7 +119,7 @@ static int st_job_create_archive_archive(struct st_job * job, struct st_job_sele
 	int failed = self->worker->ops->add_file(self->worker, path);
 	if (failed) {
 		if (failed < 0)
-			st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Error while adding file: '%s'", path);
+			st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Error while adding file: '%s'", path);
 		return failed;
 	}
 
@@ -127,7 +128,7 @@ static int st_job_create_archive_archive(struct st_job * job, struct st_job_sele
 	if (S_ISREG(st.st_mode)) {
 		int fd = open(path, O_RDONLY);
 		if (fd < 0) {
-			st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Error while opening file: '%s' because %m", path);
+			st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Error while opening file: '%s' because %m", path);
 			return -1;
 		}
 
@@ -145,7 +146,7 @@ static int st_job_create_archive_archive(struct st_job * job, struct st_job_sele
 		}
 
 		if (nb_read < 0) {
-			st_job_add_record(self->connect, st_log_level_error, job, st_job_record_notif_important, "Unexpected error while reading from file '%s' because %m", path);
+			st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Unexpected error while reading from file '%s' because %m", path);
 			failed = -1;
 		}
 
@@ -155,7 +156,7 @@ static int st_job_create_archive_archive(struct st_job * job, struct st_job_sele
 			self->worker->ops->end_file(self->worker);
 	} else if (S_ISDIR(st.st_mode)) {
 		if (access(path, F_OK | R_OK | X_OK)) {
-			st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Can't access to directory %s", path);
+			st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Can't access to directory %s", path);
 			return 1;
 		}
 
@@ -191,8 +192,8 @@ static bool st_job_create_archive_check(struct st_job * job) {
 static void st_job_create_archive_free(struct st_job * job) {
 	struct st_job_create_archive_private * self = job->data;
 	if (self != NULL) {
-		self->connect->ops->close(self->connect);
-		self->connect->ops->free(self->connect);
+		job->db_connect->ops->close(job->db_connect);
+		job->db_connect->ops->free(job->db_connect);
 	}
 
 	if (self->nb_selected_paths > 0) {
@@ -207,6 +208,7 @@ static void st_job_create_archive_free(struct st_job * job) {
 		self->nb_selected_paths = 0;
 	}
 
+	st_archive_free(self->archive);
 	self->worker->ops->free(self->worker);
 	self->meta->ops->free(self->meta);
 
@@ -218,13 +220,13 @@ static void st_job_create_archive_init(void) {
 	st_job_register_driver(&st_job_create_archive_driver);
 }
 
-static void st_job_create_archive_new_job(struct st_job * job, struct st_database_connection * db) {
+static void st_job_create_archive_new_job(struct st_job * job) {
 	struct st_job_create_archive_private * self = malloc(sizeof(struct st_job_create_archive_private));
-	self->connect = db->config->ops->connect(db->config);
+	job->db_connect = job->db_config->ops->connect(job->db_config);
 
 	self->nb_selected_paths = 0;
-	self->selected_paths = self->connect->ops->get_selected_paths(self->connect, job, &self->nb_selected_paths);
-	self->pool = st_pool_get_by_job(job, self->connect);
+	self->selected_paths = job->db_connect->ops->get_selected_paths(job->db_connect, job, &self->nb_selected_paths);
+	self->pool = st_pool_get_by_job(job, job->db_connect);
 
 	self->total_done = self->total_size = 0;
 
@@ -240,7 +242,30 @@ static void st_job_create_archive_new_job(struct st_job * job, struct st_databas
 		if (size >= 0)
 			self->total_size += size;
 		else
-			st_job_add_record(self->connect, st_log_level_error, job, st_job_record_notif_important, "Error while computing size of '%s'", p->path);
+			st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Error while computing size of '%s'", p->path);
+	}
+
+	self->archive = job->db_connect->ops->get_archive_volumes_by_job(job->db_connect, job);
+	self->archive_size = 0;
+	self->nb_files = 0;
+
+	if (self->archive == NULL) {
+		self->archive = st_archive_new(job->name, job->user);
+		self->archive->metadatas = strdup(job->meta);
+	}
+
+	for (i = 0; i < self->archive->nb_volumes; i++) {
+		struct st_archive_volume * vol = self->archive->volumes + i;
+		job->db_connect->ops->get_archive_files_by_job_and_archive_volume(job->db_connect, job, vol);
+		self->archive_size += vol->size;
+		self->nb_files += vol->nb_files;
+
+		unsigned int j;
+		for (j = 0; j < vol->nb_files; j++) {
+			struct st_archive_files * ff = vol->files + j;
+			struct st_archive_file * file = ff->file;
+			job->db_connect->ops->get_checksums_of_file(job->db_connect, file);
+		}
 	}
 
 	self->worker = NULL;
@@ -252,7 +277,7 @@ static void st_job_create_archive_new_job(struct st_job * job, struct st_databas
 static void st_job_create_archive_on_error(struct st_job * job) {
 	struct st_job_create_archive_private * self = job->data;
 
-	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_on_error, self->pool) == 0)
+	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_on_error, self->pool) == 0)
 		return;
 
 	json_t * pool = json_object();
@@ -286,7 +311,7 @@ static void st_job_create_archive_on_error(struct st_job * job) {
 	json_object_set_new(sdata, "host", st_host_get_info());
 	json_object_set_new(sdata, "job", json_object());
 
-	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_on_error, self->pool, sdata);
+	json_t * returned_data = st_script_run(job->db_connect, job, job->driver->name, st_script_type_on_error, self->pool, sdata);
 
 	json_decref(returned_data);
 	json_decref(sdata);
@@ -295,12 +320,12 @@ static void st_job_create_archive_on_error(struct st_job * job) {
 static void st_job_create_archive_post_run(struct st_job * job) {
 	struct st_job_create_archive_private * self = job->data;
 
-	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_post, self->pool) == 0)
+	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_post, self->pool) == 0)
 		return;
 
 	json_t * data = self->worker->ops->post_run(self->worker);
 
-	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_post, self->pool, data);
+	json_t * returned_data = st_script_run(job->db_connect, job, job->driver->name, st_script_type_post, self->pool, data);
 
 	json_decref(returned_data);
 	json_decref(data);
@@ -309,41 +334,147 @@ static void st_job_create_archive_post_run(struct st_job * job) {
 static bool st_job_create_archive_pre_run(struct st_job * job) {
 	struct st_job_create_archive_private * self = job->data;
 
-	if (self->connect->ops->get_nb_scripts(self->connect, job->driver->name, st_script_type_pre, self->pool) == 0)
+	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_pre, self->pool) == 0)
 		return true;
 
-	json_t * pool = json_object();
-	json_object_set_new(pool, "uuid", json_string(self->pool->uuid));
-	json_object_set_new(pool, "name", json_string(self->pool->name));
-
-	json_t * archive = json_object();
-	json_object_set_new(archive, "name", json_string(job->name));
+	struct st_archive * archive = self->archive;
+	json_t * jarchive = json_object();
+	json_object_set_new(jarchive, "name", json_string(archive->name));
+	json_object_set_new(jarchive, "uuid", json_string(archive->uuid));
+	json_object_set_new(jarchive, "size", json_integer(self->archive_size));
 
 	unsigned int i;
 	json_t * paths = json_array();
 	for (i = 0; i < self->nb_selected_paths; i++) {
 		struct st_job_selected_path * p = self->selected_paths + i;
-		json_array_append_new(paths, json_string(p->path));
+		ssize_t size = st_format_get_size(p->path, true, self->pool->format);
+
+		json_t * path = json_object();
+		json_object_set_new(path, "name", json_string(p->path));
+		json_object_set_new(path, "size", json_integer(size));
+
+		json_array_append_new(paths, path);
 	}
-	json_object_set_new(archive, "paths", paths);
-	json_object_set_new(archive, "pool", pool);
+	json_object_set_new(jarchive, "paths", paths);
+
+	json_t * pool = json_object();
+	json_object_set_new(pool, "uuid", json_string(self->pool->uuid));
+	json_object_set_new(pool, "name", json_string(self->pool->name));
+	json_object_set_new(jarchive, "pool", pool);
 
 	if (job->meta != NULL) {
 		json_error_t error;
 		json_t * meta = json_loads(job->meta, 0, &error);
+
 		if (meta != NULL)
-			json_object_set_new(archive, "metadatas", meta);
+			json_object_set_new(jarchive, "metadatas", meta);
 		else
-			json_object_set_new(archive, "metadatas", json_null());
+			json_object_set_new(jarchive, "metadatas", json_null());
 	} else
-		json_object_set_new(archive, "metadatas", json_null());
+		json_object_set_new(jarchive, "metadatas", json_null());
+
+	json_t * volumes = json_array();
+	unsigned int nb_files = 0;
+	char * last_file = NULL;
+	for (i = 0; i < archive->nb_volumes; i++) {
+		json_t * volume = json_object();
+		struct st_archive_volume * vol = archive->volumes + i;
+
+		json_object_set_new(volume, "position", json_integer(i));
+		json_object_set_new(volume, "size", json_integer(vol->size));
+		json_object_set_new(volume, "start time", json_integer(vol->start_time));
+		json_object_set_new(volume, "end time", json_integer(vol->end_time));
+
+		json_t * checksum = json_object();
+		unsigned int nb_digests, j;
+		const void ** checksums = st_hashtable_keys(vol->digests, &nb_digests);
+		for (j = 0; j < nb_digests; j++) {
+			struct st_hashtable_value digest = st_hashtable_get(vol->digests, checksums[j]);
+			json_object_set_new(checksum, checksums[j], json_string(digest.value.string));
+		}
+		free(checksums);
+		json_object_set_new(volume, "checksums", checksum);
+		if (vol->check_time > 0) {
+			json_object_set_new(volume, "checksum ok", vol->check_ok ? json_true() : json_false());
+			json_object_set_new(volume, "check time", json_integer(vol->check_time));
+		}
+
+		json_t * jfiles = json_array();
+		for (j = 0; j < vol->nb_files; j++) {
+			struct st_archive_files * files = vol->files + j;
+			struct st_archive_file * file = files->file;
+			json_t * jfile = json_object();
+
+			json_object_set_new(jfile, "path", json_string(file->name));
+			json_object_set_new(jfile, "type", json_string(st_archive_file_type_to_string(file->type)));
+			json_object_set_new(jfile, "mime type", json_string(file->mime_type));
+
+			json_object_set_new(jfile, "owner id", json_integer(file->ownerid));
+			json_object_set_new(jfile, "owner", json_string(file->owner));
+			json_object_set_new(jfile, "group id", json_integer(file->groupid));
+			json_object_set_new(jfile, "group", json_string(file->group));
+
+			char perm[10];
+			st_util_file_convert_mode(perm, file->perm);
+			json_object_set_new(jfile, "perm", json_string(perm));
+			json_object_set_new(jfile, "size", json_integer(file->size));
+			json_object_set_new(jfile, "block position", json_integer(files->position));
+
+			unsigned int k;
+			checksum = json_object();
+			checksums = st_hashtable_keys(file->digests, &nb_digests);
+			for (k = 0; k < nb_digests; k++) {
+				struct st_hashtable_value digest = st_hashtable_get(file->digests, checksums[k]);
+				json_object_set_new(checksum, checksums[k], json_string(digest.value.string));
+			}
+			free(checksums);
+			json_object_set_new(jfile, "checksums", checksum);
+			if (file->check_time > 0) {
+				json_object_set_new(jfile, "checksum ok", file->check_ok ? json_true() : json_false());
+				json_object_set_new(jfile, "check time", json_integer(file->check_time));
+			}
+
+			json_object_set_new(jfile, "archived time", json_integer(file->archived_time));
+
+			json_array_append_new(jfiles, jfile);
+		}
+		json_object_set_new(volume, "files", jfiles);
+		json_object_set_new(volume, "nb files", json_integer(vol->nb_files));
+
+		json_t * media = json_object();
+		json_object_set_new(media, "uuid", json_string(vol->media->uuid));
+		if (vol->media->label != NULL)
+			json_object_set_new(media, "label", json_string(vol->media->label));
+		else
+			json_object_set_new(media, "label", json_null());
+		if (vol->media->name != NULL)
+			json_object_set_new(media, "name", json_string(vol->media->name));
+		else
+			json_object_set_new(media, "name", json_null());
+		json_object_set_new(media, "medium serial number", json_string(vol->media->medium_serial_number));
+		json_object_set_new(volume, "media", media);
+
+		json_array_append_new(volumes, volume);
+
+		nb_files += vol->nb_files;
+		if (last_file != NULL && !strcmp(last_file, vol->files[0].file->name))
+			nb_files--;
+		last_file = vol->files[vol->nb_files - 1].file->name;
+	}
+	json_object_set_new(jarchive, "volumes", volumes);
+	json_object_set_new(jarchive, "nb volumes", json_integer(self->archive->nb_volumes));
+	json_object_set_new(jarchive, "nb files", json_integer(nb_files));
+
+	json_t * jjob = json_object();
+	json_object_set_new(jjob, "name", json_string(job->name));
+	json_object_set_new(jjob, "host", st_host_get_info());
+	json_object_set_new(jjob, "num run", json_integer(job->num_runs));
 
 	json_t * sdata = json_object();
-	json_object_set_new(sdata, "archive", archive);
-	json_object_set_new(sdata, "host", st_host_get_info());
-	json_object_set_new(sdata, "job", json_object());
+	json_object_set_new(sdata, "archive", jarchive);
+	json_object_set_new(sdata, "job", jjob);
 
-	json_t * returned_data = st_script_run(self->connect, job, job->driver->name, st_script_type_pre, self->pool, sdata);
+	json_t * returned_data = st_script_run(job->db_connect, job, job->driver->name, st_script_type_pre, self->pool, sdata);
 	bool sr = st_io_json_should_run(returned_data);
 
 	json_decref(returned_data);
@@ -355,24 +486,24 @@ static bool st_job_create_archive_pre_run(struct st_job * job) {
 static int st_job_create_archive_run(struct st_job * job) {
 	struct st_job_create_archive_private * self = job->data;
 
-	st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_important, "Start archive job (named: %s), num runs %ld", job->name, job->num_runs);
+	st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_important, "Start archive job (named: %s), num runs %ld", job->name, job->num_runs);
 
 	if (!job->user->can_archive) {
-		st_job_add_record(self->connect, st_log_level_error, job, st_job_record_notif_important, "Error, user (%s) cannot create archive", job->user->login);
+		st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Error, user (%s) cannot create archive", job->user->login);
 		return 1;
 	}
 
-	char bufsize[32];
-	st_util_file_convert_size_to_string(self->total_size, bufsize, 32);
-	st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_normal, "Will archive %s", bufsize);
+	char bufsize[16];
+	st_util_file_convert_size_to_string(self->total_size, bufsize, 16);
+	st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_normal, "Will archive %s", bufsize);
 
 	if (job->db_status == st_job_status_stopped) {
-		st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Job stopped by user request");
+		st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Job stopped by user request");
 		return 0;
 	}
 
-	self->meta = st_job_create_archive_meta_worker_new(job, self->connect);
-	self->worker = st_job_create_archive_single_worker(job, self->total_size, self->connect, self->meta);
+	self->meta = st_job_create_archive_meta_worker_new(job, job->db_connect);
+	self->worker = st_job_create_archive_single_worker(job, self->archive, self->total_size, job->db_connect, self->meta);
 
 	bool ok = false;
 	if (job->db_status != st_job_status_stopped) {
@@ -387,7 +518,7 @@ static int st_job_create_archive_run(struct st_job * job) {
 		unsigned int i;
 		for (i = 0; i < self->nb_selected_paths && job->db_status != st_job_status_stopped && failed >= 0; i++) {
 			struct st_job_selected_path * p = self->selected_paths + i;
-			st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_normal, "Archiving file: %s", p->path);
+			st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_normal, "Archiving file: %s", p->path);
 			failed = st_job_create_archive_archive(job, p, p->path);
 		}
 
@@ -397,11 +528,11 @@ static int st_job_create_archive_run(struct st_job * job) {
 		self->meta->ops->wait(self->meta, true);
 
 		job->done = 0.98;
-		st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_normal, "Synchronize database");
+		st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_normal, "Synchronize database");
 		self->worker->ops->sync_db(self->worker);
 
 		job->done = 0.99;
-		st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_normal, "Writing index file");
+		st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_normal, "Writing index file");
 		self->worker->ops->write_meta(self->worker);
 
 		if (st_hashtable_has_key(job->option, "check_archive")) {
@@ -430,16 +561,16 @@ static int st_job_create_archive_run(struct st_job * job) {
 			self->worker->ops->schedule_auto_check_archive(self->worker);
 
 		if (stopped)
-			st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_important, "Job stopped by user request");
+			st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Job stopped by user request");
 
 		job->done = 1;
-		st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_important, "Archive job (named: %s) finished", job->name);
+		st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_important, "Archive job (named: %s) finished", job->name);
 	} else {
 		self->worker->ops->close(self->worker);
 		self->meta->ops->wait(self->meta, true);
 
-		st_job_add_record(self->connect, st_log_level_warning, job, st_job_record_notif_normal, "Job stopped by user request");
-		st_job_add_record(self->connect, st_log_level_info, job, st_job_record_notif_important, "Archive job (named: %s) finished with status 'stopped'", job->name);
+		st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_normal, "Job stopped by user request");
+		st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_important, "Archive job (named: %s) finished with status 'stopped'", job->name);
 	}
 
 	return failed;

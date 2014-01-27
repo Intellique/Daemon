@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 06 Mar 2013 19:01:59 +0100                            *
+*  Last modified: Fri, 24 Jan 2014 13:17:33 +0100                            *
 \****************************************************************************/
 
 // json
@@ -34,6 +34,8 @@
 #include <libstone/util/json.h>
 #include <libstone/util/string.h>
 #include <libstone/util/util.h>
+
+#include "../io.h"
 
 struct st_hashtable * st_util_json_from_string(const char * string) {
 	if (string == NULL)
@@ -58,5 +60,12 @@ struct st_hashtable * st_util_json_from_string(const char * string) {
 	json_decref(obj);
 
 	return values;
+}
+
+char * st_util_json_archive_to_string(struct st_archive * archive) {
+	json_t * jarchive = st_io_json_archive(archive);
+	char * str = json_dumps(jarchive, JSON_COMPACT);
+	json_decref(jarchive);
+	return str;
 }
 

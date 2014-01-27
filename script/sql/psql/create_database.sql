@@ -457,6 +457,21 @@ CREATE TABLE Job (
     options hstore NOT NULL DEFAULT ''
 );
 
+CREATE TABLE JobRun (
+    id BIGSERIAL PRIMARY KEY,
+    job BIGSERIAL NOT NULL REFERENCES Job(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    numRun INTEGER NOT NULL DEFAULT 1 CHECK (numRun > 0),
+
+    starttime TIMESTAMP(0) NOT NULL,
+    endtime TIMESTAMP(0),
+
+    status JobStatus NOT NULL DEFAULT 'running',
+    exitcode INTEGER NOT NULL DEFAULT 0,
+    stoppedbyuser BOOLEAN NOT NULL DEFAULT FALSE,
+
+    CHECK (starttime <= endtime)
+);
+
 CREATE TABLE ArchiveVolume (
     id BIGSERIAL PRIMARY KEY,
 
@@ -472,8 +487,7 @@ CREATE TABLE ArchiveVolume (
     archive BIGINT NOT NULL REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE CASCADE,
     media INTEGER NOT NULL REFERENCES Media(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     mediaPosition INTEGER NOT NULL DEFAULT 0 CHECK (mediaPosition >= 0),
-    job BIGINT REFERENCES Job(id) ON UPDATE CASCADE ON DELETE SET NULL,
-    host INTEGER NOT NULL REFERENCES Host(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    jobrun BIGINT REFERENCES JobRun(id) ON UPDATE CASCADE ON DELETE SET NULL,
 
     CONSTRAINT archiveVolume_time CHECK (starttime <= endtime)
 );
@@ -543,9 +557,8 @@ CREATE TABLE ArchiveVolumeToChecksumResult (
 CREATE TABLE JobRecord (
     id BIGSERIAL PRIMARY KEY,
 
-    job BIGINT NOT NULL REFERENCES Job(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    jobrun BIGINT NOT NULL REFERENCES Jobrun(id) ON UPDATE CASCADE ON DELETE CASCADE,
     status JobStatus NOT NULL CHECK (status != 'disable'),
-    numRun INTEGER NOT NULL DEFAULT 1 CHECK (numRun > 0),
     timestamp TIMESTAMP(0) NOT NULL DEFAULT NOW(),
     message TEXT NOT NULL,
     notif JobRecordNotif NOT NULL DEFAULT 'normal'

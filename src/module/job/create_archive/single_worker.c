@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 21 Jan 2014 17:54:50 +0100                            *
+*  Last modified: Fri, 24 Jan 2014 13:28:18 +0100                            *
 \****************************************************************************/
 
 // asprintf
@@ -48,6 +48,7 @@
 #include <libstone/log.h>
 #include <libstone/util/file.h>
 #include <libstone/util/hashtable.h>
+#include <libstone/util/json.h>
 #include <libstone/user.h>
 #include <stoned/library/changer.h>
 #include <stoned/library/slot.h>
@@ -121,19 +122,12 @@ static struct st_job_create_archive_data_worker_ops st_job_create_archive_single
 };
 
 
-struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(struct st_job * job, ssize_t archive_size, struct st_database_connection * connect, struct st_job_create_archive_meta_worker * meta_worker) {
-	struct st_job_create_archive_private * jp = job->data;
-
+struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(struct st_job * job, struct st_archive * archive, ssize_t archive_size, struct st_database_connection * connect, struct st_job_create_archive_meta_worker * meta_worker) {
 	struct st_job_create_archive_single_worker_private * self = malloc(sizeof(struct st_job_create_archive_single_worker_private));
 	self->job = job;
 	self->connect = connect;
 
-	self->archive = jp->connect->ops->get_archive_by_job(jp->connect, job);
-	if (self->archive == NULL) {
-		self->archive = st_archive_new(job->name, job->user);
-		self->archive->metadatas = strdup(job->meta);
-	}
-
+	self->archive = archive;
 	self->pool = st_pool_get_by_job(job, connect);
 
 	if (self->pool == NULL && self->archive != NULL) {
@@ -154,7 +148,7 @@ struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(s
 	self->drive = NULL;
 	self->writer = NULL;
 
-	self->checksums = jp->connect->ops->get_checksums_by_pool(jp->connect, self->pool, &self->nb_checksums);
+	self->checksums = self->job->db_connect->ops->get_checksums_by_pool(self->job->db_connect, self->pool, &self->nb_checksums);
 
 	self->checksum_writer = NULL;
 	self->meta_worker = meta_worker;
@@ -242,7 +236,7 @@ static int st_job_create_archive_single_worker_change_volume(struct st_job_creat
 	self->writer->ops->close(self->writer);
 
 	struct st_archive_volume * last_volume = self->archive->volumes + (self->archive->nb_volumes - 1);
-	last_volume->end_time = self->archive->end_time = time(NULL);
+	last_volume->end_time = time(NULL);
 	last_volume->size = self->writer->ops->position(self->writer);
 
 	last_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
@@ -304,7 +298,7 @@ static void st_job_create_archive_single_worker_close(struct st_job_create_archi
 	self->writer->ops->close(self->writer);
 
 	struct st_archive_volume * last_volume = self->archive->volumes + (self->archive->nb_volumes - 1);
-	last_volume->end_time = self->archive->end_time = time(NULL);
+	last_volume->end_time = time(NULL);
 	last_volume->size = self->writer->ops->position(self->writer);
 
 	last_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
@@ -350,8 +344,7 @@ static void st_job_create_archive_single_worker_free(struct st_job_create_archiv
 		self->drive->lock->ops->unlock(self->drive->lock);
 
 	self->writer->ops->free(self->writer);
-
-	st_archive_free(self->archive);
+	self->archive = NULL;
 
 	unsigned int i;
 	for (i = 0; i < self->nb_checksums; i++)
@@ -744,7 +737,14 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 static int st_job_create_archive_single_worker_sync_db(struct st_job_create_archive_data_worker * worker) {
 	struct st_job_create_archive_single_worker_private * self = worker->data;
 
-	return self->connect->ops->sync_archive(self->connect, self->archive);
+	int failed = self->connect->ops->sync_archive(self->connect, self->archive);
+
+	char * report = st_util_json_archive_to_string(self->archive);
+	if (report != NULL)
+		self->connect->ops->add_report(self->connect, self->job, self->archive, report);
+	free(report);
+
+	return failed;
 }
 
 static ssize_t st_job_create_archive_single_worker_write(struct st_job_create_archive_data_worker * worker, void * buffer, ssize_t length) {
