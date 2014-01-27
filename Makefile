@@ -17,7 +17,7 @@ NAME		:= STone
 DIR_NAME	:= $(lastword $(subst /, , $(realpath .)))
 
 
-GIT_ARCHIVE := stone-squeeze-$(shell git describe).orig.tar
+GIT_ARCHIVE := stone-squeeze-${DIR_NAME}.orig.tar
 GIT_HEAD	:= $(shell ./script/git-head.pl)
 
 BINS		:=
