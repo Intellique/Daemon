@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 23 Jan 2014 11:39:42 +0100                            *
+*  Last modified: Fri, 31 Jan 2014 13:02:27 +0100                            *
 \****************************************************************************/
 
 // free, malloc
@@ -94,6 +94,7 @@ void st_archive_free(struct st_archive * archive) {
 	for (i = 0; i < archive->nb_volumes; i++)
 		st_archive_volume_free(archive->volumes + i);
 	free(archive->volumes);
+	free(archive->metadatas);
 	free(archive->db_data);
 
 	free(archive);
