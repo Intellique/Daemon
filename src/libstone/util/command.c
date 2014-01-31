@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 18 Nov 2013 15:46:52 +0100                            *
+*  Last modified: Fri, 31 Jan 2014 13:17:17 +0100                            *
 \****************************************************************************/
 
 // fcntl
@@ -71,7 +71,7 @@ void st_util_command_free(struct st_util_command * command, unsigned int nb_comm
 		free(command->command);
 
 		unsigned int j;
-		for (j = 0; j < command[i].nb_parameters; j++)
+		for (j = 0; j <= command[i].nb_parameters; j++)
 			free(command[i].params[j]);
 		free(command[i].params);
 	}
@@ -122,7 +122,7 @@ void st_util_command_new(struct st_util_command * command, const char * command_
 	unsigned int i;
 	for (i = 0; i < nb_params; i++)
 		command->params[i + 1] = strdup(params[i]);
-	command->params[i + 1] = 0;
+	command->params[i + 1] = NULL;
 
 	command->pid = -1;
 	for (i = 0; i < 3; i++) {
