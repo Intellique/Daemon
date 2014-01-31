@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 23 Jan 2014 17:53:59 +0100                            *
+*  Last modified: Fri, 31 Jan 2014 13:13:42 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2633,6 +2633,8 @@ static bool st_db_postgresql_add_report(struct st_database_connection * connect,
 		st_db_postgresql_get_error(result, query);
 
 	PQclear(result);
+	free(jobid);
+	free(archiveid);
 
 	return status == PGRES_COMMAND_OK;
 }
