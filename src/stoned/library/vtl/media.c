@@ -90,11 +90,15 @@ struct st_media * st_vtl_media_init(char * base_dir, char * prefix, unsigned int
 
 		media->first_used = time(NULL);
 		media->use_before = media->first_used + format->life_span;
+		media->last_read = media->last_write = 0;
 
 		media->load_count = 0;
 		media->read_count = 0;
 		media->write_count = 0;
 		media->operation_count = 0;
+
+		media->nb_total_read = media->nb_total_write = 0;
+		media->nb_read_errors = media->nb_write_errors = 0;
 
 		media->block_size = format->block_size;
 		media->free_block = format->capacity / format->block_size;

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 16 Jan 2014 16:19:32 +0100                            *
+*  Last modified: Wed, 05 Feb 2014 17:22:15 +0100                            *
 \****************************************************************************/
 
 #define _XOPEN_SOURCE 500
@@ -118,6 +118,17 @@ int st_db_postgresql_get_long(PGresult * result, int row, int column, long * val
 	return value != NULL;
 }
 
+int st_db_postgresql_get_long_add(PGresult * result, int row, int column, long * val) {
+	long current = 0;
+
+	int failed = st_db_postgresql_get_long(result, row, column, &current);
+
+	if (failed == 0 && val != NULL)
+		*val += current;
+
+	return failed;
+}
+
 int st_db_postgresql_get_ssize(PGresult * result, int row, int column, ssize_t * val) {
 	if (column < 0)
 		return -1;
@@ -175,6 +186,18 @@ int st_db_postgresql_get_time(PGresult * result, int row, int column, time_t * v
 	return failed;
 }
 
+int st_db_postgresql_get_time_max(PGresult * result, int row, int column, time_t * val) {
+	time_t current = 0;
+
+	int failed = st_db_postgresql_get_time(result, row, column, &current);
+	if (failed == 0 && val != NULL) {
+		if (*val < current)
+			*val = current;
+	}
+
+	return failed;
+}
+
 int st_db_postgresql_get_uchar(PGresult * result, int row, int column, unsigned char * val) {
 	if (column < 0)
 		return -1;
@@ -195,6 +218,17 @@ int st_db_postgresql_get_uint(PGresult * result, int row, int column, unsigned i
 		return 0;
 
 	return value != NULL;
+}
+
+int st_db_postgresql_get_uint_add(PGresult * result, int row, int column, unsigned int * val) {
+	unsigned int current = 0;
+
+	int failed = st_db_postgresql_get_uint(result, row, column, &current);
+
+	if (failed == 0 && val != NULL)
+		*val += current;
+
+	return failed;
 }
 
 const char * st_db_postgresql_job_record_notif_to_string(enum st_job_record_notif notif) {
