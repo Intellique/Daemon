@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 23 Jan 2014 17:49:02 +0100                            *
+*  Last modified: Fri, 31 Jan 2014 16:34:41 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -141,6 +141,8 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 		free(job);
 	}
 	free(jobs);
+
+	st_sched_lock->ops->free(st_sched_lock);
 }
 
 static void st_sched_exit(int signal) {
