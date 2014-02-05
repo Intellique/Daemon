@@ -385,8 +385,7 @@ CREATE TABLE Archive (
 
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
-    CONSTRAINT archive_id CHECK (id != copyOf),
-    CONSTRAINT archive_time CHECK (starttime <= endtime)
+    CONSTRAINT archive_id CHECK (id != copyOf)
 );
 
 CREATE TABLE ArchiveFile (
