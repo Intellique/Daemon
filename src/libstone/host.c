@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 16 Jan 2014 10:38:20 +0100                            *
+*  Last modified: Fri, 31 Jan 2014 13:54:08 +0100                            *
 \****************************************************************************/
 
 // NULL
@@ -35,6 +35,13 @@
 
 static struct st_host host = { NULL, NULL };
 
+static void st_host_exit(void) __attribute__((destructor));
+
+
+static void st_host_exit() {
+	free(host.hostname);
+	free(host.uuid);
+}
 
 bool st_host_init(struct st_database_connection * connect) {
 	if (connect == NULL)
