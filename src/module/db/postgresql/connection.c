@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 31 Jan 2014 13:13:42 +0100                            *
+*  Last modified: Wed, 05 Feb 2014 18:00:23 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -1426,7 +1426,7 @@ static struct st_media * st_db_postgresql_get_media(struct st_database_connectio
 
 	if (job != NULL) {
 		query = "select_media_by_job";
-		st_db_postgresql_prepare(self, query, "SELECT m.id, m.uuid, label, mediumserialnumber, m.name, m.status, location, firstused, usebefore, loadcount, readcount, writecount, operationcount, m.blocksize, freeblock, totalblock, m.type, nbfiles, densitycode, mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id LEFT JOIN job j ON j.media = m.id WHERE j.id = $1 LIMIT 1");
+		st_db_postgresql_prepare(self, query, "SELECT m.id, m.uuid, label, mediumserialnumber, m.name, m.status, location, firstused, usebefore, lastread, lastwrite, loadcount, readcount, writecount, operationcount, nbtotalblockread, nbtotalblockwrite, nbreaderror, nbwriteerror, m.blocksize, freeblock, totalblock, m.type, nbfiles, densitycode, mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id LEFT JOIN job j ON j.media = m.id WHERE j.id = $1 LIMIT 1");
 
 		struct st_db_postgresql_job_data * job_data = job->db_data;
 		char * jobid;
@@ -1438,19 +1438,19 @@ static struct st_media * st_db_postgresql_get_media(struct st_database_connectio
 		free(jobid);
 	} else if (uuid != NULL) {
 		query = "select_media_by_uuid";
-		st_db_postgresql_prepare(self, query, "SELECT m.id, m.uuid, label, mediumserialnumber, m.name, m.status, location, firstused, usebefore, loadcount, readcount, writecount, operationcount, m.blocksize, freeblock, totalblock, m.type, nbfiles, densitycode, mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE m.uuid = $1 LIMIT 1");
+		st_db_postgresql_prepare(self, query, "SELECT m.id, m.uuid, label, mediumserialnumber, m.name, m.status, location, firstused, usebefore, lastread, lastwrite, loadcount, readcount, writecount, operationcount, nbtotalblockread, nbtotalblockwrite, nbreaderror, nbwriteerror, m.blocksize, freeblock, totalblock, m.type, nbfiles, densitycode, mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE m.uuid = $1 LIMIT 1");
 
 		const char * param[] = { uuid };
 		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 	} else if (medium_serial_number != NULL) {
 		query = "select_media_by_medium_serial_number";
-		st_db_postgresql_prepare(self, query, "SELECT m.id, m.uuid, label, mediumserialnumber, m.name, m.status, location, firstused, usebefore, loadcount, readcount, writecount, operationcount, m.blocksize, freeblock, totalblock, m.type, nbfiles, densitycode, mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE mediumserialnumber = $1 LIMIT 1");
+		st_db_postgresql_prepare(self, query, "SELECT m.id, m.uuid, label, mediumserialnumber, m.name, m.status, location, firstused, usebefore, lastread, lastwrite, loadcount, readcount, writecount, operationcount, nbtotalblockread, nbtotalblockwrite, nbreaderror, nbwriteerror, m.blocksize, freeblock, totalblock, m.type, nbfiles, densitycode, mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE mediumserialnumber = $1 LIMIT 1");
 
 		const char * param[] = { medium_serial_number };
 		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 	} else {
 		query = "select_media_by_label";
-		st_db_postgresql_prepare(self, query, "SELECT m.id, m.uuid, label, mediumserialnumber, m.name, m.status, location, firstused, usebefore, loadcount, readcount, writecount, operationcount, m.blocksize, freeblock, totalblock, m.type, nbfiles, densitycode, mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE label = $1 LIMIT 1");
+		st_db_postgresql_prepare(self, query, "SELECT m.id, m.uuid, label, mediumserialnumber, m.name, m.status, location, firstused, usebefore, lastread, lastwrite, loadcount, readcount, writecount, operationcount, nbtotalblockread, nbtotalblockwrite, nbreaderror, nbwriteerror, m.blocksize, freeblock, totalblock, m.type, nbfiles, densitycode, mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE label = $1 LIMIT 1");
 
 		const char * param[] = { label };
 		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -1476,28 +1476,39 @@ static struct st_media * st_db_postgresql_get_media(struct st_database_connectio
 		media->status = st_media_string_to_status(PQgetvalue(result, 0, 5));
 		media->location = st_media_string_to_location(PQgetvalue(result, 0, 6));
 
+		media->last_read = media->last_write = 0;
 		st_db_postgresql_get_time(result, 0, 7, &media->first_used);
 		st_db_postgresql_get_time(result, 0, 8, &media->use_before);
+		if (!PQgetisnull(result, 0, 9))
+			st_db_postgresql_get_time(result, 0, 9, &media->last_read);
+		if (!PQgetisnull(result, 0, 10))
+			st_db_postgresql_get_time(result, 0, 10, &media->last_write);
 
-		st_db_postgresql_get_long(result, 0, 9, &media->load_count);
-		st_db_postgresql_get_long(result, 0, 10, &media->read_count);
-		st_db_postgresql_get_long(result, 0, 11, &media->write_count);
-		st_db_postgresql_get_long(result, 0, 12, &media->operation_count);
+		st_db_postgresql_get_long(result, 0, 11, &media->nb_total_read);
+		st_db_postgresql_get_long(result, 0, 12, &media->nb_total_write);
 
-		st_db_postgresql_get_ssize(result, 0, 13, &media->block_size);
-		st_db_postgresql_get_ssize(result, 0, 14, &media->free_block);
-		st_db_postgresql_get_ssize(result, 0, 15, &media->total_block);
+		st_db_postgresql_get_uint(result, 0, 13, &media->nb_read_errors);
+		st_db_postgresql_get_uint(result, 0, 14, &media->nb_write_errors);
 
-		media->type = st_media_string_to_type(PQgetvalue(result, 0, 16));
-		st_db_postgresql_get_uint(result, 0, 17, &media->nb_volumes);
+		st_db_postgresql_get_long(result, 0, 15, &media->load_count);
+		st_db_postgresql_get_long(result, 0, 16, &media->read_count);
+		st_db_postgresql_get_long(result, 0, 17, &media->write_count);
+		st_db_postgresql_get_long(result, 0, 18, &media->operation_count);
+
+		st_db_postgresql_get_ssize(result, 0, 19, &media->block_size);
+		st_db_postgresql_get_ssize(result, 0, 20, &media->free_block);
+		st_db_postgresql_get_ssize(result, 0, 21, &media->total_block);
+
+		media->type = st_media_string_to_type(PQgetvalue(result, 0, 22));
+		st_db_postgresql_get_uint(result, 0, 23, &media->nb_volumes);
 
 		unsigned char density_code;
-		st_db_postgresql_get_uchar(result, 0, 18, &density_code);
-		enum st_media_format_mode mode = st_media_string_to_format_mode(PQgetvalue(result, 0, 19));
+		st_db_postgresql_get_uchar(result, 0, 24, &density_code);
+		enum st_media_format_mode mode = st_media_string_to_format_mode(PQgetvalue(result, 0, 25));
 		media->format = st_media_format_get_by_density_code(density_code, mode);
 
-		if (!PQgetisnull(result, 0, 20))
-			media->pool = st_pool_get_by_uuid(PQgetvalue(result, 0, 20));
+		if (!PQgetisnull(result, 0, 26))
+			media->pool = st_pool_get_by_uuid(PQgetvalue(result, 0, 26));
 	}
 
 	PQclear(result);
@@ -1645,10 +1656,11 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		media_data->id = -1;
 	}
 
+	bool found_id = false;
 	char * mediaid = NULL, * mediaformatid = NULL, * poolid = NULL;
 	if (media_data->id < 0 && media->medium_serial_number != NULL) {
-		const char * query = "select_media_by_medium_serial_number";
-		st_db_postgresql_prepare(self, query, "SELECT id, uuid, label, name, firstused, usebefore, loadcount, readcount, writecount, type, blocksize, mediaformat, pool FROM media WHERE mediumserialnumber = $1 FOR UPDATE NOWAIT");
+		const char * query = "select_media_id_by_medium_serial_number";
+		st_db_postgresql_prepare(self, query, "SELECT id, uuid, label FROM media WHERE mediumserialnumber = $1 FOR UPDATE NOWAIT");
 
 		const char * param[] = { media->medium_serial_number };
 		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -1659,39 +1671,22 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			st_db_postgresql_get_string_dup(result, 0, 0, &mediaid);
 			st_db_postgresql_get_long(result, 0, 0, &media_data->id);
+
 			st_db_postgresql_get_string(result, 0, 1, media->uuid, 37);
+
+			free(media->label);
+			media->label = NULL;
 			st_db_postgresql_get_string_dup(result, 0, 2, &media->label);
-			st_db_postgresql_get_string_dup(result, 0, 3, &media->name);
-			st_db_postgresql_get_time(result, 0, 4, &media->first_used);
-			st_db_postgresql_get_time(result, 0, 5, &media->use_before);
 
-			long old_value = media->load_count;
-			st_db_postgresql_get_long(result, 0, 6, &media->load_count);
-			media->load_count += old_value;
-
-			old_value = media->read_count;
-			st_db_postgresql_get_long(result, 0, 7, &media->read_count);
-			media->read_count += old_value;
-
-			old_value = media->write_count;
-			st_db_postgresql_get_long(result, 0, 8, &media->write_count);
-			media->write_count += old_value;
-
-			media->type = st_media_string_to_type(PQgetvalue(result, 0, 9));
-			st_db_postgresql_get_ssize(result, 0, 10, &media->block_size);
-
-			st_db_postgresql_get_string_dup(result, 0, 11, &mediaformatid);
-
-			if (!PQgetisnull(result, 0, 12))
-				st_db_postgresql_get_string_dup(result, 0, 12, &poolid);
+			found_id = true;
 		}
 
 		PQclear(result);
 	}
 
 	if (media_data->id < 0 && media->uuid[0] != '\0') {
-		const char * query = "select_media_by_uuid";
-		st_db_postgresql_prepare(self, query, "SELECT id, label, name, firstused, usebefore, loadcount, readcount, writecount, type, blocksize, mediaformat, pool FROM media WHERE uuid = $1 FOR UPDATE NOWAIT");
+		const char * query = "select_media_id_by_uuid";
+		st_db_postgresql_prepare(self, query, "SELECT id, mediumserialnumber, label FROM media WHERE uuid = $1 FOR UPDATE NOWAIT");
 
 		const char * param[] = { media->uuid };
 		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -1702,38 +1697,24 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			st_db_postgresql_get_string_dup(result, 0, 0, &mediaid);
 			st_db_postgresql_get_long(result, 0, 0, &media_data->id);
-			st_db_postgresql_get_string_dup(result, 0, 1, &media->label);
-			st_db_postgresql_get_string_dup(result, 0, 2, &media->name);
-			st_db_postgresql_get_time(result, 0, 3, &media->first_used);
-			st_db_postgresql_get_time(result, 0, 4, &media->use_before);
 
-			long old_value = media->load_count;
-			st_db_postgresql_get_long(result, 0, 5, &media->load_count);
-			media->load_count += old_value;
+			free(media->medium_serial_number);
+			media->medium_serial_number = NULL;
+			st_db_postgresql_get_string_dup(result, 0, 1, &media->medium_serial_number);
 
-			old_value = media->read_count;
-			st_db_postgresql_get_long(result, 0, 6, &media->read_count);
-			media->read_count += old_value;
+			free(media->label);
+			media->label = NULL;
+			st_db_postgresql_get_string_dup(result, 0, 2, &media->label);
 
-			old_value = media->write_count;
-			st_db_postgresql_get_long(result, 0, 7, &media->write_count);
-			media->write_count += old_value;
-
-			media->type = st_media_string_to_type(PQgetvalue(result, 0, 8));
-			st_db_postgresql_get_ssize(result, 0, 9, &media->block_size);
-
-			st_db_postgresql_get_string_dup(result, 0, 11, &mediaformatid);
-
-			if (!PQgetisnull(result, 0, 12))
-				st_db_postgresql_get_string_dup(result, 0, 12, &poolid);
+			found_id = true;
 		}
 
 		PQclear(result);
 	}
 
 	if (media_data->id < 0 && media->label != NULL) {
-		const char * query = "select_media_by_label_for_sync";
-		st_db_postgresql_prepare(self, query, "SELECT id, name, firstused, usebefore, loadcount, readcount, writecount, type, blocksize, mediaformat, pool FROM media WHERE label = $1 FOR UPDATE NOWAIT");
+		const char * query = "select_media_id_by_label_for_sync";
+		st_db_postgresql_prepare(self, query, "SELECT id, mediumserialnumber, uuid FROM media WHERE label = $1 FOR UPDATE NOWAIT");
 
 		const char * param[] = { media->label };
 		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -1744,29 +1725,59 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			st_db_postgresql_get_string_dup(result, 0, 0, &mediaid);
 			st_db_postgresql_get_long(result, 0, 0, &media_data->id);
-			st_db_postgresql_get_string_dup(result, 0, 1, &media->name);
-			st_db_postgresql_get_time(result, 0, 2, &media->first_used);
-			st_db_postgresql_get_time(result, 0, 3, &media->use_before);
 
-			long old_value = media->load_count;
-			st_db_postgresql_get_long(result, 0, 4, &media->load_count);
-			media->load_count += old_value;
+			free(media->medium_serial_number);
+			media->medium_serial_number = NULL;
+			st_db_postgresql_get_string_dup(result, 0, 1, &media->medium_serial_number);
 
-			old_value = media->read_count;
-			st_db_postgresql_get_long(result, 0, 5, &media->read_count);
-			media->read_count += old_value;
+			st_db_postgresql_get_string(result, 0, 2, media->uuid, 37);
 
-			old_value = media->write_count;
-			st_db_postgresql_get_long(result, 0, 6, &media->write_count);
-			media->write_count += old_value;
+			found_id = true;
+		}
 
-			media->type = st_media_string_to_type(PQgetvalue(result, 0, 7));
-			st_db_postgresql_get_ssize(result, 0, 8, &media->block_size);
+		PQclear(result);
+	}
 
-			st_db_postgresql_get_string_dup(result, 0, 9, &mediaformatid);
+	if (found_id) {
+		const char * query = "select_media_by_id";
+		st_db_postgresql_prepare(self, query, "SELECT name, firstused, usebefore, lastread, lastwrite, loadcount, readcount, writecount, nbtotalblockread, nbtotalblockwrite, nbreaderror, nbwriteerror, type, blocksize, mediaformat, pool FROM media WHERE id = $1");
 
-			if (!PQgetisnull(result, 0, 10))
-				st_db_postgresql_get_string_dup(result, 0, 10, &poolid);
+		const char * param[] = { mediaid };
+		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+			free(media->name);
+			media->name = NULL;
+			st_db_postgresql_get_string_dup(result, 0, 0, &media->name);
+
+			st_db_postgresql_get_time(result, 0, 1, &media->first_used);
+			st_db_postgresql_get_time(result, 0, 2, &media->use_before);
+
+			if (!PQgetisnull(result, 0, 3))
+				st_db_postgresql_get_time_max(result, 0, 3, &media->last_read);
+			if (!PQgetisnull(result, 0, 4))
+				st_db_postgresql_get_time_max(result, 0, 4, &media->last_write);
+
+			st_db_postgresql_get_long_add(result, 0, 5, &media->load_count);
+			st_db_postgresql_get_long_add(result, 0, 6, &media->read_count);
+			st_db_postgresql_get_long_add(result, 0, 7, &media->write_count);
+
+			st_db_postgresql_get_long_add(result, 0, 8, &media->nb_total_read);
+			st_db_postgresql_get_long_add(result, 0, 9, &media->nb_total_write);
+
+			st_db_postgresql_get_uint_add(result, 0, 10, &media->nb_read_errors);
+			st_db_postgresql_get_uint_add(result, 0, 11, &media->nb_write_errors);
+
+			media->type = st_media_string_to_type(PQgetvalue(result, 0, 12));
+			st_db_postgresql_get_ssize(result, 0, 13, &media->block_size);
+
+			st_db_postgresql_get_string_dup(result, 0, 14, &mediaformatid);
+
+			if (!PQgetisnull(result, 0, 15))
+				st_db_postgresql_get_string_dup(result, 0, 15, &poolid);
 		}
 
 		PQclear(result);
@@ -1792,7 +1803,7 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		PQclear(result);
 	}
 
-	if (!poolid && media->pool != NULL) {
+	if (poolid == NULL && media->pool != NULL) {
 		const char * query = "select_pool_id_by_uuid";
 		st_db_postgresql_prepare(self, query, "SELECT id FROM pool WHERE uuid = $1 LIMIT 1");
 
@@ -1806,21 +1817,27 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 			st_db_postgresql_get_string_dup(result, 0, 0, &poolid);
 
 		PQclear(result);
-	} else if (poolid && !media->pool) {
+	} else if (poolid != NULL && media->pool == NULL) {
 		free(poolid);
 		poolid = NULL;
 	}
 
 	if (media_data->id < 0) {
 		const char * query = "insert_media";
-		st_db_postgresql_prepare(self, query, "INSERT INTO media(uuid, label, mediumserialnumber, name, status, location, firstused, usebefore, loadcount, readcount, writecount, type, nbfiles, blocksize, freeblock, totalblock, mediaformat, pool) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id");
+		st_db_postgresql_prepare(self, query, "INSERT INTO media(uuid, label, mediumserialnumber, name, status, location, firstused, usebefore, lastread, lastwrite, loadcount, readcount, writecount, nbtotalblockread, nbtotalblockwrite, nbreaderror, nbwriteerror, type, nbfiles, blocksize, freeblock, totalblock, mediaformat, pool) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24) RETURNING id");
 
 		char buffer_first_used[32];
 		char buffer_use_before[32];
+		char buffer_last_read[32] = "";
+		char buffer_last_write[32] = "";
 		st_util_time_convert(&media->first_used, "%F %T", buffer_first_used, 32);
 		st_util_time_convert(&media->use_before, "%F %T", buffer_use_before, 32);
+		if (media->last_read > 0)
+			st_util_time_convert(&media->last_read, "%F %T", buffer_last_read, 32);
+		if (media->last_write > 0)
+			st_util_time_convert(&media->last_write, "%F %T", buffer_last_write, 32);
 
-		char * load, * read, * write, * nbfiles, * blocksize, * freeblock, * totalblock;
+		char * load, * read, * write, * nbfiles, * blocksize, * freeblock, * totalblock, * totalblockread, * totalblockwrite, * totalreaderror, * totalwriteerror;
 		asprintf(&load, "%ld", media->load_count);
 		asprintf(&read, "%ld", media->read_count);
 		asprintf(&write, "%ld", media->write_count);
@@ -1828,18 +1845,18 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		asprintf(&blocksize, "%zd", media->block_size);
 		asprintf(&freeblock, "%zd", media->free_block);
 		asprintf(&totalblock, "%zd", media->total_block);
+		asprintf(&totalblockread, "%zd", media->nb_total_read);
+		asprintf(&totalblockwrite, "%zd", media->nb_total_write);
+		asprintf(&totalreaderror, "%u", media->nb_read_errors);
+		asprintf(&totalwriteerror, "%u", media->nb_write_errors);
 
 		const char * param[] = {
-			*media->uuid ? media->uuid : NULL,
-			media->label, media->medium_serial_number, media->name,
-			st_media_status_to_string(media->status),
-			st_media_location_to_string(media->location),
-			buffer_first_used, buffer_use_before,
-			load, read, write, st_media_type_to_string(media->type),
-			nbfiles, blocksize, freeblock, totalblock,
-			mediaformatid, poolid
+			*media->uuid ? media->uuid : NULL, media->label, media->medium_serial_number, media->name, st_media_status_to_string(media->status),
+			st_media_location_to_string(media->location), buffer_first_used, buffer_use_before, media->last_read > 0 ? buffer_last_read : NULL,
+			media->last_write > 0 ? buffer_last_write : NULL, load, read, write, totalblockread, totalblockwrite, totalreaderror, totalwriteerror,
+			st_media_type_to_string(media->type), nbfiles, blocksize, freeblock, totalblock, mediaformatid, poolid
 		};
-		PGresult * result = PQexecPrepared(self->connect, query, 18, param, NULL, NULL, 0);
+		PGresult * result = PQexecPrepared(self->connect, query, 24, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -1855,6 +1872,10 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		free(blocksize);
 		free(mediaformatid);
 		free(poolid);
+		free(totalblockread);
+		free(totalblockwrite);
+		free(totalreaderror);
+		free(totalwriteerror);
 
 		return status == PGRES_FATAL_ERROR;
 	} else {
@@ -1898,9 +1919,16 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		}
 
 		const char * query = "update_media";
-		st_db_postgresql_prepare(self, query, "UPDATE media SET uuid = $1, name = $2, status = $3, location = $4, loadcount = $5, readcount = $6, writecount = $7, nbfiles = $8, blocksize = $9, freeblock = $10, totalblock = $11, pool = $12, locked = $13, type = $14 WHERE id = $15");
+		st_db_postgresql_prepare(self, query, "UPDATE media SET uuid = $1, name = $2, status = $3, location = $4, lastread = $5, lastwrite = $6, loadcount = $7, readcount = $8, writecount = $9, nbtotalblockread = $10, nbtotalblockwrite = $11, nbreaderror = $12, nbwriteerror = $13, nbfiles = $14, blocksize = $15, freeblock = $16, totalblock = $17, pool = $18, locked = $19, type = $20 WHERE id = $21");
 
-		char * load, * read, * write, * nbfiles, * blocksize, * freeblock, * totalblock;
+		char buffer_last_read[32] = "";
+		char buffer_last_write[32] = "";
+		if (media->last_read > 0)
+			st_util_time_convert(&media->last_read, "%F %T", buffer_last_read, 32);
+		if (media->last_write > 0)
+			st_util_time_convert(&media->last_write, "%F %T", buffer_last_write, 32);
+
+		char * load, * read, * write, * nbfiles, * blocksize, * freeblock, * totalblock, * totalblockread, * totalblockwrite, * totalreaderror, * totalwriteerror;
 		asprintf(&load, "%ld", media->load_count);
 		asprintf(&read, "%ld", media->read_count);
 		asprintf(&write, "%ld", media->write_count);
@@ -1908,14 +1936,18 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		asprintf(&blocksize, "%zd", media->block_size);
 		asprintf(&freeblock, "%zd", media->free_block);
 		asprintf(&totalblock, "%zd", media->total_block);
+		asprintf(&totalblockread, "%zd", media->nb_total_read);
+		asprintf(&totalblockwrite, "%zd", media->nb_total_write);
+		asprintf(&totalreaderror, "%u", media->nb_read_errors);
+		asprintf(&totalwriteerror, "%u", media->nb_write_errors);
 
 		const char * param2[] = {
-			*media->uuid ? media->uuid : NULL, media->name, st_media_status_to_string(media->status),
-			st_media_location_to_string(media->location),
-			load, read, write, nbfiles, blocksize, freeblock, totalblock,
+			*media->uuid ? media->uuid : NULL, media->name, st_media_status_to_string(media->status), st_media_location_to_string(media->location),
+			media->last_read > 0 ? buffer_last_read : NULL, media->last_write > 0 ? buffer_last_write : NULL, load, read, write, 
+			totalblockread, totalblockwrite, totalreaderror, totalwriteerror, nbfiles, blocksize, freeblock, totalblock,
 			poolid, media->locked ? "true" : "false", st_media_type_to_string(media->type), mediaid
 		};
-		PGresult * result = PQexecPrepared(self->connect, query, 15, param2, NULL, NULL, 0);
+		PGresult * result = PQexecPrepared(self->connect, query, 21, param2, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -1932,6 +1964,10 @@ static int st_db_postgresql_sync_media(struct st_database_connection * connect, 
 		free(mediaid);
 		free(mediaformatid);
 		free(poolid);
+		free(totalblockread);
+		free(totalblockwrite);
+		free(totalreaderror);
+		free(totalwriteerror);
 
 		return status == PGRES_FATAL_ERROR;
 	}
