@@ -683,10 +683,6 @@ AFTER UPDATE OR DELETE ON Vtl
 FOR EACH ROW EXECUTE PROCEDURE check_metadata();
 
 -- Comments
-COMMENT ON COLUMN Archive.starttime IS 'Start time of archive creation';
-COMMENT ON COLUMN Archive.endtime IS 'End time of archive creation';
-COMMENT ON COLUMN Archive.checktime IS 'Last time of checked time';
-
 COMMENT ON COLUMN ArchiveVolume.starttime IS 'Start time of archive volume creation';
 COMMENT ON COLUMN ArchiveVolume.endtime IS 'End time of archive volume creation';
 COMMENT ON COLUMN ArchiveVolume.checktime IS 'Last time of checked time';
