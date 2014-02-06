@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 05 Feb 2014 18:00:23 +0100                            *
+*  Last modified: Thu, 06 Feb 2014 11:44:55 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2416,17 +2416,16 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 		}
 
 		query = "update_job";
-		st_db_postgresql_prepare(self, query, "UPDATE job SET nextstart = $1, repetition = $2, done = $3, status = $4, update = NOW() WHERE id = $5");
+		st_db_postgresql_prepare(self, query, "UPDATE job SET nextstart = $1, repetition = $2, status = $3, update = NOW() WHERE id = $4");
 
 		char next_start[24];
 		st_util_time_convert(&job->next_start, "%F %T", next_start, 24);
 
-		char * repetition, * done;
+		char * repetition;
 		asprintf(&repetition, "%ld", job->repetition);
-		asprintf(&done, "%f", job->done);
 
-		const char * param2[] = { next_start, repetition, done, st_job_status_to_string(job->sched_status), job_id };
-		result = PQexecPrepared(self->connect, query, 5, param2, NULL, NULL, 0);
+		const char * param2[] = { next_start, repetition, st_job_status_to_string(job->sched_status), job_id };
+		result = PQexecPrepared(self->connect, query, 4, param2, NULL, NULL, 0);
 		status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -2434,12 +2433,32 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 
 		free(job_id);
 		free(repetition);
-		free(done);
 		PQclear(result);
+
+		if (job_data->jobrun_id > 0) {
+			query = "update_jobrun";
+			st_db_postgresql_prepare(self, query, "UPDATE jobrun SET status = $1, done = $2 WHERE id = $3");
+
+			char * done, * id;
+			asprintf(&done, "%f", job->done);
+			asprintf(&id, "%ld", job_data->jobrun_id);
+
+			const char * param3[] = { st_job_status_to_string(job->sched_status), done, id };
+			result = PQexecPrepared(self->connect, query, 3, param3, NULL, NULL, 0);
+
+			status = PQresultStatus(result);
+
+			if (status == PGRES_FATAL_ERROR)
+				st_db_postgresql_get_error(result, query);
+
+			free(done);
+			free(id);
+			PQclear(result);
+		}
 	}
 
 	const char * query0 = "select_new_jobs";
-	st_db_postgresql_prepare(self, query0, "SELECT j.id, j.name, nextstart, EXTRACT('epoch' FROM interval), repetition, done, status, u.login, metadata, options, jt.name FROM job j LEFT JOIN jobtype jt ON j.type = jt.id LEFT JOIN users u ON j.login = u.id WHERE host = $1 AND j.id > $2 ORDER BY j.id");
+	st_db_postgresql_prepare(self, query0, "SELECT j.id, j.name, nextstart, EXTRACT('epoch' FROM interval), repetition, status, u.login, metadata, options, jt.name FROM job j LEFT JOIN jobtype jt ON j.type = jt.id LEFT JOIN users u ON j.login = u.id WHERE host = $1 AND j.id > $2 ORDER BY j.id");
 	const char * query1 = "select_job_option";
 	st_db_postgresql_prepare(self, query1, "SELECT * FROM each((SELECT options FROM job WHERE id = $1 LIMIT 1))");
 	const char * query2 = "select_num_runs";
@@ -2476,6 +2495,7 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 			struct st_job * job = (*jobs)[*nb_jobs + i] = malloc(sizeof(struct st_job));
 			bzero(job, sizeof(struct st_job));
 			struct st_db_postgresql_job_data * job_data = malloc(sizeof(struct st_db_postgresql_job_data));
+			bzero(job_data, sizeof(*job_data));
 			char * job_id;
 
 			job->db_config = connect->config;
@@ -2489,16 +2509,15 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 				st_db_postgresql_get_long(result, i, 3, &job->interval);
 			st_db_postgresql_get_long(result, i, 4, &job->repetition);
 
-			st_db_postgresql_get_float(result, i, 5, &job->done);
-			job->sched_status = job->db_status = st_job_string_to_status(PQgetvalue(result, i, 6));
+			job->sched_status = job->db_status = st_job_string_to_status(PQgetvalue(result, i, 5));
 			job->stoped_by_user = false;
 			job->updated = time(NULL);
 
 			// login
-			job->user = st_user_get(PQgetvalue(result, i, 7));
+			job->user = st_user_get(PQgetvalue(result, i, 6));
 
 			// meta
-			st_db_postgresql_get_string_dup(result, i, 8, &job->meta);
+			st_db_postgresql_get_string_dup(result, i, 7, &job->meta);
 
 			// options
 			job->option = st_hashtable_new2(st_util_string_compute_hash, st_util_basic_free);
@@ -2527,7 +2546,7 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 			PQclear(result1);
 
 			// driver
-			job->driver = st_job_get_driver(PQgetvalue(result, i, 10));
+			job->driver = st_job_get_driver(PQgetvalue(result, i, 9));
 
 			free(job_id);
 		}
