@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 31 Jan 2014 13:02:27 +0100                            *
+*  Last modified: Fri, 07 Feb 2014 10:23:34 +0100                            *
 \****************************************************************************/
 
 // free, malloc
@@ -107,9 +107,6 @@ struct st_archive * st_archive_new(const char * name, struct st_user * user) {
 	struct st_archive * archive = malloc(sizeof(struct st_archive));
 	uuid_unparse_lower(id, archive->uuid);
 	archive->name = strdup(name);
-
-	archive->check_ok = false;
-	archive->check_time = 0;
 
 	archive->volumes = NULL;
 	archive->nb_volumes = 0;

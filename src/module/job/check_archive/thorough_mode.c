@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 23 Jan 2014 13:24:32 +0100                            *
+*  Last modified: Fri, 07 Feb 2014 10:37:40 +0100                            *
 \****************************************************************************/
 
 // free
@@ -254,20 +254,17 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 
 		reader->ops->free(reader);
 
+		free(self->vol_checksums);
+		self->vol_checksums = NULL;
+
 end_of_work:
 		drive->lock->ops->unlock(drive->lock);
 	}
 
-	if (!error) {
-		self->job->done = 0.99;
-
-		self->job->db_connect->ops->mark_archive_as_checked(self->job->db_connect, self->archive, true);
-
+	if (!error)
 		self->job->done = 1;
-	} else {
-		self->job->db_connect->ops->mark_archive_as_checked(self->job->db_connect, self->archive, false);
+	else
 		self->job->sched_status = st_job_status_error;
-	}
 
 	return error;
 }
