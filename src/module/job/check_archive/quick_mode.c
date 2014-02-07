@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 23 Jan 2014 13:24:16 +0100                            *
+*  Last modified: Fri, 07 Feb 2014 10:37:02 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -199,17 +199,13 @@ int st_job_check_archive_quick_mode(struct st_job_check_archive_private * self) 
 		}
 
 		float done = total_done;
-		done *= 0.97;
+		done *= 0.98;
 		done /= total_size;
 		self->job->done = 0.02 + done;
 
 		if (!finished)
 			worker = first_worker;
 	} while (worker != NULL);
-
-	self->job->done = 0.99;
-
-	self->job->db_connect->ops->mark_archive_as_checked(self->job->db_connect, archive, nb_errors == 0 && nb_warnings == 0);
 
 	self->job->done = 1;
 

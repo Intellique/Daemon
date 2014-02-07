@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 23 Jan 2014 11:37:59 +0100                            *
+*  Last modified: Fri, 07 Feb 2014 10:23:24 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_ARCHIVE_H__
@@ -59,9 +59,6 @@ enum st_archive_file_type {
 struct st_archive {
 	char uuid[37];
 	char * name;
-
-	bool check_ok;
-	time_t check_time;
 
 	struct st_archive_volume * volumes;
 	unsigned int nb_volumes;
