@@ -1,4 +1,4 @@
-stone-wheezy (1.1.3+wheezy) polisher; urgency=low
+stone-wheezy (1.1.3) polisher; urgency=low
 
   * Ajout de nouvelles données dans la base de données
     - date de dernières lecture et écriture de chaque médias
