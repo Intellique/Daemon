@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 18 Dec 2013 21:46:39 +0100                            *
+*  Last modified: Fri, 31 Jan 2014 13:47:47 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -624,14 +624,17 @@ void st_changer_stop() {
 		}
 	}
 
-	struct st_vtl_list * vtl;
-	for (vtl = st_vtls; vtl != NULL; vtl = vtl->next) {
+	struct st_vtl_list * vtl, * next = NULL;
+	for (vtl = st_vtls; vtl != NULL; vtl = next) {
 		struct st_changer * ch = vtl->changer;
 
 		if (ch->enabled) {
 			ch->ops->shut_down(ch);
 			ch->ops->free(ch);
 		}
+
+		next = vtl->next;
+		free(vtl);
 	}
 
 	free(st_changers);

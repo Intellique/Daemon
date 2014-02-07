@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 23 Jan 2014 13:12:37 +0100                            *
+*  Last modified: Fri, 07 Feb 2014 10:31:58 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -169,11 +169,6 @@ static void st_job_check_archive_on_error(struct st_job * job) {
 	json_object_set_new(archive, "volumes", volumes);
 	json_object_set_new(archive, "nb volumes", json_integer(self->archive->nb_volumes));
 
-	if (self->archive->check_time > 0) {
-		json_object_set_new(archive, "checksum ok", self->archive->check_ok ? json_true() : json_false());
-		json_object_set_new(archive, "check time", json_integer(self->archive->check_time));
-	}
-
 	unsigned int i;
 	for (i = 0; i < self->archive->nb_volumes; i++) {
 		json_t * volume = json_object();
@@ -287,9 +282,6 @@ static void st_job_check_archive_post_run(struct st_job * job) {
 	json_t * volumes = json_array();
 	json_object_set_new(archive, "volumes", volumes);
 	json_object_set_new(archive, "nb volumes", json_integer(self->archive->nb_volumes));
-
-	json_object_set_new(archive, "checksum ok", self->archive->check_ok ? json_true() : json_false());
-	json_object_set_new(archive, "check time", json_integer(self->archive->check_time));
 
 	unsigned int i;
 	for (i = 0; i < self->archive->nb_volumes; i++) {
@@ -405,11 +397,6 @@ static bool st_job_check_archive_pre_run(struct st_job * job) {
 	json_t * volumes = json_array();
 	json_object_set_new(archive, "volumes", volumes);
 	json_object_set_new(archive, "nb volumes", json_integer(self->archive->nb_volumes));
-
-	if (self->archive->check_time > 0) {
-		json_object_set_new(archive, "checksum ok", self->archive->check_ok ? json_true() : json_false());
-		json_object_set_new(archive, "check time", json_integer(self->archive->check_time));
-	}
 
 	unsigned int i;
 	for (i = 0; i < self->archive->nb_volumes; i++) {

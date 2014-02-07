@@ -214,11 +214,19 @@ CREATE TABLE Media (
 
     firstUsed TIMESTAMP(0) NOT NULL,
     useBefore TIMESTAMP(0) NOT NULL,
+    lastRead TIMESTAMP(0),
+    lastWrite TIMESTAMP(0),
 
     loadCount INTEGER NOT NULL DEFAULT 0 CHECK (loadCount >= 0),
     readCount INTEGER NOT NULL DEFAULT 0 CHECK (readCount >= 0),
     writeCount INTEGER NOT NULL DEFAULT 0 CHECK (writeCount >= 0),
     operationCount INTEGER NOT NULL DEFAULT 0 CHECK (operationCount >= 0),
+
+    nbTotalBlockRead BIGINT NOT NULL DEFAULT 0 CHECK (nbTotalBlockRead >= 0),
+    nbTotalBlockWrite BIGINT NOT NULL DEFAULT 0 CHECK (nbTotalBlockWrite >= 0),
+
+    nbReadError INTEGER NOT NULL DEFAULT 0 CHECK (nbReadError >= 0),
+    nbWriteError INTEGER NOT NULL DEFAULT 0 CHECK (nbWriteError >= 0),
 
     nbFiles INTEGER NOT NULL DEFAULT 0 CHECK (nbFiles >= 0),
     blockSize INTEGER NOT NULL DEFAULT 0 CHECK (blockSize >= 0),
@@ -226,8 +234,8 @@ CREATE TABLE Media (
     totalBlock INTEGER NOT NULL CHECK (totalBlock >= 0),
 
     hasPartition BOOLEAN NOT NULL DEFAULT FALSE,
-
     locked BOOLEAN NOT NULL DEFAULT FALSE,
+
     type MediaType NOT NULL DEFAULT 'rewritable',
     mediaFormat INTEGER NOT NULL REFERENCES MediaFormat(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     pool INTEGER NULL REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE SET NULL,
@@ -370,12 +378,6 @@ CREATE TABLE Archive (
     uuid UUID NOT NULL UNIQUE,
     name TEXT NOT NULL,
 
-    starttime TIMESTAMP(0) NOT NULL,
-    endtime TIMESTAMP(0) NOT NULL,
-
-    checksumok BOOLEAN NOT NULL DEFAULT FALSE,
-    checktime TIMESTAMP(0),
-
     creator INTEGER NOT NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     owner INTEGER NOT NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
@@ -383,8 +385,7 @@ CREATE TABLE Archive (
 
     deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
-    CONSTRAINT archive_id CHECK (id != copyOf),
-    CONSTRAINT archive_time CHECK (starttime <= endtime)
+    CONSTRAINT archive_id CHECK (id != copyOf)
 );
 
 CREATE TABLE ArchiveFile (
@@ -441,7 +442,7 @@ CREATE TABLE Job (
     nextStart TIMESTAMP(0) NOT NULL DEFAULT NOW(),
     interval INTERVAL DEFAULT NULL,
     repetition INTEGER NOT NULL DEFAULT 1,
-    done FLOAT NOT NULL DEFAULT 0,
+
     status JobStatus NOT NULL DEFAULT 'scheduled',
     update TIMESTAMP(0) NOT NULL DEFAULT NOW(),
 
@@ -466,6 +467,7 @@ CREATE TABLE JobRun (
     endtime TIMESTAMP(0),
 
     status JobStatus NOT NULL DEFAULT 'running',
+    done FLOAT NOT NULL DEFAULT 0,
     exitcode INTEGER NOT NULL DEFAULT 0,
     stoppedbyuser BOOLEAN NOT NULL DEFAULT FALSE,
 
@@ -681,10 +683,6 @@ AFTER UPDATE OR DELETE ON Vtl
 FOR EACH ROW EXECUTE PROCEDURE check_metadata();
 
 -- Comments
-COMMENT ON COLUMN Archive.starttime IS 'Start time of archive creation';
-COMMENT ON COLUMN Archive.endtime IS 'End time of archive creation';
-COMMENT ON COLUMN Archive.checktime IS 'Last time of checked time';
-
 COMMENT ON COLUMN ArchiveVolume.starttime IS 'Start time of archive volume creation';
 COMMENT ON COLUMN ArchiveVolume.endtime IS 'End time of archive volume creation';
 COMMENT ON COLUMN ArchiveVolume.checktime IS 'Last time of checked time';

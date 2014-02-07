@@ -216,7 +216,7 @@ stat:
 	@${GIT} diff -M --cached --stat=${COLUMNS}
 
 stat-extra:
-	@c_count -w 64 $(sort ${HEAD_FILES} ${SRC_FILES})
+	@c_count2 -w 64 $(sort ${HEAD_FILES} ${SRC_FILES})
 
 tar: ${NAME}.tar.bz2
 

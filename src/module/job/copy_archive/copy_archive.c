@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 23 Jan 2014 13:26:32 +0100                            *
+*  Last modified: Fri, 07 Feb 2014 10:32:30 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -160,11 +160,6 @@ static void st_job_copy_archive_on_error(struct st_job * job) {
 	json_object_set_new(src_archive, "name", json_string(archive->name));
 	json_object_set_new(src_archive, "uuid", json_string(archive->uuid));
 	json_object_set_new(src_archive, "size", json_integer(self->archive_size));
-	json_object_set_new(src_archive, "checksum ok", archive->check_ok ? json_true() : json_false());
-	if (archive->check_time > 0)
-		json_object_set_new(src_archive, "check time", json_integer(archive->check_time));
-	else
-		json_object_set_new(src_archive, "check time", json_null());
 
 	json_t * volumes = json_array();
 	json_object_set_new(src_archive, "volumes", volumes);
@@ -279,11 +274,6 @@ static void st_job_copy_archive_post_run(struct st_job * job) {
 	json_object_set_new(src_archive, "name", json_string(archive->name));
 	json_object_set_new(src_archive, "uuid", json_string(archive->uuid));
 	json_object_set_new(src_archive, "size", json_integer(self->archive_size));
-	json_object_set_new(src_archive, "checksum ok", archive->check_ok ? json_true() : json_false());
-	if (archive->check_time > 0)
-		json_object_set_new(src_archive, "check time", json_integer(archive->check_time));
-	else
-		json_object_set_new(src_archive, "check time", json_null());
 
 	json_t * volumes = json_array();
 	json_object_set_new(src_archive, "volumes", volumes);
@@ -374,11 +364,6 @@ static void st_job_copy_archive_post_run(struct st_job * job) {
 	json_object_set_new(copy_archive, "name", json_string(archive->name));
 	json_object_set_new(copy_archive, "uuid", json_string(archive->uuid));
 	json_object_set_new(copy_archive, "size", json_integer(self->archive_size));
-	json_object_set_new(copy_archive, "checksum ok", archive->check_ok ? json_true() : json_false());
-	if (archive->check_time > 0)
-		json_object_set_new(copy_archive, "check time", json_integer(archive->check_time));
-	else
-		json_object_set_new(copy_archive, "check time", json_null());
 
 	volumes = json_array();
 	json_object_set_new(copy_archive, "volumes", volumes);
@@ -485,11 +470,6 @@ static bool st_job_copy_archive_pre_run(struct st_job * job) {
 	json_object_set_new(src_archive, "name", json_string(archive->name));
 	json_object_set_new(src_archive, "uuid", json_string(archive->uuid));
 	json_object_set_new(src_archive, "size", json_integer(self->archive_size));
-	json_object_set_new(src_archive, "checksum ok", archive->check_ok ? json_true() : json_false());
-	if (archive->check_time > 0)
-		json_object_set_new(src_archive, "check time", json_integer(archive->check_time));
-	else
-		json_object_set_new(src_archive, "check time", json_null());
 
 	json_t * volumes = json_array();
 	json_object_set_new(src_archive, "volumes", volumes);

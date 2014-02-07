@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 18 Sep 2013 10:41:58 +0200                            *
+*  Last modified: Wed, 05 Feb 2014 12:44:39 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -116,11 +116,19 @@ struct st_media {
 
 	time_t first_used;
 	time_t use_before;
+	time_t last_read;
+	time_t last_write;
 
 	long load_count;
 	long read_count;
 	long write_count;
 	long operation_count;
+
+	ssize_t nb_total_read;
+	ssize_t nb_total_write;
+
+	unsigned int nb_read_errors;
+	unsigned int nb_write_errors;
 
 	ssize_t block_size;
 	ssize_t free_block; // in block size, not in bytes
