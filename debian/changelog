@@ -1,3 +1,10 @@
+stone-wheezy (1.1.3+wheezy) polisher; urgency=low
+
+  * Ajout de nouvelles données dans la base de données
+    - date de dernières lecture et écriture de chaque médias
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 07 Feb 2014 13:18:38 +0100
+
 stone-wheezy (1.1.2-1+wheezy) polisher; urgency=low
 
   * Test
