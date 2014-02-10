@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 10 Feb 2014 10:18:19 +0100                            *
+*  Last modified: Mon, 10 Feb 2014 11:39:04 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -188,6 +188,8 @@ static void st_sched_run_job(void * arg) {
 		st_log_write_all(st_log_level_info, st_log_type_scheduler, "Job '%s' aborted by pre-script request", job->name);
 	}
 
+	if (job->sched_status == st_job_status_running)
+		job->sched_status = st_job_status_finished;
 	job->db_connect->ops->finish_job_run(job->db_connect, job, time(NULL), status);
 
 	if (job->interval > 0) {
