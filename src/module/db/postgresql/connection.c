@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 07 Feb 2014 10:36:37 +0100                            *
+*  Last modified: Mon, 10 Feb 2014 11:22:19 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2278,25 +2278,28 @@ static int st_db_postgresql_finish_job_run(struct st_database_connection * conne
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	const char * query = "update_job_run";
-	st_db_postgresql_prepare(self, query, "UPDATE jobrun SET endtime = $1, status = $2, exitcode = $3, stoppedbyuser = $4 WHERE id = $5");
+	st_db_postgresql_prepare(self, query, "UPDATE jobrun SET endtime = $1, status = $2, done = $3, exitcode = $4, stoppedbyuser = $5 WHERE id = $6");
 
 	struct st_db_postgresql_job_data * job_data = job->db_data;
 
-	char * jobrunid, str_endtime[24], * str_exitcode, * stoppedbyuser;
+	char * jobrunid, str_endtime[24], * done, * str_exitcode, * stoppedbyuser;
 	asprintf(&jobrunid, "%ld", job_data->jobrun_id);
 	st_util_time_convert(&endtime, "%F %T", str_endtime, 24);
+	asprintf(&done, "%f", job->done);
 	asprintf(&str_exitcode, "%d", exitcode);
 	stoppedbyuser = job->stoped_by_user ? "TRUE" : "FALSE";
 
-	const char * param[] = { str_endtime, st_job_status_to_string(job->sched_status), str_exitcode, stoppedbyuser, jobrunid };
-	PGresult * result = PQexecPrepared(self->connect, query, 5, param, 0, 0, 0);
+	const char * param[] = { str_endtime, st_job_status_to_string(job->sched_status), done, str_exitcode, stoppedbyuser, jobrunid };
+	PGresult * result = PQexecPrepared(self->connect, query, 6, param, 0, 0, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)
 		st_db_postgresql_get_error(result, query);
+	job_data->jobrun_id = -1;
 
 	PQclear(result);
 	free(jobrunid);
+	free(done);
 	free(str_exitcode);
 
 	return status != PGRES_COMMAND_OK;

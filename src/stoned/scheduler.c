@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 31 Jan 2014 16:34:41 +0100                            *
+*  Last modified: Mon, 10 Feb 2014 11:39:04 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -164,8 +164,7 @@ static void st_sched_run_job(void * arg) {
 		job->repetition--;
 	job->num_runs++;
 
-	time_t starttime = time(NULL);
-	job->db_connect->ops->start_job_run(job->db_connect, job, starttime);
+	job->db_connect->ops->start_job_run(job->db_connect, job, time(NULL));
 
 	st_log_write_all(st_log_level_info, st_log_type_scheduler, "Starting pre-script of job: %s", job->name);
 
@@ -189,7 +188,9 @@ static void st_sched_run_job(void * arg) {
 		st_log_write_all(st_log_level_info, st_log_type_scheduler, "Job '%s' aborted by pre-script request", job->name);
 	}
 
-	time_t endtime = time(NULL);
+	if (job->sched_status == st_job_status_running)
+		job->sched_status = st_job_status_finished;
+	job->db_connect->ops->finish_job_run(job->db_connect, job, time(NULL), status);
 
 	if (job->interval > 0) {
 		time_t now = time(NULL);
@@ -200,8 +201,6 @@ static void st_sched_run_job(void * arg) {
 	}
 	if (job->sched_status == st_job_status_running)
 		job->sched_status = job->repetition != 0 ? st_job_status_scheduled : st_job_status_finished;
-
-	job->db_connect->ops->finish_job_run(job->db_connect, job, endtime, status);
 
 	job->ops->free(job);
 
