@@ -1,3 +1,9 @@
+stone-wheezy (1.1.4) polisher; urgency=low
+
+  * Correctif de bugs
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 17 Feb 2014 17:28:52 +0100
+
 stone-wheezy (1.1.3) polisher; urgency=low
 
   * Ajout de nouvelles données dans la base de données
