@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 08 Nov 2013 16:21:36 +0100                            *
+*  Last modified: Tue, 18 Feb 2014 15:57:26 +0100                            *
 \****************************************************************************/
 
 // malloc, free, realloc
@@ -33,7 +33,7 @@
 #include <libstone/backup.h>
 #include <libstone/log.h>
 
-void st_backup_add_volume(struct st_backup * backup, struct st_media * media, unsigned int position) {
+void st_backup_add_volume(struct st_backup * backup, struct st_media * media, unsigned int position, struct st_job * job) {
 	void * addr = realloc(backup->volumes, (backup->nb_volumes + 1) * sizeof(struct st_backup_volume));
 	if (addr == NULL) {
 		st_log_write_all(st_log_level_error, st_log_type_daemon, "failed to add volume to backup, because %m");
@@ -45,6 +45,7 @@ void st_backup_add_volume(struct st_backup * backup, struct st_media * media, un
 	backup->nb_volumes++;
 	bv->media = media;
 	bv->position = position;
+	bv->job = job;
 }
 
 void st_backup_free(struct st_backup * backup) {
