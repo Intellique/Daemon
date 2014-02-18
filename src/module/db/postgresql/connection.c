@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 10 Feb 2014 11:22:19 +0100                            *
+*  Last modified: Tue, 18 Feb 2014 15:59:17 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -378,21 +378,21 @@ static int st_db_postgresql_add_backup(struct st_database_connection * connect, 
 	}
 
 	query = "insert_backup_volume";
-	st_db_postgresql_prepare(self, query, "INSERT INTO backupvolume(sequence, backup, media, mediaposition, host) VALUES ($1, $2, $3, $4, $5)");
-
-	char * host_id = st_db_postgresql_get_host(connect);
+	st_db_postgresql_prepare(self, query, "INSERT INTO backupvolume(sequence, backup, media, mediaposition, jobrun) VALUES ($1, $2, $3, $4, $5)");
 
 	unsigned int i;
 	for (i = 0; i < backup->nb_volumes; i++) {
 		struct st_backup_volume * bv = backup->volumes + i;
 		struct st_db_postgresql_media_data * media_data = bv->media->db_data;
+		struct st_db_postgresql_job_data * job_data = bv->job->db_data;
 
-		char * seq, * media_id, * media_position;
+		char * seq, * media_id, * media_position, * jobrun_id;
 		asprintf(&seq, "%u", i);
 		asprintf(&media_id, "%ld", media_data->id);
 		asprintf(&media_position, "%u", bv->position);
+		asprintf(&jobrun_id, "%ld", job_data->jobrun_id);
 
-		const char * param[] = { seq, backup_id, media_id, media_position, host_id };
+		const char * param[] = { seq, backup_id, media_id, media_position, jobrun_id };
 		result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);
 		status = PQresultStatus(result);
 
@@ -401,10 +401,10 @@ static int st_db_postgresql_add_backup(struct st_database_connection * connect, 
 
 		free(media_position);
 		free(media_id);
+		free(jobrun_id);
 		free(seq);
 	}
 
-	free(host_id);
 	free(backup_id);
 
 	return status == PGRES_FATAL_ERROR ? -5 : 0;
