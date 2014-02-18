@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 10 Feb 2014 11:39:04 +0100                            *
+*  Last modified: Tue, 18 Feb 2014 15:41:41 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -198,9 +198,10 @@ static void st_sched_run_job(void * arg) {
 		if (diff < 0)
 			diff = job->next_start - now;
 		job->next_start += diff - (diff % job->interval) + job->interval;
+
+		if (job->sched_status == st_job_status_finished)
+			job->sched_status = st_job_status_scheduled;
 	}
-	if (job->sched_status == st_job_status_running)
-		job->sched_status = job->repetition != 0 ? st_job_status_scheduled : st_job_status_finished;
 
 	job->ops->free(job);
 
