@@ -1,3 +1,11 @@
+stone-squeeze (1.1.6) polisher; urgency=low
+
+  * Nouveautés:
+    - sha224, ssh384
+  * Correctifs de bugs
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 21 Feb 2014 12:20:47 +0100
+
 stone-squeeze (1.1.1-2+squeeze) polisher; urgency=low
 
   * Nouveautés:
