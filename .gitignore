@@ -1,7 +1,7 @@
 .*.swp
 bin/
 build/
-checksum/
+/checksum/
 cscope.out
 depend/
 doc/
