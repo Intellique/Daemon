@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 08 Nov 2013 15:56:49 +0100                            *
+*  Last modified: Tue, 18 Feb 2014 15:56:52 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_BACKUP_H__
@@ -41,11 +41,12 @@ struct st_backup {
 	struct st_backup_volume {
 		struct st_media * media;
 		unsigned int position;
+		struct st_job * job;
 	} * volumes;
 	unsigned int nb_volumes;
 };
 
-void st_backup_add_volume(struct st_backup * backup, struct st_media * media, unsigned int position);
+void st_backup_add_volume(struct st_backup * backup, struct st_media * media, unsigned int position, struct st_job * job);
 void st_backup_free(struct st_backup * backup);
 struct st_backup * st_backup_new(void);
 

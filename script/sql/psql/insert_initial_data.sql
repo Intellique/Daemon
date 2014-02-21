@@ -45,4 +45,4 @@ INSERT INTO Users(login, password, salt, fullname, email, homedirectory, isAdmin
 
 INSERT INTO UserEvent(event) VALUES
 	('connection'),
-	('deconnection');
+	('disconnection');
