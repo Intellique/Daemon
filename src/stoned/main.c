@@ -22,9 +22,104 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 26 Dec 2013 13:49:05 +0100                            *
 \****************************************************************************/
 
+// getopt_long
+#include <getopt.h>
+// bool
+#include <stdbool.h>
+// printf
+#include <stdio.h>
+
+#include "checksum/stoned.chcksum"
+#include "config.h"
+#include "stone.version"
+
+static void st_show_help(void);
+
+int main(int argc, char ** argv) {
+	enum {
+		OPT_CONFIG   = 'c',
+		OPT_DETACH   = 'd',
+		OPT_HELP     = 'h',
+		OPT_PID_FILE = 'p',
+		OPT_VERSION  = 'V',
+	};
+
+	static int option_index = 0;
+	static struct option long_options[] = {
+		{ "config",   1, NULL, OPT_CONFIG },
+		{ "detach",   0, NULL, OPT_DETACH },
+		{ "help",     0, NULL, OPT_HELP },
+		{ "pid-file", 1, NULL, OPT_PID_FILE },
+		{ "version",  0, NULL, OPT_VERSION },
+
+		{ NULL, 0, NULL, 0 },
+	};
+
+	char * config_file = DAEMON_CONFIG_FILE;
+	bool detach = 0;
+	char * pid_file = DAEMON_PID_FILE;
+
+	// parse option
+	int opt;
+	do {
+		opt = getopt_long(argc, argv, "c:dhp:V", long_options, &option_index);
+
+		switch (opt) {
+			case -1:
+				break;
+
+			case OPT_CONFIG:
+				config_file = optarg;
+				// st_log_write_all(st_log_level_info, st_log_type_daemon, "Using configuration file: '%s'", optarg);
+				break;
+
+			case OPT_DETACH:
+				detach = true;
+				// st_log_write_all(st_log_level_info, st_log_type_daemon, "Using detach mode (i.e. use fork())");
+				break;
+
+			case OPT_HELP:
+				// st_log_disable_display_log();
+
+				st_show_help();
+				return 0;
+
+			case OPT_PID_FILE:
+				pid_file = optarg;
+				// st_log_write_all(st_log_level_info, st_log_type_daemon, "Using pid file: '%s'", optarg);
+				break;
+
+			case OPT_VERSION:
+				// st_log_disable_display_log();
+
+				printf("STone, version: " STONE_VERSION ", build: " __DATE__ " " __TIME__ "\n");
+				printf("Checksum: " STONED_SRCSUM ", last commit: " STONE_GIT_COMMIT "\n");
+				return 0;
+
+			default:
+				// st_log_write_all(st_log_level_error, st_log_type_daemon, "Unsupported parameter '%d : %s'", opt, optarg);
+				return 1;
+		}
+	} while (opt > -1);
+
+
+	return 0;
+}
+
+static void st_show_help(void) {
+	// st_log_disable_display_log();
+
+	printf("STone, version: " STONE_VERSION ", build: " __DATE__ " " __TIME__ "\n");
+	printf("    --config,   -c : Read this config file instead of \"" DAEMON_CONFIG_FILE "\"\n");
+	printf("    --detach,   -d : Daemonize it\n");
+	printf("    --help,     -h : Show this and exit\n");
+	printf("    --pid-file, -p : Write the pid of daemon into instead of \"" DAEMON_PID_FILE "\"\n");
+	printf("    --version,  -V : Show the version of STone then exit\n");
+}
+
+/*
 // getopt_long
 #include <getopt.h>
 // printf
@@ -249,3 +344,4 @@ static void st_show_help(void) {
 	printf("    --version,  -V : Show the version of STone then exit\n");
 }
 
+*/
