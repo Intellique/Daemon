@@ -5,8 +5,35 @@ LIBSTONE_1.0 {
 		st_value_copy;
 		st_value_equals;
 		st_value_free;
+		st_value_hashtable_clear;
+		st_value_hashtable_get;
+		st_value_hashtable_get2;
+		st_value_hashtable_get_iterator;
+		st_value_hashtable_has_key;
+		st_value_hashtable_keys;
+		st_value_hashtable_put;
+		st_value_hashtable_remove;
+		st_value_hashtable_values;
+		st_value_iterator_free;
+		st_value_iterator_get_key;
+		st_value_iterator_get_value;
+		st_value_iterator_has_next;
+		st_value_list_clear;
+		st_value_list_get_iterator;
+		st_value_list_pop;
+		st_value_list_push;
+		st_value_list_shift;
+		st_value_list_unshift;
 		st_value_new_array;
 		st_value_new_boolean;
+		st_value_new_custom;
+		st_value_new_float;
+		st_value_new_hashtable;
+		st_value_new_integer;
+		st_value_new_linked_list;
+		st_value_new_null;
+		st_value_new_string;
+		st_value_share;
 
 	local:
 		*_v1;
