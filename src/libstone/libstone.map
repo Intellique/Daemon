@@ -1,0 +1,13 @@
+LIBSTONE_1.0 {
+	global:
+		st_value_can_convert;
+		st_value_convert;
+		st_value_copy;
+		st_value_equals;
+		st_value_free;
+		st_value_new_array;
+		st_value_new_boolean;
+
+	local:
+		*_v1;
+};

@@ -104,13 +104,10 @@ int main(int argc, char ** argv) {
 		}
 	} while (opt > -1);
 
-
 	return 0;
 }
 
 static void st_show_help(void) {
-	// st_log_disable_display_log();
-
 	printf("STone, version: " STONE_VERSION ", build: " __DATE__ " " __TIME__ "\n");
 	printf("    --config,   -c : Read this config file instead of \"" DAEMON_CONFIG_FILE "\"\n");
 	printf("    --detach,   -d : Daemonize it\n");
