@@ -57,19 +57,6 @@ bool st_util_string_check_valid_utf8(const char * string) {
 	return true;
 }
 
-/**
- * sdbm function
- * http://www.cse.yorku.ca/~oz/hash.html
- **/
-uint64_t st_util_string_compute_hash(const void * key) {
-	const char * cstr = key;
-	uint64_t hash = 0;
-	int length = strlen(cstr), i;
-	for (i = 0; i < length; i++)
-		hash = cstr[i] + (hash << 6) + (hash << 16) - hash;
-	return hash;
-}
-
 void st_util_string_delete_double_char(char * str, char delete_char) {
 	char double_char[3] = { delete_char, delete_char, '\0' };
 
