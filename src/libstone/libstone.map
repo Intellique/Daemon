@@ -3,6 +3,10 @@ LIBSTONE_1.0 {
 		st_json_parse_file;
 		st_json_parse_string;
 
+		st_poll;
+		st_poll_register;
+		st_poll_unregister;
+
 		st_string_check_valid_utf8;
 		st_string_compute_hash;
 		st_string_convert_unicode_to_utf8;
