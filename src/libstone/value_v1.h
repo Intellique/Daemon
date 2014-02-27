@@ -27,7 +27,7 @@
 #ifndef __LIBSTONE_UTIL_VALUE_H_P__
 #define __LIBSTONE_UTIL_VALUE_H_P__
 
-#include <libstone/util/value.h>
+#include <libstone/value.h>
 
 bool st_value_can_convert_v1(struct st_value * val, enum st_value_type type) __attribute__((nonnull));
 struct st_value * st_value_convert_v1(struct st_value * val, enum st_value_type type) __attribute__((nonnull,warn_unused_result));

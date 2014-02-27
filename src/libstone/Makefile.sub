@@ -1,8 +1,8 @@
 LIBSTONE_SRC_DIR		:= src/libstone
 
-LIBSTONE_CFLAG			:= -fPIC
+LIBSTONE_CFLAG			:= -fPIC -pthread
 LIBSTONE_LIB			:= lib/libstone.so
-LIBSTONE_LD				:= -shared -Wl,--version-script,src/libstone/libstone.map
+LIBSTONE_LD				:= -shared -pthread -Wl,--version-script,src/libstone/libstone.map
 LIBSTONE_SONAME			:= libstone.so.1
 LIBSTONE_LIB_VERSION	:= 1.0
 

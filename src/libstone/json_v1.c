@@ -44,16 +44,16 @@
 #include "json_v1.h"
 #include "string_v1.h"
 
-struct st_util_json_parser {
+struct st_json_parser {
 	const char * json;
 	const char * position;
 };
 
-static struct st_value * st_util_json_parse_string_inner(struct st_util_json_parser * parser);
-static void st_util_json_parse_string_strip(struct st_util_json_parser * parser);
+static struct st_value * st_json_parse_string_inner(struct st_json_parser * parser);
+static void st_json_parse_string_strip(struct st_json_parser * parser);
 
-__asm__(".symver st_util_json_parse_file_v1, st_util_json_parse_file@@LIBSTONE_1.0");
-struct st_value * st_util_json_parse_file_v1(const char * file) {
+__asm__(".symver st_json_parse_file_v1, st_json_parse_file@@LIBSTONE_1.0");
+struct st_value * st_json_parse_file_v1(const char * file) {
 	if (file == NULL)
 		return NULL;
 
@@ -75,28 +75,28 @@ struct st_value * st_util_json_parse_file_v1(const char * file) {
 		return NULL;
 	}
 
-	struct st_value * ret_value = st_util_json_parse_string_v1(buffer);
+	struct st_value * ret_value = st_json_parse_string_v1(buffer);
 	free(buffer);
 
 	return ret_value;
 }
 
-__asm__(".symver st_util_json_parse_string_v1, st_util_json_parse_string@@LIBSTONE_1.0");
-struct st_value * st_util_json_parse_string_v1(const char * json) {
-	struct st_util_json_parser parser = { .json = json, .position = json };
-	return st_util_json_parse_string_inner(&parser);
+__asm__(".symver st_json_parse_string_v1, st_json_parse_string@@LIBSTONE_1.0");
+struct st_value * st_json_parse_string_v1(const char * json) {
+	struct st_json_parser parser = { .json = json, .position = json };
+	return st_json_parse_string_inner(&parser);
 }
 
-static struct st_value * st_util_json_parse_string_inner(struct st_util_json_parser * parser) {
-	st_util_json_parse_string_strip(parser);
+static struct st_value * st_json_parse_string_inner(struct st_json_parser * parser) {
+	st_json_parse_string_strip(parser);
 
 	struct st_value * ret_val = NULL;
 	switch (*parser->position) {
 		case '{':
 			parser->position++;
-			ret_val = st_value_new_hashtable_v1(st_util_string_compute_hash_v1);
+			ret_val = st_value_new_hashtable_v1(st_string_compute_hash_v1);
 
-			st_util_json_parse_string_strip(parser);
+			st_json_parse_string_strip(parser);
 			if (*parser->position == '}') {
 				parser->position++;
 				return ret_val;
@@ -108,7 +108,7 @@ static struct st_value * st_util_json_parse_string_inner(struct st_util_json_par
 					return NULL;
 				}
 
-				struct st_value * key = st_util_json_parse_string_inner(parser);
+				struct st_value * key = st_json_parse_string_inner(parser);
 				if (key == NULL || key->type != st_value_string) {
 					if (key != NULL)
 						st_value_free_v1(key);
@@ -116,7 +116,7 @@ static struct st_value * st_util_json_parse_string_inner(struct st_util_json_par
 					return NULL;
 				}
 
-				st_util_json_parse_string_strip(parser);
+				st_json_parse_string_strip(parser);
 
 				if (*parser->position != ':') {
 					st_value_free_v1(ret_val);
@@ -125,9 +125,9 @@ static struct st_value * st_util_json_parse_string_inner(struct st_util_json_par
 				} else
 					parser->position++;
 
-				st_util_json_parse_string_strip(parser);
+				st_json_parse_string_strip(parser);
 
-				struct st_value * value = st_util_json_parse_string_inner(parser);
+				struct st_value * value = st_json_parse_string_inner(parser);
 				if (value == NULL) {
 					st_value_free_v1(ret_val);
 					st_value_free_v1(key);
@@ -136,7 +136,7 @@ static struct st_value * st_util_json_parse_string_inner(struct st_util_json_par
 
 				st_value_hashtable_put_v1(ret_val, key, true, value, true);
 
-				st_util_json_parse_string_strip(parser);
+				st_json_parse_string_strip(parser);
 
 				if (*parser->position == '}') {
 					parser->position++;
@@ -147,7 +147,7 @@ static struct st_value * st_util_json_parse_string_inner(struct st_util_json_par
 				}
 
 				parser->position++;
-				st_util_json_parse_string_strip(parser);
+				st_json_parse_string_strip(parser);
 			}
 			break;
 
@@ -155,14 +155,14 @@ static struct st_value * st_util_json_parse_string_inner(struct st_util_json_par
 			parser->position++;
 			ret_val = st_value_new_linked_list_v1();
 
-			st_util_json_parse_string_strip(parser);
+			st_json_parse_string_strip(parser);
 			if (*parser->position == ']') {
 				parser->position++;
 				return ret_val;
 			}
 
 			for (;;) {
-				struct st_value * value = st_util_json_parse_string_inner(parser);
+				struct st_value * value = st_json_parse_string_inner(parser);
 				if (value == NULL) {
 					st_value_free_v1(ret_val);
 					return NULL;
@@ -170,7 +170,7 @@ static struct st_value * st_util_json_parse_string_inner(struct st_util_json_par
 
 				st_value_list_push_v1(ret_val, value, true);
 
-				st_util_json_parse_string_strip(parser);
+				st_json_parse_string_strip(parser);
 
 				if (*parser->position == ']') {
 					parser->position++;
@@ -181,7 +181,7 @@ static struct st_value * st_util_json_parse_string_inner(struct st_util_json_par
 				}
 
 				parser->position++;
-				st_util_json_parse_string_strip(parser);
+				st_json_parse_string_strip(parser);
 			}
 			break;
 
@@ -203,7 +203,7 @@ static struct st_value * st_util_json_parse_string_inner(struct st_util_json_par
 
 							if (sscanf(parser->position, "%4x", &unicode) < 1)
 								return NULL;
-							size_t char_length = st_util_string_unicode_length_v1(unicode);
+							size_t char_length = st_string_unicode_length_v1(unicode);
 
 							if (char_length == 0)
 								return NULL;
@@ -252,8 +252,8 @@ static struct st_value * st_util_json_parse_string_inner(struct st_util_json_par
 								sscanf(string + from, "%4x", &unicode);
 								from += 3;
 
-								st_util_string_convert_unicode_to_utf8_v1(unicode, tmp_string + to, length - to, false);
-								to += st_util_string_unicode_length_v1(unicode) - 1;
+								st_string_convert_unicode_to_utf8_v1(unicode, tmp_string + to, length - to, false);
+								to += st_string_unicode_length_v1(unicode) - 1;
 								break;
 						}
 					} else
@@ -320,7 +320,7 @@ static struct st_value * st_util_json_parse_string_inner(struct st_util_json_par
 	return NULL;
 }
 
-static void st_util_json_parse_string_strip(struct st_util_json_parser * parser) {
+static void st_json_parse_string_strip(struct st_json_parser * parser) {
 	size_t length = strspn(parser->position, " \t\n");
 	if (length > 0)
 		parser->position += length;

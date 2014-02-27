@@ -142,7 +142,7 @@ struct st_value {
          * \brief Function used to release custom value
          */
         st_value_free_f release;
-};
+} __attribute__((packed));
 
 struct st_value_iterator {
         struct st_value * value;

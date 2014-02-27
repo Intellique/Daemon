@@ -39,16 +39,16 @@
  * \param[in] string : a string which contains one or more UTF8 characters
  * \returns size of first character or \b -1
  */
-static int st_util_string_valid_utf8_char(const char * string);
+static int st_string_valid_utf8_char(const char * string);
 
-__asm__(".symver st_util_string_check_valid_utf8_v1, st_util_string_check_valid_utf8@@LIBSTONE_1.0");
-bool st_util_string_check_valid_utf8_v1(const char * string) {
+__asm__(".symver st_string_check_valid_utf8_v1, st_string_check_valid_utf8@@LIBSTONE_1.0");
+bool st_string_check_valid_utf8_v1(const char * string) {
 	if (string == NULL)
 		return false;
 
 	const char * ptr = string;
 	while (*ptr) {
-		int size = st_util_string_valid_utf8_char(ptr);
+		int size = st_string_valid_utf8_char(ptr);
 
 		if (!size)
 			return false;
@@ -59,8 +59,8 @@ bool st_util_string_check_valid_utf8_v1(const char * string) {
 	return true;
 }
 
-__asm__(".symver st_util_string_compute_hash_v1, st_util_string_compute_hash@@LIBSTONE_1.0");
-unsigned long long st_util_string_compute_hash_v1(const struct st_value * value) {
+__asm__(".symver st_string_compute_hash_v1, st_string_compute_hash@@LIBSTONE_1.0");
+unsigned long long st_string_compute_hash_v1(const struct st_value * value) {
 	if (value == NULL || value->type != st_value_string)
 		return 0;
 
@@ -71,8 +71,8 @@ unsigned long long st_util_string_compute_hash_v1(const struct st_value * value)
 	return hash;
 }
 
-__asm__(".symver st_util_string_convert_unicode_to_utf8_v1, st_util_string_convert_unicode_to_utf8@@LIBSTONE_1.0");
-bool st_util_string_convert_unicode_to_utf8_v1(unsigned int unicode, char * string, size_t length, bool end_string) {
+__asm__(".symver st_string_convert_unicode_to_utf8_v1, st_string_convert_unicode_to_utf8@@LIBSTONE_1.0");
+bool st_string_convert_unicode_to_utf8_v1(unsigned int unicode, char * string, size_t length, bool end_string) {
 	if (unicode < 0x80 && length > 1) {
 		string[0] = unicode & 0x7F;
 		if (end_string)
@@ -104,8 +104,8 @@ bool st_util_string_convert_unicode_to_utf8_v1(unsigned int unicode, char * stri
 	return false;
 }
 
-__asm__(".symver st_util_string_unicode_length_v1, st_util_string_unicode_length@@LIBSTONE_1.0");
-size_t st_util_string_unicode_length_v1(unsigned int unicode) {
+__asm__(".symver st_string_unicode_length_v1, st_string_unicode_length@@LIBSTONE_1.0");
+size_t st_string_unicode_length_v1(unsigned int unicode) {
 	if (unicode < 0x80)
 		return 1;
 	else if (unicode < 0x800)
@@ -118,7 +118,7 @@ size_t st_util_string_unicode_length_v1(unsigned int unicode) {
 	return 0;
 }
 
-static int st_util_string_valid_utf8_char(const char * string) {
+static int st_string_valid_utf8_char(const char * string) {
 	const unsigned char * ptr = (const unsigned char *) string;
 	if ((*ptr & 0x7F) == *ptr) {
 		return 1;

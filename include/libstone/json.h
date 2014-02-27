@@ -24,15 +24,14 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_UTIL_STRING_P_H__
-#define __LIBSTONE_UTIL_STRING_P_H__
+#ifndef __LIBSTONE_UTIL_JSON_H__
+#define __LIBSTONE_UTIL_JSON_H__
 
-#include <libstone/util/string.h>
+struct st_value;
 
-bool st_util_string_check_valid_utf8_v1(const char * string);
-unsigned long long st_util_string_compute_hash_v1(const struct st_value * value);
-bool st_util_string_convert_unicode_to_utf8_v1(unsigned int unicode, char * string, size_t length, bool end_string);
-size_t st_util_string_unicode_length_v1(unsigned int unicode);
+struct st_value * st_json_parse_file(const char * file);
+struct st_value * st_json_parse_string(const char * json);
+// char * st_json_
 
 #endif
 
