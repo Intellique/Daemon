@@ -1,5 +1,8 @@
 LIBSTONE_1.0 {
 	global:
+		st_json_encode_to_fd;
+		st_json_encode_to_string;
+		st_json_parse_fd;
 		st_json_parse_file;
 		st_json_parse_string;
 

@@ -31,6 +31,9 @@
 
 #include "value_v1.h"
 
+size_t st_json_encode_to_fd_v1(struct st_value * value, int fd);
+char * st_json_encode_to_string_v1(struct st_value * value);
+struct st_value * st_json_parse_fd_v1(int fd);
 struct st_value * st_json_parse_file_v1(const char * file);
 struct st_value * st_json_parse_string_v1(const char * json);
 // char * st_json_
