@@ -24,35 +24,15 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_UTIL_STRING_H__
-#define __LIBSTONE_UTIL_STRING_H__
+#ifndef __LIBSTONE_UTIL_STRING_P_H__
+#define __LIBSTONE_UTIL_STRING_P_H__
 
-struct st_value;
+#include <libstone/util/string.h>
 
-// bool
-#include <stdbool.h>
-
-/**
- * \brief Check if \a string is a valid utf8 string
- *
- * \param[in] string : a utf8 string
- * \returns \b 1 if ok else 0
- */
-bool st_util_string_check_valid_utf8(const char * string);
-
-/**
- * \brief Compute hash of key
- *
- * \param[in] key : a c string
- * \returns computed hash
- *
- * \see st_hashtable_new
- */
-unsigned long long st_util_string_compute_hash(const struct st_value * value);
-
-bool st_util_string_convert_unicode_to_utf8(unsigned int unicode, char * string, size_t length, bool end_string);
-
-size_t st_util_string_unicode_length(unsigned int unicode);
+bool st_util_string_check_valid_utf8_v1(const char * string);
+unsigned long long st_util_string_compute_hash_v1(const struct st_value * value);
+bool st_util_string_convert_unicode_to_utf8_v1(unsigned int unicode, char * string, size_t length, bool end_string);
+size_t st_util_string_unicode_length_v1(unsigned int unicode);
 
 #endif
 

@@ -24,23 +24,39 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// NULL
-#include <stddef.h>
-// strlen
-#include <string.h>
+#ifndef __STONED_CONF_H__
+#define __STONED_CONF_H__
 
-#include "string.h"
-#include "value.h"
+struct st_value;
 
-__asm__(".symver st_util_string_compute_hash_v1, st_util_string_compute_hash@@LIBSTONE_1.0");
-unsigned long long st_util_string_compute_hash_v1(const struct st_value * value) {
-	if (value == NULL || value->type != st_value_string)
-		return 0;
+/**
+ * \brief Callback function
+ *
+ * \param[in] params : All keys values associated to section
+ */
+typedef void (*st_conf_callback_f)(const struct st_value * params);
 
-	unsigned long long hash = 0;
-	int length = strlen(value->value.string), i;
-	for (i = 0; i < length; i++)
-		hash = value->value.string[i] + (hash << 6) + (hash << 16) - hash;
-	return hash;
-}
+/**
+ * \brief st_read config file
+ *
+ * \param[in] conf_file : config file
+ * \return a value which correspond to
+ * \li 0 if ok
+ * \li 1 if error
+ */
+int st_conf_read_config(const char * conf_file);
+
+/**
+ * \brief Register a function which will be called if a \a section is found
+ *
+ * First, register a function \a callback associated to a \a section.
+ * Then, call st_conf_read_config and if \a section is found, the function 
+ * \a callback will be called.
+ *
+ * \param[in] section : a section name
+ * \param[in] callback : a function called if \a section is found into a config file.
+ */
+void st_conf_register_callback(const char * section, st_conf_callback_f callback);
+
+#endif
 

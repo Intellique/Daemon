@@ -32,31 +32,6 @@
 
 #include <libstone/util/string.h>
 
-/**
- * \brief Compute size of a UTF8 character
- *
- * \param[in] string : a string which contains one or more UTF8 characters
- * \returns size of first character or \b -1
- */
-static int st_util_string_valid_utf8_char(const char * string);
-
-bool st_util_string_check_valid_utf8(const char * string) {
-	if (string == NULL)
-		return false;
-
-	const char * ptr = string;
-	while (*ptr) {
-		int size = st_util_string_valid_utf8_char(ptr);
-
-		if (!size)
-			return false;
-
-		ptr += size;
-	}
-
-	return true;
-}
-
 void st_util_string_delete_double_char(char * str, char delete_char) {
 	char double_char[3] = { delete_char, delete_char, '\0' };
 
@@ -181,46 +156,5 @@ size_t st_util_string_strlen(const char * str) {
 	}
 
 	return length;
-}
-
-static int st_util_string_valid_utf8_char(const char * string) {
-	const unsigned char * ptr = (const unsigned char *) string;
-	if ((*ptr & 0x7F) == *ptr) {
-		return 1;
-	} else if ((*ptr & 0xBF) == *ptr) {
-		return 0;
-	} else if ((*ptr & 0xDF) == *ptr) {
-		ptr++;
-		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
-			return 0;
-
-		return 2;
-	} else if ((*ptr & 0xEF) == *ptr) {
-		ptr++;
-		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
-			return 0;
-
-		ptr++;
-		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
-			return 0;
-
-		return 3;
-	} else if ((*ptr & 0x7F) == *ptr) {
-		ptr++;
-		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
-			return 0;
-
-		ptr++;
-		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
-			return 0;
-
-		ptr++;
-		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
-			return 0;
-
-		return 4;
-	} else {
-		return 0;
-	}
 }
 

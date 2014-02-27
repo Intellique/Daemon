@@ -1,6 +1,12 @@
 LIBSTONE_1.0 {
 	global:
+		st_util_json_parse_file;
+		st_util_json_parse_string;
+
+		st_util_string_check_valid_utf8;
 		st_util_string_compute_hash;
+		st_util_string_convert_unicode_to_utf8;
+		st_util_string_unicode_length;
 
 		st_value_can_convert;
 		st_value_convert;

@@ -34,14 +34,6 @@
 #include <stdint.h>
 
 /**
- * \brief Check if \a string is a valid utf8 string
- *
- * \param[in] string : a utf8 string
- * \returns \b 1 if ok else 0
- */
-bool st_util_string_check_valid_utf8(const char * string);
-
-/**
  * \brief Remove from \a str a sequence of two or more of character \a delete_char
  *
  * \param[in,out] str : a string

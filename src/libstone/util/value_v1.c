@@ -29,7 +29,7 @@
 // memmove, strdup
 #include <string.h>
 
-#include "value.h"
+#include "value_v1.h"
 
 static struct st_value * st_value_new_v1(enum st_value_type type);
 
