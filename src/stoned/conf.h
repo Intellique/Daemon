@@ -30,13 +30,6 @@
 struct st_value;
 
 /**
- * \brief Callback function
- *
- * \param[in] params : All keys values associated to section
- */
-typedef void (*st_conf_callback_f)(const struct st_value * params);
-
-/**
  * \brief st_read config file
  *
  * \param[in] conf_file : config file
@@ -44,19 +37,7 @@ typedef void (*st_conf_callback_f)(const struct st_value * params);
  * \li 0 if ok
  * \li 1 if error
  */
-int st_conf_read_config(const char * conf_file);
-
-/**
- * \brief Register a function which will be called if a \a section is found
- *
- * First, register a function \a callback associated to a \a section.
- * Then, call st_conf_read_config and if \a section is found, the function 
- * \a callback will be called.
- *
- * \param[in] section : a section name
- * \param[in] callback : a function called if \a section is found into a config file.
- */
-void st_conf_register_callback(const char * section, st_conf_callback_f callback);
+struct st_value * st_conf_read_config(const char * conf_file);
 
 #endif
 

@@ -24,8 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_UTIL_JSON_H__
-#define __LIBSTONE_UTIL_JSON_H__
+#ifndef __LIBSTONE_JSON_H__
+#define __LIBSTONE_JSON_H__
 
 struct st_value;
 

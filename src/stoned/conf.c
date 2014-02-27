@@ -28,6 +28,8 @@
 #include <fcntl.h>
 // free, malloc
 #include <malloc.h>
+// strchr
+#include <string.h>
 // fstat, open
 #include <sys/stat.h>
 // fstat, open
@@ -35,31 +37,18 @@
 // access, close, fstat, read, readlink, unlink, write
 #include <unistd.h>
 
-#include <libstone/util/string.h>
-#include <libstone/util/value.h>
+#include <libstone/string.h>
+#include <libstone/value.h>
 
 #include "conf.h"
 
-static void st_conf_exit(void) __attribute__((destructor));
-static void st_conf_init(void) __attribute__((constructor));
 
-static struct st_value * st_conf_callback = NULL;
-
-
-static void st_conf_exit() {
-	st_value_free_v1(st_conf_callback);
-}
-
-static void st_conf_init() {
-	st_conf_callback = st_value_new_hashtable_v1(st_util_string_compute_hash_v1);
-}
-
-int st_conf_read_config(const char * conf_file) {
+struct st_value * st_conf_read_config(const char * conf_file) {
 	if (conf_file == NULL)
-		return -1;
+		return NULL;
 
 	if (access(conf_file, R_OK))
-		return -1;
+		return NULL;
 
 	int fd = open(conf_file, O_RDONLY);
 
@@ -73,13 +62,16 @@ int st_conf_read_config(const char * conf_file) {
 
 	if (nb_read < 0) {
 		free(buffer);
-		return 1;
+		return NULL;
 	}
 
 	char * ptr = buffer;
-	char section[24] = { '\0' };
-	struct st_hashtable * params = st_hashtable_new2(st_util_string_compute_hash, st_util_basic_free);
+	struct st_value * params = st_value_new_hashtable(st_string_compute_hash);
+	struct st_value * section = NULL;
+	struct st_value * param = NULL;
 
+	char sec[24];
+	struct st_value * key;
 	while (ptr != NULL && *ptr) {
 		switch (*ptr) {
 			case ';':
@@ -88,26 +80,31 @@ int st_conf_read_config(const char * conf_file) {
 
 			case '\n':
 				ptr++;
-				if (*ptr == '\n') {
-					if (*section) {
-						st_conf_callback_f f = st_hashtable_get(st_conf_callback, section).value.custom;
-						if (f != NULL)
-							f(params);
-					}
-
-					*section = 0;
-					st_hashtable_clear(params);
-				}
+				if (*ptr == '\n')
+					section = NULL;
 				continue;
 
 			case '[':
-				sscanf(ptr, "[%23[^]]]", section);
+				sscanf(ptr, "[%23[^]]]", sec);
+
+				key = st_value_new_string(sec);
+				if (st_value_hashtable_has_key(params, key))
+					section = st_value_hashtable_get(params, key, false);
+				else {
+					section = st_value_new_linked_list();
+					st_value_hashtable_put(params, key, false, section, true);
+				}
+				st_value_free(key);
+				key = NULL;
+
+				param = st_value_new_hashtable(st_string_compute_hash);
+				st_value_list_push(section, param, true);
 
 				ptr = strchr(ptr, '\n');
 				continue;
 
 			default:
-				if (!*section)
+				if (section == NULL)
 					continue;
 
 				if (strchr(ptr, '=') < strchr(ptr, '\n')) {
@@ -115,23 +112,14 @@ int st_conf_read_config(const char * conf_file) {
 					char value[64];
 					int val = sscanf(ptr, "%s = %s", key, value);
 					if (val == 2)
-						st_hashtable_put(params, strdup(key), st_hashtable_val_string(strdup(value)));
+						st_value_hashtable_put(param, st_value_new_string(key), true, st_value_new_string(value), true);
 				}
 				ptr = strchr(ptr, '\n');
 		}
 	}
 
-	if (params->nb_elements > 0 && *section) {
-		st_conf_callback_f f = st_hashtable_get(st_conf_callback, section).value.custom;
-		if (f != NULL)
-			f(params);
-	}
-
-	st_hashtable_free(params);
 	free(buffer);
 
-	st_log_start_logger();
-
-	return 0;
+	return params;
 }
 

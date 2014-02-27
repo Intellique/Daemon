@@ -52,6 +52,7 @@ struct st_json_parser {
 static struct st_value * st_json_parse_string_inner(struct st_json_parser * parser);
 static void st_json_parse_string_strip(struct st_json_parser * parser);
 
+
 __asm__(".symver st_json_parse_file_v1, st_json_parse_file@@LIBSTONE_1.0");
 struct st_value * st_json_parse_file_v1(const char * file) {
 	if (file == NULL)

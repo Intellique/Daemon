@@ -24,8 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_UTIL_STRING_P_H__
-#define __LIBSTONE_UTIL_STRING_P_H__
+#ifndef __LIBSTONE_STRING_P_H__
+#define __LIBSTONE_STRING_P_H__
 
 #include <libstone/string.h>
 

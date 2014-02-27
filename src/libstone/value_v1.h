@@ -24,8 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_UTIL_VALUE_H_P__
-#define __LIBSTONE_UTIL_VALUE_H_P__
+#ifndef __LIBSTONE_VALUE_H_P__
+#define __LIBSTONE_VALUE_H_P__
 
 #include <libstone/value.h>
 
