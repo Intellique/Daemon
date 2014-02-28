@@ -22,41 +22,26 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 09 Jun 2013 10:44:37 +0200                            *
 \****************************************************************************/
 
-#ifndef __STONE_UTIL_STRING_H__
-#define __STONE_UTIL_STRING_H__
+#ifndef __LIBSTONE_PROCESS_P_H__
+#define __LIBSTONE_PROCESS_P_H__
 
-// bool
-#include <stdbool.h>
-// uint64_t
-#include <stdint.h>
+#include <libstone/process.h>
 
-/**
- * \brief Remove from \a str a sequence of two or more of character \a delete_char
- *
- * \param[in,out] str : a string
- * \param[in] delete_char : a character
- */
-void st_util_string_delete_double_char(char * str, char delete_char);
-
-/**
- * \brief Fix a UTF8 string by removing invalid character
- *
- * \param[in,out] string : a (in)valid UTF8 string
- */
-void st_util_string_fix_invalid_utf8(char * string);
-
-void st_util_string_middle_elipsis(char * string, size_t length);
-
-/**
- * \brief Compute length in characters (not in bytes)
- * \param[in] str valid utf8 string
- * \return length in characters
- * \note to compute length in bytes, use strlen
- */
-size_t st_util_string_strlen(const char * str);
+void st_process_drop_environment_v1(struct st_process * process, const char * key);
+void st_process_free_v1(struct st_process * process, unsigned int nb_process);
+void st_process_new_v1(struct st_process * process, const char * process_name, const char ** params, unsigned int nb_params);
+void st_process_pipe_v1(struct st_process * process_out, enum st_process_std out, struct st_process * process_in);
+int st_process_pipe_from_v1(struct st_process * process_out, enum st_process_std out);
+int st_process_pipe_to_v1(struct st_process * process_in);
+void st_process_put_environment_v1(struct st_process * process, const char * key, const char * value);
+void st_process_redir_err_to_out_v1(struct st_process * process);
+void st_process_redir_out_to_err_v1(struct st_process * process);
+void st_process_set_environment_v1(struct st_process * process, struct st_value * environment);
+void st_process_set_fd_v1(struct st_process * process, enum st_process_std fd_process, int new_fd);
+void st_process_start_v1(struct st_process * process, unsigned int nb_process);
+void st_process_wait_v1(struct st_process * process, unsigned int nb_process);
 
 #endif
 

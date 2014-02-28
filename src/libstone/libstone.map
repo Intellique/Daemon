@@ -18,6 +18,20 @@ LIBSTONE_1.0 {
 		st_poll_register;
 		st_poll_unregister;
 
+		st_process_drop_environment;
+		st_process_free;
+		st_process_new;
+		st_process_pipe;
+		st_process_pipe_from;
+		st_process_pipe_to;
+		st_process_put_environment;
+		st_process_redir_err_to_out;
+		st_process_redir_out_to_err;
+		st_process_set_environment;
+		st_process_set_fd;
+		st_process_start;
+		st_process_wait;
+
 		st_string_check_valid_utf8;
 		st_string_compute_hash;
 		st_string_convert_unicode_to_utf8;

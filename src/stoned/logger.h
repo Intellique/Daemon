@@ -22,41 +22,12 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 09 Jun 2013 10:44:37 +0200                            *
 \****************************************************************************/
 
-#ifndef __STONE_UTIL_STRING_H__
-#define __STONE_UTIL_STRING_H__
+#ifndef __STONED_LOGGER_H__
+#define __STONED_LOGGER_H__
 
-// bool
-#include <stdbool.h>
-// uint64_t
-#include <stdint.h>
-
-/**
- * \brief Remove from \a str a sequence of two or more of character \a delete_char
- *
- * \param[in,out] str : a string
- * \param[in] delete_char : a character
- */
-void st_util_string_delete_double_char(char * str, char delete_char);
-
-/**
- * \brief Fix a UTF8 string by removing invalid character
- *
- * \param[in,out] string : a (in)valid UTF8 string
- */
-void st_util_string_fix_invalid_utf8(char * string);
-
-void st_util_string_middle_elipsis(char * string, size_t length);
-
-/**
- * \brief Compute length in characters (not in bytes)
- * \param[in] str valid utf8 string
- * \return length in characters
- * \note to compute length in bytes, use strlen
- */
-size_t st_util_string_strlen(const char * str);
+void std_start_logger(void);
 
 #endif
 

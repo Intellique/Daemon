@@ -31,6 +31,8 @@ struct st_value;
 
 // bool
 #include <stdbool.h>
+// size_t
+#include <sys/types.h>
 
 /**
  * \brief Check if \a string is a valid utf8 string
