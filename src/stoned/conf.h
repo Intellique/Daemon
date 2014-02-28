@@ -37,7 +37,7 @@ struct st_value;
  * \li 0 if ok
  * \li 1 if error
  */
-struct st_value * st_conf_read_config(const char * conf_file);
+struct st_value * std_conf_read_config(const char * conf_file);
 
 #endif
 

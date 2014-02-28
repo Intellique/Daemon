@@ -31,6 +31,7 @@
 // printf
 #include <stdio.h>
 
+#include "conf.h"
 #include "env.h"
 #include "logger.h"
 
@@ -107,10 +108,12 @@ int main(int argc, char ** argv) {
 		}
 	} while (opt > -1);
 
+	struct st_value * config = std_conf_read_config(config_file);
+
 	if (!std_env_setup())
 		return 1;
 
-	std_logger_start();
+	std_logger_start(config);
 
 	return 0;
 }

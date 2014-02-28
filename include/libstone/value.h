@@ -130,7 +130,13 @@ struct st_value {
                         unsigned int nb_vals;
                 } list;
                 char * string;
-                void * custom;
+				struct st_value_custom {
+					void * data;
+					/**
+					 * \brief Function used to release custom value
+					 */
+					st_value_free_f release;
+				} custom;
         } value;
         /**
          * \brief Number of many times this value is shared
@@ -138,10 +144,6 @@ struct st_value {
          * \attention Should not be modify
          */
         unsigned int shared;
-        /**
-         * \brief Function used to release custom value
-         */
-        st_value_free_f release;
 } __attribute__((packed));
 
 struct st_value_iterator {
@@ -287,8 +289,8 @@ void st_value_hashtable_clear(struct st_value * hash) __attribute__((nonnull));
  * \param[in] detach if \b true then remove also value from hashtable
  * \returns \b null or the value associated to \a key
  */
-struct st_value * st_value_hashtable_get(struct st_value * hash, struct st_value * key, bool detach) __attribute__((nonnull,warn_unused_result));
-struct st_value * st_value_hashtable_get2(struct st_value * hash, const char * key) __attribute__((nonnull,warn_unused_result));
+struct st_value * st_value_hashtable_get(struct st_value * hash, struct st_value * key, bool shared, bool detach) __attribute__((nonnull,warn_unused_result));
+struct st_value * st_value_hashtable_get2(struct st_value * hash, const char * key, bool shared) __attribute__((nonnull,warn_unused_result));
 /**
  * \brief Get an object to iter through an hashtable
  *

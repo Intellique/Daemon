@@ -43,7 +43,7 @@
 #include "conf.h"
 
 
-struct st_value * st_conf_read_config(const char * conf_file) {
+struct st_value * std_conf_read_config(const char * conf_file) {
 	if (conf_file == NULL)
 		return NULL;
 
@@ -89,7 +89,7 @@ struct st_value * st_conf_read_config(const char * conf_file) {
 
 				key = st_value_new_string(sec);
 				if (st_value_hashtable_has_key(params, key))
-					section = st_value_hashtable_get(params, key, false);
+					section = st_value_hashtable_get(params, key, false, false);
 				else {
 					section = st_value_new_linked_list();
 					st_value_hashtable_put(params, key, false, section, true);

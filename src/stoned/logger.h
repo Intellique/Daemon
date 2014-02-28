@@ -27,7 +27,9 @@
 #ifndef __STONED_LOGGER_H__
 #define __STONED_LOGGER_H__
 
-void std_logger_start(void);
+struct st_value;
+
+void std_logger_start(struct st_value * config);
 
 #endif
 

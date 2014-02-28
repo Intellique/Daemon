@@ -39,9 +39,8 @@ static void st_value_hashtable_release_node_v1(struct st_value_hashtable_node * 
 
 static struct st_value null_value = {
 	.type = st_value_null,
-	.value.custom = NULL,
+	.value.string = NULL,
 	.shared = 0,
-	.release = NULL,
 };
 
 __asm__(".symver st_value_can_convert_v1, st_value_can_convert@@LIBSTONE_1.0");
@@ -399,7 +398,7 @@ bool st_value_equals_v1(struct st_value * a, struct st_value * b) {
 
 		case st_value_custom:
 			if (b->type == st_value_custom)
-				return a->value.custom == b->value.custom;
+				return a->value.custom.data == b->value.custom.data;
 
 		case st_value_float:
 			switch (b->type) {
@@ -431,8 +430,8 @@ bool st_value_equals_v1(struct st_value * a, struct st_value * b) {
 						break;
 					}
 
-					struct st_value * val_a = st_value_hashtable_get_v1(a, key, false);
-					struct st_value * val_b = st_value_hashtable_get_v1(b, key, false);
+					struct st_value * val_a = st_value_hashtable_get_v1(a, key, false, false);
+					struct st_value * val_b = st_value_hashtable_get_v1(b, key, false, false);
 					equals = st_value_equals_v1(val_a, val_b);
 				}
 				st_value_iterator_free_v1(iter);
@@ -494,9 +493,8 @@ void st_value_free_v1(struct st_value * value) {
 			break;
 
 		case st_value_custom:
-		case st_value_string:
-			if (value->release != NULL)
-				value->release(value->value.custom);
+			if (value->value.custom.release != NULL)
+				value->value.custom.release(value->value.custom.data);
 			break;
 
 		case st_value_hashtable:
@@ -508,6 +506,10 @@ void st_value_free_v1(struct st_value * value) {
 			st_value_list_clear_v1(value);
 			break;
 
+		case st_value_string:
+			free(value->value.string);
+			break;
+
 		default:
 			break;
 	}
@@ -517,9 +519,8 @@ void st_value_free_v1(struct st_value * value) {
 static struct st_value * st_value_new_v1(enum st_value_type type) {
 	struct st_value * val = malloc(sizeof(struct st_value));
 	val->type = type;
-	val->value.custom = NULL;
+	val->value.string = NULL;
 	val->shared = 1;
-	val->release = NULL;
 	return val;
 }
 
@@ -544,8 +545,8 @@ struct st_value * st_value_new_boolean_v1(bool value) {
 __asm__(".symver st_value_new_custom_v1, st_value_new_custom@@LIBSTONE_1.0");
 struct st_value * st_value_new_custom_v1(void * value, st_value_free_f release) {
 	struct st_value * val = st_value_new_v1(st_value_custom);
-	val->value.custom = value;
-	val->release = release;
+	val->value.custom.data = value;
+	val->value.custom.release = release;
 	return val;
 }
 
@@ -591,7 +592,6 @@ __asm__(".symver st_value_new_string_v1, st_value_new_string@@LIBSTONE_1.0");
 struct st_value * st_value_new_string_v1(const char * value) {
 	struct st_value * val = st_value_new_v1(st_value_string);
 	val->value.string = strdup(value);
-	val->release = free;
 	return val;
 }
 
@@ -631,7 +631,7 @@ void st_value_hashtable_clear_v1(struct st_value * hash) {
 }
 
 __asm__(".symver st_value_hashtable_get_v1, st_value_hashtable_get@@LIBSTONE_1.0");
-struct st_value * st_value_hashtable_get_v1(struct st_value * hash, struct st_value * key, bool detach) {
+struct st_value * st_value_hashtable_get_v1(struct st_value * hash, struct st_value * key, bool shared, bool detach) {
 	if (hash == NULL || hash->type != st_value_hashtable || key == NULL)
 		return &null_value;
 
@@ -645,7 +645,10 @@ struct st_value * st_value_hashtable_get_v1(struct st_value * hash, struct st_va
 
 	struct st_value * ret = &null_value;
 	if (node != NULL && node->hash == h) {
-		ret = st_value_share_v1(node->value);
+		if (shared)
+			ret = st_value_share_v1(node->value);
+		else
+			ret = node->value;
 
 		if (detach)
 			st_value_hashtable_remove_v1(hash, key);
@@ -655,9 +658,9 @@ struct st_value * st_value_hashtable_get_v1(struct st_value * hash, struct st_va
 }
 
 __asm__(".symver st_value_hashtable_get2_v1, st_value_hashtable_get2@@LIBSTONE_1.0");
-struct st_value * st_value_hashtable_get2_v1(struct st_value * hash, const char * key) {
+struct st_value * st_value_hashtable_get2_v1(struct st_value * hash, const char * key, bool shared) {
 	struct st_value * k = st_value_new_string_v1(key);
-	struct st_value * returned = st_value_hashtable_get_v1(hash, k, false);
+	struct st_value * returned = st_value_hashtable_get_v1(hash, k, shared, false);
 	st_value_free_v1(k);
 	return returned;
 }

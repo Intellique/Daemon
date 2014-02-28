@@ -46,8 +46,8 @@ struct st_value * st_value_new_string_v1(const char * value) __attribute__((nonn
 struct st_value * st_value_share_v1(struct st_value * value) __attribute__((nonnull,warn_unused_result));
 
 void st_value_hashtable_clear_v1(struct st_value * hash) __attribute__((nonnull));
-struct st_value * st_value_hashtable_get_v1(struct st_value * hash, struct st_value * key, bool detach) __attribute__((nonnull,warn_unused_result));
-struct st_value * st_value_hashtable_get2_v1(struct st_value * hash, const char * key) __attribute__((nonnull,warn_unused_result));
+struct st_value * st_value_hashtable_get_v1(struct st_value * hash, struct st_value * key, bool shared, bool detach) __attribute__((nonnull,warn_unused_result));
+struct st_value * st_value_hashtable_get2_v1(struct st_value * hash, const char * key, bool shared) __attribute__((nonnull,warn_unused_result));
 struct st_value_iterator * st_value_hashtable_get_iterator_v1(struct st_value * hash) __attribute__((nonnull,warn_unused_result));
 bool st_value_hashtable_has_key_v1(struct st_value * hash, struct st_value * key) __attribute__((nonnull));
 struct st_value * st_value_hashtable_keys_v1(struct st_value * hash) __attribute__((nonnull));

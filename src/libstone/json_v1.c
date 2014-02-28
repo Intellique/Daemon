@@ -286,6 +286,18 @@ size_t st_json_encode_to_fd_v1(struct st_value * val, int fd) {
 	return nb_write;
 }
 
+__asm__(".symver st_json_encode_to_file_v1, st_json_encode_to_file@@LIBSTONE_1.0");
+size_t st_json_encode_to_file_v1(struct st_value * value, const char * filename) {
+	if (filename == NULL)
+		return -1;
+
+	int fd = open(filename, O_WRONLY | O_TRUNC | O_CREAT, 0744);
+	size_t nb_write = st_json_encode_to_fd_v1(value, fd);
+	close(fd);
+
+	return nb_write;
+}
+
 static size_t st_json_encode_to_string_inner(struct st_value * val, char * buffer, size_t length) {
 	size_t nb_write = 0;
 	switch (val->type) {

@@ -9,6 +9,7 @@ LIBSTONE_1.0 {
 		st_file_rm;
 
 		st_json_encode_to_fd;
+		st_json_encode_to_file;
 		st_json_encode_to_string;
 		st_json_parse_fd;
 		st_json_parse_file;
