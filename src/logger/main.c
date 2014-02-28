@@ -24,7 +24,25 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// sleep
+#include <unistd.h>
+
+#include <libstone/json.h>
+#include <libstone/poll.h>
+#include <libstone/value.h>
+
+static void daemon_request(int fd, short event, void * data);
+
+
+static void daemon_request(int fd __attribute__((unused)), short event __attribute__((unused)), void * data __attribute__((unused))) {}
+
 int main() {
+	struct st_value * config = st_json_parse_fd(0, 1000);
+	if (config == NULL)
+		return 1;
+
+	st_poll_register(0, POLLIN, daemon_request, NULL);
+
 	return 0;
 }
 

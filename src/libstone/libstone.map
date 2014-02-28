@@ -1,5 +1,13 @@
 LIBSTONE_1.0 {
 	global:
+		st_file_basic_scandir_filter;
+		st_file_convert_mode;
+		st_file_convert_size_to_string;
+		st_file_cp;
+		st_file_mkdir;
+		st_file_mv;
+		st_file_rm;
+
 		st_json_encode_to_fd;
 		st_json_encode_to_string;
 		st_json_parse_fd;
@@ -13,6 +21,9 @@ LIBSTONE_1.0 {
 		st_string_check_valid_utf8;
 		st_string_compute_hash;
 		st_string_convert_unicode_to_utf8;
+		st_string_delete_double_char;
+		st_string_rtrim;
+		st_string_trim;
 		st_string_unicode_length;
 
 		st_value_can_convert;

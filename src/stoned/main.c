@@ -31,6 +31,8 @@
 // printf
 #include <stdio.h>
 
+#include <libstone/file.h>
+
 #include "checksum/stoned.chcksum"
 #include "config.h"
 #include "stone.version"
@@ -103,6 +105,9 @@ int main(int argc, char ** argv) {
 				return 1;
 		}
 	} while (opt > -1);
+
+	if (st_file_mkdir(DAEMON_SOCKET_DIR, 0700) != 0)
+		return 1;
 
 	return 0;
 }

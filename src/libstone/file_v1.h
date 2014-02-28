@@ -22,92 +22,20 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 09 Jun 2013 16:21:20 +0200                            *
 \****************************************************************************/
 
-// free, realloc
-#include <stdlib.h>
-// strlen, strspn, strstr
-#include <string.h>
+#ifndef __LIBSTONE_FILE_P_H__
+#define __LIBSTONE_FILE_P_H__
 
-#include <libstone/util/string.h>
+#include <libstone/file.h>
 
-void st_util_string_fix_invalid_utf8(char * string) {
-	if (string == NULL)
-		return;
+int st_file_basic_scandir_filter_v1(const struct dirent * d);
+void st_file_convert_mode_v1(char * buffer, mode_t mode);
+void st_file_convert_size_to_string_v1(ssize_t size, char * str, ssize_t str_len);
+int st_file_cp_v1(const char * src, const char * dst);
+int st_file_mkdir_v1(const char * dirname, mode_t mode);
+int st_file_mv_v1(const char * src, const char * dst);
+int st_file_rm_v1(const char * path);
 
-	char * ptr = string;
-	while (*ptr) {
-		int size = st_util_string_valid_utf8_char(ptr);
-
-		if (size > 0) {
-			ptr += size;
-			continue;
-		}
-
-		char * ptr_end = ptr + 1;
-		while (*ptr_end && st_util_string_valid_utf8_char(ptr_end) == 0)
-			ptr_end++;
-
-		if (*ptr_end)
-			memmove(ptr, ptr_end, strlen(ptr_end) + 1);
-		else
-			*ptr = '\0';
-	}
-}
-
-void st_util_string_middle_elipsis(char * string, size_t length) {
-	size_t str_length = strlen(string);
-	if (str_length <= length)
-		return;
-
-	length--;
-
-	size_t used = 0;
-	char * ptrA = string;
-	char * ptrB = string + str_length;
-	while (used < length) {
-		int char_length = st_util_string_valid_utf8_char(ptrA);
-		if (char_length == 0)
-			return;
-
-		if (used + char_length > length)
-			break;
-
-		used += char_length;
-		ptrA += char_length;
-
-		int offset = 1;
-		while (char_length = st_util_string_valid_utf8_char(ptrB - offset), ptrA < ptrB - offset && char_length == 0)
-			offset++;
-
-		if (char_length == 0)
-			return;
-
-		if (used + char_length > length)
-			break;
-
-		used += char_length;
-		ptrB -= char_length;
-	}
-
-	*ptrA = '~';
-	memmove(ptrA + 1, ptrB, strlen(ptrB) + 1);
-}
-
-size_t st_util_string_strlen(const char * str) {
-	size_t length = 0;
-	size_t offset = 0;
-
-	while (str[offset] != '\0') {
-		int char_length = st_util_string_valid_utf8_char(str + offset);
-		if (char_length == 0)
-			break;
-
-		length++;
-		offset += char_length;
-	}
-
-	return length;
-}
+#endif
 

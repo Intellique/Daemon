@@ -35,35 +35,7 @@
 
 struct dirent;
 
-/**
- * \brief Basic function which is designed to be used by scandir
- *
- * This function, when used by scandir, remove only files named '.' and '..'
- *
- * \param[in] d : directory information
- * \returns 0 if d->d_name equals '.' or '..'
- */
-int st_util_file_basic_scandir_filter(const struct dirent * d);
-
 bool st_util_file_check_link(const char * file);
-
-/**
- * \brief Convert a file mode to \b buffer with `ls -l` style
- * \param[out] buffer : a 10 bytes already allocated buffer
- * \param[in] mode : convert with this mode
- */
-void st_util_file_convert_mode(char * buffer, mode_t mode);
-
-/**
- * \brief Convert \a size to humain readeable format (i.e. 30KB)
- *
- * \param[in] size : convert this \a size
- * \param[out] str : an allocated string which will contain result
- * \param[in] str_len : length of \a str in bytes
- */
-void st_util_file_convert_size_to_string(ssize_t size, char * str, ssize_t str_len);
-
-int st_util_file_cp(const char * src, const char * dst);
 
 char * st_util_file_get_serial(const char * filename);
 
@@ -78,28 +50,9 @@ char * st_util_file_get_serial(const char * filename);
  */
 void st_util_file_gid2name(char * name, ssize_t length, gid_t gid);
 
-/**
- * \brief Create directory recursively
- *
- * \param[in] dirname : a directory name
- * \param[in] mode : create directory with specific mode
- * \returns 0 if ok or read errno
- */
-int st_util_file_mkdir(const char * dirname, mode_t mode);
-
-int st_util_file_mv(const char * src, const char * dst);
-
 char * st_util_file_read_all_from(const char * filename);
 
 char * st_util_file_rename(const char * filename);
-
-/**
- * \brief Remove recursively path
- *
- * \param[in] path : a path that will be deleted
- * \returns 0 if ok or read errno
- */
-int st_util_file_rm(const char * path);
 
 /**
  * \brief Trunc \a nb_trunc_path directories from \a path

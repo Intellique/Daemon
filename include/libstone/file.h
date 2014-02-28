@@ -22,92 +22,64 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Sun, 09 Jun 2013 16:21:20 +0200                            *
 \****************************************************************************/
 
-// free, realloc
-#include <stdlib.h>
-// strlen, strspn, strstr
-#include <string.h>
+#ifndef __LIBSTONE_FILE_H__
+#define __LIBSTONE_FILE_H__
 
-#include <libstone/util/string.h>
+// bool
+#include <stdbool.h>
+// gid_t, mode_t, ssize_t
+#include <sys/types.h>
 
-void st_util_string_fix_invalid_utf8(char * string) {
-	if (string == NULL)
-		return;
+struct dirent;
 
-	char * ptr = string;
-	while (*ptr) {
-		int size = st_util_string_valid_utf8_char(ptr);
+/**
+ * \brief Basic function which is designed to be used by scandir
+ *
+ * This function, when used by scandir, remove only files named '.' and '..'
+ *
+ * \param[in] d : directory information
+ * \returns 0 if d->d_name equals '.' or '..'
+ */
+int st_file_basic_scandir_filter(const struct dirent * d);
 
-		if (size > 0) {
-			ptr += size;
-			continue;
-		}
+/**
+ * \brief Convert a file mode to \b buffer with `ls -l` style
+ * \param[out] buffer : a 10 bytes already allocated buffer
+ * \param[in] mode : convert with this mode
+ */
+void st_file_convert_mode(char * buffer, mode_t mode);
 
-		char * ptr_end = ptr + 1;
-		while (*ptr_end && st_util_string_valid_utf8_char(ptr_end) == 0)
-			ptr_end++;
+/**
+ * \brief Convert \a size to humain readeable format (i.e. 30KB)
+ *
+ * \param[in] size : convert this \a size
+ * \param[out] str : an allocated string which will contain result
+ * \param[in] str_len : length of \a str in bytes
+ */
+void st_file_convert_size_to_string(ssize_t size, char * str, ssize_t str_len);
 
-		if (*ptr_end)
-			memmove(ptr, ptr_end, strlen(ptr_end) + 1);
-		else
-			*ptr = '\0';
-	}
-}
+int st_file_cp(const char * src, const char * dst);
 
-void st_util_string_middle_elipsis(char * string, size_t length) {
-	size_t str_length = strlen(string);
-	if (str_length <= length)
-		return;
+/**
+ * \brief Create directory recursively
+ *
+ * \param[in] dirname : a directory name
+ * \param[in] mode : create directory with specific mode
+ * \returns 0 if ok or read errno
+ */
+int st_file_mkdir(const char * dirname, mode_t mode);
 
-	length--;
+int st_file_mv(const char * src, const char * dst);
 
-	size_t used = 0;
-	char * ptrA = string;
-	char * ptrB = string + str_length;
-	while (used < length) {
-		int char_length = st_util_string_valid_utf8_char(ptrA);
-		if (char_length == 0)
-			return;
+/**
+ * \brief Remove recursively path
+ *
+ * \param[in] path : a path that will be deleted
+ * \returns 0 if ok or read errno
+ */
+int st_file_rm(const char * path);
 
-		if (used + char_length > length)
-			break;
-
-		used += char_length;
-		ptrA += char_length;
-
-		int offset = 1;
-		while (char_length = st_util_string_valid_utf8_char(ptrB - offset), ptrA < ptrB - offset && char_length == 0)
-			offset++;
-
-		if (char_length == 0)
-			return;
-
-		if (used + char_length > length)
-			break;
-
-		used += char_length;
-		ptrB -= char_length;
-	}
-
-	*ptrA = '~';
-	memmove(ptrA + 1, ptrB, strlen(ptrB) + 1);
-}
-
-size_t st_util_string_strlen(const char * str) {
-	size_t length = 0;
-	size_t offset = 0;
-
-	while (str[offset] != '\0') {
-		int char_length = st_util_string_valid_utf8_char(str + offset);
-		if (char_length == 0)
-			break;
-
-		length++;
-		offset += char_length;
-	}
-
-	return length;
-}
+#endif
 

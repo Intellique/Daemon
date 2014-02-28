@@ -50,7 +50,33 @@ bool st_string_check_valid_utf8(const char * string);
  */
 unsigned long long st_string_compute_hash(const struct st_value * value);
 
+/**
+ * \brief Remove from \a str a sequence of two or more of character \a delete_char
+ *
+ * \param[in,out] str : a string
+ * \param[in] delete_char : a character
+ */
+void st_string_delete_double_char(char * str, char delete_char);
+
 bool st_string_convert_unicode_to_utf8(unsigned int unicode, char * string, size_t length, bool end_string);
+
+/**
+ * \brief Remove characters \a trim at the end of \a str
+ *
+ * \param[in,out] str : a string
+ * \param[in] trim : a character
+ *
+ * \see st_util_string_trim
+ */
+void st_string_rtrim(char * str, char trim);
+
+/**
+ * \brief Remove characters \a trim at the beginning and at the end of \a str
+ *
+ * \param[in,out] str : a string
+ * \param[in] trim : a character
+ */
+void st_string_trim(char * str, char trim);
 
 size_t st_string_unicode_length(unsigned int unicode);
 

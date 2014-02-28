@@ -24,9 +24,7 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// NULL
-#include <stddef.h>
-// strlen
+// memmove, strlen, strspn, strstr
 #include <string.h>
 
 #include "string_v1.h"
@@ -102,6 +100,56 @@ bool st_string_convert_unicode_to_utf8_v1(unsigned int unicode, char * string, s
 	}
 
 	return false;
+}
+
+__asm__(".symver st_string_delete_double_char_v1, st_string_delete_double_char@@LIBSTONE_1.0");
+void st_string_delete_double_char_v1(char * str, char delete_char) {
+	char double_char[3] = { delete_char, delete_char, '\0' };
+
+	char * ptr = strstr(str, double_char);
+	while (ptr != NULL) {
+		ptr++;
+
+		size_t length = strlen(ptr);
+		size_t delete_length = strspn(ptr, double_char + 1);
+
+		memmove(ptr, ptr + delete_length, length - delete_length + 1);
+
+		ptr = strstr(ptr, double_char);
+	}
+}
+
+__asm__(".symver st_string_rtrim_v1, st_string_rtrim@@LIBSTONE_1.0");
+void st_string_rtrim_v1(char * str, char trim) {
+	size_t length = strlen(str);
+
+	char * ptr;
+	for (ptr = str + (length - 1); *ptr == trim && ptr > str; ptr--);
+
+	if (ptr[1] != '\0')
+		ptr[1] = '\0';
+}
+
+__asm__(".symver st_string_trim_v1, st_string_trim@@LIBSTONE_1.0");
+void st_string_trim_v1(char * str, char trim) {
+	size_t length = strlen(str);
+
+	char * ptr;
+	for (ptr = str; *ptr == trim; ptr++);
+
+	if (str < ptr) {
+		length -= ptr - str;
+		if (length == 0) {
+			*str = '\0';
+			return;
+		}
+		memmove(str, ptr, length + 1);
+	}
+
+	for (ptr = str + (length - 1); *ptr == trim && ptr > str; ptr--);
+
+	if (ptr[1] != '\0')
+		ptr[1] = '\0';
 }
 
 __asm__(".symver st_string_unicode_length_v1, st_string_unicode_length@@LIBSTONE_1.0");

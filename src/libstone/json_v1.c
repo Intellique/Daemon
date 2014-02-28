@@ -28,6 +28,8 @@
 #include <stdbool.h>
 // open
 #include <fcntl.h>
+// poll
+#include <poll.h>
 // dprintf, snprintf, sscanf
 #include <stdio.h>
 // free, malloc
@@ -416,7 +418,7 @@ char * st_json_encode_to_string_v1(struct st_value * value) {
 }
 
 __asm__(".symver st_json_parse_fd_v1, st_json_parse_fd@@LIBSTONE_1.0");
-struct st_value * st_json_parse_fd_v1(int fd) {
+struct st_value * st_json_parse_fd_v1(int fd, int timeout) {
 	ssize_t buffer_size = 4096, nb_total_read = 0, size;
 	char * buffer = malloc(buffer_size + 1);
 	buffer[0] = '\0';
@@ -425,10 +427,12 @@ struct st_value * st_json_parse_fd_v1(int fd) {
 		nb_total_read += size;
 		buffer[nb_total_read] = '\0';
 
-		struct stat st;
-		fstat(fd, &st);
-
-		if (st.st_size == 0)
+		struct pollfd pfd = {
+			.fd = fd,
+			.events = POLLIN,
+			.revents = 0,
+		};
+		if (poll(&pfd, 1, timeout) == 0)
 			break;
 
 		buffer_size += 4096;
