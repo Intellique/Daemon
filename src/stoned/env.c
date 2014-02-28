@@ -24,69 +24,30 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_PROCESS_H__
-#define __LIBSTONE_PROCESS_H__
+#define _GNU_SOURCE
+// asprintf
+#include <stdio.h>
+// free, getenv, setenv
+#include <stdlib.h>
+// strstr
+#include <string.h>
 
-struct st_value;
+#include <libstone/file.h>
 
-enum st_process_fd_type {
-	st_process_fd_type_default,
-	st_process_fd_type_close,
-	st_process_fd_type_set,
-	st_process_fd_type_dup,
-};
+#include "env.h"
 
-struct st_process_fd {
-	int fd;
-	enum st_process_fd_type type;
-};
+#include "config.h"
 
-enum st_process_std {
-    st_process_stdin  = 0,
-    st_process_stdout = 1,
-    st_process_stderr = 2,
-};
+bool std_env_setup() {
+	if (st_file_mkdir(DAEMON_SOCKET_DIR, 0700) != 0)
+		return false;
 
-struct st_process {
-	/**
-	 * \brief Command name
-	 */
-	char * command;
+	char * path = getenv("PATH");
+	char * new_path;
+	asprintf(&new_path, DAEMON_BIN_DIR ":%s", path);
+	setenv("PATH", new_path, true);
+	free(new_path);
 
-	/**
-	 * \brief parameters
-	 */
-	char ** params;
-	unsigned int nb_parameters;
-
-	struct st_value * environment;
-
-	/**
-	 * \brief Pid of process or -1
-	 */
-	int pid;
-	struct st_process_fd fds[3];
-
-	/**
-	 * \brief code that process has returned
-	 */
-	int exited_code;
-};
-
-void st_process_close(struct st_process * process, enum st_process_std std);
-void st_process_drop_environment(struct st_process * process, const char * key);
-void st_process_free(struct st_process * process, unsigned int nb_process);
-void st_process_new(struct st_process * process, const char * process_name, const char ** params, unsigned int nb_params);
-void st_process_pipe(struct st_process * process_out, enum st_process_std out, struct st_process * process_in);
-int st_process_pipe_from(struct st_process * process_out, enum st_process_std out);
-int st_process_pipe_to(struct st_process * process_in);
-void st_process_put_environment(struct st_process * process, const char * key, const char * value);
-void st_process_redir_err_to_out(struct st_process * process);
-void st_process_redir_out_to_err(struct st_process * process);
-void st_process_set_environment(struct st_process * process, struct st_value * environment);
-void st_process_set_fd(struct st_process * process, enum st_process_std fd_process, int new_fd);
-void st_process_start(struct st_process * process, unsigned int nb_process);
-void st_process_wait(struct st_process * process, unsigned int nb_process);
-
-#endif
+	return true;
+}
 

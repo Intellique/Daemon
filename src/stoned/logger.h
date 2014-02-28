@@ -27,7 +27,7 @@
 #ifndef __STONED_LOGGER_H__
 #define __STONED_LOGGER_H__
 
-void std_start_logger(void);
+void std_logger_start(void);
 
 #endif
 

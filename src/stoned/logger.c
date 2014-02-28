@@ -24,8 +24,28 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+#include <stddef.h>
+
+#include <libstone/process.h>
+
 #include "logger.h"
 
-void std_start_logger() {
+static struct st_process logger;
+static int logger_in = -1;
+static int logger_out = -1;
+
+static void std_logger_exit(void) __attribute__((destructor));
+
+
+static void std_logger_exit() {
+	st_process_free(&logger, 1);
+}
+
+void std_logger_start() {
+	st_process_new(&logger, "logger", NULL, 0);
+	logger_in = st_process_pipe_to(&logger);
+	logger_out = st_process_pipe_from(&logger, st_process_stdout);
+	st_process_close(&logger, st_process_stderr);
+	st_process_start(&logger, 1);
 }
 

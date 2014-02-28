@@ -31,7 +31,8 @@
 // printf
 #include <stdio.h>
 
-#include <libstone/file.h>
+#include "env.h"
+#include "logger.h"
 
 #include "checksum/stoned.chcksum"
 #include "config.h"
@@ -106,8 +107,10 @@ int main(int argc, char ** argv) {
 		}
 	} while (opt > -1);
 
-	if (st_file_mkdir(DAEMON_SOCKET_DIR, 0700) != 0)
+	if (!std_env_setup())
 		return 1;
+
+	std_logger_start();
 
 	return 0;
 }

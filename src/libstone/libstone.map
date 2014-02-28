@@ -18,6 +18,7 @@ LIBSTONE_1.0 {
 		st_poll_register;
 		st_poll_unregister;
 
+		st_process_close;
 		st_process_drop_environment;
 		st_process_free;
 		st_process_new;

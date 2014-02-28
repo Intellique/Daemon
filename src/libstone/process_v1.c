@@ -48,6 +48,14 @@
 
 static void st_process_set_close_exe_flag(int fd, bool on);
 
+__asm__(".symver st_process_close_v1, st_process_close@@LIBSTONE_1.0");
+void st_process_close_v1(struct st_process * process, enum st_process_std std) {
+	if (process == NULL)
+		return;
+
+	process->fds[std].type = st_process_fd_type_close;
+}
+
 __asm__(".symver st_process_drop_environment_v1, st_process_drop_environment@@LIBSTONE_1.0");
 void st_process_drop_environment_v1(struct st_process * process, const char * key) {
 	if (process == NULL || key == NULL)

@@ -29,6 +29,7 @@
 
 #include <libstone/process.h>
 
+void st_process_close_v1(struct st_process * process, enum st_process_std std);
 void st_process_drop_environment_v1(struct st_process * process, const char * key);
 void st_process_free_v1(struct st_process * process, unsigned int nb_process);
 void st_process_new_v1(struct st_process * process, const char * process_name, const char ** params, unsigned int nb_params);
