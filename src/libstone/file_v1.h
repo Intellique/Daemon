@@ -31,7 +31,7 @@
 
 int st_file_basic_scandir_filter_v1(const struct dirent * d);
 void st_file_convert_mode_v1(char * buffer, mode_t mode);
-void st_file_convert_size_to_string_v1(ssize_t size, char * str, ssize_t str_len);
+void st_file_convert_size_to_string_v1(size_t size, char * str, ssize_t str_len);
 int st_file_cp_v1(const char * src, const char * dst);
 int st_file_mkdir_v1(const char * dirname, mode_t mode);
 int st_file_mv_v1(const char * src, const char * dst);

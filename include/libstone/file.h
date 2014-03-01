@@ -58,7 +58,7 @@ void st_file_convert_mode(char * buffer, mode_t mode);
  * \param[out] str : an allocated string which will contain result
  * \param[in] str_len : length of \a str in bytes
  */
-void st_file_convert_size_to_string(ssize_t size, char * str, ssize_t str_len);
+void st_file_convert_size_to_string(size_t size, char * str, ssize_t str_len);
 
 int st_file_cp(const char * src, const char * dst);
 

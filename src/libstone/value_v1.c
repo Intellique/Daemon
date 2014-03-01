@@ -87,6 +87,7 @@ bool st_value_can_convert_v1(struct st_value * val, enum st_value_type type) {
 				default:
 					return false;
 			}
+
 		case st_value_hashtable:
 			switch (type) {
 				case st_value_hashtable:
@@ -151,18 +152,18 @@ struct st_value * st_value_convert_v1(struct st_value * val, enum st_value_type 
 					return st_value_share_v1(val);
 
 				case st_value_linked_list: {
-											struct st_value * ret = st_value_new_linked_list_v1();
-											struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
-											while (st_value_iterator_has_next_v1(iter)) {
-												struct st_value * elt = st_value_iterator_get_value_v1(iter, true);
-												st_value_list_push_v1(ret, elt, true);
-											}
-											st_value_iterator_free_v1(iter);
-											return ret;
-										}
+						struct st_value * ret = st_value_new_linked_list_v1();
+						struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
+						while (st_value_iterator_has_next_v1(iter)) {
+							struct st_value * elt = st_value_iterator_get_value_v1(iter, true);
+							st_value_list_push_v1(ret, elt, true);
+						}
+						st_value_iterator_free_v1(iter);
+						return ret;
+					}
 
 				default:
-										return &null_value;
+					return &null_value;
 			}
 
 		case st_value_boolean:

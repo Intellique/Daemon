@@ -66,8 +66,9 @@ static size_t st_json_compute_length(struct st_value * val) {
 
 				struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
 				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
+					struct st_value * elt = st_value_iterator_get_value_v1(iter, true);
 					nb_write += st_json_compute_length(elt);
+					st_value_free_v1(elt);
 
 					if (st_value_iterator_has_next_v1(iter))
 						nb_write++;
@@ -97,8 +98,8 @@ static size_t st_json_compute_length(struct st_value * val) {
 
 				struct st_value_iterator * iter = st_value_hashtable_get_iterator_v1(val);
 				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * key = st_value_iterator_get_key_v1(iter, false, false);
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
+					struct st_value * key = st_value_iterator_get_key_v1(iter, false, true);
+					struct st_value * elt = st_value_iterator_get_value_v1(iter, true);
 
 					if (key->type == st_value_string) {
 						nb_write += st_json_compute_length(key);
@@ -108,6 +109,9 @@ static size_t st_json_compute_length(struct st_value * val) {
 						if (st_value_iterator_has_next_v1(iter))
 							nb_write++;
 					}
+
+					st_value_free_v1(key);
+					st_value_free_v1(elt);
 				}
 				nb_write++;
 				st_value_iterator_free_v1(iter);
@@ -178,8 +182,9 @@ size_t st_json_encode_to_fd_v1(struct st_value * val, int fd) {
 
 				struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
 				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
+					struct st_value * elt = st_value_iterator_get_value_v1(iter, true);
 					nb_write += st_json_encode_to_fd_v1(elt, fd);
+					st_value_free_v1(elt);
 
 					if (st_value_iterator_has_next_v1(iter))
 						nb_write += dprintf(fd, ",");
@@ -205,8 +210,8 @@ size_t st_json_encode_to_fd_v1(struct st_value * val, int fd) {
 
 				struct st_value_iterator * iter = st_value_hashtable_get_iterator_v1(val);
 				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * key = st_value_iterator_get_key_v1(iter, false, false);
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
+					struct st_value * key = st_value_iterator_get_key_v1(iter, false, true);
+					struct st_value * elt = st_value_iterator_get_value_v1(iter, true);
 
 					if (key->type == st_value_string) {
 						nb_write += st_json_encode_to_fd_v1(key, fd);
@@ -216,6 +221,9 @@ size_t st_json_encode_to_fd_v1(struct st_value * val, int fd) {
 						if (st_value_iterator_has_next_v1(iter))
 							nb_write += dprintf(fd, ",");
 					}
+
+					st_value_free_v1(key);
+					st_value_free_v1(elt);
 				}
 				nb_write += dprintf(fd, "}");
 				st_value_iterator_free_v1(iter);
@@ -307,8 +315,9 @@ static size_t st_json_encode_to_string_inner(struct st_value * val, char * buffe
 
 				struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
 				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
+					struct st_value * elt = st_value_iterator_get_value_v1(iter, true);
 					nb_write += st_json_encode_to_string_inner(elt, buffer + nb_write, length - nb_write);
+					st_value_free_v1(elt);
 
 					if (st_value_iterator_has_next_v1(iter))
 						nb_write += snprintf(buffer + nb_write, length - nb_write, ",");
@@ -334,8 +343,8 @@ static size_t st_json_encode_to_string_inner(struct st_value * val, char * buffe
 
 				struct st_value_iterator * iter = st_value_hashtable_get_iterator_v1(val);
 				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * key = st_value_iterator_get_key_v1(iter, false, false);
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
+					struct st_value * key = st_value_iterator_get_key_v1(iter, false, true);
+					struct st_value * elt = st_value_iterator_get_value_v1(iter, true);
 
 					if (key->type == st_value_string) {
 						nb_write += st_json_encode_to_string_inner(key, buffer + nb_write, length - nb_write);
@@ -345,6 +354,9 @@ static size_t st_json_encode_to_string_inner(struct st_value * val, char * buffe
 						if (st_value_iterator_has_next_v1(iter))
 							nb_write += snprintf(buffer + nb_write, length - nb_write, ",");
 					}
+
+					st_value_free_v1(key);
+					st_value_free_v1(elt);
 				}
 				nb_write += snprintf(buffer + nb_write, length - nb_write, "}");
 				st_value_iterator_free_v1(iter);

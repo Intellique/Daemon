@@ -108,23 +108,20 @@ void st_file_convert_mode_v1(char * buffer, mode_t mode) {
 }
 
 __asm__(".symver st_file_convert_size_to_string_v1, st_file_convert_size_to_string@@LIBSTONE_1.0");
-void st_file_convert_size_to_string_v1(ssize_t size, char * str, ssize_t str_len) {
+void st_file_convert_size_to_string_v1(size_t size, char * str, ssize_t str_len) {
 	unsigned short mult = 0;
 	double tsize = size;
 
-	while (tsize >= 1000 && mult < 4) {
+	while (tsize >= 8192 && mult < 4) {
 		tsize /= 1024;
 		mult++;
 	}
 
 	int fixed = 0;
-	if (tsize < 0) {
-		fixed = 3;
-	} else if (tsize < 10) {
+	if (tsize < 10)
 		fixed = 2;
-	} else if (tsize < 100) {
+	else if (tsize < 100)
 		fixed = 1;
-	}
 
 	switch (mult) {
 		case 0:
@@ -160,7 +157,7 @@ __asm__(".symver st_file_cp_v1, st_file_cp@@LIBSTONE_1.0");
 int st_file_cp_v1(const char * src, const char * dst) {
 	struct stat stsrc;
 	int failed = lstat(src, &stsrc);
-	if (failed) {
+	if (failed != 0) {
 		// st_log_write_all(st_log_level_error, st_log_type_daemon, "Copy files: Can't get information of '%s' because %m", src);
 		return failed;
 	}
@@ -174,7 +171,7 @@ int st_file_cp_v1(const char * src, const char * dst) {
 	if (!access(dst, F_OK)) {
 		struct stat stdst;
 		failed = lstat(dst, &stdst);
-		if (failed) {
+		if (failed != 0) {
 			// st_log_write_all(st_log_level_error, st_log_type_daemon, "Copy files: Can't get information of '%s' because %m", dst);
 			return failed;
 		}
@@ -197,7 +194,7 @@ int st_file_cp_v1(const char * src, const char * dst) {
 
 		struct stat stdst;
 		failed = lstat(dirname_dst, &stdst);
-		if (failed) {
+		if (failed != 0) {
 			// st_log_write_all(st_log_level_error, st_log_type_daemon, "Copy files: Can't get information of '%s' because %m", dirname_dst);
 			free(cpdst);
 			return 2;
@@ -289,20 +286,20 @@ int st_file_cp_v1(const char * src, const char * dst) {
 
 		if (!failed) {
 			failed = symlink(link, dst_file);
-			if (failed) {
+			if (failed != 0) {
 				// st_log_write_all(st_log_level_error, st_log_type_daemon, "Copy files: Failed to create symlink '%s' -> '%s' because %m", dst_file, link);
 				failed = 9;
 			}
 		}
 	} else if (S_ISFIFO(stsrc.st_mode)) {
 		failed = mkfifo(dst_file, stsrc.st_mode);
-		if (failed) {
+		if (failed != 0) {
 			// st_log_write_all(st_log_level_error, st_log_type_daemon, "Copy files: Failed to create fifo '%s' because %m", dst_file);
 			failed = 10;
 		}
 	} else if (S_ISBLK(stsrc.st_mode) || S_ISCHR(stsrc.st_mode)) {
 		failed = mknod(dst_file, stsrc.st_mode, stsrc.st_rdev);
-		if (failed) {
+		if (failed != 0) {
 			// st_log_write_all(st_log_level_error, st_log_type_daemon, "Copy files: Failed to create device '%s' because %m", dst_file);
 			failed = 10;
 		}
@@ -367,7 +364,7 @@ __asm__(".symver st_file_mv_v1, st_file_mv@@LIBSTONE_1.0");
 int st_file_mv_v1(const char * src, const char * dst) {
 	struct stat stsrc;
 	int failed = lstat(src, &stsrc);
-	if (failed) {
+	if (failed != 0) {
 		// st_log_write_all(st_log_level_error, st_log_type_daemon, "Move files: Can't get information of '%s' because %m", src);
 		return failed;
 	}
@@ -377,7 +374,7 @@ int st_file_mv_v1(const char * src, const char * dst) {
 
 	struct stat stdst;
 	failed = lstat(dirname_dst, &stdst);
-	if (failed) {
+	if (failed != 0) {
 		// st_log_write_all(st_log_level_error, st_log_type_daemon, "Move files: Can't get information of '%s' because %m", dst);
 	} else if (stsrc.st_dev != stdst.st_dev) {
 		failed = st_file_cp_v1(src, dirname_dst);
