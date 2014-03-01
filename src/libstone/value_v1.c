@@ -225,21 +225,21 @@ struct st_value * st_value_convert_v1(struct st_value * val, enum st_value_type 
 		case st_value_linked_list:
 			switch (type) {
 				case st_value_array: {
-										struct st_value * ret = st_value_new_array_v1(val->value.list.nb_vals);
-										struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
-										while (st_value_iterator_has_next_v1(iter)) {
-											struct st_value * elt = st_value_iterator_get_value_v1(iter, true);
-											st_value_list_push_v1(ret, elt, true);
-										}
-										st_value_iterator_free_v1(iter);
-										return ret;
-									}
+					struct st_value * ret = st_value_new_array_v1(val->value.list.nb_vals);
+					struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
+					while (st_value_iterator_has_next_v1(iter)) {
+						struct st_value * elt = st_value_iterator_get_value_v1(iter, true);
+						st_value_list_push_v1(ret, elt, true);
+					}
+					st_value_iterator_free_v1(iter);
+					return ret;
+				}
 
 				case st_value_linked_list:
-									return st_value_share_v1(val);
+					return st_value_share_v1(val);
 
 				default:
-									return &null_value;
+					return &null_value;
 			}
 
 		case st_value_null:
@@ -267,77 +267,77 @@ struct st_value * st_value_copy_v1(struct st_value * val, bool deep_copy) {
 
 	switch (val->type) {
 		case st_value_array: {
-								ret = st_value_new_array_v1(val->value.array.nb_preallocated);
+				ret = st_value_new_array_v1(val->value.array.nb_preallocated);
 
-								struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
-								while (st_value_iterator_has_next_v1(iter)) {
-									struct st_value * elt = st_value_iterator_get_value_v1(iter, !deep_copy);
-									if (deep_copy)
-										elt = st_value_copy_v1(elt, true);
-									st_value_list_push_v1(ret, val, false);
-								}
-								st_value_iterator_free_v1(iter);
-							}
-							break;
+				struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
+				while (st_value_iterator_has_next_v1(iter)) {
+					struct st_value * elt = st_value_iterator_get_value_v1(iter, !deep_copy);
+					if (deep_copy)
+						elt = st_value_copy_v1(elt, true);
+					st_value_list_push_v1(ret, val, false);
+				}
+				st_value_iterator_free_v1(iter);
+			}
+			break;
 
 		case st_value_boolean:
-							ret = st_value_new_boolean_v1(val->value.boolean);
-							break;
+			ret = st_value_new_boolean_v1(val->value.boolean);
+			break;
 
 		case st_value_custom:
-							ret = st_value_share_v1(val);
-							break;
+			ret = st_value_share_v1(val);
+			break;
 
 		case st_value_float:
-							ret = st_value_new_float_v1(val->value.floating);
-							break;
+			ret = st_value_new_float_v1(val->value.floating);
+			break;
 
 		case st_value_hashtable: {
-									ret = st_value_new_hashtable_v1(val->value.hashtable.compute_hash);
+				ret = st_value_new_hashtable_v1(val->value.hashtable.compute_hash);
 
-									struct st_value_iterator * iter = st_value_hashtable_get_iterator_v1(val);
-									while (st_value_iterator_has_next_v1(iter)) {
-										struct st_value * key = st_value_iterator_get_key_v1(iter, false, false);
-										struct st_value * value = st_value_iterator_get_value_v1(iter, false);
+				struct st_value_iterator * iter = st_value_hashtable_get_iterator_v1(val);
+				while (st_value_iterator_has_next_v1(iter)) {
+					struct st_value * key = st_value_iterator_get_key_v1(iter, false, false);
+					struct st_value * value = st_value_iterator_get_value_v1(iter, false);
 
-										if (deep_copy) {
-											key = st_value_copy_v1(key, true);
-											value = st_value_copy_v1(value, true);
-										} else {
-											key = st_value_share_v1(key);
-											value = st_value_share_v1(value);
-										}
+					if (deep_copy) {
+						key = st_value_copy_v1(key, true);
+						value = st_value_copy_v1(value, true);
+					} else {
+						key = st_value_share_v1(key);
+						value = st_value_share_v1(value);
+					}
 
-										st_value_hashtable_put_v1(ret, key, false, value, false);
-									}
-									st_value_iterator_free_v1(iter);
-								}
-								break;
+					st_value_hashtable_put_v1(ret, key, false, value, false);
+				}
+				st_value_iterator_free_v1(iter);
+			}
+			break;
 
 		case st_value_integer:
-								ret = st_value_new_integer_v1(val->value.integer);
-								break;
+			ret = st_value_new_integer_v1(val->value.integer);
+			break;
 
 		case st_value_null:
-								break;
+			break;
 
 		case st_value_linked_list: {
-									ret = st_value_new_linked_list_v1();
+				ret = st_value_new_linked_list_v1();
 
-									struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
-									while (st_value_iterator_has_next_v1(iter)) {
-										struct st_value * elt = st_value_iterator_get_value_v1(iter, !deep_copy);
-										if (deep_copy)
-											elt = st_value_copy_v1(elt, true);
-										st_value_list_push_v1(ret, val, false);
-									}
-									st_value_iterator_free_v1(iter);
-								}
-								break;
+				struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
+				while (st_value_iterator_has_next_v1(iter)) {
+					struct st_value * elt = st_value_iterator_get_value_v1(iter, !deep_copy);
+					if (deep_copy)
+						elt = st_value_copy_v1(elt, true);
+					st_value_list_push_v1(ret, val, false);
+				}
+				st_value_iterator_free_v1(iter);
+			}
+			break;
 
 		case st_value_string:
-								ret = st_value_new_string_v1(strdup(val->value.string));
-								break;
+			ret = st_value_new_string_v1(strdup(val->value.string));
+			break;
 	}
 
 	return ret;
@@ -357,28 +357,28 @@ bool st_value_equals_v1(struct st_value * a, struct st_value * b) {
 			switch (b->type) {
 				case st_value_array:
 				case st_value_linked_list: {
-											struct st_value_iterator * iter_a = st_value_list_get_iterator_v1(a);
-											struct st_value_iterator * iter_b = st_value_list_get_iterator_v1(b);
+						struct st_value_iterator * iter_a = st_value_list_get_iterator_v1(a);
+						struct st_value_iterator * iter_b = st_value_list_get_iterator_v1(b);
 
-											bool equals = true;
-											while (equals && st_value_iterator_has_next_v1(iter_a) && st_value_iterator_has_next_v1(iter_b)) {
-												struct st_value * v_a = st_value_iterator_get_value_v1(iter_a, false);
-												struct st_value * v_b = st_value_iterator_get_value_v1(iter_b, false);
+						bool equals = true;
+						while (equals && st_value_iterator_has_next_v1(iter_a) && st_value_iterator_has_next_v1(iter_b)) {
+							struct st_value * v_a = st_value_iterator_get_value_v1(iter_a, false);
+							struct st_value * v_b = st_value_iterator_get_value_v1(iter_b, false);
 
-												equals = st_value_equals_v1(v_a, v_b);
-											}
+							equals = st_value_equals_v1(v_a, v_b);
+						}
 
-											if (equals)
-												equals = !st_value_iterator_has_next_v1(iter_a) && !st_value_iterator_has_next_v1(iter_b);
+						if (equals)
+							equals = !st_value_iterator_has_next_v1(iter_a) && !st_value_iterator_has_next_v1(iter_b);
 
-											st_value_iterator_free_v1(iter_a);
-											st_value_iterator_free_v1(iter_b);
+						st_value_iterator_free_v1(iter_a);
+						st_value_iterator_free_v1(iter_b);
 
-											return equals;
-										}
+						return equals;
+					}
 
 				default:
-										return false;
+					return false;
 			}
 
 		case st_value_boolean:
