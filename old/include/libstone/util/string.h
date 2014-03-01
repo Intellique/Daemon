@@ -34,14 +34,6 @@
 #include <stdint.h>
 
 /**
- * \brief Remove from \a str a sequence of two or more of character \a delete_char
- *
- * \param[in,out] str : a string
- * \param[in] delete_char : a character
- */
-void st_util_string_delete_double_char(char * str, char delete_char);
-
-/**
  * \brief Fix a UTF8 string by removing invalid character
  *
  * \param[in,out] string : a (in)valid UTF8 string

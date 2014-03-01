@@ -56,45 +56,6 @@ void st_util_string_fix_invalid_utf8(char * string) {
 	}
 }
 
-void st_util_string_middle_elipsis(char * string, size_t length) {
-	size_t str_length = strlen(string);
-	if (str_length <= length)
-		return;
-
-	length--;
-
-	size_t used = 0;
-	char * ptrA = string;
-	char * ptrB = string + str_length;
-	while (used < length) {
-		int char_length = st_util_string_valid_utf8_char(ptrA);
-		if (char_length == 0)
-			return;
-
-		if (used + char_length > length)
-			break;
-
-		used += char_length;
-		ptrA += char_length;
-
-		int offset = 1;
-		while (char_length = st_util_string_valid_utf8_char(ptrB - offset), ptrA < ptrB - offset && char_length == 0)
-			offset++;
-
-		if (char_length == 0)
-			return;
-
-		if (used + char_length > length)
-			break;
-
-		used += char_length;
-		ptrB -= char_length;
-	}
-
-	*ptrA = '~';
-	memmove(ptrA + 1, ptrB, strlen(ptrB) + 1);
-}
-
 size_t st_util_string_strlen(const char * str) {
 	size_t length = 0;
 	size_t offset = 0;

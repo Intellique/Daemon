@@ -119,6 +119,46 @@ void st_string_delete_double_char_v1(char * str, char delete_char) {
 	}
 }
 
+__asm__(".symver st_string_middle_elipsis_v1, st_string_middle_elipsis@@LIBSTONE_1.0");
+void st_string_middle_elipsis_v1(char * string, size_t length) {
+	size_t str_length = strlen(string);
+	if (str_length <= length)
+		return;
+
+	length--;
+
+	size_t used = 0;
+	char * ptrA = string;
+	char * ptrB = string + str_length;
+	while (used < length) {
+		int char_length = st_string_valid_utf8_char(ptrA);
+		if (char_length == 0)
+			return;
+
+		if (used + char_length > length)
+			break;
+
+		used += char_length;
+		ptrA += char_length;
+
+		int offset = 1;
+		while (char_length = st_string_valid_utf8_char(ptrB - offset), ptrA < ptrB - offset && char_length == 0)
+			offset++;
+
+		if (char_length == 0)
+			return;
+
+		if (used + char_length > length)
+			break;
+
+		used += char_length;
+		ptrB -= char_length;
+	}
+
+	*ptrA = '~';
+	memmove(ptrA + 1, ptrB, strlen(ptrB) + 1);
+}
+
 __asm__(".symver st_string_rtrim_v1, st_string_rtrim@@LIBSTONE_1.0");
 void st_string_rtrim_v1(char * str, char trim) {
 	size_t length = strlen(str);

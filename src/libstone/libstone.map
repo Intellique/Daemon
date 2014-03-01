@@ -38,9 +38,13 @@ LIBSTONE_1.0 {
 		st_string_compute_hash;
 		st_string_convert_unicode_to_utf8;
 		st_string_delete_double_char;
+		st_string_middle_elipsis;
 		st_string_rtrim;
 		st_string_trim;
 		st_string_unicode_length;
+
+		st_thread_pool_run;
+		st_thread_pool_run2;
 
 		st_value_can_convert;
 		st_value_convert;

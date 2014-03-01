@@ -22,7 +22,6 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 08 Oct 2013 11:27:14 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -49,9 +48,8 @@
 // close, getpid, syscall, write
 #include <unistd.h>
 
-#include <libstone/log.h>
-#include <libstone/thread_pool.h>
-#include <libstone/util/string.h>
+#include "string_v1.h"
+#include "thread_pool_v1.h"
 
 struct st_thread_pool_thread {
 	pthread_t thread;
@@ -105,11 +103,13 @@ static void st_thread_pool_init() {
 	st_thread_pool_pid = getpid();
 }
 
-int st_thread_pool_run(const char * thread_name, void (*function)(void * arg), void * arg) {
+__asm__(".symver st_thread_pool_run_v1, st_thread_pool_run@@LIBSTONE_1.0");
+int st_thread_pool_run_v1(const char * thread_name, void (*function)(void * arg), void * arg) {
 	return st_thread_pool_run2(thread_name, function, arg, 0);
 }
 
-int st_thread_pool_run2(const char * thread_name, void (*function)(void * arg), void * arg, int nice) {
+__asm__(".symver st_thread_pool_run2_v1, st_thread_pool_run2@@LIBSTONE_1.0");
+int st_thread_pool_run2_v1(const char * thread_name, void (*function)(void * arg), void * arg, int nice) {
 	pthread_mutex_lock(&st_thread_pool_lock);
 	unsigned int i;
 	for (i = 0; i < st_thread_pool_nb_threads; i++) {
@@ -163,7 +163,7 @@ int st_thread_pool_run2(const char * thread_name, void (*function)(void * arg), 
 
 	void * new_addr = realloc(st_thread_pool_threads, (st_thread_pool_nb_threads + 1) * sizeof(struct st_thread_pool_thread *));
 	if (new_addr == NULL) {
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Error, not enought memory to start new thread");
+		// st_log_write_all(st_log_level_error, st_log_type_daemon, "Error, not enought memory to start new thread");
 		return 1;
 	}
 
@@ -197,7 +197,7 @@ int st_thread_pool_run2(const char * thread_name, void (*function)(void * arg), 
 
 static void st_thread_pool_set_name(pid_t tid, const char * name) {
 	char * th_name = strdup(name);
-	st_util_string_middle_elipsis(th_name, 15);
+	st_string_middle_elipsis(th_name, 15);
 
 	char * path;
 	asprintf(&path, "/proc/%d/task/%d/comm", st_thread_pool_pid, tid);
@@ -217,7 +217,7 @@ static void * st_thread_pool_work(void * arg) {
 
 	pid_t tid = syscall(SYS_gettid);
 
-	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Starting new thread #%ld (pid: %d) to function: %p with parameter: %p", th->thread, tid, th->function, th->arg);
+	// st_log_write_all(st_log_level_debug, st_log_type_daemon, "Starting new thread #%ld (pid: %d) to function: %p with parameter: %p", th->thread, tid, th->function, th->arg);
 
 	do {
 		setpriority(PRIO_PROCESS, tid, th->nice);
@@ -237,7 +237,7 @@ static void * st_thread_pool_work(void * arg) {
 		free(th->name);
 		th->name = NULL;
 
-		st_log_write_all(st_log_level_debug, st_log_type_daemon, "Thread #%ld (pid: %d) is going to sleep", th->thread, tid);
+		// st_log_write_all(st_log_level_debug, st_log_type_daemon, "Thread #%ld (pid: %d) is going to sleep", th->thread, tid);
 
 		pthread_mutex_lock(&th->lock);
 
@@ -258,12 +258,12 @@ static void * st_thread_pool_work(void * arg) {
 
 		pthread_mutex_unlock(&th->lock);
 
-		if (th->state == st_thread_pool_state_running)
-			st_log_write_all(st_log_level_debug, st_log_type_daemon, "Restarting thread #%ld (pid: %d) to function: %p with parameter: %p", th->thread, tid, th->function, th->arg);
+		// if (th->state == st_thread_pool_state_running)
+			//st_log_write_all(st_log_level_debug, st_log_type_daemon, "Restarting thread #%ld (pid: %d) to function: %p with parameter: %p", th->thread, tid, th->function, th->arg);
 
 	} while (th->state == st_thread_pool_state_running);
 
-	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Thread #%ld is dead", th->thread);
+	// st_log_write_all(st_log_level_debug, st_log_type_daemon, "Thread #%ld is dead", th->thread);
 
 	return NULL;
 }

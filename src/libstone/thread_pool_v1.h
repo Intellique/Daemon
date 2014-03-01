@@ -22,39 +22,15 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 30 May 2013 17:17:19 +0200                            *
 \****************************************************************************/
 
-#ifndef __STONE_THREADPOOL_H__
-#define __STONE_THREADPOOL_H__
+#ifndef __STONE_THREADPOOL_P_H__
+#define __STONE_THREADPOOL_P_H__
 
-/**
- * \brief Run this function into another thread
- *
- * \param[in] function : call this function from another thread
- * \param[in] arg : call this function by passing this argument
- * \returns 0 if OK
- *
- * \note this function reuse an unused thread or create new one
- *
- * \note All threads which are not used while 5 minutes are stopped
- */
-int st_thread_pool_run(const char * thread_name, void (*function)(void * arg), void * arg);
+#include <libstone/thread_pool.h>
 
-/**
- * \brief Run this function into another thread with specified
- * \a nice priority.
- *
- * \param[in] function : call this function from another thread
- * \param[in] arg : call this function by passing this argument
- * \param[in] nice : call nice(2) before call \a function
- * \returns 0 if OK
- *
- * \note this function reuse an unused thread or create new one
- *
- * \note All threads which are not used while 5 minutes are stopped
- */
-int st_thread_pool_run2(const char * thread_name, void (*function)(void * arg), void * arg, int nice);
+int st_thread_pool_run_v1(const char * thread_name, void (*function)(void * arg), void * arg);
+int st_thread_pool_run2_v1(const char * thread_name, void (*function)(void * arg), void * arg, int nice);
 
 #endif
 

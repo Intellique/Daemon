@@ -24,65 +24,36 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_STRING_H__
-#define __LIBSTONE_STRING_H__
-
-struct st_value;
-
-// bool
-#include <stdbool.h>
-// size_t
-#include <sys/types.h>
+#ifndef __STONE_THREADPOOL_H__
+#define __STONE_THREADPOOL_H__
 
 /**
- * \brief Check if \a string is a valid utf8 string
+ * \brief Run this function into another thread
  *
- * \param[in] string : a utf8 string
- * \returns \b 1 if ok else 0
+ * \param[in] function : call this function from another thread
+ * \param[in] arg : call this function by passing this argument
+ * \returns 0 if OK
+ *
+ * \note this function reuse an unused thread or create new one
+ *
+ * \note All threads which are not used while 5 minutes are stopped
  */
-bool st_string_check_valid_utf8(const char * string);
+int st_thread_pool_run(const char * thread_name, void (*function)(void * arg), void * arg);
 
 /**
- * \brief Compute hash of key
+ * \brief Run this function into another thread with specified
+ * \a nice priority.
  *
- * \param[in] key : a c string
- * \returns computed hash
+ * \param[in] function : call this function from another thread
+ * \param[in] arg : call this function by passing this argument
+ * \param[in] nice : call nice(2) before call \a function
+ * \returns 0 if OK
  *
- * \see st_hashtable_new
+ * \note this function reuse an unused thread or create new one
+ *
+ * \note All threads which are not used while 5 minutes are stopped
  */
-unsigned long long st_string_compute_hash(const struct st_value * value);
-
-/**
- * \brief Remove from \a str a sequence of two or more of character \a delete_char
- *
- * \param[in,out] str : a string
- * \param[in] delete_char : a character
- */
-void st_string_delete_double_char(char * str, char delete_char);
-
-bool st_string_convert_unicode_to_utf8(unsigned int unicode, char * string, size_t length, bool end_string);
-
-void st_string_middle_elipsis(char * string, size_t length);
-
-/**
- * \brief Remove characters \a trim at the end of \a str
- *
- * \param[in,out] str : a string
- * \param[in] trim : a character
- *
- * \see st_util_string_trim
- */
-void st_string_rtrim(char * str, char trim);
-
-/**
- * \brief Remove characters \a trim at the beginning and at the end of \a str
- *
- * \param[in,out] str : a string
- * \param[in] trim : a character
- */
-void st_string_trim(char * str, char trim);
-
-size_t st_string_unicode_length(unsigned int unicode);
+int st_thread_pool_run2(const char * thread_name, void (*function)(void * arg), void * arg, int nice);
 
 #endif
 
