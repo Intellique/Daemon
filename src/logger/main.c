@@ -47,11 +47,11 @@ static void daemon_request(int fd __attribute__((unused)), short event, void * d
 }
 
 int main() {
-	struct st_value * config = st_json_parse_fd(0, 100000);
+	struct st_value * config = st_json_parse_fd(0, 5000);
 	if (config == NULL)
 		return 1;
 
-	st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL);
+	st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
 
 	st_json_encode_to_file(config, "logger.json");
 

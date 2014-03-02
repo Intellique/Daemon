@@ -28,15 +28,19 @@
 #include <stdlib.h>
 // memmove
 #include <string.h>
+// close
+#include <unistd.h>
 
 #include "poll_v1.h"
 
 static struct pollfd * st_polls = NULL;
 static struct st_poll_info {
-	st_pool_callback_f callback;
+	st_poll_callback_f callback;
 	void * data;
+	st_poll_free_f release;
 } * st_poll_infos = NULL;
 static unsigned int st_nb_polls = 0;
+static bool st_poll_restart = false;
 
 static void st_poll_exit(void) __attribute__((destructor));
 
@@ -55,20 +59,33 @@ int st_poll_v1(int timeout) {
 		st_polls[i].revents = 0;
 
 	int nb_event = poll(st_polls, st_nb_polls, timeout);
-	if (nb_event == 0)
-		return 0;
-
 	for (i = 0; i < st_nb_polls; i++) {
 		struct pollfd * evt = st_polls + i;
+
+		int fd = evt->fd;
+		short event = evt->revents;
+		evt->revents = 0;
+
 		if (evt->revents != 0)
-			st_poll_infos[i].callback(evt->fd, evt->revents, st_poll_infos[i].data);
+			st_poll_infos[i].callback(fd, event, st_poll_infos[i].data);
+
+		if (st_poll_restart) {
+			i = -1;
+			st_poll_restart = false;
+		} else if ((fd == evt->fd) && (event & POLLHUP)) {
+			st_poll_unregister_v1(fd);
+			close(fd);
+
+			st_poll_restart = false;
+			i--;
+		}
 	}
 
 	return nb_event;
 }
 
 __asm__(".symver st_poll_register_v1, st_poll_register@@LIBSTONE_1.0");
-bool st_poll_register_v1(int fd, short event, st_pool_callback_f callback, void * data) {
+bool st_poll_register_v1(int fd, short event, st_poll_callback_f callback, void * data, st_poll_free_f release) {
 	void * addr = realloc(st_polls, (st_nb_polls + 1) * sizeof(struct pollfd));
 	if (addr == NULL)
 		return false;
@@ -87,6 +104,7 @@ bool st_poll_register_v1(int fd, short event, st_pool_callback_f callback, void 
 	struct st_poll_info * new_info = st_poll_infos + st_nb_polls;
 	new_info->callback = callback;
 	new_info->data = data;
+	new_info->release = release;
 
 	st_nb_polls++;
 
@@ -103,6 +121,10 @@ void st_poll_unregister_v1(int fd) {
 	if (i == st_nb_polls)
 		return;
 
+	struct st_poll_info * new_info = st_poll_infos + i;
+	if (new_info->data != NULL && new_info->release != NULL)
+		new_info->release(new_info->data);
+
 	if (i + 1 < st_nb_polls) {
 		size_t nb_move = st_nb_polls - i - 1;
 		memmove(st_polls + i, st_polls + (i + 1), nb_move * sizeof(struct pollfd));
@@ -118,5 +140,7 @@ void st_poll_unregister_v1(int fd) {
 	addr = realloc(st_poll_infos, st_nb_polls * sizeof(struct st_poll_info));
 	if (addr != NULL)
 		st_poll_infos = addr;
+
+	st_poll_restart = true;
 }
 

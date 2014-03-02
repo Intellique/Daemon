@@ -24,14 +24,9 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_POLL_P_H__
-#define __LIBSTONE_POLL_P_H__
+#include "log_v1.h"
 
-#include <libstone/poll.h>
-
-int st_poll_v1(int timeout);
-bool st_poll_register_v1(int fd, short event, st_poll_callback_f callback, void * data, st_poll_free_f release);
-void st_poll_unregister_v1(int fd);
-
-#endif
+__asm__(".symver lgr_log_register_driver_v1, lgr_log_register_driver@@LIBSTONE_LOGGER_1.0");
+void lgr_log_register_driver_v1(struct lgr_log_driver * driver) {
+}
 

@@ -24,14 +24,68 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_POLL_P_H__
-#define __LIBSTONE_POLL_P_H__
+#define _GNU_SOURCE
+// bool
+#include <stdbool.h>
+// pthread_mutex_lock, pthread_mutex_unlock,
+#include <pthread.h>
+// dlclose, dlerror, dlopen
+#include <dlfcn.h>
+// glob
+#include <glob.h>
+// snprintf
+#include <stdio.h>
+// free
+#include <stdlib.h>
+// access
+#include <unistd.h>
 
-#include <libstone/poll.h>
+#include "config.h"
+#include "loader.h"
 
-int st_poll_v1(int timeout);
-bool st_poll_register_v1(int fd, short event, st_poll_callback_f callback, void * data, st_poll_free_f release);
-void st_poll_unregister_v1(int fd);
+static void * lgr_loader_load_file(const char * filename);
 
-#endif
+static bool lgr_loader_loaded = false;
+
+
+void * lgr_loader_load(const char * module, const char * name) {
+	if (module == NULL || name == NULL)
+		return NULL;
+
+	char * path;
+	asprintf(&path, MODULE_PATH "/lib%s-%s.so", module, name);
+
+	void * cookie = lgr_loader_load_file(path);
+
+	free(path);
+
+	return cookie;
+}
+
+static void * lgr_loader_load_file(const char * filename) {
+	if (access(filename, R_OK | X_OK)) {
+		// lgr_log_write_all(lgr_log_level_debug, lgr_log_type_daemon, "Loader: access to file %s failed because %m", filename);
+		return NULL;
+	}
+
+	static pthread_mutex_t lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+	pthread_mutex_lock(&lock);
+
+	lgr_loader_loaded = false;
+
+	void * cookie = dlopen(filename, RTLD_NOW);
+	if (cookie == NULL) {
+		// lgr_log_write_all(lgr_log_level_debug, lgr_log_type_daemon, "Loader: failed to load '%s' because %s", filename, dlerror());
+	} else if (!lgr_loader_loaded) {
+		dlclose(cookie);
+		cookie = NULL;
+	}
+
+	pthread_mutex_unlock(&lock);
+	return cookie;
+}
+
+void lgr_loader_register_ok(void) {
+	lgr_loader_loaded = true;
+}
 

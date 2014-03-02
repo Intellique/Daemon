@@ -24,14 +24,29 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_POLL_P_H__
-#define __LIBSTONE_POLL_P_H__
+#ifndef __STONELOGGER_LOG_H__
+#define __STONELOGGER_LOG_H__
 
-#include <libstone/poll.h>
+struct lgr_log_driver {
+	const char * name;
 
-int st_poll_v1(int timeout);
-bool st_poll_register_v1(int fd, short event, st_poll_callback_f callback, void * data, st_poll_free_f release);
-void st_poll_unregister_v1(int fd);
+	void * cookie;
+	const unsigned int api_level;
+	const char * src_checksum;
+};
+
+/**
+ * \brief Each log driver should call this function only one time
+ *
+ * \param driver : a static allocated structure
+ * \code
+ * \_\_attribute\_\_((constructor))
+ * static void log_myLog_init() {
+ *    lgr_log_register_driver(&log_myLog_module);
+ * }
+ * \endcode
+ */
+void lgr_log_register_driver(struct lgr_log_driver * driver);
 
 #endif
 
