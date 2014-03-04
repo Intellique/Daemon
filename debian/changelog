@@ -1,4 +1,4 @@
-stone-squeeze (1.1.6) polisher; urgency=low
+stone (1.1.6) polisher; urgency=low
 
   * Nouveautés:
     - sha224, ssh384
