@@ -17,7 +17,7 @@ NAME		:= STone
 DIR_NAME	:= $(lastword $(subst /, , $(realpath .)))
 
 
-GIT_ARCHIVE := $(shell ./script/git-archive.pl ${DIR_NAME}).orig.tar
+GIT_ARCHIVE := stone_$(shell ./script/git-archive.pl)+wheezy.orig.tar
 GIT_HEAD	:= $(shell ./script/git-head.pl)
 
 BINS		:=
@@ -202,7 +202,7 @@ package:
 	@echo ' CLEAN'
 	@dh_clean
 	@echo ' UPDATE src'
-	@${GIT} archive --format=tar --prefix=${DIR_NAME}/ -o ../${GIT_ARCHIVE} debian
+	@${GIT} archive --format=tar -o ../${GIT_ARCHIVE} master
 	@gzip -9vf ../${GIT_ARCHIVE}
 	@echo ' BUILD package'
 	@dpkg-buildpackage -us -uc -rfakeroot -sa

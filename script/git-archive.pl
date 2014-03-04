@@ -3,13 +3,8 @@
 use strict;
 use warnings;
 
-my ($dirname) = @ARGV;
+my ($version) = qx/git describe/;
+chomp $version;
+$version =~ s/^v([^-+]+).*$/$1/;
 
-my ($dir, $ver) = $dirname =~ /^(.+?).(\d+.*)/;
-
-if (defined $ver) {
-	print "${dir}_$ver";
-} else {
-	print $dirname;
-}
-
+print "$version\n";
