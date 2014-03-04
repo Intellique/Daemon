@@ -1,3 +1,9 @@
+stone-wheezy (1.1.6+wheezy) polisher; urgency=low
+
+  * Ajout de checksum sha224 et sha384
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 04 Mar 2014 13:52:06 +0100
+
 stone-wheezy (1.1.5) polisher; urgency=low
 
   * Correctif de bugs
