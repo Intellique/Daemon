@@ -29,6 +29,8 @@
 
 #include <libstone-logger/log.h>
 
+bool lgr_log_load_v1(struct st_value * params);
+
 void lgr_log_register_driver_v1(struct lgr_log_driver * driver);
 
 #endif

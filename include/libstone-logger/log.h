@@ -27,6 +27,11 @@
 #ifndef __STONELOGGER_LOG_H__
 #define __STONELOGGER_LOG_H__
 
+// bool
+#include <stdbool.h>
+
+struct st_value;
+
 struct lgr_log_driver {
 	const char * name;
 
@@ -34,6 +39,8 @@ struct lgr_log_driver {
 	const unsigned int api_level;
 	const char * src_checksum;
 };
+
+bool lgr_log_load(struct st_value * params);
 
 /**
  * \brief Each log driver should call this function only one time

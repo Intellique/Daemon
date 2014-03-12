@@ -24,7 +24,13 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+#include <libstone/value.h>
+
 #include "log_v1.h"
+
+__asm__(".symver lgr_log_load_v1, lgr_log_load@@LIBSTONE_LOGGER_1.0");
+bool lgr_log_load_v1(struct st_value * params) {
+}
 
 __asm__(".symver lgr_log_register_driver_v1, lgr_log_register_driver@@LIBSTONE_LOGGER_1.0");
 void lgr_log_register_driver_v1(struct lgr_log_driver * driver) {
