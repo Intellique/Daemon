@@ -1,3 +1,11 @@
+stone (1.1.7+squeeze) polisher; urgency=low
+
+  * Correctif:
+    - Tâche restauration : attend que la fin de la vérification des fichiers
+    avant de quitter.
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 14 Mar 2014 13:03:37 +0100
+
 stone (1.1.6+squeeze) polisher; urgency=low
 
   * Nouveautés:
