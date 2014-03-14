@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 23 Jan 2014 13:36:08 +0100                            *
+*  Last modified: Fri, 14 Mar 2014 12:40:00 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_JOB_RESTOREARCHIVE_H__
@@ -94,6 +94,7 @@ struct st_job_restore_archive_private {
 void st_job_restore_archive_checks_worker_add_file(struct st_job_restore_archive_checks_worker * check, struct st_archive_file * file);
 void st_job_restore_archive_checks_worker_free(struct st_job_restore_archive_checks_worker * check);
 struct st_job_restore_archive_checks_worker * st_job_restore_archive_checks_worker_new(struct st_job_restore_archive_private * jp);
+void st_job_restore_archive_checks_worker_wait(struct st_job_restore_archive_checks_worker * check);
 
 void st_job_restore_archive_data_worker_free(struct st_job_restore_archive_data_worker * worker);
 struct st_job_restore_archive_data_worker * st_job_restore_archive_data_worker_new(struct st_job_restore_archive_private * self, struct st_drive * drive, struct st_slot * slot);
