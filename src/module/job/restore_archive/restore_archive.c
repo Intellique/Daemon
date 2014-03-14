@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 07 Feb 2014 10:32:50 +0100                            *
+*  Last modified: Fri, 14 Mar 2014 12:38:24 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -677,6 +677,8 @@ static int st_job_restore_archive_run(struct st_job * job) {
 	self->first_worker = self->last_worker = NULL;
 
 	job->done = 0.99;
+
+	st_job_restore_archive_checks_worker_wait(self->checks);
 
 	for (i = 1; i <= nb_directories; i++) {
 		struct st_archive_file * directory = directories + (nb_directories - i);
