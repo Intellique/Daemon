@@ -1,3 +1,9 @@
+stone (1.1.7+wheezy) polisher; urgency=low
+
+  * Correctif tâche de restauration
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 14 Mar 2014 13:12:44 +0100
+
 stone (1.1.6+wheezy) polisher; urgency=low
 
   * Ajout de checksum sha224 et sha384
