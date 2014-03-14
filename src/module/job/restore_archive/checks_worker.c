@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 23 Jan 2014 13:37:56 +0100                            *
+*  Last modified: Fri, 14 Mar 2014 12:40:02 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -169,12 +169,6 @@ void st_job_restore_archive_checks_worker_free(struct st_job_restore_archive_che
 	if (check == NULL)
 		return;
 
-	pthread_mutex_lock(&check->lock);
-	check->running = false;
-	pthread_cond_signal(&check->wait);
-	pthread_cond_wait(&check->wait, &check->lock);
-	pthread_mutex_unlock(&check->lock);
-
 	struct st_job_restore_archive_checks_files * elt = check->first_file;
 	while (elt != NULL) {
 		st_archive_file_free(elt->file);
@@ -210,6 +204,17 @@ struct st_job_restore_archive_checks_worker * st_job_restore_archive_checks_work
 	free(th_name);
 
 	return check;
+}
+
+void st_job_restore_archive_checks_worker_wait(struct st_job_restore_archive_checks_worker * check) {
+	if (check == NULL)
+		return;
+
+	pthread_mutex_lock(&check->lock);
+	check->running = false;
+	pthread_cond_signal(&check->wait);
+	pthread_cond_wait(&check->wait, &check->lock);
+	pthread_mutex_unlock(&check->lock);
 }
 
 static void st_job_restore_archive_checks_worker_work(void * arg) {
