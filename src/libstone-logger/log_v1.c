@@ -24,15 +24,100 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// NULL
+#include <stddef.h>
+
+#include <libstone/string.h>
 #include <libstone/value.h>
 
+#include "loader.h"
 #include "log_v1.h"
+
+static struct st_value * lgr_drivers = NULL;
+static struct st_value * lgr_modules = NULL;
+
+static void lgr_log_exit(void) __attribute__((destructor));
+static void lgr_log_free_module(void * module);
+static void lgr_log_init(void) __attribute__((constructor));
+
+
+static void lgr_log_exit() {
+	st_value_free(lgr_drivers);
+	st_value_free(lgr_modules);
+}
+
+static void lgr_log_free_module(void * module) {
+	struct lgr_log_module * mod = module;
+	mod->ops->free(mod);
+}
+
+static void lgr_log_init() {
+	lgr_drivers = st_value_new_hashtable(st_string_compute_hash);
+	lgr_modules = st_value_new_linked_list();
+}
 
 __asm__(".symver lgr_log_load_v1, lgr_log_load@@LIBSTONE_LOGGER_1.0");
 bool lgr_log_load_v1(struct st_value * params) {
+	bool ok = true;
+
+	struct st_value_iterator * iter = st_value_list_get_iterator(params);
+	while (ok && st_value_iterator_has_next(iter)) {
+		struct st_value * elt = st_value_iterator_get_value(iter, false);
+		struct st_value * type = st_value_hashtable_get2(elt, "type", false);
+
+		void * cookie = NULL;
+		if (!st_value_hashtable_has_key(lgr_drivers, type)) {
+			cookie = lgr_loader_load("log", type->value.string);
+
+			if (cookie == NULL) {
+				ok = false;
+				break;
+			}
+		}
+
+		struct st_value * st_driver = st_value_hashtable_get(lgr_drivers, type, false, false);
+		struct lgr_log_driver * driver = st_driver->value.custom.data;
+		if (cookie != NULL)
+			driver->cookie = cookie;
+
+		struct lgr_log_module * module = driver->new_module(elt);
+		if (module != NULL)
+			st_value_list_push(lgr_modules, st_value_new_custom(module, lgr_log_free_module), true);
+		else
+			ok = false;
+	}
+	st_value_iterator_free(iter);
+
+	return ok;
 }
 
 __asm__(".symver lgr_log_register_driver_v1, lgr_log_register_driver@@LIBSTONE_LOGGER_1.0");
 void lgr_log_register_driver_v1(struct lgr_log_driver * driver) {
+	if (driver == NULL)
+		return;
+
+	if (!st_value_hashtable_has_key2(lgr_drivers, driver->name)) {
+		st_value_hashtable_put(lgr_drivers, st_value_new_string(driver->name), true, st_value_new_custom(driver, NULL), true);
+		driver->api_level = 1;
+		lgr_loader_register_ok();
+	}
+}
+
+__asm__(".symver lgr_log_write_v1, lgr_log_write@@LIBSTONE_LOGGER_1.0");
+void lgr_log_write_v1(struct st_value * message) {
+	struct st_value * level = st_value_hashtable_get2(message, "level", false);
+	if (level == NULL || level->type != st_value_string)
+		return;
+
+	enum st_log_level lvl = st_log_string_to_level(level->value.string);
+	struct st_value_iterator * iter = st_value_list_get_iterator(lgr_modules);
+	while (st_value_iterator_has_next(iter)) {
+		struct st_value * module = st_value_iterator_get_value(iter, false);
+		struct lgr_log_module * mod = module->value.custom.data;
+
+		if (lvl <= mod->level)
+			mod->ops->write(mod, message);
+	}
+	st_value_iterator_free(iter);
 }
 

@@ -2,11 +2,11 @@ LIBSTONELOGGER_SRC_DIR		:= src/libstone-logger
 
 LIBSTONELOGGER_CFLAG		:= -fPIC -pthread
 LIBSTONELOGGER_LIB			:= lib/libstone-logger.so
-LIBSTONELOGGER_LD			:= -shared -pthread -Wl,--version-script,src/libstone-logger/libstone-logger.map
+LIBSTONELOGGER_LD			:= -shared -pthread -ldl -lstone -Llib -Wl,--version-script,src/libstone-logger/libstone-logger.map
 LIBSTONELOGGER_SONAME		:= libstone-logger.so.1
 LIBSTONELOGGER_LIB_VERSION	:= 1.0
 
-LIBSTONELOGGER_DEPEND_LIB	:= src/libstone-logger/libstone-logger.map
+LIBSTONELOGGER_DEPEND_LIB	:= src/libstone-logger/libstone-logger.map lib/libstone.so
 
 LIBSTONELOGGER_CHCKSUM_FILE	:= libstone-logger.chcksum
 

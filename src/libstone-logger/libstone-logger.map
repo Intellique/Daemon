@@ -2,6 +2,7 @@ LIBSTONE_LOGGER_1.0 {
 	global:
 		lgr_log_load;
 		lgr_log_register_driver;
+		lgr_log_write;
 
 	local:
 		*_v1;

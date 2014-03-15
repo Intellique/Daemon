@@ -67,38 +67,6 @@ static struct st_log_message_unsent * volatile st_log_message_last = NULL;
 static pthread_mutex_t st_log_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 static pthread_cond_t st_log_wait = PTHREAD_COND_INITIALIZER;
 
-static struct st_log_level2 {
-	enum st_log_level level;
-	const char * name;
-} st_log_levels[] = {
-	{ st_log_level_debug,   "Debug" },
-	{ st_log_level_error,   "Error" },
-	{ st_log_level_info,    "Info" },
-	{ st_log_level_warning, "Warning" },
-
-	{ st_log_level_unknown, "Unknown level" },
-};
-
-static struct st_log_type2 {
-	enum st_log_type type;
-	const char * name;
-} st_log_types[] = {
-	{ st_log_type_changer,         "Changer" },
-	{ st_log_type_checksum,        "Checksum" },
-	{ st_log_type_daemon,          "Daemon" },
-	{ st_log_type_database,        "Database" },
-	{ st_log_type_drive,           "Drive" },
-	{ st_log_type_job,             "Job" },
-	{ st_log_type_plugin_checksum, "Plugin Checksum" },
-	{ st_log_type_plugin_db,       "Plugin Database" },
-	{ st_log_type_plugin_log,      "Plugin Log" },
-	{ st_log_type_scheduler,       "Scheduler" },
-	{ st_log_type_ui,              "User Interface" },
-	{ st_log_type_user_message,    "User Message" },
-
-	{ st_log_type_unknown, "Unknown type" },
-};
-
 
 void st_log_disable_display_log() {
 	st_log_display_at_exit = false;
@@ -182,15 +150,6 @@ struct st_log_driver * st_log_get_driver(const char * driver) {
 	pthread_mutex_unlock(&st_log_lock);
 
 	return dr;
-}
-
-const char * st_log_level_to_string(enum st_log_level level) {
-	unsigned int i;
-	for (i = 0; st_log_levels[i].level != st_log_level_unknown; i++)
-		if (st_log_levels[i].level == level)
-			return st_log_levels[i].name;
-
-	return st_log_levels[i].name;
 }
 
 void st_log_register_driver(struct st_log_driver * driver) {
@@ -284,39 +243,6 @@ void st_log_stop_logger() {
 	}
 
 	pthread_mutex_unlock(&st_log_lock);
-}
-
-enum st_log_level st_log_string_to_level(const char * level) {
-	if (level == NULL)
-		return st_log_level_unknown;
-
-	unsigned int i;
-	for (i = 0; st_log_levels[i].level != st_log_level_unknown; i++)
-		if (!strcasecmp(st_log_levels[i].name, level))
-			return st_log_levels[i].level;
-
-	return st_log_levels[i].level;
-}
-
-enum st_log_type st_log_string_to_type(const char * type) {
-	if (type == NULL)
-		return st_log_type_unknown;
-
-	unsigned int i;
-	for (i = 0; st_log_types[i].type != st_log_type_unknown; i++)
-		if (!strcasecmp(type, st_log_types[i].name))
-			return st_log_types[i].type;
-
-	return st_log_types[i].type;
-}
-
-const char * st_log_type_to_string(enum st_log_type type) {
-	unsigned int i;
-	for (i = 0; st_log_types[i].type != st_log_type_unknown; i++)
-		if (st_log_types[i].type == type)
-			return st_log_types[i].name;
-
-	return st_log_types[i].name;
 }
 
 void st_log_write_all(enum st_log_level level, enum st_log_type type, const char * format, ...) {

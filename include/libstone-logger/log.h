@@ -30,14 +30,70 @@
 // bool
 #include <stdbool.h>
 
+#include <libstone/log.h>
+
 struct st_value;
 
+struct lgr_log_module;
+
+/**
+ * \struct lgr_log_driver
+ * \brief Structure used used only one time by each log module
+ *
+ * \note This structure should be staticaly allocated and passed to function st_log_register_driver
+ * \see st_log_register_driver
+ */
 struct lgr_log_driver {
+	/**
+	 * \brief Name of driver
+	 *
+	 * \note Should be unique and equals to liblog-name.so where name is the name of driver.
+	 */
 	const char * name;
 
+	struct lgr_log_module * (*new_module)(struct st_value * param) __attribute__((nonnull,warn_unused_result));
+
+	/**
+	 * \brief cookie
+	 *
+	 * Is a value returns by dlopen and should not be used nor released
+	 */
 	void * cookie;
-	const unsigned int api_level;
+	unsigned int api_level;
 	const char * src_checksum;
+};
+
+struct lgr_log_module {
+	/**
+	 * \brief Minimal level
+	 */
+	enum st_log_level level;
+
+	/**
+	 * \struct lgr_log_module_ops
+	 * \brief Functions associated to a log module
+	 */
+	struct lgr_log_module_ops {
+		/**
+		 * \brief release a module
+		 *
+		 * \param[in] module : release this module
+		 */
+		void (*free)(struct lgr_log_module * module);
+		/**
+		 * \brief Write a message to a module
+		 *
+		 * \param[in] module : write to this module
+		 * \param[in] message : write this message
+		 */
+		void (*write)(struct lgr_log_module * module, struct st_value * message);
+	} * ops;
+
+	struct lgr_log_driver * driver;
+	/**
+	 * \brief Private data of a log module
+	 */
+	void * data;
 };
 
 bool lgr_log_load(struct st_value * params);
@@ -54,6 +110,8 @@ bool lgr_log_load(struct st_value * params);
  * \endcode
  */
 void lgr_log_register_driver(struct lgr_log_driver * driver);
+
+void lgr_log_write(struct st_value * message);
 
 #endif
 

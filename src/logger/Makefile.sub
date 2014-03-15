@@ -2,9 +2,9 @@ LOGGER_SRC_DIR		:= src/logger
 
 LOGGER_BIN			:= bin/logger
 LOGGER_CFLAG		:=
-LOGGER_LD			:=  -rdynamic -ldl -lstone -Llib -Wl,-rpath,lib
+LOGGER_LD			:= -lstone -lstone-logger -Llib -Wl,-rpath,lib
 
-LOGGER_DEPEND_LIB	:= lib/libstone.so
+LOGGER_DEPEND_LIB	:= lib/libstone-logger.so
 
 LOGGER_CHCKSUM_FILE	:= logger.chcksum
 

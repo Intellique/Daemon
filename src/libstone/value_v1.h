@@ -43,6 +43,7 @@ struct st_value * st_value_new_integer_v1(long long int value) __attribute__((wa
 struct st_value * st_value_new_linked_list_v1(void) __attribute__((warn_unused_result));
 struct st_value * st_value_new_null_v1(void) __attribute__((warn_unused_result));
 struct st_value * st_value_new_string_v1(const char * value) __attribute__((nonnull,warn_unused_result));
+struct st_value * st_value_pack_v1(const char * format, ...) __attribute__((nonnull(1),warn_unused_result));
 struct st_value * st_value_share_v1(struct st_value * value) __attribute__((nonnull,warn_unused_result));
 
 void st_value_hashtable_clear_v1(struct st_value * hash) __attribute__((nonnull));
@@ -50,6 +51,7 @@ struct st_value * st_value_hashtable_get_v1(struct st_value * hash, struct st_va
 struct st_value * st_value_hashtable_get2_v1(struct st_value * hash, const char * key, bool shared) __attribute__((nonnull,warn_unused_result));
 struct st_value_iterator * st_value_hashtable_get_iterator_v1(struct st_value * hash) __attribute__((nonnull,warn_unused_result));
 bool st_value_hashtable_has_key_v1(struct st_value * hash, struct st_value * key) __attribute__((nonnull));
+bool st_value_hashtable_has_key2_v1(struct st_value * hash, const char * key) __attribute__((nonnull));
 struct st_value * st_value_hashtable_keys_v1(struct st_value * hash) __attribute__((nonnull));
 void st_value_hashtable_put_v1(struct st_value * hash, struct st_value * key, bool new_key, struct st_value * value, bool new_value) __attribute__((nonnull));
 void st_value_hashtable_remove_v1(struct st_value * hash, struct st_value * key) __attribute__((nonnull));

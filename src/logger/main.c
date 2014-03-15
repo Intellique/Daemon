@@ -33,6 +33,8 @@
 #include <libstone/poll.h>
 #include <libstone/value.h>
 
+#include <libstone-logger/log.h>
+
 static bool stop = false;
 
 static void daemon_request(int fd, short event, void * data);
@@ -52,6 +54,8 @@ int main() {
 		return 1;
 
 	st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
+
+	lgr_log_load(config);
 
 	st_json_encode_to_file(config, "logger.json");
 

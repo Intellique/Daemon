@@ -15,6 +15,11 @@ LIBSTONE_1.0 {
 		st_json_parse_file;
 		st_json_parse_string;
 
+		st_log_level_to_string;
+		st_log_string_to_level;
+		st_log_string_to_type;
+		st_log_type_to_string;
+
 		st_poll;
 		st_poll_register;
 		st_poll_unregister;

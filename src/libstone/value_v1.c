@@ -24,14 +24,18 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// va_end, va_start
+#include <stdarg.h>
 // calloc, free, malloc
 #include <stdlib.h>
 // memmove, strdup
 #include <string.h>
 
+#include "string_v1.h"
 #include "value_v1.h"
 
 static struct st_value * st_value_new_v1(enum st_value_type type);
+static struct st_value * st_value_pack_inner(const char ** format, va_list params);
 
 static void st_value_hashtable_put2_v1(struct st_value * hash, unsigned int index, struct st_value_hashtable_node * new_node);
 static void st_value_hashtable_rehash_v1(struct st_value * hash);
@@ -596,6 +600,103 @@ struct st_value * st_value_new_string_v1(const char * value) {
 	return val;
 }
 
+static struct st_value * st_value_pack_inner(const char ** format, va_list params) {
+	switch (**format) {
+		case 'b':
+			return st_value_new_boolean_v1(va_arg(params, int));
+
+		case 'f':
+			return st_value_new_float_v1(va_arg(params, double));
+
+		case 'i':
+			return st_value_new_integer_v1(va_arg(params, long long int));
+
+		case 'n':
+			return &null_value;
+
+		case 'o': {
+				struct st_value * value = va_arg(params, struct st_value *);
+				if (value != NULL)
+					return value;
+				return &null_value;
+			}
+
+		case 'O': {
+				struct st_value * value = va_arg(params, struct st_value *);
+				if (value != NULL)
+					return st_value_share_v1(value);
+				return &null_value;
+			}
+
+		case 's': {
+				const char * str_val = va_arg(params, const char *);
+				if (str_val != NULL)
+					return st_value_new_string_v1(str_val);
+				return &null_value;
+			}
+
+		case '[': {
+				struct st_value * array = st_value_new_linked_list_v1();
+				(*format)++;
+
+				while (**format != ']') {
+					struct st_value * elt = st_value_pack_inner(format, params);
+					if (elt == NULL) {
+						st_value_free_v1(array);
+						return NULL;
+					}
+					st_value_list_push_v1(array, elt, true);
+					(*format)++;
+				}
+
+				return array;
+			}
+
+		case '{': {
+				struct st_value * object = st_value_new_hashtable_v1(st_string_compute_hash_v1);
+				(*format)++;
+
+				while (**format != '}') {
+					if (**format != 's') {
+						st_value_free_v1(object);
+						return NULL;
+					}
+
+					struct st_value * key = st_value_pack_inner(format, params);
+					(*format)++;
+
+					struct st_value * value = st_value_pack_inner(format, params);
+					if (value == NULL) {
+						st_value_free_v1(object);
+						st_value_free_v1(key);
+						return NULL;
+					}
+
+					st_value_hashtable_put_v1(object, key, true, value, true);
+					(*format)++;
+				}
+
+				return object;
+			}
+	}
+	return NULL;
+}
+
+__asm__(".symver st_value_new_string_v1, st_value_new_string@@LIBSTONE_1.0");
+struct st_value * st_value_pack_v1(const char * format, ...) {
+	if (format == NULL)
+		return NULL;
+
+	va_list va;
+	va_start(va, format);
+
+	struct st_value * new_value = st_value_pack_inner(&format, va);
+
+	va_end(va);
+
+	return new_value;
+}
+
 __asm__(".symver st_value_share_v1, st_value_share@@LIBSTONE_1.0");
 struct st_value * st_value_share_v1(struct st_value * value) {
 	if (value == NULL)
@@ -696,6 +797,14 @@ bool st_value_hashtable_has_key_v1(struct st_value * hash, struct st_value * key
 		node = node->next;
 
 	return node != NULL && node->hash == h;
+}
+
+__asm__(".symver st_value_hashtable_has_key2_v1, st_value_hashtable_has_key2@@LIBSTONE_1.0");
+bool st_value_hashtable_has_key2_v1(struct st_value * hash, const char * key) {
+	struct st_value * k = st_value_new_string_v1(key);
+	bool returned = st_value_hashtable_has_key_v1(hash, k);
+	st_value_free_v1(k);
+	return returned;
 }
 
 __asm__(".symver st_value_hashtable_keys_v1, st_value_hashtable_keys@@LIBSTONE_1.0");

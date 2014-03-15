@@ -267,6 +267,7 @@ struct st_value * st_value_new_null(void) __attribute__((warn_unused_result));
  * \returns new string value
  */
 struct st_value * st_value_new_string(const char * value) __attribute__((nonnull,warn_unused_result));
+struct st_value * st_value_pack(const char * format, ...) __attribute__((nonnull(1),warn_unused_result));
 /**
  * \brief Share this value
  *
@@ -306,6 +307,7 @@ struct st_value_iterator * st_value_hashtable_get_iterator(struct st_value * has
  * \return \b true if \a key is found
  */
 bool st_value_hashtable_has_key(struct st_value * hash, struct st_value * key) __attribute__((nonnull));
+bool st_value_hashtable_has_key2(struct st_value * hash, const char * key) __attribute__((nonnull));
 /**
  * \brief Get a list of keys presents into hashtable
  *

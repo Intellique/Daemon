@@ -24,16 +24,15 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONELOGGER_LOG_P_H__
-#define __STONELOGGER_LOG_P_H__
+#ifndef __LIBSTONE_LOG_P_H__
+#define __LIBSTONE_LOG_P_H__
 
-#include <libstone-logger/log.h>
+#include <libstone/log.h>
 
-bool lgr_log_load_v1(struct st_value * params);
-
-void lgr_log_register_driver_v1(struct lgr_log_driver * driver);
-
-void lgr_log_write_v1(struct st_value * message);
+const char * st_log_level_to_string_v1(enum st_log_level level);
+enum st_log_level st_log_string_to_level_v1(const char * string);
+enum st_log_type st_log_string_to_type_v1(const char * string);
+const char * st_log_type_to_string_v1(enum st_log_type type);
 
 #endif
 
