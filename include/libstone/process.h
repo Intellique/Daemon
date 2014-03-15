@@ -60,6 +60,7 @@ struct st_process {
 	unsigned int nb_parameters;
 
 	struct st_value * environment;
+	int nice;
 
 	/**
 	 * \brief Pid of process or -1
@@ -85,6 +86,7 @@ void st_process_redir_err_to_out(struct st_process * process);
 void st_process_redir_out_to_err(struct st_process * process);
 void st_process_set_environment(struct st_process * process, struct st_value * environment);
 void st_process_set_fd(struct st_process * process, enum st_process_std fd_process, int new_fd);
+void st_process_set_nice(struct st_process * process, int nice);
 void st_process_start(struct st_process * process, unsigned int nb_process);
 void st_process_wait(struct st_process * process, unsigned int nb_process);
 

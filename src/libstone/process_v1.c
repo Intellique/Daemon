@@ -39,7 +39,7 @@
 #include <sys/types.h>
 // waitpid
 #include <sys/wait.h>
-// access, close, dup2, execv, fcntl, fork, pipe
+// access, close, dup2, execv, fcntl, fork, nice, pipe
 #include <unistd.h>
 
 #include "process_v1.h"
@@ -125,6 +125,7 @@ void st_process_new_v1(struct st_process * process, const char * process_name, c
 	process->nb_parameters = nb_params;
 
 	process->environment = NULL;
+	process->nice = 0;
 
 	process->params[0] = strdup(process_name);
 	unsigned int i;
@@ -235,6 +236,14 @@ void st_process_set_fd_v1(struct st_process * process, enum st_process_std fd_pr
 	st_process_set_close_exe_flag(new_fd, true);
 }
 
+__asm__(".symver st_process_set_fd_v1, st_process_set_fd@@LIBSTONE_1.0");
+void st_process_set_nice_v1(struct st_process * process, int nice) {
+	if (process == NULL)
+		return;
+
+	process->nice = nice;
+}
+
 static void st_process_set_close_exe_flag(int fd, bool on) {
 	int flag = fcntl(fd, F_GETFD);
 
@@ -296,6 +305,9 @@ void st_process_start_v1(struct st_process * process, unsigned int nb_process) {
 				}
 				st_value_iterator_free_v1(iter);
 			}
+
+			if (process->nice != 0)
+				nice(process->nice);
 
 			execv(process[i].command, process[i].params);
 		}

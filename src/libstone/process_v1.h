@@ -41,6 +41,7 @@ void st_process_redir_err_to_out_v1(struct st_process * process);
 void st_process_redir_out_to_err_v1(struct st_process * process);
 void st_process_set_environment_v1(struct st_process * process, struct st_value * environment);
 void st_process_set_fd_v1(struct st_process * process, enum st_process_std fd_process, int new_fd);
+void st_process_set_nice_v1(struct st_process * process, int nice);
 void st_process_start_v1(struct st_process * process, unsigned int nb_process);
 void st_process_wait_v1(struct st_process * process, unsigned int nb_process);
 

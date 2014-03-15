@@ -36,6 +36,7 @@ LIBSTONE_1.0 {
 		st_process_redir_out_to_err;
 		st_process_set_environment;
 		st_process_set_fd;
+		st_process_set_nice;
 		st_process_start;
 		st_process_wait;
 
