@@ -66,7 +66,7 @@ int st_poll_v1(int timeout) {
 		short event = evt->revents;
 		evt->revents = 0;
 
-		if (evt->revents != 0)
+		if (event != 0)
 			st_poll_infos[i].callback(fd, event, st_poll_infos[i].data);
 
 		if (st_poll_restart) {
