@@ -447,9 +447,15 @@ struct st_value * st_json_parse_fd_v1(int fd, int timeout) {
 	char * buffer = malloc(buffer_size + 1);
 	buffer[0] = '\0';
 
+	struct st_value * ret_val = NULL;
+
 	while (size = read(fd, buffer + nb_total_read, buffer_size - nb_total_read), size > 0) {
 		nb_total_read += size;
 		buffer[nb_total_read] = '\0';
+
+		ret_val = st_json_parse_string_v1(buffer);
+		if (ret_val != NULL)
+			break;
 
 		struct pollfd pfd = {
 			.fd = fd,
@@ -469,7 +475,6 @@ struct st_value * st_json_parse_fd_v1(int fd, int timeout) {
 		buffer = addr;
 	}
 
-	struct st_value * ret_val = st_json_parse_string_v1(buffer);
 	free(buffer);
 	return ret_val;
 }

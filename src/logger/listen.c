@@ -27,8 +27,12 @@
 // NULL
 #include <stddef.h>
 
+#include <libstone/json.h>
 #include <libstone/poll.h>
 #include <libstone/socket.h>
+#include <libstone/value.h>
+
+#include <libstone-logger/log.h>
 
 #include "listen.h"
 
@@ -44,9 +48,15 @@ static void lgr_socket_accept(int fd_server __attribute__((unused)), int fd_clie
 }
 
 static void lgr_socket_message(int fd, short event, void * data __attribute__((unused))) {
-	if (event == POLLHUP) {
-		st_poll_unregister(fd);
+	if (event == POLLHUP)
 		return;
-	}
+
+	struct st_value * message = st_json_parse_fd(fd, -1);
+	lgr_log_write(message);
+	st_value_free(message);
+
+	struct st_value * response = st_value_new_boolean(true);
+	st_json_encode_to_fd(response, fd);
+	st_value_free(response);
 }
 

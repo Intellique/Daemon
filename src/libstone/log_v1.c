@@ -141,8 +141,9 @@ enum st_log_type st_log_string_to_type_v1(const char * type) {
 static void st_log_send_message(void * arg __attribute__((unused))) {
 	struct st_value * messages = NULL;
 
-	pthread_mutex_lock(&st_log_lock);
 	for (;;) {
+		pthread_mutex_lock(&st_log_lock);
+
 		struct st_value * tmp_messages = st_log_messages;
 		st_log_messages = messages;
 		messages = tmp_messages;
@@ -173,6 +174,8 @@ static void st_log_send_message(void * arg __attribute__((unused))) {
 
 	pthread_cond_signal(&st_log_wait);
 	pthread_mutex_unlock(&st_log_lock);
+
+	st_value_free_v1(messages);
 }
 
 __asm__(".symver st_log_type_to_string_v1, st_log_type_to_string@@LIBSTONE_1.0");
