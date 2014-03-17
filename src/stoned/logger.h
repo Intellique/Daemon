@@ -29,6 +29,7 @@
 
 struct st_value;
 
+struct st_value * std_logger_get_config(void);
 void std_logger_start(struct st_value * config);
 
 #endif

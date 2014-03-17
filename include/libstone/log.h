@@ -30,6 +30,7 @@
 // time_t
 #include <sys/time.h>
 
+struct st_value;
 
 /**
  * \enum st_log_level
@@ -144,6 +145,8 @@ enum st_log_type {
 	st_log_type_unknown,
 };
 
+
+void st_log_configure(struct st_value * config);
 
 /**
  * \brief Convert an enumeration to a statically allocated string

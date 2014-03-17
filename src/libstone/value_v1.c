@@ -682,7 +682,7 @@ static struct st_value * st_value_pack_inner(const char ** format, va_list param
 	return NULL;
 }
 
-__asm__(".symver st_value_new_string_v1, st_value_new_string@@LIBSTONE_1.0");
+__asm__(".symver st_value_pack_v1, st_value_pack@@LIBSTONE_1.0");
 struct st_value * st_value_pack_v1(const char * format, ...) {
 	if (format == NULL)
 		return NULL;
@@ -1009,6 +1009,17 @@ struct st_value_iterator * st_value_list_get_iterator_v1(struct st_value * list)
 	}
 
 	return iter;
+}
+
+__asm__(".symver st_value_list_get_iterator_v1, st_value_list_get_iterator@@LIBSTONE_1.0");
+unsigned int st_value_list_get_length_v1(struct st_value * list) {
+	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
+		return 0;
+
+	if (list->type == st_value_array)
+		return list->value.array.nb_vals;
+	else
+		return list->value.list.nb_vals;
 }
 
 __asm__(".symver st_value_list_pop_v1, st_value_list_pop@@LIBSTONE_1.0");

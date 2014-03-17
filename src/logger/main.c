@@ -35,6 +35,8 @@
 
 #include <libstone-logger/log.h>
 
+#include "listen.h"
+
 static bool stop = false;
 
 static void daemon_request(int fd, short event, void * data);
@@ -50,14 +52,21 @@ static void daemon_request(int fd __attribute__((unused)), short event, void * d
 
 int main() {
 	struct st_value * config = st_json_parse_fd(0, 5000);
-	if (config == NULL)
+	if (config == NULL || !st_value_hashtable_has_key2(config, "module"))
 		return 1;
 
 	st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
 
-	lgr_log_load(config);
+	struct st_value * module = st_value_hashtable_get2(config, "module", false);
+	lgr_log_load(module);
+
+	struct st_value * socket = st_value_hashtable_get2(config, "socket", false);
+	lgr_listen_configure(socket);
 
 	st_json_encode_to_file(config, "logger.json");
+
+	while (!stop)
+		st_poll(-1);
 
 	return 0;
 }

@@ -236,7 +236,7 @@ void st_process_set_fd_v1(struct st_process * process, enum st_process_std fd_pr
 	st_process_set_close_exe_flag(new_fd, true);
 }
 
-__asm__(".symver st_process_set_fd_v1, st_process_set_fd@@LIBSTONE_1.0");
+__asm__(".symver st_process_set_nice_v1, st_process_set_nice@@LIBSTONE_1.0");
 void st_process_set_nice_v1(struct st_process * process, int nice) {
 	if (process == NULL)
 		return;

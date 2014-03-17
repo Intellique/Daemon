@@ -31,6 +31,9 @@
 // printf
 #include <stdio.h>
 
+#include <libstone/log.h>
+#include <libstone/value.h>
+
 #include "conf.h"
 #include "env.h"
 #include "logger.h"
@@ -62,8 +65,8 @@ int main(int argc, char ** argv) {
 	};
 
 	char * config_file = DAEMON_CONFIG_FILE;
-	bool detach = 0;
-	char * pid_file = DAEMON_PID_FILE;
+	// bool detach = false;
+	// char * pid_file = DAEMON_PID_FILE;
 
 	// parse option
 	int opt;
@@ -80,7 +83,7 @@ int main(int argc, char ** argv) {
 				break;
 
 			case OPT_DETACH:
-				detach = true;
+				// detach = true;
 				// st_log_write_all(st_log_level_info, st_log_type_daemon, "Using detach mode (i.e. use fork())");
 				break;
 
@@ -91,7 +94,7 @@ int main(int argc, char ** argv) {
 				return 0;
 
 			case OPT_PID_FILE:
-				pid_file = optarg;
+				// pid_file = optarg;
 				// st_log_write_all(st_log_level_info, st_log_type_daemon, "Using pid file: '%s'", optarg);
 				break;
 
@@ -114,6 +117,10 @@ int main(int argc, char ** argv) {
 		return 1;
 
 	std_logger_start(config);
+
+	struct st_value * log_config = std_logger_get_config();
+	st_log_configure(log_config);
+	st_value_free(log_config);
 
 	return 0;
 }

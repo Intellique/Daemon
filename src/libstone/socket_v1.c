@@ -24,50 +24,17 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// close
-#include <unistd.h>
+#include "socket_v1.h"
+#include "socket/unix_v1.h"
+#include "value_v1.h"
 
-#include <libstone/json.h>
-#include <libstone/process.h>
-#include <libstone/value.h>
-
-#include "config.h"
-#include "logger.h"
-
-static struct st_process logger;
-static int logger_in = -1;
-static int logger_out = -1;
-static struct st_value * logger_config = NULL;
-
-static void std_logger_exit(void) __attribute__((destructor));
-
-
-static void std_logger_exit() {
-	close(logger_in);
-	close(logger_out);
-	st_process_free(&logger, 1);
-
-	st_value_free(logger_config);
+__asm__(".symver st_socket_server_v1, st_socket_server@@LIBSTONE_1.0");
+int st_socket_v1(struct st_value * config) {
+	return st_socket_unix_v1(config);
 }
 
-struct st_value * std_logger_get_config() {
-	if (logger_config == NULL)
-		return NULL;
-
-	return st_value_hashtable_get2(logger_config, "socket", true);
-}
-
-void std_logger_start(struct st_value * config) {
-	st_process_new(&logger, "logger", NULL, 0);
-	logger_in = st_process_pipe_to(&logger);
-	logger_out = st_process_pipe_from(&logger, st_process_stdout);
-	st_process_close(&logger, st_process_stderr);
-	st_process_set_nice(&logger, 4);
-	st_process_start(&logger, 1);
-
-	if (logger_config == NULL)
-		logger_config = st_value_pack("{sos{ssss}}", "module", st_value_hashtable_get2(config, "log", true), "socket", "type", "unix", "path", "run/logger.socket");
-
-	st_json_encode_to_fd(logger_config, logger_in);
+__asm__(".symver st_socket_server_v1, st_socket_server@@LIBSTONE_1.0");
+bool st_socket_server_v1(struct st_value * config, st_socket_accept_f accept_callback) {
+	return st_socket_unix_server_v1(config, accept_callback);
 }
 

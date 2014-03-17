@@ -343,6 +343,7 @@ struct st_value * st_value_hashtable_values(struct st_value * hash) __attribute_
 
 void st_value_list_clear(struct st_value * list) __attribute__((nonnull));
 struct st_value_iterator * st_value_list_get_iterator(struct st_value * list) __attribute__((nonnull,warn_unused_result));
+unsigned int st_value_list_get_length(struct st_value * list) __attribute__((nonnull));
 struct st_value * st_value_list_pop(struct st_value * list) __attribute__((nonnull,warn_unused_result));
 bool st_value_list_push(struct st_value * list, struct st_value * val, bool new_val) __attribute__((nonnull));
 bool st_value_list_shift(struct st_value * list, struct st_value * val, bool new_val) __attribute__((nonnull));
