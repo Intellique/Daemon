@@ -113,6 +113,7 @@ enum st_log_type {
 	 * \brief used by jobs
 	 */
 	st_log_type_job,
+	st_log_type_logger,
 	/**
 	 * \brief used by checksum module
 	 */

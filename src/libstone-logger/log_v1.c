@@ -24,9 +24,17 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// NULL
-#include <stddef.h>
+#define _GNU_SOURCE
+// va_end, va_start
+#include <stdarg.h>
+// free
+#include <stdlib.h>
+// vasprintf
+#include <stdio.h>
+// time
+#include <time.h>
 
+#include <libstone/log.h>
 #include <libstone/string.h>
 #include <libstone/value.h>
 
@@ -34,6 +42,7 @@
 #include "log_v1.h"
 
 static struct st_value * lgr_drivers = NULL;
+static struct st_value * lgr_messages = NULL;
 static struct st_value * lgr_modules = NULL;
 
 static void lgr_log_exit(void) __attribute__((destructor));
@@ -43,6 +52,7 @@ static void lgr_log_init(void) __attribute__((constructor));
 
 static void lgr_log_exit() {
 	st_value_free(lgr_drivers);
+	st_value_free(lgr_messages);
 	st_value_free(lgr_modules);
 }
 
@@ -53,6 +63,7 @@ static void lgr_log_free_module(void * module) {
 
 static void lgr_log_init() {
 	lgr_drivers = st_value_new_hashtable(st_string_compute_hash);
+	lgr_messages = st_value_new_linked_list();
 	lgr_modules = st_value_new_linked_list();
 }
 
@@ -119,5 +130,42 @@ void lgr_log_write_v1(struct st_value * message) {
 			mod->ops->write(mod, message);
 	}
 	st_value_iterator_free(iter);
+}
+
+__asm__(".symver lgr_log_write2_v1, lgr_log_write2@@LIBSTONE_LOGGER_1.0");
+void lgr_log_write2_v1(enum st_log_level level, enum st_log_type type, const char * format, ...) {
+	char * str_message = NULL;
+
+	long long int timestamp = time(NULL);
+
+	va_list va;
+	va_start(va, format);
+	vasprintf(&str_message, format, va);
+	va_end(va);
+
+	struct st_value * message = st_value_pack("{sssssiss}", "level", st_log_level_to_string(level), "type", st_log_type_to_string(type), "timestamp", timestamp, "message", str_message);
+
+	free(str_message);
+
+	unsigned int nb_unsent_messages = st_value_list_get_length(lgr_messages);
+	unsigned int nb_modules = st_value_list_get_length(lgr_modules);
+
+	if (nb_modules == 0) {
+		st_value_list_push(lgr_messages, message, true);
+		return;
+	}
+
+	if (nb_unsent_messages > 0) {
+		struct st_value_iterator * iter = st_value_list_get_iterator(lgr_messages);
+		while (st_value_iterator_has_next(iter)) {
+			struct st_value * msg = st_value_iterator_get_value(iter, false);
+			lgr_log_write_v1(msg);
+		}
+		st_value_iterator_free(iter);
+		st_value_list_clear(lgr_messages);
+	}
+
+	lgr_log_write_v1(message);
+	st_value_free(message);
 }
 

@@ -78,6 +78,7 @@ static struct st_log_type2 {
 	{ st_log_type_daemon,          "Daemon" },
 	{ st_log_type_drive,           "Drive" },
 	{ st_log_type_job,             "Job" },
+	{ st_log_type_logger,          "Logger" },
 	{ st_log_type_plugin_checksum, "Plugin Checksum" },
 	{ st_log_type_plugin_db,       "Plugin Database" },
 	{ st_log_type_plugin_log,      "Plugin Log" },
@@ -141,9 +142,8 @@ enum st_log_type st_log_string_to_type_v1(const char * type) {
 static void st_log_send_message(void * arg __attribute__((unused))) {
 	struct st_value * messages = NULL;
 
+	pthread_mutex_lock(&st_log_lock);
 	for (;;) {
-		pthread_mutex_lock(&st_log_lock);
-
 		struct st_value * tmp_messages = st_log_messages;
 		st_log_messages = messages;
 		messages = tmp_messages;
@@ -156,8 +156,10 @@ static void st_log_send_message(void * arg __attribute__((unused))) {
 		unsigned int nb_messages = st_value_list_get_length_v1(messages);
 		if (nb_messages == 0 && st_log_finished)
 			break;
-		if (nb_messages == 0)
+		if (nb_messages == 0) {
 			pthread_cond_wait(&st_log_wait, &st_log_lock);
+			continue;
+		}
 
 		pthread_mutex_unlock(&st_log_lock);
 
@@ -170,6 +172,8 @@ static void st_log_send_message(void * arg __attribute__((unused))) {
 		}
 		st_value_iterator_free_v1(iter);
 		st_value_list_clear_v1(messages);
+
+		pthread_mutex_lock(&st_log_lock);
 	}
 
 	pthread_cond_signal(&st_log_wait);

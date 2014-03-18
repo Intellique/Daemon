@@ -113,5 +113,7 @@ void lgr_log_register_driver(struct lgr_log_driver * driver);
 
 void lgr_log_write(struct st_value * message);
 
+void lgr_log_write2(enum st_log_level level, enum st_log_type type, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
+
 #endif
 

@@ -24,54 +24,17 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+#ifndef __LIBSTONE_SOCKET_H__
+#define __LIBSTONE_SOCKET_H__
+
 // bool
 #include <stdbool.h>
-// getpid
-#include <unistd.h>
 
-#include <libstone/json.h>
-#include <libstone/poll.h>
-#include <libstone/value.h>
+struct st_value;
+typedef void (*st_socket_accept_f)(int fd_server, int fd_client, struct st_value * client);
 
-#include <libstone-logger/log.h>
+int st_socket(struct st_value * config);
+bool st_socket_server(struct st_value * config, st_socket_accept_f accept_callback);
 
-#include "listen.h"
-
-static bool stop = false;
-
-static void daemon_request(int fd, short event, void * data);
-
-
-static void daemon_request(int fd __attribute__((unused)), short event, void * data __attribute__((unused))) {
-	switch (event) {
-		case POLLHUP:
-			stop = true;
-			break;
-	}
-}
-
-int main() {
-	lgr_log_write2(st_log_level_notice, st_log_type_logger, "Starting logger process (pid: %d)", getpid());
-
-	struct st_value * config = st_json_parse_fd(0, 5000);
-	if (config == NULL || !st_value_hashtable_has_key2(config, "module"))
-		return 1;
-
-	st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
-
-	struct st_value * module = st_value_hashtable_get2(config, "module", false);
-	lgr_log_load(module);
-
-	struct st_value * socket = st_value_hashtable_get2(config, "socket", false);
-	lgr_listen_configure(socket);
-
-	st_json_encode_to_file(config, "logger.json");
-
-	while (!stop)
-		st_poll(-1);
-
-	st_value_free(config);
-
-	return 0;
-}
+#endif
 

@@ -45,7 +45,8 @@
 
 static void * lgr_loader_load_file(const char * filename);
 
-static bool lgr_loader_loaded = false;
+static volatile bool lgr_loader_loading = false;
+static volatile bool lgr_loader_loaded = false;
 
 
 void * lgr_loader_load(const char * module, const char * name) {
@@ -71,6 +72,7 @@ static void * lgr_loader_load_file(const char * filename) {
 	static pthread_mutex_t lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 	pthread_mutex_lock(&lock);
 
+	lgr_loader_loading = true;
 	lgr_loader_loaded = false;
 
 	void * cookie = dlopen(filename, RTLD_NOW);
@@ -81,11 +83,14 @@ static void * lgr_loader_load_file(const char * filename) {
 		cookie = NULL;
 	}
 
+	lgr_loader_loading = false;
+
 	pthread_mutex_unlock(&lock);
 	return cookie;
 }
 
 void lgr_loader_register_ok(void) {
-	lgr_loader_loaded = true;
+	if (lgr_loader_loading)
+		lgr_loader_loaded = true;
 }
 

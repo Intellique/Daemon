@@ -1011,7 +1011,7 @@ struct st_value_iterator * st_value_list_get_iterator_v1(struct st_value * list)
 	return iter;
 }
 
-__asm__(".symver st_value_list_get_iterator_v1, st_value_list_get_iterator@@LIBSTONE_1.0");
+__asm__(".symver st_value_list_get_length_v1, st_value_list_get_length@@LIBSTONE_1.0");
 unsigned int st_value_list_get_length_v1(struct st_value * list) {
 	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
 		return 0;
