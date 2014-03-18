@@ -99,6 +99,7 @@ static struct lgr_log_module * file_driver_new_module(struct st_value * param) {
 	struct logger_log_file_private * self = malloc(sizeof(struct logger_log_file_private));
 	self->path = strdup(path->value.string);
 	self->fd = fd;
+	fstat(self->fd, &self->current);
 
 	struct lgr_log_module * mod = malloc(sizeof(struct lgr_log_module));
 	mod->level = st_log_string_to_level(level->value.string);
