@@ -57,79 +57,79 @@ typedef unsigned long long (*st_value_hashtable_compupte_hash_f)(const struct st
  * This structure can contain differents kind of value. Each value can be shared.
  */
 struct st_value {
-        /**
-         * \enum st_value_type
-         * \brief Type of value
-         */
-        enum st_value_type {
-                /**
-                 * \brief Used to store an array list
-                 */
-                st_value_array,
-                /**
-                 * \brief Used to store a boolean value
-                 */
-                st_value_boolean,
-                /**
-                 * \brief Used to store a custom value
-                 */
-                st_value_custom,
-                /**
-                 * \brief Used to store a floating value
-                 */
-                st_value_float,
-                /**
-                 * \brief Used to store an hashtable
-                 */
-                st_value_hashtable,
-                /**
-                 * \brief Used to store an integer value
-                 */
-                st_value_integer,
-                /**
-                 * \brief Used to store a linked list
-                 */
-                st_value_linked_list,
-                /**
-                 * \brief Used to store a null value
-                 */
-                st_value_null,
-                /**
-                 * \brief Used to store a string value
-                 */
-                st_value_string,
-        } type;
-        union {
-                bool boolean;
-                struct st_value_array {
-                        struct st_value ** values;
-                        unsigned int nb_vals, nb_preallocated;
-                } array;
-                long long int integer;
-                double floating;
-                struct st_value_hashtable {
-                        struct st_value_hashtable_node {
-                                unsigned long long hash;
-                                struct st_value * key;
-                                struct st_value * value;
-                                struct st_value_hashtable_node * next;
-                        } ** nodes;
-                        unsigned int nb_elements;
-                        unsigned int size_node;
+		/**
+		 * \enum st_value_type
+		 * \brief Type of value
+		 */
+		enum st_value_type {
+				/**
+				 * \brief Used to store an array list
+				 */
+				st_value_array,
+				/**
+				 * \brief Used to store a boolean value
+				 */
+				st_value_boolean,
+				/**
+				 * \brief Used to store a custom value
+				 */
+				st_value_custom,
+				/**
+				 * \brief Used to store a floating value
+				 */
+				st_value_float,
+				/**
+				 * \brief Used to store an hashtable
+				 */
+				st_value_hashtable,
+				/**
+				 * \brief Used to store an integer value
+				 */
+				st_value_integer,
+				/**
+				 * \brief Used to store a linked list
+				 */
+				st_value_linked_list,
+				/**
+				 * \brief Used to store a null value
+				 */
+				st_value_null,
+				/**
+				 * \brief Used to store a string value
+				 */
+				st_value_string,
+		} type;
+		union {
+				bool boolean;
+				struct st_value_array {
+						struct st_value ** values;
+						unsigned int nb_vals, nb_preallocated;
+				} array;
+				long long int integer;
+				double floating;
+				struct st_value_hashtable {
+						struct st_value_hashtable_node {
+								unsigned long long hash;
+								struct st_value * key;
+								struct st_value * value;
+								struct st_value_hashtable_node * next;
+						} ** nodes;
+						unsigned int nb_elements;
+						unsigned int size_node;
 
-                        bool allow_rehash;
+						bool allow_rehash;
 
-                        st_value_hashtable_compupte_hash_f compute_hash;
-                } hashtable;
-                struct st_value_linked_list {
-                        struct st_value_linked_list_node {
-                                struct st_value * value;
-                                struct st_value_linked_list_node * next;
-                                struct st_value_linked_list_node * previous;
-                        } * first, * last;
-                        unsigned int nb_vals;
-                } list;
-                char * string;
+						st_value_hashtable_compupte_hash_f compute_hash;
+				} hashtable;
+				struct st_value_linked_list {
+						struct st_value_linked_list_node {
+								struct st_value * value;
+								struct st_value_linked_list_node * next;
+								struct st_value_linked_list_node * previous;
+						} * first, * last;
+						unsigned int nb_vals;
+				} list;
+				char * string;
 				struct st_value_custom {
 					void * data;
 					/**
@@ -137,25 +137,28 @@ struct st_value {
 					 */
 					st_value_free_f release;
 				} custom;
-        } value;
-        /**
-         * \brief Number of many times this value is shared
-         *
-         * \attention Should not be modify
-         */
-        unsigned int shared;
+		} value;
+		/**
+		 * \brief Number of many times this value is shared
+		 *
+		 * \attention Should not be modify
+		 */
+		unsigned int shared;
 } __attribute__((packed));
 
 struct st_value_iterator {
-        struct st_value * value;
-        union {
-                unsigned int array_index;
-                struct st_value_iterator_hashtable {
-                        struct st_value_hashtable_node * node;
-                        unsigned int i_elements;
-                } hashtable;
-                struct st_value_linked_list_node * list_node;
-        } data;
+		struct st_value * value;
+		union {
+				unsigned int array_index;
+				struct st_value_iterator_hashtable {
+						struct st_value_hashtable_node * node;
+						unsigned int i_elements;
+				} hashtable;
+				struct st_value_iterator_list {
+					struct st_value_linked_list_node * current;
+					struct st_value_linked_list_node * next;
+				} list;
+		} data;
 };
 
 /**

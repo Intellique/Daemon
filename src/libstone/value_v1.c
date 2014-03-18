@@ -1008,7 +1008,9 @@ struct st_value_iterator * st_value_list_get_iterator_v1(struct st_value * list)
 	if (list->type == st_value_array) {
 		iter->data.array_index = 0;
 	} else {
-		iter->data.list_node = list->value.list.first;
+		struct st_value_iterator_list * iter_list = &iter->data.list;
+		iter_list->current = NULL;
+		iter_list->next = list->value.list.first;
 	}
 
 	return iter;
@@ -1224,7 +1226,7 @@ struct st_value * st_value_iterator_get_value_v1(struct st_value_iterator * iter
 			break;
 
 		case st_value_hashtable: {
-			if (iter->data.hashtable.node == NULL)
+				if (iter->data.hashtable.node == NULL)
 					break;
 
 				struct st_value_hashtable * hash = &iter->value->value.hashtable;
@@ -1236,12 +1238,14 @@ struct st_value * st_value_iterator_get_value_v1(struct st_value_iterator * iter
 			}
 			break;
 
-		case st_value_linked_list:
-			if (iter->data.list_node == NULL)
-				break;
-
-			ret = iter->data.list_node->value;
-			iter->data.list_node = iter->data.list_node->next;
+		case st_value_linked_list: {
+				struct st_value_iterator_list * iter_list = &iter->data.list;
+				iter_list->current = iter_list->next;
+				if (iter_list->current != NULL) {
+					ret = iter_list->current->value;
+					iter_list->next = iter_list->next->next;
+				}
+			}
 			break;
 
 		default:
@@ -1266,8 +1270,20 @@ bool st_value_iterator_has_next_v1(struct st_value_iterator * iter) {
 		case st_value_hashtable:
 			return iter->data.hashtable.node != NULL;
 
-		case st_value_linked_list:
-			return iter->data.list_node != NULL;
+		case st_value_linked_list: {
+				struct st_value_iterator_list * iter_list = &iter->data.list;
+				if (iter_list->next != NULL)
+					return true;
+				if (iter_list->current == NULL)
+					return false;
+
+				/**
+				 * \note Special case, curent->next != NULL && next = NULL
+				 * This case occure when we fetch the last element, then we push new
+				 * value to the list and check if iterator has next element
+				 */
+				return iter_list->current->next != NULL;
+			}
 
 		default:
 			return false;
