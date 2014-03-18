@@ -454,10 +454,12 @@ struct st_value * st_json_parse_fd_v1(int fd, int timeout) {
 
 		struct pollfd pfd = {
 			.fd = fd,
-			.events = POLLIN,
+			.events = POLLIN | POLLHUP,
 			.revents = 0,
 		};
 		if (poll(&pfd, 1, timeout) == 0)
+			break;
+		if (pfd.revents & POLLHUP)
 			break;
 
 		buffer_size += 4096;

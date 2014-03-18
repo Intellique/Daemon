@@ -37,7 +37,7 @@
 #include <string.h>
 // time
 #include <time.h>
-// read, write
+// close, read, sleep, write
 #include <unistd.h>
 
 #include "json_v1.h"
@@ -46,11 +46,11 @@
 #include "thread_pool_v1.h"
 #include "value_v1.h"
 
-static int st_log_socket = -1;
 static pthread_mutex_t st_log_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 static pthread_cond_t st_log_wait = PTHREAD_COND_INITIALIZER;
 static struct st_value * st_log_messages = NULL;
 static volatile bool st_log_finished = false;
+static volatile bool st_log_started = false;
 
 static void st_log_send_message(void * arg);
 
@@ -93,11 +93,13 @@ static struct st_log_type2 {
 
 __asm__(".symver st_log_configure_v1, st_log_configure@@LIBSTONE_1.0");
 void st_log_configure_v1(struct st_value * config) {
+	struct st_value * copy_config = st_value_copy_v1(config, true);
+
 	pthread_mutex_lock(&st_log_lock);
 
-	if (st_log_socket < 0) {
-		st_log_socket = st_socket_v1(config);
-		st_thread_pool_run2("logger", st_log_send_message, NULL, 4);
+	if (!st_log_started) {
+		st_log_started = true;
+		st_thread_pool_run2("logger", st_log_send_message, copy_config, 4);
 	}
 
 	pthread_mutex_unlock(&st_log_lock);
@@ -139,8 +141,10 @@ enum st_log_type st_log_string_to_type_v1(const char * type) {
 	return st_log_types[i].type;
 }
 
-static void st_log_send_message(void * arg __attribute__((unused))) {
+static void st_log_send_message(void * arg) {
+	struct st_value * config = arg;
 	struct st_value * messages = NULL;
+	int socket = -1;
 
 	pthread_mutex_lock(&st_log_lock);
 	for (;;) {
@@ -161,14 +165,34 @@ static void st_log_send_message(void * arg __attribute__((unused))) {
 			continue;
 		}
 
+		while (socket < 0) {
+			socket = st_socket_v1(config);
+			if (socket < 0)
+				sleep(5);
+		}
+
 		pthread_mutex_unlock(&st_log_lock);
 
 		struct st_value_iterator * iter = st_value_list_get_iterator_v1(messages);
 		while (st_value_iterator_has_next_v1(iter)) {
 			struct st_value * message = st_value_iterator_get_value_v1(iter, false);
-			st_json_encode_to_fd_v1(message, st_log_socket);
-			struct st_value * returned = st_json_parse_fd_v1(st_log_socket, 5000);
-			st_value_free_v1(returned);
+			st_json_encode_to_fd_v1(message, socket);
+
+			struct st_value * returned = st_json_parse_fd_v1(socket, 5000);
+			if (returned == NULL) {
+				pthread_mutex_unlock(&st_log_lock);
+
+				close(socket);
+
+				while (socket < 0) {
+					socket = st_socket_v1(config);
+					if (socket < 0)
+						sleep(5);
+				}
+
+				pthread_mutex_lock(&st_log_lock);
+			} else
+				st_value_free_v1(returned);
 		}
 		st_value_iterator_free_v1(iter);
 		st_value_list_clear_v1(messages);
