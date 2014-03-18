@@ -45,6 +45,7 @@ static void daemon_request(int fd, short event, void * data);
 static void daemon_request(int fd __attribute__((unused)), short event, void * data __attribute__((unused))) {
 	switch (event) {
 		case POLLHUP:
+			lgr_log_write2(st_log_level_alert, st_log_type_logger, "Stoned has hang up");
 			stop = true;
 			break;
 	}
@@ -54,23 +55,30 @@ int main() {
 	lgr_log_write2(st_log_level_notice, st_log_type_logger, "Starting logger process (pid: %d)", getpid());
 
 	struct st_value * config = st_json_parse_fd(0, 5000);
-	if (config == NULL || !st_value_hashtable_has_key2(config, "module"))
+	if (config == NULL || !st_value_hashtable_has_key2(config, "module")) {
+		lgr_log_write2(st_log_level_emergencey, st_log_type_logger, "No configuration received from daemon, will quit");
 		return 1;
+	}
 
 	st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
 
 	struct st_value * module = st_value_hashtable_get2(config, "module", false);
 	lgr_log_load(module);
+	lgr_log_write2(st_log_level_debug, st_log_type_logger, "Modules loaded");
 
 	struct st_value * socket = st_value_hashtable_get2(config, "socket", false);
 	lgr_listen_configure(socket);
 
-	st_json_encode_to_file(config, "logger.json");
-
-	while (!stop)
+	unsigned int nb_handlers = st_poll_nb_handlers();
+	while (!stop || nb_handlers > 0) {
 		st_poll(-1);
 
+		nb_handlers = st_poll_nb_handlers();
+	}
+
 	st_value_free(config);
+
+	lgr_log_write2(st_log_level_notice, st_log_type_logger, "Logger process (pid: %d) will now exit", getpid());
 
 	return 0;
 }

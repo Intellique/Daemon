@@ -980,6 +980,9 @@ void st_value_list_clear_v1(struct st_value * list) {
 		}
 		list->value.array.nb_vals = 0;
 	} else {
+		if (list->value.list.nb_vals == 0)
+			return;
+
 		struct st_value_linked_list_node * ptr;
 		for (ptr = list->value.list.first->next; ptr != NULL; ptr = ptr->next) {
 			st_value_free_v1(ptr->previous->value);

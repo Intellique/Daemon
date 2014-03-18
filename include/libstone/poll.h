@@ -36,6 +36,7 @@ typedef void (*st_poll_callback_f)(int fd, short event, void * data);
 typedef void (*st_poll_free_f)(void * data);
 
 int st_poll(int timeout);
+unsigned int st_poll_nb_handlers(void);
 bool st_poll_register(int fd, short event, st_poll_callback_f callback, void * data, st_poll_free_f release);
 void st_poll_unregister(int fd);
 

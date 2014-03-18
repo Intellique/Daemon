@@ -147,13 +147,16 @@ void lgr_log_write2_v1(enum st_log_level level, enum st_log_type type, const cha
 
 	free(str_message);
 
+	static bool writing_message = false;
 	unsigned int nb_unsent_messages = st_value_list_get_length(lgr_messages);
 	unsigned int nb_modules = st_value_list_get_length(lgr_modules);
 
-	if (nb_modules == 0) {
+	if (nb_modules == 0 || writing_message) {
 		st_value_list_push(lgr_messages, message, true);
 		return;
 	}
+
+	writing_message = true;
 
 	if (nb_unsent_messages > 0) {
 		struct st_value_iterator * iter = st_value_list_get_iterator(lgr_messages);
@@ -167,5 +170,7 @@ void lgr_log_write2_v1(enum st_log_level level, enum st_log_type type, const cha
 
 	lgr_log_write_v1(message);
 	st_value_free(message);
+
+	writing_message = false;
 }
 

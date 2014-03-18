@@ -23,6 +23,7 @@ LIBSTONE_1.0 {
 		st_log_write;
 
 		st_poll;
+		st_poll_nb_handlers;
 		st_poll_register;
 		st_poll_unregister;
 

@@ -122,13 +122,12 @@ static void file_module_check_logrotate(struct logger_log_file_private * self) {
 	} while (failed);
 
 	if (self->current.st_ino != reference.st_ino) {
-		// st_log_write_all(st_log_level_info, st_log_type_plugin_log, "Log: file: logrotate detected");
-		// lgr_log_write
-
 		close(self->fd);
 
 		self->fd = open(self->path, O_WRONLY | O_APPEND | O_CREAT, 0640);
 		fstat(self->fd, &self->current);
+
+		lgr_log_write2(st_log_level_notice, st_log_type_plugin_log, "Log: file: logrotate detected");
 	}
 }
 

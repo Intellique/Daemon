@@ -84,6 +84,11 @@ int st_poll_v1(int timeout) {
 	return nb_event;
 }
 
+__asm__(".symver st_poll_nb_handlers_v1, st_poll_nb_handlers@@LIBSTONE_1.0");
+unsigned int st_poll_nb_handlers_v1() {
+	return st_nb_polls;
+}
+
 __asm__(".symver st_poll_register_v1, st_poll_register@@LIBSTONE_1.0");
 bool st_poll_register_v1(int fd, short event, st_poll_callback_f callback, void * data, st_poll_free_f release) {
 	void * addr = realloc(st_polls, (st_nb_polls + 1) * sizeof(struct pollfd));

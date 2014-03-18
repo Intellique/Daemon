@@ -44,12 +44,16 @@ void lgr_listen_configure(struct st_value * config) {
 }
 
 static void lgr_socket_accept(int fd_server __attribute__((unused)), int fd_client, struct st_value * client __attribute__((unused))) {
+	lgr_log_write2(st_log_level_debug, st_log_type_logger, "New connection...");
+
 	st_poll_register(fd_client, POLLIN | POLLHUP, lgr_socket_message, NULL, NULL);
 }
 
 static void lgr_socket_message(int fd, short event, void * data __attribute__((unused))) {
-	if (event == POLLHUP)
+	if (event & POLLHUP) {
+		lgr_log_write2(st_log_level_debug, st_log_type_logger, "Connection closed");
 		return;
+	}
 
 	struct st_value * message = st_json_parse_fd(fd, -1);
 	lgr_log_write(message);
