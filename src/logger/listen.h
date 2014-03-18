@@ -30,6 +30,7 @@
 struct st_value;
 
 void lgr_listen_configure(struct st_value * config);
+unsigned int lgr_listen_nb_clients(void);
 
 #endif
 

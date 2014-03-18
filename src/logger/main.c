@@ -69,11 +69,11 @@ int main() {
 	struct st_value * socket = st_value_hashtable_get2(config, "socket", false);
 	lgr_listen_configure(socket);
 
-	unsigned int nb_handlers = st_poll_nb_handlers();
-	while (!stop || nb_handlers > 0) {
+	unsigned int nb_handlers = lgr_listen_nb_clients();
+	while (!stop || nb_handlers > 1) {
 		st_poll(-1);
 
-		nb_handlers = st_poll_nb_handlers();
+		nb_handlers = lgr_listen_nb_clients();
 	}
 
 	st_value_free(config);

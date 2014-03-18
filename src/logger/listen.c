@@ -36,6 +36,8 @@
 
 #include "listen.h"
 
+static unsigned int lgr_nb_clients = 0;
+
 static void lgr_socket_accept(int fd_server, int fd_client, struct st_value * client);
 static void lgr_socket_message(int fd, short event, void * data);
 
@@ -44,13 +46,15 @@ void lgr_listen_configure(struct st_value * config) {
 }
 
 static void lgr_socket_accept(int fd_server __attribute__((unused)), int fd_client, struct st_value * client __attribute__((unused))) {
-	lgr_log_write2(st_log_level_debug, st_log_type_logger, "New connection...");
-
 	st_poll_register(fd_client, POLLIN | POLLHUP, lgr_socket_message, NULL, NULL);
+	lgr_nb_clients++;
+
+	lgr_log_write2(st_log_level_debug, st_log_type_logger, "New connection...");
 }
 
 static void lgr_socket_message(int fd, short event, void * data __attribute__((unused))) {
 	if (event & POLLHUP) {
+		lgr_nb_clients--;
 		lgr_log_write2(st_log_level_debug, st_log_type_logger, "Connection closed");
 		return;
 	}
@@ -62,5 +66,9 @@ static void lgr_socket_message(int fd, short event, void * data __attribute__((u
 	struct st_value * response = st_value_new_boolean(true);
 	st_json_encode_to_fd(response, fd);
 	st_value_free(response);
+}
+
+unsigned int lgr_listen_nb_clients() {
+	return lgr_nb_clients;
 }
 
