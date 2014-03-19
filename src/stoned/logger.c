@@ -48,6 +48,9 @@ static void std_logger_exited(int fd, short event, void * data);
 
 
 static void std_logger_exit() {
+	if (logger_in < 0)
+		return;
+
 	close(logger_in);
 	st_process_free(&logger, 1);
 
