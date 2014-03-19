@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 06 Feb 2014 18:55:15 +0100                            *
+*  Last modified: Wed, 19 Mar 2014 17:23:04 +0100                            *
 \****************************************************************************/
 
 // errno
@@ -230,6 +230,7 @@ static int st_scsi_tape_drive_eject(struct st_drive * drive) {
 	struct st_scsi_tape_drive_private * self = drive->data;
 
 	st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: rewind tape and put the drive offline", drive->vendor, drive->model, drive - drive->changer->drives);
+	drive->status = st_drive_unloading;
 
 	static struct mtop eject = { MTOFFL, 1 };
 	st_scsi_tape_drive_operation_start(self);
@@ -239,6 +240,7 @@ static int st_scsi_tape_drive_eject(struct st_drive * drive) {
 	if (!failed)
 		drive->slot->media->operation_count++;
 
+	drive->status = failed ? st_drive_error : st_drive_empty_idle;
 	st_log_write_all(failed ? st_log_level_error : st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: rewind tape and put the drive offline, finish with code = %d", drive->vendor, drive->model, drive - drive->changer->drives, failed);
 
 	st_scsi_tape_drive_update_media_info(drive);
@@ -259,12 +261,15 @@ static int st_scsi_tape_drive_format(struct st_drive * drive, int file_position,
 		fd = open(drive->scsi_device, O_RDWR);
 
 	if (!failed && fd > -1) {
+		drive->status = st_drive_erasing;
 		st_scsi_tape_drive_operation_start(self);
 		failed = st_scsi_tape_format(fd, quick_mode);
 		st_scsi_tape_drive_operation_stop(drive);
 
 		if (!failed)
 			drive->slot->media->operation_count++;
+
+		drive->status = st_drive_loaded_idle;
 
 		close(fd);
 	}
@@ -386,6 +391,7 @@ static struct st_stream_reader * st_scsi_tape_drive_get_raw_reader(struct st_dri
 		return NULL;
 	}
 
+	drive->status = st_drive_reading;
 	drive->slot->media->read_count++;
 	st_log_write_all(st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: drive is open for reading", drive->vendor, drive->model, drive - drive->changer->drives);
 
@@ -405,6 +411,7 @@ static struct st_stream_writer * st_scsi_tape_drive_get_raw_writer(struct st_dri
 		return NULL;
 	}
 
+	drive->status = st_drive_writing;
 	drive->slot->media->write_count++;
 	st_log_write_all(st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: drive is open for writing", drive->vendor, drive->model, drive - drive->changer->drives);
 
@@ -513,6 +520,8 @@ static int st_scsi_tape_drive_set_file_position(struct st_drive * drive, int fil
 	int failed;
 	if (file_position < 0) {
 		st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Fast forwarding to end of media", drive->vendor, drive->model, drive - drive->changer->drives);
+		drive->status = st_drive_positioning;
+
 		static struct mtop eod = { MTEOM, 1 };
 		st_scsi_tape_drive_operation_start(self);
 		failed = ioctl(self->fd_nst, MTIOCTOP, &eod);
@@ -521,19 +530,26 @@ static int st_scsi_tape_drive_set_file_position(struct st_drive * drive, int fil
 			st_log_write_all(st_log_level_error, st_log_type_drive, "[%s | %s | #%td]: Fast forwarding to end of media finished with error (%m)", drive->vendor, drive->model, drive - drive->changer->drives);
 		else
 			st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Fast forwarding to end of media finished with status = OK", drive->vendor, drive->model, drive - drive->changer->drives);
+
+		drive->status = failed ? st_drive_error : st_drive_positioning;
 	} else {
 		st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Positioning media to position #%d", drive->vendor, drive->model, drive - drive->changer->drives, file_position);
+		drive->status = st_drive_rewinding;
+
 		static struct mtop rewind = { MTREW, 1 };
 		st_scsi_tape_drive_operation_start(self);
 		failed = ioctl(self->fd_nst, MTIOCTOP, &rewind);
 		st_scsi_tape_drive_operation_stop(drive);
 
 		if (failed) {
+			drive->status = st_drive_error;
 			st_log_write_all(st_log_level_error, st_log_type_drive, "[%s | %s | #%td]: Positioning media to position #%d finished with error (%m)", drive->vendor, drive->model, drive - drive->changer->drives, file_position);
 			return failed;
 		}
 
 		if (file_position > 0) {
+			drive->status = st_drive_positioning;
+
 			struct mtop fsr = { MTFSF, file_position };
 			st_scsi_tape_drive_operation_start(self);
 			failed = ioctl(self->fd_nst, MTIOCTOP, &fsr);
@@ -543,6 +559,8 @@ static int st_scsi_tape_drive_set_file_position(struct st_drive * drive, int fil
 				st_log_write_all(st_log_level_error, st_log_type_drive, "[%s | %s | #%td]: Positioning media to position #%d finished with error (%m)", drive->vendor, drive->model, drive - drive->changer->drives, file_position);
 			else
 				st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Positioning media to position #%d finished with status = OK", drive->vendor, drive->model, drive - drive->changer->drives, file_position);
+
+			drive->status = failed ? st_drive_error : st_drive_positioning;
 		} else
 			st_log_write_all(st_log_level_info, st_log_type_drive, "[%s | %s | #%td]: Positioning media to position #%d finished with status = OK", drive->vendor, drive->model, drive - drive->changer->drives, file_position);
 	}
@@ -677,6 +695,7 @@ static int st_scsi_tape_drive_io_reader_close(struct st_stream_reader * sr) {
 		self->buffer_pos = self->buffer + self->block_size;
 		self->last_errno = 0;
 
+		self->drive->status = st_drive_loaded_idle;
 		self->media->last_read = time(NULL);
 
 		self->drive_private->used_by_io = false;
@@ -999,6 +1018,8 @@ static int st_scsi_tape_drive_io_writer_close(struct st_stream_writer * sw) {
 			self->media->nb_write_errors++;
 			return -1;
 		}
+
+		self->drive->status = st_drive_loaded_idle;
 
 		st_scsi_tape_drive_update_media_info(self->drive);
 		self->drive->slot->media->nb_volumes = self->drive_private->status.mt_fileno;

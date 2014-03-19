@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 22 Oct 2013 14:11:46 +0200                            *
+*  Last modified: Wed, 19 Mar 2014 17:11:33 +0100                            *
 \****************************************************************************/
 
 // open
@@ -180,6 +180,8 @@ static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * fr
 	self->lock->ops->lock(self->lock);
 	st_scsi_loader_ready(self->fd);
 
+	ch->status = st_changer_loading;
+
 	int failed = st_scsi_loader_move(self->fd, self->transport_address, from, to->slot);
 
 	if (failed) {
@@ -210,11 +212,15 @@ static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * fr
 		sto->src_address = sfrom->address;
 		sto->src_slot = from;
 
+		ch->status = st_changer_idle;
+
 		st_log_write_all(st_log_level_debug, st_log_type_changer, "[%s | %s]: loading media '%s' from slot #%td to drive #%td finished with code = OK", ch->vendor, ch->model, to->slot->volume_name, from - ch->slots, to - ch->drives);
 
 		to->ops->update_media_info(to);
-	} else
+	} else {
+		ch->status = st_changer_error;
 		st_log_write_all(st_log_level_error, st_log_type_changer, "[%s | %s]: loading media '%s' from slot #%td to drive #%td finished with code = %d", ch->vendor, ch->model, to->slot->volume_name, from - ch->slots, to - ch->drives, failed);
+	}
 
 	self->lock->ops->unlock(self->lock);
 
@@ -463,6 +469,7 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 	}
 
 	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: unloading media '%s' from drive #%td to slot #%td", ch->vendor, ch->model, from->slot->volume_name, from - ch->drives, to - ch->slots);
+	ch->status = st_changer_unloading;
 
 	int failed = st_scsi_loader_move(self->fd, self->transport_address, from->slot, to);
 
@@ -490,6 +497,7 @@ static int st_scsi_changer_unload(struct st_changer * ch, struct st_drive * from
 		 */
 		if (loaded_media != NULL)
 			loaded_media->location = st_media_location_online;
+		ch->status = st_changer_idle;
 	}
 
 	to->lock->ops->unlock(to->lock);
