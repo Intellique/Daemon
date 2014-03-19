@@ -24,30 +24,44 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// close
+// close, unlink
 #include <unistd.h>
 
 #include <libstone/json.h>
+#include <libstone/log.h>
+#include <libstone/poll.h>
 #include <libstone/process.h>
 #include <libstone/value.h>
 
 #include "config.h"
 #include "logger.h"
 
+#define SOCKET_PATH "run/logger.socket"
+
+
 static struct st_process logger;
 static int logger_in = -1;
-static int logger_out = -1;
 static struct st_value * logger_config = NULL;
 
 static void std_logger_exit(void) __attribute__((destructor));
+static void std_logger_exited(int fd, short event, void * data);
 
 
 static void std_logger_exit() {
 	close(logger_in);
-	close(logger_out);
 	st_process_free(&logger, 1);
 
 	st_value_free(logger_config);
+}
+
+static void std_logger_exited(int fd __attribute__((unused)), short event __attribute__((unused)), void * data __attribute__((unused))) {
+	logger_in = -1;
+	st_process_free(&logger, 1);
+	unlink(SOCKET_PATH);
+
+	st_log_write(st_log_level_critical, st_log_type_daemon, "Restart logger");
+
+	std_logger_start(NULL);
 }
 
 struct st_value * std_logger_get_config() {
@@ -60,13 +74,15 @@ struct st_value * std_logger_get_config() {
 void std_logger_start(struct st_value * config) {
 	st_process_new(&logger, "logger", NULL, 0);
 	logger_in = st_process_pipe_to(&logger);
-	logger_out = st_process_pipe_from(&logger, st_process_stdout);
+	st_process_close(&logger, st_process_stdout);
 	st_process_close(&logger, st_process_stderr);
 	st_process_set_nice(&logger, 4);
 	st_process_start(&logger, 1);
 
+	st_poll_register(logger_in, POLLHUP, std_logger_exited, NULL, NULL);
+
 	if (logger_config == NULL)
-		logger_config = st_value_pack("{sos{ssss}}", "module", st_value_hashtable_get2(config, "log", true), "socket", "type", "unix", "path", "run/logger.socket");
+		logger_config = st_value_pack("{sos{ssss}}", "module", st_value_hashtable_get2(config, "log", true), "socket", "type", "unix", "path", SOCKET_PATH);
 
 	st_json_encode_to_fd(logger_config, logger_in);
 }

@@ -314,7 +314,7 @@ void st_process_start_v1(struct st_process * process, unsigned int nb_process) {
 	}
 }
 
-__asm__(".symver st_process_start_v1, st_process_start@@LIBSTONE_1.0");
+__asm__(".symver st_process_wait_v1, st_process_wait@@LIBSTONE_1.0");
 void st_process_wait_v1(struct st_process * process, unsigned int nb_process) {
 	if (!process || nb_process < 1)
 		return;

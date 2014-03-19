@@ -431,7 +431,7 @@ char * st_json_encode_to_string_v1(struct st_value * value) {
 	char * buffer = malloc(length + 1);
 	buffer[length] = '\0';
 
-	st_json_encode_to_string_inner(value, buffer, length);
+	st_json_encode_to_string_inner(value, buffer, length + 1);
 
 	return buffer;
 }

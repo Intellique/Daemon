@@ -33,8 +33,12 @@
 #include <stdio.h>
 // free
 #include <stdlib.h>
-// strcasecmp
+// strcasecmp, strlen
 #include <string.h>
+// recv, send
+#include <sys/socket.h>
+// recv, send
+#include <sys/types.h>
 // time
 #include <time.h>
 // close, read, sleep, write
@@ -165,34 +169,44 @@ static void st_log_send_message(void * arg) {
 			continue;
 		}
 
+		pthread_mutex_unlock(&st_log_lock);
+
 		while (socket < 0) {
 			socket = st_socket_v1(config);
 			if (socket < 0)
-				sleep(5);
+				sleep(1);
 		}
-
-		pthread_mutex_unlock(&st_log_lock);
 
 		struct st_value_iterator * iter = st_value_list_get_iterator_v1(messages);
 		while (st_value_iterator_has_next_v1(iter)) {
 			struct st_value * message = st_value_iterator_get_value_v1(iter, false);
-			st_json_encode_to_fd_v1(message, socket);
+			char * str_message = st_json_encode_to_string_v1(message);
+			size_t str_message_length = strlen(str_message);
 
-			struct st_value * returned = st_json_parse_fd_v1(socket, 5000);
-			if (returned == NULL) {
-				pthread_mutex_unlock(&st_log_lock);
+			ssize_t nb_send;
+			do {
+				nb_send = send(socket, str_message, str_message_length, MSG_NOSIGNAL);
+				if (nb_send < 0) {
+					close(socket);
+					socket = -1;
 
-				close(socket);
+					sleep(1);
 
-				while (socket < 0) {
-					socket = st_socket_v1(config);
-					if (socket < 0)
-						sleep(5);
+					while (socket < 0) {
+						socket = st_socket_v1(config);
+						if (socket < 0)
+							sleep(1);
+					}
 				}
+			} while (nb_send < 0);
+			free(str_message);
 
-				pthread_mutex_lock(&st_log_lock);
-			} else
-				st_value_free_v1(returned);
+			char buffer[32];
+			ssize_t nb_recv = recv(socket, buffer, 32, 0);
+			if (nb_recv == 0) {
+				close(socket);
+				socket = -1;
+			}
 		}
 		st_value_iterator_free_v1(iter);
 		st_value_list_clear_v1(messages);
