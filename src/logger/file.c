@@ -181,6 +181,6 @@ static void file_module_write(struct lgr_log_module * module, struct st_value * 
 	localtime_r(&timestamp, &curTime2);
 	strftime(strtime, 32, "%F %T", &curTime2);
 
-	dprintf(self->fd, "[L:%-7s | T:%-15s | @%s]: %s\n", level->value.string, vtype->value.string, strtime, vmessage->value.string);
+	dprintf(self->fd, "[L:%-9s | T:%-15s | @%s]: %s\n", level->value.string, vtype->value.string, strtime, vmessage->value.string);
 }
 

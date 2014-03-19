@@ -36,7 +36,7 @@
 #include "config.h"
 #include "logger.h"
 
-#define SOCKET_PATH "run/logger.socket"
+#define SOCKET_PATH DAEMON_SOCKET_DIR "/logger.socket"
 
 
 static struct st_process logger;
@@ -57,7 +57,6 @@ static void std_logger_exit() {
 static void std_logger_exited(int fd __attribute__((unused)), short event __attribute__((unused)), void * data __attribute__((unused))) {
 	logger_in = -1;
 	st_process_free(&logger, 1);
-	unlink(SOCKET_PATH);
 
 	st_log_write(st_log_level_critical, st_log_type_daemon, "Restart logger");
 
@@ -72,6 +71,8 @@ struct st_value * std_logger_get_config() {
 }
 
 void std_logger_start(struct st_value * config) {
+	unlink(SOCKET_PATH);
+
 	st_process_new(&logger, "logger", NULL, 0);
 	logger_in = st_process_pipe_to(&logger);
 	st_process_close(&logger, st_process_stdout);

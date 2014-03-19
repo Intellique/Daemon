@@ -30,8 +30,11 @@
 #include <stdbool.h>
 // printf
 #include <stdio.h>
+// getpid, getsid
+#include <unistd.h>
 
 #include <libstone/log.h>
+#include <libstone/poll.h>
 #include <libstone/value.h>
 
 #include "conf.h"
@@ -45,6 +48,10 @@
 static void st_show_help(void);
 
 int main(int argc, char ** argv) {
+	st_log_write(st_log_level_notice, st_log_type_daemon, "stone, version: " STONE_VERSION ", build: " __DATE__ " " __TIME__);
+	st_log_write(st_log_level_notice, st_log_type_daemon, "stone (pid: %d, sid: %d)", getpid(), getsid(0));
+	st_log_write(st_log_level_debug, st_log_type_daemon, "Checksum: " STONED_SRCSUM ", last commit: " STONE_GIT_COMMIT);
+
 	enum {
 		OPT_CONFIG   = 'c',
 		OPT_DETACH   = 'd',
@@ -110,6 +117,8 @@ int main(int argc, char ** argv) {
 				return 1;
 		}
 	} while (opt > -1);
+
+	st_log_write(st_log_level_debug, st_log_type_daemon, "Parsing option: ok");
 
 	struct st_value * config = std_conf_read_config(config_file);
 

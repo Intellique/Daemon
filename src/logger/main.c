@@ -26,7 +26,7 @@
 
 // bool
 #include <stdbool.h>
-// getpid
+// getpid, getppid, getsid
 #include <unistd.h>
 
 #include <libstone/json.h>
@@ -36,6 +36,9 @@
 #include <libstone-logger/log.h>
 
 #include "listen.h"
+
+#include "checksum/logger.chcksum"
+#include "stone.version"
 
 static bool stop = false;
 
@@ -52,7 +55,8 @@ static void daemon_request(int fd __attribute__((unused)), short event, void * d
 }
 
 int main() {
-	lgr_log_write2(st_log_level_notice, st_log_type_logger, "Starting logger process (pid: %d)", getpid());
+	lgr_log_write2(st_log_level_notice, st_log_type_logger, "Starting logger process (pid: %d, ppid: %d, sid: %d)", getpid(), getppid(), getsid(0));
+	st_log_write(st_log_level_debug, st_log_type_daemon, "Checksum: " LOGGER_SRCSUM ", last commit: " STONE_GIT_COMMIT);
 
 	struct st_value * config = st_json_parse_fd(0, 5000);
 	if (config == NULL || !st_value_hashtable_has_key2(config, "module")) {
