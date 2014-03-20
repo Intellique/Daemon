@@ -37,7 +37,7 @@
 static struct st_value * st_value_new_v1(enum st_value_type type);
 static struct st_value * st_value_pack_inner(const char ** format, va_list params);
 
-static void st_value_hashtable_put2_v1(struct st_value * hash, unsigned int index, struct st_value_hashtable_node * new_node);
+static void st_value_hashtable_put_inner_v1(struct st_value * hash, unsigned int index, struct st_value_hashtable_node * new_node);
 static void st_value_hashtable_rehash_v1(struct st_value * hash);
 static void st_value_hashtable_release_node_v1(struct st_value_hashtable_node * node);
 
@@ -851,11 +851,17 @@ void st_value_hashtable_put_v1(struct st_value * hash, struct st_value * key, bo
 	node->value = value;
 	node->next = NULL;
 
-	st_value_hashtable_put2_v1(hash, index, node);
+	st_value_hashtable_put_inner_v1(hash, index, node);
 	hashtable->nb_elements++;
 }
 
-static void st_value_hashtable_put2_v1(struct st_value * hash, unsigned int index, struct st_value_hashtable_node * new_node) {
+__asm__(".symver st_value_hashtable_put2_v1, st_value_hashtable_put2@@LIBSTONE_1.0");
+void st_value_hashtable_put2_v1(struct st_value * hash, const char * key, struct st_value * value, bool new_value) {
+	struct st_value * k = st_value_new_string_v1(key);
+	st_value_hashtable_put_v1(hash, k, true, value, new_value);
+}
+
+static void st_value_hashtable_put_inner_v1(struct st_value * hash, unsigned int index, struct st_value_hashtable_node * new_node) {
 	struct st_value_hashtable * hashtable = &hash->value.hashtable;
 	struct st_value_hashtable_node * node = hashtable->nodes[index];
 
@@ -910,7 +916,7 @@ static void st_value_hashtable_rehash_v1(struct st_value * hash) {
 			current_node->next = NULL;
 
 			unsigned long long h = current_node->hash % hashtable->size_node;
-			st_value_hashtable_put2_v1(hash, h, current_node);
+			st_value_hashtable_put_inner_v1(hash, h, current_node);
 		}
 	}
 }

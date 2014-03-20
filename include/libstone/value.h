@@ -330,6 +330,7 @@ struct st_value * st_value_hashtable_keys(struct st_value * hash) __attribute__(
  * \note if \a new_key is equal to \b false then function will get a shared value of \a key. item for \a new_value
  */
 void st_value_hashtable_put(struct st_value * hash, struct st_value * key, bool new_key, struct st_value * value, bool new_value) __attribute__((nonnull));
+void st_value_hashtable_put2(struct st_value * hash, const char * key, struct st_value * value, bool new_value) __attribute__((nonnull));
 /**
  * \brief Remove value from hashtable
  *

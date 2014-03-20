@@ -70,6 +70,7 @@ LIBSTONE_1.0 {
 		st_value_hashtable_has_key;
 		st_value_hashtable_keys;
 		st_value_hashtable_put;
+		st_value_hashtable_put2;
 		st_value_hashtable_remove;
 		st_value_hashtable_values;
 		st_value_iterator_free;

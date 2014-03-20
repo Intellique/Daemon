@@ -55,6 +55,7 @@ bool st_value_hashtable_has_key_v1(struct st_value * hash, struct st_value * key
 bool st_value_hashtable_has_key2_v1(struct st_value * hash, const char * key) __attribute__((nonnull));
 struct st_value * st_value_hashtable_keys_v1(struct st_value * hash) __attribute__((nonnull));
 void st_value_hashtable_put_v1(struct st_value * hash, struct st_value * key, bool new_key, struct st_value * value, bool new_value) __attribute__((nonnull));
+void st_value_hashtable_put2_v1(struct st_value * hash, const char * key, struct st_value * value, bool new_value) __attribute__((nonnull));
 void st_value_hashtable_remove_v1(struct st_value * hash, struct st_value * key) __attribute__((nonnull));
 struct st_value * st_value_hashtable_values_v1(struct st_value * hash) __attribute__((nonnull));
 
