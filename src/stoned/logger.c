@@ -86,7 +86,7 @@ void std_logger_start(struct st_value * config) {
 	st_poll_register(logger_in, POLLHUP, std_logger_exited, NULL, NULL);
 
 	if (logger_config == NULL)
-		logger_config = st_value_pack("{sos{ssss}}", "module", st_value_hashtable_get2(config, "log", true), "socket", "type", "unix", "path", SOCKET_PATH);
+		logger_config = st_value_pack("{sos{ssss}}", "module", st_value_hashtable_get2(config, "log", true), "socket", "domain", "unix", "path", SOCKET_PATH);
 
 	st_json_encode_to_fd(logger_config, logger_in);
 }
