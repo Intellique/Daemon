@@ -33,7 +33,7 @@
 #include <stdio.h>
 // free, getenv, setenv, unsetenv
 #include <stdlib.h>
-// strchr, strcpy, strdup
+// strchr, strcpy, strdup, strrchr
 #include <string.h>
 // waitpid
 #include <sys/types.h>
@@ -127,7 +127,13 @@ void st_process_new_v1(struct st_process * process, const char * process_name, c
 	process->environment = NULL;
 	process->nice = 0;
 
-	process->params[0] = strdup(process_name);
+	char * ptr_cmd = strrchr(process->command, '/');
+	if (ptr_cmd == NULL)
+		ptr_cmd = process->command;
+	else
+		ptr_cmd++;
+
+	process->params[0] = strdup(ptr_cmd);
 	unsigned int i;
 	for (i = 0; i < nb_params; i++)
 		process->params[i + 1] = strdup(params[i]);
