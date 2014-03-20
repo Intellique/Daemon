@@ -128,5 +128,7 @@ static void st_socket_unix_server_callback(int fd, short event __attribute__((un
 	struct st_value * client_info = st_value_pack_v1("{ssss}", "type", "unix", "path", new_addr.sun_path);
 
 	self->callback(fd, new_fd, client_info);
+
+	st_value_free_v1(client_info);
 }
 
