@@ -39,6 +39,7 @@ struct st_value * st_value_new_boolean_v1(bool value) __attribute__((warn_unused
 struct st_value * st_value_new_custom_v1(void * value, st_value_free_f release) __attribute__((warn_unused_result));
 struct st_value * st_value_new_float_v1(double value) __attribute__((warn_unused_result));
 struct st_value * st_value_new_hashtable_v1(st_value_hashtable_compupte_hash_f compute_hash) __attribute__((nonnull,warn_unused_result));
+struct st_value * st_value_new_hashtable2_v1(void) __attribute__((warn_unused_result));
 struct st_value * st_value_new_integer_v1(long long int value) __attribute__((warn_unused_result));
 struct st_value * st_value_new_linked_list_v1(void) __attribute__((warn_unused_result));
 struct st_value * st_value_new_null_v1(void) __attribute__((warn_unused_result));

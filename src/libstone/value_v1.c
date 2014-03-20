@@ -573,6 +573,11 @@ struct st_value * st_value_new_hashtable_v1(st_value_hashtable_compupte_hash_f c
 	return val;
 }
 
+__asm__(".symver st_value_new_hashtable2_v1, st_value_new_hashtable2@@LIBSTONE_1.0");
+struct st_value * st_value_new_hashtable2_v1() {
+	return st_value_new_hashtable_v1(st_string_compute_hash_v1);
+}
+
 __asm__(".symver st_value_new_integer_v1, st_value_new_integer@@LIBSTONE_1.0");
 struct st_value * st_value_new_integer_v1(long long int value) {
 	struct st_value * val = st_value_new_v1(st_value_integer);

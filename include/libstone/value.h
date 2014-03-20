@@ -244,6 +244,7 @@ struct st_value * st_value_new_float(double value) __attribute__((warn_unused_re
  * \returns new hashtable value
  */
 struct st_value * st_value_new_hashtable(st_value_hashtable_compupte_hash_f compute_hash) __attribute__((nonnull,warn_unused_result));
+struct st_value * st_value_new_hashtable2(void) __attribute__((warn_unused_result));
 /**
  * \brief Create new integer value
  *

@@ -88,6 +88,7 @@ LIBSTONE_1.0 {
 		st_value_new_custom;
 		st_value_new_float;
 		st_value_new_hashtable;
+		st_value_new_hashtable2;
 		st_value_new_integer;
 		st_value_new_linked_list;
 		st_value_new_null;
