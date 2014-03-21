@@ -24,18 +24,24 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// NULL
+#include <stddef.h>
+
 #include <libstone/socket.h>
 #include <libstone/value.h>
 
 #include "admin.h"
 
+static struct st_value * std_admin_conf = NULL;
+
 static void std_admin_new_connection(int fd_server, int fd_client, struct st_value * client);
 
 
 void std_admin_config(struct st_value * config) {
-	config = st_value_pack("{sssssssi}", "domain", "inet", "type", "inet", "address", "localhost", "port", 4822L );
+	std_admin_conf = st_value_share(config);
 
-	st_socket_server(config, std_admin_new_connection);
+	struct st_value * socket = st_value_hashtable_get2(config, "socket", false);
+	st_socket_server(socket, std_admin_new_connection);
 }
 
 static void std_admin_new_connection(int fd_server, int fd_client, struct st_value * client) {

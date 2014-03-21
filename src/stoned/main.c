@@ -33,11 +33,12 @@
 // getpid, getsid
 #include <unistd.h>
 
+#include <libstone/json.h>
 #include <libstone/log.h>
 #include <libstone/poll.h>
 #include <libstone/value.h>
 
-#include "conf.h"
+#include "admin.h"
 #include "env.h"
 #include "logger.h"
 
@@ -120,16 +121,25 @@ int main(int argc, char ** argv) {
 
 	st_log_write(st_log_level_debug, st_log_type_daemon, "Parsing option: ok");
 
-	struct st_value * config = std_conf_read_config(config_file);
-
-	if (!std_env_setup())
+	struct st_value * config = st_json_parse_file(config_file);
+	if (config == NULL)
 		return 1;
 
-	std_logger_start(config);
+	if (!std_env_setup())
+		return 2;
 
-	struct st_value * log_config = std_logger_get_config();
-	st_log_configure(log_config);
-	st_value_free(log_config);
+	struct st_value * logger_config = st_value_hashtable_get2(config, "logger", false);
+	if (logger_config == NULL || logger_config->type != st_value_hashtable)
+		return 1;
+	std_logger_start(logger_config);
+
+	struct st_value * log_file = st_value_hashtable_get2(logger_config, "socket", false);
+	if (log_file == NULL || log_file->type != st_value_hashtable)
+		return 1;
+	st_log_configure(log_file);
+
+	struct st_value * admin_config = st_value_hashtable_get2(config, "admin", false);
+	std_admin_config(admin_config);
 
 	return 0;
 }

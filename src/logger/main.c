@@ -59,14 +59,14 @@ int main() {
 	st_log_write(st_log_level_debug, st_log_type_daemon, "Checksum: " LOGGER_SRCSUM ", last commit: " STONE_GIT_COMMIT);
 
 	struct st_value * config = st_json_parse_fd(0, 5000);
-	if (config == NULL || !st_value_hashtable_has_key2(config, "module")) {
+	if (config == NULL || !st_value_hashtable_has_key2(config, "modules")) {
 		lgr_log_write2(st_log_level_emergencey, st_log_type_logger, "No configuration received from daemon, will quit");
 		return 1;
 	}
 
 	st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
 
-	struct st_value * module = st_value_hashtable_get2(config, "module", false);
+	struct st_value * module = st_value_hashtable_get2(config, "modules", false);
 	lgr_log_load(module);
 	lgr_log_write2(st_log_level_debug, st_log_type_logger, "Modules loaded");
 

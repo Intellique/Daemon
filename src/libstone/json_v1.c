@@ -149,6 +149,7 @@ static size_t st_json_compute_length(struct st_value * val) {
 						case '\r':
 						case '\t':
 							nb_write += 2;
+							str++;
 							break;
 					}
 				}
@@ -516,7 +517,7 @@ static struct st_value * st_json_parse_string_inner(const char ** json) {
 	struct st_value * ret_val = NULL;
 	switch (**json) {
 		case '{':
-			ret_val = st_value_new_hashtable_v1(st_string_compute_hash_v1);
+			ret_val = st_value_new_hashtable2_v1();
 			(*json)++;
 
 			st_json_parse_string_strip(json);

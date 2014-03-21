@@ -24,7 +24,11 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// close, unlink
+// free
+#include <stdlib.h>
+// strlen
+#include <string.h>
+// access, close, unlink, write
 #include <unistd.h>
 
 #include <libstone/json.h>
@@ -33,10 +37,7 @@
 #include <libstone/process.h>
 #include <libstone/value.h>
 
-#include "config.h"
 #include "logger.h"
-
-#define SOCKET_PATH DAEMON_SOCKET_DIR "/logger.socket"
 
 
 static struct st_process logger;
@@ -52,12 +53,18 @@ static void std_logger_exit() {
 		return;
 
 	close(logger_in);
+	logger_in = -1;
 	st_process_free(&logger, 1);
 
 	st_value_free(logger_config);
 }
 
-static void std_logger_exited(int fd __attribute__((unused)), short event __attribute__((unused)), void * data __attribute__((unused))) {
+static void std_logger_exited(int fd __attribute__((unused)), short event, void * data __attribute__((unused))) {
+	if (event & POLLERR) {
+		st_poll_unregister(logger_in);
+		close(logger_in);
+	}
+
 	logger_in = -1;
 	st_process_free(&logger, 1);
 
@@ -66,15 +73,19 @@ static void std_logger_exited(int fd __attribute__((unused)), short event __attr
 	std_logger_start(NULL);
 }
 
-struct st_value * std_logger_get_config() {
+bool std_logger_start(struct st_value * config) {
 	if (logger_config == NULL)
-		return NULL;
+		logger_config = st_value_share(config);
 
-	return st_value_hashtable_get2(logger_config, "socket", true);
-}
+	struct st_value * socket = st_value_hashtable_get2(logger_config, "socket", false);
+	if (socket == NULL || socket->type != st_value_hashtable)
+		return false;
 
-void std_logger_start(struct st_value * config) {
-	unlink(SOCKET_PATH);
+	struct st_value * path = st_value_hashtable_get2(socket, "path", false);
+	if (path == NULL || path->type != st_value_string)
+		return false;
+	if (!access(path->value.string, F_OK))
+		unlink(path->value.string);
 
 	st_process_new(&logger, "logger", NULL, 0);
 	logger_in = st_process_pipe_to(&logger);
@@ -86,8 +97,12 @@ void std_logger_start(struct st_value * config) {
 	st_poll_register(logger_in, POLLHUP, std_logger_exited, NULL, NULL);
 
 	if (logger_config == NULL)
-		logger_config = st_value_pack("{sos{ssss}}", "module", st_value_hashtable_get2(config, "log", true), "socket", "domain", "unix", "path", SOCKET_PATH);
+		logger_config = st_value_share(config);
 
-	st_json_encode_to_fd(logger_config, logger_in);
+	char * str_config = st_json_encode_to_string(logger_config);
+	write(logger_in, str_config, strlen(str_config));
+	free(str_config);
+
+	return true;
 }
 
