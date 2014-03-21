@@ -30,7 +30,9 @@
 #include "../socket_v1.h"
 
 int st_socket_tcp_v1(struct st_value * config);
+int st_socket6_tcp_v1(struct st_value * config);
 bool st_socket_tcp_server_v1(struct st_value * config, st_socket_accept_f accept_callback);
+bool st_socket_tcp_server6_v1(struct st_value * config, st_socket_accept_f accept_callback);
 
 #endif
 

@@ -55,8 +55,11 @@ bool st_socket_server_v1(struct st_value * config, st_socket_accept_f accept_cal
 	if (vaf->type != st_value_string)
 		return false;
 
-	if (!strcmp(vaf->value.string, "inet") || !strcmp(vaf->value.string, "inet6"))
+	if (!strcmp(vaf->value.string, "inet"))
 		return st_socket_tcp_server_v1(config, accept_callback);
+
+	if (!strcmp(vaf->value.string, "inet6"))
+		return st_socket_tcp_server6_v1(config, accept_callback);
 
 	if (!strcmp(vaf->value.string, "unix"))
 		return st_socket_unix_server_v1(config, accept_callback);

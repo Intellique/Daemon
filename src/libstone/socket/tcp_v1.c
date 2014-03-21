@@ -55,7 +55,6 @@ static void st_socket_tcp_server_callback(int fd, short event, void * data);
 
 
 int st_socket_tcp_v1(struct st_value * config) {
-	int af = AF_INET;
 	int type = SOCK_STREAM;
 
 	struct st_value * vtype = st_value_hashtable_get2_v1(config, "type", false);
@@ -66,21 +65,13 @@ int st_socket_tcp_v1(struct st_value * config) {
 	if (vaddr->type != st_value_string)
 		return -1;
 
-	struct st_value * vinet_version = st_value_hashtable_get2_v1(config, "inet_version", false);
-	int version = 4;
-	if (vinet_version->type == st_value_string)
-		sscanf(vinet_version->value.string, "%d", &version);
-	else if (vinet_version->type == st_value_integer)
-		version = vinet_version->value.integer;
-
-	if (version != 6 || version != 4)
+	struct st_value * vport = st_value_hashtable_get2_v1(config, "port", false);
+	if (vport->type != st_value_integer)
 		return -1;
-	if (version == 6)
-		af = AF_INET6;
 
 	struct addrinfo * addr = NULL;
 	struct addrinfo hint = {
-		.ai_family    = af,
+		.ai_family    = AF_INET,
 		.ai_socktype  = type,
 		.ai_protocol  = 0,
 		.ai_addrlen   = 0,
@@ -97,19 +88,68 @@ int st_socket_tcp_v1(struct st_value * config) {
 	while (fd > -1 && ptr != NULL) {
 		struct sockaddr_in * addr_v4  = (struct sockaddr_in *) ptr->ai_addr;
 
-		af = addr_v4->sin_family == AF_INET ? AF_INET : AF_INET6;
-		fd = socket(af, type, 0);
+		fd = socket(AF_INET, type, 0);
 		if (fd < 0) {
 			ptr = ptr->ai_next;
 			continue;
 		}
 
-		if (addr_v4->sin_family == AF_INET) {
-			addr_v4->sin_port = htons(80);
-		} else {
-			struct sockaddr_in6 * addr_v6 = (struct sockaddr_in6 *) ptr->ai_addr;
-			addr_v6->sin6_port = htons(80);
+		addr_v4->sin_port = htons(vport->value.integer);
+
+		int failed = connect(fd, ptr->ai_addr, ptr->ai_addrlen);
+		if (failed != 0) {
+			close(fd);
+			fd = -1;
+			ptr = ptr->ai_next;
 		}
+	}
+
+	freeaddrinfo(addr);
+
+	return fd;
+}
+
+int st_socket6_tcp_v1(struct st_value * config) {
+	int type = SOCK_STREAM;
+
+	struct st_value * vtype = st_value_hashtable_get2_v1(config, "type", false);
+	if (vtype->type == st_value_string && !strcmp(vtype->value.string, "datagram"))
+		type = SOCK_DGRAM;
+
+	struct st_value * vaddr = st_value_hashtable_get2_v1(config, "address", false);
+	if (vaddr->type != st_value_string)
+		return -1;
+
+	struct st_value * vport = st_value_hashtable_get2_v1(config, "port", false);
+	if (vport->type != st_value_integer)
+		return -1;
+
+	struct addrinfo * addr = NULL;
+	struct addrinfo hint = {
+		.ai_family    = AF_INET6,
+		.ai_socktype  = type,
+		.ai_protocol  = 0,
+		.ai_addrlen   = 0,
+		.ai_addr      = NULL,
+		.ai_canonname = NULL,
+		.ai_next      = NULL,
+	};
+	int failed = getaddrinfo(vaddr->value.string, NULL, &hint, &addr);
+	if (failed != 0)
+		return -1;
+
+	int fd = -1;
+	struct addrinfo * ptr = addr;
+	while (fd > -1 && ptr != NULL) {
+		struct sockaddr_in6 * addr_v6  = (struct sockaddr_in6 *) ptr->ai_addr;
+
+		fd = socket(AF_INET6, type, 0);
+		if (fd < 0) {
+			ptr = ptr->ai_next;
+			continue;
+		}
+
+		addr_v6->sin6_port = htons(vport->value.integer);
 
 		int failed = connect(fd, ptr->ai_addr, ptr->ai_addrlen);
 		if (failed != 0) {
@@ -125,7 +165,6 @@ int st_socket_tcp_v1(struct st_value * config) {
 }
 
 bool st_socket_tcp_server_v1(struct st_value * config, st_socket_accept_f accept_callback) {
-	int af = AF_INET;
 	int type = SOCK_STREAM;
 
 	struct st_value * vtype = st_value_hashtable_get2_v1(config, "type", false);
@@ -133,71 +172,157 @@ bool st_socket_tcp_server_v1(struct st_value * config, st_socket_accept_f accept
 		type = SOCK_DGRAM;
 
 	struct st_value * vaddr = st_value_hashtable_get2_v1(config, "address", false);
-	if (vaddr->type != st_value_string)
+	struct st_value * vport = st_value_hashtable_get2_v1(config, "port", false);
+	if (vport->type != st_value_integer)
 		return -1;
 
-	struct st_value * vinet_version = st_value_hashtable_get2_v1(config, "inet_version", false);
-	int version = 4;
-	if (vinet_version->type == st_value_string)
-		sscanf(vinet_version->value.string, "%d", &version);
-	else if (vinet_version->type == st_value_integer)
-		version = vinet_version->value.integer;
+	int fd = -1, failed;
+	if (vaddr->type == st_value_string) {
+		struct addrinfo * addr = NULL;
+		struct addrinfo hint = {
+			.ai_family    = AF_INET,
+			.ai_socktype  = type,
+			.ai_protocol  = 0,
+			.ai_addrlen   = 0,
+			.ai_addr      = NULL,
+			.ai_canonname = NULL,
+			.ai_next      = NULL,
+		};
+		failed = getaddrinfo(vaddr->value.string, NULL, &hint, &addr);
+		if (failed != 0)
+			return -1;
 
-	if (version != 6 || version != 4)
-		return -1;
-	if (version == 6)
-		af = AF_INET6;
+		struct addrinfo * ptr = addr;
+		while (fd < 0 && ptr != NULL) {
+			fd = socket(AF_INET, type, 0);
+			if (fd < 0) {
+				ptr = ptr->ai_next;
+				continue;
+			}
 
-	struct addrinfo * addr = NULL;
-	struct addrinfo hint = {
-		.ai_family    = af,
-		.ai_socktype  = type,
-		.ai_protocol  = 0,
-		.ai_addrlen   = 0,
-		.ai_addr      = NULL,
-		.ai_canonname = NULL,
-		.ai_next      = NULL,
-	};
-	int failed = getaddrinfo(vaddr->value.string, NULL, &hint, &addr);
-	if (failed != 0)
-		return -1;
+			struct sockaddr_in * addr_v4 = (struct sockaddr_in *) ptr->ai_addr;
+			addr_v4->sin_port = htons(vport->value.integer);
 
-	int fd = -1;
-	struct addrinfo * ptr = addr;
-	while (fd > -1 && ptr != NULL) {
-		struct sockaddr_in * addr_v4  = (struct sockaddr_in *) ptr->ai_addr;
-
-		int af = addr_v4->sin_family == AF_INET ? AF_INET : AF_INET6;
-		fd = socket(af, type, 0);
-		if (fd < 0) {
-			ptr = ptr->ai_next;
-			continue;
+			int failed = bind(fd, ptr->ai_addr, ptr->ai_addrlen);
+			if (failed != 0) {
+				close(fd);
+				fd = -1;
+				ptr = ptr->ai_next;
+			}
 		}
 
-		if (addr_v4->sin_family == AF_INET) {
-			addr_v4->sin_port = htons(80);
-		} else {
-			struct sockaddr_in6 * addr_v6 = (struct sockaddr_in6 *) ptr->ai_addr;
-			addr_v6->sin6_port = htons(80);
-		}
+		freeaddrinfo(addr);
+	} else {
+		fd = socket(AF_INET, type, 0);
+		if (fd < 0)
+			return false;
 
-		int failed = bind(fd, ptr->ai_addr, ptr->ai_addrlen);
+		struct sockaddr_in addr_v4;
+		bzero(&addr_v4, sizeof(addr_v4));
+		addr_v4.sin_port = htons(vport->value.integer);
+
+		int failed = bind(fd, (struct sockaddr *) &addr_v4, sizeof(addr_v4));
 		if (failed != 0) {
 			close(fd);
 			fd = -1;
-			ptr = ptr->ai_next;
 		}
 	}
-
-	freeaddrinfo(addr);
 
 	if (fd < 0)
 		return false;
 
+	failed = listen(fd, 16);
+
 	struct st_tcp_socket_server * self = malloc(sizeof(struct st_tcp_socket_server));
 	self->fd = fd;
 	self->callback = accept_callback;
-	self->af = af;
+	self->af = AF_INET;
+
+	st_poll_register_v1(fd, POLLIN | POLLPRI, st_socket_tcp_server_callback, self, free);
+
+	return true;
+}
+
+bool st_socket_tcp_server6_v1(struct st_value * config, st_socket_accept_f accept_callback) {
+	int type = SOCK_STREAM;
+
+	struct st_value * vtype = st_value_hashtable_get2_v1(config, "type", false);
+	if (vtype->type == st_value_string && !strcmp(vtype->value.string, "datagram"))
+		type = SOCK_DGRAM;
+
+	struct st_value * vaddr = st_value_hashtable_get2_v1(config, "address", false);
+	struct st_value * vport = st_value_hashtable_get2_v1(config, "port", false);
+	if (vport->type != st_value_integer)
+		return -1;
+
+	int fd = -1, failed;
+	if (vaddr->type == st_value_string) {
+		struct addrinfo * addr = NULL;
+		struct addrinfo hint = {
+			.ai_family    = AF_INET6,
+			.ai_socktype  = type,
+			.ai_protocol  = 0,
+			.ai_addrlen   = 0,
+			.ai_addr      = NULL,
+			.ai_canonname = NULL,
+			.ai_next      = NULL,
+		};
+		failed = getaddrinfo(vaddr->value.string, NULL, &hint, &addr);
+		if (failed != 0)
+			return -1;
+
+		struct addrinfo * ptr = addr;
+		while (fd < 0 && ptr != NULL) {
+			int af = ptr->ai_addr->sa_family == AF_INET ? AF_INET : AF_INET6;
+
+			fd = socket(af, type, 0);
+			if (fd < 0) {
+				ptr = ptr->ai_next;
+				continue;
+			}
+
+			if (af == AF_INET) {
+				struct sockaddr_in * addr_v4 = (struct sockaddr_in *) ptr->ai_addr;
+				addr_v4->sin_port = htons(vport->value.integer);
+			} else {
+				struct sockaddr_in6 * addr_v6 = (struct sockaddr_in6 *) ptr->ai_addr;
+				addr_v6->sin6_port = htons(vport->value.integer);
+			}
+
+			int failed = bind(fd, ptr->ai_addr, ptr->ai_addrlen);
+			if (failed != 0) {
+				close(fd);
+				fd = -1;
+				ptr = ptr->ai_next;
+			}
+		}
+
+		freeaddrinfo(addr);
+	} else {
+		fd = socket(AF_INET6, type, 0);
+		if (fd < 0)
+			return false;
+
+		struct sockaddr_in6 addr_v6;
+		bzero(&addr_v6, sizeof(addr_v6));
+		addr_v6.sin6_port = htons(vport->value.integer);
+
+		int failed = bind(fd, (struct sockaddr *) &addr_v6, sizeof(addr_v6));
+		if (failed != 0) {
+			close(fd);
+			fd = -1;
+		}
+	}
+
+	if (fd < 0)
+		return false;
+
+	failed = listen(fd, 16);
+
+	struct st_tcp_socket_server * self = malloc(sizeof(struct st_tcp_socket_server));
+	self->fd = fd;
+	self->callback = accept_callback;
+	self->af = AF_INET6;
 
 	st_poll_register_v1(fd, POLLIN | POLLPRI, st_socket_tcp_server_callback, self, free);
 
