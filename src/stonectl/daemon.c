@@ -39,3 +39,7 @@ int stctl_start_daemon(int argc __attribute__((unused)), char ** argv __attribut
 	return daemon.pid < 2;
 }
 
+int stctl_status_daemon(int argc __attribute__((unused)), char ** argv __attribute__((unused))) {
+	return 0;
+}
+

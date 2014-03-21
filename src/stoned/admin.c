@@ -24,36 +24,20 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// printf
-#include <stdio.h>
-
+#include <libstone/socket.h>
 #include <libstone/value.h>
 
-#include "common.h"
+#include "admin.h"
 
-static void init(void) __attribute__((constructor));
-
-static struct st_value * commands = NULL;
+static void std_admin_new_connection(int fd_server, int fd_client, struct st_value * client);
 
 
-static void init() {
-	commands = st_value_new_hashtable2();
-	st_value_hashtable_put2(commands, "start", st_value_new_custom(stctl_start_daemon, NULL), true);
-	st_value_hashtable_put2(commands, "status", st_value_new_custom(stctl_status_daemon, NULL), true);
+void std_admin_config(struct st_value * config) {
+	config = st_value_pack("{sssssssi}", "domain", "inet", "type", "inet", "address", "localhost", "port", 4822L );
+
+	st_socket_server(config, std_admin_new_connection);
 }
 
-int main(int argc, char ** argv) {
-	if (argc < 1)
-		return 1;
-
-	if (!st_value_hashtable_has_key2(commands, argv[1])) {
-		printf("Error: command not found (%s)\n", argv[1]);
-		return 2;
-	}
-
-	struct st_value * com = st_value_hashtable_get2(commands, argv[1], false);
-	command_f command = com->value.custom.data;
-
-	return command(argc - 2, argv + 2);
+static void std_admin_new_connection(int fd_server, int fd_client, struct st_value * client) {
 }
 

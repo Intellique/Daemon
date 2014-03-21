@@ -7,4 +7,5 @@ LIBSTONE_LOGGER_1.0 {
 
 	local:
 		*_v1;
+		lgr_loader_*;
 };
