@@ -29,12 +29,18 @@
 
 #include <libstone/log.h>
 
-void st_log_configure_v1(struct st_value * config);
-const char * st_log_level_to_string_v1(enum st_log_level level);
-enum st_log_level st_log_string_to_level_v1(const char * string);
-enum st_log_type st_log_string_to_type_v1(const char * string);
-const char * st_log_type_to_string_v1(enum st_log_type type);
-void st_log_write_v1(enum st_log_level level, enum st_log_type type, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
+#include "value_v1.h"
+
+#define st_log_level_v1 st_log_level
+#define st_log_type_v1 st_log_type
+
+void st_log_configure_v1(struct st_value_v1 * config, enum st_log_type_v1 default_type);
+const char * st_log_level_to_string_v1(enum st_log_level_v1 level);
+enum st_log_level_v1 st_log_string_to_level_v1(const char * string);
+enum st_log_type_v1 st_log_string_to_type_v1(const char * string);
+const char * st_log_type_to_string_v1(enum st_log_type type_v1);
+void st_log_write_v1(enum st_log_level level, const char * format, ...) __attribute__ ((format (printf, 2, 3)));
+void st_log_write2_v1(enum st_log_level_v1 level, enum st_log_type_v1 type, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
 
 #endif
 

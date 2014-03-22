@@ -33,7 +33,7 @@
 #include <dlfcn.h>
 // glob
 #include <glob.h>
-// snprintf
+// asprintf, snprintf
 #include <stdio.h>
 // free
 #include <stdlib.h>

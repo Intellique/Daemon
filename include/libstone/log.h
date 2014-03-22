@@ -147,7 +147,7 @@ enum st_log_type {
 };
 
 
-void st_log_configure(struct st_value * config);
+void st_log_configure(struct st_value * config, enum st_log_type default_type);
 
 /**
  * \brief Convert an enumeration to a statically allocated string
@@ -194,7 +194,8 @@ const char * st_log_type_to_string(enum st_log_type type);
  * \note Message can be wrote after that this function has returned.
  * \note This function is thread-safe
  */
-void st_log_write(enum st_log_level level, enum st_log_type type, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
+void st_log_write(enum st_log_level level, const char * format, ...) __attribute__ ((format (printf, 2, 3)));
+void st_log_write2(enum st_log_level level, enum st_log_type type, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
 
 /*
 
