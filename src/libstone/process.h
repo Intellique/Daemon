@@ -29,6 +29,8 @@
 
 #include <libstone/process.h>
 
+#include "value.h"
+
 #define st_process_fd_type_v1 st_process_fd_type
 #define st_process_fd_v1 st_process_fd
 #define st_process_std_v1 st_process_std
@@ -44,7 +46,7 @@ int st_process_pipe_to_v1(struct st_process_v1 * process_in);
 void st_process_put_environment_v1(struct st_process_v1 * process, const char * key, const char * value);
 void st_process_redir_err_to_out_v1(struct st_process_v1 * process);
 void st_process_redir_out_to_err_v1(struct st_process_v1 * process);
-void st_process_set_environment_v1(struct st_process_v1 * process, struct st_value * environment);
+void st_process_set_environment_v1(struct st_process_v1 * process, struct st_value_v1 * environment);
 void st_process_set_fd_v1(struct st_process_v1 * process, enum st_process_std_v1 fd_process, int new_fd);
 void st_process_set_nice_v1(struct st_process_v1 * process, int nice);
 void st_process_start_v1(struct st_process_v1 * process, unsigned int nb_process);

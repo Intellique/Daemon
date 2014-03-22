@@ -29,7 +29,7 @@
 
 #include <libstone/socket.h>
 
-#include "value_v1.h"
+#include "value.h"
 
 #define st_socket_accept_f_v1 st_socket_accept_f
 

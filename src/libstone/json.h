@@ -29,7 +29,7 @@
 
 #include <libstone/json.h>
 
-#include "value_v1.h"
+#include "value.h"
 
 ssize_t st_json_encode_to_fd_v1(struct st_value * value_v1, int fd, bool use_buffer);
 ssize_t st_json_encode_to_file_v1(struct st_value * value_v1, const char * filename);

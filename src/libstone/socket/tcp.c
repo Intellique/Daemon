@@ -44,7 +44,7 @@
 #include <libstone/poll.h>
 
 #include "tcp.h"
-#include "../value_v1.h"
+#include "../value.h"
 
 struct st_tcp_socket_server_v1 {
 	int fd;

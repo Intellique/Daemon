@@ -29,7 +29,7 @@
 
 #include <libstone/string.h>
 
-#include "value_v1.h"
+#include "value.h"
 
 bool st_string_check_valid_utf8_v1(const char * string);
 unsigned long long st_string_compute_hash_v1(const struct st_value_v1 * value);

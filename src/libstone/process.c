@@ -43,7 +43,6 @@
 #include <unistd.h>
 
 #include "process.h"
-#include "value_v1.h"
 
 static void st_process_set_close_exe_flag(int fd, bool on);
 
@@ -217,7 +216,7 @@ void st_process_redir_out_to_err_v1(struct st_process_v1 * process) {
 }
 
 __asm__(".symver st_process_set_environment_v1, st_process_set_environment@@LIBSTONE_1.2");
-void st_process_set_environment_v1(struct st_process_v1 * process, struct st_value * environment) {
+void st_process_set_environment_v1(struct st_process_v1 * process, struct st_value_v1 * environment) {
 	if (process == NULL || environment == NULL)
 		return;
 
@@ -300,8 +299,8 @@ void st_process_start_v1(struct st_process_v1 * process, unsigned int nb_process
 			if (process->environment != NULL) {
 				struct st_value_iterator * iter = st_value_hashtable_get_iterator_v1(process->environment);
 				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * key = st_value_iterator_get_key_v1(iter, false, false);
-					struct st_value * value = st_value_iterator_get_value_v1(iter, false);
+					struct st_value_v1 * key = st_value_iterator_get_key_v1(iter, false, false);
+					struct st_value_v1 * value = st_value_iterator_get_value_v1(iter, false);
 
 					if (value->type == st_value_null)
 						unsetenv(key->value.string);

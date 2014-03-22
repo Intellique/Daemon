@@ -30,7 +30,7 @@
 #include "socket.h"
 #include "socket/tcp.h"
 #include "socket/unix.h"
-#include "value_v1.h"
+#include "value.h"
 
 __asm__(".symver st_socket_server_v1, st_socket_server@@LIBSTONE_1.2");
 int st_socket_v1(struct st_value_v1 * config) {

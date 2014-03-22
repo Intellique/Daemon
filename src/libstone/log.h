@@ -29,7 +29,7 @@
 
 #include <libstone/log.h>
 
-#include "value_v1.h"
+#include "value.h"
 
 #define st_log_level_v1 st_log_level
 #define st_log_type_v1 st_log_type

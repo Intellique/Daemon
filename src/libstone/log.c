@@ -49,7 +49,6 @@
 #include "json.h"
 #include "log.h"
 #include "socket.h"
-#include "value_v1.h"
 
 static pthread_mutex_t st_log_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 static pthread_cond_t st_log_wait = PTHREAD_COND_INITIALIZER;
