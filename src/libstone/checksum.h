@@ -29,6 +29,9 @@
 
 #include <libstone/checksum.h>
 
+#define st_checksum_v1 st_checksum
+#define st_checksum_driver_v1 st_checksum_driver
+
 char * st_checksum_compute_v1(const char * checksum, const void * data, ssize_t length) __attribute__((nonnull(1),warn_unused_result));
 void st_checksum_convert_to_hex_v1(unsigned char * digest, ssize_t length, char * hex_digest);
 struct st_checksum_driver * st_checksum_get_driver_v1(const char * driver);

@@ -43,8 +43,9 @@
 // access, close, fstat, read
 #include <unistd.h>
 
+#include <libstone/string.h>
+
 #include "json_v1.h"
-#include "string_v1.h"
 
 static size_t st_json_compute_length(struct st_value * val);
 static size_t st_json_encode_to_string_inner(struct st_value * val, char * buffer, size_t length);
@@ -634,7 +635,7 @@ static struct st_value * st_json_parse_string_inner(const char ** json) {
 
 							if (sscanf(*json, "%4x", &unicode) < 1)
 								return NULL;
-							size_t char_length = st_string_unicode_length_v1(unicode);
+							size_t char_length = st_string_unicode_length(unicode);
 
 							if (char_length == 0)
 								return NULL;
@@ -683,8 +684,8 @@ static struct st_value * st_json_parse_string_inner(const char ** json) {
 								sscanf(string + from, "%4x", &unicode);
 								from += 3;
 
-								st_string_convert_unicode_to_utf8_v1(unicode, tmp_string + to, length - to, false);
-								to += st_string_unicode_length_v1(unicode) - 1;
+								st_string_convert_unicode_to_utf8(unicode, tmp_string + to, length - to, false);
+								to += st_string_unicode_length(unicode) - 1;
 								break;
 						}
 					} else

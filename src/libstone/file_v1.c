@@ -44,8 +44,9 @@
 // access, close, mkfifo, read, readlink, rmdir, symlink, unlink, write
 #include <unistd.h>
 
+#include <libstone/string.h>
+
 #include "file_v1.h"
-#include "string_v1.h"
 
 __asm__(".symver st_file_basic_scandir_filter_v1, st_file_basic_scandir_filter@@LIBSTONE_1.2");
 int st_file_basic_scandir_filter_v1(const struct dirent * d) {
@@ -316,8 +317,8 @@ int st_file_mkdir_v1(const char * dirname, mode_t mode) {
 		return 0;
 
 	char * dir = strdup(dirname);
-	st_string_delete_double_char_v1(dir, '/');
-	st_string_rtrim_v1(dir, '/');
+	st_string_delete_double_char(dir, '/');
+	st_string_rtrim(dir, '/');
 
 	char * ptr = strrchr(dir, '/');
 	int failed = 0;

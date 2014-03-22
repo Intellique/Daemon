@@ -39,10 +39,11 @@
 // pipe, read, write
 #include <unistd.h>
 
-#include "checksum_v1.h"
+#include <libstone/log.h>
+#include <libstone/value.h>
+
+#include "checksum.h"
 #include "loader.h"
-#include "log_v1.h"
-#include "value_v1.h"
 
 
 static struct st_value * st_checksum_drivers = NULL;
@@ -57,11 +58,11 @@ char * st_checksum_compute_v1(const char * checksum, const void * data, ssize_t 
 	if (checksum == NULL || (data == NULL && length > 0) || length < 0)
 		return NULL;
 
-	struct st_checksum_driver * driver = st_checksum_get_driver_v1(checksum);
+	struct st_checksum_driver_v1 * driver = st_checksum_get_driver_v1(checksum);
 	if (driver == NULL)
 		return NULL;
 
-	struct st_checksum * chck = driver->new_checksum();
+	struct st_checksum_v1 * chck = driver->new_checksum();
 	if (length > 0)
 		chck->ops->update(chck, data, length);
 
@@ -83,7 +84,7 @@ void st_checksum_convert_to_hex_v1(unsigned char * digest, ssize_t length, char 
 }
 
 static void st_checksum_exit() {
-	st_value_free_v1(st_checksum_drivers);
+	st_value_free(st_checksum_drivers);
 	st_checksum_drivers = NULL;
 }
 
@@ -95,24 +96,24 @@ struct st_checksum_driver * st_checksum_get_driver_v1(const char * driver) {
 	pthread_mutex_lock(&st_checksum_lock);
 
 	void * cookie = NULL;
-	if (!st_value_hashtable_has_key2_v1(st_checksum_drivers, driver)) {
+	if (!st_value_hashtable_has_key2(st_checksum_drivers, driver)) {
 		cookie = st_loader_load("checksum", driver);
 
 		if (cookie == NULL) {
-			st_log_write_v1(st_log_level_error, st_log_type_plugin_checksum, "Failed to load checksum driver '%s'", driver);
 			pthread_mutex_unlock(&st_checksum_lock);
+			st_log_write(st_log_level_error, st_log_type_plugin_checksum, "Failed to load checksum driver '%s'", driver);
 			return NULL;
 		}
 
-		if (!st_value_hashtable_has_key2_v1(st_checksum_drivers, driver)) {
-			st_log_write_v1(st_log_level_warning, st_log_type_plugin_checksum, "Driver '%s' did not call 'register_driver'", driver);
+		if (!st_value_hashtable_has_key2(st_checksum_drivers, driver)) {
 			pthread_mutex_unlock(&st_checksum_lock);
+			st_log_write(st_log_level_warning, st_log_type_plugin_checksum, "Driver '%s' did not call 'register_driver'", driver);
 			return NULL;
 		}
 	}
 
-	struct st_value * vdriver = st_value_hashtable_get2_v1(st_checksum_drivers, driver, false);
-	struct st_checksum_driver * dr = vdriver->value.custom.data;
+	struct st_value * vdriver = st_value_hashtable_get2(st_checksum_drivers, driver, false);
+	struct st_checksum_driver_v1 * dr = vdriver->value.custom.data;
 
 	pthread_mutex_unlock(&st_checksum_lock);
 
@@ -120,31 +121,30 @@ struct st_checksum_driver * st_checksum_get_driver_v1(const char * driver) {
 }
 
 static void st_checksum_init() {
-	st_checksum_drivers = st_value_new_hashtable2_v1();
+	st_checksum_drivers = st_value_new_hashtable2();
 }
 
 __asm__(".symver st_checksum_register_driver_v1, st_checksum_register_driver@@LIBSTONE_1.2");
 void st_checksum_register_driver_v1(struct st_checksum_driver * driver) {
 	if (driver == NULL) {
-		st_log_write_v1(st_log_level_error, st_log_type_plugin_checksum, "Try to register with null driver");
+		st_log_write(st_log_level_error, st_log_type_plugin_checksum, "Try to register with null driver");
 		return;
 	}
 
 	pthread_mutex_lock(&st_checksum_lock);
 
-	if (st_value_hashtable_has_key2_v1(st_checksum_drivers, driver->name)) {
-		st_log_write_v1(st_log_level_warning, st_log_type_plugin_checksum, "Checksum driver '%s' is already registred", driver->name);
+	if (st_value_hashtable_has_key2(st_checksum_drivers, driver->name)) {
 		pthread_mutex_unlock(&st_checksum_lock);
+		st_log_write(st_log_level_warning, st_log_type_plugin_checksum, "Checksum driver '%s' is already registred", driver->name);
 		return;
 	}
 
-	st_value_hashtable_put2_v1(st_checksum_drivers, driver->name, st_value_new_custom_v1(driver, NULL), true);
-
+	st_value_hashtable_put2(st_checksum_drivers, driver->name, st_value_new_custom(driver, NULL), true);
 	st_loader_register_ok();
 
 	pthread_mutex_unlock(&st_checksum_lock);
 
-	st_log_write_v1(st_log_level_info, st_log_type_plugin_checksum, "Checksum driver '%s' is now registred", driver->name);
+	st_log_write(st_log_level_info, st_log_type_plugin_checksum, "Checksum driver '%s' is now registred", driver->name);
 }
 
 
