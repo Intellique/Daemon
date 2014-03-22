@@ -29,8 +29,8 @@
 
 struct st_value;
 
-size_t st_json_encode_to_fd(struct st_value * value, int fd);
-size_t st_json_encode_to_file(struct st_value * value, const char * filename);
+ssize_t st_json_encode_to_fd(struct st_value * value, int fd, bool use_buffer);
+ssize_t st_json_encode_to_file(struct st_value * value, const char * filename);
 char * st_json_encode_to_string(struct st_value * value);
 struct st_value * st_json_parse_fd(int fd, int timeout);
 struct st_value * st_json_parse_file(const char * file);

@@ -34,26 +34,26 @@
 #include <stdio.h>
 // free, malloc
 #include <stdlib.h>
-// strspn, strncmp
+// strspn, strncmp, strlen
 #include <string.h>
 // fstat, open
 #include <sys/stat.h>
 // fstat, open
 #include <sys/types.h>
-// access, close, fstat, read
+// access, close, fstat, read, write
 #include <unistd.h>
 
 #include <libstone/string.h>
 
-#include "json_v1.h"
+#include "json.h"
 
-static size_t st_json_compute_length(struct st_value * val);
-static size_t st_json_encode_to_string_inner(struct st_value * val, char * buffer, size_t length);
-static struct st_value * st_json_parse_string_inner(const char ** json);
+static size_t st_json_compute_length_v1(struct st_value_v1 * val);
+static ssize_t st_json_encode_to_string_inner_v1(struct st_value_v1 * val, char * buffer, size_t length);
+static struct st_value_v1 * st_json_parse_string_inner(const char ** json);
 static void st_json_parse_string_strip(const char ** json);
 
 
-static size_t st_json_compute_length(struct st_value * val) {
+static size_t st_json_compute_length_v1(struct st_value_v1 * val) {
 	size_t nb_write = 0;
 	switch (val->type) {
 		case st_value_array:
@@ -62,8 +62,8 @@ static size_t st_json_compute_length(struct st_value * val) {
 
 				struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
 				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, true);
-					nb_write += st_json_compute_length(elt);
+					struct st_value_v1 * elt = st_value_iterator_get_value_v1(iter, true);
+					nb_write += st_json_compute_length_v1(elt);
 					st_value_free_v1(elt);
 
 					if (st_value_iterator_has_next_v1(iter))
@@ -94,13 +94,13 @@ static size_t st_json_compute_length(struct st_value * val) {
 
 				struct st_value_iterator * iter = st_value_hashtable_get_iterator_v1(val);
 				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * key = st_value_iterator_get_key_v1(iter, false, true);
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, true);
+					struct st_value_v1 * key = st_value_iterator_get_key_v1(iter, false, true);
+					struct st_value_v1 * elt = st_value_iterator_get_value_v1(iter, true);
 
 					if (key->type == st_value_string) {
-						nb_write += st_json_compute_length(key);
+						nb_write += st_json_compute_length_v1(key);
 						nb_write++;
-						nb_write += st_json_compute_length(elt);
+						nb_write += st_json_compute_length_v1(elt);
 
 						if (st_value_iterator_has_next_v1(iter))
 							nb_write++;
@@ -167,144 +167,153 @@ static size_t st_json_compute_length(struct st_value * val) {
 }
 
 __asm__(".symver st_json_encode_to_fd_v1, st_json_encode_to_fd@@LIBSTONE_1.2");
-size_t st_json_encode_to_fd_v1(struct st_value * val, int fd) {
+ssize_t st_json_encode_to_fd_v1(struct st_value_v1 * val, int fd, bool use_buffer) {
 	if (val == NULL)
 		return 0;
 
-	size_t nb_write = 0;
-	switch (val->type) {
-		case st_value_array:
-		case st_value_linked_list: {
-				nb_write = dprintf(fd, "[");
+	ssize_t nb_write = 0;
+	if (use_buffer) {
+		char * buffer = st_json_encode_to_string_v1(val);
+		if (buffer == NULL)
+			return -1;
 
-				struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
-				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, true);
-					nb_write += st_json_encode_to_fd_v1(elt, fd);
-					st_value_free_v1(elt);
+		nb_write = write(fd, buffer, strlen(buffer));
+		free(buffer);
+	} else {
+		switch (val->type) {
+			case st_value_array:
+			case st_value_linked_list: {
+					nb_write = dprintf(fd, "[");
 
-					if (st_value_iterator_has_next_v1(iter))
-						nb_write += dprintf(fd, ",");
-				}
-				nb_write += dprintf(fd, "]");
-				st_value_iterator_free_v1(iter);
-			}
-			break;
-
-		case st_value_boolean:
-			if (val->value.boolean)
-				nb_write = dprintf(fd, "true");
-			else
-				nb_write = dprintf(fd, "false");
-			break;
-
-		case st_value_float:
-			nb_write = dprintf(fd, "%g", val->value.floating);
-			break;
-
-		case st_value_hashtable: {
-				nb_write = dprintf(fd, "{");
-
-				struct st_value_iterator * iter = st_value_hashtable_get_iterator_v1(val);
-				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * key = st_value_iterator_get_key_v1(iter, false, true);
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, true);
-
-					if (key->type == st_value_string) {
-						nb_write += st_json_encode_to_fd_v1(key, fd);
-						nb_write += dprintf(fd, ":");
-						nb_write += st_json_encode_to_fd_v1(elt, fd);
+					struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
+					while (st_value_iterator_has_next_v1(iter)) {
+						struct st_value_v1 * elt = st_value_iterator_get_value_v1(iter, true);
+						nb_write += st_json_encode_to_fd_v1(elt, fd, false);
+						st_value_free_v1(elt);
 
 						if (st_value_iterator_has_next_v1(iter))
 							nb_write += dprintf(fd, ",");
 					}
-
-					st_value_free_v1(key);
-					st_value_free_v1(elt);
+					nb_write += dprintf(fd, "]");
+					st_value_iterator_free_v1(iter);
 				}
-				nb_write += dprintf(fd, "}");
-				st_value_iterator_free_v1(iter);
-			}
-			break;
+				break;
 
-		case st_value_integer:
-			nb_write = dprintf(fd, "%Ld", val->value.integer);
-			break;
+			case st_value_boolean:
+				if (val->value.boolean)
+					nb_write = dprintf(fd, "true");
+				else
+					nb_write = dprintf(fd, "false");
+				break;
 
-		case st_value_null:
-			nb_write = dprintf(fd, "null");
-			break;
+			case st_value_float:
+				nb_write = dprintf(fd, "%g", val->value.floating);
+				break;
 
-		case st_value_string: {
-				nb_write = dprintf(fd, "\"");
-				char * str = val->value.string;
+			case st_value_hashtable: {
+					nb_write = dprintf(fd, "{");
 
-				while (*str != 0) {
-					int nb_printable = strcspn(str, "\"\\/\b\f\n\r\t");
-					if (nb_printable > 0) {
-						nb_write += dprintf(fd, "%.*s", nb_printable, str);
-						str += nb_printable;
+					struct st_value_iterator * iter = st_value_hashtable_get_iterator_v1(val);
+					while (st_value_iterator_has_next_v1(iter)) {
+						struct st_value_v1 * key = st_value_iterator_get_key_v1(iter, false, true);
+						struct st_value_v1 * elt = st_value_iterator_get_value_v1(iter, true);
 
-						if (*str == '\0')
-							break;
+						if (key->type == st_value_string) {
+							nb_write += st_json_encode_to_fd_v1(key, fd, false);
+							nb_write += dprintf(fd, ":");
+							nb_write += st_json_encode_to_fd_v1(elt, fd, false);
+
+							if (st_value_iterator_has_next_v1(iter))
+								nb_write += dprintf(fd, ",");
+						}
+
+						st_value_free_v1(key);
+						st_value_free_v1(elt);
+					}
+					nb_write += dprintf(fd, "}");
+					st_value_iterator_free_v1(iter);
+				}
+				break;
+
+			case st_value_integer:
+				nb_write = dprintf(fd, "%Ld", val->value.integer);
+				break;
+
+			case st_value_null:
+				nb_write = dprintf(fd, "null");
+				break;
+
+			case st_value_string: {
+					nb_write = dprintf(fd, "\"");
+					char * str = val->value.string;
+
+					while (*str != 0) {
+						int nb_printable = strcspn(str, "\"\\/\b\f\n\r\t");
+						if (nb_printable > 0) {
+							nb_write += dprintf(fd, "%.*s", nb_printable, str);
+							str += nb_printable;
+
+							if (*str == '\0')
+								break;
+						}
+
+						switch (*str) {
+							case '"':
+							case '\\':
+							case '/':
+								nb_write += dprintf(fd, "\\%c", *str);
+								break;
+
+							case '\b':
+								nb_write += dprintf(fd, "\\b");
+								break;
+
+							case '\f':
+								nb_write += dprintf(fd, "\\f");
+								break;
+
+							case '\n':
+								nb_write += dprintf(fd, "\\n");
+								break;
+
+							case '\r':
+								nb_write += dprintf(fd, "\\r");
+								break;
+
+							case '\t':
+								nb_write += dprintf(fd, "\\t");
+								break;
+						}
+
+						str++;
 					}
 
-					switch (*str) {
-						case '"':
-						case '\\':
-						case '/':
-							nb_write += dprintf(fd, "\\%c", *str);
-							break;
-
-						case '\b':
-							nb_write += dprintf(fd, "\\b");
-							break;
-
-						case '\f':
-							nb_write += dprintf(fd, "\\f");
-							break;
-
-						case '\n':
-							nb_write += dprintf(fd, "\\n");
-							break;
-
-						case '\r':
-							nb_write += dprintf(fd, "\\r");
-							break;
-
-						case '\t':
-							nb_write += dprintf(fd, "\\t");
-							break;
-					}
-
-					str++;
+					nb_write += dprintf(fd, "\"");
 				}
+				break;
 
-				nb_write += dprintf(fd, "\"");
-			}
-			break;
-
-		default:
-			break;
+			default:
+				break;
+		}
 	}
 
 	return nb_write;
 }
 
 __asm__(".symver st_json_encode_to_file_v1, st_json_encode_to_file@@LIBSTONE_1.2");
-size_t st_json_encode_to_file_v1(struct st_value * value, const char * filename) {
+ssize_t st_json_encode_to_file_v1(struct st_value_v1 * value, const char * filename) {
 	if (filename == NULL)
 		return -1;
 
 	int fd = open(filename, O_WRONLY | O_TRUNC | O_CREAT, 0744);
-	size_t nb_write = st_json_encode_to_fd_v1(value, fd);
+	size_t nb_write = st_json_encode_to_fd_v1(value, fd, false);
 	close(fd);
 
 	return nb_write;
 }
 
-static size_t st_json_encode_to_string_inner(struct st_value * val, char * buffer, size_t length) {
-	size_t nb_write = 0;
+static ssize_t st_json_encode_to_string_inner_v1(struct st_value_v1 * val, char * buffer, size_t length) {
+	ssize_t nb_write = 0;
 	switch (val->type) {
 		case st_value_array:
 		case st_value_linked_list: {
@@ -312,8 +321,8 @@ static size_t st_json_encode_to_string_inner(struct st_value * val, char * buffe
 
 				struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
 				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, true);
-					nb_write += st_json_encode_to_string_inner(elt, buffer + nb_write, length - nb_write);
+					struct st_value_v1 * elt = st_value_iterator_get_value_v1(iter, true);
+					nb_write += st_json_encode_to_string_inner_v1(elt, buffer + nb_write, length - nb_write);
 					st_value_free_v1(elt);
 
 					if (st_value_iterator_has_next_v1(iter))
@@ -340,13 +349,13 @@ static size_t st_json_encode_to_string_inner(struct st_value * val, char * buffe
 
 				struct st_value_iterator * iter = st_value_hashtable_get_iterator_v1(val);
 				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * key = st_value_iterator_get_key_v1(iter, false, true);
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, true);
+					struct st_value_v1 * key = st_value_iterator_get_key_v1(iter, false, true);
+					struct st_value_v1 * elt = st_value_iterator_get_value_v1(iter, true);
 
 					if (key->type == st_value_string) {
-						nb_write += st_json_encode_to_string_inner(key, buffer + nb_write, length - nb_write);
+						nb_write += st_json_encode_to_string_inner_v1(key, buffer + nb_write, length - nb_write);
 						nb_write += snprintf(buffer + nb_write, length - nb_write, ":");
-						nb_write += st_json_encode_to_string_inner(elt, buffer + nb_write, length - nb_write);
+						nb_write += st_json_encode_to_string_inner_v1(elt, buffer + nb_write, length - nb_write);
 
 						if (st_value_iterator_has_next_v1(iter))
 							nb_write += snprintf(buffer + nb_write, length - nb_write, ",");
@@ -425,26 +434,26 @@ static size_t st_json_encode_to_string_inner(struct st_value * val, char * buffe
 }
 
 __asm__(".symver st_json_encode_to_string_v1, st_json_encode_to_string@@LIBSTONE_1.2");
-char * st_json_encode_to_string_v1(struct st_value * value) {
-	size_t length = st_json_compute_length(value);
+char * st_json_encode_to_string_v1(struct st_value_v1 * value) {
+	size_t length = st_json_compute_length_v1(value);
 	if (length == 0)
 		return NULL;
 
 	char * buffer = malloc(length + 1);
 	buffer[length] = '\0';
 
-	st_json_encode_to_string_inner(value, buffer, length + 1);
+	st_json_encode_to_string_inner_v1(value, buffer, length + 1);
 
 	return buffer;
 }
 
 __asm__(".symver st_json_parse_fd_v1, st_json_parse_fd@@LIBSTONE_1.2");
-struct st_value * st_json_parse_fd_v1(int fd, int timeout) {
+struct st_value_v1 * st_json_parse_fd_v1(int fd, int timeout) {
 	ssize_t buffer_size = 4096, nb_total_read = 0, size;
 	char * buffer = malloc(buffer_size + 1);
 	buffer[0] = '\0';
 
-	struct st_value * ret_val = NULL;
+	struct st_value_v1 * ret_val = NULL;
 
 	while (size = read(fd, buffer + nb_total_read, buffer_size - nb_total_read), size > 0) {
 		nb_total_read += size;
@@ -479,7 +488,7 @@ struct st_value * st_json_parse_fd_v1(int fd, int timeout) {
 }
 
 __asm__(".symver st_json_parse_file_v1, st_json_parse_file@@LIBSTONE_1.2");
-struct st_value * st_json_parse_file_v1(const char * file) {
+struct st_value_v1 * st_json_parse_file_v1(const char * file) {
 	if (file == NULL)
 		return NULL;
 
@@ -501,21 +510,21 @@ struct st_value * st_json_parse_file_v1(const char * file) {
 		return NULL;
 	}
 
-	struct st_value * ret_value = st_json_parse_string_v1(buffer);
+	struct st_value_v1 * ret_value = st_json_parse_string_v1(buffer);
 	free(buffer);
 
 	return ret_value;
 }
 
 __asm__(".symver st_json_parse_string_v1, st_json_parse_string@@LIBSTONE_1.2");
-struct st_value * st_json_parse_string_v1(const char * json) {
+struct st_value_v1 * st_json_parse_string_v1(const char * json) {
 	return st_json_parse_string_inner(&json);
 }
 
-static struct st_value * st_json_parse_string_inner(const char ** json) {
+static struct st_value_v1 * st_json_parse_string_inner(const char ** json) {
 	st_json_parse_string_strip(json);
 
-	struct st_value * ret_val = NULL;
+	struct st_value_v1 * ret_val = NULL;
 	switch (**json) {
 		case '{':
 			ret_val = st_value_new_hashtable2_v1();
@@ -534,7 +543,7 @@ static struct st_value * st_json_parse_string_inner(const char ** json) {
 					return NULL;
 				}
 
-				struct st_value * key = st_json_parse_string_inner(json);
+				struct st_value_v1 * key = st_json_parse_string_inner(json);
 				if (key == NULL || key->type != st_value_string) {
 					if (key != NULL)
 						st_value_free_v1(key);
@@ -553,7 +562,7 @@ static struct st_value * st_json_parse_string_inner(const char ** json) {
 				(*json)++;
 				st_json_parse_string_strip(json);
 
-				struct st_value * value = st_json_parse_string_inner(json);
+				struct st_value_v1 * value = st_json_parse_string_inner(json);
 				if (value == NULL) {
 					st_value_free_v1(ret_val);
 					st_value_free_v1(key);
@@ -591,7 +600,7 @@ static struct st_value * st_json_parse_string_inner(const char ** json) {
 			}
 
 			for (;;) {
-				struct st_value * value = st_json_parse_string_inner(json);
+				struct st_value_v1 * value = st_json_parse_string_inner(json);
 				if (value == NULL) {
 					st_value_free_v1(ret_val);
 					return NULL;
