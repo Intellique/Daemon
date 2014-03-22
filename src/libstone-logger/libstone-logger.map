@@ -1,4 +1,4 @@
-LIBSTONE_LOGGER_1.0 {
+LIBSTONE_LOGGER_1.2 {
 	global:
 		lgr_log_load;
 		lgr_log_register_driver;

@@ -1,4 +1,4 @@
-LIBSTONE_1.0 {
+LIBSTONE_1.2 {
 	global:
 		st_checksum_compute;
 		st_checksum_convert_to_hex;

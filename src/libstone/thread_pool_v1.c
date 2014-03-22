@@ -103,12 +103,12 @@ static void st_thread_pool_init() {
 	st_thread_pool_pid = getpid();
 }
 
-__asm__(".symver st_thread_pool_run_v1, st_thread_pool_run@@LIBSTONE_1.0");
+__asm__(".symver st_thread_pool_run_v1, st_thread_pool_run@@LIBSTONE_1.2");
 int st_thread_pool_run_v1(const char * thread_name, void (*function)(void * arg), void * arg) {
 	return st_thread_pool_run2(thread_name, function, arg, 0);
 }
 
-__asm__(".symver st_thread_pool_run2_v1, st_thread_pool_run2@@LIBSTONE_1.0");
+__asm__(".symver st_thread_pool_run2_v1, st_thread_pool_run2@@LIBSTONE_1.2");
 int st_thread_pool_run2_v1(const char * thread_name, void (*function)(void * arg), void * arg, int nice) {
 	pthread_mutex_lock(&st_thread_pool_lock);
 	unsigned int i;

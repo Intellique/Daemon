@@ -165,7 +165,7 @@ static size_t st_json_compute_length(struct st_value * val) {
 	return nb_write;
 }
 
-__asm__(".symver st_json_encode_to_fd_v1, st_json_encode_to_fd@@LIBSTONE_1.0");
+__asm__(".symver st_json_encode_to_fd_v1, st_json_encode_to_fd@@LIBSTONE_1.2");
 size_t st_json_encode_to_fd_v1(struct st_value * val, int fd) {
 	if (val == NULL)
 		return 0;
@@ -290,7 +290,7 @@ size_t st_json_encode_to_fd_v1(struct st_value * val, int fd) {
 	return nb_write;
 }
 
-__asm__(".symver st_json_encode_to_file_v1, st_json_encode_to_file@@LIBSTONE_1.0");
+__asm__(".symver st_json_encode_to_file_v1, st_json_encode_to_file@@LIBSTONE_1.2");
 size_t st_json_encode_to_file_v1(struct st_value * value, const char * filename) {
 	if (filename == NULL)
 		return -1;
@@ -423,7 +423,7 @@ static size_t st_json_encode_to_string_inner(struct st_value * val, char * buffe
 	return nb_write;
 }
 
-__asm__(".symver st_json_encode_to_string_v1, st_json_encode_to_string@@LIBSTONE_1.0");
+__asm__(".symver st_json_encode_to_string_v1, st_json_encode_to_string@@LIBSTONE_1.2");
 char * st_json_encode_to_string_v1(struct st_value * value) {
 	size_t length = st_json_compute_length(value);
 	if (length == 0)
@@ -437,7 +437,7 @@ char * st_json_encode_to_string_v1(struct st_value * value) {
 	return buffer;
 }
 
-__asm__(".symver st_json_parse_fd_v1, st_json_parse_fd@@LIBSTONE_1.0");
+__asm__(".symver st_json_parse_fd_v1, st_json_parse_fd@@LIBSTONE_1.2");
 struct st_value * st_json_parse_fd_v1(int fd, int timeout) {
 	ssize_t buffer_size = 4096, nb_total_read = 0, size;
 	char * buffer = malloc(buffer_size + 1);
@@ -477,7 +477,7 @@ struct st_value * st_json_parse_fd_v1(int fd, int timeout) {
 	return ret_val;
 }
 
-__asm__(".symver st_json_parse_file_v1, st_json_parse_file@@LIBSTONE_1.0");
+__asm__(".symver st_json_parse_file_v1, st_json_parse_file@@LIBSTONE_1.2");
 struct st_value * st_json_parse_file_v1(const char * file) {
 	if (file == NULL)
 		return NULL;
@@ -506,7 +506,7 @@ struct st_value * st_json_parse_file_v1(const char * file) {
 	return ret_value;
 }
 
-__asm__(".symver st_json_parse_string_v1, st_json_parse_string@@LIBSTONE_1.0");
+__asm__(".symver st_json_parse_string_v1, st_json_parse_string@@LIBSTONE_1.2");
 struct st_value * st_json_parse_string_v1(const char * json) {
 	return st_json_parse_string_inner(&json);
 }

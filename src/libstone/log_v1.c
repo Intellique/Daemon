@@ -95,7 +95,7 @@ static struct st_log_type2 {
 };
 
 
-__asm__(".symver st_log_configure_v1, st_log_configure@@LIBSTONE_1.0");
+__asm__(".symver st_log_configure_v1, st_log_configure@@LIBSTONE_1.2");
 void st_log_configure_v1(struct st_value * config) {
 	struct st_value * copy_config = st_value_copy_v1(config, true);
 
@@ -109,7 +109,7 @@ void st_log_configure_v1(struct st_value * config) {
 	pthread_mutex_unlock(&st_log_lock);
 }
 
-__asm__(".symver st_log_level_to_string_v1, st_log_level_to_string@@LIBSTONE_1.0");
+__asm__(".symver st_log_level_to_string_v1, st_log_level_to_string@@LIBSTONE_1.2");
 const char * st_log_level_to_string_v1(enum st_log_level level) {
 	unsigned int i;
 	for (i = 0; st_log_levels[i].level != st_log_level_unknown; i++)
@@ -119,7 +119,7 @@ const char * st_log_level_to_string_v1(enum st_log_level level) {
 	return st_log_levels[i].name;
 }
 
-__asm__(".symver st_log_string_to_level_v1, st_log_string_to_level@@LIBSTONE_1.0");
+__asm__(".symver st_log_string_to_level_v1, st_log_string_to_level@@LIBSTONE_1.2");
 enum st_log_level st_log_string_to_level_v1(const char * level) {
 	if (level == NULL)
 		return st_log_level_unknown;
@@ -132,7 +132,7 @@ enum st_log_level st_log_string_to_level_v1(const char * level) {
 	return st_log_levels[i].level;
 }
 
-__asm__(".symver st_log_string_to_type_v1, st_log_string_to_type@@LIBSTONE_1.0");
+__asm__(".symver st_log_string_to_type_v1, st_log_string_to_type@@LIBSTONE_1.2");
 enum st_log_type st_log_string_to_type_v1(const char * type) {
 	if (type == NULL)
 		return st_log_type_unknown;
@@ -220,7 +220,7 @@ static void st_log_send_message(void * arg) {
 	st_value_free_v1(messages);
 }
 
-__asm__(".symver st_log_type_to_string_v1, st_log_type_to_string@@LIBSTONE_1.0");
+__asm__(".symver st_log_type_to_string_v1, st_log_type_to_string@@LIBSTONE_1.2");
 const char * st_log_type_to_string_v1(enum st_log_type type) {
 	unsigned int i;
 	for (i = 0; st_log_types[i].type != st_log_type_unknown; i++)
@@ -230,7 +230,7 @@ const char * st_log_type_to_string_v1(enum st_log_type type) {
 	return st_log_types[i].name;
 }
 
-__asm__(".symver st_log_write_v1, st_log_write@@LIBSTONE_1.0");
+__asm__(".symver st_log_write_v1, st_log_write@@LIBSTONE_1.2");
 void st_log_write_v1(enum st_log_level level, enum st_log_type type, const char * format, ...) {
 	if (st_log_finished)
 		return;

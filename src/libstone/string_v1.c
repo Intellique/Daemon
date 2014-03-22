@@ -39,7 +39,7 @@
  */
 static int st_string_valid_utf8_char(const char * string);
 
-__asm__(".symver st_string_check_valid_utf8_v1, st_string_check_valid_utf8@@LIBSTONE_1.0");
+__asm__(".symver st_string_check_valid_utf8_v1, st_string_check_valid_utf8@@LIBSTONE_1.2");
 bool st_string_check_valid_utf8_v1(const char * string) {
 	if (string == NULL)
 		return false;
@@ -57,7 +57,7 @@ bool st_string_check_valid_utf8_v1(const char * string) {
 	return true;
 }
 
-__asm__(".symver st_string_compute_hash_v1, st_string_compute_hash@@LIBSTONE_1.0");
+__asm__(".symver st_string_compute_hash_v1, st_string_compute_hash@@LIBSTONE_1.2");
 unsigned long long st_string_compute_hash_v1(const struct st_value * value) {
 	if (value == NULL || value->type != st_value_string)
 		return 0;
@@ -69,7 +69,7 @@ unsigned long long st_string_compute_hash_v1(const struct st_value * value) {
 	return hash;
 }
 
-__asm__(".symver st_string_convert_unicode_to_utf8_v1, st_string_convert_unicode_to_utf8@@LIBSTONE_1.0");
+__asm__(".symver st_string_convert_unicode_to_utf8_v1, st_string_convert_unicode_to_utf8@@LIBSTONE_1.2");
 bool st_string_convert_unicode_to_utf8_v1(unsigned int unicode, char * string, size_t length, bool end_string) {
 	if (unicode < 0x80 && length > 1) {
 		string[0] = unicode & 0x7F;
@@ -102,7 +102,7 @@ bool st_string_convert_unicode_to_utf8_v1(unsigned int unicode, char * string, s
 	return false;
 }
 
-__asm__(".symver st_string_delete_double_char_v1, st_string_delete_double_char@@LIBSTONE_1.0");
+__asm__(".symver st_string_delete_double_char_v1, st_string_delete_double_char@@LIBSTONE_1.2");
 void st_string_delete_double_char_v1(char * str, char delete_char) {
 	char double_char[3] = { delete_char, delete_char, '\0' };
 
@@ -119,7 +119,7 @@ void st_string_delete_double_char_v1(char * str, char delete_char) {
 	}
 }
 
-__asm__(".symver st_string_middle_elipsis_v1, st_string_middle_elipsis@@LIBSTONE_1.0");
+__asm__(".symver st_string_middle_elipsis_v1, st_string_middle_elipsis@@LIBSTONE_1.2");
 void st_string_middle_elipsis_v1(char * string, size_t length) {
 	size_t str_length = strlen(string);
 	if (str_length <= length)
@@ -159,7 +159,7 @@ void st_string_middle_elipsis_v1(char * string, size_t length) {
 	memmove(ptrA + 1, ptrB, strlen(ptrB) + 1);
 }
 
-__asm__(".symver st_string_rtrim_v1, st_string_rtrim@@LIBSTONE_1.0");
+__asm__(".symver st_string_rtrim_v1, st_string_rtrim@@LIBSTONE_1.2");
 void st_string_rtrim_v1(char * str, char trim) {
 	size_t length = strlen(str);
 
@@ -170,7 +170,7 @@ void st_string_rtrim_v1(char * str, char trim) {
 		ptr[1] = '\0';
 }
 
-__asm__(".symver st_string_trim_v1, st_string_trim@@LIBSTONE_1.0");
+__asm__(".symver st_string_trim_v1, st_string_trim@@LIBSTONE_1.2");
 void st_string_trim_v1(char * str, char trim) {
 	size_t length = strlen(str);
 
@@ -192,7 +192,7 @@ void st_string_trim_v1(char * str, char trim) {
 		ptr[1] = '\0';
 }
 
-__asm__(".symver st_string_unicode_length_v1, st_string_unicode_length@@LIBSTONE_1.0");
+__asm__(".symver st_string_unicode_length_v1, st_string_unicode_length@@LIBSTONE_1.2");
 size_t st_string_unicode_length_v1(unsigned int unicode) {
 	if (unicode < 0x80)
 		return 1;

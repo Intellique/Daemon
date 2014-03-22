@@ -32,7 +32,7 @@
 #include "socket/unix_v1.h"
 #include "value_v1.h"
 
-__asm__(".symver st_socket_server_v1, st_socket_server@@LIBSTONE_1.0");
+__asm__(".symver st_socket_server_v1, st_socket_server@@LIBSTONE_1.2");
 int st_socket_v1(struct st_value * config) {
 	struct st_value * vaf = st_value_hashtable_get2_v1(config, "domain", false);
 
@@ -48,7 +48,7 @@ int st_socket_v1(struct st_value * config) {
 	return -1;
 }
 
-__asm__(".symver st_socket_server_v1, st_socket_server@@LIBSTONE_1.0");
+__asm__(".symver st_socket_server_v1, st_socket_server@@LIBSTONE_1.2");
 bool st_socket_server_v1(struct st_value * config, st_socket_accept_f accept_callback) {
 	struct st_value * vaf = st_value_hashtable_get2_v1(config, "domain", false);
 

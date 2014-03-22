@@ -67,7 +67,7 @@ static void lgr_log_init() {
 	lgr_modules = st_value_new_linked_list();
 }
 
-__asm__(".symver lgr_log_load_v1, lgr_log_load@@LIBSTONE_LOGGER_1.0");
+__asm__(".symver lgr_log_load_v1, lgr_log_load@@LIBSTONE_LOGGER_1.2");
 bool lgr_log_load_v1(struct st_value * params) {
 	bool ok = true;
 
@@ -102,7 +102,7 @@ bool lgr_log_load_v1(struct st_value * params) {
 	return ok;
 }
 
-__asm__(".symver lgr_log_register_driver_v1, lgr_log_register_driver@@LIBSTONE_LOGGER_1.0");
+__asm__(".symver lgr_log_register_driver_v1, lgr_log_register_driver@@LIBSTONE_LOGGER_1.2");
 void lgr_log_register_driver_v1(struct lgr_log_driver * driver) {
 	if (driver == NULL)
 		return;
@@ -114,7 +114,7 @@ void lgr_log_register_driver_v1(struct lgr_log_driver * driver) {
 	}
 }
 
-__asm__(".symver lgr_log_write_v1, lgr_log_write@@LIBSTONE_LOGGER_1.0");
+__asm__(".symver lgr_log_write_v1, lgr_log_write@@LIBSTONE_LOGGER_1.2");
 void lgr_log_write_v1(struct st_value * message) {
 	struct st_value * level = st_value_hashtable_get2(message, "level", false);
 	if (level == NULL || level->type != st_value_string)
@@ -132,7 +132,7 @@ void lgr_log_write_v1(struct st_value * message) {
 	st_value_iterator_free(iter);
 }
 
-__asm__(".symver lgr_log_write2_v1, lgr_log_write2@@LIBSTONE_LOGGER_1.0");
+__asm__(".symver lgr_log_write2_v1, lgr_log_write2@@LIBSTONE_LOGGER_1.2");
 void lgr_log_write2_v1(enum st_log_level level, enum st_log_type type, const char * format, ...) {
 	char * str_message = NULL;
 

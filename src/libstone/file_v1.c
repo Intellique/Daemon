@@ -47,7 +47,7 @@
 #include "file_v1.h"
 #include "string_v1.h"
 
-__asm__(".symver st_file_basic_scandir_filter_v1, st_file_basic_scandir_filter@@LIBSTONE_1.0");
+__asm__(".symver st_file_basic_scandir_filter_v1, st_file_basic_scandir_filter@@LIBSTONE_1.2");
 int st_file_basic_scandir_filter_v1(const struct dirent * d) {
 	if (d->d_name[0] != '.')
 		return 1;
@@ -58,7 +58,7 @@ int st_file_basic_scandir_filter_v1(const struct dirent * d) {
 	return d->d_name[1] != '.' || d->d_name[2] != '\0';
 }
 
-__asm__(".symver st_file_convert_mode_v1, st_file_convert_mode@@LIBSTONE_1.0");
+__asm__(".symver st_file_convert_mode_v1, st_file_convert_mode@@LIBSTONE_1.2");
 void st_file_convert_mode_v1(char * buffer, mode_t mode) {
 	strcpy(buffer, "----------");
 
@@ -107,7 +107,7 @@ void st_file_convert_mode_v1(char * buffer, mode_t mode) {
 		buffer[9] = 'x';
 }
 
-__asm__(".symver st_file_convert_size_to_string_v1, st_file_convert_size_to_string@@LIBSTONE_1.0");
+__asm__(".symver st_file_convert_size_to_string_v1, st_file_convert_size_to_string@@LIBSTONE_1.2");
 void st_file_convert_size_to_string_v1(size_t size, char * str, ssize_t str_len) {
 	unsigned short mult = 0;
 	double tsize = size;
@@ -153,7 +153,7 @@ void st_file_convert_size_to_string_v1(size_t size, char * str, ssize_t str_len)
 	}
 }
 
-__asm__(".symver st_file_cp_v1, st_file_cp@@LIBSTONE_1.0");
+__asm__(".symver st_file_cp_v1, st_file_cp@@LIBSTONE_1.2");
 int st_file_cp_v1(const char * src, const char * dst) {
 	struct stat stsrc;
 	int failed = lstat(src, &stsrc);
@@ -310,7 +310,7 @@ int st_file_cp_v1(const char * src, const char * dst) {
 	return failed;
 }
 
-__asm__(".symver st_file_mkdir_v1, st_file_mkdir@@LIBSTONE_1.0");
+__asm__(".symver st_file_mkdir_v1, st_file_mkdir@@LIBSTONE_1.2");
 int st_file_mkdir_v1(const char * dirname, mode_t mode) {
 	if (!access(dirname, F_OK))
 		return 0;
@@ -360,7 +360,7 @@ int st_file_mkdir_v1(const char * dirname, mode_t mode) {
 	return failed;
 }
 
-__asm__(".symver st_file_mv_v1, st_file_mv@@LIBSTONE_1.0");
+__asm__(".symver st_file_mv_v1, st_file_mv@@LIBSTONE_1.2");
 int st_file_mv_v1(const char * src, const char * dst) {
 	struct stat stsrc;
 	int failed = lstat(src, &stsrc);
@@ -391,7 +391,7 @@ int st_file_mv_v1(const char * src, const char * dst) {
 	return failed;
 }
 
-__asm__(".symver st_file_rm_v1, st_file_rm@@LIBSTONE_1.0");
+__asm__(".symver st_file_rm_v1, st_file_rm@@LIBSTONE_1.2");
 int st_file_rm_v1(const char * path) {
 	if (access(path, F_OK))
 		return 0;

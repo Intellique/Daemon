@@ -52,7 +52,7 @@ static void st_checksum_exit(void) __attribute__((destructor));
 static void st_checksum_init(void) __attribute__((constructor));
 
 
-__asm__(".symver st_checksum_compute_v1, st_checksum_compute@@LIBSTONE_1.0");
+__asm__(".symver st_checksum_compute_v1, st_checksum_compute@@LIBSTONE_1.2");
 char * st_checksum_compute_v1(const char * checksum, const void * data, ssize_t length) {
 	if (checksum == NULL || (data == NULL && length > 0) || length < 0)
 		return NULL;
@@ -71,7 +71,7 @@ char * st_checksum_compute_v1(const char * checksum, const void * data, ssize_t 
 	return digest;
 }
 
-__asm__(".symver st_checksum_convert_to_hex_v1, st_checksum_convert_to_hex@@LIBSTONE_1.0");
+__asm__(".symver st_checksum_convert_to_hex_v1, st_checksum_convert_to_hex@@LIBSTONE_1.2");
 void st_checksum_convert_to_hex_v1(unsigned char * digest, ssize_t length, char * hex_digest) {
 	if (digest == NULL || length < 1 || hex_digest == NULL)
 		return;
@@ -87,7 +87,7 @@ static void st_checksum_exit() {
 	st_checksum_drivers = NULL;
 }
 
-__asm__(".symver st_checksum_get_driver_v1, st_checksum_get_driver@@LIBSTONE_1.0");
+__asm__(".symver st_checksum_get_driver_v1, st_checksum_get_driver@@LIBSTONE_1.2");
 struct st_checksum_driver * st_checksum_get_driver_v1(const char * driver) {
 	if (driver == NULL)
 		return NULL;
@@ -123,7 +123,7 @@ static void st_checksum_init() {
 	st_checksum_drivers = st_value_new_hashtable2_v1();
 }
 
-__asm__(".symver st_checksum_register_driver_v1, st_checksum_register_driver@@LIBSTONE_1.0");
+__asm__(".symver st_checksum_register_driver_v1, st_checksum_register_driver@@LIBSTONE_1.2");
 void st_checksum_register_driver_v1(struct st_checksum_driver * driver) {
 	if (driver == NULL) {
 		st_log_write_v1(st_log_level_error, st_log_type_plugin_checksum, "Try to register with null driver");

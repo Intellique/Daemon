@@ -49,7 +49,7 @@ static void st_poll_exit() {
 	free(st_polls);
 }
 
-__asm__(".symver st_poll_v1, st_poll@@LIBSTONE_1.0");
+__asm__(".symver st_poll_v1, st_poll@@LIBSTONE_1.2");
 int st_poll_v1(int timeout) {
 	if (st_nb_polls < 1)
 		return 0;
@@ -84,12 +84,12 @@ int st_poll_v1(int timeout) {
 	return nb_event;
 }
 
-__asm__(".symver st_poll_nb_handlers_v1, st_poll_nb_handlers@@LIBSTONE_1.0");
+__asm__(".symver st_poll_nb_handlers_v1, st_poll_nb_handlers@@LIBSTONE_1.2");
 unsigned int st_poll_nb_handlers_v1() {
 	return st_nb_polls;
 }
 
-__asm__(".symver st_poll_register_v1, st_poll_register@@LIBSTONE_1.0");
+__asm__(".symver st_poll_register_v1, st_poll_register@@LIBSTONE_1.2");
 bool st_poll_register_v1(int fd, short event, st_poll_callback_f callback, void * data, st_poll_free_f release) {
 	void * addr = realloc(st_polls, (st_nb_polls + 1) * sizeof(struct pollfd));
 	if (addr == NULL)
@@ -116,7 +116,7 @@ bool st_poll_register_v1(int fd, short event, st_poll_callback_f callback, void 
 	return true;
 }
 
-__asm__(".symver st_poll_unregister_v1, st_poll_unregister@@LIBSTONE_1.0");
+__asm__(".symver st_poll_unregister_v1, st_poll_unregister@@LIBSTONE_1.2");
 void st_poll_unregister_v1(int fd) {
 	unsigned int i;
 	for (i = 0; i < st_nb_polls; i++)
