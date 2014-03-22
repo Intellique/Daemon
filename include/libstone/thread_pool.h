@@ -27,6 +27,8 @@
 #ifndef __STONE_THREADPOOL_H__
 #define __STONE_THREADPOOL_H__
 
+typedef void (*st_thread_pool_f)(void * arg);
+
 /**
  * \brief Run this function into another thread
  *
@@ -38,7 +40,7 @@
  *
  * \note All threads which are not used while 5 minutes are stopped
  */
-int st_thread_pool_run(const char * thread_name, void (*function)(void * arg), void * arg);
+int st_thread_pool_run(const char * thread_name, st_thread_pool_f callback, void * arg);
 
 /**
  * \brief Run this function into another thread with specified
@@ -53,7 +55,7 @@ int st_thread_pool_run(const char * thread_name, void (*function)(void * arg), v
  *
  * \note All threads which are not used while 5 minutes are stopped
  */
-int st_thread_pool_run2(const char * thread_name, void (*function)(void * arg), void * arg, int nice);
+int st_thread_pool_run2(const char * thread_name, st_thread_pool_f callback, void * arg, int nice);
 
 #endif
 

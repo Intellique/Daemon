@@ -29,8 +29,10 @@
 
 #include <libstone/thread_pool.h>
 
-int st_thread_pool_run_v1(const char * thread_name, void (*function)(void * arg), void * arg);
-int st_thread_pool_run2_v1(const char * thread_name, void (*function)(void * arg), void * arg, int nice);
+#define st_thread_pool_f_v1 st_thread_pool_f
+
+int st_thread_pool_run_v1(const char * thread_name, st_thread_pool_f_v1 callback, void * arg);
+int st_thread_pool_run2_v1(const char * thread_name, st_thread_pool_f_v1 callback, void * arg, int nice);
 
 #endif
 
