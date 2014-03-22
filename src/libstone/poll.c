@@ -24,20 +24,20 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// free
+// free, realloc
 #include <stdlib.h>
 // memmove
 #include <string.h>
 // close
 #include <unistd.h>
 
-#include "poll_v1.h"
+#include "poll.h"
 
 static struct pollfd * st_polls = NULL;
 static struct st_poll_info {
-	st_poll_callback_f callback;
+	st_poll_callback_f_v1 callback;
 	void * data;
-	st_poll_free_f release;
+	st_poll_free_f_v1 release;
 } * st_poll_infos = NULL;
 static unsigned int st_nb_polls = 0;
 static bool st_poll_restart = false;
@@ -90,7 +90,7 @@ unsigned int st_poll_nb_handlers_v1() {
 }
 
 __asm__(".symver st_poll_register_v1, st_poll_register@@LIBSTONE_1.2");
-bool st_poll_register_v1(int fd, short event, st_poll_callback_f callback, void * data, st_poll_free_f release) {
+bool st_poll_register_v1(int fd, short event, st_poll_callback_f_v1 callback, void * data, st_poll_free_f_v1 release) {
 	void * addr = realloc(st_polls, (st_nb_polls + 1) * sizeof(struct pollfd));
 	if (addr == NULL)
 		return false;
