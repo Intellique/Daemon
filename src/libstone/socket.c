@@ -24,13 +24,49 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_SOCKET_UNIX_P_H__
-#define __LIBSTONE_SOCKET_UNIX_P_H__
+// strcmp
+#include <string.h>
 
-#include "../socket_v1.h"
+#include "socket.h"
+#include "socket/tcp.h"
+#include "socket/unix.h"
+#include "value_v1.h"
 
-int st_socket_unix_v1(struct st_value * config);
-bool st_socket_unix_server_v1(struct st_value * config, st_socket_accept_f accept_callback);
+__asm__(".symver st_socket_server_v1, st_socket_server@@LIBSTONE_1.2");
+int st_socket_v1(struct st_value_v1 * config) {
+	struct st_value * vaf = st_value_hashtable_get2_v1(config, "domain", false);
 
-#endif
+	if (vaf->type != st_value_string)
+		return -1;
+
+	if (!strcmp(vaf->value.string, "inet"))
+		return st_socket_tcp_v1(config);
+		
+	if (!strcmp(vaf->value.string, "inet6"))
+		return st_socket_tcp6_v1(config);
+
+	if (!strcmp(vaf->value.string, "unix"))
+		return st_socket_unix_v1(config);
+
+	return -1;
+}
+
+__asm__(".symver st_socket_server_v1, st_socket_server@@LIBSTONE_1.2");
+bool st_socket_server_v1(struct st_value_v1 * config, st_socket_accept_f_v1 accept_callback) {
+	struct st_value * vaf = st_value_hashtable_get2_v1(config, "domain", false);
+
+	if (vaf->type != st_value_string)
+		return false;
+
+	if (!strcmp(vaf->value.string, "inet"))
+		return st_socket_tcp_server_v1(config, accept_callback);
+
+	if (!strcmp(vaf->value.string, "inet6"))
+		return st_socket_tcp6_server_v1(config, accept_callback);
+
+	if (!strcmp(vaf->value.string, "unix"))
+		return st_socket_unix_server_v1(config, accept_callback);
+
+	return false;
+}
 

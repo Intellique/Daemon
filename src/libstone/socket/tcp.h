@@ -27,12 +27,12 @@
 #ifndef __LIBSTONE_SOCKET_TCP_P_H__
 #define __LIBSTONE_SOCKET_TCP_P_H__
 
-#include "../socket_v1.h"
+#include "../socket.h"
 
-int st_socket_tcp_v1(struct st_value * config);
-int st_socket6_tcp_v1(struct st_value * config);
-bool st_socket_tcp_server_v1(struct st_value * config, st_socket_accept_f accept_callback);
-bool st_socket_tcp_server6_v1(struct st_value * config, st_socket_accept_f accept_callback);
+int st_socket_tcp_v1(struct st_value_v1 * config);
+int st_socket_tcp6_v1(struct st_value_v1 * config);
+bool st_socket_tcp_server_v1(struct st_value_v1 * config, st_socket_accept_f_v1 accept_callback);
+bool st_socket_tcp6_server_v1(struct st_value_v1 * config, st_socket_accept_f_v1 accept_callback);
 
 #endif
 

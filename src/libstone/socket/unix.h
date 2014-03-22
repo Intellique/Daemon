@@ -24,13 +24,13 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_SOCKET_P_H__
-#define __LIBSTONE_SOCKET_P_H__
+#ifndef __LIBSTONE_SOCKET_UNIX_P_H__
+#define __LIBSTONE_SOCKET_UNIX_P_H__
 
-#include <libstone/socket.h>
+#include "../socket.h"
 
-int st_socket_v1(struct st_value * config);
-bool st_socket_server_v1(struct st_value * config, st_socket_accept_f accept_callback);
+int st_socket_unix_v1(struct st_value_v1 * config);
+bool st_socket_unix_server_v1(struct st_value_v1 * config, st_socket_accept_f_v1 accept_callback);
 
 #endif
 
