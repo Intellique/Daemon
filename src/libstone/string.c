@@ -27,8 +27,7 @@
 // memmove, strlen, strspn, strstr
 #include <string.h>
 
-#include "string_v1.h"
-#include "value_v1.h"
+#include "string.h"
 
 
 /**
@@ -37,7 +36,7 @@
  * \param[in] string : a string which contains one or more UTF8 characters
  * \returns size of first character or \b -1
  */
-static int st_string_valid_utf8_char(const char * string);
+static int st_string_valid_utf8_char_v1(const char * string);
 
 __asm__(".symver st_string_check_valid_utf8_v1, st_string_check_valid_utf8@@LIBSTONE_1.2");
 bool st_string_check_valid_utf8_v1(const char * string) {
@@ -46,7 +45,7 @@ bool st_string_check_valid_utf8_v1(const char * string) {
 
 	const char * ptr = string;
 	while (*ptr) {
-		int size = st_string_valid_utf8_char(ptr);
+		int size = st_string_valid_utf8_char_v1(ptr);
 
 		if (!size)
 			return false;
@@ -58,7 +57,7 @@ bool st_string_check_valid_utf8_v1(const char * string) {
 }
 
 __asm__(".symver st_string_compute_hash_v1, st_string_compute_hash@@LIBSTONE_1.2");
-unsigned long long st_string_compute_hash_v1(const struct st_value * value) {
+unsigned long long st_string_compute_hash_v1(const struct st_value_v1 * value) {
 	if (value == NULL || value->type != st_value_string)
 		return 0;
 
@@ -131,7 +130,7 @@ void st_string_middle_elipsis_v1(char * string, size_t length) {
 	char * ptrA = string;
 	char * ptrB = string + str_length;
 	while (used < length) {
-		int char_length = st_string_valid_utf8_char(ptrA);
+		int char_length = st_string_valid_utf8_char_v1(ptrA);
 		if (char_length == 0)
 			return;
 
@@ -142,7 +141,7 @@ void st_string_middle_elipsis_v1(char * string, size_t length) {
 		ptrA += char_length;
 
 		int offset = 1;
-		while (char_length = st_string_valid_utf8_char(ptrB - offset), ptrA < ptrB - offset && char_length == 0)
+		while (char_length = st_string_valid_utf8_char_v1(ptrB - offset), ptrA < ptrB - offset && char_length == 0)
 			offset++;
 
 		if (char_length == 0)
@@ -206,7 +205,7 @@ size_t st_string_unicode_length_v1(unsigned int unicode) {
 	return 0;
 }
 
-static int st_string_valid_utf8_char(const char * string) {
+static int st_string_valid_utf8_char_v1(const char * string) {
 	const unsigned char * ptr = (const unsigned char *) string;
 	if ((*ptr & 0x7F) == *ptr) {
 		return 1;
