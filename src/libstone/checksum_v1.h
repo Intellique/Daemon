@@ -24,74 +24,16 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#define _GNU_SOURCE
-// bool
-#include <stdbool.h>
-// pthread_mutex_lock, pthread_mutex_unlock,
-#include <pthread.h>
-// dlclose, dlerror, dlopen
-#include <dlfcn.h>
-// glob
-#include <glob.h>
-// snprintf
-#include <stdio.h>
-// free
-#include <stdlib.h>
-// access
-#include <unistd.h>
+#ifndef __LIBSTONE_CHECKSUM_P_H__
+#define __LIBSTONE_CHECKSUM_P_H__
 
-#include "config.h"
-#include "loader.h"
-#include "log_v1.h"
+#include <libstone/checksum.h>
 
-static void * lgr_loader_load_file(const char * filename);
-
-static volatile bool lgr_loader_loading = false;
-static volatile bool lgr_loader_loaded = false;
+char * st_checksum_compute_v1(const char * checksum, const void * data, ssize_t length) __attribute__((nonnull(1),warn_unused_result));
+void st_checksum_convert_to_hex_v1(unsigned char * digest, ssize_t length, char * hex_digest);
+struct st_checksum_driver * st_checksum_get_driver_v1(const char * driver);
+void st_checksum_register_driver_v1(struct st_checksum_driver * driver);
 
 
-void * lgr_loader_load(const char * module, const char * name) {
-	if (module == NULL || name == NULL)
-		return NULL;
-
-	char * path;
-	asprintf(&path, MODULE_PATH "/lib%s-%s.so", module, name);
-
-	void * cookie = lgr_loader_load_file(path);
-
-	free(path);
-
-	return cookie;
-}
-
-static void * lgr_loader_load_file(const char * filename) {
-	if (access(filename, R_OK | X_OK)) {
-		lgr_log_write2_v1(st_log_level_debug, st_log_type_daemon, "Loader: access to file %s failed because %m", filename);
-		return NULL;
-	}
-
-	static pthread_mutex_t lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
-	pthread_mutex_lock(&lock);
-
-	lgr_loader_loading = true;
-	lgr_loader_loaded = false;
-
-	void * cookie = dlopen(filename, RTLD_NOW);
-	if (cookie == NULL) {
-		lgr_log_write2_v1(st_log_level_debug, st_log_type_daemon, "Loader: failed to load '%s' because %s", filename, dlerror());
-	} else if (!lgr_loader_loaded) {
-		dlclose(cookie);
-		cookie = NULL;
-	}
-
-	lgr_loader_loading = false;
-
-	pthread_mutex_unlock(&lock);
-	return cookie;
-}
-
-void lgr_loader_register_ok(void) {
-	if (lgr_loader_loading)
-		lgr_loader_loaded = true;
-}
+#endif
 

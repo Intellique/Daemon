@@ -22,17 +22,14 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 26 Apr 2013 11:42:23 +0200                            *
 \****************************************************************************/
 
-#ifndef __STONE_CHECKSUM_H__
-#define __STONE_CHECKSUM_H__
+#ifndef __LIBSTONE_CHECKSUM_H__
+#define __LIBSTONE_CHECKSUM_H__
 
 #include <stdbool.h>
 
 struct st_database_connection;
-
-#include "plugin.h"
 
 // ssize_t
 #include <sys/types.h>
@@ -221,13 +218,13 @@ struct st_checksum {
 		 * \param[in] checksum a checksum handler
 		 * \return a malloc allocated string which contains a digest in hexadecimal form
 		 */
-		char * (*digest)(struct st_checksum * checksum) __attribute__((warn_unused_result));
+		char * (*digest)(struct st_checksum * checksum) __attribute__((nonnull,warn_unused_result));
 		/**
 		 * \brief This function releases all memory associated to checksum
 		 *
 		 * \param[in] checksum a checksum handler
 		 */
-		void (*free)(struct st_checksum * checksum);
+		void (*free)(struct st_checksum * checksum) __attribute__((nonnull));
 		/**
 		 * \brief This function reads some data
 		 *
@@ -240,18 +237,19 @@ struct st_checksum {
 		 *
 		 * \note this function can be called after function digest
 		 */
-		ssize_t (*update)(struct st_checksum * checksum, const void * data, ssize_t length);
+		ssize_t (*update)(struct st_checksum * checksum, const void * data, ssize_t length) __attribute__((nonnull(1)));
 	} * ops;
-	/**
-	 * \brief Private data of one checksum
-	 */
-	void * data;
+
 	/**
 	 * \brief Driver associated
 	 *
 	 * \note Should not be NULL
 	 */
 	struct st_checksum_driver * driver;
+	/**
+	 * \brief Private data of one checksum
+	 */
+	void * data;
 };
 
 /**
@@ -269,12 +267,14 @@ struct st_checksum_driver {
 	 * \brief Is this checksum should be used by default
 	 */
 	bool default_checksum;
+
 	/**
 	 * \brief Get a new checksum handler
 	 *
 	 * \return a structure which allows to compute checksum
 	 */
 	struct st_checksum * (*new_checksum)(void) __attribute__((warn_unused_result));
+
 	/**
 	 * \brief Private data used by each checksum handler
 	 */
@@ -282,20 +282,12 @@ struct st_checksum_driver {
 	/**
 	 * \brief Check if the driver use the correct api level
 	 */
-	const struct st_plugin api_level;
+	const unsigned int api_level;
 	/**
 	 * \brief Sha1 sum of plugins source code
 	 */
 	const char * src_checksum;
 };
-
-/**
- * \def STONE_CHECKSUM_API_LEVEL
- * \brief Current api level of checksum
- *
- * Will increment from new version of struct st_checksum_driver or struct st_checksum
- */
-#define STONE_CHECKSUM_API_LEVEL 1
 
 
 /**
@@ -307,7 +299,7 @@ struct st_checksum_driver {
  * \return a malloc allocated string which contains checksum or \b NULL if failed
  * \note Returned value should be release with \a free
  */
-char * st_checksum_compute(const char * checksum, const void * data, ssize_t length) __attribute__((warn_unused_result));
+char * st_checksum_compute(const char * checksum, const void * data, ssize_t length) __attribute__((nonnull(1),warn_unused_result));
 
 /**
  * \brief This function converts a digest into hexadecimal form
@@ -346,12 +338,13 @@ struct st_checksum_driver * st_checksum_get_driver(const char * driver);
  */
 void st_checksum_register_driver(struct st_checksum_driver * driver);
 
+
 /**
  * \brief Synchronize checksum plugin to database
  *
  * \param[in] connection an already connected link to database
- */
 void st_checksum_sync_plugins(struct st_database_connection * connection);
+ */
 
 #endif
 
