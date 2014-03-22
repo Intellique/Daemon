@@ -27,17 +27,11 @@
 
 #define _GNU_SOURCE
 // glob, globfree
-#include <glob.h>
+// #include <glob.h>
 // pthread_mutex_lock, pthread_mutex_unlock,
 #include <pthread.h>
-// free, malloc, realloc
-#include <stdlib.h>
-// sscanf
+// snprintf, sscanf
 #include <stdio.h>
-// strcmp, strdup
-#include <string.h>
-// pipe, read, write
-#include <unistd.h>
 
 #include <libstone/log.h>
 #include <libstone/value.h>
@@ -89,7 +83,7 @@ static void st_checksum_exit() {
 }
 
 __asm__(".symver st_checksum_get_driver_v1, st_checksum_get_driver@@LIBSTONE_1.2");
-struct st_checksum_driver * st_checksum_get_driver_v1(const char * driver) {
+struct st_checksum_driver_v1 * st_checksum_get_driver_v1(const char * driver) {
 	if (driver == NULL)
 		return NULL;
 
@@ -125,7 +119,7 @@ static void st_checksum_init() {
 }
 
 __asm__(".symver st_checksum_register_driver_v1, st_checksum_register_driver@@LIBSTONE_1.2");
-void st_checksum_register_driver_v1(struct st_checksum_driver * driver) {
+void st_checksum_register_driver_v1(struct st_checksum_driver_v1 * driver) {
 	if (driver == NULL) {
 		st_log_write(st_log_level_error, st_log_type_plugin_checksum, "Try to register with null driver");
 		return;

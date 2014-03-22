@@ -29,8 +29,6 @@
 
 #include <stdbool.h>
 
-struct st_database_connection;
-
 // ssize_t
 #include <sys/types.h>
 
