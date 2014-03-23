@@ -64,7 +64,7 @@ static void lgr_socket_message(int fd, short event, void * data __attribute__((u
 	st_value_free(message);
 
 	struct st_value * response = st_value_new_boolean(true);
-	st_json_encode_to_fd(response, fd);
+	st_json_encode_to_fd(response, fd, true);
 	st_value_free(response);
 }
 

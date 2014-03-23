@@ -27,6 +27,11 @@
 #ifndef __LIBSTONE_JSON_H__
 #define __LIBSTONE_JSON_H__
 
+// bool
+#include <stdbool.h>
+// ssize_t
+#include <sys/types.h>
+
 struct st_value;
 
 ssize_t st_json_encode_to_fd(struct st_value * value, int fd, bool use_buffer);

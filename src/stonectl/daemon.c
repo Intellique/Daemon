@@ -24,8 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// NULL
-#include <stddef.h>
+// sleep
+#include <unistd.h>
 
 #include <libstone/process.h>
 
@@ -35,6 +35,10 @@ int stctl_start_daemon(int argc __attribute__((unused)), char ** argv __attribut
 	struct st_process daemon;
 	st_process_new(&daemon, "./bin/stoned", NULL, 0);
 	st_process_start(&daemon, 1);
+
+	sleep(1);
+
+	// TODO: ping server
 
 	return daemon.pid < 2;
 }

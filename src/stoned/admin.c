@@ -34,6 +34,10 @@
 
 static struct st_value * std_admin_conf = NULL;
 
+struct st_admin_client {
+	bool logged;
+};
+
 static void std_admin_new_connection(int fd_server, int fd_client, struct st_value * client);
 
 
