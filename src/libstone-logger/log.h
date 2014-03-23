@@ -29,12 +29,11 @@
 
 #include <libstone-logger/log.h>
 
-bool lgr_log_load_v1(struct st_value * params);
+#define st_value_v1 st_value
 
+bool lgr_log_load_v1(struct st_value_v1 * params);
 void lgr_log_register_driver_v1(struct lgr_log_driver * driver);
-
-void lgr_log_write_v1(struct st_value * message);
-
+void lgr_log_write_v1(struct st_value_v1 * message);
 void lgr_log_write2_v1(enum st_log_level level, enum st_log_type type, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
 
 #endif

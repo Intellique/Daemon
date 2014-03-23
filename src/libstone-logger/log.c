@@ -39,11 +39,11 @@
 #include <libstone/value.h>
 
 #include "loader.h"
-#include "log_v1.h"
+#include "log.h"
 
-static struct st_value * lgr_drivers = NULL;
-static struct st_value * lgr_messages = NULL;
-static struct st_value * lgr_modules = NULL;
+static struct st_value_v1 * lgr_drivers = NULL;
+static struct st_value_v1 * lgr_messages = NULL;
+static struct st_value_v1 * lgr_modules = NULL;
 
 static void lgr_log_exit(void) __attribute__((destructor));
 static void lgr_log_free_module(void * module);
@@ -68,13 +68,13 @@ static void lgr_log_init() {
 }
 
 __asm__(".symver lgr_log_load_v1, lgr_log_load@@LIBSTONE_LOGGER_1.2");
-bool lgr_log_load_v1(struct st_value * params) {
+bool lgr_log_load_v1(struct st_value_v1 * params) {
 	bool ok = true;
 
 	struct st_value_iterator * iter = st_value_list_get_iterator(params);
 	while (ok && st_value_iterator_has_next(iter)) {
-		struct st_value * elt = st_value_iterator_get_value(iter, false);
-		struct st_value * type = st_value_hashtable_get2(elt, "type", false);
+		struct st_value_v1 * elt = st_value_iterator_get_value(iter, false);
+		struct st_value_v1 * type = st_value_hashtable_get2(elt, "type", false);
 
 		void * cookie = NULL;
 		if (!st_value_hashtable_has_key(lgr_drivers, type)) {
@@ -86,7 +86,7 @@ bool lgr_log_load_v1(struct st_value * params) {
 			}
 		}
 
-		struct st_value * st_driver = st_value_hashtable_get(lgr_drivers, type, false, false);
+		struct st_value_v1 * st_driver = st_value_hashtable_get(lgr_drivers, type, false, false);
 		struct lgr_log_driver * driver = st_driver->value.custom.data;
 		if (cookie != NULL)
 			driver->cookie = cookie;
@@ -115,15 +115,15 @@ void lgr_log_register_driver_v1(struct lgr_log_driver * driver) {
 }
 
 __asm__(".symver lgr_log_write_v1, lgr_log_write@@LIBSTONE_LOGGER_1.2");
-void lgr_log_write_v1(struct st_value * message) {
-	struct st_value * level = st_value_hashtable_get2(message, "level", false);
+void lgr_log_write_v1(struct st_value_v1 * message) {
+	struct st_value_v1 * level = st_value_hashtable_get2(message, "level", false);
 	if (level == NULL || level->type != st_value_string)
 		return;
 
 	enum st_log_level lvl = st_log_string_to_level(level->value.string);
 	struct st_value_iterator * iter = st_value_list_get_iterator(lgr_modules);
 	while (st_value_iterator_has_next(iter)) {
-		struct st_value * module = st_value_iterator_get_value(iter, false);
+		struct st_value_v1 * module = st_value_iterator_get_value(iter, false);
 		struct lgr_log_module * mod = module->value.custom.data;
 
 		if (lvl <= mod->level)
@@ -143,7 +143,7 @@ void lgr_log_write2_v1(enum st_log_level level, enum st_log_type type, const cha
 	vasprintf(&str_message, format, va);
 	va_end(va);
 
-	struct st_value * message = st_value_pack("{sssssiss}", "level", st_log_level_to_string(level), "type", st_log_type_to_string(type), "timestamp", timestamp, "message", str_message);
+	struct st_value_v1 * message = st_value_pack("{sssssiss}", "level", st_log_level_to_string(level), "type", st_log_type_to_string(type), "timestamp", timestamp, "message", str_message);
 
 	free(str_message);
 
@@ -161,7 +161,7 @@ void lgr_log_write2_v1(enum st_log_level level, enum st_log_type type, const cha
 	if (nb_unsent_messages > 0) {
 		struct st_value_iterator * iter = st_value_list_get_iterator(lgr_messages);
 		while (st_value_iterator_has_next(iter)) {
-			struct st_value * msg = st_value_iterator_get_value(iter, false);
+			struct st_value_v1 * msg = st_value_iterator_get_value(iter, false);
 			lgr_log_write_v1(msg);
 		}
 		st_value_iterator_free(iter);

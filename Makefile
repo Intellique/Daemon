@@ -168,7 +168,7 @@ clean:
 	@echo ' RM       -Rf $(foreach dir,${BIN_DIRS},$(word 1,$(subst /, ,$(dir)))) ${BUILD_DIR}'
 	@rm -Rf $(foreach dir,${BIN_DIRS},$(word 1,$(subst /, ,$(dir)))) ${BUILD_DIR}
 
-clean-depend:
+clean-depend: clean
 	@echo ' RM       -Rf depend'
 	@rm -Rf depend
 

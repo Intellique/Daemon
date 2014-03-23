@@ -42,7 +42,7 @@
 
 #include "config.h"
 #include "loader.h"
-#include "log_v1.h"
+#include "log.h"
 
 static void * lgr_loader_load_file(const char * filename);
 
@@ -66,7 +66,7 @@ void * lgr_loader_load(const char * module, const char * name) {
 
 static void * lgr_loader_load_file(const char * filename) {
 	if (access(filename, R_OK | X_OK)) {
-		lgr_log_write2_v1(st_log_level_debug, st_log_type_daemon, "Loader: access to file %s failed because %m", filename);
+		lgr_log_write2(st_log_level_debug, st_log_type_logger, "Loader: access to file %s failed because %m", filename);
 		return NULL;
 	}
 
@@ -78,7 +78,7 @@ static void * lgr_loader_load_file(const char * filename) {
 
 	void * cookie = dlopen(filename, RTLD_NOW);
 	if (cookie == NULL) {
-		lgr_log_write2_v1(st_log_level_debug, st_log_type_daemon, "Loader: failed to load '%s' because %s", filename, dlerror());
+		lgr_log_write2(st_log_level_debug, st_log_type_logger, "Loader: failed to load '%s' because %s", filename, dlerror());
 	} else if (!lgr_loader_loaded) {
 		dlclose(cookie);
 		cookie = NULL;
