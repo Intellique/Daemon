@@ -1,4 +1,4 @@
-STONE_CHECKSUM_SHA1_SRC_DIR			:= src/module/checksum/sha1
+STONE_CHECKSUM_SHA1_SRC_DIR			:= src/checksum/sha1
 
 STONE_CHECKSUM_SHA1_BIN				:= lib/libchecksum-sha1.so
 STONE_CHECKSUM_SHA1_CFLAG			:= -pthread -fPIC -fvisibility=hidden

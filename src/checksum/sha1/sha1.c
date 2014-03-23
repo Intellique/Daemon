@@ -22,7 +22,6 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 22 Apr 2013 13:26:21 +0200                            *
 \****************************************************************************/
 
 // free, malloc
@@ -52,11 +51,7 @@ static struct st_checksum_driver st_checksum_sha1_driver = {
 	.default_checksum = true,
 	.new_checksum	  = st_checksum_sha1_new_checksum,
 	.cookie			  = NULL,
-	.api_level        = {
-		.checksum = STONE_CHECKSUM_API_LEVEL,
-		.database = 0,
-		.job      = 0,
-	},
+	.api_level        = 0,
 	.src_checksum     = STONE_CHECKSUM_SHA1_SRCSUM,
 };
 
