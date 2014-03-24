@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 18 Feb 2014 15:59:17 +0100                            *
+*  Last modified: Mon, 24 Mar 2014 17:01:05 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -186,7 +186,7 @@ static bool st_db_postgresql_has_selected_files_by_job(struct st_database_connec
 static bool st_db_postgresql_mark_archive_file_as_checked(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_file * file, bool ok);
 static bool st_db_postgresql_mark_archive_volume_as_checked(struct st_database_connection * connect, struct st_archive_volume * volume, bool ok);
 static int st_db_postgresql_sync_archive(struct st_database_connection * connect, struct st_archive * archive);
-static int st_db_postgresql_sync_file(struct st_database_connection * connect, struct st_archive_file * file, char ** file_id);
+static int st_db_postgresql_sync_file(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_file * file, char ** file_id);
 static int st_db_postgresql_sync_volume(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_volume * volume);
 
 static struct st_vtl_config * st_db_postgresql_get_vtls(struct st_database_connection * connect, unsigned int * nb_vtls);
@@ -3571,30 +3571,36 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 
 		struct st_hashtable * metadatas = st_util_json_from_string(archive->metadatas);
 		if (metadatas != NULL) {
-			const char * query2 = "insert_metadata";
-			st_db_postgresql_prepare(self, query2, "INSERT INTO metadata(key, value, id, type) VALUES ($1, $2, $3, 'archive')");
+			if (st_hashtable_has_key(metadatas, "archive")) {
+				const char * query2 = "insert_metadata_archive";
+				st_db_postgresql_prepare(self, query2, "INSERT INTO metadata(key, value, id, type) VALUES ($1, $2, $3, 'archive')");
 
-			unsigned int nb_keys = 0;
-			const void ** keys = st_hashtable_keys(metadatas, &nb_keys);
+				struct st_hashtable_value archive = st_hashtable_get(metadatas, "archive");
+				struct st_hashtable * archive_metadatas = st_util_json_from_string(archive.value.string);
 
-			unsigned int i;
-			for (i = 0; i < nb_keys; i++) {
-				struct st_hashtable_value val = st_hashtable_get(metadatas, keys[i]);
-				char * value = NULL;
-				if (val.type == st_hashtable_value_string)
-					value = val.value.string;
+				unsigned int nb_keys = 0;
+				const void ** keys = st_hashtable_keys(archive_metadatas, &nb_keys);
 
-				const char * param2[] = { keys[i], value, archiveid };
-				PGresult * result2 = PQexecPrepared(self->connect, query2, 3, param2, NULL, NULL, 0);
-				ExecStatusType status2 = PQresultStatus(result2);
+				unsigned int i;
+				for (i = 0; i < nb_keys; i++) {
+					struct st_hashtable_value val = st_hashtable_get(archive_metadatas, keys[i]);
+					char * value = NULL;
+					if (val.type == st_hashtable_value_string)
+						value = val.value.string;
 
-				if (status2 == PGRES_FATAL_ERROR)
-					st_db_postgresql_get_error(result2, query2);
+					const char * param2[] = { keys[i], value, archiveid };
+					PGresult * result2 = PQexecPrepared(self->connect, query2, 3, param2, NULL, NULL, 0);
+					ExecStatusType status2 = PQresultStatus(result2);
 
-				PQclear(result2);
+					if (status2 == PGRES_FATAL_ERROR)
+						st_db_postgresql_get_error(result2, query2);
+
+					PQclear(result2);
+				}
+
+				free(keys);
+				st_hashtable_free(archive_metadatas);
 			}
-
-			free(keys);
 			st_hashtable_free(metadatas);
 		}
 	}
@@ -3627,7 +3633,7 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 	return failed;
 }
 
-static int st_db_postgresql_sync_file(struct st_database_connection * connect, struct st_archive_file * file, char ** file_id) {
+static int st_db_postgresql_sync_file(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_file * file, char ** file_id) {
 	struct st_db_postgresql_archive_file_data * file_data = file->db_data;
 	if (file_data != NULL) {
 		asprintf(file_id, "%ld", file_data->id);
@@ -3680,6 +3686,48 @@ static int st_db_postgresql_sync_file(struct st_database_connection * connect, s
 
 	if (status == PGRES_FATAL_ERROR)
 		return 1;
+
+	struct st_hashtable * metadatas = st_util_json_from_string(archive->metadatas);
+	if (metadatas != NULL) {
+		if (st_hashtable_has_key(metadatas, "files")) {
+			struct st_hashtable_value files = st_hashtable_get(metadatas, "files");
+			struct st_hashtable * files_metadatas = st_util_json_from_string(files.value.string);
+
+			if (st_hashtable_has_key(files_metadatas, file->name)) {
+				struct st_hashtable_value vfile = st_hashtable_get(files_metadatas, file->name);
+				struct st_hashtable * file_metadatas = st_util_json_from_string(vfile.value.string);
+
+				const char * query2 = "insert_metadata_files";
+				st_db_postgresql_prepare(self, query2, "INSERT INTO metadata(key, value, id, type) VALUES ($1, $2, $3, 'archivefile')");
+
+				unsigned int nb_keys = 0;
+				const void ** keys = st_hashtable_keys(file_metadatas, &nb_keys);
+
+				unsigned int i;
+				for (i = 0; i < nb_keys; i++) {
+					struct st_hashtable_value val = st_hashtable_get(file_metadatas, keys[i]);
+					char * value = NULL;
+					if (val.type == st_hashtable_value_string)
+						value = val.value.string;
+
+					const char * param2[] = { keys[i], value, *file_id };
+					PGresult * result2 = PQexecPrepared(self->connect, query2, 3, param2, NULL, NULL, 0);
+					ExecStatusType status2 = PQresultStatus(result2);
+
+					if (status2 == PGRES_FATAL_ERROR)
+						st_db_postgresql_get_error(result2, query2);
+
+					PQclear(result2);
+				}
+
+				free(keys);
+				st_hashtable_free(file_metadatas);
+			}
+
+			st_hashtable_free(files_metadatas);
+		}
+		st_hashtable_free(metadatas);
+	}
 
 	if (file->digests == NULL || file->digests->nb_elements == 0)
 		return 0;
@@ -3818,7 +3866,7 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 		struct st_archive_files * f = volume->files + i;
 		char * file_id;
 
-		failed = st_db_postgresql_sync_file(connect, f->file, &file_id);
+		failed = st_db_postgresql_sync_file(connect, archive, f->file, &file_id);
 
 		char * block_number;
 		asprintf(&block_number, "%zd", f->position);
