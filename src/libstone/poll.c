@@ -110,7 +110,7 @@ int st_poll_v1(int timeout) {
 				info->limit.tv_nsec += 1000000 * (info->timeout % 1000);
 				st_time_fix(&info->limit);
 			}
-		} else if (info->timeout > 0)
+		} else if (info->timeout > 0 && st_time_cmp(&now, &info->limit) >= 0)
 			info->timeout_callback(evt->fd, info->data);
 
 		if (st_poll_restart) {
