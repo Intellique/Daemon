@@ -30,6 +30,10 @@
 #include <string.h>
 // close
 #include <unistd.h>
+// time
+#include <time.h>
+
+#include <libstone/time.h>
 
 #include "poll.h"
 
@@ -37,6 +41,11 @@ static struct pollfd * st_polls = NULL;
 static struct st_poll_info {
 	st_poll_callback_f_v1 callback;
 	void * data;
+
+	int timeout;
+	struct timespec limit;
+	st_poll_timeout_f_v1 timeout_callback;
+
 	st_poll_free_f_v1 release;
 } * st_poll_infos = NULL;
 static unsigned int st_nb_polls = 0;
@@ -54,20 +63,55 @@ int st_poll_v1(int timeout) {
 	if (st_nb_polls < 1)
 		return 0;
 
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+
 	unsigned int i;
-	for (i = 0; i < st_nb_polls; i++)
+	for (i = 0; i < st_nb_polls; i++) {
 		st_polls[i].revents = 0;
 
+		struct st_poll_info * info = st_poll_infos + i;
+		if (info->timeout > 0) {
+			if (st_time_cmp(&now, &info->limit) >= 0)
+				info->timeout_callback(st_polls[i].fd, info->data);
+			else if (timeout < 0)
+				timeout = st_time_diff(&info->limit, &now) / 1000000;
+			else {
+				struct timespec future = {
+					.tv_sec = now.tv_sec + timeout / 1000,
+					.tv_nsec = now.tv_nsec + 1000000 * (timeout % 1000)
+				};
+				st_time_fix(&future);
+
+				if (st_time_cmp(&future, &info->limit) > 0)
+					timeout = st_time_diff(&info->limit, &now) / 1000000;
+			}
+		}
+	}
+
 	int nb_event = poll(st_polls, st_nb_polls, timeout);
+
+	clock_gettime(CLOCK_MONOTONIC, &now);
+
 	for (i = 0; i < st_nb_polls; i++) {
 		struct pollfd * evt = st_polls + i;
+		struct st_poll_info * info = st_poll_infos + i;
 
 		int fd = evt->fd;
 		short event = evt->revents;
 		evt->revents = 0;
 
-		if (event != 0)
-			st_poll_infos[i].callback(fd, event, st_poll_infos[i].data);
+		if (event != 0) {
+			info->callback(fd, event, info->data);
+
+			if (info->timeout > 0) {
+				info->limit = now;
+				info->limit.tv_sec += info->timeout / 1000;
+				info->limit.tv_nsec += 1000000 * (info->timeout % 1000);
+				st_time_fix(&info->limit);
+			}
+		} else if (info->timeout > 0)
+			info->timeout_callback(evt->fd, info->data);
 
 		if (st_poll_restart) {
 			i = -1;
@@ -91,6 +135,9 @@ unsigned int st_poll_nb_handlers_v1() {
 
 __asm__(".symver st_poll_register_v1, st_poll_register@@LIBSTONE_1.2");
 bool st_poll_register_v1(int fd, short event, st_poll_callback_f_v1 callback, void * data, st_poll_free_f_v1 release) {
+	if (fd < 0 || callback == NULL)
+		return false;
+
 	void * addr = realloc(st_polls, (st_nb_polls + 1) * sizeof(struct pollfd));
 	if (addr == NULL)
 		return false;
@@ -109,6 +156,10 @@ bool st_poll_register_v1(int fd, short event, st_poll_callback_f_v1 callback, vo
 	struct st_poll_info * new_info = st_poll_infos + st_nb_polls;
 	new_info->callback = callback;
 	new_info->data = data;
+	new_info->timeout = -1;
+	new_info->limit.tv_sec = 0;
+	new_info->limit.tv_nsec = 0;
+	new_info->timeout_callback = NULL;
 	new_info->release = release;
 
 	st_nb_polls++;
@@ -116,8 +167,36 @@ bool st_poll_register_v1(int fd, short event, st_poll_callback_f_v1 callback, vo
 	return true;
 }
 
+__asm__(".symver st_poll_set_timeout_v1, st_poll_set_timeout@@LIBSTONE_1.2");
+bool st_poll_set_timeout_v1(int fd, int timeout, st_poll_timeout_f_v1 callback) {
+	if (fd < 0 || timeout < 1 || callback == NULL)
+		return false;
+
+	unsigned int i;
+	for (i = 0; i < st_nb_polls; i++) {
+		if (st_polls[i].fd == fd) {
+			struct st_poll_info * info = st_poll_infos + i;
+
+			info->timeout = timeout;
+			clock_gettime(CLOCK_MONOTONIC, &info->limit);
+			info->timeout_callback = callback;
+
+			info->limit.tv_sec += timeout / 1000;
+			info->limit.tv_nsec += 1000000 * (timeout % 1000);
+			st_time_fix(&info->limit);
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
 __asm__(".symver st_poll_unregister_v1, st_poll_unregister@@LIBSTONE_1.2");
 void st_poll_unregister_v1(int fd) {
+	if (fd < 0)
+		return;
+
 	unsigned int i;
 	for (i = 0; i < st_nb_polls; i++)
 		if (st_polls[i].fd == fd)

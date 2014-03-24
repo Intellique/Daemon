@@ -22,23 +22,20 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 05 Jun 2013 14:58:08 +0200                            *
 \****************************************************************************/
 
-// localtime_r, time
-#include <time.h>
+#ifndef __LIBSTONE_TIME_H__
+#define __LIBSTONE_TIME_H__
 
-#include <libstone/util/time.h>
+// time_t
+#include <bits/time.h>
+// size_t
+#include <sys/types.h>
 
-size_t st_util_time_convert(time_t * clock, const char * format, char * buffer, size_t buffer_length) {
-	struct tm lnow;
-	if (clock == NULL) {
-		time_t lclock = time(NULL);
-		localtime_r(&lclock, &lnow);
-	} else {
-		localtime_r(clock, &lnow);
-	}
+int st_time_cmp(struct timespec * ta, struct timespec * tb);
+size_t st_time_convert(time_t * clock, const char * format, char * buffer, size_t buffer_length);
+long long int st_time_diff(struct timespec * ta, struct timespec * tb);
+void st_time_fix(struct timespec * time);
 
-	return strftime(buffer, buffer_length, format, &lnow);
-}
+#endif
 

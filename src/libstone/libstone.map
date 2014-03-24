@@ -60,6 +60,11 @@ LIBSTONE_1.2 {
 		st_string_trim;
 		st_string_unicode_length;
 
+		st_time_cmp;
+		st_time_convert;
+		st_time_diff;
+		st_time_fix;
+
 		st_thread_pool_run;
 		st_thread_pool_run2;
 

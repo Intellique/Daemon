@@ -27,8 +27,8 @@
 #ifndef __LIBSTONE_CHECKSUM_H__
 #define __LIBSTONE_CHECKSUM_H__
 
+// bool
 #include <stdbool.h>
-
 // ssize_t
 #include <sys/types.h>
 

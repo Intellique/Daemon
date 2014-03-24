@@ -24,20 +24,15 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_POLL_P_H__
-#define __LIBSTONE_POLL_P_H__
+#ifndef __LIBSTONE_TIME_P_H__
+#define __LIBSTONE_TIME_P_H__
 
-#include <libstone/poll.h>
+#include <libstone/time.h>
 
-#define st_poll_callback_f_v1 st_poll_callback_f
-#define st_poll_timeout_f_v1 st_poll_timeout_f
-#define st_poll_free_f_v1 st_poll_free_f
-
-int st_poll_v1(int timeout);
-unsigned int st_poll_nb_handlers_v1(void);
-bool st_poll_register_v1(int fd, short event, st_poll_callback_f_v1 callback, void * data, st_poll_free_f_v1 release);
-bool st_poll_set_timeout_v1(int fd, int timeout, st_poll_timeout_f_v1 callback);
-void st_poll_unregister_v1(int fd);
+int st_time_cmp_v1(struct timespec * ta, struct timespec * tb);
+size_t st_time_convert_v1(time_t * clock, const char * format, char * buffer, size_t buffer_length);
+long long int st_time_diff_v1(struct timespec * ta, struct timespec * tb);
+void st_time_fix_v1(struct timespec * time);
 
 #endif
 

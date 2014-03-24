@@ -34,10 +34,12 @@
 
 typedef void (*st_poll_callback_f)(int fd, short event, void * data);
 typedef void (*st_poll_free_f)(void * data);
+typedef void (*st_poll_timeout_f)(int fd, void * data);
 
 int st_poll(int timeout);
 unsigned int st_poll_nb_handlers(void);
 bool st_poll_register(int fd, short event, st_poll_callback_f callback, void * data, st_poll_free_f release);
+bool st_poll_set_timeout(int fd, int timeout, st_poll_timeout_f callback);
 void st_poll_unregister(int fd);
 
 #endif
