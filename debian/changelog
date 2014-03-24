@@ -1,3 +1,10 @@
+stone (1.1.10+wheezy) polisher; urgency=low
+
+  * Correctif : peut archive dans un pool sans checksum
+  * Amélioration : Support des méta-données par fichier et par archive
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 24 Mar 2014 18:33:35 +0100
+
 stone (1.1.9+wheezy) polisher; urgency=low
 
   * Correctif Librairie / Lecteur: Mise à jour du status
