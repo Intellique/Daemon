@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 24 Jan 2014 13:28:18 +0100                            *
+*  Last modified: Mon, 24 Mar 2014 17:08:35 +0100                            *
 \****************************************************************************/
 
 // asprintf
@@ -239,7 +239,9 @@ static int st_job_create_archive_single_worker_change_volume(struct st_job_creat
 	last_volume->end_time = time(NULL);
 	last_volume->size = self->writer->ops->position(self->writer);
 
-	last_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
+	last_volume->digests = NULL;
+	if (self->checksum_writer != NULL)
+		last_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
 
 	self->meta_worker->ops->wait(self->meta_worker, false);
 
@@ -301,7 +303,9 @@ static void st_job_create_archive_single_worker_close(struct st_job_create_archi
 	last_volume->end_time = time(NULL);
 	last_volume->size = self->writer->ops->position(self->writer);
 
-	last_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
+	last_volume->digests = NULL;
+	if (self->checksum_writer != NULL)
+		last_volume->digests = st_checksum_writer_get_checksums(self->checksum_writer);
 
 	self->meta_worker->ops->wait(self->meta_worker, false);
 
