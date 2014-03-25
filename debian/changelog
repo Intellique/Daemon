@@ -1,3 +1,12 @@
+stone (1.1.11+wheezy) polisher; urgency=low
+
+  * Correctif : tâche d'archivage, si l'insécabilité d'un pool est au niveau
+    fichier et que l'on archive un fichier qui ne tient pas sur média
+  * Amélioration : Refuse d'archive si dans un pool, le niveau d'insécabilité 
+    est fichier et qu'il existe un fichier plus gros d'un média
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 25 Mar 2014 16:55:54 +0100
+
 stone (1.1.10+wheezy) polisher; urgency=low
 
   * Correctif : peut archive dans un pool sans checksum
