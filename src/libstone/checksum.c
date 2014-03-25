@@ -26,10 +26,22 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
+// open
+#include <fcntl.h>
 // pthread_mutex_lock, pthread_mutex_unlock,
 #include <pthread.h>
-// snprintf, sscanf
+// asprintf, snprintf, sscanf
 #include <stdio.h>
+// free, malloc
+#include <stdlib.h>
+// strlen
+#include <string.h>
+// open
+#include <sys/stat.h>
+// open
+#include <sys/types.h>
+// close, read
+#include <unistd.h>
 
 #include <libstone/log.h>
 #include <libstone/value.h>
@@ -78,6 +90,32 @@ void st_checksum_convert_to_hex_v1(unsigned char * digest, ssize_t length, char 
 static void st_checksum_exit() {
 	st_value_free(st_checksum_drivers);
 	st_checksum_drivers = NULL;
+}
+
+__asm__(".symver st_checksum_gen_salt_v1, st_checksum_gen_salt@@LIBSTONE_1.2");
+char * st_checksum_gen_salt_v1(const char * checksum, size_t length) {
+	if (length < 8)
+		return NULL;
+
+	int fd = open("/dev/urandom", O_RDONLY);
+	if (fd < 0)
+		return NULL;
+
+	size_t half_len = length / 2;
+	unsigned char * buffer = malloc(half_len);
+	read(fd, buffer, half_len);
+	close(fd);
+
+	char * result;
+	if (checksum != NULL)
+		result = st_checksum_compute_v1(checksum, buffer, half_len);
+	else {
+		result = malloc(length + 1);
+		st_checksum_convert_to_hex_v1(buffer, half_len, result);
+	}
+
+	free(buffer);
+	return result;
 }
 
 __asm__(".symver st_checksum_get_driver_v1, st_checksum_get_driver@@LIBSTONE_1.2");
@@ -137,6 +175,17 @@ void st_checksum_register_driver_v1(struct st_checksum_driver_v1 * driver) {
 	pthread_mutex_unlock(&st_checksum_lock);
 
 	st_log_write(st_log_level_info, "Checksum driver '%s' is now registred", driver->name);
+}
+
+__asm__(".symver st_checksum_salt_password_v1, st_checksum_salt_password@@LIBSTONE_1.2");
+char * st_checksum_salt_password_v1(const char * checksum, const char * password, const char * salt) {
+	char * pw_salt;
+	asprintf(&pw_salt, "%s%s", password, salt);
+
+	char * result = st_checksum_compute_v1(checksum, pw_salt, strlen(pw_salt));
+	free(pw_salt);
+
+	return result;
 }
 
 

@@ -311,6 +311,8 @@ char * st_checksum_compute(const char * checksum, const void * data, ssize_t len
  */
 void st_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * hex_digest);
 
+char * st_checksum_gen_salt(const char * checksum, size_t length);
+
 /**
  * \brief Get a checksum driver
  *
@@ -335,6 +337,8 @@ struct st_checksum_driver * st_checksum_get_driver(const char * driver);
  * \endcode
  */
 void st_checksum_register_driver(struct st_checksum_driver * driver);
+
+char * st_checksum_salt_password(const char * checksum, const char * password, const char * salt);
 
 
 /**
