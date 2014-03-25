@@ -170,8 +170,6 @@ struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(s
 static int st_job_create_archive_single_worker_add_file(struct st_job_create_archive_data_worker * worker, const char * path) {
 	struct st_job_create_archive_single_worker_private * self = worker->data;
 
-	ssize_t position = self->writer->ops->position(self->writer) / self->writer->ops->get_block_size(self->writer);
-
 	if (self->pool->unbreakable_level == st_pool_unbreakable_level_file) {
 		ssize_t available_size = self->writer->ops->get_available_size(self->writer);
 		ssize_t file_size = self->writer->ops->compute_size_of_file(self->writer, path, false);
@@ -179,6 +177,8 @@ static int st_job_create_archive_single_worker_add_file(struct st_job_create_arc
 		if (available_size < file_size && st_job_create_archive_single_worker_change_volume(self))
 			return 1;
 	}
+
+	ssize_t position = self->writer->ops->position(self->writer) / self->writer->ops->get_block_size(self->writer);
 
 	enum st_format_writer_status status = self->writer->ops->add_file(self->writer, path);
 	int failed;

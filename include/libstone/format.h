@@ -109,6 +109,7 @@ struct st_format_writer {
 	void * data;
 };
 
+ssize_t st_format_find_greater_file(char * path, struct st_media_format * format);
 struct st_format_reader * st_format_get_reader(struct st_stream_reader * reader, struct st_media_format * format);
 ssize_t st_format_get_size(const char * path, bool recursive, struct st_media_format * format);
 struct st_format_writer * st_format_get_writer(struct st_stream_writer * writer, struct st_media_format * format);

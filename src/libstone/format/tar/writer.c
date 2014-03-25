@@ -113,6 +113,55 @@ static struct st_format_writer_ops st_format_tar_writer_ops = {
 };
 
 
+ssize_t st_format_tar_find_greater_file(char * path) {
+	struct stat sfile;
+	if (lstat(path, &sfile))
+		return -1;
+
+	const char * path2 = st_format_tar_writer_skip_leading_slash(path);
+	int path_length = strlen(path2);
+
+	ssize_t file_size = 512;
+	if (S_ISLNK(sfile.st_mode)) {
+		char link[257];
+		ssize_t link_length = readlink(path, link, 256);
+		link[link_length] = '\0';
+
+		if (path_length > 100 && link_length > 100) {
+			file_size += 2048 + path_length - path_length % 512 + link_length - link_length % 512;
+		} else if (path_length > 100) {
+			file_size += 1024 + path_length - path_length % 512;
+		} else if (link_length > 100) {
+			file_size += 1024 + link_length - link_length % 512;
+		}
+	} else if (path_length > 100) {
+		file_size += 512 + path_length - path_length % 512;
+	}
+
+	if (S_ISREG(sfile.st_mode))
+		file_size += 512 + sfile.st_size - sfile.st_size % 512;
+	else if (S_ISDIR(sfile.st_mode)) {
+		struct dirent ** dl = NULL;
+		int nb_paths = scandir(path, &dl, st_util_file_basic_scandir_filter, NULL);
+		int i;
+		for (i = 0; i < nb_paths; i++) {
+			char * subpath = NULL;
+			asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
+
+			ssize_t size = st_format_tar_find_greater_file(subpath);
+			if (size > file_size)
+				file_size = size;
+
+			free(subpath);
+			free(dl[i]);
+		}
+
+		free(dl);
+	}
+
+	return file_size;
+}
+
 ssize_t st_format_tar_get_size(const char * path, bool recursive) {
 	struct stat sfile;
 	if (lstat(path, &sfile))
