@@ -209,8 +209,10 @@ static void st_job_create_archive_free(struct st_job * job) {
 	}
 
 	st_archive_free(self->archive);
-	self->worker->ops->free(self->worker);
-	self->meta->ops->free(self->meta);
+	if (self->worker != NULL)
+		self->worker->ops->free(self->worker);
+	if (self->meta != NULL)
+		self->meta->ops->free(self->meta);
 
 	free(self);
 	job->data = NULL;
@@ -490,6 +492,27 @@ static int st_job_create_archive_run(struct st_job * job) {
 
 	if (!job->user->can_archive) {
 		st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Error, user (%s) cannot create archive", job->user->login);
+		return 1;
+	}
+
+	unsigned int i;
+	ssize_t max_file_size = 0;
+	for (i = 0; i < self->nb_selected_paths; i++) {
+		struct st_job_selected_path * p = self->selected_paths + i;
+
+		ssize_t l_mfs = st_format_find_greater_file(p->path, self->pool->format);
+		if (l_mfs > max_file_size)
+			max_file_size = l_mfs;
+	}
+
+	if (self->pool->unbreakable_level == st_pool_unbreakable_level_file && max_file_size > self->pool->format->capacity) {
+		char buf_fs[16], buf_ms[16];
+		st_util_file_convert_size_to_string(max_file_size, buf_fs, 16);
+		st_util_file_convert_size_to_string(self->pool->format->capacity, buf_ms, 16);
+
+		st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Pool (%s) request that file should not be split and we found a file (size: %s > media's size: %s) which need to be split", self->pool->name, buf_fs, buf_ms);
+		job->sched_status = st_job_status_error;
+
 		return 1;
 	}
 
