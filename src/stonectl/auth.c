@@ -70,10 +70,15 @@ bool stctl_auth_do_authentification(int fd, char * password) {
 
 
 	response = st_json_parse_fd(fd, 10000);
-	if (response != NULL)
-		st_json_encode_to_fd(response, 1, true);
+	error = st_value_hashtable_get2(response, "error", false);
+	if (error == NULL || error->type != st_value_boolean || error->value.boolean) {
+		st_value_free(response);
+		return false;
+	}
+
+	bool ok = !error->value.boolean;
 	st_value_free(response);
 
-	return false;
+	return ok;
 }
 

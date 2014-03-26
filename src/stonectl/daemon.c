@@ -81,10 +81,10 @@ int stctl_status_daemon(int argc __attribute__((unused)), char ** argv __attribu
 	if (fd < 0)
 		return 2;
 
-	stctl_auth_do_authentification(fd, password->value.string);
+	bool ok = stctl_auth_do_authentification(fd, password->value.string);
 
 	st_value_free(config);
 
-	return 0;
+	return ok != true;
 }
 
