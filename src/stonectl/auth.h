@@ -24,60 +24,14 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// waitpid
-#include <sys/types.h>
-// waitpid
-#include <sys/wait.h>
-// sleep
-#include <unistd.h>
+#ifndef __STONECTL_AUTH_H__
+#define __STONECTL_AUTH_H__
 
-#include <libstone/json.h>
-#include <libstone/process.h>
-#include <libstone/socket.h>
-#include <libstone/value.h>
+// bool
+#include <stdbool.h>
 
-#include "auth.h"
-#include "common.h"
-#include "config.h"
+bool stctl_auth_do_authentification(int fd);
 
-int stctl_start_daemon(int argc __attribute__((unused)), char ** argv __attribute__((unused))) {
-	struct st_process daemon;
-	st_process_new(&daemon, "./bin/stoned", NULL, 0);
-	st_process_start(&daemon, 1);
 
-	sleep(3);
-
-	int status = 0;
-	pid_t ret = waitpid(daemon.pid, &status, WNOHANG);
-
-	return ret != 0;
-}
-
-int stctl_status_daemon(int argc __attribute__((unused)), char ** argv __attribute__((unused))) {
-	struct st_value * config = st_json_parse_file(DAEMON_CONFIG_FILE);
-	if (config == NULL || !st_value_hashtable_has_key2(config, "admin"))
-		return 1;
-
-	struct st_value * admin = st_value_hashtable_get2(config, "admin", false);
-	if (admin == NULL || admin->type != st_value_hashtable || !st_value_hashtable_has_key2(admin, "socket")) {
-		st_value_free(config);
-		return 1;
-	}
-
-	struct st_value * socket = st_value_hashtable_get2(admin, "socket", false);
-	if (socket == NULL || socket->type != st_value_hashtable) {
-		st_value_free(config);
-		return 1;
-	}
-
-	int fd = st_socket(socket);
-	st_value_free(config);
-
-	if (fd < 0)
-		return 2;
-
-	stctl_auth_do_authentification(fd);
-
-	return 0;
-}
+#endif
 

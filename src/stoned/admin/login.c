@@ -24,60 +24,35 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// waitpid
-#include <sys/types.h>
-// waitpid
-#include <sys/wait.h>
-// sleep
-#include <unistd.h>
+// free
+#include <stdlib.h>
 
-#include <libstone/json.h>
-#include <libstone/process.h>
-#include <libstone/socket.h>
+#include <libstone/checksum.h>
 #include <libstone/value.h>
 
-#include "auth.h"
 #include "common.h"
-#include "config.h"
 
-int stctl_start_daemon(int argc __attribute__((unused)), char ** argv __attribute__((unused))) {
-	struct st_process daemon;
-	st_process_new(&daemon, "./bin/stoned", NULL, 0);
-	st_process_start(&daemon, 1);
+struct st_value * std_admin_login(struct std_admin_client * client, struct st_value * request) {
+	if (!st_value_hashtable_has_key2(request, "step"))
+		return st_value_pack("{sbss}", "error", true, "message", "parameter required");
 
-	sleep(3);
+	struct st_value * step = st_value_hashtable_get2(request, "step", false);
+	if (step->type != st_value_integer)
+		return st_value_pack("{sbss}", "error", true, "message", "parameter step : should be an integer");
 
-	int status = 0;
-	pid_t ret = waitpid(daemon.pid, &status, WNOHANG);
+	if (client->logged)
+		return st_value_pack("{sbss}", "error", false, "message", "already logged");
 
-	return ret != 0;
-}
+	switch (step->value.integer) {
+		case 1: {
+				free(client->salt);
+				client->salt = st_checksum_gen_salt("sha1", 64);
 
-int stctl_status_daemon(int argc __attribute__((unused)), char ** argv __attribute__((unused))) {
-	struct st_value * config = st_json_parse_file(DAEMON_CONFIG_FILE);
-	if (config == NULL || !st_value_hashtable_has_key2(config, "admin"))
-		return 1;
+				return st_value_pack("{sbssss}", "error", false, "message", "do step 2 of loggin process", "salt", client->salt);
+			}
 
-	struct st_value * admin = st_value_hashtable_get2(config, "admin", false);
-	if (admin == NULL || admin->type != st_value_hashtable || !st_value_hashtable_has_key2(admin, "socket")) {
-		st_value_free(config);
-		return 1;
+		default:
+			return st_value_pack("{sbss}", "error", true, "message", "parameter step : invalid step value");
 	}
-
-	struct st_value * socket = st_value_hashtable_get2(admin, "socket", false);
-	if (socket == NULL || socket->type != st_value_hashtable) {
-		st_value_free(config);
-		return 1;
-	}
-
-	int fd = st_socket(socket);
-	st_value_free(config);
-
-	if (fd < 0)
-		return 2;
-
-	stctl_auth_do_authentification(fd);
-
-	return 0;
 }
 

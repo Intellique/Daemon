@@ -86,7 +86,7 @@ int st_socket_tcp_v1(struct st_value_v1 * config) {
 
 	int fd = -1;
 	struct addrinfo * ptr = addr;
-	while (fd > -1 && ptr != NULL) {
+	while (fd < 0 && ptr != NULL) {
 		struct sockaddr_in * addr_v4  = (struct sockaddr_in *) ptr->ai_addr;
 
 		fd = socket(AF_INET, type, 0);
@@ -141,7 +141,7 @@ int st_socket_tcp6_v1(struct st_value_v1 * config) {
 
 	int fd = -1;
 	struct addrinfo * ptr = addr;
-	while (fd > -1 && ptr != NULL) {
+	while (fd < 0 && ptr != NULL) {
 		struct sockaddr_in6 * addr_v6  = (struct sockaddr_in6 *) ptr->ai_addr;
 
 		fd = socket(AF_INET6, type, 0);
