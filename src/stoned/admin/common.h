@@ -37,6 +37,7 @@ struct std_admin_client {
 typedef struct st_value * (*std_admin_f)(struct std_admin_client * client, struct st_value * request, struct st_value * config);
 
 struct st_value * std_admin_login(struct std_admin_client * client, struct st_value * request, struct st_value * config);
+struct st_value * std_admin_server_shutdown(struct std_admin_client * client, struct st_value * request, struct st_value * config);
 
 #endif
 

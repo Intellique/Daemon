@@ -41,12 +41,14 @@
 #include "admin.h"
 #include "env.h"
 #include "logger.h"
+#include "main.h"
 
 #include "checksum/stoned.chcksum"
 #include "config.h"
 #include "stone.version"
 
-static void st_show_help(void);
+static bool std_daemon_run = true;
+static void std_show_help(void);
 
 int main(int argc, char ** argv) {
 	st_log_write2(st_log_level_notice, st_log_type_daemon, "stone, version: " STONE_VERSION ", build: " __DATE__ " " __TIME__);
@@ -88,7 +90,7 @@ int main(int argc, char ** argv) {
 				break;
 
 			case OPT_HELP:
-				st_show_help();
+				std_show_help();
 				return 0;
 
 			case OPT_PID_FILE:
@@ -131,18 +133,18 @@ int main(int argc, char ** argv) {
 	else
 		st_log_write2(st_log_level_warning, st_log_type_daemon, "No administration configured");
 
-	while (true) {
+	while (std_daemon_run) {
 		st_poll(-1);
-
-		st_log_write2(st_log_level_debug, st_log_type_daemon, "Ping");
 	}
 
 	st_value_free(config);
 
+	st_log_write2(st_log_level_notice, st_log_type_daemon, "Daemon will shut down");
+
 	return 0;
 }
 
-static void st_show_help(void) {
+static void std_show_help(void) {
 	printf("STone, version: " STONE_VERSION ", build: " __DATE__ " " __TIME__ "\n");
 	printf("    --config,   -c : Read this config file instead of \"" DAEMON_CONFIG_FILE "\"\n");
 	printf("    --help,     -h : Show this and exit\n");
@@ -150,9 +152,11 @@ static void st_show_help(void) {
 	printf("    --version,  -V : Show the version of STone then exit\n");
 }
 
+void std_shutdown() {
+	std_daemon_run = false;
+}
+
 /*
-// getopt_long
-#include <getopt.h>
 // printf
 #include <stdio.h>
 // uname
@@ -160,48 +164,7 @@ static void st_show_help(void) {
 // daemon
 #include <unistd.h>
 
-#include <libstone/checksum.h>
-#include <libstone/conf.h>
-#include <libstone/database.h>
-#include <libstone/host.h>
-#include <libstone/job.h>
-#include <libstone/log.h>
-#include <libstone/util/file.h>
-#include <stoned/library/changer.h>
-
-#include "checksum/stoned.chcksum"
-#include "config.h"
-#include "library/common.h"
-#include "stone.version"
-#include "scheduler.h"
-
-static void st_show_help(void);
-
 int main(int argc, char ** argv) {
-	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone, version: " STONE_VERSION ", build: " __DATE__ " " __TIME__);
-	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Checksum: " STONED_SRCSUM ", last commit: " STONE_GIT_COMMIT);
-
-	enum {
-		OPT_CONFIG   = 'c',
-		OPT_DETACH   = 'd',
-		OPT_HELP     = 'h',
-		OPT_PID_FILE = 'p',
-		OPT_VERSION  = 'V',
-	};
-
-	static int option_index = 0;
-	static struct option long_options[] = {
-		{ "config",   1, NULL, OPT_CONFIG },
-		{ "detach",   0, NULL, OPT_DETACH },
-		{ "help",     0, NULL, OPT_HELP },
-		{ "pid-file", 1, NULL, OPT_PID_FILE },
-		{ "version",  0, NULL, OPT_VERSION },
-
-		{ NULL, 0, NULL, 0 },
-	};
-
-	char * config_file = DAEMON_CONFIG_FILE;
-	short detach = 0;
 	char * pid_file = DAEMON_PID_FILE;
 
 	// parse option
@@ -210,44 +173,13 @@ int main(int argc, char ** argv) {
 		opt = getopt_long(argc, argv, "c:dhp:V", long_options, &option_index);
 
 		switch (opt) {
-			case -1:
-				break;
-
-			case OPT_CONFIG:
-				config_file = optarg;
-				st_log_write_all(st_log_level_info, st_log_type_daemon, "Using configuration file: '%s'", optarg);
-				break;
-
-			case OPT_DETACH:
-				detach = 1;
-				st_log_write_all(st_log_level_info, st_log_type_daemon, "Using detach mode (i.e. use fork())");
-				break;
-
-			case OPT_HELP:
-				st_log_disable_display_log();
-
-				st_show_help();
-				return 0;
-
 			case OPT_PID_FILE:
 				pid_file = optarg;
 				st_log_write_all(st_log_level_info, st_log_type_daemon, "Using pid file: '%s'", optarg);
 				break;
 
-			case OPT_VERSION:
-				st_log_disable_display_log();
-
-				printf("STone, version: " STONE_VERSION ", build: " __DATE__ " " __TIME__ "\n");
-				printf("Checksum: " STONED_SRCSUM ", last commit: " STONE_GIT_COMMIT "\n");
-				return 0;
-
-			default:
-				st_log_write_all(st_log_level_error, st_log_type_daemon, "Unsupported parameter '%d : %s'", opt, optarg);
-				return 1;
 		}
 	} while (opt > -1);
-
-	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Parsing option: ok");
 
 	// check pid file
 	int pid = st_conf_read_pid(pid_file);
@@ -362,17 +294,6 @@ int main(int argc, char ** argv) {
 	usleep(250);
 
 	return 0;
-}
-
-static void st_show_help(void) {
-	st_log_disable_display_log();
-
-	printf("STone, version: " STONE_VERSION ", build: " __DATE__ " " __TIME__ "\n");
-	printf("    --config,   -c : Read this config file instead of \"" DAEMON_CONFIG_FILE "\"\n");
-	printf("    --detach,   -d : Daemonize it\n");
-	printf("    --help,     -h : Show this and exit\n");
-	printf("    --pid-file, -p : Write the pid of daemon into instead of \"" DAEMON_PID_FILE "\"\n");
-	printf("    --version,  -V : Show the version of STone then exit\n");
 }
 
 */

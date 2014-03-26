@@ -40,6 +40,7 @@ static void init() {
 	commands = st_value_new_hashtable2();
 	st_value_hashtable_put2(commands, "start", st_value_new_custom(stctl_start_daemon, NULL), true);
 	st_value_hashtable_put2(commands, "status", st_value_new_custom(stctl_status_daemon, NULL), true);
+	st_value_hashtable_put2(commands, "stop", st_value_new_custom(stctl_stop_daemon, NULL), true);
 }
 
 int main(int argc, char ** argv) {

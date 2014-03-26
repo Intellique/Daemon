@@ -54,6 +54,7 @@ void std_admin_config(struct st_value * config) {
 	if (std_admin_callbacks == NULL) {
 		std_admin_callbacks = st_value_new_hashtable2();
 		st_value_hashtable_put2(std_admin_callbacks, "login", st_value_new_custom(std_admin_login, NULL), true);
+		st_value_hashtable_put2(std_admin_callbacks, "shutdown", st_value_new_custom(std_admin_server_shutdown, NULL), true);
 	}
 
 	struct st_value * socket = st_value_hashtable_get2(config, "socket", false);

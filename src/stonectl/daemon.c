@@ -28,7 +28,7 @@
 #include <sys/types.h>
 // waitpid
 #include <sys/wait.h>
-// sleep
+// close, sleep
 #include <unistd.h>
 
 #include <libstone/json.h>
@@ -40,45 +40,59 @@
 #include "common.h"
 #include "config.h"
 
+static int stctl_daemon_init_socket(struct st_value * config);
 static bool stctl_daemon_try_connect(void);
 
 
-static bool stctl_daemon_try_connect() {
-	struct st_value * config = st_json_parse_file(DAEMON_CONFIG_FILE);
-	if (config == NULL || !st_value_hashtable_has_key2(config, "admin"))
-		return 1;
-
+static int stctl_daemon_init_socket(struct st_value * config) {
 	struct st_value * admin = st_value_hashtable_get2(config, "admin", false);
 	if (admin == NULL || admin->type != st_value_hashtable || !st_value_hashtable_has_key2(admin, "password") || !st_value_hashtable_has_key2(admin, "socket")) {
 		st_value_free(config);
-		return 1;
-	}
-
-	struct st_value * password = st_value_hashtable_get2(admin, "password", false);
-	if (password == NULL || password->type != st_value_string) {
-		st_value_free(config);
-		return 1;
+		return false;
 	}
 
 	struct st_value * socket = st_value_hashtable_get2(admin, "socket", false);
 	if (socket == NULL || socket->type != st_value_hashtable) {
 		st_value_free(config);
-		return 1;
+		return false;
 	}
 
-	int fd = st_socket(socket);
+	return st_socket(socket);
+}
 
+static bool stctl_daemon_try_connect() {
+	struct st_value * config = st_json_parse_file(DAEMON_CONFIG_FILE);
+	if (config == NULL || !st_value_hashtable_has_key2(config, "admin"))
+		return false;
+
+	struct st_value * admin = st_value_hashtable_get2(config, "admin", false);
+	if (admin == NULL || admin->type != st_value_hashtable || !st_value_hashtable_has_key2(admin, "password") || !st_value_hashtable_has_key2(admin, "socket")) {
+		st_value_free(config);
+		return false;
+	}
+
+	int fd = stctl_daemon_init_socket(config);
 	if (fd < 0)
-		return 2;
+		return false;
+
+	struct st_value * password = st_value_hashtable_get2(admin, "password", false);
+	if (password == NULL || password->type != st_value_string) {
+		st_value_free(config);
+		return false;
+	}
 
 	bool ok = stctl_auth_do_authentification(fd, password->value.string);
 
 	st_value_free(config);
+	close(fd);
 
 	return ok;
 }
 
 int stctl_start_daemon(int argc __attribute__((unused)), char ** argv __attribute__((unused))) {
+	if (stctl_daemon_try_connect())
+		return 1;
+
 	struct st_process daemon;
 	st_process_new(&daemon, "./bin/stoned", NULL, 0);
 	st_process_start(&daemon, 1);
@@ -91,7 +105,7 @@ int stctl_start_daemon(int argc __attribute__((unused)), char ** argv __attribut
 		int status = 0;
 		pid_t ret = waitpid(daemon.pid, &status, WNOHANG);
 		if (ret != 0)
-			return 3;
+			return 2;
 
 		if (stctl_daemon_try_connect())
 			ok = true;
@@ -101,6 +115,88 @@ int stctl_start_daemon(int argc __attribute__((unused)), char ** argv __attribut
 }
 
 int stctl_status_daemon(int argc __attribute__((unused)), char ** argv __attribute__((unused))) {
-	return stctl_daemon_try_connect() ? 0 : 3;
+	return stctl_daemon_try_connect() ? 0 : 1;
+}
+
+int stctl_stop_daemon(int argc __attribute__((unused)), char ** argv __attribute__((unused))) {
+	if (!stctl_daemon_try_connect())
+		return 0;
+
+	struct st_value * config = st_json_parse_file(DAEMON_CONFIG_FILE);
+	if (config == NULL || !st_value_hashtable_has_key2(config, "admin"))
+		return 1;
+
+	struct st_value * admin = st_value_hashtable_get2(config, "admin", false);
+	if (admin == NULL || admin->type != st_value_hashtable || !st_value_hashtable_has_key2(admin, "password") || !st_value_hashtable_has_key2(admin, "socket")) {
+		st_value_free(config);
+		return 1;
+	}
+
+	int fd = stctl_daemon_init_socket(config);
+	if (fd < 0)
+		return 2;
+
+	struct st_value * password = st_value_hashtable_get2(admin, "password", false);
+	if (password == NULL || password->type != st_value_string) {
+		st_value_free(config);
+		return 2;
+	}
+
+	bool ok = stctl_auth_do_authentification(fd, password->value.string);
+
+	if (!ok) {
+		st_value_free(config);
+		close(fd);
+		return 3;
+	}
+
+	struct st_value * request = st_value_pack("{ss}", "method", "shutdown");
+	st_json_encode_to_fd(request, fd, true);
+	st_value_free(request);
+
+	struct st_value * response = st_json_parse_fd(fd, 10000);
+	if (response == NULL || !st_value_hashtable_has_key2(response, "pid")) {
+		st_value_free(config);
+		close(fd);
+		return 4;
+	}
+
+	struct st_value * error = st_value_hashtable_get2(response, "error", false);
+	if (error == NULL || error->type != st_value_boolean) {
+		st_value_free(response);
+		st_value_free(config);
+		close(fd);
+		return 4;
+	}
+
+	struct st_value * pid = st_value_hashtable_get2(response, "pid", false);
+	if (pid == NULL || pid->type != st_value_integer) {
+		st_value_free(response);
+		st_value_free(config);
+		close(fd);
+		return 4;
+	}
+
+	pid_t process = pid->value.integer;
+
+	ok = !error->value.boolean;
+
+	st_value_free(config);
+	close(fd);
+
+	if (!ok)
+		return 5;
+
+	short retry;
+	for (retry = 0; retry < 10; retry++) {
+		sleep(1);
+
+		int status = 0;
+		pid_t ret = waitpid(process, &status, WNOHANG);
+		if (ret != 0)
+			return 0;
+	}
+
+	return 5;
 }
 

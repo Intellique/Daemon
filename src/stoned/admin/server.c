@@ -24,14 +24,23 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONECTL_COMMON_H__
-#define __STONECTL_COMMON_H__
+// getpid
+#include <sys/types.h>
+// getpid
+#include <unistd.h>
 
-typedef int (*command_f)(int argc, char ** argv);
+#include <libstone/value.h>
 
-int stctl_start_daemon(int argc, char ** argv);
-int stctl_status_daemon(int argc, char ** argv);
-int stctl_stop_daemon(int argc, char ** argv);
+#include "common.h"
+#include "../main.h"
 
-#endif
+struct st_value * std_admin_server_shutdown(struct std_admin_client * client, struct st_value * request __attribute__((unused)), struct st_value * config __attribute__((unused))) {
+	if (!client->logged)
+		return st_value_pack("{sbss}", "error", true, "message", "client should be authenticated");
+
+	std_shutdown();
+
+	long long int pid = getpid();
+	return st_value_pack("{sbsssi}", "error", false, "message", "shut down in progress", "pid", pid);
+}
 
