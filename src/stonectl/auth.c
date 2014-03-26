@@ -26,19 +26,53 @@
 
 #include <stddef.h>
 
+#include <libstone/checksum.h>
 #include <libstone/json.h>
 #include <libstone/value.h>
 
 #include "auth.h"
 
-bool stctl_auth_do_authentification(int fd) {
+bool stctl_auth_do_authentification(int fd, char * password) {
+	// step 1
 	struct st_value * request = st_value_pack("{siss}", "step", 1, "method", "login");
 	st_json_encode_to_fd(request, fd, true);
 	st_value_free(request);
 
 	struct st_value * response = st_json_parse_fd(fd, 10000);
+	if (response == NULL || !st_value_hashtable_has_key2(response, "salt"))
+		return false;
+
+	struct st_value * error = st_value_hashtable_get2(response, "error", false);
+	if (error == NULL || error->type != st_value_boolean || error->value.boolean) {
+		st_value_free(response);
+		return false;
+	}
+
+	struct st_value * salt = st_value_hashtable_get2(response, "salt", true);
+	st_value_free(response);
+
+	if (salt->type != st_value_string) {
+		st_value_free(salt);
+		return false;
+	}
+
+
+	// step 2
+	char * hash = st_checksum_salt_password("sha1", password, salt->value.string);
+	if (hash == NULL) {
+		st_value_free(salt);
+		return false;
+	}
+
+	request = st_value_pack("{sissss}", "step", 2, "method", "login", "password", hash);
+	st_json_encode_to_fd(request, fd, true);
+	st_value_free(request);
+
+
+	response = st_json_parse_fd(fd, 10000);
 	if (response != NULL)
 		st_json_encode_to_fd(response, 1, true);
+	st_value_free(response);
 
 	return false;
 }

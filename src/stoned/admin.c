@@ -88,7 +88,7 @@ static void std_admin_client_do(int fd, short event, void * data) {
 	struct st_value * vmethod = st_value_hashtable_get(std_admin_callbacks, method, false, false);
 	std_admin_f command = vmethod->value.custom.data;
 
-	struct st_value * response = command(data, request);
+	struct st_value * response = command(data, request, std_admin_conf);
 	st_json_encode_to_fd(response, fd, true);
 	st_value_free(response);
 	st_value_free(request);

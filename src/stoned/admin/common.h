@@ -34,9 +34,9 @@ struct std_admin_client {
 	char * salt;
 };
 
-typedef struct st_value * (*std_admin_f)(struct std_admin_client * client, struct st_value * request);
+typedef struct st_value * (*std_admin_f)(struct std_admin_client * client, struct st_value * request, struct st_value * config);
 
-struct st_value * std_admin_login(struct std_admin_client * client, struct st_value * request);
+struct st_value * std_admin_login(struct std_admin_client * client, struct st_value * request, struct st_value * config);
 
 #endif
 

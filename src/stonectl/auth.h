@@ -30,7 +30,7 @@
 // bool
 #include <stdbool.h>
 
-bool stctl_auth_do_authentification(int fd);
+bool stctl_auth_do_authentification(int fd, char * password);
 
 
 #endif

@@ -59,7 +59,13 @@ int stctl_status_daemon(int argc __attribute__((unused)), char ** argv __attribu
 		return 1;
 
 	struct st_value * admin = st_value_hashtable_get2(config, "admin", false);
-	if (admin == NULL || admin->type != st_value_hashtable || !st_value_hashtable_has_key2(admin, "socket")) {
+	if (admin == NULL || admin->type != st_value_hashtable || !st_value_hashtable_has_key2(admin, "password") || !st_value_hashtable_has_key2(admin, "socket")) {
+		st_value_free(config);
+		return 1;
+	}
+
+	struct st_value * password = st_value_hashtable_get2(admin, "password", false);
+	if (password == NULL || password->type != st_value_string) {
 		st_value_free(config);
 		return 1;
 	}
@@ -71,12 +77,13 @@ int stctl_status_daemon(int argc __attribute__((unused)), char ** argv __attribu
 	}
 
 	int fd = st_socket(socket);
-	st_value_free(config);
 
 	if (fd < 0)
 		return 2;
 
-	stctl_auth_do_authentification(fd);
+	stctl_auth_do_authentification(fd, password->value.string);
+
+	st_value_free(config);
 
 	return 0;
 }
