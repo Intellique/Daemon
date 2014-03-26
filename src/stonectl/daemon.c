@@ -40,20 +40,10 @@
 #include "common.h"
 #include "config.h"
 
-int stctl_start_daemon(int argc __attribute__((unused)), char ** argv __attribute__((unused))) {
-	struct st_process daemon;
-	st_process_new(&daemon, "./bin/stoned", NULL, 0);
-	st_process_start(&daemon, 1);
+static bool stctl_daemon_try_connect(void);
 
-	sleep(3);
 
-	int status = 0;
-	pid_t ret = waitpid(daemon.pid, &status, WNOHANG);
-
-	return ret != 0;
-}
-
-int stctl_status_daemon(int argc __attribute__((unused)), char ** argv __attribute__((unused))) {
+static bool stctl_daemon_try_connect() {
 	struct st_value * config = st_json_parse_file(DAEMON_CONFIG_FILE);
 	if (config == NULL || !st_value_hashtable_has_key2(config, "admin"))
 		return 1;
@@ -85,6 +75,32 @@ int stctl_status_daemon(int argc __attribute__((unused)), char ** argv __attribu
 
 	st_value_free(config);
 
-	return ok != true;
+	return ok;
+}
+
+int stctl_start_daemon(int argc __attribute__((unused)), char ** argv __attribute__((unused))) {
+	struct st_process daemon;
+	st_process_new(&daemon, "./bin/stoned", NULL, 0);
+	st_process_start(&daemon, 1);
+
+	bool ok = false;
+	short retry;
+	for (retry = 0; retry < 10 && !ok; retry++) {
+		sleep(1);
+
+		int status = 0;
+		pid_t ret = waitpid(daemon.pid, &status, WNOHANG);
+		if (ret != 0)
+			return 3;
+
+		if (stctl_daemon_try_connect())
+			ok = true;
+	}
+
+	return ok ? 0 : 3;
+}
+
+int stctl_status_daemon(int argc __attribute__((unused)), char ** argv __attribute__((unused))) {
+	return stctl_daemon_try_connect() ? 0 : 3;
 }
 
