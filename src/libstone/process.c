@@ -70,8 +70,6 @@ void st_process_free_v1(struct st_process_v1 * process, unsigned int nb_process)
 	if (process == NULL || nb_process < 1)
 		return;
 
-	st_process_wait_v1(process, nb_process);
-
 	unsigned int i;
 	for (i = 0; i < nb_process; i++) {
 		free(process->command);

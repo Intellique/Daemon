@@ -145,13 +145,15 @@ int stctl_start_daemon(int argc, char ** argv) {
 		int status = 0;
 		pid_t ret = waitpid(daemon.pid, &status, WNOHANG);
 		if (ret != 0)
-			return 2;
+			break;
 
 		if (stctl_daemon_try_connect())
 			ok = true;
 	}
 
-	return ok ? 0 : 3;
+	st_process_free(&daemon, 1);
+
+	return ok ? 0 : 2;
 }
 
 int stctl_status_daemon(int argc, char ** argv) {

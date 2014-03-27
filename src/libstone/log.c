@@ -57,6 +57,7 @@ static enum st_log_type_v1 st_log_default_type = st_log_type_daemon;
 static volatile bool st_log_finished = false;
 static volatile bool st_log_started = false;
 
+static void st_log_exit(void) __attribute__((destructor));
 static void st_log_send_message(void * arg);
 static void st_log_write_inner(enum st_log_level_v1 level, enum st_log_type_v1 type, const char * format, va_list params);
 
@@ -110,6 +111,11 @@ void st_log_configure_v1(struct st_value_v1 * config, enum st_log_type_v1 defaul
 	}
 
 	pthread_mutex_unlock(&st_log_lock);
+}
+
+static void st_log_exit() {
+	st_value_free(st_log_messages);
+	st_log_messages = NULL;
 }
 
 __asm__(".symver st_log_level_to_string_v1, st_log_level_to_string@@LIBSTONE_1.2");

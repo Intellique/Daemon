@@ -24,7 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#include <stddef.h>
+// free
+#include <stdlib.h>
 
 #include <libstone/checksum.h>
 #include <libstone/json.h>
@@ -39,8 +40,11 @@ bool stctl_auth_do_authentification(int fd, char * password) {
 	st_value_free(request);
 
 	struct st_value * response = st_json_parse_fd(fd, 10000);
-	if (response == NULL || !st_value_hashtable_has_key2(response, "salt"))
+	if (response == NULL || !st_value_hashtable_has_key2(response, "salt")) {
+		if (response != NULL)
+			st_value_free(response);
 		return false;
+	}
 
 	struct st_value * error = st_value_hashtable_get2(response, "error", false);
 	if (error == NULL || error->type != st_value_boolean || error->value.boolean) {
@@ -59,15 +63,15 @@ bool stctl_auth_do_authentification(int fd, char * password) {
 
 	// step 2
 	char * hash = st_checksum_salt_password("sha1", password, salt->value.string);
-	if (hash == NULL) {
-		st_value_free(salt);
+	st_value_free(salt);
+	if (hash == NULL)
 		return false;
-	}
 
 	request = st_value_pack("{sissss}", "step", 2, "method", "login", "password", hash);
+	free(hash);
+
 	st_json_encode_to_fd(request, fd, true);
 	st_value_free(request);
-
 
 	response = st_json_parse_fd(fd, 10000);
 	error = st_value_hashtable_get2(response, "error", false);
