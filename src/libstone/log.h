@@ -36,6 +36,7 @@
 
 void st_log_configure_v1(struct st_value_v1 * config, enum st_log_type_v1 default_type);
 const char * st_log_level_to_string_v1(enum st_log_level_v1 level);
+void st_log_stop_logger_v1(void);
 enum st_log_level_v1 st_log_string_to_level_v1(const char * string);
 enum st_log_type_v1 st_log_string_to_type_v1(const char * string);
 const char * st_log_type_to_string_v1(enum st_log_type type_v1);

@@ -112,79 +112,6 @@ static void st_log_exit() {
 	st_log_finished = true;
 }
 
-struct st_log_driver * st_log_get_driver(const char * driver) {
-	if (driver == NULL) {
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Get checksum driver with driver's name is NULL");
-		return NULL;
-	}
-
-	pthread_mutex_lock(&st_log_lock);
-
-	unsigned int i;
-	struct st_log_driver * dr = NULL;
-	for (i = 0; i < st_log_nb_drivers && dr == NULL; i++)
-		if (!strcmp(driver, st_log_drivers[i]->name))
-			dr = st_log_drivers[i];
-
-	if (dr == NULL) {
-		void * cookie = st_loader_load("log", driver);
-
-		if (dr == NULL && cookie == NULL) {
-			st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Failed to load driver %s", driver);
-			pthread_mutex_unlock(&st_log_lock);
-			return NULL;
-		}
-
-		for (i = 0; i < st_log_nb_drivers && dr == NULL; i++)
-			if (!strcmp(driver, st_log_drivers[i]->name)) {
-				dr = st_log_drivers[i];
-				dr->cookie = cookie;
-
-				st_log_write_all(st_log_level_debug, st_log_type_checksum, "Driver '%s' is now registred, src checksum: %s", driver, dr->src_checksum);
-			}
-
-		if (dr == NULL)
-			st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Driver %s not found", driver);
-	}
-
-	pthread_mutex_unlock(&st_log_lock);
-
-	return dr;
-}
-
-void st_log_register_driver(struct st_log_driver * driver) {
-	if (driver == NULL) {
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Try to register with driver=0");
-		return;
-	}
-
-	if (driver->api_level != STONE_LOG_API_LEVEL) {
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Log: Driver '%s' has not the correct api version (current: %d, expected: %d)", driver->name, driver->api_level, STONE_LOG_API_LEVEL);
-		return;
-	}
-
-	unsigned int i;
-	for (i = 0; i < st_log_nb_drivers; i++)
-		if (st_log_drivers[i] == driver || !strcmp(driver->name, st_log_drivers[i]->name)) {
-			st_log_write_all(st_log_level_info, st_log_type_daemon, "Log: Driver '%s' is already registred", driver->name);
-			return;
-		}
-
-	void * new_addr = realloc(st_log_drivers, (st_log_nb_drivers + 1) * sizeof(struct st_log_driver *));
-	if (new_addr == NULL) {
-		st_log_write_all(st_log_level_info, st_log_type_daemon, "Driver '%s' cannot be registred because there is not enough memory", driver->name);
-		return;
-	}
-
-	st_log_drivers = new_addr;
-	st_log_drivers[st_log_nb_drivers] = driver;
-	st_log_nb_drivers++;
-
-	st_loader_register_ok();
-
-	st_log_write_all(st_log_level_info, st_log_type_daemon, "Log: Driver '%s' is now registred", driver->name);
-}
-
 static void st_log_sent_message(void * arg __attribute__((unused))) {
 	for (;;) {
 		pthread_mutex_lock(&st_log_lock);
@@ -228,18 +155,6 @@ void st_log_start_logger() {
 		st_log_logger_running = 1;
 		st_thread_pool_run2("logger", st_log_sent_message, NULL, 4);
 		st_log_display_at_exit = 0;
-	}
-
-	pthread_mutex_unlock(&st_log_lock);
-}
-
-void st_log_stop_logger() {
-	pthread_mutex_lock(&st_log_lock);
-
-	if (st_log_logger_running) {
-		st_log_logger_running = false;
-		pthread_cond_signal(&st_log_wait);
-		pthread_cond_wait(&st_log_wait, &st_log_lock);
 	}
 
 	pthread_mutex_unlock(&st_log_lock);

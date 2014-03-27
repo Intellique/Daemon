@@ -24,6 +24,7 @@ LIBSTONE_1.2 {
 
 		st_log_configure;
 		st_log_level_to_string;
+		st_log_stop_logger;
 		st_log_string_to_level;
 		st_log_string_to_type;
 		st_log_type_to_string;

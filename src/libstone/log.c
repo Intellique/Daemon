@@ -122,6 +122,19 @@ const char * st_log_level_to_string_v1(enum st_log_level_v1 level) {
 	return st_log_levels[i].name;
 }
 
+__asm__(".symver st_log_stop_logger_v1, st_log_stop_logger@@LIBSTONE_1.2");
+void st_log_stop_logger_v1() {
+	pthread_mutex_lock(&st_log_lock);
+
+	if (st_log_started) {
+		st_log_finished = true;
+		pthread_cond_signal(&st_log_wait);
+		pthread_cond_wait(&st_log_wait, &st_log_lock);
+	}
+
+	pthread_mutex_unlock(&st_log_lock);
+}
+
 __asm__(".symver st_log_string_to_level_v1, st_log_string_to_level@@LIBSTONE_1.2");
 enum st_log_level_v1 st_log_string_to_level_v1(const char * level) {
 	if (level == NULL)

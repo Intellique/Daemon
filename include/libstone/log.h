@@ -158,6 +158,8 @@ void st_log_configure(struct st_value * config, enum st_log_type default_type);
  */
 const char * st_log_level_to_string(enum st_log_level level);
 
+void st_log_stop_logger(void);
+
 /**
  * \brief Convert a c string to an enumeration
  *
