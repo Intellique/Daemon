@@ -252,6 +252,8 @@ int stctl_stop_daemon(int argc, char ** argv) {
 
 	struct st_value * response = st_json_parse_fd(fd, 10000);
 	if (response == NULL || !st_value_hashtable_has_key2(response, "pid")) {
+		if (response != NULL)
+			st_value_free(response);
 		st_value_free(config);
 		close(fd);
 		return 4;
@@ -277,6 +279,7 @@ int stctl_stop_daemon(int argc, char ** argv) {
 
 	ok = !error->value.boolean;
 
+	st_value_free(response);
 	st_value_free(config);
 	close(fd);
 
