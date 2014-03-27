@@ -55,6 +55,6 @@ int main(int argc, char ** argv) {
 	struct st_value * com = st_value_hashtable_get2(commands, argv[1], false);
 	command_f command = com->value.custom.data;
 
-	return command(argc - 2, argv + 2);
+	return command(argc - 1, argv + 1);
 }
 

@@ -24,6 +24,10 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// getopt_long
+#include <getopt.h>
+// printf
+#include <stdio.h>
 // waitpid
 #include <sys/types.h>
 // waitpid
@@ -39,6 +43,10 @@
 #include "auth.h"
 #include "common.h"
 #include "config.h"
+
+enum {
+	OPT_HELP = 'h',
+};
 
 static int stctl_daemon_init_socket(struct st_value * config);
 static bool stctl_daemon_try_connect(void);
@@ -89,7 +97,34 @@ static bool stctl_daemon_try_connect() {
 	return ok;
 }
 
-int stctl_start_daemon(int argc __attribute__((unused)), char ** argv __attribute__((unused))) {
+int stctl_start_daemon(int argc, char ** argv) {
+	int option_index = 0;
+	static struct option long_options[] = {
+		{ "help",     0, NULL, OPT_HELP },
+
+		{ NULL, 0, NULL, 0 },
+	};
+
+	// parse option
+	int opt;
+	optind = 0;
+	do {
+		opt = getopt_long(argc, argv, "h", long_options, &option_index);
+
+		switch (opt) {
+			case -1:
+				break;
+
+			case OPT_HELP:
+				printf("stonectl start : start stoned\n");
+				printf("  -h, --help : show this and exit\n");
+				return 0;
+
+			default:
+				return 1;
+		}
+	} while (opt > -1);
+
 	if (stctl_daemon_try_connect())
 		return 1;
 
@@ -114,11 +149,65 @@ int stctl_start_daemon(int argc __attribute__((unused)), char ** argv __attribut
 	return ok ? 0 : 3;
 }
 
-int stctl_status_daemon(int argc __attribute__((unused)), char ** argv __attribute__((unused))) {
+int stctl_status_daemon(int argc, char ** argv) {
+	int option_index = 0;
+	static struct option long_options[] = {
+		{ "help",     0, NULL, OPT_HELP },
+
+		{ NULL, 0, NULL, 0 },
+	};
+
+	// parse option
+	int opt;
+	optind = 0;
+	do {
+		opt = getopt_long(argc, argv, "h", long_options, &option_index);
+
+		switch (opt) {
+			case -1:
+				break;
+
+			case OPT_HELP:
+				printf("stonectl status : get status of stoned\n");
+				printf("  -h, --help : show this and exit\n");
+				return 0;
+
+			default:
+				return 1;
+		}
+	} while (opt > -1);
+
 	return stctl_daemon_try_connect() ? 0 : 1;
 }
 
-int stctl_stop_daemon(int argc __attribute__((unused)), char ** argv __attribute__((unused))) {
+int stctl_stop_daemon(int argc, char ** argv) {
+	int option_index = 0;
+	static struct option long_options[] = {
+		{ "help",     0, NULL, OPT_HELP },
+
+		{ NULL, 0, NULL, 0 },
+	};
+
+	// parse option
+	int opt;
+	optind = 0;
+	do {
+		opt = getopt_long(argc, argv, "h", long_options, &option_index);
+
+		switch (opt) {
+			case -1:
+				break;
+
+			case OPT_HELP:
+				printf("stonectl stop : stop stoned daemon\n");
+				printf("  -h, --help : show this and exit\n");
+				return 0;
+
+			default:
+				return 1;
+		}
+	} while (opt > -1);
+
 	if (!stctl_daemon_try_connect())
 		return 0;
 
