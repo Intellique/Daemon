@@ -30,6 +30,8 @@
 #include <stdlib.h>
 // memmove, strdup
 #include <string.h>
+// bzero
+#include <strings.h>
 
 #include "string.h"
 #include "value.h"
@@ -523,6 +525,8 @@ void st_value_free_v1(struct st_value_v1 * value) {
 
 static struct st_value_v1 * st_value_new_v1(enum st_value_type type) {
 	struct st_value_v1 * val = malloc(sizeof(struct st_value));
+	bzero(val, sizeof(struct st_value));
+
 	val->type = type;
 	val->value.string = NULL;
 	val->shared = 1;

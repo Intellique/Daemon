@@ -70,8 +70,11 @@ static int stctl_daemon_init_socket(struct st_value * config) {
 
 static bool stctl_daemon_try_connect() {
 	struct st_value * config = st_json_parse_file(DAEMON_CONFIG_FILE);
-	if (config == NULL || !st_value_hashtable_has_key2(config, "admin"))
+	if (config == NULL || !st_value_hashtable_has_key2(config, "admin")) {
+		if (config != NULL)
+			st_value_free(config);
 		return false;
+	}
 
 	struct st_value * admin = st_value_hashtable_get2(config, "admin", false);
 	if (admin == NULL || admin->type != st_value_hashtable || !st_value_hashtable_has_key2(admin, "password") || !st_value_hashtable_has_key2(admin, "socket")) {
@@ -80,8 +83,10 @@ static bool stctl_daemon_try_connect() {
 	}
 
 	int fd = stctl_daemon_init_socket(config);
-	if (fd < 0)
+	if (fd < 0) {
+		st_value_free(config);
 		return false;
+	}
 
 	struct st_value * password = st_value_hashtable_get2(admin, "password", false);
 	if (password == NULL || password->type != st_value_string) {
