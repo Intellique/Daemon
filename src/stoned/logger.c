@@ -49,14 +49,14 @@ static void std_logger_exited(int fd, short event, void * data);
 
 
 static void std_logger_exit() {
+	st_value_free(logger_config);
+
 	if (logger_in < 0)
 		return;
 
 	close(logger_in);
 	logger_in = -1;
 	st_process_free(&logger, 1);
-
-	st_value_free(logger_config);
 }
 
 static void std_logger_exited(int fd __attribute__((unused)), short event, void * data __attribute__((unused))) {
