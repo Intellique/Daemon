@@ -22,79 +22,71 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 22 Apr 2013 13:26:11 +0200                            *
 \****************************************************************************/
 
 // free, malloc
 #include <stdlib.h>
-// RIPEMD_Final, RIPEMD_Init, RIPEMD_Update
-#include <openssl/ripemd.h>
 // strdup
 #include <string.h>
+// crc32
+#include <zlib.h>
 
 #include <libstone/checksum.h>
 
-#include <libchecksum-ripemd.chcksum>
+#include <libchecksum-crc32.chcksum>
 
-struct st_checksum_ripemd_private {
-	RIPEMD160_CTX ripemd;
-	char digest[RIPEMD160_DIGEST_LENGTH * 2 + 1];
+struct st_checksum_crc32_private {
+	uLong crc32;
+	char digest[9];
 };
 
-static char * st_checksum_ripemd_digest(struct st_checksum * checksum);
-static void st_checksum_ripemd_free(struct st_checksum * checksum);
-static struct st_checksum * st_checksum_ripemd_new_checksum(void);
-static void st_checksum_ripemd_init(void) __attribute__((constructor));
-static ssize_t st_checksum_ripemd_update(struct st_checksum * checksum, const void * data, ssize_t length);
+static char * st_checksum_crc32_digest(struct st_checksum * checksum);
+static void st_checksum_crc32_free(struct st_checksum * checksum);
+static struct st_checksum * st_checksum_crc32_new_checksum(void);
+static void st_checksum_crc32_init(void) __attribute__((constructor));
+static ssize_t st_checksum_crc32_update(struct st_checksum * checksum, const void * data, ssize_t length);
 
-static struct st_checksum_driver st_checksum_ripemd_driver = {
-	.name			  = "ripemd",
+static struct st_checksum_driver st_checksum_crc32_driver = {
+	.name			  = "crc32",
 	.default_checksum = false,
-	.new_checksum	  = st_checksum_ripemd_new_checksum,
+	.new_checksum	  = st_checksum_crc32_new_checksum,
 	.cookie			  = NULL,
-	.api_level        = {
-		.checksum = STONE_CHECKSUM_API_LEVEL,
-		.database = 0,
-		.job      = 0,
-	},
-	.src_checksum     = STONE_CHECKSUM_RIPEMD_SRCSUM,
+	.api_level        = 0,
+	.src_checksum     = STONE_CHECKSUM_CRC32_SRCSUM,
 };
 
-static struct st_checksum_ops st_checksum_ripemd_ops = {
-	.digest	= st_checksum_ripemd_digest,
-	.free	= st_checksum_ripemd_free,
-	.update	= st_checksum_ripemd_update,
+static struct st_checksum_ops st_checksum_crc32_ops = {
+	.digest	= st_checksum_crc32_digest,
+	.free	= st_checksum_crc32_free,
+	.update	= st_checksum_crc32_update,
 };
 
 
-static char * st_checksum_ripemd_digest(struct st_checksum * checksum) {
+static char * st_checksum_crc32_digest(struct st_checksum * checksum) {
 	if (checksum == NULL)
 		return NULL;
 
-	struct st_checksum_ripemd_private * self = checksum->data;
+	struct st_checksum_crc32_private * self = checksum->data;
 	if (self->digest[0] != '\0')
 		return strdup(self->digest);
 
-	RIPEMD160_CTX ripemd = self->ripemd;
-	unsigned char digest[RIPEMD160_DIGEST_LENGTH];
-	if (!RIPEMD160_Final(digest, &ripemd))
-		return NULL;
+	unsigned char digest[4] = {
+		(self->crc32 >> 24) & 0xFF,
+		(self->crc32 >> 16) & 0xFF,
+		(self->crc32 >> 8)  & 0xFF,
+		self->crc32         & 0xFF,
+	};
 
-	st_checksum_convert_to_hex(digest, RIPEMD160_DIGEST_LENGTH, self->digest);
+	st_checksum_convert_to_hex(digest, 4, self->digest);
 
 	return strdup(self->digest);
 }
 
-static void st_checksum_ripemd_free(struct st_checksum * checksum) {
+static void st_checksum_crc32_free(struct st_checksum * checksum) {
 	if (checksum == NULL)
 		return;
 
-	struct st_checksum_ripemd_private * self = checksum->data;
-
-	unsigned char digest[RIPEMD160_DIGEST_LENGTH];
-	RIPEMD160_Final(digest, &self->ripemd);
-
-	free(self);
+	free(checksum->data);
 
 	checksum->data = NULL;
 	checksum->ops = NULL;
@@ -103,33 +95,31 @@ static void st_checksum_ripemd_free(struct st_checksum * checksum) {
 	free(checksum);
 }
 
-static void st_checksum_ripemd_init(void) {
-	st_checksum_register_driver(&st_checksum_ripemd_driver);
+static void st_checksum_crc32_init(void) {
+	st_checksum_register_driver(&st_checksum_crc32_driver);
 }
 
-static struct st_checksum * st_checksum_ripemd_new_checksum(void) {
+static struct st_checksum * st_checksum_crc32_new_checksum(void) {
 	struct st_checksum * checksum = malloc(sizeof(struct st_checksum));
-	checksum->ops = &st_checksum_ripemd_ops;
-	checksum->driver = &st_checksum_ripemd_driver;
+	checksum->ops = &st_checksum_crc32_ops;
+	checksum->driver = &st_checksum_crc32_driver;
 
-	struct st_checksum_ripemd_private * self = malloc(sizeof(struct st_checksum_ripemd_private));
-	RIPEMD160_Init(&self->ripemd);
+	struct st_checksum_crc32_private * self = malloc(sizeof(struct st_checksum_crc32_private));
+	self->crc32 = crc32(0L, Z_NULL, 0);
 	*self->digest = '\0';
 
 	checksum->data = self;
 	return checksum;
 }
 
-static ssize_t st_checksum_ripemd_update(struct st_checksum * checksum, const void * data, ssize_t length) {
+static ssize_t st_checksum_crc32_update(struct st_checksum * checksum, const void * data, ssize_t length) {
 	if (checksum == NULL || data == NULL || length < 1)
 		return -1;
 
-	struct st_checksum_ripemd_private * self = checksum->data;
-	if (RIPEMD160_Update(&self->ripemd, data, length)) {
-		*self->digest = '\0';
-		return length;
-	}
+	struct st_checksum_crc32_private * self = checksum->data;
+	self->crc32 = crc32(self->crc32, data, length);
+	*self->digest = '\0';
 
-	return -1;
+	return length;
 }
 

@@ -22,76 +22,75 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 22 Apr 2013 13:25:59 +0200                            *
+*  Last modified: Mon, 22 Apr 2013 13:26:43 +0200                            *
 \****************************************************************************/
 
 // free, malloc
 #include <stdlib.h>
+// SHA512_Final, SHA512_Init, SHA512_Update
+#include <openssl/sha.h>
 // strdup
 #include <string.h>
-// crc32
-#include <zlib.h>
 
 #include <libstone/checksum.h>
 
-#include <libchecksum-crc32.chcksum>
+#include <libchecksum-sha512.chcksum>
 
-struct st_checksum_crc32_private {
-	uLong crc32;
-	char digest[9];
+struct st_checksum_sha512_private {
+	SHA512_CTX sha512;
+	char digest[SHA512_DIGEST_LENGTH * 2 + 1];
 };
 
-static char * st_checksum_crc32_digest(struct st_checksum * checksum);
-static void st_checksum_crc32_free(struct st_checksum * checksum);
-static struct st_checksum * st_checksum_crc32_new_checksum(void);
-static void st_checksum_crc32_init(void) __attribute__((constructor));
-static ssize_t st_checksum_crc32_update(struct st_checksum * checksum, const void * data, ssize_t length);
+static char * st_checksum_sha512_digest(struct st_checksum * checksum);
+static void st_checksum_sha512_free(struct st_checksum * checksum);
+static struct st_checksum * st_checksum_sha512_new_checksum(void);
+static void st_checksum_sha512_init(void) __attribute__((constructor));
+static ssize_t st_checksum_sha512_update(struct st_checksum * checksum, const void * data, ssize_t length);
 
-static struct st_checksum_driver st_checksum_crc32_driver = {
-	.name			  = "crc32",
+static struct st_checksum_driver st_checksum_sha512_driver = {
+	.name			  = "sha512",
 	.default_checksum = false,
-	.new_checksum	  = st_checksum_crc32_new_checksum,
+	.new_checksum	  = st_checksum_sha512_new_checksum,
 	.cookie			  = NULL,
-	.api_level        = {
-		.checksum = STONE_CHECKSUM_API_LEVEL,
-		.database = 0,
-		.job      = 0,
-	},
-	.src_checksum     = STONE_CHECKSUM_CRC32_SRCSUM,
+	.api_level        = 0,
+	.src_checksum     = STONE_CHECKSUM_SHA512_SRCSUM,
 };
 
-static struct st_checksum_ops st_checksum_crc32_ops = {
-	.digest	= st_checksum_crc32_digest,
-	.free	= st_checksum_crc32_free,
-	.update	= st_checksum_crc32_update,
+static struct st_checksum_ops st_checksum_sha512_ops = {
+	.digest	= st_checksum_sha512_digest,
+	.free	= st_checksum_sha512_free,
+	.update	= st_checksum_sha512_update,
 };
 
 
-static char * st_checksum_crc32_digest(struct st_checksum * checksum) {
+static char * st_checksum_sha512_digest(struct st_checksum * checksum) {
 	if (checksum == NULL)
 		return NULL;
 
-	struct st_checksum_crc32_private * self = checksum->data;
+	struct st_checksum_sha512_private * self = checksum->data;
 	if (self->digest[0] != '\0')
 		return strdup(self->digest);
 
-	unsigned char digest[4] = {
-		(self->crc32 >> 24) & 0xFF,
-		(self->crc32 >> 16) & 0xFF,
-		(self->crc32 >> 8)  & 0xFF,
-		self->crc32         & 0xFF,
-	};
+	SHA512_CTX sha512 = self->sha512;
+	unsigned char digest[SHA512_DIGEST_LENGTH];
+	if (!SHA512_Final(digest, &sha512))
+		return NULL;
 
-	st_checksum_convert_to_hex(digest, 4, self->digest);
+	st_checksum_convert_to_hex(digest, SHA512_DIGEST_LENGTH, self->digest);
 
 	return strdup(self->digest);
 }
 
-static void st_checksum_crc32_free(struct st_checksum * checksum) {
+static void st_checksum_sha512_free(struct st_checksum * checksum) {
 	if (checksum == NULL)
 		return;
 
-	free(checksum->data);
+	struct st_checksum_sha512_private * self = checksum->data;
+
+	unsigned char digest[SHA512_DIGEST_LENGTH];
+	SHA512_Final(digest, &self->sha512);
+
+	free(self);
 
 	checksum->data = NULL;
 	checksum->ops = NULL;
@@ -100,31 +99,33 @@ static void st_checksum_crc32_free(struct st_checksum * checksum) {
 	free(checksum);
 }
 
-static void st_checksum_crc32_init(void) {
-	st_checksum_register_driver(&st_checksum_crc32_driver);
+static void st_checksum_sha512_init(void) {
+	st_checksum_register_driver(&st_checksum_sha512_driver);
 }
 
-static struct st_checksum * st_checksum_crc32_new_checksum(void) {
+static struct st_checksum * st_checksum_sha512_new_checksum(void) {
 	struct st_checksum * checksum = malloc(sizeof(struct st_checksum));
-	checksum->ops = &st_checksum_crc32_ops;
-	checksum->driver = &st_checksum_crc32_driver;
+	checksum->ops = &st_checksum_sha512_ops;
+	checksum->driver = &st_checksum_sha512_driver;
 
-	struct st_checksum_crc32_private * self = malloc(sizeof(struct st_checksum_crc32_private));
-	self->crc32 = crc32(0L, Z_NULL, 0);
+	struct st_checksum_sha512_private * self = malloc(sizeof(struct st_checksum_sha512_private));
+	SHA512_Init(&self->sha512);
 	*self->digest = '\0';
 
 	checksum->data = self;
 	return checksum;
 }
 
-static ssize_t st_checksum_crc32_update(struct st_checksum * checksum, const void * data, ssize_t length) {
+static ssize_t st_checksum_sha512_update(struct st_checksum * checksum, const void * data, ssize_t length) {
 	if (checksum == NULL || data == NULL || length < 1)
 		return -1;
 
-	struct st_checksum_crc32_private * self = checksum->data;
-	self->crc32 = crc32(self->crc32, data, length);
-	*self->digest = '\0';
+	struct st_checksum_sha512_private * self = checksum->data;
+	if (SHA512_Update(&self->sha512, data, length)) {
+		*self->digest = '\0';
+		return length;
+	}
 
-	return length;
+	return -1;
 }
 

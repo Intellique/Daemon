@@ -52,11 +52,7 @@ static struct st_checksum_driver st_checksum_whirlpool_driver = {
 	.default_checksum = false,
 	.new_checksum	  = st_checksum_whirlpool_new_checksum,
 	.cookie			  = NULL,
-	.api_level        = {
-		.checksum = STONE_CHECKSUM_API_LEVEL,
-		.database = 0,
-		.job      = 0,
-	},
+	.api_level        = 0,
 	.src_checksum     = STONE_CHECKSUM_WHIRLPOOL_SRCSUM,
 };
 

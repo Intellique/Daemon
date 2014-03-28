@@ -22,77 +22,73 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 22 Apr 2013 13:26:33 +0200                            *
+*  Last modified: Mon, 22 Apr 2013 13:26:02 +0200                            *
 \****************************************************************************/
 
 // free, malloc
 #include <stdlib.h>
-// SHA256_Final, SHA256_Init, SHA256_Update
-#include <openssl/sha.h>
+// MD5_Final, MD5_Init, MD5_Update
+#include <openssl/md5.h>
 // strdup
 #include <string.h>
 
 #include <libstone/checksum.h>
 
-#include <libchecksum-sha256.chcksum>
+#include <libchecksum-md5.chcksum>
 
-struct st_checksum_sha256_private {
-	SHA256_CTX sha256;
-	char digest[SHA256_DIGEST_LENGTH * 2 + 1];
+struct st_checksum_md5_private {
+	MD5_CTX md5;
+	char digest[MD5_DIGEST_LENGTH * 2 + 1];
 };
 
-static char * st_checksum_sha256_digest(struct st_checksum * checksum);
-static void st_checksum_sha256_free(struct st_checksum * checksum);
-static struct st_checksum * st_checksum_sha256_new_checksum(void);
-static void st_checksum_sha256_init(void) __attribute__((constructor));
-static ssize_t st_checksum_sha256_update(struct st_checksum * checksum, const void * data, ssize_t length);
+static char * st_checksum_md5_digest(struct st_checksum * checksum);
+static void st_checksum_md5_free(struct st_checksum * checksum);
+static struct st_checksum * st_checksum_md5_new_checksum(void);
+static void st_checksum_md5_init(void) __attribute__((constructor));
+static ssize_t st_checksum_md5_update(struct st_checksum * checksum, const void * data, ssize_t length);
 
-static struct st_checksum_driver st_checksum_sha256_driver = {
-	.name			  = "sha256",
+static struct st_checksum_driver st_checksum_md5_driver = {
+	.name			  = "md5",
 	.default_checksum = false,
-	.new_checksum	  = st_checksum_sha256_new_checksum,
+	.new_checksum	  = st_checksum_md5_new_checksum,
 	.cookie			  = NULL,
-	.api_level        = {
-		.checksum = STONE_CHECKSUM_API_LEVEL,
-		.database = 0,
-		.job      = 0,
-	},
-	.src_checksum     = STONE_CHECKSUM_SHA256_SRCSUM,
+	.api_level        = 0,
+	.src_checksum     = STONE_CHECKSUM_MD5_SRCSUM,
 };
 
-static struct st_checksum_ops st_checksum_sha256_ops = {
-	.digest	= st_checksum_sha256_digest,
-	.free	= st_checksum_sha256_free,
-	.update	= st_checksum_sha256_update,
+static struct st_checksum_ops st_checksum_md5_ops = {
+	.digest	= st_checksum_md5_digest,
+	.free	= st_checksum_md5_free,
+	.update	= st_checksum_md5_update,
 };
 
 
-static char * st_checksum_sha256_digest(struct st_checksum * checksum) {
+static char * st_checksum_md5_digest(struct st_checksum * checksum) {
 	if (checksum == NULL)
 		return NULL;
 
-	struct st_checksum_sha256_private * self = checksum->data;
+	struct st_checksum_md5_private * self = checksum->data;
 	if (self->digest[0] != '\0')
 		return strdup(self->digest);
 
-	SHA256_CTX sha256 = self->sha256;
-	unsigned char digest[SHA256_DIGEST_LENGTH];
-	if (!SHA256_Final(digest, &sha256))
+	MD5_CTX md5 = self->md5;
+	unsigned char digest[MD5_DIGEST_LENGTH];
+	if (!MD5_Final(digest, &md5))
 		return NULL;
 
-	st_checksum_convert_to_hex(digest, SHA256_DIGEST_LENGTH, self->digest);
+	st_checksum_convert_to_hex(digest, MD5_DIGEST_LENGTH, self->digest);
 
 	return strdup(self->digest);
 }
 
-static void st_checksum_sha256_free(struct st_checksum * checksum) {
+static void st_checksum_md5_free(struct st_checksum * checksum) {
 	if (checksum == NULL)
 		return;
 
-	struct st_checksum_sha256_private * self = checksum->data;
+	struct st_checksum_md5_private * self = checksum->data;
 
-	unsigned char digest[SHA256_DIGEST_LENGTH];
-	SHA256_Final(digest, &self->sha256);
+	unsigned char digest[MD5_DIGEST_LENGTH];
+	MD5_Final(digest, &self->md5);
 
 	free(self);
 
@@ -103,29 +99,29 @@ static void st_checksum_sha256_free(struct st_checksum * checksum) {
 	free(checksum);
 }
 
-static void st_checksum_sha256_init(void) {
-	st_checksum_register_driver(&st_checksum_sha256_driver);
+static void st_checksum_md5_init(void) {
+	st_checksum_register_driver(&st_checksum_md5_driver);
 }
 
-static struct st_checksum * st_checksum_sha256_new_checksum(void) {
+static struct st_checksum * st_checksum_md5_new_checksum(void) {
 	struct st_checksum * checksum = malloc(sizeof(struct st_checksum));
-	checksum->ops = &st_checksum_sha256_ops;
-	checksum->driver = &st_checksum_sha256_driver;
+	checksum->ops = &st_checksum_md5_ops;
+	checksum->driver = &st_checksum_md5_driver;
 
-	struct st_checksum_sha256_private * self = malloc(sizeof(struct st_checksum_sha256_private));
-	SHA256_Init(&self->sha256);
+	struct st_checksum_md5_private * self = malloc(sizeof(struct st_checksum_md5_private));
+	MD5_Init(&self->md5);
 	*self->digest = '\0';
 
 	checksum->data = self;
 	return checksum;
 }
 
-static ssize_t st_checksum_sha256_update(struct st_checksum * checksum, const void * data, ssize_t length) {
+static ssize_t st_checksum_md5_update(struct st_checksum * checksum, const void * data, ssize_t length) {
 	if (checksum == NULL || data == NULL || length < 1)
 		return -1;
 
-	struct st_checksum_sha256_private * self = checksum->data;
-	if (SHA256_Update(&self->sha256, data, length)) {
+	struct st_checksum_md5_private * self = checksum->data;
+	if (MD5_Update(&self->md5, data, length)) {
 		*self->digest = '\0';
 		return length;
 	}

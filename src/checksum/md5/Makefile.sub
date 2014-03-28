@@ -1,10 +1,10 @@
-STONE_CHECKSUM_MD5_SRC_DIR		:= src/module/checksum/md5
+STONE_CHECKSUM_MD5_SRC_DIR		:= src/checksum/md5
 
 STONE_CHECKSUM_MD5_BIN			:= lib/libchecksum-md5.so
 STONE_CHECKSUM_MD5_CFLAG		:= -pthread -fPIC -fvisibility=hidden
-STONE_CHECKSUM_MD5_LD			:= -pthread -shared -lcrypto
+STONE_CHECKSUM_MD5_LD			:= -pthread -shared -lstone -Llib -lcrypto
 
-STONE_CHECKSUM_MD5_DEPEND_LIB	:=
+STONE_CHECKSUM_MD5_DEPEND_LIB	:= lib/libstone.so
 
 STONE_CHECKSUM_MD5_CHCKSUM_FILE	:= libchecksum-md5.chcksum
 

@@ -1,10 +1,10 @@
-STONE_CHECKSUM_WHIRLPOOL_SRC_DIR		:= src/module/checksum/whirlpool
+STONE_CHECKSUM_WHIRLPOOL_SRC_DIR		:= src/checksum/whirlpool
 
 STONE_CHECKSUM_WHIRLPOOL_BIN			:= lib/libchecksum-whirlpool.so
 STONE_CHECKSUM_WHIRLPOOL_CFLAG			:= -pthread -fPIC -fvisibility=hidden
-STONE_CHECKSUM_WHIRLPOOL_LD				:= -pthread -shared -lcrypto
+STONE_CHECKSUM_WHIRLPOOL_LD				:= -pthread -shared -lstone -Llib -lcrypto
 
-STONE_CHECKSUM_WHIRLPOOL_DEPEND_LIB		:=
+STONE_CHECKSUM_WHIRLPOOL_DEPEND_LIB		:= lib/libstone.so
 
 STONE_CHECKSUM_WHIRLPOOL_CHCKSUM_FILE	:= libchecksum-whirlpool.chcksum
 

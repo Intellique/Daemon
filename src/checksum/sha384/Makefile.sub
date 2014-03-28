@@ -1,10 +1,10 @@
-STONE_CHECKSUM_SHA384_SRC_DIR		:= src/module/checksum/sha384
+STONE_CHECKSUM_SHA384_SRC_DIR		:= src/checksum/sha384
 
 STONE_CHECKSUM_SHA384_BIN			:= lib/libchecksum-sha384.so
 STONE_CHECKSUM_SHA384_CFLAG			:= -pthread -fPIC -fvisibility=hidden
-STONE_CHECKSUM_SHA384_LD			:= -pthread -shared -lcrypto
+STONE_CHECKSUM_SHA384_LD			:= -pthread -shared -lstone -Llib -lcrypto
 
-STONE_CHECKSUM_SHA384_DEPEND_LIB	:=
+STONE_CHECKSUM_SHA384_DEPEND_LIB	:= lib/libstone.so
 
 STONE_CHECKSUM_SHA384_CHCKSUM_FILE	:= libchecksum-sha384.chcksum
 

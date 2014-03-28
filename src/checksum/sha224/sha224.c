@@ -22,77 +22,73 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 21 Feb 2014 10:51:05 +0100                            *
+*  Last modified: Mon, 22 Apr 2013 13:26:33 +0200                            *
 \****************************************************************************/
 
 // free, malloc
 #include <stdlib.h>
-// SHA384_Final, SHA384_Init, SHA384_Update
+// SHA224_Final, SHA224_Init, SHA224_Update
 #include <openssl/sha.h>
 // strdup
 #include <string.h>
 
 #include <libstone/checksum.h>
 
-#include <libchecksum-sha384.chcksum>
+#include <libchecksum-sha224.chcksum>
 
-struct st_checksum_sha384_private {
-	SHA512_CTX sha384;
-	char digest[SHA384_DIGEST_LENGTH * 2 + 1];
+struct st_checksum_sha224_private {
+	SHA256_CTX sha224;
+	char digest[SHA224_DIGEST_LENGTH * 2 + 1];
 };
 
-static char * st_checksum_sha384_digest(struct st_checksum * checksum);
-static void st_checksum_sha384_free(struct st_checksum * checksum);
-static struct st_checksum * st_checksum_sha384_new_checksum(void);
-static void st_checksum_sha384_init(void) __attribute__((constructor));
-static ssize_t st_checksum_sha384_update(struct st_checksum * checksum, const void * data, ssize_t length);
+static char * st_checksum_sha224_digest(struct st_checksum * checksum);
+static void st_checksum_sha224_free(struct st_checksum * checksum);
+static struct st_checksum * st_checksum_sha224_new_checksum(void);
+static void st_checksum_sha224_init(void) __attribute__((constructor));
+static ssize_t st_checksum_sha224_update(struct st_checksum * checksum, const void * data, ssize_t length);
 
-static struct st_checksum_driver st_checksum_sha384_driver = {
-	.name			  = "sha384",
+static struct st_checksum_driver st_checksum_sha224_driver = {
+	.name			  = "sha224",
 	.default_checksum = false,
-	.new_checksum	  = st_checksum_sha384_new_checksum,
+	.new_checksum	  = st_checksum_sha224_new_checksum,
 	.cookie			  = NULL,
-	.api_level        = {
-		.checksum = STONE_CHECKSUM_API_LEVEL,
-		.database = 0,
-		.job      = 0,
-	},
-	.src_checksum     = STONE_CHECKSUM_SHA384_SRCSUM,
+	.api_level        = 0,
+	.src_checksum     = STONE_CHECKSUM_SHA224_SRCSUM,
 };
 
-static struct st_checksum_ops st_checksum_sha384_ops = {
-	.digest	= st_checksum_sha384_digest,
-	.free	= st_checksum_sha384_free,
-	.update	= st_checksum_sha384_update,
+static struct st_checksum_ops st_checksum_sha224_ops = {
+	.digest	= st_checksum_sha224_digest,
+	.free	= st_checksum_sha224_free,
+	.update	= st_checksum_sha224_update,
 };
 
 
-static char * st_checksum_sha384_digest(struct st_checksum * checksum) {
+static char * st_checksum_sha224_digest(struct st_checksum * checksum) {
 	if (checksum == NULL)
 		return NULL;
 
-	struct st_checksum_sha384_private * self = checksum->data;
+	struct st_checksum_sha224_private * self = checksum->data;
 	if (self->digest[0] != '\0')
 		return strdup(self->digest);
 
-	SHA512_CTX sha384 = self->sha384;
-	unsigned char digest[SHA384_DIGEST_LENGTH];
-	if (!SHA384_Final(digest, &sha384))
+	SHA256_CTX sha224 = self->sha224;
+	unsigned char digest[SHA224_DIGEST_LENGTH];
+	if (!SHA224_Final(digest, &sha224))
 		return NULL;
 
-	st_checksum_convert_to_hex(digest, SHA384_DIGEST_LENGTH, self->digest);
+	st_checksum_convert_to_hex(digest, SHA224_DIGEST_LENGTH, self->digest);
 
 	return strdup(self->digest);
 }
 
-static void st_checksum_sha384_free(struct st_checksum * checksum) {
+static void st_checksum_sha224_free(struct st_checksum * checksum) {
 	if (checksum == NULL)
 		return;
 
-	struct st_checksum_sha384_private * self = checksum->data;
+	struct st_checksum_sha224_private * self = checksum->data;
 
-	unsigned char digest[SHA384_DIGEST_LENGTH];
-	SHA384_Final(digest, &self->sha384);
+	unsigned char digest[SHA224_DIGEST_LENGTH];
+	SHA224_Final(digest, &self->sha224);
 
 	free(self);
 
@@ -103,29 +99,29 @@ static void st_checksum_sha384_free(struct st_checksum * checksum) {
 	free(checksum);
 }
 
-static void st_checksum_sha384_init(void) {
-	st_checksum_register_driver(&st_checksum_sha384_driver);
+static void st_checksum_sha224_init(void) {
+	st_checksum_register_driver(&st_checksum_sha224_driver);
 }
 
-static struct st_checksum * st_checksum_sha384_new_checksum(void) {
+static struct st_checksum * st_checksum_sha224_new_checksum(void) {
 	struct st_checksum * checksum = malloc(sizeof(struct st_checksum));
-	checksum->ops = &st_checksum_sha384_ops;
-	checksum->driver = &st_checksum_sha384_driver;
+	checksum->ops = &st_checksum_sha224_ops;
+	checksum->driver = &st_checksum_sha224_driver;
 
-	struct st_checksum_sha384_private * self = malloc(sizeof(struct st_checksum_sha384_private));
-	SHA384_Init(&self->sha384);
+	struct st_checksum_sha224_private * self = malloc(sizeof(struct st_checksum_sha224_private));
+	SHA224_Init(&self->sha224);
 	*self->digest = '\0';
 
 	checksum->data = self;
 	return checksum;
 }
 
-static ssize_t st_checksum_sha384_update(struct st_checksum * checksum, const void * data, ssize_t length) {
+static ssize_t st_checksum_sha224_update(struct st_checksum * checksum, const void * data, ssize_t length) {
 	if (checksum == NULL || data == NULL || length < 1)
 		return -1;
 
-	struct st_checksum_sha384_private * self = checksum->data;
-	if (SHA384_Update(&self->sha384, data, length)) {
+	struct st_checksum_sha224_private * self = checksum->data;
+	if (SHA224_Update(&self->sha224, data, length)) {
 		*self->digest = '\0';
 		return length;
 	}

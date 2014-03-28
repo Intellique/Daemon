@@ -2,9 +2,9 @@ STONE_CHECKSUM_SHA1_SRC_DIR			:= src/checksum/sha1
 
 STONE_CHECKSUM_SHA1_BIN				:= lib/libchecksum-sha1.so
 STONE_CHECKSUM_SHA1_CFLAG			:= -pthread -fPIC -fvisibility=hidden
-STONE_CHECKSUM_SHA1_LD				:= -pthread -shared -lcrypto
+STONE_CHECKSUM_SHA1_LD				:= -pthread -shared -lstone -Llib -lcrypto
 
-STONE_CHECKSUM_SHA1_DEPEND_LIB		:=
+STONE_CHECKSUM_SHA1_DEPEND_LIB		:= lib/libstone.so
 
 STONE_CHECKSUM_SHA1_CHCKSUM_FILE	:= libchecksum-sha1.chcksum
 

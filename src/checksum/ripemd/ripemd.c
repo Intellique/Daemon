@@ -22,77 +22,73 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 22 Apr 2013 13:26:33 +0200                            *
+*  Last modified: Mon, 22 Apr 2013 13:26:11 +0200                            *
 \****************************************************************************/
 
 // free, malloc
 #include <stdlib.h>
-// SHA224_Final, SHA224_Init, SHA224_Update
-#include <openssl/sha.h>
+// RIPEMD_Final, RIPEMD_Init, RIPEMD_Update
+#include <openssl/ripemd.h>
 // strdup
 #include <string.h>
 
 #include <libstone/checksum.h>
 
-#include <libchecksum-sha224.chcksum>
+#include <libchecksum-ripemd.chcksum>
 
-struct st_checksum_sha224_private {
-	SHA256_CTX sha224;
-	char digest[SHA224_DIGEST_LENGTH * 2 + 1];
+struct st_checksum_ripemd_private {
+	RIPEMD160_CTX ripemd;
+	char digest[RIPEMD160_DIGEST_LENGTH * 2 + 1];
 };
 
-static char * st_checksum_sha224_digest(struct st_checksum * checksum);
-static void st_checksum_sha224_free(struct st_checksum * checksum);
-static struct st_checksum * st_checksum_sha224_new_checksum(void);
-static void st_checksum_sha224_init(void) __attribute__((constructor));
-static ssize_t st_checksum_sha224_update(struct st_checksum * checksum, const void * data, ssize_t length);
+static char * st_checksum_ripemd_digest(struct st_checksum * checksum);
+static void st_checksum_ripemd_free(struct st_checksum * checksum);
+static struct st_checksum * st_checksum_ripemd_new_checksum(void);
+static void st_checksum_ripemd_init(void) __attribute__((constructor));
+static ssize_t st_checksum_ripemd_update(struct st_checksum * checksum, const void * data, ssize_t length);
 
-static struct st_checksum_driver st_checksum_sha224_driver = {
-	.name			  = "sha224",
+static struct st_checksum_driver st_checksum_ripemd_driver = {
+	.name			  = "ripemd",
 	.default_checksum = false,
-	.new_checksum	  = st_checksum_sha224_new_checksum,
+	.new_checksum	  = st_checksum_ripemd_new_checksum,
 	.cookie			  = NULL,
-	.api_level        = {
-		.checksum = STONE_CHECKSUM_API_LEVEL,
-		.database = 0,
-		.job      = 0,
-	},
-	.src_checksum     = STONE_CHECKSUM_SHA224_SRCSUM,
+	.api_level        = 0,
+	.src_checksum     = STONE_CHECKSUM_RIPEMD_SRCSUM,
 };
 
-static struct st_checksum_ops st_checksum_sha224_ops = {
-	.digest	= st_checksum_sha224_digest,
-	.free	= st_checksum_sha224_free,
-	.update	= st_checksum_sha224_update,
+static struct st_checksum_ops st_checksum_ripemd_ops = {
+	.digest	= st_checksum_ripemd_digest,
+	.free	= st_checksum_ripemd_free,
+	.update	= st_checksum_ripemd_update,
 };
 
 
-static char * st_checksum_sha224_digest(struct st_checksum * checksum) {
+static char * st_checksum_ripemd_digest(struct st_checksum * checksum) {
 	if (checksum == NULL)
 		return NULL;
 
-	struct st_checksum_sha224_private * self = checksum->data;
+	struct st_checksum_ripemd_private * self = checksum->data;
 	if (self->digest[0] != '\0')
 		return strdup(self->digest);
 
-	SHA256_CTX sha224 = self->sha224;
-	unsigned char digest[SHA224_DIGEST_LENGTH];
-	if (!SHA224_Final(digest, &sha224))
+	RIPEMD160_CTX ripemd = self->ripemd;
+	unsigned char digest[RIPEMD160_DIGEST_LENGTH];
+	if (!RIPEMD160_Final(digest, &ripemd))
 		return NULL;
 
-	st_checksum_convert_to_hex(digest, SHA224_DIGEST_LENGTH, self->digest);
+	st_checksum_convert_to_hex(digest, RIPEMD160_DIGEST_LENGTH, self->digest);
 
 	return strdup(self->digest);
 }
 
-static void st_checksum_sha224_free(struct st_checksum * checksum) {
+static void st_checksum_ripemd_free(struct st_checksum * checksum) {
 	if (checksum == NULL)
 		return;
 
-	struct st_checksum_sha224_private * self = checksum->data;
+	struct st_checksum_ripemd_private * self = checksum->data;
 
-	unsigned char digest[SHA224_DIGEST_LENGTH];
-	SHA224_Final(digest, &self->sha224);
+	unsigned char digest[RIPEMD160_DIGEST_LENGTH];
+	RIPEMD160_Final(digest, &self->ripemd);
 
 	free(self);
 
@@ -103,29 +99,29 @@ static void st_checksum_sha224_free(struct st_checksum * checksum) {
 	free(checksum);
 }
 
-static void st_checksum_sha224_init(void) {
-	st_checksum_register_driver(&st_checksum_sha224_driver);
+static void st_checksum_ripemd_init(void) {
+	st_checksum_register_driver(&st_checksum_ripemd_driver);
 }
 
-static struct st_checksum * st_checksum_sha224_new_checksum(void) {
+static struct st_checksum * st_checksum_ripemd_new_checksum(void) {
 	struct st_checksum * checksum = malloc(sizeof(struct st_checksum));
-	checksum->ops = &st_checksum_sha224_ops;
-	checksum->driver = &st_checksum_sha224_driver;
+	checksum->ops = &st_checksum_ripemd_ops;
+	checksum->driver = &st_checksum_ripemd_driver;
 
-	struct st_checksum_sha224_private * self = malloc(sizeof(struct st_checksum_sha224_private));
-	SHA224_Init(&self->sha224);
+	struct st_checksum_ripemd_private * self = malloc(sizeof(struct st_checksum_ripemd_private));
+	RIPEMD160_Init(&self->ripemd);
 	*self->digest = '\0';
 
 	checksum->data = self;
 	return checksum;
 }
 
-static ssize_t st_checksum_sha224_update(struct st_checksum * checksum, const void * data, ssize_t length) {
+static ssize_t st_checksum_ripemd_update(struct st_checksum * checksum, const void * data, ssize_t length) {
 	if (checksum == NULL || data == NULL || length < 1)
 		return -1;
 
-	struct st_checksum_sha224_private * self = checksum->data;
-	if (SHA224_Update(&self->sha224, data, length)) {
+	struct st_checksum_ripemd_private * self = checksum->data;
+	if (RIPEMD160_Update(&self->ripemd, data, length)) {
 		*self->digest = '\0';
 		return length;
 	}
