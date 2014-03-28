@@ -55,9 +55,10 @@ static pthread_cond_t st_log_wait = PTHREAD_COND_INITIALIZER;
 static struct st_value_v1 * st_log_messages = NULL;
 static enum st_log_type_v1 st_log_default_type = st_log_type_daemon;
 static volatile bool st_log_finished = false;
-static volatile bool st_log_started = false;
+static volatile bool st_log_running = false;
 
 static void st_log_exit(void) __attribute__((destructor));
+static void st_log_init(void) __attribute__((constructor));
 static void st_log_send_message(void * arg);
 static void st_log_write_inner(enum st_log_level_v1 level, enum st_log_type_v1 type, const char * format, va_list params);
 
@@ -104,8 +105,8 @@ void st_log_configure_v1(struct st_value_v1 * config, enum st_log_type_v1 defaul
 
 	pthread_mutex_lock(&st_log_lock);
 
-	if (!st_log_started) {
-		st_log_started = true;
+	if (!st_log_running) {
+		st_log_running = true;
 		st_log_default_type = default_type;
 		st_thread_pool_run2("logger", st_log_send_message, copy_config, 4);
 	}
@@ -116,6 +117,10 @@ void st_log_configure_v1(struct st_value_v1 * config, enum st_log_type_v1 defaul
 static void st_log_exit() {
 	st_value_free(st_log_messages);
 	st_log_messages = NULL;
+}
+
+static void st_log_init() {
+	st_log_messages = st_value_new_linked_list();
 }
 
 __asm__(".symver st_log_level_to_string_v1, st_log_level_to_string@@LIBSTONE_1.2");
@@ -132,8 +137,8 @@ __asm__(".symver st_log_stop_logger_v1, st_log_stop_logger@@LIBSTONE_1.2");
 void st_log_stop_logger_v1() {
 	pthread_mutex_lock(&st_log_lock);
 
-	if (st_log_started) {
-		st_log_finished = true;
+	if (st_log_running) {
+		st_log_running = false;
 		pthread_cond_signal(&st_log_wait);
 		pthread_cond_wait(&st_log_wait, &st_log_lock);
 	}
@@ -169,7 +174,7 @@ enum st_log_type_v1 st_log_string_to_type_v1(const char * type) {
 
 static void st_log_send_message(void * arg) {
 	struct st_value_v1 * config = arg;
-	struct st_value_v1 * messages = NULL;
+	struct st_value_v1 * messages = st_value_new_linked_list();
 	int socket = -1;
 
 	pthread_mutex_lock(&st_log_lock);
@@ -178,13 +183,8 @@ static void st_log_send_message(void * arg) {
 		st_log_messages = messages;
 		messages = tmp_messages;
 
-		if (messages == NULL) {
-			pthread_cond_wait(&st_log_wait, &st_log_lock);
-			continue;
-		}
-
 		unsigned int nb_messages = st_value_list_get_length_v1(messages);
-		if (nb_messages == 0 && st_log_finished)
+		if (nb_messages == 0 && !st_log_running)
 			break;
 		if (nb_messages == 0) {
 			pthread_cond_wait(&st_log_wait, &st_log_lock);
@@ -235,6 +235,8 @@ static void st_log_send_message(void * arg) {
 
 		pthread_mutex_lock(&st_log_lock);
 	}
+
+	st_log_finished = true;
 
 	pthread_cond_signal(&st_log_wait);
 	pthread_mutex_unlock(&st_log_lock);
@@ -287,8 +289,6 @@ static void st_log_write_inner(enum st_log_level_v1 level, enum st_log_type_v1 t
 
 	pthread_mutex_lock(&st_log_lock);
 
-	if (st_log_messages == NULL)
-		st_log_messages = st_value_new_linked_list_v1();
 	st_value_list_push_v1(st_log_messages, message, true);
 
 	pthread_cond_signal(&st_log_wait);
