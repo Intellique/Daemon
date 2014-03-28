@@ -309,9 +309,9 @@ char * st_checksum_compute(const char * checksum, const void * data, ssize_t len
  * \note this function suppose that \a hexDigest is already allocated
  * and its size is, at least, \f$ 2 length + 1 \f$
  */
-void st_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * hex_digest);
+void st_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * hex_digest) __attribute__((nonnull));
 
-char * st_checksum_gen_salt(const char * checksum, size_t length);
+char * st_checksum_gen_salt(const char * checksum, size_t length) __attribute__((nonnull,warn_unused_result));
 
 /**
  * \brief Get a checksum driver
@@ -322,7 +322,7 @@ char * st_checksum_gen_salt(const char * checksum, size_t length);
  * \note if this driver is not loaded, this function will load it
  * \warning the returned value <b>SHALL NOT BE RELEASE</b> with \a free
  */
-struct st_checksum_driver * st_checksum_get_driver(const char * driver);
+struct st_checksum_driver * st_checksum_get_driver(const char * driver) __attribute__((nonnull));
 
 /**
  * \brief Register a checksum driver
@@ -336,9 +336,9 @@ struct st_checksum_driver * st_checksum_get_driver(const char * driver);
  * }
  * \endcode
  */
-void st_checksum_register_driver(struct st_checksum_driver * driver);
+void st_checksum_register_driver(struct st_checksum_driver * driver) __attribute__((nonnull));
 
-char * st_checksum_salt_password(const char * checksum, const char * password, const char * salt);
+char * st_checksum_salt_password(const char * checksum, const char * password, const char * salt) __attribute__((nonnull,warn_unused_result));
 
 
 /**

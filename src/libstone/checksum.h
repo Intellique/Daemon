@@ -33,11 +33,11 @@
 #define st_checksum_driver_v1 st_checksum_driver
 
 char * st_checksum_compute_v1(const char * checksum, const void * data, ssize_t length) __attribute__((nonnull(1),warn_unused_result));
-void st_checksum_convert_to_hex_v1(unsigned char * digest, ssize_t length, char * hex_digest);
-char * st_checksum_gen_salt_v1(const char * checksum, size_t length);
-struct st_checksum_driver_v1 * st_checksum_get_driver_v1(const char * driver);
-void st_checksum_register_driver_v1(struct st_checksum_driver * driver);
-char * st_checksum_salt_password_v1(const char * checksum, const char * password, const char * salt);
+void st_checksum_convert_to_hex_v1(unsigned char * digest, ssize_t length, char * hex_digest) __attribute__((nonnull));
+char * st_checksum_gen_salt_v1(const char * checksum, size_t length) __attribute__((nonnull,warn_unused_result));
+struct st_checksum_driver_v1 * st_checksum_get_driver_v1(const char * driver) __attribute__((nonnull));
+void st_checksum_register_driver_v1(struct st_checksum_driver * driver) __attribute__((nonnull));
+char * st_checksum_salt_password_v1(const char * checksum, const char * password, const char * salt) __attribute__((nonnull,warn_unused_result));
 
 #endif
 

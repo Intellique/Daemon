@@ -45,11 +45,9 @@ static void test_libstone_checksum_compute_4(void);
 
 static void test_libstone_checksum_convert_0(void);
 static void test_libstone_checksum_convert_1(void);
-static void test_libstone_checksum_convert_2(void);
 
 static void test_libstone_checksum_get_driver_0(void);
 static void test_libstone_checksum_get_driver_1(void);
-static void test_libstone_checksum_get_driver_2(void);
 
 static struct {
 	void (*function)(void);
@@ -62,12 +60,10 @@ static struct {
     { test_libstone_checksum_compute_4, "libstone: checksum compute: length is lower than 0" },
 
     { test_libstone_checksum_convert_0, "libstone: checksum convert #0" },
-    { test_libstone_checksum_convert_1, "libstone: checksum convert #1" },
-    { test_libstone_checksum_convert_2, "libstone: checksum convert #2" },
+    { test_libstone_checksum_convert_1, "libstone: checksum convert #2" },
 
     { test_libstone_checksum_get_driver_0, "libstone: checksum get driver #0" },
     { test_libstone_checksum_get_driver_1, "libstone: checksum get driver #1" },
-    { test_libstone_checksum_get_driver_2, "libstone: checksum get driver #2" },
 
 	{ 0, 0 },
 };
@@ -134,13 +130,6 @@ void test_libstone_checksum_convert_0() {
 }
 
 void test_libstone_checksum_convert_1() {
-    char hex_digest[7] = "";
-
-    st_checksum_convert_to_hex(0, 3, hex_digest);
-    CU_ASSERT_STRING_EQUAL(hex_digest, "");
-}
-
-void test_libstone_checksum_convert_2() {
     unsigned char digest[] = "abc";
     char hex_digest[7] = "";
 
@@ -155,11 +144,6 @@ void test_libstone_checksum_get_driver_0() {
 
 void test_libstone_checksum_get_driver_1() {
     struct st_checksum_driver * driver = st_checksum_get_driver("foo");
-    CU_ASSERT_PTR_NULL(driver);
-}
-
-void test_libstone_checksum_get_driver_2() {
-    struct st_checksum_driver * driver = st_checksum_get_driver(0);
     CU_ASSERT_PTR_NULL(driver);
 }
 
