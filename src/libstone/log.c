@@ -240,6 +240,7 @@ static void st_log_send_message(void * arg) {
 	pthread_mutex_unlock(&st_log_lock);
 
 	st_value_free_v1(messages);
+	st_value_free_v1(config);
 }
 
 __asm__(".symver st_log_type_to_string_v1, st_log_type_to_string@@LIBSTONE_1.2");

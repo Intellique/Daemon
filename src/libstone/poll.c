@@ -70,12 +70,11 @@ int st_poll_v1(int timeout) {
 	for (i = 0; i < st_nb_polls; i++) {
 		st_polls[i].revents = 0;
 
-		struct st_poll_info * info = st_poll_infos + i;
-		if (info->timeout > 0) {
-			if (st_time_cmp(&now, &info->limit) >= 0)
-				info->timeout_callback(st_polls[i].fd, info->data);
+		if (st_poll_infos[i].timeout > 0) {
+			if (st_time_cmp(&now, &st_poll_infos[i].limit) >= 0)
+				st_poll_infos[i].timeout_callback(st_polls[i].fd, st_poll_infos[i].data);
 			else if (timeout < 0)
-				timeout = st_time_diff(&info->limit, &now) / 1000000;
+				timeout = st_time_diff(&st_poll_infos[i].limit, &now) / 1000000;
 			else {
 				struct timespec future = {
 					.tv_sec = now.tv_sec + timeout / 1000,
@@ -83,8 +82,8 @@ int st_poll_v1(int timeout) {
 				};
 				st_time_fix(&future);
 
-				if (st_time_cmp(&future, &info->limit) > 0)
-					timeout = st_time_diff(&info->limit, &now) / 1000000;
+				if (st_time_cmp(&future, &st_poll_infos[i].limit) > 0)
+					timeout = st_time_diff(&st_poll_infos[i].limit, &now) / 1000000;
 			}
 		}
 	}
@@ -94,29 +93,30 @@ int st_poll_v1(int timeout) {
 	clock_gettime(CLOCK_MONOTONIC, &now);
 
 	for (i = 0; i < st_nb_polls; i++) {
-		struct pollfd * evt = st_polls + i;
-		struct st_poll_info * info = st_poll_infos + i;
-
-		int fd = evt->fd;
-		short event = evt->revents;
-		evt->revents = 0;
+		int fd = st_polls[i].fd;
+		short event = st_polls[i].revents;
+		st_polls[i].revents = 0;
 
 		if (event != 0) {
-			info->callback(fd, event, info->data);
+			st_poll_infos[i].callback(fd, event, st_poll_infos[i].data);
 
-			if (info->timeout > 0) {
-				info->limit = now;
-				info->limit.tv_sec += info->timeout / 1000;
-				info->limit.tv_nsec += 1000000 * (info->timeout % 1000);
-				st_time_fix(&info->limit);
+			if (st_poll_restart) {
+				i = -1;
+				st_poll_restart = false;
+				continue;
+			} else if (st_poll_infos[i].timeout > 0) {
+				st_poll_infos[i].limit = now;
+				st_poll_infos[i].limit.tv_sec += st_poll_infos[i].timeout / 1000;
+				st_poll_infos[i].limit.tv_nsec += 1000000 * (st_poll_infos[i].timeout % 1000);
+				st_time_fix(&st_poll_infos[i].limit);
 			}
-		} else if (info->timeout > 0 && st_time_cmp(&now, &info->limit) >= 0)
-			info->timeout_callback(evt->fd, info->data);
+		} else if (st_poll_infos[i].timeout > 0 && st_time_cmp(&now, &st_poll_infos[i].limit) >= 0)
+			st_poll_infos[i].timeout_callback(st_polls[i].fd, st_poll_infos[i].data);
 
 		if (st_poll_restart) {
 			i = -1;
 			st_poll_restart = false;
-		} else if ((fd == evt->fd) && (event & POLLHUP)) {
+		} else if ((fd == st_polls[i].fd) && (event & POLLHUP)) {
 			st_poll_unregister_v1(fd);
 			close(fd);
 

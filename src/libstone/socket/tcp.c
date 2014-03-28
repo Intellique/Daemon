@@ -327,7 +327,7 @@ static void st_socket_tcp_server_callback(int fd, short event __attribute__((unu
 	struct st_tcp_socket_server_v1 * self = data;
 
 	int new_fd = -1;
-	socklen_t length;
+	socklen_t length = 0;
 	struct st_value_v1 * client_info;
 
 	if (self->af == AF_INET) {
