@@ -56,6 +56,15 @@ static void st_poll_exit(void) __attribute__((destructor));
 
 static void st_poll_exit() {
 	free(st_polls);
+
+	unsigned int i;
+	for (i = 0; i < st_nb_polls; i++) {
+		struct st_poll_info * info = st_poll_infos + i;
+
+		if (info->release != NULL && info->data != NULL)
+			info->release(info->data);
+	}
+	free(st_poll_infos);
 }
 
 __asm__(".symver st_poll_v1, st_poll@@LIBSTONE_1.2");

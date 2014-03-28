@@ -315,7 +315,7 @@ struct st_value_v1 * st_value_copy_v1(struct st_value_v1 * val, bool deep_copy) 
 						value = st_value_share_v1(value);
 					}
 
-					st_value_hashtable_put_v1(ret, key, false, value, false);
+					st_value_hashtable_put_v1(ret, key, true, value, true);
 				}
 				st_value_iterator_free_v1(iter);
 			}
@@ -343,7 +343,7 @@ struct st_value_v1 * st_value_copy_v1(struct st_value_v1 * val, bool deep_copy) 
 			break;
 
 		case st_value_string:
-			ret = st_value_new_string_v1(strdup(val->value.string));
+			ret = st_value_new_string_v1(val->value.string);
 			break;
 	}
 
