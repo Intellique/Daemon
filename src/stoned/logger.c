@@ -106,3 +106,16 @@ bool std_logger_start(struct st_value * config) {
 	return true;
 }
 
+void std_logger_stop() {
+	struct st_value * stop = st_value_pack("{ss}", "command", "stop");
+	st_json_encode_to_fd(stop, logger_in, true);
+	st_value_free(stop);
+
+	st_process_wait(&logger, 1);
+
+	close(logger_in);
+	logger_in = -1;
+
+	st_process_free(&logger, 1);
+}
+

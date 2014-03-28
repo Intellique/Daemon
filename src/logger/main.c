@@ -26,6 +26,8 @@
 
 // bool
 #include <stdbool.h>
+// strcmp
+#include <string.h>
 // getpid, getppid, getsid
 #include <unistd.h>
 
@@ -45,13 +47,31 @@ static bool stop = false;
 static void daemon_request(int fd, short event, void * data);
 
 
-static void daemon_request(int fd __attribute__((unused)), short event, void * data __attribute__((unused))) {
+static void daemon_request(int fd, short event, void * data __attribute__((unused))) {
 	switch (event) {
 		case POLLHUP:
 			lgr_log_write2(st_log_level_alert, st_log_type_logger, "Stoned has hang up");
 			stop = true;
 			break;
 	}
+
+	struct st_value * request = st_json_parse_fd(fd, 1000);
+	if (request == NULL || !st_value_hashtable_has_key2(request, "command")) {
+		if (request == NULL)
+			st_value_free(request);
+		return;
+	}
+
+	struct st_value * command = st_value_hashtable_get2(request, "command", false);
+	if (command == NULL || command->type != st_value_string) {
+		st_value_free(request);
+		return;
+	}
+
+	if (!strcmp("stop", command->value.string))
+		stop = true;
+
+	st_value_free(request);
 }
 
 int main() {

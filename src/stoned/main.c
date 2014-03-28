@@ -142,6 +142,7 @@ int main(int argc, char ** argv) {
 	st_log_write2(st_log_level_notice, st_log_type_daemon, "Daemon will shut down");
 
 	st_log_stop_logger();
+	std_logger_stop();
 
 	return 0;
 }

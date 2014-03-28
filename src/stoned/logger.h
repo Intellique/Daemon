@@ -33,6 +33,7 @@
 struct st_value;
 
 bool std_logger_start(struct st_value * config);
+void std_logger_stop(void);
 
 #endif
 
