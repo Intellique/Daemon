@@ -66,6 +66,7 @@ static void std_logger_exited(int fd __attribute__((unused)), short event, void 
 	}
 
 	logger_in = -1;
+	st_process_wait(&logger, 1);
 	st_process_free(&logger, 1);
 
 	st_log_write2(st_log_level_critical, st_log_type_daemon, "Restart logger");
