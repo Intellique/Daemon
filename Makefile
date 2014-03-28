@@ -56,7 +56,7 @@ VERSION_OPT		:= STONE ${VERSION_FILE}
 
 
 # sub makefiles
-SUB_MAKES	:= $(sort $(shell test -d src && find src -name Makefile.sub))
+SUB_MAKES   := $(sort $(shell test -d src -a -d test && find src test -name Makefile.sub))
 ifeq (${SUB_MAKES},)
 $(error "No sub makefiles")
 endif
@@ -221,7 +221,7 @@ stat-extra:
 tar: ${NAME}.tar.bz2
 
 test: prepare $(sort ${TEST_BINS})
-	@./${TEST_CUNIT_BIN}
+	@./${CUNIT_BIN}
 
 
 # real target

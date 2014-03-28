@@ -21,8 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Jun 2012 09:49:42 +0200                         *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>        *
 \*************************************************************************/
 
 #ifndef __TEST_LIBSTONE_CHECKSUM_H__

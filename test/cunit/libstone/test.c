@@ -21,14 +21,13 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Jun 2012 09:49:40 +0200                         *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>        *
 \*************************************************************************/
 
-#ifndef __TEST_LIBSTONE_H__
-#define __TEST_LIBSTONE_H__
+#include "checksum.h"
+#include "test.h"
 
-void test_libstone_add_suite(void);
-
-#endif
+void test_libstone_add_suite() {
+    test_libstone_checksum_add_suite();
+}
 

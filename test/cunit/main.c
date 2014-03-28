@@ -21,8 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.  *
 *                                                                         *
 *  ---------------------------------------------------------------------  *
-*  Copyright (C) 2012, Clercin guillaume <gclercin@intellique.com>        *
-*  Last modified: Mon, 04 Jun 2012 10:03:41 +0200                         *
+*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>        *
 \*************************************************************************/
 
 // CU_basic_run_tests
@@ -41,9 +40,6 @@
 #include <stdio.h>
 
 #include "libstone/test.h"
-#include "log.h"
-#include "stone-config/test.h"
-#include "stoned/test.h"
 
 int main(int argc, char * argv[]) {
 	enum {
@@ -132,11 +128,7 @@ int main(int argc, char * argv[]) {
 		return 2;
 	}
 
-	test_stoneconfig_add_suite();
     test_libstone_add_suite();
-    test_stoned_add_suite();
-
-    st_log_disable_display_log();
 
 	switch (interface) {
 		case interface_basic:

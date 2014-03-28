@@ -2,7 +2,7 @@ CUNIT_SRC_DIR		:= test/cunit
 
 CUNIT_BIN			:= bin/cunit
 CUNIT_CFLAG			:=
-CUNIT_LD			:= -lstone -ldl -lcunit -Llib
+CUNIT_LD			:= -lstone -lcunit -Llib
 
 CUNIT_DEPEND_LIB	:= lib/libstone.so
 
