@@ -194,7 +194,7 @@ static void st_log_postgresql_module_write(struct lgr_log_module * module, struc
 	enum st_log_type typ = st_log_string_to_type(vtype->value.string);
 
 	const char * param[] = {
-		st_log_postgresql_types[lvl], st_log_postgresql_levels[typ], strtime, vmessage->value.string, self->hostid
+		st_log_postgresql_types[typ], st_log_postgresql_levels[lvl], strtime, vmessage->value.string, self->hostid
 	};
 
 	PGresult * result = PQexecPrepared(self->connection, "insert_log", 5, param, NULL, NULL, 0);

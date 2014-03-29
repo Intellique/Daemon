@@ -25,9 +25,11 @@
 \*************************************************************************/
 
 #include "checksum.h"
+#include "log.h"
 #include "test.h"
 
 void test_libstone_add_suite() {
     test_libstone_checksum_add_suite();
+	test_libstone_log_add_suite();
 }
 

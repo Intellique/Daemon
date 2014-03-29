@@ -166,7 +166,7 @@ void st_log_stop_logger(void);
  * \param string : one string level
  * \return an enumeration
  */
-enum st_log_level st_log_string_to_level(const char * string);
+enum st_log_level st_log_string_to_level(const char * string) __attribute__((nonnull));
 
 /**
  * \brief Convert a c string to an enum st_log_type
@@ -174,7 +174,7 @@ enum st_log_level st_log_string_to_level(const char * string);
  * \param string : one string type
  * \return an enumeration
  */
-enum st_log_type st_log_string_to_type(const char * string);
+enum st_log_type st_log_string_to_type(const char * string) __attribute__((nonnull));
 
 /**
  * \brief Convert an enum st_log_type to a statically allocated c string
