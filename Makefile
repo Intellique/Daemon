@@ -126,10 +126,10 @@ ${CHCKSUM_DIR}/$${$(1)_CHCKSUM_FILE}: $${$(1)_SRC_FILES} $${$(1)_HEAD_FILES}
 $$($(1)_BIN): $$($(1)_LIB) $$($(1)_OBJ_FILES)
 	@echo " LD       $$@"
 	@${CC} -o $$@ $$($(1)_OBJ_FILES) ${LDFLAGS} $$($(1)_LD)
-	@${OBJCOPY} --only-keep-debug $$@ $$@.debug
-	@${STRIP} $$@
-	@${OBJCOPY} --add-gnu-debuglink=$$@.debug $$@
-	@chmod -x $$@.debug
+#	@${OBJCOPY} --only-keep-debug $$@ $$@.debug
+#	@${STRIP} $$@
+#	@${OBJCOPY} --add-gnu-debuglink=$$@.debug $$@
+#	@chmod -x $$@.debug
 
 $$($(1)_BUILD_DIR)/%.o: $$($(1)_SRC_DIR)/%.c
 	@echo " CC       $$@"

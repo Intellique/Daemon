@@ -65,19 +65,22 @@ CREATE TYPE JobStatus AS ENUM (
 );
 
 CREATE TYPE LogLevel AS ENUM (
+	'alert',
+	'critical',
     'debug',
+	'emergency',
+    'error',
     'info',
-    'warning',
-    'error'
+	'notice',
+    'warning'
 );
 
 CREATE TYPE LogType AS ENUM (
     'changer',
-    'checksum',
     'daemon',
-    'database',
     'drive',
     'job',
+	'logger',
     'plugin checksum',
     'plugin db',
     'plugin log',
@@ -424,18 +427,6 @@ CREATE TABLE Backup (
     nbArchive INTEGER NOT NULL DEFAULT 0 CHECK (nbArchive >= 0)
 );
 
-CREATE TABLE BackupVolume (
-    id BIGSERIAL PRIMARY KEY,
-
-    sequence INTEGER NOT NULL DEFAULT 0 CHECK (sequence >= 0),
-    backup BIGINT NOT NULL REFERENCES Backup(id) ON DELETE CASCADE ON UPDATE CASCADE,
-
-    media INTEGER NOT NULL REFERENCES Media(id) ON DELETE RESTRICT ON UPDATE CASCADE,
-    mediaPosition INTEGER NOT NULL DEFAULT 0 CHECK (mediaPosition >= 0),
-
-    jobrun BIGINT REFERENCES JobRun(id) ON UPDATE CASCADE ON DELETE SET NULL
-);
-
 CREATE TABLE Job (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -494,6 +485,18 @@ CREATE TABLE ArchiveVolume (
     jobrun BIGINT REFERENCES JobRun(id) ON UPDATE CASCADE ON DELETE SET NULL,
 
     CONSTRAINT archiveVolume_time CHECK (starttime <= endtime)
+);
+
+CREATE TABLE BackupVolume (
+    id BIGSERIAL PRIMARY KEY,
+
+    sequence INTEGER NOT NULL DEFAULT 0 CHECK (sequence >= 0),
+    backup BIGINT NOT NULL REFERENCES Backup(id) ON DELETE CASCADE ON UPDATE CASCADE,
+
+    media INTEGER NOT NULL REFERENCES Media(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    mediaPosition INTEGER NOT NULL DEFAULT 0 CHECK (mediaPosition >= 0),
+
+    jobrun BIGINT REFERENCES JobRun(id) ON UPDATE CASCADE ON DELETE SET NULL
 );
 
 CREATE TABLE ArchiveFileToArchiveVolume (

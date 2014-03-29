@@ -25,23 +25,17 @@
 *  Last modified: Fri, 29 Nov 2013 00:11:45 +0100                            *
 \****************************************************************************/
 
-#define _GNU_SOURCE
 // free, malloc
 #include <malloc.h>
-
+// PQclear, PQexecParams, PQexecPrepared, PQfinish, PQgetvalue, PQntuples,
+// PQprepare, PQresultStatus, PQsetdbLogin, PQstatus
 #include <postgresql/libpq-fe.h>
-// asprintf
-#include <stdio.h>
 // strdup
 #include <string.h>
-// gettimeofday
-#include <sys/time.h>
 // uname
 #include <sys/utsname.h>
-// localtime_r, strftime
-#include <time.h>
 
-#include <libstone/user.h>
+#include <libstone/time.h>
 
 #include "common.h"
 
@@ -50,28 +44,31 @@ struct st_log_postgresql_private {
 	char * hostid;
 };
 
-static void st_log_postgresql_module_free(struct st_log_module * module);
-static void st_log_postgresql_module_write(struct st_log_module * module, const struct st_log_message * message);
+static void st_log_postgresql_module_free(struct lgr_log_module * module);
+static void st_log_postgresql_module_write(struct lgr_log_module * module, struct st_value * message);
 
-static struct st_log_module_ops st_log_postgresql_module_ops = {
+static struct lgr_log_module_ops st_log_postgresql_module_ops = {
 	.free  = st_log_postgresql_module_free,
 	.write = st_log_postgresql_module_write,
 };
 
 static const char * st_log_postgresql_levels[] = {
-	[st_log_level_error]   = "error",
-	[st_log_level_warning] = "warning",
-	[st_log_level_info]    = "info",
-	[st_log_level_debug]   = "debug",
+	[st_log_level_alert]      = "alert",
+	[st_log_level_critical]   = "critical",
+	[st_log_level_debug]      = "debug",
+	[st_log_level_emergencey] = "emergency",
+	[st_log_level_error]      = "error",
+	[st_log_level_info]       = "info",
+	[st_log_level_notice]     = "notice",
+	[st_log_level_warning]    = "warning",
 };
 
 static const char * st_log_postgresql_types[] = {
 	[st_log_type_changer]         = "changer",
-	[st_log_type_checksum]        = "checksum",
 	[st_log_type_daemon]          = "daemon",
-	[st_log_type_database]        = "database",
 	[st_log_type_drive]           = "drive",
 	[st_log_type_job]             = "job",
+	[st_log_type_logger]          = "logger",
 	[st_log_type_plugin_checksum] = "plugin checksum",
 	[st_log_type_plugin_db]       = "plugin database",
 	[st_log_type_plugin_log]      = "plugin log",
@@ -81,32 +78,51 @@ static const char * st_log_postgresql_types[] = {
 };
 
 
-static void st_log_postgresql_module_free(struct st_log_module * module) {
+static void st_log_postgresql_module_free(struct lgr_log_module * module) {
 	struct st_log_postgresql_private * self = module->data;
 
 	PQfinish(self->connection);
 	free(self->hostid);
 	free(self);
 
-	free(module->alias);
 	module->ops = NULL;
 	module->data = NULL;
 }
 
-int st_log_postgresql_new(struct st_log_module * module, enum st_log_level level, const struct st_hashtable * params) {
-	const char * alias = st_hashtable_get(params, "alias").value.string;
-	const char * host = st_hashtable_get(params, "host").value.string;
-	const char * port = st_hashtable_get(params, "port").value.string;
-	const char * db = st_hashtable_get(params, "db").value.string;
-	const char * user = st_hashtable_get(params, "user").value.string;
-	const char * password = st_hashtable_get(params, "password").value.string;
+struct lgr_log_module * st_log_postgresql_new_module(struct st_value * params) {
+	struct st_value * val_host = st_value_hashtable_get2(params, "host", false);
+	struct st_value * val_port = st_value_hashtable_get2(params, "port", false);
+	struct st_value * val_db = st_value_hashtable_get2(params, "db", false);
+	struct st_value * val_user = st_value_hashtable_get2(params, "user", false);
+	struct st_value * val_password = st_value_hashtable_get2(params, "password", false);
+	struct st_value * level = st_value_hashtable_get2(params, "verbosity", false);
+
+	char * host = NULL;
+	if (val_host->type == st_value_string)
+		host = val_host->value.string;
+
+	char * port = NULL;
+	if (val_port->type == st_value_string)
+		port = val_port->value.string;
+
+	char * db = NULL;
+	if (val_db->type == st_value_string)
+		db = val_db->value.string;
+
+	char * user = NULL;
+	if (val_user->type == st_value_string)
+		user = val_user->value.string;
+
+	char * password = NULL;
+	if (val_password->type == st_value_string)
+		password = val_password->value.string;
 
 	PGconn * connect = PQsetdbLogin(host, port, NULL, NULL, db, user, password);
 	ConnStatusType status = PQstatus(connect);
 
 	if (status == CONNECTION_BAD) {
 		PQfinish(connect);
-		return -1;
+		return NULL;
 	}
 
 	char * hostid = NULL;
@@ -121,10 +137,10 @@ int st_log_postgresql_new(struct st_log_module * module, enum st_log_level level
 
 	if (hostid == NULL) {
 		PQfinish(connect);
-		return -1;
+		return NULL;
 	}
 
-	PGresult * prepare = PQprepare(connect, "insert_log", "INSERT INTO log(type, level, time, message, host, login) VALUES ($1, $2, $3, $4, $5, $6)", 0, NULL);
+	PGresult * prepare = PQprepare(connect, "insert_log", "INSERT INTO log(type, level, time, message, host) VALUES ($1, $2, $3, $4, $5)", 0, NULL);
 	PQclear(prepare);
 
 	prepare = PQprepare(connect, "select_user_by_login", "SELECT id FROM users WHERE login = $1 LIMIT 1", 0, NULL);
@@ -134,40 +150,54 @@ int st_log_postgresql_new(struct st_log_module * module, enum st_log_level level
 	self->connection = connect;
 	self->hostid = hostid;
 
-	module->alias = strdup(alias);
-	module->level = level;
-	module->data = self;
-	module->ops = &st_log_postgresql_module_ops;
+	struct lgr_log_module * mod = malloc(sizeof(struct lgr_log_module));
+	mod->level = st_log_string_to_level(level->value.string);
+	mod->ops = &st_log_postgresql_module_ops;
+	mod->data = self;
 
-	return 0;
+	return mod;
 }
 
-static void st_log_postgresql_module_write(struct st_log_module * module, const struct st_log_message * message) {
+static void st_log_postgresql_module_write(struct lgr_log_module * module, struct st_value * message) {
 	struct st_log_postgresql_private * self = module->data;
 
-	struct tm curTime2;
-	char buffer[32];
+	if (!st_value_hashtable_has_key2(message, "type") || !st_value_hashtable_has_key2(message, "message"))
+		return;
 
-	localtime_r(&message->timestamp, &curTime2);
-	strftime(buffer, 32, "%F %T", &curTime2);
+	struct st_value * level = st_value_hashtable_get2(message, "level", false);
+	if (level->type != st_value_string)
+		return;
+
+	struct st_value * vtype = st_value_hashtable_get2(message, "type", false);
+	if (vtype->type != st_value_string)
+		return;
+
+	enum st_log_type type = st_log_string_to_type(vtype->value.string);
+	if (type == st_log_type_unknown)
+		return;
+
+	struct st_value * vtimestamp = st_value_hashtable_get2(message, "timestamp", false);
+	if (vtimestamp->type != st_value_integer)
+		return;
+
+	struct st_value * vmessage = st_value_hashtable_get2(message, "message", false);
+	if (vmessage->type != st_value_string)
+		return;
+
+	char strtime[32];
+	time_t timestamp = vtimestamp->value.integer;
+	st_time_convert(&timestamp, "%F %T", strtime, 32);
 
 	char * userid = NULL;
-	if (message->user) {
-		const char * param[] = { message->user->login };
-		PGresult * result = PQexecPrepared(self->connection, "select_user_by_login", 1, param, NULL, NULL, 0);
 
-		if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
-			userid = strdup(PQgetvalue(result, 0, 0));
-
-		PQclear(result);
-	}
+	enum st_log_level lvl = st_log_string_to_level(level->value.string);
+	enum st_log_type typ = st_log_string_to_type(vtype->value.string);
 
 	const char * param[] = {
-		st_log_postgresql_types[message->type], st_log_postgresql_levels[message->level],
-		buffer, message->message, self->hostid, userid,
+		st_log_postgresql_types[lvl], st_log_postgresql_levels[typ], strtime, vmessage->value.string, self->hostid
 	};
 
-	PGresult * result = PQexecPrepared(self->connection, "insert_log", 6, param, NULL, NULL, 0);
+	PGresult * result = PQexecPrepared(self->connection, "insert_log", 5, param, NULL, NULL, 0);
 	PQclear(result);
 
 	free(userid);

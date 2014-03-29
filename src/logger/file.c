@@ -38,11 +38,10 @@
 #include <sys/time.h>
 // fstat, open, stat
 #include <sys/types.h>
-// localtime_r, strftime
-#include <time.h>
 // close, fstat, sleep, stat
 #include <unistd.h>
 
+#include <libstone/time.h>
 #include <libstone/value.h>
 #include <libstone-logger/log.h>
 
@@ -174,12 +173,9 @@ static void file_module_write(struct lgr_log_module * module, struct st_value * 
 	if (vmessage->type != st_value_string)
 		return;
 
-	struct tm curTime2;
 	char strtime[32];
-
 	time_t timestamp = vtimestamp->value.integer;
-	localtime_r(&timestamp, &curTime2);
-	strftime(strtime, 32, "%F %T", &curTime2);
+	st_time_convert(&timestamp, "%F %T", strtime, 32);
 
 	dprintf(self->fd, "[L:%-9s | T:%-15s | @%s]: %s\n", level->value.string, vtype->value.string, strtime, vmessage->value.string);
 }

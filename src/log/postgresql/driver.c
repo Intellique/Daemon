@@ -22,16 +22,36 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 23 Jul 2012 09:28:10 +0200                            *
 \****************************************************************************/
 
-#ifndef __STONE_LOG_POSTGRESQL_H__
-#define __STONE_LOG_POSTGRESQL_H__
+// realloc
+#include <malloc.h>
 
-#include <libstone/log.h>
-#include <libstone/util/hashtable.h>
+#include <liblog-postgresql.chcksum>
 
-int st_log_postgresql_new(struct st_log_module * module, enum st_log_level level, const struct st_hashtable * params);
+#include "common.h"
 
-#endif
+static struct lgr_log_module * st_log_postgresql_add_module(struct st_value * params);
+static void st_log_postgresql_init(void) __attribute__((constructor));
+
+
+static struct lgr_log_driver st_log_postgresql_driver = {
+	.name       = "postgresql",
+	.new_module = st_log_postgresql_add_module,
+	.cookie     = NULL,
+	.api_level  = 0,
+	.src_checksum = STONE_LOG_POSTGRESQL_SRCSUM,
+};
+
+
+static struct lgr_log_module * st_log_postgresql_add_module(struct st_value * params) {
+	struct lgr_log_module * mod = st_log_postgresql_new_module(params);
+	if (mod != NULL)
+		mod->driver = &st_log_postgresql_driver;
+	return mod;
+}
+
+static void st_log_postgresql_init(void) {
+	lgr_log_register_driver(&st_log_postgresql_driver);
+}
 
