@@ -27,7 +27,7 @@
 // free, malloc
 #include <malloc.h>
 // PQclear, PQexecParams, PQexecPrepared, PQfinish, PQgetvalue, PQntuples,
-// PQprepare, PQresultStatus, PQsetdbLogin, PQstatus
+// PQprepare, PQreset, PQresultStatus, PQsetdbLogin, PQstatus
 #include <postgresql/libpq-fe.h>
 // strdup
 #include <string.h>
@@ -44,6 +44,7 @@ struct st_log_postgresql_private {
 };
 
 static void st_log_postgresql_module_free(struct lgr_log_module * module);
+static void st_log_postgresql_module_prepare_queries(PGconn * connection);
 static void st_log_postgresql_module_write(struct lgr_log_module * module, struct st_value * message);
 
 static struct lgr_log_module_ops st_log_postgresql_module_ops = {
@@ -142,8 +143,7 @@ struct lgr_log_module * st_log_postgresql_new_module(struct st_value * params) {
 	PGresult * prepare = PQprepare(connect, "insert_log", "INSERT INTO log(type, level, time, message, host) VALUES ($1, $2, $3, $4, $5)", 0, NULL);
 	PQclear(prepare);
 
-	prepare = PQprepare(connect, "select_user_by_login", "SELECT id FROM users WHERE login = $1 LIMIT 1", 0, NULL);
-	PQclear(prepare);
+	st_log_postgresql_module_prepare_queries(connect);
 
 	struct st_log_postgresql_private * self = malloc(sizeof(struct st_log_postgresql_private));
 	self->connection = connect;
@@ -155,6 +155,11 @@ struct lgr_log_module * st_log_postgresql_new_module(struct st_value * params) {
 	mod->data = self;
 
 	return mod;
+}
+
+static void st_log_postgresql_module_prepare_queries(PGconn * connection) {
+	PGresult * prepare = PQprepare(connection, "insert_log", "INSERT INTO log(type, level, time, message, host) VALUES ($1, $2, $3, $4, $5)", 0, NULL);
+	PQclear(prepare);
 }
 
 static void st_log_postgresql_module_write(struct lgr_log_module * module, struct st_value * message) {
@@ -187,18 +192,22 @@ static void st_log_postgresql_module_write(struct lgr_log_module * module, struc
 	time_t timestamp = vtimestamp->value.integer;
 	st_time_convert(&timestamp, "%F %T", strtime, 32);
 
-	char * userid = NULL;
-
 	enum st_log_level lvl = st_log_string_to_level(level->value.string);
 	enum st_log_type typ = st_log_string_to_type(vtype->value.string);
 
-	const char * param[] = {
-		st_log_postgresql_types[typ], st_log_postgresql_levels[lvl], strtime, vmessage->value.string, self->hostid
-	};
+	const char * param[] = {st_log_postgresql_types[typ], st_log_postgresql_levels[lvl], strtime, vmessage->value.string, self->hostid};
 
-	PGresult * result = PQexecPrepared(self->connection, "insert_log", 5, param, NULL, NULL, 0);
-	PQclear(result);
+	ExecStatusType qStatus;
+	do {
+		PGresult * result = PQexecPrepared(self->connection, "insert_log", 5, param, NULL, NULL, 0);
+		qStatus = PQresultStatus(result);
+		PQclear(result);
 
-	free(userid);
+		ConnStatusType status = PQstatus(self->connection);
+		if (qStatus != PGRES_COMMAND_OK || status != CONNECTION_OK) {
+			PQreset(self->connection);
+			st_log_postgresql_module_prepare_queries(self->connection);
+		}
+	} while (qStatus != PGRES_COMMAND_OK);
 }
 
