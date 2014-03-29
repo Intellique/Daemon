@@ -24,34 +24,13 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// NULL
-#include <stddef.h>
+#ifndef __STONE_LOG_MARIADB_H__
+#define __STONE_LOG_MARIADB_H__
 
-#include <liblog-postgresql.chcksum>
+#include <libstone-logger/log.h>
+#include <libstone/value.h>
 
-#include "common.h"
+struct lgr_log_module * st_log_mariadb_new_module(struct st_value * params);
 
-static struct lgr_log_module * st_log_postgresql_add_module(struct st_value * params);
-static void st_log_postgresql_init(void) __attribute__((constructor));
-
-
-static struct lgr_log_driver st_log_postgresql_driver = {
-	.name       = "postgresql",
-	.new_module = st_log_postgresql_add_module,
-	.cookie     = NULL,
-	.api_level  = 0,
-	.src_checksum = STONE_LOG_POSTGRESQL_SRCSUM,
-};
-
-
-static struct lgr_log_module * st_log_postgresql_add_module(struct st_value * params) {
-	struct lgr_log_module * mod = st_log_postgresql_new_module(params);
-	if (mod != NULL)
-		mod->driver = &st_log_postgresql_driver;
-	return mod;
-}
-
-static void st_log_postgresql_init(void) {
-	lgr_log_register_driver(&st_log_postgresql_driver);
-}
+#endif
 

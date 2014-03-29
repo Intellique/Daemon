@@ -24,34 +24,37 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // free, malloc
 #include <malloc.h>
-// PQclear, PQexecParams, PQexecPrepared, PQfinish, PQgetvalue, PQntuples,
-// PQprepare, PQresultStatus, PQsetdbLogin, PQstatus
-#include <postgresql/libpq-fe.h>
+// mysql_*
+#include <mysql/mysql.h>
+// sscanf
+#include <stdio.h>
 // strdup
 #include <string.h>
+// bzero
+#include <strings.h>
 // uname
 #include <sys/utsname.h>
 
-#include <libstone/time.h>
-
 #include "common.h"
 
-struct st_log_postgresql_private {
-	PGconn * connection;
-	char * hostid;
+struct st_log_mariadb_private {
+	MYSQL handler;
+	int host_id;
+	MYSQL_STMT * insert_log;
 };
 
-static void st_log_postgresql_module_free(struct lgr_log_module * module);
-static void st_log_postgresql_module_write(struct lgr_log_module * module, struct st_value * message);
+static void st_log_mariadb_module_free(struct lgr_log_module * module);
+static void st_log_mariadb_module_write(struct lgr_log_module * module, struct st_value * message);
 
-static struct lgr_log_module_ops st_log_postgresql_module_ops = {
-	.free  = st_log_postgresql_module_free,
-	.write = st_log_postgresql_module_write,
+static struct lgr_log_module_ops st_log_mariadb_module_ops = {
+	.free  = st_log_mariadb_module_free,
+	.write = st_log_mariadb_module_write,
 };
 
-static const char * st_log_postgresql_levels[] = {
+static char * st_log_mariadb_levels[] = {
 	[st_log_level_alert]      = "alert",
 	[st_log_level_critical]   = "critical",
 	[st_log_level_debug]      = "debug",
@@ -62,7 +65,7 @@ static const char * st_log_postgresql_levels[] = {
 	[st_log_level_warning]    = "warning",
 };
 
-static const char * st_log_postgresql_types[] = {
+static char * st_log_mariadb_types[] = {
 	[st_log_type_changer]         = "changer",
 	[st_log_type_daemon]          = "daemon",
 	[st_log_type_drive]           = "drive",
@@ -77,18 +80,17 @@ static const char * st_log_postgresql_types[] = {
 };
 
 
-static void st_log_postgresql_module_free(struct lgr_log_module * module) {
-	struct st_log_postgresql_private * self = module->data;
-
-	PQfinish(self->connection);
-	free(self->hostid);
+static void st_log_mariadb_module_free(struct lgr_log_module * module) {
+	struct st_log_mariadb_private * self = module->data;
+	mysql_stmt_close(self->insert_log);
+	mysql_close(&self->handler);
 	free(self);
 
 	module->ops = NULL;
 	module->data = NULL;
 }
 
-struct lgr_log_module * st_log_postgresql_new_module(struct st_value * params) {
+struct lgr_log_module * st_log_mariadb_new_module(struct st_value * params) {
 	struct st_value * val_host = st_value_hashtable_get2(params, "host", false);
 	struct st_value * val_port = st_value_hashtable_get2(params, "port", false);
 	struct st_value * val_db = st_value_hashtable_get2(params, "db", false);
@@ -116,49 +118,74 @@ struct lgr_log_module * st_log_postgresql_new_module(struct st_value * params) {
 	if (val_password->type == st_value_string)
 		password = val_password->value.string;
 
-	PGconn * connect = PQsetdbLogin(host, port, NULL, NULL, db, user, password);
-	ConnStatusType status = PQstatus(connect);
+	unsigned int pport = 0;
+	if (port != NULL)
+		sscanf(port, "%u", &pport);
 
-	if (status == CONNECTION_BAD) {
-		PQfinish(connect);
+	struct st_log_mariadb_private * self = malloc(sizeof(struct st_log_mariadb_private));
+	bzero(self, sizeof(*self));
+	mysql_init(&self->handler);
+	self->host_id = 0;
+
+	void * ok = mysql_real_connect(&self->handler, host, user, password, db, pport, NULL, CLIENT_COMPRESS);
+	if (ok == NULL) {
+		free(self);
 		return NULL;
 	}
 
-	char * hostid = NULL;
 	struct utsname name;
 	uname(&name);
 
-	const char * param[] = { name.nodename };
-	PGresult * result = PQexecParams(connect, "SELECT id FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1", 1, NULL, param, NULL, NULL, 0);
-	if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
-		hostid = strdup(PQgetvalue(result, 0, 0));
-	PQclear(result);
+	MYSQL_STMT * get_host_id = mysql_stmt_init(&self->handler);
+	mysql_stmt_prepare(get_host_id, "SELECT id FROM Host WHERE name = ? OR CONCAT(name, '.', domaine) = ? LIMIT 1", 68);
 
-	if (hostid == NULL) {
-		PQfinish(connect);
+	MYSQL_BIND param[] = {
+		{
+			.buffer_type   = MYSQL_TYPE_STRING,
+			.buffer        = name.nodename,
+			.buffer_length = strlen(name.nodename),
+			.is_null       = false,
+		}, {
+			.buffer_type   = MYSQL_TYPE_STRING,
+			.buffer        = name.nodename,
+			.buffer_length = strlen(name.nodename),
+			.is_null       = false,
+		}
+	};
+	mysql_stmt_bind_param(get_host_id, param);
+
+	mysql_stmt_execute(get_host_id);
+
+	MYSQL_BIND result;
+	bzero(&result, sizeof(result));
+
+	result.buffer_type = MYSQL_TYPE_LONG;
+	result.buffer = (char *) &self->host_id;
+	result.is_null = false;
+
+	mysql_stmt_bind_result(get_host_id, &result);
+	mysql_stmt_fetch(get_host_id);
+	mysql_stmt_close(get_host_id);
+
+	if (self->host_id < 1) {
+		mysql_close(&self->handler);
+		free(self);
 		return NULL;
 	}
 
-	PGresult * prepare = PQprepare(connect, "insert_log", "INSERT INTO log(type, level, time, message, host) VALUES ($1, $2, $3, $4, $5)", 0, NULL);
-	PQclear(prepare);
-
-	prepare = PQprepare(connect, "select_user_by_login", "SELECT id FROM users WHERE login = $1 LIMIT 1", 0, NULL);
-	PQclear(prepare);
-
-	struct st_log_postgresql_private * self = malloc(sizeof(struct st_log_postgresql_private));
-	self->connection = connect;
-	self->hostid = hostid;
+	self->insert_log = mysql_stmt_init(&self->handler);
+	mysql_stmt_prepare(self->insert_log, "INSERT INTO Log(type, level, time, message, host) VALUES (?, ?, FROM_UNIXTIME(?), ?, ?)", 97);
 
 	struct lgr_log_module * mod = malloc(sizeof(struct lgr_log_module));
 	mod->level = st_log_string_to_level(level->value.string);
-	mod->ops = &st_log_postgresql_module_ops;
+	mod->ops = &st_log_mariadb_module_ops;
 	mod->data = self;
 
-	return mod;
+	return 0;
 }
 
-static void st_log_postgresql_module_write(struct lgr_log_module * module, struct st_value * message) {
-	struct st_log_postgresql_private * self = module->data;
+static void st_log_mariadb_module_write(struct lgr_log_module * module, struct st_value * message) {
+	struct st_log_mariadb_private * self = module->data;
 
 	if (!st_value_hashtable_has_key2(message, "type") || !st_value_hashtable_has_key2(message, "message"))
 		return;
@@ -183,22 +210,34 @@ static void st_log_postgresql_module_write(struct lgr_log_module * module, struc
 	if (vmessage->type != st_value_string)
 		return;
 
-	char strtime[32];
-	time_t timestamp = vtimestamp->value.integer;
-	st_time_convert(&timestamp, "%F %T", strtime, 32);
-
-	char * userid = NULL;
-
 	enum st_log_level lvl = st_log_string_to_level(level->value.string);
 	enum st_log_type typ = st_log_string_to_type(vtype->value.string);
 
-	const char * param[] = {
-		st_log_postgresql_types[typ], st_log_postgresql_levels[lvl], strtime, vmessage->value.string, self->hostid
-	};
+	MYSQL_BIND params[5];
+	bzero(params, sizeof(params));
 
-	PGresult * result = PQexecPrepared(self->connection, "insert_log", 5, param, NULL, NULL, 0);
-	PQclear(result);
+	params[0].buffer_type = MYSQL_TYPE_STRING;
+	params[0].buffer = st_log_mariadb_types[typ];
+	params[0].buffer_length = strlen(st_log_mariadb_types[typ]);
 
-	free(userid);
+	params[1].buffer_type = MYSQL_TYPE_STRING;
+	params[1].buffer = st_log_mariadb_levels[lvl];
+	params[1].buffer_length = strlen(st_log_mariadb_levels[lvl]);
+
+	params[2].buffer_type = MYSQL_TYPE_LONGLONG;
+	params[2].buffer = (char *) &vtimestamp->value.integer;
+	params[2].buffer_length = sizeof(vtimestamp->value.integer);
+
+	params[3].buffer_type = MYSQL_TYPE_STRING;
+	params[3].buffer = vmessage->value.string;
+	params[3].buffer_length = strlen(vmessage->value.string);
+
+	params[4].buffer_type = MYSQL_TYPE_LONG;
+	params[4].buffer = (char *) &self->host_id;
+	params[4].buffer_length = sizeof(self->host_id);
+
+	mysql_stmt_bind_param(self->insert_log, params);
+	mysql_stmt_execute(self->insert_log);
+	mysql_stmt_reset(self->insert_log);
 }
 
