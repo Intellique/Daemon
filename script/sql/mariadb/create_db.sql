@@ -416,7 +416,7 @@ CREATE TABLE `JobToSelectedFile` (
 CREATE TABLE `Log` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
-    `type` ENUM('changer', 'daemon', 'drive', 'job', 'plugin checksum', 'plugin db', 'plugin log', 'scheduler', 'ui', 'user message') NOT NULL,
+    `type` ENUM('changer', 'daemon', 'drive', 'job', 'logger', 'plugin checksum', 'plugin db', 'plugin log', 'scheduler', 'ui', 'user message') NOT NULL,
     `level` ENUM('alert', 'critical', 'debug', 'emergency', 'error', 'info', 'notice', 'warning') NOT NULL,
     `time` TIMESTAMP NOT NULL,
     `message` TEXT NOT NULL,

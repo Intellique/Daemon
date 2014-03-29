@@ -1,8 +1,8 @@
 STONED_SRC_DIR		:= src/stoned
 
 STONED_BIN			:= bin/stoned
-STONED_CFLAG		:=
-STONED_LD			:= -lstone -Llib -Wl,-rpath,lib
+STONED_CFLAG		:= -fPIC -pthread
+STONED_LD			:= -pthread -lstone -Llib -Wl,-rpath,lib
 
 STONED_DEPEND_LIB	:= lib/libstone.so
 

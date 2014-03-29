@@ -174,14 +174,14 @@ struct lgr_log_module * st_log_mariadb_new_module(struct st_value * params) {
 	}
 
 	self->insert_log = mysql_stmt_init(&self->handler);
-	mysql_stmt_prepare(self->insert_log, "INSERT INTO Log(type, level, time, message, host) VALUES (?, ?, FROM_UNIXTIME(?), ?, ?)", 97);
+	mysql_stmt_prepare(self->insert_log, "INSERT INTO Log(type, level, time, message, host) VALUES (?, ?, FROM_UNIXTIME(?), ?, ?)", 87);
 
 	struct lgr_log_module * mod = malloc(sizeof(struct lgr_log_module));
 	mod->level = st_log_string_to_level(level->value.string);
 	mod->ops = &st_log_mariadb_module_ops;
 	mod->data = self;
 
-	return 0;
+	return mod;
 }
 
 static void st_log_mariadb_module_write(struct lgr_log_module * module, struct st_value * message) {

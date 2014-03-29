@@ -1,8 +1,8 @@
 STONECTL_SRC_DIR		:= src/stonectl
 
 STONECTL_BIN			:= bin/stonectl
-STONECTL_CFLAG			:=
-STONECTL_LD				:= -lstone -Llib -Wl,-rpath,lib
+STONECTL_CFLAG			:= -fPIC -pthread
+STONECTL_LD				:= -pthread -lstone -Llib -Wl,-rpath,lib
 
 STONECTL_DEPEND_LIB		:= lib/libstone.so
 
