@@ -47,6 +47,7 @@ struct st_log_mariadb_private {
 };
 
 static void st_log_mariadb_module_free(struct lgr_log_module * module);
+static void st_log_mariadb_module_prepare_queries(struct st_log_mariadb_private * self);
 static void st_log_mariadb_module_write(struct lgr_log_module * module, struct st_value * message);
 
 static struct lgr_log_module_ops st_log_mariadb_module_ops = {
@@ -133,6 +134,9 @@ struct lgr_log_module * st_log_mariadb_new_module(struct st_value * params) {
 		return NULL;
 	}
 
+	my_bool auto_connect = 1;
+	mysql_options(&self->handler, MYSQL_OPT_RECONNECT, &auto_connect);
+
 	struct utsname name;
 	uname(&name);
 
@@ -173,8 +177,7 @@ struct lgr_log_module * st_log_mariadb_new_module(struct st_value * params) {
 		return NULL;
 	}
 
-	self->insert_log = mysql_stmt_init(&self->handler);
-	mysql_stmt_prepare(self->insert_log, "INSERT INTO Log(type, level, time, message, host) VALUES (?, ?, FROM_UNIXTIME(?), ?, ?)", 87);
+	st_log_mariadb_module_prepare_queries(self);
 
 	struct lgr_log_module * mod = malloc(sizeof(struct lgr_log_module));
 	mod->level = st_log_string_to_level(level->value.string);
@@ -182,6 +185,11 @@ struct lgr_log_module * st_log_mariadb_new_module(struct st_value * params) {
 	mod->data = self;
 
 	return mod;
+}
+
+static void st_log_mariadb_module_prepare_queries(struct st_log_mariadb_private * self) {
+	self->insert_log = mysql_stmt_init(&self->handler);
+	mysql_stmt_prepare(self->insert_log, "INSERT INTO Log(type, level, time, message, host) VALUES (?, ?, FROM_UNIXTIME(?), ?, ?)", 87);
 }
 
 static void st_log_mariadb_module_write(struct lgr_log_module * module, struct st_value * message) {
@@ -236,8 +244,20 @@ static void st_log_mariadb_module_write(struct lgr_log_module * module, struct s
 	params[4].buffer = (char *) &self->host_id;
 	params[4].buffer_length = sizeof(self->host_id);
 
-	mysql_stmt_bind_param(self->insert_log, params);
-	mysql_stmt_execute(self->insert_log);
-	mysql_stmt_reset(self->insert_log);
+	int failed;
+	do {
+		mysql_stmt_bind_param(self->insert_log, params);
+		failed = mysql_stmt_execute(self->insert_log);
+		mysql_stmt_reset(self->insert_log);
+
+		if (failed != 0) {
+			mysql_stmt_close(self->insert_log);
+			self->insert_log = NULL;
+
+			mysql_ping(&self->handler);
+
+			st_log_mariadb_module_prepare_queries(self);
+		}
+	} while (failed != 0);
 }
 
