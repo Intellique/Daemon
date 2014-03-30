@@ -280,7 +280,7 @@ struct st_checksum_driver {
 	/**
 	 * \brief Check if the driver use the correct api level
 	 */
-	const unsigned int api_level;
+	unsigned int api_level;
 	/**
 	 * \brief Sha1 sum of plugins source code
 	 */
@@ -313,16 +313,9 @@ void st_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * h
 
 char * st_checksum_gen_salt(const char * checksum, size_t length) __attribute__((nonnull,warn_unused_result));
 
-/**
- * \brief Get a checksum driver
- *
- * \param[in] driver driver's name
- * \return NULL if failed
- *
- * \note if this driver is not loaded, this function will load it
- * \warning the returned value <b>SHALL NOT BE RELEASE</b> with \a free
- */
-struct st_checksum_driver * st_checksum_get_driver(const char * driver) __attribute__((nonnull));
+bool st_checksum_is_default(const char * driver) __attribute__((nonnull));
+
+struct st_checksum * st_checksum_new(const char * driver) __attribute__((nonnull,warn_unused_result));
 
 /**
  * \brief Register a checksum driver
