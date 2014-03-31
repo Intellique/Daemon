@@ -24,21 +24,50 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_CHECKSUM_P_H__
-#define __LIBSTONE_CHECKSUM_P_H__
+#ifndef __LIBSTONE_DATABASE_H__
+#define __LIBSTONE_DATABASE_H__
 
-#include <libstone/checksum.h>
+/**
+ * \brief Get a database configuration by his name
+ *
+ * This configuration should be previous loaded.
+ *
+ * \param[in] name name of config
+ * \returns \b NULL if not found
+ */
+struct st_database_config * st_database_get_config_by_name(const char * name) __attribute__((nonnull));
 
-#define st_checksum_v1 st_checksum
-#define st_checksum_driver_v1 st_checksum_driver
+/**
+ * \brief get the default database driver
+ *
+ * \return NULL if failed
+ */
+struct st_database * st_database_get_default_driver(void);
 
-char * st_checksum_compute_v1(const char * checksum, const void * data, ssize_t length) __attribute__((nonnull(1),warn_unused_result));
-void st_checksum_convert_to_hex_v1(unsigned char * digest, ssize_t length, char * hex_digest) __attribute__((nonnull));
-char * st_checksum_gen_salt_v1(const char * checksum, size_t length) __attribute__((nonnull,warn_unused_result));
-struct st_checksum_driver_v1 * st_checksum_get_driver_v1(const char * driver) __attribute__((nonnull));
-bool st_checksum_is_default_v1(const char * driver) __attribute__((nonnull));
-void st_checksum_register_driver_v1(struct st_checksum_driver * driver) __attribute__((nonnull));
-char * st_checksum_salt_password_v1(const char * checksum, const char * password, const char * salt) __attribute__((nonnull,warn_unused_result));
+/**
+ * \brief get a database driver
+ *
+ * \param[in] database database name
+ * \return NULL if failed
+ *
+ * \note if this driver is not loaded, this function will load it
+ * \warning the returned value <b>SHALL NOT BE RELEASE</b> with \a free
+ */
+struct st_database * st_database_get_driver(const char * database) __attribute__((nonnull));
+
+/**
+ * \brief Register a database driver
+ *
+ * \param[in] database a statically allocated struct st_database
+ *
+ * \note Each database driver should call this function only one time
+ * \code
+ * static void database_myDb_init() __attribute__((constructor)) {
+ *    st_database_register_driver(&database_myDb_module);
+ * }
+ * \endcode
+ */
+void st_database_register_driver(struct st_database * database) __attribute__((nonnull));
 
 #endif
 

@@ -117,6 +117,7 @@ char * st_checksum_gen_salt_v1(const char * checksum, size_t length) {
 	return result;
 }
 
+__asm__(".symver st_checksum_get_driver_v1, st_checksum_get_driver@@LIBSTONE_1.2");
 struct st_checksum_driver_v1 * st_checksum_get_driver_v1(const char * driver) {
 	if (driver == NULL)
 		return NULL;
@@ -148,26 +149,8 @@ struct st_checksum_driver_v1 * st_checksum_get_driver_v1(const char * driver) {
 	return dr;
 }
 
-__asm__(".symver st_checksum_is_default_v1, st_checksum_is_default@@LIBSTONE_1.2");
-bool st_checksum_is_default_v1(const char * driver) {
-	struct st_checksum_driver * dr = st_checksum_get_driver_v1(driver);
-	if (dr != NULL)
-		return dr->default_checksum;
-
-	return false;
-}
-
 static void st_checksum_init() {
 	st_checksum_drivers = st_value_new_hashtable2();
-}
-
-__asm__(".symver st_checksum_new_v1, st_checksum_new@@LIBSTONE_1.2");
-struct st_checksum * st_checksum_new_v1(const char * driver) {
-	struct st_checksum_driver * dr = st_checksum_get_driver_v1(driver);
-	if (dr != NULL)
-		return dr->new_checksum();
-
-	return NULL;
 }
 
 __asm__(".symver st_checksum_register_driver_v1, st_checksum_register_driver@@LIBSTONE_1.2");

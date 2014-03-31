@@ -313,9 +313,7 @@ void st_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * h
 
 char * st_checksum_gen_salt(const char * checksum, size_t length) __attribute__((nonnull,warn_unused_result));
 
-bool st_checksum_is_default(const char * driver) __attribute__((nonnull));
-
-struct st_checksum * st_checksum_new(const char * driver) __attribute__((nonnull,warn_unused_result));
+struct st_checksum_driver * st_checksum_get_driver(const char * driver) __attribute__((nonnull));
 
 /**
  * \brief Register a checksum driver
