@@ -187,7 +187,7 @@ struct st_database {
 		 * \param[in] params hashtable which contains parameters
 		 * \returns \b 0 if ok
 		 */
-		struct st_database_config * (*add)(const struct st_value * params);
+		struct st_database_config * (*add)(struct st_value * params);
 		/**
 		 * \brief Get default database configuration
 		 */

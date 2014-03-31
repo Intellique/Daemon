@@ -22,7 +22,6 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 05 Feb 2014 17:21:47 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_DB_POSTGRESQL_CONNNECTION_H__
@@ -37,10 +36,9 @@
 
 typedef struct pg_conn PGconn;
 typedef struct pg_result PGresult;
-struct st_hashtable;
 
 
-struct st_db_postgresql_config_private {
+struct st_database_postgresql_config_private {
 	char * user;
 	char * password;
 	char * db;
@@ -49,49 +47,30 @@ struct st_db_postgresql_config_private {
 };
 
 
-struct st_stream_reader * st_db_postgresql_backup_init(struct st_db_postgresql_config_private * config);
-
 /**
  * \brief Initialize a postgresql config
  *
  * \returns 0 if ok
  */
-int st_db_postgresql_config_init(struct st_database_config * config, const struct st_hashtable * params);
+struct st_database_config * st_database_postgresql_config_init(struct st_value * params);
 
-struct st_database_connection * st_db_postgresql_connnect_init(PGconn * pg_connect);
+struct st_database_connection * st_database_postgresql_connnect_init(PGconn * pg_connect);
 
-int st_db_postgresql_get_bool(PGresult * result, int row, int column, bool * value);
-
-int st_db_postgresql_get_double(PGresult * result, int row, int column, double * value);
-
-void st_db_postgresql_get_error(PGresult * result, const char * prepared_query);
-
-int st_db_postgresql_get_float(PGresult * result, int row, int column, float * value);
-
-int st_db_postgresql_get_int(PGresult * result, int row, int column, int * value);
-
-int st_db_postgresql_get_long(PGresult * result, int row, int column, long * value);
-
-int st_db_postgresql_get_long_add(PGresult * result, int row, int column, long * value);
-
-int st_db_postgresql_get_ssize(PGresult * result, int row, int column, ssize_t * value);
-
-int st_db_postgresql_get_string(PGresult * result, int row, int column, char * string, size_t length);
-
-int st_db_postgresql_get_string_dup(PGresult * result, int row, int column, char ** string);
-
-int st_db_postgresql_get_time(PGresult * result, int row, int column, time_t * value);
-
-int st_db_postgresql_get_time_max(PGresult * result, int row, int column, time_t * value);
-
-int st_db_postgresql_get_uchar(PGresult * result, int row, int column, unsigned char * value);
-
-int st_db_postgresql_get_uint(PGresult * result, int row, int column, unsigned int * value);
-
-int st_db_postgresql_get_uint_add(PGresult * result, int row, int column, unsigned int * value);
-
-const char * st_db_postgresql_job_record_notif_to_string(enum st_job_record_notif notif);
-const char * st_db_postgresql_script_type_to_string(enum st_script_type type);
+int st_database_postgresql_get_bool(PGresult * result, int row, int column, bool * value);
+int st_database_postgresql_get_double(PGresult * result, int row, int column, double * value);
+void st_database_postgresql_get_error(PGresult * result, const char * prepared_query);
+int st_database_postgresql_get_float(PGresult * result, int row, int column, float * value);
+int st_database_postgresql_get_int(PGresult * result, int row, int column, int * value);
+int st_database_postgresql_get_long(PGresult * result, int row, int column, long * value);
+int st_database_postgresql_get_long_add(PGresult * result, int row, int column, long * value);
+int st_database_postgresql_get_ssize(PGresult * result, int row, int column, ssize_t * value);
+int st_database_postgresql_get_string(PGresult * result, int row, int column, char * string, size_t length);
+int st_database_postgresql_get_string_dup(PGresult * result, int row, int column, char ** string);
+int st_database_postgresql_get_time(PGresult * result, int row, int column, time_t * value);
+int st_database_postgresql_get_time_max(PGresult * result, int row, int column, time_t * value);
+int st_database_postgresql_get_uchar(PGresult * result, int row, int column, unsigned char * value);
+int st_database_postgresql_get_uint(PGresult * result, int row, int column, unsigned int * value);
+int st_database_postgresql_get_uint_add(PGresult * result, int row, int column, unsigned int * value);
 
 #endif
 
