@@ -1,3 +1,14 @@
+stone (1.1.11+squeeze) polisher; urgency=low
+
+  * Correctif : tâche d'archivage, si l'insécabilité d'un pool est au niveau
+    fichier et que l'on archive un fichier qui ne tient pas sur média
+  * Amélioration : Refuse d'archive si dans un pool, le niveau d'insécabilité 
+    est fichier et qu'il existe un fichier plus gros d'un média
+  * Correctif : peut archive dans un pool sans checksum
+  * Amélioration : Support des méta-données par fichier et par archive
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 31 Mar 2014 19:29:50 +0200
+
 stone (1.1.9+squeeze) polisher; urgency=low
 
   * Correctif: Status Librairie/Lecteur
