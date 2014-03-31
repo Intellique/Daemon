@@ -30,6 +30,7 @@
 
 #include <libstone/format.h>
 
+ssize_t st_format_tar_find_greater_file(char * path);
 struct st_format_reader * st_format_tar_get_reader(struct st_stream_reader * reader);
 ssize_t st_format_tar_get_size(const char * path, bool recursive);
 struct st_format_writer * st_format_tar_get_writer(struct st_stream_writer * writer);

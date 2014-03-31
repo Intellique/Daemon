@@ -94,6 +94,7 @@ void st_archive_free(struct st_archive * archive) {
 	for (i = 0; i < archive->nb_volumes; i++)
 		st_archive_volume_free(archive->volumes + i);
 	free(archive->volumes);
+	free(archive->metadatas);
 	free(archive->db_data);
 
 	free(archive);

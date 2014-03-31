@@ -30,6 +30,10 @@
 
 #include "format.h"
 
+ssize_t st_format_find_greater_file(char * path, struct st_media_format * format __attribute__((unused))) {
+	return st_format_tar_find_greater_file(path);
+}
+
 void st_format_file_free(struct st_format_file * file) {
 	if (file == NULL)
 		return;
