@@ -22,7 +22,6 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 10 Apr 2013 01:06:13 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -34,9 +33,11 @@
 #include <stdlib.h>
 
 #include <libstone/log.h>
-#include <libstone/util/debug.h>
 
-void st_debug_log_stack(unsigned int nb_stacks) {
+#include "debug.h"
+
+__asm__(".symver st_debug_log_stack_v1, st_debug_log_stack@@LIBSTONE_1.2");
+void st_debug_log_stack_v1(unsigned int nb_stacks) {
 	if (nb_stacks < 1)
 		return;
 
@@ -53,11 +54,11 @@ void st_debug_log_stack(unsigned int nb_stacks) {
 	pthread_attr_getstack(&attr, &stack_addr, &stack_size);
 	pthread_attr_destroy(&attr);
 
-	st_log_write_all(st_log_level_debug, st_log_type_daemon, "Dump %zd stack%c, stack addr: %p, stack size: %zd", size, size != 1 ? 's' : '\0', stack_addr, stack_size);
+	st_log_write(st_log_level_debug, "Dump %zd stack%c, stack addr: %p, stack size: %zd", size, size != 1 ? 's' : '\0', stack_addr, stack_size);
 
 	ssize_t i;
 	for (i = 0; i < size; i++)
-		st_log_write_all(st_log_level_debug, st_log_type_daemon, "#%zd %s", i, strings[i]);
+		st_log_write(st_log_level_debug, "#%zd %s", i, strings[i]);
 
 	free(strings);
 	free(array);

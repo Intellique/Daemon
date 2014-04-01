@@ -11,6 +11,8 @@ LIBSTONE_1.2 {
 		st_database_get_driver;
 		st_database_register_driver;
 
+		st_debug_log_stack;
+
 		st_file_basic_scandir_filter;
 		st_file_convert_mode;
 		st_file_convert_size_to_string;

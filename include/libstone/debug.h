@@ -22,11 +22,10 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 10 Apr 2013 00:47:59 +0200                            *
 \****************************************************************************/
 
-#ifndef __STONE_UTIL_DEBUG_H__
-#define __STONE_UTIL_DEBUG_H__
+#ifndef __LIBSTONE_DEBUG_H__
+#define __LIBSTONE_DEBUG_H__
 
 void st_debug_log_stack(unsigned int nb_stacks);
 
