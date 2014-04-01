@@ -25,8 +25,11 @@
 *  Last modified: Fri, 29 Nov 2013 00:07:21 +0100                            *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // PQfinish, PQsetdbLogin, PQstatus
 #include <postgresql/libpq-fe.h>
+// asprintf
+#include <stdio.h>
 // malloc
 #include <stdlib.h>
 // bzero, strchr, strdup
@@ -35,29 +38,21 @@
 #include <sys/utsname.h>
 
 #include <libstone/log.h>
-#include <libstone/util/hashtable.h>
+#include <libstone/value.h>
 
 #include "common.h"
 
-static struct st_stream_reader * st_db_postgresql_backup_db(struct st_database_config * db_config);
-static struct st_database_connection * st_db_postgresql_connect(struct st_database_config * db_config);
-static void st_db_postgresql_config_free(struct st_database_config * db_config);
-static int st_db_postgresql_ping(struct st_database_config * db_config);
+static struct st_database_connection * st_database_postgresql_connect(struct st_database_config * db_config);
+static int st_database_postgresql_ping(struct st_database_config * db_config);
 
-static struct st_database_config_ops st_db_postgresql_config_ops = {
-	.backup_db = st_db_postgresql_backup_db,
-	.connect   = st_db_postgresql_connect,
-	.free      = st_db_postgresql_config_free,
-	.ping      = st_db_postgresql_ping,
+static struct st_database_config_ops st_database_postgresql_config_ops = {
+	.connect = st_database_postgresql_connect,
+	.ping    = st_database_postgresql_ping,
 };
 
 
-static struct st_stream_reader * st_db_postgresql_backup_db(struct st_database_config * db_config) {
-	return st_db_postgresql_backup_init(db_config->data);
-}
-
-static struct st_database_connection * st_db_postgresql_connect(struct st_database_config * db_config) {
-	struct st_db_postgresql_config_private * self = db_config->data;
+static struct st_database_connection * st_database_postgresql_connect(struct st_database_config * db_config) {
+	struct st_database_postgresql_config_private * self = db_config->data;
 
 	PGconn * connect = PQsetdbLogin(self->host, self->port, NULL, NULL, self->db, self->user, self->password);
 	ConnStatusType status = PQstatus(connect);
@@ -67,7 +62,7 @@ static struct st_database_connection * st_db_postgresql_connect(struct st_databa
 		return NULL;
 	}
 
-	struct st_database_connection * connection = st_db_postgresql_connnect_init(connect);
+	struct st_database_connection * connection = st_database_postgresql_connnect_init(connect);
 	if (connection == NULL) {
 		PQfinish(connect);
 		return NULL;
@@ -78,53 +73,53 @@ static struct st_database_connection * st_db_postgresql_connect(struct st_databa
 	return connection;
 }
 
-static void st_db_postgresql_config_free(struct st_database_config * config) {
-	struct st_db_postgresql_config_private * self = config->data;
-	free(self->user);
-	free(self->password);
-	free(self->db);
-	free(self->host);
-	free(self->port);
-	free(self);
+struct st_database_config * st_database_postgresql_config_init(struct st_value * params) {
+	struct st_value * name = st_value_hashtable_get2(params, "name", false);
+	struct st_value * user = st_value_hashtable_get2(params, "user", false);
+	struct st_value * password = st_value_hashtable_get2(params, "password", false);
+	struct st_value * db = st_value_hashtable_get2(params, "db", false);
+	struct st_value * host = st_value_hashtable_get2(params, "host", false);
+	struct st_value * port = st_value_hashtable_get2(params, "port", false);
 
-	free(config->name);
-	config->name = NULL;
-	config->ops = NULL;
-}
+	struct st_database_postgresql_config_private * self = malloc(sizeof(struct st_database_postgresql_config_private));
+	bzero(self, sizeof(struct st_database_postgresql_config_private));
 
-int st_db_postgresql_config_init(struct st_database_config * config, const struct st_hashtable * params) {
-	struct st_db_postgresql_config_private * self = malloc(sizeof(struct st_db_postgresql_config_private));
-	bzero(self, sizeof(struct st_db_postgresql_config_private));
+	if (user != NULL && user->type == st_value_string)
+		self->user = strdup(user->value.string);
 
-	const char * value = st_hashtable_get(params, "user").value.string;
-	if (value != NULL)
-		self->user = strdup(value);
+	if (password != NULL && password->type == st_value_string)
+		self->password = strdup(password->value.string);
 
-	value = st_hashtable_get(params, "password").value.string;
-	if (value != NULL)
-		self->password = strdup(value);
+	if (db != NULL && db->type == st_value_string)
+		self->db = strdup(db->value.string);
 
-	value = st_hashtable_get(params, "db").value.string;
-	if (value != NULL)
-		self->db = strdup(value);
+	if (host != NULL && host->type == st_value_string)
+		self->host = strdup(host->value.string);
 
-	value = st_hashtable_get(params, "host").value.string;
-	if (value != NULL)
-		self->host = strdup(value);
+	if (port != NULL) {
+		if (port->type == st_value_string)
+			self->port = strdup(port->value.string);
+		else if (port->type == st_value_integer)
+			asprintf(&self->port, "%lld", port->value.integer);
+	}
 
-	value = st_hashtable_get(params, "port").value.string;
-	if (value != NULL)
-		self->port = strdup(value);
-
-	config->name = strdup(st_hashtable_get(params, "alias").value.string);
-	config->ops = &st_db_postgresql_config_ops;
+	struct st_database_config * config = malloc(sizeof(struct st_database_config));
+	if (name != NULL && name->type == st_value_string)
+		config->name = strdup(name->value.string);
+	else {
+		static int n_config = 1;
+		asprintf(&config->name, "config_%d", n_config);
+		n_config++;
+	}
+	config->ops = &st_database_postgresql_config_ops;
 	config->data = self;
+	config->driver = NULL;
 
-	return 0;
+	return config;
 }
 
-static int st_db_postgresql_ping(struct st_database_config * db_config) {
-	struct st_db_postgresql_config_private * self = db_config->data;
+static int st_database_postgresql_ping(struct st_database_config * db_config) {
+	struct st_database_postgresql_config_private * self = db_config->data;
 
 	PGconn * connect = PQsetdbLogin(self->host, self->port, NULL, NULL, self->db, self->user, self->password);
 	ConnStatusType status = PQstatus(connect);
@@ -142,7 +137,7 @@ static int st_db_postgresql_ping(struct st_database_config * db_config) {
 	int server_version_minor = server_version_major % 100;
 	server_version_major /= 100;
 
-	st_log_write_all(st_log_level_info, st_log_type_plugin_db, "Ping postgresql v.%d.%d.%d (using protocol version %d)", server_version_major, server_version_minor, server_version_rev, protocol_version);
+	st_log_write2(st_log_level_info, st_log_type_plugin_db, "Ping postgresql v.%d.%d.%d (using protocol version %d)", server_version_major, server_version_minor, server_version_rev, protocol_version);
 
 	PQfinish(connect);
 
