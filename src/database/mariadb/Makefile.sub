@@ -1,0 +1,11 @@
+STONE_DATABASE_MARIADB_SRC_DIR		:= src/database/mariadb
+
+STONE_DATABASE_MARIADB_BIN			:= lib/libdatabase-mariadb.so
+STONE_DATABASE_MARIADB_CFLAG		:= -pthread -fPIC -fvisibility=hidden
+STONE_DATABASE_MARIADB_LD			:= -pthread -shared -lstone -Llib -lmariadbclient
+
+STONE_DATABASE_MARIADB_DEPEND_LIB	:= lib/libstone.so
+
+STONE_DATABASE_MARIADB_CHCKSUM_FILE	:= libdatabase-mariadb.chcksum
+
+BIN_SYMS							+= STONE_DATABASE_MARIADB
