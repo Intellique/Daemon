@@ -22,7 +22,6 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 29 Nov 2013 00:07:21 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -30,7 +29,7 @@
 #include <postgresql/libpq-fe.h>
 // asprintf
 #include <stdio.h>
-// malloc
+// free, malloc
 #include <stdlib.h>
 // bzero, strchr, strdup
 #include <string.h>
@@ -71,6 +70,21 @@ static struct st_database_connection * st_database_postgresql_connect(struct st_
 	connection->driver = db_config->driver;
 	connection->config = db_config;
 	return connection;
+}
+
+void st_database_postgresql_config_free(void * data) {
+	struct st_database_config * config = data;
+	free(config->name);
+
+	struct st_database_postgresql_config_private * self = config->data;
+	free(self->user);
+	free(self->password);
+	free(self->db);
+	free(self->host);
+	free(self->port);
+	free(self);
+
+	free(config);
 }
 
 struct st_database_config * st_database_postgresql_config_init(struct st_value * params) {

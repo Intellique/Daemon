@@ -47,6 +47,7 @@ struct st_database_postgresql_config_private {
 };
 
 
+void st_database_postgresql_config_free(void * data);
 /**
  * \brief Initialize a postgresql config
  *

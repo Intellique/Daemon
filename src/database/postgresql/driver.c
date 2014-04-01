@@ -63,7 +63,7 @@ static struct st_database_config * st_database_postgresql_add(struct st_value * 
 	if (config != NULL) {
 		config->driver = &st_database_postgresql_driver;
 
-		struct st_value * vconfig = st_value_new_custom(config, NULL);
+		struct st_value * vconfig = st_value_new_custom(config, st_database_postgresql_config_free);
 		st_value_hashtable_put2(st_database_postgresql_driver.configurations, "default", vconfig, true);
 		st_value_hashtable_put(st_database_postgresql_driver.configurations, st_value_new_string(config->name), true, vconfig, false);
 	}

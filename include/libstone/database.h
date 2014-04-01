@@ -27,6 +27,9 @@
 #ifndef __LIBSTONE_DATABASE_H__
 #define __LIBSTONE_DATABASE_H__
 
+// bool
+#include <stdbool.h>
+
 struct st_database;
 struct st_database_config;
 struct st_value;
@@ -73,7 +76,7 @@ struct st_database_connection {
 		 * \param[in] db a database connection
 		 * \return 0 if the connection is not closed
 		 */
-		int (*is_connected)(struct st_database_connection * connect);
+		bool (*is_connected)(struct st_database_connection * connect);
 
 		/**
 		 * \brief Rool back a transaction
