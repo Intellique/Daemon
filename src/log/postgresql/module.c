@@ -33,6 +33,8 @@
 #include <string.h>
 // uname
 #include <sys/utsname.h>
+// sleep
+#include <unistd.h>
 
 #include <libstone/time.h>
 
@@ -197,17 +199,19 @@ static void st_log_postgresql_module_write(struct lgr_log_module * module, struc
 
 	const char * param[] = {st_log_postgresql_types[typ], st_log_postgresql_levels[lvl], strtime, vmessage->value.string, self->hostid};
 
-	ExecStatusType qStatus;
-	do {
+	ExecStatusType qStatus = PGRES_FATAL_ERROR;
+	unsigned short i;
+	for (i = 0; i < 5 && qStatus != PGRES_COMMAND_OK; i++) {
 		PGresult * result = PQexecPrepared(self->connection, "insert_log", 5, param, NULL, NULL, 0);
 		qStatus = PQresultStatus(result);
 		PQclear(result);
 
 		ConnStatusType status = PQstatus(self->connection);
 		if (qStatus != PGRES_COMMAND_OK || status != CONNECTION_OK) {
+			sleep(i);
 			PQreset(self->connection);
 			st_log_postgresql_module_prepare_queries(self->connection);
 		}
-	} while (qStatus != PGRES_COMMAND_OK);
+	}
 }
 

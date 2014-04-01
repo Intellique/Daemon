@@ -37,6 +37,8 @@
 #include <strings.h>
 // uname
 #include <sys/utsname.h>
+// sleep
+#include <unistd.h>
 
 #include "common.h"
 
@@ -244,8 +246,9 @@ static void st_log_mariadb_module_write(struct lgr_log_module * module, struct s
 	params[4].buffer = (char *) &self->host_id;
 	params[4].buffer_length = sizeof(self->host_id);
 
-	int failed;
-	do {
+	int failed = 1;
+	unsigned short i;
+	for (i = 0; i < 5 && failed != 0; i++) {
 		mysql_stmt_bind_param(self->insert_log, params);
 		failed = mysql_stmt_execute(self->insert_log);
 		mysql_stmt_reset(self->insert_log);
@@ -254,10 +257,11 @@ static void st_log_mariadb_module_write(struct lgr_log_module * module, struct s
 			mysql_stmt_close(self->insert_log);
 			self->insert_log = NULL;
 
+			sleep(i);
 			mysql_ping(&self->handler);
 
 			st_log_mariadb_module_prepare_queries(self);
 		}
-	} while (failed != 0);
+	}
 }
 
