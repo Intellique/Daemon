@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 24 Jan 2014 13:14:42 +0100                            *
+*  Last modified: Wed, 02 Apr 2014 18:26:53 +0200                            *
 \****************************************************************************/
 
 // json_array, json_array_append_new, json_decref, json_dumps, json_integer,
@@ -50,9 +50,9 @@
 
 static struct utsname st_io_json_uname;
 
-static json_t * st_io_json_file(struct st_archive_file * file);
+static json_t * st_io_json_file(struct st_archive_file * file, json_t * metas);
 static json_t * st_io_json_media(struct st_media * media);
-static json_t * st_io_json_volume(struct st_archive_volume * volume);
+static json_t * st_io_json_volume(struct st_archive_volume * volume, json_t * metas);
 static void st_io_json_volume_init(void) __attribute__((constructor));
 
 
@@ -63,22 +63,33 @@ json_t * st_io_json_archive(struct st_archive * archive) {
 	json_object_set_new(jarchive, "name", json_string(archive->name));
 	json_object_set_new(jarchive, "user", json_string(archive->user->login));
 
+	json_error_t error;
+	json_t * meta = NULL;
+	if (archive->metadatas != NULL)
+		meta = json_loads(archive->metadatas, JSON_REJECT_DUPLICATES | JSON_DECODE_ANY, &error);
+
+	json_t * meta_file = NULL;
+	if (meta != NULL)
+		meta_file = json_object_get(meta, "files");
+
 	json_t * volumes = json_array();
 	unsigned int i;
 	for (i = 0; i < archive->nb_volumes; i++)
-		json_array_append_new(volumes, st_io_json_volume(archive->volumes + i));
+		json_array_append_new(volumes, st_io_json_volume(archive->volumes + i, meta_file));
 	json_object_set_new(jarchive, "volumes", volumes);
 
-	json_error_t error;
-	json_t * meta = json_loads(archive->metadatas, JSON_REJECT_DUPLICATES | JSON_DECODE_ANY, &error);
+	if (meta != NULL) {
+		json_t * meta_archive = json_object_get(meta, "archive");
+		if (meta_archive != NULL)
+			json_object_set(jarchive, "metadatas", meta_archive);
 
-	if (meta != NULL)
-		json_object_set_new(jarchive, "metadatas", meta);
+		json_decref(meta);
+	}
 
 	return jarchive;
 }
 
-static json_t * st_io_json_file(struct st_archive_file * file) {
+static json_t * st_io_json_file(struct st_archive_file * file, json_t * metas) {
 	json_t * jfile = json_object();
 
 	json_object_set_new(jfile, "name", json_string(file->name));
@@ -116,6 +127,14 @@ static json_t * st_io_json_file(struct st_archive_file * file) {
 		free(checksums);
 	}
 	json_object_set_new(jfile, "checksums", jchecksums);
+
+	if (metas != NULL) {
+		json_t * meta_file = json_object_get(metas, file->name);
+		if (meta_file != NULL)
+			json_object_set(jfile, "metadatas", meta_file);
+		else
+			json_object_set_new(jfile, "metadatas", json_object());
+	}
 
 	return jfile;
 }
@@ -160,7 +179,7 @@ json_t * st_io_json_read_from(int fd, bool need_close) {
 	return value;
 }
 
-static json_t * st_io_json_volume(struct st_archive_volume * volume) {
+static json_t * st_io_json_volume(struct st_archive_volume * volume, json_t * metas) {
 	json_t * jvolume = json_object();
 
 	json_object_set_new(jvolume, "host", json_string(st_io_json_uname.nodename));
@@ -197,7 +216,7 @@ static json_t * st_io_json_volume(struct st_archive_volume * volume) {
 
 		json_t * jblock = json_object();
 		json_object_set_new(jblock, "block position", json_integer(file->position));
-		json_object_set_new(jblock, "file", st_io_json_file(file->file));
+		json_object_set_new(jblock, "file", st_io_json_file(file->file, metas));
 
 		json_array_append_new(files, jblock);
 	}
