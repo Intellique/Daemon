@@ -393,6 +393,15 @@ static bool st_job_create_archive_single_worker_load_media(struct st_job_create_
 static json_t * st_job_create_archive_single_worker_post_run(struct st_job_create_archive_data_worker * worker) {
 	struct st_job_create_archive_single_worker_private * self = worker->data;
 
+	json_error_t error;
+	json_t * meta = NULL;
+	if (self->archive->metadatas != NULL)
+		meta = json_loads(self->archive->metadatas, JSON_REJECT_DUPLICATES | JSON_DECODE_ANY, &error);
+
+	json_t * meta_files = NULL;
+	if (meta != NULL)
+		meta_files = json_object_get(meta, "files");
+
 	json_t * archive = json_object();
 	json_object_set_new(archive, "name", json_string(self->archive->name));
 	json_object_set_new(archive, "uuid", json_string(self->archive->uuid));
@@ -406,6 +415,7 @@ static json_t * st_job_create_archive_single_worker_post_run(struct st_job_creat
 	for (i = 0; i < self->archive->nb_volumes; i++) {
 		json_t * volume = json_object();
 		struct st_archive_volume * vol = self->archive->volumes + i;
+		size += vol->size;
 
 		json_object_set_new(volume, "position", json_integer(i));
 		json_object_set_new(volume, "size", json_integer(vol->size));
@@ -458,6 +468,14 @@ static json_t * st_job_create_archive_single_worker_post_run(struct st_job_creat
 
 			json_object_set_new(jfile, "archived time", json_integer(file->archived_time));
 
+			if (meta_files != NULL) {
+				json_t * meta_file = json_object_get(meta_files, file->name);
+				if (meta_file != NULL)
+					json_object_set(jfile, "metadatas", meta_file);
+				else
+					json_object_set_new(jfile, "metadatas", json_object());
+			}
+
 			json_array_append_new(jfiles, jfile);
 		}
 		json_object_set_new(volume, "files", jfiles);
@@ -480,6 +498,14 @@ static json_t * st_job_create_archive_single_worker_post_run(struct st_job_creat
 	}
 
 	json_object_set_new(archive, "size", json_integer(size));
+
+	if (meta != NULL) {
+		json_t * meta_archive = json_object_get(meta, "archive");
+		if (meta_archive != NULL)
+			json_object_set(archive, "metadatas", meta_archive);
+
+		json_decref(meta);
+	}
 
 	return archive;
 }
