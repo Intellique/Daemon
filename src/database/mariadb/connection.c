@@ -24,30 +24,5 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONE_DB_MARIADB_CONNNECTION_H__
-#define __STONE_DB_MARIADB_CONNNECTION_H__
-
-// mysql_*
-#include <mysql/mysql.h>
-
-#include <libstone/database.h>
-
-struct st_database_mariadb_config_private {
-	char * user;
-	char * password;
-	char * db;
-	char * host;
-	char * port;
-};
-
-struct st_database_mariadb_connection_private {
-	MYSQL handler;
-};
-
-void st_database_mariadb_config_free(void * data);
-struct st_database_config * st_database_mariadb_config_init(struct st_value * params);
-
-struct st_database_connection * st_database_mariadb_connnect_init(struct st_database_mariadb_config_private * config, struct st_database_mariadb_connection_private * self);
-
-#endif
+#include "common.h"
 

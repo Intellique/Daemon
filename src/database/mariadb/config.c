@@ -25,8 +25,6 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
-// PQfinish, PQsetdbLogin, PQstatus
-#include <postgresql/libpq-fe.h>
 // asprintf
 #include <stdio.h>
 // free, malloc
@@ -35,37 +33,27 @@
 #include <string.h>
 // bzero
 #include <strings.h>
-// uname
-#include <sys/utsname.h>
 
-#include <libstone/log.h>
 #include <libstone/value.h>
 
 #include "common.h"
 
-static struct st_database_connection * st_database_postgresql_connect(struct st_database_config * db_config);
-static int st_database_postgresql_ping(struct st_database_config * db_config);
+static struct st_database_connection * st_database_mariadb_connect(struct st_database_config * db_config);
+static int st_database_mariadb_ping(struct st_database_config * db_config);
 
-static struct st_database_config_ops st_database_postgresql_config_ops = {
-	.connect = st_database_postgresql_connect,
-	.ping    = st_database_postgresql_ping,
+static struct st_database_config_ops st_database_mariadb_config_ops = {
+	.connect = st_database_mariadb_connect,
+	.ping    = st_database_mariadb_ping,
 };
 
 
-static struct st_database_connection * st_database_postgresql_connect(struct st_database_config * db_config) {
-	struct st_database_postgresql_config_private * self = db_config->data;
+static struct st_database_connection * st_database_mariadb_connect(struct st_database_config * db_config) {
+	struct st_database_mariadb_config_private * self = db_config->data;
 
-	PGconn * connect = PQsetdbLogin(self->host, self->port, NULL, NULL, self->db, self->user, self->password);
-	ConnStatusType status = PQstatus(connect);
-
-	if (status == CONNECTION_BAD) {
-		PQfinish(connect);
-		return NULL;
-	}
-
-	struct st_database_connection * connection = st_database_postgresql_connect_init(connect);
+	struct st_database_mariadb_connection_private * connect = malloc(sizeof(struct st_database_mariadb_connection_private)); 
+	struct st_database_connection * connection = st_database_mariadb_connnect_init(self, connect);
 	if (connection == NULL) {
-		PQfinish(connect);
+		free(connect);
 		return NULL;
 	}
 
@@ -74,11 +62,11 @@ static struct st_database_connection * st_database_postgresql_connect(struct st_
 	return connection;
 }
 
-void st_database_postgresql_config_free(void * data) {
+void st_database_mariadb_config_free(void * data) {
 	struct st_database_config * config = data;
 	free(config->name);
 
-	struct st_database_postgresql_config_private * self = config->data;
+	struct st_database_mariadb_config_private * self = config->data;
 	free(self->user);
 	free(self->password);
 	free(self->db);
@@ -89,7 +77,7 @@ void st_database_postgresql_config_free(void * data) {
 	free(config);
 }
 
-struct st_database_config * st_database_postgresql_config_init(struct st_value * params) {
+struct st_database_config * st_database_mariadb_config_init(struct st_value * params) {
 	struct st_value * name = st_value_hashtable_get2(params, "name", false);
 	struct st_value * user = st_value_hashtable_get2(params, "user", false);
 	struct st_value * password = st_value_hashtable_get2(params, "password", false);
@@ -97,8 +85,8 @@ struct st_database_config * st_database_postgresql_config_init(struct st_value *
 	struct st_value * host = st_value_hashtable_get2(params, "host", false);
 	struct st_value * port = st_value_hashtable_get2(params, "port", false);
 
-	struct st_database_postgresql_config_private * self = malloc(sizeof(struct st_database_postgresql_config_private));
-	bzero(self, sizeof(struct st_database_postgresql_config_private));
+	struct st_database_mariadb_config_private * self = malloc(sizeof(struct st_database_mariadb_config_private));
+	bzero(self, sizeof(struct st_database_mariadb_config_private));
 
 	if (user != NULL && user->type == st_value_string)
 		self->user = strdup(user->value.string);
@@ -127,35 +115,15 @@ struct st_database_config * st_database_postgresql_config_init(struct st_value *
 		asprintf(&config->name, "config_%d", n_config);
 		n_config++;
 	}
-	config->ops = &st_database_postgresql_config_ops;
+	config->ops = &st_database_mariadb_config_ops;
 	config->data = self;
 	config->driver = NULL;
 
 	return config;
 }
 
-static int st_database_postgresql_ping(struct st_database_config * db_config) {
-	struct st_database_postgresql_config_private * self = db_config->data;
-
-	PGconn * connect = PQsetdbLogin(self->host, self->port, NULL, NULL, self->db, self->user, self->password);
-	ConnStatusType status = PQstatus(connect);
-
-	if (status == CONNECTION_BAD) {
-		PQfinish(connect);
-		return -1;
-	}
-
-	int protocol_version = PQprotocolVersion(connect);
-	int server_version_major = PQserverVersion(connect);
-
-	int server_version_rev = server_version_major % 100;
-	server_version_major /= 100;
-	int server_version_minor = server_version_major % 100;
-	server_version_major /= 100;
-
-	st_log_write2(st_log_level_info, st_log_type_plugin_db, "Ping postgresql v.%d.%d.%d (using protocol version %d)", server_version_major, server_version_minor, server_version_rev, protocol_version);
-
-	PQfinish(connect);
+static int st_database_mariadb_ping(struct st_database_config * db_config) {
+	struct st_database_mariadb_config_private * self = db_config->data;
 
 	return 1;
 }
