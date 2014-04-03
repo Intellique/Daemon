@@ -420,8 +420,7 @@ CREATE TABLE `Log` (
     `level` ENUM('alert', 'critical', 'debug', 'emergency', 'error', 'info', 'notice', 'warning') NOT NULL,
     `time` TIMESTAMP NOT NULL,
     `message` TEXT NOT NULL,
-    `host` INTEGER UNSIGNED NOT NULL REFERENCES Host(`id`) ON UPDATE CASCADE ON DELETE CASCADE,
-    `login` INTEGER UNSIGNED REFERENCES Users(`id`) ON UPDATE CASCADE ON DELETE SET NULL
+    `host` INTEGER UNSIGNED NOT NULL REFERENCES Host(`id`) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE `RestoreTo` (
