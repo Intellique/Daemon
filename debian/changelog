@@ -1,3 +1,10 @@
+stone (1.1.12+wheezy) polisher; urgency=low
+
+  * Correctif : correctif concernant les rapports et sur les données envoyés
+    au scriptes post-archivage
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 03 Apr 2014 10:24:12 +0200
+
 stone (1.1.11+wheezy) polisher; urgency=low
 
   * Correctif : tâche d'archivage, si l'insécabilité d'un pool est au niveau
