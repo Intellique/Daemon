@@ -62,7 +62,7 @@ static struct st_database_connection_ops st_database_postgresql_connection_ops =
 };
 
 
-struct st_database_connection * st_database_postgresql_connnect_init(PGconn * pg_connect) {
+struct st_database_connection * st_database_postgresql_connect_init(PGconn * pg_connect) {
 	PQsetErrorVerbosity(pg_connect, PQERRORS_VERBOSE);
 
 	struct st_database_postgresql_connection_private * self = malloc(sizeof(struct st_database_postgresql_connection_private));
@@ -92,10 +92,8 @@ static int st_database_postgresql_close(struct st_database_connection * connect)
 }
 
 static int st_database_postgresql_free(struct st_database_connection * connect) {
-	struct st_database_postgresql_connection_private * self = connect->data;
-
 	st_database_postgresql_close(connect);
-	free(self);
+	free(connect->data);
 
 	connect->data = NULL;
 	connect->driver = NULL;

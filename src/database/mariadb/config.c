@@ -51,6 +51,8 @@ static struct st_database_connection * st_database_mariadb_connect(struct st_dat
 	struct st_database_mariadb_config_private * self = db_config->data;
 
 	struct st_database_mariadb_connection_private * connect = malloc(sizeof(struct st_database_mariadb_connection_private)); 
+	bzero(connect, sizeof(struct st_database_mariadb_connection_private));
+
 	struct st_database_connection * connection = st_database_mariadb_connnect_init(self, connect);
 	if (connection == NULL) {
 		free(connect);
@@ -71,7 +73,6 @@ void st_database_mariadb_config_free(void * data) {
 	free(self->password);
 	free(self->db);
 	free(self->host);
-	free(self->port);
 	free(self);
 
 	free(config);
@@ -100,12 +101,8 @@ struct st_database_config * st_database_mariadb_config_init(struct st_value * pa
 	if (host != NULL && host->type == st_value_string)
 		self->host = strdup(host->value.string);
 
-	if (port != NULL) {
-		if (port->type == st_value_string)
-			self->port = strdup(port->value.string);
-		else if (port->type == st_value_integer)
-			asprintf(&self->port, "%lld", port->value.integer);
-	}
+	if (port != NULL && port->type == st_value_integer)
+		self->port = port->value.integer;
 
 	struct st_database_config * config = malloc(sizeof(struct st_database_config));
 	if (name != NULL && name->type == st_value_string)

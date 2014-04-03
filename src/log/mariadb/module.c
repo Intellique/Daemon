@@ -130,7 +130,7 @@ struct lgr_log_module * st_log_mariadb_new_module(struct st_value * params) {
 	mysql_init(&self->handler);
 	self->host_id = 0;
 
-	void * ok = mysql_real_connect(&self->handler, host, user, password, db, pport, NULL, CLIENT_COMPRESS);
+	void * ok = mysql_real_connect(&self->handler, host, user, password, db, pport, NULL, 0);
 	if (ok == NULL) {
 		free(self);
 		return NULL;

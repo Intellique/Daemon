@@ -27,6 +27,8 @@
 #ifndef __STONE_DB_MARIADB_CONNNECTION_H__
 #define __STONE_DB_MARIADB_CONNNECTION_H__
 
+// bool
+#include <stdbool.h>
 // mysql_*
 #include <mysql/mysql.h>
 
@@ -37,11 +39,12 @@ struct st_database_mariadb_config_private {
 	char * password;
 	char * db;
 	char * host;
-	char * port;
+	int port;
 };
 
 struct st_database_mariadb_connection_private {
 	MYSQL handler;
+	bool closed;
 };
 
 void st_database_mariadb_config_free(void * data);
