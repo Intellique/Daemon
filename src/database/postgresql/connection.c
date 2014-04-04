@@ -28,8 +28,12 @@
 // PQclear, PQexec, PQexecPrepared, PQfinish, PQresultStatus
 // PQsetErrorVerbosity, PQtransactionStatus
 #include <postgresql/libpq-fe.h>
+// asprintf
+#include <stdio.h>
 // malloc
 #include <stdlib.h>
+// uname
+#include <sys/utsname.h>
 
 #include <libstone/log.h>
 #include <libstone/value.h>
@@ -51,6 +55,13 @@ static int st_database_postgresql_create_checkpoint(struct st_database_connectio
 static int st_database_postgresql_finish_transaction(struct st_database_connection * connect);
 static int st_database_postgresql_start_transaction(struct st_database_connection * connect);
 
+static int st_database_postgresql_add_host(struct st_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description);
+static bool st_database_postgresql_find_host(struct st_database_connection * connect, const char * uuid, const char * hostname);
+static char * st_database_postgresql_get_host(struct st_database_connection * connect);
+static struct st_value * st_database_postgresql_get_host_by_name(struct st_database_connection * connect, const char * name);
+
+static void st_database_postgresql_prepare(struct st_database_postgresql_connection_private * self, const char * statement_name, const char * query);
+
 static struct st_database_connection_ops st_database_postgresql_connection_ops = {
 	.close        = st_database_postgresql_close,
 	.free         = st_database_postgresql_free,
@@ -59,6 +70,10 @@ static struct st_database_connection_ops st_database_postgresql_connection_ops =
 	.cancel_transaction = st_database_postgresql_cancel_transaction,
 	.finish_transaction = st_database_postgresql_finish_transaction,
 	.start_transaction  = st_database_postgresql_start_transaction,
+
+	.add_host         = st_database_postgresql_add_host,
+	.find_host        = st_database_postgresql_find_host,
+	.get_host_by_name = st_database_postgresql_get_host_by_name,
 };
 
 
@@ -244,6 +259,119 @@ static int st_database_postgresql_start_transaction(struct st_database_connectio
 
 		default:
 			return 1;
+	}
+}
+
+
+static int st_database_postgresql_add_host(struct st_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description) {
+	if (connect == NULL || uuid == NULL || name == NULL)
+		return 1;
+
+	struct st_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "insert_host";
+	st_database_postgresql_prepare(self, query, "INSERT INTO host(uuid, name, domaine, description) VALUES ($1, $2, $3, $4)");
+
+	const char * param[] = { uuid, name, domaine, description };
+	PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+
+	return status == PGRES_FATAL_ERROR;
+}
+
+static bool st_database_postgresql_find_host(struct st_database_connection * connect, const char * uuid, const char * hostname) {
+	struct st_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_host_by_name_or_uuid";
+	st_database_postgresql_prepare(self, query, "SELECT id FROM host WHERE uuid::TEXT = $1 OR name = $2 OR name || '.' || domaine = $2 LIMIT 1");
+
+	const char * param[] = { uuid, hostname };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	bool found = false;
+	if (status == PGRES_FATAL_ERROR)
+		st_database_postgresql_get_error(result, query);
+	else if (PQntuples(result) == 1)
+		found = true;
+
+	PQclear(result);
+
+	return found;
+}
+
+static char * st_database_postgresql_get_host(struct st_database_connection * connect) {
+	struct st_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_host_by_name";
+	st_database_postgresql_prepare(self, query, "SELECT id FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1");
+
+	struct utsname name;
+	uname(&name);
+
+	const char * param[] = { name.nodename };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_database_postgresql_get_error(result, query);
+
+	char * hostid = NULL;
+
+	if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		st_database_postgresql_get_string_dup(result, 0, 0, &hostid);
+	else
+		st_log_write2(st_log_level_error, st_log_type_plugin_db, "Postgresql: Host not found into database (%s)", name.nodename);
+
+	PQclear(result);
+
+	return hostid;
+}
+
+static struct st_value * st_database_postgresql_get_host_by_name(struct st_database_connection * connect, const char * name) {
+	struct st_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_host_by_name_by_name";
+	st_database_postgresql_prepare(self, query, "SELECT CASE WHEN domaine IS NULL THEN name ELSE name || '.' || domaine END, uuid FROM host WHERE name = $1 OR name || '.' || domaine = $1 LIMIT 1");
+
+	const char * param[] = { name };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	struct st_value * vresult;
+	if (status == PGRES_FATAL_ERROR) {
+		st_database_postgresql_get_error(result, query);
+
+		char * error = PQresultErrorField(result, PG_DIAG_MESSAGE_PRIMARY);
+		vresult = st_value_pack("{sbss}", "error", true, "message", error);
+	} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		char * host = PQgetvalue(result, 0, 0);
+		char * uuid = PQgetvalue(result, 0, 1);
+
+		vresult = st_value_pack("{sss{ssss}}", "error", false, "host", "hostname", host, "uuid", uuid);
+	}
+
+	PQclear(result);
+
+	return vresult;
+}
+
+
+static void st_database_postgresql_prepare(struct st_database_postgresql_connection_private * self, const char * statement_name, const char * query) {
+	if (!st_value_hashtable_has_key2(self->cached_query, statement_name)) {
+		PGresult * prepare = PQprepare(self->connect, statement_name, query, 0, NULL);
+		ExecStatusType status = PQresultStatus(prepare);
+		if (status == PGRES_FATAL_ERROR) {
+			st_database_postgresql_get_error(prepare, statement_name);
+			st_log_write2(status == PGRES_COMMAND_OK ? st_log_level_debug : st_log_level_error, st_log_type_plugin_db, "Postgresql: new query prepared (%s) => {%s}, status: %s", statement_name, query, PQresStatus(status));
+		} else
+			st_value_hashtable_put2(self->cached_query, statement_name, st_value_new_string(query), true);
+		PQclear(prepare);
 	}
 }
 

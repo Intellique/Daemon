@@ -22,7 +22,6 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 05 Feb 2014 17:22:15 +0100                            *
 \****************************************************************************/
 
 #define _XOPEN_SOURCE 500
@@ -35,35 +34,10 @@
 // mktime, strptime
 #include <time.h>
 
-#include <libstone/job.h>
-#include <libstone/script.h>
-
 #include "common.h"
 
-static const struct st_db_postgresql_job_record_notif {
-	char * name;
-	enum st_job_record_notif notif;
-} st_db_postgresql_job_record_notifs[] = {
-	{ "important", st_job_record_notif_important },
-	{ "normal",    st_job_record_notif_normal },
-	{ "read",      st_job_record_notif_read },
 
-	{ "unknwon", st_job_record_notif_unknown },
-};
-
-static const struct st_db_postgresql_script_type {
-	char * name;
-	enum st_script_type type;
-} st_db_postgresql_script_types[] = {
-	{ "on error", st_script_type_on_error, },
-	{ "post job", st_script_type_post, },
-	{ "pre job",  st_script_type_pre, },
-
-	{ "unknown", st_script_type_unknown },
-};
-
-
-int st_db_postgresql_get_bool(PGresult * result, int row, int column, bool * val) {
+int st_database_postgresql_get_bool(PGresult * result, int row, int column, bool * val) {
 	if (column < 0)
 		return -1;
 
@@ -74,7 +48,7 @@ int st_db_postgresql_get_bool(PGresult * result, int row, int column, bool * val
 	return value != NULL;
 }
 
-int st_db_postgresql_get_double(PGresult * result, int row, int column, double * val) {
+int st_database_postgresql_get_double(PGresult * result, int row, int column, double * val) {
 	if (column < 0)
 		return -1;
 
@@ -85,7 +59,7 @@ int st_db_postgresql_get_double(PGresult * result, int row, int column, double *
 	return value != NULL;
 }
 
-int st_db_postgresql_get_float(PGresult * result, int row, int column, float * val) {
+int st_database_postgresql_get_float(PGresult * result, int row, int column, float * val) {
 	if (column < 0)
 		return -1;
 
@@ -96,7 +70,7 @@ int st_db_postgresql_get_float(PGresult * result, int row, int column, float * v
 	return value != NULL;
 }
 
-int st_db_postgresql_get_int(PGresult * result, int row, int column, int * val) {
+int st_database_postgresql_get_int(PGresult * result, int row, int column, int * val) {
 	if (column < 0)
 		return -1;
 
@@ -107,7 +81,7 @@ int st_db_postgresql_get_int(PGresult * result, int row, int column, int * val) 
 	return value != NULL;
 }
 
-int st_db_postgresql_get_long(PGresult * result, int row, int column, long * val) {
+int st_database_postgresql_get_long(PGresult * result, int row, int column, long * val) {
 	if (column < 0)
 		return -1;
 
@@ -118,10 +92,10 @@ int st_db_postgresql_get_long(PGresult * result, int row, int column, long * val
 	return value != NULL;
 }
 
-int st_db_postgresql_get_long_add(PGresult * result, int row, int column, long * val) {
+int st_database_postgresql_get_long_add(PGresult * result, int row, int column, long * val) {
 	long current = 0;
 
-	int failed = st_db_postgresql_get_long(result, row, column, &current);
+	int failed = st_database_postgresql_get_long(result, row, column, &current);
 
 	if (failed == 0 && val != NULL)
 		*val += current;
@@ -129,7 +103,7 @@ int st_db_postgresql_get_long_add(PGresult * result, int row, int column, long *
 	return failed;
 }
 
-int st_db_postgresql_get_ssize(PGresult * result, int row, int column, ssize_t * val) {
+int st_database_postgresql_get_ssize(PGresult * result, int row, int column, ssize_t * val) {
 	if (column < 0)
 		return -1;
 
@@ -140,7 +114,7 @@ int st_db_postgresql_get_ssize(PGresult * result, int row, int column, ssize_t *
 	return value != NULL;
 }
 
-int st_db_postgresql_get_string(PGresult * result, int row, int column, char * string, size_t length) {
+int st_database_postgresql_get_string(PGresult * result, int row, int column, char * string, size_t length) {
 	if (column < 0)
 		return -1;
 
@@ -153,7 +127,7 @@ int st_db_postgresql_get_string(PGresult * result, int row, int column, char * s
 	return value != NULL;
 }
 
-int st_db_postgresql_get_string_dup(PGresult * result, int row, int column, char ** string) {
+int st_database_postgresql_get_string_dup(PGresult * result, int row, int column, char ** string) {
 	if (row < 0 || column < 0)
 		return -1;
 
@@ -167,7 +141,7 @@ int st_db_postgresql_get_string_dup(PGresult * result, int row, int column, char
 	return value != NULL;
 }
 
-int st_db_postgresql_get_time(PGresult * result, int row, int column, time_t * val) {
+int st_database_postgresql_get_time(PGresult * result, int row, int column, time_t * val) {
 	if (column < 0)
 		return -1;
 
@@ -186,10 +160,10 @@ int st_db_postgresql_get_time(PGresult * result, int row, int column, time_t * v
 	return failed;
 }
 
-int st_db_postgresql_get_time_max(PGresult * result, int row, int column, time_t * val) {
+int st_database_postgresql_get_time_max(PGresult * result, int row, int column, time_t * val) {
 	time_t current = 0;
 
-	int failed = st_db_postgresql_get_time(result, row, column, &current);
+	int failed = st_database_postgresql_get_time(result, row, column, &current);
 	if (failed == 0 && val != NULL) {
 		if (*val < current)
 			*val = current;
@@ -198,7 +172,7 @@ int st_db_postgresql_get_time_max(PGresult * result, int row, int column, time_t
 	return failed;
 }
 
-int st_db_postgresql_get_uchar(PGresult * result, int row, int column, unsigned char * val) {
+int st_database_postgresql_get_uchar(PGresult * result, int row, int column, unsigned char * val) {
 	if (column < 0)
 		return -1;
 
@@ -209,7 +183,7 @@ int st_db_postgresql_get_uchar(PGresult * result, int row, int column, unsigned 
 	return value != NULL;
 }
 
-int st_db_postgresql_get_uint(PGresult * result, int row, int column, unsigned int * val) {
+int st_database_postgresql_get_uint(PGresult * result, int row, int column, unsigned int * val) {
 	if (column < 0)
 		return -1;
 
@@ -220,32 +194,14 @@ int st_db_postgresql_get_uint(PGresult * result, int row, int column, unsigned i
 	return value != NULL;
 }
 
-int st_db_postgresql_get_uint_add(PGresult * result, int row, int column, unsigned int * val) {
+int st_database_postgresql_get_uint_add(PGresult * result, int row, int column, unsigned int * val) {
 	unsigned int current = 0;
 
-	int failed = st_db_postgresql_get_uint(result, row, column, &current);
+	int failed = st_database_postgresql_get_uint(result, row, column, &current);
 
 	if (failed == 0 && val != NULL)
 		*val += current;
 
 	return failed;
-}
-
-const char * st_db_postgresql_job_record_notif_to_string(enum st_job_record_notif notif) {
-	unsigned int i;
-	for (i = 0; st_db_postgresql_job_record_notifs[i].notif != st_job_record_notif_unknown; i++)
-		if (st_db_postgresql_job_record_notifs[i].notif == notif)
-			return st_db_postgresql_job_record_notifs[i].name;
-
-	return st_db_postgresql_job_record_notifs[i].name;
-}
-
-const char * st_db_postgresql_script_type_to_string(enum st_script_type type) {
-	unsigned int i;
-	for (i = 0; st_db_postgresql_script_types[i].type != st_script_type_unknown; i++)
-		if (st_db_postgresql_script_types[i].type == type)
-			return st_db_postgresql_script_types[i].name;
-
-	return st_db_postgresql_script_types[i].name;
 }
 

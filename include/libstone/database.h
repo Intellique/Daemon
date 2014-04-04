@@ -108,6 +108,10 @@ struct st_database_connection {
 		 * \li < 0 if error
 		 */
 		int (*start_transaction)(struct st_database_connection * connect);
+
+		int (*add_host)(struct st_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description);
+		bool (*find_host)(struct st_database_connection * connect, const char * uuid, const char * hostname);
+		struct st_value * (*get_host_by_name)(struct st_database_connection * connect, const char * name);
 	} * ops;
 
 	/**
