@@ -81,6 +81,9 @@ struct st_database_v1 * st_database_get_driver_v1(const char * driver) {
 	struct st_value * vdriver = st_value_hashtable_get2(st_database_drivers, driver, false);
 	struct st_database_v1 * dr = vdriver->value.custom.data;
 
+	if (cookie != NULL)
+		dr->cookie = cookie;
+
 	pthread_mutex_unlock(&st_database_lock);
 
 	return dr;
