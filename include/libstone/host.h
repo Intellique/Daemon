@@ -22,46 +22,19 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 31 Jan 2014 13:54:08 +0100                            *
 \****************************************************************************/
 
-// NULL
-#include <stddef.h>
-// uname
-#include <sys/utsname.h>
+#ifndef __LIBSTONE_HOST_H__
+#define __LIBSTONE_HOST_H__
 
-#include <libstone/database.h>
-#include <libstone/host.h>
+// bool
+#include <stdbool.h>
 
-static struct st_host host = { NULL, NULL };
+struct st_database_connection;
+struct st_value;
 
-static void st_host_exit(void) __attribute__((destructor));
+bool st_host_init(struct st_database_connection * connect);
+struct st_value * st_host_get_info(void);
 
-
-static void st_host_exit() {
-	free(host.hostname);
-	free(host.uuid);
-}
-
-bool st_host_init(struct st_database_connection * connect) {
-	if (connect == NULL)
-		return false;
-
-	struct utsname name;
-	uname(&name);
-
-	int failed = connect->ops->get_host_by_name(connect, name.nodename, &host);
-	return failed == 0;
-}
-
-const struct st_host * st_host_get() {
-	return &host;
-}
-
-json_t * st_host_get_info() {
-	json_t * jhost = json_object();
-	json_object_set_new(jhost, "name", json_string(host.hostname));
-	json_object_set_new(jhost, "uuid", json_string(host.uuid));
-	return jhost;
-}
+#endif
 

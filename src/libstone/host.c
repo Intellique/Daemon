@@ -22,27 +22,46 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 16 Jan 2014 10:38:10 +0100                            *
 \****************************************************************************/
 
-#ifndef __STONE_HOST_H__
-#define __STONE_HOST_H__
+// NULL
+#include <stddef.h>
+// uname
+#include <sys/utsname.h>
 
-// bool
-#include <stdbool.h>
-// json_*
-#include <jansson.h>
+#include <libstone/database.h>
+#include <libstone/value.h>
 
-struct st_database_connection;
+#include "host.h"
 
-struct st_host {
-	char * hostname;
-	char * uuid;
-};
+static struct st_value * host = NULL;
 
-bool st_host_init(struct st_database_connection * connect);
-const struct st_host * st_host_get(void);
-json_t * st_host_get_info(void);
+static void st_host_exit(void) __attribute__((destructor));
 
-#endif
+
+static void st_host_exit() {
+	st_value_free(host);
+}
+
+__asm__(".symver st_host_init_v1, st_host_init@@LIBSTONE_1.2");
+bool st_host_init_v1(struct st_database_connection * connect) {
+	if (connect == NULL)
+		return false;
+
+	struct utsname name;
+	uname(&name);
+
+	host = connect->ops->get_host_by_name(connect, name.nodename);
+	struct st_value * error = st_value_hashtable_get2(host, "error", false);
+
+	return host != NULL && error->type == st_value_boolean && !error->value.boolean;
+}
+
+__asm__(".symver st_host_get_info_v1, st_host_get_info@@LIBSTONE_1.2");
+struct st_value * st_host_get_info_v1() {
+	if (host == NULL)
+		return host;
+
+	return st_value_share(host);
+}
 

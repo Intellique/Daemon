@@ -21,6 +21,9 @@ LIBSTONE_1.2 {
 		st_file_mv;
 		st_file_rm;
 
+		st_host_init;
+		st_host_get_info;
+
 		st_json_encode_to_fd;
 		st_json_encode_to_file;
 		st_json_encode_to_string;
