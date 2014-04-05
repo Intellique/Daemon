@@ -33,6 +33,7 @@
 
 struct st_database_v1 * st_database_get_default_driver_v1(void);
 struct st_database_v1 * st_database_get_driver_v1(const char * driver) __attribute__((nonnull));
+void st_database_load_config_v1(struct st_value * config);
 void st_database_register_driver_v1(struct st_database_v1 * driver) __attribute__((nonnull));
 
 #endif

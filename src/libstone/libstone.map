@@ -9,6 +9,7 @@ LIBSTONE_1.2 {
 
 		st_database_get_default_driver;
 		st_database_get_driver;
+		st_database_load_config;
 		st_database_register_driver;
 
 		st_debug_log_stack;

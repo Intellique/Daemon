@@ -242,6 +242,8 @@ struct st_database * st_database_get_default_driver(void);
  */
 struct st_database * st_database_get_driver(const char * driver) __attribute__((nonnull));
 
+void st_database_load_config(struct st_value * config);
+
 /**
  * \brief Register a database driver
  *

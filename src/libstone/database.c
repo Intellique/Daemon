@@ -49,7 +49,7 @@ static void st_database_exit() {
 	st_database_drivers = NULL;
 }
 
-__asm__(".symver st_database_get_driver_v1, st_database_get_driver@@LIBSTONE_1.2");
+__asm__(".symver st_database_get_default_driver_v1, st_database_get_default_driver@@LIBSTONE_1.2");
 struct st_database * st_database_get_default_driver_v1() {
 	return st_database_default_driver;
 }
@@ -88,6 +88,28 @@ struct st_database_v1 * st_database_get_driver_v1(const char * driver) {
 
 static void st_database_init() {
 	st_database_drivers = st_value_new_hashtable2();
+}
+
+__asm__(".symver st_database_load_config_v1, st_database_load_config@@LIBSTONE_1.2");
+void st_database_load_config_v1(struct st_value * config) {
+	if (config == NULL || !(config->type == st_value_array || config->type == st_value_linked_list))
+		return;
+
+	struct st_value_iterator * iter = st_value_list_get_iterator(config);
+	while (st_value_iterator_has_next(iter)) {
+		struct st_value * conf = st_value_iterator_get_value(iter, false);
+		if (conf->type != st_value_hashtable || !st_value_hashtable_has_key2(conf, "type"))
+			continue;
+
+		struct st_value * type = st_value_hashtable_get2(conf, "type", false);
+		if (type->type != st_value_string)
+			continue;
+
+		struct st_database_v1 * driver = st_database_get_driver_v1(type->value.string);
+		if (driver != NULL)
+			driver->ops->add(conf);
+	}
+	st_value_iterator_free(iter);
 }
 
 __asm__(".symver st_database_register_driver_v1, st_database_register_driver@@LIBSTONE_1.2");

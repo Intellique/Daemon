@@ -29,6 +29,7 @@
 
 typedef int (*command_f)(int argc, char ** argv);
 
+int stctl_config(int argc, char ** argv);
 int stctl_start_daemon(int argc, char ** argv);
 int stctl_status_daemon(int argc, char ** argv);
 int stctl_stop_daemon(int argc, char ** argv);
