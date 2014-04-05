@@ -24,37 +24,18 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONE_DB_MARIADB_CONNNECTION_H__
-#define __STONE_DB_MARIADB_CONNNECTION_H__
+// strlen
+#include <string.h>
 
-// bool
-#include <stdbool.h>
-// mysql_*
-#include <mysql/mysql.h>
+#include "common.h"
 
-#include <libstone/database.h>
-#include <libstone/value.h>
-
-struct st_database_mariadb_config_private {
-	char * user;
-	char * password;
-	char * db;
-	char * host;
-	int port;
-};
-
-struct st_database_mariadb_connection_private {
-	MYSQL handler;
-	bool closed;
-	struct st_value * cached_query;
-};
-
-void st_database_mariadb_config_free(void * data);
-struct st_database_config * st_database_mariadb_config_init(struct st_value * params);
-
-struct st_database_connection * st_database_mariadb_connnect_init(struct st_database_mariadb_config_private * config, struct st_database_mariadb_connection_private * self);
-
-void st_database_mariadb_util_prepare_string(MYSQL_BIND * bind, const char * string);
-
-#endif
+void st_database_mariadb_util_prepare_string(MYSQL_BIND * bind, const char * string) {
+	if (string != NULL) {
+		bind->buffer_type = MYSQL_TYPE_STRING;
+		bind->buffer = (char *) string;
+		bind->buffer_length = strlen(string);
+	} else {
+		bind->buffer_type = MYSQL_TYPE_NULL;
+	}
+}
 
