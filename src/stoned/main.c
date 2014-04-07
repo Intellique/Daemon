@@ -33,6 +33,7 @@
 // getpid, getsid
 #include <unistd.h>
 
+#include <libstone/database.h>
 #include <libstone/json.h>
 #include <libstone/log.h>
 #include <libstone/poll.h>
@@ -132,6 +133,10 @@ int main(int argc, char ** argv) {
 		std_admin_config(admin_config);
 	else
 		st_log_write2(st_log_level_warning, st_log_type_daemon, "No administration configured");
+
+	struct st_value * db_configs = st_value_hashtable_get2(config, "database", false);
+	if (db_configs != NULL)
+		st_database_load_config(db_configs);
 
 	while (std_daemon_run) {
 		st_poll(-1);
