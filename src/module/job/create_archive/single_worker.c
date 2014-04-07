@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 24 Mar 2014 17:08:35 +0100                            *
+*  Last modified: Mon, 07 Apr 2014 15:57:22 +0200                            *
 \****************************************************************************/
 
 // asprintf
@@ -506,6 +506,12 @@ static json_t * st_job_create_archive_single_worker_post_run(struct st_job_creat
 
 		json_decref(meta);
 	}
+
+	json_t * pool = json_object();
+	json_object_set_new(pool, "uuid", json_string(self->pool->uuid));
+	json_object_set_new(pool, "name", json_string(self->pool->name));
+
+	json_object_set_new(archive, "pool", pool);
 
 	return archive;
 }
