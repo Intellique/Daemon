@@ -2675,13 +2675,13 @@ static bool st_db_postgresql_add_report(struct st_database_connection * connect,
 		return false;
 
 	const char * query = "insert_report";
-	st_db_postgresql_prepare(self, query, "INSERT INTO report(archive, job, data) VALUES ($1, $2, $3)");
+	st_db_postgresql_prepare(self, query, "INSERT INTO report(archive, jobrun, data) VALUES ($1, $2, $3)");
 
-	char * jobid, * archiveid;
-	asprintf(&jobid, "%ld", job_data->job_id);
+	char * jobrunid, * archiveid;
+	asprintf(&jobrunid, "%ld", job_data->jobrun_id);
 	asprintf(&archiveid, "%ld", archive_data->id);
 
-	const char * param[] = { archiveid, jobid, report };
+	const char * param[] = { archiveid, jobrunid, report };
 	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
@@ -2689,7 +2689,7 @@ static bool st_db_postgresql_add_report(struct st_database_connection * connect,
 		st_db_postgresql_get_error(result, query);
 
 	PQclear(result);
-	free(jobid);
+	free(jobrunid);
 	free(archiveid);
 
 	return status == PGRES_COMMAND_OK;
