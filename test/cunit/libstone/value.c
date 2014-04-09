@@ -24,14 +24,60 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>        *
 \*************************************************************************/
 
-#include "checksum.h"
-#include "log.h"
-#include "test.h"
 #include "value.h"
 
-void test_libstone_add_suite() {
-    test_libstone_checksum_add_suite();
-	test_libstone_log_add_suite();
-	test_libstone_value_add_suite();
+// CU_add_suite, CU_cleanup_registry, CU_cleanup_registry
+#include <CUnit/CUnit.h>
+// printf
+#include <stdio.h>
+// free
+#include <stdlib.h>
+// _exit
+#include <unistd.h>
+
+#include <libstone/value.h>
+
+static void test_libstone_value_unpack_0(void);
+
+static struct {
+	void (*function)(void);
+	char * name;
+} test_functions[] = {
+    { test_libstone_value_unpack_0, "libstone: value unpack: #0" },
+
+	{ 0, 0 },
+};
+
+void test_libstone_value_add_suite() {
+	CU_pSuite suite = CU_add_suite("libstone: value", 0, 0);
+	if (!suite) {
+		CU_cleanup_registry();
+		printf("Error while adding suite libstone because %s\n", CU_get_error_msg());
+		_exit(3);
+	}
+
+	int i;
+	for (i = 0; test_functions[i].name; i++) {
+		if (!CU_add_test(suite, test_functions[i].name, test_functions[i].function)) {
+			CU_cleanup_registry();
+			printf("Error while adding test function '%s' libstone because %s\n", test_functions[i].name, CU_get_error_msg());
+			_exit(3);
+		}
+	}
 }
 
+
+void test_libstone_value_unpack_0() {
+	struct st_value * pack = st_value_pack("{ss}", "foo", "bar");
+	CU_ASSERT_PTR_NOT_NULL_FATAL(pack);
+
+	char * value = NULL;
+	int ret = st_value_unpack(pack, "{ss}", "foo", &value);
+
+	CU_ASSERT_EQUAL(ret, 1);
+	CU_ASSERT_PTR_NOT_NULL(value);
+	CU_ASSERT_STRING_EQUAL(value, "bar");
+
+	free(value);
+	st_value_free(pack);
+}

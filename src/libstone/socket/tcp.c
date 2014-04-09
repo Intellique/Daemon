@@ -65,8 +65,7 @@ int st_socket_tcp_v1(struct st_value_v1 * config) {
 	if (st_value_unpack_v1(config, "{sssi}", "address", &saddr, "port", &port) < 2)
 		return -1;
 
-	st_value_unpack_v1(config, "{ss}", "type", &type);
-	if (!strcmp(type, "datagram"))
+	if (st_value_unpack_v1(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
 
 	free(type);
@@ -122,8 +121,7 @@ int st_socket_tcp6_v1(struct st_value_v1 * config) {
 	if (st_value_unpack_v1(config, "{sssi}", "address", &saddr, "port", &port) < 2)
 		return -1;
 
-	st_value_unpack_v1(config, "{ss}", "type", &type);
-	if (!strcmp(type, "datagram"))
+	if (st_value_unpack_v1(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
 
 	free(type);

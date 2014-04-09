@@ -822,6 +822,8 @@ static int st_value_unpack_inner(struct st_value_v1 * value, const char ** forma
 					ret += st_value_unpack_inner(child, format, params);
 
 					st_value_free_v1(key);
+
+					(*format)++;
 				}
 
 				(*format)++;
@@ -909,6 +911,8 @@ static bool st_value_valid_inner(struct st_value_v1 * value, const char ** forma
 					ok = st_value_valid_inner(child, format, params);
 
 					st_value_free_v1(key);
+
+					(*format)++;
 				}
 
 				(*format)++;

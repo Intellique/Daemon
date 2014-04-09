@@ -24,14 +24,10 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>        *
 \*************************************************************************/
 
-#include "checksum.h"
-#include "log.h"
-#include "test.h"
-#include "value.h"
+#ifndef __TEST_LIBSTONE_VALUE_H__
+#define __TEST_LIBSTONE_VALUE_H__
 
-void test_libstone_add_suite() {
-    test_libstone_checksum_add_suite();
-	test_libstone_log_add_suite();
-	test_libstone_value_add_suite();
-}
+void test_libstone_value_add_suite(void);
+
+#endif
 
