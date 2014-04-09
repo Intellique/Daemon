@@ -810,17 +810,18 @@ static int st_value_unpack_inner(struct st_value_v1 * value, const char ** forma
 
 				int ret = 0;
 				while (**format != '}') {
-					if (**format != 's')
+					struct st_value_v1 * key = st_value_pack_inner(format, params);
+					if (key == NULL || !st_value_hashtable_has_key_v1(value, key)) {
+						st_value_free_v1(key);
 						return ret;
-
-					char * key = va_arg(params, char *);
-					if (key == NULL || !st_value_hashtable_has_key2_v1(value, key))
-						return ret;
+					}
 
 					(*format)++;
 
-					struct st_value * child = st_value_hashtable_get2_v1(value, key, false);
+					struct st_value * child = st_value_hashtable_get_v1(value, key, false, false);
 					ret += st_value_unpack_inner(child, format, params);
+
+					st_value_free_v1(key);
 				}
 
 				(*format)++;
@@ -896,17 +897,18 @@ static bool st_value_valid_inner(struct st_value_v1 * value, const char ** forma
 
 				bool ok = true;
 				while (ok && **format != '}') {
-					if (**format != 's')
+					struct st_value_v1 * key = st_value_pack_inner(format, params);
+					if (key == NULL || !st_value_hashtable_has_key_v1(value, key)) {
+						st_value_free_v1(key);
 						return false;
-
-					char * key = va_arg(params, char *);
-					if (key == NULL || !st_value_hashtable_has_key2_v1(value, key))
-						return false;
+					}
 
 					(*format)++;
 
-					struct st_value * child = st_value_hashtable_get2_v1(value, key, false);
+					struct st_value * child = st_value_hashtable_get_v1(value, key, false, false);
 					ok = st_value_valid_inner(child, format, params);
+
+					st_value_free_v1(key);
 				}
 
 				(*format)++;

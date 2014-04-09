@@ -56,31 +56,33 @@ static void st_socket_tcp_server_callback(int fd, short event, void * data);
 
 
 int st_socket_tcp_v1(struct st_value_v1 * config) {
-	int type = SOCK_STREAM;
+	int stype = SOCK_STREAM;
 
-	struct st_value_v1 * vtype = st_value_hashtable_get2_v1(config, "type", false);
-	if (vtype->type == st_value_string && !strcmp(vtype->value.string, "datagram"))
-		type = SOCK_DGRAM;
+	char * type = NULL;
+	char * saddr;
+	long long int port;
 
-	struct st_value_v1 * vaddr = st_value_hashtable_get2_v1(config, "address", false);
-	if (vaddr->type != st_value_string)
+	if (st_value_unpack_v1(config, "{sssi}", "address", &saddr, "port", &port) < 2)
 		return -1;
 
-	struct st_value_v1 * vport = st_value_hashtable_get2_v1(config, "port", false);
-	if (vport->type != st_value_integer)
-		return -1;
+	st_value_unpack_v1(config, "{ss}", "type", &type);
+	if (!strcmp(type, "datagram"))
+		stype = SOCK_DGRAM;
+
+	free(type);
 
 	struct addrinfo * addr = NULL;
 	struct addrinfo hint = {
 		.ai_family    = AF_INET,
-		.ai_socktype  = type,
+		.ai_socktype  = stype,
 		.ai_protocol  = 0,
 		.ai_addrlen   = 0,
 		.ai_addr      = NULL,
 		.ai_canonname = NULL,
 		.ai_next      = NULL,
 	};
-	int failed = getaddrinfo(vaddr->value.string, NULL, &hint, &addr);
+	int failed = getaddrinfo(saddr, NULL, &hint, &addr);
+	free(saddr);
 	if (failed != 0)
 		return -1;
 
@@ -89,13 +91,13 @@ int st_socket_tcp_v1(struct st_value_v1 * config) {
 	while (fd < 0 && ptr != NULL) {
 		struct sockaddr_in * addr_v4  = (struct sockaddr_in *) ptr->ai_addr;
 
-		fd = socket(AF_INET, type, 0);
+		fd = socket(AF_INET, stype, 0);
 		if (fd < 0) {
 			ptr = ptr->ai_next;
 			continue;
 		}
 
-		addr_v4->sin_port = htons(vport->value.integer);
+		addr_v4->sin_port = htons(port);
 
 		int failed = connect(fd, ptr->ai_addr, ptr->ai_addrlen);
 		if (failed != 0) {
@@ -111,31 +113,33 @@ int st_socket_tcp_v1(struct st_value_v1 * config) {
 }
 
 int st_socket_tcp6_v1(struct st_value_v1 * config) {
-	int type = SOCK_STREAM;
+	int stype = SOCK_STREAM;
 
-	struct st_value_v1 * vtype = st_value_hashtable_get2_v1(config, "type", false);
-	if (vtype->type == st_value_string && !strcmp(vtype->value.string, "datagram"))
-		type = SOCK_DGRAM;
+	char * type = NULL;
+	char * saddr;
+	long long int port;
 
-	struct st_value_v1 * vaddr = st_value_hashtable_get2_v1(config, "address", false);
-	if (vaddr->type != st_value_string)
+	if (st_value_unpack_v1(config, "{sssi}", "address", &saddr, "port", &port) < 2)
 		return -1;
 
-	struct st_value_v1 * vport = st_value_hashtable_get2_v1(config, "port", false);
-	if (vport->type != st_value_integer)
-		return -1;
+	st_value_unpack_v1(config, "{ss}", "type", &type);
+	if (!strcmp(type, "datagram"))
+		stype = SOCK_DGRAM;
+
+	free(type);
 
 	struct addrinfo * addr = NULL;
 	struct addrinfo hint = {
 		.ai_family    = AF_INET6,
-		.ai_socktype  = type,
+		.ai_socktype  = stype,
 		.ai_protocol  = 0,
 		.ai_addrlen   = 0,
 		.ai_addr      = NULL,
 		.ai_canonname = NULL,
 		.ai_next      = NULL,
 	};
-	int failed = getaddrinfo(vaddr->value.string, NULL, &hint, &addr);
+	int failed = getaddrinfo(saddr, NULL, &hint, &addr);
+	free(saddr);
 	if (failed != 0)
 		return -1;
 
@@ -144,13 +148,13 @@ int st_socket_tcp6_v1(struct st_value_v1 * config) {
 	while (fd < 0 && ptr != NULL) {
 		struct sockaddr_in6 * addr_v6  = (struct sockaddr_in6 *) ptr->ai_addr;
 
-		fd = socket(AF_INET6, type, 0);
+		fd = socket(AF_INET6, stype, 0);
 		if (fd < 0) {
 			ptr = ptr->ai_next;
 			continue;
 		}
 
-		addr_v6->sin6_port = htons(vport->value.integer);
+		addr_v6->sin6_port = htons(port);
 
 		int failed = connect(fd, ptr->ai_addr, ptr->ai_addrlen);
 		if (failed != 0) {

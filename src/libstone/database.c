@@ -29,6 +29,8 @@
 #define _GNU_SOURCE
 // pthread_mutex_lock, pthread_mutex_unlock,
 #include <pthread.h>
+// free
+#include <stdlib.h>
 
 #include <libstone/log.h>
 #include <libstone/value.h>
@@ -101,16 +103,16 @@ void st_database_load_config_v1(struct st_value * config) {
 	struct st_value_iterator * iter = st_value_list_get_iterator(config);
 	while (st_value_iterator_has_next(iter)) {
 		struct st_value * conf = st_value_iterator_get_value(iter, false);
-		if (conf->type != st_value_hashtable || !st_value_hashtable_has_key2(conf, "type"))
+
+		char * type;
+		if (st_value_unpack(conf, "{ss}", "type", &type) < 1)
 			continue;
 
-		struct st_value * type = st_value_hashtable_get2(conf, "type", false);
-		if (type->type != st_value_string)
-			continue;
-
-		struct st_database_v1 * driver = st_database_get_driver_v1(type->value.string);
+		struct st_database_v1 * driver = st_database_get_driver_v1(type);
 		if (driver != NULL)
 			driver->ops->add(conf);
+
+		free(type);
 	}
 	st_value_iterator_free(iter);
 }

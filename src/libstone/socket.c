@@ -24,6 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// free
+#include <stdlib.h>
 // strcmp
 #include <string.h>
 
@@ -34,39 +36,38 @@
 
 __asm__(".symver st_socket_v1, st_socket@@LIBSTONE_1.2");
 int st_socket_v1(struct st_value_v1 * config) {
-	struct st_value * vaf = st_value_hashtable_get2_v1(config, "domain", false);
-
-	if (vaf->type != st_value_string)
+	char * domain;
+	if (st_value_unpack_v1(config, "{ss}", "domain", &domain) < 1)
 		return -1;
 
-	if (!strcmp(vaf->value.string, "inet"))
-		return st_socket_tcp_v1(config);
-		
-	if (!strcmp(vaf->value.string, "inet6"))
-		return st_socket_tcp6_v1(config);
+	int fd = -1;
+	if (!strcmp(domain, "inet"))
+		fd = st_socket_tcp_v1(config);
+	else if (!strcmp(domain, "inet6"))
+		fd = st_socket_tcp6_v1(config);
+	else if (!strcmp(domain, "unix"))
+		fd = st_socket_unix_v1(config);
 
-	if (!strcmp(vaf->value.string, "unix"))
-		return st_socket_unix_v1(config);
+	free(domain);
 
-	return -1;
+	return fd;
 }
 
 __asm__(".symver st_socket_server_v1, st_socket_server@@LIBSTONE_1.2");
 bool st_socket_server_v1(struct st_value_v1 * config, st_socket_accept_f_v1 accept_callback) {
-	struct st_value * vaf = st_value_hashtable_get2_v1(config, "domain", false);
+	char * domain;
 
-	if (vaf->type != st_value_string)
+	if (st_value_unpack_v1(config, "{ss}", "domain", &domain) < 1)
 		return false;
 
-	if (!strcmp(vaf->value.string, "inet"))
-		return st_socket_tcp_server_v1(config, accept_callback);
+	bool ok = false;
+	if (!strcmp(domain, "inet"))
+		ok = st_socket_tcp_server_v1(config, accept_callback);
+	else if (!strcmp(domain, "inet6"))
+		ok = st_socket_tcp6_server_v1(config, accept_callback);
+	else if (!strcmp(domain, "unix"))
+		ok = st_socket_unix_server_v1(config, accept_callback);
 
-	if (!strcmp(vaf->value.string, "inet6"))
-		return st_socket_tcp6_server_v1(config, accept_callback);
-
-	if (!strcmp(vaf->value.string, "unix"))
-		return st_socket_unix_server_v1(config, accept_callback);
-
-	return false;
+	return ok;
 }
 
