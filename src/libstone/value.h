@@ -54,6 +54,8 @@ struct st_value_v1 * st_value_share_v1(struct st_value_v1 * value) __attribute__
 int st_value_unpack_v1(struct st_value_v1 * root, const char * format, ...) __attribute__((nonnull));
 bool st_value_valid_v1(struct st_value_v1 * value, const char * format, ...) __attribute__((nonnull));
 struct st_value * st_value_vpack_v1(const char * format, va_list params) __attribute__((nonnull(1),warn_unused_result));
+int st_value_vunpack_v1(struct st_value * root, const char * format, va_list params) __attribute__((nonnull));
+bool st_value_vvalid_v1(struct st_value * value, const char * format, va_list params) __attribute__((nonnull));
 
 void st_value_hashtable_clear_v1(struct st_value_v1 * hash) __attribute__((nonnull));
 struct st_value_v1 * st_value_hashtable_get_v1(struct st_value_v1 * hash, struct st_value_v1 * key, bool shared, bool detach) __attribute__((nonnull,warn_unused_result));

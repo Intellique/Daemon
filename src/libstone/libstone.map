@@ -122,6 +122,8 @@ LIBSTONE_1.2 {
 		st_value_unpack;
 		st_value_valid;
 		st_value_vpack;
+		st_value_vunpack;
+		st_value_vvalid;
 
 	local:
 		st_loader_*;

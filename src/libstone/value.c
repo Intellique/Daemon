@@ -942,6 +942,22 @@ struct st_value * st_value_vpack_v1(const char * format, va_list params) {
 	return st_value_pack_inner(&format, params);
 }
 
+__asm__(".symver st_value_vunpack_v1, st_value_vunpack@@LIBSTONE_1.2");
+int st_value_vunpack_v1(struct st_value * root, const char * format, va_list params) {
+	if (root == NULL || format == NULL)
+		return false;
+
+	return st_value_unpack_inner(root, &format, params);
+}
+
+__asm__(".symver st_value_vvalid_v1, st_value_vvalid@@LIBSTONE_1.2");
+bool st_value_vvalid_v1(struct st_value * value, const char * format, va_list params) {
+	if (format == NULL)
+		return NULL;
+
+	return st_value_valid_inner(value, &format, params);
+}
+
 
 __asm__(".symver st_value_hashtable_clear_v1, st_value_hashtable_clear@@LIBSTONE_1.2");
 void st_value_hashtable_clear_v1(struct st_value_v1 * hash) {
