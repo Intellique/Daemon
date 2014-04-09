@@ -46,7 +46,7 @@ bool stctl_scsi_drive_in_changer(struct st_value * changer, struct st_value * dr
  */
 int stctl_scsi_loaderinfo(const char * filename, struct st_value * changer);
 
-void stctl_scsi_loader_status_new(const char * filename, struct st_value * changer);
+void stctl_scsi_loader_status_new(struct st_value * changer);
 
 /**
  * \brief Inquiry the drive

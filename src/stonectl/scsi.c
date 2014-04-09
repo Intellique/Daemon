@@ -44,6 +44,7 @@
 // close
 #include <unistd.h>
 
+#include <libstone/string.h>
 #include <libstone/value.h>
 
 #include "scsi.h"
@@ -144,7 +145,278 @@ static bool stctl_scsi_drive_in_changer2(int fd, struct st_value * changer, int 
 static void stctl_scsi_loader_sort_drives(int fd, struct st_value * changer, int start_element);
 static int stctl_scsi_loader_ready(int fd);
 
+int stctl_scsi_loaderinfo(const char * filename, struct st_value * changer) {
+	int fd = open(filename, O_RDWR);
+	if (fd < 0)
+		return 1;
 
+	struct {
+		unsigned char peripheral_device_type:5;
+		unsigned char peripheral_device_qualifier:3;
+		unsigned char reserved0:7;
+		unsigned char removable_medium_bit:1;
+		unsigned char version;
+		unsigned char response_data_format:4;
+		unsigned char hi_sup:1;
+		unsigned char norm_aca:1;
+		unsigned char reserved1:1;
+		unsigned char asynchronous_event_reporting_capability:1;
+		unsigned char additional_length;
+		unsigned char reserved2:7;
+		unsigned char scc_supported:1;
+		unsigned char addr16:1;
+		unsigned char reserved3:2;
+		unsigned char medium_changer:1;
+		unsigned char multi_port:1;
+		unsigned char reserved4:1;
+		unsigned char enclosure_service:1;
+		unsigned char basic_queuing:1;
+		unsigned char reserved5:1;
+		unsigned char command_queuing:1;
+		unsigned char reserved6:1;
+		unsigned char linked_command:1;
+		unsigned char synchonous_transfer:1;
+		unsigned char wide_bus_16:1;
+		unsigned char reserved7:1;
+		unsigned char relative_addressing:1;
+		char vendor_identification[8];
+		char product_identification[16];
+		char product_revision_level[4];
+		unsigned char full_firmware_revision_level[19];
+		unsigned char bar_code:1;
+		unsigned char reserved8:7;
+		unsigned char information_units_supported:1;
+		unsigned char quick_arbitration_supported:1;
+		unsigned char clocking:2;
+		unsigned char reserved9:4;
+		unsigned char reserved10;
+		unsigned char version_description[16];
+		unsigned char reserved11[22];
+		unsigned char unit_serial_number[12];
+	} __attribute__((packed)) result_inquiry;
+
+	struct scsi_inquiry command_inquiry = {
+		.operation_code = 0x12,
+		.enable_vital_product_data = 0,
+		.page_code = 0,
+		.allocation_length = sizeof(result_inquiry),
+	};
+
+	struct scsi_request_sense sense;
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(&result_inquiry, 0, sizeof(result_inquiry));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command_inquiry);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result_inquiry);
+	header.cmdp = (unsigned char *) &command_inquiry;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &result_inquiry;
+	header.timeout = 60000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+
+	if (status) {
+		close(fd);
+		return 2;
+	}
+
+	st_string_rtrim(result_inquiry.vendor_identification, ' ');
+	st_value_hashtable_put2(changer, "vendor", st_value_new_string(result_inquiry.vendor_identification), true);
+
+	st_string_rtrim(result_inquiry.product_identification, ' ');
+	st_value_hashtable_put2(changer, "model", st_value_new_string(result_inquiry.product_identification), true);
+
+	st_string_rtrim(result_inquiry.product_revision_level, ' ');
+	st_value_hashtable_put2(changer, "revision", st_value_new_string(result_inquiry.product_revision_level), true);
+
+	st_value_hashtable_put2(changer, "barcode", st_value_new_boolean(result_inquiry.bar_code), true);
+
+
+	struct {
+		unsigned char peripheral_device_type:5;
+		unsigned char peripheral_device_qualifier:3;
+		unsigned char page_code;
+		unsigned char reserved;
+		unsigned char page_length;
+		char unit_serial_number[12];
+	} __attribute__((packed)) result_serial_number;
+
+	struct scsi_inquiry command_serial_number = {
+		.operation_code = 0x12,
+		.enable_vital_product_data = 1,
+		.page_code = 0x80,
+		.allocation_length = sizeof(result_serial_number),
+	};
+
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(&result_serial_number, 0, sizeof(result_serial_number));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command_serial_number);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result_serial_number);
+	header.cmdp = (unsigned char *) &command_serial_number;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &result_serial_number;
+	header.timeout = 60000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	status = ioctl(fd, SG_IO, &header);
+
+	close(fd);
+
+	if (status)
+		return 3;
+
+	st_string_rtrim(result_serial_number.unit_serial_number, ' ');
+	st_value_hashtable_put2(changer, "serial number", st_value_new_string(result_serial_number.unit_serial_number), true);
+
+	st_value_hashtable_put2(changer, "device", st_value_new_string(filename), true);
+
+	return 0;
+}
+
+void stctl_scsi_loader_status_new(struct st_value * changer) {
+}
+
+int stctl_scsi_tapeinfo(const char * filename, struct st_value * drive) {
+	int fd = open(filename, O_RDWR);
+	if (fd < 0)
+		return 1;
+
+	struct {
+		unsigned char peripheral_device_type:5;
+		unsigned char peripheral_device_qualifier:3;
+		unsigned char reserved0:7;
+		unsigned char removable_medium_bit:1;
+		unsigned char version:3;
+		unsigned char ecma_version:3;
+		unsigned char iso_version:2;
+		unsigned char response_data_format:4;
+		unsigned char hi_sup:1;
+		unsigned char norm_aca:1;
+		unsigned char obsolete0:1;
+		unsigned char asynchronous_event_reporting_capability:1;
+		unsigned char additional_length;
+		unsigned char reserved1:7;
+		unsigned char scc_supported:1;
+		unsigned char addr16:1;
+		unsigned char addr32:1;
+		unsigned char obsolete1:1;
+		unsigned char medium_changer:1;
+		unsigned char multi_port:1;
+		unsigned char vs:1;
+		unsigned char enclosure_service:1;
+		unsigned char basic_queuing:1;
+		unsigned char reserved2:1;
+		unsigned char command_queuing:1;
+		unsigned char trans_dis:1;
+		unsigned char linked_command:1;
+		unsigned char synchonous_transfer:1;
+		unsigned char wide_bus_16:1;
+		unsigned char obsolete2:1;
+		unsigned char relative_addressing:1;
+		char vendor_identification[8];
+		char product_identification[16];
+		char product_revision_level[4];
+		unsigned char aut_dis:1;
+		unsigned char performance_limit;
+		unsigned char reserved3[3];
+		unsigned char oem_specific;
+	} __attribute__((packed)) result_inquiry;
+
+	struct scsi_inquiry command_inquiry = {
+		.operation_code = 0x12,
+		.enable_vital_product_data = 0,
+		.page_code = 0,
+		.allocation_length = sizeof(result_inquiry),
+	};
+
+	struct scsi_request_sense sense;
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(&result_inquiry, 0, sizeof(result_inquiry));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command_inquiry);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result_inquiry);
+	header.cmdp = (unsigned char *) &command_inquiry;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &result_inquiry;
+	header.timeout = 60000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+
+	if (status) {
+		close(fd);
+		return 2;
+	}
+
+	st_string_rtrim(result_inquiry.vendor_identification, ' ');
+	st_value_hashtable_put2(drive, "vendor", st_value_new_string(result_inquiry.vendor_identification), true);
+
+	st_string_rtrim(result_inquiry.product_identification, ' ');
+	st_value_hashtable_put2(drive, "model", st_value_new_string(result_inquiry.product_identification), true);
+
+	st_string_rtrim(result_inquiry.product_revision_level, ' ');
+	st_value_hashtable_put2(drive, "revision", st_value_new_string(result_inquiry.product_revision_level), true);
+
+	struct {
+		unsigned char peripheral_device_type:5;
+		unsigned char peripheral_device_qualifier:3;
+		unsigned char page_code;
+		unsigned char reserved;
+		unsigned char page_length;
+		char unit_serial_number[12];
+	} __attribute__((packed)) result_serial_number;
+
+	struct scsi_inquiry command_serial_number = {
+		.operation_code = 0x12,
+		.enable_vital_product_data = 1,
+		.page_code = 0x80,
+		.allocation_length = sizeof(result_serial_number),
+	};
+
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(&result_serial_number, 0, sizeof(result_serial_number));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command_serial_number);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result_serial_number);
+	header.cmdp = (unsigned char *) &command_serial_number;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &result_serial_number;
+	header.timeout = 60000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	status = ioctl(fd, SG_IO, &header);
+
+	close(fd);
+
+	if (status)
+		return 3;
+
+	st_string_rtrim(result_serial_number.unit_serial_number, ' ');
+	st_value_hashtable_put2(drive, "serial number", st_value_new_string(result_serial_number.unit_serial_number), true);
+
+	st_value_hashtable_put2(drive, "device", st_value_new_string(filename), true);
+
+	return 0;
+}
+
+
+/*
 bool stctl_scsi_drive_in_changer(struct st_value * changer, struct st_value * drive) {
 	struct st_value * device = st_value_hashtable_get2(changer, "device", false);
 
@@ -230,7 +502,7 @@ bool stctl_scsi_drive_in_changer(struct st_value * changer, struct st_value * dr
 	int start_element = be16toh(result.first_data_transfer_element_address);
 	int nb_elements = be16toh(result.number_of_data_transfer_elements);
 
-	bool ok = stcfg_scsi_drive_in_changer2(fd, changer, start_element, nb_elements, drive);
+	bool ok = stctl_scsi_drive_in_changer2(fd, changer, start_element, nb_elements, drive);
 
 	close(fd);
 
@@ -909,3 +1181,4 @@ int stctl_scsi_tapeinfo(const char * filename, struct st_drive * drive) {
 	return 0;
 }
 
+*/

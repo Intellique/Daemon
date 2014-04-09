@@ -27,6 +27,8 @@
 #ifndef __LIBSTONE_VALUE_H__
 #define __LIBSTONE_VALUE_H__
 
+// va_list
+#include <stdarg.h>
 // bool
 #include <stdbool.h>
 
@@ -279,6 +281,9 @@ struct st_value * st_value_pack(const char * format, ...) __attribute__((nonnull
  * \returns sharred value
  */
 struct st_value * st_value_share(struct st_value * value) __attribute__((nonnull,warn_unused_result));
+int st_value_unpack(struct st_value * root, const char * format, ...) __attribute__((nonnull));
+bool st_value_valid(struct st_value * value, const char * format, ...) __attribute__((nonnull));
+struct st_value * st_value_vpack(const char * format, va_list params) __attribute__((nonnull(1),warn_unused_result));
 
 /**
  * \brief remove all elements from hashtable

@@ -119,6 +119,9 @@ LIBSTONE_1.2 {
 		st_value_new_string;
 		st_value_pack;
 		st_value_share;
+		st_value_unpack;
+		st_value_valid;
+		st_value_vpack;
 
 	local:
 		st_loader_*;
