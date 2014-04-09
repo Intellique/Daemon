@@ -80,31 +80,28 @@ static void file_driver_init() {
 }
 
 static struct lgr_log_module * file_driver_new_module(struct st_value * param) {
-	if (!st_value_hashtable_has_key2(param, "path"))
+	char * path = NULL, * level;
+	if (st_value_unpack(param, "{ssss}", "path", &path, "verbosity", &level) < 2) {
+		free(path);
 		return NULL;
+	}
 
-	struct st_value * path = st_value_hashtable_get2(param, "path", false);
-	if (path == NULL || path->type != st_value_string)
-		return NULL;
-
-	struct st_value * level = st_value_hashtable_get2(param, "verbosity", false);
-	if (level == NULL || level->type != st_value_string)
-		return NULL;
-
-	int fd = open(path->value.string, O_WRONLY | O_APPEND | O_CREAT, 0640);
+	int fd = open(path, O_WRONLY | O_APPEND | O_CREAT, 0640);
 	if (fd < 0)
 		return NULL;
 
 	struct logger_log_file_private * self = malloc(sizeof(struct logger_log_file_private));
-	self->path = strdup(path->value.string);
+	self->path = path;
 	self->fd = fd;
 	fstat(self->fd, &self->current);
 
 	struct lgr_log_module * mod = malloc(sizeof(struct lgr_log_module));
-	mod->level = st_log_string_to_level(level->value.string);
+	mod->level = st_log_string_to_level(level);
 	mod->ops = &file_module_ops;
 	mod->driver = &file_driver;
 	mod->data = self;
+
+	free(level);
 
 	return mod;
 }
@@ -148,35 +145,32 @@ static void file_module_free(struct lgr_log_module * module) {
 static void file_module_write(struct lgr_log_module * module, struct st_value * message) {
 	struct logger_log_file_private * self = module->data;
 
-	if (!st_value_hashtable_has_key2(message, "type") || !st_value_hashtable_has_key2(message, "message"))
+	char * level = NULL, * stype = NULL, * smessage = NULL;
+	long long int iTimestamp;
+
+	int ret = st_value_unpack(message, "{sssssiss}", "level", &level, "type", &stype, "timestamp", &iTimestamp, "message", &smessage);
+
+	enum st_log_type type;
+	if (ret == 4)
+		type = st_log_string_to_type(stype);
+
+	if (ret < 4 || type == st_log_type_unknown) {
+		free(level);
+		free(stype);
+		free(smessage);
 		return;
+	}
 
 	file_module_check_logrotate(self);
 
-	struct st_value * level = st_value_hashtable_get2(message, "level", false);
-	if (level->type != st_value_string)
-		return;
-
-	struct st_value * vtype = st_value_hashtable_get2(message, "type", false);
-	if (vtype->type != st_value_string)
-		return;
-
-	enum st_log_type type = st_log_string_to_type(vtype->value.string);
-	if (type == st_log_type_unknown)
-		return;
-
-	struct st_value * vtimestamp = st_value_hashtable_get2(message, "timestamp", false);
-	if (vtimestamp->type != st_value_integer)
-		return;
-
-	struct st_value * vmessage = st_value_hashtable_get2(message, "message", false);
-	if (vmessage->type != st_value_string)
-		return;
-
 	char strtime[32];
-	time_t timestamp = vtimestamp->value.integer;
+	time_t timestamp = iTimestamp;
 	st_time_convert(&timestamp, "%F %T", strtime, 32);
 
-	dprintf(self->fd, "[L:%-9s | T:%-15s | @%s]: %s\n", level->value.string, vtype->value.string, strtime, vmessage->value.string);
+	dprintf(self->fd, "[L:%-9s | T:%-15s | @%s]: %s\n", level, stype, strtime, smessage);
+
+	free(level);
+	free(stype);
+	free(smessage);
 }
 

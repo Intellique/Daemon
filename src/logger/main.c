@@ -26,6 +26,8 @@
 
 // bool
 #include <stdbool.h>
+// free
+#include <stdlib.h>
 // strcmp
 #include <string.h>
 // getpid, getppid, getsid
@@ -56,22 +58,18 @@ static void daemon_request(int fd, short event, void * data __attribute__((unuse
 	}
 
 	struct st_value * request = st_json_parse_fd(fd, 1000);
-	if (request == NULL || !st_value_hashtable_has_key2(request, "command")) {
-		if (request == NULL)
+	char * command;
+	if (request == NULL || st_value_unpack(request, "{ss}", "command", &command) < 0) {
+		if (request != NULL)
 			st_value_free(request);
 		return;
 	}
 
-	struct st_value * command = st_value_hashtable_get2(request, "command", false);
-	if (command == NULL || command->type != st_value_string) {
-		st_value_free(request);
-		return;
-	}
-
-	if (!strcmp("stop", command->value.string))
+	if (!strcmp("stop", command))
 		stop = true;
 
 	st_value_free(request);
+	free(command);
 }
 
 int main() {
@@ -86,11 +84,13 @@ int main() {
 
 	st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
 
-	struct st_value * module = st_value_hashtable_get2(config, "modules", false);
+	struct st_value * module;
+	struct st_value * socket;
+	st_value_unpack(config, "{soso}", "modules", &module, "socket", &socket);
+
 	lgr_log_load(module);
 	lgr_log_write2(st_log_level_debug, st_log_type_logger, "Modules loaded");
 
-	struct st_value * socket = st_value_hashtable_get2(config, "socket", false);
 	lgr_listen_configure(socket);
 
 	unsigned int nb_handlers = lgr_listen_nb_clients();
