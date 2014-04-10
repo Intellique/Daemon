@@ -35,8 +35,6 @@
 
 struct dirent;
 
-bool st_util_file_check_link(const char * file);
-
 char * st_util_file_get_serial(const char * filename);
 
 /**
@@ -49,10 +47,6 @@ char * st_util_file_get_serial(const char * filename);
  * \note if \a gid is not found, write gid number into \a name
  */
 void st_util_file_gid2name(char * name, ssize_t length, gid_t gid);
-
-char * st_util_file_read_all_from(const char * filename);
-
-char * st_util_file_rename(const char * filename);
 
 /**
  * \brief Trunc \a nb_trunc_path directories from \a path

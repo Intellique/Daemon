@@ -44,12 +44,14 @@ struct dirent;
  */
 int st_file_basic_scandir_filter(const struct dirent * d);
 
+bool st_file_check_link(const char * file) __attribute__((nonnull));
+
 /**
  * \brief Convert a file mode to \b buffer with `ls -l` style
  * \param[out] buffer : a 10 bytes already allocated buffer
  * \param[in] mode : convert with this mode
  */
-void st_file_convert_mode(char * buffer, mode_t mode);
+void st_file_convert_mode(char * buffer, mode_t mode) __attribute__((nonnull));
 
 /**
  * \brief Convert \a size to humain readeable format (i.e. 30KB)
@@ -58,9 +60,9 @@ void st_file_convert_mode(char * buffer, mode_t mode);
  * \param[out] str : an allocated string which will contain result
  * \param[in] str_len : length of \a str in bytes
  */
-void st_file_convert_size_to_string(size_t size, char * str, ssize_t str_len);
+void st_file_convert_size_to_string(size_t size, char * str, ssize_t str_len) __attribute__((nonnull));
 
-int st_file_cp(const char * src, const char * dst);
+int st_file_cp(const char * src, const char * dst) __attribute__((nonnull));
 
 /**
  * \brief Create directory recursively
@@ -69,9 +71,13 @@ int st_file_cp(const char * src, const char * dst);
  * \param[in] mode : create directory with specific mode
  * \returns 0 if ok or read errno
  */
-int st_file_mkdir(const char * dirname, mode_t mode);
+int st_file_mkdir(const char * dirname, mode_t mode) __attribute__((nonnull));
 
-int st_file_mv(const char * src, const char * dst);
+int st_file_mv(const char * src, const char * dst) __attribute__((nonnull));
+
+char * st_file_read_all_from(const char * filename) __attribute__((nonnull));
+
+char * st_file_rename(const char * filename) __attribute__((nonnull));
 
 /**
  * \brief Remove recursively path
@@ -79,7 +85,7 @@ int st_file_mv(const char * src, const char * dst);
  * \param[in] path : a path that will be deleted
  * \returns 0 if ok or read errno
  */
-int st_file_rm(const char * path);
+int st_file_rm(const char * path) __attribute__((nonnull));
 
 #endif
 

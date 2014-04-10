@@ -57,19 +57,6 @@
 #include <libstone/util/string.h>
 
 
-bool st_util_file_check_link(const char * file) {
-	if (access(file, F_OK))
-		return false;
-
-	char link[256];
-	ssize_t link_lenght = readlink(file, link, 256);
-
-	if (link_lenght < 0)
-		return false;
-
-	return !access(link, F_OK);
-}
-
 char * st_util_file_get_serial(const char * filename) {
 	char * serial = st_util_file_read_all_from(filename);
 	if (serial == NULL) {
@@ -101,62 +88,6 @@ void st_util_file_gid2name(char * name, ssize_t length, gid_t gid) {
 	}
 
 	free(buffer);
-}
-
-char * st_util_file_read_all_from(const char * filename) {
-	int fd = open(filename, O_RDONLY);
-	if (fd < 0)
-		return NULL;
-
-	struct stat st;
-	int failed = fstat(fd, &st);
-	if (failed != 0 || st.st_size == 0) {
-		close(fd);
-		return NULL;
-	}
-
-	char * data = malloc(st.st_size + 1);
-
-	ssize_t nb_read = read(fd, data, st.st_size);
-	data[st.st_size] = '\0';
-
-	close(fd);
-
-	if (nb_read < 0) {
-		free(data);
-		data = NULL;
-	}
-
-	return data;
-}
-
-char * st_util_file_rename(const char * filename) {
-	char * path = strdup(filename);
-	char * extension = strrchr(path, '.');
-
-	unsigned int next = 0;
-	if (!access(path, F_OK)) {
-		char * old_path = path;
-		path = NULL;
-
-		if (extension != NULL)
-			*extension = '\0';
-
-		do {
-			free(path);
-
-			if (extension != NULL)
-				asprintf(&path, "%s_%u.%s", old_path, next, extension + 1);
-			else
-				asprintf(&path, "%s_%u", old_path, next);
-
-			next++;
-		} while (!access(path, F_OK));
-
-		free(old_path);
-	}
-
-	return path;
 }
 
 char * st_util_file_trunc_path(char * path, int nb_trunc_path) {

@@ -15,11 +15,14 @@ LIBSTONE_1.2 {
 		st_debug_log_stack;
 
 		st_file_basic_scandir_filter;
+		st_file_check_link;
 		st_file_convert_mode;
 		st_file_convert_size_to_string;
 		st_file_cp;
 		st_file_mkdir;
 		st_file_mv;
+		st_file_rename;
+		st_file_read_all_from;
 		st_file_rm;
 
 		st_host_init;
