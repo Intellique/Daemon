@@ -37,12 +37,15 @@
 
 #include <libstone/value.h>
 
+static void test_libstone_value_pack_0(void);
 static void test_libstone_value_unpack_0(void);
 
 static struct {
 	void (*function)(void);
 	char * name;
 } test_functions[] = {
+    { test_libstone_value_pack_0, "libstone: value pack: #0" },
+
     { test_libstone_value_unpack_0, "libstone: value unpack: #0" },
 
 	{ 0, 0 },
@@ -66,6 +69,13 @@ void test_libstone_value_add_suite() {
 	}
 }
 
+
+static void test_libstone_value_pack_0() {
+	struct st_value * pack = st_value_pack("{s[]}", "foo");
+	CU_ASSERT_PTR_NOT_NULL_FATAL(pack);
+
+	st_value_free(pack);
+}
 
 void test_libstone_value_unpack_0() {
 	struct st_value * pack = st_value_pack("{ss}", "foo", "bar");

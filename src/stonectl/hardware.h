@@ -24,8 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONECTL_COMMON_H__
-#define __STONECTL_COMMON_H__
+#ifndef __STONECTL_HARDWARE_H__
+#define __STONECTL_HARDWARE_H__
 
 struct st_value;
 

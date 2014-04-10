@@ -43,6 +43,7 @@
 
 #include "common.h"
 #include "config.h"
+#include "hardware.h"
 
 enum {
 	OPT_HELP = 'h',
@@ -116,6 +117,8 @@ int stctl_config(int argc, char ** argv) {
 
 		db_connection->ops->add_host(db_connection, uuid, name.nodename, domaine, NULL);
 	}
+
+	struct st_value * changers = stctl_detect_hardware();
 
 	return 0;
 }

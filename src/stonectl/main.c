@@ -31,18 +31,18 @@
 
 #include "common.h"
 
-static void stcl_exit(void) __attribute__((destructor));
-static void stcl_init(void) __attribute__((constructor));
+static void stctl_exit(void) __attribute__((destructor));
+static void stctl_init(void) __attribute__((constructor));
 
 static struct st_value * commands = NULL;
 
 
-static void stcl_exit() {
+static void stctl_exit() {
 	st_value_free(commands);
 	commands = NULL;
 }
 
-static void stcl_init() {
+static void stctl_init() {
 	commands = st_value_new_hashtable2();
 	st_value_hashtable_put2(commands, "config", st_value_new_custom(stctl_config, NULL), true);
 	st_value_hashtable_put2(commands, "start", st_value_new_custom(stctl_start_daemon, NULL), true);

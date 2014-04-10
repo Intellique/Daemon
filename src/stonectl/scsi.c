@@ -443,14 +443,17 @@ int stctl_scsi_loaderinfo(const char * filename, struct st_value * changer) {
 		return 2;
 	}
 
-	st_string_rtrim(result_inquiry.vendor_identification, ' ');
-	st_value_hashtable_put2(changer, "vendor", st_value_new_string(result_inquiry.vendor_identification), true);
+	result_inquiry.product_revision_level[4] = '\0';
+	st_string_rtrim(result_inquiry.product_revision_level, ' ');
+	st_value_hashtable_put2(changer, "revision", st_value_new_string(result_inquiry.product_revision_level), true);
 
+	result_inquiry.product_identification[16] = '\0';
 	st_string_rtrim(result_inquiry.product_identification, ' ');
 	st_value_hashtable_put2(changer, "model", st_value_new_string(result_inquiry.product_identification), true);
 
-	st_string_rtrim(result_inquiry.product_revision_level, ' ');
-	st_value_hashtable_put2(changer, "revision", st_value_new_string(result_inquiry.product_revision_level), true);
+	result_inquiry.vendor_identification[8] = '\0';
+	st_string_rtrim(result_inquiry.vendor_identification, ' ');
+	st_value_hashtable_put2(changer, "vendor", st_value_new_string(result_inquiry.vendor_identification), true);
 
 	st_value_hashtable_put2(changer, "barcode", st_value_new_boolean(result_inquiry.bar_code), true);
 
@@ -605,12 +608,15 @@ int stctl_scsi_tapeinfo(const char * filename, struct st_value * drive) {
 		return 2;
 	}
 
+	result_inquiry.vendor_identification[7] = '\0';
 	st_string_rtrim(result_inquiry.vendor_identification, ' ');
 	st_value_hashtable_put2(drive, "vendor", st_value_new_string(result_inquiry.vendor_identification), true);
 
+	result_inquiry.product_identification[15] = '\0';
 	st_string_rtrim(result_inquiry.product_identification, ' ');
 	st_value_hashtable_put2(drive, "model", st_value_new_string(result_inquiry.product_identification), true);
 
+	result_inquiry.product_revision_level[4] = '\0';
 	st_string_rtrim(result_inquiry.product_revision_level, ' ');
 	st_value_hashtable_put2(drive, "revision", st_value_new_string(result_inquiry.product_revision_level), true);
 
@@ -651,6 +657,7 @@ int stctl_scsi_tapeinfo(const char * filename, struct st_value * drive) {
 	if (status)
 		return 3;
 
+	result_serial_number.unit_serial_number[11] = '\0';
 	st_string_rtrim(result_serial_number.unit_serial_number, ' ');
 	st_value_hashtable_put2(drive, "serial number", st_value_new_string(result_serial_number.unit_serial_number), true);
 

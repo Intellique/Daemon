@@ -24,6 +24,149 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+#define _GNU_SOURCE
+// glob, globfree
+#include <glob.h>
+// printf, sscanf, snprintf
+#include <stdio.h>
+// free
+#include <stdlib.h>
+// strcat, strchr, strcpy, strstr
+#include <string.h>
+// stat
+#include <sys/stat.h>
+// stat
+#include <sys/types.h>
+// readlink, stat
+#include <unistd.h>
+
+#include <libstone/file.h>
+#include <libstone/log.h>
+#include <libstone/value.h>
+
+#include "hardware.h"
+#include "scsi.h"
+
 struct st_value * stctl_detect_hardware() {
+	struct st_value * changers = st_value_new_linked_list();
+
+	glob_t gl;
+	glob("/sys/class/scsi_device/*/device/scsi_tape", 0, NULL, &gl);
+
+	if (gl.gl_pathc == 0) {
+		st_log_write2(st_log_level_notice, st_log_type_user_message, "There is drive found");
+		return changers;
+	}
+
+	st_log_write2(st_log_level_info, st_log_type_user_message, "Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+	printf("Library: Found %zd drive%s\n", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+
+	struct st_value * drives = st_value_new_array(gl.gl_pathc);
+
+	unsigned int i;
+	for (i = 0; i < gl.gl_pathc; i++) {
+		char * ptr = strrchr(gl.gl_pathv[i], '/');
+		*ptr = '\0';
+
+		char link[256];
+		ssize_t length = readlink(gl.gl_pathv[i], link, 256);
+		link[length] = '\0';
+
+		ptr = strrchr(link, '/') + 1;
+
+		char * path;
+		asprintf(&path, "%s/generic", gl.gl_pathv[i]);
+		length = readlink(path, link, 256);
+		link[length] = '\0';
+		free(path);
+
+		char * scsi_device;
+		ptr = strrchr(link, '/');
+		asprintf(&scsi_device, "/dev%s", ptr);
+
+		asprintf(&path, "%s/tape", gl.gl_pathv[i]);
+		length = readlink(path, link, 256);
+		link[length] = '\0';
+		free(path);
+
+		char * device;
+		ptr = strrchr(link, '/') + 1;
+		asprintf(&device, "/dev/n%s", ptr);
+
+		struct st_value * drive = st_value_pack("{sssssssb}", "device", device, "scsi device", scsi_device, "status", "unknown", "enabled", true);
+
+		stctl_scsi_tapeinfo(scsi_device, drive);
+
+		st_value_list_push(drives, drive, true);
+
+		free(device);
+		free(scsi_device);
+	}
+	globfree(&gl);
+
+	glob("/sys/class/scsi_changer/*/device", 0, NULL, &gl);
+
+	st_log_write2(st_log_level_info, st_log_type_user_message, "Library: Found %zd changer%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+	printf("Library: Found %zd changer%s\n", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+
+	for (i = 0; i < gl.gl_pathc; i++) {
+		char link[256];
+		ssize_t length = readlink(gl.gl_pathv[i], link, 256);
+		link[length] = '\0';
+
+		char * ptr = strrchr(link, '/') + 1;
+		int host = 0, target = 0, channel = 0, bus = 0;
+		sscanf(ptr, "%d:%d:%d:%d", &host, &target, &channel, &bus);
+
+		char * path;
+		asprintf(&path, "%s/generic", gl.gl_pathv[i]);
+		length = readlink(path, link, 256);
+		link[length] = '\0';
+		free(path);
+
+		char * device;
+		ptr = strrchr(link, '/');
+		asprintf(&device, "/dev%s", ptr);
+
+		struct st_value * changer = st_value_pack("{sssssbs[]s[]}", "device", device, "status", "unknown", "enable", true, "drives", "slots");
+		free(device);
+
+		asprintf(&path, "/sys/class/sas_host/host%d", host);
+		struct stat st;
+		if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
+			realpath(gl.gl_pathv[i], link);
+
+			ptr = strstr(link, "end_device-");
+			if (ptr != NULL) {
+				char * cp = strchr(ptr, '/');
+				if (cp != NULL)
+					*cp = '\0';
+
+				free(path);
+				asprintf(&path, "/sys/class/sas_device/%s/sas_address", ptr);
+
+				char * data = st_file_read_all_from(path);
+				cp = strchr(data, '\n');
+				if (cp != NULL)
+					*cp = '\0';
+
+				char * wwn;
+				asprintf(&wwn, "sas:%s", data);
+
+				st_value_hashtable_put2(changer, "wwn", st_value_new_string(wwn), true);
+
+				free(data);
+				free(wwn);
+			}
+		}
+		free(path);
+
+		stctl_scsi_loaderinfo(device, changer);
+
+		st_value_list_push(changers, changer, true);
+	}
+	globfree(&gl);
+
+	return changers;
 }
 
