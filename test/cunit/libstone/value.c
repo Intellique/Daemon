@@ -37,6 +37,8 @@
 
 #include <libstone/value.h>
 
+static void test_libstone_value_hashtable_iter_0(void);
+static void test_libstone_value_hashtable_iter_1(void);
 static void test_libstone_value_pack_0(void);
 static void test_libstone_value_unpack_0(void);
 
@@ -44,6 +46,9 @@ static struct {
 	void (*function)(void);
 	char * name;
 } test_functions[] = {
+	{ test_libstone_value_hashtable_iter_0, "libstone: hashtable iter: #0" },
+	{ test_libstone_value_hashtable_iter_1, "libstone: hashtable iter: #1" },
+
     { test_libstone_value_pack_0, "libstone: value pack: #0" },
 
     { test_libstone_value_unpack_0, "libstone: value unpack: #0" },
@@ -70,6 +75,54 @@ void test_libstone_value_add_suite() {
 }
 
 
+static void test_libstone_value_hashtable_iter_0() {
+	struct st_value * hash = st_value_pack("{}");
+	CU_ASSERT_PTR_NOT_NULL_FATAL(hash);
+
+	struct st_value_iterator * iter = st_value_hashtable_get_iterator(hash);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(iter);
+
+	unsigned int i = 0;
+	while (st_value_iterator_has_next(iter)) {
+		struct st_value * key = st_value_iterator_get_key(iter, false, true);
+		struct st_value * elt = st_value_iterator_get_value(iter, true);
+
+		st_value_free(key);
+		st_value_free(elt);
+
+		i++;
+	}
+
+	st_value_iterator_free(iter);
+	st_value_free(hash);
+
+	CU_ASSERT_EQUAL(i, 0);
+}
+
+static void test_libstone_value_hashtable_iter_1() {
+	struct st_value * hash = st_value_pack("{sb}", "barcode", false);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(hash);
+
+	struct st_value_iterator * iter = st_value_hashtable_get_iterator(hash);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(iter);
+
+	unsigned int i = 0;
+	while (st_value_iterator_has_next(iter)) {
+		struct st_value * key = st_value_iterator_get_key(iter, false, true);
+		struct st_value * elt = st_value_iterator_get_value(iter, true);
+
+		st_value_free(key);
+		st_value_free(elt);
+
+		i++;
+	}
+
+	st_value_iterator_free(iter);
+	st_value_free(hash);
+
+	CU_ASSERT_EQUAL(i, 1);
+}
+
 static void test_libstone_value_pack_0() {
 	struct st_value * pack = st_value_pack("{s[]}", "foo");
 	CU_ASSERT_PTR_NOT_NULL_FATAL(pack);
@@ -91,3 +144,4 @@ void test_libstone_value_unpack_0() {
 	free(value);
 	st_value_free(pack);
 }
+

@@ -1462,8 +1462,11 @@ struct st_value_v1 * st_value_iterator_get_key_v1(struct st_value_iterator_v1 * 
 
 	if (move_to_next) {
 		struct st_value_hashtable * hash = &iter->value->value.hashtable;
-		for (iter->data.hashtable.node = node->next; iter->data.hashtable.i_elements < hash->size_node && iter->data.hashtable.node == NULL; iter->data.hashtable.i_elements++)
-			iter->data.hashtable.node = hash->nodes[iter->data.hashtable.i_elements];
+		iter->data.hashtable.node = node->next;
+
+		if (iter->data.hashtable.node == NULL)
+			for (iter->data.hashtable.i_elements++; iter->data.hashtable.i_elements < hash->size_node && iter->data.hashtable.node == NULL; iter->data.hashtable.i_elements++)
+				iter->data.hashtable.node = hash->nodes[iter->data.hashtable.i_elements];
 	}
 
 	return key;
@@ -1492,7 +1495,11 @@ struct st_value_v1 * st_value_iterator_get_value_v1(struct st_value_iterator_v1 
 				struct st_value_hashtable_node * node = iter->data.hashtable.node;
 				ret = node->value;
 
-				for (iter->data.hashtable.node = node->next; iter->data.hashtable.i_elements < hash->size_node && iter->data.hashtable.node == NULL; iter->data.hashtable.i_elements++)
+				iter->data.hashtable.node = node->next;
+				if (iter->data.hashtable.node != NULL)
+					break;
+
+				for (iter->data.hashtable.i_elements++; iter->data.hashtable.i_elements < hash->size_node && iter->data.hashtable.node == NULL; iter->data.hashtable.i_elements++)
 					iter->data.hashtable.node = hash->nodes[iter->data.hashtable.i_elements];
 			}
 			break;
