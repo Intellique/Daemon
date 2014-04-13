@@ -200,7 +200,7 @@ struct scsi_request_sense {
 
 
 static int stctl_scsi_loader_ready(int fd);
-static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, struct st_value * available_drives, struct st_value * slots, int start_element, int nb_elements, enum scsi_loader_element_type type);
+static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, struct st_value * available_drives, struct st_value * slots, int offset, int start_element, int nb_elements, enum scsi_loader_element_type type);
 
 int stctl_scsi_loaderinfo(const char * filename, struct st_value * changer, struct st_value * available_drives) {
 	int fd = open(filename, O_RDWR);
@@ -428,9 +428,11 @@ int stctl_scsi_loaderinfo(const char * filename, struct st_value * changer, stru
 
 	unsigned int i;
 	for (i = 0; i < nb_slots; i++)
-		st_value_list_push(slots, st_value_pack("{sOsn}", "changer", changer, "media"), true);
+		st_value_list_push(slots, st_value_pack("{sn}", "media"), true);
 
-	stctl_scsi_loader_status_slot(fd, changer, available_drives, slots, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer);
+	stctl_scsi_loader_status_slot(fd, changer, available_drives, slots, 0, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer);
+	stctl_scsi_loader_status_slot(fd, changer, available_drives, slots, result.number_of_data_transfer_elements, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element);
+	stctl_scsi_loader_status_slot(fd, changer, available_drives, slots, result.number_of_data_transfer_elements + result.number_of_storage_elements, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_import_export_element);
 
 	return 0;
 }
@@ -464,7 +466,7 @@ static int stctl_scsi_loader_ready(int fd) {
 	return sense.sense_key;
 }
 
-static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, struct st_value * available_drives, struct st_value * slots, int start_element, int nb_elements, enum scsi_loader_element_type type) {
+static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, struct st_value * available_drives, struct st_value * slots, int offset, int start_element, int nb_elements, enum scsi_loader_element_type type) {
 	size_t size_needed = 16;
 	switch (type) {
 		case scsi_loader_element_type_all_elements:
@@ -567,7 +569,7 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, str
 			case scsi_loader_element_type_data_transfer: {
 					struct scsi_loader_data_transfer_element * data_transfer_element = (struct scsi_loader_data_transfer_element *) ptr;
 
-					slot = slots->value.array.values[i];
+					slot = slots->value.array.values[i + offset];
 					st_value_hashtable_put2(slot, "full", st_value_new_boolean(data_transfer_element->full), true);
 
 					if (data_transfer_element->full) {
@@ -596,7 +598,7 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, str
 			case scsi_loader_element_type_import_export_element: {
 					struct scsi_loader_import_export_element * import_export_element = (struct scsi_loader_import_export_element *) ptr;
 
-					slot = slots->value.array.values[i];
+					slot = slots->value.array.values[i + offset];
 					st_value_hashtable_put2(slot, "full", st_value_new_boolean(import_export_element->full), true);
 
 					if (import_export_element->full) {
@@ -617,7 +619,7 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, str
 			case scsi_loader_element_type_storage_element: {
 					struct scsi_loader_storage_element * storage_element = (struct scsi_loader_storage_element *) ptr;
 
-					slot = slots->value.array.values[i];
+					slot = slots->value.array.values[i + offset];
 					st_value_hashtable_put2(slot, "full", st_value_new_boolean(storage_element->full), true);
 
 					if (storage_element->full) {
