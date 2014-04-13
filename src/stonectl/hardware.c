@@ -31,7 +31,7 @@
 #include <stdio.h>
 // free
 #include <stdlib.h>
-// strcat, strchr, strcpy, strstr
+// memset, strcat, strchr, strcpy, strncpy, strstr
 #include <string.h>
 // stat
 #include <sys/stat.h>
@@ -61,7 +61,7 @@ struct st_value * stctl_detect_hardware() {
 	st_log_write2(st_log_level_info, st_log_type_user_message, "Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
 	printf("Library: Found %zd drive%s\n", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
 
-	struct st_value * drives = st_value_new_array(gl.gl_pathc);
+	struct st_value * drives = st_value_new_hashtable2();
 
 	unsigned int i;
 	for (i = 0; i < gl.gl_pathc; i++) {
@@ -97,8 +97,23 @@ struct st_value * stctl_detect_hardware() {
 
 		stctl_scsi_tapeinfo(scsi_device, drive);
 
-		st_value_list_push(drives, drive, true);
+		char * vendor, * model, * serial_number;
+		st_value_unpack(drive, "{ssssss}", "vendor", &vendor, "model", &model, "serial number", &serial_number);
 
+		char dev[35];
+		dev[34] = '\0';
+		memset(dev, ' ', 35);
+		strncpy(dev, vendor, strlen(vendor));
+		dev[7] = ' ';
+		strncpy(dev + 8, model, strlen(model));
+		dev[23] = ' ';
+		strcpy(dev + 24, serial_number);
+
+		st_value_hashtable_put2(drives, dev, drive, true);
+
+		free(vendor);
+		free(model);
+		free(serial_number);
 		free(device);
 		free(scsi_device);
 	}
@@ -129,7 +144,6 @@ struct st_value * stctl_detect_hardware() {
 		asprintf(&device, "/dev%s", ptr);
 
 		struct st_value * changer = st_value_pack("{sssssbs[]s[]}", "device", device, "status", "unknown", "enable", true, "drives", "slots");
-		free(device);
 
 		asprintf(&path, "/sys/class/sas_host/host%d", host);
 		struct stat st;
@@ -161,7 +175,8 @@ struct st_value * stctl_detect_hardware() {
 		}
 		free(path);
 
-		stctl_scsi_loaderinfo(device, changer);
+		stctl_scsi_loaderinfo(device, changer, drives);
+		free(device);
 
 		st_value_list_push(changers, changer, true);
 	}

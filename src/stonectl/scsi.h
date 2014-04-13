@@ -33,20 +33,13 @@
 struct st_value;
 
 /**
- * \brief Check if \a drive is in \a changer
- */
-bool stctl_scsi_drive_in_changer(struct st_value * changer, struct st_value * drive);
-
-/**
  * \brief Inquiry the changer
  *
  * \param[in] filename : a generic scsi filename which used by a changer
  * \param[out] changer : an already allocated changer
  * \returns 0 if ok
  */
-int stctl_scsi_loaderinfo(const char * filename, struct st_value * changer);
-
-void stctl_scsi_loader_status_new(struct st_value * changer);
+int stctl_scsi_loaderinfo(const char * filename, struct st_value * changer, struct st_value * available_drives);
 
 /**
  * \brief Inquiry the drive
