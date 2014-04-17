@@ -103,6 +103,17 @@ int st_database_postgresql_get_long_add(PGresult * result, int row, int column, 
 	return failed;
 }
 
+int st_database_postgresql_get_long_long(PGresult * result, int row, int column, long long * val) {
+	if (column < 0)
+		return -1;
+
+	char * value = PQgetvalue(result, row, column);
+	if (value != NULL && sscanf(value, "%lld", val) == 1)
+		return 0;
+
+	return value != NULL;
+}
+
 int st_database_postgresql_get_ssize(PGresult * result, int row, int column, ssize_t * val) {
 	if (column < 0)
 		return -1;

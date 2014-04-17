@@ -55,7 +55,7 @@ struct st_database_connection {
 		 * \li 0 if ok
 		 * \li < 0 if error
 		 */
-		int (*close)(struct st_database_connection * connect);
+		int (*close)(struct st_database_connection * connect) __attribute__((nonnull));
 		/**
 		 * \brief free memory associated with database connection
 		 *
@@ -69,14 +69,14 @@ struct st_database_connection {
 		 * free(db);
 		 * \endcode
 		 */
-		int (*free)(struct st_database_connection * connect);
+		int (*free)(struct st_database_connection * connect) __attribute__((nonnull));
 		/**
 		 * \brief check if the connection to database is closed
 		 *
 		 * \param[in] db a database connection
 		 * \return 0 if the connection is not closed
 		 */
-		bool (*is_connected)(struct st_database_connection * connect);
+		bool (*is_connected)(struct st_database_connection * connect) __attribute__((nonnull));
 
 		/**
 		 * \brief Rool back a transaction
@@ -86,7 +86,7 @@ struct st_database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*cancel_transaction)(struct st_database_connection * connect);
+		int (*cancel_transaction)(struct st_database_connection * connect) __attribute__((nonnull));
 		/**
 		 * \brief Finish a transaction
 		 *
@@ -96,7 +96,7 @@ struct st_database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*finish_transaction)(struct st_database_connection * connect);
+		int (*finish_transaction)(struct st_database_connection * connect) __attribute__((nonnull));
 		/**
 		 * \brief Starts a transaction
 		 *
@@ -107,11 +107,14 @@ struct st_database_connection {
 		 * \li 1 if noop
 		 * \li < 0 if error
 		 */
-		int (*start_transaction)(struct st_database_connection * connect);
+		int (*start_transaction)(struct st_database_connection * connect) __attribute__((nonnull));
 
-		int (*add_host)(struct st_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description);
-		bool (*find_host)(struct st_database_connection * connect, const char * uuid, const char * hostname);
-		struct st_value * (*get_host_by_name)(struct st_database_connection * connect, const char * name);
+		int (*add_host)(struct st_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description) __attribute__((nonnull(1,2,3)));
+		bool (*find_host)(struct st_database_connection * connect, const char * uuid, const char * hostname) __attribute__((nonnull(1)));
+		struct st_value * (*get_host_by_name)(struct st_database_connection * connect, const char * name) __attribute__((nonnull));
+
+		int (*sync_changer)(struct st_database_connection * connect, struct st_value * changer, bool init) __attribute__((nonnull));
+		int (*sync_drive)(struct st_database_connection * connect, struct st_value * drive, bool init) __attribute__((nonnull));
 	} * ops;
 
 	/**
@@ -150,11 +153,11 @@ struct st_database_config {
 		 *
 		 * \returns a database connection
 		 */
-		struct st_database_connection * (*connect)(struct st_database_config * db_config);
+		struct st_database_connection * (*connect)(struct st_database_config * db_config) __attribute__((nonnull,warn_unused_result));
 		/**
 		 * \brief Check if database is online
 		 */
-		int (*ping)(struct st_database_config * db_config);
+		int (*ping)(struct st_database_config * db_config) __attribute__((nonnull));
 	} * ops;
 
 	/**
@@ -194,7 +197,7 @@ struct st_database {
 		 * \param[in] params hashtable which contains parameters
 		 * \returns \b 0 if ok
 		 */
-		struct st_database_config * (*add)(struct st_value * params);
+		struct st_database_config * (*add)(struct st_value * params) __attribute__((nonnull));
 		/**
 		 * \brief Get default database configuration
 		 */
@@ -242,7 +245,7 @@ struct st_database * st_database_get_default_driver(void);
  */
 struct st_database * st_database_get_driver(const char * driver) __attribute__((nonnull));
 
-void st_database_load_config(struct st_value * config);
+void st_database_load_config(struct st_value * config) __attribute__((nonnull));
 
 /**
  * \brief Register a database driver

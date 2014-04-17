@@ -60,6 +60,9 @@ static bool st_database_postgresql_find_host(struct st_database_connection * con
 static char * st_database_postgresql_get_host(struct st_database_connection * connect);
 static struct st_value * st_database_postgresql_get_host_by_name(struct st_database_connection * connect, const char * name);
 
+static int st_database_postgresql_sync_changer(struct st_database_connection * connect, struct st_value * changer, bool init);
+static int st_database_postgresql_sync_drive(struct st_database_connection * connect, struct st_value * drive, bool init);
+
 static void st_database_postgresql_prepare(struct st_database_postgresql_connection_private * self, const char * statement_name, const char * query);
 
 static struct st_database_connection_ops st_database_postgresql_connection_ops = {
@@ -74,6 +77,9 @@ static struct st_database_connection_ops st_database_postgresql_connection_ops =
 	.add_host         = st_database_postgresql_add_host,
 	.find_host        = st_database_postgresql_find_host,
 	.get_host_by_name = st_database_postgresql_get_host_by_name,
+
+	.sync_changer = st_database_postgresql_sync_changer,
+	.sync_drive   = st_database_postgresql_sync_drive,
 };
 
 
@@ -359,6 +365,192 @@ static struct st_value * st_database_postgresql_get_host_by_name(struct st_datab
 	PQclear(result);
 
 	return vresult;
+}
+
+
+static int st_database_postgresql_sync_changer(struct st_database_connection * connect, struct st_value * changer, bool init) {
+	if (connect == NULL || changer == NULL)
+		return -1;
+
+	struct st_database_postgresql_connection_private * self = connect->data;
+	PGTransactionStatusType transStatus = PQtransactionStatus(self->connect);
+	if (transStatus == PQTRANS_INERROR)
+		return 1;
+
+	char * hostid = st_database_postgresql_get_host(connect);
+	if (hostid == NULL)
+		return 2;
+
+	if (transStatus == PQTRANS_IDLE)
+		st_database_postgresql_start_transaction(connect);
+
+	long long int id = -1;
+	st_value_unpack(changer, "{s{si}}", "db", "id", &id);
+
+	char * changerid = NULL;
+	bool enabled = true;
+	if (id > 0) {
+		asprintf(&changerid, "%lld", id);
+
+		const char * query = "select_changer_by_id";
+		st_database_postgresql_prepare(self, query, "SELECT enable FROM changer WHERE id = $1 FOR UPDATE");
+
+		const char * param[] = { changerid };
+		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+		int nb_result = PQntuples(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && nb_result == 1)
+			st_database_postgresql_get_bool(result, 0, 0, &enabled);
+		else if (status == PGRES_TUPLES_OK && nb_result == 0)
+			enabled = false;
+
+		PQclear(result);
+
+		if (status == PGRES_FATAL_ERROR || nb_result == 0) {
+			free(hostid);
+			free(changerid);
+
+			if (transStatus == PQTRANS_IDLE)
+				st_database_postgresql_cancel_transaction(connect);
+			return 3;
+		}
+	} else {
+		const char * query;
+		PGresult * result;
+
+		char * model = NULL, * vendor = NULL, * serial_number = NULL, * wwn = NULL;
+		st_value_unpack(changer, "{ssssssss}", "model", &model, "vendor", &vendor, "serial number", &serial_number, "wwn", &wwn);
+
+		if (wwn != NULL) {
+			query = "select_changer_by_model_vendor_serialnumber_wwn";
+			st_database_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn = $4 FOR UPDATE NOWAIT");
+
+			const char * param[] = { model, vendor, serial_number, wwn };
+			result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+		} else {
+			query = "select_changer_by_model_vendor_serialnumber";
+			st_database_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn IS NULL FOR UPDATE NOWAIT");
+
+			const char * param[] = { model, vendor, serial_number };
+			result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+		}
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+			st_database_postgresql_get_long_long(result, 0, 0, &id);
+			st_database_postgresql_get_string_dup(result, 0, 0, &changerid);
+			st_database_postgresql_get_bool(result, 0, 1, &enabled);
+		}
+
+		PQclear(result);
+		free(model);
+		free(vendor);
+		free(serial_number);
+		free(wwn);
+
+		if (status == PGRES_FATAL_ERROR) {
+			free(hostid);
+
+			if (transStatus == PQTRANS_IDLE)
+				st_database_postgresql_cancel_transaction(connect);
+			return 3;
+		}
+	}
+
+	if (id > 0) {
+		const char * query = "update_changer";
+		st_database_postgresql_prepare(self, query, "UPDATE changer SET device = $1, status = $2, firmwarerev = $3 WHERE id = $4");
+
+		char * device = NULL, * sstatus = NULL, * revision = NULL;
+		st_value_unpack(changer, "{ssssss}", "device", &device, "status", &sstatus, "revision", &revision);
+
+		const char * params[] = { device, "unknown", revision, changerid };
+		PGresult * result = PQexecPrepared(self->connect, query, 4, params, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		PQclear(result);
+
+		free(changerid);
+		free(device);
+		free(revision);
+		free(sstatus);
+
+		if (status == PGRES_FATAL_ERROR) {
+			st_database_postgresql_get_error(result, query);
+
+			free(hostid);
+
+			if (transStatus == PQTRANS_IDLE)
+				st_database_postgresql_cancel_transaction(connect);
+			return -2;
+		}
+	} else {
+		const char * query = "insert_changer";
+		st_database_postgresql_prepare(self, query, "INSERT INTO changer(device, status, barcode, model, vendor, firmwarerev, serialnumber, wwn, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id");
+
+		char * device = NULL, * sstatus = NULL, * revision = NULL, * model = NULL, * vendor = NULL, * serial_number = NULL, * wwn = NULL;
+		bool barcode = false;
+
+		st_value_unpack(changer, "{sssssbssssssssss}", "device", &device, "status", &sstatus, "barcode", &barcode, "model", &model, "vendor", &vendor, "revision", &revision, "serial number", &serial_number, "wwn", &wwn);
+
+		const char * param[] = {
+			device, "unknown", barcode ? "true" : "false", model, vendor, revision, serial_number, wwn, hostid,
+		};
+
+		PGresult * result = PQexecPrepared(self->connect, query, 9, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+			st_database_postgresql_get_long_long(result, 0, 0, &id);
+
+		PQclear(result);
+
+		free(changerid);
+		free(device);
+		free(model);
+		free(revision);
+		free(serial_number);
+		free(sstatus);
+		free(vendor);
+		free(wwn);
+
+		if (status == PGRES_FATAL_ERROR) {
+			free(hostid);
+			if (transStatus == PQTRANS_IDLE)
+				st_database_postgresql_cancel_transaction(connect);
+			return -1;
+		}
+	}
+
+	free(hostid);
+
+	int failed = 0;
+
+	if (transStatus == PQTRANS_IDLE && failed == 0)
+		st_database_postgresql_finish_transaction(connect);
+
+	return 0;
+}
+
+static int st_database_postgresql_sync_drive(struct st_database_connection * connect, struct st_value * drive, bool init) {
+	if (connect == NULL || drive == NULL)
+		return -1;
+
+	struct st_database_postgresql_connection_private * self = connect->data;
+	PGTransactionStatusType transStatus = PQtransactionStatus(self->connect);
+	if (transStatus == PQTRANS_INERROR)
+		return 2;
+	else if (transStatus == PQTRANS_IDLE)
+		st_database_postgresql_start_transaction(connect);
+
+	long long changer_id;
 }
 
 

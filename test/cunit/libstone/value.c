@@ -40,6 +40,8 @@
 static void test_libstone_value_hashtable_iter_0(void);
 static void test_libstone_value_hashtable_iter_1(void);
 static void test_libstone_value_pack_0(void);
+static void test_libstone_value_ref_cycle_0(void);
+static void test_libstone_value_share_0(void);
 static void test_libstone_value_unpack_0(void);
 
 static struct {
@@ -50,6 +52,10 @@ static struct {
 	{ test_libstone_value_hashtable_iter_1, "libstone: hashtable iter: #1" },
 
     { test_libstone_value_pack_0, "libstone: value pack: #0" },
+
+    { test_libstone_value_ref_cycle_0, "libstone: value ref cycle: #0" },
+
+    { test_libstone_value_share_0, "libstone: value share: #0" },
 
     { test_libstone_value_unpack_0, "libstone: value unpack: #0" },
 
@@ -128,6 +134,39 @@ static void test_libstone_value_pack_0() {
 	CU_ASSERT_PTR_NOT_NULL_FATAL(pack);
 
 	st_value_free(pack);
+	CU_ASSERT_EQUAL(pack->shared, 0);
+}
+
+static void test_libstone_value_ref_cycle_0() {
+	struct st_value * objA = st_value_pack("{s{}}", "link");
+	CU_ASSERT_PTR_NOT_NULL_FATAL(objA);
+
+	struct st_value * objB;
+	st_value_unpack(objA, "{sO}", "link", &objB);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(objB);
+
+	CU_ASSERT_EQUAL(objA->shared, 1);
+	CU_ASSERT_EQUAL(objB->shared, 2);
+
+	st_value_hashtable_put2(objB, "ref", objA, false);
+	CU_ASSERT_EQUAL(objA->shared, 2);
+
+	st_value_free(objA);
+	CU_ASSERT_EQUAL(objA->shared, 0);
+}
+
+static void test_libstone_value_share_0() {
+	struct st_value * val = st_value_new_boolean(true);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(val);
+
+	CU_ASSERT_EQUAL(val->shared, 1);
+
+	struct st_value * val_shared = st_value_share(val);
+	CU_ASSERT_EQUAL(val->shared, 2);
+	CU_ASSERT_EQUAL(val_shared->shared, 2);
+
+	st_value_free(val_shared);
+	CU_ASSERT_EQUAL(val->shared, 1);
 }
 
 void test_libstone_value_unpack_0() {

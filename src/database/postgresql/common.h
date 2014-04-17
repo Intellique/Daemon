@@ -64,6 +64,7 @@ int st_database_postgresql_get_float(PGresult * result, int row, int column, flo
 int st_database_postgresql_get_int(PGresult * result, int row, int column, int * value);
 int st_database_postgresql_get_long(PGresult * result, int row, int column, long * value);
 int st_database_postgresql_get_long_add(PGresult * result, int row, int column, long * value);
+int st_database_postgresql_get_long_long(PGresult * result, int row, int column, long long * value);
 int st_database_postgresql_get_ssize(PGresult * result, int row, int column, ssize_t * value);
 int st_database_postgresql_get_string(PGresult * result, int row, int column, char * string, size_t length);
 int st_database_postgresql_get_string_dup(PGresult * result, int row, int column, char ** string);

@@ -120,6 +120,16 @@ int stctl_config(int argc, char ** argv) {
 
 	struct st_value * changers = stctl_detect_hardware();
 
-	return 0;
+	int failed = 0;
+	struct st_value_iterator * iter = st_value_list_get_iterator(changers);
+	while (failed == 0 && st_value_iterator_has_next(iter)) {
+		struct st_value * changer = st_value_iterator_get_value(iter, false);
+		failed = db_connection->ops->sync_changer(db_connection, changer, true);
+	}
+	st_value_iterator_free(iter);
+
+	db_connection->ops->close(db_connection);
+
+	return failed;
 }
 
