@@ -30,9 +30,12 @@
 #include <libstone/value.h>
 
 #define st_value_v1 st_value
+#define st_value_array_v1 st_value_array
 #define st_value_free_f_v1 st_value_free_f
 #define st_value_hashtable_compupte_hash_f_v1 st_value_hashtable_compupte_hash_f
 #define st_value_iterator_v1 st_value_iterator
+#define st_value_linked_list_v1 st_value_linked_list
+#define st_value_linked_list_node_v1 st_value_linked_list_node
 
 bool st_value_can_convert_v1(struct st_value_v1 * val, enum st_value_type type) __attribute__((nonnull));
 struct st_value_v1 * st_value_convert_v1(struct st_value_v1 * val, enum st_value_type type) __attribute__((nonnull,warn_unused_result));
@@ -67,19 +70,24 @@ struct st_value_v1 * st_value_hashtable_keys_v1(struct st_value_v1 * hash) __att
 void st_value_hashtable_put_v1(struct st_value_v1 * hash, struct st_value_v1 * key, bool new_key, struct st_value_v1 * value, bool new_value) __attribute__((nonnull));
 void st_value_hashtable_put2_v1(struct st_value_v1 * hash, const char * key, struct st_value_v1 * value, bool new_value) __attribute__((nonnull));
 void st_value_hashtable_remove_v1(struct st_value_v1 * hash, struct st_value_v1 * key) __attribute__((nonnull));
+void st_value_hashtable_remove2_v1(struct st_value * hash, const char * key) __attribute__((nonnull));
 struct st_value_v1 * st_value_hashtable_values_v1(struct st_value_v1 * hash) __attribute__((nonnull));
 
 void st_value_list_clear_v1(struct st_value_v1 * list) __attribute__((nonnull));
 struct st_value_iterator_v1 * st_value_list_get_iterator_v1(struct st_value_v1 * list) __attribute__((nonnull,warn_unused_result));
 unsigned int st_value_list_get_length_v1(struct st_value_v1 * list) __attribute__((nonnull));
+int st_value_list_index_of_v1(struct st_value * list, struct st_value * elt) __attribute__((nonnull));
 struct st_value_v1 * st_value_list_pop_v1(struct st_value_v1 * list) __attribute__((nonnull,warn_unused_result));
 bool st_value_list_push_v1(struct st_value_v1 * list, struct st_value_v1 * val, bool new_val) __attribute__((nonnull));
 bool st_value_list_shift_v1(struct st_value_v1 * list, struct st_value_v1 * val, bool new_val) __attribute__((nonnull));
+struct st_value * st_value_list_slice_v1(struct st_value * list, int index) __attribute__((nonnull,warn_unused_result));
+struct st_value * st_value_list_slice2_v1(struct st_value * list, int index, int end) __attribute__((nonnull,warn_unused_result));
+struct st_value * st_value_list_splice_v1(struct st_value * list, int index, int how_many, ...) __attribute__((nonnull(1),warn_unused_result));
 struct st_value_v1 * st_value_list_unshift_v1(struct st_value_v1 * list) __attribute__((nonnull,warn_unused_result));
 
 void st_value_iterator_free_v1(struct st_value_iterator_v1 * iter) __attribute__((nonnull));
 struct st_value_v1 * st_value_iterator_get_key_v1(struct st_value_iterator_v1 * iter, bool move_to_next, bool shared) __attribute__((nonnull,warn_unused_result));
-struct st_value_v1 * st_value_iterator_get_value_v1(struct st_value_iterator_v1 * iter, bool shared) __attribute__((nonnull,warn_unused_result));
+struct st_value_v1 * st_value_iterator_get_value_v1(struct st_value_iterator_v1 * iter, bool shared) __attribute__((nonnull));
 bool st_value_iterator_has_next_v1(struct st_value_iterator_v1 * iter) __attribute__((nonnull));
 
 #endif

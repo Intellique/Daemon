@@ -345,6 +345,7 @@ void st_value_hashtable_put2(struct st_value * hash, const char * key, struct st
  * \param[in] key remove a value associated to this \a key
  */
 void st_value_hashtable_remove(struct st_value * hash, struct st_value * key) __attribute__((nonnull));
+void st_value_hashtable_remove2(struct st_value * hash, const char * key) __attribute__((nonnull));
 /**
  * \brief Get a list of all values
  *
@@ -356,9 +357,13 @@ struct st_value * st_value_hashtable_values(struct st_value * hash) __attribute_
 void st_value_list_clear(struct st_value * list) __attribute__((nonnull));
 struct st_value_iterator * st_value_list_get_iterator(struct st_value * list) __attribute__((nonnull,warn_unused_result));
 unsigned int st_value_list_get_length(struct st_value * list) __attribute__((nonnull));
+int st_value_list_index_of(struct st_value * list, struct st_value * elt) __attribute__((nonnull));
 struct st_value * st_value_list_pop(struct st_value * list) __attribute__((nonnull,warn_unused_result));
 bool st_value_list_push(struct st_value * list, struct st_value * val, bool new_val) __attribute__((nonnull));
 bool st_value_list_shift(struct st_value * list, struct st_value * val, bool new_val) __attribute__((nonnull));
+struct st_value * st_value_list_slice(struct st_value * list, int index) __attribute__((nonnull,warn_unused_result));
+struct st_value * st_value_list_slice2(struct st_value * list, int index, int end) __attribute__((nonnull,warn_unused_result));
+struct st_value * st_value_list_splice(struct st_value * list, int index, int how_many, ...) __attribute__((nonnull(1),warn_unused_result));
 struct st_value * st_value_list_unshift(struct st_value * list) __attribute__((nonnull,warn_unused_result));
 
 void st_value_iterator_free(struct st_value_iterator * iter) __attribute__((nonnull));

@@ -1206,6 +1206,13 @@ void st_value_hashtable_remove_v1(struct st_value_v1 * hash, struct st_value_v1 
 	}
 }
 
+__asm__(".symver st_value_hashtable_remove2_v1, st_value_hashtable_remove2@@LIBSTONE_1.2");
+void st_value_hashtable_remove2_v1(struct st_value * hash, const char * key) {
+	struct st_value_v1 * k = st_value_new_string_v1(key);
+	st_value_hashtable_remove_v1(hash, k);
+	st_value_free_v1(k);
+}
+
 __asm__(".symver st_value_hashtable_values_v1, st_value_hashtable_values@@LIBSTONE_1.2");
 struct st_value_v1 * st_value_hashtable_values_v1(struct st_value_v1 * hash) {
 	if (hash == NULL || hash->type != st_value_hashtable)
@@ -1284,6 +1291,24 @@ unsigned int st_value_list_get_length_v1(struct st_value_v1 * list) {
 		return list->value.array.nb_vals;
 	else
 		return list->value.list.nb_vals;
+}
+
+__asm__(".symver st_value_list_index_of_v1, st_value_list_index_of@@LIBSTONE_1.2");
+int st_value_list_index_of_v1(struct st_value * list, struct st_value * elt) {
+	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
+		return -1;
+
+	bool found = false;
+	int index = -1;
+	struct st_value_iterator_v1 * iter = st_value_list_get_iterator_v1(list);
+	while (!found && st_value_iterator_has_next_v1(iter)) {
+		struct st_value_v1 * i_elt = st_value_iterator_get_value_v1(iter, false);
+		found = st_value_equals_v1(elt, i_elt);
+		index++;
+	}
+	st_value_iterator_free_v1(iter);
+
+	return found ? index : -1;
 }
 
 __asm__(".symver st_value_list_pop_v1, st_value_list_pop@@LIBSTONE_1.2");
@@ -1404,6 +1429,190 @@ bool st_value_list_shift_v1(struct st_value_v1 * list, struct st_value_v1 * val,
 
 		return true;
 	}
+}
+
+__asm__(".symver st_value_list_slice_v1, st_value_list_slice@@LIBSTONE_1.2");
+struct st_value * st_value_list_slice_v1(struct st_value * list, int index) {
+	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
+		return st_value_new_linked_list_v1();
+
+	int length = st_value_list_get_length_v1(list);
+	struct st_value_v1 * ret = st_value_new_array_v1(length);
+
+	if (index < 0) {
+		index += length;
+		if (index < 0)
+			index = 0;
+	} else if (index >= length)
+		return ret;
+
+	struct st_value_iterator_v1 * iter = st_value_list_get_iterator_v1(list);
+	while (index > 0 && st_value_iterator_has_next_v1(iter)) {
+		st_value_iterator_get_value_v1(iter, false);
+		index--;
+	}
+
+	if (index == 0)
+		while (st_value_iterator_has_next(iter))
+			st_value_list_push_v1(ret, st_value_iterator_get_value_v1(iter, true), true);
+
+	st_value_iterator_free_v1(iter);
+
+	return ret;
+}
+
+__asm__(".symver st_value_list_slice2_v1, st_value_list_slice2@@LIBSTONE_1.2");
+struct st_value * st_value_list_slice2_v1(struct st_value * list, int index, int end) {
+	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
+		return st_value_new_linked_list_v1();
+
+	int length = st_value_list_get_length_v1(list);
+	struct st_value_v1 * ret = st_value_new_array_v1(length);
+
+	if (index < 0) {
+		index += length;
+		if (index < 0)
+			index = 0;
+	} else if (index >= length)
+		return ret;
+
+	if (end < 0) {
+		end += length;
+		if (end < 0)
+			end = 0;
+	} else if (end >= length)
+		return ret;
+
+	if (index >= end)
+		return ret;
+
+	struct st_value_iterator_v1 * iter = st_value_list_get_iterator_v1(list);
+	while (index > 0 && st_value_iterator_has_next_v1(iter)) {
+		st_value_iterator_get_value_v1(iter, false);
+		index--;
+		end--;
+	}
+
+	if (index == 0)
+		while (end > 0 && st_value_iterator_has_next(iter)) {
+			st_value_list_push_v1(ret, st_value_iterator_get_value_v1(iter, true), true);
+			end--;
+		}
+
+	st_value_iterator_free_v1(iter);
+
+	return ret;
+}
+
+__asm__(".symver st_value_list_splice_v1, st_value_list_splice@@LIBSTONE_1.2");
+struct st_value * st_value_list_splice_v1(struct st_value * list, int index, int how_many, ...) {
+	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
+		return st_value_new_linked_list_v1();
+
+	int length = st_value_list_get_length_v1(list);
+	struct st_value_v1 * ret = st_value_new_array_v1(length);
+
+	if (index < 0) {
+		index += length;
+		if (index < 0)
+			index = 0;
+	} else if (index >= length)
+		index = length;
+
+	if (list->type == st_value_array) {
+		struct st_value_array_v1 * array = &list->value.array;
+		struct st_value_v1 * tmp_elts = st_value_new_linked_list_v1();
+
+		if (index < length && how_many > 0) {
+			int i;
+			for (i = index; i < index + how_many && i < length; i++) {
+				st_value_list_push_v1(ret, array->values[i], false);
+				array->values[i] = NULL;
+				array->nb_vals--;
+			}
+
+			for (; i < length; i++) {
+				st_value_list_push_v1(tmp_elts, array->values[i], false);
+				array->values[i] = NULL;
+				array->nb_vals--;
+			}
+		}
+
+		va_list args;
+		va_start(args, how_many);
+
+		struct st_value * new_val = va_arg(args, struct st_value *);
+		while (new_val != NULL) {
+			st_value_list_push_v1(list, new_val, false);
+			new_val = va_arg(args, struct st_value *);
+		}
+
+		va_end(args);
+
+		struct st_value_iterator_v1 * iter = st_value_list_get_iterator_v1(tmp_elts);
+		while (st_value_iterator_has_next_v1(iter)) {
+			struct st_value_v1 * elt = st_value_iterator_get_value_v1(iter, false);
+			st_value_list_push_v1(list, elt, false);
+		}
+		st_value_iterator_free_v1(iter);
+	} else {
+		struct st_value_linked_list_v1 * llist = &list->value.list;
+		struct st_value_linked_list_node_v1 * node = llist->first;
+
+		while (node != NULL && index > 0) {
+			node = node->next;
+			index--;
+		}
+
+		while (node != NULL && how_many > 0) {
+			st_value_list_push_v1(ret, node->value, true);
+			node->value = NULL;
+
+			if (node == llist->first) {
+				llist->first = node->next;
+				if (llist->first != NULL)
+					llist->first->previous = NULL;
+			}
+			if (node == llist->last) {
+				llist->last = node->previous;
+				if (llist->last != NULL)
+					llist->last->next = NULL;
+			}
+			llist->nb_vals--;
+
+			free(node);
+			how_many--;
+		}
+
+		va_list args;
+		va_start(args, how_many);
+
+		struct st_value * new_val = va_arg(args, struct st_value *);
+		while (new_val != NULL) {
+			if (node == NULL || node->next == NULL)
+				st_value_list_push(list, new_val, false);
+			else {
+				struct st_value_linked_list_node_v1 * new_node = malloc(sizeof(struct st_value_linked_list_node));
+				new_node->value = st_value_share_v1(new_val);
+				new_node->next = node;
+				new_node->previous = node->previous;
+
+				if (new_node->previous != NULL)
+					new_node->previous->next = new_node;
+				else
+					llist->first = new_node;
+				node->previous = new_node;
+
+				llist->nb_vals++;
+			}
+
+			new_val = va_arg(args, struct st_value *);
+		}
+
+		va_end(args);
+	}
+
+	return ret;
 }
 
 __asm__(".symver st_value_list_unshift_v1, st_value_list_unshift@@LIBSTONE_1.2");

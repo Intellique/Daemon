@@ -98,6 +98,7 @@ LIBSTONE_1.2 {
 		st_value_hashtable_put;
 		st_value_hashtable_put2;
 		st_value_hashtable_remove;
+		st_value_hashtable_remove2;
 		st_value_hashtable_values;
 		st_value_iterator_free;
 		st_value_iterator_get_key;
@@ -106,9 +107,13 @@ LIBSTONE_1.2 {
 		st_value_list_clear;
 		st_value_list_get_iterator;
 		st_value_list_get_length;
+		st_value_list_index_of;
 		st_value_list_pop;
 		st_value_list_push;
 		st_value_list_shift;
+		st_value_list_slice;
+		st_value_list_slice2;
+		st_value_list_splice;
 		st_value_list_unshift;
 		st_value_new_array;
 		st_value_new_boolean;
