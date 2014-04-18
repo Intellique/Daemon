@@ -1555,6 +1555,7 @@ struct st_value * st_value_list_splice_v1(struct st_value * list, int index, int
 			st_value_list_push_v1(list, elt, false);
 		}
 		st_value_iterator_free_v1(iter);
+		st_value_free_v1(tmp_elts);
 	} else {
 		struct st_value_linked_list_v1 * llist = &list->value.list;
 		struct st_value_linked_list_node_v1 * node = llist->first;

@@ -39,6 +39,7 @@
 
 static void test_libstone_value_hashtable_iter_0(void);
 static void test_libstone_value_hashtable_iter_1(void);
+static void test_libstone_value_list_slice_0(void);
 static void test_libstone_value_pack_0(void);
 static void test_libstone_value_ref_cycle_0(void);
 static void test_libstone_value_ref_cycle_1(void);
@@ -51,6 +52,8 @@ static struct {
 } test_functions[] = {
 	{ test_libstone_value_hashtable_iter_0, "libstone: hashtable iter: #0" },
 	{ test_libstone_value_hashtable_iter_1, "libstone: hashtable iter: #1" },
+
+    { test_libstone_value_list_slice_0, "libstone: list slice: #0" },
 
     { test_libstone_value_pack_0, "libstone: value pack: #0" },
 
@@ -129,6 +132,21 @@ static void test_libstone_value_hashtable_iter_1() {
 	st_value_free(hash);
 
 	CU_ASSERT_EQUAL(i, 1);
+}
+
+static void test_libstone_value_list_slice_0() {
+	struct st_value * list = st_value_pack("[iii]", 1, 2, 3);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(list);
+
+	struct st_value * l2 = st_value_list_slice(list, 2);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(l2);
+
+	long long i2;
+	st_value_unpack(l2, "[i]", &i2);
+	CU_ASSERT_EQUAL(i2, 3);
+
+	st_value_free(list);
+	st_value_free(l2);
 }
 
 static void test_libstone_value_pack_0() {
