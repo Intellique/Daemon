@@ -53,7 +53,7 @@ struct st_value_v1 * st_value_new_linked_list_v1(void) __attribute__((warn_unuse
 struct st_value_v1 * st_value_new_null_v1(void) __attribute__((warn_unused_result));
 struct st_value_v1 * st_value_new_string_v1(const char * value) __attribute__((nonnull,warn_unused_result));
 struct st_value_v1 * st_value_pack_v1(const char * format, ...) __attribute__((nonnull(1),warn_unused_result));
-struct st_value_v1 * st_value_share_v1(struct st_value_v1 * value) __attribute__((nonnull,warn_unused_result));
+struct st_value_v1 * st_value_share_v1(struct st_value_v1 * value) __attribute__((nonnull));
 int st_value_unpack_v1(struct st_value_v1 * root, const char * format, ...) __attribute__((nonnull));
 bool st_value_valid_v1(struct st_value_v1 * value, const char * format, ...) __attribute__((nonnull));
 struct st_value * st_value_vpack_v1(const char * format, va_list params) __attribute__((nonnull(1),warn_unused_result));

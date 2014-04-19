@@ -150,6 +150,7 @@ struct st_value {
 
 struct st_value_iterator {
 		struct st_value * value;
+		bool shallow_ref;
 		union {
 				unsigned int array_index;
 				struct st_value_iterator_hashtable {

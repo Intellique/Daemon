@@ -36,14 +36,19 @@
 #include "string.h"
 #include "value.h"
 
+static unsigned int st_value_count_ref_v1(struct st_value_v1 * base);
+static unsigned int st_value_count_ref2_v1(struct st_value_v1 * base, struct st_value_v1 * ref);
 static struct st_value_v1 * st_value_new_v1(enum st_value_type type);
 static struct st_value_v1 * st_value_pack_inner(const char ** format, va_list params);
 static int st_value_unpack_inner(struct st_value_v1 * root, const char ** format, va_list params);
 static bool st_value_valid_inner(struct st_value_v1 * value, const char ** format, va_list params);
 
+struct st_value_iterator_v1 * st_value_hashtable_get_iterator2_v1(struct st_value_v1 * hash, bool shallow_ref) __attribute__((nonnull,warn_unused_result));
 static void st_value_hashtable_put_inner_v1(struct st_value_v1 * hash, unsigned int index, struct st_value_hashtable_node * new_node);
 static void st_value_hashtable_rehash_v1(struct st_value_v1 * hash);
 static void st_value_hashtable_release_node_v1(struct st_value_hashtable_node * node);
+
+struct st_value_iterator_v1 * st_value_list_get_iterator2_v1(struct st_value_v1 * list, bool shallow_ref) __attribute__((nonnull,warn_unused_result));
 
 static struct st_value_v1 null_value = {
 	.type = st_value_null,
@@ -352,6 +357,82 @@ struct st_value_v1 * st_value_copy_v1(struct st_value_v1 * val, bool deep_copy) 
 	return ret;
 }
 
+static unsigned int st_value_count_ref_v1(struct st_value_v1 * base) {
+	unsigned int nb_ref = 1;
+
+	switch (base->type) {
+		case st_value_array:
+		case st_value_linked_list: {
+				struct st_value_iterator_v1 * iter = st_value_list_get_iterator2_v1(base, true);
+				while (st_value_iterator_has_next_v1(iter)) {
+					struct st_value_v1 * elt = st_value_iterator_get_value_v1(iter, false);
+					nb_ref += st_value_count_ref2_v1(elt, base);
+				}
+				st_value_iterator_free_v1(iter);
+				break;
+			}
+
+		case st_value_hashtable: {
+				struct st_value_iterator_v1 * iter = st_value_hashtable_get_iterator2_v1(base, true);
+				while (st_value_iterator_has_next_v1(iter)) {
+					struct st_value_v1 * key = st_value_iterator_get_key_v1(iter, false, false);
+					nb_ref += st_value_count_ref2_v1(key, base);
+
+					struct st_value_v1 * elt = st_value_iterator_get_value_v1(iter, false);
+					nb_ref += st_value_count_ref2_v1(elt, base);
+				}
+				st_value_iterator_free_v1(iter);
+				break;
+			}
+
+		default:
+			break;
+	}
+
+	return nb_ref;
+}
+
+static unsigned int st_value_count_ref2_v1(struct st_value_v1 * base, struct st_value_v1 * ref) {
+	unsigned int nb_ref = 0;
+
+	if (base->shared == 0)
+		return 0;
+
+	if (base == ref)
+		return 1;
+
+	switch (base->type) {
+		case st_value_array:
+		case st_value_linked_list: {
+				struct st_value_iterator_v1 * iter = st_value_list_get_iterator2_v1(base, true);
+				while (st_value_iterator_has_next_v1(iter)) {
+					struct st_value_v1 * elt = st_value_iterator_get_value_v1(iter, false);
+					nb_ref += st_value_count_ref2_v1(elt, ref);
+				}
+				st_value_iterator_free_v1(iter);
+				break;
+			}
+
+		case st_value_hashtable: {
+				struct st_value_iterator_v1 * iter = st_value_hashtable_get_iterator2_v1(base, true);
+				while (st_value_iterator_has_next_v1(iter)) {
+					struct st_value_v1 * key = st_value_iterator_get_key_v1(iter, false, false);
+					nb_ref += st_value_count_ref2_v1(key, ref);
+
+					struct st_value_v1 * elt = st_value_iterator_get_value_v1(iter, false);
+					nb_ref += st_value_count_ref2_v1(elt, ref);
+				}
+				st_value_iterator_free_v1(iter);
+				break;
+			}
+
+		default:
+			break;
+	}
+
+	return nb_ref;
+}
+
 __asm__(".symver st_value_equals_v1, st_value_equals@@LIBSTONE_1.2");
 bool st_value_equals_v1(struct st_value_v1 * a, struct st_value_v1 * b) {
 	if (a == NULL && b == NULL)
@@ -488,12 +569,19 @@ bool st_value_equals_v1(struct st_value_v1 * a, struct st_value_v1 * b) {
 
 __asm__(".symver st_value_free_v1, st_value_free@@LIBSTONE_1.2");
 void st_value_free_v1(struct st_value_v1 * value) {
-	if (value == NULL || value == &null_value)
+	if (value == NULL || value == &null_value || value->shared == 0)
 		return;
 
-	value->shared--;
-	if (value->shared > 0)
-		return;
+	if (value->shared > 1) {
+		unsigned int nb_ref = st_value_count_ref_v1(value);
+		if (nb_ref < value->shared) {
+			value->shared--;
+			return;
+		}
+		value->shared -= nb_ref;
+	}
+
+	value->shared = 0;
 
 	switch (value->type) {
 		case st_value_array:
@@ -1022,11 +1110,20 @@ struct st_value_v1 * st_value_hashtable_get2_v1(struct st_value_v1 * hash, const
 
 __asm__(".symver st_value_hashtable_get_iterator_v1, st_value_hashtable_get_iterator@@LIBSTONE_1.2");
 struct st_value_iterator_v1 * st_value_hashtable_get_iterator_v1(struct st_value_v1 * hash) {
+	return st_value_hashtable_get_iterator2_v1(hash, false);
+}
+
+struct st_value_iterator_v1 * st_value_hashtable_get_iterator2_v1(struct st_value_v1 * hash, bool shallow_ref) {
 	if (hash == NULL || hash->type != st_value_hashtable)
 		return NULL;
 
+	if (!shallow_ref)
+		st_value_share_v1(hash);
+
 	struct st_value_iterator_v1 * iter = malloc(sizeof(struct st_value_iterator_v1));
-	iter->value = st_value_share_v1(hash);
+	iter->value = hash;
+	iter->shallow_ref = shallow_ref;
+
 	iter->data.hashtable.node = NULL;
 	iter->data.hashtable.i_elements = 0;
 
@@ -1265,11 +1362,19 @@ void st_value_list_clear_v1(struct st_value_v1 * list) {
 
 __asm__(".symver st_value_list_get_iterator_v1, st_value_list_get_iterator@@LIBSTONE_1.2");
 struct st_value_iterator_v1 * st_value_list_get_iterator_v1(struct st_value_v1 * list) {
+	return st_value_list_get_iterator2_v1(list, false);
+}
+
+struct st_value_iterator_v1 * st_value_list_get_iterator2_v1(struct st_value_v1 * list, bool shallow_ref) {
 	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
 		return NULL;
 
+	if (!shallow_ref)
+		st_value_share_v1(list);
+
 	struct st_value_iterator_v1 * iter = malloc(sizeof(struct st_value_iterator_v1));
-	iter->value = st_value_share_v1(list);
+	iter->value = list;
+	iter->shallow_ref = shallow_ref;
 
 	if (list->type == st_value_array) {
 		iter->data.array_index = 0;
@@ -1653,7 +1758,7 @@ void st_value_iterator_free_v1(struct st_value_iterator_v1 * iter) {
 	if (iter == NULL)
 		return;
 
-	if (iter->value != NULL)
+	if (iter->value != NULL && !iter->shallow_ref)
 		st_value_free_v1(iter->value);
 	iter->value = NULL;
 

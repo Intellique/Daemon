@@ -184,7 +184,7 @@ static void test_libstone_value_ref_cycle_1() {
 	CU_ASSERT_PTR_NOT_NULL_FATAL(objB);
 
 	struct st_value * objC;
-	st_value_unpack(objA, "{s{so}}", "parent", "link", &objC);
+	st_value_unpack(objB, "{so}", "link", &objC);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(objC);
 
 	CU_ASSERT_EQUAL(objA->shared, 1);
