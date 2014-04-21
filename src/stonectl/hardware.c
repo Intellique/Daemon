@@ -93,7 +93,7 @@ struct st_value * stctl_detect_hardware() {
 		ptr = strrchr(link, '/') + 1;
 		asprintf(&device, "/dev/n%s", ptr);
 
-		struct st_value * drive = st_value_pack("{sssssssb}", "device", device, "scsi device", scsi_device, "status", "unknown", "enabled", true);
+		struct st_value * drive = st_value_pack("{sssssssssbsfsis{}}", "device", device, "scsi device", scsi_device, "status", "unknown", "mode", "linear", "enabled", true, "operation duration", 0.0, "last clean", 0, "db");
 
 		stctl_scsi_tapeinfo(scsi_device, drive);
 
@@ -143,7 +143,7 @@ struct st_value * stctl_detect_hardware() {
 		ptr = strrchr(link, '/');
 		asprintf(&device, "/dev%s", ptr);
 
-		struct st_value * changer = st_value_pack("{sssssbs[]s[]}", "device", device, "status", "unknown", "enable", true, "drives", "slots");
+		struct st_value * changer = st_value_pack("{sssssbs[]s[]s{}}", "device", device, "status", "unknown", "enable", true, "drives", "slots", "db");
 
 		asprintf(&path, "/sys/class/sas_host/host%d", host);
 		struct stat st;

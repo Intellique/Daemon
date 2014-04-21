@@ -36,6 +36,7 @@
 #include <sys/utsname.h>
 
 #include <libstone/log.h>
+#include <libstone/time.h>
 #include <libstone/value.h>
 
 #include "common.h"
@@ -384,18 +385,18 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 	if (transStatus == PQTRANS_IDLE)
 		st_database_postgresql_start_transaction(connect);
 
-	long long int id = -1;
-	st_value_unpack(changer, "{s{si}}", "db", "id", &id);
+	struct st_value * db = NULL;
+	st_value_unpack(changer, "{so}", "db", &db);
 
-	char * changerid = NULL;
+	char * changer_id = NULL;
+	st_value_unpack(db, "{ss}", "id", &changer_id);
+
 	bool enabled = true;
-	if (id > 0) {
-		asprintf(&changerid, "%lld", id);
-
+	if (changer_id != NULL) {
 		const char * query = "select_changer_by_id";
 		st_database_postgresql_prepare(self, query, "SELECT enable FROM changer WHERE id = $1 FOR UPDATE");
 
-		const char * param[] = { changerid };
+		const char * param[] = { changer_id };
 		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 		int nb_result = PQntuples(result);
@@ -411,7 +412,7 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 
 		if (status == PGRES_FATAL_ERROR || nb_result == 0) {
 			free(hostid);
-			free(changerid);
+			free(changer_id);
 
 			if (transStatus == PQTRANS_IDLE)
 				st_database_postgresql_cancel_transaction(connect);
@@ -426,13 +427,13 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 
 		if (wwn != NULL) {
 			query = "select_changer_by_model_vendor_serialnumber_wwn";
-			st_database_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn = $4 FOR UPDATE NOWAIT");
+			st_database_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn = $4 FOR UPDATE");
 
 			const char * param[] = { model, vendor, serial_number, wwn };
 			result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 		} else {
 			query = "select_changer_by_model_vendor_serialnumber";
-			st_database_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn IS NULL FOR UPDATE NOWAIT");
+			st_database_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn IS NULL FOR UPDATE");
 
 			const char * param[] = { model, vendor, serial_number };
 			result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
@@ -442,9 +443,11 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 		if (status == PGRES_FATAL_ERROR)
 			st_database_postgresql_get_error(result, query);
 		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
-			st_database_postgresql_get_long_long(result, 0, 0, &id);
-			st_database_postgresql_get_string_dup(result, 0, 0, &changerid);
+			st_database_postgresql_get_string_dup(result, 0, 0, &changer_id);
 			st_database_postgresql_get_bool(result, 0, 1, &enabled);
+
+			st_value_hashtable_put2(changer, "enable", st_value_new_boolean(enabled), true);
+			st_value_hashtable_put2(db, "id", st_value_new_string(changer_id), true);
 		}
 
 		PQclear(result);
@@ -462,20 +465,20 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 		}
 	}
 
-	if (id > 0) {
+	if (changer_id != NULL) {
 		const char * query = "update_changer";
 		st_database_postgresql_prepare(self, query, "UPDATE changer SET device = $1, status = $2, firmwarerev = $3 WHERE id = $4");
 
 		char * device = NULL, * sstatus = NULL, * revision = NULL;
 		st_value_unpack(changer, "{ssssss}", "device", &device, "status", &sstatus, "revision", &revision);
 
-		const char * params[] = { device, "unknown", revision, changerid };
+		const char * params[] = { device, sstatus, revision, changer_id };
 		PGresult * result = PQexecPrepared(self->connect, query, 4, params, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		PQclear(result);
 
-		free(changerid);
+		free(changer_id);
 		free(device);
 		free(revision);
 		free(sstatus);
@@ -489,7 +492,7 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 				st_database_postgresql_cancel_transaction(connect);
 			return -2;
 		}
-	} else {
+	} else if (init) {
 		const char * query = "insert_changer";
 		st_database_postgresql_prepare(self, query, "INSERT INTO changer(device, status, barcode, model, vendor, firmwarerev, serialnumber, wwn, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id");
 
@@ -499,7 +502,7 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 		st_value_unpack(changer, "{sssssbssssssssss}", "device", &device, "status", &sstatus, "barcode", &barcode, "model", &model, "vendor", &vendor, "revision", &revision, "serial number", &serial_number, "wwn", &wwn);
 
 		const char * param[] = {
-			device, "unknown", barcode ? "true" : "false", model, vendor, revision, serial_number, wwn, hostid,
+			device, sstatus, barcode ? "true" : "false", model, vendor, revision, serial_number, wwn, hostid,
 		};
 
 		PGresult * result = PQexecPrepared(self->connect, query, 9, param, NULL, NULL, 0);
@@ -507,12 +510,14 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 
 		if (status == PGRES_FATAL_ERROR)
 			st_database_postgresql_get_error(result, query);
-		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
-			st_database_postgresql_get_long_long(result, 0, 0, &id);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+			st_database_postgresql_get_string_dup(result, 0, 0, &changer_id);
+			st_value_hashtable_put2(db, "id", st_value_new_string(changer_id), true);
+		}
 
 		PQclear(result);
 
-		free(changerid);
+		free(changer_id);
 		free(device);
 		free(model);
 		free(revision);
@@ -527,11 +532,27 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 				st_database_postgresql_cancel_transaction(connect);
 			return -1;
 		}
+	} else {
+		if (transStatus == PQTRANS_IDLE)
+			st_database_postgresql_cancel_transaction(connect);
+		return -1;
 	}
 
 	free(hostid);
 
 	int failed = 0;
+
+	if (init) {
+		struct st_value * drives;
+		st_value_unpack(changer, "{so}", "drives", &drives);
+
+		struct st_value_iterator * iter = st_value_list_get_iterator(drives);
+		while (failed == 0 && st_value_iterator_has_next(iter)) {
+			struct st_value * drive = st_value_iterator_get_value(iter, false);
+			failed = st_database_postgresql_sync_drive(connect, drive, init);
+		}
+		st_value_iterator_free(iter);
+	}
 
 	if (transStatus == PQTRANS_IDLE && failed == 0)
 		st_database_postgresql_finish_transaction(connect);
@@ -550,7 +571,245 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 	else if (transStatus == PQTRANS_IDLE)
 		st_database_postgresql_start_transaction(connect);
 
-	long long changer_id;
+	struct st_value * db;
+	char * drive_id = NULL;
+	st_value_unpack(drive, "{so}", "db", &db);
+	st_value_unpack(db, "{ss}", "db", "id", &drive_id);
+
+	char * driveformat_id = NULL;
+
+	if (drive_id != NULL) {
+		const char * query = "select_drive_by_id";
+		st_database_postgresql_prepare(self, query, "SELECT driveformat, enable FROM drive WHERE id = $1 FOR UPDATE");
+
+		const char * param[] = { drive_id };
+		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+		int nb_result = PQntuples(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && nb_result == 1) {
+			if (!PQgetisnull(result, 0, 0)) {
+				st_database_postgresql_get_string_dup(result, 0, 0, &driveformat_id);
+				st_value_hashtable_put2(db, "driveformat_id", st_value_new_string(driveformat_id), true);
+			}
+
+			bool enabled;
+			st_database_postgresql_get_bool(result, 0, 1, &enabled);
+			st_value_hashtable_put2(drive, "enable", st_value_new_boolean(enabled), true);
+		} else if (status == PGRES_TUPLES_OK && nb_result == 1)
+			st_value_hashtable_put2(drive, "enable", st_value_new_boolean(false), true);
+
+		PQclear(result);
+
+		if (status == PGRES_FATAL_ERROR) {
+			free(drive_id);
+			if (transStatus == PQTRANS_IDLE)
+				st_database_postgresql_cancel_transaction(connect);
+			return 3;
+		}
+	} else {
+		const char * query = "select_drive_by_model_vendor_serialnumber";
+		st_database_postgresql_prepare(self, query, "SELECT id, operationduration, lastclean, driveformat, enable FROM drive WHERE model = $1 AND vendor = $2 AND serialnumber = $3 FOR UPDATE");
+
+		char * model = NULL, * vendor = NULL, * serial_number = NULL;
+		st_value_unpack(drive, "{ssssss}", "model", &model, "vendor", &vendor, "serial number", &serial_number);
+
+		const char * param[] = { model, vendor, serial_number };
+		PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+			st_database_postgresql_get_string_dup(result, 0, 0, &drive_id);
+
+			double old_operation_duration = 0;
+			st_database_postgresql_get_double(result, 0, 1, &old_operation_duration);
+			double current_operation_duration = 0;
+			st_value_unpack(drive, "{sf}", "operation duration", &current_operation_duration);
+			st_value_hashtable_put2(drive, "operation duration", st_value_new_float(old_operation_duration + current_operation_duration), true);
+
+			time_t last_clean;
+			st_database_postgresql_get_time(result, 0, 2, &last_clean);
+			st_value_hashtable_put2(drive, "last clean", st_value_new_integer(last_clean), true);
+
+			if (!PQgetisnull(result, 0, 3)) {
+				st_database_postgresql_get_string_dup(result, 0, 3, &driveformat_id);
+				st_value_hashtable_put2(db, "driveformat_id", st_value_new_string(driveformat_id), true);
+			}
+
+			bool enabled;
+			st_database_postgresql_get_bool(result, 0, 4, &enabled);
+			st_value_hashtable_put2(drive, "enable", st_value_new_boolean(enabled), true);
+		}
+
+		PQclear(result);
+		free(model);
+		free(vendor);
+		free(serial_number);
+
+		if (status == PGRES_FATAL_ERROR) {
+			if (transStatus == PQTRANS_IDLE)
+				st_database_postgresql_cancel_transaction(connect);
+			return 3;
+		}
+	}
+
+	if (driveformat_id != NULL) {
+		const char * query = "select_driveformat_by_id";
+		st_database_postgresql_prepare(self, query, "SELECT densitycode FROM driveformat WHERE id = $1 LIMIT 1");
+
+		const char * param[] = { driveformat_id };
+		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		unsigned char density_code = 0;
+
+		if (status == PGRES_FATAL_ERROR)
+			st_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+			st_database_postgresql_get_uchar(result, 0, 0, &density_code);
+
+		PQclear(result);
+
+		long long current_density_code = 0;
+		st_value_unpack(drive, "{si}", "density code", &current_density_code);
+
+		if (current_density_code > density_code) {
+			free(driveformat_id);
+			driveformat_id = NULL;
+		}
+	}
+
+	if (driveformat_id == NULL) {
+		const char * query = "select_driveformat_by_densitycode";
+		st_database_postgresql_prepare(self, query, "SELECT id FROM driveformat WHERE densitycode = $1 AND mode = $2 LIMIT 1");
+
+		long long current_density_code = 0;
+		char * drive_mode = NULL;
+		st_value_unpack(drive, "{siss}", "density code", &current_density_code, "mode", &drive_mode);
+
+		char * sdensity_code = NULL;
+		asprintf(&sdensity_code, "%lld", current_density_code);
+
+		const char * param[] = { sdensity_code, drive_mode };
+		PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+			st_database_postgresql_get_string_dup(result, 0, 0, &driveformat_id);
+			st_value_hashtable_put2(db, "driveformat_id", st_value_new_string(driveformat_id), true);
+		}
+
+		PQclear(result);
+		free(sdensity_code);
+		free(drive_mode);
+	}
+
+	if (drive_id != NULL) {
+		const char * query = "update_drive";
+		st_database_postgresql_prepare(self, query, "UPDATE drive SET device = $1, scsidevice = $2, status = $3, operationduration = $4, lastclean = $5, firmwarerev = $6, driveformat = $7 WHERE id = $8");
+
+		double drive_operation_duration = 0;
+		long long drive_last_clean = 0;
+		char * drive_device = NULL, * drive_scsi_device = NULL, * drive_status = NULL, * drive_revision = NULL;
+		st_value_unpack(drive, "{sfssss}", "operation duration", &drive_operation_duration, "last clean", &drive_last_clean, "device", &drive_device, "scsi device", &drive_scsi_device, "status", &drive_status);
+
+		char * op_duration = NULL, * last_clean = NULL;
+		asprintf(&op_duration, "%.3f", drive_operation_duration);
+
+		if (drive_last_clean > 0) {
+			time_t drive_last_clean2 = drive_last_clean;
+			last_clean = malloc(24);
+			st_time_convert(&drive_last_clean2, "%F %T", last_clean, 24);
+		}
+
+		const char * param[] = {
+			drive_device, drive_scsi_device, drive_status, op_duration, last_clean,
+			drive_revision, driveformat_id, drive_id
+		};
+		PGresult * result = PQexecPrepared(self->connect, query, 8, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_database_postgresql_get_error(result, query);
+
+		PQclear(result);
+		free(last_clean);
+		free(op_duration);
+		free(drive_device);
+		free(drive_scsi_device);
+		free(drive_status);
+		free(drive_revision);
+
+		if (status == PGRES_FATAL_ERROR) {
+			if (transStatus == PQTRANS_IDLE)
+				st_database_postgresql_cancel_transaction(connect);
+			return 3;
+		}
+	} else if (init) {
+		const char * query = "insert_drive";
+		st_database_postgresql_prepare(self, query, "INSERT INTO drive(device, scsidevice, status, operationduration, lastclean, model, vendor, firmwarerev, serialnumber, changer, driveformat) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id");
+
+		double drive_operation_duration = 0;
+		long long drive_last_clean = 0;
+		char * drive_device = NULL, * drive_scsi_device = NULL, * drive_status = NULL, * drive_revision = NULL, * drive_model = NULL, * drive_vendor = NULL, * drive_serial_number = NULL;
+		st_value_unpack(drive, "{sfsissssssssssssss}", "operation duration", &drive_operation_duration, "last clean", &drive_last_clean, "device", &drive_device, "scsi device", &drive_scsi_device, "revision", &drive_revision, "status", &drive_status, "model", &drive_model, "vendor", &drive_vendor, "serial number", &drive_serial_number);
+
+		char * op_duration = NULL, * last_clean = NULL;
+		asprintf(&op_duration, "%.3f", drive_operation_duration);
+
+		char * changer_id = NULL;
+		st_value_unpack(drive, "{s{s{ss}}}", "changer", "db", "id", &changer_id);
+
+		if (drive_last_clean > 0) {
+			time_t drive_last_clean2 = drive_last_clean;
+			last_clean = malloc(24);
+			st_time_convert(&drive_last_clean2, "%F %T", last_clean, 24);
+		}
+
+		const char * param[] = {
+			drive_device, drive_scsi_device, drive_status, op_duration, last_clean,
+			drive_model, drive_vendor, drive_revision, drive_serial_number, changer_id, driveformat_id
+		};
+		PGresult * result = PQexecPrepared(self->connect, query, 11, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+			st_database_postgresql_get_string_dup(result, 0, 0, &drive_id);
+			st_value_hashtable_put2(db, "id", st_value_new_string(drive_id), true);
+		}
+
+		PQclear(result);
+		free(changer_id);
+		free(last_clean);
+		free(op_duration);
+		free(drive_device);
+		free(drive_scsi_device);
+		free(drive_status);
+		free(drive_revision);
+		free(drive_model);
+		free(drive_vendor);
+		free(drive_serial_number);
+
+		if (status == PGRES_FATAL_ERROR) {
+			if (transStatus == PQTRANS_IDLE)
+				st_database_postgresql_cancel_transaction(connect);
+			return 3;
+		}
+	} else {
+	}
+
+	if (transStatus == PQTRANS_IDLE)
+		st_database_postgresql_finish_transaction(connect);
+
+	return 0;
 }
 
 
