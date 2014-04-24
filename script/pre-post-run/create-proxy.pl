@@ -37,6 +37,8 @@ unless ($encoder) {
     exit 1;
 }
 
+$nb_cpu = int( $nb_cpu * 3 / 4 ) if $nb_cpu >= 4;
+
 my $archive = decode_json $data_in;
 
 my %file_done;
