@@ -41,6 +41,28 @@ my $archive = decode_json $data_in;
 
 my %file_done;
 my $nb_processes = 0;
+
+sub process {
+    my ( $input, $format ) = @_;
+
+    my $pid = fork();
+    if ( $pid == 0 ) {
+        nice(10);
+
+        my $filename = md5_hex($input) . '.mp4';
+        exec $encoder, '-v', 'quiet', '-i', $input, '-acodec', 'libvorbis',
+            '-ac', '2', '-ab', '96k', '-ar', '44100', '-b', '500k', '-s',
+            '320x240', '-t', '0:0:30', "$output_dir/$filename";
+    }
+
+    $nb_processes++;
+
+    if ( $nb_processes >= $nb_cpu ) {
+        wait();
+        $nb_processes--;
+    }
+}
+
 foreach my $vol ( @{ $archive->{volumes} } ) {
     foreach my $file ( @{ $vol->{files} } ) {
         next if defined $file_done{ $file->{path} };
@@ -48,27 +70,12 @@ foreach my $vol ( @{ $archive->{volumes} } ) {
 
         next unless $file->{'mime type'} =~ m{^video/};
 
-        my $pid = fork();
-        if ( $pid == 0 ) {
-            nice(10);
-
-            my $filename = md5_hex( $file->{path} ) . '.mp4';
-            exec $encoder, '-v', 'quiet', '-i', $file->{path}, '-acodec',
-                'libvorbis', '-ac', '2', '-ab', '96k', '-ar', '44100', '-b',
-                '500k', '-s', '320x240', '-t', '0:0:30',
-                "$output_dir/$filename";
-        }
-
-        $nb_processes++;
-
-        if ($nb_processes >= $nb_cpu) {
-            wait();
-            $nb_processes--;
-        }
+        process( $file->{path}, '.mp4' );
+        process( $file->{path}, '.ogv' );
     }
 }
 
-while ($nb_processes > 0) {
+while ( $nb_processes > 0 ) {
     wait();
     $nb_processes--;
 }
