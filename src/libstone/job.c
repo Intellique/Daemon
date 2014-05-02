@@ -200,7 +200,7 @@ void st_job_sync_plugins(struct st_database_connection * connection) {
 		char * ptr = strrchr(gl.gl_pathv[i], '/') + 1;
 
 		char plugin[64];
-		sscanf(ptr, "libjob-%64[^.].so", plugin);
+		sscanf(ptr, "libjob-%63[^.].so", plugin);
 
 		if (connection->ops->sync_plugin_job(connection, plugin))
 			st_log_write_all(st_log_level_error, st_log_type_job, "Failed to synchronize plugin '%s'", plugin);
