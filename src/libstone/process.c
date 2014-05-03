@@ -47,7 +47,7 @@
 static void st_process_set_close_exe_flag(int fd, bool on);
 
 __asm__(".symver st_process_close_v1, st_process_close@@LIBSTONE_1.2");
-void st_process_close_v1(struct st_process_v1 * process, enum st_process_std_v1 std) {
+void st_process_close_v1(struct st_process * process, enum st_process_std std) {
 	if (process == NULL)
 		return;
 
@@ -55,18 +55,18 @@ void st_process_close_v1(struct st_process_v1 * process, enum st_process_std_v1 
 }
 
 __asm__(".symver st_process_drop_environment_v1, st_process_drop_environment@@LIBSTONE_1.2");
-void st_process_drop_environment_v1(struct st_process_v1 * process, const char * key) {
+void st_process_drop_environment_v1(struct st_process * process, const char * key) {
 	if (process == NULL || key == NULL)
 		return;
 
 	if (process->environment == NULL)
-		process->environment = st_value_new_hashtable2_v1();
+		process->environment = st_value_new_hashtable2();
 
-	st_value_hashtable_put_v1(process->environment, st_value_new_string_v1(key), true, st_value_new_null_v1(), true);
+	st_value_hashtable_put(process->environment, st_value_new_string(key), true, st_value_new_null(), true);
 }
 
 __asm__(".symver st_process_free_v1, st_process_free@@LIBSTONE_1.2");
-void st_process_free_v1(struct st_process_v1 * process, unsigned int nb_process) {
+void st_process_free_v1(struct st_process * process, unsigned int nb_process) {
 	if (process == NULL || nb_process < 1)
 		return;
 
@@ -82,7 +82,7 @@ void st_process_free_v1(struct st_process_v1 * process, unsigned int nb_process)
 }
 
 __asm__(".symver st_process_new_v1, st_process_new@@LIBSTONE_1.2");
-void st_process_new_v1(struct st_process_v1 * process, const char * process_name, const char ** params, unsigned int nb_params) {
+void st_process_new_v1(struct st_process * process, const char * process_name, const char ** params, unsigned int nb_params) {
 	if (process == NULL || process_name == NULL || (params == NULL && nb_params > 0))
 		return;
 
@@ -144,7 +144,7 @@ void st_process_new_v1(struct st_process_v1 * process, const char * process_name
 }
 
 __asm__(".symver st_process_pipe_v1, st_process_pipe@@LIBSTONE_1.2");
-void st_process_pipe_v1(struct st_process_v1 * process_out, enum st_process_std_v1 out, struct st_process_v1 * process_in) {
+void st_process_pipe_v1(struct st_process * process_out, enum st_process_std out, struct st_process * process_in) {
 	if (process_out == NULL || process_in == NULL)
 		return;
 
@@ -152,12 +152,12 @@ void st_process_pipe_v1(struct st_process_v1 * process_out, enum st_process_std_
 	if (pipe(fd_pipe))
 		return;
 
-	st_process_set_fd_v1(process_in, st_process_stdin, fd_pipe[0]);
-	st_process_set_fd_v1(process_out, out, fd_pipe[1]);
+	st_process_set_fd(process_in, st_process_stdin, fd_pipe[0]);
+	st_process_set_fd(process_out, out, fd_pipe[1]);
 }
 
 __asm__(".symver st_process_pipe_from_v1, st_process_pipe_from@@LIBSTONE_1.2");
-int st_process_pipe_from_v1(struct st_process_v1 * process_out, enum st_process_std_v1 out) {
+int st_process_pipe_from_v1(struct st_process * process_out, enum st_process_std out) {
 	if (process_out == NULL || out == st_process_stdin)
 		return -1;
 
@@ -171,7 +171,7 @@ int st_process_pipe_from_v1(struct st_process_v1 * process_out, enum st_process_
 }
 
 __asm__(".symver st_process_pipe_to_v1, st_process_pipe_to@@LIBSTONE_1.2");
-int st_process_pipe_to_v1(struct st_process_v1 * process_in) {
+int st_process_pipe_to_v1(struct st_process * process_in) {
 	if (process_in == NULL)
 		return -1;
 
@@ -185,18 +185,18 @@ int st_process_pipe_to_v1(struct st_process_v1 * process_in) {
 }
 
 __asm__(".symver st_process_put_environment_v1, st_process_put_environment@@LIBSTONE_1.2");
-void st_process_put_environment_v1(struct st_process_v1 * process, const char * key, const char * value) {
+void st_process_put_environment_v1(struct st_process * process, const char * key, const char * value) {
 	if (process == NULL || key == NULL || value == NULL)
 		return;
 
 	if (process->environment == NULL)
-		process->environment = st_value_new_hashtable2_v1();
+		process->environment = st_value_new_hashtable2();
 
-	st_value_hashtable_put_v1(process->environment, st_value_new_string_v1(key), true, st_value_new_string_v1(value), true);
+	st_value_hashtable_put(process->environment, st_value_new_string(key), true, st_value_new_string(value), true);
 }
 
 __asm__(".symver st_process_redir_err_to_out_v1, st_process_redir_err_to_out@@LIBSTONE_1.2");
-void st_process_redir_err_to_out_v1(struct st_process_v1 * process) {
+void st_process_redir_err_to_out_v1(struct st_process * process) {
 	if (process == NULL)
 		return;
 
@@ -205,7 +205,7 @@ void st_process_redir_err_to_out_v1(struct st_process_v1 * process) {
 }
 
 __asm__(".symver st_process_redir_out_to_err_v1, st_process_redir_out_to_err@@LIBSTONE_1.2");
-void st_process_redir_out_to_err_v1(struct st_process_v1 * process) {
+void st_process_redir_out_to_err_v1(struct st_process * process) {
 	if (process == NULL)
 		return;
 
@@ -214,18 +214,18 @@ void st_process_redir_out_to_err_v1(struct st_process_v1 * process) {
 }
 
 __asm__(".symver st_process_set_environment_v1, st_process_set_environment@@LIBSTONE_1.2");
-void st_process_set_environment_v1(struct st_process_v1 * process, struct st_value_v1 * environment) {
+void st_process_set_environment_v1(struct st_process * process, struct st_value * environment) {
 	if (process == NULL || environment == NULL)
 		return;
 
 	if (process->environment != NULL)
-		st_value_free_v1(process->environment);
+		st_value_free(process->environment);
 
 	process->environment = environment;
 }
 
 __asm__(".symver st_process_set_fd_v1, st_process_set_fd@@LIBSTONE_1.2");
-void st_process_set_fd_v1(struct st_process_v1 * process, enum st_process_std_v1 fd_process, int new_fd) {
+void st_process_set_fd_v1(struct st_process * process, enum st_process_std fd_process, int new_fd) {
 	if (process == NULL || fd_process >= 3)
 		return;
 
@@ -239,7 +239,7 @@ void st_process_set_fd_v1(struct st_process_v1 * process, enum st_process_std_v1
 }
 
 __asm__(".symver st_process_set_nice_v1, st_process_set_nice@@LIBSTONE_1.2");
-void st_process_set_nice_v1(struct st_process_v1 * process, int nice) {
+void st_process_set_nice_v1(struct st_process * process, int nice) {
 	if (process == NULL)
 		return;
 
@@ -258,7 +258,7 @@ static void st_process_set_close_exe_flag(int fd, bool on) {
 }
 
 __asm__(".symver st_process_start_v1, st_process_start@@LIBSTONE_1.2");
-void st_process_start_v1(struct st_process_v1 * process, unsigned int nb_process) {
+void st_process_start_v1(struct st_process * process, unsigned int nb_process) {
 	if (!process || nb_process < 1)
 		return;
 
@@ -295,17 +295,17 @@ void st_process_start_v1(struct st_process_v1 * process, unsigned int nb_process
 			}
 
 			if (process->environment != NULL) {
-				struct st_value_iterator_v1 * iter = st_value_hashtable_get_iterator_v1(process->environment);
-				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value_v1 * key = st_value_iterator_get_key_v1(iter, false, false);
-					struct st_value_v1 * value = st_value_iterator_get_value_v1(iter, false);
+				struct st_value_iterator * iter = st_value_hashtable_get_iterator(process->environment);
+				while (st_value_iterator_has_next(iter)) {
+					struct st_value * key = st_value_iterator_get_key(iter, false, false);
+					struct st_value * value = st_value_iterator_get_value(iter, false);
 
 					if (value->type == st_value_null)
-						unsetenv(key->value.string);
+						unsetenv(st_value_string_get(key));
 					else
-						setenv(key->value.string, value->value.string, true);
+						setenv(st_value_string_get(key), st_value_string_get(value), true);
 				}
-				st_value_iterator_free_v1(iter);
+				st_value_iterator_free(iter);
 			}
 
 			if (process->nice != 0)
@@ -317,7 +317,7 @@ void st_process_start_v1(struct st_process_v1 * process, unsigned int nb_process
 }
 
 __asm__(".symver st_process_wait_v1, st_process_wait@@LIBSTONE_1.2");
-void st_process_wait_v1(struct st_process_v1 * process, unsigned int nb_process) {
+void st_process_wait_v1(struct st_process * process, unsigned int nb_process) {
 	if (!process || nb_process < 1)
 		return;
 

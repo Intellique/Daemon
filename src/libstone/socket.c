@@ -29,15 +29,16 @@
 // strcmp
 #include <string.h>
 
+#include <libstone/value.h>
+
 #include "socket.h"
 #include "socket/tcp.h"
 #include "socket/unix.h"
-#include "value.h"
 
 __asm__(".symver st_socket_v1, st_socket@@LIBSTONE_1.2");
-int st_socket_v1(struct st_value_v1 * config) {
+int st_socket_v1(struct st_value * config) {
 	char * domain;
-	if (st_value_unpack_v1(config, "{ss}", "domain", &domain) < 1)
+	if (st_value_unpack(config, "{ss}", "domain", &domain) < 1)
 		return -1;
 
 	int fd = -1;
@@ -54,10 +55,10 @@ int st_socket_v1(struct st_value_v1 * config) {
 }
 
 __asm__(".symver st_socket_server_v1, st_socket_server@@LIBSTONE_1.2");
-bool st_socket_server_v1(struct st_value_v1 * config, st_socket_accept_f_v1 accept_callback) {
+bool st_socket_server_v1(struct st_value * config, st_socket_accept_f accept_callback) {
 	char * domain;
 
-	if (st_value_unpack_v1(config, "{ss}", "domain", &domain) < 1)
+	if (st_value_unpack(config, "{ss}", "domain", &domain) < 1)
 		return false;
 
 	bool ok = false;

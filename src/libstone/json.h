@@ -28,15 +28,14 @@
 #define __LIBSTONE_JSON_H__
 
 #include <libstone/json.h>
+#include <libstone/value.h>
 
-#include "value.h"
-
-ssize_t st_json_encode_to_fd_v1(struct st_value * value_v1, int fd, bool use_buffer);
-ssize_t st_json_encode_to_file_v1(struct st_value * value_v1, const char * filename);
-char * st_json_encode_to_string_v1(struct st_value * value_v1);
-struct st_value_v1 * st_json_parse_fd_v1(int fd, int timeout);
-struct st_value_v1 * st_json_parse_file_v1(const char * file);
-struct st_value_v1 * st_json_parse_string_v1(const char * json);
+ssize_t st_json_encode_to_fd_v1(struct st_value * value, int fd, bool use_buffer);
+ssize_t st_json_encode_to_file_v1(struct st_value * value, const char * filename);
+char * st_json_encode_to_string_v1(struct st_value * value);
+struct st_value * st_json_parse_fd_v1(int fd, int timeout);
+struct st_value * st_json_parse_file_v1(const char * file);
+struct st_value * st_json_parse_string_v1(const char * json);
 
 #endif
 

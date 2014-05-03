@@ -54,7 +54,7 @@ bool st_host_init_v1(struct st_database_connection * connect) {
 	host = connect->ops->get_host_by_name(connect, name.nodename);
 	struct st_value * error = st_value_hashtable_get2(host, "error", false);
 
-	return host != NULL && error->type == st_value_boolean && !error->value.boolean;
+	return host != NULL && error->type == st_value_boolean && !st_value_boolean_get(error);
 }
 
 __asm__(".symver st_host_get_info_v1, st_host_get_info@@LIBSTONE_1.2");

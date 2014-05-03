@@ -52,18 +52,18 @@
 
 static pthread_mutex_t st_log_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 static pthread_cond_t st_log_wait = PTHREAD_COND_INITIALIZER;
-static struct st_value_v1 * st_log_messages = NULL;
-static enum st_log_type_v1 st_log_default_type = st_log_type_daemon;
+static struct st_value * st_log_messages = NULL;
+static enum st_log_type st_log_default_type = st_log_type_daemon;
 static volatile bool st_log_finished = false;
 static volatile bool st_log_running = false;
 
 static void st_log_exit(void) __attribute__((destructor));
 static void st_log_init(void) __attribute__((constructor));
 static void st_log_send_message(void * arg);
-static void st_log_write_inner(enum st_log_level_v1 level, enum st_log_type_v1 type, const char * format, va_list params);
+static void st_log_write_inner(enum st_log_level level, enum st_log_type type, const char * format, va_list params);
 
 static struct st_log_level2 {
-	enum st_log_level_v1 level;
+	enum st_log_level level;
 	const char * name;
 } st_log_levels[] = {
 	{ st_log_level_alert,      "Alert" },
@@ -79,7 +79,7 @@ static struct st_log_level2 {
 };
 
 static struct st_log_type2 {
-	enum st_log_type_v1 type;
+	enum st_log_type type;
 	const char * name;
 } st_log_types[] = {
 	{ st_log_type_changer,         "Changer" },
@@ -100,8 +100,8 @@ static struct st_log_type2 {
 
 
 __asm__(".symver st_log_configure_v1, st_log_configure@@LIBSTONE_1.2");
-void st_log_configure_v1(struct st_value_v1 * config, enum st_log_type_v1 default_type) {
-	struct st_value_v1 * copy_config = st_value_copy_v1(config, true);
+void st_log_configure_v1(struct st_value * config, enum st_log_type default_type) {
+	struct st_value * copy_config = st_value_copy(config, true);
 
 	pthread_mutex_lock(&st_log_lock);
 
@@ -124,7 +124,7 @@ static void st_log_init() {
 }
 
 __asm__(".symver st_log_level_to_string_v1, st_log_level_to_string@@LIBSTONE_1.2");
-const char * st_log_level_to_string_v1(enum st_log_level_v1 level) {
+const char * st_log_level_to_string_v1(enum st_log_level level) {
 	unsigned int i;
 	for (i = 0; st_log_levels[i].level != st_log_level_unknown; i++)
 		if (st_log_levels[i].level == level)
@@ -147,7 +147,7 @@ void st_log_stop_logger_v1() {
 }
 
 __asm__(".symver st_log_string_to_level_v1, st_log_string_to_level@@LIBSTONE_1.2");
-enum st_log_level_v1 st_log_string_to_level_v1(const char * level) {
+enum st_log_level st_log_string_to_level_v1(const char * level) {
 	if (level == NULL)
 		return st_log_level_unknown;
 
@@ -160,7 +160,7 @@ enum st_log_level_v1 st_log_string_to_level_v1(const char * level) {
 }
 
 __asm__(".symver st_log_string_to_type_v1, st_log_string_to_type@@LIBSTONE_1.2");
-enum st_log_type_v1 st_log_string_to_type_v1(const char * type) {
+enum st_log_type st_log_string_to_type_v1(const char * type) {
 	if (type == NULL)
 		return st_log_type_unknown;
 
@@ -173,17 +173,17 @@ enum st_log_type_v1 st_log_string_to_type_v1(const char * type) {
 }
 
 static void st_log_send_message(void * arg) {
-	struct st_value_v1 * config = arg;
-	struct st_value_v1 * messages = st_value_new_linked_list();
+	struct st_value * config = arg;
+	struct st_value * messages = st_value_new_linked_list();
 	int socket = -1;
 
 	pthread_mutex_lock(&st_log_lock);
 	for (;;) {
-		struct st_value_v1 * tmp_messages = st_log_messages;
+		struct st_value * tmp_messages = st_log_messages;
 		st_log_messages = messages;
 		messages = tmp_messages;
 
-		unsigned int nb_messages = st_value_list_get_length_v1(messages);
+		unsigned int nb_messages = st_value_list_get_length(messages);
 		if (nb_messages == 0 && !st_log_running)
 			break;
 		if (nb_messages == 0) {
@@ -199,9 +199,9 @@ static void st_log_send_message(void * arg) {
 				sleep(1);
 		}
 
-		struct st_value_iterator * iter = st_value_list_get_iterator_v1(messages);
-		while (st_value_iterator_has_next_v1(iter)) {
-			struct st_value_v1 * message = st_value_iterator_get_value_v1(iter, false);
+		struct st_value_iterator * iter = st_value_list_get_iterator(messages);
+		while (st_value_iterator_has_next(iter)) {
+			struct st_value * message = st_value_iterator_get_value(iter, false);
 			char * str_message = st_json_encode_to_string_v1(message);
 			size_t str_message_length = strlen(str_message);
 
@@ -230,8 +230,8 @@ static void st_log_send_message(void * arg) {
 				socket = -1;
 			}
 		}
-		st_value_iterator_free_v1(iter);
-		st_value_list_clear_v1(messages);
+		st_value_iterator_free(iter);
+		st_value_list_clear(messages);
 
 		pthread_mutex_lock(&st_log_lock);
 	}
@@ -241,12 +241,12 @@ static void st_log_send_message(void * arg) {
 	pthread_cond_signal(&st_log_wait);
 	pthread_mutex_unlock(&st_log_lock);
 
-	st_value_free_v1(messages);
-	st_value_free_v1(config);
+	st_value_free(messages);
+	st_value_free(config);
 }
 
 __asm__(".symver st_log_type_to_string_v1, st_log_type_to_string@@LIBSTONE_1.2");
-const char * st_log_type_to_string_v1(enum st_log_type_v1 type) {
+const char * st_log_type_to_string_v1(enum st_log_type type) {
 	unsigned int i;
 	for (i = 0; st_log_types[i].type != st_log_type_unknown; i++)
 		if (st_log_types[i].type == type)
@@ -256,7 +256,7 @@ const char * st_log_type_to_string_v1(enum st_log_type_v1 type) {
 }
 
 __asm__(".symver st_log_write_v1, st_log_write@@LIBSTONE_1.2");
-void st_log_write_v1(enum st_log_level_v1 level, const char * format, ...) {
+void st_log_write_v1(enum st_log_level level, const char * format, ...) {
 	if (st_log_finished)
 		return;
 
@@ -267,7 +267,7 @@ void st_log_write_v1(enum st_log_level_v1 level, const char * format, ...) {
 }
 
 __asm__(".symver st_log_write2_v1, st_log_write2@@LIBSTONE_1.2");
-void st_log_write2_v1(enum st_log_level_v1 level, enum st_log_type_v1 type, const char * format, ...) {
+void st_log_write2_v1(enum st_log_level level, enum st_log_type type, const char * format, ...) {
 	if (st_log_finished)
 		return;
 
@@ -277,19 +277,19 @@ void st_log_write2_v1(enum st_log_level_v1 level, enum st_log_type_v1 type, cons
 	va_end(va);
 }
 
-static void st_log_write_inner(enum st_log_level_v1 level, enum st_log_type_v1 type, const char * format, va_list params) {
+static void st_log_write_inner(enum st_log_level level, enum st_log_type type, const char * format, va_list params) {
 	long long int timestamp = time(NULL);
 
 	char * str_message = NULL;
 	vasprintf(&str_message, format, params);
 
-	struct st_value_v1 * message = st_value_pack_v1("{sssssiss}", "level", st_log_level_to_string_v1(level), "type", st_log_type_to_string_v1(type), "timestamp", timestamp, "message", str_message);
+	struct st_value * message = st_value_pack("{sssssiss}", "level", st_log_level_to_string_v1(level), "type", st_log_type_to_string_v1(type), "timestamp", timestamp, "message", str_message);
 
 	free(str_message);
 
 	pthread_mutex_lock(&st_log_lock);
 
-	st_value_list_push_v1(st_log_messages, message, true);
+	st_value_list_push(st_log_messages, message, true);
 
 	pthread_cond_signal(&st_log_wait);
 	pthread_mutex_unlock(&st_log_lock);

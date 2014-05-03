@@ -32,7 +32,61 @@
 // bool
 #include <stdbool.h>
 
-struct st_value;
+/**
+ * \brief Wrapper of value
+ *
+ * This structure can contain differents kind of value. Each value can be shared.
+ */
+struct st_value {
+		/**
+		 * \enum st_value_type
+		 * \brief Type of value
+		 */
+		enum st_value_type {
+				/**
+				 * \brief Used to store an array list
+				 */
+				st_value_array = 0x1,
+				/**
+				 * \brief Used to store a boolean value
+				 */
+				st_value_boolean = 0x2,
+				/**
+				 * \brief Used to store a custom value
+				 */
+				st_value_custom = 0x3,
+				/**
+				 * \brief Used to store a floating value
+				 */
+				st_value_float = 0x4,
+				/**
+				 * \brief Used to store an hashtable
+				 */
+				st_value_hashtable = 0x5,
+				/**
+				 * \brief Used to store an integer value
+				 */
+				st_value_integer = 0x6,
+				/**
+				 * \brief Used to store a linked list
+				 */
+				st_value_linked_list = 0x7,
+				/**
+				 * \brief Used to store a null value
+				 */
+				st_value_null = 0x8,
+				/**
+				 * \brief Used to store a string value
+				 */
+				st_value_string = 0x9,
+		} type;
+		/**
+		 * \brief Number of many times this value is shared
+		 *
+		 * \attention Should not be modify
+		 */
+		unsigned int shared;
+} __attribute__((packed));
 
 /**
  * \brief Used to free custom value
@@ -53,116 +107,11 @@ typedef void (*st_value_free_f)(void * value);
  */
 typedef unsigned long long (*st_value_hashtable_compupte_hash_f)(const struct st_value * key);
 
-/**
- * \brief Wrapper of value
- *
- * This structure can contain differents kind of value. Each value can be shared.
- */
-struct st_value {
-		/**
-		 * \enum st_value_type
-		 * \brief Type of value
-		 */
-		enum st_value_type {
-				/**
-				 * \brief Used to store an array list
-				 */
-				st_value_array,
-				/**
-				 * \brief Used to store a boolean value
-				 */
-				st_value_boolean,
-				/**
-				 * \brief Used to store a custom value
-				 */
-				st_value_custom,
-				/**
-				 * \brief Used to store a floating value
-				 */
-				st_value_float,
-				/**
-				 * \brief Used to store an hashtable
-				 */
-				st_value_hashtable,
-				/**
-				 * \brief Used to store an integer value
-				 */
-				st_value_integer,
-				/**
-				 * \brief Used to store a linked list
-				 */
-				st_value_linked_list,
-				/**
-				 * \brief Used to store a null value
-				 */
-				st_value_null,
-				/**
-				 * \brief Used to store a string value
-				 */
-				st_value_string,
-		} type;
-		union {
-				bool boolean;
-				struct st_value_array {
-						struct st_value ** values;
-						unsigned int nb_vals, nb_preallocated;
-				} array;
-				long long int integer;
-				double floating;
-				struct st_value_hashtable {
-						struct st_value_hashtable_node {
-								unsigned long long hash;
-								struct st_value * key;
-								struct st_value * value;
-								struct st_value_hashtable_node * next;
-						} ** nodes;
-						unsigned int nb_elements;
-						unsigned int size_node;
-
-						bool allow_rehash;
-
-						st_value_hashtable_compupte_hash_f compute_hash;
-				} hashtable;
-				struct st_value_linked_list {
-						struct st_value_linked_list_node {
-								struct st_value * value;
-								struct st_value_linked_list_node * next;
-								struct st_value_linked_list_node * previous;
-						} * first, * last;
-						unsigned int nb_vals;
-				} list;
-				char * string;
-				struct st_value_custom {
-					void * data;
-					/**
-					 * \brief Function used to release custom value
-					 */
-					st_value_free_f release;
-				} custom;
-		} value;
-		/**
-		 * \brief Number of many times this value is shared
-		 *
-		 * \attention Should not be modify
-		 */
-		unsigned int shared;
-} __attribute__((packed));
-
 struct st_value_iterator {
-		struct st_value * value;
-		bool shallow_ref;
-		union {
-				unsigned int array_index;
-				struct st_value_iterator_hashtable {
-						struct st_value_hashtable_node * node;
-						unsigned int i_elements;
-				} hashtable;
-				struct st_value_iterator_list {
-					struct st_value_linked_list_node * current;
-					struct st_value_linked_list_node * next;
-				} list;
-		} data;
+	struct st_value * value;
+	bool weak_ref;
 };
+
 
 /**
  * \brief test if \a val can be convert into type \a type
@@ -208,6 +157,7 @@ bool st_value_equals(struct st_value * a, struct st_value * b) __attribute__((no
  * \param[in] value release this \a value
  */
 void st_value_free(struct st_value * value) __attribute__((nonnull));
+void * st_value_get(const struct st_value * value) __attribute__((nonnull));
 /**
  * \brief Create new array list
  *
@@ -288,6 +238,12 @@ struct st_value * st_value_vpack(const char * format, va_list params) __attribut
 int st_value_vunpack(struct st_value * root, const char * format, va_list params) __attribute__((nonnull));
 bool st_value_vvalid(struct st_value * value, const char * format, va_list params) __attribute__((nonnull));
 
+bool st_value_boolean_get(const struct st_value * value) __attribute__((nonnull));
+
+void * st_value_custom_get(const struct st_value * value) __attribute__((nonnull));
+
+double st_value_float_get(const struct st_value * value) __attribute__((nonnull));
+
 /**
  * \brief remove all elements from hashtable
  *
@@ -355,6 +311,8 @@ void st_value_hashtable_remove2(struct st_value * hash, const char * key) __attr
  */
 struct st_value * st_value_hashtable_values(struct st_value * hash) __attribute__((nonnull));
 
+long long int st_value_integer_get(const struct st_value * value) __attribute__((nonnull));
+
 void st_value_list_clear(struct st_value * list) __attribute__((nonnull));
 struct st_value_iterator * st_value_list_get_iterator(struct st_value * list) __attribute__((nonnull,warn_unused_result));
 unsigned int st_value_list_get_length(struct st_value * list) __attribute__((nonnull));
@@ -366,6 +324,8 @@ struct st_value * st_value_list_slice(struct st_value * list, int index) __attri
 struct st_value * st_value_list_slice2(struct st_value * list, int index, int end) __attribute__((nonnull,warn_unused_result));
 struct st_value * st_value_list_splice(struct st_value * list, int index, int how_many, ...) __attribute__((nonnull(1),warn_unused_result));
 struct st_value * st_value_list_unshift(struct st_value * list) __attribute__((nonnull,warn_unused_result));
+
+const char * st_value_string_get(const struct st_value * value) __attribute__((nonnull));
 
 void st_value_iterator_free(struct st_value_iterator * iter) __attribute__((nonnull));
 struct st_value * st_value_iterator_get_key(struct st_value_iterator * iter, bool move_to_next, bool shared) __attribute__((nonnull,warn_unused_result));

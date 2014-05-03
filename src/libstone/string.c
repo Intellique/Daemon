@@ -57,14 +57,15 @@ bool st_string_check_valid_utf8_v1(const char * string) {
 }
 
 __asm__(".symver st_string_compute_hash_v1, st_string_compute_hash@@LIBSTONE_1.2");
-unsigned long long st_string_compute_hash_v1(const struct st_value_v1 * value) {
+unsigned long long st_string_compute_hash_v1(const struct st_value * value) {
 	if (value == NULL || value->type != st_value_string)
 		return 0;
 
 	unsigned long long hash = 0;
-	int length = strlen(value->value.string), i;
+	const char * str = st_value_string_get(value);
+	int length = strlen(str), i;
 	for (i = 0; i < length; i++)
-		hash = value->value.string[i] + (hash << 6) + (hash << 16) - hash;
+		hash = str[i] + (hash << 6) + (hash << 16) - hash;
 	return hash;
 }
 

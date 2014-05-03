@@ -28,20 +28,16 @@
 #define __LIBSTONE_LOG_P_H__
 
 #include <libstone/log.h>
+#include <libstone/value.h>
 
-#include "value.h"
-
-#define st_log_level_v1 st_log_level
-#define st_log_type_v1 st_log_type
-
-void st_log_configure_v1(struct st_value_v1 * config, enum st_log_type_v1 default_type);
-const char * st_log_level_to_string_v1(enum st_log_level_v1 level);
+void st_log_configure_v1(struct st_value * config, enum st_log_type default_type);
+const char * st_log_level_to_string_v1(enum st_log_level level);
 void st_log_stop_logger_v1(void);
-enum st_log_level_v1 st_log_string_to_level_v1(const char * string) __attribute__((nonnull));
-enum st_log_type_v1 st_log_string_to_type_v1(const char * string) __attribute__((nonnull));
-const char * st_log_type_to_string_v1(enum st_log_type type_v1);
+enum st_log_level st_log_string_to_level_v1(const char * string) __attribute__((nonnull));
+enum st_log_type st_log_string_to_type_v1(const char * string) __attribute__((nonnull));
+const char * st_log_type_to_string_v1(enum st_log_type type);
 void st_log_write_v1(enum st_log_level level, const char * format, ...) __attribute__ ((format (printf, 2, 3)));
-void st_log_write2_v1(enum st_log_level_v1 level, enum st_log_type_v1 type, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
+void st_log_write2_v1(enum st_log_level level, enum st_log_type type, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
 
 #endif
 

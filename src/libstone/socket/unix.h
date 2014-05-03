@@ -29,8 +29,8 @@
 
 #include "../socket.h"
 
-int st_socket_unix_v1(struct st_value_v1 * config);
-bool st_socket_unix_server_v1(struct st_value_v1 * config, st_socket_accept_f_v1 accept_callback);
+int st_socket_unix_v1(struct st_value * config);
+bool st_socket_unix_server_v1(struct st_value * config, st_socket_accept_f accept_callback);
 
 #endif
 

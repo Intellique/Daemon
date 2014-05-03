@@ -42,30 +42,30 @@
 #include <unistd.h>
 
 #include <libstone/poll.h>
+#include <libstone/value.h>
 
 #include "tcp.h"
-#include "../value.h"
 
 struct st_tcp_socket_server_v1 {
 	int fd;
-	st_socket_accept_f_v1 callback;
+	st_socket_accept_f callback;
 	int af;
 };
 
 static void st_socket_tcp_server_callback(int fd, short event, void * data);
 
 
-int st_socket_tcp_v1(struct st_value_v1 * config) {
+int st_socket_tcp_v1(struct st_value * config) {
 	int stype = SOCK_STREAM;
 
 	char * type = NULL;
 	char * saddr;
 	long long int port;
 
-	if (st_value_unpack_v1(config, "{sssi}", "address", &saddr, "port", &port) < 2)
+	if (st_value_unpack(config, "{sssi}", "address", &saddr, "port", &port) < 2)
 		return -1;
 
-	if (st_value_unpack_v1(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+	if (st_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
 
 	free(type);
@@ -111,17 +111,17 @@ int st_socket_tcp_v1(struct st_value_v1 * config) {
 	return fd;
 }
 
-int st_socket_tcp6_v1(struct st_value_v1 * config) {
+int st_socket_tcp6_v1(struct st_value * config) {
 	int stype = SOCK_STREAM;
 
 	char * type = NULL;
 	char * saddr;
 	long long int port;
 
-	if (st_value_unpack_v1(config, "{sssi}", "address", &saddr, "port", &port) < 2)
+	if (st_value_unpack(config, "{sssi}", "address", &saddr, "port", &port) < 2)
 		return -1;
 
-	if (st_value_unpack_v1(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+	if (st_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
 
 	free(type);
@@ -167,15 +167,15 @@ int st_socket_tcp6_v1(struct st_value_v1 * config) {
 	return fd;
 }
 
-bool st_socket_tcp_server_v1(struct st_value_v1 * config, st_socket_accept_f_v1 accept_callback) {
+bool st_socket_tcp_server_v1(struct st_value * config, st_socket_accept_f accept_callback) {
 	int type = SOCK_STREAM;
 
-	struct st_value_v1 * vtype = st_value_hashtable_get2_v1(config, "type", false);
-	if (vtype->type == st_value_string && !strcmp(vtype->value.string, "datagram"))
+	struct st_value * vtype = st_value_hashtable_get2(config, "type", false);
+	if (vtype->type == st_value_string && !strcmp(st_value_string_get(vtype), "datagram"))
 		type = SOCK_DGRAM;
 
-	struct st_value_v1 * vaddr = st_value_hashtable_get2_v1(config, "address", false);
-	struct st_value_v1 * vport = st_value_hashtable_get2_v1(config, "port", false);
+	struct st_value * vaddr = st_value_hashtable_get2(config, "address", false);
+	struct st_value * vport = st_value_hashtable_get2(config, "port", false);
 	if (vport->type != st_value_integer)
 		return -1;
 
@@ -191,7 +191,7 @@ bool st_socket_tcp_server_v1(struct st_value_v1 * config, st_socket_accept_f_v1 
 			.ai_canonname = NULL,
 			.ai_next      = NULL,
 		};
-		failed = getaddrinfo(vaddr->value.string, NULL, &hint, &addr);
+		failed = getaddrinfo(st_value_string_get(vtype), NULL, &hint, &addr);
 		if (failed != 0)
 			return -1;
 
@@ -204,7 +204,7 @@ bool st_socket_tcp_server_v1(struct st_value_v1 * config, st_socket_accept_f_v1 
 			}
 
 			struct sockaddr_in * addr_v4 = (struct sockaddr_in *) ptr->ai_addr;
-			addr_v4->sin_port = htons(vport->value.integer);
+			addr_v4->sin_port = htons(st_value_integer_get(vport));
 
 			int failed = bind(fd, ptr->ai_addr, ptr->ai_addrlen);
 			if (failed != 0) {
@@ -222,7 +222,7 @@ bool st_socket_tcp_server_v1(struct st_value_v1 * config, st_socket_accept_f_v1 
 
 		struct sockaddr_in addr_v4;
 		bzero(&addr_v4, sizeof(addr_v4));
-		addr_v4.sin_port = htons(vport->value.integer);
+		addr_v4.sin_port = htons(st_value_integer_get(vport));
 
 		int failed = bind(fd, (struct sockaddr *) &addr_v4, sizeof(addr_v4));
 		if (failed != 0) {
@@ -246,15 +246,15 @@ bool st_socket_tcp_server_v1(struct st_value_v1 * config, st_socket_accept_f_v1 
 	return true;
 }
 
-bool st_socket_tcp6_server_v1(struct st_value_v1 * config, st_socket_accept_f_v1 accept_callback) {
+bool st_socket_tcp6_server_v1(struct st_value * config, st_socket_accept_f accept_callback) {
 	int type = SOCK_STREAM;
 
-	struct st_value_v1 * vtype = st_value_hashtable_get2_v1(config, "type", false);
-	if (vtype->type == st_value_string && !strcmp(vtype->value.string, "datagram"))
+	struct st_value * vtype = st_value_hashtable_get2(config, "type", false);
+	if (vtype->type == st_value_string && !strcmp(st_value_string_get(vtype), "datagram"))
 		type = SOCK_DGRAM;
 
-	struct st_value_v1 * vaddr = st_value_hashtable_get2_v1(config, "address", false);
-	struct st_value_v1 * vport = st_value_hashtable_get2_v1(config, "port", false);
+	struct st_value * vaddr = st_value_hashtable_get2(config, "address", false);
+	struct st_value * vport = st_value_hashtable_get2(config, "port", false);
 	if (vport->type != st_value_integer)
 		return -1;
 
@@ -270,7 +270,7 @@ bool st_socket_tcp6_server_v1(struct st_value_v1 * config, st_socket_accept_f_v1
 			.ai_canonname = NULL,
 			.ai_next      = NULL,
 		};
-		failed = getaddrinfo(vaddr->value.string, NULL, &hint, &addr);
+		failed = getaddrinfo(st_value_string_get(vtype), NULL, &hint, &addr);
 		if (failed != 0)
 			return -1;
 
@@ -283,7 +283,7 @@ bool st_socket_tcp6_server_v1(struct st_value_v1 * config, st_socket_accept_f_v1
 			}
 
 			struct sockaddr_in6 * addr_v6 = (struct sockaddr_in6 *) ptr->ai_addr;
-			addr_v6->sin6_port = htons(vport->value.integer);
+			addr_v6->sin6_port = htons(st_value_integer_get(vport));
 
 			int failed = bind(fd, ptr->ai_addr, ptr->ai_addrlen);
 			if (failed != 0) {
@@ -301,7 +301,7 @@ bool st_socket_tcp6_server_v1(struct st_value_v1 * config, st_socket_accept_f_v1
 
 		struct sockaddr_in6 addr_v6;
 		bzero(&addr_v6, sizeof(addr_v6));
-		addr_v6.sin6_port = htons(vport->value.integer);
+		addr_v6.sin6_port = htons(st_value_integer_get(vport));
 
 		int failed = bind(fd, (struct sockaddr *) &addr_v6, sizeof(addr_v6));
 		if (failed != 0) {
@@ -330,7 +330,7 @@ static void st_socket_tcp_server_callback(int fd, short event __attribute__((unu
 
 	int new_fd = -1;
 	socklen_t length = 0;
-	struct st_value_v1 * client_info;
+	struct st_value * client_info;
 
 	if (self->af == AF_INET) {
 		struct sockaddr_in addr_v4;
@@ -342,7 +342,7 @@ static void st_socket_tcp_server_callback(int fd, short event __attribute__((unu
 		inet_ntop(AF_INET, &addr_v4, str_addr, INET_ADDRSTRLEN);
 		long long int port = ntohs(addr_v4.sin_port);
 
-		client_info = st_value_pack_v1("{sssssi}", "type", "inet", "addr", str_addr, "port", port);
+		client_info = st_value_pack("{sssssi}", "type", "inet", "addr", str_addr, "port", port);
 	} else {
 		struct sockaddr_in6 addr_v6;
 		bzero(&addr_v6, sizeof(addr_v6));
@@ -353,11 +353,11 @@ static void st_socket_tcp_server_callback(int fd, short event __attribute__((unu
 		inet_ntop(AF_INET6, &addr_v6, str_addr, INET6_ADDRSTRLEN);
 		long long int port = ntohs(addr_v6.sin6_port);
 
-		client_info = st_value_pack_v1("{sssssi}", "type", "inet6", "addr", str_addr, "port", port);
+		client_info = st_value_pack("{sssssi}", "type", "inet6", "addr", str_addr, "port", port);
 	}
 
 	self->callback(fd, new_fd, client_info);
 
-	st_value_free_v1(client_info);
+	st_value_free(client_info);
 }
 
