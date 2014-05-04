@@ -101,25 +101,25 @@ struct lgr_log_module * st_log_mariadb_new_module(struct st_value * params) {
 	struct st_value * val_password = st_value_hashtable_get2(params, "password", false);
 	struct st_value * level = st_value_hashtable_get2(params, "verbosity", false);
 
-	char * host = NULL;
+	const char * host = NULL;
 	if (val_host->type == st_value_string)
-		host = val_host->value.string;
+		host = st_value_string_get(val_host);
 
-	char * port = NULL;
+	const char * port = NULL;
 	if (val_port->type == st_value_string)
-		port = val_port->value.string;
+		port = st_value_string_get(val_port);
 
-	char * db = NULL;
+	const char * db = NULL;
 	if (val_db->type == st_value_string)
-		db = val_db->value.string;
+		db = st_value_string_get(val_db);
 
-	char * user = NULL;
+	const char * user = NULL;
 	if (val_user->type == st_value_string)
-		user = val_user->value.string;
+		user = st_value_string_get(val_user);
 
-	char * password = NULL;
+	const char * password = NULL;
 	if (val_password->type == st_value_string)
-		password = val_password->value.string;
+		password = st_value_string_get(val_password);
 
 	unsigned int pport = 0;
 	if (port != NULL)
@@ -182,7 +182,7 @@ struct lgr_log_module * st_log_mariadb_new_module(struct st_value * params) {
 	st_log_mariadb_module_prepare_queries(self);
 
 	struct lgr_log_module * mod = malloc(sizeof(struct lgr_log_module));
-	mod->level = st_log_string_to_level(level->value.string);
+	mod->level = st_log_string_to_level(st_value_string_get(level));
 	mod->ops = &st_log_mariadb_module_ops;
 	mod->data = self;
 
@@ -208,7 +208,7 @@ static void st_log_mariadb_module_write(struct lgr_log_module * module, struct s
 	if (vtype->type != st_value_string)
 		return;
 
-	enum st_log_type type = st_log_string_to_type(vtype->value.string);
+	enum st_log_type type = st_log_string_to_type(st_value_string_get(vtype));
 	if (type == st_log_type_unknown)
 		return;
 
@@ -220,8 +220,8 @@ static void st_log_mariadb_module_write(struct lgr_log_module * module, struct s
 	if (vmessage->type != st_value_string)
 		return;
 
-	enum st_log_level lvl = st_log_string_to_level(level->value.string);
-	enum st_log_type typ = st_log_string_to_type(vtype->value.string);
+	enum st_log_level lvl = st_log_string_to_level(st_value_string_get(level));
+	enum st_log_type typ = st_log_string_to_type(st_value_string_get(vtype));
 
 	MYSQL_BIND params[5];
 	bzero(params, sizeof(params));
@@ -234,13 +234,14 @@ static void st_log_mariadb_module_write(struct lgr_log_module * module, struct s
 	params[1].buffer = st_log_mariadb_levels[lvl];
 	params[1].buffer_length = strlen(st_log_mariadb_levels[lvl]);
 
+	long long int timestamp = st_value_integer_get(vtimestamp);
 	params[2].buffer_type = MYSQL_TYPE_LONGLONG;
-	params[2].buffer = (char *) &vtimestamp->value.integer;
-	params[2].buffer_length = sizeof(vtimestamp->value.integer);
+	params[2].buffer = (char *) &timestamp;
+	params[2].buffer_length = sizeof(long long int);
 
 	params[3].buffer_type = MYSQL_TYPE_STRING;
-	params[3].buffer = vmessage->value.string;
-	params[3].buffer_length = strlen(vmessage->value.string);
+	params[3].buffer = (char *) st_value_string_get(vmessage);
+	params[3].buffer_length = strlen(st_value_string_get(vmessage));
 
 	params[4].buffer_type = MYSQL_TYPE_LONG;
 	params[4].buffer = (char *) &self->host_id;

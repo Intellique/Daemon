@@ -94,7 +94,7 @@ static bool stctl_daemon_try_connect() {
 		return false;
 	}
 
-	bool ok = stctl_auth_do_authentification(fd, password->value.string);
+	bool ok = stctl_auth_do_authentification(fd, st_value_string_get(password));
 
 	st_value_free(config);
 	close(fd);
@@ -238,7 +238,7 @@ int stctl_stop_daemon(int argc, char ** argv) {
 		return 2;
 	}
 
-	bool ok = stctl_auth_do_authentification(fd, password->value.string);
+	bool ok = stctl_auth_do_authentification(fd, st_value_string_get(password));
 
 	if (!ok) {
 		st_value_free(config);
@@ -275,9 +275,9 @@ int stctl_stop_daemon(int argc, char ** argv) {
 		return 4;
 	}
 
-	pid_t process = pid->value.integer;
+	pid_t process = st_value_integer_get(pid);
 
-	ok = !error->value.boolean;
+	ok = !st_value_boolean_get(error);
 
 	st_value_free(response);
 	st_value_free(config);

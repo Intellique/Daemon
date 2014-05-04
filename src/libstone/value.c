@@ -1423,6 +1423,41 @@ void st_value_list_clear_v1(struct st_value * list) {
 	}
 }
 
+__asm__(".symver st_value_list_get_v1, st_value_list_get@@LIBSTONE_1.2");
+struct st_value * st_value_list_get_v1(struct st_value * list, unsigned int index, bool shared) {
+	struct st_value * ret = &null_value;
+
+	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
+		return ret;
+
+	if (list->type == st_value_array) {
+		struct st_value_array * array = st_value_get_v1(list);
+		if (index < array->nb_vals)
+			ret = array->values[index];
+	} else {
+		struct st_value_linked_list * linked_list = st_value_get_v1(list);
+		if (linked_list->nb_vals >= index) {
+			if (index == 0)
+				ret = linked_list->first->value;
+			else if (linked_list->nb_vals == index)
+				ret = linked_list->last->value;
+			else {
+				struct st_value_linked_list_node * node = linked_list->first;
+				while (index > 0) {
+					node = node->next;
+					index--;
+				}
+				ret = node->value;
+			}
+		}
+	}
+
+	if (shared)
+		st_value_share_v1(ret);
+
+	return ret;
+}
+
 __asm__(".symver st_value_list_get_iterator_v1, st_value_list_get_iterator@@LIBSTONE_1.2");
 struct st_value_iterator * st_value_list_get_iterator_v1(struct st_value * list) {
 	return st_value_list_get_iterator2(list, false);
@@ -1832,6 +1867,12 @@ struct st_value * st_value_list_unshift_v1(struct st_value * list) {
 	}
 
 	return ret;
+}
+
+
+__asm__(".symver st_value_string_get_v1, st_value_string_get@@LIBSTONE_1.2");
+const char * st_value_string_get_v1(const struct st_value * value) {
+	return st_value_get_v1(value);
 }
 
 

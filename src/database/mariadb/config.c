@@ -90,23 +90,23 @@ struct st_database_config * st_database_mariadb_config_init(struct st_value * pa
 	bzero(self, sizeof(struct st_database_mariadb_config_private));
 
 	if (user != NULL && user->type == st_value_string)
-		self->user = strdup(user->value.string);
+		self->user = strdup(st_value_string_get(user));
 
 	if (password != NULL && password->type == st_value_string)
-		self->password = strdup(password->value.string);
+		self->password = strdup(st_value_string_get(password));
 
 	if (db != NULL && db->type == st_value_string)
-		self->db = strdup(db->value.string);
+		self->db = strdup(st_value_string_get(db));
 
 	if (host != NULL && host->type == st_value_string)
-		self->host = strdup(host->value.string);
+		self->host = strdup(st_value_string_get(host));
 
 	if (port != NULL && port->type == st_value_integer)
-		self->port = port->value.integer;
+		self->port = st_value_integer_get(port);
 
 	struct st_database_config * config = malloc(sizeof(struct st_database_config));
 	if (name != NULL && name->type == st_value_string)
-		config->name = strdup(name->value.string);
+		config->name = strdup(st_value_string_get(name));
 	else {
 		static int n_config = 1;
 		asprintf(&config->name, "config_%d", n_config);

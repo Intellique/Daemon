@@ -45,7 +45,7 @@ struct st_value * std_admin_login(struct std_admin_client * client, struct st_va
 	if (client->logged)
 		return st_value_pack("{sbss}", "error", false, "message", "already logged");
 
-	switch (step->value.integer) {
+	switch (st_value_integer_get(step)) {
 		case 1: {
 				free(client->salt);
 				client->salt = st_checksum_gen_salt("sha1", 64);
@@ -62,9 +62,9 @@ struct st_value * std_admin_login(struct std_admin_client * client, struct st_va
 					return st_value_pack("{sbss}", "error", true, "message", "parameter password : should be a string");
 
 				struct st_value * vpasswd = st_value_hashtable_get2(config, "password", false);
-				char * hash = st_checksum_salt_password("sha1", vpasswd->value.string, client->salt);
+				char * hash = st_checksum_salt_password("sha1", st_value_string_get(vpasswd), client->salt);
 
-				if (!strcmp(hash, vhash->value.string)) {
+				if (!strcmp(hash, st_value_string_get(vhash))) {
 					free(hash);
 					free(client->salt);
 

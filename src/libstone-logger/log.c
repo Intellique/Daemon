@@ -78,7 +78,7 @@ bool lgr_log_load_v1(struct st_value_v1 * params) {
 
 		void * cookie = NULL;
 		if (!st_value_hashtable_has_key(lgr_drivers, type)) {
-			cookie = lgr_loader_load("log", type->value.string);
+			cookie = lgr_loader_load("log", st_value_string_get(type));
 
 			if (cookie == NULL) {
 				ok = false;
@@ -87,7 +87,7 @@ bool lgr_log_load_v1(struct st_value_v1 * params) {
 		}
 
 		struct st_value_v1 * st_driver = st_value_hashtable_get(lgr_drivers, type, false, false);
-		struct lgr_log_driver * driver = st_driver->value.custom.data;
+		struct lgr_log_driver * driver = st_value_custom_get(st_driver);
 		if (cookie != NULL)
 			driver->cookie = cookie;
 
@@ -120,11 +120,11 @@ void lgr_log_write_v1(struct st_value_v1 * message) {
 	if (level == NULL || level->type != st_value_string)
 		return;
 
-	enum st_log_level lvl = st_log_string_to_level(level->value.string);
+	enum st_log_level lvl = st_log_string_to_level(st_value_string_get(level));
 	struct st_value_iterator * iter = st_value_list_get_iterator(lgr_modules);
 	while (st_value_iterator_has_next(iter)) {
 		struct st_value_v1 * module = st_value_iterator_get_value(iter, false);
-		struct lgr_log_module * mod = module->value.custom.data;
+		struct lgr_log_module * mod = st_value_custom_get(module);
 
 		if (lvl <= mod->level)
 			mod->ops->write(mod, message);

@@ -155,7 +155,7 @@ DEP_DIRS	:= $(patsubst ${BUILD_DIR}/%,${DEPEND_DIR}/%,${OBJ_DIRS})
 .PHONY: all binaries clean clean-depend cscope ctags debug distclean lib package prepare realclean stat stat-extra TAGS tar test
 .NOTPARALLEL: prepare
 
-all: binaries cscope tags
+all: binaries
 
 binaries: prepare $(sort ${BINS})
 
@@ -207,7 +207,7 @@ package:
 	@echo ' BUILD package'
 	@dpkg-buildpackage -us -uc -rfakeroot
 
-prepare: ${BIN_DIRS} ${CHCKSUM_DIR} ${DEP_DIRS} ${OBJ_DIRS} $(addprefix prepare_,${BIN_SYMS}) $(addprefix prepare_,${TEST_BIN_SYMS}) ${VERSION_FILE}
+prepare: ${BIN_DIRS} ${CHCKSUM_DIR} ${DEP_DIRS} ${OBJ_DIRS} $(addprefix prepare_,${BIN_SYMS}) $(addprefix prepare_,${TEST_BIN_SYMS}) ${VERSION_FILE} cscope tags
 
 rebuild: clean all
 

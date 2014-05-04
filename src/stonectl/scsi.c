@@ -569,7 +569,7 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, str
 			case scsi_loader_element_type_data_transfer: {
 					struct scsi_loader_data_transfer_element * data_transfer_element = (struct scsi_loader_data_transfer_element *) ptr;
 
-					slot = slots->value.array.values[i + offset];
+					slot = st_value_list_get(slots, i + offset, false);
 					st_value_hashtable_put2(slot, "full", st_value_new_boolean(data_transfer_element->full), true);
 
 					if (data_transfer_element->full) {
@@ -599,7 +599,7 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, str
 			case scsi_loader_element_type_import_export_element: {
 					struct scsi_loader_import_export_element * import_export_element = (struct scsi_loader_import_export_element *) ptr;
 
-					slot = slots->value.array.values[i + offset];
+					slot = st_value_list_get(slots, i + offset, false);
 					st_value_hashtable_put2(slot, "full", st_value_new_boolean(import_export_element->full), true);
 
 					if (import_export_element->full) {
@@ -620,7 +620,7 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, str
 			case scsi_loader_element_type_storage_element: {
 					struct scsi_loader_storage_element * storage_element = (struct scsi_loader_storage_element *) ptr;
 
-					slot = slots->value.array.values[i + offset];
+					slot = st_value_list_get(slots, i + offset, false);
 					st_value_hashtable_put2(slot, "full", st_value_new_boolean(storage_element->full), true);
 
 					if (storage_element->full) {

@@ -85,8 +85,8 @@ bool std_logger_start(struct st_value * config) {
 	struct st_value * path = st_value_hashtable_get2(socket, "path", false);
 	if (path == NULL || path->type != st_value_string)
 		return false;
-	if (!access(path->value.string, F_OK))
-		unlink(path->value.string);
+	if (!access(st_value_string_get(path), F_OK))
+		unlink(st_value_string_get(path));
 
 	st_process_new(&logger, "logger", NULL, 0);
 	logger_in = st_process_pipe_to(&logger);

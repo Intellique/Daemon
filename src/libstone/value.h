@@ -128,6 +128,7 @@ struct st_value * st_value_hashtable_values_v1(struct st_value * hash) __attribu
 long long int st_value_integer_get_v1(const struct st_value * value) __attribute__((nonnull));
 
 void st_value_list_clear_v1(struct st_value * list) __attribute__((nonnull));
+struct st_value * st_value_list_get_v1(struct st_value * list, unsigned int index, bool shared) __attribute__((nonnull,warn_unused_result));
 struct st_value_iterator * st_value_list_get_iterator_v1(struct st_value * list) __attribute__((nonnull,warn_unused_result));
 unsigned int st_value_list_get_length_v1(struct st_value * list) __attribute__((nonnull));
 int st_value_list_index_of_v1(struct st_value * list, struct st_value * elt) __attribute__((nonnull));

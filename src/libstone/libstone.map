@@ -110,6 +110,7 @@ LIBSTONE_1.2 {
 		st_value_iterator_get_value;
 		st_value_iterator_has_next;
 		st_value_list_clear;
+		st_value_list_get;
 		st_value_list_get_iterator;
 		st_value_list_get_length;
 		st_value_list_index_of;

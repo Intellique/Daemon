@@ -99,25 +99,25 @@ struct lgr_log_module * st_log_postgresql_new_module(struct st_value * params) {
 	struct st_value * val_password = st_value_hashtable_get2(params, "password", false);
 	struct st_value * level = st_value_hashtable_get2(params, "verbosity", false);
 
-	char * host = NULL;
+	const char * host = NULL;
 	if (val_host->type == st_value_string)
-		host = val_host->value.string;
+		host = st_value_string_get(val_host);
 
-	char * port = NULL;
+	const char * port = NULL;
 	if (val_port->type == st_value_string)
-		port = val_port->value.string;
+		port = st_value_string_get(val_port);
 
-	char * db = NULL;
+	const char * db = NULL;
 	if (val_db->type == st_value_string)
-		db = val_db->value.string;
+		db = st_value_string_get(val_db);
 
-	char * user = NULL;
+	const char * user = NULL;
 	if (val_user->type == st_value_string)
-		user = val_user->value.string;
+		user = st_value_string_get(val_user);
 
-	char * password = NULL;
+	const char * password = NULL;
 	if (val_password->type == st_value_string)
-		password = val_password->value.string;
+		password = st_value_string_get(val_password);
 
 	PGconn * connect = PQsetdbLogin(host, port, NULL, NULL, db, user, password);
 	ConnStatusType status = PQstatus(connect);
@@ -152,7 +152,7 @@ struct lgr_log_module * st_log_postgresql_new_module(struct st_value * params) {
 	self->hostid = hostid;
 
 	struct lgr_log_module * mod = malloc(sizeof(struct lgr_log_module));
-	mod->level = st_log_string_to_level(level->value.string);
+	mod->level = st_log_string_to_level(st_value_string_get(level));
 	mod->ops = &st_log_postgresql_module_ops;
 	mod->data = self;
 
@@ -178,7 +178,7 @@ static void st_log_postgresql_module_write(struct lgr_log_module * module, struc
 	if (vtype->type != st_value_string)
 		return;
 
-	enum st_log_type type = st_log_string_to_type(vtype->value.string);
+	enum st_log_type type = st_log_string_to_type(st_value_string_get(vtype));
 	if (type == st_log_type_unknown)
 		return;
 
@@ -191,13 +191,13 @@ static void st_log_postgresql_module_write(struct lgr_log_module * module, struc
 		return;
 
 	char strtime[32];
-	time_t timestamp = vtimestamp->value.integer;
+	time_t timestamp = st_value_integer_get(vtimestamp);
 	st_time_convert(&timestamp, "%F %T", strtime, 32);
 
-	enum st_log_level lvl = st_log_string_to_level(level->value.string);
-	enum st_log_type typ = st_log_string_to_type(vtype->value.string);
+	enum st_log_level lvl = st_log_string_to_level(st_value_string_get(level));
+	enum st_log_type typ = st_log_string_to_type(st_value_string_get(vtype));
 
-	const char * param[] = {st_log_postgresql_types[typ], st_log_postgresql_levels[lvl], strtime, vmessage->value.string, self->hostid};
+	const char * param[] = {st_log_postgresql_types[typ], st_log_postgresql_levels[lvl], strtime, st_value_string_get(vmessage), self->hostid};
 
 	ExecStatusType qStatus = PGRES_FATAL_ERROR;
 	unsigned short i;

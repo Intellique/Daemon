@@ -33,7 +33,7 @@
 
 #include "auth.h"
 
-bool stctl_auth_do_authentification(int fd, char * password) {
+bool stctl_auth_do_authentification(int fd, const char * password) {
 	// step 1
 	struct st_value * request = st_value_pack("{siss}", "step", 1, "method", "login");
 	st_json_encode_to_fd(request, fd, true);
@@ -47,7 +47,7 @@ bool stctl_auth_do_authentification(int fd, char * password) {
 	}
 
 	struct st_value * error = st_value_hashtable_get2(response, "error", false);
-	if (error == NULL || error->type != st_value_boolean || error->value.boolean) {
+	if (error == NULL || error->type != st_value_boolean || st_value_string_get(error)) {
 		st_value_free(response);
 		return false;
 	}
@@ -62,7 +62,7 @@ bool stctl_auth_do_authentification(int fd, char * password) {
 
 
 	// step 2
-	char * hash = st_checksum_salt_password("sha1", password, salt->value.string);
+	char * hash = st_checksum_salt_password("sha1", password, st_value_string_get(salt));
 	st_value_free(salt);
 	if (hash == NULL)
 		return false;
@@ -75,12 +75,12 @@ bool stctl_auth_do_authentification(int fd, char * password) {
 
 	response = st_json_parse_fd(fd, 10000);
 	error = st_value_hashtable_get2(response, "error", false);
-	if (error == NULL || error->type != st_value_boolean || error->value.boolean) {
+	if (error == NULL || error->type != st_value_boolean || st_value_boolean_get(error)) {
 		st_value_free(response);
 		return false;
 	}
 
-	bool ok = !error->value.boolean;
+	bool ok = !st_value_boolean_get(error);
 	st_value_free(response);
 
 	return ok;

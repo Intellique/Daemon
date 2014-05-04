@@ -314,6 +314,7 @@ struct st_value * st_value_hashtable_values(struct st_value * hash) __attribute_
 long long int st_value_integer_get(const struct st_value * value) __attribute__((nonnull));
 
 void st_value_list_clear(struct st_value * list) __attribute__((nonnull));
+struct st_value * st_value_list_get(struct st_value * list, unsigned int index, bool shared) __attribute__((nonnull,warn_unused_result));
 struct st_value_iterator * st_value_list_get_iterator(struct st_value * list) __attribute__((nonnull,warn_unused_result));
 unsigned int st_value_list_get_length(struct st_value * list) __attribute__((nonnull));
 int st_value_list_index_of(struct st_value * list, struct st_value * elt) __attribute__((nonnull));
