@@ -40,30 +40,19 @@ bool stctl_auth_do_authentification(int fd, const char * password) {
 	st_value_free(request);
 
 	struct st_value * response = st_json_parse_fd(fd, 10000);
-	if (response == NULL || !st_value_hashtable_has_key2(response, "salt")) {
-		if (response != NULL)
-			st_value_free(response);
-		return false;
-	}
+	char * salt = NULL;
+	bool error = true;
+	st_value_unpack(response, "{sbss}", "error", &error, "salt", &salt);
 
-	struct st_value * error = st_value_hashtable_get2(response, "error", false);
-	if (error == NULL || error->type != st_value_boolean || st_value_string_get(error)) {
+	if (salt == NULL || error) {
 		st_value_free(response);
-		return false;
-	}
-
-	struct st_value * salt = st_value_hashtable_get2(response, "salt", true);
-	st_value_free(response);
-
-	if (salt->type != st_value_string) {
-		st_value_free(salt);
 		return false;
 	}
 
 
 	// step 2
-	char * hash = st_checksum_salt_password("sha1", password, st_value_string_get(salt));
-	st_value_free(salt);
+	char * hash = st_checksum_salt_password("sha1", password, salt);
+	free(salt);
 	if (hash == NULL)
 		return false;
 
@@ -74,15 +63,9 @@ bool stctl_auth_do_authentification(int fd, const char * password) {
 	st_value_free(request);
 
 	response = st_json_parse_fd(fd, 10000);
-	error = st_value_hashtable_get2(response, "error", false);
-	if (error == NULL || error->type != st_value_boolean || st_value_boolean_get(error)) {
-		st_value_free(response);
-		return false;
-	}
-
-	bool ok = !st_value_boolean_get(error);
+	st_value_unpack(response, "{sb}", "error", &error);
 	st_value_free(response);
 
-	return ok;
+	return !error;
 }
 
