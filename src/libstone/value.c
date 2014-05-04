@@ -364,38 +364,42 @@ struct st_value * st_value_copy_v1(struct st_value * val, bool deep_copy) {
 static unsigned int st_value_count_ref(struct st_value * base) {
 	unsigned int nb_ref = 1;
 
-	struct st_value * found = st_value_new_hashtable3(st_value_compute_addr, true);
-
 	switch (base->type) {
 		case st_value_array:
 		case st_value_linked_list: {
+				struct st_value * found = st_value_new_hashtable3(st_value_compute_addr, true);
+
 				struct st_value_iterator * iter = st_value_list_get_iterator2(base, true);
 				while (st_value_iterator_has_next_v1(iter)) {
 					struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
-					nb_ref += st_value_count_ref2(elt, found);
+					nb_ref += st_value_count_ref2(found, elt);
 				}
 				st_value_iterator_free_v1(iter);
+
+				st_value_free_v1(found);
 				break;
 			}
 
 		case st_value_hashtable: {
+				struct st_value * found = st_value_new_hashtable3(st_value_compute_addr, true);
+
 				struct st_value_iterator * iter = st_value_hashtable_get_iterator2(base, true);
 				while (st_value_iterator_has_next_v1(iter)) {
 					struct st_value * key = st_value_iterator_get_key_v1(iter, false, false);
-					nb_ref += st_value_count_ref2(key, found);
+					nb_ref += st_value_count_ref2(found, key);
 
 					struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
-					nb_ref += st_value_count_ref2(elt, found);
+					nb_ref += st_value_count_ref2(found, elt);
 				}
 				st_value_iterator_free_v1(iter);
+
+				st_value_free_v1(found);
 				break;
 			}
 
 		default:
 			break;
 	}
-
-	st_value_free_v1(found);
 
 	return nb_ref;
 }
@@ -416,7 +420,7 @@ static unsigned int st_value_count_ref2(struct st_value * found, struct st_value
 				struct st_value_iterator * iter = st_value_list_get_iterator2(ref, true);
 				while (st_value_iterator_has_next_v1(iter)) {
 					struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
-					nb_ref += st_value_count_ref2(elt, ref);
+					nb_ref += st_value_count_ref2(found, elt);
 				}
 				st_value_iterator_free_v1(iter);
 				break;
@@ -426,10 +430,10 @@ static unsigned int st_value_count_ref2(struct st_value * found, struct st_value
 				struct st_value_iterator * iter = st_value_hashtable_get_iterator2(ref, true);
 				while (st_value_iterator_has_next_v1(iter)) {
 					struct st_value * key = st_value_iterator_get_key_v1(iter, false, false);
-					nb_ref += st_value_count_ref2(key, ref);
+					nb_ref += st_value_count_ref2(found, key);
 
 					struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
-					nb_ref += st_value_count_ref2(elt, ref);
+					nb_ref += st_value_count_ref2(found, elt);
 				}
 				st_value_iterator_free_v1(iter);
 				break;
@@ -629,7 +633,7 @@ void st_value_free_v1(struct st_value * value) {
 }
 
 void * st_value_get_v1(const struct st_value * value) {
-	return (void *) value + 1;
+	return (void *) (value + 1);
 }
 
 static struct st_value * st_value_new(enum st_value_type type, size_t extra) {
@@ -664,7 +668,7 @@ struct st_value * st_value_new_boolean_v1(bool value) {
 __asm__(".symver st_value_new_custom_v1, st_value_new_custom@@LIBSTONE_1.2");
 struct st_value * st_value_new_custom_v1(void * value, st_value_free_f release) {
 	struct st_value * val = st_value_new(st_value_custom, sizeof(struct st_value_custom));
-	struct st_value_custom * custom = st_value_get_v1(value);
+	struct st_value_custom * custom = st_value_get_v1(val);
 	custom->data = value;
 	custom->release = release;
 	return val;
