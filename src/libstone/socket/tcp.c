@@ -59,15 +59,16 @@ int st_socket_tcp_v1(struct st_value * config) {
 	int stype = SOCK_STREAM;
 
 	char * type = NULL;
-	char * saddr;
+	char * saddr = NULL;
 	long long int port;
 
-	if (st_value_unpack(config, "{sssi}", "address", &saddr, "port", &port) < 2)
+	if (st_value_unpack(config, "{sssi}", "address", &saddr, "port", &port) < 2) {
+		free(saddr);
 		return -1;
+	}
 
 	if (st_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
-
 	free(type);
 
 	struct addrinfo * addr = NULL;
@@ -115,15 +116,16 @@ int st_socket_tcp6_v1(struct st_value * config) {
 	int stype = SOCK_STREAM;
 
 	char * type = NULL;
-	char * saddr;
+	char * saddr = NULL;
 	long long int port;
 
-	if (st_value_unpack(config, "{sssi}", "address", &saddr, "port", &port) < 2)
+	if (st_value_unpack(config, "{sssi}", "address", &saddr, "port", &port) < 2) {
+		free(saddr);
 		return -1;
+	}
 
 	if (st_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
-
 	free(type);
 
 	struct addrinfo * addr = NULL;
@@ -168,43 +170,45 @@ int st_socket_tcp6_v1(struct st_value * config) {
 }
 
 bool st_socket_tcp_server_v1(struct st_value * config, st_socket_accept_f accept_callback) {
-	int type = SOCK_STREAM;
+	int stype = SOCK_STREAM;
 
-	struct st_value * vtype = st_value_hashtable_get2(config, "type", false);
-	if (vtype->type == st_value_string && !strcmp(st_value_string_get(vtype), "datagram"))
-		type = SOCK_DGRAM;
+	char * type = NULL;
+	char * saddr = NULL;
+	long long int port;
 
-	struct st_value * vaddr = st_value_hashtable_get2(config, "address", false);
-	struct st_value * vport = st_value_hashtable_get2(config, "port", false);
-	if (vport->type != st_value_integer)
+	if (st_value_unpack(config, "{siss}", "port", &port, "address", &saddr) < 1)
 		return -1;
 
+	if (st_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+		stype = SOCK_DGRAM;
+	free(type);
+
 	int fd = -1, failed;
-	if (vaddr->type == st_value_string) {
+	if (saddr != NULL) {
 		struct addrinfo * addr = NULL;
 		struct addrinfo hint = {
 			.ai_family    = AF_INET,
-			.ai_socktype  = type,
+			.ai_socktype  = stype,
 			.ai_protocol  = 0,
 			.ai_addrlen   = 0,
 			.ai_addr      = NULL,
 			.ai_canonname = NULL,
 			.ai_next      = NULL,
 		};
-		failed = getaddrinfo(st_value_string_get(vtype), NULL, &hint, &addr);
+		failed = getaddrinfo(saddr, NULL, &hint, &addr);
 		if (failed != 0)
 			return -1;
 
 		struct addrinfo * ptr = addr;
 		while (fd < 0 && ptr != NULL) {
-			fd = socket(AF_INET, type, 0);
+			fd = socket(AF_INET, stype, 0);
 			if (fd < 0) {
 				ptr = ptr->ai_next;
 				continue;
 			}
 
 			struct sockaddr_in * addr_v4 = (struct sockaddr_in *) ptr->ai_addr;
-			addr_v4->sin_port = htons(st_value_integer_get(vport));
+			addr_v4->sin_port = htons(port);
 
 			int failed = bind(fd, ptr->ai_addr, ptr->ai_addrlen);
 			if (failed != 0) {
@@ -215,14 +219,15 @@ bool st_socket_tcp_server_v1(struct st_value * config, st_socket_accept_f accept
 		}
 
 		freeaddrinfo(addr);
+		free(saddr);
 	} else {
-		fd = socket(AF_INET, type, 0);
+		fd = socket(AF_INET, stype, 0);
 		if (fd < 0)
 			return false;
 
 		struct sockaddr_in addr_v4;
 		bzero(&addr_v4, sizeof(addr_v4));
-		addr_v4.sin_port = htons(st_value_integer_get(vport));
+		addr_v4.sin_port = htons(port);
 
 		int failed = bind(fd, (struct sockaddr *) &addr_v4, sizeof(addr_v4));
 		if (failed != 0) {
@@ -247,43 +252,45 @@ bool st_socket_tcp_server_v1(struct st_value * config, st_socket_accept_f accept
 }
 
 bool st_socket_tcp6_server_v1(struct st_value * config, st_socket_accept_f accept_callback) {
-	int type = SOCK_STREAM;
+	int stype = SOCK_STREAM;
 
-	struct st_value * vtype = st_value_hashtable_get2(config, "type", false);
-	if (vtype->type == st_value_string && !strcmp(st_value_string_get(vtype), "datagram"))
-		type = SOCK_DGRAM;
+	char * type = NULL;
+	char * saddr = NULL;
+	long long int port;
 
-	struct st_value * vaddr = st_value_hashtable_get2(config, "address", false);
-	struct st_value * vport = st_value_hashtable_get2(config, "port", false);
-	if (vport->type != st_value_integer)
+	if (st_value_unpack(config, "{siss}", "port", &port, "address", &saddr) < 1)
 		return -1;
 
+	if (st_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+		stype = SOCK_DGRAM;
+	free(type);
+
 	int fd = -1, failed;
-	if (vaddr->type == st_value_string) {
+	if (saddr != NULL) {
 		struct addrinfo * addr = NULL;
 		struct addrinfo hint = {
 			.ai_family    = AF_INET6,
-			.ai_socktype  = type,
+			.ai_socktype  = stype,
 			.ai_protocol  = 0,
 			.ai_addrlen   = 0,
 			.ai_addr      = NULL,
 			.ai_canonname = NULL,
 			.ai_next      = NULL,
 		};
-		failed = getaddrinfo(st_value_string_get(vtype), NULL, &hint, &addr);
+		failed = getaddrinfo(saddr, NULL, &hint, &addr);
 		if (failed != 0)
 			return -1;
 
 		struct addrinfo * ptr = addr;
 		while (fd < 0 && ptr != NULL) {
-			fd = socket(AF_INET6, type, 0);
+			fd = socket(AF_INET6, stype, 0);
 			if (fd < 0) {
 				ptr = ptr->ai_next;
 				continue;
 			}
 
 			struct sockaddr_in6 * addr_v6 = (struct sockaddr_in6 *) ptr->ai_addr;
-			addr_v6->sin6_port = htons(st_value_integer_get(vport));
+			addr_v6->sin6_port = htons(port);
 
 			int failed = bind(fd, ptr->ai_addr, ptr->ai_addrlen);
 			if (failed != 0) {
@@ -295,13 +302,13 @@ bool st_socket_tcp6_server_v1(struct st_value * config, st_socket_accept_f accep
 
 		freeaddrinfo(addr);
 	} else {
-		fd = socket(AF_INET6, type, 0);
+		fd = socket(AF_INET6, stype, 0);
 		if (fd < 0)
 			return false;
 
 		struct sockaddr_in6 addr_v6;
 		bzero(&addr_v6, sizeof(addr_v6));
-		addr_v6.sin6_port = htons(st_value_integer_get(vport));
+		addr_v6.sin6_port = htons(port);
 
 		int failed = bind(fd, (struct sockaddr *) &addr_v6, sizeof(addr_v6));
 		if (failed != 0) {

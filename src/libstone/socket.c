@@ -37,7 +37,7 @@
 
 __asm__(".symver st_socket_v1, st_socket@@LIBSTONE_1.2");
 int st_socket_v1(struct st_value * config) {
-	char * domain;
+	char * domain = NULL;
 	if (st_value_unpack(config, "{ss}", "domain", &domain) < 1)
 		return -1;
 
@@ -56,7 +56,7 @@ int st_socket_v1(struct st_value * config) {
 
 __asm__(".symver st_socket_server_v1, st_socket_server@@LIBSTONE_1.2");
 bool st_socket_server_v1(struct st_value * config, st_socket_accept_f accept_callback) {
-	char * domain;
+	char * domain = NULL;
 
 	if (st_value_unpack(config, "{ss}", "domain", &domain) < 1)
 		return false;
@@ -68,6 +68,8 @@ bool st_socket_server_v1(struct st_value * config, st_socket_accept_f accept_cal
 		ok = st_socket_tcp6_server_v1(config, accept_callback);
 	else if (!strcmp(domain, "unix"))
 		ok = st_socket_unix_server_v1(config, accept_callback);
+
+	free(domain);
 
 	return ok;
 }
