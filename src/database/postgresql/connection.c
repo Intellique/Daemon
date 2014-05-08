@@ -63,6 +63,7 @@ static struct st_value * st_database_postgresql_get_host_by_name(struct st_datab
 
 static int st_database_postgresql_sync_changer(struct st_database_connection * connect, struct st_value * changer, bool init);
 static int st_database_postgresql_sync_drive(struct st_database_connection * connect, struct st_value * drive, bool init);
+static int st_database_postgresql_sync_slots(struct st_database_connection * connect, struct st_value * slot, bool init);
 
 static void st_database_postgresql_prepare(struct st_database_postgresql_connection_private * self, const char * statement_name, const char * query);
 
@@ -458,6 +459,7 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 
 		if (status == PGRES_FATAL_ERROR) {
 			free(hostid);
+			free(changer_id);
 
 			if (transStatus == PQTRANS_IDLE)
 				st_database_postgresql_cancel_transaction(connect);
@@ -478,7 +480,6 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 
 		PQclear(result);
 
-		free(changer_id);
 		free(device);
 		free(revision);
 		free(sstatus);
@@ -517,7 +518,6 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 
 		PQclear(result);
 
-		free(changer_id);
 		free(device);
 		free(model);
 		free(revision);
@@ -550,6 +550,32 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 		while (failed == 0 && st_value_iterator_has_next(iter)) {
 			struct st_value * drive = st_value_iterator_get_value(iter, false);
 			failed = st_database_postgresql_sync_drive(connect, drive, init);
+		}
+		st_value_iterator_free(iter);
+
+
+		const char * query = "delete_from_changerslot_by_changer";
+		st_database_postgresql_prepare(self, query, "DELETE FROM changerslot WHERE changer = $1");
+
+		const char * param[] = { changer_id };
+		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_database_postgresql_get_error(result, query);
+		PQclear(result);
+	}
+
+	free(changer_id);
+
+	struct st_value * slots = NULL;
+	st_value_unpack(changer, "{so}", "slots", &slots);
+
+	if (failed == 0 && slots != NULL) {
+		struct st_value_iterator * iter = st_value_list_get_iterator(slots);
+		while (st_value_iterator_has_next(iter) && failed == 0) {
+			struct st_value * slot = st_value_iterator_get_value(iter, false);
+			failed = st_database_postgresql_sync_slots(connect, slot, init);
 		}
 		st_value_iterator_free(iter);
 	}
@@ -631,9 +657,11 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 			st_value_unpack(drive, "{sf}", "operation duration", &current_operation_duration);
 			st_value_hashtable_put2(drive, "operation duration", st_value_new_float(old_operation_duration + current_operation_duration), true);
 
-			time_t last_clean;
-			st_database_postgresql_get_time(result, 0, 2, &last_clean);
-			st_value_hashtable_put2(drive, "last clean", st_value_new_integer(last_clean), true);
+			time_t last_clean = 0;
+			if (!PQgetisnull(result, 0, 2)) {
+				st_database_postgresql_get_time(result, 0, 2, &last_clean);
+				st_value_hashtable_put2(drive, "last clean", st_value_new_integer(last_clean), true);
+			}
 
 			if (!PQgetisnull(result, 0, 3)) {
 				st_database_postgresql_get_string_dup(result, 0, 3, &driveformat_id);
@@ -717,7 +745,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 		double drive_operation_duration = 0;
 		long long drive_last_clean = 0;
 		char * drive_device = NULL, * drive_scsi_device = NULL, * drive_status = NULL, * drive_revision = NULL;
-		st_value_unpack(drive, "{sfssss}", "operation duration", &drive_operation_duration, "last clean", &drive_last_clean, "device", &drive_device, "scsi device", &drive_scsi_device, "status", &drive_status);
+		st_value_unpack(drive, "{sfsissssssss}", "operation duration", &drive_operation_duration, "last clean", &drive_last_clean, "device", &drive_device, "scsi device", &drive_scsi_device, "status", &drive_status, "revision", &drive_revision);
 
 		char * op_duration = NULL, * last_clean = NULL;
 		asprintf(&op_duration, "%.3f", drive_operation_duration);
@@ -810,6 +838,94 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 		st_database_postgresql_finish_transaction(connect);
 
 	return 0;
+}
+
+static int st_database_postgresql_sync_slots(struct st_database_connection * connect, struct st_value * slot, bool init) {
+	struct st_database_postgresql_connection_private * self = connect->data;
+
+	struct st_value * db = NULL, * changer = NULL, * drive = NULL;
+	long long int index = -1;
+	bool isImportExport = false;
+	bool enabled = true;
+	st_value_unpack(slot, "{sosisbsosbso}", "db", &db, "index", &index, "enable", &enabled, "import export", &isImportExport, "changer", &changer, "drive", &drive);
+
+	char * slot_id = NULL;
+	st_value_unpack(db, "{ss}", "id", &slot_id);
+
+	char * type = "storage";
+	if (drive != NULL)
+		type = "drive";
+	else if (isImportExport)
+		type = "import / export";
+
+	char * changer_id = NULL, * drive_id = NULL;
+	st_value_unpack(changer, "{s{ss}}", "db", "id", &changer_id);
+	if (drive != NULL)
+		st_value_unpack(drive, "{s{ss}}", "db", "id", &drive_id);
+
+	int failed = 0;
+
+	if (!init && slot_id == NULL) {
+		const char * query = "select_changerslot_by_index";
+		st_database_postgresql_prepare(self, query, "SELECT id, enable FROM changerslot WHERE changer = $1 AND index = $2 LIMIT 1");
+
+		char * sindex;
+		asprintf(&sindex, "%lld", index);
+
+		const char * param[] = { changer_id, sindex };
+
+		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+			st_database_postgresql_get_string_dup(result, 0, 0, &slot_id);
+			st_value_hashtable_put2(db, "id", st_value_new_string(slot_id), true);
+
+			st_database_postgresql_get_bool(result, 0, 1, &enabled);
+			st_value_hashtable_put2(slot, "enable", st_value_new_boolean(enabled), true);
+		}
+
+		PQclear(result);
+		free(sindex);
+	}
+
+	if (init) {
+		const char * query = "insert_into_changerslot";
+		st_database_postgresql_prepare(self, query, "INSERT INTO changerslot(index, changer, drive, type) VALUES ($1, $2, $3, $4, $5) RETURNING id");
+
+		char * sindex;
+		asprintf(&sindex, "%lld", index);
+
+		const char * param[] = { sindex, changer_id, drive_id, type };
+
+		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+			st_value_hashtable_put2(db, "id", st_value_new_string(PQgetvalue(result, 0, 0)), true);
+
+		PQclear(result);
+		free(sindex);
+	} else {
+		const char * query = "update_changerslot";
+		st_database_postgresql_prepare(self, query, "UDPATE changerslot SET media = $1, enable = $2 WHERE id = $3");
+
+		const char * param[] = { NULL, enabled ? "true" : "false", slot_id };
+
+		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_database_postgresql_get_error(result, query);
+
+		PQclear(result);
+	}
+
+	return failed;
 }
 
 

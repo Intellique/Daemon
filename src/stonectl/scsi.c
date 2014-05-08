@@ -428,7 +428,7 @@ int stctl_scsi_loaderinfo(const char * filename, struct st_value * changer, stru
 
 	unsigned int i;
 	for (i = 0; i < nb_slots; i++)
-		st_value_list_push(slots, st_value_pack("{}"), true);
+		st_value_list_push(slots, st_value_pack("{sOsis{}}", "changer", changer, "index", (long long int) i, "db"), true);
 
 	stctl_scsi_loader_status_slot(fd, changer, available_drives, slots, 0, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer);
 	stctl_scsi_loader_status_slot(fd, changer, available_drives, slots, result.number_of_data_transfer_elements, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element);
