@@ -650,6 +650,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 			st_database_postgresql_get_error(result, query);
 		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			st_database_postgresql_get_string_dup(result, 0, 0, &drive_id);
+			st_value_hashtable_put2(db, "id", st_value_new_string(drive_id), true);
 
 			double old_operation_duration = 0;
 			st_database_postgresql_get_double(result, 0, 1, &old_operation_duration);
