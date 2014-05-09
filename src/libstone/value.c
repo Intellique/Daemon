@@ -37,7 +37,7 @@
 #include "value.h"
 
 static unsigned int st_value_count_ref(struct st_value * base);
-static unsigned int st_value_count_ref2(struct st_value * found, struct st_value * ref);
+static unsigned int st_value_count_ref2(struct st_value * ref, struct st_value * elt, struct st_value * found);
 static struct st_value * st_value_new(enum st_value_type type, size_t extra);
 struct st_value * st_value_new_hashtable3(st_value_hashtable_compupte_hash_f compute_hash, bool weak_ref) __attribute__((warn_unused_result));
 static struct st_value * st_value_pack_inner(const char ** format, va_list params);
@@ -368,11 +368,12 @@ static unsigned int st_value_count_ref(struct st_value * base) {
 		case st_value_array:
 		case st_value_linked_list: {
 				struct st_value * found = st_value_new_hashtable3(st_value_compute_addr, true);
+				st_value_hashtable_put_v1(found, base, true, &null_value, true);
 
 				struct st_value_iterator * iter = st_value_list_get_iterator2(base, true);
 				while (st_value_iterator_has_next_v1(iter)) {
 					struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
-					nb_ref += st_value_count_ref2(found, elt);
+					nb_ref += st_value_count_ref2(base, elt, found);
 				}
 				st_value_iterator_free_v1(iter);
 
@@ -382,14 +383,15 @@ static unsigned int st_value_count_ref(struct st_value * base) {
 
 		case st_value_hashtable: {
 				struct st_value * found = st_value_new_hashtable3(st_value_compute_addr, true);
+				st_value_hashtable_put_v1(found, base, true, &null_value, true);
 
 				struct st_value_iterator * iter = st_value_hashtable_get_iterator2(base, true);
 				while (st_value_iterator_has_next_v1(iter)) {
 					struct st_value * key = st_value_iterator_get_key_v1(iter, false, false);
-					nb_ref += st_value_count_ref2(found, key);
+					nb_ref += st_value_count_ref2(base, key, found);
 
 					struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
-					nb_ref += st_value_count_ref2(found, elt);
+					nb_ref += st_value_count_ref2(base, elt, found);
 				}
 				st_value_iterator_free_v1(iter);
 
@@ -404,36 +406,36 @@ static unsigned int st_value_count_ref(struct st_value * base) {
 	return nb_ref;
 }
 
-static unsigned int st_value_count_ref2(struct st_value * found, struct st_value * ref) {
+static unsigned int st_value_count_ref2(struct st_value * ref, struct st_value * elt, struct st_value * found) {
 	unsigned int nb_ref = 0;
 
-	if (ref->shared == 0)
+	if (elt->shared == 0)
 		return 0;
 
-	if (st_value_hashtable_has_key_v1(found, ref))
-		return 1;
-	st_value_hashtable_put_v1(found, ref, true, &null_value, true);
+	if (st_value_hashtable_has_key_v1(found, elt))
+		return ref == elt ? 1 : 0;
+	st_value_hashtable_put_v1(found, elt, true, &null_value, true);
 
-	switch (ref->type) {
+	switch (elt->type) {
 		case st_value_array:
 		case st_value_linked_list: {
-				struct st_value_iterator * iter = st_value_list_get_iterator2(ref, true);
+				struct st_value_iterator * iter = st_value_list_get_iterator2(elt, true);
 				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
-					nb_ref += st_value_count_ref2(found, elt);
+					struct st_value * lst_elt = st_value_iterator_get_value_v1(iter, false);
+					nb_ref += st_value_count_ref2(ref, lst_elt, found);
 				}
 				st_value_iterator_free_v1(iter);
 				break;
 			}
 
 		case st_value_hashtable: {
-				struct st_value_iterator * iter = st_value_hashtable_get_iterator2(ref, true);
+				struct st_value_iterator * iter = st_value_hashtable_get_iterator2(elt, true);
 				while (st_value_iterator_has_next_v1(iter)) {
 					struct st_value * key = st_value_iterator_get_key_v1(iter, false, false);
-					nb_ref += st_value_count_ref2(found, key);
+					nb_ref += st_value_count_ref2(ref, key, found);
 
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
-					nb_ref += st_value_count_ref2(found, elt);
+					struct st_value * hsh_elt = st_value_iterator_get_value_v1(iter, false);
+					nb_ref += st_value_count_ref2(ref, hsh_elt, found);
 				}
 				st_value_iterator_free_v1(iter);
 				break;
