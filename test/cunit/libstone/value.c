@@ -162,17 +162,18 @@ static void test_libstone_value_ref_cycle_0() {
 	CU_ASSERT_PTR_NOT_NULL_FATAL(objA);
 
 	struct st_value * objB;
-	st_value_unpack(objA, "{sO}", "link", &objB);
+	st_value_unpack(objA, "{so}", "link", &objB);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(objB);
 
 	CU_ASSERT_EQUAL(objA->shared, 1);
-	CU_ASSERT_EQUAL(objB->shared, 2);
+	CU_ASSERT_EQUAL(objB->shared, 1);
 
 	st_value_hashtable_put2(objB, "ref", objA, false);
 	CU_ASSERT_EQUAL(objA->shared, 2);
 
 	st_value_free(objA);
 	CU_ASSERT_EQUAL(objA->shared, 0);
+	CU_ASSERT_EQUAL(objB->shared, 0);
 }
 
 static void test_libstone_value_ref_cycle_1() {

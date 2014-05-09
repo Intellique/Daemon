@@ -588,8 +588,8 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, str
 					drive_id[34] = '\0';
 
 					struct st_value * drive = st_value_hashtable_get2(available_drives, drive_id, false);
-					st_value_hashtable_put2(drive, "changer", changer, true);
-					st_value_hashtable_put2(slot, "drive", drive, true);
+					st_value_hashtable_put2(drive, "changer", changer, false);
+					st_value_hashtable_put2(slot, "drive", drive, false);
 
 					struct st_value * drives = st_value_hashtable_get2(changer, "drives", false);
 					st_value_list_push(drives, drive, false);
