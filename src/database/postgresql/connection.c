@@ -853,7 +853,7 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 	long long int index = -1;
 	bool isImportExport = false;
 	bool enabled = true;
-	st_value_unpack(slot, "{sosisbsosbso}", "db", &db, "index", &index, "enable", &enabled, "import export", &isImportExport, "changer", &changer, "drive", &drive);
+	st_value_unpack(slot, "{sosisbsbsoso}", "db", &db, "index", &index, "enable", &enabled, "import export", &isImportExport, "changer", &changer, "drive", &drive);
 
 	char * slot_id = NULL;
 	st_value_unpack(db, "{ss}", "id", &slot_id);
@@ -899,7 +899,7 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 
 	if (init) {
 		const char * query = "insert_into_changerslot";
-		st_database_postgresql_prepare(self, query, "INSERT INTO changerslot(index, changer, drive, type) VALUES ($1, $2, $3, $4, $5) RETURNING id");
+		st_database_postgresql_prepare(self, query, "INSERT INTO changerslot(index, changer, drive, type) VALUES ($1, $2, $3, $4) RETURNING id");
 
 		char * sindex;
 		asprintf(&sindex, "%lld", index);

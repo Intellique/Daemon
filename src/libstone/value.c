@@ -859,7 +859,7 @@ static int st_value_unpack_inner(struct st_value * value, const char ** format, 
 	switch (**format) {
 		case 'b':
 			if (value->type == st_value_boolean) {
-				int * val = va_arg(params, int *);
+				bool * val = va_arg(params, bool *);
 				if (val != NULL) {
 					*val = st_value_boolean_get_v1(value);
 					return 1;
