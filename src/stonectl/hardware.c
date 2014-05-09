@@ -182,6 +182,8 @@ struct st_value * stctl_detect_hardware() {
 	}
 	globfree(&gl);
 
+	st_value_free(drives);
+
 	return changers;
 }
 

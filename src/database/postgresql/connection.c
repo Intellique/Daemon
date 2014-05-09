@@ -775,6 +775,8 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 		free(drive_revision);
 
 		if (status == PGRES_FATAL_ERROR) {
+			free(drive_id);
+
 			if (transStatus == PQTRANS_IDLE)
 				st_database_postgresql_cancel_transaction(connect);
 			return 3;
@@ -827,12 +829,16 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 		free(drive_serial_number);
 
 		if (status == PGRES_FATAL_ERROR) {
+			free(drive_id);
+
 			if (transStatus == PQTRANS_IDLE)
 				st_database_postgresql_cancel_transaction(connect);
 			return 3;
 		}
 	} else {
 	}
+
+	free(drive_id);
 
 	if (transStatus == PQTRANS_IDLE)
 		st_database_postgresql_finish_transaction(connect);

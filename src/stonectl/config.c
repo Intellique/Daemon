@@ -130,6 +130,9 @@ int stctl_config(int argc, char ** argv) {
 
 	db_connection->ops->close(db_connection);
 
+	st_value_free(changers);
+	st_value_free(config);
+
 	return failed;
 }
 
