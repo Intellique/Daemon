@@ -44,17 +44,17 @@ struct st_value_ref {
 static bool st_value_count_ref(struct st_value * base);
 static void st_value_count_ref2(struct st_value * elt, struct st_value * found, struct st_value_ref * refs);
 static struct st_value * st_value_new(enum st_value_type type, size_t extra);
-struct st_value * st_value_new_hashtable3(st_value_hashtable_compupte_hash_f compute_hash, bool weak_ref) __attribute__((warn_unused_result));
+static struct st_value * st_value_new_hashtable3(st_value_hashtable_compupte_hash_f compute_hash, bool weak_ref) __attribute__((warn_unused_result));
 static struct st_value * st_value_pack_inner(const char ** format, va_list params);
 static int st_value_unpack_inner(struct st_value * root, const char ** format, va_list params);
 static bool st_value_valid_inner(struct st_value * value, const char ** format, va_list params);
 
-struct st_value_iterator * st_value_hashtable_get_iterator2(struct st_value * hash, bool weak_ref) __attribute__((nonnull,warn_unused_result));
+static struct st_value_iterator * st_value_hashtable_get_iterator2(struct st_value * hash, bool weak_ref) __attribute__((nonnull,warn_unused_result));
 static void st_value_hashtable_put_inner(struct st_value_hashtable * hash, unsigned int index, struct st_value_hashtable_node * new_node);
 static void st_value_hashtable_rehash(struct st_value_hashtable * hash);
 static void st_value_hashtable_release_node(struct st_value_hashtable_node * node, bool weak_ref);
 
-struct st_value_iterator * st_value_list_get_iterator2(struct st_value * list, bool weak_ref) __attribute__((nonnull,warn_unused_result));
+static struct st_value_iterator * st_value_list_get_iterator2(struct st_value * list, bool weak_ref) __attribute__((nonnull,warn_unused_result));
 
 static unsigned long long st_value_compute_addr(const struct st_value * key);
 
@@ -701,7 +701,7 @@ struct st_value * st_value_new_hashtable2_v1() {
 	return st_value_new_hashtable_v1(st_string_compute_hash_v1);
 }
 
-struct st_value * st_value_new_hashtable3(st_value_hashtable_compupte_hash_f compute_hash, bool weak_ref) {
+static struct st_value * st_value_new_hashtable3(st_value_hashtable_compupte_hash_f compute_hash, bool weak_ref) {
 	struct st_value * val = st_value_new(st_value_hashtable, sizeof(struct st_value_hashtable));
 	struct st_value_hashtable * hashtable = st_value_get_v1(val);
 	hashtable->nodes = calloc(16, sizeof(struct st_value_hashtable_node));
@@ -1178,7 +1178,7 @@ struct st_value_iterator * st_value_hashtable_get_iterator_v1(struct st_value * 
 	return st_value_hashtable_get_iterator2(hash, false);
 }
 
-struct st_value_iterator * st_value_hashtable_get_iterator2(struct st_value * hash, bool weak_ref) {
+static struct st_value_iterator * st_value_hashtable_get_iterator2(struct st_value * hash, bool weak_ref) {
 	if (hash == NULL || hash->type != st_value_hashtable)
 		return NULL;
 
@@ -1476,7 +1476,7 @@ struct st_value_iterator * st_value_list_get_iterator_v1(struct st_value * list)
 	return st_value_list_get_iterator2(list, false);
 }
 
-struct st_value_iterator * st_value_list_get_iterator2(struct st_value * list, bool weak_ref) {
+static struct st_value_iterator * st_value_list_get_iterator2(struct st_value * list, bool weak_ref) {
 	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
 		return NULL;
 
