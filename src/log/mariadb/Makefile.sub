@@ -2,7 +2,7 @@ STONE_LOG_MARIADB_SRC_DIR		:= src/log/mariadb
 
 STONE_LOG_MARIADB_BIN			:= lib/liblog-mariadb.so
 STONE_LOG_MARIADB_CFLAG			:= -pthread -fPIC -fvisibility=hidden
-STONE_LOG_MARIADB_LD			:= -pthread -shared -lstone -Llib -lmariadbclient
+STONE_LOG_MARIADB_LD			:= -pthread -shared -lstone -Llib $(shell mysql_config --libs)
 
 STONE_LOG_MARIADB_DEPEND_LIB	:= lib/libstone.so
 

@@ -53,6 +53,10 @@ static bool st_database_mariadb_find_host(struct st_database_connection * connec
 static unsigned int st_database_mariadb_get_host(struct st_database_connection * connect);
 static struct st_value * st_database_mariadb_get_host_by_name(struct st_database_connection * connect, const char * name);
 
+static int st_database_mariadb_sync_changer(struct st_database_connection * connect, struct st_value * changer, bool init);
+static int st_database_mariadb_sync_drive(struct st_database_connection * connect, struct st_value * drive, bool init);
+static int st_database_mariadb_sync_slots(struct st_database_connection * connect, struct st_value * slot, bool init);
+
 static void st_database_mariadb_free_prepared(void * data);
 static MYSQL_STMT * st_database_mariadb_prepare(struct st_database_mariadb_connection_private * self, const char * statement_name, const char * query);
 
@@ -68,6 +72,9 @@ static struct st_database_connection_ops st_database_mariadb_connection_ops = {
 	.add_host         = st_database_mariadb_add_host,
 	.find_host        = st_database_mariadb_find_host,
 	.get_host_by_name = st_database_mariadb_get_host_by_name,
+
+	.sync_changer = st_database_mariadb_sync_changer,
+	.sync_drive   = st_database_mariadb_sync_drive,
 };
 
 
@@ -174,7 +181,7 @@ static int st_database_mariadb_start_transaction(struct st_database_connection *
 		return -1;
 
 	struct st_database_mariadb_connection_private * self = connect->data;
-	return mysql_query(&self->handler, "BEGIN");
+	return mysql_rollback(&self->handler);
 }
 
 
@@ -307,6 +314,20 @@ static struct st_value * st_database_mariadb_get_host_by_name(struct st_database
 	mysql_stmt_reset(stmt);
 
 	return vresult;
+}
+
+
+static int st_database_mariadb_sync_changer(struct st_database_connection * connect, struct st_value * changer, bool init) {
+	if (connect == NULL || changer == NULL)
+		return -1;
+
+	struct st_database_mariadb_connection_private * self = connect->data;
+}
+
+static int st_database_mariadb_sync_drive(struct st_database_connection * connect, struct st_value * drive, bool init) {
+}
+
+static int st_database_mariadb_sync_slots(struct st_database_connection * connect, struct st_value * slot, bool init) {
 }
 
 

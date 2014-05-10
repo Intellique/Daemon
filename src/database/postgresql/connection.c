@@ -836,7 +836,6 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 				st_database_postgresql_cancel_transaction(connect);
 			return 3;
 		}
-	} else {
 	}
 
 	free(drive_id);
