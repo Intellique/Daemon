@@ -1,0 +1,9 @@
+LIBSTONE_CHANGER_1.2 {
+	global:
+		stchgr_changer_register;
+
+	local:
+		stchgr_changer_get;
+		*_v1;
+};
+

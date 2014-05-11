@@ -1,0 +1,13 @@
+LIBSTONECHANGER_SRC_DIR			:= src/libstone-changer
+
+LIBSTONECHANGER_CFLAG			:= -fPIC -pthread
+LIBSTONECHANGER_LIB				:= lib/libstone-changer.so
+LIBSTONECHANGER_LD				:= -shared -pthread -ldl -Wl,--version-script,src/libstone-changer/libstone-changer.map
+LIBSTONECHANGER_SONAME			:= libstone-changer.so.1
+LIBSTONECHANGER_LIB_VERSION		:= 1.0
+
+LIBSTONECHANGER_DEPEND_LIB		:= src/libstone-changer/libstone-changer.map lib/libstone.so
+
+LIBSTONECHANGER_CHCKSUM_FILE	:= libstone-changer.chcksum
+
+BIN_SYMS						+= LIBSTONECHANGER
