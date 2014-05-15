@@ -1,5 +1,8 @@
 LIBSTONE_1.2 {
 	global:
+		st_changer_status_to_string;
+		st_changer_string_to_status;
+
 		st_checksum_compute;
 		st_checksum_convert_to_hex;
 		st_checksum_gen_salt;
@@ -13,6 +16,9 @@ LIBSTONE_1.2 {
 		st_database_register_driver;
 
 		st_debug_log_stack;
+
+		st_drive_status_to_string;
+		st_drive_string_to_status;
 
 		st_file_basic_scandir_filter;
 		st_file_check_link;
@@ -63,6 +69,9 @@ LIBSTONE_1.2 {
 		st_process_set_nice;
 		st_process_start;
 		st_process_wait;
+
+		st_slot_type_to_string;
+		st_slot_string_to_type;
 
 		st_socket;
 		st_socket_server;
