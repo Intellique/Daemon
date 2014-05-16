@@ -337,7 +337,7 @@ static void st_database_mariadb_free_prepared(void * data) {
 
 static MYSQL_STMT * st_database_mariadb_prepare(struct st_database_mariadb_connection_private * self, const char * statement_name, const char * query) {
 	if (st_value_hashtable_has_key2(self->cached_query, statement_name)) {
-		struct st_value * vstmt = st_value_hashtable_get2(self->cached_query, statement_name, false);
+		struct st_value * vstmt = st_value_hashtable_get2(self->cached_query, statement_name, false, false);
 		return st_value_custom_get(vstmt);
 	} else {
 		MYSQL_STMT * stmt = mysql_stmt_init(&self->handler);

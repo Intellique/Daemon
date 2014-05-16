@@ -78,11 +78,11 @@ bool std_logger_start(struct st_value * config) {
 	if (logger_config == NULL)
 		logger_config = st_value_share(config);
 
-	struct st_value * socket = st_value_hashtable_get2(logger_config, "socket", false);
+	struct st_value * socket = st_value_hashtable_get2(logger_config, "socket", false, false);
 	if (socket == NULL || socket->type != st_value_hashtable)
 		return false;
 
-	struct st_value * path = st_value_hashtable_get2(socket, "path", false);
+	struct st_value * path = st_value_hashtable_get2(socket, "path", false, false);
 	if (path == NULL || path->type != st_value_string)
 		return false;
 	if (!access(st_value_string_get(path), F_OK))

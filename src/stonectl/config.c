@@ -83,7 +83,7 @@ int stctl_config(int argc, char ** argv) {
 	if (config == 0)
 		return 1;
 
-	struct st_value * db_configs = st_value_hashtable_get2(config, "database", false);
+	struct st_value * db_configs = st_value_hashtable_get2(config, "database", false, false);
 	if (db_configs != NULL)
 		st_database_load_config(db_configs);
 

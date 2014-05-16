@@ -37,13 +37,16 @@
 #include <scsi/sg.h>
 // malloc
 #include <stdlib.h>
-// memset
+// memcpy, memset, strdup
 #include <string.h>
 // ioctl
 #include <sys/ioctl.h>
 // close
 #include <unistd.h>
 
+#include <libstone/changer.h>
+#include <libstone/drive.h>
+#include <libstone/slot.h>
 #include <libstone/string.h>
 #include <libstone/value.h>
 
@@ -200,9 +203,9 @@ struct scsi_request_sense {
 
 
 static int stctl_scsi_loader_ready(int fd);
-static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, struct st_value * available_drives, struct st_value * slots, int offset, int start_element, int nb_elements, enum scsi_loader_element_type type);
+static void stctl_scsi_loader_status_slot(int fd, struct st_changer * changer, struct st_value * available_drives, struct st_slot * slots, int start_element, int nb_elements, enum scsi_loader_element_type type);
 
-int stctl_scsi_loaderinfo(const char * filename, struct st_value * changer, struct st_value * available_drives) {
+int stctl_scsi_loaderinfo(const char * filename, struct st_changer * changer, struct st_value * available_drives) {
 	int fd = open(filename, O_RDWR);
 	if (fd < 0)
 		return 1;
@@ -284,17 +287,17 @@ int stctl_scsi_loaderinfo(const char * filename, struct st_value * changer, stru
 
 	result_inquiry.product_revision_level[4] = '\0';
 	st_string_rtrim(result_inquiry.product_revision_level, ' ');
-	st_value_hashtable_put2(changer, "revision", st_value_new_string(result_inquiry.product_revision_level), true);
+	changer->revision = strdup(result_inquiry.product_revision_level);
 
 	result_inquiry.product_identification[16] = '\0';
 	st_string_rtrim(result_inquiry.product_identification, ' ');
-	st_value_hashtable_put2(changer, "model", st_value_new_string(result_inquiry.product_identification), true);
+	changer->model = strdup(result_inquiry.product_identification);
 
 	result_inquiry.vendor_identification[8] = '\0';
 	st_string_rtrim(result_inquiry.vendor_identification, ' ');
-	st_value_hashtable_put2(changer, "vendor", st_value_new_string(result_inquiry.vendor_identification), true);
+	changer->vendor = strdup(result_inquiry.vendor_identification);
 
-	st_value_hashtable_put2(changer, "barcode", st_value_new_boolean(result_inquiry.bar_code), true);
+	changer->barcode = result_inquiry.bar_code;
 
 
 	struct {
@@ -335,9 +338,7 @@ int stctl_scsi_loaderinfo(const char * filename, struct st_value * changer, stru
 	}
 
 	st_string_rtrim(result_serial_number.unit_serial_number, ' ');
-	st_value_hashtable_put2(changer, "serial number", st_value_new_string(result_serial_number.unit_serial_number), true);
-
-	st_value_hashtable_put2(changer, "device", st_value_new_string(filename), true);
+	changer->serial_number = strdup(result_serial_number.unit_serial_number);
 
 	struct {
 		unsigned char mode_data_length;
@@ -422,17 +423,21 @@ int stctl_scsi_loaderinfo(const char * filename, struct st_value * changer, stru
 	result.first_data_transfer_element_address = be16toh(result.first_data_transfer_element_address);
 	result.number_of_data_transfer_elements = be16toh(result.number_of_data_transfer_elements);
 
-	unsigned int nb_slots = result.number_of_data_transfer_elements + result.number_of_storage_elements + result.number_of_import_export_elements;
-	struct st_value * slots = st_value_new_array(nb_slots);
-	st_value_hashtable_put2(changer, "slots", slots, true);
+	changer->nb_drives = result.number_of_data_transfer_elements;
+	changer->drives = calloc(changer->nb_drives, sizeof(struct st_drive));
+
+	changer->nb_slots = result.number_of_data_transfer_elements + result.number_of_storage_elements + result.number_of_import_export_elements;
+	changer->slots = calloc(changer->nb_slots, sizeof(struct st_slot));
 
 	unsigned int i;
-	for (i = 0; i < nb_slots; i++)
-		st_value_list_push(slots, st_value_pack("{sOsisbs{}}", "changer", changer, "index", (long long int) i, "enable", true, "db"), true);
+	for (i = 0; i < changer->nb_slots; i++) {
+		struct st_slot * sl = changer->slots + i;
+		sl->changer = changer;
+	}
 
-	stctl_scsi_loader_status_slot(fd, changer, available_drives, slots, 0, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer);
-	stctl_scsi_loader_status_slot(fd, changer, available_drives, slots, result.number_of_data_transfer_elements, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element);
-	stctl_scsi_loader_status_slot(fd, changer, available_drives, slots, result.number_of_data_transfer_elements + result.number_of_storage_elements, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_import_export_element);
+	stctl_scsi_loader_status_slot(fd, changer, available_drives, changer->slots, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer);
+	stctl_scsi_loader_status_slot(fd, changer, available_drives, changer->slots + changer->nb_drives, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element);
+	stctl_scsi_loader_status_slot(fd, changer, available_drives, changer->slots + (result.number_of_data_transfer_elements + result.number_of_storage_elements), result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_import_export_element);
 
 	return 0;
 }
@@ -466,7 +471,7 @@ static int stctl_scsi_loader_ready(int fd) {
 	return sense.sense_key;
 }
 
-static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, struct st_value * available_drives, struct st_value * slots, int offset, int start_element, int nb_elements, enum scsi_loader_element_type type) {
+static void stctl_scsi_loader_status_slot(int fd, struct st_changer * changer, struct st_value * available_drives, struct st_slot * slots, int start_element, int nb_elements, enum scsi_loader_element_type type) {
 	size_t size_needed = 16;
 	switch (type) {
 		case scsi_loader_element_type_all_elements:
@@ -479,9 +484,6 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, str
 		case scsi_loader_element_type_storage_element:
 			size_needed += nb_elements * sizeof(struct scsi_loader_import_export_element);
 	}
-
-	bool has_barcode = false;
-	st_value_unpack(changer, "{sb}", "barcode", &has_barcode);
 
 	struct scsi_request_sense sense;
 	struct {
@@ -507,7 +509,7 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, str
 	} __attribute__((packed)) command = {
 		.operation_code = 0xB8,
 		.type = type,
-		.volume_tag = has_barcode,
+		.volume_tag = changer->barcode,
 		.reserved0 = 0,
 		.starting_element_address = htobe16(start_element),
 		.number_of_elements = htobe16(nb_elements),
@@ -561,7 +563,7 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, str
 
 	unsigned short i;
 	for (i = 0; i < result->number_of_elements; i++) {
-		struct st_value * slot;
+		struct st_slot * slot;
 		switch (element_header->type) {
 			case scsi_loader_element_type_all_elements:
 				break;
@@ -569,8 +571,8 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, str
 			case scsi_loader_element_type_data_transfer: {
 					struct scsi_loader_data_transfer_element * data_transfer_element = (struct scsi_loader_data_transfer_element *) ptr;
 
-					slot = st_value_list_get(slots, i + offset, false);
-					st_value_hashtable_put2(slot, "full", st_value_new_boolean(data_transfer_element->full), true);
+					slot = slots + i;
+					slot->full = data_transfer_element->full;
 
 					if (data_transfer_element->full) {
 						char volume_name[37];
@@ -580,29 +582,32 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, str
 
 						st_string_rtrim(volume_name, ' ');
 
-						st_value_hashtable_put2(slot, "volume name", st_value_new_string(volume_name), true);
+						slot->volume_name = strdup(volume_name);
 					}
+
+					slot->type = st_slot_type_drive;
 
 					char drive_id[35];
 					strncpy(drive_id, data_transfer_element->device_identifier_1, 34);
 					drive_id[34] = '\0';
 
-					struct st_value * drive = st_value_hashtable_get2(available_drives, drive_id, false);
-					st_value_hashtable_put2(drive, "changer", changer, false);
-					st_value_hashtable_put2(slot, "drive", drive, false);
+					struct st_value * val_drive = st_value_hashtable_get2(available_drives, drive_id, false, true);
+					struct st_drive * l_drive = st_value_custom_get(val_drive);
+					struct st_drive * c_drive = changer->drives + i;
 
-					struct st_value * drives = st_value_hashtable_get2(changer, "drives", false);
-					st_value_list_push(drives, drive, false);
+					memcpy(c_drive, l_drive, sizeof(struct st_drive));
+					bzero(l_drive, sizeof(struct st_drive));
 
-					st_value_hashtable_put2(slot, "import export", st_value_new_boolean(false), true);
+					c_drive->changer = changer;
+					c_drive->slot = slot;
 				}
 				break;
 
 			case scsi_loader_element_type_import_export_element: {
 					struct scsi_loader_import_export_element * import_export_element = (struct scsi_loader_import_export_element *) ptr;
 
-					slot = st_value_list_get(slots, i + offset, false);
-					st_value_hashtable_put2(slot, "full", st_value_new_boolean(import_export_element->full), true);
+					slot = slots + i;
+					slot->full = import_export_element->full;
 
 					if (import_export_element->full) {
 						char volume_name[37];
@@ -612,18 +617,18 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, str
 
 						st_string_rtrim(volume_name, ' ');
 
-						st_value_hashtable_put2(slot, "volume name", st_value_new_string(volume_name), true);
+						slot->volume_name = strdup(volume_name);
 					}
 
-					st_value_hashtable_put2(slot, "import export", st_value_new_boolean(true), true);
+					slot->type = st_slot_type_import_export;
 				 }
 				 break;
 
 			case scsi_loader_element_type_storage_element: {
 					struct scsi_loader_storage_element * storage_element = (struct scsi_loader_storage_element *) ptr;
 
-					slot = st_value_list_get(slots, i + offset, false);
-					st_value_hashtable_put2(slot, "full", st_value_new_boolean(storage_element->full), true);
+					slot = slots + i;
+					slot->full = storage_element->full;
 
 					if (storage_element->full) {
 						char volume_name[37];
@@ -633,10 +638,10 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, str
 
 						st_string_rtrim(volume_name, ' ');
 
-						st_value_hashtable_put2(slot, "volume name", st_value_new_string(volume_name), true);
+						slot->volume_name = strdup(volume_name);
 					}
 
-					st_value_hashtable_put2(slot, "import export", st_value_new_boolean(false), true);
+					slot->type = st_slot_type_storage;
 				}
 				break;
 		}
@@ -647,7 +652,7 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_value * changer, str
 	free(result);
 }
 
-int stctl_scsi_tapeinfo(const char * filename, struct st_value * drive) {
+int stctl_scsi_tapeinfo(const char * filename, struct st_drive * drive) {
 	int fd = open(filename, O_RDWR);
 	if (fd < 0)
 		return 1;
@@ -725,15 +730,15 @@ int stctl_scsi_tapeinfo(const char * filename, struct st_value * drive) {
 
 	result_inquiry.vendor_identification[7] = '\0';
 	st_string_rtrim(result_inquiry.vendor_identification, ' ');
-	st_value_hashtable_put2(drive, "vendor", st_value_new_string(result_inquiry.vendor_identification), true);
+	drive->vendor = strdup(result_inquiry.vendor_identification);
 
 	result_inquiry.product_identification[15] = '\0';
 	st_string_rtrim(result_inquiry.product_identification, ' ');
-	st_value_hashtable_put2(drive, "model", st_value_new_string(result_inquiry.product_identification), true);
+	drive->model = strdup(result_inquiry.product_identification);
 
 	result_inquiry.product_revision_level[4] = '\0';
 	st_string_rtrim(result_inquiry.product_revision_level, ' ');
-	st_value_hashtable_put2(drive, "revision", st_value_new_string(result_inquiry.product_revision_level), true);
+	drive->revision = strdup(result_inquiry.product_revision_level);
 
 	struct {
 		unsigned char peripheral_device_type:5;
@@ -774,7 +779,7 @@ int stctl_scsi_tapeinfo(const char * filename, struct st_value * drive) {
 
 	result_serial_number.unit_serial_number[11] = '\0';
 	st_string_rtrim(result_serial_number.unit_serial_number, ' ');
-	st_value_hashtable_put2(drive, "serial number", st_value_new_string(result_serial_number.unit_serial_number), true);
+	drive->serial_number = strdup(result_serial_number.unit_serial_number);
 
 	return 0;
 }

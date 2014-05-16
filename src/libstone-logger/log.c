@@ -74,7 +74,7 @@ bool lgr_log_load_v1(struct st_value_v1 * params) {
 	struct st_value_iterator * iter = st_value_list_get_iterator(params);
 	while (ok && st_value_iterator_has_next(iter)) {
 		struct st_value_v1 * elt = st_value_iterator_get_value(iter, false);
-		struct st_value_v1 * type = st_value_hashtable_get2(elt, "type", false);
+		struct st_value_v1 * type = st_value_hashtable_get2(elt, "type", false, false);
 
 		void * cookie = NULL;
 		if (!st_value_hashtable_has_key(lgr_drivers, type)) {
@@ -116,7 +116,7 @@ void lgr_log_register_driver_v1(struct lgr_log_driver * driver) {
 
 __asm__(".symver lgr_log_write_v1, lgr_log_write@@LIBSTONE_LOGGER_1.2");
 void lgr_log_write_v1(struct st_value_v1 * message) {
-	struct st_value_v1 * level = st_value_hashtable_get2(message, "level", false);
+	struct st_value_v1 * level = st_value_hashtable_get2(message, "level", false, false);
 	if (level == NULL || level->type != st_value_string)
 		return;
 

@@ -141,7 +141,7 @@ struct st_checksum_driver_v1 * st_checksum_get_driver_v1(const char * driver) {
 		}
 	}
 
-	struct st_value * vdriver = st_value_hashtable_get2(st_checksum_drivers, driver, false);
+	struct st_value * vdriver = st_value_hashtable_get2(st_checksum_drivers, driver, false, false);
 	struct st_checksum_driver_v1 * dr = st_value_custom_get(vdriver);
 
 	if (cookie != NULL)

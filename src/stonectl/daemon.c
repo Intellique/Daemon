@@ -53,13 +53,13 @@ static bool stctl_daemon_try_connect(void);
 
 
 static int stctl_daemon_init_socket(struct st_value * config) {
-	struct st_value * admin = st_value_hashtable_get2(config, "admin", false);
+	struct st_value * admin = st_value_hashtable_get2(config, "admin", false, false);
 	if (admin == NULL || admin->type != st_value_hashtable || !st_value_hashtable_has_key2(admin, "password") || !st_value_hashtable_has_key2(admin, "socket")) {
 		st_value_free(config);
 		return false;
 	}
 
-	struct st_value * socket = st_value_hashtable_get2(admin, "socket", false);
+	struct st_value * socket = st_value_hashtable_get2(admin, "socket", false, false);
 	if (socket == NULL || socket->type != st_value_hashtable) {
 		st_value_free(config);
 		return false;
@@ -76,7 +76,7 @@ static bool stctl_daemon_try_connect() {
 		return false;
 	}
 
-	struct st_value * admin = st_value_hashtable_get2(config, "admin", false);
+	struct st_value * admin = st_value_hashtable_get2(config, "admin", false, false);
 	if (admin == NULL || admin->type != st_value_hashtable || !st_value_hashtable_has_key2(admin, "password") || !st_value_hashtable_has_key2(admin, "socket")) {
 		st_value_free(config);
 		return false;
@@ -88,7 +88,7 @@ static bool stctl_daemon_try_connect() {
 		return false;
 	}
 
-	struct st_value * password = st_value_hashtable_get2(admin, "password", false);
+	struct st_value * password = st_value_hashtable_get2(admin, "password", false, false);
 	if (password == NULL || password->type != st_value_string) {
 		st_value_free(config);
 		return false;
@@ -222,7 +222,7 @@ int stctl_stop_daemon(int argc, char ** argv) {
 	if (config == NULL || !st_value_hashtable_has_key2(config, "admin"))
 		return 1;
 
-	struct st_value * admin = st_value_hashtable_get2(config, "admin", false);
+	struct st_value * admin = st_value_hashtable_get2(config, "admin", false, false);
 	if (admin == NULL || admin->type != st_value_hashtable || !st_value_hashtable_has_key2(admin, "password") || !st_value_hashtable_has_key2(admin, "socket")) {
 		st_value_free(config);
 		return 1;
@@ -232,7 +232,7 @@ int stctl_stop_daemon(int argc, char ** argv) {
 	if (fd < 0)
 		return 2;
 
-	struct st_value * password = st_value_hashtable_get2(admin, "password", false);
+	struct st_value * password = st_value_hashtable_get2(admin, "password", false, false);
 	if (password == NULL || password->type != st_value_string) {
 		st_value_free(config);
 		return 2;
@@ -259,7 +259,7 @@ int stctl_stop_daemon(int argc, char ** argv) {
 		return 4;
 	}
 
-	struct st_value * error = st_value_hashtable_get2(response, "error", false);
+	struct st_value * error = st_value_hashtable_get2(response, "error", false, false);
 	if (error == NULL || error->type != st_value_boolean) {
 		st_value_free(response);
 		st_value_free(config);
@@ -267,7 +267,7 @@ int stctl_stop_daemon(int argc, char ** argv) {
 		return 4;
 	}
 
-	struct st_value * pid = st_value_hashtable_get2(response, "pid", false);
+	struct st_value * pid = st_value_hashtable_get2(response, "pid", false, false);
 	if (pid == NULL || pid->type != st_value_integer) {
 		st_value_free(response);
 		st_value_free(config);

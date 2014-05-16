@@ -31,6 +31,8 @@
 
 #define st_changer_v1 st_changer
 
+void st_changer_free_v1(struct st_changer * changer) __attribute__((nonnull));
+void st_changer_free2_v1(void * changer) __attribute__((nonnull));
 const char * st_changer_status_to_string_v1(enum st_changer_status status);
 enum st_changer_status st_changer_string_to_status_v1(const char * status) __attribute__((nonnull));
 

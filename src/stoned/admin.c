@@ -57,7 +57,7 @@ void std_admin_config(struct st_value * config) {
 		st_value_hashtable_put2(std_admin_callbacks, "shutdown", st_value_new_custom(std_admin_server_shutdown, NULL), true);
 	}
 
-	struct st_value * socket = st_value_hashtable_get2(config, "socket", false);
+	struct st_value * socket = st_value_hashtable_get2(config, "socket", false, false);
 	st_socket_server(socket, std_admin_new_connection);
 }
 
@@ -77,7 +77,7 @@ static void std_admin_client_do(int fd, short event, void * data) {
 		return;
 	}
 
-	struct st_value * method = st_value_hashtable_get2(request, "method", false);
+	struct st_value * method = st_value_hashtable_get2(request, "method", false, false);
 	if (!st_value_hashtable_has_key(std_admin_callbacks, method)) {
 		st_value_free(request);
 

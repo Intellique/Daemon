@@ -24,6 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// free
+#include <stdlib.h>
 // strcasecmp
 #include <string.h>
 
@@ -48,6 +50,24 @@ static const struct st_drive_status2 {
 	{ "unknown", st_drive_unknown },
 };
 
+
+__asm__(".symver st_drive_free_v1, st_drive_free@@LIBSTONE_1.2");
+void st_drive_free_v1(struct st_drive * drive) {
+	if (drive == NULL)
+		return;
+
+	free(drive->device);
+	free(drive->scsi_device);
+	free(drive->model);
+	free(drive->vendor);
+	free(drive->revision);
+	free(drive->serial_number);
+}
+
+__asm__(".symver st_drive_free2_v1, st_drive_free2@@LIBSTONE_1.2");
+void st_drive_free2_v1(void * drive) {
+	st_drive_free_v1(drive);
+}
 
 __asm__(".symver st_drive_status_to_string_v1, st_drive_status_to_string@@LIBSTONE_1.2");
 const char * st_drive_status_to_string_v1(enum st_drive_status status) {

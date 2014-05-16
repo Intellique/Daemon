@@ -79,12 +79,12 @@ void st_database_mariadb_config_free(void * data) {
 }
 
 struct st_database_config * st_database_mariadb_config_init(struct st_value * params) {
-	struct st_value * name = st_value_hashtable_get2(params, "name", false);
-	struct st_value * user = st_value_hashtable_get2(params, "user", false);
-	struct st_value * password = st_value_hashtable_get2(params, "password", false);
-	struct st_value * db = st_value_hashtable_get2(params, "db", false);
-	struct st_value * host = st_value_hashtable_get2(params, "host", false);
-	struct st_value * port = st_value_hashtable_get2(params, "port", false);
+	struct st_value * name = st_value_hashtable_get2(params, "name", false, false);
+	struct st_value * user = st_value_hashtable_get2(params, "user", false, false);
+	struct st_value * password = st_value_hashtable_get2(params, "password", false, false);
+	struct st_value * db = st_value_hashtable_get2(params, "db", false, false);
+	struct st_value * host = st_value_hashtable_get2(params, "host", false, false);
+	struct st_value * port = st_value_hashtable_get2(params, "port", false, false);
 
 	struct st_database_mariadb_config_private * self = malloc(sizeof(struct st_database_mariadb_config_private));
 	bzero(self, sizeof(struct st_database_mariadb_config_private));

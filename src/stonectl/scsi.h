@@ -30,6 +30,8 @@
 // bool
 #include <stdbool.h>
 
+struct st_changer;
+struct st_drive;
 struct st_value;
 
 /**
@@ -39,7 +41,7 @@ struct st_value;
  * \param[out] changer : an already allocated changer
  * \returns 0 if ok
  */
-int stctl_scsi_loaderinfo(const char * filename, struct st_value * changer, struct st_value * available_drives);
+int stctl_scsi_loaderinfo(const char * filename, struct st_changer * changer, struct st_value * available_drives);
 
 /**
  * \brief Inquiry the drive
@@ -48,7 +50,7 @@ int stctl_scsi_loaderinfo(const char * filename, struct st_value * changer, stru
  * \param[out] drive : an already allocated drive
  * \returns 0 if ok
  */
-int stctl_scsi_tapeinfo(const char * filename, struct st_value * drive);
+int stctl_scsi_tapeinfo(const char * filename, struct st_drive * drive);
 
 #endif
 

@@ -29,10 +29,12 @@
 #include <glob.h>
 // printf, sscanf, snprintf
 #include <stdio.h>
-// free
+// free, malloc
 #include <stdlib.h>
-// memset, strcat, strchr, strcpy, strncpy, strstr
+// memset, strcat, strchr, strcpy, strdup, strncpy, strstr
 #include <string.h>
+// bzero
+#include <strings.h>
 // stat
 #include <sys/stat.h>
 // stat
@@ -40,6 +42,8 @@
 // readlink, stat
 #include <unistd.h>
 
+#include <libstone/changer.h>
+#include <libstone/drive.h>
 #include <libstone/file.h>
 #include <libstone/log.h>
 #include <libstone/value.h>
@@ -93,29 +97,26 @@ struct st_value * stctl_detect_hardware() {
 		ptr = strrchr(link, '/') + 1;
 		asprintf(&device, "/dev/n%s", ptr);
 
-		struct st_value * drive = st_value_pack("{sssssssssbsfsis{}}", "device", device, "scsi device", scsi_device, "status", "unknown", "mode", "linear", "enabled", true, "operation duration", 0.0, "last clean", 0, "db");
+		// struct st_value * drive = st_value_pack("{sssssssssbsfsis{}}", "device", device, "scsi device", scsi_device, "status", "unknown", "mode", "linear", "enabled", true, "operation duration", 0.0, "last clean", 0, "db");
+		struct st_drive * drive = malloc(sizeof(struct st_drive));
+		bzero(drive, sizeof(struct st_drive));
+		drive->device = device;
+		drive->scsi_device = scsi_device;
+		drive->status = st_drive_unknown;
+		// drive->mode
 
 		stctl_scsi_tapeinfo(scsi_device, drive);
-
-		char * vendor, * model, * serial_number;
-		st_value_unpack(drive, "{ssssss}", "vendor", &vendor, "model", &model, "serial number", &serial_number);
 
 		char dev[35];
 		dev[34] = '\0';
 		memset(dev, ' ', 35);
-		strncpy(dev, vendor, strlen(vendor));
+		strncpy(dev, drive->vendor, strlen(drive->vendor));
 		dev[7] = ' ';
-		strncpy(dev + 8, model, strlen(model));
+		strncpy(dev + 8, drive->model, strlen(drive->model));
 		dev[23] = ' ';
-		strcpy(dev + 24, serial_number);
+		strcpy(dev + 24, drive->serial_number);
 
-		st_value_hashtable_put2(drives, dev, drive, true);
-
-		free(vendor);
-		free(model);
-		free(serial_number);
-		free(device);
-		free(scsi_device);
+		st_value_hashtable_put2(drives, dev, st_value_new_custom(drive, st_drive_free2), true);
 	}
 	globfree(&gl);
 
@@ -143,7 +144,11 @@ struct st_value * stctl_detect_hardware() {
 		ptr = strrchr(link, '/');
 		asprintf(&device, "/dev%s", ptr);
 
-		struct st_value * changer = st_value_pack("{sssssbs[]s[]s{}}", "device", device, "status", "unknown", "enable", true, "drives", "slots", "db");
+		struct st_changer * changer = malloc(sizeof(struct st_changer));
+		bzero(changer, sizeof(struct st_changer));
+		changer->device = strdup(device);
+		changer->status = st_changer_unknown;
+		changer->enabled = true;
 
 		asprintf(&path, "/sys/class/sas_host/host%d", host);
 		struct stat st;
@@ -164,13 +169,9 @@ struct st_value * stctl_detect_hardware() {
 				if (cp != NULL)
 					*cp = '\0';
 
-				char * wwn;
-				asprintf(&wwn, "sas:%s", data);
-
-				st_value_hashtable_put2(changer, "wwn", st_value_new_string(wwn), true);
+				asprintf(&changer->wwn, "sas:%s", data);
 
 				free(data);
-				free(wwn);
 			}
 		}
 		free(path);
@@ -178,7 +179,7 @@ struct st_value * stctl_detect_hardware() {
 		stctl_scsi_loaderinfo(device, changer, drives);
 		free(device);
 
-		st_value_list_push(changers, changer, true);
+		st_value_list_push(changers, st_value_new_custom(changer, st_changer_free2), true);
 	}
 	globfree(&gl);
 

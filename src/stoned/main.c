@@ -118,23 +118,23 @@ int main(int argc, char ** argv) {
 	if (!std_env_setup())
 		return 3;
 
-	struct st_value * logger_config = st_value_hashtable_get2(config, "logger", false);
+	struct st_value * logger_config = st_value_hashtable_get2(config, "logger", false, false);
 	if (logger_config == NULL || logger_config->type != st_value_hashtable)
 		return 2;
 	std_logger_start(logger_config);
 
-	struct st_value * log_file = st_value_hashtable_get2(logger_config, "socket", false);
+	struct st_value * log_file = st_value_hashtable_get2(logger_config, "socket", false, false);
 	if (log_file == NULL || log_file->type != st_value_hashtable)
 		return 2;
 	st_log_configure(log_file, st_log_type_daemon);
 
-	struct st_value * admin_config = st_value_hashtable_get2(config, "admin", false);
+	struct st_value * admin_config = st_value_hashtable_get2(config, "admin", false, false);
 	if (admin_config != NULL && admin_config->type == st_value_hashtable)
 		std_admin_config(admin_config);
 	else
 		st_log_write2(st_log_level_warning, st_log_type_daemon, "No administration configured");
 
-	struct st_value * db_configs = st_value_hashtable_get2(config, "database", false);
+	struct st_value * db_configs = st_value_hashtable_get2(config, "database", false, false);
 	if (db_configs != NULL)
 		st_database_load_config(db_configs);
 

@@ -259,7 +259,7 @@ void st_value_hashtable_clear(struct st_value * hash) __attribute__((nonnull));
  * \returns \b null or the value associated to \a key
  */
 struct st_value * st_value_hashtable_get(struct st_value * hash, struct st_value * key, bool shared, bool detach) __attribute__((nonnull,warn_unused_result));
-struct st_value * st_value_hashtable_get2(struct st_value * hash, const char * key, bool shared) __attribute__((nonnull,warn_unused_result));
+struct st_value * st_value_hashtable_get2(struct st_value * hash, const char * key, bool shared, bool detach) __attribute__((nonnull,warn_unused_result));
 /**
  * \brief Get an object to iter through an hashtable
  *

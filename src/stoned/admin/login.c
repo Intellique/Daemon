@@ -38,7 +38,7 @@ struct st_value * std_admin_login(struct std_admin_client * client, struct st_va
 	if (!st_value_hashtable_has_key2(request, "step"))
 		return st_value_pack("{sbss}", "error", true, "message", "parameter required");
 
-	struct st_value * step = st_value_hashtable_get2(request, "step", false);
+	struct st_value * step = st_value_hashtable_get2(request, "step", false, false);
 	if (step->type != st_value_integer)
 		return st_value_pack("{sbss}", "error", true, "message", "parameter step : should be an integer");
 
@@ -57,11 +57,11 @@ struct st_value * std_admin_login(struct std_admin_client * client, struct st_va
 				if (client->salt == NULL)
 					return st_value_pack("{sbss}", "error", true, "message", "do step 1 of loggin process");
 
-				struct st_value * vhash = st_value_hashtable_get2(request, "password", false);
+				struct st_value * vhash = st_value_hashtable_get2(request, "password", false, false);
 				if (vhash == NULL || vhash->type != st_value_string)
 					return st_value_pack("{sbss}", "error", true, "message", "parameter password : should be a string");
 
-				struct st_value * vpasswd = st_value_hashtable_get2(config, "password", false);
+				struct st_value * vpasswd = st_value_hashtable_get2(config, "password", false, false);
 				char * hash = st_checksum_salt_password("sha1", st_value_string_get(vpasswd), client->salt);
 
 				if (!strcmp(hash, st_value_string_get(vhash))) {

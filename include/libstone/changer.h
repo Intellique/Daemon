@@ -117,6 +117,8 @@ struct st_changer {
 	void * db_data;
 };
 
+void st_changer_free(struct st_changer * changer) __attribute__((nonnull));
+void st_changer_free2(void * changer) __attribute__((nonnull));
 const char * st_changer_status_to_string(enum st_changer_status status);
 enum st_changer_status st_changer_string_to_status(const char * status) __attribute__((nonnull));
 

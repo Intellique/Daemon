@@ -24,6 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// free
+#include <stdlib.h>
 // strcasecmp
 #include <string.h>
 
@@ -46,6 +48,24 @@ static const struct st_changer_status2 {
 	{ "unknown", st_changer_unknown },
 };
 
+
+__asm__(".symver st_changer_free_v1, st_changer_free@@LIBSTONE_1.2");
+void st_changer_free_v1(struct st_changer * changer) {
+	if (changer == NULL)
+		return;
+
+	free(changer->device);
+	free(changer->model);
+	free(changer->vendor);
+	free(changer->revision);
+	free(changer->serial_number);
+	free(changer->wwn);
+}
+
+__asm__(".symver st_changer_free2_v1, st_changer_free2@@LIBSTONE_1.2");
+void st_changer_free2_v1(void * changer) {
+	st_changer_free_v1(changer);
+}
 
 __asm__(".symver st_changer_status_to_string_v1, st_changer_status_to_string@@LIBSTONE_1.2");
 const char * st_changer_status_to_string_v1(enum st_changer_status status) {

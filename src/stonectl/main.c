@@ -59,7 +59,7 @@ int main(int argc, char ** argv) {
 		return 2;
 	}
 
-	struct st_value * com = st_value_hashtable_get2(commands, argv[1], false);
+	struct st_value * com = st_value_hashtable_get2(commands, argv[1], false, false);
 	command_f command = st_value_custom_get(com);
 
 	return command(argc - 1, argv + 1);

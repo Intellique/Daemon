@@ -57,11 +57,11 @@ static void st_socket_unix_server_callback_v1(int fd, short event, void * data);
 int st_socket_unix_v1(struct st_value * config) {
 	int type = SOCK_STREAM;
 
-	struct st_value * vtype = st_value_hashtable_get2(config, "type", false);
+	struct st_value * vtype = st_value_hashtable_get2(config, "type", false, false);
 	if (vtype->type == st_value_string && !strcmp(st_value_string_get(vtype), "datagram"))
 		type = SOCK_DGRAM;
 
-	struct st_value * vpath = st_value_hashtable_get2(config, "path", false);
+	struct st_value * vpath = st_value_hashtable_get2(config, "path", false, false);
 	if (vpath->type != st_value_string)
 		return -1;
 
@@ -85,11 +85,11 @@ int st_socket_unix_v1(struct st_value * config) {
 bool st_socket_unix_server_v1(struct st_value * config, st_socket_accept_f accept_callback) {
 	int type = SOCK_STREAM;
 
-	struct st_value * vtype = st_value_hashtable_get2(config, "type", false);
+	struct st_value * vtype = st_value_hashtable_get2(config, "type", false, false);
 	if (vtype->type == st_value_string && !strcmp(st_value_string_get(vtype), "datagram"))
 		type = SOCK_DGRAM;
 
-	struct st_value * vpath = st_value_hashtable_get2(config, "path", false);
+	struct st_value * vpath = st_value_hashtable_get2(config, "path", false, false);
 	if (vpath->type != st_value_string)
 		return false;
 

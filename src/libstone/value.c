@@ -1166,9 +1166,9 @@ struct st_value * st_value_hashtable_get_v1(struct st_value * hash, struct st_va
 }
 
 __asm__(".symver st_value_hashtable_get2_v1, st_value_hashtable_get2@@LIBSTONE_1.2");
-struct st_value * st_value_hashtable_get2_v1(struct st_value * hash, const char * key, bool shared) {
+struct st_value * st_value_hashtable_get2_v1(struct st_value * hash, const char * key, bool shared, bool detach) {
 	struct st_value * k = st_value_new_string_v1(key);
-	struct st_value * returned = st_value_hashtable_get_v1(hash, k, shared, false);
+	struct st_value * returned = st_value_hashtable_get_v1(hash, k, shared, detach);
 	st_value_free_v1(k);
 	return returned;
 }

@@ -71,7 +71,7 @@ static struct st_database_config * st_database_mariadb_add(struct st_value * par
 }
 
 static struct st_database_config * st_database_mariadb_get_default_config() {
-	struct st_value * vconfig = st_value_hashtable_get2(st_database_mariadb_driver.configurations, "default", false);
+	struct st_value * vconfig = st_value_hashtable_get2(st_database_mariadb_driver.configurations, "default", false, false);
 	if (vconfig->type == st_value_custom)
 		return st_value_custom_get(vconfig);
 	return NULL;

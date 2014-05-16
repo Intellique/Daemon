@@ -78,6 +78,8 @@ struct st_drive {
 	void * db_data;
 };
 
+void st_drive_free(struct st_drive * drive) __attribute__((nonnull));
+void st_drive_free2(void * drive) __attribute__((nonnull));
 const char * st_drive_status_to_string(enum st_drive_status status);
 enum st_drive_status st_drive_string_to_status(const char * status) __attribute__((nonnull));
 

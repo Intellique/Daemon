@@ -94,12 +94,12 @@ static void st_log_mariadb_module_free(struct lgr_log_module * module) {
 }
 
 struct lgr_log_module * st_log_mariadb_new_module(struct st_value * params) {
-	struct st_value * val_host = st_value_hashtable_get2(params, "host", false);
-	struct st_value * val_port = st_value_hashtable_get2(params, "port", false);
-	struct st_value * val_db = st_value_hashtable_get2(params, "db", false);
-	struct st_value * val_user = st_value_hashtable_get2(params, "user", false);
-	struct st_value * val_password = st_value_hashtable_get2(params, "password", false);
-	struct st_value * level = st_value_hashtable_get2(params, "verbosity", false);
+	struct st_value * val_host = st_value_hashtable_get2(params, "host", false, false);
+	struct st_value * val_port = st_value_hashtable_get2(params, "port", false, false);
+	struct st_value * val_db = st_value_hashtable_get2(params, "db", false, false);
+	struct st_value * val_user = st_value_hashtable_get2(params, "user", false, false);
+	struct st_value * val_password = st_value_hashtable_get2(params, "password", false, false);
+	struct st_value * level = st_value_hashtable_get2(params, "verbosity", false, false);
 
 	const char * host = NULL;
 	if (val_host->type == st_value_string)
@@ -200,11 +200,11 @@ static void st_log_mariadb_module_write(struct lgr_log_module * module, struct s
 	if (!st_value_hashtable_has_key2(message, "type") || !st_value_hashtable_has_key2(message, "message"))
 		return;
 
-	struct st_value * level = st_value_hashtable_get2(message, "level", false);
+	struct st_value * level = st_value_hashtable_get2(message, "level", false, false);
 	if (level->type != st_value_string)
 		return;
 
-	struct st_value * vtype = st_value_hashtable_get2(message, "type", false);
+	struct st_value * vtype = st_value_hashtable_get2(message, "type", false, false);
 	if (vtype->type != st_value_string)
 		return;
 
@@ -212,11 +212,11 @@ static void st_log_mariadb_module_write(struct lgr_log_module * module, struct s
 	if (type == st_log_type_unknown)
 		return;
 
-	struct st_value * vtimestamp = st_value_hashtable_get2(message, "timestamp", false);
+	struct st_value * vtimestamp = st_value_hashtable_get2(message, "timestamp", false, false);
 	if (vtimestamp->type != st_value_integer)
 		return;
 
-	struct st_value * vmessage = st_value_hashtable_get2(message, "message", false);
+	struct st_value * vmessage = st_value_hashtable_get2(message, "message", false, false);
 	if (vmessage->type != st_value_string)
 		return;
 
