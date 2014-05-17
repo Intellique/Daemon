@@ -32,6 +32,7 @@
 
 struct st_drive;
 struct st_slot;
+struct st_value;
 
 enum st_changer_status {
 	st_changer_error = 0x1,
@@ -114,7 +115,7 @@ struct st_changer {
 	/**
 	 * \brief Private data used by database plugin
 	 */
-	void * db_data;
+	struct st_value * db_data;
 };
 
 void st_changer_free(struct st_changer * changer) __attribute__((nonnull));

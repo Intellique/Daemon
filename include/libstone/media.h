@@ -35,5 +35,8 @@ enum st_media_format_mode {
 	st_media_format_mode_unknown = 0x0,
 };
 
+const char * st_media_format_mode_to_string(enum st_media_format_mode mode);
+enum st_media_format_mode st_media_string_to_format_mode(const char * mode) __attribute__((nonnull));
+
 #endif
 

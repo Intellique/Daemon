@@ -62,6 +62,8 @@ void st_drive_free_v1(struct st_drive * drive) {
 	free(drive->vendor);
 	free(drive->revision);
 	free(drive->serial_number);
+
+	free(drive->data);
 }
 
 __asm__(".symver st_drive_free2_v1, st_drive_free2@@LIBSTONE_1.2");

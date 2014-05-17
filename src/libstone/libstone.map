@@ -74,6 +74,8 @@ LIBSTONE_1.2 {
 		st_process_start;
 		st_process_wait;
 
+		st_slot_free;
+		st_slot_free2;
 		st_slot_type_to_string;
 		st_slot_string_to_type;
 
@@ -101,6 +103,7 @@ LIBSTONE_1.2 {
 		st_value_can_convert;
 		st_value_convert;
 		st_value_copy;
+		st_value_custom_compute_hash;
 		st_value_custom_get;
 		st_value_equals;
 		st_value_float_get;

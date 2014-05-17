@@ -35,7 +35,11 @@
 // uname
 #include <sys/utsname.h>
 
+#include <libstone/changer.h>
+#include <libstone/drive.h>
 #include <libstone/log.h>
+#include <libstone/media.h>
+#include <libstone/slot.h>
 #include <libstone/time.h>
 #include <libstone/value.h>
 
@@ -61,9 +65,9 @@ static bool st_database_postgresql_find_host(struct st_database_connection * con
 static char * st_database_postgresql_get_host(struct st_database_connection * connect);
 static struct st_value * st_database_postgresql_get_host_by_name(struct st_database_connection * connect, const char * name);
 
-static int st_database_postgresql_sync_changer(struct st_database_connection * connect, struct st_value * changer, bool init);
-static int st_database_postgresql_sync_drive(struct st_database_connection * connect, struct st_value * drive, bool init);
-static int st_database_postgresql_sync_slots(struct st_database_connection * connect, struct st_value * slot, bool init);
+static int st_database_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer, bool init);
+static int st_database_postgresql_sync_drive(struct st_database_connection * connect, struct st_drive * drive, bool init);
+static int st_database_postgresql_sync_slots(struct st_database_connection * connect, struct st_slot * slot, bool init);
 
 static void st_database_postgresql_prepare(struct st_database_postgresql_connection_private * self, const char * statement_name, const char * query);
 
@@ -370,7 +374,7 @@ static struct st_value * st_database_postgresql_get_host_by_name(struct st_datab
 }
 
 
-static int st_database_postgresql_sync_changer(struct st_database_connection * connect, struct st_value * changer, bool init) {
+static int st_database_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer, bool init) {
 	if (connect == NULL || changer == NULL)
 		return -1;
 
@@ -386,8 +390,17 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 	if (transStatus == PQTRANS_IDLE)
 		st_database_postgresql_start_transaction(connect);
 
+	struct st_value * key = st_value_new_custom(connect->config, NULL);
 	struct st_value * db = NULL;
-	st_value_unpack(changer, "{so}", "db", &db);
+	if (changer->db_data == NULL) {
+		changer->db_data = st_value_new_hashtable(st_value_custom_compute_hash);
+
+		db = st_value_new_hashtable2();
+		st_value_hashtable_put(changer->db_data, key, true, db, true);
+	} else {
+		db = st_value_hashtable_get(changer->db_data, key, false, false);
+		st_value_free(key);
+	}
 
 	char * changer_id = NULL;
 	st_value_unpack(db, "{ss}", "id", &changer_id);
@@ -423,20 +436,17 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 		const char * query;
 		PGresult * result;
 
-		char * model = NULL, * vendor = NULL, * serial_number = NULL, * wwn = NULL;
-		st_value_unpack(changer, "{ssssssss}", "model", &model, "vendor", &vendor, "serial number", &serial_number, "wwn", &wwn);
-
-		if (wwn != NULL) {
+		if (changer->wwn != NULL) {
 			query = "select_changer_by_model_vendor_serialnumber_wwn";
 			st_database_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn = $4 FOR UPDATE");
 
-			const char * param[] = { model, vendor, serial_number, wwn };
+			const char * param[] = { changer->model, changer->vendor, changer->serial_number, changer->wwn };
 			result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 		} else {
 			query = "select_changer_by_model_vendor_serialnumber";
 			st_database_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn IS NULL FOR UPDATE");
 
-			const char * param[] = { model, vendor, serial_number };
+			const char * param[] = { changer->model, changer->vendor, changer->serial_number };
 			result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
 		}
 		ExecStatusType status = PQresultStatus(result);
@@ -445,17 +455,12 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 			st_database_postgresql_get_error(result, query);
 		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			st_database_postgresql_get_string_dup(result, 0, 0, &changer_id);
-			st_database_postgresql_get_bool(result, 0, 1, &enabled);
+			st_database_postgresql_get_bool(result, 0, 1, &changer->enabled);
 
-			st_value_hashtable_put2(changer, "enable", st_value_new_boolean(enabled), true);
 			st_value_hashtable_put2(db, "id", st_value_new_string(changer_id), true);
 		}
 
 		PQclear(result);
-		free(model);
-		free(vendor);
-		free(serial_number);
-		free(wwn);
 
 		if (status == PGRES_FATAL_ERROR) {
 			free(hostid);
@@ -471,18 +476,11 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 		const char * query = "update_changer";
 		st_database_postgresql_prepare(self, query, "UPDATE changer SET device = $1, status = $2, firmwarerev = $3 WHERE id = $4");
 
-		char * device = NULL, * sstatus = NULL, * revision = NULL;
-		st_value_unpack(changer, "{ssssss}", "device", &device, "status", &sstatus, "revision", &revision);
-
-		const char * params[] = { device, sstatus, revision, changer_id };
+		const char * params[] = { changer->device, st_changer_status_to_string(changer->status), changer->revision, changer_id };
 		PGresult * result = PQexecPrepared(self->connect, query, 4, params, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		PQclear(result);
-
-		free(device);
-		free(revision);
-		free(sstatus);
 
 		if (status == PGRES_FATAL_ERROR) {
 			st_database_postgresql_get_error(result, query);
@@ -497,13 +495,9 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 		const char * query = "insert_changer";
 		st_database_postgresql_prepare(self, query, "INSERT INTO changer(device, status, barcode, model, vendor, firmwarerev, serialnumber, wwn, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id");
 
-		char * device = NULL, * sstatus = NULL, * revision = NULL, * model = NULL, * vendor = NULL, * serial_number = NULL, * wwn = NULL;
-		bool barcode = false;
-
-		st_value_unpack(changer, "{sssssbssssssssss}", "device", &device, "status", &sstatus, "barcode", &barcode, "model", &model, "vendor", &vendor, "revision", &revision, "serial number", &serial_number, "wwn", &wwn);
-
 		const char * param[] = {
-			device, sstatus, barcode ? "true" : "false", model, vendor, revision, serial_number, wwn, hostid,
+			changer->device, st_changer_status_to_string(changer->status), changer->barcode ? "true" : "false",
+			changer->model, changer->vendor, changer->revision, changer->serial_number, changer->wwn, hostid,
 		};
 
 		PGresult * result = PQexecPrepared(self->connect, query, 9, param, NULL, NULL, 0);
@@ -517,14 +511,6 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 		}
 
 		PQclear(result);
-
-		free(device);
-		free(model);
-		free(revision);
-		free(serial_number);
-		free(sstatus);
-		free(vendor);
-		free(wwn);
 
 		if (status == PGRES_FATAL_ERROR) {
 			free(hostid);
@@ -541,18 +527,11 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 	free(hostid);
 
 	int failed = 0;
+	unsigned int i;
 
 	if (init) {
-		struct st_value * drives;
-		st_value_unpack(changer, "{so}", "drives", &drives);
-
-		struct st_value_iterator * iter = st_value_list_get_iterator(drives);
-		while (failed == 0 && st_value_iterator_has_next(iter)) {
-			struct st_value * drive = st_value_iterator_get_value(iter, false);
-			failed = st_database_postgresql_sync_drive(connect, drive, init);
-		}
-		st_value_iterator_free(iter);
-
+		for (i = 0; failed == 0 && i < changer->nb_drives; i++)
+			failed = st_database_postgresql_sync_drive(connect, changer->drives + i, init);
 
 		const char * query = "delete_from_changerslot_by_changer";
 		st_database_postgresql_prepare(self, query, "DELETE FROM changerslot WHERE changer = $1");
@@ -568,17 +547,8 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 
 	free(changer_id);
 
-	struct st_value * slots = NULL;
-	st_value_unpack(changer, "{so}", "slots", &slots);
-
-	if (failed == 0 && slots != NULL) {
-		struct st_value_iterator * iter = st_value_list_get_iterator(slots);
-		while (st_value_iterator_has_next(iter) && failed == 0) {
-			struct st_value * slot = st_value_iterator_get_value(iter, false);
-			failed = st_database_postgresql_sync_slots(connect, slot, init);
-		}
-		st_value_iterator_free(iter);
-	}
+	for (i = 0; failed == 0 && i < changer->nb_slots; i++)
+		failed = st_database_postgresql_sync_slots(connect, changer->slots + i, init);
 
 	if (transStatus == PQTRANS_IDLE && failed == 0)
 		st_database_postgresql_finish_transaction(connect);
@@ -586,7 +556,7 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 	return 0;
 }
 
-static int st_database_postgresql_sync_drive(struct st_database_connection * connect, struct st_value * drive, bool init) {
+static int st_database_postgresql_sync_drive(struct st_database_connection * connect, struct st_drive * drive, bool init) {
 	if (connect == NULL || drive == NULL)
 		return -1;
 
@@ -597,9 +567,30 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 	else if (transStatus == PQTRANS_IDLE)
 		st_database_postgresql_start_transaction(connect);
 
-	struct st_value * db;
+	struct st_value * key = st_value_new_custom(connect->config, NULL);
+	struct st_value * db = NULL;
+	if (drive->db_data == NULL) {
+		drive->db_data = st_value_new_hashtable(st_value_custom_compute_hash);
+
+		db = st_value_new_hashtable2();
+		st_value_hashtable_put(drive->db_data, key, true, db, true);
+
+		struct st_value * changer_data = st_value_hashtable_get(drive->changer->db_data, key, false, false);
+		struct st_value * changer_id = st_value_hashtable_get2(changer_data, "id", true, false);
+		st_value_hashtable_put2(db, "changer_id", changer_id, true);
+	} else {
+		db = st_value_hashtable_get(drive->db_data, key, false, false);
+
+		if (!st_value_hashtable_has_key2(db, "changer_id")) {
+			struct st_value * changer_data = st_value_hashtable_get(drive->changer->db_data, key, false, false);
+			struct st_value * changer_id = st_value_hashtable_get2(changer_data, "id", true, false);
+			st_value_hashtable_put2(db, "changer_id", changer_id, true);
+		}
+
+		st_value_free(key);
+	}
+
 	char * drive_id = NULL;
-	st_value_unpack(drive, "{so}", "db", &db);
 	st_value_unpack(db, "{ss}", "db", "id", &drive_id);
 
 	char * driveformat_id = NULL;
@@ -621,11 +612,9 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 				st_value_hashtable_put2(db, "driveformat_id", st_value_new_string(driveformat_id), true);
 			}
 
-			bool enabled;
-			st_database_postgresql_get_bool(result, 0, 1, &enabled);
-			st_value_hashtable_put2(drive, "enable", st_value_new_boolean(enabled), true);
+			st_database_postgresql_get_bool(result, 0, 1, &drive->enabled);
 		} else if (status == PGRES_TUPLES_OK && nb_result == 1)
-			st_value_hashtable_put2(drive, "enable", st_value_new_boolean(false), true);
+			drive->enabled = false;
 
 		PQclear(result);
 
@@ -639,10 +628,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 		const char * query = "select_drive_by_model_vendor_serialnumber";
 		st_database_postgresql_prepare(self, query, "SELECT id, operationduration, lastclean, driveformat, enable FROM drive WHERE model = $1 AND vendor = $2 AND serialnumber = $3 FOR UPDATE");
 
-		char * model = NULL, * vendor = NULL, * serial_number = NULL;
-		st_value_unpack(drive, "{ssssss}", "model", &model, "vendor", &vendor, "serial number", &serial_number);
-
-		const char * param[] = { model, vendor, serial_number };
+		const char * param[] = { drive->model, drive->vendor, drive->serial_number };
 		PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
@@ -654,30 +640,20 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 
 			double old_operation_duration = 0;
 			st_database_postgresql_get_double(result, 0, 1, &old_operation_duration);
-			double current_operation_duration = 0;
-			st_value_unpack(drive, "{sf}", "operation duration", &current_operation_duration);
-			st_value_hashtable_put2(drive, "operation duration", st_value_new_float(old_operation_duration + current_operation_duration), true);
+			drive->operation_duration += old_operation_duration;
 
-			time_t last_clean = 0;
-			if (!PQgetisnull(result, 0, 2)) {
-				st_database_postgresql_get_time(result, 0, 2, &last_clean);
-				st_value_hashtable_put2(drive, "last clean", st_value_new_integer(last_clean), true);
-			}
+			if (!PQgetisnull(result, 0, 2))
+				st_database_postgresql_get_time(result, 0, 2, &drive->last_clean);
 
 			if (!PQgetisnull(result, 0, 3)) {
 				st_database_postgresql_get_string_dup(result, 0, 3, &driveformat_id);
 				st_value_hashtable_put2(db, "driveformat_id", st_value_new_string(driveformat_id), true);
 			}
 
-			bool enabled;
-			st_database_postgresql_get_bool(result, 0, 4, &enabled);
-			st_value_hashtable_put2(drive, "enable", st_value_new_boolean(enabled), true);
+			st_database_postgresql_get_bool(result, 0, 4, &drive->enabled);
 		}
 
 		PQclear(result);
-		free(model);
-		free(vendor);
-		free(serial_number);
 
 		if (status == PGRES_FATAL_ERROR) {
 			if (transStatus == PQTRANS_IDLE)
@@ -703,10 +679,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 
 		PQclear(result);
 
-		long long current_density_code = 0;
-		st_value_unpack(drive, "{si}", "density code", &current_density_code);
-
-		if (current_density_code > density_code) {
+		if (drive->density_code > density_code) {
 			free(driveformat_id);
 			driveformat_id = NULL;
 		}
@@ -716,14 +689,10 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 		const char * query = "select_driveformat_by_densitycode";
 		st_database_postgresql_prepare(self, query, "SELECT id FROM driveformat WHERE densitycode = $1 AND mode = $2 LIMIT 1");
 
-		long long current_density_code = 0;
-		char * drive_mode = NULL;
-		st_value_unpack(drive, "{siss}", "density code", &current_density_code, "mode", &drive_mode);
+		char * densitycode = NULL;
+		asprintf(&densitycode, "%u", drive->density_code);
 
-		char * sdensity_code = NULL;
-		asprintf(&sdensity_code, "%lld", current_density_code);
-
-		const char * param[] = { sdensity_code, drive_mode };
+		const char * param[] = { densitycode, st_media_format_mode_to_string(drive->mode), };
 		PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
@@ -735,31 +704,24 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 		}
 
 		PQclear(result);
-		free(sdensity_code);
-		free(drive_mode);
+		free(densitycode);
 	}
 
 	if (drive_id != NULL) {
 		const char * query = "update_drive";
 		st_database_postgresql_prepare(self, query, "UPDATE drive SET device = $1, scsidevice = $2, status = $3, operationduration = $4, lastclean = $5, firmwarerev = $6, driveformat = $7 WHERE id = $8");
 
-		double drive_operation_duration = 0;
-		long long drive_last_clean = 0;
-		char * drive_device = NULL, * drive_scsi_device = NULL, * drive_status = NULL, * drive_revision = NULL;
-		st_value_unpack(drive, "{sfsissssssss}", "operation duration", &drive_operation_duration, "last clean", &drive_last_clean, "device", &drive_device, "scsi device", &drive_scsi_device, "status", &drive_status, "revision", &drive_revision);
-
 		char * op_duration = NULL, * last_clean = NULL;
-		asprintf(&op_duration, "%.3f", drive_operation_duration);
+		asprintf(&op_duration, "%.3Lf", drive->operation_duration);
 
-		if (drive_last_clean > 0) {
-			time_t drive_last_clean2 = drive_last_clean;
+		if (drive->last_clean > 0) {
 			last_clean = malloc(24);
-			st_time_convert(&drive_last_clean2, "%F %T", last_clean, 24);
+			st_time_convert(&drive->last_clean, "%F %T", last_clean, 24);
 		}
 
 		const char * param[] = {
-			drive_device, drive_scsi_device, drive_status, op_duration, last_clean,
-			drive_revision, driveformat_id, drive_id
+			drive->device, drive->scsi_device, st_drive_status_to_string(drive->status),
+			op_duration, last_clean, drive->revision, driveformat_id, drive_id,
 		};
 		PGresult * result = PQexecPrepared(self->connect, query, 8, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
@@ -770,10 +732,6 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 		PQclear(result);
 		free(last_clean);
 		free(op_duration);
-		free(drive_device);
-		free(drive_scsi_device);
-		free(drive_status);
-		free(drive_revision);
 
 		if (status == PGRES_FATAL_ERROR) {
 			free(drive_id);
@@ -786,26 +744,22 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 		const char * query = "insert_drive";
 		st_database_postgresql_prepare(self, query, "INSERT INTO drive(device, scsidevice, status, operationduration, lastclean, model, vendor, firmwarerev, serialnumber, changer, driveformat) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id");
 
-		double drive_operation_duration = 0;
-		long long drive_last_clean = 0;
-		char * drive_device = NULL, * drive_scsi_device = NULL, * drive_status = NULL, * drive_revision = NULL, * drive_model = NULL, * drive_vendor = NULL, * drive_serial_number = NULL;
-		st_value_unpack(drive, "{sfsissssssssssssss}", "operation duration", &drive_operation_duration, "last clean", &drive_last_clean, "device", &drive_device, "scsi device", &drive_scsi_device, "revision", &drive_revision, "status", &drive_status, "model", &drive_model, "vendor", &drive_vendor, "serial number", &drive_serial_number);
-
 		char * op_duration = NULL, * last_clean = NULL;
-		asprintf(&op_duration, "%.3f", drive_operation_duration);
+		asprintf(&op_duration, "%.3Lf", drive->operation_duration);
+
+		db = st_value_hashtable_get(drive->changer->db_data, key, false, false);
 
 		char * changer_id = NULL;
-		st_value_unpack(drive, "{s{s{ss}}}", "changer", "db", "id", &changer_id);
+		st_value_unpack(db, "{ss}", "changer_id", &changer_id);
 
-		if (drive_last_clean > 0) {
-			time_t drive_last_clean2 = drive_last_clean;
+		if (drive->last_clean > 0) {
 			last_clean = malloc(24);
-			st_time_convert(&drive_last_clean2, "%F %T", last_clean, 24);
+			st_time_convert(&drive->last_clean, "%F %T", last_clean, 24);
 		}
 
 		const char * param[] = {
-			drive_device, drive_scsi_device, drive_status, op_duration, last_clean,
-			drive_model, drive_vendor, drive_revision, drive_serial_number, changer_id, driveformat_id
+			drive->device, drive->scsi_device, st_drive_status_to_string(drive->status), op_duration, last_clean,
+			drive->model, drive->vendor, drive->revision, drive->serial_number, changer_id, driveformat_id
 		};
 		PGresult * result = PQexecPrepared(self->connect, query, 11, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
@@ -821,13 +775,6 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 		free(changer_id);
 		free(last_clean);
 		free(op_duration);
-		free(drive_device);
-		free(drive_scsi_device);
-		free(drive_status);
-		free(drive_revision);
-		free(drive_model);
-		free(drive_vendor);
-		free(drive_serial_number);
 
 		if (status == PGRES_FATAL_ERROR) {
 			free(drive_id);
@@ -846,28 +793,51 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 	return 0;
 }
 
-static int st_database_postgresql_sync_slots(struct st_database_connection * connect, struct st_value * slot, bool init) {
+static int st_database_postgresql_sync_slots(struct st_database_connection * connect, struct st_slot * slot, bool init) {
 	struct st_database_postgresql_connection_private * self = connect->data;
 
-	struct st_value * db = NULL, * changer = NULL, * drive = NULL;
-	long long int index = -1;
-	bool isImportExport = false;
-	bool enabled = true;
-	st_value_unpack(slot, "{sosisbsbsoso}", "db", &db, "index", &index, "enable", &enabled, "import export", &isImportExport, "changer", &changer, "drive", &drive);
+	struct st_value * key = st_value_new_custom(connect->config, NULL);
+	struct st_value * db = NULL;
+	if (slot->db_data == NULL) {
+		slot->db_data = st_value_new_hashtable(st_value_custom_compute_hash);
+
+		db = st_value_new_hashtable2();
+		st_value_hashtable_put(slot->db_data, key, true, db, true);
+
+		struct st_value * changer_data = st_value_hashtable_get(slot->changer->db_data, key, false, false);
+		struct st_value * changer_id = st_value_hashtable_get2(changer_data, "id", true, false);
+		st_value_hashtable_put2(db, "changer_id", changer_id, true);
+
+		if (slot->drive != NULL) {
+			struct st_value * drive_data = st_value_hashtable_get(slot->drive->db_data, key, false, false);
+			struct st_value * drive_id = st_value_hashtable_get2(drive_data, "id", true, false);
+			st_value_hashtable_put2(db, "drive_id", drive_id, true);
+		}
+	} else {
+		db = st_value_hashtable_get(slot->db_data, key, false, false);
+
+		if (!st_value_hashtable_has_key2(db, "changer_id")) {
+			struct st_value * changer_data = st_value_hashtable_get(slot->changer->db_data, key, false, false);
+			struct st_value * changer_id = st_value_hashtable_get2(changer_data, "id", true, false);
+			st_value_hashtable_put2(db, "changer_id", changer_id, true);
+		}
+
+		if (slot->drive != NULL && !st_value_hashtable_has_key2(db, "drive_id")) {
+			struct st_value * drive_data = st_value_hashtable_get(slot->drive->db_data, key, false, false);
+			struct st_value * drive_id = st_value_hashtable_get2(drive_data, "id", true, false);
+			st_value_hashtable_put2(db, "drive_id", drive_id, true);
+		}
+
+		st_value_free(key);
+	}
 
 	char * slot_id = NULL;
 	st_value_unpack(db, "{ss}", "id", &slot_id);
 
-	char * type = "storage";
-	if (drive != NULL)
-		type = "drive";
-	else if (isImportExport)
-		type = "import / export";
-
 	char * changer_id = NULL, * drive_id = NULL;
-	st_value_unpack(changer, "{s{ss}}", "db", "id", &changer_id);
-	if (drive != NULL)
-		st_value_unpack(drive, "{s{ss}}", "db", "id", &drive_id);
+	st_value_unpack(db, "{ssss}", "changer_id", &changer_id, "drive_id", &drive_id);
+
+	unsigned int index = slot->changer->slots - slot;
 
 	int failed = 0;
 
@@ -876,7 +846,7 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 		st_database_postgresql_prepare(self, query, "SELECT id, enable FROM changerslot WHERE changer = $1 AND index = $2 LIMIT 1");
 
 		char * sindex;
-		asprintf(&sindex, "%lld", index);
+		asprintf(&sindex, "%d", index);
 
 		const char * param[] = { changer_id, sindex };
 
@@ -889,8 +859,7 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 			st_database_postgresql_get_string_dup(result, 0, 0, &slot_id);
 			st_value_hashtable_put2(db, "id", st_value_new_string(slot_id), true);
 
-			st_database_postgresql_get_bool(result, 0, 1, &enabled);
-			st_value_hashtable_put2(slot, "enable", st_value_new_boolean(enabled), true);
+			st_database_postgresql_get_bool(result, 0, 1, &slot->enable);
 		}
 
 		PQclear(result);
@@ -902,9 +871,9 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 		st_database_postgresql_prepare(self, query, "INSERT INTO changerslot(index, changer, drive, type) VALUES ($1, $2, $3, $4) RETURNING id");
 
 		char * sindex;
-		asprintf(&sindex, "%lld", index);
+		asprintf(&sindex, "%d", index);
 
-		const char * param[] = { sindex, changer_id, drive_id, type };
+		const char * param[] = { sindex, changer_id, drive_id, st_slot_type_to_string(slot->type) };
 
 		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
@@ -920,7 +889,7 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 		const char * query = "update_changerslot";
 		st_database_postgresql_prepare(self, query, "UDPATE changerslot SET media = $1, enable = $2 WHERE id = $3");
 
-		const char * param[] = { NULL, enabled ? "true" : "false", slot_id };
+		const char * param[] = { NULL, slot->enable ? "true" : "false", slot_id };
 
 		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);

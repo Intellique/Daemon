@@ -24,6 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// free
+#include <stdlib.h>
 // strcasecmp
 #include <string.h>
 
@@ -41,6 +43,20 @@ static const struct st_slot_type2 {
 	{ "unknown slot", st_slot_type_unkown },
 };
 
+
+__asm__(".symver st_slot_type_to_string_v1, st_slot_type_to_string@@LIBSTONE_1.2");
+void st_slot_free_v1(struct st_slot * slot) {
+	if (slot == NULL)
+		return;
+
+	free(slot->volume_name);
+	free(slot->data);
+}
+
+__asm__(".symver st_slot_type_to_string_v1, st_slot_type_to_string@@LIBSTONE_1.2");
+void st_slot_free2_v1(void * slot) {
+	st_slot_free_v1(slot);
+}
 
 __asm__(".symver st_slot_type_to_string_v1, st_slot_type_to_string@@LIBSTONE_1.2");
 const char * st_slot_type_to_string_v1(enum st_slot_type type) {

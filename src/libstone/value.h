@@ -108,6 +108,7 @@ bool st_value_vvalid_v1(struct st_value * value, const char * format, va_list pa
 
 bool st_value_boolean_get_v1(const struct st_value * value) __attribute__((nonnull));
 
+unsigned long long st_value_custom_compute_hash_v1(const struct st_value * value) __attribute__((nonnull));
 void * st_value_custom_get_v1(const struct st_value * value) __attribute__((nonnull));
 
 double st_value_float_get_v1(const struct st_value * value) __attribute__((nonnull));

@@ -60,8 +60,10 @@ struct st_slot {
 	void * db_data;
 };
 
+void st_slot_free(struct st_slot * slot) __attribute__((nonnull));
+void st_slot_free2(void * slot) __attribute__((nonnull));
 const char * st_slot_type_to_string(enum st_slot_type type);
-enum st_slot_type st_slot_string_to_type(const char * type);
+enum st_slot_type st_slot_string_to_type(const char * type) __attribute__((nonnull));
 
 #endif
 

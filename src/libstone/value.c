@@ -1102,6 +1102,12 @@ bool st_value_boolean_get_v1(const struct st_value * value) {
 }
 
 
+__asm__(".symver st_value_custom_compute_hash_v1, st_value_custom_compute_hash@@LIBSTONE_1.2");
+unsigned long long st_value_custom_compute_hash_v1(const struct st_value * value) {
+	struct st_value_custom * custom = st_value_get_v1(value);
+	return (unsigned long long) custom->data;
+}
+
 __asm__(".symver st_value_custom_get_v1, st_value_custom_get@@LIBSTONE_1.2");
 void * st_value_custom_get_v1(const struct st_value * value) {
 	struct st_value_custom * custom = st_value_get_v1(value);
@@ -1153,7 +1159,7 @@ struct st_value * st_value_hashtable_get_v1(struct st_value * hash, struct st_va
 
 	struct st_value * ret = &null_value;
 	if (node != NULL && node->hash == h) {
-		if (shared)
+		if (shared || detach)
 			ret = st_value_share_v1(node->value);
 		else
 			ret = node->value;

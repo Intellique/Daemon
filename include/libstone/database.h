@@ -30,8 +30,10 @@
 // bool
 #include <stdbool.h>
 
+struct st_changer;
 struct st_database;
 struct st_database_config;
+struct st_drive;
 struct st_value;
 
 /**
@@ -113,8 +115,8 @@ struct st_database_connection {
 		bool (*find_host)(struct st_database_connection * connect, const char * uuid, const char * hostname) __attribute__((nonnull(1)));
 		struct st_value * (*get_host_by_name)(struct st_database_connection * connect, const char * name) __attribute__((nonnull));
 
-		int (*sync_changer)(struct st_database_connection * connect, struct st_value * changer, bool init) __attribute__((nonnull));
-		int (*sync_drive)(struct st_database_connection * connect, struct st_value * drive, bool init) __attribute__((nonnull));
+		int (*sync_changer)(struct st_database_connection * connect, struct st_changer * changer, bool init) __attribute__((nonnull));
+		int (*sync_drive)(struct st_database_connection * connect, struct st_drive * drive, bool init) __attribute__((nonnull));
 	} * ops;
 
 	/**

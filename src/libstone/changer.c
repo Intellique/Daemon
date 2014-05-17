@@ -30,6 +30,9 @@
 #include <string.h>
 
 #include "changer.h"
+#include "drive.h"
+#include "slot.h"
+#include "value.h"
 
 static const struct st_changer_status2 {
 	const char * name;
@@ -60,6 +63,18 @@ void st_changer_free_v1(struct st_changer * changer) {
 	free(changer->revision);
 	free(changer->serial_number);
 	free(changer->wwn);
+
+	unsigned int i;
+	for (i = 0; i < changer->nb_drives; i++)
+		st_drive_free_v1(changer->drives + i);
+	free(changer->drives);
+
+	for (i = 0; i < changer->nb_slots; i++)
+		st_slot_free_v1(changer->slots + i);
+	free(changer->slots);
+
+	free(changer->data);
+	st_value_free(changer->db_data);
 }
 
 __asm__(".symver st_changer_free2_v1, st_changer_free2@@LIBSTONE_1.2");

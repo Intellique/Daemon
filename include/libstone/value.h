@@ -240,6 +240,7 @@ bool st_value_vvalid(struct st_value * value, const char * format, va_list param
 
 bool st_value_boolean_get(const struct st_value * value) __attribute__((nonnull));
 
+unsigned long long st_value_custom_compute_hash(const struct st_value * value) __attribute__((nonnull));
 void * st_value_custom_get(const struct st_value * value) __attribute__((nonnull));
 
 double st_value_float_get(const struct st_value * value) __attribute__((nonnull));

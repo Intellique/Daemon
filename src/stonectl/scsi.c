@@ -600,6 +600,8 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_changer * changer, s
 
 					c_drive->changer = changer;
 					c_drive->slot = slot;
+
+					st_value_free(val_drive);
 				}
 				break;
 
