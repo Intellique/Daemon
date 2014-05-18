@@ -685,7 +685,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 		}
 	}
 
-	if (driveformat_id == NULL) {
+	if (driveformat_id == NULL && drive->mode != st_media_format_mode_unknown) {
 		const char * query = "select_driveformat_by_densitycode";
 		st_database_postgresql_prepare(self, query, "SELECT id FROM driveformat WHERE densitycode = $1 AND mode = $2 LIMIT 1");
 
