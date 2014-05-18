@@ -53,6 +53,9 @@ LIBSTONE_1.2 {
 		st_log_type_to_string;
 		st_log_write;
 
+		st_media_format_mode_to_string;
+		st_media_string_to_format_mode;
+
 		st_poll;
 		st_poll_nb_handlers;
 		st_poll_register;
