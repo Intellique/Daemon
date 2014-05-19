@@ -232,6 +232,13 @@ static void st_job_create_archive_new_job(struct st_job * job) {
 
 	self->total_done = self->total_size = 0;
 
+	self->archive = job->db_connect->ops->get_archive_volumes_by_job(job->db_connect, job);
+	self->archive_size = 0;
+	self->nb_files = 0;
+
+	if (self->pool == NULL)
+		self->pool = st_pool_get_by_archive(self->archive, job->db_connect);
+
 	unsigned int i;
 	for (i = 0; i < self->nb_selected_paths; i++) {
 		struct st_job_selected_path * p = self->selected_paths + i;
@@ -246,10 +253,6 @@ static void st_job_create_archive_new_job(struct st_job * job) {
 		else
 			st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Error while computing size of '%s'", p->path);
 	}
-
-	self->archive = job->db_connect->ops->get_archive_volumes_by_job(job->db_connect, job);
-	self->archive_size = 0;
-	self->nb_files = 0;
 
 	if (self->archive == NULL) {
 		self->archive = st_archive_new(job->name, job->user);
