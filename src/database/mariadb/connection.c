@@ -287,7 +287,8 @@ static struct st_value * st_database_mariadb_get_host_by_name(struct st_database
 	mysql_stmt_bind_param(stmt, params);
 	int failed = mysql_stmt_execute(stmt);
 
-	struct st_value * vresult;
+	struct st_value * vresult = NULL;
+
 	if (failed != 0) {
 		vresult = st_value_pack("{sbss}", "error", true, "message", mysql_stmt_error(stmt));
 	} else if (failed == 0 && mysql_stmt_num_rows(stmt) == 1) {

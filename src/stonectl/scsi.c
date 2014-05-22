@@ -285,17 +285,14 @@ int stctl_scsi_loaderinfo(const char * filename, struct st_changer * changer, st
 		return 2;
 	}
 
-	result_inquiry.product_revision_level[4] = '\0';
-	st_string_rtrim(result_inquiry.product_revision_level, ' ');
-	changer->revision = strdup(result_inquiry.product_revision_level);
+	changer->model = strndup(result_inquiry.product_identification, 16);
+	st_string_rtrim(changer->model, ' ');
 
-	result_inquiry.product_identification[16] = '\0';
-	st_string_rtrim(result_inquiry.product_identification, ' ');
-	changer->model = strdup(result_inquiry.product_identification);
+	changer->vendor = strndup(result_inquiry.vendor_identification, 8);
+	st_string_rtrim(changer->vendor, ' ');
 
-	result_inquiry.vendor_identification[8] = '\0';
-	st_string_rtrim(result_inquiry.vendor_identification, ' ');
-	changer->vendor = strdup(result_inquiry.vendor_identification);
+	changer->revision = strndup(result_inquiry.product_revision_level, 4);
+	st_string_rtrim(changer->revision, ' ');
 
 	changer->barcode = result_inquiry.bar_code;
 
@@ -730,17 +727,14 @@ int stctl_scsi_tapeinfo(const char * filename, struct st_drive * drive) {
 		return 2;
 	}
 
-	result_inquiry.vendor_identification[7] = '\0';
-	st_string_rtrim(result_inquiry.vendor_identification, ' ');
-	drive->vendor = strdup(result_inquiry.vendor_identification);
+	drive->vendor = strndup(result_inquiry.vendor_identification, 7);
+	st_string_rtrim(drive->vendor, ' ');
 
-	result_inquiry.product_identification[15] = '\0';
-	st_string_rtrim(result_inquiry.product_identification, ' ');
-	drive->model = strdup(result_inquiry.product_identification);
+	drive->model = strndup(result_inquiry.product_identification, 15);
+	st_string_rtrim(drive->model, ' ');
 
-	result_inquiry.product_revision_level[4] = '\0';
-	st_string_rtrim(result_inquiry.product_revision_level, ' ');
-	drive->revision = strdup(result_inquiry.product_revision_level);
+	drive->revision = strndup(result_inquiry.product_revision_level, 4);
+	st_string_rtrim(drive->revision, ' ');
 
 	struct {
 		unsigned char peripheral_device_type:5;

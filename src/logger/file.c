@@ -150,7 +150,7 @@ static void file_module_write(struct lgr_log_module * module, struct st_value * 
 
 	int ret = st_value_unpack(message, "{sssssiss}", "level", &level, "type", &stype, "timestamp", &iTimestamp, "message", &smessage);
 
-	enum st_log_type type;
+	enum st_log_type type = st_log_type_unknown;
 	if (ret == 4)
 		type = st_log_string_to_type(stype);
 

@@ -201,15 +201,17 @@ int st_thread_pool_run2_v1(const char * thread_name, void (*function)(void * arg
 }
 
 static void st_thread_pool_set_name(pid_t tid, const char * name) {
-	char * th_name = strdup(name);
-	st_string_middle_elipsis(th_name, 15);
-
 	char * path;
 	asprintf(&path, "/proc/%d/task/%d/comm", st_thread_pool_pid, tid);
 
 	int fd = open(path, O_WRONLY);
-	if (fd < 0)
+	if (fd < 0) {
+		free(path);
 		return;
+	}
+
+	char * th_name = strdup(name);
+	st_string_middle_elipsis(th_name, 15);
 
 	write(fd, th_name, strlen(th_name) + 1);
 	close(fd);

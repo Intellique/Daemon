@@ -355,7 +355,8 @@ static struct st_value * st_database_postgresql_get_host_by_name(struct st_datab
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
-	struct st_value * vresult;
+	struct st_value * vresult = NULL;
+
 	if (status == PGRES_FATAL_ERROR) {
 		st_database_postgresql_get_error(result, query);
 
