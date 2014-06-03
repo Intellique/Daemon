@@ -287,6 +287,7 @@ CREATE TABLE Host (
     domaine VARCHAR(255) NULL,
 
     description TEXT,
+    updated TIMESTAMP NOT NULL DEFAULT NOW(),
 
     UNIQUE (name, domaine)
 );
@@ -497,18 +498,6 @@ CREATE TABLE ArchiveVolume (
     CONSTRAINT archiveVolume_time CHECK (starttime <= endtime)
 );
 
-CREATE TABLE BackupVolume (
-    id BIGSERIAL PRIMARY KEY,
-
-    sequence INTEGER NOT NULL DEFAULT 0 CHECK (sequence >= 0),
-    backup BIGINT NOT NULL REFERENCES Backup(id) ON DELETE CASCADE ON UPDATE CASCADE,
-
-    media INTEGER NOT NULL REFERENCES Media(id) ON DELETE RESTRICT ON UPDATE CASCADE,
-    mediaPosition INTEGER NOT NULL DEFAULT 0 CHECK (mediaPosition >= 0),
-
-    jobrun BIGINT REFERENCES JobRun(id) ON UPDATE CASCADE ON DELETE SET NULL
-);
-
 CREATE TABLE ArchiveFileToArchiveVolume (
     archiveVolume BIGINT NOT NULL REFERENCES ArchiveVolume(id) ON UPDATE CASCADE ON DELETE CASCADE,
     archiveFile BIGINT NOT NULL REFERENCES ArchiveFile(id) ON UPDATE CASCADE ON DELETE CASCADE,
@@ -520,6 +509,18 @@ CREATE TABLE ArchiveFileToArchiveVolume (
     checksumok BOOLEAN NOT NULL DEFAULT FALSE,
 
     PRIMARY KEY (archiveVolume, archiveFile)
+);
+
+CREATE TABLE BackupVolume (
+    id BIGSERIAL PRIMARY KEY,
+
+    sequence INTEGER NOT NULL DEFAULT 0 CHECK (sequence >= 0),
+    backup BIGINT NOT NULL REFERENCES Backup(id) ON DELETE CASCADE ON UPDATE CASCADE,
+
+    media INTEGER NOT NULL REFERENCES Media(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    mediaPosition INTEGER NOT NULL DEFAULT 0 CHECK (mediaPosition >= 0),
+
+    jobrun BIGINT REFERENCES JobRun(id) ON UPDATE CASCADE ON DELETE SET NULL
 );
 
 CREATE TABLE Metadata (
