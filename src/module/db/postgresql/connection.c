@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 03 Jun 2014 10:56:40 +0200                            *
+*  Last modified: Tue, 03 Jun 2014 22:51:51 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -734,7 +734,7 @@ static int st_db_postgresql_update_host_timestamp(struct st_database_connection 
 	struct st_db_postgresql_connection_private * self = connect->data;
 
 	const char * query = "update_host_timestamp";
-	st_db_postgresql_prepare(self, query, "UPDATE host SET updated = NOW() WHERE id = ?");
+	st_db_postgresql_prepare(self, query, "UPDATE host SET updated = NOW() WHERE id = $1");
 
 	const char * param[] = { hostid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
