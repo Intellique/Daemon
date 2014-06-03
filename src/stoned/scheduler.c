@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 18 Feb 2014 15:41:41 +0100                            *
+*  Last modified: Tue, 03 Jun 2014 11:07:52 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -76,6 +76,7 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 	time_t update = time(NULL);
 
 	connection->ops->sync_job(connection, &jobs, &nb_jobs);
+	connection->ops->update_host_timestamp(connection);
 
 	unsigned int i;
 	for (i = 0; i < nb_jobs; i++) {
@@ -127,6 +128,8 @@ void st_sched_do_loop(struct st_database_connection * connection) {
 		}
 
 		update = now;
+
+		connection->ops->update_host_timestamp(connection);
 	}
 
 	for (i = 0; i < nb_jobs; i++) {
