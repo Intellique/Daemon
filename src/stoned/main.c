@@ -198,6 +198,7 @@ int main(int argc, char ** argv) {
 
 		return 6;
 	}
+	connect->ops->update_host_timestamp(connect);
 
 	// synchronize checksum plugins
 	st_checksum_sync_plugins(connect);

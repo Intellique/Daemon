@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 24 Mar 2014 17:01:05 +0100                            *
+*  Last modified: Tue, 03 Jun 2014 22:51:51 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -136,6 +136,7 @@ static int st_db_postgresql_add_host(struct st_database_connection * connect, co
 static bool st_db_postgresql_find_host(struct st_database_connection * connect, const char * uuid, const char * hostname);
 static char * st_db_postgresql_get_host(struct st_database_connection * connect);
 static int st_db_postgresql_get_host_by_name(struct st_database_connection * connect, const char * name, struct st_host * host);
+static int st_db_postgresql_update_host_timestamp(struct st_database_connection * connect);
 
 static int st_db_postgresql_get_nb_scripts(struct st_database_connection * connect, const char * job_type, enum st_script_type type, struct st_pool * pool);
 static char * st_db_postgresql_get_script(struct st_database_connection * connect, const char * job_type, unsigned int sequence, enum st_script_type type, struct st_pool * pool);
@@ -207,9 +208,10 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.sync_plugin_checksum = st_db_postgresql_sync_plugin_checksum,
 	.sync_plugin_job      = st_db_postgresql_sync_plugin_job,
 
-	.add_host         = st_db_postgresql_add_host,
-	.find_host        = st_db_postgresql_find_host,
-	.get_host_by_name = st_db_postgresql_get_host_by_name,
+	.add_host              = st_db_postgresql_add_host,
+	.find_host             = st_db_postgresql_find_host,
+	.get_host_by_name      = st_db_postgresql_get_host_by_name,
+	.update_host_timestamp = st_db_postgresql_update_host_timestamp,
 
 	.get_nb_scripts = st_db_postgresql_get_nb_scripts,
 	.get_script     = st_db_postgresql_get_script,
@@ -722,6 +724,29 @@ static int st_db_postgresql_get_host_by_name(struct st_database_connection * con
 	PQclear(result);
 
 	return failed;
+}
+
+static int st_db_postgresql_update_host_timestamp(struct st_database_connection * connect) {
+	char * hostid = st_db_postgresql_get_host(connect);
+	if (hostid == NULL)
+		return 1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+
+	const char * query = "update_host_timestamp";
+	st_db_postgresql_prepare(self, query, "UPDATE host SET updated = NOW() WHERE id = $1");
+
+	const char * param[] = { hostid };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+
+	PQclear(result);
+	free(hostid);
+
+	return status == PGRES_FATAL_ERROR;
 }
 
 

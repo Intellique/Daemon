@@ -284,6 +284,7 @@ CREATE TABLE Host (
     domaine VARCHAR(255) NULL,
 
     description TEXT,
+    updated TIMESTAMP NOT NULL DEFAULT NOW(),
 
     UNIQUE (name, domaine)
 );

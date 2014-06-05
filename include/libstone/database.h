@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 07 Feb 2014 10:36:21 +0100                            *
+*  Last modified: Tue, 03 Jun 2014 10:56:55 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -150,6 +150,7 @@ struct st_database_connection {
 		int (*add_host)(struct st_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description);
 		bool (*find_host)(struct st_database_connection * connect, const char * uuid, const char * hostname);
 		int (*get_host_by_name)(struct st_database_connection * connect, const char * name, struct st_host * host);
+		int (*update_host_timestamp)(struct st_database_connection * connect);
 
 		int (*get_nb_scripts)(struct st_database_connection * connect, const char * job_type, enum st_script_type type, struct st_pool * pool);
 		char * (*get_script)(struct st_database_connection * connect, const char * job_type, unsigned int sequence, enum st_script_type type, struct st_pool * pool);
