@@ -1,3 +1,9 @@
+stone (1.1.14+wheezy) polisher; urgency=low
+
+  * Mise à jour du champ update de host
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 05 Jun 2014 18:08:42 +0200
+
 stone (1.1.13+wheezy) polisher; urgency=low
 
   * Ajout: support: LTO6
