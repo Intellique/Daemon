@@ -5,6 +5,12 @@ CREATE TYPE AutoCheckMode AS ENUM (
     'none'
 );
 
+CREATE TYPE ChangerAction AS ENUM (
+    'none',
+    'put online',
+    'put offline'
+);
+
 CREATE TYPE ChangerSlotType AS ENUM (
     'drive',
     'import / export',
@@ -278,6 +284,7 @@ CREATE TABLE Host (
     domaine VARCHAR(255) NULL,
 
     description TEXT,
+    updated TIMESTAMP NOT NULL DEFAULT NOW(),
 
     UNIQUE (name, domaine)
 );
@@ -295,6 +302,10 @@ CREATE TABLE Changer (
 
     barcode BOOLEAN NOT NULL,
     status ChangerStatus NOT NULL,
+
+    isonline BOOLEAN NOT NULL DEFAULT TRUE,
+    action ChangerAction NOT NULL DEFAULT 'none',
+
     enable BOOLEAN NOT NULL DEFAULT TRUE,
 
     host INTEGER NOT NULL REFERENCES Host(id) ON UPDATE CASCADE ON DELETE RESTRICT
@@ -484,6 +495,18 @@ CREATE TABLE ArchiveVolume (
     CONSTRAINT archiveVolume_time CHECK (starttime <= endtime)
 );
 
+CREATE TABLE BackupVolume (
+    id BIGSERIAL PRIMARY KEY,
+
+    sequence INTEGER NOT NULL DEFAULT 0 CHECK (sequence >= 0),
+    backup BIGINT NOT NULL REFERENCES Backup(id) ON DELETE CASCADE ON UPDATE CASCADE,
+
+    media INTEGER NOT NULL REFERENCES Media(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    mediaPosition INTEGER NOT NULL DEFAULT 0 CHECK (mediaPosition >= 0),
+
+    jobrun BIGINT REFERENCES JobRun(id) ON UPDATE CASCADE ON DELETE SET NULL
+);
+
 CREATE TABLE ArchiveFileToArchiveVolume (
     archiveVolume BIGINT NOT NULL REFERENCES ArchiveVolume(id) ON UPDATE CASCADE ON DELETE CASCADE,
     archiveFile BIGINT NOT NULL REFERENCES ArchiveFile(id) ON UPDATE CASCADE ON DELETE CASCADE,
@@ -597,7 +620,7 @@ CREATE TABLE Report (
     timestamp TIMESTAMP(0) NOT NULL DEFAULT NOW(),
 
     archive BIGINT REFERENCES archive(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    job BIGINT NOT NULL REFERENCES job(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    jobrun BIGINT NOT NULL REFERENCES jobrun(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
     data TEXT NOT NULL
 );

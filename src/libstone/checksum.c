@@ -215,7 +215,7 @@ void st_checksum_sync_plugins(struct st_database_connection * connection) {
 		char * ptr = strrchr(gl.gl_pathv[i], '/') + 1;
 
 		char plugin[64];
-		sscanf(ptr, "libchecksum-%64[^.].so", plugin);
+		sscanf(ptr, "libchecksum-%63[^.].so", plugin);
 
 		if (connection->ops->sync_plugin_checksum(connection, plugin))
 			st_log_write_all(st_log_level_error, st_log_type_checksum, "Failed to synchronize plugin '%s'", plugin);
