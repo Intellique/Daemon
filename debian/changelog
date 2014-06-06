@@ -1,3 +1,17 @@
+stone (1.1.14+squeeze) polisher; urgency=low
+
+  * Mise à jour du champ update de host
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 05 Jun 2014 18:08:42 +0200
+
+stone (1.1.13+squeeze) unrelease; urgency=low
+
+  * Ajout: support: LTO6
+  * script création proxy: utilise 75% des cpus si nb_cpus > 4
+  * Correctif ajout de fichier à une archive existante.
+
+ -- guillaume clercin <gclercin@intellique.com>  Mon, 19 May 2014 19:10:31 +0200
+
 stone (1.1.12+squeeze) polisher; urgency=low
 
   * Correctif : Ajout pool
