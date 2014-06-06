@@ -1,3 +1,9 @@
+stone (1.1.15+wheezy) polisher; urgency=low
+
+  * Bug fix: vérification si la librairie est actif ou non
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 06 Jun 2014 18:54:44 +0200
+
 stone (1.1.14+wheezy) polisher; urgency=low
 
   * Mise à jour du champ update de host
