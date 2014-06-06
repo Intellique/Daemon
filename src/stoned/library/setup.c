@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 31 Jan 2014 13:47:47 +0100                            *
+*  Last modified: Fri, 06 Jun 2014 18:51:36 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -646,6 +646,9 @@ void st_changer_sync(struct st_database_connection * connection) {
 	unsigned int i, nb_changers = st_nb_real_changers + st_nb_fake_changers;
 	for (i = 0; i < nb_changers; i++) {
 		struct st_changer * ch = st_changers + i;
+		if (!ch->enabled)
+			continue;
+
 		ch->ops->update_status(ch);
 
 		connection->ops->sync_changer(connection, ch);
