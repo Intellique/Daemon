@@ -24,19 +24,24 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#include <stddef.h>
+#include <libstone-changer/changer.h>
 
-#include "changer.h"
+#include "device.h"
 
-static struct st_changer_driver * current_changer = NULL;
+#include <changer-scsichanger.chcksum>
+
+static struct st_changer_driver scsichanger_driver = {
+	.name = "scsi changer",
+
+	.api_level    = 0,
+	.src_checksum = STONE_CHANGER_SCSICHANGER_SRCSUM,
+};
+
+static void scsichanger_init(void) __attribute__((constructor));
 
 
-struct st_changer_driver * stchgr_changer_get() {
-	return current_changer;
-}
-
-__asm__(".symver stchgr_changer_register_v1, stchgr_changer_register@@LIBSTONE_CHANGER_1.2");
-void stchgr_changer_register_v1(struct st_changer_driver * chngr) {
-	current_changer = chngr;
+static void scsichanger_init() {
+	scsichanger_driver.device = scsichanger_get_device();
+	stchgr_changer_register(&scsichanger_driver);
 }
 

@@ -24,19 +24,10 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#include <stddef.h>
+#ifndef __ST_SCSICHANGER_DEVICE_H__
+#define __ST_SCSICHANGER_DEVICE_H__
 
-#include "changer.h"
+struct st_changer * scsichanger_get_device(void);
 
-static struct st_changer_driver * current_changer = NULL;
-
-
-struct st_changer_driver * stchgr_changer_get() {
-	return current_changer;
-}
-
-__asm__(".symver stchgr_changer_register_v1, stchgr_changer_register@@LIBSTONE_CHANGER_1.2");
-void stchgr_changer_register_v1(struct st_changer_driver * chngr) {
-	current_changer = chngr;
-}
+#endif
 

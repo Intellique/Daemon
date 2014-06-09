@@ -41,6 +41,7 @@ static unsigned int lgr_nb_clients = 0;
 static void lgr_socket_accept(int fd_server, int fd_client, struct st_value * client);
 static void lgr_socket_message(int fd, short event, void * data);
 
+
 void lgr_listen_configure(struct st_value * config) {
 	st_socket_server(config, lgr_socket_accept);
 }

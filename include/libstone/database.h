@@ -115,6 +115,9 @@ struct st_database_connection {
 		bool (*find_host)(struct st_database_connection * connect, const char * uuid, const char * hostname) __attribute__((nonnull(1)));
 		struct st_value * (*get_host_by_name)(struct st_database_connection * connect, const char * name) __attribute__((nonnull));
 
+		struct st_value * (*get_changers)(struct st_database_connection * connect) __attribute__((nonnull));
+		struct st_value * (*get_standalone_drives)(struct st_database_connection * connect) __attribute__((nonnull));
+		struct st_value * (*get_vtls)(struct st_database_connection * connect) __attribute__((nonnull));
 		int (*sync_changer)(struct st_database_connection * connect, struct st_changer * changer, bool init) __attribute__((nonnull));
 		int (*sync_drive)(struct st_database_connection * connect, struct st_drive * drive, bool init) __attribute__((nonnull));
 	} * ops;

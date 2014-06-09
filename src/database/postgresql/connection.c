@@ -65,6 +65,9 @@ static bool st_database_postgresql_find_host(struct st_database_connection * con
 static char * st_database_postgresql_get_host(struct st_database_connection * connect);
 static struct st_value * st_database_postgresql_get_host_by_name(struct st_database_connection * connect, const char * name);
 
+static struct st_value * st_database_postgresql_get_changers(struct st_database_connection * connect);
+static struct st_value * st_database_postgresql_get_standalone_drives(struct st_database_connection * connect);
+static struct st_value * st_database_postgresql_get_vtls(struct st_database_connection * connect);
 static int st_database_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer, bool init);
 static int st_database_postgresql_sync_drive(struct st_database_connection * connect, struct st_drive * drive, bool init);
 static int st_database_postgresql_sync_slots(struct st_database_connection * connect, struct st_slot * slot, bool init);
@@ -84,8 +87,11 @@ static struct st_database_connection_ops st_database_postgresql_connection_ops =
 	.find_host        = st_database_postgresql_find_host,
 	.get_host_by_name = st_database_postgresql_get_host_by_name,
 
-	.sync_changer = st_database_postgresql_sync_changer,
-	.sync_drive   = st_database_postgresql_sync_drive,
+	.get_changers          = st_database_postgresql_get_changers,
+	.get_standalone_drives = st_database_postgresql_get_standalone_drives,
+	.get_vtls              = st_database_postgresql_get_vtls,
+	.sync_changer          = st_database_postgresql_sync_changer,
+	.sync_drive            = st_database_postgresql_sync_drive,
 };
 
 
@@ -187,7 +193,7 @@ static int st_database_postgresql_cancel_transaction(struct st_database_connecti
 	}
 }
 
-static int st_db_postgresql_create_checkpoint(struct st_database_connection * connect, const char * checkpoint) {
+static int st_database_postgresql_create_checkpoint(struct st_database_connection * connect, const char * checkpoint) {
 	if (connect == NULL || checkpoint == NULL)
 		return -1;
 
@@ -375,6 +381,116 @@ static struct st_value * st_database_postgresql_get_host_by_name(struct st_datab
 }
 
 
+static struct st_value * st_database_postgresql_get_changers(struct st_database_connection * connect) {
+	struct st_value * changers = st_value_new_linked_list();
+
+	char * host_id = st_database_postgresql_get_host(connect);
+	if (host_id == NULL)
+		return changers;
+
+	struct st_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_real_changer_by_host";
+	st_database_postgresql_prepare(self, query, "SELECT DISTINCT c.device, c.model, c.vendor, c.firmwarerev, c.serialnumber, c.wwn, c.barcode, c.status, c.isonline, c.action, c.enable FROM changer c LEFT JOIN drive d ON c.id = d.changer AND c.serialnumber != d.serialnumber WHERE c.host = $1 AND c.serialnumber NOT IN (SELECT uuid::TEXT FROM vtl WHERE host = $1)");
+
+	const char * param[] = { host_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+	int nb_result = PQntuples(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && nb_result > 0) {
+		int i;
+		for (i = 0; i < nb_result; i++) {
+			bool barcode = false, isonline = false, enabled = false;
+			st_database_postgresql_get_bool(result, i, 6, &barcode);
+			st_database_postgresql_get_bool(result, i, 8, &isonline);
+			st_database_postgresql_get_bool(result, i, 10, &enabled);
+
+			struct st_value * changer = st_value_pack("{sssssssssssssbsssbsssb}",
+					"device", PQgetvalue(result, i, 0),
+					"model", PQgetvalue(result, i, 1),
+					"vendor", PQgetvalue(result, i, 2),
+					"firmwarerev", PQgetvalue(result, i, 3),
+					"serial number", PQgetvalue(result, i, 4),
+					"wwn", PQgetvalue(result, i, 5),
+					"barcode", barcode,
+					"status", PQgetvalue(result, i, 7),
+					"is online", isonline,
+					"action", PQgetvalue(result, i, 9),
+					"enable", enabled
+			);
+
+			st_value_list_push(changers, changer, true);
+		}
+	}
+
+	PQclear(result);
+	free(host_id);
+
+	return changers;
+}
+
+static struct st_value * st_database_postgresql_get_standalone_drives(struct st_database_connection * connect) {
+	struct st_value * changers = st_value_new_linked_list();
+
+	char * host_id = st_database_postgresql_get_host(connect);
+	if (host_id == NULL)
+		return changers;
+
+	struct st_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_real_changer_by_host";
+	st_database_postgresql_prepare(self, query, "SELECT c.device, c.model, c.vendor, c.firmwarerev, c.serialnumber, c.status, c.isonline, c.action, c.enable FROM changer c LEFT JOIN drive d ON c.id = d.changer AND c.serialnumber = d.serialnumber WHERE c.host = $1 AND c.serialnumber NOT IN (SELECT uuid::TEXT FROM vtl WHERE host = $1)");
+
+	const char * param[] = { host_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+	int nb_result = PQntuples(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && nb_result > 0) {
+		int i;
+		for (i = 0; i < nb_result; i++) {
+			bool enabled = false;
+			st_database_postgresql_get_bool(result, i, 11, &enabled);
+
+			struct st_value * changer = st_value_pack("{sssssssssssnsbsssbsssb}",
+					"device", PQgetvalue(result, i, 0),
+					"model", PQgetvalue(result, i, 1),
+					"vendor", PQgetvalue(result, i, 2),
+					"firmwarerev", PQgetvalue(result, i, 3),
+					"serialnumber", PQgetvalue(result, i, 4),
+					"wwn",
+					"barcode", false,
+					"status", PQgetvalue(result, i, 5),
+					"is online", true,
+					"action", "none",
+					"enable", enabled
+			);
+
+			st_value_list_push(changers, changer, true);
+		}
+	}
+
+	PQclear(result);
+	free(host_id);
+
+	return changers;
+}
+
+static struct st_value * st_database_postgresql_get_vtls(struct st_database_connection * connect) {
+	struct st_value * changers = st_value_new_linked_list();
+
+	char * host_id = st_database_postgresql_get_host(connect);
+	if (host_id == NULL)
+		return changers;
+
+	struct st_database_postgresql_connection_private * self = connect->data;
+}
+
 static int st_database_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer, bool init) {
 	if (connect == NULL || changer == NULL)
 		return -1;
@@ -531,6 +647,8 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 	unsigned int i;
 
 	if (init) {
+		st_database_postgresql_create_checkpoint(connect, "after_changers");
+
 		for (i = 0; failed == 0 && i < changer->nb_drives; i++)
 			failed = st_database_postgresql_sync_drive(connect, changer->drives + i, init);
 
@@ -544,6 +662,11 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 		if (status == PGRES_FATAL_ERROR)
 			st_database_postgresql_get_error(result, query);
 		PQclear(result);
+
+		if (failed != 0) {
+			st_database_postgresql_cancel_checkpoint(connect, "after_changers");
+			failed = 0;
+		}
 	}
 
 	free(changer_id);

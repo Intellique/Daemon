@@ -1,0 +1,11 @@
+STONE_CHANGER_SCSICHANGER_SRC_DIR		:= src/changer/scsi_changer
+
+STONE_CHANGER_SCSICHANGER_BIN			:= bin/scsi_changer
+STONE_CHANGER_SCSICHANGER_CFLAG			:= -pthread
+STONE_CHANGER_SCSICHANGER_LD			:= -pthread -lstone -lstone-changer -Llib
+
+STONE_CHANGER_SCSICHANGER_DEPEND_LIB	:= lib/libstone-changer.so
+
+STONE_CHANGER_SCSICHANGER_CHCKSUM_FILE	:= changer-scsichanger.chcksum
+
+BIN_SYMS								+= STONE_CHANGER_SCSICHANGER

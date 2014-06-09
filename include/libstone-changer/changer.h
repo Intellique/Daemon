@@ -27,14 +27,25 @@
 #ifndef __STONECHANGER_CHANGER_H__
 #define __STONECHANGER_CHANGER_H__
 
-struct st_changer {
+#include <libstone/changer.h>
+
+struct st_value;
+
+struct st_changer_driver {
 	const char * name;
+
+	struct st_changer * device;
+	int (*configure_device)(struct st_value * config);
 
 	unsigned int api_level;
 	const char * src_checksum;
 };
 
-void stchgr_changer_register(struct st_changer * chngr);
+struct st_changer_ops {
+	int (*init)(struct st_value * config);
+};
+
+void stchgr_changer_register(struct st_changer_driver * chngr);
 
 #endif
 

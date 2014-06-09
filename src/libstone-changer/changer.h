@@ -29,8 +29,8 @@
 
 #include <libstone-changer/changer.h>
 
-struct st_changer * stchgr_changer_get(void);
-void stchgr_changer_register_v1(struct st_changer * chngr);
+struct st_changer_driver * stchgr_changer_get(void);
+void stchgr_changer_register_v1(struct st_changer_driver * chngr);
 
 #endif
 

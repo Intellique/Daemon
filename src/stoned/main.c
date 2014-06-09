@@ -40,6 +40,7 @@
 #include <libstone/value.h>
 
 #include "admin.h"
+#include "device.h"
 #include "env.h"
 #include "logger.h"
 #include "main.h"
@@ -138,6 +139,9 @@ int main(int argc, char ** argv) {
 	if (db_configs != NULL)
 		st_database_load_config(db_configs);
 
+	if (logger_config != NULL && db_configs != NULL)
+		std_device_configure(logger_config, db_configs);
+
 	while (std_daemon_run) {
 		st_poll(-1);
 	}
@@ -164,144 +168,3 @@ void std_shutdown() {
 	std_daemon_run = false;
 }
 
-/*
-// printf
-#include <stdio.h>
-// uname
-#include <sys/utsname.h>
-// daemon
-#include <unistd.h>
-
-int main(int argc, char ** argv) {
-	char * pid_file = DAEMON_PID_FILE;
-
-	// parse option
-	int opt;
-	do {
-		opt = getopt_long(argc, argv, "c:dhp:V", long_options, &option_index);
-
-		switch (opt) {
-			case OPT_PID_FILE:
-				pid_file = optarg;
-				st_log_write_all(st_log_level_info, st_log_type_daemon, "Using pid file: '%s'", optarg);
-				break;
-
-		}
-	} while (opt > -1);
-
-	// check pid file
-	int pid = st_conf_read_pid(pid_file);
-	if (pid >= 0) {
-		int code = st_conf_check_pid(*argv, pid);
-		switch (code) {
-			case -1:
-				st_log_write_all(st_log_level_warning, st_log_type_daemon, "Daemon: another process used this pid (%d)", pid);
-				break;
-
-			case 0:
-				st_log_write_all(st_log_level_info, st_log_type_daemon, "Daemon: daemon is dead, long life the daemon");
-				break;
-
-			case 1:
-				st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: daemon is alive (pid: %d)", pid);
-				return 2;
-		}
-	}
-
-	// create daemon
-	if (detach) {
-		if (!daemon(0, 0)) {
-			pid_t pid = getpid();
-			st_conf_write_pid(pid_file, pid);
-		} else {
-			st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: Failed to daemonize");
-			return 3;
-		}
-	} else {
-		pid_t pid = getpid();
-		st_conf_write_pid(pid_file, pid);
-	}
-
-	// read configuration
-	if (st_conf_read_config(config_file)) {
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Error while parsing '%s'", config_file);
-		return 4;
-	}
-
-	// check if config file contains a database
-	struct st_database * db = st_database_get_default_driver();
-	if (db == NULL) {
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: There is no database into config file '%s'", config_file);
-		return 5;
-	}
-
-	struct st_database_config * config = NULL;
-	struct st_database_connection * connect = NULL;
-
-	if (db != NULL)
-		config = db->ops->get_default_config();
-	if (config != NULL)
-		connect = config->ops->connect(config);
-
-	if (connect == NULL) {
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: Failed to connect to database");
-
-		st_log_stop_logger();
-
-		return 5;
-	}
-
-	// check hostname in database
-	if (!st_host_init(connect)) {
-		static struct utsname name;
-		uname(&name);
-
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Fatal error: Host '%s' not found into database", name.nodename);
-		st_log_write_all(st_log_level_error, st_log_type_daemon, "Please, run stone-config to fix it");
-
-		connect->ops->free(connect);
-		st_log_stop_logger();
-
-		return 6;
-	}
-
-	// synchronize checksum plugins
-	st_checksum_sync_plugins(connect);
-
-	// synchronize job plugins
-	st_job_sync_plugins(connect);
-
-	// synchronize vtls
-	st_vtl_sync(connect);
-
-	if (st_changer_setup()) {
-		connect->ops->free(connect);
-		st_log_stop_logger();
-
-		return 7;
-	}
-
-	// start remote admin
-	//st_admin_start();
-
-	// run scheduler loop
-	st_sched_do_loop(connect);
-
-	connect->ops->free(connect);
-
-	// remove pid file
-	st_util_file_rm(pid_file);
-
-	// stop libraries
-	st_changer_stop();
-
-	st_log_write_all(st_log_level_info, st_log_type_daemon, "STone exit");
-
-	st_log_stop_logger();
-
-	usleep(250);
-
-	return 0;
-}
-
-*/

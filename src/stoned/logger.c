@@ -100,9 +100,7 @@ bool std_logger_start(struct st_value * config) {
 	if (logger_config == NULL)
 		logger_config = st_value_share(config);
 
-	char * str_config = st_json_encode_to_string(logger_config);
-	write(logger_in, str_config, strlen(str_config));
-	free(str_config);
+	st_json_encode_to_fd(logger_config, logger_in, true);
 
 	return true;
 }

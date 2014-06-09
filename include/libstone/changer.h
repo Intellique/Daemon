@@ -61,19 +61,11 @@ struct st_changer {
 	 * \brief Status of changer
 	 */
 	enum st_changer_status status;
+	bool is_online;
 	/**
 	 * \brief Can use this \a changer
 	 */
 	bool enabled;
-
-	/**
-	 * \brief Drives into this \a changer
-	 */
-	struct st_drive * drives;
-	/**
-	 * \brief Number of drives into this \a changer
-	 */
-	unsigned int nb_drives;
 
 	/**
 	 * \brief Model of this \a changer
@@ -100,7 +92,14 @@ struct st_changer {
 	 */
 	bool barcode;
 
-	struct st_changer_ops * ops;
+	/**
+	 * \brief Drives into this \a changer
+	 */
+	struct st_drive * drives;
+	/**
+	 * \brief Number of drives into this \a changer
+	 */
+	unsigned int nb_drives;
 
 	/**
 	 * \brief Slots into this \a changer
@@ -110,6 +109,8 @@ struct st_changer {
 	 * \brief Number of slots into this \a changer
 	 */
 	unsigned int nb_slots;
+
+	struct st_changer_ops * ops;
 
 	void * data;
 	/**

@@ -24,19 +24,13 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#include <stddef.h>
+#ifndef __STONED_DEVICE_H__
+#define __STONED_DEVICE_H__
 
-#include "changer.h"
+struct st_value;
 
-static struct st_changer_driver * current_changer = NULL;
+void std_device_configure(struct st_value * logger, struct st_value * db_config) __attribute__((nonnull));
+void std_device_stop(void);
 
-
-struct st_changer_driver * stchgr_changer_get() {
-	return current_changer;
-}
-
-__asm__(".symver stchgr_changer_register_v1, stchgr_changer_register@@LIBSTONE_CHANGER_1.2");
-void stchgr_changer_register_v1(struct st_changer_driver * chngr) {
-	current_changer = chngr;
-}
+#endif
 
