@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 10 Jun 2014 14:44:17 +0200                            *
+*  Last modified: Tue, 10 Jun 2014 19:12:40 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -469,7 +469,7 @@ int st_changer_setup(void) {
 				if (drives[j].changer)
 					continue;
 
-				connect->ops->sync_changer(connect, st_changers + i);
+				connect->ops->sync_changer(connect, st_changers + i, false);
 				connect->ops->sync_drive(connect, drives + i);
 
 				if (connect->ops->is_changer_contain_drive(connect, st_changers + i, drives + j)) {
@@ -649,9 +649,9 @@ void st_changer_sync(struct st_database_connection * connection) {
 		if (!ch->enabled)
 			continue;
 
-		ch->ops->update_status(ch);
+		bool updated = ch->ops->update_status(ch);
 
-		connection->ops->sync_changer(connection, ch);
+		connection->ops->sync_changer(connection, ch, updated);
 	}
 
 	struct st_vtl_list * vtl;
@@ -662,7 +662,7 @@ void st_changer_sync(struct st_database_connection * connection) {
 
 		ch->ops->update_status(ch);
 
-		connection->ops->sync_changer(connection, ch);
+		connection->ops->sync_changer(connection, ch, false);
 	}
 }
 
