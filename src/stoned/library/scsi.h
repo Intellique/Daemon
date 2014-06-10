@@ -50,6 +50,7 @@ int st_scsi_loader_medium_removal(int fd, bool allow);
 int st_scsi_loader_move(int fd, int transport_address, struct st_slot * from, struct st_slot * to);
 int st_scsi_loader_ready(int fd);
 void st_scsi_loader_status_new(int fd, struct st_changer * changer, int * transport_address);
+void st_scsi_loader_status_update(int fd, struct st_changer * changer);
 
 int st_scsi_tape_format(int fd, bool quick);
 void st_scsi_tape_info(int fd, struct st_drive * drive);
