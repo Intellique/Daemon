@@ -1,3 +1,9 @@
+stone (1.1.16+squeeze) polisher; urgency=low
+
+  * Correctif librairie non actif
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 10 Jun 2014 17:51:17 +0200
+
 stone (1.1.14+squeeze) polisher; urgency=low
 
   * Mise à jour du champ update de host
