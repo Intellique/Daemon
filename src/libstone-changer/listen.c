@@ -24,79 +24,46 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// bool
-#include <stdbool.h>
-// free
-#include <stdlib.h>
-// strcmp
-#include <string.h>
+// NULL
+#include <stddef.h>
 
-#include <libstone/database.h>
 #include <libstone/json.h>
-#include <libstone/log.h>
+#include <libstone/socket.h>
 #include <libstone/poll.h>
 #include <libstone/value.h>
 
-#include "changer.h"
 #include "listen.h"
 
-static bool stop = false;
+static unsigned int stchr_nb_clients = 0;
 
-static void daemon_request(int fd, short event, void * data);
+static void stchgr_socket_accept(int fd_server, int fd_client, struct st_value * client);
+static void stchgr_socket_message(int fd, short event, void * data);
 
 
-static void daemon_request(int fd, short event, void * data __attribute__((unused))) {
-	switch (event) {
-		case POLLHUP:
-			// lgr_log_write2(st_log_level_alert, st_log_type_logger, "Stoned has hang up");
-			stop = true;
-			break;
-	}
+void stchgr_listen_configure(struct st_value * config) {
+	st_socket_server(config, stchgr_socket_accept);
+}
 
-	struct st_value * request = st_json_parse_fd(fd, 1000);
-	char * command;
-	if (request == NULL || st_value_unpack(request, "{ss}", "command", &command) < 0) {
-		if (request != NULL)
-			st_value_free(request);
+unsigned int stchgr_listen_nb_clients(void) {
+	return stchr_nb_clients;
+}
+
+static void stchgr_socket_accept(int fd_server __attribute__((unused)), int fd_client, struct st_value * client __attribute__((unused))) {
+	st_poll_register(fd_client, POLLIN | POLLHUP, stchgr_socket_message, NULL, NULL);
+	stchr_nb_clients++;
+}
+
+static void stchgr_socket_message(int fd, short event, void * data __attribute__((unused))) {
+	if (event & POLLHUP) {
+		stchr_nb_clients--;
 		return;
 	}
 
-	if (!strcmp("stop", command))
-		stop = true;
+	struct st_value * message = st_json_parse_fd(fd, -1);
+	st_value_free(message);
 
-	st_value_free(request);
-	free(command);
-}
-
-int main() {
-	struct st_changer_driver * driver = stchgr_changer_get();
-	if (driver == NULL)
-		return 1;
-
-	struct st_value * config = st_json_parse_fd(0, 5000);
-	if (config == NULL)
-		return 2;
-
-	struct st_value * log_config = NULL, * changer_config = NULL, * db_config = NULL;
-	st_value_unpack(config, "{sososo}", "logger", &log_config, "changer", &changer_config, "database", &db_config);
-
-	if (log_config == NULL || changer_config == NULL || db_config == NULL)
-		return 3;
-
-	st_log_configure(log_config, st_log_type_changer);
-	st_database_load_config(db_config);
-
-	st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
-
-	struct st_changer * changer = driver->device;
-	int failed = changer->ops->init(changer_config);
-	if (failed != 0)
-		return 4;
-
-	while (!stop) {
-		st_poll(-1);
-	}
-
-	return 0;
+	struct st_value * response = st_value_new_boolean(true);
+	st_json_encode_to_fd(response, fd, true);
+	st_value_free(response);
 }
 

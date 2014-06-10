@@ -45,6 +45,7 @@
 #include <libstone-changer/changer.h>
 
 #include "device.h"
+#include "scsi.h"
 
 static int scsi_changer_init(struct st_value * config);
 
@@ -144,6 +145,9 @@ static int scsi_changer_init(struct st_value * config) {
 		}
 		free(path);
 
+		if (!found)
+			found = scsichanger_scsi_check_device(&scsi_changer, device);
+
 		if (found) {
 			scsi_changer.device = device;
 		} else {
@@ -151,6 +155,9 @@ static int scsi_changer_init(struct st_value * config) {
 		}
 	}
 	globfree(&gl);
+
+	if (found && scsi_changer.enabled && scsi_changer.is_online)
+		scsichanger_scsi_new_status(&scsi_changer);
 
 	return found ? 0 : 1;
 }

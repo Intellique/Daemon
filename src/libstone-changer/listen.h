@@ -24,79 +24,13 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// bool
-#include <stdbool.h>
-// free
-#include <stdlib.h>
-// strcmp
-#include <string.h>
+#ifndef __STONECHANGER_LISTEN_H__
+#define __STONECHANGER_LISTEN_H__
 
-#include <libstone/database.h>
-#include <libstone/json.h>
-#include <libstone/log.h>
-#include <libstone/poll.h>
-#include <libstone/value.h>
+struct st_value;
 
-#include "changer.h"
-#include "listen.h"
+void stchgr_listen_configure(struct st_value * config);
+unsigned int stchgr_listen_nb_clients(void);
 
-static bool stop = false;
-
-static void daemon_request(int fd, short event, void * data);
-
-
-static void daemon_request(int fd, short event, void * data __attribute__((unused))) {
-	switch (event) {
-		case POLLHUP:
-			// lgr_log_write2(st_log_level_alert, st_log_type_logger, "Stoned has hang up");
-			stop = true;
-			break;
-	}
-
-	struct st_value * request = st_json_parse_fd(fd, 1000);
-	char * command;
-	if (request == NULL || st_value_unpack(request, "{ss}", "command", &command) < 0) {
-		if (request != NULL)
-			st_value_free(request);
-		return;
-	}
-
-	if (!strcmp("stop", command))
-		stop = true;
-
-	st_value_free(request);
-	free(command);
-}
-
-int main() {
-	struct st_changer_driver * driver = stchgr_changer_get();
-	if (driver == NULL)
-		return 1;
-
-	struct st_value * config = st_json_parse_fd(0, 5000);
-	if (config == NULL)
-		return 2;
-
-	struct st_value * log_config = NULL, * changer_config = NULL, * db_config = NULL;
-	st_value_unpack(config, "{sososo}", "logger", &log_config, "changer", &changer_config, "database", &db_config);
-
-	if (log_config == NULL || changer_config == NULL || db_config == NULL)
-		return 3;
-
-	st_log_configure(log_config, st_log_type_changer);
-	st_database_load_config(db_config);
-
-	st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
-
-	struct st_changer * changer = driver->device;
-	int failed = changer->ops->init(changer_config);
-	if (failed != 0)
-		return 4;
-
-	while (!stop) {
-		st_poll(-1);
-	}
-
-	return 0;
-}
+#endif
 
