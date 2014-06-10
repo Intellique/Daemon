@@ -1,3 +1,9 @@
+stone (1.1.16+wheezy) polisher; urgency=low
+
+  * Bug fix: vérification si la vtl est actif ou non
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 10 Jun 2014 14:48:08 +0200
+
 stone (1.1.15+wheezy) polisher; urgency=low
 
   * Bug fix: vérification si la librairie est actif ou non
