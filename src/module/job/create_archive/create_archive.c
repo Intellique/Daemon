@@ -594,6 +594,7 @@ static int st_job_create_archive_run(struct st_job * job) {
 	} else {
 		if (self->worker != NULL)
 			self->worker->ops->close(self->worker);
+
 		self->meta->ops->wait(self->meta, true);
 
 		st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_normal, "Job stopped by user request");
