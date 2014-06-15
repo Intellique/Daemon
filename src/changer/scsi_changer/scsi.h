@@ -34,7 +34,6 @@ struct st_changer;
 
 bool scsichanger_scsi_check_device(struct st_changer * changer, const char * path);
 void scsichanger_scsi_new_status(struct st_changer * changer);
-void scsichanger_scsi_update_status(struct st_changer * changer);
 
 #endif
 
