@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 10 Jun 2014 19:18:53 +0200                            *
+*  Last modified: Mon, 16 Jun 2014 13:30:26 +0200                            *
 \****************************************************************************/
 
 // open
@@ -244,6 +244,16 @@ static bool st_scsi_changer_put_offline(struct st_changer * ch) {
 			st_scsi_changer_unload(ch, dr);
 
 		dr->lock->ops->unlock(dr->lock);
+	}
+
+	for (i = ch->nb_drives; i < ch->nb_slots; i++) {
+		struct st_slot * sl = ch->slots + i;
+
+		if (!sl->enable || !sl->full || sl->media == NULL)
+			continue;
+
+		sl->media->location = st_media_location_offline;
+		sl->media = NULL;
 	}
 
 	st_scsi_loader_medium_removal(self->fd, true);

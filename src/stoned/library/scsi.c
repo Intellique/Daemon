@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 03 Jul 2013 17:42:56 +0200                            *
+*  Last modified: Mon, 16 Jun 2014 13:30:23 +0200                            *
 \****************************************************************************/
 
 // open, size_t
@@ -927,8 +927,6 @@ void st_scsi_loader_status_update(int fd, struct st_changer * changer) {
 	unsigned int i;
 	for (i = 0; i < changer->nb_slots; i++) {
 		struct st_slot * sl = changer->slots + i;
-		sl->media = NULL;
-
 		struct st_scsislot * sp = sl->data;
 		sp->address = sp->src_address = 0;
 		sp->src_slot = NULL;
