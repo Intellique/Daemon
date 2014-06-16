@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 04 Jun 2014 11:01:09 +0200                            *
+*  Last modified: Mon, 16 Jun 2014 16:13:22 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -1129,6 +1129,7 @@ static int st_db_postgresql_sync_changer(struct st_database_connection * connect
 			st_db_postgresql_get_long(result, 0, 0, &changer_data->id);
 
 		PQclear(result);
+		free(changerid);
 
 		if (status == PGRES_FATAL_ERROR) {
 			free(hostid);
@@ -1139,7 +1140,6 @@ static int st_db_postgresql_sync_changer(struct st_database_connection * connect
 	}
 
 	free(hostid);
-	free(changerid);
 
 	st_db_postgresql_create_checkpoint(connect, "sync_changer_before_drive");
 
