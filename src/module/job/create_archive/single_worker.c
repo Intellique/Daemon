@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 07 Apr 2014 15:57:22 +0200                            *
+*  Last modified: Mon, 16 Jun 2014 19:09:50 +0200                            *
 \****************************************************************************/
 
 // asprintf
@@ -449,7 +449,7 @@ static json_t * st_job_create_archive_single_worker_post_run(struct st_job_creat
 			json_object_set_new(jfile, "group id", json_integer(file->groupid));
 			json_object_set_new(jfile, "group", json_string(file->group));
 
-			char perm[10];
+			char perm[11];
 			st_util_file_convert_mode(perm, file->perm);
 			json_object_set_new(jfile, "perm", json_string(perm));
 			json_object_set_new(jfile, "size", json_integer(file->size));
