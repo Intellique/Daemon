@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 26 Dec 2013 18:47:45 +0100                            *
+*  Last modified: Mon, 16 Jun 2014 16:33:00 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -677,7 +677,7 @@ static bool st_media_read_header_v2(struct st_media * media, const char * buffer
 	else
 		ok = false;
 
-	if (ok && sscanf(buffer + nb_parsed, "Pool: name=%65[^,], uuid=%36s\n%n", pool_name, pool_id, &nb_parsed2) == 2)
+	if (ok && sscanf(buffer + nb_parsed, "Pool: name=%64[^,], uuid=%36s\n%n", pool_name, pool_id, &nb_parsed2) == 2)
 		nb_parsed += nb_parsed2;
 	else
 		ok = false;
