@@ -1,0 +1,9 @@
+LIBSTONE_DRIVE_1.2 {
+	global:
+		stdr_drive_register;
+
+	local:
+		stdr_drive_get;
+		*_v1;
+};
+
