@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 16 Jun 2014 16:13:22 +0200                            *
+*  Last modified: Mon, 16 Jun 2014 18:39:46 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2281,10 +2281,13 @@ static int st_db_postgresql_add_job_record(struct st_database_connection * conne
 		return 1;
 
 	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_job_data * job_data = job->db_data;
+	if (job_data->jobrun_id < 1)
+		return 0;
+
 	const char * query = "insert_job_record";
 	st_db_postgresql_prepare(self, query, "INSERT INTO jobrecord(jobrun, status, message, notif) VALUES ($1, $2, $3, $4)");
 
-	struct st_db_postgresql_job_data * job_data = job->db_data;
 
 	char * jobrunid, * numrun;
 	asprintf(&jobrunid, "%ld", job_data->jobrun_id);
