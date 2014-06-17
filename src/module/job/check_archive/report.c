@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 17 Jun 2014 13:07:49 +0200                            *
+*  Last modified: Tue, 17 Jun 2014 13:24:35 +0200                            *
 \****************************************************************************/
 
 // json_*
@@ -98,9 +98,6 @@ void st_job_check_archive_report_add_file(struct st_job_check_archive_report * r
 	}
 	free(checksums);
 	json_object_set_new(report->current_file, "checksums", checksum);
-	json_object_set_new(report->current_file, "checksum ok", file->check_ok ? json_true() : json_false());
-	st_util_time_convert(&file->check_time, "%F %T", buffer, 20);
-	json_object_set_new(report->current_file, "check time", json_string(buffer));
 
 	json_t * files = json_object_get(report->current_volume, "files");
 	json_array_append_new(files, report->current_file);
@@ -130,11 +127,6 @@ void st_job_check_archive_report_add_volume(struct st_job_check_archive_report *
 	}
 	free(checksums);
 	json_object_set_new(report->current_volume, "checksums", checksum);
-	json_object_set_new(report->current_volume, "checksum ok", volume->check_ok ? json_true() : json_false());
-
-	char buffer[20];
-	st_util_time_convert(&volume->check_time, "%F %T", buffer, 20);
-	json_object_set_new(report->current_volume, "check time", json_string(buffer));
 
 	json_t * files = json_array();
 	json_object_set_new(report->current_volume, "files", files);
