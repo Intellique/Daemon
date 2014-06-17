@@ -35,6 +35,8 @@
 #include <scsi/scsi.h>
 // sg_io_hdr_t
 #include <scsi/sg.h>
+// bool
+#include <stdbool.h>
 // free
 #include <stdlib.h>
 // memcpy, memset, strdup
@@ -45,10 +47,10 @@
 #include <unistd.h>
 
 #include <libstone/changer.h>
-#include <libstone/drive.h>
 #include <libstone/slot.h>
 #include <libstone/string.h>
 #include <libstone/value.h>
+#include <libstone-changer/drive.h>
 
 #include "scsi.h"
 
@@ -62,7 +64,7 @@ enum scsi_loader_element_type {
 
 struct scsi_inquiry {
 	unsigned char operation_code;
-	unsigned char enable_vital_product_data:1;
+	bool enable_vital_product_data:1;
 	unsigned char reserved0:4;
 	unsigned char obsolete:3;
 	unsigned char page_code;
@@ -73,24 +75,24 @@ struct scsi_inquiry {
 
 struct scsi_loader_data_transfer_element {
 	unsigned short element_address;
-	unsigned char full:1;
-	unsigned char reserved0:1;
-	unsigned char execpt:1;
-	unsigned char access:1;
+	bool full:1;
+	bool reserved0:1;
+	bool execpt:1;
+	bool access:1;
 	unsigned char reserved1:4;
 	unsigned char reserved2;
 	unsigned char additional_sense_code;
 	unsigned char additional_sense_code_qualifier;
 	unsigned char logical_unit_number:3;
-	unsigned char reserved3:1;
-	unsigned char logical_unit_valid:1;
-	unsigned char id_valid:1;
+	bool reserved3:1;
+	bool logical_unit_valid:1;
+	bool id_valid:1;
 	unsigned char reserved4:2;
 	unsigned char scsi_bus_address;
 	unsigned char reserved5;
 	unsigned char reserved6:6;
-	unsigned char invert:1;
-	unsigned char source_valid:1;
+	bool invert:1;
+	bool source_valid:1;
 	unsigned short source_storage_element_address;
 	char primary_volume_tag_information[36];
 	unsigned char code_set_1:4;
@@ -113,8 +115,8 @@ struct scsi_loader_data_transfer_element {
 struct scsi_loader_element_status {
 	enum scsi_loader_element_type type:8;
 	unsigned char reserved0:6;
-	unsigned alternate_volume_tag:1;
-	unsigned primary_volume_tag:1;
+	bool alternate_volume_tag:1;
+	bool primary_volume_tag:1;
 	unsigned short element_descriptor_length;
 	unsigned char reserved1;
 	unsigned int byte_count_of_descriptor_data_available:24;
@@ -180,13 +182,13 @@ struct scsi_loader_storage_element {
 
 struct scsi_request_sense {
 	unsigned char error_code:7;						/* Byte 0 Bits 0-6 */
-	unsigned char valid:1;							/* Byte 0 Bit 7 */
+	bool valid:1;									/* Byte 0 Bit 7 */
 	unsigned char segment_number;					/* Byte 1 */
 	unsigned char sense_key:4;						/* Byte 2 Bits 0-3 */
-	unsigned char :1;								/* Byte 2 Bit 4 */
-	unsigned char ili:1;							/* Byte 2 Bit 5 */
-	unsigned char eom:1;							/* Byte 2 Bit 6 */
-	unsigned char filemark:1;						/* Byte 2 Bit 7 */
+	bool :1;										/* Byte 2 Bit 4 */
+	bool ili:1;										/* Byte 2 Bit 5 */
+	bool eom:1;										/* Byte 2 Bit 6 */
+	bool filemark:1;								/* Byte 2 Bit 7 */
 	unsigned char information[4];					/* Bytes 3-6 */
 	unsigned char additional_sense_length;			/* Byte 7 */
 	unsigned char command_specific_information[4];	/* Bytes 8-11 */
@@ -196,8 +198,8 @@ struct scsi_request_sense {
 	unsigned char bit_pointer:3;					/* Byte 15 */
 	unsigned char bpv:1;
 	unsigned char :2;
-	unsigned char command_data :1;
-	unsigned char sksv:1;
+	bool command_data:1;
+	bool sksv:1;
 	unsigned char field_data[2];					/* Byte 16,17 */
 };
 
@@ -210,7 +212,7 @@ struct scsi_changer_slot {
 
 
 static int scsichanger_scsi_loader_ready(int fd);
-static void scsichanger_scsi_update_status(int fd, struct st_changer * changer, struct st_slot * slots, int start_element, int nb_elements, enum scsi_loader_element_type type);
+static void scsichanger_scsi_update_status(int fd, struct st_changer * changer, struct st_slot * slots, int start_element, int nb_elements, enum scsi_loader_element_type type, struct st_value * available_drives);
 
 
 bool scsichanger_scsi_check_device(struct st_changer * changer, const char * path) {
@@ -394,7 +396,7 @@ static int scsichanger_scsi_loader_ready(int fd) {
 	return sense.sense_key;
 }
 
-void scsichanger_scsi_new_status(struct st_changer * changer) {
+void scsichanger_scsi_new_status(struct st_changer * changer, struct st_value * available_drives) {
 	int fd = open(changer->device, O_RDWR);
 	if (fd < 0)
 		return;
@@ -482,6 +484,9 @@ void scsichanger_scsi_new_status(struct st_changer * changer) {
 	result.first_data_transfer_element_address = be16toh(result.first_data_transfer_element_address);
 	result.number_of_data_transfer_elements = be16toh(result.number_of_data_transfer_elements);
 
+	changer->nb_drives = result.number_of_data_transfer_elements;
+	changer->drives = calloc(sizeof(struct st_drive), changer->nb_drives);
+
 	changer->nb_slots = result.number_of_storage_elements;
 	unsigned short nb_io_slots = result.number_of_import_export_elements;
 	if (nb_io_slots > 0)
@@ -507,15 +512,15 @@ void scsichanger_scsi_new_status(struct st_changer * changer) {
 		sp->src_slot = NULL;
 	}
 
-	scsichanger_scsi_update_status(fd, changer, changer->slots, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer);
-	scsichanger_scsi_update_status(fd, changer, changer->slots + result.number_of_data_transfer_elements, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element);
+	scsichanger_scsi_update_status(fd, changer, changer->slots, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer, available_drives);
+	scsichanger_scsi_update_status(fd, changer, changer->slots + result.number_of_data_transfer_elements, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element, available_drives);
 	if (result.number_of_import_export_elements > 0)
-		scsichanger_scsi_update_status(fd, changer, changer->slots + (result.number_of_data_transfer_elements + result.number_of_storage_elements), result.first_import_export_element_address, result.number_of_import_export_elements, scsi_loader_element_type_import_export_element);
+		scsichanger_scsi_update_status(fd, changer, changer->slots + (result.number_of_data_transfer_elements + result.number_of_storage_elements), result.first_import_export_element_address, result.number_of_import_export_elements, scsi_loader_element_type_import_export_element, available_drives);
 
 	close(fd);
 }
 
-static void scsichanger_scsi_update_status(int fd, struct st_changer * changer, struct st_slot * slots, int start_element, int nb_elements, enum scsi_loader_element_type type) {
+static void scsichanger_scsi_update_status(int fd, struct st_changer * changer, struct st_slot * slots, int start_element, int nb_elements, enum scsi_loader_element_type type, struct st_value * available_drives) {
 	size_t size_needed = 16;
 	switch (type) {
 		case scsi_loader_element_type_all_elements:
@@ -634,6 +639,20 @@ static void scsichanger_scsi_update_status(int fd, struct st_changer * changer, 
 					struct scsi_changer_slot * sl = slot->data;
 					sl->address = be16toh(data_transfer_element->element_address);
 					sl->src_address = be16toh(data_transfer_element->source_storage_element_address);
+
+					if (available_drives != NULL && st_value_hashtable_has_key2(available_drives, data_transfer_element->device_identifier_1)) {
+						struct st_value * drive = st_value_hashtable_get2(available_drives, data_transfer_element->device_identifier_1, false, false);
+						struct st_drive * dr = changer->drives + i;
+
+						dr->status = st_drive_unknown;
+						dr->changer = changer;
+						dr->slot = slot;
+						slot->drive = dr;
+
+						st_value_unpack(drive, "{sssssssssb}", "model", &dr->model, "vendor", &dr->vendor, "firmwarerev", &dr->revision, "serial number", &dr->serial_number, "enable", &dr->enabled);
+
+						stchgr_drive_register(dr);
+					}
 
 					break;
 				}

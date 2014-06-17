@@ -156,8 +156,41 @@ static int scsi_changer_init(struct st_value * config) {
 	}
 	globfree(&gl);
 
+	struct st_value * available_drives = st_value_new_hashtable2();
+	struct st_value * drives = NULL;
+	st_value_unpack(config, "{so}", "drives", &drives);
+
+	if (drives != NULL) {
+		struct st_value_iterator * iter = st_value_list_get_iterator(drives);
+		while (st_value_iterator_has_next(iter)) {
+			struct st_value * dr = st_value_iterator_get_value(iter, true);
+
+			char * vendor = NULL, * model = NULL, * serial_number = NULL;
+			st_value_unpack(dr, "{ssssss}", "vendor", &vendor, "model", &model, "serial number", &serial_number);
+
+			char dev[35];
+			memset(dev, ' ', 34);
+			dev[34] = '\0';
+
+			strncpy(dev, vendor, strlen(vendor));
+			dev[7] = ' ';
+			strncpy(dev + 8, model, strlen(model));
+			dev[23] = ' ';
+			strcpy(dev + 23, serial_number);
+
+			st_value_hashtable_put2(available_drives, dev, dr, false);
+
+			free(vendor);
+			free(model);
+			free(serial_number);
+		}
+		st_value_iterator_free(iter);
+	}
+
 	if (found && scsi_changer.enabled && scsi_changer.is_online)
-		scsichanger_scsi_new_status(&scsi_changer);
+		scsichanger_scsi_new_status(&scsi_changer, available_drives);
+
+	st_value_free(available_drives);
 
 	return found ? 0 : 1;
 }

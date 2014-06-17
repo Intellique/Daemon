@@ -24,17 +24,12 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __SCSICHANGER_SCSI_H__
-#define __SCSICHANGER_SCSI_H__
+#ifndef __STONECHANGER_DRIVE_H__
+#define __STONECHANGER_DRIVE_H__
 
-// bool
-#include <stdbool.h>
+#include <libstone/drive.h>
 
-struct st_changer;
-struct st_value;
-
-bool scsichanger_scsi_check_device(struct st_changer * changer, const char * path);
-void scsichanger_scsi_new_status(struct st_changer * changer, struct st_value * available_drives);
+void stchgr_drive_register(struct st_drive * drive);
 
 #endif
 
