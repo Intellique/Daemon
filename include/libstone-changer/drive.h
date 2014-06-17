@@ -29,7 +29,10 @@
 
 #include <libstone/drive.h>
 
-void stchgr_drive_register(struct st_drive * drive);
+struct st_value;
+
+void stchgr_drive_register(struct st_drive * drive, const char * process_name);
+void stchgr_drive_set_config(struct st_value * logger, struct st_value * db_config);
 
 #endif
 

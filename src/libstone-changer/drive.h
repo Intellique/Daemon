@@ -36,7 +36,8 @@ struct stchgr_drive {
 	int fd_out;
 };
 
-void stchgr_drive_register_v1(struct st_drive * drive);
+void stchgr_drive_register_v1(struct st_drive * drive, const char * process_name);
+void stchgr_drive_set_config_v1(struct st_value * logger, struct st_value * db_config);
 
 #endif
 

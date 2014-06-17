@@ -146,7 +146,7 @@ static int scsi_changer_init(struct st_value * config) {
 		free(path);
 
 		if (!found)
-			found = scsichanger_scsi_check_device(&scsi_changer, device);
+			found = scsichanger_scsi_check_changer(&scsi_changer, device);
 
 		if (found) {
 			scsi_changer.device = device;

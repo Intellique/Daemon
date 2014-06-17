@@ -24,6 +24,7 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // open, size_t
 #include <sys/types.h>
 
@@ -31,12 +32,16 @@
 #include <endian.h>
 // open
 #include <fcntl.h>
+// glob, globfree
+#include <glob.h>
 // sg_io_hdr_t
 #include <scsi/scsi.h>
 // sg_io_hdr_t
 #include <scsi/sg.h>
 // bool
 #include <stdbool.h>
+// printf, sscanf, snprintf
+#include <stdio.h>
 // free
 #include <stdlib.h>
 // memcpy, memset, strdup
@@ -212,10 +217,11 @@ struct scsi_changer_slot {
 
 
 static int scsichanger_scsi_loader_ready(int fd);
+static void scsichanger_scsi_setup_drive(struct st_drive * drive);
 static void scsichanger_scsi_update_status(int fd, struct st_changer * changer, struct st_slot * slots, int start_element, int nb_elements, enum scsi_loader_element_type type, struct st_value * available_drives);
 
 
-bool scsichanger_scsi_check_device(struct st_changer * changer, const char * path) {
+bool scsichanger_scsi_check_changer(struct st_changer * changer, const char * path) {
 	int fd = open(path, O_RDWR);
 	if (fd < 0)
 		return false;
@@ -338,6 +344,7 @@ bool scsichanger_scsi_check_device(struct st_changer * changer, const char * pat
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	status = ioctl(fd, SG_IO, &header);
+	close(fd);
 
 	if (status) {
 		close(fd);
@@ -365,6 +372,152 @@ bool scsichanger_scsi_check_device(struct st_changer * changer, const char * pat
 	free(serial_number);
 
 	return found;
+}
+
+bool scsichanger_scsi_check_drive(struct st_drive * drive, const char * path) {
+	int fd = open(path, O_RDWR);
+	if (fd < 0)
+		return false;
+
+	struct {
+		unsigned char peripheral_device_type:5;
+		unsigned char peripheral_device_qualifier:3;
+		unsigned char reserved0:7;
+		unsigned char removable_medium_bit:1;
+		unsigned char version:3;
+		unsigned char ecma_version:3;
+		unsigned char iso_version:2;
+		unsigned char response_data_format:4;
+		unsigned char hi_sup:1;
+		unsigned char norm_aca:1;
+		unsigned char obsolete0:1;
+		unsigned char asynchronous_event_reporting_capability:1;
+		unsigned char additional_length;
+		unsigned char reserved1:7;
+		unsigned char scc_supported:1;
+		unsigned char addr16:1;
+		unsigned char addr32:1;
+		unsigned char obsolete1:1;
+		unsigned char medium_changer:1;
+		unsigned char multi_port:1;
+		unsigned char vs:1;
+		unsigned char enclosure_service:1;
+		unsigned char basic_queuing:1;
+		unsigned char reserved2:1;
+		unsigned char command_queuing:1;
+		unsigned char trans_dis:1;
+		unsigned char linked_command:1;
+		unsigned char synchonous_transfer:1;
+		unsigned char wide_bus_16:1;
+		unsigned char obsolete2:1;
+		unsigned char relative_addressing:1;
+		char vendor_identification[8];
+		char product_identification[16];
+		char product_revision_level[4];
+		unsigned char aut_dis:1;
+		unsigned char performance_limit;
+		unsigned char reserved3[3];
+		unsigned char oem_specific;
+	} __attribute__((packed)) result_inquiry;
+
+	struct scsi_inquiry command_inquiry = {
+		.operation_code = 0x12,
+		.enable_vital_product_data = 0,
+		.page_code = 0,
+		.allocation_length = sizeof(result_inquiry),
+	};
+
+	struct scsi_request_sense sense;
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(&result_inquiry, 0, sizeof(result_inquiry));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command_inquiry);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result_inquiry);
+	header.cmdp = (unsigned char *) &command_inquiry;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &result_inquiry;
+	header.timeout = 60000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+
+	if (status) {
+		close(fd);
+		return false;
+	}
+
+	char * vendor = strndup(result_inquiry.vendor_identification, 7);
+	st_string_rtrim(vendor, ' ');
+	char * model = strndup(result_inquiry.product_identification, 15);
+	st_string_rtrim(model, ' ');
+	char * revision = strndup(result_inquiry.product_revision_level, 4);
+	st_string_rtrim(revision, ' ');
+
+	bool ok = !strcmp(drive->vendor, vendor);
+	if (ok)
+		ok = !strcmp(drive->model, model);
+	if (ok)
+		ok = !strcmp(drive->revision, revision);
+
+	free(vendor);
+	free(model);
+	free(revision);
+
+	if (!ok) {
+		close(fd);
+		return false;
+	}
+
+	struct {
+		unsigned char peripheral_device_type:5;
+		unsigned char peripheral_device_qualifier:3;
+		unsigned char page_code;
+		unsigned char reserved;
+		unsigned char page_length;
+		char unit_serial_number[12];
+	} __attribute__((packed)) result_serial_number;
+
+	struct scsi_inquiry command_serial_number = {
+		.operation_code = 0x12,
+		.enable_vital_product_data = 1,
+		.page_code = 0x80,
+		.allocation_length = sizeof(result_serial_number),
+	};
+
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(&result_serial_number, 0, sizeof(result_serial_number));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command_serial_number);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result_serial_number);
+	header.cmdp = (unsigned char *) &command_serial_number;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &result_serial_number;
+	header.timeout = 60000;
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	status = ioctl(fd, SG_IO, &header);
+
+	close(fd);
+
+	if (status != 0)
+		return false;
+
+	result_serial_number.unit_serial_number[11] = '\0';
+	st_string_rtrim(result_serial_number.unit_serial_number, ' ');
+	char * serial_number = strdup(result_serial_number.unit_serial_number);
+
+	ok = !strcmp(drive->serial_number, serial_number);
+
+	free(serial_number);
+
+	return ok;
 }
 
 static int scsichanger_scsi_loader_ready(int fd) {
@@ -520,6 +673,175 @@ void scsichanger_scsi_new_status(struct st_changer * changer, struct st_value * 
 	close(fd);
 }
 
+static void scsichanger_scsi_setup_drive(struct st_drive * drive) {
+	glob_t gl;
+	glob("/sys/class/scsi_device/*/device/scsi_tape", 0, NULL, &gl);
+
+	unsigned int i;
+	for (i = 0; i < gl.gl_pathc; i++) {
+		char * ptr = strrchr(gl.gl_pathv[i], '/');
+		*ptr = '\0';
+
+		char link[256];
+		ssize_t length = readlink(gl.gl_pathv[i], link, 256);
+		link[length] = '\0';
+
+		ptr = strrchr(link, '/') + 1;
+
+		char * path;
+		asprintf(&path, "%s/generic", gl.gl_pathv[i]);
+		length = readlink(path, link, 256);
+		link[length] = '\0';
+		free(path);
+
+		char * scsi_device;
+		ptr = strrchr(link, '/');
+		asprintf(&scsi_device, "/dev%s", ptr);
+
+		int fd = open(scsi_device, O_RDWR);
+		if (fd < 0) {
+			free(scsi_device);
+			continue;
+		}
+
+		struct {
+			unsigned char peripheral_device_type:5;
+			unsigned char peripheral_device_qualifier:3;
+			unsigned char reserved0:7;
+			bool removable_medium_bit:1;
+			unsigned char version:3;
+			unsigned char ecma_version:3;
+			unsigned char iso_version:2;
+			unsigned char response_data_format:4;
+			bool hi_sup:1;
+			bool norm_aca:1;
+			bool obsolete0:1;
+			bool asynchronous_event_reporting_capability:1;
+			unsigned char additional_length;
+			unsigned char reserved1:7;
+			bool scc_supported:1;
+			bool addr16:1;
+			bool addr32:1;
+			bool obsolete1:1;
+			bool medium_changer:1;
+			bool multi_port:1;
+			bool vs:1;
+			bool enclosure_service:1;
+			bool basic_queuing:1;
+			bool reserved2:1;
+			bool command_queuing:1;
+			bool trans_dis:1;
+			bool linked_command:1;
+			bool synchonous_transfer:1;
+			bool wide_bus_16:1;
+			bool obsolete2:1;
+			bool relative_addressing:1;
+			char vendor_identification[8];
+			char product_identification[16];
+			char product_revision_level[4];
+			bool aut_dis:1;
+			unsigned char performance_limit;
+			unsigned char reserved3[3];
+			unsigned char oem_specific;
+		} __attribute__((packed)) result_inquiry;
+
+		struct scsi_inquiry command_inquiry = {
+			.operation_code = 0x12,
+			.enable_vital_product_data = 0,
+			.page_code = 0,
+			.allocation_length = sizeof(result_inquiry),
+		};
+
+		struct scsi_request_sense sense;
+		sg_io_hdr_t header;
+		memset(&header, 0, sizeof(header));
+		memset(&sense, 0, sizeof(sense));
+		memset(&result_inquiry, 0, sizeof(result_inquiry));
+
+		header.interface_id = 'S';
+		header.cmd_len = sizeof(command_inquiry);
+		header.mx_sb_len = sizeof(sense);
+		header.dxfer_len = sizeof(result_inquiry);
+		header.cmdp = (unsigned char *) &command_inquiry;
+		header.sbp = (unsigned char *) &sense;
+		header.dxferp = (unsigned char *) &result_inquiry;
+		header.timeout = 60000;
+		header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+		int status = ioctl(fd, SG_IO, &header);
+
+		if (status) {
+			close(fd);
+			free(scsi_device);
+			continue;
+		}
+
+		char * vendor = strndup(result_inquiry.vendor_identification, 7);
+		st_string_rtrim(vendor, ' ');
+		bool ok = !strcmp(vendor, drive->vendor);
+
+		char * model = strndup(result_inquiry.product_identification, 15);
+		st_string_rtrim(model, ' ');
+		if (ok)
+			ok = !strcmp(model, drive->model);
+
+		if (!ok) {
+			close(fd);
+			free(vendor);
+			free(model);
+			continue;
+		}
+
+		struct {
+			unsigned char peripheral_device_type:5;
+			unsigned char peripheral_device_qualifier:3;
+			unsigned char page_code;
+			unsigned char reserved;
+			unsigned char page_length;
+			char unit_serial_number[12];
+		} __attribute__((packed)) result_serial_number;
+
+		struct scsi_inquiry command_serial_number = {
+			.operation_code = 0x12,
+			.enable_vital_product_data = 1,
+			.page_code = 0x80,
+			.allocation_length = sizeof(result_serial_number),
+		};
+
+		memset(&header, 0, sizeof(header));
+		memset(&sense, 0, sizeof(sense));
+		memset(&result_serial_number, 0, sizeof(result_serial_number));
+
+		header.interface_id = 'S';
+		header.cmd_len = sizeof(command_serial_number);
+		header.mx_sb_len = sizeof(sense);
+		header.dxfer_len = sizeof(result_serial_number);
+		header.cmdp = (unsigned char *) &command_serial_number;
+		header.sbp = (unsigned char *) &sense;
+		header.dxferp = (unsigned char *) &result_serial_number;
+		header.timeout = 60000;
+		header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+		status = ioctl(fd, SG_IO, &header);
+
+		result_serial_number.unit_serial_number[11] = '\0';
+		st_string_rtrim(result_serial_number.unit_serial_number, ' ');
+		char * serial_number = strdup(result_serial_number.unit_serial_number);
+
+		ok = !strcmp(serial_number, drive->serial_number);
+
+		free(serial_number);
+		close(fd);
+
+		if (ok) {
+			stchgr_drive_register(drive, "tape_drive");
+			break;
+		}
+	}
+
+	globfree(&gl);
+}
+
 static void scsichanger_scsi_update_status(int fd, struct st_changer * changer, struct st_slot * slots, int start_element, int nb_elements, enum scsi_loader_element_type type, struct st_value * available_drives) {
 	size_t size_needed = 16;
 	switch (type) {
@@ -651,7 +973,7 @@ static void scsichanger_scsi_update_status(int fd, struct st_changer * changer, 
 
 						st_value_unpack(drive, "{sssssssssb}", "model", &dr->model, "vendor", &dr->vendor, "firmwarerev", &dr->revision, "serial number", &dr->serial_number, "enable", &dr->enabled);
 
-						stchgr_drive_register(dr);
+						scsichanger_scsi_setup_drive(dr);
 					}
 
 					break;

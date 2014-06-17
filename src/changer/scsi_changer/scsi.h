@@ -33,7 +33,8 @@
 struct st_changer;
 struct st_value;
 
-bool scsichanger_scsi_check_device(struct st_changer * changer, const char * path);
+bool scsichanger_scsi_check_changer(struct st_changer * changer, const char * path);
+bool scsichanger_scsi_check_drive(struct st_drive * drive, const char * path);
 void scsichanger_scsi_new_status(struct st_changer * changer, struct st_value * available_drives);
 
 #endif

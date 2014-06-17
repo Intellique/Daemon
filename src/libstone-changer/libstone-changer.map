@@ -2,6 +2,7 @@ LIBSTONE_CHANGER_1.2 {
 	global:
 		stchgr_changer_register;
 		stchgr_drive_register;
+		stchgr_drive_set_config;
 
 	local:
 		stchgr_changer_get;
