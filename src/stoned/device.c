@@ -33,6 +33,7 @@
 #include <unistd.h>
 
 #include <libstone/json.h>
+#include <libstone/log.h>
 #include <libstone/database.h>
 #include <libstone/poll.h>
 #include <libstone/process.h>
@@ -41,6 +42,7 @@
 #include "device.h"
 
 struct std_device {
+	char * process_name;
 	struct st_process process;
 	int fd_in;
 	struct st_value * config;
@@ -74,12 +76,13 @@ void std_device_configure(struct st_value * logger, struct st_value * db_config)
 		struct st_value * changer = st_value_iterator_get_value(iter, true);
 
 		struct std_device * dev = malloc(sizeof(struct std_device));
-		st_process_new(&dev->process, "scsi_changer", NULL, 0);
+		dev->process_name = "scsi_changer";
+		st_process_new(&dev->process, dev->process_name, NULL, 0);
 		dev->fd_in = st_process_pipe_to(&dev->process);
 		st_process_close(&dev->process, st_process_stdout);
 		st_process_close(&dev->process, st_process_stderr);
 
-		st_poll_register(dev->fd_in, POLLHUP, std_device_exited, dev, std_device_free);
+		st_poll_register(dev->fd_in, POLLHUP, std_device_exited, dev, NULL);
 
 		static int i_changer = 0;
 		char * path;
@@ -98,7 +101,29 @@ void std_device_configure(struct st_value * logger, struct st_value * db_config)
 	st_value_iterator_free(iter);
 }
 
-static void std_device_exited(int fd, short event, void * data) {
+static void std_device_exited(int fd __attribute__((unused)), short event, void * data) {
+	struct std_device * dev = data;
+
+	if (event & POLLERR) {
+		st_poll_unregister(dev->fd_in);
+		close(dev->fd_in);
+	}
+
+	dev->fd_in = -1;
+	st_process_wait(&dev->process, 1);
+	st_process_free(&dev->process, 1);
+
+	st_log_write2(st_log_level_critical, st_log_type_daemon, "Restart changer: %s", dev->process_name);
+
+	st_process_new(&dev->process, dev->process_name, NULL, 0);
+	dev->fd_in = st_process_pipe_to(&dev->process);
+	st_process_close(&dev->process, st_process_stdout);
+	st_process_close(&dev->process, st_process_stderr);
+
+	st_poll_register(dev->fd_in, POLLHUP, std_device_exited, dev, NULL);
+
+	st_process_start(&dev->process, 1);
+	st_json_encode_to_fd(dev->config, dev->fd_in, true);
 }
 
 static void std_device_free(void * d) {
@@ -110,5 +135,19 @@ static void std_device_free(void * d) {
 }
 
 void std_device_stop() {
+	struct st_value * stop = st_value_pack("{ss}", "command", "stop");
+
+	struct st_value_iterator * iter = st_value_list_get_iterator(devices);
+	while (st_value_iterator_has_next(iter)) {
+		struct st_value * elt = st_value_iterator_get_value(iter, false);
+		struct std_device * dev = st_value_custom_get(elt);
+
+		st_json_encode_to_fd(stop, dev->fd_in, true);
+		st_poll_unregister(dev->fd_in);
+	}
+	st_value_iterator_free(iter);
+
+	st_value_free(stop);
+	st_value_free(devices);
 }
 

@@ -666,9 +666,9 @@ void scsichanger_scsi_new_status(struct st_changer * changer, struct st_value * 
 	}
 
 	scsichanger_scsi_update_status(fd, changer, changer->slots, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer, available_drives);
-	scsichanger_scsi_update_status(fd, changer, changer->slots + result.number_of_data_transfer_elements, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element, available_drives);
+	scsichanger_scsi_update_status(fd, changer, changer->slots + result.number_of_data_transfer_elements, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element, NULL);
 	if (result.number_of_import_export_elements > 0)
-		scsichanger_scsi_update_status(fd, changer, changer->slots + (result.number_of_data_transfer_elements + result.number_of_storage_elements), result.first_import_export_element_address, result.number_of_import_export_elements, scsi_loader_element_type_import_export_element, available_drives);
+		scsichanger_scsi_update_status(fd, changer, changer->slots + (result.number_of_data_transfer_elements + result.number_of_storage_elements), result.first_import_export_element_address, result.number_of_import_export_elements, scsi_loader_element_type_import_export_element, NULL);
 
 	close(fd);
 }
@@ -975,7 +975,7 @@ static void scsichanger_scsi_update_status(int fd, struct st_changer * changer, 
 						dr->slot = slot;
 						slot->drive = dr;
 
-						st_value_unpack(drive, "{sssssssssb}", "model", &dr->model, "vendor", &dr->vendor, "firmwarerev", &dr->revision, "serial number", &dr->serial_number, "enable", &dr->enabled);
+						st_value_unpack(drive, "{sssssssssb}", "model", &dr->model, "vendor", &dr->vendor, "firmware revision", &dr->revision, "serial number", &dr->serial_number, "enable", &dr->enabled);
 
 						scsichanger_scsi_setup_drive(dr);
 					}

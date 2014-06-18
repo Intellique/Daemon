@@ -47,13 +47,12 @@ void stchgr_drive_register_v1(struct st_drive * drive, const char * process_name
 	self->fd_out = st_process_pipe_from(&self->process, st_process_stdout);
 	drive->data = self;
 
-	struct st_value * config = st_value_pack("{sOsO}", "logger", log_config, "database", db_config);
+	// struct st_value * config = st_value_pack("{sOsO}", "logger", log_config, "database", db_config);
 
 	// st_process_start(&self->process, 1);
 	// st_json_encode_to_fd(config, self->fd_in, true);
 }
 
-__asm__(".symver stchgr_drive_set_config_v1, stchgr_drive_set_config@@LIBSTONE_CHANGER_1.2");
 void stchgr_drive_set_config_v1(struct st_value * logger, struct st_value * db) {
 	log_config = logger;
 	db_config = db;
