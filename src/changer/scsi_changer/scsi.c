@@ -890,7 +890,7 @@ static void scsichanger_scsi_update_status(int fd, struct st_changer * changer, 
 		.allocation_length = { size_needed >> 16, size_needed >> 8, size_needed & 0xFF, },
 		.reserved2 = 0,
 		.reserved3 = 0,
-		.serial_number_request = 0,
+		.serial_number_request = false,
 	};
 
 	sg_io_hdr_t header;
@@ -962,8 +962,12 @@ static void scsichanger_scsi_update_status(int fd, struct st_changer * changer, 
 					sl->address = be16toh(data_transfer_element->element_address);
 					sl->src_address = be16toh(data_transfer_element->source_storage_element_address);
 
-					if (available_drives != NULL && st_value_hashtable_has_key2(available_drives, data_transfer_element->device_identifier_1)) {
-						struct st_value * drive = st_value_hashtable_get2(available_drives, data_transfer_element->device_identifier_1, false, false);
+					char dev_name[35];
+					strncpy(dev_name, data_transfer_element->device_identifier_1, 34);
+					dev_name[34] = '\0';
+
+					if (available_drives != NULL && st_value_hashtable_has_key2(available_drives, dev_name)) {
+						struct st_value * drive = st_value_hashtable_get2(available_drives, dev_name, false, false);
 						struct st_drive * dr = changer->drives + i;
 
 						dr->status = st_drive_unknown;

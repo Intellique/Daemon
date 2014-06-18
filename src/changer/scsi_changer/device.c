@@ -83,7 +83,7 @@ struct st_changer * scsichanger_get_device() {
 }
 
 static int scsi_changer_init(struct st_value * config) {
-	st_value_unpack(config, "{sssssssbsbss}", "model", &scsi_changer.model, "vendor", &scsi_changer.vendor, "serial number", &scsi_changer.serial_number, "enable", &scsi_changer.enabled, "is online", &scsi_changer.is_online, "wwn", &scsi_changer.wwn);
+	st_value_unpack(config, "{sssssssbsbsbss}", "model", &scsi_changer.model, "vendor", &scsi_changer.vendor, "serial number", &scsi_changer.serial_number, "barcode", &scsi_changer.barcode, "enable", &scsi_changer.enabled, "is online", &scsi_changer.is_online, "wwn", &scsi_changer.wwn);
 
 	glob_t gl;
 	glob("/sys/class/scsi_changer/*/device", 0, NULL, &gl);
@@ -176,7 +176,7 @@ static int scsi_changer_init(struct st_value * config) {
 			dev[7] = ' ';
 			strncpy(dev + 8, model, strlen(model));
 			dev[23] = ' ';
-			strcpy(dev + 23, serial_number);
+			strcpy(dev + 24, serial_number);
 
 			st_value_hashtable_put2(available_drives, dev, dr, false);
 
