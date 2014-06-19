@@ -24,21 +24,24 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONECHANGER_DRIVE_P_H__
-#define __STONECHANGER_DRIVE_P_H__
+#include <libstone-drive/drive.h>
 
-#include <libstone/process.h>
-#include <libstone-changer/drive.h>
+#include "device.h"
 
-struct stchgr_drive {
-	struct st_process process;
-	int fd_in;
-	int fd_out;
-	struct st_value * config;
+#include <drive-tapedrive.chcksum>
+
+static struct st_drive_driver tapedrive_driver = {
+	.name = "tape drive",
+
+	.api_level    = 0,
+	.src_checksum = STONE_DRIVE_TAPEDRIVE_SRCSUM,
 };
 
-void stchgr_drive_register_v1(struct st_drive * drive, const char * process_name);
-void stchgr_drive_set_config(struct st_value * logger, struct st_value * db_config);
+static void tapedrive_init(void) __attribute__((constructor));
 
-#endif
+
+static void tapedrive_init() {
+	tapedrive_driver.device = tapedrive_get_device();
+	stdr_drive_register(&tapedrive_driver);
+}
 

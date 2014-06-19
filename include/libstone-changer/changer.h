@@ -43,6 +43,8 @@ struct st_changer_driver {
 
 struct st_changer_ops {
 	int (*init)(struct st_value * config);
+	int (*put_offline)(void);
+	int (*put_online)(void);
 };
 
 void stchgr_changer_register(struct st_changer_driver * chngr);

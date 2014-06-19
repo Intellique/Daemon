@@ -38,6 +38,7 @@
 #include <libstone/value.h>
 
 #include "changer.h"
+#include "drive.h"
 #include "listen.h"
 
 static bool stop = false;
@@ -85,6 +86,7 @@ int main() {
 
 	st_log_configure(log_config, st_log_type_changer);
 	st_database_load_config(db_config);
+	stchgr_drive_set_config(log_config, db_config);
 
 	st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
 

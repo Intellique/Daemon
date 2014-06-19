@@ -24,21 +24,15 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONECHANGER_DRIVE_P_H__
-#define __STONECHANGER_DRIVE_P_H__
+#ifndef __TAPEDRIVE_SCSI_H__
+#define __TAPEDRIVE_SCSI_H__
 
-#include <libstone/process.h>
-#include <libstone-changer/drive.h>
+// bool
+#include <stdbool.h>
 
-struct stchgr_drive {
-	struct st_process process;
-	int fd_in;
-	int fd_out;
-	struct st_value * config;
-};
+struct st_drive;
 
-void stchgr_drive_register_v1(struct st_drive * drive, const char * process_name);
-void stchgr_drive_set_config(struct st_value * logger, struct st_value * db_config);
+bool tapedrive_scsi_check_drive(struct st_drive * drive, const char * path);
 
 #endif
 

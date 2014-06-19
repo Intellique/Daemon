@@ -5,6 +5,7 @@ LIBSTONE_CHANGER_1.2 {
 
 	local:
 		stchgr_changer_get;
+		stchgr_drive_set_config;
 		stchgr_listen_configure;
 		stchgr_listen_nb_clients;
 		*_v1;
