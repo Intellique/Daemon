@@ -37,6 +37,7 @@
  * \returns size of first character or \b -1
  */
 static int st_string_valid_utf8_char_v1(const char * string);
+static int st_string_valid_utf8_char2_v1(const unsigned char * ptr, unsigned short length);
 
 __asm__(".symver st_string_check_valid_utf8_v1, st_string_check_valid_utf8@@LIBSTONE_1.2");
 bool st_string_check_valid_utf8_v1(const char * string) {
@@ -208,42 +209,25 @@ size_t st_string_unicode_length_v1(unsigned int unicode) {
 
 static int st_string_valid_utf8_char_v1(const char * string) {
 	const unsigned char * ptr = (const unsigned char *) string;
-	if ((*ptr & 0x7F) == *ptr) {
+	if ((*ptr & 0x7F) == *ptr)
 		return 1;
-	} else if ((*ptr & 0xBF) == *ptr) {
+	else if ((*ptr & 0xBF) == *ptr)
+	  return 0;
+	else if ((*ptr & 0xDF) == *ptr)
+	  return ((ptr[1] & 0xBF) != ptr[1] || ((ptr[1] & 0x80) != 0x80)) ? 0 : 2;
+	else if ((*ptr & 0xEF) == *ptr)
+	  return st_string_valid_utf8_char2_v1(ptr, 2) ? 0 : 3;
+	else if ((*ptr & 0xF7) == *ptr)
+	  return st_string_valid_utf8_char2_v1(ptr, 3) ? 0 : 4;
+	else
 		return 0;
-	} else if ((*ptr & 0xDF) == *ptr) {
-		ptr++;
-		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
-			return 0;
+}
 
-		return 2;
-	} else if ((*ptr & 0xEF) == *ptr) {
-		ptr++;
-		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
-			return 0;
-
-		ptr++;
-		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
-			return 0;
-
-		return 3;
-	} else if ((*ptr & 0x7F) == *ptr) {
-		ptr++;
-		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
-			return 0;
-
-		ptr++;
-		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
-			return 0;
-
-		ptr++;
-		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
-			return 0;
-
-		return 4;
-	} else {
-		return 0;
-	}
+static int st_string_valid_utf8_char2_v1(const unsigned char * ptr, unsigned short length) {
+	unsigned short i;
+	for (i = 1; i <= length; i++)
+		if ((ptr[i] & 0xBF) != ptr[i] || ((ptr[i] & 0x80) != 0x80))
+			return 1;
+	return 0;
 }
 
