@@ -57,7 +57,7 @@ int main() {
 	if (log_config == NULL || drive_config == NULL || db_config == NULL)
 		return 3;
 
-	st_log_configure(log_config, st_log_type_changer);
+	st_log_configure(log_config, st_log_type_drive);
 	st_database_load_config(db_config);
 
 	// st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);

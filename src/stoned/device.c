@@ -70,6 +70,8 @@ void std_device_configure(struct st_value * logger, struct st_value * db_config)
 	if (devices == NULL)
 		devices = st_value_new_linked_list();
 
+	static int i_changer = 0, i_drives = 0;
+
 	struct st_value * real_changers = connection->ops->get_changers(connection);
 	struct st_value_iterator * iter = st_value_list_get_iterator(real_changers);
 	while (st_value_iterator_has_next(iter)) {
@@ -84,19 +86,34 @@ void std_device_configure(struct st_value * logger, struct st_value * db_config)
 
 		st_poll_register(dev->fd_in, POLLHUP, std_device_exited, dev, NULL);
 
-		static int i_changer = 0;
 		char * path;
 		asprintf(&path, "run/changer_%d.socket", i_changer);
-		i_changer++;
 
 		dev->config = st_value_pack("{sOsOsOs{ssss}}", "changer", changer, "logger", logger, "database", db_config, "socket", "domain", "unix", "path", path);
+
+		free(path);
+
+		struct st_value * drives;
+		st_value_unpack(changer, "{so}", "drives", &drives);
+		struct st_value_iterator * iter = st_value_list_get_iterator(drives);
+		while (st_value_iterator_has_next(iter)) {
+			struct st_value * drive = st_value_iterator_get_value(iter, false);
+
+			asprintf(&path, "run/changer_%d_drive_%d.socket", i_changer, i_drives);
+			i_drives++;
+
+			st_value_hashtable_put2(drive, "socket", st_value_pack("{ssss}", "domain", "unix", "path", path), true);
+
+			free(path);
+		}
+		st_value_iterator_free(iter);
 
 		st_value_list_push(devices, st_value_new_custom(dev, std_device_free), true);
 
 		st_process_start(&dev->process, 1);
 		st_json_encode_to_fd(dev->config, dev->fd_in, true);
 
-		free(path);
+		i_changer++;
 	}
 	st_value_iterator_free(iter);
 }

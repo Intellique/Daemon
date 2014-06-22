@@ -37,7 +37,7 @@ struct stchgr_drive {
 	struct st_value * config;
 };
 
-void stchgr_drive_register_v1(struct st_drive * drive, const char * process_name);
+void stchgr_drive_register_v1(struct st_drive * drive, struct st_value * config, const char * process_name);
 void stchgr_drive_set_config(struct st_value * logger, struct st_value * db_config);
 
 #endif

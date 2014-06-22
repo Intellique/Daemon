@@ -217,7 +217,7 @@ struct scsi_changer_slot {
 
 
 static int scsichanger_scsi_loader_ready(int fd);
-static void scsichanger_scsi_setup_drive(struct st_drive * drive);
+static void scsichanger_scsi_setup_drive(struct st_drive * drive, struct st_value * config);
 static void scsichanger_scsi_update_status(int fd, struct st_changer * changer, struct st_slot * slots, int start_element, int nb_elements, enum scsi_loader_element_type type, struct st_value * available_drives);
 
 
@@ -670,10 +670,18 @@ void scsichanger_scsi_new_status(struct st_changer * changer, struct st_value * 
 	if (result.number_of_import_export_elements > 0)
 		scsichanger_scsi_update_status(fd, changer, changer->slots + (result.number_of_data_transfer_elements + result.number_of_storage_elements), result.first_import_export_element_address, result.number_of_import_export_elements, scsi_loader_element_type_import_export_element, NULL);
 
+	for (i = 0; i < changer->nb_drives; i++) {
+		struct st_drive * drive = changer->drives + 1;
+		if (!drive->enabled)
+			continue;
+
+		// drive->ops->update_status(drive);
+	}
+
 	close(fd);
 }
 
-static void scsichanger_scsi_setup_drive(struct st_drive * drive) {
+static void scsichanger_scsi_setup_drive(struct st_drive * drive, struct st_value * config) {
 	glob_t gl;
 	glob("/sys/class/scsi_device/*/device/scsi_tape", 0, NULL, &gl);
 
@@ -834,7 +842,7 @@ static void scsichanger_scsi_setup_drive(struct st_drive * drive) {
 		close(fd);
 
 		if (ok) {
-			stchgr_drive_register(drive, "tape_drive");
+			stchgr_drive_register(drive, config, "tape_drive");
 			break;
 		}
 	}
@@ -977,7 +985,7 @@ static void scsichanger_scsi_update_status(int fd, struct st_changer * changer, 
 
 						st_value_unpack(drive, "{sssssssssb}", "model", &dr->model, "vendor", &dr->vendor, "firmware revision", &dr->revision, "serial number", &dr->serial_number, "enable", &dr->enabled);
 
-						scsichanger_scsi_setup_drive(dr);
+						scsichanger_scsi_setup_drive(dr, drive);
 					}
 
 					break;

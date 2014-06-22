@@ -166,18 +166,13 @@ bool tapedrive_scsi_check_drive(struct st_drive * drive, const char * path) {
 	st_string_rtrim(vendor, ' ');
 	char * model = strndup(result_inquiry.product_identification, 15);
 	st_string_rtrim(model, ' ');
-	char * revision = strndup(result_inquiry.product_revision_level, 4);
-	st_string_rtrim(revision, ' ');
 
 	bool ok = !strcmp(drive->vendor, vendor);
 	if (ok)
 		ok = !strcmp(drive->model, model);
-	if (ok)
-		ok = !strcmp(drive->revision, revision);
 
 	free(vendor);
 	free(model);
-	free(revision);
 
 	if (!ok) {
 		close(fd);

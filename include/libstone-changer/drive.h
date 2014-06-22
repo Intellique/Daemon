@@ -36,7 +36,7 @@ struct st_drive_ops {
 	int (*update_status)(struct st_drive * drive);
 };
 
-void stchgr_drive_register(struct st_drive * drive, const char * process_name);
+void stchgr_drive_register(struct st_drive * drive, struct st_value * config, const char * process_name);
 
 #endif
 
