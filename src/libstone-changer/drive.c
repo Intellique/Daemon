@@ -35,19 +35,19 @@
 
 #include "drive.h"
 
-static bool stchr_drive_is_loocked(struct st_drive * dr);
-static int stchr_drive_update_status(struct st_drive * drive);
+static bool stchgr_drive_is_loocked(struct st_drive * dr);
+static int stchgr_drive_update_status(struct st_drive * drive);
 
 static struct st_drive_ops drive_ops = {
-	.is_locked     = stchr_drive_is_loocked,
-	.update_status = stchr_drive_update_status,
+	.is_locked     = stchgr_drive_is_loocked,
+	.update_status = stchgr_drive_update_status,
 };
 
 static struct st_value * log_config = NULL;
 static struct st_value * db_config = NULL;
 
 
-static bool stchr_drive_is_loocked(struct st_drive * dr) {
+static bool stchgr_drive_is_loocked(struct st_drive * dr) {
 	return false;
 }
 
@@ -76,7 +76,18 @@ void stchgr_drive_set_config(struct st_value * logger, struct st_value * db) {
 	db_config = db;
 }
 
-static int stchr_drive_update_status(struct st_drive * drive) {
-	return 1;
+static int stchgr_drive_update_status(struct st_drive * drive) {
+	struct stchgr_drive * self = drive->data;
+
+	struct st_value * command = st_value_pack("{ss}", "command", "update status");
+	st_json_encode_to_fd(command, self->fd_in, true);
+	st_value_free(command);
+
+	struct st_value * returned = st_json_parse_fd(self->fd_out, -1);
+	int val = 1;
+	st_value_unpack(returned, "{si}", "status", &val);
+	st_value_free(returned);
+
+	return val;
 }
 

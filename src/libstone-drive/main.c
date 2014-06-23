@@ -24,7 +24,12 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#include <stddef.h>
+// bool
+#include <stdbool.h>
+// free
+#include <stdlib.h>
+// strcmp
+#include <string.h>
 
 #include <libstone/database.h>
 #include <libstone/json.h>
@@ -39,7 +44,37 @@ static bool stop = false;
 static void changer_request(int fd, short event, void * data);
 
 
-static void changer_request(int fd, short event, void * data) {
+static void changer_request(int fd, short event, void * data __attribute__((unused))) {
+	switch (event) {
+		case POLLHUP:
+			st_log_write(st_log_level_alert, "changer has hang up");
+			stop = true;
+			break;
+	}
+
+	struct st_value * request = st_json_parse_fd(fd, 1000);
+	char * command;
+	if (request == NULL || st_value_unpack(request, "{ss}", "command", &command) < 0) {
+		if (request != NULL)
+			st_value_free(request);
+		return;
+	}
+
+	if (!strcmp("stop", command))
+		stop = true;
+	else if (!strcmp("update status", command)) {
+		struct st_drive_driver * driver = stdr_drive_get();
+		struct st_drive * drive = driver->device;
+
+		int failed = drive->ops->update_status();
+
+		struct st_value * returned = st_value_pack("{si}", "status", (long long int) failed);
+		st_json_encode_to_fd(returned, 1, true);
+		st_value_free(returned);
+	}
+
+	st_value_free(request);
+	free(command);
 }
 
 int main() {
@@ -60,7 +95,7 @@ int main() {
 	st_log_configure(log_config, st_log_type_drive);
 	st_database_load_config(db_config);
 
-	// st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
+	st_poll_register(0, POLLIN | POLLHUP, changer_request, NULL, NULL);
 
 	struct st_drive * drive = driver->device;
 	int failed = drive->ops->init(drive_config);

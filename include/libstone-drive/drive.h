@@ -43,6 +43,7 @@ struct st_drive_driver {
 
 struct st_drive_ops {
 	int (*init)(struct st_value * config);
+	int (*update_status)(void);
 };
 
 void stdr_drive_register(struct st_drive_driver * dr);

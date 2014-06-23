@@ -49,7 +49,7 @@ static void daemon_request(int fd, short event, void * data);
 static void daemon_request(int fd, short event, void * data __attribute__((unused))) {
 	switch (event) {
 		case POLLHUP:
-			// lgr_log_write2(st_log_level_alert, st_log_type_logger, "Stoned has hang up");
+			st_log_write(st_log_level_alert, "Stoned has hang up");
 			stop = true;
 			break;
 	}
@@ -100,6 +100,8 @@ int main() {
 	while (!stop) {
 		st_poll(-1);
 	}
+
+	st_log_write(st_log_level_info, "Changer (type: %s) will stop", driver->name);
 
 	return 0;
 }

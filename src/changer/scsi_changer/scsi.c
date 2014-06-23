@@ -671,11 +671,11 @@ void scsichanger_scsi_new_status(struct st_changer * changer, struct st_value * 
 		scsichanger_scsi_update_status(fd, changer, changer->slots + (result.number_of_data_transfer_elements + result.number_of_storage_elements), result.first_import_export_element_address, result.number_of_import_export_elements, scsi_loader_element_type_import_export_element, NULL);
 
 	for (i = 0; i < changer->nb_drives; i++) {
-		struct st_drive * drive = changer->drives + 1;
+		struct st_drive * drive = changer->drives + i;
 		if (!drive->enabled)
 			continue;
 
-		// drive->ops->update_status(drive);
+		drive->ops->update_status(drive);
 	}
 
 	close(fd);

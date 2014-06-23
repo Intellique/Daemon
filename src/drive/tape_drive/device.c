@@ -48,9 +48,11 @@
 #include "scsi.h"
 
 static int tape_drive_init(struct st_value * config);
+static int tape_drive_update_status(void);
 
 static struct st_drive_ops tape_drive_ops = {
-	.init = tape_drive_init,
+	.init          = tape_drive_init,
+	.update_status = tape_drive_update_status,
 };
 
 static struct st_drive tape_drive = {
@@ -131,5 +133,9 @@ static int tape_drive_init(struct st_value * config) {
 	globfree(&gl);
 
 	return found ? 0 : 1;
+}
+
+static int tape_drive_update_status() {
+	return 0;
 }
 
