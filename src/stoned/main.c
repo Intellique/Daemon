@@ -140,7 +140,7 @@ int main(int argc, char ** argv) {
 		st_database_load_config(db_configs);
 
 	if (logger_config != NULL && db_configs != NULL)
-		std_device_configure(logger_config, db_configs);
+		std_device_configure(log_file, db_configs);
 
 	while (std_daemon_run) {
 		st_poll(-1);

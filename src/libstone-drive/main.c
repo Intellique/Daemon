@@ -82,6 +82,8 @@ int main() {
 	if (driver == NULL)
 		return 1;
 
+	st_log_write(st_log_level_info, "Starting drive (type: %s)", driver->name);
+
 	struct st_value * config = st_json_parse_fd(0, 5000);
 	if (config == NULL)
 		return 2;
@@ -105,6 +107,8 @@ int main() {
 	while (!stop) {
 		st_poll(-1);
 	}
+
+	st_log_stop_logger();
 
 	return 0;
 }

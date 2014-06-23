@@ -103,6 +103,8 @@ int main() {
 
 	st_log_write(st_log_level_info, "Changer (type: %s) will stop", driver->name);
 
+	st_log_stop_logger();
+
 	return 0;
 }
 
