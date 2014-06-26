@@ -29,8 +29,26 @@
 
 #include <libstone/media.h>
 
+const char * st_media_format_data_to_string_v1(enum st_media_format_data_type type);
+enum st_media_format_data_type st_media_string_to_format_data_v1(const char * type) __attribute__((nonnull));
+
 const char * st_media_format_mode_to_string_v1(enum st_media_format_mode mode);
 enum st_media_format_mode st_media_string_to_format_mode_v1(const char * mode) __attribute__((nonnull));
+
+const char * st_media_location_to_string_v1(enum st_media_location location);
+enum st_media_location st_media_string_to_location_v1(const char * location) __attribute__((nonnull));
+
+const char * st_media_status_to_string_v1(enum st_media_status status);
+enum st_media_status st_media_string_to_status_v1(const char * status) __attribute__((nonnull));
+
+enum st_media_type st_media_string_to_type_v1(const char * type) __attribute__((nonnull));
+const char * st_media_type_to_string_v1(enum st_media_type type);
+
+const char * st_pool_autocheck_mode_to_string_v1(enum st_pool_autocheck_mode mode);
+enum st_pool_autocheck_mode st_pool_string_to_autocheck_mode_v1(const char * mode) __attribute__((nonnull));
+
+enum st_pool_unbreakable_level st_pool_string_to_unbreakable_level_v1(const char * level) __attribute__((nonnull));
+const char * st_pool_unbreakable_level_to_string_v1(enum st_pool_unbreakable_level level);
 
 #endif
 

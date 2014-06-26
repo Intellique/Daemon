@@ -36,6 +36,12 @@ struct st_database_config;
 struct st_drive;
 struct st_value;
 
+enum st_database_sync_method {
+	st_database_sync_default,
+	st_database_sync_init,
+	st_database_sync_id_only,
+};
+
 /**
  * \struct st_database_connection
  * \brief A database connection
@@ -118,8 +124,8 @@ struct st_database_connection {
 		struct st_value * (*get_changers)(struct st_database_connection * connect) __attribute__((nonnull));
 		struct st_value * (*get_standalone_drives)(struct st_database_connection * connect) __attribute__((nonnull));
 		struct st_value * (*get_vtls)(struct st_database_connection * connect) __attribute__((nonnull));
-		int (*sync_changer)(struct st_database_connection * connect, struct st_changer * changer, bool init) __attribute__((nonnull));
-		int (*sync_drive)(struct st_database_connection * connect, struct st_drive * drive, bool init) __attribute__((nonnull));
+		int (*sync_changer)(struct st_database_connection * connect, struct st_changer * changer, enum st_database_sync_method method) __attribute__((nonnull));
+		int (*sync_drive)(struct st_database_connection * connect, struct st_drive * drive, enum st_database_sync_method method) __attribute__((nonnull));
 	} * ops;
 
 	/**

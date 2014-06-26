@@ -40,6 +40,7 @@
 // readlink, stat
 #include <unistd.h>
 
+#include <libstone/database.h>
 #include <libstone/file.h>
 #include <libstone/value.h>
 #include <libstone-changer/changer.h>
@@ -47,7 +48,7 @@
 #include "device.h"
 #include "scsi.h"
 
-static int scsi_changer_init(struct st_value * config);
+static int scsi_changer_init(struct st_value * config, struct st_database_connection * db_connection);
 
 struct st_changer_ops scsi_changer_ops = {
 	.init = scsi_changer_init,
@@ -82,7 +83,7 @@ struct st_changer * scsichanger_get_device() {
 	return &scsi_changer;
 }
 
-static int scsi_changer_init(struct st_value * config) {
+static int scsi_changer_init(struct st_value * config, struct st_database_connection * db_connection) {
 	st_value_unpack(config, "{sssssssbsbsbss}", "model", &scsi_changer.model, "vendor", &scsi_changer.vendor, "serial number", &scsi_changer.serial_number, "barcode", &scsi_changer.barcode, "enable", &scsi_changer.enabled, "is online", &scsi_changer.is_online, "wwn", &scsi_changer.wwn);
 
 	glob_t gl;
@@ -145,7 +146,9 @@ static int scsi_changer_init(struct st_value * config) {
 		}
 		free(path);
 
-		if (!found)
+		if (found)
+			scsichanger_scsi_check_changer(&scsi_changer, device);
+		else
 			found = scsichanger_scsi_check_changer(&scsi_changer, device);
 
 		if (found) {
@@ -191,6 +194,15 @@ static int scsi_changer_init(struct st_value * config) {
 		scsichanger_scsi_new_status(&scsi_changer, available_drives);
 
 	st_value_free(available_drives);
+
+	if (found) {
+		scsi_changer.status = st_changer_idle;
+
+		db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_id_only);
+
+		for (i = scsi_changer.nb_drives; i < scsi_changer.nb_slots; i++) {
+		}
+	}
 
 	return found ? 0 : 1;
 }

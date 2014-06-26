@@ -92,10 +92,21 @@ int main() {
 
 	st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
 
-	struct st_changer * changer = driver->device;
-	int failed = changer->ops->init(changer_config);
-	if (failed != 0)
+	struct st_database * db_driver = st_database_get_default_driver();
+	if (db_driver == NULL)
 		return 4;
+	struct st_database_config * db_conf = db_driver->ops->get_default_config();
+	if (db_conf == NULL)
+		return 4;
+	struct st_database_connection * db_connect = db_conf->ops->connect(db_conf);
+	if (db_connect == NULL)
+		return 4;
+
+	st_log_write(st_log_level_info, "Initialize changer (type: %s)", driver->name);
+	struct st_changer * changer = driver->device;
+	int failed = changer->ops->init(changer_config, db_connect);
+	if (failed != 0)
+		return 5;
 
 	while (!stop) {
 		st_poll(-1);

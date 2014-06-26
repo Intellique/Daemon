@@ -346,7 +346,7 @@ bool scsichanger_scsi_check_changer(struct st_changer * changer, const char * pa
 	status = ioctl(fd, SG_IO, &header);
 	close(fd);
 
-	if (status) {
+	if (status != 0) {
 		close(fd);
 		free(model);
 		free(vendor);
@@ -460,8 +460,6 @@ bool scsichanger_scsi_check_drive(struct st_drive * drive, const char * path) {
 	bool ok = !strcmp(drive->vendor, vendor);
 	if (ok)
 		ok = !strcmp(drive->model, model);
-	if (ok)
-		ok = !strcmp(drive->revision, revision);
 
 	free(vendor);
 	free(model);

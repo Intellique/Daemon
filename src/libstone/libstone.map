@@ -53,13 +53,26 @@ LIBSTONE_1.2 {
 		st_log_type_to_string;
 		st_log_write;
 
+		st_media_format_data_to_string;
 		st_media_format_mode_to_string;
+		st_media_location_to_string;
+		st_media_status_to_string;
+		st_media_string_to_format_data;
 		st_media_string_to_format_mode;
+		st_media_string_to_location;
+		st_media_string_to_status;
+		st_media_string_to_type;
+		st_media_type_to_string;
 
 		st_poll;
 		st_poll_nb_handlers;
 		st_poll_register;
 		st_poll_unregister;
+
+		st_pool_autocheck_mode_to_string;
+		st_pool_string_to_autocheck_mode;
+		st_pool_string_to_unbreakable_level;
+		st_pool_unbreakable_level_to_string;
 
 		st_process_close;
 		st_process_drop_environment;
@@ -87,6 +100,7 @@ LIBSTONE_1.2 {
 
 		st_string_check_valid_utf8;
 		st_string_compute_hash;
+		st_string_compute_hash2;
 		st_string_convert_unicode_to_utf8;
 		st_string_delete_double_char;
 		st_string_middle_elipsis;

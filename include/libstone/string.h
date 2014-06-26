@@ -51,6 +51,7 @@ bool st_string_check_valid_utf8(const char * string);
  * \see st_hashtable_new
  */
 unsigned long long st_string_compute_hash(const struct st_value * value);
+unsigned long long st_string_compute_hash2(const char * value);
 
 /**
  * \brief Remove from \a str a sequence of two or more of character \a delete_char

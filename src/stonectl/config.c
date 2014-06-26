@@ -125,7 +125,7 @@ int stctl_config(int argc, char ** argv) {
 	while (failed == 0 && st_value_iterator_has_next(iter)) {
 		struct st_value * val_changer = st_value_iterator_get_value(iter, false);
 		struct st_changer * changer = st_value_custom_get(val_changer);
-		failed = db_connection->ops->sync_changer(db_connection, changer, true);
+		failed = db_connection->ops->sync_changer(db_connection, changer, st_database_sync_init);
 	}
 	st_value_iterator_free(iter);
 

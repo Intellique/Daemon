@@ -62,8 +62,15 @@ unsigned long long st_string_compute_hash_v1(const struct st_value * value) {
 	if (value == NULL || value->type != st_value_string)
 		return 0;
 
+	return st_string_compute_hash2_v1(st_value_string_get(value));
+}
+
+__asm__(".symver st_string_compute_hash2_v1, st_string_compute_hash2@@LIBSTONE_1.2");
+unsigned long long st_string_compute_hash2_v1(const char * str) {
+	if (str == NULL)
+		return 0;
+
 	unsigned long long hash = 0;
-	const char * str = st_value_string_get(value);
 	int length = strlen(str), i;
 	for (i = 0; i < length; i++)
 		hash = str[i] + (hash << 6) + (hash << 16) - hash;

@@ -69,9 +69,9 @@ static struct st_value * st_database_postgresql_get_changers(struct st_database_
 static struct st_value * st_database_postgresql_get_drives_by_changer(struct st_database_connection * connect, const char * changer_id);
 static struct st_value * st_database_postgresql_get_standalone_drives(struct st_database_connection * connect);
 static struct st_value * st_database_postgresql_get_vtls(struct st_database_connection * connect);
-static int st_database_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer, bool init);
-static int st_database_postgresql_sync_drive(struct st_database_connection * connect, struct st_drive * drive, bool init);
-static int st_database_postgresql_sync_slots(struct st_database_connection * connect, struct st_slot * slot, bool init);
+static int st_database_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer, enum st_database_sync_method method);
+static int st_database_postgresql_sync_drive(struct st_database_connection * connect, struct st_drive * drive, enum st_database_sync_method method);
+static int st_database_postgresql_sync_slots(struct st_database_connection * connect, struct st_slot * slot, enum st_database_sync_method method);
 
 static void st_database_postgresql_prepare(struct st_database_postgresql_connection_private * self, const char * statement_name, const char * query);
 
@@ -538,7 +538,7 @@ static struct st_value * st_database_postgresql_get_vtls(struct st_database_conn
 	struct st_database_postgresql_connection_private * self = connect->data;
 }
 
-static int st_database_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer, bool init) {
+static int st_database_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer, enum st_database_sync_method method) {
 	if (connect == NULL || changer == NULL)
 		return -1;
 
@@ -581,7 +581,7 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 
 		if (status == PGRES_FATAL_ERROR)
 			st_database_postgresql_get_error(result, query);
-		else if (status == PGRES_TUPLES_OK && nb_result == 1)
+		else if (status == PGRES_TUPLES_OK && nb_result == 1 && method != st_database_sync_id_only)
 			st_database_postgresql_get_bool(result, 0, 0, &enabled);
 		else if (status == PGRES_TUPLES_OK && nb_result == 0)
 			enabled = false;
@@ -619,7 +619,8 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 			st_database_postgresql_get_error(result, query);
 		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			st_database_postgresql_get_string_dup(result, 0, 0, &changer_id);
-			st_database_postgresql_get_bool(result, 0, 1, &changer->enabled);
+			if (method != st_database_sync_id_only)
+				st_database_postgresql_get_bool(result, 0, 1, &changer->enabled);
 
 			st_value_hashtable_put2(db, "id", st_value_new_string(changer_id), true);
 		}
@@ -636,56 +637,58 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 		}
 	}
 
-	if (changer_id != NULL) {
-		const char * query = "update_changer";
-		st_database_postgresql_prepare(self, query, "UPDATE changer SET device = $1, status = $2, firmwarerev = $3 WHERE id = $4");
+	if (method != st_database_sync_id_only) {
+		if (changer_id != NULL) {
+			const char * query = "update_changer";
+			st_database_postgresql_prepare(self, query, "UPDATE changer SET device = $1, status = $2, firmwarerev = $3 WHERE id = $4");
 
-		const char * params[] = { changer->device, st_changer_status_to_string(changer->status), changer->revision, changer_id };
-		PGresult * result = PQexecPrepared(self->connect, query, 4, params, NULL, NULL, 0);
-		ExecStatusType status = PQresultStatus(result);
+			const char * params[] = { changer->device, st_changer_status_to_string(changer->status), changer->revision, changer_id };
+			PGresult * result = PQexecPrepared(self->connect, query, 4, params, NULL, NULL, 0);
+			ExecStatusType status = PQresultStatus(result);
 
-		PQclear(result);
+			PQclear(result);
 
-		if (status == PGRES_FATAL_ERROR) {
-			st_database_postgresql_get_error(result, query);
+			if (status == PGRES_FATAL_ERROR) {
+				st_database_postgresql_get_error(result, query);
 
-			free(hostid);
+				free(hostid);
 
-			if (transStatus == PQTRANS_IDLE)
-				st_database_postgresql_cancel_transaction(connect);
-			return -2;
-		}
-	} else if (init) {
-		const char * query = "insert_changer";
-		st_database_postgresql_prepare(self, query, "INSERT INTO changer(device, status, barcode, model, vendor, firmwarerev, serialnumber, wwn, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id");
+				if (transStatus == PQTRANS_IDLE)
+					st_database_postgresql_cancel_transaction(connect);
+				return -2;
+			}
+		} else if (method == st_database_sync_init) {
+			const char * query = "insert_changer";
+			st_database_postgresql_prepare(self, query, "INSERT INTO changer(device, status, barcode, model, vendor, firmwarerev, serialnumber, wwn, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id");
 
-		const char * param[] = {
-			changer->device, st_changer_status_to_string(changer->status), changer->barcode ? "true" : "false",
-			changer->model, changer->vendor, changer->revision, changer->serial_number, changer->wwn, hostid,
-		};
+			const char * param[] = {
+				changer->device, st_changer_status_to_string(changer->status), changer->barcode ? "true" : "false",
+				changer->model, changer->vendor, changer->revision, changer->serial_number, changer->wwn, hostid,
+			};
 
-		PGresult * result = PQexecPrepared(self->connect, query, 9, param, NULL, NULL, 0);
-		ExecStatusType status = PQresultStatus(result);
+			PGresult * result = PQexecPrepared(self->connect, query, 9, param, NULL, NULL, 0);
+			ExecStatusType status = PQresultStatus(result);
 
-		if (status == PGRES_FATAL_ERROR)
-			st_database_postgresql_get_error(result, query);
-		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
-			st_database_postgresql_get_string_dup(result, 0, 0, &changer_id);
-			st_value_hashtable_put2(db, "id", st_value_new_string(changer_id), true);
-		}
+			if (status == PGRES_FATAL_ERROR)
+				st_database_postgresql_get_error(result, query);
+			else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+				st_database_postgresql_get_string_dup(result, 0, 0, &changer_id);
+				st_value_hashtable_put2(db, "id", st_value_new_string(changer_id), true);
+			}
 
-		PQclear(result);
+			PQclear(result);
 
-		if (status == PGRES_FATAL_ERROR) {
-			free(hostid);
+			if (status == PGRES_FATAL_ERROR) {
+				free(hostid);
+				if (transStatus == PQTRANS_IDLE)
+					st_database_postgresql_cancel_transaction(connect);
+				return -1;
+			}
+		} else {
 			if (transStatus == PQTRANS_IDLE)
 				st_database_postgresql_cancel_transaction(connect);
 			return -1;
 		}
-	} else {
-		if (transStatus == PQTRANS_IDLE)
-			st_database_postgresql_cancel_transaction(connect);
-		return -1;
 	}
 
 	free(hostid);
@@ -693,12 +696,14 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 	int failed = 0;
 	unsigned int i;
 
-	if (init) {
+	if (method == st_database_sync_id_only || method == st_database_sync_init) {
 		st_database_postgresql_create_checkpoint(connect, "after_changers");
 
 		for (i = 0; failed == 0 && i < changer->nb_drives; i++)
-			failed = st_database_postgresql_sync_drive(connect, changer->drives + i, init);
+			failed = st_database_postgresql_sync_drive(connect, changer->drives + i, method);
+	}
 
+	if (method == st_database_sync_init) {
 		const char * query = "delete_from_changerslot_by_changer";
 		st_database_postgresql_prepare(self, query, "DELETE FROM changerslot WHERE changer = $1");
 
@@ -719,7 +724,7 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 	free(changer_id);
 
 	for (i = 0; failed == 0 && i < changer->nb_slots; i++)
-		failed = st_database_postgresql_sync_slots(connect, changer->slots + i, init);
+		failed = st_database_postgresql_sync_slots(connect, changer->slots + i, method);
 
 	if (transStatus == PQTRANS_IDLE && failed == 0)
 		st_database_postgresql_finish_transaction(connect);
@@ -727,7 +732,7 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 	return 0;
 }
 
-static int st_database_postgresql_sync_drive(struct st_database_connection * connect, struct st_drive * drive, bool init) {
+static int st_database_postgresql_sync_drive(struct st_database_connection * connect, struct st_drive * drive, enum st_database_sync_method method) {
 	if (connect == NULL || drive == NULL)
 		return -1;
 
@@ -809,12 +814,14 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 			st_database_postgresql_get_string_dup(result, 0, 0, &drive_id);
 			st_value_hashtable_put2(db, "id", st_value_new_string(drive_id), true);
 
-			double old_operation_duration = 0;
-			st_database_postgresql_get_double(result, 0, 1, &old_operation_duration);
-			drive->operation_duration += old_operation_duration;
+			if (method != st_database_sync_id_only) {
+				double old_operation_duration = 0;
+				st_database_postgresql_get_double(result, 0, 1, &old_operation_duration);
+				drive->operation_duration += old_operation_duration;
 
-			if (!PQgetisnull(result, 0, 2))
-				st_database_postgresql_get_time(result, 0, 2, &drive->last_clean);
+				if (!PQgetisnull(result, 0, 2))
+					st_database_postgresql_get_time(result, 0, 2, &drive->last_clean);
+			}
 
 			if (!PQgetisnull(result, 0, 3)) {
 				st_database_postgresql_get_string_dup(result, 0, 3, &driveformat_id);
@@ -833,129 +840,132 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 		}
 	}
 
-	if (driveformat_id != NULL) {
-		const char * query = "select_driveformat_by_id";
-		st_database_postgresql_prepare(self, query, "SELECT densitycode FROM driveformat WHERE id = $1 LIMIT 1");
+	if (method != st_database_sync_id_only) {
+		if (driveformat_id != NULL) {
+			const char * query = "select_driveformat_by_id";
+			st_database_postgresql_prepare(self, query, "SELECT densitycode FROM driveformat WHERE id = $1 LIMIT 1");
 
-		const char * param[] = { driveformat_id };
-		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
-		ExecStatusType status = PQresultStatus(result);
+			const char * param[] = { driveformat_id };
+			PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+			ExecStatusType status = PQresultStatus(result);
 
-		unsigned char density_code = 0;
+			unsigned char density_code = 0;
 
-		if (status == PGRES_FATAL_ERROR)
-			st_database_postgresql_get_error(result, query);
-		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
-			st_database_postgresql_get_uchar(result, 0, 0, &density_code);
+			if (status == PGRES_FATAL_ERROR)
+				st_database_postgresql_get_error(result, query);
+			else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+				st_database_postgresql_get_uchar(result, 0, 0, &density_code);
 
-		PQclear(result);
+			PQclear(result);
 
-		if (drive->density_code > density_code) {
-			free(driveformat_id);
-			driveformat_id = NULL;
+			if (drive->density_code > density_code) {
+				free(driveformat_id);
+				driveformat_id = NULL;
+			}
+		}
+
+		if (driveformat_id == NULL && drive->mode != st_media_format_mode_unknown) {
+			const char * query = "select_driveformat_by_densitycode";
+			st_database_postgresql_prepare(self, query, "SELECT id FROM driveformat WHERE densitycode = $1 AND mode = $2 LIMIT 1");
+
+			char * densitycode = NULL;
+			asprintf(&densitycode, "%u", drive->density_code);
+
+			const char * param[] = { densitycode, st_media_format_mode_to_string(drive->mode), };
+			PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+			ExecStatusType status = PQresultStatus(result);
+
+			if (status == PGRES_FATAL_ERROR)
+				st_database_postgresql_get_error(result, query);
+			else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+				st_database_postgresql_get_string_dup(result, 0, 0, &driveformat_id);
+				st_value_hashtable_put2(db, "driveformat_id", st_value_new_string(driveformat_id), true);
+			}
+
+			PQclear(result);
+			free(densitycode);
+		}
+
+		if (drive_id != NULL) {
+			const char * query = "update_drive";
+			st_database_postgresql_prepare(self, query, "UPDATE drive SET device = $1, scsidevice = $2, status = $3, operationduration = $4, lastclean = $5, firmwarerev = $6, driveformat = $7 WHERE id = $8");
+
+			char * op_duration = NULL, * last_clean = NULL;
+			asprintf(&op_duration, "%.3Lf", drive->operation_duration);
+
+			if (drive->last_clean > 0) {
+				last_clean = malloc(24);
+				st_time_convert(&drive->last_clean, "%F %T", last_clean, 24);
+			}
+
+			const char * param[] = {
+				drive->device, drive->scsi_device, st_drive_status_to_string(drive->status),
+				op_duration, last_clean, drive->revision, driveformat_id, drive_id,
+			};
+			PGresult * result = PQexecPrepared(self->connect, query, 8, param, NULL, NULL, 0);
+			ExecStatusType status = PQresultStatus(result);
+
+			if (status == PGRES_FATAL_ERROR)
+				st_database_postgresql_get_error(result, query);
+
+			PQclear(result);
+			free(last_clean);
+			free(op_duration);
+
+			if (status == PGRES_FATAL_ERROR) {
+				free(drive_id);
+
+				if (transStatus == PQTRANS_IDLE)
+					st_database_postgresql_cancel_transaction(connect);
+				return 3;
+			}
+		} else if (method == st_database_sync_init) {
+			const char * query = "insert_drive";
+			st_database_postgresql_prepare(self, query, "INSERT INTO drive(device, scsidevice, status, operationduration, lastclean, model, vendor, firmwarerev, serialnumber, changer, driveformat) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id");
+
+			char * op_duration = NULL, * last_clean = NULL;
+			asprintf(&op_duration, "%.3Lf", drive->operation_duration);
+
+			db = st_value_hashtable_get(drive->changer->db_data, key, false, false);
+
+			char * changer_id = NULL;
+			st_value_unpack(db, "{ss}", "changer_id", &changer_id);
+
+			if (drive->last_clean > 0) {
+				last_clean = malloc(24);
+				st_time_convert(&drive->last_clean, "%F %T", last_clean, 24);
+			}
+
+			const char * param[] = {
+				drive->device, drive->scsi_device, st_drive_status_to_string(drive->status), op_duration, last_clean,
+				drive->model, drive->vendor, drive->revision, drive->serial_number, changer_id, driveformat_id
+			};
+			PGresult * result = PQexecPrepared(self->connect, query, 11, param, NULL, NULL, 0);
+			ExecStatusType status = PQresultStatus(result);
+
+			if (status == PGRES_FATAL_ERROR)
+				st_database_postgresql_get_error(result, query);
+			else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+				st_database_postgresql_get_string_dup(result, 0, 0, &drive_id);
+				st_value_hashtable_put2(db, "id", st_value_new_string(drive_id), true);
+			}
+
+			PQclear(result);
+			free(changer_id);
+			free(last_clean);
+			free(op_duration);
+
+			if (status == PGRES_FATAL_ERROR) {
+				free(drive_id);
+
+				if (transStatus == PQTRANS_IDLE)
+					st_database_postgresql_cancel_transaction(connect);
+				return 3;
+			}
 		}
 	}
 
-	if (driveformat_id == NULL && drive->mode != st_media_format_mode_unknown) {
-		const char * query = "select_driveformat_by_densitycode";
-		st_database_postgresql_prepare(self, query, "SELECT id FROM driveformat WHERE densitycode = $1 AND mode = $2 LIMIT 1");
-
-		char * densitycode = NULL;
-		asprintf(&densitycode, "%u", drive->density_code);
-
-		const char * param[] = { densitycode, st_media_format_mode_to_string(drive->mode), };
-		PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
-		ExecStatusType status = PQresultStatus(result);
-
-		if (status == PGRES_FATAL_ERROR)
-			st_database_postgresql_get_error(result, query);
-		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
-			st_database_postgresql_get_string_dup(result, 0, 0, &driveformat_id);
-			st_value_hashtable_put2(db, "driveformat_id", st_value_new_string(driveformat_id), true);
-		}
-
-		PQclear(result);
-		free(densitycode);
-	}
-
-	if (drive_id != NULL) {
-		const char * query = "update_drive";
-		st_database_postgresql_prepare(self, query, "UPDATE drive SET device = $1, scsidevice = $2, status = $3, operationduration = $4, lastclean = $5, firmwarerev = $6, driveformat = $7 WHERE id = $8");
-
-		char * op_duration = NULL, * last_clean = NULL;
-		asprintf(&op_duration, "%.3Lf", drive->operation_duration);
-
-		if (drive->last_clean > 0) {
-			last_clean = malloc(24);
-			st_time_convert(&drive->last_clean, "%F %T", last_clean, 24);
-		}
-
-		const char * param[] = {
-			drive->device, drive->scsi_device, st_drive_status_to_string(drive->status),
-			op_duration, last_clean, drive->revision, driveformat_id, drive_id,
-		};
-		PGresult * result = PQexecPrepared(self->connect, query, 8, param, NULL, NULL, 0);
-		ExecStatusType status = PQresultStatus(result);
-
-		if (status == PGRES_FATAL_ERROR)
-			st_database_postgresql_get_error(result, query);
-
-		PQclear(result);
-		free(last_clean);
-		free(op_duration);
-
-		if (status == PGRES_FATAL_ERROR) {
-			free(drive_id);
-
-			if (transStatus == PQTRANS_IDLE)
-				st_database_postgresql_cancel_transaction(connect);
-			return 3;
-		}
-	} else if (init) {
-		const char * query = "insert_drive";
-		st_database_postgresql_prepare(self, query, "INSERT INTO drive(device, scsidevice, status, operationduration, lastclean, model, vendor, firmwarerev, serialnumber, changer, driveformat) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id");
-
-		char * op_duration = NULL, * last_clean = NULL;
-		asprintf(&op_duration, "%.3Lf", drive->operation_duration);
-
-		db = st_value_hashtable_get(drive->changer->db_data, key, false, false);
-
-		char * changer_id = NULL;
-		st_value_unpack(db, "{ss}", "changer_id", &changer_id);
-
-		if (drive->last_clean > 0) {
-			last_clean = malloc(24);
-			st_time_convert(&drive->last_clean, "%F %T", last_clean, 24);
-		}
-
-		const char * param[] = {
-			drive->device, drive->scsi_device, st_drive_status_to_string(drive->status), op_duration, last_clean,
-			drive->model, drive->vendor, drive->revision, drive->serial_number, changer_id, driveformat_id
-		};
-		PGresult * result = PQexecPrepared(self->connect, query, 11, param, NULL, NULL, 0);
-		ExecStatusType status = PQresultStatus(result);
-
-		if (status == PGRES_FATAL_ERROR)
-			st_database_postgresql_get_error(result, query);
-		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
-			st_database_postgresql_get_string_dup(result, 0, 0, &drive_id);
-			st_value_hashtable_put2(db, "id", st_value_new_string(drive_id), true);
-		}
-
-		PQclear(result);
-		free(changer_id);
-		free(last_clean);
-		free(op_duration);
-
-		if (status == PGRES_FATAL_ERROR) {
-			free(drive_id);
-
-			if (transStatus == PQTRANS_IDLE)
-				st_database_postgresql_cancel_transaction(connect);
-			return 3;
-		}
-	}
-
+	free(driveformat_id);
 	free(drive_id);
 
 	if (transStatus == PQTRANS_IDLE)
@@ -964,7 +974,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 	return 0;
 }
 
-static int st_database_postgresql_sync_slots(struct st_database_connection * connect, struct st_slot * slot, bool init) {
+static int st_database_postgresql_sync_slots(struct st_database_connection * connect, struct st_slot * slot, enum st_database_sync_method method) {
 	struct st_database_postgresql_connection_private * self = connect->data;
 
 	struct st_value * key = st_value_new_custom(connect->config, NULL);
@@ -1012,7 +1022,7 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 
 	int failed = 0;
 
-	if (!init && slot_id == NULL) {
+	if (method != st_database_sync_init && slot_id == NULL) {
 		const char * query = "select_changerslot_by_index";
 		st_database_postgresql_prepare(self, query, "SELECT id, enable FROM changerslot WHERE changer = $1 AND index = $2 LIMIT 1");
 
@@ -1021,7 +1031,7 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 
 		const char * param[] = { changer_id, sindex };
 
-		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+		PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -1037,7 +1047,7 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 		free(sindex);
 	}
 
-	if (init) {
+	if (method == st_database_sync_init) {
 		const char * query = "insert_into_changerslot";
 		st_database_postgresql_prepare(self, query, "INSERT INTO changerslot(index, changer, drive, type) VALUES ($1, $2, $3, $4) RETURNING id");
 
@@ -1056,7 +1066,7 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 
 		PQclear(result);
 		free(sindex);
-	} else {
+	} else if (method != st_database_sync_id_only) {
 		const char * query = "update_changerslot";
 		st_database_postgresql_prepare(self, query, "UDPATE changerslot SET media = $1, enable = $2 WHERE id = $3");
 

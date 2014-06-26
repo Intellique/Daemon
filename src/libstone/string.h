@@ -33,6 +33,7 @@
 
 bool st_string_check_valid_utf8_v1(const char * string);
 unsigned long long st_string_compute_hash_v1(const struct st_value * value);
+unsigned long long st_string_compute_hash2_v1(const char * value);
 bool st_string_convert_unicode_to_utf8_v1(unsigned int unicode, char * string, size_t length, bool end_string);
 void st_string_delete_double_char_v1(char * str, char delete_char);
 void st_string_middle_elipsis_v1(char * string, size_t length);

@@ -29,6 +29,7 @@
 
 #include <libstone/changer.h>
 
+struct st_database_connection;
 struct st_value;
 
 struct st_changer_driver {
@@ -42,7 +43,7 @@ struct st_changer_driver {
 };
 
 struct st_changer_ops {
-	int (*init)(struct st_value * config);
+	int (*init)(struct st_value * config, struct st_database_connection * db_connection);
 	int (*put_offline)(void);
 	int (*put_online)(void);
 };
