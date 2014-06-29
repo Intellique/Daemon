@@ -32,6 +32,8 @@
 #include <stdio.h>
 // malloc
 #include <stdlib.h>
+// bzero
+#include <strings.h>
 // uname
 #include <sys/utsname.h>
 
@@ -67,6 +69,7 @@ static struct st_value * st_database_postgresql_get_host_by_name(struct st_datab
 
 static struct st_value * st_database_postgresql_get_changers(struct st_database_connection * connect);
 static struct st_value * st_database_postgresql_get_drives_by_changer(struct st_database_connection * connect, const char * changer_id);
+static struct st_media * st_database_postgresql_get_media(struct st_database_connection * connect, const char * medium_serial_number, const char * label) __attribute__((nonnull,warn_unused_result));
 static struct st_value * st_database_postgresql_get_standalone_drives(struct st_database_connection * connect);
 static struct st_value * st_database_postgresql_get_vtls(struct st_database_connection * connect);
 static int st_database_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer, enum st_database_sync_method method);
@@ -89,6 +92,7 @@ static struct st_database_connection_ops st_database_postgresql_connection_ops =
 	.get_host_by_name = st_database_postgresql_get_host_by_name,
 
 	.get_changers          = st_database_postgresql_get_changers,
+	.get_media             = st_database_postgresql_get_media,
 	.get_standalone_drives = st_database_postgresql_get_standalone_drives,
 	.get_vtls              = st_database_postgresql_get_vtls,
 	.sync_changer          = st_database_postgresql_sync_changer,
@@ -477,6 +481,90 @@ static struct st_value * st_database_postgresql_get_drives_by_changer(struct st_
 	PQclear(result);
 
 	return drives;
+}
+
+static struct st_media * st_database_postgresql_get_media(struct st_database_connection * connect, const char * medium_serial_number, const char * label) {
+	if (connect == NULL || (medium_serial_number == NULL && label == NULL))
+		return NULL;
+
+	struct st_database_postgresql_connection_private * self = connect->data;
+
+	const char * query;
+	PGresult * result;
+
+	if (medium_serial_number != NULL) {
+		query = "select_media_by_medium_serial_number";
+		st_database_postgresql_prepare(self, query, "SELECT m.id, m.uuid, label, mediumserialnumber, m.name, m.status, location, firstused, usebefore, lastread, lastwrite, loadcount, readcount, writecount, operationcount, nbtotalblockread, nbtotalblockwrite, nbreaderror, nbwriteerror, m.blocksize, freeblock, totalblock, m.type, nbfiles, densitycode, mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE mediumserialnumber = $1 LIMIT 1");
+
+		const char * param[] = { medium_serial_number };
+		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	} else {
+		query = "select_media_by_label";
+		st_database_postgresql_prepare(self, query, "SELECT m.id, m.uuid, label, mediumserialnumber, m.name, m.status, location, firstused, usebefore, lastread, lastwrite, loadcount, readcount, writecount, operationcount, nbtotalblockread, nbtotalblockwrite, nbreaderror, nbwriteerror, m.blocksize, freeblock, totalblock, m.type, nbfiles, densitycode, mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE label = $1 LIMIT 1");
+
+		const char * param[] = { label };
+		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	}
+
+	struct st_media * media = NULL;
+
+	ExecStatusType status = PQresultStatus(result);
+	if (status == PGRES_FATAL_ERROR)
+		st_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		media = malloc(sizeof(struct st_media));
+		bzero(media, sizeof(struct st_media));
+
+		media->db_data = st_value_new_hashtable(st_value_custom_compute_hash);
+		struct st_value * key = st_value_new_custom(connect->config, NULL);
+		struct st_value * db = st_value_new_hashtable2();
+		st_value_hashtable_put(media->db_data, key, true, db, true);
+
+		st_value_hashtable_put2(db, "id", st_value_new_string(PQgetvalue(result, 0, 0)), true);
+		st_database_postgresql_get_string(result, 0, 1, media->uuid, 37);
+		st_database_postgresql_get_string_dup(result, 0, 2, &media->label);
+		st_database_postgresql_get_string_dup(result, 0, 3, &media->medium_serial_number);
+		st_database_postgresql_get_string_dup(result, 0, 3, &media->name);
+
+		media->status = st_media_string_to_status(PQgetvalue(result, 0, 5));
+		media->location = st_media_string_to_location(PQgetvalue(result, 0, 6));
+
+		st_database_postgresql_get_time(result, 0, 7, &media->first_used);
+		st_database_postgresql_get_time(result, 0, 8, &media->use_before);
+		if (!PQgetisnull(result, 0, 9))
+			st_database_postgresql_get_time(result, 0, 9, &media->last_read);
+		if (!PQgetisnull(result, 0, 10))
+			st_database_postgresql_get_time(result, 0, 10, &media->last_write);
+
+		st_database_postgresql_get_long(result, 0, 11, &media->nb_total_read);
+		st_database_postgresql_get_long(result, 0, 12, &media->nb_total_write);
+
+		st_database_postgresql_get_uint(result, 0, 13, &media->nb_read_errors);
+		st_database_postgresql_get_uint(result, 0, 14, &media->nb_write_errors);
+
+		st_database_postgresql_get_long(result, 0, 15, &media->load_count);
+		st_database_postgresql_get_long(result, 0, 16, &media->read_count);
+		st_database_postgresql_get_long(result, 0, 17, &media->write_count);
+		st_database_postgresql_get_long(result, 0, 18, &media->operation_count);
+
+		st_database_postgresql_get_ssize(result, 0, 19, &media->block_size);
+		st_database_postgresql_get_ssize(result, 0, 20, &media->free_block);
+		st_database_postgresql_get_ssize(result, 0, 21, &media->total_block);
+
+		media->type = st_media_string_to_type(PQgetvalue(result, 0, 22));
+		st_database_postgresql_get_uint(result, 0, 23, &media->nb_volumes);
+
+		unsigned char density_code;
+		st_database_postgresql_get_uchar(result, 0, 24, &density_code);
+		enum st_media_format_mode mode = st_media_string_to_format_mode(PQgetvalue(result, 0, 25));
+		// media->format = st_media_format_get_by_density_code(density_code, mode);
+
+		// if (!PQgetisnull(result, 0, 26))
+		//	media->pool = st_pool_get_by_uuid(PQgetvalue(result, 0, 26));
+	}
+
+	PQclear(result);
+	return media;
 }
 
 static struct st_value * st_database_postgresql_get_standalone_drives(struct st_database_connection * connect) {

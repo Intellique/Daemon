@@ -27,7 +27,7 @@
 #ifndef __ST_SCSICHANGER_DEVICE_H__
 #define __ST_SCSICHANGER_DEVICE_H__
 
-struct st_changer * scsichanger_get_device(void);
+struct st_changer * scsi_changer_get_device(void);
 
 #endif
 

@@ -30,18 +30,18 @@
 
 #include <changer-scsichanger.chcksum>
 
-static struct st_changer_driver scsichanger_driver = {
+static struct st_changer_driver scsi_changer_driver = {
 	.name = "scsi changer",
 
 	.api_level    = 0,
 	.src_checksum = STONE_CHANGER_SCSICHANGER_SRCSUM,
 };
 
-static void scsichanger_init(void) __attribute__((constructor));
+static void scsi_changer_init(void) __attribute__((constructor));
 
 
-static void scsichanger_init() {
-	scsichanger_driver.device = scsichanger_get_device();
-	stchgr_changer_register(&scsichanger_driver);
+static void scsi_changer_init() {
+	scsi_changer_driver.device = scsi_changer_get_device();
+	stchgr_changer_register(&scsi_changer_driver);
 }
 

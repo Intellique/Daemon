@@ -37,11 +37,14 @@
 #include <sys/stat.h>
 // stat
 #include <sys/types.h>
-// readlink, stat
+// readlink, sleep, stat
 #include <unistd.h>
 
 #include <libstone/database.h>
+#include <libstone/drive.h>
 #include <libstone/file.h>
+#include <libstone/media.h>
+#include <libstone/slot.h>
 #include <libstone/value.h>
 #include <libstone-changer/changer.h>
 
@@ -49,9 +52,16 @@
 #include "scsi.h"
 
 static int scsi_changer_init(struct st_value * config, struct st_database_connection * db_connection);
+static int scsi_changer_load(struct st_slot * from, struct st_drive * to, struct st_database_connection * db_connection);
+static int scsi_changer_unload(struct st_drive * from, struct st_database_connection * db_connection);
+static void scsi_changer_wait(void);
+
+static int scsi_changer_transport_address = -1;
 
 struct st_changer_ops scsi_changer_ops = {
-	.init = scsi_changer_init,
+	.init   = scsi_changer_init,
+	.load   = scsi_changer_load,
+	.unload = scsi_changer_unload,
 };
 
 static struct st_changer scsi_changer = {
@@ -79,7 +89,7 @@ static struct st_changer scsi_changer = {
 };
 
 
-struct st_changer * scsichanger_get_device() {
+struct st_changer * scsi_changer_get_device() {
 	return &scsi_changer;
 }
 
@@ -147,9 +157,9 @@ static int scsi_changer_init(struct st_value * config, struct st_database_connec
 		free(path);
 
 		if (found)
-			scsichanger_scsi_check_changer(&scsi_changer, device);
+			scsi_changer_scsi_check_changer(&scsi_changer, device);
 		else
-			found = scsichanger_scsi_check_changer(&scsi_changer, device);
+			found = scsi_changer_scsi_check_changer(&scsi_changer, device);
 
 		if (found) {
 			scsi_changer.device = device;
@@ -191,7 +201,7 @@ static int scsi_changer_init(struct st_value * config, struct st_database_connec
 	}
 
 	if (found && scsi_changer.enabled && scsi_changer.is_online)
-		scsichanger_scsi_new_status(&scsi_changer, available_drives);
+		scsi_changer_scsi_new_status(&scsi_changer, available_drives, &scsi_changer_transport_address);
 
 	st_value_free(available_drives);
 
@@ -200,10 +210,137 @@ static int scsi_changer_init(struct st_value * config, struct st_database_connec
 
 		db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_id_only);
 
+		bool need_init = false;
 		for (i = scsi_changer.nb_drives; i < scsi_changer.nb_slots; i++) {
+			struct st_slot * sl = scsi_changer.slots + i;
+
+			if (!sl->enable || !sl->full)
+				continue;
+
+			sl->media = db_connection->ops->get_media(db_connection, NULL, sl->volume_name);
+			if (sl->media == NULL)
+				need_init = true;
+			else
+				sl->media->location = sl->drive != NULL ? st_media_location_indrive : st_media_location_online;
 		}
 	}
 
 	return found ? 0 : 1;
+}
+
+static int scsi_changer_load(struct st_slot * from, struct st_drive * to, struct st_database_connection * db_connection) {
+	scsi_changer_wait();
+
+	int failed = scsi_changer_scsi_move(&scsi_changer, scsi_changer_transport_address, from, to->slot);
+
+	if (failed) {
+		scsi_changer_wait();
+
+		struct st_slot tmp_from = *from;
+		scsi_changer_scsi_loader_check_slot(&scsi_changer, &tmp_from);
+
+		struct st_slot tmp_to = *to->slot;
+		scsi_changer_scsi_loader_check_slot(&scsi_changer, &tmp_to);
+
+		failed = tmp_from.full || !tmp_to.full;
+	}
+
+	if (!failed) {
+		struct st_media * media = to->slot->media = from->media;
+		from->media = NULL;
+
+		to->slot->volume_name = from->volume_name;
+		from->volume_name = NULL;
+
+		from->full = false;
+		to->slot->full = true;
+
+		if (media != NULL) {
+			media->location = st_media_location_indrive;
+			media->load_count++;
+		}
+
+		struct scsi_changer_slot * sfrom = from->data;
+		struct scsi_changer_slot * sto = to->slot->data;
+		sto->src_address = sfrom->address;
+		sto->src_slot = from;
+	} else {
+	}
+
+	return failed;
+}
+
+static int scsi_changer_unload(struct st_drive * from, struct st_database_connection * db_connection) {
+	// update drive information
+
+	struct scsi_changer_slot * sfrom = from->slot->data;
+	struct st_slot * to = sfrom->src_slot;
+
+	if (to != NULL && (!to->enable || to->full)) {
+		// oops, can't reuse original slot
+		to = NULL;
+	}
+
+	unsigned int i;
+	for (i = scsi_changer.nb_drives; i < scsi_changer.nb_slots && to == NULL; i++) {
+		to = scsi_changer.slots + i;
+
+		if (!to->enable || to->media != NULL) {
+			to = NULL;
+			continue;
+		}
+	}
+
+	if (to == NULL) {
+		// no slot found
+		return 1;
+	}
+
+	scsi_changer_wait();
+
+	int failed = scsi_changer_scsi_move(&scsi_changer, scsi_changer_transport_address, from->slot, to);
+
+	if (failed) {
+		scsi_changer_wait();
+
+		struct st_slot tmp_from = *from->slot;
+		scsi_changer_scsi_loader_check_slot(&scsi_changer, &tmp_from);
+
+		struct st_slot tmp_to = *to;
+		scsi_changer_scsi_loader_check_slot(&scsi_changer, &tmp_to);
+
+		failed = tmp_from.full || !tmp_to.full;
+	}
+
+	if (failed == 0) {
+		struct st_media * media = to->media = from->slot->media;
+		from->slot->media = NULL;
+
+		to->volume_name = from->slot->volume_name;
+		from->slot->volume_name = NULL;
+
+		to->full = true;
+		from->slot->full = false;
+
+		if (media != NULL)
+			media->location = st_media_location_online;
+
+		struct scsi_changer_slot * sfrom = from->slot->data;
+		sfrom->src_address = 0;
+	}
+
+	return failed;
+}
+
+static void scsi_changer_wait() {
+	bool is_ready = true;
+	while (scsi_changer_scsi_loader_ready(&scsi_changer)) {
+		if (is_ready) {
+			// log message
+			is_ready = false;
+		}
+
+		sleep(5);
+	}
 }
 
