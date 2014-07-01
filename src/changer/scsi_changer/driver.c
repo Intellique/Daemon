@@ -37,10 +37,10 @@ static struct st_changer_driver scsi_changer_driver = {
 	.src_checksum = STONE_CHANGER_SCSICHANGER_SRCSUM,
 };
 
-static void scsi_changer_init(void) __attribute__((constructor));
+static void scsi_changer_driver_init(void) __attribute__((constructor));
 
 
-static void scsi_changer_init() {
+static void scsi_changer_driver_init() {
 	scsi_changer_driver.device = scsi_changer_get_device();
 	stchgr_changer_register(&scsi_changer_driver);
 }

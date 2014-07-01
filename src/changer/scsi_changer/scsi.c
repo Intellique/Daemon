@@ -672,6 +672,7 @@ void scsi_changer_scsi_new_status(struct st_changer * changer, struct st_value *
 		slot->drive = NULL;
 		slot->media = NULL;
 
+		slot->index = i;
 		slot->volume_name = NULL;
 		slot->full = false;
 

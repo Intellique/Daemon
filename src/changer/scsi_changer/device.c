@@ -27,6 +27,8 @@
 #define _GNU_SOURCE
 // glob, globfree
 #include <glob.h>
+// pthread_mutex_t
+#include <pthread.h>
 // printf, sscanf, snprintf
 #include <stdio.h>
 // free, malloc
@@ -45,6 +47,7 @@
 #include <libstone/file.h>
 #include <libstone/media.h>
 #include <libstone/slot.h>
+#include <libstone/thread_pool.h>
 #include <libstone/value.h>
 #include <libstone-changer/changer.h>
 
@@ -52,11 +55,14 @@
 #include "scsi.h"
 
 static int scsi_changer_init(struct st_value * config, struct st_database_connection * db_connection);
+static void scsi_changer_init_worker(void * arg);
 static int scsi_changer_load(struct st_slot * from, struct st_drive * to, struct st_database_connection * db_connection);
 static int scsi_changer_unload(struct st_drive * from, struct st_database_connection * db_connection);
 static void scsi_changer_wait(void);
 
 static int scsi_changer_transport_address = -1;
+static pthread_mutex_t scsi_changer_lock = PTHREAD_MUTEX_INITIALIZER;
+static volatile unsigned int scsi_changer_nb_worker = 0;
 
 struct st_changer_ops scsi_changer_ops = {
 	.init   = scsi_changer_init,
@@ -210,7 +216,13 @@ static int scsi_changer_init(struct st_value * config, struct st_database_connec
 
 		db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_id_only);
 
-		bool need_init = false;
+		unsigned int need_init = 0, nb_drive_enabled = 0;
+		for (i = 0; i < scsi_changer.nb_drives; i++) {
+			struct st_slot * sl = scsi_changer.slots + i;
+			if (sl->drive != NULL && sl->drive->enabled)
+				nb_drive_enabled++;
+		}
+
 		for (i = scsi_changer.nb_drives; i < scsi_changer.nb_slots; i++) {
 			struct st_slot * sl = scsi_changer.slots + i;
 
@@ -219,13 +231,73 @@ static int scsi_changer_init(struct st_value * config, struct st_database_connec
 
 			sl->media = db_connection->ops->get_media(db_connection, NULL, sl->volume_name);
 			if (sl->media == NULL)
-				need_init = true;
+				need_init++;
 			else
 				sl->media->location = sl->drive != NULL ? st_media_location_indrive : st_media_location_online;
+		}
+
+		if (need_init > 1 && nb_drive_enabled > 1) {
+			for (i = 0; i < scsi_changer.nb_drives; i++) {
+				if (scsi_changer.drives[i].enabled)
+					st_thread_pool_run("changer init", scsi_changer_init_worker, scsi_changer.drives + i);
+			}
+
+			sleep(5);
+
+			pthread_mutex_lock(&scsi_changer_lock);
+			while (scsi_changer_nb_worker > 0) {
+				pthread_mutex_unlock(&scsi_changer_lock);
+				sleep(1);
+				pthread_mutex_lock(&scsi_changer_lock);
+			}
+			pthread_mutex_unlock(&scsi_changer_lock);
+		} else if (need_init > 0) {
+			struct st_drive * dr = NULL;
+			for (i = 0; i < scsi_changer.nb_drives && dr == NULL; i++)
+				if (scsi_changer.drives[i].enabled)
+					dr = scsi_changer.drives + i;
+
+			if (dr != NULL) {
+				scsi_changer_init_worker(dr);
+			} else {
+				// TODO:
+			}
 		}
 	}
 
 	return found ? 0 : 1;
+}
+
+static void scsi_changer_init_worker(void * arg) {
+	struct st_drive * dr = arg;
+
+	pthread_mutex_lock(&scsi_changer_lock);
+	scsi_changer_nb_worker++;
+	pthread_mutex_unlock(&scsi_changer_lock);
+
+	// check if drive has media
+
+	unsigned int i;
+	pthread_mutex_lock(&scsi_changer_lock);
+	for (i = scsi_changer.nb_drives; i < scsi_changer.nb_slots; i++) {
+		struct st_slot * sl = scsi_changer.slots + i;
+
+		if (!sl->enable || !sl->full || sl->media != NULL)
+			continue;
+
+		int failed = scsi_changer_load(sl, dr, NULL);
+
+		pthread_mutex_unlock(&scsi_changer_lock);
+
+		// get drive status
+
+		pthread_mutex_lock(&scsi_changer_lock);
+
+		failed = scsi_changer_unload(dr, NULL);
+	}
+
+	scsi_changer_nb_worker--;
+	pthread_mutex_unlock(&scsi_changer_lock);
 }
 
 static int scsi_changer_load(struct st_slot * from, struct st_drive * to, struct st_database_connection * db_connection) {

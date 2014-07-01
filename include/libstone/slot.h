@@ -48,6 +48,7 @@ struct st_slot {
 	struct st_drive * drive;
 	struct st_media * media;
 
+	unsigned int index;
 	char * volume_name;
 	bool full;
 	enum st_slot_type type;

@@ -556,7 +556,7 @@ static struct st_media * st_database_postgresql_get_media(struct st_database_con
 
 		unsigned char density_code;
 		st_database_postgresql_get_uchar(result, 0, 24, &density_code);
-		enum st_media_format_mode mode = st_media_string_to_format_mode(PQgetvalue(result, 0, 25));
+		// enum st_media_format_mode mode = st_media_string_to_format_mode(PQgetvalue(result, 0, 25));
 		// media->format = st_media_format_get_by_density_code(density_code, mode);
 
 		// if (!PQgetisnull(result, 0, 26))
@@ -623,7 +623,8 @@ static struct st_value * st_database_postgresql_get_vtls(struct st_database_conn
 	if (host_id == NULL)
 		return changers;
 
-	struct st_database_postgresql_connection_private * self = connect->data;
+	// struct st_database_postgresql_connection_private * self = connect->data;
+	return changers;
 }
 
 static int st_database_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer, enum st_database_sync_method method) {
@@ -1106,8 +1107,6 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 	char * changer_id = NULL, * drive_id = NULL;
 	st_value_unpack(db, "{ssss}", "changer_id", &changer_id, "drive_id", &drive_id);
 
-	unsigned int index = slot->changer->slots - slot;
-
 	int failed = 0;
 
 	if (method != st_database_sync_init && slot_id == NULL) {
@@ -1115,7 +1114,7 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 		st_database_postgresql_prepare(self, query, "SELECT id, enable FROM changerslot WHERE changer = $1 AND index = $2 LIMIT 1");
 
 		char * sindex;
-		asprintf(&sindex, "%d", index);
+		asprintf(&sindex, "%u", slot->index);
 
 		const char * param[] = { changer_id, sindex };
 
@@ -1140,7 +1139,7 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 		st_database_postgresql_prepare(self, query, "INSERT INTO changerslot(index, changer, drive, type) VALUES ($1, $2, $3, $4) RETURNING id");
 
 		char * sindex;
-		asprintf(&sindex, "%d", index);
+		asprintf(&sindex, "%u", slot->index);
 
 		const char * param[] = { sindex, changer_id, drive_id, st_slot_type_to_string(slot->type) };
 
