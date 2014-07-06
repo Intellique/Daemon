@@ -48,6 +48,7 @@ struct st_changer_ops {
 	int (*load)(struct st_slot * from, struct st_drive * to, struct st_database_connection * db_connection);
 	int (*put_offline)(struct st_database_connection * db_connection);
 	int (*put_online)(struct st_database_connection * db_connection);
+	int (*shut_down)(struct st_database_connection * db_connection);
 	int (*unload)(struct st_drive * from, struct st_database_connection * db_connection);
 };
 

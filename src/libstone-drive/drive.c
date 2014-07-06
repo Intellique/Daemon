@@ -26,10 +26,41 @@
 
 #include <stddef.h>
 
+#include <libstone/slot.h>
+#include <libstone/value.h>
+
 #include "drive.h"
 
 static struct st_drive_driver * current_drive = NULL;
 
+
+struct st_value * stdr_drive_convert(struct st_drive * dr) {
+	struct st_slot * sl = dr->slot;
+
+	return st_value_pack("{sssssssbsisssfsisbsssssssss{sisssssb}}",
+		"device", dr->device,
+		"scsi device", dr->scsi_device,
+		"status", st_drive_status_to_string(dr->status),
+		"enable", dr->enable,
+
+		"density code", dr->density_code,
+		"mode", "unkown",
+		"operation duration", dr->operation_duration,
+		"last clean", dr->last_clean,
+		"is empty", dr->is_empty,
+
+		"model", dr->model,
+		"vendor", dr->vendor,
+		"revision", dr->revision,
+		"serial number", dr->serial_number,
+
+		"slot",
+			"index", sl->index,
+			"volume name", sl->volume_name,
+			"type", st_slot_type_to_string(sl->type),
+			"enable", sl->enable
+	);
+}
 
 struct st_drive_driver * stdr_drive_get() {
 	return current_drive;

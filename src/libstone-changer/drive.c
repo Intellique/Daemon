@@ -53,7 +53,7 @@ static bool stchgr_drive_is_loocked(struct st_drive * dr) {
 
 __asm__(".symver stchgr_drive_register_v1, stchgr_drive_register@@LIBSTONE_CHANGER_1.2");
 void stchgr_drive_register_v1(struct st_drive * drive, struct st_value * config, const char * process_name) {
-	if (!drive->enabled)
+	if (!drive->enable)
 		return;
 
 	struct stchgr_drive * self = malloc(sizeof(struct stchgr_drive));
@@ -85,7 +85,13 @@ static int stchgr_drive_update_status(struct st_drive * drive) {
 
 	struct st_value * returned = st_json_parse_fd(self->fd_out, -1);
 	int val = 1;
-	st_value_unpack(returned, "{si}", "status", &val);
+	struct st_value * new_drive = NULL;
+
+	st_value_unpack(returned, "{siso}", "status", &val, "drive", &new_drive);
+
+	if (new_drive != NULL)
+		st_drive_sync(drive, new_drive);
+
 	st_value_free(returned);
 
 	return val;

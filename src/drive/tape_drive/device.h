@@ -27,7 +27,7 @@
 #ifndef __ST_TAPEDRIVE_DEVICE_H__
 #define __ST_TAPEDRIVE_DEVICE_H__
 
-struct st_drive * tapedrive_get_device(void);
+struct st_drive * tape_drive_get_device(void);
 
 #endif
 

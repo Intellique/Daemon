@@ -31,10 +31,13 @@
 
 #define st_drive_v1 st_drive
 
+struct st_value;
+
 void st_drive_free_v1(struct st_drive * drive) __attribute__((nonnull));
 void st_drive_free2_v1(void * drive) __attribute__((nonnull));
 const char * st_drive_status_to_string_v1(enum st_drive_status status);
 enum st_drive_status st_drive_string_to_status_v1(const char * status) __attribute__((nonnull));
+void st_drive_sync_v1(struct st_drive * drive, struct st_value * new_drive) __attribute__((nonnull));
 
 #endif
 

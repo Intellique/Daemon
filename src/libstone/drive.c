@@ -30,6 +30,8 @@
 #include <string.h>
 
 #include "drive.h"
+#include "slot.h"
+#include "value.h"
 
 static const struct st_drive_status2 {
 	const char * name;
@@ -92,5 +94,34 @@ enum st_drive_status st_drive_string_to_status_v1(const char * status) {
 			return st_drive_status[i].status;
 
 	return st_drive_status[i].status;
+}
+
+__asm__(".symver st_drive_sync_v1, st_drive_sync@@LIBSTONE_1.2");
+void st_drive_sync_v1(struct st_drive * drive, struct st_value * new_drive) {
+	struct st_slot * sl = drive->slot;
+
+	st_value_unpack(new_drive, "{sssssssssssssssbsisssfsisbs{sisssssb}}",
+		"model", drive->model,
+		"vendor", drive->vendor,
+		"revision", drive->revision,
+		"serial number", drive->serial_number,
+
+		"device", drive->device,
+		"scsi device", drive->scsi_device,
+		"status", st_drive_status_to_string(drive->status),
+		"enable", drive->enable,
+
+		"density code", drive->density_code,
+		"mode", "unkown",
+		"operation duration", drive->operation_duration,
+		"last clean", drive->last_clean,
+		"is empty", drive->is_empty,
+
+		"slot",
+			"index", sl->index,
+			"volume name", sl->volume_name,
+			"type", st_slot_type_to_string(sl->type),
+			"enable", sl->enable
+	);
 }
 

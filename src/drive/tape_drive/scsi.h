@@ -32,7 +32,7 @@
 
 struct st_drive;
 
-bool tapedrive_scsi_check_drive(struct st_drive * drive, const char * path);
+bool tape_drive_scsi_check_drive(struct st_drive * drive, const char * path);
 
 #endif
 

@@ -29,6 +29,9 @@
 
 #include <libstone-drive/drive.h>
 
+struct st_value;
+
+struct st_value * stdr_drive_convert(struct st_drive * dr);
 struct st_drive_driver * stdr_drive_get(void);
 void stdr_drive_register_v1(struct st_drive_driver * dr);
 

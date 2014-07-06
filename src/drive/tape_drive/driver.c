@@ -30,18 +30,18 @@
 
 #include <drive-tapedrive.chcksum>
 
-static struct st_drive_driver tapedrive_driver = {
+static struct st_drive_driver tape_drive_driver = {
 	.name = "tape drive",
 
 	.api_level    = 0,
 	.src_checksum = STONE_DRIVE_TAPEDRIVE_SRCSUM,
 };
 
-static void tapedrive_init(void) __attribute__((constructor));
+static void tape_drive_init(void) __attribute__((constructor));
 
 
-static void tapedrive_init() {
-	tapedrive_driver.device = tapedrive_get_device();
-	stdr_drive_register(&tapedrive_driver);
+static void tape_drive_init() {
+	tape_drive_driver.device = tape_drive_get_device();
+	stdr_drive_register(&tape_drive_driver);
 }
 

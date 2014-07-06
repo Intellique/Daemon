@@ -34,6 +34,8 @@
 
 #include "media.h"
 
+struct st_value;
+
 enum st_drive_status {
 	st_drive_cleaning = 0x1,
 	st_drive_empty_idle = 0x2,
@@ -53,7 +55,7 @@ struct st_drive {
 	char * device;
 	char * scsi_device;
 	enum st_drive_status status;
-	bool enabled;
+	bool enable;
 
 	unsigned char density_code;
 	enum st_media_format_mode mode;
@@ -82,6 +84,7 @@ void st_drive_free(struct st_drive * drive) __attribute__((nonnull));
 void st_drive_free2(void * drive) __attribute__((nonnull));
 const char * st_drive_status_to_string(enum st_drive_status status);
 enum st_drive_status st_drive_string_to_status(const char * status) __attribute__((nonnull));
+void st_drive_sync(struct st_drive * drive, struct st_value * new_drive) __attribute__((nonnull));
 
 #endif
 

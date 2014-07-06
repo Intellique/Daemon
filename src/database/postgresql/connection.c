@@ -70,6 +70,7 @@ static struct st_value * st_database_postgresql_get_host_by_name(struct st_datab
 static struct st_value * st_database_postgresql_get_changers(struct st_database_connection * connect);
 static struct st_value * st_database_postgresql_get_drives_by_changer(struct st_database_connection * connect, const char * changer_id);
 static struct st_media * st_database_postgresql_get_media(struct st_database_connection * connect, const char * medium_serial_number, const char * label) __attribute__((nonnull,warn_unused_result));
+static struct st_value * st_database_postgresql_get_slot_by_drive(struct st_database_connection * connect, const char * drive_id);
 static struct st_value * st_database_postgresql_get_standalone_drives(struct st_database_connection * connect);
 static struct st_value * st_database_postgresql_get_vtls(struct st_database_connection * connect);
 static int st_database_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer, enum st_database_sync_method method);
@@ -449,7 +450,7 @@ static struct st_value * st_database_postgresql_get_drives_by_changer(struct st_
 	struct st_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_drives_by_changer";
-	st_database_postgresql_prepare(self, query, "SELECT device, scsidevice, model, vendor, firmwarerev, serialnumber, enable FROM drive WHERE changer = $1");
+	st_database_postgresql_prepare(self, query, "SELECT id, device, scsidevice, model, vendor, firmwarerev, serialnumber, enable FROM drive WHERE changer = $1");
 
 	const char * param[] = { changer_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -461,17 +462,19 @@ static struct st_value * st_database_postgresql_get_drives_by_changer(struct st_
 	else if (status == PGRES_TUPLES_OK && nb_result > 0) {
 		int i;
 		for (i = 0; i < nb_result; i++) {
+			char * drive_id = PQgetvalue(result, i, 0);
 			bool enabled = false;
-			st_database_postgresql_get_bool(result, i, 6, &enabled);
+			st_database_postgresql_get_bool(result, i, 7, &enabled);
 
-			struct st_value * drive = st_value_pack("{sssssssssssssb}",
-					"device", PQgetvalue(result, i, 0),
-					"scsi devie", PQgetvalue(result, i, 1),
-					"model", PQgetvalue(result, i, 2),
-					"vendor", PQgetvalue(result, i, 3),
-					"firmware revision", PQgetvalue(result, i, 4),
-					"serial number", PQgetvalue(result, i, 5),
-					"enable", enabled
+			struct st_value * drive = st_value_pack("{sssssssssssssbso}",
+					"device", PQgetvalue(result, i, 1),
+					"scsi devie", PQgetvalue(result, i, 2),
+					"model", PQgetvalue(result, i, 3),
+					"vendor", PQgetvalue(result, i, 4),
+					"firmware revision", PQgetvalue(result, i, 5),
+					"serial number", PQgetvalue(result, i, 6),
+					"enable", enabled,
+					"slot", st_database_postgresql_get_slot_by_drive(connect, drive_id)
 			);
 
 			st_value_list_push(drives, drive, true);
@@ -614,6 +617,36 @@ static struct st_value * st_database_postgresql_get_standalone_drives(struct st_
 	free(host_id);
 
 	return changers;
+}
+
+static struct st_value * st_database_postgresql_get_slot_by_drive(struct st_database_connection * connect, const char * drive_id) {
+	struct st_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_slot_by_drive";
+	st_database_postgresql_prepare(self, query, "SELECT index, type, enable FROM changerslot WHERE drive = $1");
+
+	const char * param[] = { drive_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	struct st_value * slot = st_value_new_null();
+	if (status == PGRES_FATAL_ERROR)
+		st_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK) {
+		int index = -1;
+		bool enable = false;
+		st_database_postgresql_get_int(result, 0, 0, &index);
+		st_database_postgresql_get_bool(result, 0, 2, &enable);
+
+		slot = st_value_pack("{sisssb}",
+				"index", index,
+				"type", st_slot_string_to_type(PQgetvalue(result, 0, 1)),
+				"enable", enable);
+	}
+
+	PQclear(result);
+
+	return slot;
 }
 
 static struct st_value * st_database_postgresql_get_vtls(struct st_database_connection * connect) {
@@ -877,9 +910,9 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 				st_value_hashtable_put2(db, "driveformat_id", st_value_new_string(driveformat_id), true);
 			}
 
-			st_database_postgresql_get_bool(result, 0, 1, &drive->enabled);
+			st_database_postgresql_get_bool(result, 0, 1, &drive->enable);
 		} else if (status == PGRES_TUPLES_OK && nb_result == 1)
-			drive->enabled = false;
+			drive->enable = false;
 
 		PQclear(result);
 
@@ -917,7 +950,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 				st_value_hashtable_put2(db, "driveformat_id", st_value_new_string(driveformat_id), true);
 			}
 
-			st_database_postgresql_get_bool(result, 0, 4, &drive->enabled);
+			st_database_postgresql_get_bool(result, 0, 4, &drive->enable);
 		}
 
 		PQclear(result);

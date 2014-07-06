@@ -688,7 +688,7 @@ void scsi_changer_scsi_new_status(struct st_changer * changer, struct st_value *
 
 	for (i = 0; i < changer->nb_drives; i++) {
 		struct st_drive * drive = changer->drives + i;
-		if (!drive->enabled)
+		if (!drive->enable)
 			continue;
 
 		drive->ops->update_status(drive);
@@ -1094,7 +1094,7 @@ static void scsi_changer_scsi_update_status(int fd, struct st_changer * changer,
 						dr->slot = slot;
 						slot->drive = dr;
 
-						st_value_unpack(drive, "{sssssssssb}", "model", &dr->model, "vendor", &dr->vendor, "firmware revision", &dr->revision, "serial number", &dr->serial_number, "enable", &dr->enabled);
+						st_value_unpack(drive, "{sssssssssb}", "model", &dr->model, "vendor", &dr->vendor, "firmware revision", &dr->revision, "serial number", &dr->serial_number, "enable", &dr->enable);
 
 						scsi_changer_scsi_setup_drive(dr, drive);
 					}

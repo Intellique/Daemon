@@ -86,7 +86,7 @@ struct scsi_request_sense {
 };
 
 
-bool tapedrive_scsi_check_drive(struct st_drive * drive, const char * path) {
+bool tape_drive_scsi_check_drive(struct st_drive * drive, const char * path) {
 	int fd = open(path, O_RDWR);
 	if (fd < 0)
 		return false;

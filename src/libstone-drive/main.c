@@ -68,7 +68,7 @@ static void changer_request(int fd, short event, void * data __attribute__((unus
 
 		int failed = drive->ops->update_status();
 
-		struct st_value * returned = st_value_pack("{si}", "status", (long long int) failed);
+		struct st_value * returned = st_value_pack("{siso}", "status", (long long int) failed, "drive", stdr_drive_convert(drive));
 		st_json_encode_to_fd(returned, 1, true);
 		st_value_free(returned);
 	}
