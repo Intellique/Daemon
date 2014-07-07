@@ -153,8 +153,8 @@ static void test_libstone_value_pack_0() {
 	struct st_value * pack = st_value_pack("{s[]}", "foo");
 	CU_ASSERT_PTR_NOT_NULL_FATAL(pack);
 
+	CU_ASSERT_EQUAL(pack->shared, 1);
 	st_value_free(pack);
-	CU_ASSERT_EQUAL(pack->shared, 0);
 }
 
 static void test_libstone_value_ref_cycle_0() {
@@ -172,8 +172,6 @@ static void test_libstone_value_ref_cycle_0() {
 	CU_ASSERT_EQUAL(objA->shared, 2);
 
 	st_value_free(objA);
-	CU_ASSERT_EQUAL(objA->shared, 0);
-	CU_ASSERT_EQUAL(objB->shared, 0);
 }
 
 static void test_libstone_value_ref_cycle_1() {
@@ -196,9 +194,6 @@ static void test_libstone_value_ref_cycle_1() {
 	CU_ASSERT_EQUAL(objB->shared, 2);
 
 	st_value_free(objA);
-	CU_ASSERT_EQUAL(objA->shared, 0);
-	CU_ASSERT_EQUAL(objB->shared, 0);
-	CU_ASSERT_EQUAL(objC->shared, 0);
 }
 
 static void test_libstone_value_share_0() {

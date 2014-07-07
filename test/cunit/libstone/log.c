@@ -72,40 +72,40 @@ void test_libstone_log_add_suite() {
 
 static void test_libstone_log_level_to_string_0() {
 	const char * lvl = st_log_level_to_string(st_log_level_alert);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(lvl);
-    CU_ASSERT_STRING_EQUAL(lvl, "Alert");
+	CU_ASSERT_PTR_NOT_NULL_FATAL(lvl);
+	CU_ASSERT_STRING_EQUAL(lvl, "Alert");
 
 	lvl = st_log_level_to_string(st_log_level_critical);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(lvl);
-    CU_ASSERT_STRING_EQUAL(lvl, "Critical");
+	CU_ASSERT_PTR_NOT_NULL_FATAL(lvl);
+	CU_ASSERT_STRING_EQUAL(lvl, "Critical");
 
 	lvl = st_log_level_to_string(st_log_level_debug);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(lvl);
-    CU_ASSERT_STRING_EQUAL(lvl, "Debug");
+	CU_ASSERT_PTR_NOT_NULL_FATAL(lvl);
+	CU_ASSERT_STRING_EQUAL(lvl, "Debug");
 
 	lvl = st_log_level_to_string(st_log_level_emergencey);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(lvl);
-    CU_ASSERT_STRING_EQUAL(lvl, "Emergency");
+	CU_ASSERT_PTR_NOT_NULL_FATAL(lvl);
+	CU_ASSERT_STRING_EQUAL(lvl, "Emergency");
 
 	lvl = st_log_level_to_string(st_log_level_error);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(lvl);
-    CU_ASSERT_STRING_EQUAL(lvl, "Error");
+	CU_ASSERT_PTR_NOT_NULL_FATAL(lvl);
+	CU_ASSERT_STRING_EQUAL(lvl, "Error");
 
 	lvl = st_log_level_to_string(st_log_level_info);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(lvl);
-    CU_ASSERT_STRING_EQUAL(lvl, "Info");
+	CU_ASSERT_PTR_NOT_NULL_FATAL(lvl);
+	CU_ASSERT_STRING_EQUAL(lvl, "Info");
 
 	lvl = st_log_level_to_string(st_log_level_notice);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(lvl);
-    CU_ASSERT_STRING_EQUAL(lvl, "Notice");
+	CU_ASSERT_PTR_NOT_NULL_FATAL(lvl);
+	CU_ASSERT_STRING_EQUAL(lvl, "Notice");
 
 	lvl = st_log_level_to_string(st_log_level_warning);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(lvl);
-    CU_ASSERT_STRING_EQUAL(lvl, "Warning");
+	CU_ASSERT_PTR_NOT_NULL_FATAL(lvl);
+	CU_ASSERT_STRING_EQUAL(lvl, "Warning");
 
 	lvl = st_log_level_to_string(st_log_level_unknown);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(lvl);
-    CU_ASSERT_STRING_EQUAL(lvl, "Unknown level");
+	CU_ASSERT_PTR_NOT_NULL_FATAL(lvl);
+	CU_ASSERT_STRING_EQUAL(lvl, "Unknown level");
 }
 
 static void test_libstone_log_string_to_level_0() {

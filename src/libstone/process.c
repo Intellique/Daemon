@@ -35,11 +35,13 @@
 #include <stdlib.h>
 // strchr, strdup, strrchr
 #include <string.h>
-// waitpid
+// stat
+#include <sys/stat.h>
+// stat, waitpid
 #include <sys/types.h>
 // waitpid
 #include <sys/wait.h>
-// access, close, dup2, execv, fcntl, fork, nice, pipe
+// access, close, dup2, execv, fcntl, fork, nice, pipe, stat
 #include <unistd.h>
 
 #include "process.h"
@@ -86,14 +88,17 @@ void st_process_new_v1(struct st_process * process, const char * process_name, c
 	if (process == NULL || process_name == NULL || (params == NULL && nb_params > 0))
 		return;
 
-	bool found = false;
-	if (access(process_name, R_OK | X_OK)) {
+	struct stat file;
+	if (access(process_name, R_OK | X_OK) == 0 && stat(process_name, &file) == 0 && S_ISREG(file.st_mode))
+		process->command = strdup(process_name);
+
+	if (process->command == NULL) {
 		char * path = getenv("PATH");
 		if (path != NULL) {
 			char * tok = path = strdup(path);
 
 			char * next;
-			for (next = NULL; !found && tok != NULL; tok = next) {
+			for (next = NULL; process->command != NULL && tok != NULL; tok = next) {
 				next = strchr(tok, ':');
 				if (next != NULL) {
 					*next = '\0';
@@ -103,10 +108,8 @@ void st_process_new_v1(struct st_process * process, const char * process_name, c
 				char * path_com;
 				asprintf(&path_com, "%s/%s", tok, process_name);
 
-				if (!access(path_com, R_OK | X_OK)) {
+				if (!access(path_com, R_OK | X_OK))
 					process->command = strdup(path_com);
-					found = true;
-				}
 
 				free(path_com);
 			}
@@ -114,7 +117,8 @@ void st_process_new_v1(struct st_process * process, const char * process_name, c
 			free(path);
 		}
 	}
-	if (!found)
+
+	if (process->command == NULL)
 		process->command = strdup(process_name);
 
 	process->params = calloc(nb_params + 2, sizeof(char *));
@@ -136,9 +140,10 @@ void st_process_new_v1(struct st_process * process, const char * process_name, c
 	process->params[i + 1] = NULL;
 
 	process->pid = -1;
-	for (i = 0; i < 3; i++) {
-		process->fds[i].fd = i;
-		process->fds[i].type = st_process_fd_type_default;
+	int j;
+	for (j = 0; j < 3; j++) {
+		process->fds[j].fd = j;
+		process->fds[j].type = st_process_fd_type_default;
 	}
 	process->exited_code = 0;
 }
@@ -274,7 +279,7 @@ void st_process_start_v1(struct st_process * process, unsigned int nb_process) {
 				if (process[i].fds[j].type == st_process_fd_type_set)
 					close(process[i].fds[j].fd);
 		} else if (process[i].pid == 0) {
-			unsigned int j;
+			int j;
 			for (j = 0; j < 3; j++) {
 				if (process[i].fds[j].type == st_process_fd_type_default)
 					continue;
@@ -312,6 +317,8 @@ void st_process_start_v1(struct st_process * process, unsigned int nb_process) {
 				nice(process->nice);
 
 			execv(process[i].command, process[i].params);
+
+			_exit(1);
 		}
 	}
 }

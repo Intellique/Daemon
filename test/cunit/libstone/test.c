@@ -26,12 +26,14 @@
 
 #include "checksum.h"
 #include "log.h"
+#include "process.h"
 #include "test.h"
 #include "value.h"
 
 void test_libstone_add_suite() {
     test_libstone_checksum_add_suite();
 	test_libstone_log_add_suite();
+	test_libstone_process_add_suite();
 	test_libstone_value_add_suite();
 }
 
