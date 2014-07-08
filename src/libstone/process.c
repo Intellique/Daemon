@@ -35,6 +35,8 @@
 #include <stdlib.h>
 // strchr, strdup, strrchr
 #include <string.h>
+// bzero
+#include <strings.h>
 // stat
 #include <sys/stat.h>
 // stat, waitpid
@@ -88,6 +90,8 @@ void st_process_new_v1(struct st_process * process, const char * process_name, c
 	if (process == NULL || process_name == NULL || (params == NULL && nb_params > 0))
 		return;
 
+	bzero(process, sizeof(struct st_process));
+
 	struct stat file;
 	if (access(process_name, R_OK | X_OK) == 0 && stat(process_name, &file) == 0 && S_ISREG(file.st_mode))
 		process->command = strdup(process_name);
@@ -98,7 +102,7 @@ void st_process_new_v1(struct st_process * process, const char * process_name, c
 			char * tok = path = strdup(path);
 
 			char * next;
-			for (next = NULL; process->command != NULL && tok != NULL; tok = next) {
+			for (next = NULL; process->command == NULL && tok != NULL; tok = next) {
 				next = strchr(tok, ':');
 				if (next != NULL) {
 					*next = '\0';
@@ -108,7 +112,7 @@ void st_process_new_v1(struct st_process * process, const char * process_name, c
 				char * path_com;
 				asprintf(&path_com, "%s/%s", tok, process_name);
 
-				if (!access(path_com, R_OK | X_OK))
+				if (access(path_com, R_OK | X_OK) == 0 && stat(path_com, &file) == 0 && S_ISREG(file.st_mode))
 					process->command = strdup(path_com);
 
 				free(path_com);
