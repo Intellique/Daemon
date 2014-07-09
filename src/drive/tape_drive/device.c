@@ -110,7 +110,7 @@ static int tape_drive_init(struct st_value * config) {
 	bzero(tape_drive.slot, sizeof(struct st_slot));
 	sl->drive = &tape_drive;
 
-	char * type;
+	char * type = NULL;
 	st_value_unpack(config, "{sssssssbs{si}}", "model", &tape_drive.model, "vendor", &tape_drive.vendor, "serial number", &tape_drive.serial_number, "enable", &tape_drive.enable, "slot", "index", &sl->index, "type", type);
 	sl->type = st_slot_string_to_type(type);
 	free(type);
@@ -226,7 +226,7 @@ static int tape_drive_update_status() {
 	 * Make sure that we have the correct status of tape
 	 */
 	while (!failed && GMT_ONLINE(status.mt_gstat)) {
-		unsigned char density_code = (status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT;
+		unsigned int density_code = ((status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT) & 0xFF;
 
 		if (density_code != 0)
 			break;
@@ -246,9 +246,9 @@ static int tape_drive_update_status() {
 			tape_drive.status = st_drive_loaded_idle;
 			tape_drive.is_empty = false;
 
-			unsigned char density_code = (status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT;
+			unsigned int density_code = ((status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT) & 0xFF;
 			if (tape_drive.density_code < density_code)
-				tape_drive.density_code = density_code;
+				tape_drive.density_code = density_code & 0xFF;
 		} else {
 			tape_drive.status = st_drive_empty_idle;
 			tape_drive.is_empty = true;

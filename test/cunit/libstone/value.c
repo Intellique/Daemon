@@ -208,6 +208,8 @@ static void test_libstone_value_share_0() {
 
 	st_value_free(val_shared);
 	CU_ASSERT_EQUAL(val->shared, 1);
+
+	st_value_free(val);
 }
 
 void test_libstone_value_unpack_0() {

@@ -40,12 +40,16 @@ bool stctl_auth_do_authentification(int fd, const char * password) {
 	st_value_free(request);
 
 	struct st_value * response = st_json_parse_fd(fd, 10000);
+	if (response == NULL)
+		return false;
+
 	char * salt = NULL;
 	bool error = true;
 	st_value_unpack(response, "{sbss}", "error", &error, "salt", &salt);
+	st_value_free(response);
 
 	if (salt == NULL || error) {
-		st_value_free(response);
+		free(salt);
 		return false;
 	}
 
@@ -63,6 +67,9 @@ bool stctl_auth_do_authentification(int fd, const char * password) {
 	st_value_free(request);
 
 	response = st_json_parse_fd(fd, 10000);
+	if (response == NULL)
+		return false;
+
 	st_value_unpack(response, "{sb}", "error", &error);
 	st_value_free(response);
 
