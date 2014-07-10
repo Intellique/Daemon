@@ -1094,7 +1094,16 @@ static void scsi_changer_scsi_update_status(int fd, struct st_changer * changer,
 						dr->slot = slot;
 						slot->drive = dr;
 
-						st_value_unpack(drive, "{sssssssssb}", "model", &dr->model, "vendor", &dr->vendor, "firmware revision", &dr->revision, "serial number", &dr->serial_number, "enable", &dr->enable);
+						struct st_value * vslot = NULL;
+						st_value_unpack(drive, "{sssssssssbso}", "model", &dr->model, "vendor", &dr->vendor, "firmware revision", &dr->revision, "serial number", &dr->serial_number, "enable", &dr->enable, "slot", &vslot);
+
+						if (vslot != NULL) {
+							if (slot->volume_name != NULL)
+								st_value_hashtable_put2(vslot, "volume name", st_value_new_string(slot->volume_name), true);
+							else
+								st_value_hashtable_put2(vslot, "volume name", st_value_new_null(), true);
+							st_value_hashtable_put2(vslot, "type", st_value_new_string(st_slot_type_to_string(slot->type)), true);
+						}
 
 						scsi_changer_scsi_setup_drive(dr, drive);
 					}

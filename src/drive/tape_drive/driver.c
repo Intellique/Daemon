@@ -37,10 +37,10 @@ static struct st_drive_driver tape_drive_driver = {
 	.src_checksum = STONE_DRIVE_TAPEDRIVE_SRCSUM,
 };
 
-static void tape_drive_init(void) __attribute__((constructor));
+static void tape_driver_init(void) __attribute__((constructor));
 
 
-static void tape_drive_init() {
+static void tape_driver_init() {
 	tape_drive_driver.device = tape_drive_get_device();
 	stdr_drive_register(&tape_drive_driver);
 }

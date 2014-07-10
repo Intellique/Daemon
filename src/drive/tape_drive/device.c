@@ -111,7 +111,7 @@ static int tape_drive_init(struct st_value * config) {
 	sl->drive = &tape_drive;
 
 	char * type = NULL;
-	st_value_unpack(config, "{sssssssbs{si}}", "model", &tape_drive.model, "vendor", &tape_drive.vendor, "serial number", &tape_drive.serial_number, "enable", &tape_drive.enable, "slot", "index", &sl->index, "type", type);
+	st_value_unpack(config, "{sssssssbs{sisbssss}}", "model", &tape_drive.model, "vendor", &tape_drive.vendor, "serial number", &tape_drive.serial_number, "enable", &tape_drive.enable, "slot", "index", &sl->index, "enable", &sl->enable, "type", &type, "volume name", &sl->volume_name);
 	sl->type = st_slot_string_to_type(type);
 	free(type);
 
@@ -196,7 +196,7 @@ static void tape_drive_operation_stop() {
 	struct timespec finish;
 	clock_gettime(CLOCK_MONOTONIC, &finish);
 
-	tape_drive.operation_duration += (finish.tv_sec - last_start.tv_sec) + (finish.tv_nsec - last_start.tv_nsec) / 1000000000;
+	tape_drive.operation_duration += (finish.tv_sec - last_start.tv_sec) + (finish.tv_nsec - last_start.tv_nsec) / 1000000000.0;
 }
 
 static int tape_drive_update_status() {

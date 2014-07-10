@@ -134,7 +134,7 @@ bool tape_drive_scsi_check_drive(struct st_drive * drive, const char * path) {
 
 	struct scsi_inquiry command_inquiry = {
 		.operation_code = 0x12,
-		.enable_vital_product_data = 0,
+		.enable_vital_product_data = false,
 		.page_code = 0,
 		.allocation_length = sizeof(result_inquiry),
 	};
@@ -223,6 +223,13 @@ bool tape_drive_scsi_check_drive(struct st_drive * drive, const char * path) {
 	ok = !strcmp(drive->serial_number, serial_number);
 
 	free(serial_number);
+
+	if (ok) {
+		drive->revision = malloc(5);
+		strncpy(drive->revision, result_inquiry.product_revision_level, 4);
+		drive->revision[4] = '\0';
+		st_string_rtrim(drive->revision, ' ');
+	}
 
 	return ok;
 }

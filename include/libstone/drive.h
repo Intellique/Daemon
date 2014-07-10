@@ -59,7 +59,7 @@ struct st_drive {
 
 	unsigned char density_code;
 	enum st_media_format_mode mode;
-	long double operation_duration;
+	double operation_duration;
 	time_t last_clean;
 	bool is_empty;
 

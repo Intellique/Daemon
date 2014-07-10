@@ -26,6 +26,7 @@
 
 #include <stddef.h>
 
+#include <libstone/media.h>
 #include <libstone/slot.h>
 #include <libstone/value.h>
 
@@ -37,14 +38,17 @@ static struct st_drive_driver * current_drive = NULL;
 struct st_value * stdr_drive_convert(struct st_drive * dr) {
 	struct st_slot * sl = dr->slot;
 
+	long int density_code = dr->density_code;
+	long int slot_index = sl->index;
+
 	return st_value_pack("{sssssssbsisssfsisbsssssssss{sisssssb}}",
 		"device", dr->device,
 		"scsi device", dr->scsi_device,
 		"status", st_drive_status_to_string(dr->status),
 		"enable", dr->enable,
 
-		"density code", dr->density_code,
-		"mode", "unkown",
+		"density code", density_code,
+		"mode", st_media_format_mode_to_string(dr->mode),
 		"operation duration", dr->operation_duration,
 		"last clean", dr->last_clean,
 		"is empty", dr->is_empty,
@@ -55,7 +59,7 @@ struct st_value * stdr_drive_convert(struct st_drive * dr) {
 		"serial number", dr->serial_number,
 
 		"slot",
-			"index", sl->index,
+			"index", slot_index,
 			"volume name", sl->volume_name,
 			"type", st_slot_type_to_string(sl->type),
 			"enable", sl->enable

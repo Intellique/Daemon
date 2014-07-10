@@ -84,7 +84,7 @@ static int stchgr_drive_update_status(struct st_drive * drive) {
 	st_value_free(command);
 
 	struct st_value * returned = st_json_parse_fd(self->fd_out, -1);
-	int val = 1;
+	long int val = 1;
 	struct st_value * new_drive = NULL;
 
 	st_value_unpack(returned, "{siso}", "status", &val, "drive", &new_drive);
@@ -94,6 +94,6 @@ static int stchgr_drive_update_status(struct st_drive * drive) {
 
 	st_value_free(returned);
 
-	return val;
+	return (int) val;
 }
 
