@@ -55,7 +55,9 @@ LIBSTONE_1.2 {
 		st_log_write;
 
 		st_media_format_data_to_string;
+		st_media_format_free;
 		st_media_format_mode_to_string;
+		st_media_free;
 		st_media_location_to_string;
 		st_media_status_to_string;
 		st_media_string_to_format_data;
@@ -71,6 +73,7 @@ LIBSTONE_1.2 {
 		st_poll_unregister;
 
 		st_pool_autocheck_mode_to_string;
+		st_pool_free;
 		st_pool_string_to_autocheck_mode;
 		st_pool_string_to_unbreakable_level;
 		st_pool_unbreakable_level_to_string;

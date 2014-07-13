@@ -44,7 +44,7 @@ static bool stop = false;
 static void changer_request(int fd, short event, void * data);
 
 
-static void changer_request(int fd, short event, void * data __attribute__((unused))) {
+static void changer_request(int fd, short event, void * data) {
 	switch (event) {
 		case POLLHUP:
 			st_log_write(st_log_level_alert, "changer has hang up");
@@ -65,8 +65,9 @@ static void changer_request(int fd, short event, void * data __attribute__((unus
 	else if (!strcmp("update status", command)) {
 		struct st_drive_driver * driver = stdr_drive_get();
 		struct st_drive * drive = driver->device;
+		struct st_database_connection * db = data;
 
-		int failed = drive->ops->update_status();
+		int failed = drive->ops->update_status(db);
 
 		struct st_value * returned = st_value_pack("{siso}", "status", (long long int) failed, "drive", stdr_drive_convert(drive));
 		st_json_encode_to_fd(returned, 1, true);
@@ -97,7 +98,17 @@ int main() {
 	st_log_configure(log_config, st_log_type_drive);
 	st_database_load_config(db_config);
 
-	st_poll_register(0, POLLIN | POLLHUP, changer_request, NULL, NULL);
+	struct st_database * db_driver = st_database_get_default_driver();
+	if (db_driver == NULL)
+		return 4;
+	struct st_database_config * db_conf = db_driver->ops->get_default_config();
+	if (db_conf == NULL)
+		return 4;
+	struct st_database_connection * db_connect = db_conf->ops->connect(db_conf);
+	if (db_connect == NULL)
+		return 4;
+
+	st_poll_register(0, POLLIN | POLLHUP, changer_request, db_connect, NULL);
 
 	struct st_drive * drive = driver->device;
 	int failed = drive->ops->init(drive_config);

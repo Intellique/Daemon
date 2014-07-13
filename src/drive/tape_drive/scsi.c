@@ -85,6 +85,41 @@ struct scsi_request_sense {
 	unsigned char field_data[2];					/* Byte 16,17 */
 };
 
+enum scsi_mam_attribute {
+	scsi_mam_remaining_capacity  = 0x0000,
+	scsi_mam_maximum_capacity    = 0x0001,
+	scsi_mam_load_count          = 0x0003,
+	scsi_mam_mam_space_remaining = 0x0004,
+
+	scsi_mam_device_at_last_load           = 0x020A,
+	scsi_mam_device_at_last_load_2         = 0x020B,
+	scsi_mam_device_at_last_load_3         = 0x020C,
+	scsi_mam_device_at_last_load_4         = 0x020D,
+	scsi_mam_total_written_in_medium_life  = 0x0220,
+	scsi_mam_total_read_in_medium_life     = 0x0221,
+	scsi_mam_total_written_in_current_load = 0x0222,
+	scsi_mam_total_read_current_load       = 0x0223,
+
+	scsi_mam_medium_manufacturer      = 0x0400,
+	scsi_mam_medium_serial_number     = 0x0401,
+	scsi_mam_medium_manufacturer_date = 0x0406,
+	scsi_mam_mam_capacity             = 0x0407,
+	scsi_mam_medium_type              = 0x0408,
+	scsi_mam_medium_type_information  = 0x0409,
+
+	scsi_mam_application_vendor           = 0x0800,
+	scsi_mam_application_name             = 0x0801,
+	scsi_mam_application_version          = 0x0802,
+	scsi_mam_user_medium_text_label       = 0x0803,
+	scsi_mam_date_and_time_last_written   = 0x0804,
+	scsi_mam_text_localization_identifier = 0x0805,
+	scsi_mam_barcode                      = 0x0806,
+	scsi_mam_owning_host_textual_name     = 0x0807,
+	scsi_mam_media_pool                   = 0x0808,
+
+	scsi_mam_unique_cardtrige_identity = 0x1000,
+};
+
 
 bool tape_drive_scsi_check_drive(struct st_drive * drive, const char * path) {
 	int fd = open(path, O_RDWR);
@@ -232,5 +267,302 @@ bool tape_drive_scsi_check_drive(struct st_drive * drive, const char * path) {
 	}
 
 	return ok;
+}
+
+int tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_number, size_t length) {
+	struct {
+		unsigned char operation_code;
+		enum {
+			scsi_read_attribute_service_action_attributes_values = 0x00,
+			scsi_read_attribute_service_action_attribute_list = 0x01,
+			scsi_read_attribute_service_action_volume_list = 0x02,
+			scsi_read_attribute_service_action_parition_list = 0x03,
+		} service_action:5;
+		unsigned char obsolete:3;
+		unsigned char reserved0[3];
+		unsigned char volume_number;
+		unsigned char reserved1;
+		unsigned char partition_number;
+		unsigned short first_attribute_id;
+		unsigned short allocation_length;
+		unsigned char reserved2;
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x8C, // READ ATTRIBUTE
+		.service_action = scsi_read_attribute_service_action_attributes_values,
+		.volume_number = 0,
+		.partition_number = 0,
+		.first_attribute_id = 0,
+		.allocation_length = htobe16(1024),
+		.control = 0,
+	};
+
+	struct scsi_request_sense sense;
+	unsigned char buffer[1024];
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(buffer, 0, 1024);
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(buffer);
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = buffer;
+	header.timeout = 60000; // 1 minute
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	if (status)
+		return status;
+
+	struct scsi_mam {
+		enum scsi_mam_attribute attribute_identifier:16;
+		unsigned char format:2;
+		unsigned char reserved:5;
+		bool read_only:1;
+		unsigned short attribute_length;
+		union {
+			unsigned char int8;
+			unsigned short be16;
+			unsigned long long be64;
+			char text[160];
+		} attribute_value;
+	} __attribute__((packed));
+
+	unsigned int data_available = be32toh(*(unsigned int *) buffer);
+	unsigned char * ptr = buffer + 4;
+
+	for (ptr = buffer + 4; ptr < buffer + data_available;) {
+		struct scsi_mam * attr = (struct scsi_mam *) ptr;
+		attr->attribute_identifier = be16toh(attr->attribute_identifier);
+		attr->attribute_length = be16toh(attr->attribute_length);
+
+		ptr += attr->attribute_length + 5;
+
+		if (attr->attribute_length == 0)
+			continue;
+
+		char * space;
+		switch (attr->attribute_identifier) {
+			case scsi_mam_medium_serial_number:
+				strncpy(medium_serial_number, attr->attribute_value.text, length);
+				space = strchr(medium_serial_number, ' ');
+				if (space)
+					*space = '\0';
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	return 0;
+}
+
+int tape_drive_scsi_read_mam(int fd, struct st_media * media) {
+	struct {
+		unsigned char operation_code;
+		enum {
+			scsi_read_attribute_service_action_attributes_values = 0x00,
+			scsi_read_attribute_service_action_attribute_list = 0x01,
+			scsi_read_attribute_service_action_volume_list = 0x02,
+			scsi_read_attribute_service_action_parition_list = 0x03,
+		} service_action:5;
+		unsigned char obsolete:3;
+		unsigned char reserved0[3];
+		unsigned char volume_number;
+		unsigned char reserved1;
+		unsigned char partition_number;
+		unsigned short first_attribute_id;
+		unsigned short allocation_length;
+		unsigned char reserved2;
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x8C, // READ ATTRIBUTE
+		.service_action = scsi_read_attribute_service_action_attributes_values,
+		.volume_number = 0,
+		.partition_number = 0,
+		.first_attribute_id = 0,
+		.allocation_length = htobe16(1024),
+		.control = 0,
+	};
+
+	struct scsi_request_sense sense;
+	unsigned char buffer[1024];
+
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(buffer, 0, 1024);
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(buffer);
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = buffer;
+	header.timeout = 60000; // 1 minute
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	if (status)
+		return status;
+
+	struct scsi_mam {
+		enum scsi_mam_attribute attribute_identifier:16;
+		unsigned char format:2;
+		unsigned char reserved:5;
+		bool read_only:1;
+		unsigned short attribute_length;
+		union {
+			unsigned char int8;
+			unsigned short be16;
+			unsigned long long be64;
+			char text[160];
+		} attribute_value;
+	} __attribute__((packed));
+
+	unsigned int data_available = be32toh(*(unsigned int *) buffer);
+	unsigned char * ptr = buffer + 4;
+
+	for (ptr = buffer + 4; ptr < buffer + data_available;) {
+		struct scsi_mam * attr = (struct scsi_mam *) ptr;
+		attr->attribute_identifier = be16toh(attr->attribute_identifier);
+		attr->attribute_length = be16toh(attr->attribute_length);
+
+		ptr += attr->attribute_length + 5;
+
+		if (attr->attribute_length == 0)
+			continue;
+
+		char * space;
+		switch (attr->attribute_identifier) {
+			case scsi_mam_remaining_capacity:
+				media->free_block = be64toh(attr->attribute_value.be64);
+				media->free_block <<= 10;
+				media->free_block /= (media->block_size >> 10);
+				break;
+
+			case scsi_mam_load_count:
+				media->load_count = be64toh(attr->attribute_value.be64);
+				break;
+
+			case scsi_mam_medium_serial_number:
+				media->medium_serial_number = strdup(attr->attribute_value.text);
+				space = strchr(media->medium_serial_number, ' ');
+				if (space)
+					*space = '\0';
+				break;
+
+			case scsi_mam_medium_type:
+				switch (attr->attribute_value.int8) {
+					case 0x01:
+						media->type = st_media_type_cleaning;
+						break;
+
+					case 0x80:
+						media->type = st_media_type_readonly;
+						break;
+
+					default:
+						media->type = st_media_type_rewritable;
+						break;
+				}
+
+			default:
+				break;
+		}
+	}
+
+	return 0;
+}
+
+int tape_drive_scsi_size_available(int fd, struct st_media * media) {
+	struct {
+		unsigned char page_code:6;
+		unsigned char reserved0:2;
+		unsigned char reserved1;
+		unsigned short page_length;
+		struct {
+			unsigned short parameter_code;
+			bool lp:1;
+			bool lbin:1;
+			unsigned char tmc:2;
+			bool etc:1;
+			bool tsd:1;
+			bool ds:1;
+			bool du:1;
+			unsigned char parameter_length;
+			unsigned int value;
+		} values[4];
+	} __attribute__((packed)) result;
+
+	struct {
+		unsigned char operation_code;
+		bool saved_paged:1;
+		bool parameter_pointer_control:1;
+		unsigned char reserved0:3;
+		unsigned char obsolete:3;
+		unsigned char page_code:6;
+		enum {
+			page_control_max_value = 0x0,
+			page_control_current_value = 0x1,
+			page_control_max_value2 = 0x2, // same as page_control_max_value ?
+			page_control_power_on_value = 0x3,
+		} page_control:2;
+		unsigned char reserved1[2];
+		unsigned short parameter_pointer; // must be a bigger endian integer
+		unsigned short allocation_length; // must be a bigger endian integer
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x4D,
+		.saved_paged = false,
+		.parameter_pointer_control = false,
+		.page_code = 0x31,
+		.page_control = page_control_current_value,
+		.parameter_pointer = 0,
+		.allocation_length = htobe16(sizeof(result)),
+		.control = 0,
+	};
+
+	struct scsi_request_sense sense;
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(&result, 0, sizeof(result));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result);
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &result;
+	header.timeout = 60000; // 1 minute
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	if (status || result.page_code != 0x31)
+		return 1;
+
+	result.page_length = be16toh(result.page_length);
+	unsigned short i;
+	for (i = 0; i < 4; i++) {
+		result.values[i].parameter_code = be16toh(result.values[i].parameter_code);
+		result.values[i].value = be32toh(result.values[i].value);
+	}
+
+	media->free_block = result.values[0].value << 10;
+	media->free_block /= (media->block_size >> 10);
+
+	media->total_block = result.values[2].value << 10;
+	media->total_block /= (media->block_size >> 10);
+
+	return 0;
 }
 

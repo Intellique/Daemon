@@ -114,7 +114,10 @@ void st_drive_sync_v1(struct st_drive * drive, struct st_value * new_drive) {
 	sl->volume_name = NULL;
 	char * type = NULL;
 
-	st_value_unpack(new_drive, "{sssssssssssssssbsisssfsisbs{sisssssb}}",
+	struct st_value * last_clean = NULL;
+
+	struct st_value * media = NULL;
+	st_value_unpack(new_drive, "{sssssssssssbsisssfsosbs{sisssssbso}}",
 		"model", &drive->model,
 		"vendor", &drive->vendor,
 		"revision", &drive->revision,
@@ -126,14 +129,15 @@ void st_drive_sync_v1(struct st_drive * drive, struct st_value * new_drive) {
 		"density code", &drive->density_code,
 		"mode", &mode,
 		"operation duration", &drive->operation_duration,
-		"last clean", &drive->last_clean,
+		"last clean", &last_clean,
 		"is empty", &drive->is_empty,
 
 		"slot",
 			"index", &sl->index,
 			"volume name", &sl->volume_name,
 			"type", &type,
-			"enable", &sl->enable
+			"enable", &sl->enable,
+			"media", &media
 	);
 
 	if (status != NULL)
@@ -144,8 +148,81 @@ void st_drive_sync_v1(struct st_drive * drive, struct st_value * new_drive) {
 		drive->mode = st_media_string_to_format_mode_v1(mode);
 	free(mode);
 
+	if (last_clean->type == st_value_null)
+		drive->last_clean = 0;
+	else
+		drive->last_clean = st_value_integer_get_v1(last_clean);
+
 	if (type != NULL)
 		sl->type = st_slot_string_to_type_v1(type);
 	free(type);
+
+	if (sl->media != NULL && (media == NULL || media->type == st_value_null)) {
+		st_media_free_v1(sl->media);
+		sl->media = NULL;
+	} else if (media != NULL && media->type != st_value_null) {
+		if (sl->media == NULL) {
+			sl->media = malloc(sizeof(struct st_media));
+			bzero(sl->media, sizeof(struct st_media));
+		} else {
+			free(sl->media->label);
+			free(sl->media->medium_serial_number);
+			free(sl->media->name);
+			sl->media->label = sl->media->medium_serial_number = sl->media->name = NULL;
+		}
+
+		char * uuid = NULL, * status = NULL, * location = NULL, * type = NULL;
+		long int nb_read_errors = 0, nb_write_errors = 0;
+		long int nb_volumes = 0;
+
+		st_value_unpack(media, "{sssssssssssssisisisisisisisisisisisisisiss}",
+			"uuid", &uuid,
+			"label", &sl->media->label,
+			"medium serial number", &sl->media->medium_serial_number,
+			"name", &sl->media->name,
+
+			"status", &status,
+			"location", &location,
+
+			"first used", &sl->media->first_used,
+			"use before", &sl->media->use_before,
+
+			"load count", &sl->media->load_count,
+			"read count", &sl->media->read_count,
+			"write count", &sl->media->write_count,
+			"operation count", &sl->media->operation_count,
+
+			"nb total read", &sl->media->nb_total_read,
+			"nb total write", &sl->media->nb_total_write,
+
+			"nb read errors", &nb_read_errors,
+			"nb write errors", &nb_write_errors,
+
+			"block size", &sl->media->block_size,
+			"free block", &sl->media->free_block,
+			"total block", &sl->media->total_block,
+
+			"nb volumes", &nb_volumes,
+			"type", &type
+		);
+
+		if (uuid != NULL) {
+			strncpy(sl->media->uuid, uuid, 36);
+			sl->media->uuid[36] = '\0';
+			free(uuid);
+		}
+
+		sl->media->status = st_media_string_to_status_v1(status);
+		sl->media->location = st_media_string_to_location_v1(location);
+		free(status);
+		free(location);
+
+		sl->media->nb_read_errors = nb_read_errors;
+		sl->media->nb_write_errors = nb_write_errors;
+
+		sl->media->nb_volumes = nb_volumes;
+		sl->media->type = st_media_string_to_type_v1(type);
+		free(type);
+	}
 }
 

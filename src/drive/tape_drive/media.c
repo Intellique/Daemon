@@ -24,35 +24,56 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_MEDIA_P_H__
-#define __LIBSTONE_MEDIA_P_H__
+#include <stddef.h>
 
 #include <libstone/media.h>
+#include <libstone/slot.h>
+#include <libstone-drive/drive.h>
 
-void st_media_free_v1(struct st_media * media) __attribute__((nonnull));
-void st_media_format_free_v1(struct st_media_format * format) __attribute__((nonnull));
-void st_pool_free_v1(struct st_pool * pool) __attribute__((nonnull));
+#include "media.h"
 
-const char * st_media_format_data_to_string_v1(enum st_media_format_data_type type);
-enum st_media_format_data_type st_media_string_to_format_data_v1(const char * type) __attribute__((nonnull));
+bool tape_drive_media_read_header(struct st_drive * drive, struct st_database_connection * db) {
+	struct st_media * media = drive->slot->media;
+	if (media == NULL)
+		return false;
 
-const char * st_media_format_mode_to_string_v1(enum st_media_format_mode mode);
-enum st_media_format_mode st_media_string_to_format_mode_v1(const char * mode) __attribute__((nonnull));
+	/*
+	struct st_stream_reader * reader = drive->ops->get_raw_reader(drive, 0);
+	if (reader == NULL) {
+		st_log_write_all(st_log_level_info, st_log_type_daemon, "[%s | %s | #%td]: failed to read media", drive->vendor, drive->model, drive - drive->changer->drives);
+		return 1;
+	}
 
-const char * st_media_location_to_string_v1(enum st_media_location location);
-enum st_media_location st_media_string_to_location_v1(const char * location) __attribute__((nonnull));
+	char buffer[512];
+	ssize_t nb_read = reader->ops->read(reader, buffer, 512);
+	reader->ops->close(reader);
+	reader->ops->free(reader);
 
-const char * st_media_status_to_string_v1(enum st_media_status status);
-enum st_media_status st_media_string_to_status_v1(const char * status) __attribute__((nonnull));
+	if (nb_read <= 0) {
+		st_log_write_all(st_log_level_warning, st_log_type_daemon, "[%s | %s | #%td]: media has no header", drive->vendor, drive->model, drive - drive->changer->drives);
+		return false;
+	}
 
-enum st_media_type st_media_string_to_type_v1(const char * type) __attribute__((nonnull));
-const char * st_media_type_to_string_v1(enum st_media_type type);
+	char stone_version[65];
+	int tape_format_version = 0;
+	int nb_parsed = 0;
+	bool ok = false;
 
-const char * st_pool_autocheck_mode_to_string_v1(enum st_pool_autocheck_mode mode);
-enum st_pool_autocheck_mode st_pool_string_to_autocheck_mode_v1(const char * mode) __attribute__((nonnull));
+	if (sscanf(buffer, "STone (%64[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
+		switch (tape_format_version) {
+			case 1:
+				ok = st_media_read_header_v1(media, buffer, nb_parsed, true);
+				break;
 
-enum st_pool_unbreakable_level st_pool_string_to_unbreakable_level_v1(const char * level) __attribute__((nonnull));
-const char * st_pool_unbreakable_level_to_string_v1(enum st_pool_unbreakable_level level);
+			case 2:
+				ok = st_media_read_header_v2(media, buffer, nb_parsed, true);
+				break;
+		}
+	}
 
-#endif
+	return ok;
+	*/
+
+	return false;
+}
 

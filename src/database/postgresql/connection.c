@@ -70,6 +70,7 @@ static struct st_value * st_database_postgresql_get_host_by_name(struct st_datab
 static struct st_value * st_database_postgresql_get_changers(struct st_database_connection * connect);
 static struct st_value * st_database_postgresql_get_drives_by_changer(struct st_database_connection * connect, const char * changer_id);
 static struct st_media * st_database_postgresql_get_media(struct st_database_connection * connect, const char * medium_serial_number, const char * label) __attribute__((nonnull,warn_unused_result));
+static struct st_media_format * st_database_postgresql_get_media_format(struct st_database_connection * connect, unsigned int density_code, enum st_media_format_mode mode);
 static struct st_value * st_database_postgresql_get_slot_by_drive(struct st_database_connection * connect, const char * drive_id);
 static struct st_value * st_database_postgresql_get_standalone_drives(struct st_database_connection * connect);
 static struct st_value * st_database_postgresql_get_vtls(struct st_database_connection * connect);
@@ -94,6 +95,7 @@ static struct st_database_connection_ops st_database_postgresql_connection_ops =
 
 	.get_changers          = st_database_postgresql_get_changers,
 	.get_media             = st_database_postgresql_get_media,
+	.get_media_format      = st_database_postgresql_get_media_format,
 	.get_standalone_drives = st_database_postgresql_get_standalone_drives,
 	.get_vtls              = st_database_postgresql_get_vtls,
 	.sync_changer          = st_database_postgresql_sync_changer,
@@ -570,6 +572,57 @@ static struct st_media * st_database_postgresql_get_media(struct st_database_con
 	return media;
 }
 
+static struct st_media_format * st_database_postgresql_get_media_format(struct st_database_connection * connect, unsigned int density_code, enum st_media_format_mode mode) {
+	if (connect == NULL || density_code == 0 || mode == st_media_format_mode_unknown)
+		return NULL;
+
+	struct st_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_media_format_by_density_code";
+	st_database_postgresql_prepare(self, query, "SELECT name, datatype, maxloadcount, maxreadcount, maxwritecount, maxopcount, EXTRACT('epoch' FROM lifespan), capacity, blocksize, densitycode, supportpartition, supportmam FROM mediaformat WHERE densitycode = $1 AND mode = $2 LIMIT 1");
+
+	char * c_density_code = NULL;
+	asprintf(&c_density_code, "%d", density_code);
+
+	const char * param[] = { c_density_code, st_media_format_mode_to_string(mode) };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	free(c_density_code);
+
+	struct st_media_format * format = NULL;
+
+	if (status == PGRES_FATAL_ERROR)
+		st_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		format = malloc(sizeof(struct st_media_format));
+		bzero(format, sizeof(struct st_media_format));
+
+		st_database_postgresql_get_string(result, 0, 0, format->name, 64);
+		format->density_code = density_code;
+		format->type = st_media_string_to_format_data(PQgetvalue(result, 0, 1));
+		format->mode = mode;
+
+		st_database_postgresql_get_long(result, 0, 2, &format->max_load_count);
+		st_database_postgresql_get_long(result, 0, 3, &format->max_read_count);
+		st_database_postgresql_get_long(result, 0, 4, &format->max_write_count);
+		st_database_postgresql_get_long(result, 0, 5, &format->max_operation_count);
+
+		st_database_postgresql_get_long(result, 0, 6, &format->life_span);
+
+		st_database_postgresql_get_ssize(result, 0, 7, &format->capacity);
+		st_database_postgresql_get_ssize(result, 0, 8, &format->block_size);
+		st_database_postgresql_get_uchar(result, 0, 9, &format->density_code);
+
+		st_database_postgresql_get_bool(result, 0, 10, &format->support_partition);
+		st_database_postgresql_get_bool(result, 0, 11, &format->support_mam);
+	}
+
+	PQclear(result);
+
+	return format;
+}
+
 static struct st_value * st_database_postgresql_get_standalone_drives(struct st_database_connection * connect) {
 	struct st_value * changers = st_value_new_linked_list();
 
@@ -1013,7 +1066,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 			st_database_postgresql_prepare(self, query, "UPDATE drive SET device = $1, scsidevice = $2, status = $3, operationduration = $4, lastclean = $5, firmwarerev = $6, driveformat = $7 WHERE id = $8");
 
 			char * op_duration = NULL, * last_clean = NULL;
-			asprintf(&op_duration, "%.3Lf", drive->operation_duration);
+			asprintf(&op_duration, "%.3f", drive->operation_duration);
 
 			if (drive->last_clean > 0) {
 				last_clean = malloc(24);
@@ -1046,7 +1099,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 			st_database_postgresql_prepare(self, query, "INSERT INTO drive(device, scsidevice, status, operationduration, lastclean, model, vendor, firmwarerev, serialnumber, changer, driveformat) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id");
 
 			char * op_duration = NULL, * last_clean = NULL;
-			asprintf(&op_duration, "%.3Lf", drive->operation_duration);
+			asprintf(&op_duration, "%.3f", drive->operation_duration);
 
 			db = st_value_hashtable_get(drive->changer->db_data, key, false, false);
 

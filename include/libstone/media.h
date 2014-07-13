@@ -131,11 +131,7 @@ struct st_media {
 	struct st_media_format * format;
 	struct st_pool * pool;
 
-	struct st_ressource * lock;
-	volatile bool locked;
-
-	void * data;
-	void * db_data;
+	struct st_value * db_data;
 };
 
 struct st_media_format {
@@ -170,10 +166,12 @@ struct st_pool {
 	bool deleted;
 
 	struct st_media_format * format;
-
-	void * db_data;
 };
 
+
+void st_media_free(struct st_media * media) __attribute__((nonnull));
+void st_media_format_free(struct st_media_format * format) __attribute__((nonnull));
+void st_pool_free(struct st_pool * pool) __attribute__((nonnull));
 
 const char * st_media_format_data_to_string(enum st_media_format_data_type type);
 enum st_media_format_data_type st_media_string_to_format_data(const char * type) __attribute__((nonnull));

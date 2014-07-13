@@ -50,6 +50,7 @@
 // close
 #include <unistd.h>
 
+#include <libstone/database.h>
 #include <libstone/log.h>
 #include <libstone/media.h>
 #include <libstone/slot.h>
@@ -57,17 +58,21 @@
 #include <libstone-drive/drive.h>
 
 #include "device.h"
+#include "media.h"
 #include "scsi.h"
 
+static void tape_drive_create_media(struct st_database_connection * db);
+static ssize_t tape_drive_get_block_size(void);
 static int tape_drive_init(struct st_value * config);
 static void tape_drive_on_failed(bool verbose, unsigned int sleep_time);
 static void tape_drive_operation_start(void);
 static void tape_drive_operation_stop(void);
-static int tape_drive_update_status(void);
+static int tape_drive_update_status(struct st_database_connection * db);
 
 static int fd_nst = -1;
 static struct mtget status;
 static struct timespec last_start;
+static int drive_index = 0;
 
 
 static struct st_drive_ops tape_drive_ops = {
@@ -101,6 +106,117 @@ static struct st_drive tape_drive = {
 };
 
 
+static void tape_drive_create_media(struct st_database_connection * db) {
+	struct st_media * media = malloc(sizeof(struct st_media));
+	bzero(media, sizeof(struct st_media));
+	tape_drive.slot->media = media;
+
+	if (tape_drive.slot->volume_name != NULL) {
+		media->label = strdup(tape_drive.slot->volume_name);
+		media->name = strdup(media->label);
+	}
+
+	unsigned int density_code = ((status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT) & 0xFF;
+	media->format = db->ops->get_media_format(db, (unsigned char) density_code, st_media_format_mode_linear);
+
+	media->status = st_media_status_foreign;
+	media->location = st_media_location_indrive;
+	media->first_used = time(NULL);
+	media->use_before = media->first_used + media->format->life_span;
+
+	media->load_count = 1;
+
+	media->block_size = tape_drive_get_block_size();
+
+	if (media->format != NULL && media->format->support_mam) {
+		int fd = open(tape_drive.scsi_device, O_RDWR);
+		int failed = tape_drive_scsi_read_mam(fd, media);
+		close(fd);
+
+		if (failed != 0)
+			st_log_write(st_log_level_warning, "[%s | %s | #%d]: failed to read medium axilary memory", tape_drive.vendor, tape_drive.model, drive_index);
+	}
+
+	tape_drive_media_read_header(&tape_drive, db);
+}
+
+static ssize_t tape_drive_get_block_size() {
+	ssize_t block_size = (status.mt_dsreg & MT_ST_BLKSIZE_MASK) >> MT_ST_BLKSIZE_SHIFT;
+	if (block_size > 0)
+		return block_size;
+
+	struct st_media * media = tape_drive.slot->media;
+	if (tape_drive.slot->media != NULL && media->block_size > 0)
+		return media->block_size;
+
+	tape_drive.status = st_drive_rewinding;
+
+	static struct mtop rewind = { MTREW, 1 };
+	tape_drive_operation_start();
+	int failed = ioctl(fd_nst, MTIOCTOP, &rewind);
+	tape_drive_operation_stop();
+
+	tape_drive.status = st_drive_loaded_idle;
+
+	unsigned int i;
+	ssize_t nb_read;
+	block_size = 1 << 16;
+	char * buffer = malloc(block_size);
+	for (i = 0; i < 4 && buffer != NULL && failed == 0; i++) {
+		tape_drive.status = st_drive_reading;
+
+		tape_drive_operation_start();
+		nb_read = read(fd_nst, buffer, block_size);
+		tape_drive_operation_stop();
+
+		tape_drive.status = st_drive_loaded_idle;
+
+		tape_drive_operation_start();
+		failed = ioctl(fd_nst, MTIOCGET, &status);
+		tape_drive_operation_stop();
+
+		if (!failed && status.mt_blkno < 1)
+			break;
+
+		if (media != NULL) {
+			media->last_read = time(NULL);
+			media->read_count++;
+			media->nb_total_read++;
+		}
+
+		if (nb_read > 0) {
+			st_log_write(st_log_level_notice, "[%s | %s | #%d]: found block size: %zd", tape_drive.vendor, tape_drive.model, drive_index, nb_read);
+
+			free(buffer);
+			return nb_read;
+		}
+
+		tape_drive.status = st_drive_rewinding;
+
+		tape_drive_operation_start();
+		failed = ioctl(fd_nst, MTIOCTOP, &rewind);
+		tape_drive_operation_stop();
+
+		tape_drive.status = st_drive_loaded_idle;
+
+		if (failed == 0) {
+			block_size <<= 1;
+			void * new_addr = realloc(buffer, block_size);
+			if (new_addr == NULL)
+				free(buffer);
+			buffer = new_addr;
+		} else
+			break;
+	}
+
+	free(buffer);
+
+	if (media != NULL && media->format != NULL)
+		return media->format->block_size;
+
+	return -1;
+}
+
 struct st_drive * tape_drive_get_device() {
 	return &tape_drive;
 }
@@ -114,6 +230,7 @@ static int tape_drive_init(struct st_value * config) {
 	st_value_unpack(config, "{sssssssbs{sisbssss}}", "model", &tape_drive.model, "vendor", &tape_drive.vendor, "serial number", &tape_drive.serial_number, "enable", &tape_drive.enable, "slot", "index", &sl->index, "enable", &sl->enable, "type", &type, "volume name", &sl->volume_name);
 	sl->type = st_slot_string_to_type(type);
 	free(type);
+	drive_index = sl->index;
 
 	glob_t gl;
 	glob("/sys/class/scsi_device/*/device/scsi_tape", 0, NULL, &gl);
@@ -180,8 +297,8 @@ static int tape_drive_init(struct st_value * config) {
 }
 
 static void tape_drive_on_failed(bool verbose, unsigned int sleep_time) {
-	// if (verbose)
-	//	st_log_write_all(st_log_level_debug, st_log_type_drive, "[%s | %s | #%td]: Try to recover an error", drive->vendor, drive->model, drive - drive->changer->drives);
+	if (verbose)
+		st_log_write(st_log_level_debug, "[%s | %s | #%d]: Try to recover an error", tape_drive.vendor, tape_drive.model, drive_index);
 
 	close(fd_nst);
 	sleep(sleep_time);
@@ -199,7 +316,7 @@ static void tape_drive_operation_stop() {
 	tape_drive.operation_duration += (finish.tv_sec - last_start.tv_sec) + (finish.tv_nsec - last_start.tv_nsec) / 1000000000.0;
 }
 
-static int tape_drive_update_status() {
+static int tape_drive_update_status(struct st_database_connection * db) {
 	tape_drive_operation_start();
 	int failed = ioctl(fd_nst, MTIOCGET, &status);
 	tape_drive_operation_stop();
@@ -257,30 +374,28 @@ static int tape_drive_update_status() {
 		if (tape_drive.slot->media == NULL && !tape_drive.is_empty) {
 			char medium_serial_number[32];
 			int fd = open(tape_drive.scsi_device, O_RDWR);
-
-			// failed = st_scsi_tape_read_medium_serial_number(fd, medium_serial_number, 32);
-
+			failed = tape_drive_scsi_read_medium_serial_number(fd, medium_serial_number, 32);
 			close(fd);
 
-			// if (failed == 0)
-			// tape_drive.slot->media = st_media_get_by_medium_serial_number(medium_serial_number);
+			if (failed == 0)
+				tape_drive.slot->media = db->ops->get_media(db, medium_serial_number, NULL);
 
-			// if (drive->slot->media == NULL)
-			//	st_scsi_tape_drive_create_media(drive);
+			if (tape_drive.slot->media == NULL)
+				tape_drive_create_media(db);
 		}
 
 		if (tape_drive.slot->media != NULL && !tape_drive.is_empty) {
 			struct st_media * media = tape_drive.slot->media;
 
 			int fd = open(tape_drive.scsi_device, O_RDWR);
-			// st_scsi_tape_size_available(fd, media);
+			tape_drive_scsi_size_available(fd, media);
 			close(fd);
 
 			media->type = GMT_WR_PROT(status.mt_gstat) ? st_media_type_readonly : st_media_type_rewritable;
 
 			if (is_empty && media->status == st_media_status_in_use) {
+				st_log_write(st_log_level_info, "[%s | %s | #%d]: Checking media header", tape_drive.vendor, tape_drive.model, drive_index);
 				/*
-				st_log_write(st_log_level_info, "[%s | %s | #%td]: Checking media header", tape_drive.vendor, tape_drive.model, drive - tape_drive.changer->drives);
 				if (!st_media_check_header(drive)) {
 					media->status = st_media_status_error;
 					st_log_write_all(st_log_level_error, st_log_type_drive, "[%s | %s | #%td]: Error while checking media header", drive->vendor, drive->model, drive - drive->changer->drives);

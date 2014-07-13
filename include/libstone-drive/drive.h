@@ -29,6 +29,7 @@
 
 #include <libstone/drive.h>
 
+struct st_database_connection;
 struct st_value;
 
 struct st_drive_driver {
@@ -43,7 +44,7 @@ struct st_drive_driver {
 
 struct st_drive_ops {
 	int (*init)(struct st_value * config);
-	int (*update_status)(void);
+	int (*update_status)(struct st_database_connection * db);
 };
 
 void stdr_drive_register(struct st_drive_driver * dr);

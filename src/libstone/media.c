@@ -158,6 +158,39 @@ static void st_media_init(void) {
 }
 
 
+__asm__(".symver st_media_free_v1, st_media_free@@LIBSTONE_1.2");
+void st_media_free_v1(struct st_media * media) {
+	if (media == NULL)
+		return;
+
+	free(media->label);
+	free(media->medium_serial_number);
+	free(media->name);
+
+	st_media_format_free_v1(media->format);
+	st_pool_free_v1(media->pool);
+
+	st_value_free_v1(media->db_data);
+
+	free(media);
+}
+
+__asm__(".symver st_media_format_free_v1, st_media_format_free@@LIBSTONE_1.2");
+void st_media_format_free_v1(struct st_media_format * format) {
+	free(format);
+}
+
+__asm__(".symver st_pool_free_v1, st_pool_free@@LIBSTONE_1.2");
+void st_pool_free_v1(struct st_pool * pool) {
+	if (pool == NULL)
+		return;
+
+	free(pool->name);
+	st_media_format_free_v1(pool->format);
+	free(pool);
+}
+
+
 __asm__(".symver st_media_format_data_to_string_v1, st_media_format_data_to_string@@LIBSTONE_1.2");
 const char * st_media_format_data_to_string_v1(enum st_media_format_data_type type) {
 	unsigned int i;
