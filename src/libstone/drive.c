@@ -59,8 +59,6 @@ void st_drive_free_v1(struct st_drive * drive) {
 	if (drive == NULL)
 		return;
 
-	free(drive->device);
-	free(drive->scsi_device);
 	free(drive->model);
 	free(drive->vendor);
 	free(drive->revision);

@@ -69,6 +69,8 @@ static void tape_drive_operation_start(void);
 static void tape_drive_operation_stop(void);
 static int tape_drive_update_status(struct st_database_connection * db);
 
+static char * tape_scsi_device = NULL;
+static char * st_device = NULL;
 static int fd_nst = -1;
 static struct mtget status;
 static struct timespec last_start;
@@ -81,8 +83,6 @@ static struct st_drive_ops tape_drive_ops = {
 };
 
 static struct st_drive tape_drive = {
-	.device      = NULL,
-	.scsi_device = NULL,
 	.status      = st_drive_unknown,
 	.enable      = true,
 
@@ -129,7 +129,7 @@ static void tape_drive_create_media(struct st_database_connection * db) {
 	media->block_size = tape_drive_get_block_size();
 
 	if (media->format != NULL && media->format->support_mam) {
-		int fd = open(tape_drive.scsi_device, O_RDWR);
+		int fd = open(tape_scsi_device, O_RDWR);
 		int failed = tape_drive_scsi_read_mam(fd, media);
 		close(fd);
 
@@ -270,14 +270,14 @@ static int tape_drive_init(struct st_value * config) {
 
 		found = tape_drive_scsi_check_drive(&tape_drive, scsi_device);
 		if (found) {
-			tape_drive.device = strdup(device);
-			tape_drive.scsi_device = strdup(scsi_device);
+			st_device = strdup(device);
+			tape_scsi_device = strdup(scsi_device);
 		}
 	}
 	globfree(&gl);
 
 	if (found) {
-		fd_nst = open(tape_drive.device, O_RDWR | O_NONBLOCK);
+		fd_nst = open(st_device, O_RDWR | O_NONBLOCK);
 		tape_drive_operation_start();
 		int failed = ioctl(fd_nst, MTIOCGET, &status);
 		tape_drive_operation_stop();
@@ -302,7 +302,7 @@ static void tape_drive_on_failed(bool verbose, unsigned int sleep_time) {
 
 	close(fd_nst);
 	sleep(sleep_time);
-	fd_nst = open(tape_drive.device, O_RDWR | O_NONBLOCK);
+	fd_nst = open(st_device, O_RDWR | O_NONBLOCK);
 }
 
 static void tape_drive_operation_start() {
@@ -373,7 +373,7 @@ static int tape_drive_update_status(struct st_database_connection * db) {
 
 		if (tape_drive.slot->media == NULL && !tape_drive.is_empty) {
 			char medium_serial_number[32];
-			int fd = open(tape_drive.scsi_device, O_RDWR);
+			int fd = open(tape_scsi_device, O_RDWR);
 			failed = tape_drive_scsi_read_medium_serial_number(fd, medium_serial_number, 32);
 			close(fd);
 
@@ -387,7 +387,7 @@ static int tape_drive_update_status(struct st_database_connection * db) {
 		if (tape_drive.slot->media != NULL && !tape_drive.is_empty) {
 			struct st_media * media = tape_drive.slot->media;
 
-			int fd = open(tape_drive.scsi_device, O_RDWR);
+			int fd = open(tape_scsi_device, O_RDWR);
 			tape_drive_scsi_size_available(fd, media);
 			close(fd);
 

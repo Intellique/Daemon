@@ -100,8 +100,6 @@ struct st_value * stctl_detect_hardware() {
 		// struct st_value * drive = st_value_pack("{sssssssssbsfsis{}}", "device", device, "scsi device", scsi_device, "status", "unknown", "mode", "linear", "enabled", true, "operation duration", 0.0, "last clean", 0, "db");
 		struct st_drive * drive = malloc(sizeof(struct st_drive));
 		bzero(drive, sizeof(struct st_drive));
-		drive->device = device;
-		drive->scsi_device = scsi_device;
 		drive->status = st_drive_unknown;
 		// drive->mode
 

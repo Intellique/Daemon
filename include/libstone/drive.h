@@ -52,8 +52,6 @@ enum st_drive_status {
 };
 
 struct st_drive {
-	char * device;
-	char * scsi_device;
 	enum st_drive_status status;
 	bool enable;
 

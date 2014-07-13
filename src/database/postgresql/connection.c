@@ -1063,7 +1063,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 
 		if (drive_id != NULL) {
 			const char * query = "update_drive";
-			st_database_postgresql_prepare(self, query, "UPDATE drive SET device = $1, scsidevice = $2, status = $3, operationduration = $4, lastclean = $5, firmwarerev = $6, driveformat = $7 WHERE id = $8");
+			st_database_postgresql_prepare(self, query, "UPDATE drive SET status = $1, operationduration = $2, lastclean = $3, firmwarerev = $4, driveformat = $5 WHERE id = $6");
 
 			char * op_duration = NULL, * last_clean = NULL;
 			asprintf(&op_duration, "%.3f", drive->operation_duration);
@@ -1074,10 +1074,9 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 			}
 
 			const char * param[] = {
-				drive->device, drive->scsi_device, st_drive_status_to_string(drive->status),
-				op_duration, last_clean, drive->revision, driveformat_id, drive_id,
+				st_drive_status_to_string(drive->status), op_duration, last_clean, drive->revision, driveformat_id, drive_id,
 			};
-			PGresult * result = PQexecPrepared(self->connect, query, 8, param, NULL, NULL, 0);
+			PGresult * result = PQexecPrepared(self->connect, query, 6, param, NULL, NULL, 0);
 			ExecStatusType status = PQresultStatus(result);
 
 			if (status == PGRES_FATAL_ERROR)
@@ -1096,7 +1095,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 			}
 		} else if (method == st_database_sync_init) {
 			const char * query = "insert_drive";
-			st_database_postgresql_prepare(self, query, "INSERT INTO drive(device, scsidevice, status, operationduration, lastclean, model, vendor, firmwarerev, serialnumber, changer, driveformat) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id");
+			st_database_postgresql_prepare(self, query, "INSERT INTO drivestatus, operationduration, lastclean, model, vendor, firmwarerev, serialnumber, changer, driveformat) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id");
 
 			char * op_duration = NULL, * last_clean = NULL;
 			asprintf(&op_duration, "%.3f", drive->operation_duration);
@@ -1112,10 +1111,10 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 			}
 
 			const char * param[] = {
-				drive->device, drive->scsi_device, st_drive_status_to_string(drive->status), op_duration, last_clean,
+				st_drive_status_to_string(drive->status), op_duration, last_clean,
 				drive->model, drive->vendor, drive->revision, drive->serial_number, changer_id, driveformat_id
 			};
-			PGresult * result = PQexecPrepared(self->connect, query, 11, param, NULL, NULL, 0);
+			PGresult * result = PQexecPrepared(self->connect, query, 9, param, NULL, NULL, 0);
 			ExecStatusType status = PQresultStatus(result);
 
 			if (status == PGRES_FATAL_ERROR)
