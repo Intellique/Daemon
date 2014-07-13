@@ -40,13 +40,13 @@ struct scsi_changer_slot {
 	struct st_slot * src_slot;
 };
 
-void scsi_changer_scsi_loader_check_slot(struct st_changer * changer, struct st_slot * slot);
+void scsi_changer_scsi_loader_check_slot(struct st_changer * changer, const char * device, struct st_slot * slot);
 bool scsi_changer_scsi_check_changer(struct st_changer * changer, const char * path);
 bool scsi_changer_scsi_check_drive(struct st_drive * drive, const char * path);
-int scsi_changer_scsi_loader_ready(struct st_changer * changer);
-int scsi_changer_scsi_medium_removal(struct st_changer * changer, bool allow);
-int scsi_changer_scsi_move(struct st_changer * changer, int transport_address, struct st_slot * from, struct st_slot * to);
-void scsi_changer_scsi_new_status(struct st_changer * changer, struct st_value * available_drives, int * transport_address);
+int scsi_changer_scsi_loader_ready(const char * device);
+int scsi_changer_scsi_medium_removal(const char * device, bool allow);
+int scsi_changer_scsi_move(const char * device, int transport_address, struct st_slot * from, struct st_slot * to);
+void scsi_changer_scsi_new_status(struct st_changer * changer, const char * device, struct st_value * available_drives, int * transport_address);
 
 #endif
 

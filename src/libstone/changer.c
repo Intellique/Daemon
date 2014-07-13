@@ -57,7 +57,6 @@ void st_changer_free_v1(struct st_changer * changer) {
 	if (changer == NULL)
 		return;
 
-	free(changer->device);
 	free(changer->model);
 	free(changer->vendor);
 	free(changer->revision);

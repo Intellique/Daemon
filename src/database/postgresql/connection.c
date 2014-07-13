@@ -815,10 +815,10 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 	if (method != st_database_sync_id_only) {
 		if (changer_id != NULL) {
 			const char * query = "update_changer";
-			st_database_postgresql_prepare(self, query, "UPDATE changer SET device = $1, status = $2, firmwarerev = $3 WHERE id = $4");
+			st_database_postgresql_prepare(self, query, "UPDATE changer SET status = $1, firmwarerev = $2 WHERE id = $3");
 
-			const char * params[] = { changer->device, st_changer_status_to_string(changer->status), changer->revision, changer_id };
-			PGresult * result = PQexecPrepared(self->connect, query, 4, params, NULL, NULL, 0);
+			const char * params[] = { st_changer_status_to_string(changer->status), changer->revision, changer_id };
+			PGresult * result = PQexecPrepared(self->connect, query, 3, params, NULL, NULL, 0);
 			ExecStatusType status = PQresultStatus(result);
 
 			PQclear(result);
@@ -834,14 +834,14 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 			}
 		} else if (method == st_database_sync_init) {
 			const char * query = "insert_changer";
-			st_database_postgresql_prepare(self, query, "INSERT INTO changer(device, status, barcode, model, vendor, firmwarerev, serialnumber, wwn, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id");
+			st_database_postgresql_prepare(self, query, "INSERT INTO changer(status, barcode, model, vendor, firmwarerev, serialnumber, wwn, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id");
 
 			const char * param[] = {
-				changer->device, st_changer_status_to_string(changer->status), changer->barcode ? "true" : "false",
+				st_changer_status_to_string(changer->status), changer->barcode ? "true" : "false",
 				changer->model, changer->vendor, changer->revision, changer->serial_number, changer->wwn, hostid,
 			};
 
-			PGresult * result = PQexecPrepared(self->connect, query, 9, param, NULL, NULL, 0);
+			PGresult * result = PQexecPrepared(self->connect, query, 8, param, NULL, NULL, 0);
 			ExecStatusType status = PQresultStatus(result);
 
 			if (status == PGRES_FATAL_ERROR)

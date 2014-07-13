@@ -63,6 +63,7 @@ static int scsi_changer_unload(struct st_drive * from, struct st_database_connec
 static int scsi_changer_shut_down(struct st_database_connection * db_connection);
 static void scsi_changer_wait(void);
 
+static char * scsi_changer_device = NULL;
 static int scsi_changer_transport_address = -1;
 static pthread_mutex_t scsi_changer_lock = PTHREAD_MUTEX_INITIALIZER;
 static volatile unsigned int scsi_changer_nb_worker = 0;
@@ -75,7 +76,6 @@ struct st_changer_ops scsi_changer_ops = {
 };
 
 static struct st_changer scsi_changer = {
-	.device  = NULL,
 	.status  = st_changer_unknown,
 	.enabled = true,
 
@@ -172,8 +172,7 @@ static int scsi_changer_init(struct st_value * config, struct st_database_connec
 			found = scsi_changer_scsi_check_changer(&scsi_changer, device);
 
 		if (found) {
-			scsi_changer.device = device;
-
+			scsi_changer_device = device;
 			st_log_write(st_log_level_info, "Found scsi changer %s %s, serial: %s", scsi_changer.vendor, scsi_changer.model, scsi_changer.serial_number);
 		} else {
 			free(device);
@@ -213,7 +212,7 @@ static int scsi_changer_init(struct st_value * config, struct st_database_connec
 	}
 
 	if (found && scsi_changer.enabled && scsi_changer.is_online)
-		scsi_changer_scsi_new_status(&scsi_changer, available_drives, &scsi_changer_transport_address);
+		scsi_changer_scsi_new_status(&scsi_changer, scsi_changer_device, available_drives, &scsi_changer_transport_address);
 
 	st_value_free(available_drives);
 
@@ -335,16 +334,16 @@ static int scsi_changer_load(struct st_slot * from, struct st_drive * to, struct
 
 	st_log_write(st_log_level_notice, "[%s | %s]: loading media '%s' from slot #%u to drive #%td", scsi_changer.vendor, scsi_changer.model, from->volume_name, from->index, to - scsi_changer.drives);
 
-	int failed = scsi_changer_scsi_move(&scsi_changer, scsi_changer_transport_address, from, to->slot);
+	int failed = scsi_changer_scsi_move(scsi_changer_device, scsi_changer_transport_address, from, to->slot);
 
 	if (failed) {
 		scsi_changer_wait();
 
 		struct st_slot tmp_from = *from;
-		scsi_changer_scsi_loader_check_slot(&scsi_changer, &tmp_from);
+		scsi_changer_scsi_loader_check_slot(&scsi_changer, scsi_changer_device, &tmp_from);
 
 		struct st_slot tmp_to = *to->slot;
-		scsi_changer_scsi_loader_check_slot(&scsi_changer, &tmp_to);
+		scsi_changer_scsi_loader_check_slot(&scsi_changer, scsi_changer_device, &tmp_to);
 
 		failed = tmp_from.full || !tmp_to.full;
 	}
@@ -415,16 +414,16 @@ static int scsi_changer_unload(struct st_drive * from, struct st_database_connec
 
 	st_log_write(st_log_level_notice, "[%s | %s]: unloading media '%s' from drive #%u to slot #%td", scsi_changer.vendor, scsi_changer.model, from->slot->volume_name, to->index, from - scsi_changer.drives);
 
-	failed = scsi_changer_scsi_move(&scsi_changer, scsi_changer_transport_address, from->slot, to);
+	failed = scsi_changer_scsi_move(scsi_changer_device, scsi_changer_transport_address, from->slot, to);
 
 	if (failed != 0) {
 		scsi_changer_wait();
 
 		struct st_slot tmp_from = *from->slot;
-		scsi_changer_scsi_loader_check_slot(&scsi_changer, &tmp_from);
+		scsi_changer_scsi_loader_check_slot(&scsi_changer, scsi_changer_device, &tmp_from);
 
 		struct st_slot tmp_to = *to;
-		scsi_changer_scsi_loader_check_slot(&scsi_changer, &tmp_to);
+		scsi_changer_scsi_loader_check_slot(&scsi_changer, scsi_changer_device, &tmp_to);
 
 		failed = tmp_from.full || !tmp_to.full;
 	}
@@ -458,7 +457,7 @@ static int scsi_changer_shut_down(struct st_database_connection * db_connection 
 
 static void scsi_changer_wait() {
 	bool is_ready = true;
-	while (scsi_changer_scsi_loader_ready(&scsi_changer)) {
+	while (scsi_changer_scsi_loader_ready(scsi_changer_device)) {
 		if (is_ready) {
 			// log message
 			is_ready = false;

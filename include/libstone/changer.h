@@ -54,10 +54,6 @@ enum st_changer_status {
  */
 struct st_changer {
 	/**
-	 * \brief Filename of device
-	 */
-	char * device;
-	/**
 	 * \brief Status of changer
 	 */
 	enum st_changer_status status;

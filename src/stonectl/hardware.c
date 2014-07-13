@@ -146,7 +146,6 @@ struct st_value * stctl_detect_hardware() {
 
 		struct st_changer * changer = malloc(sizeof(struct st_changer));
 		bzero(changer, sizeof(struct st_changer));
-		changer->device = strdup(device);
 		changer->status = st_changer_unknown;
 		changer->enabled = true;
 
