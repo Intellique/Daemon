@@ -171,11 +171,13 @@ void st_drive_sync_v1(struct st_drive * drive, struct st_value * new_drive) {
 			sl->media->label = sl->media->medium_serial_number = sl->media->name = NULL;
 		}
 
-		char * uuid = NULL, * status = NULL, * location = NULL, * type = NULL;
+		struct st_value * uuid = NULL;
+		char * status = NULL, * location = NULL, * type = NULL;
+		struct st_value * last_read = NULL, * last_write = NULL;
 		long int nb_read_errors = 0, nb_write_errors = 0;
 		long int nb_volumes = 0;
 
-		st_value_unpack(media, "{sssssssssssssisisisisisisisisisisisisisiss}",
+		st_value_unpack(media, "{sosssssssssssisisososisisisisisisisisisiss}",
 			"uuid", &uuid,
 			"label", &sl->media->label,
 			"medium serial number", &sl->media->medium_serial_number,
@@ -186,6 +188,8 @@ void st_drive_sync_v1(struct st_drive * drive, struct st_value * new_drive) {
 
 			"first used", &sl->media->first_used,
 			"use before", &sl->media->use_before,
+			"last read", &last_read,
+			"last write", &last_write,
 
 			"load count", &sl->media->load_count,
 			"read count", &sl->media->read_count,
@@ -207,15 +211,32 @@ void st_drive_sync_v1(struct st_drive * drive, struct st_value * new_drive) {
 		);
 
 		if (uuid != NULL) {
-			strncpy(sl->media->uuid, uuid, 36);
-			sl->media->uuid[36] = '\0';
-			free(uuid);
+			if (uuid->type != st_value_null) {
+				strncpy(sl->media->uuid, st_value_string_get_v1(uuid), 36);
+				sl->media->uuid[36] = '\0';
+			} else {
+				sl->media->uuid[0] = '\0';
+			}
 		}
 
 		sl->media->status = st_media_string_to_status_v1(status);
 		sl->media->location = st_media_string_to_location_v1(location);
 		free(status);
 		free(location);
+
+		if (last_read != NULL) {
+			if (last_read->type != st_value_null)
+				sl->media->last_read = st_value_integer_get_v1(last_read);
+			else
+				sl->media->last_read = 0;
+		}
+
+		if (last_write != NULL) {
+			if (last_write->type != st_value_null)
+				sl->media->last_write = st_value_integer_get_v1(last_write);
+			else
+				sl->media->last_write = 0;
+		}
 
 		sl->media->nb_read_errors = nb_read_errors;
 		sl->media->nb_write_errors = nb_write_errors;
