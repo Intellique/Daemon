@@ -100,7 +100,7 @@ struct st_value * stctl_detect_hardware() {
 		// struct st_value * drive = st_value_pack("{sssssssssbsfsis{}}", "device", device, "scsi device", scsi_device, "status", "unknown", "mode", "linear", "enabled", true, "operation duration", 0.0, "last clean", 0, "db");
 		struct st_drive * drive = malloc(sizeof(struct st_drive));
 		bzero(drive, sizeof(struct st_drive));
-		drive->status = st_drive_unknown;
+		drive->status = st_drive_status_unknown;
 		// drive->mode
 
 		stctl_scsi_tapeinfo(scsi_device, drive);
@@ -144,8 +144,8 @@ struct st_value * stctl_detect_hardware() {
 
 		struct st_changer * changer = malloc(sizeof(struct st_changer));
 		bzero(changer, sizeof(struct st_changer));
-		changer->status = st_changer_unknown;
-		changer->enabled = true;
+		changer->status = st_changer_status_unknown;
+		changer->enable = true;
 
 		asprintf(&path, "/sys/class/sas_host/host%d", host);
 		struct stat st;

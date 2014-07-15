@@ -26,31 +26,61 @@
 
 // free
 #include <stdlib.h>
-// strcasecmp
-#include <string.h>
 
 #include "changer.h"
 #include "drive.h"
 #include "slot.h"
+#include "string.h"
 #include "value.h"
 
-static const struct st_changer_status2 {
+static struct st_changer_status2 {
 	const char * name;
-	enum st_changer_status status;
+	const enum st_changer_status status;
+	unsigned long long hash;
 } st_library_status[] = {
-	{ "error",		st_changer_error },
-	{ "exporting",	st_changer_exporting },
-	{ "idle",		st_changer_idle },
-	{ "go offline", st_changer_go_offline },
-	{ "go online",  st_changer_go_online },
-	{ "importing",	st_changer_importing },
-	{ "loading",	st_changer_loading },
-	{ "offline",    st_changer_offline },
-	{ "unloading",	st_changer_unloading },
+	{ "error",		st_changer_status_error,      0 },
+	{ "exporting",	st_changer_status_exporting,  0 },
+	{ "idle",		st_changer_status_idle,       0 },
+	{ "go offline", st_changer_status_go_offline, 0 },
+	{ "go online",  st_changer_status_go_online,  0 },
+	{ "importing",	st_changer_status_importing,  0 },
+	{ "loading",	st_changer_status_loading,    0 },
+	{ "offline",    st_changer_status_offline,    0 },
+	{ "unloading",	st_changer_status_unloading,  0 },
 
-	{ "unknown", st_changer_unknown },
+	{ "unknown", st_changer_status_unknown, 0 },
 };
 
+static void st_changer_init(void) __attribute__((constructor));
+
+
+__asm__(".symver st_changer_convert_v1, st_changer_convert@@LIBSTONE_1.2");
+struct st_value * st_changer_convert_v1(struct st_changer * changer) {
+	struct st_value * drives = st_value_new_array_v1(changer->nb_drives);
+	unsigned int i;
+	for (i = 0; i < changer->nb_drives; i++)
+		st_value_list_push_v1(drives, st_drive_convert_v1(changer->drives + i, false), true);
+
+	struct st_value * slots = st_value_new_array_v1(changer->nb_slots);
+	for (i = 0; i < changer->nb_slots; i++)
+		st_value_list_push_v1(slots, st_slot_convert_v1(changer->slots + i), true);
+
+	return st_value_pack_v1("{sssssssssssbsssbsbsoso}",
+		"model", changer->model,
+		"vendor", changer->vendor,
+		"revision", changer->revision,
+		"serial number", changer->serial_number,
+		"wwn", changer->wwn,
+		"barcode", changer->barcode,
+
+		"status", st_changer_status_to_string_v1(changer->status),
+		"is online", changer->is_online,
+		"enable", changer->enable,
+
+		"drives", drives,
+		"slots", slots
+	);
+}
 
 __asm__(".symver st_changer_free_v1, st_changer_free@@LIBSTONE_1.2");
 void st_changer_free_v1(struct st_changer * changer) {
@@ -81,10 +111,17 @@ void st_changer_free2_v1(void * changer) {
 	st_changer_free_v1(changer);
 }
 
+static void st_changer_init() {
+	int i;
+	for (i = 0; st_library_status[i].status != st_changer_status_unknown; i++)
+		st_library_status[i].hash = st_string_compute_hash2(st_library_status[i].name);
+	st_library_status[i].hash = st_string_compute_hash2(st_library_status[i].name);
+}
+
 __asm__(".symver st_changer_status_to_string_v1, st_changer_status_to_string@@LIBSTONE_1.2");
 const char * st_changer_status_to_string_v1(enum st_changer_status status) {
 	unsigned int i;
-	for (i = 0; st_library_status[i].status != st_changer_unknown; i++)
+	for (i = 0; st_library_status[i].status != st_changer_status_unknown; i++)
 		if (st_library_status[i].status == status)
 			return st_library_status[i].name;
 
@@ -94,13 +131,61 @@ const char * st_changer_status_to_string_v1(enum st_changer_status status) {
 __asm__(".symver st_changer_string_to_status_v1, st_changer_string_to_status@@LIBSTONE_1.2");
 enum st_changer_status st_changer_string_to_status_v1(const char * status) {
 	if (status == NULL)
-		return st_changer_unknown;
+		return st_changer_status_unknown;
 
 	unsigned int i;
-	for (i = 0; st_library_status[i].status != st_changer_unknown; i++)
-		if (!strcasecmp(status, st_library_status[i].name))
+	const unsigned long long hash = st_string_compute_hash2(status);
+	for (i = 0; st_library_status[i].status != st_changer_status_unknown; i++)
+		if (hash == st_library_status[i].hash)
 			return st_library_status[i].status;
 
 	return st_library_status[i].status;
+}
+
+__asm__(".symver st_changer_sync_v1, st_changer_sync@@LIBSTONE_1.2");
+void st_changer_sync_v1(struct st_changer * changer, struct st_value * new_changer) {
+	free(changer->model);
+	free(changer->vendor);
+	free(changer->revision);
+	free(changer->serial_number);
+	free(changer->wwn);
+
+	char * status = NULL;
+	struct st_value * drives = NULL, * slots = NULL;
+
+	st_value_unpack_v1(new_changer, "{sssssssssssbsssbsbsoso}",
+		"model", &changer->model,
+		"vendor", &changer->vendor,
+		"revision", &changer->revision,
+		"serial number", &changer->serial_number,
+		"wwn", &changer->wwn,
+		"barcode", &changer->barcode,
+
+		"status", &status,
+		"is online", &changer->is_online,
+		"enable", &changer->enable,
+
+		"drives", &drives,
+		"slots", &slots
+	);
+
+	if (status != NULL)
+		changer->status = st_changer_string_to_status_v1(status);
+	free(status);
+
+	unsigned int i;
+	struct st_value_iterator * iter = st_value_list_get_iterator_v1(drives);
+	for (i = 0; i < changer->nb_drives; i++) {
+		struct st_value * drive = st_value_iterator_get_value_v1(iter, false);
+		st_drive_sync_v1(changer->drives + i, drive, false);
+	}
+	st_value_iterator_free_v1(iter);
+
+	iter = st_value_list_get_iterator_v1(slots);
+	for (i = 0; i < changer->nb_slots; i++) {
+		struct st_value * slot = st_value_iterator_get_value_v1(iter, false);
+		st_slot_sync_v1(changer->slots + i, slot);
+	}
+	st_value_iterator_free_v1(iter);
 }
 

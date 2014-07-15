@@ -1,9 +1,11 @@
 LIBSTONE_1.2 {
 	global:
+		st_changer_convert;
 		st_changer_free;
 		st_changer_free2;
 		st_changer_status_to_string;
 		st_changer_string_to_status;
+		st_changer_sync;
 
 		st_checksum_compute;
 		st_checksum_convert_to_hex;
@@ -19,6 +21,7 @@ LIBSTONE_1.2 {
 
 		st_debug_log_stack;
 
+		st_drive_convert;
 		st_drive_free;
 		st_drive_free2;
 		st_drive_status_to_string;
@@ -54,18 +57,22 @@ LIBSTONE_1.2 {
 		st_log_type_to_string;
 		st_log_write;
 
-		st_media_format_data_to_string;
+		st_media_convert;
+		st_media_format_convert;
+		st_media_format_data_type_to_string;
 		st_media_format_free;
 		st_media_format_mode_to_string;
+		st_media_format_sync;
 		st_media_free;
 		st_media_location_to_string;
 		st_media_status_to_string;
-		st_media_string_to_format_data;
+		st_media_string_to_format_data_type;
 		st_media_string_to_format_mode;
 		st_media_string_to_location;
 		st_media_string_to_status;
 		st_media_string_to_type;
 		st_media_type_to_string;
+		st_media_sync;
 
 		st_poll;
 		st_poll_nb_handlers;
@@ -73,10 +80,12 @@ LIBSTONE_1.2 {
 		st_poll_unregister;
 
 		st_pool_autocheck_mode_to_string;
+		st_pool_convert;
 		st_pool_free;
 		st_pool_string_to_autocheck_mode;
 		st_pool_string_to_unbreakable_level;
 		st_pool_unbreakable_level_to_string;
+		st_pool_sync;
 
 		st_process_close;
 		st_process_drop_environment;
@@ -94,10 +103,12 @@ LIBSTONE_1.2 {
 		st_process_start;
 		st_process_wait;
 
+		st_slot_convert;
 		st_slot_free;
 		st_slot_free2;
 		st_slot_type_to_string;
 		st_slot_string_to_type;
+		st_slot_sync;
 
 		st_socket;
 		st_socket_server;

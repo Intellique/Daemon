@@ -33,6 +33,7 @@
 struct st_changer;
 struct st_drive;
 struct st_media;
+struct st_value;
 
 enum st_slot_type {
 	st_slot_type_drive = 0x1,
@@ -61,10 +62,12 @@ struct st_slot {
 	void * db_data;
 };
 
+struct st_value * st_slot_convert(struct st_slot * slot) __attribute__((nonnull,warn_unused_result));
 void st_slot_free(struct st_slot * slot) __attribute__((nonnull));
 void st_slot_free2(void * slot) __attribute__((nonnull));
 const char * st_slot_type_to_string(enum st_slot_type type);
 enum st_slot_type st_slot_string_to_type(const char * type) __attribute__((nonnull));
+void st_slot_sync(struct st_slot * slot, struct st_value * new_slot) __attribute__((nonnull));
 
 #endif
 

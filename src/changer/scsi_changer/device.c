@@ -76,15 +76,15 @@ struct st_changer_ops scsi_changer_ops = {
 };
 
 static struct st_changer scsi_changer = {
-	.status  = st_changer_unknown,
-	.enabled = true,
-
 	.model         = NULL,
 	.vendor        = NULL,
 	.revision      = NULL,
 	.serial_number = NULL,
 	.wwn           = NULL,
 	.barcode       = false,
+
+	.status  = st_changer_status_unknown,
+	.enable  = true,
 
 	.drives    = NULL,
 	.nb_drives = 0,
@@ -104,7 +104,7 @@ struct st_changer * scsi_changer_get_device() {
 }
 
 static int scsi_changer_init(struct st_value * config, struct st_database_connection * db_connection) {
-	st_value_unpack(config, "{sssssssbsbsbss}", "model", &scsi_changer.model, "vendor", &scsi_changer.vendor, "serial number", &scsi_changer.serial_number, "barcode", &scsi_changer.barcode, "enable", &scsi_changer.enabled, "is online", &scsi_changer.is_online, "wwn", &scsi_changer.wwn);
+	st_value_unpack(config, "{sssssssbsbsbss}", "model", &scsi_changer.model, "vendor", &scsi_changer.vendor, "serial number", &scsi_changer.serial_number, "barcode", &scsi_changer.barcode, "enable", &scsi_changer.enable, "is online", &scsi_changer.is_online, "wwn", &scsi_changer.wwn);
 
 	glob_t gl;
 	glob("/sys/class/scsi_changer/*/device", 0, NULL, &gl);
@@ -211,13 +211,13 @@ static int scsi_changer_init(struct st_value * config, struct st_database_connec
 		st_value_iterator_free(iter);
 	}
 
-	if (found && scsi_changer.enabled && scsi_changer.is_online)
+	if (found && scsi_changer.enable && scsi_changer.is_online)
 		scsi_changer_scsi_new_status(&scsi_changer, scsi_changer_device, available_drives, &scsi_changer_transport_address);
 
 	st_value_free(available_drives);
 
 	if (found) {
-		scsi_changer.status = st_changer_idle;
+		scsi_changer.status = st_changer_status_idle;
 
 		db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_id_only);
 
@@ -348,6 +348,8 @@ static int scsi_changer_load(struct st_slot * from, struct st_drive * to, struct
 		failed = tmp_from.full || !tmp_to.full;
 	}
 
+	to->ops->reset(to);
+
 	if (failed == 0) {
 		st_log_write(st_log_level_notice, "[%s | %s]: loading media '%s' from slot #%u to drive #%td finished with code = OK", scsi_changer.vendor, scsi_changer.model, from->volume_name, from->index, to - scsi_changer.drives);
 
@@ -427,6 +429,8 @@ static int scsi_changer_unload(struct st_drive * from, struct st_database_connec
 
 		failed = tmp_from.full || !tmp_to.full;
 	}
+
+	from->ops->reset(from);
 
 	if (failed == 0) {
 		st_log_write(st_log_level_notice, "[%s | %s]: unloading media '%s' from drive #%u to slot #%td finished with code = OK", scsi_changer.vendor, scsi_changer.model, from->slot->volume_name, to->index, from - scsi_changer.drives);

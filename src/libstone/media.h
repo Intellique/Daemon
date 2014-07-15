@@ -29,12 +29,19 @@
 
 #include <libstone/media.h>
 
+struct st_value * st_media_convert_v1(struct st_media * media) __attribute__((nonnull,warn_unused_result));
+struct st_value * st_media_format_convert_v1(struct st_media_format * format) __attribute__((nonnull,warn_unused_result));
+void st_media_format_sync_v1(struct st_media_format * format, struct st_value * new_format) __attribute__((nonnull));
+void st_media_sync_v1(struct st_media * media, struct st_value * new_media) __attribute__((nonnull));
+struct st_value * st_pool_convert_v1(struct st_pool * pool) __attribute__((nonnull,warn_unused_result));
+void st_pool_sync_v1(struct st_pool * pool, struct st_value * new_pool) __attribute__((nonnull));
+
 void st_media_free_v1(struct st_media * media) __attribute__((nonnull));
 void st_media_format_free_v1(struct st_media_format * format) __attribute__((nonnull));
 void st_pool_free_v1(struct st_pool * pool) __attribute__((nonnull));
 
-const char * st_media_format_data_to_string_v1(enum st_media_format_data_type type);
-enum st_media_format_data_type st_media_string_to_format_data_v1(const char * type) __attribute__((nonnull));
+const char * st_media_format_data_type_to_string_v1(enum st_media_format_data_type type);
+enum st_media_format_data_type st_media_string_to_format_data_type_v1(const char * type) __attribute__((nonnull));
 
 const char * st_media_format_mode_to_string_v1(enum st_media_format_mode mode);
 enum st_media_format_mode st_media_string_to_format_mode_v1(const char * mode) __attribute__((nonnull));

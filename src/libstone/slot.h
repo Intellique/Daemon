@@ -31,10 +31,12 @@
 
 #define st_slot_v1 st_slot
 
+struct st_value * st_slot_convert_v1(struct st_slot * slot) __attribute__((nonnull,warn_unused_result));
 void st_slot_free_v1(struct st_slot * slot) __attribute__((nonnull));
 void st_slot_free2_v1(void * slot) __attribute__((nonnull));
 const char * st_slot_type_to_string_v1(enum st_slot_type type);
 enum st_slot_type st_slot_string_to_type_v1(const char * type) __attribute__((nonnull));
+void st_slot_sync_v1(struct st_slot * slot, struct st_value * new_slot) __attribute__((nonnull));
 
 #endif
 

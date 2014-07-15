@@ -44,6 +44,7 @@ struct st_drive_driver {
 
 struct st_drive_ops {
 	int (*init)(struct st_value * config);
+	int (*reset)(struct st_database_connection * db);
 	int (*update_status)(struct st_database_connection * db);
 };
 

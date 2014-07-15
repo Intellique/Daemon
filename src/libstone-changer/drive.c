@@ -36,10 +36,12 @@
 #include "drive.h"
 
 static bool stchgr_drive_is_loocked(struct st_drive * dr);
+static int stchgr_drive_reset(struct st_drive * drive);
 static int stchgr_drive_update_status(struct st_drive * drive);
 
 static struct st_drive_ops drive_ops = {
 	.is_locked     = stchgr_drive_is_loocked,
+	.reset         = stchgr_drive_reset,
 	.update_status = stchgr_drive_update_status,
 };
 
@@ -71,6 +73,23 @@ void stchgr_drive_register_v1(struct st_drive * drive, struct st_value * config,
 	st_json_encode_to_fd(self->config, self->fd_in, true);
 }
 
+static int stchgr_drive_reset(struct st_drive * drive) {
+	struct stchgr_drive * self = drive->data;
+
+	struct st_value * command = st_value_pack("{ss}", "command", "reset");
+	st_json_encode_to_fd(command, self->fd_in, true);
+	st_value_free(command);
+
+	struct st_value * returned = st_json_parse_fd(self->fd_out, -1);
+	long int val = 1;
+
+	st_value_unpack(returned, "{si}", "status", &val);
+
+	st_value_free(returned);
+
+	return (int) val;
+}
+
 void stchgr_drive_set_config(struct st_value * logger, struct st_value * db) {
 	log_config = logger;
 	db_config = db;
@@ -90,7 +109,7 @@ static int stchgr_drive_update_status(struct st_drive * drive) {
 	st_value_unpack(returned, "{siso}", "status", &val, "drive", &new_drive);
 
 	if (new_drive != NULL)
-		st_drive_sync(drive, new_drive);
+		st_drive_sync(drive, new_drive, true);
 
 	st_value_free(returned);
 

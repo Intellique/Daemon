@@ -26,33 +26,63 @@
 
 // free
 #include <stdlib.h>
-// strcasecmp
-#include <string.h>
 
 #include "drive.h"
 #include "media.h"
 #include "slot.h"
+#include "string.h"
 #include "value.h"
 
-static const struct st_drive_status2 {
+static struct st_drive_status2 {
 	const char * name;
-	enum st_drive_status status;
+	const enum st_drive_status status;
+	unsigned long long hash;
 } st_drive_status[] = {
-	{ "cleaning",		st_drive_cleaning },
-	{ "empty idle",		st_drive_empty_idle },
-	{ "erasing",		st_drive_erasing },
-	{ "error",			st_drive_error },
-	{ "loaded idle",	st_drive_loaded_idle },
-	{ "loading",		st_drive_loading },
-	{ "positioning",	st_drive_positioning },
-	{ "reading",		st_drive_reading },
-	{ "rewinding",		st_drive_rewinding },
-	{ "unloading",		st_drive_unloading },
-	{ "writing",		st_drive_writing },
+	{ "cleaning",		st_drive_status_cleaning,    0 },
+	{ "empty idle",		st_drive_status_empty_idle,  0 },
+	{ "erasing",		st_drive_status_erasing,     0 },
+	{ "error",			st_drive_status_error,       0 },
+	{ "loaded idle",	st_drive_status_loaded_idle, 0 },
+	{ "loading",		st_drive_status_loading,     0 },
+	{ "positioning",	st_drive_status_positioning, 0 },
+	{ "reading",		st_drive_status_reading,     0 },
+	{ "rewinding",		st_drive_status_rewinding,   0 },
+	{ "unloading",		st_drive_status_unloading,   0 },
+	{ "writing",		st_drive_status_writing,     0 },
 
-	{ "unknown", st_drive_unknown },
+	{ "unknown", st_drive_status_unknown, 0 },
 };
 
+static void st_drive_init(void) __attribute__((constructor));
+
+
+__asm__(".symver st_drive_convert_v1, st_drive_convert@@LIBSTONE_1.2");
+struct st_value * st_drive_convert_v1(struct st_drive * drive, bool with_slot) {
+	struct st_value * last_clean = st_value_new_null();
+	if (drive->last_clean > 0)
+		last_clean = st_value_new_integer(drive->last_clean);
+
+	struct st_value * dr = st_value_pack("{sssssssssssbsisssfsosb}",
+		"model", drive->model,
+		"vendor", drive->vendor,
+		"revision", drive->revision,
+		"serial number", drive->serial_number,
+
+		"status", st_drive_status_to_string(drive->status),
+		"enable", drive->enable,
+
+		"density code", (long int) drive->density_code,
+		"mode", st_media_format_mode_to_string(drive->mode),
+		"operation duration", drive->operation_duration,
+		"last clean", last_clean,
+		"is empty", drive->is_empty
+	);
+
+	if (with_slot)
+		st_value_hashtable_put2_v1(dr, "slot", st_slot_convert_v1(drive->slot), true);
+
+	return dr;
+}
 
 __asm__(".symver st_drive_free_v1, st_drive_free@@LIBSTONE_1.2");
 void st_drive_free_v1(struct st_drive * drive) {
@@ -72,10 +102,17 @@ void st_drive_free2_v1(void * drive) {
 	st_drive_free_v1(drive);
 }
 
+static void st_drive_init() {
+	int i;
+	for (i = 0; st_drive_status[i].status != st_drive_status_unknown; i++)
+		st_drive_status[i].hash = st_string_compute_hash2(st_drive_status[i].name);
+	st_drive_status[i].hash = st_string_compute_hash2(st_drive_status[i].name);
+}
+
 __asm__(".symver st_drive_status_to_string_v1, st_drive_status_to_string@@LIBSTONE_1.2");
 const char * st_drive_status_to_string_v1(enum st_drive_status status) {
 	unsigned int i;
-	for (i = 0; st_drive_status[i].status != st_drive_unknown; i++)
+	for (i = 0; st_drive_status[i].status != st_drive_status_unknown; i++)
 		if (st_drive_status[i].status == status)
 			return st_drive_status[i].name;
 
@@ -85,18 +122,19 @@ const char * st_drive_status_to_string_v1(enum st_drive_status status) {
 __asm__(".symver st_drive_string_to_status_v1, st_drive_string_to_status@@LIBSTONE_1.2");
 enum st_drive_status st_drive_string_to_status_v1(const char * status) {
 	if (status == NULL)
-		return st_drive_unknown;
+		return st_drive_status_unknown;
 
 	unsigned int i;
-	for (i = 0; st_drive_status[i].status != st_drive_unknown; i++)
-		if (!strcasecmp(status, st_drive_status[i].name))
+	const unsigned long long hash = st_string_compute_hash2(status);
+	for (i = 0; st_drive_status[i].status != st_drive_status_unknown; i++)
+		if (hash == st_drive_status[i].hash)
 			return st_drive_status[i].status;
 
 	return st_drive_status[i].status;
 }
 
 __asm__(".symver st_drive_sync_v1, st_drive_sync@@LIBSTONE_1.2");
-void st_drive_sync_v1(struct st_drive * drive, struct st_value * new_drive) {
+void st_drive_sync_v1(struct st_drive * drive, struct st_value * new_drive, bool with_slot) {
 	struct st_slot * sl = drive->slot;
 
 	free(drive->model);
@@ -113,9 +151,9 @@ void st_drive_sync_v1(struct st_drive * drive, struct st_value * new_drive) {
 	char * type = NULL;
 
 	struct st_value * last_clean = NULL;
+	struct st_value * slot = NULL;
 
-	struct st_value * media = NULL;
-	st_value_unpack(new_drive, "{sssssssssssbsisssfsosbs{sisssssbso}}",
+	st_value_unpack(new_drive, "{sssssssssssbsisssfsosbso}",
 		"model", &drive->model,
 		"vendor", &drive->vendor,
 		"revision", &drive->revision,
@@ -130,12 +168,7 @@ void st_drive_sync_v1(struct st_drive * drive, struct st_value * new_drive) {
 		"last clean", &last_clean,
 		"is empty", &drive->is_empty,
 
-		"slot",
-			"index", &sl->index,
-			"volume name", &sl->volume_name,
-			"type", &type,
-			"enable", &sl->enable,
-			"media", &media
+		"slot", &slot
 	);
 
 	if (status != NULL)
@@ -155,93 +188,7 @@ void st_drive_sync_v1(struct st_drive * drive, struct st_value * new_drive) {
 		sl->type = st_slot_string_to_type_v1(type);
 	free(type);
 
-	if (sl->media != NULL && (media == NULL || media->type == st_value_null)) {
-		st_media_free_v1(sl->media);
-		sl->media = NULL;
-	} else if (media != NULL && media->type != st_value_null) {
-		if (sl->media == NULL) {
-			sl->media = malloc(sizeof(struct st_media));
-			bzero(sl->media, sizeof(struct st_media));
-		} else {
-			free(sl->media->label);
-			free(sl->media->medium_serial_number);
-			free(sl->media->name);
-			sl->media->label = sl->media->medium_serial_number = sl->media->name = NULL;
-		}
-
-		struct st_value * uuid = NULL;
-		char * status = NULL, * location = NULL, * type = NULL;
-		struct st_value * last_read = NULL, * last_write = NULL;
-		long int nb_read_errors = 0, nb_write_errors = 0;
-		long int nb_volumes = 0;
-
-		st_value_unpack(media, "{sosssssssssssisisososisisisisisisisisisiss}",
-			"uuid", &uuid,
-			"label", &sl->media->label,
-			"medium serial number", &sl->media->medium_serial_number,
-			"name", &sl->media->name,
-
-			"status", &status,
-			"location", &location,
-
-			"first used", &sl->media->first_used,
-			"use before", &sl->media->use_before,
-			"last read", &last_read,
-			"last write", &last_write,
-
-			"load count", &sl->media->load_count,
-			"read count", &sl->media->read_count,
-			"write count", &sl->media->write_count,
-			"operation count", &sl->media->operation_count,
-
-			"nb total read", &sl->media->nb_total_read,
-			"nb total write", &sl->media->nb_total_write,
-
-			"nb read errors", &nb_read_errors,
-			"nb write errors", &nb_write_errors,
-
-			"block size", &sl->media->block_size,
-			"free block", &sl->media->free_block,
-			"total block", &sl->media->total_block,
-
-			"nb volumes", &nb_volumes,
-			"type", &type
-		);
-
-		if (uuid != NULL) {
-			if (uuid->type != st_value_null) {
-				strncpy(sl->media->uuid, st_value_string_get_v1(uuid), 36);
-				sl->media->uuid[36] = '\0';
-			} else {
-				sl->media->uuid[0] = '\0';
-			}
-		}
-
-		sl->media->status = st_media_string_to_status_v1(status);
-		sl->media->location = st_media_string_to_location_v1(location);
-		free(status);
-		free(location);
-
-		if (last_read != NULL) {
-			if (last_read->type != st_value_null)
-				sl->media->last_read = st_value_integer_get_v1(last_read);
-			else
-				sl->media->last_read = 0;
-		}
-
-		if (last_write != NULL) {
-			if (last_write->type != st_value_null)
-				sl->media->last_write = st_value_integer_get_v1(last_write);
-			else
-				sl->media->last_write = 0;
-		}
-
-		sl->media->nb_read_errors = nb_read_errors;
-		sl->media->nb_write_errors = nb_write_errors;
-
-		sl->media->nb_volumes = nb_volumes;
-		sl->media->type = st_media_string_to_type_v1(type);
-		free(type);
-	}
+	if (with_slot && slot != NULL)
+		st_slot_sync(drive->slot, slot);
 }
 

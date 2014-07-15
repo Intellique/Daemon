@@ -35,17 +35,17 @@ struct st_slot;
 struct st_value;
 
 enum st_changer_status {
-	st_changer_error = 0x1,
-	st_changer_exporting = 0x2,
-	st_changer_go_offline = 0x3,
-	st_changer_go_online = 0x4,
-	st_changer_idle = 0x5,
-	st_changer_importing = 0x6,
-	st_changer_loading = 0x7,
-	st_changer_offline = 0x8,
-	st_changer_unloading = 0x9,
+	st_changer_status_error = 0x1,
+	st_changer_status_exporting = 0x2,
+	st_changer_status_go_offline = 0x3,
+	st_changer_status_go_online = 0x4,
+	st_changer_status_idle = 0x5,
+	st_changer_status_importing = 0x6,
+	st_changer_status_loading = 0x7,
+	st_changer_status_offline = 0x8,
+	st_changer_status_unloading = 0x9,
 
-	st_changer_unknown = 0x0,
+	st_changer_status_unknown = 0x0,
 };
 
 /**
@@ -53,16 +53,6 @@ enum st_changer_status {
  * \brief Common structure for all changers
  */
 struct st_changer {
-	/**
-	 * \brief Status of changer
-	 */
-	enum st_changer_status status;
-	bool is_online;
-	/**
-	 * \brief Can use this \a changer
-	 */
-	bool enabled;
-
 	/**
 	 * \brief Model of this \a changer
 	 */
@@ -87,6 +77,16 @@ struct st_changer {
 	 * \brief This changer has got a barcode reader
 	 */
 	bool barcode;
+
+	/**
+	 * \brief Status of changer
+	 */
+	enum st_changer_status status;
+	bool is_online;
+	/**
+	 * \brief Can use this \a changer
+	 */
+	bool enable;
 
 	/**
 	 * \brief Drives into this \a changer
@@ -115,10 +115,12 @@ struct st_changer {
 	struct st_value * db_data;
 };
 
+struct st_value * st_changer_convert(struct st_changer * changer) __attribute__((nonnull,warn_unused_result));
 void st_changer_free(struct st_changer * changer) __attribute__((nonnull));
 void st_changer_free2(void * changer) __attribute__((nonnull));
 const char * st_changer_status_to_string(enum st_changer_status status);
 enum st_changer_status st_changer_string_to_status(const char * status) __attribute__((nonnull));
+void st_changer_sync(struct st_changer * changer, struct st_value * new_changer) __attribute__((nonnull));
 
 #endif
 

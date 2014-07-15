@@ -26,7 +26,7 @@
 
 // free
 #include <stdlib.h>
-// strcasecmp
+// strncpy
 #include <string.h>
 
 #include "media.h"
@@ -158,6 +158,248 @@ static void st_media_init(void) {
 }
 
 
+__asm__(".symver st_media_convert_v1, st_media_convert@@LIBSTONE_1.2");
+struct st_value * st_media_convert_v1(struct st_media * media) {
+	struct st_value * md = st_value_pack("{sssssssssssssisisisisisisisisisisisisisissso}",
+		"uuid", media->uuid[0] != '\0' ? media->uuid : NULL,
+		"label", media->label,
+		"medium serial number", media->medium_serial_number,
+		"name", media->name,
+
+		"status", st_media_status_to_string_v1(media->status),
+		"location", st_media_location_to_string_v1(media->location),
+
+		"first used", media->first_used,
+		"use before", media->use_before,
+
+		"load count", media->load_count,
+		"read count", media->read_count,
+		"write count", media->write_count,
+		"operation count", media->operation_count,
+
+		"nb total read", media->nb_total_read,
+		"nb total write", media->nb_total_write,
+
+		"nb read errors", (unsigned long int) media->nb_read_errors,
+		"nb write errors", (unsigned long int) media->nb_write_errors,
+
+		"block size", media->block_size,
+		"free block", media->free_block,
+		"total block", media->total_block,
+
+		"nb volumes", (unsigned long int) media->nb_volumes,
+		"type", st_media_type_to_string_v1(media->type),
+
+		"format", st_media_format_convert_v1(media->format)
+	);
+
+	if (media->last_read > 0)
+		st_value_hashtable_put2(md, "last read", st_value_new_integer_v1(media->last_read), true);
+	else
+		st_value_hashtable_put2(md, "last read", st_value_new_null_v1(), true);
+
+	if (media->last_write > 0)
+		st_value_hashtable_put2(md, "last write", st_value_new_integer_v1(media->last_write), true);
+	else
+		st_value_hashtable_put2(md, "last write", st_value_new_null_v1(), true);
+
+	if (media->pool != NULL)
+		st_value_hashtable_put2(md, "pool", st_pool_convert_v1(media->pool), true);
+	else
+		st_value_hashtable_put2(md, "pool", st_value_new_null_v1(), true);
+
+	return md;
+}
+
+__asm__(".symver st_media_format_convert_v1, st_media_format_convert@@LIBSTONE_1.2");
+struct st_value * st_media_format_convert_v1(struct st_media_format * format) {
+	return st_value_pack_v1("{sssisssssisisisisisisisbsb}",
+		"name", format->name,
+
+		"density code", (long int) format->density_code,
+		"type", st_media_format_data_type_to_string_v1(format->type),
+		"mode", st_media_format_mode_to_string_v1(format->mode),
+
+		"max load count", format->max_load_count,
+		"max read count", format->max_read_count,
+		"max write count", format->max_write_count,
+		"max operation count", format->max_operation_count,
+
+		"life span", format->life_span,
+
+		"capacity", format->capacity,
+		"block size", format->block_size,
+
+		"support partition", format->support_partition,
+		"support mam", format->support_mam
+	);
+}
+
+__asm__(".symver st_media_format_sync_v1, st_media_format_sync@@LIBSTONE_1.2");
+void st_media_format_sync_v1(struct st_media_format * format, struct st_value * new_format) {
+	char * name = NULL;
+
+	long int density_code = 0;
+	char * type = NULL, * mode = NULL;
+
+	st_value_unpack_v1(new_format, "{sssisssssisisisisisisisbsb}",
+		"name", &name,
+
+		"density code", &density_code,
+		"type", &type,
+		"mode", &mode,
+
+		"max load count", &format->max_load_count,
+		"max read count", &format->max_read_count,
+		"max write count", &format->max_write_count,
+		"max operation count", &format->max_operation_count,
+
+		"life span", &format->life_span,
+
+		"capacity", &format->capacity,
+		"block size", &format->block_size,
+
+		"support partition", &format->support_partition,
+		"support mam", &format->support_mam
+	);
+
+	if (name != NULL)
+		strncpy(format->name, name, 64);
+	free(name);
+
+	format->density_code = density_code;
+	format->type = st_media_string_to_format_data_type_v1(type);
+	format->mode = st_media_string_to_format_mode_v1(mode);
+	free(type);
+	free(mode);
+}
+
+__asm__(".symver st_media_sync_v1, st_media_sync@@LIBSTONE_1.2");
+void st_media_sync_v1(struct st_media * media, struct st_value * new_media) {
+	free(media->label);
+	free(media->medium_serial_number);
+	free(media->name);
+	media->label = media->medium_serial_number = media->name = NULL;
+
+	struct st_value * uuid = NULL;
+	struct st_value * format = NULL;
+
+	char * status = NULL, * location = NULL, * type = NULL;
+	long int nb_read_errors = 0, nb_write_errors = 0;
+	long int nb_volumes = 0;
+
+	st_value_unpack_v1(new_media, "{sosssssssssssisisisisisisisisisisisisisissso}",
+		"uuid", &uuid,
+		"label", &media->label,
+		"medium serial number", &media->medium_serial_number,
+		"name", &media->name,
+
+		"status", &status,
+		"location", &location,
+
+		"first used", &media->first_used,
+		"use before", &media->use_before,
+
+		"load count", &media->load_count,
+		"read count", &media->read_count,
+		"write count", &media->write_count,
+		"operation count", &media->operation_count,
+
+		"nb total read", &media->nb_total_read,
+		"nb total write", &media->nb_total_write,
+
+		"nb read errors", &nb_read_errors,
+		"nb write errors", &nb_write_errors,
+
+		"block size", &media->block_size,
+		"free block", &media->free_block,
+		"total block", &media->total_block,
+
+		"nb volumes", &nb_volumes,
+		"type", &type,
+
+		"format", &format
+	);
+
+	if (uuid->type != st_value_null) {
+		strncpy(media->uuid, st_value_string_get_v1(uuid), 37);
+		media->uuid[36] = '\0';
+	} else
+		media->uuid[0] = '\0';
+
+	media->status = st_media_string_to_status_v1(status);
+	media->location = st_media_string_to_location_v1(location);
+	free(status);
+	free(location);
+
+	media->nb_read_errors = nb_read_errors;
+	media->nb_write_errors = nb_write_errors;
+
+	media->nb_volumes = nb_volumes;
+	media->type = st_media_string_to_type_v1(type);
+	free(type);
+
+	if (media->format == NULL) {
+		media->format = malloc(sizeof(struct st_media_format));
+		bzero(media->format, sizeof(struct st_media_format));
+	}
+	st_media_format_sync_v1(media->format, format);
+}
+
+__asm__(".symver st_pool_convert_v1, st_pool_convert@@LIBSTONE_1.2");
+struct st_value * st_pool_convert_v1(struct st_pool * pool) {
+	return st_value_pack_v1("{sssssssbsssbsbso}",
+		"uuid", pool->uuid,
+		"name", pool->name,
+
+		"auto check", st_pool_autocheck_mode_to_string_v1(pool->auto_check),
+		"growable", pool->growable,
+		"unbreakable level", st_pool_unbreakable_level_to_string_v1(pool->unbreakable_level),
+		"rewritable", pool->rewritable,
+		"deleted", pool->deleted,
+
+		"format", st_media_format_convert_v1(pool->format)
+	);
+}
+
+__asm__(".symver st_pool_sync_v1, st_pool_sync@@LIBSTONE_1.2");
+void st_pool_sync_v1(struct st_pool * pool, struct st_value * new_pool) {
+	char * uuid = NULL;
+	free(pool->name);
+	pool->name = NULL;
+
+	char * auto_check = NULL, * unbreakable_level = NULL;
+
+	struct st_value * format = NULL;
+
+	st_value_unpack_v1(new_pool, "{sssssssbsssbso}",
+		"uuid", &uuid,
+		"name", &pool->name,
+
+		"auto check", &auto_check,
+		"growable", &pool->growable,
+		"unbreakable level", &unbreakable_level,
+		"deleted", &pool->deleted,
+
+		"format", &format
+	);
+
+	if (uuid != NULL)
+		strncpy(pool->uuid, uuid, 37);
+
+	pool->auto_check = st_pool_string_to_autocheck_mode_v1(auto_check);
+	pool->unbreakable_level = st_pool_string_to_unbreakable_level_v1(unbreakable_level);
+	free(auto_check);
+	free(unbreakable_level);
+
+	if (pool->format == NULL) {
+		pool->format = malloc(sizeof(struct st_media_format));
+		bzero(pool->format, sizeof(struct st_media_format));
+	}
+	st_media_format_sync_v1(pool->format, format);
+}
+
+
 __asm__(".symver st_media_free_v1, st_media_free@@LIBSTONE_1.2");
 void st_media_free_v1(struct st_media * media) {
 	if (media == NULL)
@@ -177,6 +419,7 @@ void st_media_free_v1(struct st_media * media) {
 
 __asm__(".symver st_media_format_free_v1, st_media_format_free@@LIBSTONE_1.2");
 void st_media_format_free_v1(struct st_media_format * format) {
+	st_value_free_v1(format->db_data);
 	free(format);
 }
 
@@ -191,8 +434,8 @@ void st_pool_free_v1(struct st_pool * pool) {
 }
 
 
-__asm__(".symver st_media_format_data_to_string_v1, st_media_format_data_to_string@@LIBSTONE_1.2");
-const char * st_media_format_data_to_string_v1(enum st_media_format_data_type type) {
+__asm__(".symver st_media_format_data_type_to_string_v1, st_media_format_data_type_to_string@@LIBSTONE_1.2");
+const char * st_media_format_data_type_to_string_v1(enum st_media_format_data_type type) {
 	unsigned int i;
 	for (i = 0; st_media_format_data_types[i].type != st_media_format_data_unknown; i++)
 		if (st_media_format_data_types[i].type == type)
@@ -201,8 +444,8 @@ const char * st_media_format_data_to_string_v1(enum st_media_format_data_type ty
 	return st_media_format_data_types[i].name;
 }
 
-__asm__(".symver st_media_string_to_format_data_v1, st_media_string_to_format_data@@LIBSTONE_1.2");
-enum st_media_format_data_type st_media_string_to_format_data_v1(const char * type) {
+__asm__(".symver st_media_string_to_format_data_type_v1, st_media_string_to_format_data_type@@LIBSTONE_1.2");
+enum st_media_format_data_type st_media_string_to_format_data_type_v1(const char * type) {
 	if (type == NULL)
 		return st_media_format_data_unknown;
 

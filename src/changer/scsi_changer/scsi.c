@@ -1089,7 +1089,7 @@ static void scsi_changer_scsi_update_status(int fd, struct st_changer * changer,
 						struct st_value * drive = st_value_hashtable_get2(available_drives, dev_name, false, false);
 						struct st_drive * dr = changer->drives + i;
 
-						dr->status = st_drive_unknown;
+						dr->status = st_drive_status_unknown;
 						dr->changer = changer;
 						dr->slot = slot;
 						slot->drive = dr;

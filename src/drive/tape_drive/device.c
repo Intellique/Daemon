@@ -67,6 +67,7 @@ static int tape_drive_init(struct st_value * config);
 static void tape_drive_on_failed(bool verbose, unsigned int sleep_time);
 static void tape_drive_operation_start(void);
 static void tape_drive_operation_stop(void);
+static int tape_drive_reset(struct st_database_connection * db);
 static int tape_drive_update_status(struct st_database_connection * db);
 
 static char * tape_scsi_device = NULL;
@@ -79,11 +80,12 @@ static int drive_index = 0;
 
 static struct st_drive_ops tape_drive_ops = {
 	.init          = tape_drive_init,
+	.reset         = tape_drive_reset,
 	.update_status = tape_drive_update_status,
 };
 
 static struct st_drive tape_drive = {
-	.status      = st_drive_unknown,
+	.status      = st_drive_status_unknown,
 	.enable      = true,
 
 	.density_code       = 0,
@@ -149,27 +151,27 @@ static ssize_t tape_drive_get_block_size() {
 	if (tape_drive.slot->media != NULL && media->block_size > 0)
 		return media->block_size;
 
-	tape_drive.status = st_drive_rewinding;
+	tape_drive.status = st_drive_status_rewinding;
 
 	static struct mtop rewind = { MTREW, 1 };
 	tape_drive_operation_start();
 	int failed = ioctl(fd_nst, MTIOCTOP, &rewind);
 	tape_drive_operation_stop();
 
-	tape_drive.status = st_drive_loaded_idle;
+	tape_drive.status = st_drive_status_loaded_idle;
 
 	unsigned int i;
 	ssize_t nb_read;
 	block_size = 1 << 16;
 	char * buffer = malloc(block_size);
 	for (i = 0; i < 4 && buffer != NULL && failed == 0; i++) {
-		tape_drive.status = st_drive_reading;
+		tape_drive.status = st_drive_status_reading;
 
 		tape_drive_operation_start();
 		nb_read = read(fd_nst, buffer, block_size);
 		tape_drive_operation_stop();
 
-		tape_drive.status = st_drive_loaded_idle;
+		tape_drive.status = st_drive_status_loaded_idle;
 
 		tape_drive_operation_start();
 		failed = ioctl(fd_nst, MTIOCGET, &status);
@@ -191,13 +193,13 @@ static ssize_t tape_drive_get_block_size() {
 			return nb_read;
 		}
 
-		tape_drive.status = st_drive_rewinding;
+		tape_drive.status = st_drive_status_rewinding;
 
 		tape_drive_operation_start();
 		failed = ioctl(fd_nst, MTIOCTOP, &rewind);
 		tape_drive_operation_stop();
 
-		tape_drive.status = st_drive_loaded_idle;
+		tape_drive.status = st_drive_status_loaded_idle;
 
 		if (failed == 0) {
 			block_size <<= 1;
@@ -284,10 +286,10 @@ static int tape_drive_init(struct st_value * config) {
 
 		if (failed != 0) {
 			if (GMT_ONLINE(status.mt_gstat)) {
-				tape_drive.status = st_drive_loaded_idle;
+				tape_drive.status = st_drive_status_loaded_idle;
 				tape_drive.is_empty = false;
 			} else {
-				tape_drive.status = st_drive_empty_idle;
+				tape_drive.status = st_drive_status_empty_idle;
 				tape_drive.is_empty = true;
 			}
 		}
@@ -316,6 +318,11 @@ static void tape_drive_operation_stop() {
 	tape_drive.operation_duration += (finish.tv_sec - last_start.tv_sec) + (finish.tv_nsec - last_start.tv_nsec) / 1000000000.0;
 }
 
+static int tape_drive_reset(struct st_database_connection * db) {
+	tape_drive_on_failed(false, 1);
+	return tape_drive_update_status(db);
+}
+
 static int tape_drive_update_status(struct st_database_connection * db) {
 	tape_drive_operation_start();
 	int failed = ioctl(fd_nst, MTIOCGET, &status);
@@ -331,7 +338,7 @@ static int tape_drive_update_status(struct st_database_connection * db) {
 	}
 
 	if (failed != 0) {
-		tape_drive.status = st_drive_error;
+		tape_drive.status = st_drive_status_error;
 
 		static struct mtop reset = { MTRESET, 1 };
 		tape_drive_operation_start();
@@ -360,14 +367,14 @@ static int tape_drive_update_status(struct st_database_connection * db) {
 		bool is_empty = tape_drive.is_empty;
 
 		if (GMT_ONLINE(status.mt_gstat)) {
-			tape_drive.status = st_drive_loaded_idle;
+			tape_drive.status = st_drive_status_loaded_idle;
 			tape_drive.is_empty = false;
 
 			unsigned int density_code = ((status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT) & 0xFF;
 			if (tape_drive.density_code < density_code)
 				tape_drive.density_code = density_code & 0xFF;
 		} else {
-			tape_drive.status = st_drive_empty_idle;
+			tape_drive.status = st_drive_status_empty_idle;
 			tape_drive.is_empty = true;
 		}
 
@@ -405,7 +412,7 @@ static int tape_drive_update_status(struct st_database_connection * db) {
 			}
 		}
 	} else {
-		tape_drive.status = st_drive_error;
+		tape_drive.status = st_drive_status_error;
 	}
 
 	return failed;

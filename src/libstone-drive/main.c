@@ -62,14 +62,20 @@ static void changer_request(int fd, short event, void * data) {
 
 	if (!strcmp("stop", command))
 		stop = true;
-	else if (!strcmp("update status", command)) {
+	else {
 		struct st_drive_driver * driver = stdr_drive_get();
 		struct st_drive * drive = driver->device;
 		struct st_database_connection * db = data;
+		int failed = -1;
+		struct st_value * returned = st_value_new_null();
 
-		int failed = drive->ops->update_status(db);
+		if (!strcmp("reset", command)) {
+			failed = drive->ops->reset(db);
+		} else if (!strcmp("update status", command)) {
+			failed = drive->ops->update_status(db);
+			returned = st_value_pack("{siso}", "status", (long long int) failed, "drive", st_drive_convert(drive, true));
+		}
 
-		struct st_value * returned = st_value_pack("{siso}", "status", (long long int) failed, "drive", stdr_drive_convert(drive));
 		st_json_encode_to_fd(returned, 1, true);
 		st_value_free(returned);
 	}

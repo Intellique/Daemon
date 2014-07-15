@@ -153,6 +153,8 @@ struct st_media_format {
 
 	bool support_partition;
 	bool support_mam;
+
+	struct st_value * db_data;
 };
 
 struct st_pool {
@@ -169,12 +171,19 @@ struct st_pool {
 };
 
 
+struct st_value * st_media_convert(struct st_media * media) __attribute__((nonnull,warn_unused_result));
+struct st_value * st_media_format_convert(struct st_media_format * format) __attribute__((nonnull,warn_unused_result));
+void st_media_format_sync(struct st_media_format * format, struct st_value * new_format) __attribute__((nonnull));
+void st_media_sync(struct st_media * media, struct st_value * new_media) __attribute__((nonnull));
+struct st_value * st_pool_convert(struct st_pool * pool) __attribute__((nonnull,warn_unused_result));
+void st_pool_sync(struct st_pool * pool, struct st_value * new_pool) __attribute__((nonnull));
+
 void st_media_free(struct st_media * media) __attribute__((nonnull));
 void st_media_format_free(struct st_media_format * format) __attribute__((nonnull));
 void st_pool_free(struct st_pool * pool) __attribute__((nonnull));
 
-const char * st_media_format_data_to_string(enum st_media_format_data_type type);
-enum st_media_format_data_type st_media_string_to_format_data(const char * type) __attribute__((nonnull));
+const char * st_media_format_data_type_to_string(enum st_media_format_data_type type);
+enum st_media_format_data_type st_media_string_to_format_data_type(const char * type) __attribute__((nonnull));
 
 const char * st_media_format_mode_to_string(enum st_media_format_mode mode);
 enum st_media_format_mode st_media_string_to_format_mode(const char * mode) __attribute__((nonnull));

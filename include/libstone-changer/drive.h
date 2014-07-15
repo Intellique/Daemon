@@ -33,6 +33,7 @@ struct st_value;
 
 struct st_drive_ops {
 	bool (*is_locked)(struct st_drive * drive);
+	int (*reset)(struct st_drive * drive);
 	int (*update_status)(struct st_drive * drive);
 };
 
