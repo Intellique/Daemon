@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 03 Jun 2014 10:56:55 +0200                            *
+*  Last modified: Tue, 10 Jun 2014 19:05:34 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -189,7 +189,7 @@ struct st_database_connection {
 		 * \param[in] changer a \a changer
 		 * \returns 0 if OK
 		 */
-		int (*sync_changer)(struct st_database_connection * connect, struct st_changer * changer);
+		int (*sync_changer)(struct st_database_connection * connect, struct st_changer * changer, bool force_update);
 		/**
 		 * \brief Synchronize \a drive with database
 		 *

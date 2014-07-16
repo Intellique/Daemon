@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 03 Jun 2014 22:51:51 +0200                            *
+*  Last modified: Mon, 16 Jun 2014 16:13:22 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -146,7 +146,7 @@ static bool st_db_postgresql_changer_is_enabled(struct st_database_connection * 
 static bool st_db_postgresql_drive_is_enabled(struct st_database_connection * connect, struct st_drive * drive);
 static int st_db_postgresql_is_changer_contain_drive(struct st_database_connection * connect, struct st_changer * changer, struct st_drive * drive);
 static void st_db_postgresql_slots_are_enabled(struct st_database_connection * connect, struct st_changer * changer);
-static int st_db_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer);
+static int st_db_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer, bool force_update);
 static int st_db_postgresql_sync_drive(struct st_database_connection * connect, struct st_drive * drive);
 
 static ssize_t st_db_postgresql_get_available_size_of_offline_media_from_pool(struct st_database_connection * connect, struct st_pool * pool);
@@ -996,7 +996,7 @@ static void st_db_postgresql_slots_are_enabled(struct st_database_connection * c
 	free(changerid);
 }
 
-static int st_db_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer) {
+static int st_db_postgresql_sync_changer(struct st_database_connection * connect, struct st_changer * changer, bool force_update) {
 	if (connect == NULL || changer == NULL)
 		return -1;
 
@@ -1019,46 +1019,19 @@ static int st_db_postgresql_sync_changer(struct st_database_connection * connect
 	}
 
 	char * changerid = NULL;
-	if (changer_data->id >= 0) {
-		asprintf(&changerid, "%ld", changer_data->id);
-
-		const char * query = "select_changer_by_id";
-		st_db_postgresql_prepare(self, query, "SELECT enable FROM changer WHERE id = $1 FOR UPDATE NOWAIT");
-
-		const char * param[] = { changerid };
-		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
-		ExecStatusType status = PQresultStatus(result);
-		int nb_result = PQntuples(result);
-
-		if (status == PGRES_FATAL_ERROR)
-			st_db_postgresql_get_error(result, query);
-		else if (status == PGRES_TUPLES_OK && nb_result == 1)
-			st_db_postgresql_get_bool(result, 0, 0, &changer->enabled);
-		else if (status == PGRES_TUPLES_OK && nb_result == 0)
-			changer->enabled = 0;
-
-		PQclear(result);
-
-		if (status == PGRES_FATAL_ERROR || nb_result == 0) {
-			free(hostid);
-			free(changerid);
-			if (transStatus == PQTRANS_IDLE)
-				st_db_postgresql_cancel_transaction(connect);
-			return 3;
-		}
-	} else {
+	if (changer_data->id < 0) {
 		const char * query;
 		PGresult * result;
 
 		if (changer->wwn != NULL) {
 			query = "select_changer_by_model_vendor_serialnumber_wwn";
-			st_db_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn = $4 FOR UPDATE NOWAIT");
+			st_db_postgresql_prepare(self, query, "SELECT id FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn = $4 FOR UPDATE NOWAIT");
 
 			const char * param[] = { changer->model, changer->vendor, changer->serial_number, changer->wwn };
 			result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 		} else {
 			query = "select_changer_by_model_vendor_serialnumber";
-			st_db_postgresql_prepare(self, query, "SELECT id, enable FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn IS NULL FOR UPDATE NOWAIT");
+			st_db_postgresql_prepare(self, query, "SELECT id FROM changer WHERE model = $1 AND vendor = $2 AND serialnumber = $3 AND wwn IS NULL FOR UPDATE NOWAIT");
 
 			const char * param[] = { changer->model, changer->vendor, changer->serial_number };
 			result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
@@ -1070,7 +1043,6 @@ static int st_db_postgresql_sync_changer(struct st_database_connection * connect
 		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			st_db_postgresql_get_long(result, 0, 0, &changer_data->id);
 			st_db_postgresql_get_string_dup(result, 0, 0, &changerid);
-			st_db_postgresql_get_bool(result, 0, 1, &changer->enabled);
 		}
 
 		PQclear(result);
@@ -1083,12 +1055,46 @@ static int st_db_postgresql_sync_changer(struct st_database_connection * connect
 		}
 	}
 
+	if (changer_data->id >= 0 && changerid == NULL)
+		asprintf(&changerid, "%ld", changer_data->id);
+
+	if (changer_data->id >= 0 && !force_update) {
+		const char * query = "select_changer_by_id";
+		st_db_postgresql_prepare(self, query, "SELECT enable, action FROM changer WHERE id = $1 FOR UPDATE NOWAIT");
+
+		const char * param[] = { changerid };
+		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+		int nb_result = PQntuples(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && nb_result == 1) {
+			st_db_postgresql_get_bool(result, 0, 0, &changer->enabled);
+			changer->next_action = st_changer_string_to_action(PQgetvalue(result, 0, 1));
+		} else if (status == PGRES_TUPLES_OK && nb_result == 0)
+			changer->enabled = 0;
+
+		PQclear(result);
+
+		if (status == PGRES_FATAL_ERROR || nb_result == 0) {
+			free(hostid);
+			free(changerid);
+			if (transStatus == PQTRANS_IDLE)
+				st_db_postgresql_cancel_transaction(connect);
+			return 3;
+		}
+	}
+
 	if (changer_data->id >= 0) {
 		const char * query = "update_changer";
-		st_db_postgresql_prepare(self, query, "UPDATE changer SET device = $1, status = $2, firmwarerev = $3 WHERE id = $4");
+		st_db_postgresql_prepare(self, query, "UPDATE changer SET device = $1, status = $2, firmwarerev = $3, isonline = $4, action = $5 WHERE id = $6");
 
-		const char * params[] = { changer->device, st_changer_status_to_string(changer->status), changer->revision, changerid };
-		PGresult * result = PQexecPrepared(self->connect, query, 4, params, NULL, NULL, 0);
+		const char * params[] = {
+			changer->device, st_changer_status_to_string(changer->status), changer->revision,
+			changer->is_online ? "true" : "false", st_changer_action_to_string(changer->next_action), changerid
+		};
+		PGresult * result = PQexecPrepared(self->connect, query, 6, params, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		free(changerid);
@@ -1123,6 +1129,7 @@ static int st_db_postgresql_sync_changer(struct st_database_connection * connect
 			st_db_postgresql_get_long(result, 0, 0, &changer_data->id);
 
 		PQclear(result);
+		free(changerid);
 
 		if (status == PGRES_FATAL_ERROR) {
 			free(hostid);
@@ -3166,7 +3173,7 @@ static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st
 			volume->archive = archive;
 			volume->job = NULL;
 
-			char uuid[37];
+			char uuid[38];
 			st_db_postgresql_get_string(result, i, 7, uuid, 37);
 			volume->media = st_media_get_by_uuid(uuid);
 			st_db_postgresql_get_long(result, i, 8, &volume->media_position);
