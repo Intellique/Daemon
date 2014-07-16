@@ -1,3 +1,9 @@
+stone (1.1.17+squeeze) polisher; urgency=low
+
+  * Correctif espace restante sur bande
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 16 Jul 2014 13:32:42 +0200
+
 stone (1.1.16+squeeze) polisher; urgency=low
 
   * Correctif librairie non actif
