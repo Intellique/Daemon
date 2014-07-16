@@ -149,6 +149,7 @@ void st_changer_sync_v1(struct st_changer * changer, struct st_value * new_chang
 	free(changer->revision);
 	free(changer->serial_number);
 	free(changer->wwn);
+	changer->model = changer->vendor = changer->revision = changer->serial_number = changer->wwn = NULL;
 
 	char * status = NULL;
 	struct st_value * drives = NULL, * slots = NULL;

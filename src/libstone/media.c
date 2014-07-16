@@ -269,8 +269,8 @@ void st_media_format_sync_v1(struct st_media_format * format, struct st_value * 
 
 	format->density_code = density_code;
 	format->type = st_media_string_to_format_data_type_v1(type);
-	format->mode = st_media_string_to_format_mode_v1(mode);
 	free(type);
+	format->mode = st_media_string_to_format_mode_v1(mode);
 	free(mode);
 }
 
@@ -386,10 +386,11 @@ void st_pool_sync_v1(struct st_pool * pool, struct st_value * new_pool) {
 
 	if (uuid != NULL)
 		strncpy(pool->uuid, uuid, 37);
+	free(uuid);
 
 	pool->auto_check = st_pool_string_to_autocheck_mode_v1(auto_check);
-	pool->unbreakable_level = st_pool_string_to_unbreakable_level_v1(unbreakable_level);
 	free(auto_check);
+	pool->unbreakable_level = st_pool_string_to_unbreakable_level_v1(unbreakable_level);
 	free(unbreakable_level);
 
 	if (pool->format == NULL) {

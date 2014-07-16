@@ -121,8 +121,12 @@ int main() {
 	if (failed != 0)
 		return 4;
 
+	db_connect->ops->sync_drive(db_connect, drive, st_database_sync_default);
+
 	while (!stop) {
 		st_poll(-1);
+
+		db_connect->ops->sync_drive(db_connect, drive, st_database_sync_default);
 	}
 
 	st_log_write(st_log_level_info, "Changer (type: %s) will stop", driver->name);

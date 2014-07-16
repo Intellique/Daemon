@@ -931,13 +931,15 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 		db = st_value_new_hashtable2();
 		st_value_hashtable_put(drive->db_data, key, true, db, true);
 
-		struct st_value * changer_data = st_value_hashtable_get(drive->changer->db_data, key, false, false);
-		struct st_value * changer_id = st_value_hashtable_get2(changer_data, "id", true, false);
-		st_value_hashtable_put2(db, "changer_id", changer_id, true);
+		if (drive->changer != NULL) {
+			struct st_value * changer_data = st_value_hashtable_get(drive->changer->db_data, key, false, false);
+			struct st_value * changer_id = st_value_hashtable_get2(changer_data, "id", true, false);
+			st_value_hashtable_put2(db, "changer_id", changer_id, true);
+		}
 	} else {
 		db = st_value_hashtable_get(drive->db_data, key, false, false);
 
-		if (!st_value_hashtable_has_key2(db, "changer_id")) {
+		if (drive->changer != NULL && !st_value_hashtable_has_key2(db, "changer_id")) {
 			struct st_value * changer_data = st_value_hashtable_get(drive->changer->db_data, key, false, false);
 			struct st_value * changer_id = st_value_hashtable_get2(changer_data, "id", true, false);
 			st_value_hashtable_put2(db, "changer_id", changer_id, true);
@@ -947,7 +949,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 	}
 
 	char * drive_id = NULL;
-	st_value_unpack(db, "{ss}", "db", "id", &drive_id);
+	st_value_unpack(db, "{ss}", "id", &drive_id);
 
 	char * driveformat_id = NULL;
 
