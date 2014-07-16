@@ -1,3 +1,9 @@
+stone (1.1.17+wheezy) polisher; urgency=low
+
+  * Bug fix: espace restante sur bande
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 16 Jul 2014 13:41:28 +0200
+
 stone (1.1.16+wheezy) polisher; urgency=low
 
   * Bug fix: vérification si la vtl est actif ou non
