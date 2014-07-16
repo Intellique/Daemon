@@ -30,6 +30,17 @@
 
 #include <libstone/library/changer.h>
 
+static const struct st_changer_action2 {
+	const char * name;
+	enum st_changer_action action;
+} st_library_actions[] = {
+	{ "none",        st_changer_action_none },
+	{ "put offline", st_changer_action_put_offline },
+	{ "put online",  st_changer_action_put_online },
+
+	{ "unknown", st_changer_action_unknown },
+};
+
 static const struct st_changer_status2 {
 	const char * name;
 	enum st_changer_status status;
@@ -45,6 +56,15 @@ static const struct st_changer_status2 {
 };
 
 
+const char * st_changer_action_to_string(enum st_changer_action action) {
+	unsigned int i;
+	for (i = 0; st_library_actions[i].action != st_changer_action_unknown; i++)
+		if (st_library_actions[i].action == action)
+			return st_library_actions[i].name;
+
+	return st_library_actions[i].name;
+}
+
 const char * st_changer_status_to_string(enum st_changer_status status) {
 	unsigned int i;
 	for (i = 0; st_library_status[i].status != st_changer_unknown; i++)
@@ -52,6 +72,18 @@ const char * st_changer_status_to_string(enum st_changer_status status) {
 			return st_library_status[i].name;
 
 	return st_library_status[i].name;
+}
+
+enum st_changer_action st_changer_string_to_action(const char * action) {
+	if (action == NULL)
+		return st_changer_action_unknown;
+
+	unsigned int i;
+	for (i = 0; st_library_actions[i].action != st_changer_action_unknown; i++)
+		if (!strcasecmp(action, st_library_actions[i].name))
+			return st_library_actions[i].action;
+
+	return st_library_actions[i].action;
 }
 
 enum st_changer_status st_changer_string_to_status(const char * status) {

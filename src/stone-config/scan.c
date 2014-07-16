@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 18 Dec 2013 21:45:54 +0100                            *
+*  Last modified: Tue, 10 Jun 2014 19:12:07 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -270,7 +270,7 @@ int stcfg_scan(void) {
 
 		int failed = 0;
 		for (i = 0; i < nb_real_changers + nb_fake_changers; i++)
-			failed = connect->ops->sync_changer(connect, changers + i);
+			failed = connect->ops->sync_changer(connect, changers + i, false);
 
 		connect->ops->close(connect);
 		connect->ops->free(connect);

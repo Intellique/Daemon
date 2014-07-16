@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 07 Feb 2014 10:31:58 +0100                            *
+*  Last modified: Mon, 16 Jun 2014 19:31:30 +0200                            *
 \****************************************************************************/
 
 // json_*
@@ -320,7 +320,7 @@ static void st_job_check_archive_post_run(struct st_job * job) {
 			json_object_set_new(jfile, "group id", json_integer(file->groupid));
 			json_object_set_new(jfile, "group", json_string(file->group));
 
-			char perm[10];
+			char perm[11];
 			st_util_file_convert_mode(perm, file->perm);
 			json_object_set_new(jfile, "perm", json_string(perm));
 			json_object_set_new(jfile, "size", json_integer(file->size));

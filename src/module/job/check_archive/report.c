@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 14 Oct 2013 12:23:34 +0200                            *
+*  Last modified: Tue, 17 Jun 2014 13:24:35 +0200                            *
 \****************************************************************************/
 
 // json_*
@@ -38,6 +38,7 @@
 #include <libstone/library/archive.h>
 #include <libstone/library/media.h>
 #include <libstone/user.h>
+#include <libstone/util/hashtable.h>
 #include <libstone/util/time.h>
 
 #include "common.h"
@@ -88,6 +89,16 @@ void st_job_check_archive_report_add_file(struct st_job_check_archive_report * r
 	st_util_time_convert(&file->archived_time, "%F %T", buffer, 20);
 	json_object_set_new(report->current_file, "archived time", json_string(buffer));
 
+	json_t * checksum = json_object();
+	unsigned int nb_digests = 0, i;
+	const void ** checksums = st_hashtable_keys(file->digests, &nb_digests);
+	for (i = 0; i < nb_digests; i++) {
+		struct st_hashtable_value digest = st_hashtable_get(file->digests, checksums[i]);
+		json_object_set_new(checksum, checksums[i], json_string(digest.value.string));
+	}
+	free(checksums);
+	json_object_set_new(report->current_file, "checksums", checksum);
+
 	json_t * files = json_object_get(report->current_volume, "files");
 	json_array_append_new(files, report->current_file);
 
@@ -106,6 +117,16 @@ void st_job_check_archive_report_add_volume(struct st_job_check_archive_report *
 	json_object_set_new(report->current_volume, "sequence", json_integer(volume->sequence));
 	json_object_set_new(report->current_volume, "size", json_integer(volume->size));
 	json_object_set_new(report->current_volume, "media", jmedia);
+
+	json_t * checksum = json_object();
+	unsigned int nb_digests = 0, i;
+	const void ** checksums = st_hashtable_keys(volume->digests, &nb_digests);
+	for (i = 0; i < nb_digests; i++) {
+		struct st_hashtable_value digest = st_hashtable_get(volume->digests, checksums[i]);
+		json_object_set_new(checksum, checksums[i], json_string(digest.value.string));
+	}
+	free(checksums);
+	json_object_set_new(report->current_volume, "checksums", checksum);
 
 	json_t * files = json_array();
 	json_object_set_new(report->current_volume, "files", files);

@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 18 Dec 2013 13:44:29 +0100                            *
+*  Last modified: Wed, 04 Jun 2014 11:20:11 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_LIBRARY_CHANGER_H__
@@ -36,6 +36,13 @@ struct st_drive;
 struct st_media;
 struct st_media_format;
 struct st_slot;
+
+enum st_changer_action {
+	st_changer_action_none,
+	st_changer_action_put_offline,
+	st_changer_action_put_online,
+	st_changer_action_unknown,
+};
 
 enum st_changer_status {
 	st_changer_error,
@@ -60,6 +67,8 @@ struct st_changer {
 	 * \brief Status of changer
 	 */
 	enum st_changer_status status;
+	enum st_changer_action next_action;
+	bool is_online;
 	/**
 	 * \brief Can use this \a changer
 	 */
@@ -149,7 +158,7 @@ struct st_changer {
 		 * \returns 0 if ok
 		 */
 		int (*unload)(struct st_changer * ch, struct st_drive * from);
-		int (*update_status)(struct st_changer * ch);
+		bool (*update_status)(struct st_changer * ch);
 	} * ops;
 	void * data;
 
@@ -159,7 +168,9 @@ struct st_changer {
 	void * db_data;
 };
 
+const char * st_changer_action_to_string(enum st_changer_action action);
 const char * st_changer_status_to_string(enum st_changer_status status);
+enum st_changer_action st_changer_string_to_action(const char * action);
 enum st_changer_status st_changer_string_to_status(const char * status);
 
 #endif
