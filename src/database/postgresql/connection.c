@@ -400,7 +400,7 @@ static struct st_value * st_database_postgresql_get_changers(struct st_database_
 	struct st_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_real_changer_by_host";
-	st_database_postgresql_prepare(self, query, "SELECT DISTINCT c.id, c.device, c.model, c.vendor, c.firmwarerev, c.serialnumber, c.wwn, c.barcode, c.status, c.isonline, c.action, c.enable FROM changer c LEFT JOIN drive d ON c.id = d.changer AND c.serialnumber != d.serialnumber WHERE c.host = $1 AND c.serialnumber NOT IN (SELECT uuid::TEXT FROM vtl WHERE host = $1)");
+	st_database_postgresql_prepare(self, query, "SELECT DISTINCT c.id, c.model, c.vendor, c.firmwarerev, c.serialnumber, c.wwn, c.barcode, c.status, c.isonline, c.action, c.enable FROM changer c LEFT JOIN drive d ON c.id = d.changer AND c.serialnumber != d.serialnumber WHERE c.host = $1 AND c.serialnumber NOT IN (SELECT uuid::TEXT FROM vtl WHERE host = $1)");
 
 	const char * param[] = { host_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -416,22 +416,21 @@ static struct st_value * st_database_postgresql_get_changers(struct st_database_
 			st_database_postgresql_get_string_dup(result, i, 0, &changer_id);
 
 			bool barcode = false, isonline = false, enabled = false;
-			st_database_postgresql_get_bool(result, i, 7, &barcode);
-			st_database_postgresql_get_bool(result, i, 9, &isonline);
-			st_database_postgresql_get_bool(result, i, 11, &enabled);
+			st_database_postgresql_get_bool(result, i, 6, &barcode);
+			st_database_postgresql_get_bool(result, i, 8, &isonline);
+			st_database_postgresql_get_bool(result, i, 10, &enabled);
 
-			struct st_value * changer = st_value_pack("{sssssssssssssbsosssbsssb}",
-					"device", PQgetvalue(result, i, 1),
-					"model", PQgetvalue(result, i, 2),
-					"vendor", PQgetvalue(result, i, 3),
-					"firmwarerev", PQgetvalue(result, i, 4),
-					"serial number", PQgetvalue(result, i, 5),
-					"wwn", PQgetvalue(result, i, 6),
+			struct st_value * changer = st_value_pack("{sssssssssssbsosssbsssb}",
+					"model", PQgetvalue(result, i, 1),
+					"vendor", PQgetvalue(result, i, 2),
+					"firmwarerev", PQgetvalue(result, i, 3),
+					"serial number", PQgetvalue(result, i, 4),
+					"wwn", PQgetvalue(result, i, 5),
 					"barcode", barcode,
 					"drives", st_database_postgresql_get_drives_by_changer(connect, changer_id),
-					"status", PQgetvalue(result, i, 8),
+					"status", PQgetvalue(result, i, 7),
 					"is online", isonline,
-					"action", PQgetvalue(result, i, 10),
+					"action", PQgetvalue(result, i, 9),
 					"enable", enabled
 			);
 
@@ -453,7 +452,7 @@ static struct st_value * st_database_postgresql_get_drives_by_changer(struct st_
 	struct st_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_drives_by_changer";
-	st_database_postgresql_prepare(self, query, "SELECT id, device, scsidevice, model, vendor, firmwarerev, serialnumber, enable FROM drive WHERE changer = $1");
+	st_database_postgresql_prepare(self, query, "SELECT id, model, vendor, firmwarerev, serialnumber, enable FROM drive WHERE changer = $1");
 
 	const char * param[] = { changer_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -467,15 +466,13 @@ static struct st_value * st_database_postgresql_get_drives_by_changer(struct st_
 		for (i = 0; i < nb_result; i++) {
 			char * drive_id = PQgetvalue(result, i, 0);
 			bool enabled = false;
-			st_database_postgresql_get_bool(result, i, 7, &enabled);
+			st_database_postgresql_get_bool(result, i, 5, &enabled);
 
-			struct st_value * drive = st_value_pack("{sssssssssssssbso}",
-					"device", PQgetvalue(result, i, 1),
-					"scsi devie", PQgetvalue(result, i, 2),
-					"model", PQgetvalue(result, i, 3),
-					"vendor", PQgetvalue(result, i, 4),
-					"firmware revision", PQgetvalue(result, i, 5),
-					"serial number", PQgetvalue(result, i, 6),
+			struct st_value * drive = st_value_pack("{sssssssssbso}",
+					"model", PQgetvalue(result, i, 1),
+					"vendor", PQgetvalue(result, i, 2),
+					"firmware revision", PQgetvalue(result, i, 3),
+					"serial number", PQgetvalue(result, i, 4),
 					"enable", enabled,
 					"slot", st_database_postgresql_get_slot_by_drive(connect, drive_id)
 			);
