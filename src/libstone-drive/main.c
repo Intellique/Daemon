@@ -121,6 +121,7 @@ int main() {
 	if (failed != 0)
 		return 4;
 
+	drive->ops->update_status(db_connect);
 	db_connect->ops->sync_drive(db_connect, drive, st_database_sync_default);
 
 	while (!stop) {

@@ -1146,6 +1146,9 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 	free(driveformat_id);
 	free(drive_id);
 
+	if (drive->slot != NULL && drive->slot->media != NULL)
+		st_database_postgresql_sync_media(connect, drive->slot->media, method);
+
 	if (transStatus == PQTRANS_IDLE)
 		st_database_postgresql_finish_transaction(connect);
 
@@ -1199,11 +1202,11 @@ static int st_database_postgresql_sync_media(struct st_database_connection * con
 		PQclear(result);
 	}
 
-	if (method == st_database_sync_init) {
+	if (media_id == NULL) {
 		if (mediaformat_id == NULL) {
 			if (media->format->db_data != NULL) {
 				struct st_value * format_db = st_value_hashtable_get(media->format->db_data, key, false, false);
-				st_value_unpack(format_db, "{ss}", &mediaformat_id);
+				st_value_unpack(format_db, "{ss}", "id", &mediaformat_id);
 				st_value_hashtable_put2(db, "media format id", st_value_new_string(mediaformat_id), true);
 			} else {
 				const char * query = "select_media_format_by_density";
@@ -1270,7 +1273,7 @@ static int st_database_postgresql_sync_media(struct st_database_connection * con
 		if (status == PGRES_FATAL_ERROR)
 			st_database_postgresql_get_error(result, query);
 		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
-			st_value_hashtable_put2(db, "media id", st_value_new_string(media_id), true);
+			st_value_hashtable_put2(db, "id", st_value_new_string(PQgetvalue(result, 0, 0)), true);
 
 		PQclear(result);
 		free(load);
