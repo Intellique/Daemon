@@ -47,6 +47,7 @@
 #include <unistd.h>
 
 #include <libstone/drive.h>
+#include <libstone/log.h>
 #include <libstone/string.h>
 
 #include "scsi.h"
@@ -513,6 +514,7 @@ int tape_drive_scsi_read_mam(int fd, struct st_media * media) {
 			continue;
 
 		char * space;
+		char buf[33];
 		switch (attr->attribute_identifier) {
 			case scsi_mam_remaining_capacity:
 				media->free_block = be64toh(attr->attribute_value.be64);
@@ -522,6 +524,23 @@ int tape_drive_scsi_read_mam(int fd, struct st_media * media) {
 
 			case scsi_mam_load_count:
 				media->load_count = be64toh(attr->attribute_value.be64);
+				media->free_block <<= 10;
+				break;
+
+			case scsi_mam_total_written_in_medium_life:
+				media->nb_total_write = be64toh(attr->attribute_value.be64);
+				media->free_block <<= 10;
+				break;
+
+			case scsi_mam_total_read_in_medium_life:
+				media->nb_total_read = be64toh(attr->attribute_value.be64);
+				break;
+
+			case scsi_mam_medium_manufacturer:
+				strncpy(buf, attr->attribute_value.text, 8);
+				buf[8] = '\0';
+				st_string_rtrim(buf, ' ');
+				st_log_write(st_log_level_debug, "Medium manufacturer: %s", buf);
 				break;
 
 			case scsi_mam_medium_serial_number:
@@ -531,6 +550,13 @@ int tape_drive_scsi_read_mam(int fd, struct st_media * media) {
 					*space = '\0';
 				break;
 
+			case scsi_mam_medium_manufacturer_date:
+				strncpy(buf, attr->attribute_value.text, 8);
+				buf[8] = '\0';
+				st_string_rtrim(buf, ' ');
+				st_log_write(st_log_level_debug, "Medium date: %s", buf);
+				break;
+
 			case scsi_mam_medium_type:
 				switch (attr->attribute_value.int8) {
 					case 0x01:
@@ -538,9 +564,10 @@ int tape_drive_scsi_read_mam(int fd, struct st_media * media) {
 						break;
 
 					case 0x80:
-						media->type = st_media_type_readonly;
+						media->type = st_media_type_worm;
 						break;
 
+					case 0x00:
 					default:
 						media->type = st_media_type_rewritable;
 						break;

@@ -80,7 +80,6 @@ static struct st_media_type2 {
 	unsigned long long hash;
 } st_media_types[] = {
 	{ "cleaning",   st_media_type_cleaning,   0 },
-	{ "readonly",   st_media_type_readonly,   0 },
 	{ "rewritable", st_media_type_rewritable, 0 },
 	{ "worm",       st_media_type_worm,       0 },
 
@@ -144,7 +143,7 @@ static void st_media_init(void) {
 
 __asm__(".symver st_media_convert_v1, st_media_convert@@LIBSTONE_1.2");
 struct st_value * st_media_convert_v1(struct st_media * media) {
-	struct st_value * md = st_value_pack("{sssssssssssssisisisisisisisisisisisisisissso}",
+	struct st_value * md = st_value_pack("{sssssssssssisisisisisisisisisisisisisisbsssbso}",
 		"uuid", media->uuid[0] != '\0' ? media->uuid : NULL,
 		"label", media->label,
 		"medium serial number", media->medium_serial_number,
@@ -171,7 +170,9 @@ struct st_value * st_media_convert_v1(struct st_media * media) {
 		"total block", media->total_block,
 
 		"nb volumes", (unsigned long int) media->nb_volumes,
+		"append", media->append,
 		"type", st_media_type_to_string_v1(media->type),
+		"write lock", media->write_lock,
 
 		"format", st_media_format_convert_v1(media->format)
 	);
@@ -271,7 +272,7 @@ void st_media_sync_v1(struct st_media * media, struct st_value * new_media) {
 	long int nb_read_errors = 0, nb_write_errors = 0;
 	long int nb_volumes = 0;
 
-	st_value_unpack_v1(new_media, "{sosssssssssssisisisisisisisisisisisisisissso}",
+	st_value_unpack_v1(new_media, "{sosssssssssisisisisisisisisisisisisisisbsssbso}",
 		"uuid", &uuid,
 		"label", &media->label,
 		"medium serial number", &media->medium_serial_number,
@@ -298,7 +299,9 @@ void st_media_sync_v1(struct st_media * media, struct st_value * new_media) {
 		"total block", &media->total_block,
 
 		"nb volumes", &nb_volumes,
+		"append", &media->append,
 		"type", &type,
+		"write lock", &media->write_lock,
 
 		"format", &format
 	);

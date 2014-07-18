@@ -64,9 +64,8 @@ enum st_media_status {
 
 enum st_media_type {
 	st_media_type_cleaning = 0x1,
-	st_media_type_readonly = 0x2,
-	st_media_type_rewritable = 0x3,
-	st_media_type_worm = 0x4, //TODO: à ajouter dans la base de données
+	st_media_type_rewritable = 0x2,
+	st_media_type_worm = 0x3,
 
 	st_media_type_unknown = 0x0,
 };
@@ -117,7 +116,9 @@ struct st_media {
 	ssize_t total_block; // size in block
 
 	unsigned int nb_volumes;
+	bool append;
 	enum st_media_type type;
+	bool write_lock;
 
 	struct st_media_format * format;
 	struct st_pool * pool;

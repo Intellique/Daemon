@@ -124,6 +124,7 @@ static void tape_drive_create_media(struct st_database_connection * db) {
 	media->status = st_media_status_foreign;
 	media->first_used = time(NULL);
 	media->use_before = media->first_used + media->format->life_span;
+	media->append = false;
 
 	media->load_count = 1;
 
@@ -397,9 +398,11 @@ static int tape_drive_update_status(struct st_database_connection * db) {
 
 			int fd = open(scsi_device, O_RDWR);
 			tape_drive_scsi_size_available(fd, media);
+			if (media != NULL && media->format != NULL && media->format->support_mam)
+				tape_drive_scsi_read_mam(fd, media);
 			close(fd);
 
-			media->type = GMT_WR_PROT(status.mt_gstat) ? st_media_type_readonly : st_media_type_rewritable;
+			media->write_lock = GMT_WR_PROT(status.mt_gstat);
 
 			if (is_empty && media->status == st_media_status_in_use) {
 				st_log_write(st_log_level_info, "[%s | %s | #%d]: Checking media header", tape_drive.vendor, tape_drive.model, drive_index);
