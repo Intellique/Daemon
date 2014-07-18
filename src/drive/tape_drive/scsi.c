@@ -524,16 +524,16 @@ int tape_drive_scsi_read_mam(int fd, struct st_media * media) {
 
 			case scsi_mam_load_count:
 				media->load_count = be64toh(attr->attribute_value.be64);
-				media->free_block <<= 10;
 				break;
 
 			case scsi_mam_total_written_in_medium_life:
 				media->nb_total_write = be64toh(attr->attribute_value.be64);
-				media->free_block <<= 10;
+				media->nb_total_write <<= 10;
 				break;
 
 			case scsi_mam_total_read_in_medium_life:
 				media->nb_total_read = be64toh(attr->attribute_value.be64);
+				media->nb_total_read <<= 10;
 				break;
 
 			case scsi_mam_medium_manufacturer:

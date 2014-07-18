@@ -1212,7 +1212,7 @@ static int st_database_postgresql_sync_media(struct st_database_connection * con
 		PQclear(result);
 	} else if (media != NULL) {
 		const char * query = "select_media_for_sync";
-		st_database_postgresql_prepare(self, query, "SELECT label, name FROM drive WHERE id = $1 LIMIT 1");
+		st_database_postgresql_prepare(self, query, "SELECT label, name FROM media WHERE id = $1 LIMIT 1");
 
 		const char * param[] = { media_id };
 
