@@ -64,11 +64,9 @@ LIBSTONE_1.2 {
 		st_media_format_mode_to_string;
 		st_media_format_sync;
 		st_media_free;
-		st_media_location_to_string;
 		st_media_status_to_string;
 		st_media_string_to_format_data_type;
 		st_media_string_to_format_mode;
-		st_media_string_to_location;
 		st_media_string_to_status;
 		st_media_string_to_type;
 		st_media_type_to_string;

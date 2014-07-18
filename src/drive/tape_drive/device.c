@@ -122,7 +122,6 @@ static void tape_drive_create_media(struct st_database_connection * db) {
 	media->format = db->ops->get_media_format(db, (unsigned char) density_code, st_media_format_mode_linear);
 
 	media->status = st_media_status_foreign;
-	media->location = st_media_location_indrive;
 	media->first_used = time(NULL);
 	media->use_before = media->first_used + media->format->life_span;
 

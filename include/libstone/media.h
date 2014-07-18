@@ -49,14 +49,6 @@ enum st_media_format_mode {
 	st_media_format_mode_unknown = 0x0,
 };
 
-enum st_media_location {
-	st_media_location_indrive = 0x1,
-	st_media_location_offline = 0x2,
-	st_media_location_online = 0x3,
-
-	st_media_location_unknown = 0x0,
-};
-
 enum st_media_status {
 	st_media_status_erasable = 0x1,
 	st_media_status_error = 0x2,
@@ -103,7 +95,6 @@ struct st_media {
 	char * name;
 
 	enum st_media_status status;
-	enum st_media_location location;
 
 	time_t first_used;
 	time_t use_before;
@@ -187,9 +178,6 @@ enum st_media_format_data_type st_media_string_to_format_data_type(const char * 
 
 const char * st_media_format_mode_to_string(enum st_media_format_mode mode);
 enum st_media_format_mode st_media_string_to_format_mode(const char * mode) __attribute__((nonnull));
-
-const char * st_media_location_to_string(enum st_media_location location);
-enum st_media_location st_media_string_to_location(const char * location) __attribute__((nonnull));
 
 const char * st_media_status_to_string(enum st_media_status status);
 enum st_media_status st_media_string_to_status(const char * status) __attribute__((nonnull));

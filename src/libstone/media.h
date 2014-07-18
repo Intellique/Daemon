@@ -46,9 +46,6 @@ enum st_media_format_data_type st_media_string_to_format_data_type_v1(const char
 const char * st_media_format_mode_to_string_v1(enum st_media_format_mode mode);
 enum st_media_format_mode st_media_string_to_format_mode_v1(const char * mode) __attribute__((nonnull));
 
-const char * st_media_location_to_string_v1(enum st_media_location location);
-enum st_media_location st_media_string_to_location_v1(const char * location) __attribute__((nonnull));
-
 const char * st_media_status_to_string_v1(enum st_media_status status);
 enum st_media_status st_media_string_to_status_v1(const char * status) __attribute__((nonnull));
 

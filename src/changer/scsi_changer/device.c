@@ -237,8 +237,6 @@ static int scsi_changer_init(struct st_value * config, struct st_database_connec
 			sl->media = db_connection->ops->get_media(db_connection, NULL, sl->volume_name);
 			if (sl->media == NULL)
 				need_init++;
-			else
-				sl->media->location = sl->drive != NULL ? st_media_location_indrive : st_media_location_online;
 		}
 
 		if (need_init > 0)
@@ -362,10 +360,8 @@ static int scsi_changer_load(struct st_slot * from, struct st_drive * to, struct
 		from->full = false;
 		to->slot->full = true;
 
-		if (media != NULL) {
-			media->location = st_media_location_indrive;
+		if (media != NULL)
 			media->load_count++;
-		}
 
 		struct scsi_changer_slot * sfrom = from->data;
 		struct scsi_changer_slot * sto = to->slot->data;
@@ -443,9 +439,6 @@ static int scsi_changer_unload(struct st_drive * from, struct st_database_connec
 
 		to->full = true;
 		from->slot->full = false;
-
-		if (media != NULL)
-			media->location = st_media_location_online;
 
 		struct scsi_changer_slot * sfrom = from->slot->data;
 		sfrom->src_address = 0;

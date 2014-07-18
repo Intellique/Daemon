@@ -57,18 +57,6 @@ static struct st_media_format_mode2 {
 	{ "unknown", st_media_format_mode_unknown, 0 },
 };
 
-static struct st_media_location2 {
-	const char * name;
-	const enum st_media_location location;
-	unsigned long long hash;
-} st_media_locations[] = {
-	{ "in drive", st_media_location_indrive, 0 },
-	{ "offline",  st_media_location_offline, 0 },
-	{ "online",   st_media_location_online,  0 },
-
-	{ "unknown", st_media_location_unknown, 0 },
-};
-
 static struct st_media_status2 {
 	const char * name;
 	const enum st_media_status status;
@@ -136,10 +124,6 @@ static void st_media_init(void) {
 		st_media_format_modes[i].hash = st_string_compute_hash2(st_media_format_modes[i].name);
 	st_media_format_modes[i].hash = st_string_compute_hash2(st_media_format_modes[i].name);
 
-	for (i = 0; st_media_locations[i].location != st_media_location_unknown; i++)
-		st_media_locations[i].hash = st_string_compute_hash2(st_media_locations[i].name);
-	st_media_locations[i].hash = st_string_compute_hash2(st_media_locations[i].name);
-
 	for (i = 0; st_media_status[i].status != st_media_status_unknown; i++)
 		st_media_status[i].hash = st_string_compute_hash2(st_media_status[i].name);
 	st_media_status[i].hash = st_string_compute_hash2(st_media_status[i].name);
@@ -167,7 +151,6 @@ struct st_value * st_media_convert_v1(struct st_media * media) {
 		"name", media->name,
 
 		"status", st_media_status_to_string_v1(media->status),
-		"location", st_media_location_to_string_v1(media->location),
 
 		"first used", media->first_used,
 		"use before", media->use_before,
@@ -284,7 +267,7 @@ void st_media_sync_v1(struct st_media * media, struct st_value * new_media) {
 	struct st_value * uuid = NULL;
 	struct st_value * format = NULL;
 
-	char * status = NULL, * location = NULL, * type = NULL;
+	char * status = NULL, * type = NULL;
 	long int nb_read_errors = 0, nb_write_errors = 0;
 	long int nb_volumes = 0;
 
@@ -295,7 +278,6 @@ void st_media_sync_v1(struct st_media * media, struct st_value * new_media) {
 		"name", &media->name,
 
 		"status", &status,
-		"location", &location,
 
 		"first used", &media->first_used,
 		"use before", &media->use_before,
@@ -328,9 +310,7 @@ void st_media_sync_v1(struct st_media * media, struct st_value * new_media) {
 		media->uuid[0] = '\0';
 
 	media->status = st_media_string_to_status_v1(status);
-	media->location = st_media_string_to_location_v1(location);
 	free(status);
-	free(location);
 
 	media->nb_read_errors = nb_read_errors;
 	media->nb_write_errors = nb_write_errors;
@@ -482,31 +462,6 @@ enum st_media_format_mode st_media_string_to_format_mode_v1(const char * mode) {
 			return st_media_format_modes[i].mode;
 
 	return st_media_format_modes[i].mode;
-}
-
-
-__asm__(".symver st_media_location_to_string_v1, st_media_location_to_string@@LIBSTONE_1.2");
-const char * st_media_location_to_string_v1(enum st_media_location location) {
-	unsigned int i;
-	for (i = 0; st_media_locations[i].location != st_media_location_unknown; i++)
-		if (st_media_locations[i].location == location)
-			return st_media_locations[i].name;
-
-	return st_media_locations[i].name;
-}
-
-__asm__(".symver st_media_string_to_location_v1, st_media_string_to_location@@LIBSTONE_1.2");
-enum st_media_location st_media_string_to_location_v1(const char * location) {
-	if (location == NULL)
-		return st_media_location_unknown;
-
-	unsigned int i;
-	unsigned long long hash = st_string_compute_hash2(location);
-	for (i = 0; st_media_locations[i].location != st_media_location_unknown; i++)
-		if (hash == st_media_locations[i].hash)
-			return st_media_locations[i].location;
-
-	return st_media_locations[i].location;
 }
 
 
