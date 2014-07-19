@@ -31,6 +31,7 @@
 
 #include <libstone/json.h>
 #include <libstone/poll.h>
+#include <libstone/slot.h>
 #include <libstone/value.h>
 
 #include "drive.h"
@@ -76,7 +77,7 @@ void stchgr_drive_register_v1(struct st_drive * drive, struct st_value * config,
 static int stchgr_drive_reset(struct st_drive * drive) {
 	struct stchgr_drive * self = drive->data;
 
-	struct st_value * command = st_value_pack("{ss}", "command", "reset");
+	struct st_value * command = st_value_pack("{ssso}", "command", "reset", "slot", st_slot_convert(drive->slot));
 	st_json_encode_to_fd(command, self->fd_in, true);
 	st_value_free(command);
 

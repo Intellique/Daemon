@@ -371,10 +371,6 @@ static int tape_drive_update_status(struct st_database_connection * db) {
 		if (GMT_ONLINE(status.mt_gstat)) {
 			tape_drive.status = st_drive_status_loaded_idle;
 			tape_drive.is_empty = false;
-
-			unsigned int density_code = ((status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT) & 0xFF;
-			if (tape_drive.density_code < density_code)
-				tape_drive.density_code = density_code & 0xFF;
 		} else {
 			tape_drive.status = st_drive_status_empty_idle;
 			tape_drive.is_empty = true;

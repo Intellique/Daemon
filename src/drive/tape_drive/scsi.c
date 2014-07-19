@@ -540,7 +540,7 @@ int tape_drive_scsi_read_mam(int fd, struct st_media * media) {
 				strncpy(buf, attr->attribute_value.text, 8);
 				buf[8] = '\0';
 				st_string_rtrim(buf, ' ');
-				st_log_write(st_log_level_debug, "Medium manufacturer: %s", buf);
+				st_log_write(st_log_level_debug, "Media information of %s, Medium manufacturer: %s", media->name, buf);
 				break;
 
 			case scsi_mam_medium_serial_number:
@@ -554,7 +554,7 @@ int tape_drive_scsi_read_mam(int fd, struct st_media * media) {
 				strncpy(buf, attr->attribute_value.text, 8);
 				buf[8] = '\0';
 				st_string_rtrim(buf, ' ');
-				st_log_write(st_log_level_debug, "Medium date: %s", buf);
+				st_log_write(st_log_level_debug, "Media information of %s, Medium date: %s", media->name, buf);
 				break;
 
 			case scsi_mam_medium_type:

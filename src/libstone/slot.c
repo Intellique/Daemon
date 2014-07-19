@@ -135,7 +135,7 @@ void st_slot_sync_v1(struct st_slot * slot, struct st_value * new_slot) {
 	if (slot->media != NULL && (media == NULL || media->type == st_value_null)) {
 		st_media_free_v1(slot->media);
 		slot->media = NULL;
-	} else if (media != NULL || media->type != st_value_null) {
+	} else if (media != NULL && media->type != st_value_null) {
 		if (slot->media == NULL) {
 			slot->media = malloc(sizeof(struct st_media));
 			bzero(slot->media, sizeof(struct st_media));

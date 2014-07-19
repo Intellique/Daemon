@@ -35,6 +35,7 @@
 #include <libstone/json.h>
 #include <libstone/log.h>
 #include <libstone/poll.h>
+#include <libstone/slot.h>
 #include <libstone/value.h>
 
 #include "drive.h"
@@ -70,6 +71,11 @@ static void changer_request(int fd, short event, void * data) {
 		struct st_value * returned = st_value_new_null();
 
 		if (!strcmp("reset", command)) {
+			if (st_value_hashtable_has_key2(request, "slot")) {
+				struct st_value * slot = st_value_hashtable_get2(request, "slot", false, false);
+				st_slot_sync(drive->slot, slot);
+			}
+
 			failed = drive->ops->reset(db);
 		} else if (!strcmp("update status", command)) {
 			failed = drive->ops->update_status(db);

@@ -1180,7 +1180,7 @@ static int st_database_postgresql_sync_media(struct st_database_connection * con
 
 	if (method != st_database_sync_init && media_id == NULL) {
 		const char * query = "select_media_by_medium_serial_number";
-		st_database_postgresql_prepare(self, query, "SELECT id, label, name, mediaformat, pool FROM drive WHERE mediumserialnumber = $1 LIMIT 1");
+		st_database_postgresql_prepare(self, query, "SELECT id, label, name, mediaformat, pool FROM media WHERE mediumserialnumber = $1 LIMIT 1");
 
 		const char * param[] = { media->medium_serial_number };
 

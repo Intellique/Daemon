@@ -692,6 +692,23 @@ void scsi_changer_scsi_new_status(struct st_changer * changer, const char * devi
 			continue;
 
 		drive->ops->update_status(drive);
+
+		struct st_slot * sl = changer->slots + i;
+		struct scsi_changer_slot * sp = sl->data;
+
+		if (sp->src_address == 0)
+			continue;
+
+		unsigned int j;
+		for (j = changer->nb_drives; j < changer->nb_slots; j++) {
+			struct st_slot * sl2 = changer->slots + j;
+			struct scsi_changer_slot * sp2 = sl2->data;
+
+			if (sp->src_address == sp2->address) {
+				sp->src_slot = sl2;
+				break;
+			}
+		}
 	}
 
 	close(fd);
