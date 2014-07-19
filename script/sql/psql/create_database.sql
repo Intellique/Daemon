@@ -108,12 +108,6 @@ CREATE TYPE MediaFormatMode AS ENUM (
     'optical'
 );
 
-CREATE TYPE MediaLocation AS ENUM (
-    'offline',
-    'online',
-    'in drive'
-);
-
 CREATE TYPE MediaStatus AS ENUM (
     'erasable',
     'error',
@@ -128,8 +122,8 @@ CREATE TYPE MediaStatus AS ENUM (
 
 CREATE TYPE MediaType AS ENUM (
     'cleaning',
-    'readonly',
-    'rewritable'
+    'rewritable',
+    'worm'
 );
 
 CREATE TYPE MetaType AS ENUM (
@@ -187,6 +181,14 @@ CREATE TABLE MediaFormat (
     supportMAM BOOLEAN NOT NULL DEFAULT FALSE
 );
 
+CREATE TABLE PoolMirror (
+    id SERIAL PRIMARY KEY,
+
+    uuid UUID NOT NULL UNIQUE,
+    name VARCHAR(64) NOT NULL,
+    synchronized BOOLEAN NOT NULL
+);
+
 CREATE TABLE Pool (
     id SERIAL PRIMARY KEY,
 
@@ -206,8 +208,40 @@ CREATE TABLE Pool (
     needproxy BOOLEAN NOT NULL DEFAULT FALSE,
 
     poolOriginal INTEGER REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    poolMirror INTEGER REFERENCES PoolMirror(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
     deleted BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE PoolGroup (
+    id SERIAL PRIMARY KEY,
+
+    uuid UUID NOT NULL UNIQUE,
+    name VARCHAR(64) NOT NULL
+);
+
+CREATE TABLE PoolToPoolGroup (
+    pool INTEGER NOT NULL REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    poolgroup INTEGER NOT NULL REFERENCES PoolGroup(id) ON UPDATE CASCADE ON DELETE RESTRICT
+);
+
+CREATE INDEX ON PoolToPoolGroup(pool);
+CREATE INDEX ON PoolToPoolGroup(poolgroup);
+
+CREATE TABLE PoolTemplate (
+    id SERIAL PRIMARY KEY,
+
+    name VARCHAR(64) NOT NULL UNIQUE,
+
+    autocheck AutoCheckMode NOT NULL DEFAULT 'none',
+    lockcheck BOOLEAN NOT NULL DEFAULT FALSE,
+
+    growable BOOLEAN NOT NULL DEFAULT FALSE,
+    unbreakableLevel UnbreakableLevel NOT NULL DEFAULT 'none',
+    rewritable BOOLEAN NOT NULL DEFAULT TRUE,
+
+    metadata TEXT NOT NULL DEFAULT '',
+    createProxy BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE Media (
@@ -219,7 +253,6 @@ CREATE TABLE Media (
     name VARCHAR(255) NULL,
 
     status MediaStatus NOT NULL,
-    location MediaLocation NOT NULL,
 
     firstUsed TIMESTAMP(0) NOT NULL,
     useBefore TIMESTAMP(0) NOT NULL,
@@ -243,9 +276,11 @@ CREATE TABLE Media (
     totalBlock INTEGER NOT NULL CHECK (totalBlock >= 0),
 
     hasPartition BOOLEAN NOT NULL DEFAULT FALSE,
-    locked BOOLEAN NOT NULL DEFAULT FALSE,
+    append BOOLEAN NOT NULL DEFAULT TRUE,
 
     type MediaType NOT NULL DEFAULT 'rewritable',
+    writeLock BOOLEAN NOT NULL FALSE,
+
     mediaFormat INTEGER NOT NULL REFERENCES MediaFormat(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     pool INTEGER NULL REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE SET NULL,
 
@@ -274,9 +309,7 @@ CREATE TABLE DriveFormatSupport (
     mediaFormat INTEGER NOT NULL REFERENCES MediaFormat(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
     read BOOLEAN NOT NULL DEFAULT TRUE,
-    write BOOLEAN NOT NULL DEFAULT TRUE,
-
-    PRIMARY KEY (driveFormat, mediaFormat)
+    write BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 CREATE TABLE Host (
@@ -294,8 +327,6 @@ CREATE TABLE Host (
 
 CREATE TABLE Changer (
     id SERIAL PRIMARY KEY,
-
-    device VARCHAR(64),
 
     model VARCHAR(64) NOT NULL,
     vendor VARCHAR(64) NOT NULL,
@@ -316,9 +347,6 @@ CREATE TABLE Changer (
 
 CREATE TABLE Drive (
     id SERIAL PRIMARY KEY,
-
-    device VARCHAR(64),
-    scsiDevice VARCHAR(64),
 
     model VARCHAR(64) NOT NULL,
     vendor VARCHAR(64) NOT NULL,
@@ -369,7 +397,7 @@ CREATE TABLE Users (
 
     disabled BOOLEAN NOT NULL DEFAULT FALSE,
 
-    pool INTEGER NOT NULL REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    poolgroup INTEGER NOT NULL REFERENCES PoolGroup(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     meta hstore NOT NULL
 );
 
@@ -560,6 +588,12 @@ CREATE TABLE PoolToChecksum (
     PRIMARY KEY (pool, checksum)
 );
 
+CREATE TABLE PoolTemplateToChecksum (
+    poolTemplate INTEGER NOT NULL REFERENCES PoolTemplate(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    checksum INTEGER NOT NULL REFERENCES Checksum(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    PRIMARY KEY (poolTemplate, checksum)
+);
+
 CREATE TABLE ArchiveFileToChecksumResult (
     archiveFile BIGINT NOT NULL REFERENCES ArchiveFile(id) ON UPDATE CASCADE ON DELETE CASCADE,
     checksumResult BIGINT NOT NULL REFERENCES ChecksumResult(id) ON UPDATE CASCADE ON DELETE RESTRICT,
@@ -709,6 +743,8 @@ COMMENT ON COLUMN DriveFormat.cleaningInterval IS 'Interval between two cleaning
 COMMENT ON TYPE JobStatus IS E'disable => disabled,\nerror => error while running,\nfinished => task finished,\npause => waiting for user action,\nrunning => running,\nscheduled => not yet started or completed,\nstopped => stopped by user,\nwaiting => waiting for a resource';
 
 COMMENT ON COLUMN Media.label IS 'Contains an UUID';
+COMMENT ON COLUMN Media.append IS 'Can add file into this media';
+COMMENT ON COLUMN Media.writeLock IS 'Media is write protected';
 
 COMMENT ON COLUMN MediaFormat.blockSize IS 'Default block size';
 COMMENT ON COLUMN MediaFormat.supportPartition IS 'Is the media can be partitionned';
