@@ -80,15 +80,16 @@ int main() {
 	if (config == NULL)
 		return 2;
 
-	struct st_value * log_config = NULL, * changer_config = NULL, * db_config = NULL;
-	st_value_unpack(config, "{sososo}", "logger", &log_config, "changer", &changer_config, "database", &db_config);
+	struct st_value * log_config = NULL, * changer_config = NULL, * db_config = NULL, * socket = NULL;
+	st_value_unpack(config, "{sosososo}", "logger", &log_config, "changer", &changer_config, "database", &db_config, "socket", &socket);
 
-	if (log_config == NULL || changer_config == NULL || db_config == NULL)
+	if (log_config == NULL || changer_config == NULL || db_config == NULL || socket == NULL)
 		return 3;
 
 	st_log_configure(log_config, st_log_type_changer);
 	st_database_load_config(db_config);
 	stchgr_drive_set_config(log_config, db_config);
+	stchgr_listen_configure(socket);
 
 	st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
 
@@ -108,8 +109,12 @@ int main() {
 	if (failed != 0)
 		return 5;
 
+	db_connect->ops->sync_changer(db_connect, changer, st_database_sync_default);
+
 	while (!stop) {
 		st_poll(-1);
+
+		db_connect->ops->sync_changer(db_connect, changer, st_database_sync_default);
 	}
 
 	st_log_write(st_log_level_info, "Changer (type: %s) will stop", driver->name);

@@ -500,6 +500,9 @@ int tape_drive_scsi_read_mam(int fd, struct st_media * media) {
 		} attribute_value;
 	} __attribute__((packed));
 
+	static unsigned long last_hash = 0;
+	const unsigned long hash = st_string_compute_hash2(media->name);
+
 	unsigned int data_available = be32toh(*(unsigned int *) buffer);
 	unsigned char * ptr = buffer + 4;
 
@@ -537,10 +540,12 @@ int tape_drive_scsi_read_mam(int fd, struct st_media * media) {
 				break;
 
 			case scsi_mam_medium_manufacturer:
-				strncpy(buf, attr->attribute_value.text, 8);
-				buf[8] = '\0';
-				st_string_rtrim(buf, ' ');
-				st_log_write(st_log_level_debug, "Media information of %s, Medium manufacturer: %s", media->name, buf);
+				if (last_hash != hash) {
+					strncpy(buf, attr->attribute_value.text, 8);
+					buf[8] = '\0';
+					st_string_rtrim(buf, ' ');
+					st_log_write(st_log_level_debug, "Media information of %s, Medium manufacturer: %s", media->name, buf);
+				}
 				break;
 
 			case scsi_mam_medium_serial_number:
@@ -551,10 +556,12 @@ int tape_drive_scsi_read_mam(int fd, struct st_media * media) {
 				break;
 
 			case scsi_mam_medium_manufacturer_date:
-				strncpy(buf, attr->attribute_value.text, 8);
-				buf[8] = '\0';
-				st_string_rtrim(buf, ' ');
-				st_log_write(st_log_level_debug, "Media information of %s, Medium date: %s", media->name, buf);
+				if (last_hash != hash) {
+					strncpy(buf, attr->attribute_value.text, 8);
+					buf[8] = '\0';
+					st_string_rtrim(buf, ' ');
+					st_log_write(st_log_level_debug, "Media information of %s, Medium date: %s", media->name, buf);
+				}
 				break;
 
 			case scsi_mam_medium_type:
@@ -577,6 +584,8 @@ int tape_drive_scsi_read_mam(int fd, struct st_media * media) {
 				break;
 		}
 	}
+
+	last_hash = hash;
 
 	return 0;
 }
