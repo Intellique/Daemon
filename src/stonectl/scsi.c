@@ -431,6 +431,9 @@ int stctl_scsi_loaderinfo(const char * filename, struct st_changer * changer, st
 		struct st_slot * sl = changer->slots + i;
 		sl->changer = changer;
 		sl->index = i;
+
+		if (i < changer->nb_drives)
+			sl->drive = changer->drives + i;
 	}
 
 	stctl_scsi_loader_status_slot(fd, changer, available_drives, changer->slots, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer);

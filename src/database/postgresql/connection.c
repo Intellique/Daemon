@@ -938,7 +938,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 		if (drive->changer != NULL) {
 			struct st_value * changer_data = st_value_hashtable_get(drive->changer->db_data, key, false, false);
 			struct st_value * changer_id = st_value_hashtable_get2(changer_data, "id", true, false);
-			st_value_hashtable_put2(db, "changer_id", changer_id, true);
+			st_value_hashtable_put2(db, "changer id", changer_id, true);
 		}
 	} else {
 		db = st_value_hashtable_get(drive->db_data, key, false, false);
@@ -946,7 +946,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 		if (drive->changer != NULL && !st_value_hashtable_has_key2(db, "changer_id")) {
 			struct st_value * changer_data = st_value_hashtable_get(drive->changer->db_data, key, false, false);
 			struct st_value * changer_id = st_value_hashtable_get2(changer_data, "id", true, false);
-			st_value_hashtable_put2(db, "changer_id", changer_id, true);
+			st_value_hashtable_put2(db, "changer id", changer_id, true);
 		}
 
 		st_value_free(key);
@@ -1114,7 +1114,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 			db = st_value_hashtable_get(drive->changer->db_data, key, false, false);
 
 			char * changer_id = NULL;
-			st_value_unpack(db, "{ss}", "changer_id", &changer_id);
+			st_value_unpack(db, "{ss}", "changer id", &changer_id);
 
 			if (drive->last_clean > 0) {
 				last_clean = malloc(24);
@@ -1402,31 +1402,31 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 
 		struct st_value * changer_data = st_value_hashtable_get(slot->changer->db_data, key, false, false);
 		struct st_value * changer_id = st_value_hashtable_get2(changer_data, "id", true, false);
-		st_value_hashtable_put2(db, "changer_id", changer_id, true);
+		st_value_hashtable_put2(db, "changer id", changer_id, true);
 
 		if (slot->drive != NULL) {
 			struct st_value * drive_data = st_value_hashtable_get(slot->drive->db_data, key, false, false);
 			struct st_value * drive_id = st_value_hashtable_get2(drive_data, "id", true, false);
-			st_value_hashtable_put2(db, "drive_id", drive_id, true);
+			st_value_hashtable_put2(db, "drive id", drive_id, true);
 		}
 	} else {
 		if (!st_value_hashtable_has_key2(db, "changer_id")) {
 			struct st_value * changer_data = st_value_hashtable_get(slot->changer->db_data, key, false, false);
 			struct st_value * changer_id = st_value_hashtable_get2(changer_data, "id", true, false);
-			st_value_hashtable_put2(db, "changer_id", changer_id, true);
+			st_value_hashtable_put2(db, "changer id", changer_id, true);
 		}
 
 		if (slot->drive != NULL && !st_value_hashtable_has_key2(db, "drive_id")) {
 			struct st_value * drive_data = st_value_hashtable_get(slot->drive->db_data, key, false, false);
 			struct st_value * drive_id = st_value_hashtable_get2(drive_data, "id", true, false);
-			st_value_hashtable_put2(db, "drive_id", drive_id, true);
+			st_value_hashtable_put2(db, "drive id", drive_id, true);
 		}
 
 		st_value_free(key);
 	}
 
 	char * changer_id = NULL, * drive_id = NULL, * media_id = NULL;
-	st_value_unpack(db, "{ssss}", "changer_id", &changer_id, "drive_id", &drive_id);
+	st_value_unpack(db, "{ssss}", "changer id", &changer_id, "drive id", &drive_id);
 
 	if (slot->media != NULL) {
 		struct st_value * media_data = st_value_hashtable_get(slot->media->db_data, key, false, false);
