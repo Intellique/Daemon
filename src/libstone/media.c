@@ -396,6 +396,7 @@ void st_media_free_v1(struct st_media * media) {
 	st_media_format_free_v1(media->format);
 	st_pool_free_v1(media->pool);
 
+	free(media->changer_data);
 	st_value_free_v1(media->db_data);
 
 	free(media);

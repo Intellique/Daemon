@@ -11,12 +11,6 @@ CREATE TYPE ChangerAction AS ENUM (
     'put offline'
 );
 
-CREATE TYPE ChangerSlotType AS ENUM (
-    'drive',
-    'import / export',
-    'storage'
-);
-
 CREATE TYPE ChangerStatus AS ENUM (
     'error',
     'exporting',
@@ -363,16 +357,16 @@ CREATE TABLE Drive (
 );
 
 CREATE TABLE ChangerSlot (
-    id SERIAL PRIMARY KEY,
-
-    index INTEGER NOT NULL,
     changer INTEGER NOT NULL REFERENCES Changer(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    index INTEGER NOT NULL,
     drive INTEGER UNIQUE REFERENCES Drive(id) ON UPDATE CASCADE ON DELETE SET NULL,
+
     media INTEGER REFERENCES Media(id) ON UPDATE CASCADE ON DELETE SET NULL,
-    type ChangerSlotType NOT NULL DEFAULT 'storage',
+
+    isieport BOOLEAN NOT NULL DEFAULT FALSE,
     enable BOOLEAN NOT NULL DEFAULT TRUE,
 
-    CONSTRAINT unique_slot UNIQUE (index, changer)
+    PRIMARY KEY (changer, index)
 );
 
 CREATE TABLE SelectedFile (

@@ -104,8 +104,6 @@ LIBSTONE_1.2 {
 		st_slot_convert;
 		st_slot_free;
 		st_slot_free2;
-		st_slot_type_to_string;
-		st_slot_string_to_type;
 		st_slot_sync;
 
 		st_socket;

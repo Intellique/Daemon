@@ -24,15 +24,16 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_SLOT_P_H__
-#define __LIBSTONE_SLOT_P_H__
+#ifndef __STONECHANGER_MEDIA_P__H__
+#define __STONECHANGER_MEDIA_P__H__
 
-#include <libstone/slot.h>
+#include <libstone-changer/media.h>
 
-struct st_value * st_slot_convert_v1(struct st_slot * slot) __attribute__((nonnull,warn_unused_result));
-void st_slot_free_v1(struct st_slot * slot) __attribute__((nonnull));
-void st_slot_free2_v1(void * slot) __attribute__((nonnull));
-void st_slot_sync_v1(struct st_slot * slot, struct st_value * new_slot) __attribute__((nonnull));
+struct st_changer;
+struct st_slot;
+
+void stchgr_media_init(struct st_changer * changer);
+void stchgr_media_init_slot(struct st_slot * slot);
 
 #endif
 

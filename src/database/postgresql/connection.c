@@ -681,7 +681,7 @@ static struct st_value * st_database_postgresql_get_slot_by_drive(struct st_data
 	struct st_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_slot_by_drive";
-	st_database_postgresql_prepare(self, query, "SELECT index, type, enable FROM changerslot WHERE drive = $1");
+	st_database_postgresql_prepare(self, query, "SELECT index, isieport, enable FROM changerslot WHERE drive = $1");
 
 	const char * param[] = { drive_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -693,13 +693,16 @@ static struct st_value * st_database_postgresql_get_slot_by_drive(struct st_data
 	else if (status == PGRES_TUPLES_OK) {
 		int index = -1;
 		bool enable = false;
+		bool ie_port = false;
 		st_database_postgresql_get_int(result, 0, 0, &index);
+		st_database_postgresql_get_bool(result, 0, 1, &ie_port);
 		st_database_postgresql_get_bool(result, 0, 2, &enable);
 
 		slot = st_value_pack("{sisssb}",
-				"index", index,
-				"type", st_slot_string_to_type(PQgetvalue(result, 0, 1)),
-				"enable", enable);
+			"index", index,
+			"ie port", ie_port,
+			"enable", enable
+		);
 	}
 
 	PQclear(result);
@@ -1386,7 +1389,11 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 
 	struct st_value * key = st_value_new_custom(connect->config, NULL);
 	struct st_value * db = NULL;
-	if (slot->db_data == NULL) {
+
+	if (slot->db_data != NULL)
+		db = st_value_hashtable_get(slot->db_data, key, false, false);
+
+	if (db == NULL || db->type == st_value_null) {
 		slot->db_data = st_value_new_hashtable(st_value_custom_compute_hash);
 
 		db = st_value_new_hashtable2();
@@ -1402,8 +1409,6 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 			st_value_hashtable_put2(db, "drive_id", drive_id, true);
 		}
 	} else {
-		db = st_value_hashtable_get(slot->db_data, key, false, false);
-
 		if (!st_value_hashtable_has_key2(db, "changer_id")) {
 			struct st_value * changer_data = st_value_hashtable_get(slot->changer->db_data, key, false, false);
 			struct st_value * changer_id = st_value_hashtable_get2(changer_data, "id", true, false);
@@ -1419,17 +1424,19 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 		st_value_free(key);
 	}
 
-	char * slot_id = NULL;
-	st_value_unpack(db, "{ss}", "id", &slot_id);
-
-	char * changer_id = NULL, * drive_id = NULL;
+	char * changer_id = NULL, * drive_id = NULL, * media_id = NULL;
 	st_value_unpack(db, "{ssss}", "changer_id", &changer_id, "drive_id", &drive_id);
+
+	if (slot->media != NULL) {
+		struct st_value * media_data = st_value_hashtable_get(slot->media->db_data, key, false, false);
+		st_value_unpack(media_data, "{ss}", "id", &media_id);
+	}
 
 	int failed = 0;
 
-	if (method != st_database_sync_init && slot_id == NULL) {
+	if (method != st_database_sync_init) {
 		const char * query = "select_changerslot_by_index";
-		st_database_postgresql_prepare(self, query, "SELECT id, enable FROM changerslot WHERE changer = $1 AND index = $2 LIMIT 1");
+		st_database_postgresql_prepare(self, query, "SELECT enable FROM changerslot WHERE changer = $1 AND index = $2 LIMIT 1");
 
 		char * sindex;
 		asprintf(&sindex, "%u", slot->index);
@@ -1441,12 +1448,8 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 
 		if (status == PGRES_FATAL_ERROR)
 			st_database_postgresql_get_error(result, query);
-		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
-			st_database_postgresql_get_string_dup(result, 0, 0, &slot_id);
-			st_value_hashtable_put2(db, "id", st_value_new_string(slot_id), true);
-
-			st_database_postgresql_get_bool(result, 0, 1, &slot->enable);
-		}
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+			st_database_postgresql_get_bool(result, 0, 0, &slot->enable);
 
 		PQclear(result);
 		free(sindex);
@@ -1454,28 +1457,29 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 
 	if (method == st_database_sync_init) {
 		const char * query = "insert_into_changerslot";
-		st_database_postgresql_prepare(self, query, "INSERT INTO changerslot(index, changer, drive, type) VALUES ($1, $2, $3, $4) RETURNING id");
+		st_database_postgresql_prepare(self, query, "INSERT INTO changerslot(changer, index, drive, media, isieport) VALUES ($1, $2, $3, $4, $5)");
 
 		char * sindex;
 		asprintf(&sindex, "%u", slot->index);
 
-		const char * param[] = { sindex, changer_id, drive_id, st_slot_type_to_string(slot->type) };
+		const char * param[] = { changer_id, sindex, drive_id, media_id, slot->is_ie_port ? "TRUE" : "FALSE" };
 
 		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
 			st_database_postgresql_get_error(result, query);
-		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
-			st_value_hashtable_put2(db, "id", st_value_new_string(PQgetvalue(result, 0, 0)), true);
 
 		PQclear(result);
 		free(sindex);
 	} else if (method != st_database_sync_id_only) {
 		const char * query = "update_changerslot";
-		st_database_postgresql_prepare(self, query, "UDPATE changerslot SET media = $1, enable = $2 WHERE id = $3");
+		st_database_postgresql_prepare(self, query, "UPDATE changerslot SET media = $1, enable = $2 WHERE changer = $3 AND index = $4");
 
-		const char * param[] = { NULL, slot->enable ? "true" : "false", slot_id };
+		char * sindex;
+		asprintf(&sindex, "%u", slot->index);
+
+		const char * param[] = { media_id, slot->enable ? "true" : "false", changer_id, sindex };
 
 		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
@@ -1484,7 +1488,12 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 			st_database_postgresql_get_error(result, query);
 
 		PQclear(result);
+		free(sindex);
 	}
+
+	free(changer_id);
+	free(drive_id);
+	free(media_id);
 
 	return failed;
 }

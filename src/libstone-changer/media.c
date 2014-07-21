@@ -24,15 +24,26 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_SLOT_P_H__
-#define __LIBSTONE_SLOT_P_H__
+// malloc
+#include <stdlib.h>
 
+#include <libstone/changer.h>
+#include <libstone/media.h>
 #include <libstone/slot.h>
 
-struct st_value * st_slot_convert_v1(struct st_slot * slot) __attribute__((nonnull,warn_unused_result));
-void st_slot_free_v1(struct st_slot * slot) __attribute__((nonnull));
-void st_slot_free2_v1(void * slot) __attribute__((nonnull));
-void st_slot_sync_v1(struct st_slot * slot, struct st_value * new_slot) __attribute__((nonnull));
+#include "media.h"
 
-#endif
+void stchgr_media_init(struct st_changer * changer) {
+	unsigned int i;
+	for (i = 0; i < changer->nb_slots; i++)
+		stchgr_media_init_slot(changer->slots + i);
+}
+
+void stchgr_media_init_slot(struct st_slot * slot) {
+	struct st_media * media = slot->media;
+	if (media != NULL && media->changer_data == NULL) {
+		struct stchgr_media * md = media->changer_data = malloc(sizeof(struct stchgr_media));
+		md->peer = NULL;
+	}
+}
 

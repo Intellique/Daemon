@@ -228,10 +228,7 @@ static int tape_drive_init(struct st_value * config) {
 	bzero(tape_drive.slot, sizeof(struct st_slot));
 	sl->drive = &tape_drive;
 
-	char * type = NULL;
-	st_value_unpack(config, "{sssssssbs{sisbssss}}", "model", &tape_drive.model, "vendor", &tape_drive.vendor, "serial number", &tape_drive.serial_number, "enable", &tape_drive.enable, "slot", "index", &sl->index, "enable", &sl->enable, "type", &type, "volume name", &sl->volume_name);
-	sl->type = st_slot_string_to_type(type);
-	free(type);
+	st_value_unpack(config, "{sssssssbs{sisbsbss}}", "model", &tape_drive.model, "vendor", &tape_drive.vendor, "serial number", &tape_drive.serial_number, "enable", &tape_drive.enable, "slot", "index", &sl->index, "enable", &sl->enable, "ie port", &sl->is_ie_port, "volume name", &sl->volume_name);
 	drive_index = sl->index;
 
 	glob_t gl;

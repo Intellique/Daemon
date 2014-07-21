@@ -123,6 +123,7 @@ struct st_media {
 	struct st_media_format * format;
 	struct st_pool * pool;
 
+	void * changer_data;
 	struct st_value * db_data;
 };
 

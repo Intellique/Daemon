@@ -34,21 +34,6 @@
 #include "string.h"
 #include "value.h"
 
-static struct st_slot_type2 {
-	const char * name;
-	const enum st_slot_type type;
-	unsigned long long hash;
-} st_slot_types[] = {
-	{ "drive slot",         st_slot_type_drive,         0 },
-	{ "import-export slot", st_slot_type_import_export, 0 },
-	{ "storage slot",       st_slot_type_storage,       0 },
-	{ "transport slot",     st_slot_type_import_export, 0 },
-
-	{ "unknown slot", st_slot_type_unkown, 0 },
-};
-
-static void st_slot_init(void) __attribute__((constructor));
-
 
 __asm__(".symver st_slot_convert_v1, st_slot_convert@@LIBSTONE_1.2");
 struct st_value * st_slot_convert_v1(struct st_slot * slot) {
@@ -56,20 +41,13 @@ struct st_value * st_slot_convert_v1(struct st_slot * slot) {
 	if (slot->media != NULL)
 		media = st_media_convert_v1(slot->media);
 
-	return st_value_pack("{sisssssbso}",
+	return st_value_pack("{sisssbsbso}",
 		"index", (long int) slot->index,
 		"volume name", slot->volume_name,
-		"type", st_slot_type_to_string(slot->type),
+		"ie port", slot->is_ie_port,
 		"enable", slot->enable,
 		"media", media
 	);
-}
-
-static void st_slot_init() {
-	int i;
-	for (i = 0; st_slot_types[i].type != st_slot_type_unkown; i++)
-		st_slot_types[i].hash = st_string_compute_hash2(st_slot_types[i].name);
-	st_slot_types[i].hash = st_string_compute_hash2(st_slot_types[i].name);
 }
 
 __asm__(".symver st_slot_type_to_string_v1, st_slot_type_to_string@@LIBSTONE_1.2");
@@ -86,51 +64,23 @@ void st_slot_free2_v1(void * slot) {
 	st_slot_free_v1(slot);
 }
 
-__asm__(".symver st_slot_type_to_string_v1, st_slot_type_to_string@@LIBSTONE_1.2");
-const char * st_slot_type_to_string_v1(enum st_slot_type type) {
-	unsigned int i;
-	for (i = 0; st_slot_types[i].type != st_slot_type_unkown; i++)
-		if (st_slot_types[i].type == type)
-			return st_slot_types[i].name;
-
-	return st_slot_types[i].name;
-}
-
-__asm__(".symver st_slot_string_to_type_v1, st_slot_string_to_type@@LIBSTONE_1.2");
-enum st_slot_type st_slot_string_to_type_v1(const char * type) {
-	if (type == NULL)
-		return st_slot_type_unkown;
-
-	unsigned int i;
-	const unsigned long long hash = st_string_compute_hash2(type);
-	for (i = 0; st_slot_types[i].type != st_slot_type_unkown; i++)
-		if (hash == st_slot_types[i].hash)
-			return st_slot_types[i].type;
-
-	return st_slot_types[i].type;
-}
-
 __asm__(".symver st_slot_sync_v1, st_slot_sync@@LIBSTONE_1.2");
 void st_slot_sync_v1(struct st_slot * slot, struct st_value * new_slot) {
 	free(slot->volume_name);
 	slot->volume_name = NULL;
 
 	struct st_value * media = NULL;
-	char * type = NULL;
 	long int index = -1;
 
-	st_value_unpack_v1(new_slot, "{sisssssbso}",
+	st_value_unpack_v1(new_slot, "{sisssbsbso}",
 		"index", &index,
 		"volume name", &slot->volume_name,
-		"type", &type,
+		"ie port", &slot->is_ie_port,
 		"enable", &slot->enable,
 		"media", &media
 	);
 
 	slot->index = index;
-	if (type != NULL)
-		slot->type = st_slot_string_to_type_v1(type);
-	free(type);
 
 	if (slot->media != NULL && (media == NULL || media->type == st_value_null)) {
 		st_media_free_v1(slot->media);

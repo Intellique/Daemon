@@ -582,7 +582,7 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_changer * changer, s
 						slot->volume_name = strdup(volume_name);
 					}
 
-					slot->type = st_slot_type_drive;
+					slot->is_ie_port = false;
 
 					char drive_id[35];
 					strncpy(drive_id, data_transfer_element->device_identifier_1, 34);
@@ -619,7 +619,7 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_changer * changer, s
 						slot->volume_name = strdup(volume_name);
 					}
 
-					slot->type = st_slot_type_import_export;
+					slot->is_ie_port = true;
 				 }
 				 break;
 
@@ -640,7 +640,7 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_changer * changer, s
 						slot->volume_name = strdup(volume_name);
 					}
 
-					slot->type = st_slot_type_storage;
+					slot->is_ie_port = false;
 				}
 				break;
 		}

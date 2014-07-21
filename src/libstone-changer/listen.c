@@ -35,6 +35,7 @@
 
 #include "changer.h"
 #include "listen.h"
+#include "peer.h"
 
 static unsigned int stchr_nb_clients = 0;
 
@@ -67,7 +68,9 @@ unsigned int stchgr_listen_nb_clients(void) {
 }
 
 static void stchgr_socket_accept(int fd_server __attribute__((unused)), int fd_client, struct st_value * client __attribute__((unused))) {
-	st_poll_register(fd_client, POLLIN | POLLHUP, stchgr_socket_message, NULL, NULL);
+	struct stchgr_peer * peer = stchgr_peer_new(fd_client);
+
+	st_poll_register(fd_client, POLLIN | POLLHUP, stchgr_socket_message, peer, NULL);
 	stchr_nb_clients++;
 }
 

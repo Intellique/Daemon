@@ -24,15 +24,23 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_SLOT_P_H__
-#define __LIBSTONE_SLOT_P_H__
+// bzero
+#include <strings.h>
+// free, malloc
+#include <stdlib.h>
 
-#include <libstone/slot.h>
+#include "peer.h"
 
-struct st_value * st_slot_convert_v1(struct st_slot * slot) __attribute__((nonnull,warn_unused_result));
-void st_slot_free_v1(struct st_slot * slot) __attribute__((nonnull));
-void st_slot_free2_v1(void * slot) __attribute__((nonnull));
-void st_slot_sync_v1(struct st_slot * slot, struct st_value * new_slot) __attribute__((nonnull));
+void stchgr_peer_free(struct stchgr_peer * peer) {
+	free(peer);
+}
 
-#endif
+struct stchgr_peer * stchgr_peer_new(int fd) {
+	struct stchgr_peer * peer = malloc(sizeof(struct stchgr_peer));
+	bzero(peer, sizeof(struct stchgr_peer));
+
+	peer->fd = fd;
+
+	return peer;
+}
 

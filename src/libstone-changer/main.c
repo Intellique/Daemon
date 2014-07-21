@@ -40,6 +40,7 @@
 #include "changer.h"
 #include "drive.h"
 #include "listen.h"
+#include "media.h"
 
 static bool stop = false;
 
@@ -108,6 +109,8 @@ int main() {
 	int failed = changer->ops->init(changer_config, db_connect);
 	if (failed != 0)
 		return 5;
+
+	stchgr_media_init(changer);
 
 	db_connect->ops->sync_changer(db_connect, changer, st_database_sync_default);
 

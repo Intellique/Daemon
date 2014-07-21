@@ -219,9 +219,9 @@ void scsi_changer_scsi_loader_check_slot(struct st_changer * changer, const char
 		return;
 
 	enum scsi_loader_element_type type = scsi_loader_element_type_storage_element;
-	if (slot->drive)
+	if (slot->drive != NULL)
 		type = scsi_loader_element_type_data_transfer;
-	else if (slot->type == st_slot_type_import_export)
+	else if (slot->is_ie_port)
 		type = scsi_loader_element_type_import_export_element;
 
 	struct scsi_changer_slot * sp = slot->data;
@@ -1092,7 +1092,7 @@ static void scsi_changer_scsi_update_status(int fd, struct st_changer * changer,
 						slot->volume_name = strdup(volume_name);
 					}
 
-					slot->type = st_slot_type_drive;
+					slot->is_ie_port = false;
 
 					struct scsi_changer_slot * sl = slot->data;
 					sl->address = be16toh(data_transfer_element->element_address);
@@ -1119,7 +1119,7 @@ static void scsi_changer_scsi_update_status(int fd, struct st_changer * changer,
 								st_value_hashtable_put2(vslot, "volume name", st_value_new_string(slot->volume_name), true);
 							else
 								st_value_hashtable_put2(vslot, "volume name", st_value_new_null(), true);
-							st_value_hashtable_put2(vslot, "type", st_value_new_string(st_slot_type_to_string(slot->type)), true);
+							st_value_hashtable_put2(vslot, "ie port", st_value_new_boolean(slot->is_ie_port), true);
 						}
 
 						scsi_changer_scsi_setup_drive(dr, drive);
@@ -1145,7 +1145,7 @@ static void scsi_changer_scsi_update_status(int fd, struct st_changer * changer,
 						slot->volume_name = strdup(volume_name);
 					}
 
-					slot->type = st_slot_type_import_export;
+					slot->is_ie_port = true;
 
 					struct scsi_changer_slot * sl = slot->data;
 					sl->address = be16toh(import_export_element->element_address);
@@ -1170,7 +1170,7 @@ static void scsi_changer_scsi_update_status(int fd, struct st_changer * changer,
 						slot->volume_name = strdup(volume_name);
 					}
 
-					slot->type = st_slot_type_storage;
+					slot->is_ie_port = false;
 
 					struct scsi_changer_slot * sl = slot->data;
 					sl->address = be16toh(storage_element->element_address);

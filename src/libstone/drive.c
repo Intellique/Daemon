@@ -148,7 +148,6 @@ void st_drive_sync_v1(struct st_drive * drive, struct st_value * new_drive, bool
 
 	free(sl->volume_name);
 	sl->volume_name = NULL;
-	char * type = NULL;
 
 	struct st_value * last_clean = NULL;
 	struct st_value * slot = NULL;
@@ -183,10 +182,6 @@ void st_drive_sync_v1(struct st_drive * drive, struct st_value * new_drive, bool
 		drive->last_clean = 0;
 	else
 		drive->last_clean = st_value_integer_get_v1(last_clean);
-
-	if (type != NULL)
-		sl->type = st_slot_string_to_type_v1(type);
-	free(type);
 
 	if (with_slot && slot != NULL)
 		st_slot_sync(drive->slot, slot);
