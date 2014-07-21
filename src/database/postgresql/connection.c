@@ -883,7 +883,8 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 		st_database_postgresql_create_checkpoint(connect, "after_changers");
 
 		for (i = 0; failed == 0 && i < changer->nb_drives; i++)
-			failed = st_database_postgresql_sync_drive(connect, changer->drives + i, method);
+			if (changer->drives[i].enable)
+				failed = st_database_postgresql_sync_drive(connect, changer->drives + i, method);
 	}
 
 	if (method == st_database_sync_init) {
@@ -1105,7 +1106,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 			}
 		} else if (method == st_database_sync_init) {
 			const char * query = "insert_drive";
-			st_database_postgresql_prepare(self, query, "INSERT INTO drivestatus, operationduration, lastclean, model, vendor, firmwarerev, serialnumber, changer, driveformat) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id");
+			st_database_postgresql_prepare(self, query, "INSERT INTO drive (status, operationduration, lastclean, model, vendor, firmwarerev, serialnumber, changer, driveformat) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id");
 
 			char * op_duration = NULL, * last_clean = NULL;
 			asprintf(&op_duration, "%.3f", drive->operation_duration);
@@ -1464,7 +1465,7 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 
 		const char * param[] = { changer_id, sindex, drive_id, media_id, slot->is_ie_port ? "TRUE" : "FALSE" };
 
-		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+		PGresult * result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)

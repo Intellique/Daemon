@@ -430,6 +430,7 @@ int stctl_scsi_loaderinfo(const char * filename, struct st_changer * changer, st
 	for (i = 0; i < changer->nb_slots; i++) {
 		struct st_slot * sl = changer->slots + i;
 		sl->changer = changer;
+		sl->index = i;
 	}
 
 	stctl_scsi_loader_status_slot(fd, changer, available_drives, changer->slots, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer);
@@ -592,8 +593,12 @@ static void stctl_scsi_loader_status_slot(int fd, struct st_changer * changer, s
 					struct st_drive * l_drive = st_value_custom_get(val_drive);
 					struct st_drive * c_drive = changer->drives + i;
 
-					memcpy(c_drive, l_drive, sizeof(struct st_drive));
-					bzero(l_drive, sizeof(struct st_drive));
+					if (l_drive != NULL) {
+						memcpy(c_drive, l_drive, sizeof(struct st_drive));
+						bzero(l_drive, sizeof(struct st_drive));
+						c_drive->enable = true;
+					} else
+						c_drive->enable = false;
 
 					c_drive->changer = changer;
 					c_drive->slot = slot;
