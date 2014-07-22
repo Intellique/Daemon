@@ -37,6 +37,14 @@
 #include "common.h"
 
 
+const char * st_database_postgresql_bool_to_string(bool value) {
+	if (value)
+		return "TRUE";
+	else
+		return "FALSE";
+}
+
+
 int st_database_postgresql_get_bool(PGresult * result, int row, int column, bool * val) {
 	if (column < 0)
 		return -1;

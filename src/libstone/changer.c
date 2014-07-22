@@ -33,6 +33,18 @@
 #include "string.h"
 #include "value.h"
 
+static struct st_changer_action2 {
+	const char * name;
+	const enum st_changer_action action;
+	unsigned long long hash;
+} st_library_actions[] = {
+	{ "none",        st_changer_action_none,        0 },
+	{ "put offline", st_changer_action_put_offline, 0 },
+	{ "put online",  st_changer_action_put_online,  0 },
+
+	{ "unknown", st_changer_action_unknown, 0 },
+};
+
 static struct st_changer_status2 {
 	const char * name;
 	const enum st_changer_status status;
@@ -53,6 +65,16 @@ static struct st_changer_status2 {
 
 static void st_changer_init(void) __attribute__((constructor));
 
+
+__asm__(".symver st_changer_action_to_string_v1, st_changer_action_to_string@@LIBSTONE_1.2");
+const char * st_changer_action_to_string_v1(enum st_changer_action action) {
+	unsigned int i;
+	for (i = 0; st_library_actions[i].action != st_changer_action_unknown; i++)
+		if (st_library_actions[i].action == action)
+			return st_library_actions[i].name;
+
+	return st_library_actions[i].name;
+}
 
 __asm__(".symver st_changer_convert_v1, st_changer_convert@@LIBSTONE_1.2");
 struct st_value * st_changer_convert_v1(struct st_changer * changer) {
@@ -113,9 +135,27 @@ void st_changer_free2_v1(void * changer) {
 
 static void st_changer_init() {
 	int i;
+	for (i = 0; st_library_actions[i].action != st_changer_action_unknown; i++)
+		st_library_actions[i].hash = st_string_compute_hash2(st_library_actions[i].name);
+	st_library_actions[i].hash = st_string_compute_hash2(st_library_actions[i].name);
+
 	for (i = 0; st_library_status[i].status != st_changer_status_unknown; i++)
 		st_library_status[i].hash = st_string_compute_hash2(st_library_status[i].name);
 	st_library_status[i].hash = st_string_compute_hash2(st_library_status[i].name);
+}
+
+__asm__(".symver st_changer_string_to_action_v1, st_changer_string_to_action@@LIBSTONE_1.2");
+enum st_changer_action st_changer_string_to_action_v1(const char * action) {
+	if (action == NULL)
+		return st_changer_action_unknown;
+
+	unsigned int i;
+	const unsigned long long hash = st_string_compute_hash2(action);
+	for (i = 0; st_library_actions[i].action != st_changer_action_unknown; i++)
+		if (hash == st_library_actions[i].hash)
+			return st_library_actions[i].action;
+
+	return st_library_actions[i].action;
 }
 
 __asm__(".symver st_changer_status_to_string_v1, st_changer_status_to_string@@LIBSTONE_1.2");

@@ -57,6 +57,8 @@ struct st_database_config * st_database_postgresql_config_init(struct st_value *
 
 struct st_database_connection * st_database_postgresql_connect_init(PGconn * pg_connect);
 
+const char * st_database_postgresql_bool_to_string(bool value);
+
 int st_database_postgresql_get_bool(PGresult * result, int row, int column, bool * value);
 int st_database_postgresql_get_double(PGresult * result, int row, int column, double * value);
 void st_database_postgresql_get_error(PGresult * result, const char * prepared_query);

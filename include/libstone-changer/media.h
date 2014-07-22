@@ -27,6 +27,8 @@
 #ifndef __STONECHANGER_MEDIA_H__
 #define __STONECHANGER_MEDIA_H__
 
+#include <libstone/media.h>
+
 struct stchgr_peer; 
 
 struct stchgr_media {

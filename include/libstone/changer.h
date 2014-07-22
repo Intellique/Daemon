@@ -34,6 +34,14 @@ struct st_drive;
 struct st_slot;
 struct st_value;
 
+enum st_changer_action {
+	st_changer_action_none = 0x1,
+	st_changer_action_put_offline = 0x2,
+	st_changer_action_put_online = 0x3,
+
+	st_changer_action_unknown = 0x0,
+};
+
 enum st_changer_status {
 	st_changer_status_error = 0x1,
 	st_changer_status_exporting = 0x2,
@@ -82,6 +90,7 @@ struct st_changer {
 	 * \brief Status of changer
 	 */
 	enum st_changer_status status;
+	enum st_changer_action next_action;
 	bool is_online;
 	/**
 	 * \brief Can use this \a changer
@@ -115,10 +124,12 @@ struct st_changer {
 	struct st_value * db_data;
 };
 
+const char * st_changer_action_to_string(enum st_changer_action action);
 struct st_value * st_changer_convert(struct st_changer * changer) __attribute__((nonnull,warn_unused_result));
 void st_changer_free(struct st_changer * changer) __attribute__((nonnull));
 void st_changer_free2(void * changer) __attribute__((nonnull));
 const char * st_changer_status_to_string(enum st_changer_status status);
+enum st_changer_action st_changer_string_to_action(const char * action) __attribute__((nonnull));
 enum st_changer_status st_changer_string_to_status(const char * status) __attribute__((nonnull));
 void st_changer_sync(struct st_changer * changer, struct st_value * new_changer) __attribute__((nonnull));
 

@@ -59,8 +59,10 @@
 static int scsi_changer_init(struct st_value * config, struct st_database_connection * db_connection);
 static void scsi_changer_init_worker(void * arg);
 static int scsi_changer_load(struct st_slot * from, struct st_drive * to, struct st_database_connection * db_connection);
-static int scsi_changer_unload(struct st_drive * from, struct st_database_connection * db_connection);
+static int scsi_changer_put_offline(struct st_database_connection * db_connection);
+static int scsi_changer_put_online(struct st_database_connection * db_connection);
 static int scsi_changer_shut_down(struct st_database_connection * db_connection);
+static int scsi_changer_unload(struct st_drive * from, struct st_database_connection * db_connection);
 static void scsi_changer_wait(void);
 
 static char * scsi_changer_device = NULL;
@@ -69,10 +71,12 @@ static pthread_mutex_t scsi_changer_lock = PTHREAD_MUTEX_INITIALIZER;
 static volatile unsigned int scsi_changer_nb_worker = 0;
 
 struct st_changer_ops scsi_changer_ops = {
-	.init      = scsi_changer_init,
-	.load      = scsi_changer_load,
-	.unload    = scsi_changer_unload,
-	.shut_down = scsi_changer_shut_down,
+	.init        = scsi_changer_init,
+	.load        = scsi_changer_load,
+	.put_offline = scsi_changer_put_offline,
+	.put_online  = scsi_changer_put_online,
+	.shut_down   = scsi_changer_shut_down,
+	.unload      = scsi_changer_unload,
 };
 
 static struct st_changer scsi_changer = {
@@ -83,8 +87,10 @@ static struct st_changer scsi_changer = {
 	.wwn           = NULL,
 	.barcode       = false,
 
-	.status  = st_changer_status_unknown,
-	.enable  = true,
+	.status      = st_changer_status_unknown,
+	.next_action = st_changer_action_none,
+	.is_online   = true,
+	.enable      = true,
 
 	.drives    = NULL,
 	.nb_drives = 0,
@@ -331,6 +337,9 @@ static void scsi_changer_init_worker(void * arg) {
 static int scsi_changer_load(struct st_slot * from, struct st_drive * to, struct st_database_connection * db_connection) {
 	scsi_changer_wait();
 
+	scsi_changer.status = st_changer_status_loading;
+	db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_default);
+
 	st_log_write(st_log_level_notice, "[%s | %s]: loading media '%s' from slot #%u to drive #%td", scsi_changer.vendor, scsi_changer.model, from->volume_name, from->index, to - scsi_changer.drives);
 
 	int failed = scsi_changer_scsi_move(scsi_changer_device, scsi_changer_transport_address, from, to->slot);
@@ -372,7 +381,22 @@ static int scsi_changer_load(struct st_slot * from, struct st_drive * to, struct
 
 	to->ops->reset(to);
 
+	scsi_changer.status = st_changer_status_idle;
+	db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_default);
+
 	return failed;
+}
+
+static int scsi_changer_put_offline(struct st_database_connection * db_connection) {
+	// TODO
+}
+
+static int scsi_changer_put_online(struct st_database_connection * db_connection) {
+	// TODO
+}
+
+static int scsi_changer_shut_down(struct st_database_connection * db_connection __attribute__((unused))) {
+	return 0;
 }
 
 static int scsi_changer_unload(struct st_drive * from, struct st_database_connection * db_connection) {
@@ -449,15 +473,11 @@ static int scsi_changer_unload(struct st_drive * from, struct st_database_connec
 	return failed;
 }
 
-static int scsi_changer_shut_down(struct st_database_connection * db_connection __attribute__((unused))) {
-	return 0;
-}
-
 static void scsi_changer_wait() {
 	bool is_ready = true;
 	while (scsi_changer_scsi_loader_ready(scsi_changer_device)) {
 		if (is_ready) {
-			// log message
+			st_log_write(st_log_level_warning, "[%s | %s]: waiting for device ready", scsi_changer.vendor, scsi_changer.model);
 			is_ready = false;
 		}
 

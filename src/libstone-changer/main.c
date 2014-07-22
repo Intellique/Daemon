@@ -115,9 +115,22 @@ int main() {
 	db_connect->ops->sync_changer(db_connect, changer, st_database_sync_default);
 
 	while (!stop) {
-		st_poll(-1);
+		st_poll(10);
 
 		db_connect->ops->sync_changer(db_connect, changer, st_database_sync_default);
+
+		switch (changer->next_action) {
+			case st_changer_action_put_offline:
+				changer->ops->put_offline(db_connect);
+				break;
+
+			case st_changer_action_put_online:
+				changer->ops->put_online(db_connect);
+				break;
+
+			default:
+				break;
+		}
 	}
 
 	st_log_write(st_log_level_info, "Changer (type: %s) will stop", driver->name);

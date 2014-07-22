@@ -1,9 +1,11 @@
 LIBSTONE_1.2 {
 	global:
+		st_changer_action_to_string;
 		st_changer_convert;
 		st_changer_free;
 		st_changer_free2;
 		st_changer_status_to_string;
+		st_changer_string_to_action;
 		st_changer_string_to_status;
 		st_changer_sync;
 

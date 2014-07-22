@@ -755,7 +755,7 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 	bool enabled = true;
 	if (changer_id != NULL) {
 		const char * query = "select_changer_by_id";
-		st_database_postgresql_prepare(self, query, "SELECT enable FROM changer WHERE id = $1 FOR UPDATE");
+		st_database_postgresql_prepare(self, query, "SELECT action, enable FROM changer WHERE id = $1 FOR UPDATE");
 
 		const char * param[] = { changer_id };
 		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -764,9 +764,19 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 
 		if (status == PGRES_FATAL_ERROR)
 			st_database_postgresql_get_error(result, query);
-		else if (status == PGRES_TUPLES_OK && nb_result == 1 && method != st_database_sync_id_only)
-			st_database_postgresql_get_bool(result, 0, 0, &enabled);
-		else if (status == PGRES_TUPLES_OK && nb_result == 0)
+		else if (status == PGRES_TUPLES_OK && nb_result == 1 && method != st_database_sync_id_only) {
+			enum st_changer_action new_action = st_changer_string_to_action(PQgetvalue(result, 0, 0));
+			if (changer->status == st_changer_status_idle) {
+				if (changer->is_online && new_action == st_changer_action_put_offline)
+					changer->next_action = new_action;
+				else if (!changer->is_online && new_action == st_changer_action_put_online)
+					changer->next_action = new_action;
+				else
+					changer->next_action = st_changer_action_none;
+			}
+
+			st_database_postgresql_get_bool(result, 0, 1, &enabled);
+		} else if (status == PGRES_TUPLES_OK && nb_result == 0)
 			enabled = false;
 
 		PQclear(result);
@@ -823,10 +833,13 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 	if (method != st_database_sync_id_only) {
 		if (changer_id != NULL) {
 			const char * query = "update_changer";
-			st_database_postgresql_prepare(self, query, "UPDATE changer SET status = $1, firmwarerev = $2 WHERE id = $3");
+			st_database_postgresql_prepare(self, query, "UPDATE changer SET status = $1, firmwarerev = $2, isonline = $3, action = $4 WHERE id = $5");
 
-			const char * params[] = { st_changer_status_to_string(changer->status), changer->revision, changer_id };
-			PGresult * result = PQexecPrepared(self->connect, query, 3, params, NULL, NULL, 0);
+			const char * params[] = {
+				st_changer_status_to_string(changer->status), changer->revision, st_database_postgresql_bool_to_string(changer->is_online),
+				st_changer_action_to_string(changer->next_action), changer_id
+			};
+			PGresult * result = PQexecPrepared(self->connect, query, 5, params, NULL, NULL, 0);
 			ExecStatusType status = PQresultStatus(result);
 
 			PQclear(result);
@@ -1463,7 +1476,7 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 		char * sindex;
 		asprintf(&sindex, "%u", slot->index);
 
-		const char * param[] = { changer_id, sindex, drive_id, media_id, slot->is_ie_port ? "TRUE" : "FALSE" };
+		const char * param[] = { changer_id, sindex, drive_id, media_id, st_database_postgresql_bool_to_string(slot->is_ie_port) };
 
 		PGresult * result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
