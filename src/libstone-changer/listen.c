@@ -39,7 +39,7 @@
 #include "listen.h"
 #include "peer.h"
 
-static unsigned int stchr_nb_clients = 0;
+static unsigned int stchgr_nb_clients = 0;
 
 static void stchgr_socket_accept(int fd_server, int fd_client, struct st_value * client);
 static void stchgr_socket_message(int fd, short event, void * data);
@@ -49,7 +49,7 @@ static void stchgr_socket_command_reserve(struct stchgr_peer * peer, struct st_v
 static void stchgr_socket_command_sync(struct stchgr_peer * peer, struct st_value * request, int fd);
 static void stchgr_socket_command_unload(struct stchgr_peer * peer, struct st_value * request, int fd);
 
-struct stchger_socket_command {
+struct stchgr_socket_command {
 	unsigned long hash;
 	char * name;
 	void (*function)(struct stchgr_peer * peer, struct st_value * request, int fd);
@@ -71,22 +71,22 @@ void stchgr_listen_configure(struct st_value * config) {
 	st_socket_server(config, stchgr_socket_accept);
 }
 
-unsigned int stchgr_listen_nb_clients(void) {
-	return stchr_nb_clients;
+unsigned int stchgr_listen_nb_clients() {
+	return stchgr_nb_clients;
 }
 
 static void stchgr_socket_accept(int fd_server __attribute__((unused)), int fd_client, struct st_value * client __attribute__((unused))) {
 	struct stchgr_peer * peer = stchgr_peer_new(fd_client);
 
 	st_poll_register(fd_client, POLLIN | POLLHUP, stchgr_socket_message, peer, NULL);
-	stchr_nb_clients++;
+	stchgr_nb_clients++;
 }
 
 static void stchgr_socket_message(int fd, short event, void * data) {
 	struct stchgr_peer * peer = data;
 
 	if (event & POLLHUP) {
-		stchr_nb_clients--;
+		stchgr_nb_clients--;
 
 		struct st_changer_driver * driver = stchgr_changer_get();
 		struct st_changer * changer = driver->device;
@@ -101,6 +101,7 @@ static void stchgr_socket_message(int fd, short event, void * data) {
 			mp->peer = NULL;
 		}
 
+		stchgr_peer_free(peer);
 		return;
 	}
 

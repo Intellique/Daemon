@@ -95,8 +95,6 @@ int main() {
 	if (driver == NULL)
 		return 1;
 
-	st_log_write(st_log_level_info, "Starting drive (type: %s)", driver->name);
-
 	struct st_value * config = st_json_parse_fd(0, 5000);
 	if (config == NULL)
 		return 2;
@@ -126,6 +124,8 @@ int main() {
 	int failed = drive->ops->init(drive_config);
 	if (failed != 0)
 		return 4;
+
+	st_log_write(st_log_level_info, "Starting drive (type: %s, vendor: %s, model: %s, serial number: %s)", driver->name, drive->vendor, drive->model, drive->serial_number);
 
 	drive->ops->update_status(db_connect);
 	db_connect->ops->sync_drive(db_connect, drive, st_database_sync_default);

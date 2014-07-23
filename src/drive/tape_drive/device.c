@@ -58,15 +58,13 @@
 #include <libstone-drive/drive.h>
 
 #include "device.h"
+#include "io.h"
 #include "media.h"
 #include "scsi.h"
 
 static void tape_drive_create_media(struct st_database_connection * db);
-static ssize_t tape_drive_get_block_size(void);
 static int tape_drive_init(struct st_value * config);
 static void tape_drive_on_failed(bool verbose, unsigned int sleep_time);
-static void tape_drive_operation_start(void);
-static void tape_drive_operation_stop(void);
 static int tape_drive_reset(struct st_database_connection * db);
 static int tape_drive_update_status(struct st_database_connection * db);
 
@@ -142,7 +140,7 @@ static void tape_drive_create_media(struct st_database_connection * db) {
 	tape_drive_media_read_header(&tape_drive, db);
 }
 
-static ssize_t tape_drive_get_block_size() {
+ssize_t tape_drive_get_block_size() {
 	ssize_t block_size = (status.mt_dsreg & MT_ST_BLKSIZE_MASK) >> MT_ST_BLKSIZE_SHIFT;
 	if (block_size > 0)
 		return block_size;
@@ -306,11 +304,11 @@ static void tape_drive_on_failed(bool verbose, unsigned int sleep_time) {
 	fd_nst = open(st_device, O_RDWR | O_NONBLOCK);
 }
 
-static void tape_drive_operation_start() {
+void tape_drive_operation_start() {
 	clock_gettime(CLOCK_MONOTONIC, &last_start);
 }
 
-static void tape_drive_operation_stop() {
+void tape_drive_operation_stop() {
 	struct timespec finish;
 	clock_gettime(CLOCK_MONOTONIC, &finish);
 
