@@ -33,8 +33,11 @@
 struct st_value;
 typedef void (*st_socket_accept_f)(int fd_server, int fd_client, struct st_value * client);
 
-int st_socket(struct st_value * config);
-bool st_socket_server(struct st_value * config, st_socket_accept_f accept_callback);
+int st_socket(struct st_value * config) __attribute__((nonnull,warn_unused_result));
+int st_socket_accept_and_close(int fd, struct st_value * config) __attribute__((nonnull,warn_unused_result));
+int st_socket_close(int fd, struct st_value * config) __attribute__((nonnull));
+bool st_socket_server(struct st_value * config, st_socket_accept_f accept_callback) __attribute__((nonnull));
+int st_socket_server_temp(struct st_value * config) __attribute__((nonnull));
 
 #endif
 

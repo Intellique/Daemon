@@ -30,7 +30,10 @@
 #include "../socket.h"
 
 int st_socket_unix_v1(struct st_value * config);
+int st_socket_unix_accept_and_close_v1(int fd, struct st_value * config);
+int st_socket_unix_close_v1(int fd, struct st_value * config);
 bool st_socket_unix_server_v1(struct st_value * config, st_socket_accept_f accept_callback);
+int st_socket_server_temp_unix_v1(struct st_value * config);
 
 #endif
 

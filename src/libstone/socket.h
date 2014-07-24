@@ -31,7 +31,10 @@
 #include <libstone/value.h>
 
 int st_socket_v1(struct st_value * config);
+int st_socket_accept_and_close_v1(int fd, struct st_value * config) __attribute__((nonnull,warn_unused_result));
+int st_socket_close_v1(int fd, struct st_value * config);
 bool st_socket_server_v1(struct st_value * config, st_socket_accept_f accept_callback);
+int st_socket_server_temp_v1(struct st_value * config) __attribute__((nonnull));
 
 #endif
 

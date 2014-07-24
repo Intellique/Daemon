@@ -39,6 +39,7 @@
 #include <libstone/value.h>
 
 #include "drive.h"
+#include "listen.h"
 
 static bool stop = false;
 
@@ -99,8 +100,8 @@ int main() {
 	if (config == NULL)
 		return 2;
 
-	struct st_value * log_config = NULL, * drive_config = NULL, * db_config = NULL;
-	st_value_unpack(config, "{sososo}", "logger", &log_config, "drive", &drive_config, "database", &db_config);
+	struct st_value * log_config = NULL, * drive_config = NULL, * db_config = NULL, * listen = NULL;
+	st_value_unpack(config, "{sosososo}", "logger", &log_config, "drive", &drive_config, "database", &db_config, "socket", &listen);
 
 	if (log_config == NULL || drive_config == NULL || db_config == NULL)
 		return 3;
@@ -119,6 +120,8 @@ int main() {
 		return 4;
 
 	st_poll_register(0, POLLIN | POLLHUP, changer_request, db_connect, NULL);
+
+	stdr_listen_configure(listen);
 
 	struct st_drive * drive = driver->device;
 	int failed = drive->ops->init(drive_config);

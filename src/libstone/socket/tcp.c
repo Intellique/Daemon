@@ -26,6 +26,8 @@
 
 // inet_ntop, htons, ntohs
 #include <arpa/inet.h>
+// errno
+#include <errno.h>
 // free, malloc
 #include <stdlib.h>
 // strcmp
@@ -167,6 +169,38 @@ int st_socket_tcp6_v1(struct st_value * config) {
 	freeaddrinfo(addr);
 
 	return fd;
+}
+
+int st_socket_tcp_accept_and_close_v1(int fd, struct st_value * config) {
+	struct sockaddr_in addr_v4;
+	bzero(&addr_v4, sizeof(addr_v4));
+	socklen_t length;
+
+	int new_fd = accept(fd, (struct sockaddr *) &addr_v4, &length);
+
+	st_socket_tcp_close_v1(fd, config);
+
+	return new_fd;
+}
+
+int st_socket_tcp6_accept_and_close_v1(int fd, struct st_value * config) {
+	struct sockaddr_in6 addr_v6;
+	bzero(&addr_v6, sizeof(addr_v6));
+	socklen_t length;
+
+	int new_fd = accept(fd, (struct sockaddr *) &addr_v6, &length);
+
+	st_socket_tcp_close_v1(fd, config);
+
+	return new_fd;
+}
+
+int st_socket_tcp_close_v1(int fd, struct st_value * config __attribute__((unused))) {
+	return close(fd);
+}
+
+int st_socket_tcp6_close_v1(int fd, struct st_value * config __attribute__((unused))) {
+	return close(fd);
 }
 
 bool st_socket_tcp_server_v1(struct st_value * config, st_socket_accept_f accept_callback) {
@@ -366,5 +400,199 @@ static void st_socket_tcp_server_callback(int fd, short event __attribute__((unu
 	self->callback(fd, new_fd, client_info);
 
 	st_value_free(client_info);
+}
+
+int st_socket_server_temp_tcp_v1(struct st_value * config) {
+	int stype = SOCK_STREAM;
+
+	char * type = NULL;
+	char * saddr = NULL;
+	long long int port;
+
+	if (st_value_unpack(config, "{siss}", "port", &port, "address", &saddr) < 1)
+		return -1;
+
+	if (st_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+		stype = SOCK_DGRAM;
+	free(type);
+
+	int fd = -1, failed;
+	if (saddr != NULL) {
+		struct addrinfo * addr = NULL;
+		struct addrinfo hint = {
+			.ai_family    = AF_INET,
+			.ai_socktype  = stype,
+			.ai_protocol  = 0,
+			.ai_addrlen   = 0,
+			.ai_addr      = NULL,
+			.ai_canonname = NULL,
+			.ai_next      = NULL,
+		};
+		failed = getaddrinfo(saddr, NULL, &hint, &addr);
+		if (failed != 0)
+			return -1;
+
+		struct addrinfo * ptr = addr;
+		long long int first_port = port;
+
+		while (fd < 0 && ptr != NULL) {
+			port = first_port;
+
+			while (fd < 0) {
+				fd = socket(AF_INET, stype, 0);
+				if (fd < 0) {
+					ptr = ptr->ai_next;
+					continue;
+				}
+
+				struct sockaddr_in * addr_v4 = (struct sockaddr_in *) ptr->ai_addr;
+				addr_v4->sin_port = htons(port);
+
+				int failed = bind(fd, ptr->ai_addr, ptr->ai_addrlen);
+				if (failed != 0) {
+					close(fd);
+					fd = -1;
+					ptr = ptr->ai_next;
+
+					if (errno == EADDRINUSE) {
+						port++;
+					} else
+						return -1;
+				}
+			}
+		}
+
+		st_value_hashtable_put2(config, "port", st_value_new_integer(port), true);
+
+		freeaddrinfo(addr);
+		free(saddr);
+	} else {
+		while (fd < 0) {
+			fd = socket(AF_INET, stype, 0);
+			if (fd < 0)
+				return false;
+
+			struct sockaddr_in addr_v4;
+			bzero(&addr_v4, sizeof(addr_v4));
+			addr_v4.sin_port = htons(port);
+
+			int failed = bind(fd, (struct sockaddr *) &addr_v4, sizeof(addr_v4));
+			if (failed != 0) {
+				close(fd);
+				fd = -1;
+
+				if (errno == EADDRINUSE) {
+					port++;
+				} else
+					return -1;
+			}
+		}
+
+		st_value_hashtable_put2(config, "port", st_value_new_integer(port), true);
+	}
+
+	if (fd < 0)
+		return -1;
+
+	failed = listen(fd, 16);
+
+	return fd;
+}
+
+int st_socket_server_temp_tcp6_v1(struct st_value * config) {
+	int stype = SOCK_STREAM;
+
+	char * type = NULL;
+	char * saddr = NULL;
+	long long int port;
+
+	if (st_value_unpack(config, "{siss}", "port", &port, "address", &saddr) < 1)
+		return -1;
+
+	if (st_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+		stype = SOCK_DGRAM;
+	free(type);
+
+	int fd = -1, failed;
+	if (saddr != NULL) {
+		struct addrinfo * addr = NULL;
+		struct addrinfo hint = {
+			.ai_family    = AF_INET6,
+			.ai_socktype  = stype,
+			.ai_protocol  = 0,
+			.ai_addrlen   = 0,
+			.ai_addr      = NULL,
+			.ai_canonname = NULL,
+			.ai_next      = NULL,
+		};
+		failed = getaddrinfo(saddr, NULL, &hint, &addr);
+		if (failed != 0)
+			return -1;
+
+		struct addrinfo * ptr = addr;
+		long long int first_port = port;
+
+		while (fd < 0 && ptr != NULL) {
+			port = first_port;
+
+			while (fd < 0) {
+				fd = socket(AF_INET6, stype, 0);
+				if (fd < 0) {
+					ptr = ptr->ai_next;
+					continue;
+				}
+
+				struct sockaddr_in6 * addr_v6 = (struct sockaddr_in6 *) ptr->ai_addr;
+				addr_v6->sin6_port = htons(port);
+
+				int failed = bind(fd, ptr->ai_addr, ptr->ai_addrlen);
+				if (failed != 0) {
+					close(fd);
+					fd = -1;
+					ptr = ptr->ai_next;
+
+					if (errno == EADDRINUSE) {
+						port++;
+					} else
+						return -1;
+				}
+			}
+		}
+
+		st_value_hashtable_put2(config, "port", st_value_new_integer(port), true);
+
+		freeaddrinfo(addr);
+		free(saddr);
+	} else {
+		while (fd < 0) {
+			fd = socket(AF_INET6, stype, 0);
+			if (fd < 0)
+				return false;
+
+			struct sockaddr_in6 addr_v6;
+			bzero(&addr_v6, sizeof(addr_v6));
+			addr_v6.sin6_port = htons(port);
+
+			int failed = bind(fd, (struct sockaddr *) &addr_v6, sizeof(addr_v6));
+			if (failed != 0) {
+				close(fd);
+				fd = -1;
+
+				if (errno == EADDRINUSE) {
+					port++;
+				} else
+					return -1;
+			}
+		}
+
+		st_value_hashtable_put2(config, "port", st_value_new_integer(port), true);
+	}
+
+	if (fd < 0)
+		return -1;
+
+	failed = listen(fd, 16);
+
+	return fd;
 }
 

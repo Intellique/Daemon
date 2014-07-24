@@ -30,9 +30,15 @@
 #include "../socket.h"
 
 int st_socket_tcp_v1(struct st_value * config);
+int st_socket_tcp_accept_and_close_v1(int fd, struct st_value * config);
+int st_socket_tcp6_accept_and_close_v1(int fd, struct st_value * config);
+int st_socket_tcp_close_v1(int fd, struct st_value * config);
 int st_socket_tcp6_v1(struct st_value * config);
+int st_socket_tcp6_close_v1(int fd, struct st_value * config);
 bool st_socket_tcp_server_v1(struct st_value * config, st_socket_accept_f accept_callback);
 bool st_socket_tcp6_server_v1(struct st_value * config, st_socket_accept_f accept_callback);
+int st_socket_server_temp_tcp_v1(struct st_value * config);
+int st_socket_server_temp_tcp6_v1(struct st_value * config);
 
 #endif
 

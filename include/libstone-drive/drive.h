@@ -30,6 +30,7 @@
 #include <libstone/drive.h>
 
 struct st_database_connection;
+struct st_stream_reader;
 struct st_value;
 
 struct st_drive_driver {
@@ -44,6 +45,7 @@ struct st_drive_driver {
 
 struct st_drive_ops {
 	int (*init)(struct st_value * config);
+	struct st_stream_reader * (*get_raw_reader)(int file_position, struct st_database_connection * db);
 	int (*reset)(struct st_database_connection * db);
 	int (*update_status)(struct st_database_connection * db);
 };

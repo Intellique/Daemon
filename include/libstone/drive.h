@@ -67,6 +67,7 @@ struct st_drive {
 	bool is_empty;
 
 	struct st_changer * changer;
+	unsigned int index;
 	struct st_slot * slot;
 
 	struct st_drive_ops * ops;

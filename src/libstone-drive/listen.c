@@ -26,6 +26,8 @@
 
 // free
 #include <stdlib.h>
+// strcmp
+#include <string.h>
 
 #include <libstone/checksum.h>
 #include <libstone/json.h>
@@ -37,6 +39,7 @@
 #include "listen.h"
 #include "peer.h"
 
+static struct st_value * stdr_config = NULL;
 static unsigned int stdr_nb_clients = 0;
 static struct stdr_peer * stdr_current_peer = NULL;
 
@@ -52,8 +55,9 @@ struct stdr_socket_command {
 	char * name;
 	void (*function)(struct stdr_peer * peer, struct st_value * request, int fd);
 } commands[] = {
-	{ 0, "lock",    stdr_socket_command_lock },
-	{ 0, "release", stdr_socket_command_release },
+	{ 0, "get raw reader", stdr_socket_command_get_raw_reader },
+	{ 0, "lock",           stdr_socket_command_lock },
+	{ 0, "release",        stdr_socket_command_release },
 
 	{ 0, NULL, NULL }
 };
@@ -63,6 +67,10 @@ void stdr_listen_configure(struct st_value * config) {
 	unsigned int i;
 	for (i = 0; commands[i].name != NULL; i++)
 		commands[i].hash = st_string_compute_hash2(commands[i].name);
+
+	if (stdr_config != NULL)
+		st_value_free(stdr_config);
+	stdr_config = st_value_share(config);
 
 	st_socket_server(config, stdr_socket_accept);
 }
@@ -112,7 +120,27 @@ static void stdr_socket_message(int fd, short event, void * data) {
 }
 
 
-static void stdr_socket_command_get_reader(struct stdr_peer * peer, struct st_value * request, int fd) {
+static void stdr_socket_command_get_raw_reader(struct stdr_peer * peer, struct st_value * request, int fd) {
+	long int position = -1;
+	char * cookie = NULL;
+	st_value_unpack(request, "{siss}", "file position", &position, "cookie", &cookie);
+
+	if (cookie == NULL || peer->cookie == NULL || strcmp(cookie, peer->cookie) != 0) {
+		struct st_value * response = st_value_pack("{sb}", "status", false);
+		st_json_encode_to_fd(response, fd, true);
+		st_value_free(response);
+		return;
+	}
+
+	struct st_value * tmp_config = st_value_copy(stdr_config, true);
+	int tmp_socket = st_socket_server_temp(tmp_config);
+
+	struct st_value * response = st_value_pack("{sbsO}", "status", true, "socket", tmp_socket);
+	st_json_encode_to_fd(response, fd, true);
+	st_value_free(response);
+
+	peer->data_socket = st_socket_accept_and_close(tmp_socket, tmp_config);
+	st_value_free(tmp_config);
 }
 
 static void stdr_socket_command_lock(struct stdr_peer * peer, struct st_value * request __attribute__((unused)), int fd) {
@@ -138,6 +166,9 @@ static void stdr_socket_command_release(struct stdr_peer * peer, struct st_value
 
 	if (ok)
 		stdr_current_peer = NULL;
+
+	free(peer->cookie);
+	peer->cookie = NULL;
 
 	struct st_value * response = st_value_pack("{sb}", "status", ok);
 	st_json_encode_to_fd(response, fd, true);

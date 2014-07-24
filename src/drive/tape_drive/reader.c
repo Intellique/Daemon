@@ -100,7 +100,6 @@ static bool tape_drive_reader_end_of_file(struct st_stream_reader * io) {
 	return self->end_of_file;
 }
 
-// TODO
 static off_t tape_drive_reader_forward(struct st_stream_reader * io, off_t offset) {
 	struct tape_drive_reader * self = io->data;
 
@@ -130,7 +129,7 @@ static off_t tape_drive_reader_forward(struct st_stream_reader * io, off_t offse
 		while (nb_records > 1000000) {
 			int next_forward = nb_records > 8388607 ? 8388607 : nb_records;
 
-			// st_log_write(st_log_level_info, "[%s | %s | #%td]: forward (#record %ld)", self->drive->vendor, self->drive->model, self->drive - self->drive->changer->drives, nb_records);
+			st_log_write(st_log_level_info, "[%s | %s | #%u]: forward (#record %ld)", self->drive->vendor, self->drive->model, self->drive->index, nb_records);
 
 			struct mtop forward = { MTFSR, next_forward };
 			tape_drive_operation_start();

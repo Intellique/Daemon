@@ -109,7 +109,10 @@ LIBSTONE_1.2 {
 		st_slot_sync;
 
 		st_socket;
+		st_socket_accept_and_close;
+		st_socket_close;
 		st_socket_server;
+		st_socket_server_temp;
 
 		st_string_check_valid_utf8;
 		st_string_compute_hash;

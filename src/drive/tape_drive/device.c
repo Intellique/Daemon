@@ -63,9 +63,11 @@
 #include "scsi.h"
 
 static void tape_drive_create_media(struct st_database_connection * db);
+static struct st_stream_reader * tape_drive_get_raw_reader(int file_position, struct st_database_connection * db);
 static int tape_drive_init(struct st_value * config);
 static void tape_drive_on_failed(bool verbose, unsigned int sleep_time);
 static int tape_drive_reset(struct st_database_connection * db);
+static int tape_drive_set_file_position(int file_position, struct st_database_connection * db);
 static int tape_drive_update_status(struct st_database_connection * db);
 
 static char * scsi_device = NULL;
@@ -73,13 +75,13 @@ static char * st_device = NULL;
 static int fd_nst = -1;
 static struct mtget status;
 static struct timespec last_start;
-static int drive_index = 0;
 
 
 static struct st_drive_ops tape_drive_ops = {
-	.init          = tape_drive_init,
-	.reset         = tape_drive_reset,
-	.update_status = tape_drive_update_status,
+	.get_raw_reader = tape_drive_get_raw_reader,
+	.init           = tape_drive_init,
+	.reset          = tape_drive_reset,
+	.update_status  = tape_drive_update_status,
 };
 
 static struct st_drive tape_drive = {
@@ -97,6 +99,7 @@ static struct st_drive tape_drive = {
 	.serial_number = NULL,
 
 	.changer = NULL,
+	.index   = 0,
 	.slot    = NULL,
 
 	.ops = &tape_drive_ops,
@@ -134,7 +137,7 @@ static void tape_drive_create_media(struct st_database_connection * db) {
 		close(fd);
 
 		if (failed != 0)
-			st_log_write(st_log_level_warning, "[%s | %s | #%d]: failed to read medium axilary memory", tape_drive.vendor, tape_drive.model, drive_index);
+			st_log_write(st_log_level_warning, "[%s | %s | #%u]: failed to read medium axilary memory", tape_drive.vendor, tape_drive.model, tape_drive.index);
 	}
 
 	tape_drive_media_read_header(&tape_drive, db);
@@ -185,7 +188,7 @@ ssize_t tape_drive_get_block_size() {
 		}
 
 		if (nb_read > 0) {
-			st_log_write(st_log_level_notice, "[%s | %s | #%d]: found block size: %zd", tape_drive.vendor, tape_drive.model, drive_index, nb_read);
+			st_log_write(st_log_level_notice, "[%s | %s | #%u]: found block size: %zd", tape_drive.vendor, tape_drive.model, tape_drive.index, nb_read);
 
 			free(buffer);
 			return nb_read;
@@ -221,13 +224,26 @@ struct st_drive * tape_drive_get_device() {
 	return &tape_drive;
 }
 
+static struct st_stream_reader * tape_drive_get_raw_reader(int file_position, struct st_database_connection * db) {
+	if (tape_drive.slot->media == NULL)
+		return NULL;
+
+	if (tape_drive_set_file_position(file_position, db) != 0)
+		return NULL;
+
+	tape_drive.slot->media->read_count++;
+	st_log_write(st_log_level_debug, "[%s | %s | #%u]: drive is open for reading", tape_drive.vendor, tape_drive.model, tape_drive.index);
+
+	return tape_drive_reader_get_raw_reader(&tape_drive, fd_nst);
+}
+
 static int tape_drive_init(struct st_value * config) {
 	struct st_slot * sl = tape_drive.slot = malloc(sizeof(struct st_slot));
 	bzero(tape_drive.slot, sizeof(struct st_slot));
 	sl->drive = &tape_drive;
 
 	st_value_unpack(config, "{sssssssbs{sisbsbss}}", "model", &tape_drive.model, "vendor", &tape_drive.vendor, "serial number", &tape_drive.serial_number, "enable", &tape_drive.enable, "slot", "index", &sl->index, "enable", &sl->enable, "ie port", &sl->is_ie_port, "volume name", &sl->volume_name);
-	drive_index = sl->index;
+	tape_drive.index = sl->index;
 
 	glob_t gl;
 	glob("/sys/class/scsi_device/*/device/scsi_tape", 0, NULL, &gl);
@@ -297,7 +313,7 @@ static int tape_drive_init(struct st_value * config) {
 
 static void tape_drive_on_failed(bool verbose, unsigned int sleep_time) {
 	if (verbose)
-		st_log_write(st_log_level_debug, "[%s | %s | #%d]: Try to recover an error", tape_drive.vendor, tape_drive.model, drive_index);
+		st_log_write(st_log_level_debug, "[%s | %s | #%u]: Try to recover an error", tape_drive.vendor, tape_drive.model, tape_drive.index);
 
 	close(fd_nst);
 	sleep(sleep_time);
@@ -318,6 +334,68 @@ void tape_drive_operation_stop() {
 static int tape_drive_reset(struct st_database_connection * db) {
 	tape_drive_on_failed(false, 1);
 	return tape_drive_update_status(db);
+}
+
+static int tape_drive_set_file_position(int file_position, struct st_database_connection * db) {
+	int failed;
+	if (file_position < 0) {
+		st_log_write(st_log_level_info, "[%s | %s | #%u]: Fast forwarding to end of media", tape_drive.vendor, tape_drive.model, tape_drive.index);
+		tape_drive.status = st_drive_status_positioning;
+		db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+
+		static struct mtop eod = { MTEOM, 1 };
+		tape_drive_operation_start();
+		failed = ioctl(fd_nst, MTIOCTOP, &eod);
+		tape_drive_operation_stop();
+
+		if (failed != 0)
+			st_log_write(st_log_level_error, "[%s | %s | #%u]: Fast forwarding to end of media finished with error (%m)", tape_drive.vendor, tape_drive.model, tape_drive.index);
+		else
+			st_log_write(st_log_level_info, "[%s | %s | #%u]: Fast forwarding to end of media finished with status = OK", tape_drive.vendor, tape_drive.model, tape_drive.index);
+
+		tape_drive.status = failed ? st_drive_status_error : st_drive_status_positioning;
+		db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+	} else {
+		st_log_write(st_log_level_info, "[%s | %s | #%u]: Positioning media to position #%d", tape_drive.vendor, tape_drive.model, tape_drive.index, file_position);
+		tape_drive.status = st_drive_status_rewinding;
+		db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+
+		static struct mtop rewind = { MTREW, 1 };
+		tape_drive_operation_start();
+		failed = ioctl(fd_nst, MTIOCTOP, &rewind);
+		tape_drive_operation_stop();
+
+		if (failed != 0) {
+			tape_drive.status = st_drive_status_error;
+			st_log_write(st_log_level_error, "[%s | %s | #%u]: Positioning media to position #%d finished with error (%m)", tape_drive.vendor, tape_drive.model, tape_drive.index, file_position);
+			db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+			return failed;
+		}
+
+		if (file_position > 0) {
+			tape_drive.status = st_drive_status_positioning;
+			db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+
+			struct mtop fsr = { MTFSF, file_position };
+			tape_drive_operation_start();
+			failed = ioctl(fd_nst, MTIOCTOP, &fsr);
+			tape_drive_operation_stop();
+
+			if (failed != 0)
+				st_log_write(st_log_level_error, "[%s | %s | #%u]: Positioning media to position #%d finished with error (%m)", tape_drive.vendor, tape_drive.model, tape_drive.index, file_position);
+			else
+				st_log_write(st_log_level_info, "[%s | %s | #%u]: Positioning media to position #%d finished with status = OK", tape_drive.vendor, tape_drive.model, tape_drive.index, file_position);
+
+			tape_drive.status = failed != 0 ? st_drive_status_error : st_drive_status_positioning;
+			db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+		} else
+			st_log_write(st_log_level_info, "[%s | %s | #%u]: Positioning media to position #%d finished with status = OK", tape_drive.vendor, tape_drive.model, tape_drive.index, file_position);
+	}
+
+	if (failed != 0)
+		failed = tape_drive_update_status(db);
+
+	return failed;
 }
 
 static int tape_drive_update_status(struct st_database_connection * db) {
@@ -396,7 +474,7 @@ static int tape_drive_update_status(struct st_database_connection * db) {
 			media->write_lock = GMT_WR_PROT(status.mt_gstat);
 
 			if (is_empty && media->status == st_media_status_in_use) {
-				st_log_write(st_log_level_info, "[%s | %s | #%d]: Checking media header", tape_drive.vendor, tape_drive.model, drive_index);
+				st_log_write(st_log_level_info, "[%s | %s | #%u]: Checking media header", tape_drive.vendor, tape_drive.model, tape_drive.index);
 				/*
 				if (!st_media_check_header(drive)) {
 					media->status = st_media_status_error;

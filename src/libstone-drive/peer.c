@@ -29,9 +29,17 @@
 // free, malloc
 #include <stdlib.h>
 
+#include <libstone-drive/io.h>
+
 #include "peer.h"
 
 void stdr_peer_free(struct stdr_peer * peer) {
+	free(peer->cookie);
+
+	if (peer->reader != NULL)
+		peer->reader->ops->free(peer->reader);
+	peer->reader = NULL;
+
 	free(peer);
 }
 

@@ -54,10 +54,47 @@ int st_socket_v1(struct st_value * config) {
 	return fd;
 }
 
+__asm__(".symver st_socket_accept_and_close_v1, st_socket_accept_and_close@@LIBSTONE_1.2");
+int st_socket_accept_and_close_v1(int fd, struct st_value * config) {
+	char * domain = NULL;
+	if (st_value_unpack(config, "{ss}", "domain", &domain) < 1)
+		return -1;
+
+	int new_fd = -1;
+	if (!strcmp(domain, "inet"))
+		new_fd = st_socket_tcp_accept_and_close_v1(fd, config);
+	else if (!strcmp(domain, "inet6"))
+		new_fd = st_socket_tcp6_accept_and_close_v1(fd, config);
+	else if (!strcmp(domain, "unix"))
+		new_fd = st_socket_unix_accept_and_close_v1(fd, config);
+
+	free(domain);
+
+	return new_fd;
+}
+
+__asm__(".symver st_socket_close_v1, st_socket_close@@LIBSTONE_1.2");
+int st_socket_close_v1(int fd, struct st_value * config) {
+	char * domain = NULL;
+	if (st_value_unpack(config, "{ss}", "domain", &domain) < 1)
+		return -1;
+
+	int failed = 0;
+	if (!strcmp(domain, "inet"))
+		failed = st_socket_tcp_close_v1(fd, config);
+	else if (!strcmp(domain, "inet6"))
+		failed = st_socket_tcp6_close_v1(fd, config);
+	else if (!strcmp(domain, "unix"))
+		failed = st_socket_unix_close_v1(fd, config);
+
+	free(domain);
+
+	return failed;
+}
+
 __asm__(".symver st_socket_server_v1, st_socket_server@@LIBSTONE_1.2");
 bool st_socket_server_v1(struct st_value * config, st_socket_accept_f accept_callback) {
 	char * domain = NULL;
-
 	if (st_value_unpack(config, "{ss}", "domain", &domain) < 1)
 		return false;
 
@@ -72,5 +109,24 @@ bool st_socket_server_v1(struct st_value * config, st_socket_accept_f accept_cal
 	free(domain);
 
 	return ok;
+}
+
+__asm__(".symver st_socket_server_temp_v1, st_socket_server_temp@@LIBSTONE_1.2");
+int st_socket_server_temp_v1(struct st_value * config) {
+	char * domain = NULL;
+	if (st_value_unpack(config, "{ss}", "domain", &domain) < 1)
+		return -1;
+
+	int fd = -1;
+	if (!strcmp(domain, "inet"))
+		fd = st_socket_server_temp_tcp_v1(config);
+	else if (!strcmp(domain, "inet6"))
+		fd = st_socket_server_temp_tcp6_v1(config);
+	else if (!strcmp(domain, "unix"))
+		fd = st_socket_server_temp_unix_v1(config);
+
+	free(domain);
+
+	return fd;
 }
 

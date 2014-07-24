@@ -311,7 +311,7 @@ char * st_checksum_compute(const char * checksum, const void * data, ssize_t len
  */
 void st_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * hex_digest) __attribute__((nonnull));
 
-char * st_checksum_gen_salt(const char * checksum, size_t length) __attribute__((nonnull,warn_unused_result));
+char * st_checksum_gen_salt(const char * checksum, size_t length) __attribute__((warn_unused_result));
 
 struct st_checksum_driver * st_checksum_get_driver(const char * driver) __attribute__((nonnull));
 

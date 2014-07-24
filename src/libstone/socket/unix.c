@@ -24,10 +24,17 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+#define _GNU_SOURCE
+// errno
+#include <errno.h>
+// dirname
+#include <libgen.h>
 // free, malloc
 #include <stdlib.h>
-// snprintf
+// asprintf, snprintf
 #include <stdio.h>
+// free
+#include <stdlib.h>
 // strcmp
 #include <string.h>
 // bzero
@@ -44,6 +51,7 @@
 #include <libstone/poll.h>
 #include <libstone/value.h>
 
+#include "../checksum.h"
 #include "unix.h"
 
 struct st_unix_socket_server_v1 {
@@ -80,6 +88,31 @@ int st_socket_unix_v1(struct st_value * config) {
 	}
 
 	return fd;
+}
+
+int st_socket_unix_accept_and_close_v1(int fd, struct st_value * config) {
+	struct sockaddr_un new_addr;
+	bzero(&new_addr, sizeof(new_addr));
+	socklen_t length;
+	int new_fd = accept(fd, (struct sockaddr *) &new_addr, &length);
+
+	st_socket_unix_close_v1(fd, config);
+
+	return new_fd;
+}
+
+int st_socket_unix_close_v1(int fd, struct st_value * config) {
+	char * path = NULL;
+	st_value_unpack(config, "{ss}", "path", &path);
+
+	int failed = close(fd);
+
+	if (path != NULL) {
+		unlink(path);
+		free(path);
+	}
+
+	return failed;
 }
 
 bool st_socket_unix_server_v1(struct st_value * config, st_socket_accept_f accept_callback) {
@@ -133,5 +166,63 @@ static void st_socket_unix_server_callback_v1(int fd, short event __attribute__(
 	self->callback(fd, new_fd, client_info);
 
 	st_value_free(client_info);
+}
+
+int st_socket_server_temp_unix_v1(struct st_value * config) {
+	int type = SOCK_STREAM;
+
+	struct st_value * vtype = st_value_hashtable_get2(config, "type", false, false);
+	if (vtype->type == st_value_string && !strcmp(st_value_string_get(vtype), "datagram"))
+		type = SOCK_DGRAM;
+
+	char * path = NULL;
+	st_value_unpack(config, "{ss}", "path", &path);
+	if (path == NULL)
+		return -1;
+
+	char * dir = dirname(path);
+	char * salt = NULL;
+
+	int fd = -1;
+	while (fd < 0) {
+		free(salt);
+
+		salt = st_checksum_gen_salt(NULL, 16);
+		char * new_path;
+		asprintf(&new_path, "%s/%s.socket", dir, salt);
+
+		fd = socket(AF_UNIX, type, 0);
+		if (fd < 0)
+			return -1;
+
+		struct sockaddr_un addr;
+		bzero(&addr, sizeof(addr));
+		addr.sun_family = AF_UNIX;
+		strncpy(addr.sun_path, new_path, sizeof(addr.sun_path));
+
+		st_value_hashtable_put2(config, "path", st_value_new_string(new_path), true);
+		free(new_path);
+
+		int failed = bind(fd, (struct sockaddr *) &addr, sizeof(addr));
+		if (failed != 0) {
+			close(fd);
+			unlink(new_path);
+
+			if (errno == EADDRINUSE)
+				continue;
+			else {
+				close(fd);
+				fd = -1;
+				break;
+			}
+		}
+
+		listen(fd, 16);
+	}
+
+	free(path);
+	path = dir = NULL;
+
+	return fd;
 }
 
