@@ -1411,7 +1411,7 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 		slot->db_data = st_value_new_hashtable(st_value_custom_compute_hash);
 
 		db = st_value_new_hashtable2();
-		st_value_hashtable_put(slot->db_data, key, true, db, true);
+		st_value_hashtable_put(slot->db_data, key, false, db, true);
 
 		struct st_value * changer_data = st_value_hashtable_get(slot->changer->db_data, key, false, false);
 		struct st_value * changer_id = st_value_hashtable_get2(changer_data, "id", true, false);
@@ -1423,19 +1423,17 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 			st_value_hashtable_put2(db, "drive id", drive_id, true);
 		}
 	} else {
-		if (!st_value_hashtable_has_key2(db, "changer_id")) {
+		if (!st_value_hashtable_has_key2(db, "changer id")) {
 			struct st_value * changer_data = st_value_hashtable_get(slot->changer->db_data, key, false, false);
 			struct st_value * changer_id = st_value_hashtable_get2(changer_data, "id", true, false);
 			st_value_hashtable_put2(db, "changer id", changer_id, true);
 		}
 
-		if (slot->drive != NULL && !st_value_hashtable_has_key2(db, "drive_id")) {
+		if (slot->drive != NULL && !st_value_hashtable_has_key2(db, "drive id")) {
 			struct st_value * drive_data = st_value_hashtable_get(slot->drive->db_data, key, false, false);
 			struct st_value * drive_id = st_value_hashtable_get2(drive_data, "id", true, false);
 			st_value_hashtable_put2(db, "drive id", drive_id, true);
 		}
-
-		st_value_free(key);
 	}
 
 	char * changer_id = NULL, * drive_id = NULL, * media_id = NULL;
@@ -1445,6 +1443,8 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 		struct st_value * media_data = st_value_hashtable_get(slot->media->db_data, key, false, false);
 		st_value_unpack(media_data, "{ss}", "id", &media_id);
 	}
+
+	st_value_free(key);
 
 	int failed = 0;
 
