@@ -529,7 +529,7 @@ static struct st_media * st_database_postgresql_get_media(struct st_database_con
 		st_database_postgresql_get_string(result, 0, 2, media->uuid, 37);
 		st_database_postgresql_get_string_dup(result, 0, 3, &media->label);
 		st_database_postgresql_get_string_dup(result, 0, 4, &media->medium_serial_number);
-		st_database_postgresql_get_string_dup(result, 0, 4, &media->name);
+		st_database_postgresql_get_string_dup(result, 0, 5, &media->name);
 
 		media->status = st_media_string_to_status(PQgetvalue(result, 0, 6));
 
@@ -540,16 +540,16 @@ static struct st_media * st_database_postgresql_get_media(struct st_database_con
 		if (!PQgetisnull(result, 0, 10))
 			st_database_postgresql_get_time(result, 0, 10, &media->last_write);
 
-		st_database_postgresql_get_long(result, 0, 11, &media->nb_total_read);
-		st_database_postgresql_get_long(result, 0, 12, &media->nb_total_write);
+		st_database_postgresql_get_long(result, 0, 11, &media->load_count);
+		st_database_postgresql_get_long(result, 0, 12, &media->read_count);
+		st_database_postgresql_get_long(result, 0, 13, &media->write_count);
+		st_database_postgresql_get_long(result, 0, 14, &media->operation_count);
 
-		st_database_postgresql_get_uint(result, 0, 13, &media->nb_read_errors);
-		st_database_postgresql_get_uint(result, 0, 14, &media->nb_write_errors);
+		st_database_postgresql_get_long(result, 0, 15, &media->nb_total_read);
+		st_database_postgresql_get_long(result, 0, 16, &media->nb_total_write);
 
-		st_database_postgresql_get_long(result, 0, 15, &media->load_count);
-		st_database_postgresql_get_long(result, 0, 16, &media->read_count);
-		st_database_postgresql_get_long(result, 0, 17, &media->write_count);
-		st_database_postgresql_get_long(result, 0, 18, &media->operation_count);
+		st_database_postgresql_get_uint(result, 0, 17, &media->nb_read_errors);
+		st_database_postgresql_get_uint(result, 0, 18, &media->nb_write_errors);
 
 		st_database_postgresql_get_ssize(result, 0, 19, &media->block_size);
 		st_database_postgresql_get_ssize(result, 0, 20, &media->free_block);
