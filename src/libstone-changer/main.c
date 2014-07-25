@@ -115,7 +115,7 @@ int main() {
 	db_connect->ops->sync_changer(db_connect, changer, st_database_sync_default);
 
 	while (!stop) {
-		st_poll(10);
+		st_poll(10000);
 
 		db_connect->ops->sync_changer(db_connect, changer, st_database_sync_default);
 

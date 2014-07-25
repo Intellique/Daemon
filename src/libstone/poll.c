@@ -80,9 +80,10 @@ int st_poll_v1(int timeout) {
 		st_polls[i].revents = 0;
 
 		if (st_poll_infos[i].timeout > 0) {
-			if (st_time_cmp(&now, &st_poll_infos[i].limit) >= 0)
+			if (st_time_cmp(&now, &st_poll_infos[i].limit) >= 0) {
 				st_poll_infos[i].timeout_callback(st_polls[i].fd, st_poll_infos[i].data);
-			else if (timeout < 0)
+				clock_gettime(CLOCK_MONOTONIC, &now);
+			} else if (timeout < 0)
 				timeout = st_time_diff(&st_poll_infos[i].limit, &now) / 1000000;
 			else {
 				struct timespec future = {

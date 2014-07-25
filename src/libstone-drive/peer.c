@@ -28,6 +28,8 @@
 #include <strings.h>
 // free, malloc
 #include <stdlib.h>
+// close
+#include <unistd.h>
 
 #include <libstone-drive/io.h>
 
@@ -40,6 +42,9 @@ void stdr_peer_free(struct stdr_peer * peer) {
 		peer->reader->ops->free(peer->reader);
 	peer->reader = NULL;
 
+	if (peer->data_socket > -1)
+		close(peer->data_socket);
+
 	free(peer);
 }
 
@@ -48,6 +53,7 @@ struct stdr_peer * stdr_peer_new(int fd) {
 	bzero(peer, sizeof(struct stdr_peer));
 
 	peer->fd = fd;
+	peer->data_socket = -1;
 
 	return peer;
 }

@@ -135,7 +135,7 @@ static void stdr_socket_command_get_raw_reader(struct stdr_peer * peer, struct s
 	struct st_value * tmp_config = st_value_copy(stdr_config, true);
 	int tmp_socket = st_socket_server_temp(tmp_config);
 
-	struct st_value * response = st_value_pack("{sbsO}", "status", true, "socket", tmp_socket);
+	struct st_value * response = st_value_pack("{sbsO}", "status", true, "socket", tmp_config);
 	st_json_encode_to_fd(response, fd, true);
 	st_value_free(response);
 
@@ -147,13 +147,12 @@ static void stdr_socket_command_lock(struct stdr_peer * peer, struct st_value * 
 	if (stdr_current_peer == NULL) {
 		stdr_current_peer = peer;
 
-		char * cookie = st_checksum_gen_salt(NULL, 32);
+		free(peer->cookie);
+		peer->cookie = st_checksum_gen_salt(NULL, 32);
 
-		struct st_value * response = st_value_pack("{sbss}", "status", true, "cookie", cookie);
+		struct st_value * response = st_value_pack("{sbss}", "status", true, "cookie", peer->cookie);
 		st_json_encode_to_fd(response, fd, true);
 		st_value_free(response);
-
-		free(cookie);
 	} else {
 		struct st_value * response = st_value_pack("{sb}", "status", false);
 		st_json_encode_to_fd(response, fd, true);
