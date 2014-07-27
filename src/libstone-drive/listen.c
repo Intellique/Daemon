@@ -28,17 +28,27 @@
 #include <stdlib.h>
 // strcmp
 #include <string.h>
+// recv
+#include <sys/socket.h>
+// recv, send
+#include <sys/types.h>
+// read, send
+#include <unistd.h>
 
 #include <libstone/checksum.h>
 #include <libstone/json.h>
 #include <libstone/socket.h>
 #include <libstone/poll.h>
+#include <libstone/slot.h>
 #include <libstone/string.h>
 #include <libstone/value.h>
+#include <libstone-drive/io.h>
 
+#include "drive.h"
 #include "listen.h"
 #include "peer.h"
 
+static struct st_database_connection * stdr_db = NULL;
 static struct st_value * stdr_config = NULL;
 static unsigned int stdr_nb_clients = 0;
 static struct stdr_peer * stdr_current_peer = NULL;
@@ -47,6 +57,7 @@ static void stdr_socket_accept(int fd_server, int fd_client, struct st_value * c
 static void stdr_socket_message(int fd, short event, void * data);
 
 static void stdr_socket_command_get_raw_reader(struct stdr_peer * peer, struct st_value * request, int fd);
+static void stdr_socket_command_get_raw_writer(struct stdr_peer * peer, struct st_value * request, int fd);
 static void stdr_socket_command_lock(struct stdr_peer * peer, struct st_value * request, int fd);
 static void stdr_socket_command_release(struct stdr_peer * peer, struct st_value * request, int fd);
 
@@ -56,6 +67,7 @@ struct stdr_socket_command {
 	void (*function)(struct stdr_peer * peer, struct st_value * request, int fd);
 } commands[] = {
 	{ 0, "get raw reader", stdr_socket_command_get_raw_reader },
+	{ 0, "get raw writer", stdr_socket_command_get_raw_writer },
 	{ 0, "lock",           stdr_socket_command_lock },
 	{ 0, "release",        stdr_socket_command_release },
 
@@ -79,6 +91,11 @@ unsigned int stdr_listen_nb_clients() {
 	return stdr_nb_clients;
 }
 
+void stdr_listen_set_db_connection(struct st_database_connection * db) {
+	stdr_db = db;
+}
+
+
 static void stdr_socket_accept(int fd_server __attribute__((unused)), int fd_client, struct st_value * client __attribute__((unused))) {
 	struct stdr_peer * peer = stdr_peer_new(fd_client);
 
@@ -91,6 +108,9 @@ static void stdr_socket_message(int fd, short event, void * data) {
 
 	if (event & POLLHUP) {
 		stdr_nb_clients--;
+
+		if (peer == stdr_current_peer)
+			stdr_current_peer = NULL;
 		stdr_peer_free(peer);
 		return;
 	}
@@ -132,15 +152,197 @@ static void stdr_socket_command_get_raw_reader(struct stdr_peer * peer, struct s
 		return;
 	}
 
+	free(cookie);
+
+	struct st_drive_driver * driver = stdr_drive_get();
+	struct st_drive * drive = driver->device;
+
+	if (drive->slot->media == NULL) {
+		struct st_value * response = st_value_pack("{sb}", "status", false);
+		st_json_encode_to_fd(response, fd, true);
+		st_value_free(response);
+		return;
+	}
+
+	struct st_stream_reader * reader = drive->ops->get_raw_reader(position, stdr_db);
+
 	struct st_value * tmp_config = st_value_copy(stdr_config, true);
 	int tmp_socket = st_socket_server_temp(tmp_config);
 
-	struct st_value * response = st_value_pack("{sbsO}", "status", true, "socket", tmp_config);
+	struct st_value * response = st_value_pack("{sbsOsi}",
+		"status", true,
+		"socket", tmp_config,
+		"block size", reader->ops->get_block_size(reader)
+	);
 	st_json_encode_to_fd(response, fd, true);
 	st_value_free(response);
 
-	peer->data_socket = st_socket_accept_and_close(tmp_socket, tmp_config);
+	int data_socket = st_socket_accept_and_close(tmp_socket, tmp_config);
 	st_value_free(tmp_config);
+
+	ssize_t buffer_size = reader->ops->get_block_size(reader);
+	char * buffer = malloc(buffer_size);
+
+	struct st_value * command = st_json_parse_fd(fd, -1);
+
+	long int length = -1;
+	bool stop = true;
+	st_value_unpack(command, "{sbsi}", "stop", &stop, "length", &length);
+	st_value_free(command);
+
+	long int l_errno = 0;
+	while (!stop && length >= 0) {
+		ssize_t nb_total_read = 0;
+
+		while (nb_total_read < length) {
+			ssize_t will_read = length - nb_total_read;
+			if (will_read > buffer_size)
+				will_read = buffer_size;
+
+			ssize_t nb_read = reader->ops->read(reader, buffer, will_read);
+			if (nb_read < 0) {
+				l_errno = reader->ops->last_errno(reader);
+				break;
+			}
+			if (nb_read == 0)
+				break;
+
+			ssize_t nb_write = send(data_socket, buffer, nb_read, MSG_NOSIGNAL);
+			if (nb_write > 0) {
+				nb_total_read += nb_write;
+			} else if (nb_write < 0) {
+				break;
+			}
+		}
+
+		response = st_value_pack("{sbsisisb}",
+			"status", true,
+			"nb read", nb_total_read,
+			"errno", l_errno,
+			"close", false
+		);
+		st_json_encode_to_fd(response, fd, true);
+		st_value_free(response);
+
+		command = st_json_parse_fd(fd, -1);
+
+		if (command != NULL)
+			st_value_unpack(command, "{sbsi}", "stop", &stop, "length", &length);
+		else
+			break;
+		st_value_free(command);
+	}
+
+	free(buffer);
+	close(data_socket);
+
+	response = st_value_pack("{sbsb}",
+		"status", true,
+		"close", false
+	);
+	st_json_encode_to_fd(response, fd, true);
+	st_value_free(response);
+}
+
+static void stdr_socket_command_get_raw_writer(struct stdr_peer * peer, struct st_value * request, int fd) {
+	bool append = true;
+	char * cookie = NULL;
+	st_value_unpack(request, "{sbss}", "append", &append, "cookie", &cookie);
+
+	if (cookie == NULL || peer->cookie == NULL || strcmp(cookie, peer->cookie) != 0) {
+		struct st_value * response = st_value_pack("{sb}", "status", false);
+		st_json_encode_to_fd(response, fd, true);
+		st_value_free(response);
+		return;
+	}
+
+	free(cookie);
+
+	struct st_drive_driver * driver = stdr_drive_get();
+	struct st_drive * drive = driver->device;
+
+	if (drive->slot->media == NULL) {
+		struct st_value * response = st_value_pack("{sb}", "status", false);
+		st_json_encode_to_fd(response, fd, true);
+		st_value_free(response);
+		return;
+	}
+
+	struct st_stream_writer * writer = drive->ops->get_raw_writer(append, stdr_db);
+
+	struct st_value * tmp_config = st_value_copy(stdr_config, true);
+	int tmp_socket = st_socket_server_temp(tmp_config);
+
+	struct st_value * response = st_value_pack("{sbsOsi}",
+		"status", true,
+		"socket", tmp_config,
+		"block size", writer->ops->get_block_size(writer)
+	);
+	st_json_encode_to_fd(response, fd, true);
+	st_value_free(response);
+
+	int data_socket = st_socket_accept_and_close(tmp_socket, tmp_config);
+	st_value_free(tmp_config);
+
+	ssize_t buffer_size = writer->ops->get_block_size(writer);
+	char * buffer = malloc(buffer_size);
+
+	struct st_value * command = st_json_parse_fd(fd, -1);
+
+	long int length = -1;
+	bool stop = true;
+	st_value_unpack(command, "{sbsi}", "stop", &stop, "length", &length);
+	st_value_free(command);
+
+	long int l_errno = 0;
+	while (!stop && length >= 0) {
+		ssize_t nb_total_write = 0;
+
+		while (nb_total_write < length) {
+			ssize_t will_write = length - nb_total_write;
+			if (will_write > buffer_size)
+				will_write = buffer_size;
+
+			ssize_t nb_read = recv(data_socket, buffer, will_write, 0);
+			if (nb_read < 0)
+				break;
+
+			ssize_t nb_write = writer->ops->write(writer, buffer, nb_read);
+			if (nb_write > 0)
+				nb_total_write += nb_write;
+			else if (nb_write < 0) {
+				l_errno = writer->ops->last_errno(writer);
+				break;
+			}
+		}
+
+		response = st_value_pack("{sbsisisb}",
+			"status", true,
+			"nb write", nb_total_write,
+			"errno", l_errno,
+			"close", false
+		);
+		st_json_encode_to_fd(response, fd, true);
+		st_value_free(response);
+
+		command = st_json_parse_fd(fd, -1);
+
+		if (command != NULL)
+			st_value_unpack(command, "{sbsi}", "stop", &stop, "length", &length);
+		else
+			break;
+		st_value_free(command);
+	}
+
+	free(buffer);
+	close(data_socket);
+
+	response = st_value_pack("{sbsb}",
+		"status", true,
+		"close", false
+	);
+	st_json_encode_to_fd(response, fd, true);
+	st_value_free(response);
 }
 
 static void stdr_socket_command_lock(struct stdr_peer * peer, struct st_value * request __attribute__((unused)), int fd) {

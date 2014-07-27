@@ -35,6 +35,7 @@ ssize_t tape_drive_get_block_size(void);
 void tape_drive_operation_start(void);
 void tape_drive_operation_stop(void);
 struct st_stream_reader * tape_drive_reader_get_raw_reader(struct st_drive * drive, int fd);
+struct st_stream_writer * tape_drive_writer_get_raw_writer(struct st_drive * drive, int fd);
 
 #endif
 

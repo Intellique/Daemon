@@ -64,6 +64,7 @@
 
 static void tape_drive_create_media(struct st_database_connection * db);
 static struct st_stream_reader * tape_drive_get_raw_reader(int file_position, struct st_database_connection * db);
+static struct st_stream_writer * tape_drive_get_raw_writer(bool append, struct st_database_connection * db);
 static int tape_drive_init(struct st_value * config);
 static void tape_drive_on_failed(bool verbose, unsigned int sleep_time);
 static int tape_drive_reset(struct st_database_connection * db);
@@ -79,6 +80,7 @@ static struct timespec last_start;
 
 static struct st_drive_ops tape_drive_ops = {
 	.get_raw_reader = tape_drive_get_raw_reader,
+	.get_raw_writer = tape_drive_get_raw_writer,
 	.init           = tape_drive_init,
 	.reset          = tape_drive_reset,
 	.update_status  = tape_drive_update_status,
@@ -235,6 +237,19 @@ static struct st_stream_reader * tape_drive_get_raw_reader(int file_position, st
 	st_log_write(st_log_level_debug, "[%s | %s | #%u]: drive is open for reading", tape_drive.vendor, tape_drive.model, tape_drive.index);
 
 	return tape_drive_reader_get_raw_reader(&tape_drive, fd_nst);
+}
+
+static struct st_stream_writer * tape_drive_get_raw_writer(bool append, struct st_database_connection * db) {
+	if (tape_drive.slot->media == NULL)
+		return NULL;
+
+	if (append && tape_drive_set_file_position(-1, db))
+		return NULL;
+
+	tape_drive.slot->media->write_count++;
+	st_log_write(st_log_level_debug, "[%s | %s | #%u]: drive is open for writing", tape_drive.vendor, tape_drive.model, tape_drive.index);
+
+	return tape_drive_writer_get_raw_writer(&tape_drive, fd_nst);
 }
 
 static int tape_drive_init(struct st_value * config) {

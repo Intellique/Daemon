@@ -31,9 +31,6 @@ struct stdr_peer {
 	int fd;
 
 	char * cookie;
-
-	struct st_stream_reader * reader;
-	int data_socket;
 };
 
 void stdr_peer_free(struct stdr_peer * peer);

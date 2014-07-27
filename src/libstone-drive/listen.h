@@ -30,6 +30,7 @@
 struct st_value;
 
 void stdr_listen_configure(struct st_value * config);
+void stdr_listen_set_db_connection(struct st_database_connection * db);
 unsigned int stdr_listen_nb_clients(void);
 
 #endif

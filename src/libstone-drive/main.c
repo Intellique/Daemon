@@ -125,6 +125,7 @@ int main() {
 	st_poll_register(0, POLLIN | POLLHUP, changer_request, db_connect, NULL);
 
 	stdr_listen_configure(listen);
+	stdr_listen_set_db_connection(db_connect);
 
 	struct st_drive * drive = driver->device;
 	int failed = drive->ops->init(drive_config);
