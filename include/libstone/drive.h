@@ -46,9 +46,10 @@ enum st_drive_status {
 	st_drive_status_positioning = 0x7,
 	st_drive_status_reading = 0x8,
 	st_drive_status_rewinding = 0x9,
-	st_drive_status_unknown = 0x0,
 	st_drive_status_unloading = 0xa,
 	st_drive_status_writing = 0xb,
+
+	st_drive_status_unknown = 0x0,
 };
 
 struct st_drive {

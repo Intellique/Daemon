@@ -32,13 +32,13 @@
 #define st_changer_v1 st_changer
 
 const char * st_changer_action_to_string_v1(enum st_changer_action action);
-struct st_value * st_changer_convert_v1(struct st_changer * changer) __attribute__((nonnull,warn_unused_result));
-void st_changer_free_v1(struct st_changer * changer) __attribute__((nonnull));
+struct st_value * st_changer_convert_v1(struct st_changer_v1 * changer) __attribute__((nonnull,warn_unused_result));
+void st_changer_free_v1(struct st_changer_v1 * changer) __attribute__((nonnull));
 void st_changer_free2_v1(void * changer) __attribute__((nonnull));
 enum st_changer_action st_changer_string_to_action_v1(const char * action);
 const char * st_changer_status_to_string_v1(enum st_changer_status status) __attribute__((nonnull));
 enum st_changer_status st_changer_string_to_status_v1(const char * status) __attribute__((nonnull));
-void st_changer_sync_v1(struct st_changer * changer, struct st_value * new_changer) __attribute__((nonnull));
+void st_changer_sync_v1(struct st_changer_v1 * changer, struct st_value * new_changer) __attribute__((nonnull));
 
 #endif
 

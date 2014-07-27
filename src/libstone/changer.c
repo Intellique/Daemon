@@ -77,7 +77,7 @@ const char * st_changer_action_to_string_v1(enum st_changer_action action) {
 }
 
 __asm__(".symver st_changer_convert_v1, st_changer_convert@@LIBSTONE_1.2");
-struct st_value * st_changer_convert_v1(struct st_changer * changer) {
+struct st_value * st_changer_convert_v1(struct st_changer_v1 * changer) {
 	struct st_value * drives = st_value_new_array_v1(changer->nb_drives);
 	unsigned int i;
 	for (i = 0; i < changer->nb_drives; i++)
@@ -105,7 +105,7 @@ struct st_value * st_changer_convert_v1(struct st_changer * changer) {
 }
 
 __asm__(".symver st_changer_free_v1, st_changer_free@@LIBSTONE_1.2");
-void st_changer_free_v1(struct st_changer * changer) {
+void st_changer_free_v1(struct st_changer_v1 * changer) {
 	if (changer == NULL)
 		return;
 
@@ -183,7 +183,7 @@ enum st_changer_status st_changer_string_to_status_v1(const char * status) {
 }
 
 __asm__(".symver st_changer_sync_v1, st_changer_sync@@LIBSTONE_1.2");
-void st_changer_sync_v1(struct st_changer * changer, struct st_value * new_changer) {
+void st_changer_sync_v1(struct st_changer_v1 * changer, struct st_value * new_changer) {
 	free(changer->model);
 	free(changer->vendor);
 	free(changer->revision);

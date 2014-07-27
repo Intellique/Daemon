@@ -52,7 +52,7 @@ static void st_database_exit() {
 }
 
 __asm__(".symver st_database_get_default_driver_v1, st_database_get_default_driver@@LIBSTONE_1.2");
-struct st_database * st_database_get_default_driver_v1() {
+struct st_database_v1 * st_database_get_default_driver_v1() {
 	return st_database_default_driver;
 }
 

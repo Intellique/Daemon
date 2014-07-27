@@ -36,12 +36,12 @@
 
 #include "drive.h"
 
-static bool stchgr_drive_is_loocked(struct st_drive * dr);
+static bool stchgr_drive_check_cookie(struct st_drive * dr, const char * cookie);
 static int stchgr_drive_reset(struct st_drive * drive);
 static int stchgr_drive_update_status(struct st_drive * drive);
 
 static struct st_drive_ops drive_ops = {
-	.is_locked     = stchgr_drive_is_loocked,
+	.check_cookie  = stchgr_drive_check_cookie,
 	.reset         = stchgr_drive_reset,
 	.update_status = stchgr_drive_update_status,
 };
@@ -50,8 +50,20 @@ static struct st_value * log_config = NULL;
 static struct st_value * db_config = NULL;
 
 
-static bool stchgr_drive_is_loocked(struct st_drive * dr) {
-	return false;
+static bool stchgr_drive_check_cookie(struct st_drive * drive, const char * cookie) {
+	struct stchgr_drive * self = drive->data;
+
+	struct st_value * command = st_value_pack("{ssso}", "command", "ckeck cookie", "cookie", cookie);
+	st_json_encode_to_fd(command, self->fd_in, true);
+	st_value_free(command);
+
+	struct st_value * returned = st_json_parse_fd(self->fd_out, -1);
+	bool valid = false;
+
+	st_value_unpack(returned, "{si}", "valid", &valid);
+	st_value_free(returned);
+
+	return valid;
 }
 
 __asm__(".symver stchgr_drive_register_v1, stchgr_drive_register@@LIBSTONE_CHANGER_1.2");
@@ -85,7 +97,6 @@ static int stchgr_drive_reset(struct st_drive * drive) {
 	long int val = 1;
 
 	st_value_unpack(returned, "{si}", "status", &val);
-
 	st_value_free(returned);
 
 	return (int) val;
