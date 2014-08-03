@@ -24,7 +24,7 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// free
+// calloc, free
 #include <stdlib.h>
 
 #include "changer.h"
@@ -221,6 +221,22 @@ void st_changer_sync_v1(struct st_changer_v1 * changer, struct st_value * new_ch
 		st_drive_sync_v1(changer->drives + i, drive, false);
 	}
 	st_value_iterator_free_v1(iter);
+
+	if (changer->nb_slots == 0) {
+		changer->nb_slots = st_value_list_get_length(slots);
+		changer->slots = calloc(changer->nb_slots, sizeof(struct st_slot));
+
+		for (i = 0; i < changer->nb_slots; i++) {
+			struct st_slot * sl = changer->slots + i;
+			sl->changer = changer;
+			sl->index = i;
+
+			if (i < changer->nb_drives) {
+				sl->drive = changer->drives + i;
+				changer->drives[i].slot = sl;
+			}
+		}
+	}
 
 	iter = st_value_list_get_iterator_v1(slots);
 	for (i = 0; i < changer->nb_slots; i++) {

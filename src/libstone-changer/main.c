@@ -82,7 +82,8 @@ int main() {
 		return 2;
 
 	struct st_value * log_config = NULL, * changer_config = NULL, * db_config = NULL, * socket = NULL;
-	st_value_unpack(config, "{sosososo}", "logger", &log_config, "changer", &changer_config, "database", &db_config, "socket", &socket);
+	st_value_unpack(config, "{sososo}", "logger", &log_config, "changer", &changer_config, "database", &db_config);
+	st_value_unpack(changer_config, "{so}", "socket", &socket);
 
 	if (log_config == NULL || changer_config == NULL || db_config == NULL || socket == NULL)
 		return 3;

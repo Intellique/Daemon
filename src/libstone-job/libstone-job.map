@@ -1,0 +1,8 @@
+LIBSTONE_JOB_1.2 {
+	global:
+		stj_changer_set_config;
+
+	local:
+		*_v1;
+};
+

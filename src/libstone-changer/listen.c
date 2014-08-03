@@ -45,7 +45,9 @@ static void stchgr_socket_accept(int fd_server, int fd_client, struct st_value *
 static void stchgr_socket_message(int fd, short event, void * data);
 
 static void stchgr_socket_command_load(struct stchgr_peer * peer, struct st_value * request, int fd);
-static void stchgr_socket_command_reserve(struct stchgr_peer * peer, struct st_value * request, int fd);
+static void stchgr_socket_command_release_all_media(struct stchgr_peer * peer, struct st_value * request, int fd);
+static void stchgr_socket_command_release_media(struct stchgr_peer * peer, struct st_value * request, int fd);
+static void stchgr_socket_command_reserve_media(struct stchgr_peer * peer, struct st_value * request, int fd);
 static void stchgr_socket_command_sync(struct stchgr_peer * peer, struct st_value * request, int fd);
 static void stchgr_socket_command_unload(struct stchgr_peer * peer, struct st_value * request, int fd);
 
@@ -54,10 +56,12 @@ struct stchgr_socket_command {
 	char * name;
 	void (*function)(struct stchgr_peer * peer, struct st_value * request, int fd);
 } commands[] = {
-	{ 0, "load",    stchgr_socket_command_load },
-	{ 0, "reserve", stchgr_socket_command_reserve },
-	{ 0, "sync",    stchgr_socket_command_sync },
-	{ 0, "unload",  stchgr_socket_command_unload },
+	{ 0, "load",              stchgr_socket_command_load },
+	{ 0, "release all media", stchgr_socket_command_release_all_media },
+	{ 0, "release media",     stchgr_socket_command_release_media },
+	{ 0, "reserve media",     stchgr_socket_command_reserve_media },
+	{ 0, "sync",              stchgr_socket_command_sync },
+	{ 0, "unload",            stchgr_socket_command_unload },
 
 	{ 0, NULL, NULL }
 };
@@ -88,18 +92,7 @@ static void stchgr_socket_message(int fd, short event, void * data) {
 	if (event & POLLHUP) {
 		stchgr_nb_clients--;
 
-		struct st_changer_driver * driver = stchgr_changer_get();
-		struct st_changer * changer = driver->device;
-
-		unsigned int i;
-		for (i = 0; i < changer->nb_slots; i++) {
-			struct st_slot * sl = changer->slots + i;
-			if (sl->media == NULL)
-				continue;
-
-			struct stchgr_media * mp = sl->media->changer_data;
-			mp->peer = NULL;
-		}
+		stchgr_socket_command_release_all_media(peer, NULL, -1);
 
 		stchgr_peer_free(peer);
 		return;
@@ -176,66 +169,86 @@ static void stchgr_socket_command_load(struct stchgr_peer * peer, struct st_valu
 	st_value_free(response);
 }
 
-static void stchgr_socket_command_reserve(struct stchgr_peer * peer, struct st_value * request, int fd) {
+static void stchgr_socket_command_release_all_media(struct stchgr_peer * peer, struct st_value * request __attribute__((unused)), int fd) {
 	struct st_changer_driver * driver = stchgr_changer_get();
 	struct st_changer * changer = driver->device;
 
-	struct st_value * medias = NULL;
-	st_value_unpack(request, "{so}", "params", &medias);
+	unsigned int i;
+	for (i = 0; i < changer->nb_slots; i++) {
+		struct st_slot * sl = changer->slots + i;
+		if (sl->media == NULL)
+			continue;
 
-	if (medias == NULL) {
+		struct stchgr_media * mp = sl->media->changer_data;
+		if (peer == mp->peer)
+			mp->peer = NULL;
+	}
+
+	if (fd > -1) {
+		struct st_value * response = st_value_pack("{sb}", "status", true);
+		st_json_encode_to_fd(response, fd, true);
+		st_value_free(response);
+	}
+}
+
+static void stchgr_socket_command_release_media(struct stchgr_peer * peer, struct st_value * request, int fd) {
+	long int slot = -1;
+	st_value_unpack(request, "{s{si}}", "params", "slot", &slot);
+
+	if (slot < 0) {
 		struct st_value * response = st_value_pack("{sb}", "status", false);
 		st_json_encode_to_fd(response, fd, true);
 		st_value_free(response);
 		return;
 	}
 
-	struct st_value * hash_media = st_value_new_hashtable2();
-	struct st_value_iterator * iter = st_value_list_get_iterator(medias);
-	while (st_value_iterator_has_next(iter)) {
-		struct st_value * media = st_value_iterator_get_value(iter, true);
+	struct st_changer_driver * driver = stchgr_changer_get();
+	struct st_changer * changer = driver->device;
+	struct st_slot * sl = changer->slots + slot;
 
-		char * medium_serial_number = NULL;
-		st_value_unpack(media, "{ss}", "medium serial number", &medium_serial_number);
-
-		if (medium_serial_number != NULL) {
-			st_value_hashtable_put2(hash_media, medium_serial_number, media, true);
-			free(medium_serial_number);
-		}
-	}
-	st_value_iterator_free(iter);
-
-	bool ok = true;
-	unsigned int i;
-	for (i = 0; i < changer->nb_slots && ok; i++) {
-		struct st_slot * sl = changer->slots + i;
-		if (sl->media == NULL)
-			continue;
-
-		struct st_media * m = sl->media;
-		if (!st_value_hashtable_has_key2(hash_media, m->medium_serial_number))
-			continue;
-
-		struct stchgr_media * mp = m->changer_data;
-		if (mp->peer != NULL)
-			ok = false;
+	if (sl->media == NULL) {
+		struct st_value * response = st_value_pack("{sb}", "status", false);
+		st_json_encode_to_fd(response, fd, true);
+		st_value_free(response);
+		return;
 	}
 
+	struct stchgr_media * mp = sl->media->changer_data;
+	bool ok = mp->peer == peer;
 	if (ok)
-		for (i = 0; i < changer->nb_slots; i++) {
-			struct st_slot * sl = changer->slots + i;
-			if (sl->media == NULL)
-				continue;
+		mp->peer = NULL;
 
-			struct st_media * m = sl->media;
-			if (!st_value_hashtable_has_key2(hash_media, m->medium_serial_number))
-				continue;
+	struct st_value * response = st_value_pack("{sb}", "status", ok);
+	st_json_encode_to_fd(response, fd, true);
+	st_value_free(response);
+}
 
-			struct stchgr_media * mp = m->changer_data;
-			mp->peer = peer;
-		}
+static void stchgr_socket_command_reserve_media(struct stchgr_peer * peer, struct st_value * request, int fd) {
+	long int slot = -1;
+	st_value_unpack(request, "{s{si}}", "params", "slot", &slot);
 
-	st_value_free(hash_media);
+	if (slot < 0) {
+		struct st_value * response = st_value_pack("{sb}", "status", false);
+		st_json_encode_to_fd(response, fd, true);
+		st_value_free(response);
+		return;
+	}
+
+	struct st_changer_driver * driver = stchgr_changer_get();
+	struct st_changer * changer = driver->device;
+	struct st_slot * sl = changer->slots + slot;
+
+	if (sl->media == NULL) {
+		struct st_value * response = st_value_pack("{sb}", "status", false);
+		st_json_encode_to_fd(response, fd, true);
+		st_value_free(response);
+		return;
+	}
+
+	struct stchgr_media * mp = sl->media->changer_data;
+	bool ok = mp->peer == NULL;
+	if (ok)
+		mp->peer = peer;
 
 	struct st_value * response = st_value_pack("{sb}", "status", ok);
 	st_json_encode_to_fd(response, fd, true);

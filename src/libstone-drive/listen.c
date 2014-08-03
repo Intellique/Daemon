@@ -60,6 +60,7 @@ static void stdr_socket_command_get_raw_reader(struct stdr_peer * peer, struct s
 static void stdr_socket_command_get_raw_writer(struct stdr_peer * peer, struct st_value * request, int fd);
 static void stdr_socket_command_lock(struct stdr_peer * peer, struct st_value * request, int fd);
 static void stdr_socket_command_release(struct stdr_peer * peer, struct st_value * request, int fd);
+static void stdr_socket_command_sync(struct stdr_peer * peer, struct st_value * request, int fd);
 
 struct stdr_socket_command {
 	unsigned long hash;
@@ -70,6 +71,7 @@ struct stdr_socket_command {
 	{ 0, "get raw writer", stdr_socket_command_get_raw_writer },
 	{ 0, "lock",           stdr_socket_command_lock },
 	{ 0, "release",        stdr_socket_command_release },
+	{ 0, "sync",           stdr_socket_command_sync },
 
 	{ 0, NULL, NULL }
 };
@@ -372,6 +374,15 @@ static void stdr_socket_command_release(struct stdr_peer * peer, struct st_value
 	peer->cookie = NULL;
 
 	struct st_value * response = st_value_pack("{sb}", "status", ok);
+	st_json_encode_to_fd(response, fd, true);
+	st_value_free(response);
+}
+
+static void stdr_socket_command_sync(struct stdr_peer * peer __attribute__((unused)), struct st_value * request __attribute__((unused)), int fd) {
+	struct st_drive_driver * driver = stdr_drive_get();
+	struct st_drive * dr = driver->device;
+
+	struct st_value * response = st_value_pack("{so}", "drive", st_drive_convert(dr, true));
 	st_json_encode_to_fd(response, fd, true);
 	st_value_free(response);
 }

@@ -89,7 +89,8 @@ void std_device_configure(struct st_value * logger, struct st_value * db_config)
 		char * path;
 		asprintf(&path, "run/changer_%d.socket", i_changer);
 
-		dev->config = st_value_pack("{sOsOsOs{ssss}}", "changer", changer, "logger", logger, "database", db_config, "socket", "domain", "unix", "path", path);
+		st_value_hashtable_put2(changer, "socket", st_value_pack("{ssss}", "domain", "unix", "path", path), true);
+		dev->config = st_value_pack("{sOsOsO}", "changer", changer, "logger", logger, "database", db_config);
 
 		free(path);
 

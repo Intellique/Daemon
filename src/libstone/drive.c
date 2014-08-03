@@ -146,8 +146,10 @@ void st_drive_sync_v1(struct st_drive_v1 * drive, struct st_value * new_drive, b
 	char * status = NULL;
 	char * mode = NULL;
 
-	free(sl->volume_name);
-	sl->volume_name = NULL;
+	if (sl != NULL) {
+		free(sl->volume_name);
+		sl->volume_name = NULL;
+	}
 
 	struct st_value * last_clean = NULL;
 	struct st_value * slot = NULL;
