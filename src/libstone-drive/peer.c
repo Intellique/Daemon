@@ -31,7 +31,7 @@
 // close
 #include <unistd.h>
 
-#include <libstone-drive/io.h>
+#include <libstone/io.h>
 
 #include "peer.h"
 

@@ -34,18 +34,47 @@
 #include <libstone/value.h>
 
 #include "drive.h"
+#include "io.h"
 
 struct stj_drive {
 	int fd;
 	struct st_value * config;
 };
 
+static struct st_stream_reader * stj_drive_get_raw_reader(struct st_drive * drive, int file_position, const char * cookie);
+static char * stj_drive_lock(struct st_drive * drive);
 static int stj_drive_sync(struct st_drive * drive);
 
 static struct st_drive_ops stj_drive_ops = {
-	.sync = stj_drive_sync,
+	.get_raw_reader = stj_drive_get_raw_reader,
+	.lock           = stj_drive_lock,
+	.sync           = stj_drive_sync,
 };
 
+
+static struct st_stream_reader * stj_drive_get_raw_reader(struct st_drive * drive, int file_position, const char * cookie) {
+	struct stj_drive * self = drive->data;
+
+	struct st_value * request = st_value_pack("{sssiss}", "command", "get raw reader", "file position", (long int) file_position, "cookie", cookie);
+	st_json_encode_to_fd(request, self->fd, true);
+	st_value_free(request);
+
+	struct st_value * response = st_json_parse_fd(self->fd, -1);
+	if (response == NULL)
+		return NULL;
+
+	bool ok = false;
+	st_value_unpack(response, "{sb}", "status", &ok);
+
+	if (!ok) {
+		st_value_free(response);
+		return NULL;
+	}
+
+	struct st_stream_reader * reader = stj_io_new_stream_reader(drive, self->fd, response);
+	st_value_free(response);
+	return reader;
+}
 
 void stj_drive_init(struct st_drive * drive, struct st_value * config) {
 	struct st_value * socket = NULL;
@@ -58,6 +87,24 @@ void stj_drive_init(struct st_drive * drive, struct st_value * config) {
 	self->config = socket;
 
 	drive->ops = &stj_drive_ops;
+}
+
+static char * stj_drive_lock(struct st_drive * drive) {
+	struct stj_drive * self = drive->data;
+
+	struct st_value * request = st_value_pack("{ss}", "command", "lock");
+	st_json_encode_to_fd(request, self->fd, true);
+	st_value_free(request);
+
+	struct st_value * response = st_json_parse_fd(self->fd, -1);
+	if (response == NULL)
+		return NULL;
+
+	char * cookie = NULL;
+	st_value_unpack(response, "{ss}", "cookie", &cookie);
+	st_value_free(response);
+
+	return cookie;
 }
 
 static int stj_drive_sync(struct st_drive * drive) {

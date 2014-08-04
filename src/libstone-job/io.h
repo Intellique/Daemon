@@ -24,18 +24,15 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONEJOB_DRIVE_H__
-#define __STONEJOB_DRIVE_H__
+#ifndef __STONEJOB_IO_P_H__
+#define __STONEJOB_IO_P_H__
 
-#include <libstone/drive.h>
+#include <libstone/io.h>
 
 struct st_drive;
+struct st_value;
 
-struct st_drive_ops {
-	struct st_stream_reader * (*get_raw_reader)(struct st_drive * drive, int file_position, const char * cookie);
-	char * (*lock)(struct st_drive * drive);
-	int (*sync)(struct st_drive * drive);
-};
+struct st_stream_reader * stj_io_new_stream_reader(struct st_drive * drive, int fd_command, struct st_value * config);
 
 #endif
 

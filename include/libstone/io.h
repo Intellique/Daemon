@@ -24,8 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONEDRIVE_IO_H__
-#define __STONEDRIVE_IO_H__
+#ifndef __LIBSTONE_IO_H__
+#define __LIBSTONE_IO_H__
 
 // bool
 #include <stdbool.h>

@@ -36,13 +36,13 @@
 #include <unistd.h>
 
 #include <libstone/checksum.h>
+#include <libstone/io.h>
 #include <libstone/json.h>
 #include <libstone/socket.h>
 #include <libstone/poll.h>
 #include <libstone/slot.h>
 #include <libstone/string.h>
 #include <libstone/value.h>
-#include <libstone-drive/io.h>
 
 #include "drive.h"
 #include "listen.h"
@@ -187,49 +187,70 @@ static void stdr_socket_command_get_raw_reader(struct stdr_peer * peer, struct s
 
 	struct st_value * command = st_json_parse_fd(fd, -1);
 
-	long int length = -1;
 	bool stop = true;
-	st_value_unpack(command, "{sbsi}", "stop", &stop, "length", &length);
+	st_value_unpack(command, "{sbsi}", "stop", &stop);
 	st_value_free(command);
 
 	long int l_errno = 0;
-	while (!stop && length >= 0) {
-		ssize_t nb_total_read = 0;
+	while (!stop) {
+		char * str_command = NULL;
+		st_value_unpack(command, "{ss}", "command", &str_command);
 
-		while (nb_total_read < length) {
-			ssize_t will_read = length - nb_total_read;
-			if (will_read > buffer_size)
-				will_read = buffer_size;
+		if (!strcmp(str_command, "forward")) {
+			off_t offset = 0;
+			st_value_unpack(command, "{si}", "offset", &offset);
+			st_value_free(command);
 
-			ssize_t nb_read = reader->ops->read(reader, buffer, will_read);
-			if (nb_read < 0) {
-				l_errno = reader->ops->last_errno(reader);
-				break;
+			ssize_t new_position = reader->ops->forward(reader, offset);
+
+			response = st_value_pack("{sbsisisb}",
+				"status", true,
+				"new position", new_position,
+				"errno", l_errno,
+				"close", false
+			);
+			st_json_encode_to_fd(response, fd, true);
+			st_value_free(response);
+		} else if (!strcmp(str_command, "read")) {
+			long int length = -1;
+			ssize_t nb_total_read = 0;
+
+			while (nb_total_read < length) {
+				ssize_t will_read = length - nb_total_read;
+				if (will_read > buffer_size)
+					will_read = buffer_size;
+
+				ssize_t nb_read = reader->ops->read(reader, buffer, will_read);
+				if (nb_read < 0) {
+					l_errno = reader->ops->last_errno(reader);
+					break;
+				}
+				if (nb_read == 0)
+					break;
+
+				ssize_t nb_write = send(data_socket, buffer, nb_read, MSG_NOSIGNAL);
+				if (nb_write > 0) {
+					nb_total_read += nb_write;
+				} else if (nb_write < 0) {
+					break;
+				}
 			}
-			if (nb_read == 0)
-				break;
 
-			ssize_t nb_write = send(data_socket, buffer, nb_read, MSG_NOSIGNAL);
-			if (nb_write > 0) {
-				nb_total_read += nb_write;
-			} else if (nb_write < 0) {
-				break;
-			}
+			response = st_value_pack("{sbsisisb}",
+				"status", true,
+				"nb read", nb_total_read,
+				"errno", l_errno,
+				"close", false
+			);
+
+			st_json_encode_to_fd(response, fd, true);
+			st_value_free(response);
 		}
-
-		response = st_value_pack("{sbsisisb}",
-			"status", true,
-			"nb read", nb_total_read,
-			"errno", l_errno,
-			"close", false
-		);
-		st_json_encode_to_fd(response, fd, true);
-		st_value_free(response);
 
 		command = st_json_parse_fd(fd, -1);
 
 		if (command != NULL)
-			st_value_unpack(command, "{sbsi}", "stop", &stop, "length", &length);
+			st_value_unpack(command, "{sbsi}", "stop", &stop);
 		else
 			break;
 		st_value_free(command);
@@ -240,7 +261,7 @@ static void stdr_socket_command_get_raw_reader(struct stdr_peer * peer, struct s
 
 	response = st_value_pack("{sbsb}",
 		"status", true,
-		"close", false
+		"close", true
 	);
 	st_json_encode_to_fd(response, fd, true);
 	st_value_free(response);

@@ -27,7 +27,7 @@
 #ifndef __ST_TAPEDRIVE_IO_H__
 #define __ST_TAPEDRIVE_IO_H__
 
-#include <libstone-drive/io.h>
+#include <libstone/io.h>
 
 struct st_drive;
 
