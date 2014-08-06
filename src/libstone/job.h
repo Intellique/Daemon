@@ -24,13 +24,15 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONEJOB_CHANGER_P_H__
-#define __STONEJOB_CHANGER_P_H__
+#ifndef __LIBSTONE_JOB_P_H__
+#define __LIBSTONE_JOB_P_H__
 
-#include <libstone-job/changer.h>
+#include <libstone/job.h>
 
-void stj_changer_set_config_v1(struct st_value * config);
-int stj_changer_sync_all_v1(void);
+const char * st_job_report_notif_to_string_v1(enum st_job_record_notif notif);
+const char * st_job_status_to_string_v1(enum st_job_status status);
+enum st_job_record_notif st_job_string_to_record_notif_v1(const char * notif) __attribute__((nonnull));
+enum st_job_status st_job_string_to_status_v1(const char * status) __attribute__((nonnull));
 
 #endif
 

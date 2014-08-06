@@ -44,6 +44,11 @@ LIBSTONE_1.2 {
 		st_host_init;
 		st_host_get_info;
 
+		st_job_report_notif_to_string;
+		st_job_status_to_string;
+		st_job_string_to_record_notif;
+		st_job_string_to_status;
+
 		st_json_encode_to_fd;
 		st_json_encode_to_file;
 		st_json_encode_to_string;

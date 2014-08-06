@@ -4,6 +4,11 @@ LIBSTONE_DRIVE_1.2 {
 
 	local:
 		stdr_drive_get;
+		stdr_listen_configure;
+		stdr_listen_nb_clients;
+		stdr_listen_set_db_connection;
+		stdr_peer_free;
+		stdr_peer_new;
 		*_v1;
 };
 

@@ -24,13 +24,58 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONEJOB_CHANGER_P_H__
-#define __STONEJOB_CHANGER_P_H__
+#ifndef __LIBSTONE_JOB_H__
+#define __LIBSTONE_JOB_H__
 
-#include <libstone-job/changer.h>
+// bool
+#include <stdbool.h>
+// time_t
+#include <sys/time.h>
 
-void stj_changer_set_config_v1(struct st_value * config);
-int stj_changer_sync_all_v1(void);
+enum st_job_status {
+	st_job_status_disable = 0x1,
+	st_job_status_error = 0x2,
+	st_job_status_finished = 0x3,
+	st_job_status_pause = 0x4,
+	st_job_status_running = 0x5,
+	st_job_status_scheduled = 0x6,
+	st_job_status_stopped = 0x7,
+	st_job_status_waiting = 0x8,
+
+	st_job_status_unknown = 0x0,
+};
+
+enum st_job_record_notif {
+	st_job_record_notif_normal = 0x1,
+	st_job_record_notif_important = 0x2,
+	st_job_record_notif_read = 0x3,
+
+	st_job_record_notif_unknown = 0x0,
+};
+
+struct st_job {
+	char * name;
+
+	time_t next_start;
+	long interval;
+	long repetition;
+
+	long num_runs;
+	float done;
+	volatile enum st_job_status status;
+
+	bool stoped_by_user;
+
+	struct st_value * meta;
+	struct st_value * option;
+
+	void * db_data;
+};
+
+const char * st_job_report_notif_to_string(enum st_job_record_notif notif);
+const char * st_job_status_to_string(enum st_job_status status);
+enum st_job_record_notif st_job_string_to_record_notif(const char * notif) __attribute__((nonnull));
+enum st_job_status st_job_string_to_status(const char * status) __attribute__((nonnull));
 
 #endif
 

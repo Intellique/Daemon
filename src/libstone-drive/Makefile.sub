@@ -2,7 +2,7 @@ LIBSTONEDRIVE_SRC_DIR		:= src/libstone-drive
 
 LIBSTONEDRIVE_CFLAG			:= -fPIC -pthread
 LIBSTONEDRIVE_LIB			:= lib/libstone-drive.so
-LIBSTONEDRIVE_LD			:= -shared -pthread -ldl -Wl,--version-script,src/libstone-drive/libstone-drive.map
+LIBSTONEDRIVE_LD			:= -shared -pthread -ldl -lstone -Llib -Wl,--version-script,src/libstone-drive/libstone-drive.map
 LIBSTONEDRIVE_SONAME		:= libstone-drive.so.1
 LIBSTONEDRIVE_LIB_VERSION	:= 1.2
 

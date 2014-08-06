@@ -195,6 +195,17 @@ static int stj_changer_sync(struct st_changer * changer) {
 	return 0;
 }
 
+__asm__(".symver stj_changer_sync_all_v1, stj_changer_sync_all@@LIBSTONE_JOB_1.2");
+int stj_changer_sync_all_v1() {
+	int failed = 0;
+	unsigned int i;
+	for (i = 0; i < stj_nb_changers && failed == 0; i++) {
+		struct st_changer * ch = stj_changers + i;
+		failed = ch->ops->sync(ch);
+	}
+	return failed;
+}
+
 static int stj_changer_unload(struct st_changer * changer, struct st_drive * from) {
 	struct stj_changer * self = changer->data;
 

@@ -1,8 +1,11 @@
 LIBSTONE_JOB_1.2 {
 	global:
 		stj_changer_set_config;
+		stj_changer_sync_all;
 
 	local:
+		stj_drive_init;
+		stj_io_new_stream_reader;
 		*_v1;
 };
 
