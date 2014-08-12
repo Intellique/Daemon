@@ -28,8 +28,14 @@
 
 // pthread_mutex
 #include <pthread.h>
+// malloc
+#include <stdlib.h>
 // bool
 #include <stdbool.h>
+// strcmp
+#include <string.h>
+// bzero
+#include <strings.h>
 
 #include <libstone/database.h>
 #include <libstone/json.h>
@@ -41,6 +47,7 @@
 
 #include "job.h"
 
+static struct st_job * job = NULL;
 static bool stop = false;
 static volatile bool finished = false;
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -56,9 +63,31 @@ static void daemon_request(int fd, short event, void * data __attribute__((unuse
 			stop = true;
 			break;
 	}
+
+	struct st_value * request = st_json_parse_fd(fd, 1000);
+	char * command;
+	if (request == NULL || st_value_unpack(request, "{ss}", "command", &command) < 0) {
+		if (request != NULL)
+			st_value_free(request);
+		return;
+	}
+
+	if (!strcmp("sync", command)) {
+		struct st_value * cj = st_job_convert(job);
+		st_json_encode_to_fd(cj, 1, true);
+		st_value_free(cj);
+	}
+
+	st_value_free(request);
+	free(command);
 }
 
-static void job_worker(void * arg __attribute__((unused))) {
+static void job_worker(void * arg) {
+	struct st_job_driver * job_dr = stj_job_get_driver();
+	struct st_job * j = arg;
+
+	job_dr->simulate(j, NULL);
+
 	pthread_mutex_lock(&lock);
 	finished = true;
 	pthread_mutex_unlock(&lock);
@@ -73,18 +102,22 @@ int main() {
 	if (config == NULL)
 		return 2;
 
-	struct st_value * log_config = NULL, * db_config = NULL, * devices = NULL;
-	st_value_unpack(config, "{sososo}", "logger", &log_config, "database", &db_config, "devices", &devices);
-	if (log_config == NULL || db_config == NULL || devices == NULL)
+	struct st_value * log_config = NULL, * db_config = NULL, * devices = NULL, * vjob = NULL;
+	st_value_unpack(config, "{sosososo}", "logger", &log_config, "database", &db_config, "devices", &devices, "job", &vjob);
+	if (log_config == NULL || db_config == NULL || devices == NULL || vjob == NULL)
 		return 3;
 
 	st_log_configure(log_config, st_log_type_job);
 	st_database_load_config(db_config);
 	stj_changer_set_config(devices);
 
+	job = malloc(sizeof(struct st_job));
+	bzero(job, sizeof(struct st_job));
+	st_job_sync(job, vjob);
+
 	st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
 
-	st_thread_pool_run("job_worker", job_worker, NULL);
+	st_thread_pool_run("job_worker", job_worker, job);
 
 	while (!stop) {
 		st_poll(5000);
@@ -94,6 +127,10 @@ int main() {
 			stop = true;
 		pthread_mutex_unlock(&lock);
 	}
+
+	struct st_value * status = st_value_pack("{ssso}", "command", "finished", "job", st_job_convert(job));
+	st_json_encode_to_fd(status, 1, true);
+	st_value_free(status);
 
 	st_log_stop_logger();
 

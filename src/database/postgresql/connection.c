@@ -81,6 +81,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 static int st_database_postgresql_sync_slots(struct st_database_connection * connect, struct st_slot * slot, enum st_database_sync_method method);
 static int st_database_postgresql_sync_media(struct st_database_connection * connect, struct st_media * media, enum st_database_sync_method method);
 
+static int st_database_postgresql_sync_job(struct st_database_connection * connect, struct st_job * job);
 static int st_database_postgresql_sync_jobs(struct st_database_connection * connect, struct st_value * jobs);
 
 static int st_database_postgresql_sync_plugin_job(struct st_database_connection * connect, const char * job);
@@ -108,6 +109,7 @@ static struct st_database_connection_ops st_database_postgresql_connection_ops =
 	.sync_changer          = st_database_postgresql_sync_changer,
 	.sync_drive            = st_database_postgresql_sync_drive,
 
+	.sync_job  = st_database_postgresql_sync_job,
 	.sync_jobs = st_database_postgresql_sync_jobs,
 
 	.sync_plugin_job = st_database_postgresql_sync_plugin_job,
@@ -1523,6 +1525,15 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 }
 
 
+static int st_database_postgresql_sync_job(struct st_database_connection * connect, struct st_job * job) {
+	if (connect == NULL || job == NULL)
+		return 1;
+
+	struct st_database_postgresql_connection_private * self = connect->data;
+
+	return 0;
+}
+
 static int st_database_postgresql_sync_jobs(struct st_database_connection * connect, struct st_value * jobs) {
 	if (connect == NULL || jobs == NULL)
 		return 1;
@@ -1534,7 +1545,7 @@ static int st_database_postgresql_sync_jobs(struct st_database_connection * conn
 	struct st_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_scheduled_jobs";
-	st_database_postgresql_prepare(self, query, "SELECT j.id, name, type, nextstart, interval, repetition, metadata, options, MAX(jr.id) + 1 FROM job j LEFT JOIN jobrun jr ON j.id = jr.job WHERE j.status = 'scheduled' AND host = $1 GROUP BY j.id, name, type, nextstart, interval, repetition, metadata::TEXT, options::TEXT");
+	st_database_postgresql_prepare(self, query, "SELECT j.id, j.name, jt.name, nextstart, interval, repetition, metadata, options, MAX(jr.id) + 1 FROM job j INNER JOIN jobtype jt ON j.type = jt.id LEFT JOIN jobrun jr ON j.id = jr.job WHERE j.status = 'scheduled' AND host = $1 GROUP BY j.id, j.name, jt.name, nextstart, interval, repetition, metadata::TEXT, options::TEXT");
 
 	const char * param[] = { host_id };
 
