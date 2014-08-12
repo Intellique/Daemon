@@ -24,19 +24,20 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_JOB_P_H__
-#define __LIBSTONE_JOB_P_H__
+// NULL
+#include <stddef.h>
 
-#include <libstone/job.h>
+#include "job.h"
 
-struct st_value * st_job_convert_v1(struct st_job * job) __attribute__((nonnull,warn_unused_result));
-void st_job_free_v1(struct st_job * job) __attribute__((nonnull));
-void st_job_free2_v1(void * job) __attribute__((nonnull));
-const char * st_job_report_notif_to_string_v1(enum st_job_record_notif notif);
-const char * st_job_status_to_string_v1(enum st_job_status status);
-enum st_job_record_notif st_job_string_to_record_notif_v1(const char * notif) __attribute__((nonnull));
-enum st_job_status st_job_string_to_status_v1(const char * status) __attribute__((nonnull));
-void st_job_sync_v1(struct st_job * job, struct st_value * new_job) __attribute__((nonnull));
+static struct st_job_driver * stj_driver = NULL;
 
-#endif
+
+struct st_job_driver * stj_job_get_driver() {
+	return stj_driver;
+}
+
+__asm__(".symver stj_job_register_v1, stj_job_register@@LIBSTONE_JOB_1.2");
+void stj_job_register_v1(struct st_job_driver * driver) {
+	stj_driver = driver;
+}
 

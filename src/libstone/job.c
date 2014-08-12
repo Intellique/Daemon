@@ -24,11 +24,12 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// NULL
-#include <stddef.h>
+// free
+#include <stdlib.h>
 
 #include "job.h"
 #include "string.h"
+#include "value.h"
 
 static struct st_job_status2 {
 	const char * name;
@@ -62,6 +63,41 @@ static struct st_job_record_notif2 {
 static void st_job_init(void) __attribute__((constructor));
 
 
+__asm__(".symver st_job_convert_v1, st_job_convert@@LIBSTONE_1.2");
+struct st_value * st_job_convert_v1(struct st_job * job) {
+	return st_value_pack("{sssssisisisisfsssb}",
+		"name", job->name,
+		"type", job->type,
+
+		"next start", job->next_start,
+		"interval", job->interval,
+		"repetition", job->repetition,
+
+		"num runs", job->num_runs,
+		"done", job->done,
+		"status", st_job_status_to_string_v1(job->status),
+		"stopped by user", job->stoped_by_user
+	);
+}
+
+__asm__(".symver st_job_free_v1, st_job_free@@LIBSTONE_1.2");
+void st_job_free_v1(struct st_job * job) {
+	if (job == NULL)
+		return;
+
+	free(job->name);
+	free(job->type);
+	st_value_free(job->meta);
+	st_value_free(job->option);
+	st_value_free(job->db_data);
+
+	free(job);
+}
+
+__asm__(".symver st_job_free2_v1, st_job_free2@@LIBSTONE_1.2");
+void st_job_free2_v1(void * job) {
+	st_job_free_v1(job);
+}
 
 static void st_job_init() {
 	int i;
@@ -120,5 +156,33 @@ enum st_job_status st_job_string_to_status_v1(const char * status) {
 			return st_job_status[i].status;
 
 	return st_job_status[i].status;
+}
+
+__asm__(".symver st_job_sync_v1, st_job_sync@@LIBSTONE_1.2");
+void st_job_sync_v1(struct st_job * job, struct st_value * new_job) {
+	free(job->name);
+	free(job->type);
+	job->name = job->type = NULL;
+
+	char * status = NULL;
+	double done = 0;
+
+	st_value_unpack(new_job, "{sssssisisisisfsssb}",
+		"name", &job->name,
+		"type", &job->type,
+
+		"next start", &job->next_start,
+		"interval", &job->interval,
+		"repetition", &job->repetition,
+
+		"num runs", &job->num_runs,
+		"done", &done,
+		"status", status,
+		"stopped by user", &job->stoped_by_user
+	);
+
+	job->done = done;
+	job->status = st_job_string_to_status_v1(status);
+	free(status);
 }
 

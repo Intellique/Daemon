@@ -44,10 +44,14 @@ LIBSTONE_1.2 {
 		st_host_init;
 		st_host_get_info;
 
+		st_job_convert;
+		st_job_free;
+		st_job_free2;
 		st_job_report_notif_to_string;
 		st_job_status_to_string;
 		st_job_string_to_record_notif;
 		st_job_string_to_status;
+		st_job_sync;
 
 		st_json_encode_to_fd;
 		st_json_encode_to_file;

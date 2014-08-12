@@ -131,6 +131,10 @@ struct st_database_connection {
 		int (*sync_changer)(struct st_database_connection * connect, struct st_changer * changer, enum st_database_sync_method method) __attribute__((nonnull));
 		int (*sync_drive)(struct st_database_connection * connect, struct st_drive * drive, enum st_database_sync_method method) __attribute__((nonnull));
 		int (*sync_media)(struct st_database_connection * connnect, struct st_media * media, enum st_database_sync_method method) __attribute__((nonnull));
+
+		int (*sync_jobs)(struct st_database_connection * connect, struct st_value * jobs) __attribute__((nonnull));
+
+		int (*sync_plugin_job)(struct st_database_connection * connect, const char * job) __attribute__((nonnull));
 	} * ops;
 
 	/**

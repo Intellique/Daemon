@@ -24,19 +24,13 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_JOB_P_H__
-#define __LIBSTONE_JOB_P_H__
+#ifndef __STONEJOB_JOB_P_H__
+#define __STONEJOB_JOB_P_H__
 
-#include <libstone/job.h>
+#include <libstone-job/job.h>
 
-struct st_value * st_job_convert_v1(struct st_job * job) __attribute__((nonnull,warn_unused_result));
-void st_job_free_v1(struct st_job * job) __attribute__((nonnull));
-void st_job_free2_v1(void * job) __attribute__((nonnull));
-const char * st_job_report_notif_to_string_v1(enum st_job_record_notif notif);
-const char * st_job_status_to_string_v1(enum st_job_status status);
-enum st_job_record_notif st_job_string_to_record_notif_v1(const char * notif) __attribute__((nonnull));
-enum st_job_status st_job_string_to_status_v1(const char * status) __attribute__((nonnull));
-void st_job_sync_v1(struct st_job * job, struct st_value * new_job) __attribute__((nonnull));
+struct st_job_driver * stj_job_get_driver(void);
+void stj_job_register_v1(struct st_job_driver * driver) __attribute__((nonnull));
 
 #endif
 

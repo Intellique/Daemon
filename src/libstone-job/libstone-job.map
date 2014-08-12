@@ -3,9 +3,12 @@ LIBSTONE_JOB_1.2 {
 		stj_changer_set_config;
 		stj_changer_sync_all;
 
+		stj_job_register;
+
 	local:
 		stj_drive_init;
 		stj_io_new_stream_reader;
+		stj_job_get_driver;
 		*_v1;
 };
 

@@ -39,6 +39,8 @@
 
 #include <libstone/changer.h>
 #include <libstone/drive.h>
+#include <libstone/job.h>
+#include <libstone/json.h>
 #include <libstone/log.h>
 #include <libstone/media.h>
 #include <libstone/slot.h>
@@ -79,6 +81,10 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 static int st_database_postgresql_sync_slots(struct st_database_connection * connect, struct st_slot * slot, enum st_database_sync_method method);
 static int st_database_postgresql_sync_media(struct st_database_connection * connect, struct st_media * media, enum st_database_sync_method method);
 
+static int st_database_postgresql_sync_jobs(struct st_database_connection * connect, struct st_value * jobs);
+
+static int st_database_postgresql_sync_plugin_job(struct st_database_connection * connect, const char * job);
+
 static void st_database_postgresql_prepare(struct st_database_postgresql_connection_private * self, const char * statement_name, const char * query);
 
 static struct st_database_connection_ops st_database_postgresql_connection_ops = {
@@ -101,6 +107,10 @@ static struct st_database_connection_ops st_database_postgresql_connection_ops =
 	.get_vtls              = st_database_postgresql_get_vtls,
 	.sync_changer          = st_database_postgresql_sync_changer,
 	.sync_drive            = st_database_postgresql_sync_drive,
+
+	.sync_jobs = st_database_postgresql_sync_jobs,
+
+	.sync_plugin_job = st_database_postgresql_sync_plugin_job,
 };
 
 
@@ -1510,6 +1520,113 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 	free(media_id);
 
 	return failed;
+}
+
+
+static int st_database_postgresql_sync_jobs(struct st_database_connection * connect, struct st_value * jobs) {
+	if (connect == NULL || jobs == NULL)
+		return 1;
+
+	char * host_id = st_database_postgresql_get_host(connect);
+	if (host_id == NULL)
+		return 2;
+
+	struct st_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_scheduled_jobs";
+	st_database_postgresql_prepare(self, query, "SELECT j.id, name, type, nextstart, interval, repetition, metadata, options, MAX(jr.id) + 1 FROM job j LEFT JOIN jobrun jr ON j.id = jr.job WHERE j.status = 'scheduled' AND host = $1 GROUP BY j.id, name, type, nextstart, interval, repetition, metadata::TEXT, options::TEXT");
+
+	const char * param[] = { host_id };
+
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+	int nb_result = PQntuples(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && nb_result > 0) {
+		int i;
+		for (i = 0; i < nb_result; i++) {
+			char * job_id;
+			st_database_postgresql_get_string_dup(result, i, 0, &job_id);
+
+			struct st_job * job = NULL;
+			bool has_job = st_value_hashtable_has_key2(jobs, job_id);
+			if (has_job) {
+				struct st_value * vj = st_value_hashtable_get2(jobs, job_id, false, false);
+				job = st_value_custom_get(vj);
+			} else {
+				job = malloc(sizeof(struct st_job));
+				bzero(job, sizeof(struct st_job));
+
+				st_database_postgresql_get_string_dup(result, i, 1, &job->name);
+				st_database_postgresql_get_string_dup(result, i, 2, &job->type);
+				job->meta = st_json_parse_string(PQgetvalue(result, i, 6));
+				job->option = st_json_parse_string(PQgetvalue(result, i, 7));
+			}
+
+			st_database_postgresql_get_time(result, i, 3, &job->next_start);
+			st_database_postgresql_get_long(result, i, 4, &job->interval);
+			st_database_postgresql_get_long(result, i, 5, &job->repetition);
+			job->status = st_job_status_scheduled;
+			st_database_postgresql_get_long(result, i, 8, &job->num_runs);
+
+			if (!has_job) {
+				job->db_data = st_value_new_hashtable(st_value_custom_compute_hash);
+				struct st_value * key = st_value_new_custom(connect->config, NULL);
+				struct st_value * db = st_value_pack("{ss}", "id", job_id);
+				st_value_hashtable_put(job->db_data, key, true, db, true);
+
+				struct st_value * vj = st_value_new_custom(job, st_job_free2);
+				st_value_hashtable_put2(jobs, job_id, vj, true);
+			}
+
+			free(job_id);
+		}
+	}
+
+	PQclear(result);
+	free(host_id);
+
+	return status == PGRES_FATAL_ERROR;
+}
+
+
+static int st_database_postgresql_sync_plugin_job(struct st_database_connection * connect, const char * job) {
+	if (connect == NULL || job == NULL)
+		return -1;
+
+	struct st_database_postgresql_connection_private * self = connect->data;
+	const char * query = "select_jobtype_by_name";
+	st_database_postgresql_prepare(self, query, "SELECT name FROM jobtype WHERE name = $1 LIMIT 1");
+
+	const char * param[] = { job };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	bool found = false;
+	if (status == PGRES_FATAL_ERROR)
+		st_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		found = true;
+
+	PQclear(result);
+
+	if (found)
+		return 0;
+
+	query = "insert_jobtype";
+	st_database_postgresql_prepare(self, query, "INSERT INTO jobtype(name) VALUES ($1)");
+
+	result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+
+	return status == PGRES_FATAL_ERROR;
 }
 
 

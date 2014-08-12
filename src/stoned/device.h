@@ -29,7 +29,8 @@
 
 struct st_value;
 
-void std_device_configure(struct st_value * logger, struct st_value * db_config) __attribute__((nonnull));
+struct st_value * std_device_get(bool shared) __attribute__((warn_unused_result));
+void std_device_configure(struct st_value * logger, struct st_value * db_config, struct st_database_connection * connection) __attribute__((nonnull));
 void std_device_stop(void);
 
 #endif

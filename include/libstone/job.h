@@ -55,6 +55,7 @@ enum st_job_record_notif {
 
 struct st_job {
 	char * name;
+	char * type;
 
 	time_t next_start;
 	long interval;
@@ -69,13 +70,18 @@ struct st_job {
 	struct st_value * meta;
 	struct st_value * option;
 
-	void * db_data;
+	void * data;
+	struct st_value * db_data;
 };
 
+struct st_value * st_job_convert(struct st_job * job) __attribute__((nonnull,warn_unused_result));
+void st_job_free(struct st_job * job);
+void st_job_free2(void * job);
 const char * st_job_report_notif_to_string(enum st_job_record_notif notif);
 const char * st_job_status_to_string(enum st_job_status status);
 enum st_job_record_notif st_job_string_to_record_notif(const char * notif) __attribute__((nonnull));
 enum st_job_status st_job_string_to_status(const char * status) __attribute__((nonnull));
+void st_job_sync(struct st_job * job, struct st_value * new_job) __attribute__((nonnull));
 
 #endif
 

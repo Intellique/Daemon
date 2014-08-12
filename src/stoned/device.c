@@ -54,16 +54,7 @@ static void std_device_free(void * d);
 static void std_device_exited(int fd, short event, void * data);
 
 
-void std_device_configure(struct st_value * logger, struct st_value * db_config) {
-	struct st_database * db = st_database_get_default_driver();
-	if (db == NULL)
-		return;
-
-	struct st_database_config * config = db->ops->get_default_config();
-	if (config == NULL)
-		return;
-
-	struct st_database_connection * connection = config->ops->connect(config);
+void std_device_configure(struct st_value * logger, struct st_value * db_config, struct st_database_connection * connection) {
 	if (connection == NULL)
 		return;
 
@@ -150,6 +141,12 @@ static void std_device_free(void * d) {
 	close(dev->fd_in);
 	st_value_free(dev->config);
 	free(dev);
+}
+
+struct st_value * std_device_get(bool shared) {
+	if (shared)
+		return st_value_share(devices);
+	return devices;
 }
 
 void std_device_stop() {

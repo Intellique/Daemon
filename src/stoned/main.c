@@ -44,6 +44,7 @@
 #include "env.h"
 #include "logger.h"
 #include "main.h"
+#include "scheduler.h"
 
 #include "checksum/stoned.chcksum"
 #include "config.h"
@@ -119,7 +120,8 @@ int main(int argc, char ** argv) {
 	if (!std_env_setup())
 		return 3;
 
-	struct st_value * logger_config = st_value_hashtable_get2(config, "logger", false, false);
+	struct st_value * logger_config = NULL;
+	st_value_unpack(config, "{so}", "logger", &logger_config);
 	if (logger_config == NULL || logger_config->type != st_value_hashtable)
 		return 2;
 	std_logger_start(logger_config);
@@ -139,11 +141,27 @@ int main(int argc, char ** argv) {
 	if (db_configs != NULL)
 		st_database_load_config(db_configs);
 
+	struct st_database * db = st_database_get_default_driver();
+	if (db == NULL)
+		return 3;
+
+	struct st_database_config * db_config = db->ops->get_default_config();
+	if (db_config == NULL)
+		return 3;
+
+	struct st_database_connection * connection = db_config->ops->connect(db_config);
+	if (connection == NULL)
+		return 3;
+
 	if (logger_config != NULL && db_configs != NULL)
-		std_device_configure(log_file, db_configs);
+		std_device_configure(log_file, db_configs, connection);
+
+	std_scheduler_init(connection);
 
 	while (std_daemon_run) {
-		st_poll(-1);
+		std_scheduler_do(log_file, db_configs, connection);
+
+		st_poll(5);
 	}
 
 	st_value_free(config);
