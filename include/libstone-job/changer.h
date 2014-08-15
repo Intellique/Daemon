@@ -29,7 +29,9 @@
 
 #include <libstone/changer.h>
 
+struct st_database_connection;
 struct st_drive;
+struct st_job;
 struct st_media;
 struct st_slot;
 struct st_value;
@@ -43,6 +45,7 @@ struct st_changer_ops {
 	int (*unload)(struct st_changer * changer, struct st_drive * from);
 };
 
+struct st_slot * stj_changer_find_media_by_job(struct st_job * job, struct st_database_connection * db_connection) __attribute__((nonnull));
 void stj_changer_set_config(struct st_value * config) __attribute__((nonnull));
 int stj_changer_sync_all(void);
 

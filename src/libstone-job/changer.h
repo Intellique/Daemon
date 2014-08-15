@@ -29,6 +29,7 @@
 
 #include <libstone-job/changer.h>
 
+struct st_slot * stj_changer_find_media_by_job_v1(struct st_job * job, struct st_database_connection * db_connection);
 void stj_changer_set_config_v1(struct st_value * config);
 int stj_changer_sync_all_v1(void);
 

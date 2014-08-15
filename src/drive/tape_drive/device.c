@@ -471,7 +471,7 @@ static int tape_drive_update_status(struct st_database_connection * db) {
 			close(fd);
 
 			if (failed == 0)
-				tape_drive.slot->media = db->ops->get_media(db, medium_serial_number, NULL);
+				tape_drive.slot->media = db->ops->get_media(db, medium_serial_number, NULL, NULL);
 
 			if (tape_drive.slot->media == NULL)
 				tape_drive_create_media(db);

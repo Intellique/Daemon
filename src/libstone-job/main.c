@@ -107,6 +107,8 @@ int main() {
 	if (log_config == NULL || db_config == NULL || devices == NULL || vjob == NULL)
 		return 3;
 
+	st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
+
 	st_log_configure(log_config, st_log_type_job);
 	st_database_load_config(db_config);
 	stj_changer_set_config(devices);
@@ -115,7 +117,20 @@ int main() {
 	bzero(job, sizeof(struct st_job));
 	st_job_sync(job, vjob);
 
-	st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
+	struct st_database * db_driver = st_database_get_default_driver();
+	if (db_driver == NULL)
+		return 4;
+	struct st_database_config * db_conf = db_driver->ops->get_default_config();
+	if (db_conf == NULL)
+		return 4;
+	struct st_database_connection * db_connect = db_conf->ops->connect(db_conf);
+	if (db_connect == NULL)
+		return 4;
+
+	job->status = st_job_status_running;
+
+	db_connect->ops->sync_job(db_connect, job);
+	db_connect->ops->start_job(db_connect, job);
 
 	st_thread_pool_run("job_worker", job_worker, job);
 
@@ -126,7 +141,14 @@ int main() {
 		if (finished)
 			stop = true;
 		pthread_mutex_unlock(&lock);
+
+		db_connect->ops->sync_job(db_connect, job);
 	}
+
+	if (job->status == st_job_status_running)
+		job->status = st_job_status_finished;
+
+	db_connect->ops->stop_job(db_connect, job);
 
 	struct st_value * status = st_value_pack("{ssso}", "command", "finished", "job", st_job_convert(job));
 	st_json_encode_to_fd(status, 1, true);

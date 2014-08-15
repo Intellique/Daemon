@@ -54,6 +54,7 @@ enum st_job_record_notif {
 };
 
 struct st_job {
+	char * key;
 	char * name;
 	char * type;
 
@@ -65,7 +66,8 @@ struct st_job {
 	float done;
 	volatile enum st_job_status status;
 
-	bool stoped_by_user;
+	int exit_code;
+	bool stopped_by_user;
 
 	struct st_value * meta;
 	struct st_value * option;

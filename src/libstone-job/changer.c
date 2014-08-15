@@ -26,9 +26,12 @@
 
 // calloc, malloc
 #include <stdlib.h>
+// strcmp
+#include <string.h>
 // bzero
 #include <strings.h>
 
+#include <libstone/database.h>
 #include <libstone/drive.h>
 #include <libstone/json.h>
 #include <libstone/slot.h>
@@ -62,6 +65,33 @@ static struct st_changer_ops stj_changer_ops = {
 	.unload            = stj_changer_unload,
 };
 
+
+__asm__(".symver stj_changer_find_media_by_job_v1, stj_changer_find_media_by_job@@LIBSTONE_JOB_1.2");
+struct st_slot * stj_changer_find_media_by_job_v1(struct st_job * job, struct st_database_connection * db_connection) {
+	if (job == NULL || db_connection == NULL)
+		return NULL;
+
+	struct st_media * media = db_connection->ops->get_media(db_connection, NULL, NULL, job);
+	if (media == NULL)
+		return NULL;
+
+	unsigned int i;
+	for (i = 0; i < stj_nb_changers; i++) {
+		struct st_changer * ch = stj_changers + i;
+
+		unsigned int j;
+		for (j = 0; j < ch->nb_slots; j++) {
+			struct st_slot * sl = ch->slots + j;
+			if (sl->media == NULL)
+				continue;
+
+			if (!strcmp(sl->media->medium_serial_number, media->medium_serial_number))
+				return sl;
+		}
+	}
+
+	return NULL;
+}
 
 static int stj_changer_load(struct st_changer * changer, struct st_slot * from, struct st_drive * to) {
 	struct stj_changer * self = changer->data;

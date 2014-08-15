@@ -32,6 +32,8 @@
 #include <stdio.h>
 // malloc
 #include <stdlib.h>
+// strdup
+#include <string.h>
 // bzero
 #include <strings.h>
 // uname
@@ -71,7 +73,7 @@ static struct st_value * st_database_postgresql_get_host_by_name(struct st_datab
 
 static struct st_value * st_database_postgresql_get_changers(struct st_database_connection * connect);
 static struct st_value * st_database_postgresql_get_drives_by_changer(struct st_database_connection * connect, const char * changer_id);
-static struct st_media * st_database_postgresql_get_media(struct st_database_connection * connect, const char * medium_serial_number, const char * label) __attribute__((nonnull,warn_unused_result));
+static struct st_media * st_database_postgresql_get_media(struct st_database_connection * connect, const char * medium_serial_number, const char * label, struct st_job * job) __attribute__((nonnull,warn_unused_result));
 static struct st_media_format * st_database_postgresql_get_media_format(struct st_database_connection * connect, unsigned int density_code, enum st_media_format_mode mode);
 static struct st_value * st_database_postgresql_get_slot_by_drive(struct st_database_connection * connect, const char * drive_id);
 static struct st_value * st_database_postgresql_get_standalone_drives(struct st_database_connection * connect);
@@ -81,6 +83,8 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 static int st_database_postgresql_sync_slots(struct st_database_connection * connect, struct st_slot * slot, enum st_database_sync_method method);
 static int st_database_postgresql_sync_media(struct st_database_connection * connect, struct st_media * media, enum st_database_sync_method method);
 
+static int st_database_postgresql_start_job(struct st_database_connection * connect, struct st_job * job);
+static int st_database_postgresql_stop_job(struct st_database_connection * connect, struct st_job * job);
 static int st_database_postgresql_sync_job(struct st_database_connection * connect, struct st_job * job);
 static int st_database_postgresql_sync_jobs(struct st_database_connection * connect, struct st_value * jobs);
 
@@ -109,6 +113,8 @@ static struct st_database_connection_ops st_database_postgresql_connection_ops =
 	.sync_changer          = st_database_postgresql_sync_changer,
 	.sync_drive            = st_database_postgresql_sync_drive,
 
+	.start_job = st_database_postgresql_start_job,
+	.stop_job  = st_database_postgresql_stop_job,
 	.sync_job  = st_database_postgresql_sync_job,
 	.sync_jobs = st_database_postgresql_sync_jobs,
 
@@ -498,7 +504,7 @@ static struct st_value * st_database_postgresql_get_drives_by_changer(struct st_
 	return drives;
 }
 
-static struct st_media * st_database_postgresql_get_media(struct st_database_connection * connect, const char * medium_serial_number, const char * label) {
+static struct st_media * st_database_postgresql_get_media(struct st_database_connection * connect, const char * medium_serial_number, const char * label, struct st_job * job) {
 	if (connect == NULL || (medium_serial_number == NULL && label == NULL))
 		return NULL;
 
@@ -507,17 +513,30 @@ static struct st_media * st_database_postgresql_get_media(struct st_database_con
 	const char * query;
 	PGresult * result;
 
+	char * job_id = NULL;
+
 	if (medium_serial_number != NULL) {
 		query = "select_media_by_medium_serial_number";
 		st_database_postgresql_prepare(self, query, "SELECT m.id, mf.id, m.uuid, label, mediumserialnumber, m.name, m.status, firstused, usebefore, lastread, lastwrite, loadcount, readcount, writecount, operationcount, nbtotalblockread, nbtotalblockwrite, nbreaderror, nbwriteerror, m.blocksize, freeblock, totalblock, append, m.type, writelock, nbfiles, densitycode, mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE mediumserialnumber = $1 LIMIT 1");
 
 		const char * param[] = { medium_serial_number };
 		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
-	} else {
+	} else if (label != NULL) {
 		query = "select_media_by_label";
 		st_database_postgresql_prepare(self, query, "SELECT m.id, mf.id, m.uuid, label, mediumserialnumber, m.name, m.status, firstused, usebefore, lastread, lastwrite, loadcount, readcount, writecount, operationcount, nbtotalblockread, nbtotalblockwrite, nbreaderror, nbwriteerror, m.blocksize, freeblock, totalblock, append, m.type, writelock, nbfiles, densitycode, mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE label = $1 LIMIT 1");
 
 		const char * param[] = { label };
+		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	} else {
+		query = "select_media_by_job";
+		st_database_postgresql_prepare(self, query, "SELECT m.id, mf.id, m.uuid, label, mediumserialnumber, m.name, m.status, firstused, usebefore, lastread, lastwrite, loadcount, readcount, writecount, operationcount, nbtotalblockread, nbtotalblockwrite, nbreaderror, nbwriteerror, m.blocksize, freeblock, totalblock, append, m.type, writelock, nbfiles, densitycode, mode, p.uuid FROM job j LEFT JOIN media m ON j.media = m.id LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE j.id = $1 LIMIT 1");
+
+		struct st_value * key = st_value_new_custom(connect->config, NULL);
+		struct st_value * job_data = st_value_hashtable_get(job->db_data, key, false, false);
+		st_value_unpack(job_data, "{ss}", "id", &job_id);
+		st_value_free(key);
+
+		const char * param[] = { job_id };
 		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 	}
 
@@ -582,6 +601,7 @@ static struct st_media * st_database_postgresql_get_media(struct st_database_con
 	}
 
 	PQclear(result);
+	free(job_id);
 	return media;
 }
 
@@ -1525,13 +1545,154 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 }
 
 
+static int st_database_postgresql_start_job(struct st_database_connection * connect, struct st_job * job) {
+	if (connect == NULL || job == NULL)
+		return 1;
+
+	struct st_database_postgresql_connection_private * self = connect->data;
+
+	struct st_value * key = st_value_new_custom(connect->config, NULL);
+	struct st_value * db = st_value_hashtable_get(job->db_data, key, false, false);
+	st_value_free(key);
+
+	char * job_id = NULL;
+	st_value_unpack(db, "{ss}", "id", &job_id);
+
+	const char * query = "insert_new_jobrun";
+	st_database_postgresql_prepare(self, query, "INSERT INTO jobrun(job, numrun) VALUES ($1, $2) RETURNING id");
+
+	char * numrun = NULL;
+	asprintf(&numrun, "%ld", job->num_runs);
+
+	const char * param[] = { job_id, numrun };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		char * jobrun_id = PQgetvalue(result, 0, 0);
+		st_value_hashtable_put2(db, "jobrun id", st_value_new_string(jobrun_id), true);
+	}
+
+	PQclear(result);
+	free(job_id);
+	free(numrun);
+
+	return status != PGRES_TUPLES_OK;
+}
+
+static int st_database_postgresql_stop_job(struct st_database_connection * connect, struct st_job * job) {
+	if (connect == NULL || job == NULL)
+		return 1;
+
+	struct st_value * key = st_value_new_custom(connect->config, NULL);
+	struct st_value * db = st_value_hashtable_get(job->db_data, key, false, false);
+	st_value_free(key);
+
+	char * jobrun_id = NULL;
+	st_value_unpack(db, "{ss}", "jobrun id", &jobrun_id);
+
+	struct st_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "finish_jobrun";
+	st_database_postgresql_prepare(self, query, "UPDATE jobrun SET endtime = NOW(), status = $1, done = $2, exitcode = $3, stoppedbyuser = $4 WHERE id = $5");
+
+	char * done = NULL, * exitcode = NULL;
+	asprintf(&done, "%f", job->done);
+	asprintf(&exitcode, "%d", job->exit_code);
+
+	const char * param[] = { st_job_status_to_string(job->status), done, exitcode, st_database_postgresql_bool_to_string(job->stopped_by_user), jobrun_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+	free(exitcode);
+	free(done);
+	free(jobrun_id);
+
+	return status != PGRES_COMMAND_OK;
+}
+
 static int st_database_postgresql_sync_job(struct st_database_connection * connect, struct st_job * job) {
 	if (connect == NULL || job == NULL)
 		return 1;
 
 	struct st_database_postgresql_connection_private * self = connect->data;
 
-	return 0;
+	struct st_value * key = st_value_new_custom(connect->config, NULL);
+	char * job_id = NULL;
+	char * jobrun_id = NULL;
+
+	if (job->db_data == NULL) {
+		job->db_data = st_value_new_hashtable(st_value_custom_compute_hash);
+		struct st_value * db = st_value_pack("{ss}", "id", job->key);
+		st_value_hashtable_put(job->db_data, key, false, db, true);
+		job_id = strdup(job->key);
+	} else {
+		struct st_value * db = st_value_hashtable_get(job->db_data, key, false, false);
+		st_value_unpack(db, "{ssss}", "id", &job_id, "jobrun id", &jobrun_id);
+	}
+
+	st_value_free(key);
+
+	const char * query = "check_if_user_stop_job";
+	st_database_postgresql_prepare(self, query, "SELECT status FROM job WHERE id = $1 LIMIT 1");
+
+	const char * param[] = { job_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		const enum st_job_status new_status = st_job_string_to_status(PQgetvalue(result, 0, 0));
+
+		if ((job->status == st_job_status_running || job->status == st_job_status_pause) && new_status == st_job_status_stopped) {
+			job->status = new_status;
+			job->stopped_by_user = true;
+		}
+	}
+	PQclear(result);
+
+	// update job
+	query = "update_job";
+	st_database_postgresql_prepare(self, query, "UPDATE job SET status = $1, update = NOW() WHERE id = $2");
+
+	const char * param2[] = { st_job_status_to_string(job->status), job_id };
+	result = PQexecPrepared(self->connect, query, 2, param2, NULL, NULL, 0);
+	status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+
+	if (jobrun_id == NULL)
+		return status != PGRES_COMMAND_OK;
+
+	// update jobrun
+	query = "update_jobrun";
+	st_database_postgresql_prepare(self, query, "UPDATE jobrun SET status = $1, done = $2 WHERE id = $3");
+
+	char * done = NULL;
+	asprintf(&done, "%f", job->done);
+
+	const char * param3[] = { st_job_status_to_string(job->status), done, jobrun_id };
+	result = PQexecPrepared(self->connect, query, 3, param3, NULL, NULL, 0);
+	status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+	free(done);
+	free(jobrun_id);
+
+	return status != PGRES_COMMAND_OK;
 }
 
 static int st_database_postgresql_sync_jobs(struct st_database_connection * connect, struct st_value * jobs) {
@@ -1545,7 +1706,7 @@ static int st_database_postgresql_sync_jobs(struct st_database_connection * conn
 	struct st_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_scheduled_jobs";
-	st_database_postgresql_prepare(self, query, "SELECT j.id, j.name, jt.name, nextstart, interval, repetition, metadata, options, MAX(jr.id) + 1 FROM job j INNER JOIN jobtype jt ON j.type = jt.id LEFT JOIN jobrun jr ON j.id = jr.job WHERE j.status = 'scheduled' AND host = $1 GROUP BY j.id, j.name, jt.name, nextstart, interval, repetition, metadata::TEXT, options::TEXT");
+	st_database_postgresql_prepare(self, query, "SELECT j.id, j.name, jt.name, nextstart, interval, repetition, metadata, options, COALESCE(MAX(jr.numrun) + 1, 1) FROM job j INNER JOIN jobtype jt ON j.type = jt.id LEFT JOIN jobrun jr ON j.id = jr.job WHERE j.status = 'scheduled' AND host = $1 GROUP BY j.id, j.name, jt.name, nextstart, interval, repetition, metadata::TEXT, options::TEXT");
 
 	const char * param[] = { host_id };
 
@@ -1570,6 +1731,7 @@ static int st_database_postgresql_sync_jobs(struct st_database_connection * conn
 				job = malloc(sizeof(struct st_job));
 				bzero(job, sizeof(struct st_job));
 
+				st_database_postgresql_get_string_dup(result, i, 0, &job->key);
 				st_database_postgresql_get_string_dup(result, i, 1, &job->name);
 				st_database_postgresql_get_string_dup(result, i, 2, &job->type);
 				job->meta = st_json_parse_string(PQgetvalue(result, i, 6));

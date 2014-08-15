@@ -125,7 +125,7 @@ struct st_database_connection {
 		struct st_value * (*get_host_by_name)(struct st_database_connection * connect, const char * name) __attribute__((nonnull));
 
 		struct st_value * (*get_changers)(struct st_database_connection * connect) __attribute__((nonnull));
-		struct st_media * (*get_media)(struct st_database_connection * connect, const char * medium_serial_number, const char * label) __attribute__((nonnull(1),warn_unused_result));
+		struct st_media * (*get_media)(struct st_database_connection * connect, const char * medium_serial_number, const char * label, struct st_job * job) __attribute__((nonnull(1),warn_unused_result));
 		struct st_media_format * (*get_media_format)(struct st_database_connection * connect, unsigned int density_code, enum st_media_format_mode mode);
 		struct st_value * (*get_standalone_drives)(struct st_database_connection * connect) __attribute__((nonnull));
 		struct st_value * (*get_vtls)(struct st_database_connection * connect) __attribute__((nonnull));
@@ -133,6 +133,8 @@ struct st_database_connection {
 		int (*sync_drive)(struct st_database_connection * connect, struct st_drive * drive, enum st_database_sync_method method) __attribute__((nonnull));
 		int (*sync_media)(struct st_database_connection * connnect, struct st_media * media, enum st_database_sync_method method) __attribute__((nonnull));
 
+		int (*start_job)(struct st_database_connection * connect, struct st_job * job) __attribute__((nonnull));
+		int (*stop_job)(struct st_database_connection * connect, struct st_job * job) __attribute__((nonnull));
 		int (*sync_job)(struct st_database_connection * connect, struct st_job * job) __attribute__((nonnull));
 		int (*sync_jobs)(struct st_database_connection * connect, struct st_value * jobs) __attribute__((nonnull));
 

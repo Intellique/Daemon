@@ -1,5 +1,6 @@
 LIBSTONE_JOB_1.2 {
 	global:
+		stj_changer_find_media_by_job;
 		stj_changer_set_config;
 		stj_changer_sync_all;
 

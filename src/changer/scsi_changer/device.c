@@ -240,7 +240,7 @@ static int scsi_changer_init(struct st_value * config, struct st_database_connec
 			if (!sl->enable || !sl->full)
 				continue;
 
-			sl->media = db_connection->ops->get_media(db_connection, NULL, sl->volume_name);
+			sl->media = db_connection->ops->get_media(db_connection, NULL, sl->volume_name, NULL);
 			if (sl->media == NULL)
 				need_init++;
 		}

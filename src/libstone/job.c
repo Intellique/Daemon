@@ -65,7 +65,8 @@ static void st_job_init(void) __attribute__((constructor));
 
 __asm__(".symver st_job_convert_v1, st_job_convert@@LIBSTONE_1.2");
 struct st_value * st_job_convert_v1(struct st_job * job) {
-	return st_value_pack("{sssssisisisisfsssb}",
+	return st_value_pack("{sssssssisisisisfsssisb}",
+		"id", job->key,
 		"name", job->name,
 		"type", job->type,
 
@@ -76,7 +77,9 @@ struct st_value * st_job_convert_v1(struct st_job * job) {
 		"num runs", job->num_runs,
 		"done", job->done,
 		"status", st_job_status_to_string_v1(job->status),
-		"stopped by user", job->stoped_by_user
+
+		"exit code", (long int) job->exit_code,
+		"stopped by user", job->stopped_by_user
 	);
 }
 
@@ -85,6 +88,7 @@ void st_job_free_v1(struct st_job * job) {
 	if (job == NULL)
 		return;
 
+	free(job->key);
 	free(job->name);
 	free(job->type);
 	st_value_free(job->meta);
@@ -160,14 +164,17 @@ enum st_job_status st_job_string_to_status_v1(const char * status) {
 
 __asm__(".symver st_job_sync_v1, st_job_sync@@LIBSTONE_1.2");
 void st_job_sync_v1(struct st_job * job, struct st_value * new_job) {
+	free(job->key);
 	free(job->name);
 	free(job->type);
-	job->name = job->type = NULL;
+	job->key = job->name = job->type = NULL;
 
 	char * status = NULL;
 	double done = 0;
+	long int exit_code = 0;
 
-	st_value_unpack(new_job, "{sssssisisisisfsssb}",
+	st_value_unpack(new_job, "{sssssssisisisisfsssisb}",
+		"id", &job->key,
 		"name", &job->name,
 		"type", &job->type,
 
@@ -178,11 +185,14 @@ void st_job_sync_v1(struct st_job * job, struct st_value * new_job) {
 		"num runs", &job->num_runs,
 		"done", &done,
 		"status", status,
-		"stopped by user", &job->stoped_by_user
+
+		"exit code", &exit_code,
+		"stopped by user", &job->stopped_by_user
 	);
 
 	job->done = done;
 	job->status = st_job_string_to_status_v1(status);
 	free(status);
+	job->exit_code = exit_code;
 }
 
