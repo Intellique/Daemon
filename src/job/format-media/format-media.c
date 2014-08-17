@@ -24,22 +24,70 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONEJOB_JOB_H__
-#define __STONEJOB_JOB_H__
+#define NULL (void *) 0
 
-#include <libstone/job.h>
+#include <libstone/database.h>
+#include <libstone/host.h>
+#include <libstone/log.h>
+#include <libstone/media.h>
+#include <libstone/slot.h>
+#include <libstone/value.h>
+#include <libstone-job/changer.h>
+#include <libstone-job/job.h>
+#include <libstone-job/script.h>
 
-struct st_database_connection;
-struct st_job;
+#include <job_format-media.chcksum>
 
-struct st_job_driver {
-	char * name;
+static struct st_pool * formatmedia_pool = NULL;
+static struct st_slot * formatmedia_slot = NULL;
 
-	int (*simulate)(struct st_job * job, struct st_database_connection * db_connect);
-	int (*script_pre_run)(struct st_job * job, struct st_database_connection * db_connect);
+static void formatmedia_init(void) __attribute__((constructor));
+static int formatmedia_simulate(struct st_job * job, struct st_database_connection * db_connect);
+static int formatmedia_script_pre_run(struct st_job * job, struct st_database_connection * db_connect);
+
+static struct st_job_driver formatmedia = {
+	.name = "format-media",
+
+	.simulate       = formatmedia_simulate,
+	.script_pre_run = formatmedia_script_pre_run,
 };
 
-void stj_job_register(struct st_job_driver * driver) __attribute__((nonnull));
 
-#endif
+static void formatmedia_init() {
+	stj_job_register(&formatmedia);
+}
+
+static int formatmedia_simulate(struct st_job * job, struct st_database_connection * db_connect) {
+	formatmedia_pool = db_connect->ops->get_pool(db_connect, NULL, job);
+	formatmedia_slot = stj_changer_find_media_by_job(job, db_connect);
+
+	if (formatmedia_pool == NULL) {
+		st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Media not found");
+		return 1;
+	}
+	if (formatmedia_slot == NULL) {
+		st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Media not found");
+		return 1;
+	}
+
+	return 0;
+}
+
+static int formatmedia_script_pre_run(struct st_job * job, struct st_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, st_script_type_pre_job, formatmedia_pool) < 1)
+		return 0;
+
+	struct st_value * json = st_value_pack("{sosososo}",
+		"job", st_job_convert(job),
+		"host", st_host_get_info(),
+		"media", st_media_convert(formatmedia_slot->media),
+		"pool", st_pool_convert(formatmedia_pool)
+	);
+
+	int failed = 0;
+
+	st_value_free(json);
+
+	return failed;
+}
 

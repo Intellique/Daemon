@@ -35,8 +35,11 @@ struct st_database;
 struct st_database_config;
 struct st_drive;
 struct st_job;
+enum st_job_record_notif;
+enum st_log_level;
 struct st_media;
 enum st_media_format_mode;
+enum st_script_type;
 struct st_value;
 
 enum st_database_sync_method {
@@ -127,16 +130,21 @@ struct st_database_connection {
 		struct st_value * (*get_changers)(struct st_database_connection * connect) __attribute__((nonnull));
 		struct st_media * (*get_media)(struct st_database_connection * connect, const char * medium_serial_number, const char * label, struct st_job * job) __attribute__((nonnull(1),warn_unused_result));
 		struct st_media_format * (*get_media_format)(struct st_database_connection * connect, unsigned int density_code, enum st_media_format_mode mode);
+		struct st_pool * (*get_pool)(struct st_database_connection * connect, const char * uuid, struct st_job * job);
 		struct st_value * (*get_standalone_drives)(struct st_database_connection * connect) __attribute__((nonnull));
 		struct st_value * (*get_vtls)(struct st_database_connection * connect) __attribute__((nonnull));
 		int (*sync_changer)(struct st_database_connection * connect, struct st_changer * changer, enum st_database_sync_method method) __attribute__((nonnull));
 		int (*sync_drive)(struct st_database_connection * connect, struct st_drive * drive, enum st_database_sync_method method) __attribute__((nonnull));
 		int (*sync_media)(struct st_database_connection * connnect, struct st_media * media, enum st_database_sync_method method) __attribute__((nonnull));
 
+		int (*add_job_record)(struct st_database_connection * connect, struct st_job * job, enum st_log_level level, enum st_job_record_notif notif, const char * message);
 		int (*start_job)(struct st_database_connection * connect, struct st_job * job) __attribute__((nonnull));
 		int (*stop_job)(struct st_database_connection * connect, struct st_job * job) __attribute__((nonnull));
 		int (*sync_job)(struct st_database_connection * connect, struct st_job * job) __attribute__((nonnull));
 		int (*sync_jobs)(struct st_database_connection * connect, struct st_value * jobs) __attribute__((nonnull));
+
+		int (*get_nb_scripts)(struct st_database_connection * connect, const char * job_type, enum st_script_type type, struct st_pool * pool);
+		char * (*get_script)(struct st_database_connection * connect, const char * job_type, unsigned int sequence, enum st_script_type type, struct st_pool * pool);
 
 		int (*sync_plugin_job)(struct st_database_connection * connect, const char * job) __attribute__((nonnull));
 	} * ops;

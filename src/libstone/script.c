@@ -24,20 +24,55 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_JOB_P_H__
-#define __LIBSTONE_JOB_P_H__
+// NULL
+#include <stddef.h>
 
-#include <libstone/job.h>
+#include "script.h"
+#include "string.h"
 
-int st_job_add_record_v1(struct st_job * job, struct st_database_connection * db_connect, enum st_log_level level, enum st_job_record_notif notif, const char * format, ...) __attribute__ ((nonnull(1,2),format(printf, 5, 6)));
-struct st_value * st_job_convert_v1(struct st_job * job) __attribute__((nonnull,warn_unused_result));
-void st_job_free_v1(struct st_job * job) __attribute__((nonnull));
-void st_job_free2_v1(void * job) __attribute__((nonnull));
-const char * st_job_report_notif_to_string_v1(enum st_job_record_notif notif);
-const char * st_job_status_to_string_v1(enum st_job_status status);
-enum st_job_record_notif st_job_string_to_record_notif_v1(const char * notif) __attribute__((nonnull));
-enum st_job_status st_job_string_to_status_v1(const char * status) __attribute__((nonnull));
-void st_job_sync_v1(struct st_job * job, struct st_value * new_job) __attribute__((nonnull));
+static struct st_script_type2 {
+	const char * name;
+	const enum st_script_type type;
+	unsigned long long hash;
+} st_script_types[] = {
+	{ "on error", st_script_type_on_error, 0 },
+	{ "post job", st_script_type_post_job, 0 },
+	{ "pre job",  st_script_type_pre_job,  0 },
 
-#endif
+	{ "unknown", st_script_type_unknown, 0 },
+};
+
+static void st_script_init(void) __attribute__((constructor));
+
+
+static void st_script_init() {
+	unsigned int i;
+	for (i = 0; st_script_types[i].type != st_script_type_unknown; i++)
+		st_script_types[i].hash = st_string_compute_hash2(st_script_types[i].name);
+	st_script_types[i].hash = st_string_compute_hash2(st_script_types[i].name);
+}
+
+__asm__(".symver st_script_string_to_type_v1, st_script_string_to_type@@LIBSTONE_1.2");
+enum st_script_type st_script_string_to_type_v1(const char * string) {
+	if (string == NULL)
+		return st_script_type_unknown;
+
+	unsigned int i;
+	const unsigned long long hash = st_string_compute_hash2(string);
+	for (i = 0; st_script_types[i].type != st_script_type_unknown; i++)
+		if (hash == st_script_types[i].hash)
+			return st_script_types[i].type;
+
+	return st_script_type_unknown;
+}
+
+__asm__(".symver st_script_type_to_string_v1, st_script_type_to_string@@LIBSTONE_1.2");
+const char * st_script_type_to_string_v1(enum st_script_type type) {
+	unsigned int i;
+	for (i = 0; st_script_types[i].type != st_script_type_unknown; i++)
+		if (st_script_types[i].type == type)
+			return st_script_types[i].name;
+
+	return st_script_types[i].name;
+}
 

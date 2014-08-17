@@ -24,10 +24,15 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // free
 #include <stdlib.h>
+// vasprintf
+#include <stdio.h>
 
+#include "database.h"
 #include "job.h"
+#include "log.h"
 #include "string.h"
 #include "value.h"
 
@@ -62,6 +67,23 @@ static struct st_job_record_notif2 {
 
 static void st_job_init(void) __attribute__((constructor));
 
+
+__asm__(".symver st_job_add_record_v1, st_job_add_record@@LIBSTONE_1.2");
+int st_job_add_record_v1(struct st_job * job, struct st_database_connection * db_connect, enum st_log_level level, enum st_job_record_notif notif, const char * format, ...) {
+	char * message = NULL;
+
+	va_list va;
+	va_start(va, format);
+	vasprintf(&message, format, va);
+	va_end(va);
+
+	st_log_write(level, message);
+	int failed = db_connect->ops->add_job_record(db_connect, job, level, notif, message);
+
+	free(message);
+
+	return failed;
+}
 
 __asm__(".symver st_job_convert_v1, st_job_convert@@LIBSTONE_1.2");
 struct st_value * st_job_convert_v1(struct st_job * job) {

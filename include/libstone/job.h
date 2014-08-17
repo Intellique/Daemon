@@ -32,6 +32,9 @@
 // time_t
 #include <sys/time.h>
 
+struct st_database_connection;
+enum st_log_level;
+
 enum st_job_status {
 	st_job_status_disable = 0x1,
 	st_job_status_error = 0x2,
@@ -63,11 +66,11 @@ struct st_job {
 	long repetition;
 
 	long num_runs;
-	float done;
+	volatile float done;
 	volatile enum st_job_status status;
 
 	int exit_code;
-	bool stopped_by_user;
+	volatile bool stopped_by_user;
 
 	struct st_value * meta;
 	struct st_value * option;
@@ -76,6 +79,7 @@ struct st_job {
 	struct st_value * db_data;
 };
 
+int st_job_add_record(struct st_job * job, struct st_database_connection * db_connect, enum st_log_level level, enum st_job_record_notif notif, const char * format, ...) __attribute__ ((nonnull(1,2),format(printf, 5, 6)));
 struct st_value * st_job_convert(struct st_job * job) __attribute__((nonnull,warn_unused_result));
 void st_job_free(struct st_job * job);
 void st_job_free2(void * job);

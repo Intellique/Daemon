@@ -24,20 +24,12 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_JOB_P_H__
-#define __LIBSTONE_JOB_P_H__
+#ifndef __STONEJOB_SCRIPT_P_H__
+#define __STONEJOB_SCRIPT_P_H__
 
-#include <libstone/job.h>
+#include <libstone-job/script.h>
 
-int st_job_add_record_v1(struct st_job * job, struct st_database_connection * db_connect, enum st_log_level level, enum st_job_record_notif notif, const char * format, ...) __attribute__ ((nonnull(1,2),format(printf, 5, 6)));
-struct st_value * st_job_convert_v1(struct st_job * job) __attribute__((nonnull,warn_unused_result));
-void st_job_free_v1(struct st_job * job) __attribute__((nonnull));
-void st_job_free2_v1(void * job) __attribute__((nonnull));
-const char * st_job_report_notif_to_string_v1(enum st_job_record_notif notif);
-const char * st_job_status_to_string_v1(enum st_job_status status);
-enum st_job_record_notif st_job_string_to_record_notif_v1(const char * notif) __attribute__((nonnull));
-enum st_job_status st_job_string_to_status_v1(const char * status) __attribute__((nonnull));
-void st_job_sync_v1(struct st_job * job, struct st_value * new_job) __attribute__((nonnull));
+struct st_value * stj_script_run_v1(struct st_database_connection * db_connect, struct st_job * job, enum st_script_type type, struct st_pool * pool, struct st_value * data);
 
 #endif
 

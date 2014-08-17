@@ -44,6 +44,7 @@ LIBSTONE_1.2 {
 		st_host_init;
 		st_host_get_info;
 
+		st_job_add_record;
 		st_job_convert;
 		st_job_free;
 		st_job_free2;
@@ -111,6 +112,9 @@ LIBSTONE_1.2 {
 		st_process_set_nice;
 		st_process_start;
 		st_process_wait;
+
+		st_script_string_to_type;
+		st_script_type_to_string;
 
 		st_slot_convert;
 		st_slot_free;

@@ -24,8 +24,6 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#define NULL (void *) 0
-
 // pthread_mutex
 #include <pthread.h>
 // malloc
@@ -38,6 +36,7 @@
 #include <strings.h>
 
 #include <libstone/database.h>
+#include <libstone/host.h>
 #include <libstone/json.h>
 #include <libstone/log.h>
 #include <libstone/poll.h>
@@ -86,8 +85,31 @@ static void job_worker(void * arg) {
 	struct st_job_driver * job_dr = stj_job_get_driver();
 	struct st_job * j = arg;
 
-	job_dr->simulate(j, NULL);
+	struct st_database * db_driver = st_database_get_default_driver();
+	if (db_driver == NULL)
+		goto error;
+	struct st_database_config * db_conf = db_driver->ops->get_default_config();
+	if (db_conf == NULL)
+		goto error;
+	struct st_database_connection * db_connect = db_conf->ops->connect(db_conf);
+	if (db_connect == NULL)
+		goto error;
 
+	int failed = job_dr->simulate(j, db_connect);
+	if (failed != 0) {
+		job->exit_code = failed;
+		job->status = st_job_status_error;
+		goto error;
+	}
+
+	failed = job_dr->script_pre_run(j, db_connect);
+	if (failed != 0) {
+		job->exit_code = failed;
+		job->status = st_job_status_error;
+		goto error;
+	}
+
+error:
 	pthread_mutex_lock(&lock);
 	finished = true;
 	pthread_mutex_unlock(&lock);
@@ -126,6 +148,9 @@ int main() {
 	struct st_database_connection * db_connect = db_conf->ops->connect(db_conf);
 	if (db_connect == NULL)
 		return 4;
+
+	if (!st_host_init(db_connect))
+		return 5;
 
 	job->status = st_job_status_running;
 

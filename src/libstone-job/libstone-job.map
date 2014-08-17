@@ -6,6 +6,8 @@ LIBSTONE_JOB_1.2 {
 
 		stj_job_register;
 
+		stj_script_run;
+
 	local:
 		stj_drive_init;
 		stj_io_new_stream_reader;
