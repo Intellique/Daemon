@@ -171,6 +171,8 @@ void st_media_sync(struct st_media * media, struct st_value * new_media) __attri
 struct st_value * st_pool_convert(struct st_pool * pool) __attribute__((nonnull,warn_unused_result));
 void st_pool_sync(struct st_pool * pool, struct st_value * new_pool) __attribute__((nonnull));
 
+int st_media_format_cmp(struct st_media_format * f1, struct st_media_format * f2) __attribute__((nonnull));
+
 void st_media_free(struct st_media * media) __attribute__((nonnull));
 void st_media_format_free(struct st_media_format * format) __attribute__((nonnull));
 void st_pool_free(struct st_pool * pool) __attribute__((nonnull));

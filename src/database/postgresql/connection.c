@@ -516,7 +516,7 @@ static struct st_value * st_database_postgresql_get_drives_by_changer(struct st_
 }
 
 static struct st_media * st_database_postgresql_get_media(struct st_database_connection * connect, const char * medium_serial_number, const char * label, struct st_job * job) {
-	if (connect == NULL || (medium_serial_number == NULL && label == NULL))
+	if (connect == NULL || (medium_serial_number == NULL && label == NULL && job == NULL))
 		return NULL;
 
 	struct st_database_postgresql_connection_private * self = connect->data;
@@ -1632,7 +1632,7 @@ static int st_database_postgresql_add_job_record(struct st_database_connection *
 	const char * query = "insert_new_jobrecord";
 	st_database_postgresql_prepare(self, query, "INSERT INTO jobrecord(jobrun, status, level, message, notif) VALUES ($1, $2, $3, $4, $5)");
 
-	const char * param[] = { jobrun_id, st_job_status_to_string(job->status), st_log_level_to_string(level), message, st_job_report_notif_to_string(notif) };
+	const char * param[] = { jobrun_id, st_job_status_to_string(job->status), st_database_postgresql_log_level_to_string(level), message, st_job_report_notif_to_string(notif) };
 	PGresult * result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 

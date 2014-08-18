@@ -70,6 +70,7 @@ LIBSTONE_1.2 {
 		st_log_write;
 
 		st_media_convert;
+		st_media_format_cmp;
 		st_media_format_convert;
 		st_media_format_data_type_to_string;
 		st_media_format_free;

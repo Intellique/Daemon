@@ -52,15 +52,17 @@ bool st_host_init_v1(struct st_database_connection * connect) {
 	uname(&name);
 
 	host = connect->ops->get_host_by_name(connect, name.nodename);
-	struct st_value * error = st_value_hashtable_get2(host, "error", false, false);
 
-	return host != NULL && error->type == st_value_boolean && !st_value_boolean_get(error);
+	bool error = false;
+	st_value_unpack(host, "{sb}", "error", &error);
+
+	return host != NULL && !error;
 }
 
 __asm__(".symver st_host_get_info_v1, st_host_get_info@@LIBSTONE_1.2");
 struct st_value * st_host_get_info_v1() {
 	if (host == NULL)
-		return host;
+		return NULL;
 
 	return st_value_share(host);
 }

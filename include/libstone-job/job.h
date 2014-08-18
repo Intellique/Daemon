@@ -35,6 +35,7 @@ struct st_job;
 struct st_job_driver {
 	char * name;
 
+	int (*run)(struct st_job * job, struct st_database_connection * db_connect);
 	int (*simulate)(struct st_job * job, struct st_database_connection * db_connect);
 	int (*script_pre_run)(struct st_job * job, struct st_database_connection * db_connect);
 };

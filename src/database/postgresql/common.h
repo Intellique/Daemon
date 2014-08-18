@@ -33,6 +33,7 @@
 #include <sys/types.h>
 
 #include <libstone/database.h>
+#include <libstone/log.h>
 
 typedef struct pg_conn PGconn;
 typedef struct pg_result PGresult;
@@ -75,6 +76,8 @@ int st_database_postgresql_get_time_max(PGresult * result, int row, int column, 
 int st_database_postgresql_get_uchar(PGresult * result, int row, int column, unsigned char * value);
 int st_database_postgresql_get_uint(PGresult * result, int row, int column, unsigned int * value);
 int st_database_postgresql_get_uint_add(PGresult * result, int row, int column, unsigned int * value);
+
+const char * st_database_postgresql_log_level_to_string(enum st_log_level level);
 
 #endif
 

@@ -109,6 +109,8 @@ static void job_worker(void * arg) {
 		goto error;
 	}
 
+	failed = job_dr->run(j, db_connect);
+
 error:
 	pthread_mutex_lock(&lock);
 	finished = true;

@@ -36,6 +36,22 @@
 
 #include "common.h"
 
+static struct st_database_postgresql_log_level2 {
+	enum st_log_level level;
+	const char * name;
+} st_database_postgresql_log_levels[] = {
+	{ st_log_level_alert,      "alert" },
+	{ st_log_level_critical,   "critical" },
+	{ st_log_level_debug,      "debug" },
+	{ st_log_level_emergencey, "emergency" },
+	{ st_log_level_error,      "error" },
+	{ st_log_level_info,       "info" },
+	{ st_log_level_notice,     "notice" },
+	{ st_log_level_warning,    "warning" },
+
+	{ st_log_level_unknown, "Unknown level" },
+};
+
 
 const char * st_database_postgresql_bool_to_string(bool value) {
 	if (value)
@@ -222,5 +238,14 @@ int st_database_postgresql_get_uint_add(PGresult * result, int row, int column, 
 		*val += current;
 
 	return failed;
+}
+
+const char * st_database_postgresql_log_level_to_string(enum st_log_level level) {
+	unsigned int i;
+	for (i = 0; st_database_postgresql_log_levels[i].level != st_log_level_unknown; i++)
+		if (st_database_postgresql_log_levels[i].level == level)
+			return st_database_postgresql_log_levels[i].name;
+
+	return st_database_postgresql_log_levels[i].name;
 }
 

@@ -25,6 +25,8 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
+// signal
+#include <signal.h>
 // asprintf
 #include <stdio.h>
 // free, getenv, setenv
@@ -47,6 +49,9 @@ bool std_env_setup() {
 	asprintf(&new_path, DAEMON_BIN_DIR ":%s", path);
 	setenv("PATH", new_path, true);
 	free(new_path);
+
+	// ignore SIGPIPE
+	signal(SIGPIPE, SIG_IGN);
 
 	return true;
 }

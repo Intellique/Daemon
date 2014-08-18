@@ -384,6 +384,15 @@ void st_pool_sync_v1(struct st_pool * pool, struct st_value * new_pool) {
 }
 
 
+__asm__(".symver st_media_format_cmp_v1, st_media_format_cmp@@LIBSTONE_1.2");
+int st_media_format_cmp_v1(struct st_media_format * f1, struct st_media_format * f2) {
+	if (f1->mode != f2->mode)
+		return f1->mode - f2->mode;
+
+	return f1->density_code - f2->density_code;
+}
+
+
 __asm__(".symver st_media_free_v1, st_media_free@@LIBSTONE_1.2");
 void st_media_free_v1(struct st_media * media) {
 	if (media == NULL)

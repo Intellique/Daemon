@@ -36,6 +36,7 @@
 #include "job.h"
 #include "script.h"
 
+__asm__(".symver stj_script_run_v1, stj_script_run@@LIBSTONE_JOB_1.2");
 struct st_value * stj_script_run_v1(struct st_database_connection * db_connect, struct st_job * job, enum st_script_type type, struct st_pool * pool, struct st_value * data) {
 	int nb_scripts = db_connect->ops->get_nb_scripts(db_connect, job->type, type, pool);
 	st_log_write(st_log_level_info, "script found: %d", nb_scripts);

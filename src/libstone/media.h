@@ -36,6 +36,8 @@ void st_media_sync_v1(struct st_media * media, struct st_value * new_media) __at
 struct st_value * st_pool_convert_v1(struct st_pool * pool) __attribute__((nonnull,warn_unused_result));
 void st_pool_sync_v1(struct st_pool * pool, struct st_value * new_pool) __attribute__((nonnull));
 
+int st_media_format_cmp_v1(struct st_media_format * f1, struct st_media_format * f2) __attribute__((nonnull));
+
 void st_media_free_v1(struct st_media * media) __attribute__((nonnull));
 void st_media_format_free_v1(struct st_media_format * format) __attribute__((nonnull));
 void st_pool_free_v1(struct st_pool * pool) __attribute__((nonnull));
