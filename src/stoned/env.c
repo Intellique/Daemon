@@ -25,7 +25,7 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
-// signal
+// pthread_sigmask, sigaddset, sigemptyset
 #include <signal.h>
 // asprintf
 #include <stdio.h>
@@ -51,7 +51,10 @@ bool std_env_setup() {
 	free(new_path);
 
 	// ignore SIGPIPE
-	signal(SIGPIPE, SIG_IGN);
+	sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set, SIGPIPE);
+	pthread_sigmask(SIG_BLOCK, &set, NULL);
 
 	return true;
 }
