@@ -126,6 +126,7 @@ void std_scheduler_do(struct st_value * logger, struct st_value * db_config, str
 		st_value_free(command);
 
 		struct st_value * response = st_json_parse_fd(self->fd_out, -1);
+		st_job_sync(job, response);
 		st_value_free(response);
 	}
 	st_value_iterator_free(iter);

@@ -874,6 +874,12 @@ static int st_value_unpack_inner(struct st_value * value, const char ** format, 
 					*val = st_value_float_get_v1(value);
 					return 1;
 				}
+			} else if (value->type == st_value_integer) {
+				double * val = va_arg(params, double *);
+				if (val != NULL) {
+					*val = st_value_integer_get_v1(value);
+					return 1;
+				}
 			}
 			break;
 

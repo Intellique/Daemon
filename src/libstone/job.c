@@ -206,7 +206,7 @@ void st_job_sync_v1(struct st_job * job, struct st_value * new_job) {
 
 		"num runs", &job->num_runs,
 		"done", &done,
-		"status", status,
+		"status", &status,
 
 		"exit code", &exit_code,
 		"stopped by user", &job->stopped_by_user
