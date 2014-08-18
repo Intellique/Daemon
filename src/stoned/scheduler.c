@@ -92,6 +92,8 @@ static void std_job_exited(int fd, short event, void * data) {
 		st_process_free(&self->process, 1);
 		free(self->key);
 		free(self);
+
+		return;
 	}
 
 	struct st_value * request = st_json_parse_fd(fd, 1000);

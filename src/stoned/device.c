@@ -32,6 +32,7 @@
 // close
 #include <unistd.h>
 
+#include <libstone/changer.h>
 #include <libstone/json.h>
 #include <libstone/log.h>
 #include <libstone/database.h>
@@ -49,6 +50,7 @@ struct std_device {
 };
 
 static struct st_value * devices = NULL;
+static struct st_value * devices_json = NULL;
 
 static void std_device_free(void * d);
 static void std_device_exited(int fd, short event, void * data);
@@ -58,8 +60,10 @@ void std_device_configure(struct st_value * logger, struct st_value * db_config,
 	if (connection == NULL)
 		return;
 
-	if (devices == NULL)
+	if (devices == NULL) {
 		devices = st_value_new_linked_list();
+		devices_json = st_value_new_linked_list();
+	}
 
 	static int i_changer = 0, i_drives = 0;
 
@@ -101,6 +105,7 @@ void std_device_configure(struct st_value * logger, struct st_value * db_config,
 		st_value_iterator_free(iter);
 
 		st_value_list_push(devices, st_value_new_custom(dev, std_device_free), true);
+		st_value_list_push(devices_json, changer, false);
 
 		st_process_start(&dev->process, 1);
 		st_json_encode_to_fd(dev->config, dev->fd_in, true);
@@ -145,8 +150,8 @@ static void std_device_free(void * d) {
 
 struct st_value * std_device_get(bool shared) {
 	if (shared)
-		return st_value_share(devices);
-	return devices;
+		return st_value_share(devices_json);
+	return devices_json;
 }
 
 void std_device_stop() {
