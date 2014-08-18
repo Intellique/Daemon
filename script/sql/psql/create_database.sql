@@ -602,11 +602,14 @@ CREATE TABLE ArchiveVolumeToChecksumResult (
 
 CREATE TABLE JobRecord (
     id BIGSERIAL PRIMARY KEY,
-
     jobrun BIGINT NOT NULL REFERENCES Jobrun(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    status JobStatus NOT NULL CHECK (status != 'disable'),
+
     timestamp TIMESTAMP(0) NOT NULL DEFAULT NOW(),
+    status JobStatus NOT NULL CHECK (status != 'disable'),
+
+    level LogLevel NOT NULL,
     message TEXT NOT NULL,
+
     notif JobRecordNotif NOT NULL DEFAULT 'normal'
 );
 
