@@ -24,8 +24,10 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// free
+// free, malloc
 #include <stdlib.h>
+// bzero
+#include <strings.h>
 
 #include <libstone/json.h>
 #include <libstone/socket.h>
@@ -33,10 +35,11 @@
 #include <libstone/slot.h>
 #include <libstone/string.h>
 #include <libstone/value.h>
-#include <libstone-changer/media.h>
 
 #include "changer.h"
+#include "drive.h"
 #include "listen.h"
+#include "media.h"
 #include "peer.h"
 
 static unsigned int stchgr_nb_clients = 0;
@@ -44,6 +47,7 @@ static unsigned int stchgr_nb_clients = 0;
 static void stchgr_socket_accept(int fd_server, int fd_client, struct st_value * client);
 static void stchgr_socket_message(int fd, short event, void * data);
 
+static void stchgr_socket_command_find_free_drive(struct stchgr_peer * peer, struct st_value * request, int fd);
 static void stchgr_socket_command_load(struct stchgr_peer * peer, struct st_value * request, int fd);
 static void stchgr_socket_command_release_all_media(struct stchgr_peer * peer, struct st_value * request, int fd);
 static void stchgr_socket_command_release_media(struct stchgr_peer * peer, struct st_value * request, int fd);
@@ -56,6 +60,7 @@ struct stchgr_socket_command {
 	char * name;
 	void (*function)(struct stchgr_peer * peer, struct st_value * request, int fd);
 } commands[] = {
+	{ 0, "find free drive",   stchgr_socket_command_find_free_drive },
 	{ 0, "load",              stchgr_socket_command_load },
 	{ 0, "release all media", stchgr_socket_command_release_all_media },
 	{ 0, "release media",     stchgr_socket_command_release_media },
@@ -122,6 +127,37 @@ static void stchgr_socket_message(int fd, short event, void * data) {
 	}
 }
 
+
+static void stchgr_socket_command_find_free_drive(struct stchgr_peer * peer __attribute__((unused)), struct st_value * request, int fd) {
+	struct st_value * media_format = NULL;
+	bool for_reading = false, for_writing = false;
+	st_value_unpack(request, "{s{sosbsb}}", "params", "media format", &media_format, "for reading", &for_reading, "for writing", &for_writing);
+
+	struct st_media_format * format = malloc(sizeof(struct st_media_format));
+	bzero(format, sizeof(struct st_media_format));
+	st_media_format_sync(format, media_format);
+
+	struct st_changer_driver * driver = stchgr_changer_get();
+	struct st_changer * changer = driver->device;
+
+	unsigned int i, index = changer->nb_drives;
+	for (i = 0; i < changer->nb_drives; i++) {
+		struct st_drive * dr = changer->drives + i;
+		bool ok = dr->ops->check_support(dr, format, for_reading, for_writing);
+		if (!ok)
+			continue;
+
+		ok = dr->ops->is_free(dr);
+		if (ok)
+			index = i;
+	}
+
+	free(format);
+
+	struct st_value * response = st_value_pack("{sbsi}", "found", index < changer->nb_drives, "index", (long int) index);
+	st_json_encode_to_fd(response, fd, true);
+	st_value_free(response);
+}
 
 static void stchgr_socket_command_load(struct stchgr_peer * peer, struct st_value * request, int fd) {
 	long int slot_from = -1, slot_to = -1;

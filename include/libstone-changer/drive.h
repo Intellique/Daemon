@@ -33,6 +33,8 @@ struct st_value;
 
 struct st_drive_ops {
 	bool (*check_cookie)(struct st_drive * drive, const char * cookie);
+	bool (*check_support)(struct st_drive * drive, struct st_media_format * format, bool for_reading, bool for_writing);
+	bool (*is_free)(struct st_drive * drive);
 	int (*reset)(struct st_drive * drive);
 	int (*update_status)(struct st_drive * drive);
 };

@@ -26,6 +26,8 @@
 
 // uuid_generate, uuid_unparse_lower
 #include <uuid/uuid.h>
+// sleep
+#include <unistd.h>
 
 #include <libstone/database.h>
 #include <libstone/host.h>
@@ -34,6 +36,7 @@
 #include <libstone/slot.h>
 #include <libstone/value.h>
 #include <libstone-job/changer.h>
+#include <libstone-job/drive.h>
 #include <libstone-job/job.h>
 #include <libstone-job/script.h>
 
@@ -62,17 +65,52 @@ static void formatmedia_init() {
 
 static int formatmedia_run(struct st_job * job, struct st_database_connection * db_connect) {
 	enum {
+		drive_is_free,
+		media_in_drive,
 		reserve_media
 	} state = reserve_media;
 
+	char * cookie = NULL;
+	struct st_drive * drive = NULL;
+
 	int failed;
-	while (!job->stopped_by_user) {
+	bool stop = false;
+	while (!stop && !job->stopped_by_user) {
 		switch (state) {
+			case drive_is_free:
+				cookie = drive->ops->lock(drive);
+				if (cookie == NULL) {
+					drive = NULL;
+					formatmedia_slot->changer->ops->release_all_media(formatmedia_slot->changer);
+
+					sleep(20);
+
+					state = reserve_media;
+				} else
+					stop = true;
+
+				break;
+
+			case media_in_drive:
+				drive = formatmedia_slot->drive;
+				state = drive != NULL ? drive_is_free : reserve_media;
+				break;
+
 			case reserve_media:
 				failed = formatmedia_slot->changer->ops->reserve_media(formatmedia_slot->changer, formatmedia_slot);
+				if (failed == 0)
+					state = media_in_drive;
+				else {
+					sleep(20);
+
+					stj_changer_sync_all();
+					formatmedia_slot = stj_changer_find_media_by_job(job, db_connect);
+				}
 				break;
 		}
 	}
+
+	return 0;
 }
 
 static int formatmedia_simulate(struct st_job * job, struct st_database_connection * db_connect) {

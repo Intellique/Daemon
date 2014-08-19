@@ -37,11 +37,15 @@
 #include "drive.h"
 
 static bool stchgr_drive_check_cookie(struct st_drive * dr, const char * cookie);
+static bool stchgr_drive_check_support(struct st_drive * drive, struct st_media_format * format, bool for_reading, bool for_writing);
+static bool stchgr_drive_is_free(struct st_drive * drive);
 static int stchgr_drive_reset(struct st_drive * drive);
 static int stchgr_drive_update_status(struct st_drive * drive);
 
 static struct st_drive_ops drive_ops = {
 	.check_cookie  = stchgr_drive_check_cookie,
+	.check_support = stchgr_drive_check_support,
+	.is_free       = stchgr_drive_is_free,
 	.reset         = stchgr_drive_reset,
 	.update_status = stchgr_drive_update_status,
 };
@@ -53,17 +57,55 @@ static struct st_value * db_config = NULL;
 static bool stchgr_drive_check_cookie(struct st_drive * drive, const char * cookie) {
 	struct stchgr_drive * self = drive->data;
 
-	struct st_value * command = st_value_pack("{ssso}", "command", "ckeck cookie", "cookie", cookie);
+	struct st_value * command = st_value_pack("{ssso}", "command", "check cookie", "cookie", cookie);
 	st_json_encode_to_fd(command, self->fd_in, true);
 	st_value_free(command);
 
 	struct st_value * returned = st_json_parse_fd(self->fd_out, -1);
 	bool valid = false;
 
-	st_value_unpack(returned, "{si}", "valid", &valid);
+	st_value_unpack(returned, "{sb}", "valid", &valid);
 	st_value_free(returned);
 
 	return valid;
+}
+
+static bool stchgr_drive_check_support(struct st_drive * drive, struct st_media_format * format, bool for_reading, bool for_writing) {
+	struct stchgr_drive * self = drive->data;
+
+	struct st_value * command = st_value_pack("{s{sosbsb}}",
+		"command", "check support",
+		"params",
+			"format", st_media_format_convert(format),
+			"for reading", for_reading,
+			"for writing", for_writing
+	);
+	st_json_encode_to_fd(command, self->fd_in, true);
+	st_value_free(command);
+
+	struct st_value * returned = st_json_parse_fd(self->fd_out, -1);
+	bool ok = false;
+
+	st_value_unpack(returned, "{sb}", "ok", &ok);
+	st_value_free(returned);
+
+	return ok;
+}
+
+static bool stchgr_drive_is_free(struct st_drive * drive) {
+	struct stchgr_drive * self = drive->data;
+
+	struct st_value * command = st_value_pack("{ss}", "command", "is free");
+	st_json_encode_to_fd(command, self->fd_in, true);
+	st_value_free(command);
+
+	struct st_value * returned = st_json_parse_fd(self->fd_out, -1);
+	bool ok = false;
+
+	st_value_unpack(returned, "{sb}", "ok", &ok);
+	st_value_free(returned);
+
+	return ok;
 }
 
 __asm__(".symver stchgr_drive_register_v1, stchgr_drive_register@@LIBSTONE_CHANGER_1.2");
