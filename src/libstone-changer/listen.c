@@ -130,8 +130,8 @@ static void stchgr_socket_message(int fd, short event, void * data) {
 
 static void stchgr_socket_command_find_free_drive(struct stchgr_peer * peer __attribute__((unused)), struct st_value * request, int fd) {
 	struct st_value * media_format = NULL;
-	bool for_reading = false, for_writing = false;
-	st_value_unpack(request, "{s{sosbsb}}", "params", "media format", &media_format, "for reading", &for_reading, "for writing", &for_writing);
+	bool for_writing = false;
+	st_value_unpack(request, "{s{sosb}}", "params", "media format", &media_format, "for writing", &for_writing);
 
 	struct st_media_format * format = malloc(sizeof(struct st_media_format));
 	bzero(format, sizeof(struct st_media_format));
@@ -143,7 +143,7 @@ static void stchgr_socket_command_find_free_drive(struct stchgr_peer * peer __at
 	unsigned int i, index = changer->nb_drives;
 	for (i = 0; i < changer->nb_drives; i++) {
 		struct st_drive * dr = changer->drives + i;
-		bool ok = dr->ops->check_support(dr, format, for_reading, for_writing);
+		bool ok = dr->ops->check_support(dr, format, for_writing);
 		if (!ok)
 			continue;
 
@@ -152,7 +152,7 @@ static void stchgr_socket_command_find_free_drive(struct stchgr_peer * peer __at
 			index = i;
 	}
 
-	free(format);
+	st_media_format_free(format);
 
 	struct st_value * response = st_value_pack("{sbsi}", "found", index < changer->nb_drives, "index", (long int) index);
 	st_json_encode_to_fd(response, fd, true);

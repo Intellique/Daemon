@@ -27,11 +27,15 @@
 #ifndef __STONEDRIVE_LISTEN_H__
 #define __STONEDRIVE_LISTEN_H__
 
+// bool
+#include <stdbool.h>
+
 struct st_value;
 
 void stdr_listen_configure(struct st_value * config);
-void stdr_listen_set_db_connection(struct st_database_connection * db);
+bool stdr_listen_is_locked(void);
 unsigned int stdr_listen_nb_clients(void);
+void stdr_listen_set_db_connection(struct st_database_connection * db);
 
 #endif
 

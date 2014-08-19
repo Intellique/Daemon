@@ -76,7 +76,7 @@ static void std_job_exited(int fd, short event, void * data) {
 	struct st_job_private * self = job->data;
 
 	if (event & POLLHUP) {
-		st_poll_unregister(fd);
+		st_poll_unregister(fd, POLLHUP | POLLIN);
 
 		if (!self->finished) {
 			job->status = st_job_status_error;

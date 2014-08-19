@@ -119,7 +119,7 @@ static void std_device_exited(int fd __attribute__((unused)), short event, void 
 	struct std_device * dev = data;
 
 	if (event & POLLERR) {
-		st_poll_unregister(dev->fd_in);
+		st_poll_unregister(dev->fd_in, POLLHUP);
 		close(dev->fd_in);
 	}
 
@@ -163,7 +163,7 @@ void std_device_stop() {
 		struct std_device * dev = st_value_custom_get(elt);
 
 		st_json_encode_to_fd(stop, dev->fd_in, true);
-		st_poll_unregister(dev->fd_in);
+		st_poll_unregister(dev->fd_in, POLLHUP);
 	}
 	st_value_iterator_free(iter);
 

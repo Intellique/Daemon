@@ -3,12 +3,20 @@ LIBSTONE_DRIVE_1.2 {
 		stdr_drive_register;
 
 	local:
+		stdr_changer_is_stopped;
+		stdr_changer_setup;
+		stdr_changer_stop;
+
 		stdr_drive_get;
+
 		stdr_listen_configure;
+		stdr_listen_is_locked;
 		stdr_listen_nb_clients;
 		stdr_listen_set_db_connection;
+
 		stdr_peer_free;
 		stdr_peer_new;
+
 		*_v1;
 };
 

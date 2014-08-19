@@ -38,7 +38,7 @@ struct st_slot;
 struct st_value;
 
 struct st_changer_ops {
-	struct st_drive * (*find_free_drive)(struct st_changer * changer, struct st_media_format * format, bool for_reading, bool for_writing);
+	struct st_drive * (*find_free_drive)(struct st_changer * changer, struct st_media_format * format, bool for_writing);
 	int (*load)(struct st_changer * changer, struct st_slot * from, struct st_drive * to);
 	int (*release_all_media)(struct st_changer * changer);
 	int (*release_media)(struct st_changer * changer, struct st_slot * slot);

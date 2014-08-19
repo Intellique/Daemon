@@ -31,8 +31,10 @@
 #include <stdbool.h>
 
 struct st_drive;
+struct st_media_format;
 
 bool tape_drive_scsi_check_drive(struct st_drive * drive, const char * path);
+bool tape_drive_scsi_check_support(struct st_media_format * format, bool for_writing, const char * path);
 int tape_drive_scsi_read_density(struct st_drive * drive, const char * path);
 int tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_number, size_t length);
 int tape_drive_scsi_read_mam(int fd, struct st_media * media);

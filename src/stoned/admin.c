@@ -72,7 +72,7 @@ static void std_admin_client_do(int fd, short event, void * data) {
 		if (request != NULL)
 			st_value_free(request);
 
-		st_poll_unregister(fd);
+		st_poll_unregister(fd, POLLIN | POLLERR | POLLHUP);
 		close(fd);
 		return;
 	}
@@ -81,7 +81,7 @@ static void std_admin_client_do(int fd, short event, void * data) {
 	if (!st_value_hashtable_has_key(std_admin_callbacks, method)) {
 		st_value_free(request);
 
-		st_poll_unregister(fd);
+		st_poll_unregister(fd, POLLIN | POLLERR | POLLHUP);
 		close(fd);
 		return;
 	}
@@ -102,7 +102,7 @@ static void std_admin_client_free(void * data) {
 }
 
 static void std_admin_client_timeout(int fd, void * data __attribute__((unused))) {
-	st_poll_unregister(fd);
+	st_poll_unregister(fd, POLLIN | POLLERR | POLLHUP);
 	close(fd);
 }
 

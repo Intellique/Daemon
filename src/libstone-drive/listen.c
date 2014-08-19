@@ -62,7 +62,7 @@ static void stdr_socket_command_lock(struct stdr_peer * peer, struct st_value * 
 static void stdr_socket_command_release(struct stdr_peer * peer, struct st_value * request, int fd);
 static void stdr_socket_command_sync(struct stdr_peer * peer, struct st_value * request, int fd);
 
-struct stdr_socket_command {
+static struct stdr_socket_command {
 	unsigned long hash;
 	char * name;
 	void (*function)(struct stdr_peer * peer, struct st_value * request, int fd);
@@ -87,6 +87,10 @@ void stdr_listen_configure(struct st_value * config) {
 	stdr_config = st_value_share(config);
 
 	st_socket_server(config, stdr_socket_accept);
+}
+
+bool stdr_listen_is_locked() {
+	return stdr_current_peer != NULL;
 }
 
 unsigned int stdr_listen_nb_clients() {

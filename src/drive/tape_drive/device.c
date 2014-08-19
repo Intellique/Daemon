@@ -62,6 +62,7 @@
 #include "media.h"
 #include "scsi.h"
 
+static bool tape_drive_check_support(struct st_media_format * format, bool for_writing, struct st_database_connection * db);
 static void tape_drive_create_media(struct st_database_connection * db);
 static struct st_stream_reader * tape_drive_get_raw_reader(int file_position, struct st_database_connection * db);
 static struct st_stream_writer * tape_drive_get_raw_writer(bool append, struct st_database_connection * db);
@@ -79,6 +80,7 @@ static struct timespec last_start;
 
 
 static struct st_drive_ops tape_drive_ops = {
+	.check_support  = tape_drive_check_support,
 	.get_raw_reader = tape_drive_get_raw_reader,
 	.get_raw_writer = tape_drive_get_raw_writer,
 	.init           = tape_drive_init,
@@ -110,6 +112,10 @@ static struct st_drive tape_drive = {
 	.db_data = NULL,
 };
 
+
+static bool tape_drive_check_support(struct st_media_format * format, bool for_writing, struct st_database_connection * db __attribute__((unused))) {
+	return tape_drive_scsi_check_support(format, for_writing, scsi_device);
+}
 
 static void tape_drive_create_media(struct st_database_connection * db) {
 	struct st_media * media = malloc(sizeof(struct st_media));

@@ -49,7 +49,7 @@ struct stj_changer {
 static struct st_changer * stj_changers = NULL;
 static unsigned int stj_nb_changers = 0;
 
-static struct st_drive * stj_changer_find_free_drive(struct st_changer * changer, struct st_media_format * format, bool for_reading, bool for_writing);
+static struct st_drive * stj_changer_find_free_drive(struct st_changer * changer, struct st_media_format * format, bool for_writing);
 static int stj_changer_load(struct st_changer * changer, struct st_slot * from, struct st_drive * to);
 static int stj_changer_release_all_media(struct st_changer * changer);
 static int stj_changer_release_media(struct st_changer * changer, struct st_slot * slot);
@@ -58,6 +58,7 @@ static int stj_changer_sync(struct st_changer * changer);
 static int stj_changer_unload(struct st_changer * changer, struct st_drive * from);
 
 static struct st_changer_ops stj_changer_ops = {
+	.find_free_drive   = stj_changer_find_free_drive,
 	.load              = stj_changer_load,
 	.release_all_media = stj_changer_release_all_media,
 	.release_media     = stj_changer_release_media,
@@ -67,12 +68,11 @@ static struct st_changer_ops stj_changer_ops = {
 };
 
 
-static struct st_drive * stj_changer_find_free_drive(struct st_changer * changer, struct st_media_format * format, bool for_reading, bool for_writing) {
+static struct st_drive * stj_changer_find_free_drive(struct st_changer * changer, struct st_media_format * format, bool for_writing) {
 	struct stj_changer * self = changer->data;
 
-	struct st_value * request = st_value_pack("{s{sosbsb}}", "params",
+	struct st_value * request = st_value_pack("{s{sosb}}", "params",
 		"media format", st_media_format_convert(format),
-		"for reading", for_reading,
 		"for writing", for_writing
 	);
 	st_json_encode_to_fd(request, self->fd, true);
@@ -81,6 +81,14 @@ static struct st_drive * stj_changer_find_free_drive(struct st_changer * changer
 	struct st_value * response = st_json_parse_fd(self->fd, -1);
 	if (response == NULL)
 		return NULL;
+
+	bool found = false;
+	long int index = -1;
+	st_value_unpack(response, "{sbsi}", "found", &found, "index", &index);
+	st_value_free(response);
+
+	if (found)
+		return changer->drives + index;
 
 	return NULL;
 }

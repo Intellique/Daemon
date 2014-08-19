@@ -48,7 +48,7 @@ static struct st_poll_info {
 
 	st_poll_free_f_v1 release;
 } * st_poll_infos = NULL;
-static unsigned int st_nb_polls = 0;
+static unsigned int st_nb_used_polls = 0, st_nb_polls = 0;
 static bool st_poll_restart = false;
 
 static void st_poll_exit(void) __attribute__((destructor));
@@ -58,7 +58,7 @@ static void st_poll_exit() {
 	free(st_polls);
 
 	unsigned int i;
-	for (i = 0; i < st_nb_polls; i++) {
+	for (i = 0; i < st_nb_used_polls; i++) {
 		struct st_poll_info * info = st_poll_infos + i;
 
 		if (info->release != NULL && info->data != NULL)
@@ -69,14 +69,14 @@ static void st_poll_exit() {
 
 __asm__(".symver st_poll_v1, st_poll@@LIBSTONE_1.2");
 int st_poll_v1(int timeout) {
-	if (st_nb_polls < 1)
+	if (st_nb_used_polls < 1)
 		return 0;
 
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
 
 	unsigned int i;
-	for (i = 0; i < st_nb_polls; i++) {
+	for (i = 0; i < st_nb_used_polls; i++) {
 		st_polls[i].revents = 0;
 
 		if (st_poll_infos[i].timeout > 0) {
@@ -98,11 +98,11 @@ int st_poll_v1(int timeout) {
 		}
 	}
 
-	int nb_event = poll(st_polls, st_nb_polls, timeout);
+	int nb_event = poll(st_polls, st_nb_used_polls, timeout);
 
 	clock_gettime(CLOCK_MONOTONIC, &now);
 
-	for (i = 0; i < st_nb_polls; i++) {
+	for (i = 0; i < st_nb_used_polls; i++) {
 		int fd = st_polls[i].fd;
 		short event = st_polls[i].revents;
 		st_polls[i].revents = 0;
@@ -127,7 +127,7 @@ int st_poll_v1(int timeout) {
 			i = -1;
 			st_poll_restart = false;
 		} else if ((fd == st_polls[i].fd) && (event & POLLHUP)) {
-			st_poll_unregister_v1(fd);
+			st_poll_unregister_v1(fd, st_polls[i].events);
 			close(fd);
 
 			st_poll_restart = false;
@@ -140,7 +140,7 @@ int st_poll_v1(int timeout) {
 
 __asm__(".symver st_poll_nb_handlers_v1, st_poll_nb_handlers@@LIBSTONE_1.2");
 unsigned int st_poll_nb_handlers_v1() {
-	return st_nb_polls;
+	return st_nb_used_polls;
 }
 
 __asm__(".symver st_poll_register_v1, st_poll_register@@LIBSTONE_1.2");
@@ -148,22 +148,26 @@ bool st_poll_register_v1(int fd, short event, st_poll_callback_f_v1 callback, vo
 	if (fd < 0 || callback == NULL)
 		return false;
 
-	void * addr = realloc(st_polls, (st_nb_polls + 1) * sizeof(struct pollfd));
-	if (addr == NULL)
-		return false;
-	st_polls = addr;
+	if (st_nb_used_polls == st_nb_polls) {
+		void * addr = realloc(st_polls, (st_nb_polls + 4) * sizeof(struct pollfd));
+		if (addr == NULL)
+			return false;
+		st_polls = addr;
 
-	addr = realloc(st_poll_infos, (st_nb_polls + 1) * sizeof(struct st_poll_info));
-	if (addr == NULL)
-		return false;
-	st_poll_infos = addr;
+		addr = realloc(st_poll_infos, (st_nb_polls + 4) * sizeof(struct st_poll_info));
+		if (addr == NULL)
+			return false;
+		st_poll_infos = addr;
 
-	struct pollfd * new_fd = st_polls + st_nb_polls;
+		st_nb_polls += 4;
+	}
+
+	struct pollfd * new_fd = st_polls + st_nb_used_polls;
 	new_fd->fd = fd;
 	new_fd->events = event;
 	new_fd->revents = 0;
 
-	struct st_poll_info * new_info = st_poll_infos + st_nb_polls;
+	struct st_poll_info * new_info = st_poll_infos + st_nb_used_polls;
 	new_info->callback = callback;
 	new_info->data = data;
 	new_info->timeout = -1;
@@ -172,7 +176,7 @@ bool st_poll_register_v1(int fd, short event, st_poll_callback_f_v1 callback, vo
 	new_info->timeout_callback = NULL;
 	new_info->release = release;
 
-	st_nb_polls++;
+	st_nb_used_polls++;
 
 	return true;
 }
@@ -183,7 +187,7 @@ bool st_poll_set_timeout_v1(int fd, int timeout, st_poll_timeout_f_v1 callback) 
 		return false;
 
 	unsigned int i;
-	for (i = 0; i < st_nb_polls; i++) {
+	for (i = 0; i < st_nb_used_polls; i++) {
 		if (st_polls[i].fd == fd) {
 			struct st_poll_info * info = st_poll_infos + i;
 
@@ -203,38 +207,29 @@ bool st_poll_set_timeout_v1(int fd, int timeout, st_poll_timeout_f_v1 callback) 
 }
 
 __asm__(".symver st_poll_unregister_v1, st_poll_unregister@@LIBSTONE_1.2");
-void st_poll_unregister_v1(int fd) {
+void st_poll_unregister_v1(int fd, short event) {
 	if (fd < 0)
 		return;
 
 	unsigned int i;
-	for (i = 0; i < st_nb_polls; i++)
-		if (st_polls[i].fd == fd)
+	for (i = 0; i < st_nb_used_polls; i++)
+		if (st_polls[i].fd == fd && event == st_polls[i].events)
 			break;
 
-	if (i == st_nb_polls)
-		return;
+	if (i == st_nb_used_polls)
+		return; // not found
 
 	struct st_poll_info * new_info = st_poll_infos + i;
 	if (new_info->data != NULL && new_info->release != NULL)
 		new_info->release(new_info->data);
 
-	if (i + 1 < st_nb_polls) {
-		size_t nb_move = st_nb_polls - i - 1;
+	if (i + 1 < st_nb_used_polls) {
+		size_t nb_move = st_nb_used_polls - i - 1;
 		memmove(st_polls + i, st_polls + (i + 1), nb_move * sizeof(struct pollfd));
 		memmove(st_poll_infos + i, st_poll_infos + (i + 1), nb_move * sizeof(struct st_poll_info));
 	}
 
-	st_nb_polls--;
-
-	void * addr = realloc(st_polls, st_nb_polls * sizeof(struct pollfd));
-	if (addr != NULL)
-		st_polls = addr;
-
-	addr = realloc(st_poll_infos, st_nb_polls * sizeof(struct st_poll_info));
-	if (addr != NULL)
-		st_poll_infos = addr;
-
+	st_nb_used_polls--;
 	st_poll_restart = true;
 }
 

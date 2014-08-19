@@ -61,7 +61,7 @@ static void std_logger_exit() {
 
 static void std_logger_exited(int fd __attribute__((unused)), short event, void * data __attribute__((unused))) {
 	if (event & POLLERR) {
-		st_poll_unregister(logger_in);
+		st_poll_unregister(logger_in, POLLHUP);
 		close(logger_in);
 	}
 

@@ -37,7 +37,7 @@ int st_poll_v1(int timeout);
 unsigned int st_poll_nb_handlers_v1(void);
 bool st_poll_register_v1(int fd, short event, st_poll_callback_f_v1 callback, void * data, st_poll_free_f_v1 release);
 bool st_poll_set_timeout_v1(int fd, int timeout, st_poll_timeout_f_v1 callback);
-void st_poll_unregister_v1(int fd);
+void st_poll_unregister_v1(int fd, short event);
 
 #endif
 

@@ -24,23 +24,17 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_POLL_H__
-#define __LIBSTONE_POLL_H__
+#ifndef __STONEDRIVE_CHANGER_P_H__
+#define __STONEDRIVE_CHANGER_P_H__
 
 // bool
 #include <stdbool.h>
-// pool events
-#include <poll.h>
 
-typedef void (*st_poll_callback_f)(int fd, short event, void * data);
-typedef void (*st_poll_free_f)(void * data);
-typedef void (*st_poll_timeout_f)(int fd, void * data);
+struct st_database_connection;
 
-int st_poll(int timeout);
-unsigned int st_poll_nb_handlers(void);
-bool st_poll_register(int fd, short event, st_poll_callback_f callback, void * data, st_poll_free_f release);
-bool st_poll_set_timeout(int fd, int timeout, st_poll_timeout_f callback);
-void st_poll_unregister(int fd, short event);
+bool stdr_changer_is_stopped(void);
+void stdr_changer_setup(struct st_database_connection * db_connect);
+void stdr_changer_stop(void);
 
 #endif
 

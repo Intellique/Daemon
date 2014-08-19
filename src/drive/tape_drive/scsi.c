@@ -52,6 +52,27 @@
 
 #include "scsi.h"
 
+struct scsi_density {
+	unsigned short available_density_descriptor_length;
+	unsigned char reserved[2];
+	struct {
+		unsigned char primary_density_code;
+		unsigned char secondary_density_code;
+		unsigned char reserved0:5;
+		bool deflt:1;
+		bool duplicate:1;
+		bool write_ok:1;
+		unsigned char reserved1[2];
+		unsigned int bits_per_mm:24;
+		unsigned short media_width;
+		unsigned short tracks;
+		unsigned int capacity;
+		char assiging_organization[8];
+		char density_name[8];
+		char description[20];
+	} values[8];
+} __attribute__((packed));
+
 struct scsi_inquiry {
 	unsigned char operation_code;
 	bool enable_vital_product_data:1;
@@ -270,31 +291,65 @@ bool tape_drive_scsi_check_drive(struct st_drive * drive, const char * path) {
 	return ok;
 }
 
+bool tape_drive_scsi_check_support(struct st_media_format * format, bool for_writing, const char * path) {
+	int fd = open(path, O_RDWR);
+	if (fd < 0)
+		return false;
+
+	struct scsi_density result;
+
+	struct {
+		unsigned char operation_code;
+		bool media:1;
+		unsigned char reserved0:4;
+		unsigned char obsolete:3;
+		unsigned char reserved1[5];
+		unsigned short allocation_length;
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x44,
+		.media = false,
+		.allocation_length = htobe16(sizeof(result)),
+		.control = 0,
+	};
+
+	struct scsi_request_sense sense;
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(&result, 0, sizeof(result));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result);
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &result;
+	header.timeout = 60000; // 1 minutes
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int failed = ioctl(fd, SG_IO, &header);
+	close(fd);
+
+	if (failed != 0)
+		return false;
+
+	unsigned short int nb_densities = be16toh(result.available_density_descriptor_length);
+	unsigned int i;
+	for (i = 0; i < nb_densities && result.values[i].primary_density_code > 0 && i < 8; i++)
+		if (format->density_code == result.values[i].primary_density_code)
+			return !for_writing || result.values[i].write_ok;
+
+	return false;
+}
+
 int tape_drive_scsi_read_density(struct st_drive * drive, const char * path) {
 	int fd = open(path, O_RDWR);
 	if (fd < 0)
 		return 1;
 
-	struct {
-		unsigned short available_density_descriptor_length;
-		unsigned char reserved[2];
-		struct {
-			unsigned char primary_density_code;
-			unsigned char secondary_density_code;
-			unsigned char reserved0:5;
-			bool deflt:1;
-			bool duplicate:1;
-			bool write_ok:1;
-			unsigned char reserved1[2];
-			unsigned int bits_per_mm:24;
-			unsigned short media_width;
-			unsigned short tracks;
-			unsigned int capacity;
-			char assiging_organization[8];
-			char density_name[8];
-			char description[20];
-		} values[8];
-	} __attribute__((packed)) result;
+	struct scsi_density result;
 
 	struct {
 		unsigned char operation_code;

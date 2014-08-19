@@ -38,57 +38,17 @@
 #include <libstone/slot.h>
 #include <libstone/value.h>
 
+#include "changer.h"
 #include "drive.h"
 #include "listen.h"
-
-static bool stop = false;
 
 static void changer_request(int fd, short event, void * data);
 
 
-static void changer_request(int fd, short event, void * data) {
-	switch (event) {
-		case POLLHUP:
-			st_log_write(st_log_level_alert, "changer has hang up");
-			stop = true;
-			break;
-	}
-
-	struct st_value * request = st_json_parse_fd(fd, 1000);
-	char * command;
-	if (request == NULL || st_value_unpack(request, "{ss}", "command", &command) < 0) {
-		if (request != NULL)
-			st_value_free(request);
-		return;
-	}
-
-	if (!strcmp("stop", command))
-		stop = true;
-	else {
-		struct st_drive_driver * driver = stdr_drive_get();
-		struct st_drive * drive = driver->device;
-		struct st_database_connection * db = data;
-		int failed = -1;
-		struct st_value * returned = st_value_new_null();
-
-		if (!strcmp("reset", command)) {
-			if (st_value_hashtable_has_key2(request, "slot")) {
-				struct st_value * slot = st_value_hashtable_get2(request, "slot", false, false);
-				st_slot_sync(drive->slot, slot);
-			}
-
-			failed = drive->ops->reset(db);
-		} else if (!strcmp("update status", command)) {
-			failed = drive->ops->update_status(db);
-			returned = st_value_pack("{siso}", "status", (long long int) failed, "drive", st_drive_convert(drive, true));
-		}
-
-		st_json_encode_to_fd(returned, 1, true);
-		st_value_free(returned);
-	}
-
-	st_value_free(request);
-	free(command);
+static void changer_request(int fd, short event __attribute__((unused)), void * data __attribute__((unused))) {
+	st_log_write(st_log_level_alert, "changer has hang up");
+	st_poll_unregister(fd, POLLHUP);
+	stdr_changer_stop();
 }
 
 int main() {
@@ -122,8 +82,9 @@ int main() {
 	if (db_connect == NULL)
 		return 4;
 
-	st_poll_register(0, POLLIN | POLLHUP, changer_request, db_connect, NULL);
+	st_poll_register(0, POLLHUP, changer_request, NULL, NULL);
 
+	stdr_changer_setup(db_connect);
 	stdr_listen_configure(listen);
 	stdr_listen_set_db_connection(db_connect);
 
@@ -137,7 +98,7 @@ int main() {
 	drive->ops->update_status(db_connect);
 	db_connect->ops->sync_drive(db_connect, drive, st_database_sync_default);
 
-	while (!stop) {
+	while (!stdr_changer_is_stopped()) {
 		st_poll(-1);
 
 		db_connect->ops->sync_drive(db_connect, drive, st_database_sync_default);
