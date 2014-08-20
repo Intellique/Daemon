@@ -65,50 +65,110 @@ static void formatmedia_init() {
 
 static int formatmedia_run(struct st_job * job, struct st_database_connection * db_connect) {
 	enum {
+		changer_has_free_drive,
 		drive_is_free,
+		look_for_media,
 		media_in_drive,
 		reserve_media
 	} state = reserve_media;
 
 	char * cookie = NULL;
+	struct st_changer * changer = formatmedia_slot->changer;
 	struct st_drive * drive = NULL;
 
 	int failed;
 	bool stop = false;
 	while (!stop && !job->stopped_by_user) {
 		switch (state) {
-			case drive_is_free:
-				cookie = drive->ops->lock(drive);
-				if (cookie == NULL) {
+			case changer_has_free_drive:
+				drive = changer->ops->find_free_drive(changer, formatmedia_slot->media->format, true);
+				if (drive != NULL)
+					state = drive_is_free;
+				else {
+					changer->ops->release_all_media(changer);
+					changer = NULL;
 					drive = NULL;
-					formatmedia_slot->changer->ops->release_all_media(formatmedia_slot->changer);
 
 					sleep(20);
 
-					state = reserve_media;
+					state = look_for_media;
+				}
+				break;
+
+			case drive_is_free:
+				cookie = drive->ops->lock(drive);
+				if (cookie == NULL) {
+					changer->ops->release_all_media(changer);
+					changer = NULL;
+					drive = NULL;
+
+					sleep(20);
+
+					state = look_for_media;
 				} else
 					stop = true;
+				break;
 
+			case look_for_media:
+				stj_changer_sync_all();
+				formatmedia_slot = stj_changer_find_media_by_job(job, db_connect);
+				if (formatmedia_slot != NULL) {
+					changer = formatmedia_slot->changer;
+					state = reserve_media;
+				} else {
+					sleep(20);
+				}
 				break;
 
 			case media_in_drive:
 				drive = formatmedia_slot->drive;
-				state = drive != NULL ? drive_is_free : reserve_media;
+				state = drive != NULL ? drive_is_free : changer_has_free_drive;
 				break;
 
 			case reserve_media:
-				failed = formatmedia_slot->changer->ops->reserve_media(formatmedia_slot->changer, formatmedia_slot);
+				failed = changer->ops->reserve_media(changer, formatmedia_slot);
 				if (failed == 0)
 					state = media_in_drive;
 				else {
 					sleep(20);
 
-					stj_changer_sync_all();
-					formatmedia_slot = stj_changer_find_media_by_job(job, db_connect);
+					changer = NULL;
+					drive = NULL;
+					state = look_for_media;
 				}
 				break;
 		}
 	}
+
+	if (job->stopped_by_user)
+		return 1;
+
+	job->status = st_job_status_running;
+	job->done = 0.2;
+
+	if (formatmedia_slot->drive == NULL && drive->slot->media != NULL) {
+		changer->ops->unload(changer, drive);
+	}
+
+	if (job->stopped_by_user)
+		return 1;
+
+	job->status = st_job_status_running;
+	job->done = 0.4;
+
+	if (formatmedia_slot->drive == NULL) {
+		changer->ops->load(changer, formatmedia_slot, drive);
+	}
+
+	if (job->stopped_by_user)
+		return 1;
+
+	job->status = st_job_status_running;
+	job->done = 0.6;
+
+	drive->ops->sync(drive);
+
+	// check for write lock
 
 	return 0;
 }
