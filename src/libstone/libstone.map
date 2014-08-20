@@ -160,6 +160,7 @@ LIBSTONE_1.2 {
 		st_value_hashtable_get;
 		st_value_hashtable_get2;
 		st_value_hashtable_get_iterator;
+		st_value_hashtable_get_length;
 		st_value_hashtable_has_key;
 		st_value_hashtable_keys;
 		st_value_hashtable_put;

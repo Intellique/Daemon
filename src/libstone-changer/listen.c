@@ -141,14 +141,18 @@ static void stchgr_socket_command_find_free_drive(struct stchgr_peer * peer __at
 	struct st_changer * changer = driver->device;
 
 	unsigned int i, index = changer->nb_drives;
-	for (i = 0; i < changer->nb_drives; i++) {
+	bool found = false;
+	for (i = 0; i < changer->nb_drives && !found; i++) {
 		struct st_drive * dr = changer->drives + i;
-		bool ok = dr->ops->check_support(dr, format, for_writing);
-		if (!ok)
+		if (!dr->enable)
 			continue;
 
-		ok = dr->ops->is_free(dr);
-		if (ok)
+		found = dr->ops->check_support(dr, format, for_writing);
+		if (!found)
+			continue;
+
+		found = dr->ops->is_free(dr);
+		if (found)
 			index = i;
 	}
 

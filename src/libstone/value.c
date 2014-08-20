@@ -1212,6 +1212,15 @@ static struct st_value_iterator * st_value_hashtable_get_iterator2(struct st_val
 	return iter;
 }
 
+__asm__(".symver st_value_hashtable_get_length_v1, st_value_hashtable_get_length@@LIBSTONE_1.2");
+unsigned int st_value_hashtable_get_length_v1(struct st_value * hash) {
+	if (hash == NULL || hash->type != st_value_hashtable)
+		return 0;
+
+	struct st_value_hashtable * hashtable = st_value_get_v1(hash);
+	return hashtable->nb_elements;
+}
+
 __asm__(".symver st_value_hashtable_has_key_v1, st_value_hashtable_has_key@@LIBSTONE_1.2");
 bool st_value_hashtable_has_key_v1(struct st_value * hash, struct st_value * key) {
 	if (hash == NULL || hash->type != st_value_hashtable || key == NULL)

@@ -71,9 +71,11 @@ static struct st_changer_ops stj_changer_ops = {
 static struct st_drive * stj_changer_find_free_drive(struct st_changer * changer, struct st_media_format * format, bool for_writing) {
 	struct stj_changer * self = changer->data;
 
-	struct st_value * request = st_value_pack("{s{sosb}}", "params",
-		"media format", st_media_format_convert(format),
-		"for writing", for_writing
+	struct st_value * request = st_value_pack("{sss{sosb}}",
+		"command", "find free drive",
+		"params",
+			"media format", st_media_format_convert(format),
+			"for writing", for_writing
 	);
 	st_json_encode_to_fd(request, self->fd, true);
 	st_value_free(request);

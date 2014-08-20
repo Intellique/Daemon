@@ -64,7 +64,7 @@ int main() {
 	st_value_unpack(config, "{sososo}", "logger", &log_config, "drive", &drive_config, "database", &db_config);
 
 	struct st_value * listen = NULL;
-	st_value_unpack(drive_config, "{ss}", "socket", &listen);
+	st_value_unpack(drive_config, "{so}", "socket", &listen);
 
 	if (log_config == NULL || drive_config == NULL || db_config == NULL)
 		return 3;

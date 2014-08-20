@@ -1123,6 +1123,9 @@ static void scsi_changer_scsi_update_status(int fd, struct st_changer * changer,
 						}
 
 						scsi_changer_scsi_setup_drive(dr, drive);
+					} else {
+						struct st_drive * dr = changer->drives + i;
+						dr->enable = false;
 					}
 
 					break;

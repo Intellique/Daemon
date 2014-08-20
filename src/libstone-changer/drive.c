@@ -85,7 +85,7 @@ static bool stchgr_drive_check_support(struct st_drive * drive, struct st_media_
 	struct st_value * returned = st_json_parse_fd(self->fd_out, -1);
 	bool ok = false;
 
-	st_value_unpack(returned, "{sb}", "ok", &ok);
+	st_value_unpack(returned, "{sb}", "status", &ok);
 	st_value_free(returned);
 
 	return ok;
@@ -100,11 +100,11 @@ static bool stchgr_drive_is_free(struct st_drive * drive) {
 
 	struct st_value * returned = st_json_parse_fd(self->fd_out, -1);
 
-	bool locked = false;
-	st_value_unpack(returned, "{sb}", "locked", &locked);
+	bool is_free = false;
+	st_value_unpack(returned, "{sb}", "returned", &is_free);
 	st_value_free(returned);
 
-	return !locked;
+	return !is_free;
 }
 
 __asm__(".symver stchgr_drive_register_v1, stchgr_drive_register@@LIBSTONE_CHANGER_1.2");

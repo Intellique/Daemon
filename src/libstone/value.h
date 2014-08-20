@@ -117,6 +117,7 @@ void st_value_hashtable_clear_v1(struct st_value * hash) __attribute__((nonnull)
 struct st_value * st_value_hashtable_get_v1(struct st_value * hash, struct st_value * key, bool shared, bool detach) __attribute__((nonnull,warn_unused_result));
 struct st_value * st_value_hashtable_get2_v1(struct st_value * hash, const char * key, bool shared, bool detach) __attribute__((nonnull,warn_unused_result));
 struct st_value_iterator * st_value_hashtable_get_iterator_v1(struct st_value * hash) __attribute__((nonnull,warn_unused_result));
+unsigned int st_value_hashtable_get_length_v1(struct st_value * hash) __attribute__((nonnull));
 bool st_value_hashtable_has_key_v1(struct st_value * hash, struct st_value * key) __attribute__((nonnull));
 bool st_value_hashtable_has_key2_v1(struct st_value * hash, const char * key) __attribute__((nonnull));
 struct st_value * st_value_hashtable_keys_v1(struct st_value * hash) __attribute__((nonnull));

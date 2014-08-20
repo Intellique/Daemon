@@ -33,6 +33,8 @@
 #include <stdlib.h>
 // strstr
 #include <string.h>
+// access
+#include <unistd.h>
 
 #include <libstone/file.h>
 
@@ -41,6 +43,9 @@
 #include "config.h"
 
 bool std_env_setup() {
+	if (!access(DAEMON_SOCKET_DIR, F_OK))
+		st_file_rm(DAEMON_SOCKET_DIR);
+
 	if (st_file_mkdir(DAEMON_SOCKET_DIR, 0700) != 0)
 		return false;
 

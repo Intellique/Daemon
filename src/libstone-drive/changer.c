@@ -133,7 +133,7 @@ static void stdr_changer_process_check_support(struct st_value * request, struct
 static void stdr_changer_process_is_free(struct st_value * request __attribute__((unused)), struct st_database_connection * db __attribute__((unused))) {
 	bool locked = stdr_listen_is_locked();;
 
-	struct st_value * returned = st_value_pack("{sb}", "ok", !locked);
+	struct st_value * returned = st_value_pack("{sb}", "returned", !locked);
 	st_json_encode_to_fd(returned, 1, true);
 	st_value_free(returned);
 }

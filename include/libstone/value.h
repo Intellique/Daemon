@@ -268,6 +268,7 @@ struct st_value * st_value_hashtable_get2(struct st_value * hash, const char * k
  * \return an iterator
  */
 struct st_value_iterator * st_value_hashtable_get_iterator(struct st_value * hash) __attribute__((nonnull,warn_unused_result));
+unsigned int st_value_hashtable_get_length(struct st_value * hash) __attribute__((nonnull));
 /**
  * \brief Check if \a key is present into hashtable
  *
