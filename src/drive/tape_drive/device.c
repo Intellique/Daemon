@@ -47,13 +47,15 @@
 #include <sys/types.h>
 // time
 #include <time.h>
-// close
+// close, write
 #include <unistd.h>
 
+#include <libstone/checksum.h>
 #include <libstone/database.h>
 #include <libstone/log.h>
 #include <libstone/media.h>
 #include <libstone/slot.h>
+#include <libstone/time.h>
 #include <libstone/value.h>
 #include <libstone-drive/drive.h>
 
@@ -64,6 +66,7 @@
 
 static bool tape_drive_check_support(struct st_media_format * format, bool for_writing, struct st_database_connection * db);
 static void tape_drive_create_media(struct st_database_connection * db);
+static ssize_t tape_drive_find_best_block_size(struct st_database_connection * db);
 static struct st_stream_reader * tape_drive_get_raw_reader(int file_position, struct st_database_connection * db);
 static struct st_stream_writer * tape_drive_get_raw_writer(bool append, struct st_database_connection * db);
 static int tape_drive_init(struct st_value * config);
@@ -80,12 +83,13 @@ static struct timespec last_start;
 
 
 static struct st_drive_ops tape_drive_ops = {
-	.check_support  = tape_drive_check_support,
-	.get_raw_reader = tape_drive_get_raw_reader,
-	.get_raw_writer = tape_drive_get_raw_writer,
-	.init           = tape_drive_init,
-	.reset          = tape_drive_reset,
-	.update_status  = tape_drive_update_status,
+	.check_support        = tape_drive_check_support,
+	.find_best_block_size = tape_drive_find_best_block_size,
+	.get_raw_reader       = tape_drive_get_raw_reader,
+	.get_raw_writer       = tape_drive_get_raw_writer,
+	.init                 = tape_drive_init,
+	.reset                = tape_drive_reset,
+	.update_status        = tape_drive_update_status,
 };
 
 static struct st_drive tape_drive = {
@@ -149,6 +153,87 @@ static void tape_drive_create_media(struct st_database_connection * db) {
 	}
 
 	tape_drive_media_read_header(&tape_drive, db);
+}
+
+static ssize_t tape_drive_find_best_block_size(struct st_database_connection * db) {
+	struct st_media * media = tape_drive.slot->media;
+	if (media == NULL)
+		return -1;
+
+	char * buffer = st_checksum_gen_salt(NULL, 1048576);
+
+	double last_speed = 0;
+
+	ssize_t current_block_size;
+	for (current_block_size = media->format->block_size; current_block_size < 1048576; current_block_size <<= 1) {
+		tape_drive.status = st_drive_status_rewinding;
+		db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+
+		static struct mtop rewind = { MTREW, 1 };
+		tape_drive_operation_start();
+		int failed = ioctl(fd_nst, MTIOCTOP, &rewind);
+		tape_drive_operation_stop();
+
+		if (failed != 0) {
+			tape_drive.status = st_drive_status_error;
+			db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+
+			current_block_size = -1;
+			break;
+		}
+
+		tape_drive.status = st_drive_status_writing;
+		db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+
+		unsigned int i, nb_loop = 8388608 / current_block_size;
+
+		struct timespec start;
+		clock_gettime(CLOCK_MONOTONIC, &start);
+
+		for (i = 0; i < nb_loop; i++) {
+			ssize_t nb_write = write(fd_nst, buffer, current_block_size);
+			if (nb_write < 0) {
+				failed = 1;
+				break;
+			}
+		}
+
+		struct timespec end;
+		clock_gettime(CLOCK_MONOTONIC, &end);
+
+		if (failed != 0) {
+			tape_drive.status = st_drive_status_error;
+			db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+
+			current_block_size = -1;
+			break;
+		}
+
+		double time_spent = difftime(end.tv_sec, start.tv_sec);
+		double speed = i * current_block_size;
+		speed /= time_spent;
+
+		if (last_speed > 0 && speed > 52428800 && last_speed * 1.1 < speed)
+			break;
+		else
+			last_speed = speed;
+	}
+	free(buffer);
+
+	tape_drive.status = st_drive_status_rewinding;
+	db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+
+	static struct mtop rewind = { MTREW, 1 };
+	tape_drive_operation_start();
+	int failed = ioctl(fd_nst, MTIOCTOP, &rewind);
+	tape_drive_operation_stop();
+
+	if (failed != 0) {
+		tape_drive.status = st_drive_status_error;
+		db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+	}
+
+	return current_block_size;
 }
 
 ssize_t tape_drive_get_block_size() {

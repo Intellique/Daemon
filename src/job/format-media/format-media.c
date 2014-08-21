@@ -169,6 +169,14 @@ static int formatmedia_run(struct st_job * job, struct st_database_connection * 
 	drive->ops->sync(drive);
 
 	// check for write lock
+	if (drive->slot->media->write_lock) {
+	}
+
+	// find best block size
+
+	// write header
+
+	// check header
 
 	return 0;
 }
