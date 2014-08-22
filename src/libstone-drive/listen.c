@@ -57,6 +57,7 @@ static void stdr_socket_accept(int fd_server, int fd_client, struct st_value * c
 static void stdr_socket_message(int fd, short event, void * data);
 
 static void stdr_socket_command_find_best_block_size(struct stdr_peer * peer, struct st_value * request, int fd);
+static void stdr_socket_command_format_media(struct stdr_peer * peer, struct st_value * request, int fd);
 static void stdr_socket_command_get_raw_reader(struct stdr_peer * peer, struct st_value * request, int fd);
 static void stdr_socket_command_get_raw_writer(struct stdr_peer * peer, struct st_value * request, int fd);
 static void stdr_socket_command_lock(struct stdr_peer * peer, struct st_value * request, int fd);
@@ -69,6 +70,7 @@ static struct stdr_socket_command {
 	void (*function)(struct stdr_peer * peer, struct st_value * request, int fd);
 } commands[] = {
 	{ 0, "find best block size", stdr_socket_command_find_best_block_size },
+	{ 0, "format media",         stdr_socket_command_format_media },
 	{ 0, "get raw reader",       stdr_socket_command_get_raw_reader },
 	{ 0, "get raw writer",       stdr_socket_command_get_raw_writer },
 	{ 0, "lock",                 stdr_socket_command_lock },
@@ -163,6 +165,22 @@ static void stdr_socket_command_find_best_block_size(struct stdr_peer * peer, st
 	struct st_value * response = st_value_pack("{si}", "returned", block_size);
 	st_json_encode_to_fd(response, fd, true);
 	st_value_free(response);
+}
+
+static void stdr_socket_command_format_media(struct stdr_peer * peer, struct st_value * request __attribute__((unused)), int fd) {
+	if (stdr_current_peer == peer) {
+		struct st_drive_driver * driver = stdr_drive_get();
+		struct st_drive * drive = driver->device;
+
+		long int failed = drive->ops->format_media(stdr_db);
+		struct st_value * response = st_value_pack("{si}", "returned", failed);
+		st_json_encode_to_fd(response, fd, true);
+		st_value_free(response);
+	} else {
+		struct st_value * response = st_value_pack("{si}", "returned", -1L);
+		st_json_encode_to_fd(response, fd, true);
+		st_value_free(response);
+	}
 }
 
 static void stdr_socket_command_get_raw_reader(struct stdr_peer * peer, struct st_value * request, int fd) {

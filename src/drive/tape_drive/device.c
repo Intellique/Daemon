@@ -65,6 +65,7 @@
 #include "scsi.h"
 
 static bool tape_drive_check_support(struct st_media_format * format, bool for_writing, struct st_database_connection * db);
+static int tape_drive_format_media(struct st_database_connection * db);
 static void tape_drive_create_media(struct st_database_connection * db);
 static ssize_t tape_drive_find_best_block_size(struct st_database_connection * db);
 static struct st_stream_reader * tape_drive_get_raw_reader(int file_position, struct st_database_connection * db);
@@ -85,6 +86,7 @@ static struct timespec last_start;
 static struct st_drive_ops tape_drive_ops = {
 	.check_support        = tape_drive_check_support,
 	.find_best_block_size = tape_drive_find_best_block_size,
+	.format_media         = tape_drive_format_media,
 	.get_raw_reader       = tape_drive_get_raw_reader,
 	.get_raw_writer       = tape_drive_get_raw_writer,
 	.init                 = tape_drive_init,
@@ -213,7 +215,7 @@ static ssize_t tape_drive_find_best_block_size(struct st_database_connection * d
 		double speed = i * current_block_size;
 		speed /= time_spent;
 
-		if (last_speed > 0 && speed > 52428800 && last_speed * 1.1 < speed)
+		if (last_speed > 0 && speed > 52428800 && last_speed * 1.1 > speed)
 			break;
 		else
 			last_speed = speed;
@@ -228,12 +230,15 @@ static ssize_t tape_drive_find_best_block_size(struct st_database_connection * d
 	int failed = ioctl(fd_nst, MTIOCTOP, &rewind);
 	tape_drive_operation_stop();
 
-	if (failed != 0) {
-		tape_drive.status = st_drive_status_error;
-		db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
-	}
+	tape_drive.status = failed != 0 ? st_drive_status_error : st_drive_status_loaded_idle;
+	db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
 
 	return current_block_size;
+}
+
+static int tape_drive_format_media(struct st_database_connection * db) {
+
+	return 0;
 }
 
 ssize_t tape_drive_get_block_size() {

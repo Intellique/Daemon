@@ -42,12 +42,14 @@ struct stj_drive {
 };
 
 static ssize_t stj_drive_find_best_block_size(struct st_drive * drive);
+static int stj_drive_format_media(struct st_drive * drive);
 static struct st_stream_reader * stj_drive_get_raw_reader(struct st_drive * drive, int file_position, const char * cookie);
 static char * stj_drive_lock(struct st_drive * drive);
 static int stj_drive_sync(struct st_drive * drive);
 
 static struct st_drive_ops stj_drive_ops = {
 	.find_best_block_size = stj_drive_find_best_block_size,
+	.format_media         = stj_drive_format_media,
 	.get_raw_reader       = stj_drive_get_raw_reader,
 	.lock                 = stj_drive_lock,
 	.sync                 = stj_drive_sync,
@@ -70,6 +72,24 @@ static ssize_t stj_drive_find_best_block_size(struct st_drive * drive) {
 	st_value_free(response);
 
 	return block_size;
+}
+
+static int stj_drive_format_media(struct st_drive * drive) {
+	struct stj_drive * self = drive->data;
+
+	struct st_value * request = st_value_pack("{ss}", "command", "format media");
+	st_json_encode_to_fd(request, self->fd, true);
+	st_value_free(request);
+
+	struct st_value * response = st_json_parse_fd(self->fd, -1);
+	if (response == NULL)
+		return -1;
+
+	long int failed = false;
+	st_value_unpack(response, "{si}", "returned", &failed);
+	st_value_free(response);
+
+	return failed;
 }
 
 static struct st_stream_reader * stj_drive_get_raw_reader(struct st_drive * drive, int file_position, const char * cookie) {

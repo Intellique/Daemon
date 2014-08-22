@@ -173,6 +173,7 @@ static int formatmedia_run(struct st_job * job, struct st_database_connection * 
 	}
 
 	// find best block size
+	drive->ops->find_best_block_size(drive);
 
 	// write header
 
