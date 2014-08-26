@@ -42,6 +42,7 @@ struct stj_drive {
 };
 
 static bool stj_drive_check_header(struct st_drive * drive);
+static bool stj_drive_check_support(struct st_drive * drive, struct st_media_format * format, bool for_writing);
 static ssize_t stj_drive_find_best_block_size(struct st_drive * drive);
 static int stj_drive_format_media(struct st_drive * drive, struct st_pool * pool);
 static struct st_stream_reader * stj_drive_get_raw_reader(struct st_drive * drive, int file_position, const char * cookie);
@@ -50,6 +51,7 @@ static int stj_drive_sync(struct st_drive * drive);
 
 static struct st_drive_ops stj_drive_ops = {
 	.check_header         = stj_drive_check_header,
+	.check_support        = stj_drive_check_support,
 	.find_best_block_size = stj_drive_find_best_block_size,
 	.format_media         = stj_drive_format_media,
 	.get_raw_reader       = stj_drive_get_raw_reader,
@@ -72,6 +74,27 @@ static bool stj_drive_check_header(struct st_drive * drive) {
 	bool ok = false;
 	st_value_unpack(response, "{sb}", "returned", &ok);
 	st_value_free(response);
+
+	return ok;
+}
+
+static bool stj_drive_check_support(struct st_drive * drive, struct st_media_format * format, bool for_writing) {
+	struct stj_drive * self = drive->data;
+
+	struct st_value * command = st_value_pack("{sss{sosb}}",
+		"command", "check support",
+		"params",
+			"format", st_media_format_convert(format),
+			"for writing", for_writing
+	);
+	st_json_encode_to_fd(command, self->fd, true);
+	st_value_free(command);
+
+	struct st_value * returned = st_json_parse_fd(self->fd, -1);
+	bool ok = false;
+
+	st_value_unpack(returned, "{sb}", "status", &ok);
+	st_value_free(returned);
 
 	return ok;
 }

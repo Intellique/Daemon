@@ -34,6 +34,7 @@ struct st_pool;
 
 struct st_drive_ops {
 	bool (*check_header)(struct st_drive * drive);
+	bool (*check_support)(struct st_drive * drive, struct st_media_format * format, bool for_writing);
 	ssize_t (*find_best_block_size)(struct st_drive * drive);
 	int (*format_media)(struct st_drive * drive, struct st_pool * pool);
 	struct st_stream_reader * (*get_raw_reader)(struct st_drive * drive, int file_position, const char * cookie);

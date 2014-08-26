@@ -1111,7 +1111,7 @@ bool st_value_boolean_get_v1(const struct st_value * value) {
 __asm__(".symver st_value_custom_compute_hash_v1, st_value_custom_compute_hash@@LIBSTONE_1.2");
 unsigned long long st_value_custom_compute_hash_v1(const struct st_value * value) {
 	struct st_value_custom * custom = st_value_get_v1(value);
-	return (unsigned long long) custom->data;
+	return (unsigned long) custom->data;
 }
 
 __asm__(".symver st_value_custom_get_v1, st_value_custom_get@@LIBSTONE_1.2");
@@ -2044,6 +2044,6 @@ bool st_value_iterator_has_next_v1(struct st_value_iterator * iter) {
 
 
 static unsigned long long st_value_compute_addr(const struct st_value * key) {
-	return (unsigned long long int) key;
+	return (unsigned long int) key;
 }
 

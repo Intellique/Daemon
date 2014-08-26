@@ -78,6 +78,7 @@ static void formatmedia_init() {
 static int formatmedia_run(struct st_job * job, struct st_database_connection * db_connect) {
 	enum {
 		changer_has_free_drive,
+		check_write_support,
 		drive_is_free,
 		look_for_media,
 		media_in_drive,
@@ -102,6 +103,26 @@ static int formatmedia_run(struct st_job * job, struct st_database_connection * 
 					drive = NULL;
 
 					sleep(20);
+
+					state = look_for_media;
+				}
+				break;
+
+			case check_write_support:
+				if (drive->ops->check_support(drive, formatmedia_slot->media->format, true)) {
+					state = drive_is_free;
+				} else {
+					st_job_add_record(job, db_connect, st_log_level_warning, st_job_record_notif_important, "Unload media because drive can not write into this support");
+
+					failed = changer->ops->unload(changer, drive);
+
+					if (failed != 0) {
+						st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Error while unloading media (%s)", drive->slot->media->label);
+						return 2;
+					}
+
+					changer = NULL;
+					drive = NULL;
 
 					state = look_for_media;
 				}

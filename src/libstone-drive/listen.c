@@ -59,6 +59,7 @@ static void stdr_socket_accept(int fd_server, int fd_client, struct st_value * c
 static void stdr_socket_message(int fd, short event, void * data);
 
 static void stdr_socket_command_check_header(struct stdr_peer * peer, struct st_value * request, int fd);
+static void stdr_socket_command_check_support(struct stdr_peer * peer, struct st_value * request, int fd);
 static void stdr_socket_command_find_best_block_size(struct stdr_peer * peer, struct st_value * request, int fd);
 static void stdr_socket_command_format_media(struct stdr_peer * peer, struct st_value * request, int fd);
 static void stdr_socket_command_get_raw_reader(struct stdr_peer * peer, struct st_value * request, int fd);
@@ -73,6 +74,7 @@ static struct stdr_socket_command {
 	void (*function)(struct stdr_peer * peer, struct st_value * request, int fd);
 } commands[] = {
 	{ 0, "check header",         stdr_socket_command_check_header },
+	{ 0, "check support",        stdr_socket_command_check_support },
 	{ 0, "find best block size", stdr_socket_command_find_best_block_size },
 	{ 0, "format media",         stdr_socket_command_format_media },
 	{ 0, "get raw reader",       stdr_socket_command_get_raw_reader },
@@ -169,6 +171,28 @@ static void stdr_socket_command_check_header(struct stdr_peer * peer, struct st_
 	struct st_value * response = st_value_pack("{si}", "returned", ok);
 	st_json_encode_to_fd(response, fd, true);
 	st_value_free(response);
+}
+
+static void stdr_socket_command_check_support(struct stdr_peer * peer __attribute__((unused)), struct st_value * request, int fd) {
+	struct st_drive_driver * driver = stdr_drive_get();
+	struct st_drive * drive = driver->device;
+
+	struct st_value * media_format = NULL;
+	bool for_writing = false;
+
+	st_value_unpack(request, "{s{sosb}}", "params", "format", &media_format, "for writing", &for_writing);
+
+	struct st_media_format * format = malloc(sizeof(struct st_media_format));
+	bzero(format, sizeof(struct st_media_format));
+	st_media_format_sync(format, media_format);
+
+	bool ok = drive->ops->check_support(format, for_writing, NULL);
+
+	st_media_format_free(format);
+
+	struct st_value * returned = st_value_pack("{sb}", "status", ok);
+	st_json_encode_to_fd(returned, fd, true);
+	st_value_free(returned);
 }
 
 static void stdr_socket_command_find_best_block_size(struct stdr_peer * peer, struct st_value * request __attribute__((unused)), int fd) {
