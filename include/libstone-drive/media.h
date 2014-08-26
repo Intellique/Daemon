@@ -24,56 +24,18 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#include <stddef.h>
+#ifndef __STONEDRIVE_MEDIA_H__
+#define __STONEDRIVE_MEDIA_H__
+
+// size_t
+#include <sys/types.h>
 
 #include <libstone/media.h>
-#include <libstone/slot.h>
-#include <libstone-drive/drive.h>
 
-#include "media.h"
+struct st_database_connection;
 
-bool tape_drive_media_read_header(struct st_drive * drive, struct st_database_connection * db) {
-	struct st_media * media = drive->slot->media;
-	if (media == NULL)
-		return false;
+bool std_media_check_header(struct st_media * media, const char * buffer, struct st_database_connection * db_connection);
+bool std_media_write_header(struct st_media * media, struct st_pool * pool, char * buffer, size_t length);
 
-	/*
-	struct st_stream_reader * reader = drive->ops->get_raw_reader(drive, 0);
-	if (reader == NULL) {
-		st_log_write_all(st_log_level_info, st_log_type_daemon, "[%s | %s | #%td]: failed to read media", drive->vendor, drive->model, drive - drive->changer->drives);
-		return 1;
-	}
-
-	char buffer[512];
-	ssize_t nb_read = reader->ops->read(reader, buffer, 512);
-	reader->ops->close(reader);
-	reader->ops->free(reader);
-
-	if (nb_read <= 0) {
-		st_log_write_all(st_log_level_warning, st_log_type_daemon, "[%s | %s | #%td]: media has no header", drive->vendor, drive->model, drive - drive->changer->drives);
-		return false;
-	}
-
-	char stone_version[65];
-	int tape_format_version = 0;
-	int nb_parsed = 0;
-	bool ok = false;
-
-	if (sscanf(buffer, "STone (%64[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
-		switch (tape_format_version) {
-			case 1:
-				ok = st_media_read_header_v1(media, buffer, nb_parsed, true);
-				break;
-
-			case 2:
-				ok = st_media_read_header_v2(media, buffer, nb_parsed, true);
-				break;
-		}
-	}
-
-	return ok;
-	*/
-
-	return false;
-}
+#endif
 

@@ -24,6 +24,10 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// free
+#include <stdlib.h>
+// strcpy
+#include <string.h>
 // uuid_generate, uuid_unparse_lower
 #include <uuid/uuid.h>
 // sleep
@@ -45,19 +49,27 @@
 static struct st_pool * formatmedia_pool = NULL;
 static struct st_slot * formatmedia_slot = NULL;
 
+static void formatmedia_exit(struct st_job * job, struct st_database_connection * db_connect);
 static void formatmedia_init(void) __attribute__((constructor));
 static int formatmedia_run(struct st_job * job, struct st_database_connection * db_connect);
 static int formatmedia_simulate(struct st_job * job, struct st_database_connection * db_connect);
-static int formatmedia_script_pre_run(struct st_job * job, struct st_database_connection * db_connect);
+static void formatmedia_script_on_error(struct st_job * job, struct st_database_connection * db_connect);
+static void formatmedia_script_post_run(struct st_job * job, struct st_database_connection * db_connect);
+static bool formatmedia_script_pre_run(struct st_job * job, struct st_database_connection * db_connect);
 
 static struct st_job_driver formatmedia = {
 	.name = "format-media",
 
-	.run            = formatmedia_run,
-	.simulate       = formatmedia_simulate,
-	.script_pre_run = formatmedia_script_pre_run,
+	.exit            = formatmedia_exit,
+	.run             = formatmedia_run,
+	.simulate        = formatmedia_simulate,
+	.script_on_error = formatmedia_script_on_error,
+	.script_post_run = formatmedia_script_post_run,
+	.script_pre_run  = formatmedia_script_pre_run,
 };
 
+
+static void formatmedia_exit(struct st_job * job __attribute__((unused)), struct st_database_connection * db_connect __attribute__((unused))) {}
 
 static void formatmedia_init() {
 	stj_job_register(&formatmedia);
@@ -176,8 +188,10 @@ static int formatmedia_run(struct st_job * job, struct st_database_connection * 
 	drive->ops->find_best_block_size(drive);
 
 	// write header
+	drive->ops->format_media(drive, formatmedia_pool);
 
 	// check header
+	drive->ops->check_header(drive);
 
 	return 0;
 }
@@ -227,23 +241,63 @@ static int formatmedia_simulate(struct st_job * job, struct st_database_connecti
 	return 0;
 }
 
-static int formatmedia_script_pre_run(struct st_job * job, struct st_database_connection * db_connect) {
+static void formatmedia_script_on_error(struct st_job * job, struct st_database_connection * db_connect) {
+}
+
+static void formatmedia_script_post_run(struct st_job * job, struct st_database_connection * db_connect) {
+}
+
+static bool formatmedia_script_pre_run(struct st_job * job, struct st_database_connection * db_connect) {
 	if (db_connect->ops->get_nb_scripts(db_connect, job->type, st_script_type_pre_job, formatmedia_pool) < 1)
-		return 0;
+		return true;
 
 	struct st_value * json = st_value_pack("{sosososo}",
 		"job", st_job_convert(job),
-		"host", st_host_get_info(),
+		"host", st_host_get_info2(),
 		"media", st_media_convert(formatmedia_slot->media),
 		"pool", st_pool_convert(formatmedia_pool)
 	);
 
 	struct st_value * returned = stj_script_run(db_connect, job, st_script_type_pre_job, formatmedia_pool, json);
-
-	long failed = 0;
-
 	st_value_free(json);
 
-	return failed;
+	bool should_run = false;
+	st_value_unpack(returned, "{sb}", "should run", &should_run);
+	if (should_run) {
+		struct st_value * datas = NULL;
+		st_value_unpack(returned, "{so}", "datas", &datas);
+
+		struct st_value_iterator * iter = st_value_list_get_iterator(datas);
+		while (st_value_iterator_has_next(iter)) {
+			struct st_value * data = st_value_iterator_get_value(iter, false);
+
+			char * uuid = NULL;
+			st_value_unpack(data, "{s{ss}}", "media", "uuid", &uuid);
+			if (uuid != NULL) {
+				uuid_t tmp;
+				if (uuid_parse(uuid, tmp) != 0) {
+					st_job_add_record(job, db_connect, st_log_level_warning, st_job_record_notif_normal, "Invalid uuid provide by script, ignoring it");
+				} else {
+					st_job_add_record(job, db_connect, st_log_level_warning, st_job_record_notif_normal, "Script request to format media with this uuid (%s) instead of (%s)", uuid, formatmedia_slot->media->uuid);
+					strcpy(formatmedia_slot->media->uuid, uuid);
+				}
+				free(uuid);
+			}
+
+			char * name = NULL;
+			st_value_unpack(data, "{s{ss}}", "media", "name", &name);
+			if (name != NULL) {
+				st_job_add_record(job, db_connect, st_log_level_warning, st_job_record_notif_normal, "Script request to format media with this name (%s) instead of (%s)", name, formatmedia_slot->media->name);
+
+				free(formatmedia_slot->media->name);
+				formatmedia_slot->media->name = name;
+			}
+		}
+		st_value_iterator_free(iter);
+	}
+
+	st_value_free(returned);
+
+	return should_run;
 }
 

@@ -43,6 +43,7 @@ LIBSTONE_1.2 {
 
 		st_host_init;
 		st_host_get_info;
+		st_host_get_info2;
 
 		st_job_add_record;
 		st_job_convert;

@@ -41,13 +41,15 @@ struct stj_drive {
 	struct st_value * config;
 };
 
+static bool stj_drive_check_header(struct st_drive * drive);
 static ssize_t stj_drive_find_best_block_size(struct st_drive * drive);
-static int stj_drive_format_media(struct st_drive * drive);
+static int stj_drive_format_media(struct st_drive * drive, struct st_pool * pool);
 static struct st_stream_reader * stj_drive_get_raw_reader(struct st_drive * drive, int file_position, const char * cookie);
 static char * stj_drive_lock(struct st_drive * drive);
 static int stj_drive_sync(struct st_drive * drive);
 
 static struct st_drive_ops stj_drive_ops = {
+	.check_header         = stj_drive_check_header,
 	.find_best_block_size = stj_drive_find_best_block_size,
 	.format_media         = stj_drive_format_media,
 	.get_raw_reader       = stj_drive_get_raw_reader,
@@ -55,6 +57,24 @@ static struct st_drive_ops stj_drive_ops = {
 	.sync                 = stj_drive_sync,
 };
 
+
+static bool stj_drive_check_header(struct st_drive * drive) {
+	struct stj_drive * self = drive->data;
+
+	struct st_value * request = st_value_pack("{ss}", "command", "check header");
+	st_json_encode_to_fd(request, self->fd, true);
+	st_value_free(request);
+
+	struct st_value * response = st_json_parse_fd(self->fd, -1);
+	if (response == NULL)
+		return -1;
+
+	bool ok = false;
+	st_value_unpack(response, "{sb}", "returned", &ok);
+	st_value_free(response);
+
+	return ok;
+}
 
 static ssize_t stj_drive_find_best_block_size(struct st_drive * drive) {
 	struct stj_drive * self = drive->data;
@@ -68,16 +88,20 @@ static ssize_t stj_drive_find_best_block_size(struct st_drive * drive) {
 		return -1;
 
 	ssize_t block_size = -1;
-	st_value_unpack(response, "{sb}", "returned", &block_size);
+	st_value_unpack(response, "{si}", "returned", &block_size);
 	st_value_free(response);
 
 	return block_size;
 }
 
-static int stj_drive_format_media(struct st_drive * drive) {
+static int stj_drive_format_media(struct st_drive * drive, struct st_pool * pool) {
 	struct stj_drive * self = drive->data;
 
-	struct st_value * request = st_value_pack("{ss}", "command", "format media");
+	struct st_value * request = st_value_pack("{sss{so}}",
+		"command", "format media",
+		"params"
+			"pool", st_pool_convert(pool)
+	);
 	st_json_encode_to_fd(request, self->fd, true);
 	st_value_free(request);
 

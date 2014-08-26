@@ -53,19 +53,19 @@
 #include <libstone/checksum.h>
 #include <libstone/database.h>
 #include <libstone/log.h>
-#include <libstone/media.h>
 #include <libstone/slot.h>
 #include <libstone/time.h>
 #include <libstone/value.h>
 #include <libstone-drive/drive.h>
+#include <libstone-drive/media.h>
 
 #include "device.h"
 #include "io.h"
-#include "media.h"
 #include "scsi.h"
 
+static bool tape_drive_check_header(struct st_database_connection * db);
 static bool tape_drive_check_support(struct st_media_format * format, bool for_writing, struct st_database_connection * db);
-static int tape_drive_format_media(struct st_database_connection * db);
+static int tape_drive_format_media(struct st_pool * pool, struct st_database_connection * db);
 static void tape_drive_create_media(struct st_database_connection * db);
 static ssize_t tape_drive_find_best_block_size(struct st_database_connection * db);
 static struct st_stream_reader * tape_drive_get_raw_reader(int file_position, struct st_database_connection * db);
@@ -84,6 +84,7 @@ static struct timespec last_start;
 
 
 static struct st_drive_ops tape_drive_ops = {
+	.check_header         = tape_drive_check_header,
 	.check_support        = tape_drive_check_support,
 	.find_best_block_size = tape_drive_find_best_block_size,
 	.format_media         = tape_drive_format_media,
@@ -118,6 +119,35 @@ static struct st_drive tape_drive = {
 	.db_data = NULL,
 };
 
+
+static bool tape_drive_check_header(struct st_database_connection * db) {
+	size_t block_size = tape_drive_get_block_size();
+
+	tape_drive.status = st_drive_status_rewinding;
+	db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+
+	static struct mtop rewind = { MTREW, 1 };
+	tape_drive_operation_start();
+	int failed = ioctl(fd_nst, MTIOCTOP, &rewind);
+	tape_drive_operation_stop();
+
+	tape_drive.status = failed != 0 ? st_drive_status_error : st_drive_status_reading;
+	db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+
+	char * buffer = malloc(block_size);
+	ssize_t nb_read = read(fd_nst, buffer, block_size);
+
+	tape_drive.status = nb_read < 0 ? st_drive_status_error : st_drive_status_loaded_idle;
+	db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+
+	if (nb_read < 0)
+		return false;
+
+	// check header
+	bool ok = std_media_check_header(tape_drive.slot->media, buffer, db);
+	free(buffer);
+	return ok;
+}
 
 static bool tape_drive_check_support(struct st_media_format * format, bool for_writing, struct st_database_connection * db __attribute__((unused))) {
 	return tape_drive_scsi_check_support(format, for_writing, scsi_device);
@@ -154,7 +184,7 @@ static void tape_drive_create_media(struct st_database_connection * db) {
 			st_log_write(st_log_level_warning, "[%s | %s | #%u]: failed to read medium axilary memory", tape_drive.vendor, tape_drive.model, tape_drive.index);
 	}
 
-	tape_drive_media_read_header(&tape_drive, db);
+	// tape_drive_media_read_header(&tape_drive, db);
 }
 
 static ssize_t tape_drive_find_best_block_size(struct st_database_connection * db) {
@@ -236,9 +266,55 @@ static ssize_t tape_drive_find_best_block_size(struct st_database_connection * d
 	return current_block_size;
 }
 
-static int tape_drive_format_media(struct st_database_connection * db) {
+static int tape_drive_format_media(struct st_pool * pool, struct st_database_connection * db) {
+	size_t block_size = tape_drive_get_block_size();
 
-	return 0;
+	tape_drive.status = st_drive_status_rewinding;
+	db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+
+	static struct mtop rewind = { MTREW, 1 };
+	tape_drive_operation_start();
+	int failed = ioctl(fd_nst, MTIOCTOP, &rewind);
+	tape_drive_operation_stop();
+
+	tape_drive.status = failed != 0 ? st_drive_status_error : st_drive_status_loaded_idle;
+	db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+
+	if (failed != 0)
+		return failed;
+
+	char * header = malloc(block_size);
+	if (!std_media_write_header(tape_drive.slot->media, pool, header, block_size)) {
+		free(header);
+		return 1;
+	}
+
+	tape_drive.status = st_drive_status_writing;
+	db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+
+	tape_drive_operation_start();
+	ssize_t nb_write = write(fd_nst, header, block_size);
+	tape_drive_operation_stop();
+
+	if (nb_write < 0) {
+		tape_drive.status = st_drive_status_error;
+		db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+
+		free(header);
+		return 1;
+	}
+
+	static struct mtop eof = { MTWEOF, 1 };
+	tape_drive_operation_start();
+	failed = ioctl(fd_nst, MTIOCTOP, &eof);
+	tape_drive_operation_stop();
+
+	tape_drive.status = failed != 0 ? st_drive_status_error : st_drive_status_loaded_idle;
+	db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
+
+	free(header);
+
+	return failed;
 }
 
 ssize_t tape_drive_get_block_size() {

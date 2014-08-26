@@ -28,6 +28,8 @@
 #include <stdlib.h>
 // strcmp
 #include <string.h>
+// bzero
+#include <strings.h>
 // recv
 #include <sys/socket.h>
 // recv, send
@@ -56,6 +58,7 @@ static struct stdr_peer * stdr_current_peer = NULL;
 static void stdr_socket_accept(int fd_server, int fd_client, struct st_value * client);
 static void stdr_socket_message(int fd, short event, void * data);
 
+static void stdr_socket_command_check_header(struct stdr_peer * peer, struct st_value * request, int fd);
 static void stdr_socket_command_find_best_block_size(struct stdr_peer * peer, struct st_value * request, int fd);
 static void stdr_socket_command_format_media(struct stdr_peer * peer, struct st_value * request, int fd);
 static void stdr_socket_command_get_raw_reader(struct stdr_peer * peer, struct st_value * request, int fd);
@@ -69,6 +72,7 @@ static struct stdr_socket_command {
 	char * name;
 	void (*function)(struct stdr_peer * peer, struct st_value * request, int fd);
 } commands[] = {
+	{ 0, "check header",         stdr_socket_command_check_header },
 	{ 0, "find best block size", stdr_socket_command_find_best_block_size },
 	{ 0, "format media",         stdr_socket_command_format_media },
 	{ 0, "get raw reader",       stdr_socket_command_get_raw_reader },
@@ -150,6 +154,23 @@ static void stdr_socket_message(int fd, short event, void * data) {
 }
 
 
+static void stdr_socket_command_check_header(struct stdr_peer * peer, struct st_value * request __attribute__((unused)), int fd) {
+	if (stdr_current_peer != peer) {
+		struct st_value * response = st_value_pack("{sb}", "returned", -1L);
+		st_json_encode_to_fd(response, fd, true);
+		st_value_free(response);
+		return;
+	}
+
+	struct st_drive_driver * driver = stdr_drive_get();
+	struct st_drive * drive = driver->device;
+
+	bool ok = drive->ops->check_header(stdr_db);
+	struct st_value * response = st_value_pack("{si}", "returned", ok);
+	st_json_encode_to_fd(response, fd, true);
+	st_value_free(response);
+}
+
 static void stdr_socket_command_find_best_block_size(struct stdr_peer * peer, struct st_value * request __attribute__((unused)), int fd) {
 	if (stdr_current_peer != peer) {
 		struct st_value * response = st_value_pack("{sb}", "returned", -1L);
@@ -167,15 +188,24 @@ static void stdr_socket_command_find_best_block_size(struct stdr_peer * peer, st
 	st_value_free(response);
 }
 
-static void stdr_socket_command_format_media(struct stdr_peer * peer, struct st_value * request __attribute__((unused)), int fd) {
+static void stdr_socket_command_format_media(struct stdr_peer * peer, struct st_value * request, int fd) {
 	if (stdr_current_peer == peer) {
+		struct st_value * vpool = NULL;
+		st_value_unpack(request, "{s{so}}", "params", "pool", &vpool);
+
+		struct st_pool * pool = malloc(sizeof(struct st_pool));
+		bzero(pool, sizeof(struct st_pool));
+		st_pool_sync(pool, vpool);
+		st_value_free(vpool);
+
 		struct st_drive_driver * driver = stdr_drive_get();
 		struct st_drive * drive = driver->device;
 
-		long int failed = drive->ops->format_media(stdr_db);
+		long int failed = drive->ops->format_media(pool, stdr_db);
 		struct st_value * response = st_value_pack("{si}", "returned", failed);
 		st_json_encode_to_fd(response, fd, true);
 		st_value_free(response);
+		st_pool_free(pool);
 	} else {
 		struct st_value * response = st_value_pack("{si}", "returned", -1L);
 		st_json_encode_to_fd(response, fd, true);

@@ -2,6 +2,9 @@ LIBSTONE_DRIVE_1.2 {
 	global:
 		stdr_drive_register;
 
+		std_media_check_header;
+		std_media_write_header;
+
 	local:
 		stdr_changer_is_stopped;
 		stdr_changer_setup;

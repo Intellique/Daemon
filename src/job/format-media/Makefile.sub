@@ -2,7 +2,7 @@ STONE_JOB_FORMATMEDIA_SRC_DIR		:= src/job/format-media
 
 STONE_JOB_FORMATMEDIA_BIN			:= bin/job_format-media
 STONE_JOB_FORMATMEDIA_CFLAG			:= -pthread
-STONE_JOB_FORMATMEDIA_LD			:= -pthread -lstone -lstone-job -Llib
+STONE_JOB_FORMATMEDIA_LD			:= -pthread -lstone -lstone-job -luuid -Llib
 
 STONE_JOB_FORMATMEDIA_DEPEND_LIB	:= lib/libstone-job.so
 

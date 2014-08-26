@@ -102,8 +102,7 @@ static void job_worker(void * arg) {
 		goto error;
 	}
 
-	failed = job_dr->script_pre_run(j, db_connect);
-	if (failed != 0) {
+	if (!job_dr->script_pre_run(j, db_connect)) {
 		job->exit_code = failed;
 		job->status = st_job_status_error;
 		goto error;
@@ -111,7 +110,15 @@ static void job_worker(void * arg) {
 
 	failed = job_dr->run(j, db_connect);
 
+	if (failed == 0) {
+		job_dr->script_post_run(j, db_connect);
+	} else {
+		job_dr->script_on_error(j, db_connect);
+	}
+
 error:
+	job_dr->exit(j, db_connect);
+
 	pthread_mutex_lock(&lock);
 	finished = true;
 	pthread_mutex_unlock(&lock);

@@ -33,8 +33,14 @@
 struct st_database_connection;
 struct st_value;
 
+struct st_host {
+	char * hostname;
+	char * uuid;
+};
+
 bool st_host_init(struct st_database_connection * connect);
-struct st_value * st_host_get_info(void);
+struct st_host * st_host_get_info(void);
+struct st_value * st_host_get_info2(void);
 
 #endif
 

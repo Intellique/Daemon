@@ -24,8 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// NULL
-#include <stddef.h>
+// free
+#include <stdlib.h>
 // uname
 #include <sys/utsname.h>
 
@@ -34,13 +34,14 @@
 
 #include "host.h"
 
-static struct st_value * host = NULL;
+static struct st_host host = { NULL, NULL };
 
 static void st_host_exit(void) __attribute__((destructor));
 
 
 static void st_host_exit() {
-	st_value_free(host);
+	free(host.hostname);
+	free(host.uuid);
 }
 
 __asm__(".symver st_host_init_v1, st_host_init@@LIBSTONE_1.2");
@@ -51,19 +52,21 @@ bool st_host_init_v1(struct st_database_connection * connect) {
 	struct utsname name;
 	uname(&name);
 
-	host = connect->ops->get_host_by_name(connect, name.nodename);
+	int failed = connect->ops->get_host_by_name(connect, &host, name.nodename);
 
-	bool error = false;
-	st_value_unpack(host, "{sb}", "error", &error);
-
-	return host != NULL && !error;
+	return failed == 0;
 }
 
 __asm__(".symver st_host_get_info_v1, st_host_get_info@@LIBSTONE_1.2");
-struct st_value * st_host_get_info_v1() {
-	if (host == NULL)
-		return NULL;
+struct st_host * st_host_get_info_v1() {
+	return &host;
+}
 
-	return st_value_share(host);
+__asm__(".symver st_host_get_info2_v1, st_host_get_info2@@LIBSTONE_1.2");
+struct st_value * st_host_get_info2_v1() {
+	return st_value_pack("{ssss}",
+		"name", host.hostname,
+		"uuid", host.uuid
+	);
 }
 

@@ -41,6 +41,7 @@
 
 #include <libstone/changer.h>
 #include <libstone/drive.h>
+#include <libstone/host.h>
 #include <libstone/job.h>
 #include <libstone/json.h>
 #include <libstone/log.h>
@@ -70,7 +71,7 @@ static int st_database_postgresql_start_transaction(struct st_database_connectio
 static int st_database_postgresql_add_host(struct st_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description);
 static bool st_database_postgresql_find_host(struct st_database_connection * connect, const char * uuid, const char * hostname);
 static char * st_database_postgresql_get_host(struct st_database_connection * connect);
-static struct st_value * st_database_postgresql_get_host_by_name(struct st_database_connection * connect, const char * name);
+static int st_database_postgresql_get_host_by_name(struct st_database_connection * connect, struct st_host * host, const char * name);
 
 static struct st_value * st_database_postgresql_get_changers(struct st_database_connection * connect);
 static struct st_value * st_database_postgresql_get_drives_by_changer(struct st_database_connection * connect, const char * changer_id);
@@ -389,7 +390,7 @@ static char * st_database_postgresql_get_host(struct st_database_connection * co
 	return hostid;
 }
 
-static struct st_value * st_database_postgresql_get_host_by_name(struct st_database_connection * connect, const char * name) {
+static int st_database_postgresql_get_host_by_name(struct st_database_connection * connect, struct st_host * host, const char * name) {
 	struct st_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_host_by_name_by_name";
@@ -399,23 +400,20 @@ static struct st_value * st_database_postgresql_get_host_by_name(struct st_datab
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
-	struct st_value * vresult = NULL;
-
-	if (status == PGRES_FATAL_ERROR) {
+	if (status == PGRES_FATAL_ERROR)
 		st_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		free(host->hostname);
+		free(host->uuid);
+		host->hostname = host->uuid = NULL;
 
-		char * error = PQresultErrorField(result, PG_DIAG_MESSAGE_PRIMARY);
-		vresult = st_value_pack("{sbss}", "error", true, "message", error);
-	} else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
-		char * host = PQgetvalue(result, 0, 0);
-		char * uuid = PQgetvalue(result, 0, 1);
-
-		vresult = st_value_pack("{sss{ssss}}", "error", false, "host", "hostname", host, "uuid", uuid);
+		st_database_postgresql_get_string_dup(result, 0, 0, &host->hostname);
+		st_database_postgresql_get_string_dup(result, 0, 1, &host->uuid);
 	}
 
 	PQclear(result);
 
-	return vresult;
+	return status != PGRES_TUPLES_OK;
 }
 
 

@@ -35,9 +35,12 @@ struct st_job;
 struct st_job_driver {
 	char * name;
 
+	void (*exit)(struct st_job * job, struct st_database_connection * db_connect);
 	int (*run)(struct st_job * job, struct st_database_connection * db_connect);
 	int (*simulate)(struct st_job * job, struct st_database_connection * db_connect);
-	int (*script_pre_run)(struct st_job * job, struct st_database_connection * db_connect);
+	void (*script_on_error)(struct st_job * job, struct st_database_connection * db_connect);
+	void (*script_post_run)(struct st_job * job, struct st_database_connection * db_connect);
+	bool (*script_pre_run)(struct st_job * job, struct st_database_connection * db_connect);
 };
 
 void stj_job_register(struct st_job_driver * driver) __attribute__((nonnull));

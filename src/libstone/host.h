@@ -24,13 +24,14 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_HOST_H__
-#define __LIBSTONE_HOST_H__
+#ifndef __LIBSTONE_HOST_P_H__
+#define __LIBSTONE_HOST_P_H__
 
 #include <libstone/host.h>
 
 bool st_host_init_v1(struct st_database_connection * connect);
-struct st_value * st_host_get_info_v1(void);
+struct st_host * st_host_get_info_v1(void);
+struct st_value * st_host_get_info2_v1(void);
 
 #endif
 

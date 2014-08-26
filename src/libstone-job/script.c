@@ -50,7 +50,7 @@ struct st_value * stj_script_run_v1(struct st_database_connection * db_connect, 
 	for (i = 0; i < nb_scripts && status == 0; i++) {
 		char * path = db_connect->ops->get_script(db_connect, job->type, i, type, pool);
 		if (path == NULL) {
-			st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "database has not found path, %s, %d/%d", st_script_type_to_string(type), i, nb_scripts);
+			st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "script has not found into database, %s, %d/%d", st_script_type_to_string(type), i, nb_scripts);
 			status = 1;
 			break;
 		}

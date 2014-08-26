@@ -24,16 +24,13 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __ST_TAPEDRIVE_MEDIA_H__
-#define __ST_TAPEDRIVE_MEDIA_H__
+#ifndef __STONEDRIVE_MEDIA_P_H__
+#define __STONEDRIVE_MEDIA_P_H__
 
-// bool
-#include <stdbool.h>
+#include <libstone-drive/media.h>
 
-struct st_database_connection;
-struct st_drive;
-
-bool tape_drive_media_read_header(struct st_drive * drive, struct st_database_connection * db);
+bool std_media_check_header_v1(struct st_media * media, const char * buffer, struct st_database_connection * db_connection);
+bool std_media_write_header_v1(struct st_media * media, struct st_pool * pool, char * buffer, size_t length);
 
 #endif
 
