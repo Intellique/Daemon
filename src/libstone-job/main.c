@@ -110,11 +110,13 @@ static void job_worker(void * arg) {
 
 	failed = job_dr->run(j, db_connect);
 
-	if (failed == 0) {
+	if (failed != 0 && job->stopped_by_user)
+		goto error;
+
+	if (failed == 0)
 		job_dr->script_post_run(j, db_connect);
-	} else {
+	else
 		job_dr->script_on_error(j, db_connect);
-	}
 
 error:
 	job_dr->exit(j, db_connect);

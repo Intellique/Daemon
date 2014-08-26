@@ -159,7 +159,12 @@ static int formatmedia_run(struct st_job * job, struct st_database_connection * 
 	job->done = 0.2;
 
 	if (formatmedia_slot->drive == NULL && drive->slot->media != NULL) {
-		changer->ops->unload(changer, drive);
+		failed = changer->ops->unload(changer, drive);
+
+		if (failed != 0) {
+			st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Error while unloading media (%s)", drive->slot->media->label);
+			return 2;
+		}
 	}
 
 	if (job->stopped_by_user)
@@ -169,7 +174,12 @@ static int formatmedia_run(struct st_job * job, struct st_database_connection * 
 	job->done = 0.4;
 
 	if (formatmedia_slot->drive == NULL) {
-		changer->ops->load(changer, formatmedia_slot, drive);
+		failed = changer->ops->load(changer, formatmedia_slot, drive);
+
+		if (failed != 0) {
+			st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Error while loading media (%s)", formatmedia_slot->media->label);
+			return 2;
+		}
 	}
 
 	if (job->stopped_by_user)
@@ -182,18 +192,34 @@ static int formatmedia_run(struct st_job * job, struct st_database_connection * 
 
 	// check for write lock
 	if (drive->slot->media->write_lock) {
+		st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Try to format a write protected media");
+		return 3;
 	}
 
 	// find best block size
-	drive->ops->find_best_block_size(drive);
+	ssize_t block_size = drive->ops->find_best_block_size(drive);
+
+	if (job->stopped_by_user)
+		return 1;
+
+	st_job_add_record(job, db_connect, st_log_level_info, st_job_record_notif_important, "Formatting media in progress (block size used: %zd)", block_size);
 
 	// write header
-	drive->ops->format_media(drive, formatmedia_pool);
+	failed = drive->ops->format_media(drive, formatmedia_pool);
+	if (failed != 0) {
+		st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Failed to format media");
+		return 4;
+	}
 
 	// check header
-	drive->ops->check_header(drive);
-
-	return 0;
+	st_job_add_record(job, db_connect, st_log_level_info, st_job_record_notif_important, "Checking media header in progress");
+	if (drive->ops->check_header(drive)) {
+		st_job_add_record(job, db_connect, st_log_level_info, st_job_record_notif_important, "Checking media header: success");
+		return 0;
+	} else {
+		st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Checking media header: failed");
+		return 5;
+	}
 }
 
 static int formatmedia_simulate(struct st_job * job, struct st_database_connection * db_connect) {
