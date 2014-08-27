@@ -95,8 +95,11 @@ static void job_worker(void * arg) {
 	if (db_connect == NULL)
 		goto error;
 
+	st_job_add_record(j, db_connect, st_log_level_notice, st_job_record_notif_important, "Starting simulation of job (type: %s, key: %s, name: %s)", j->type, j->key, j->name);
+
 	int failed = job_dr->simulate(j, db_connect);
 	if (failed != 0) {
+		st_job_add_record(j, db_connect, st_log_level_error, st_job_record_notif_important, "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d", j->type, j->key, j->name, failed);
 		job->exit_code = failed;
 		job->status = st_job_status_error;
 		goto error;
@@ -108,7 +111,9 @@ static void job_worker(void * arg) {
 		goto error;
 	}
 
+	st_job_add_record(j, db_connect, st_log_level_notice, st_job_record_notif_important, "Starting job (type: %s, key: %s, name: %s)", j->type, j->key, j->name);
 	failed = job_dr->run(j, db_connect);
+	st_job_add_record(j, db_connect, st_log_level_notice, st_job_record_notif_important, "Job exit (type: %s, key: %s, name: %s), exit code: %d", j->type, j->key, j->name, failed);
 
 	if (failed != 0 && job->stopped_by_user)
 		goto error;

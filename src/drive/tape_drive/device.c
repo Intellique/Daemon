@@ -184,7 +184,7 @@ static void tape_drive_create_media(struct st_database_connection * db) {
 			st_log_write(st_log_level_warning, "[%s | %s | #%u]: failed to read medium axilary memory", tape_drive.vendor, tape_drive.model, tape_drive.index);
 	}
 
-	// tape_drive_media_read_header(&tape_drive, db);
+	tape_drive_check_header(db);
 }
 
 static ssize_t tape_drive_find_best_block_size(struct st_database_connection * db) {

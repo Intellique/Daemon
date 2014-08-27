@@ -91,6 +91,7 @@ static int formatmedia_run(struct st_job * job, struct st_database_connection * 
 
 	int failed;
 	bool stop = false;
+	bool has_alert_user = false;
 	while (!stop && !job->stopped_by_user) {
 		switch (state) {
 			case changer_has_free_drive:
@@ -113,6 +114,9 @@ static int formatmedia_run(struct st_job * job, struct st_database_connection * 
 					state = drive_is_free;
 				} else {
 					st_job_add_record(job, db_connect, st_log_level_warning, st_job_record_notif_important, "Unload media because drive can not write into this support");
+
+					if (changer->nb_drives == changer->nb_slots)
+						st_job_add_record(job, db_connect, st_log_level_warning, st_job_record_notif_important, "You should load media into a suitable drive because current drive can not write into it");
 
 					failed = changer->ops->unload(changer, drive);
 
@@ -149,6 +153,10 @@ static int formatmedia_run(struct st_job * job, struct st_database_connection * 
 					changer = formatmedia_slot->changer;
 					state = reserve_media;
 				} else {
+					if (!has_alert_user)
+						st_job_add_record(job, db_connect, st_log_level_warning, st_job_record_notif_important, "Waiting for media");
+					has_alert_user = true;
+
 					sleep(20);
 				}
 				break;
@@ -232,13 +240,21 @@ static int formatmedia_run(struct st_job * job, struct st_database_connection * 
 		return 4;
 	}
 
+	job->status = st_job_status_running;
+	job->done = 0.8;
+
 	// check header
 	st_job_add_record(job, db_connect, st_log_level_info, st_job_record_notif_important, "Checking media header in progress");
 	if (drive->ops->check_header(drive)) {
 		st_job_add_record(job, db_connect, st_log_level_info, st_job_record_notif_important, "Checking media header: success");
+
+		job->status = st_job_status_running;
+		job->done = 1;
 		return 0;
 	} else {
 		st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Checking media header: failed");
+
+		job->status = st_job_status_error;
 		return 5;
 	}
 }
@@ -285,13 +301,44 @@ static int formatmedia_simulate(struct st_job * job, struct st_database_connecti
 		return 1;
 	}
 
+	if (!stj_changer_has_apt_drive(media->format, true)) {
+		st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Failed to find suitable drive to format media");
+		return 1;
+	}
+
 	return 0;
 }
 
 static void formatmedia_script_on_error(struct st_job * job, struct st_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, st_script_type_on_error, formatmedia_pool) < 1)
+		return;
+
+	struct st_value * json = st_value_pack("{sosososo}",
+		"job", st_job_convert(job),
+		"host", st_host_get_info2(),
+		"media", st_media_convert(formatmedia_slot->media),
+		"pool", st_pool_convert(formatmedia_pool)
+	);
+
+	struct st_value * returned = stj_script_run(db_connect, job, st_script_type_on_error, formatmedia_pool, json);
+	st_value_free(json);
+	st_value_free(returned);
 }
 
 static void formatmedia_script_post_run(struct st_job * job, struct st_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, st_script_type_post_job, formatmedia_pool) < 1)
+		return;
+
+	struct st_value * json = st_value_pack("{sosososo}",
+		"job", st_job_convert(job),
+		"host", st_host_get_info2(),
+		"media", st_media_convert(formatmedia_slot->media),
+		"pool", st_pool_convert(formatmedia_pool)
+	);
+
+	struct st_value * returned = stj_script_run(db_connect, job, st_script_type_post_job, formatmedia_pool, json);
+	st_value_free(json);
+	st_value_free(returned);
 }
 
 static bool formatmedia_script_pre_run(struct st_job * job, struct st_database_connection * db_connect) {

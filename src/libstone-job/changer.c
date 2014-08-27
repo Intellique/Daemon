@@ -122,6 +122,26 @@ struct st_slot * stj_changer_find_media_by_job_v1(struct st_job * job, struct st
 	return NULL;
 }
 
+__asm__(".symver stj_changer_has_apt_drive_v1, stj_changer_has_apt_drive@@LIBSTONE_JOB_1.2");
+bool stj_changer_has_apt_drive_v1(struct st_media_format * format, bool for_writing) {
+	if (format == NULL)
+		return false;
+
+	unsigned int i;
+	for (i = 0; i < stj_nb_changers; i++) {
+		struct st_changer * ch = stj_changers + i;
+
+		unsigned int j;
+		for (j = 0; j < ch->nb_drives; j++) {
+			struct st_drive * dr = ch->drives + i;
+			if (dr->ops->check_support(dr, format, for_writing))
+				return true;
+		}
+	}
+
+	return false;
+}
+
 static int stj_changer_load(struct st_changer * changer, struct st_slot * from, struct st_drive * to) {
 	struct stj_changer * self = changer->data;
 

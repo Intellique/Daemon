@@ -48,6 +48,7 @@ struct st_changer_ops {
 };
 
 struct st_slot * stj_changer_find_media_by_job(struct st_job * job, struct st_database_connection * db_connection) __attribute__((nonnull));
+bool stj_changer_has_apt_drive(struct st_media_format * format, bool for_writing);
 void stj_changer_set_config(struct st_value * config) __attribute__((nonnull));
 int stj_changer_sync_all(void);
 

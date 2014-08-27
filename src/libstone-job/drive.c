@@ -93,7 +93,7 @@ static bool stj_drive_check_support(struct st_drive * drive, struct st_media_for
 	struct st_value * returned = st_json_parse_fd(self->fd, -1);
 	bool ok = false;
 
-	st_value_unpack(returned, "{sb}", "status", &ok);
+	st_value_unpack(returned, "{sb}", "returned", &ok);
 	st_value_free(returned);
 
 	return ok;
@@ -183,13 +183,14 @@ static char * stj_drive_lock(struct st_drive * drive) {
 	st_json_encode_to_fd(request, self->fd, true);
 	st_value_free(request);
 
-	struct st_value * response = st_json_parse_fd(self->fd, -1);
-	if (response == NULL)
+	struct st_value * returned = st_json_parse_fd(self->fd, -1);
+	if (returned == NULL)
 		return NULL;
 
+	bool locked = false;
 	char * cookie = NULL;
-	st_value_unpack(response, "{ss}", "cookie", &cookie);
-	st_value_free(response);
+	st_value_unpack(returned, "{s{sbss}}", "returned", "locked", &locked, "cookie", &cookie);
+	st_value_free(returned);
 
 	return cookie;
 }
@@ -206,7 +207,7 @@ static int stj_drive_sync(struct st_drive * drive) {
 		return 1;
 
 	struct st_value * vdr = NULL;
-	st_value_unpack(response, "{so}", "drive", &vdr);
+	st_value_unpack(response, "{so}", "returned", &vdr);
 
 	st_drive_sync(drive, vdr, true);
 

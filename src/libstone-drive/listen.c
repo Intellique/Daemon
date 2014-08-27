@@ -190,7 +190,7 @@ static void stdr_socket_command_check_support(struct stdr_peer * peer __attribut
 
 	st_media_format_free(format);
 
-	struct st_value * returned = st_value_pack("{sb}", "status", ok);
+	struct st_value * returned = st_value_pack("{sb}", "returned", ok);
 	st_json_encode_to_fd(returned, fd, true);
 	st_value_free(returned);
 }
@@ -470,13 +470,13 @@ static void stdr_socket_command_lock(struct stdr_peer * peer, struct st_value * 
 		free(peer->cookie);
 		peer->cookie = st_checksum_gen_salt(NULL, 32);
 
-		struct st_value * response = st_value_pack("{sbss}", "status", true, "cookie", peer->cookie);
-		st_json_encode_to_fd(response, fd, true);
-		st_value_free(response);
+		struct st_value * returned = st_value_pack("{s{sbss}}", "returned", "locked", true, "cookie", peer->cookie);
+		st_json_encode_to_fd(returned, fd, true);
+		st_value_free(returned);
 	} else {
-		struct st_value * response = st_value_pack("{sb}", "status", false);
-		st_json_encode_to_fd(response, fd, true);
-		st_value_free(response);
+		struct st_value * returned = st_value_pack("{s{sbsn}}", "returned", "locked", false, "cookie");
+		st_json_encode_to_fd(returned, fd, true);
+		st_value_free(returned);
 	}
 }
 
@@ -498,7 +498,7 @@ static void stdr_socket_command_sync(struct stdr_peer * peer __attribute__((unus
 	struct st_drive_driver * driver = stdr_drive_get();
 	struct st_drive * dr = driver->device;
 
-	struct st_value * response = st_value_pack("{so}", "drive", st_drive_convert(dr, true));
+	struct st_value * response = st_value_pack("{so}", "returned", st_drive_convert(dr, true));
 	st_json_encode_to_fd(response, fd, true);
 	st_value_free(response);
 }

@@ -36,6 +36,7 @@
 #include <uuid/uuid.h>
 
 #include <libstone/checksum.h>
+#include <libstone/database.h>
 #include <libstone/host.h>
 #include <libstone/log.h>
 
@@ -118,7 +119,7 @@ static bool std_media_read_header_v1(struct st_media * media, const char * buffe
 		ok = digest != NULL && !strcmp(checksum_value, digest);
 		free(digest);
 
-		// media->pool = st_pool_get_by_uuid(pool_id);
+		media->pool = db_connection->ops->get_pool(db_connection, pool_id, NULL);
 		// TODO: create pool
 		// if (media->pool == NULL)
 		//	media->pool = st_pool_create(pool_id, pool_name, media->format);
@@ -150,7 +151,7 @@ static bool std_media_read_header_v1(struct st_media * media, const char * buffe
 	return ok;
 }
 
-static bool std_media_read_header_v2(struct st_media * media, const char * buffer, int nb_parsed2, bool check, struct st_database_connection * db_connection __attribute__((unused))) {
+static bool std_media_read_header_v2(struct st_media * media, const char * buffer, int nb_parsed2, bool check, struct st_database_connection * db_connection) {
 	// M | STone (v0.1)
 	// M | Tape format: version=2
 	// M | Host: name=kazoo, uuid=40e576d7-cb14-42c2-95c5-edd14fbb638d
@@ -205,7 +206,7 @@ static bool std_media_read_header_v2(struct st_media * media, const char * buffe
 		ok = digest != NULL && !strcmp(checksum_value, digest);
 		free(digest);
 
-		// media->pool = st_pool_get_by_uuid(pool_id);
+		media->pool = db_connection->ops->get_pool(db_connection, pool_id, NULL);
 		// TODO: create pool
 		// if (media->pool == NULL)
 		//	media->pool = st_pool_create(pool_id, pool_name, media->format);
