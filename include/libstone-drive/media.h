@@ -34,8 +34,8 @@
 
 struct st_database_connection;
 
-bool std_media_check_header(struct st_media * media, const char * buffer, struct st_database_connection * db_connection);
-bool std_media_write_header(struct st_media * media, struct st_pool * pool, char * buffer, size_t length);
+bool stdr_media_check_header(struct st_media * media, const char * buffer, struct st_database_connection * db_connection);
+bool stdr_media_write_header(struct st_media * media, struct st_pool * pool, char * buffer, size_t length);
 
 #endif
 

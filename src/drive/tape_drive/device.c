@@ -144,7 +144,7 @@ static bool tape_drive_check_header(struct st_database_connection * db) {
 		return false;
 
 	// check header
-	bool ok = std_media_check_header(tape_drive.slot->media, buffer, db);
+	bool ok = stdr_media_check_header(tape_drive.slot->media, buffer, db);
 	free(buffer);
 	return ok;
 }
@@ -217,7 +217,7 @@ static ssize_t tape_drive_find_best_block_size(struct st_database_connection * d
 		tape_drive.status = st_drive_status_writing;
 		db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
 
-		unsigned int i, nb_loop = 8388608 / current_block_size;
+		unsigned int i, nb_loop = 8589934592 / current_block_size;
 
 		struct timespec start;
 		clock_gettime(CLOCK_MONOTONIC, &start);
@@ -241,7 +241,7 @@ static ssize_t tape_drive_find_best_block_size(struct st_database_connection * d
 			break;
 		}
 
-		double time_spent = difftime(end.tv_sec, start.tv_sec);
+		double time_spent = st_time_diff(&end, &start) / 1000000000L;
 		double speed = i * current_block_size;
 		speed /= time_spent;
 
@@ -284,7 +284,7 @@ static int tape_drive_format_media(struct st_pool * pool, struct st_database_con
 		return failed;
 
 	char * header = malloc(block_size);
-	if (!std_media_write_header(tape_drive.slot->media, pool, header, block_size)) {
+	if (!stdr_media_write_header(tape_drive.slot->media, pool, header, block_size)) {
 		free(header);
 		return 1;
 	}

@@ -44,12 +44,12 @@
 
 #include "stone.version"
 
-static bool std_media_read_header_v1(struct st_media * media, const char * buffer, int nb_parsed, bool check, struct st_database_connection * db_connection);
-static bool std_media_read_header_v2(struct st_media * media, const char * buffer, int nb_parsed, bool check, struct st_database_connection * db_connection);
+static bool stdr_media_read_header_v1(struct st_media * media, const char * buffer, int nb_parsed, bool check, struct st_database_connection * db_connection);
+static bool stdr_media_read_header_v2(struct st_media * media, const char * buffer, int nb_parsed, bool check, struct st_database_connection * db_connection);
 
 
-__asm__(".symver std_media_check_header_v1, std_media_check_header@@LIBSTONE_DRIVE_1.2");
-bool std_media_check_header_v1(struct st_media * media, const char * buffer, struct st_database_connection * db_connection) {
+__asm__(".symver stdr_media_check_header_v1, stdr_media_check_header@@LIBSTONE_DRIVE_1.2");
+bool stdr_media_check_header_v1(struct st_media * media, const char * buffer, struct st_database_connection * db_connection) {
 	char stone_version[65];
 	int tape_format_version = 0;
 	int nb_parsed = 0;
@@ -58,11 +58,11 @@ bool std_media_check_header_v1(struct st_media * media, const char * buffer, str
 	if (sscanf(buffer, "STone (%64[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed) == 2) {
 		switch (tape_format_version) {
 			case 1:
-				ok = std_media_read_header_v1(media, buffer, nb_parsed, true, db_connection);
+				ok = stdr_media_read_header_v1(media, buffer, nb_parsed, true, db_connection);
 				break;
 
 			case 2:
-				ok = std_media_read_header_v2(media, buffer, nb_parsed, true, db_connection);
+				ok = stdr_media_read_header_v2(media, buffer, nb_parsed, true, db_connection);
 				break;
 		}
 	}
@@ -70,7 +70,7 @@ bool std_media_check_header_v1(struct st_media * media, const char * buffer, str
 	return ok;
 }
 
-static bool std_media_read_header_v1(struct st_media * media, const char * buffer, int nb_parsed2, bool check, struct st_database_connection * db_connection __attribute__((unused))) {
+static bool stdr_media_read_header_v1(struct st_media * media, const char * buffer, int nb_parsed2, bool check, struct st_database_connection * db_connection __attribute__((unused))) {
 	// M | STone (v0.1)
 	// M | Tape format: version=1
 	// O | Label: A0000002
@@ -151,7 +151,7 @@ static bool std_media_read_header_v1(struct st_media * media, const char * buffe
 	return ok;
 }
 
-static bool std_media_read_header_v2(struct st_media * media, const char * buffer, int nb_parsed2, bool check, struct st_database_connection * db_connection) {
+static bool stdr_media_read_header_v2(struct st_media * media, const char * buffer, int nb_parsed2, bool check, struct st_database_connection * db_connection) {
 	// M | STone (v0.1)
 	// M | Tape format: version=2
 	// M | Host: name=kazoo, uuid=40e576d7-cb14-42c2-95c5-edd14fbb638d
@@ -238,8 +238,8 @@ static bool std_media_read_header_v2(struct st_media * media, const char * buffe
 	return ok;
 }
 
-__asm__(".symver std_media_write_header_v1, std_media_write_header@@LIBSTONE_DRIVE_1.2");
-bool std_media_write_header_v1(struct st_media * media, struct st_pool * pool, char * buffer, size_t length) {
+__asm__(".symver stdr_media_write_header_v1, stdr_media_write_header@@LIBSTONE_DRIVE_1.2");
+bool stdr_media_write_header_v1(struct st_media * media, struct st_pool * pool, char * buffer, size_t length) {
 	bzero(buffer, length);
 
 	if (*media->uuid == '\0') {

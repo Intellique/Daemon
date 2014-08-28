@@ -217,8 +217,10 @@ static int scsi_changer_init(struct st_value * config, struct st_database_connec
 		st_value_iterator_free(iter);
 	}
 
-	if (found && scsi_changer.enable && scsi_changer.is_online)
+	if (found && scsi_changer.enable && scsi_changer.is_online) {
+		scsi_changer_scsi_medium_removal(scsi_changer_device, false);
 		scsi_changer_scsi_new_status(&scsi_changer, scsi_changer_device, available_drives, &scsi_changer_transport_address);
+	}
 
 	st_value_free(available_drives);
 
@@ -398,6 +400,7 @@ static int scsi_changer_put_online(struct st_database_connection * db_connection
 }
 
 static int scsi_changer_shut_down(struct st_database_connection * db_connection __attribute__((unused))) {
+	scsi_changer_scsi_medium_removal(scsi_changer_device, true);
 	return 0;
 }
 
