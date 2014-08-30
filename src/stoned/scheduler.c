@@ -117,6 +117,16 @@ static int std_job_filter(const struct dirent * file) {
 }
 
 void std_scheduler_do(struct st_value * logger, struct st_value * db_config, struct st_database_connection * db_connection) {
+	static struct timespec last_start;
+
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+
+	if (now.tv_sec - last_start.tv_sec < 15)
+		return;
+
+	last_start = now;
+
 	struct st_value_iterator * iter = st_value_hashtable_get_iterator(jobs);
 	while (st_value_iterator_has_next(iter)) {
 		struct st_value * vjob = st_value_iterator_get_value(iter, false);

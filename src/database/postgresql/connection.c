@@ -1768,6 +1768,7 @@ static int st_database_postgresql_sync_job(struct st_database_connection * conne
 		st_database_postgresql_get_error(result, query);
 
 	PQclear(result);
+	free(job_id);
 
 	if (jobrun_id == NULL)
 		return status != PGRES_COMMAND_OK;

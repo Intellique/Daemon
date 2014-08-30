@@ -140,8 +140,10 @@ static bool tape_drive_check_header(struct st_database_connection * db) {
 	tape_drive.status = nb_read < 0 ? st_drive_status_error : st_drive_status_loaded_idle;
 	db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
 
-	if (nb_read < 0)
+	if (nb_read < 0) {
+		free(buffer);
 		return false;
+	}
 
 	// check header
 	bool ok = stdr_media_check_header(tape_drive.slot->media, buffer, db);
@@ -232,6 +234,11 @@ static ssize_t tape_drive_find_best_block_size(struct st_database_connection * d
 
 		struct timespec end;
 		clock_gettime(CLOCK_MONOTONIC, &end);
+
+		static struct mtop eof = { MTWEOF, 1 };
+		tape_drive_operation_start();
+		failed = ioctl(fd_nst, MTIOCTOP, &eof);
+		tape_drive_operation_stop();
 
 		if (failed != 0) {
 			tape_drive.status = st_drive_status_error;

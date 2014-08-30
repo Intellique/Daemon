@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include <libstone/database.h>
+#include <libstone/host.h>
 #include <libstone/json.h>
 #include <libstone/log.h>
 #include <libstone/poll.h>
@@ -82,6 +83,9 @@ int main() {
 	if (db_connect == NULL)
 		return 4;
 
+	if (!st_host_init(db_connect))
+		return 5;
+
 	st_poll_register(0, POLLHUP, changer_request, NULL, NULL);
 
 	stdr_changer_setup(db_connect);
@@ -107,6 +111,8 @@ int main() {
 	st_log_write(st_log_level_info, "Changer (type: %s) will stop", driver->name);
 
 	st_log_stop_logger();
+
+	st_value_free(config);
 
 	return 0;
 }

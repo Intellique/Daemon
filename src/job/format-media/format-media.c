@@ -69,7 +69,10 @@ static struct st_job_driver formatmedia = {
 };
 
 
-static void formatmedia_exit(struct st_job * job __attribute__((unused)), struct st_database_connection * db_connect __attribute__((unused))) {}
+static void formatmedia_exit(struct st_job * job __attribute__((unused)), struct st_database_connection * db_connect __attribute__((unused))) {
+	st_pool_free(formatmedia_pool);
+	formatmedia_pool = NULL;
+}
 
 static void formatmedia_init() {
 	stj_job_register(&formatmedia);

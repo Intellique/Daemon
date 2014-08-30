@@ -192,8 +192,10 @@ int st_socket_server_temp_unix_v1(struct st_value * config) {
 		asprintf(&new_path, "%s/%s.socket", dir, salt);
 
 		fd = socket(AF_UNIX, type, 0);
-		if (fd < 0)
+		if (fd < 0) {
+			free(new_path);
 			return -1;
+		}
 
 		struct sockaddr_un addr;
 		bzero(&addr, sizeof(addr));

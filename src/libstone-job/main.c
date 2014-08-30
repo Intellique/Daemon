@@ -126,6 +126,9 @@ static void job_worker(void * arg) {
 error:
 	job_dr->exit(j, db_connect);
 
+	db_connect->ops->close(db_connect);
+	db_connect->ops->free(db_connect);
+
 	pthread_mutex_lock(&lock);
 	finished = true;
 	pthread_mutex_unlock(&lock);
@@ -196,6 +199,8 @@ int main() {
 	st_value_free(status);
 
 	st_log_stop_logger();
+
+	st_value_free(config);
 
 	return 0;
 }
