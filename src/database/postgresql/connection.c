@@ -818,7 +818,55 @@ static struct st_value * st_database_postgresql_get_vtls(struct st_database_conn
 	if (host_id == NULL)
 		return changers;
 
-	// struct st_database_postgresql_connection_private * self = connect->data;
+	struct st_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_vtls";
+	st_database_postgresql_prepare(self, query, "SELECT v.uuid, v.path, v.prefix, v.nbslots, v.nbdrives, v.deleted, mf.name, mf.densitycode, mf.mode, c.id FROM vtl v INNER JOIN mediaformat mf ON v.mediaformat = mf.id LEFT JOIN changer c ON v.uuid::TEXT = c.serialnumber WHERE v.host = $1");
+
+	const char * params[] = { host_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, params, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+	int nb_result = PQntuples(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && nb_result > 0) {
+		int i;
+		for (i = 0; i < nb_result; i++) {
+			char * changer_id = NULL;
+			if (!PQgetisnull(result, i, 9))
+				st_database_postgresql_get_string_dup(result, i, 9, &changer_id);
+
+			unsigned int nb_slots, nb_drives;
+			bool deleted;
+
+			st_database_postgresql_get_uint(result, i, 3, &nb_slots);
+			st_database_postgresql_get_uint(result, i, 4, &nb_drives);
+			st_database_postgresql_get_bool(result, i, 5, &deleted);
+
+			unsigned int density_code;
+			st_database_postgresql_get_uint(result, i, 7, &density_code);
+			enum st_media_format_mode mode = st_media_string_to_format_mode(PQgetvalue(result, i, 8));
+			struct st_media_format * format = st_database_postgresql_get_media_format(connect, density_code, mode);
+
+			struct st_value * changer = st_value_pack("{s[]sssssssisisbso}",
+				"drives",
+				"uuid", PQgetvalue(result, i, 0),
+				"path", PQgetvalue(result, i, 1),
+				"prefix", PQgetvalue(result, i, 2),
+				"nb slots", (long long) nb_slots,
+				"nb drives", (long long) nb_drives,
+				"deleted", deleted,
+				"format", st_media_format_convert(format)
+			);
+
+			st_value_list_push(changers, changer, true);
+
+			st_media_format_free(format);
+			free(changer_id);
+		}
+	}
+
 	return changers;
 }
 

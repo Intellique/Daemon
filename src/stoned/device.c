@@ -42,6 +42,8 @@
 
 #include "device.h"
 
+#include "config.h"
+
 struct std_device {
 	char * process_name;
 	struct st_process process;
@@ -67,6 +69,7 @@ void std_device_configure(struct st_value * logger, struct st_value * db_config,
 
 	static int i_changer = 0, i_drives = 0;
 
+	// get scsi changers
 	struct st_value * real_changers = connection->ops->get_changers(connection);
 	struct st_value_iterator * iter = st_value_list_get_iterator(real_changers);
 	while (st_value_iterator_has_next(iter)) {
@@ -82,7 +85,7 @@ void std_device_configure(struct st_value * logger, struct st_value * db_config,
 		st_poll_register(dev->fd_in, POLLHUP, std_device_exited, dev, NULL);
 
 		char * path;
-		asprintf(&path, "run/changer_%d.socket", i_changer);
+		asprintf(&path, DAEMON_SOCKET_DIR "/changer_%d.socket", i_changer);
 
 		st_value_hashtable_put2(changer, "socket", st_value_pack("{ssss}", "domain", "unix", "path", path), true);
 		dev->config = st_value_pack("{sOsOsO}", "changer", changer, "logger", logger, "database", db_config);
@@ -113,6 +116,50 @@ void std_device_configure(struct st_value * logger, struct st_value * db_config,
 		i_changer++;
 	}
 	st_value_iterator_free(iter);
+	st_value_free(real_changers);
+
+	// get standalone drives
+
+	// get virtual tape libraries
+	struct st_value * vtl_changers = connection->ops->get_vtls(connection);
+	iter = st_value_list_get_iterator(vtl_changers);
+	while (st_value_iterator_has_next(iter)) {
+		struct st_value * changer = st_value_iterator_get_value(iter, true);
+
+		struct st_value * drives = NULL;
+		long long nb_drives = 0;
+		st_value_unpack(changer, "{sosi}", "drives", &drives, "nb drives", &nb_drives);
+
+		long long int i;
+		for (i = 0; i < nb_drives; i++) {
+			char * path;
+			asprintf(&path, "run/changer_%d_drive_%d.socket", i_changer, i_drives);
+			i_drives++;
+
+			st_value_list_push(drives, st_value_pack("{s{ssss}}", "socket", "domain", "unix", "path", path), true);
+
+			free(path);
+		}
+
+		struct std_device * dev = malloc(sizeof(struct std_device));
+		dev->process_name = "vtl_changer";
+		st_process_new(&dev->process, dev->process_name, NULL, 0);
+		dev->fd_in = st_process_pipe_to(&dev->process);
+		st_process_close(&dev->process, st_process_stdout);
+		st_process_close(&dev->process, st_process_stderr);
+
+		st_poll_register(dev->fd_in, POLLHUP, std_device_exited, dev, NULL);
+
+		char * path;
+		asprintf(&path, DAEMON_SOCKET_DIR "/changer_%d.socket", i_changer);
+
+		st_value_hashtable_put2(changer, "socket", st_value_pack("{ssss}", "domain", "unix", "path", path), true);
+		dev->config = st_value_pack("{sOsOsO}", "changer", changer, "logger", logger, "database", db_config);
+
+		free(path);
+	}
+	st_value_iterator_free(iter);
+	st_value_free(vtl_changers);
 }
 
 static void std_device_exited(int fd __attribute__((unused)), short event, void * data) {

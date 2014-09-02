@@ -1,0 +1,11 @@
+STONE_CHANGER_VTLCHANGER_SRC_DIR		:= src/changer/vtl_changer
+
+STONE_CHANGER_VTLCHANGER_BIN			:= bin/vtl_changer
+STONE_CHANGER_VTLCHANGER_CFLAG			:= -pthread
+STONE_CHANGER_VTLCHANGER_LD				:= -pthread -lstone -lstone-changer -Llib
+
+STONE_CHANGER_VTLCHANGER_DEPEND_LIB		:= lib/libstone-changer.so
+
+STONE_CHANGER_VTLCHANGER_CHCKSUM_FILE	:= changer-vtlchanger.chcksum
+
+BIN_SYMS								+= STONE_CHANGER_VTLCHANGER
