@@ -24,10 +24,22 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// NULL
-#include <stddef.h>
+#define _GNU_SOURCE
+// asprintf
+#include <stdio.h>
+// free
+#include <stdlib.h>
+// access
+#include <unistd.h>
 
+#include <libstone/drive.h>
+#include <libstone/file.h>
+#include <libstone/slot.h>
+#include <libstone/value.h>
 #include <libstone-changer/changer.h>
+
+#include "device.h"
+#include "util.h"
 
 static int vtl_changer_init(struct st_value * config, struct st_database_connection * db_connection);
 static int vtl_changer_load(struct st_slot * from, struct st_drive * to, struct st_database_connection * db_connection);
@@ -51,9 +63,9 @@ static struct st_changer vtl_changer = {
 	.revision      = NULL,
 	.serial_number = NULL,
 	.wwn           = NULL,
-	.barcode       = false,
+	.barcode       = true,
 
-	.status      = st_changer_status_unknown,
+	.status      = st_changer_status_idle,
 	.next_action = st_changer_action_none,
 	.is_online   = true,
 	.enable      = true,
@@ -76,6 +88,62 @@ struct st_changer * vtl_changer_get_device() {
 }
 
 static int vtl_changer_init(struct st_value * config, struct st_database_connection * db_connection) {
+	char * root_dir;
+	long long nb_drives, nb_slots;
+	st_value_unpack(config, "{sssisi}", "path", &root_dir, "nb drives", &nb_drives, "nb slots", &nb_slots);
+
+	vtl_changer.model = "Stone vtl changer";
+	vtl_changer.vendor = "Intellique";
+	vtl_changer.revision = "A01";
+
+	vtl_changer.drives = calloc(nb_drives, sizeof(struct st_drive));
+	vtl_changer.nb_drives = nb_drives;
+
+	vtl_changer.nb_slots = nb_drives + nb_slots;
+	vtl_changer.slots = calloc(vtl_changer.nb_slots, sizeof(struct st_slot));
+
+	if (access(root_dir, F_OK | R_OK | W_OK | X_OK)) {
+	} else {
+		if (st_file_mkdir(root_dir, 0700))
+			goto init_error;
+
+		char * serial_file;
+		asprintf(&serial_file, "%s/serial_number", root_dir);
+
+		vtl_changer.serial_number = vtl_util_get_serial(serial_file);
+		free(serial_file);
+
+		long long int i;
+		for (i = 0; i < nb_drives; i++) {
+			char * drive_dir;
+			asprintf(&drive_dir, "%s/drives/%Ld", root_dir, i);
+			st_file_mkdir(drive_dir, 0700);
+			free(drive_dir);
+
+			asprintf(&serial_file, "%s/drives/%Ld/serial_number", root_dir, i);
+			char * serial = vtl_util_get_serial(serial_file);
+			free(serial_file);
+		}
+
+		for (i = 0; i < nb_slots; i++) {
+			char * media_dir;
+			asprintf(&media_dir, "%s/medias/%Ld", root_dir, i);
+			st_file_mkdir(media_dir, 0700);
+			free(media_dir);
+
+			char * slot_dir;
+			asprintf(&slot_dir, "%s/slots/%Ld", root_dir, i);
+			st_file_mkdir(slot_dir, 0700);
+			free(slot_dir);
+		}
+	}
+
+	return 0;
+
+init_error:
+	free(root_dir);
+
+	return 1;
 }
 
 static int vtl_changer_load(struct st_slot * from, struct st_drive * to, struct st_database_connection * db_connection) {

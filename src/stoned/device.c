@@ -157,6 +157,14 @@ void std_device_configure(struct st_value * logger, struct st_value * db_config,
 		dev->config = st_value_pack("{sOsOsO}", "changer", changer, "logger", logger, "database", db_config);
 
 		free(path);
+
+		st_value_list_push(devices, st_value_new_custom(dev, std_device_free), true);
+		st_value_list_push(devices_json, changer, false);
+
+		st_process_start(&dev->process, 1);
+		st_json_encode_to_fd(dev->config, dev->fd_in, true);
+
+		i_changer++;
 	}
 	st_value_iterator_free(iter);
 	st_value_free(vtl_changers);
