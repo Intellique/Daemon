@@ -1,3 +1,9 @@
+stone (1.1.18+wheezy) polisher; urgency=low
+
+  * Bug fix: job check archive: checksum
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 03 Sep 2014 17:26:26 +0200
+
 stone (1.1.17+wheezy) polisher; urgency=low
 
   * Bug fix: espace restante sur bande
