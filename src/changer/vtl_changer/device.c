@@ -29,17 +29,25 @@
 #include <stdio.h>
 // free
 #include <stdlib.h>
+// strdup
+#include <string.h>
+// bzero
+#include <strings.h>
 // access
 #include <unistd.h>
+// time
+#include <time.h>
 
-#include <libstone/drive.h>
 #include <libstone/file.h>
 #include <libstone/slot.h>
 #include <libstone/value.h>
 #include <libstone-changer/changer.h>
+#include <libstone-changer/drive.h>
 
 #include "device.h"
 #include "util.h"
+
+static char * vtl_root_dir = NULL;
 
 static int vtl_changer_init(struct st_value * config, struct st_database_connection * db_connection);
 static int vtl_changer_load(struct st_slot * from, struct st_drive * to, struct st_database_connection * db_connection);
@@ -58,9 +66,9 @@ struct st_changer_ops vtl_changer_ops = {
 };
 
 static struct st_changer vtl_changer = {
-	.model         = NULL,
-	.vendor        = NULL,
-	.revision      = NULL,
+	.model         = "Stone vtl changer",
+	.vendor        = "Intellique",
+	.revision      = "A01",
 	.serial_number = NULL,
 	.wwn           = NULL,
 	.barcode       = true,
@@ -88,13 +96,14 @@ struct st_changer * vtl_changer_get_device() {
 }
 
 static int vtl_changer_init(struct st_value * config, struct st_database_connection * db_connection) {
-	char * root_dir;
 	long long nb_drives, nb_slots;
-	st_value_unpack(config, "{sssisi}", "path", &root_dir, "nb drives", &nb_drives, "nb slots", &nb_slots);
+	struct st_value * drives = NULL, * vformat = NULL;
+	char * prefix;
+	st_value_unpack(config, "{sssisisososs}", "path", &vtl_root_dir, "nb drives", &nb_drives, "nb slots", &nb_slots, "drives", &drives, "format", &vformat, "prefix", &prefix);
 
-	vtl_changer.model = "Stone vtl changer";
-	vtl_changer.vendor = "Intellique";
-	vtl_changer.revision = "A01";
+	struct st_media_format * format = malloc(sizeof(struct st_media_format));
+	bzero(format, sizeof(struct st_media_format));
+	st_media_format_sync(format, vformat);
 
 	vtl_changer.drives = calloc(nb_drives, sizeof(struct st_drive));
 	vtl_changer.nb_drives = nb_drives;
@@ -102,13 +111,13 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 	vtl_changer.nb_slots = nb_drives + nb_slots;
 	vtl_changer.slots = calloc(vtl_changer.nb_slots, sizeof(struct st_slot));
 
-	if (access(root_dir, F_OK | R_OK | W_OK | X_OK)) {
+	if (access(vtl_root_dir, F_OK | R_OK | W_OK | X_OK) == 0) {
 	} else {
-		if (st_file_mkdir(root_dir, 0700))
+		if (st_file_mkdir(vtl_root_dir, 0700))
 			goto init_error;
 
 		char * serial_file;
-		asprintf(&serial_file, "%s/serial_number", root_dir);
+		asprintf(&serial_file, "%s/serial_number", vtl_root_dir);
 
 		vtl_changer.serial_number = vtl_util_get_serial(serial_file);
 		free(serial_file);
@@ -116,32 +125,84 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 		long long int i;
 		for (i = 0; i < nb_drives; i++) {
 			char * drive_dir;
-			asprintf(&drive_dir, "%s/drives/%Ld", root_dir, i);
+			asprintf(&drive_dir, "%s/drives/%Ld", vtl_root_dir, i);
 			st_file_mkdir(drive_dir, 0700);
-			free(drive_dir);
 
-			asprintf(&serial_file, "%s/drives/%Ld/serial_number", root_dir, i);
-			char * serial = vtl_util_get_serial(serial_file);
+			asprintf(&serial_file, "%s/drives/%Ld/serial_number", vtl_root_dir, i);
+
+			struct st_drive * drive = vtl_changer.drives + i;
+			drive->model = "Stone vtl drive";
+			drive->vendor = "Intellique";
+			drive->revision = "A01";
+			drive->serial_number = vtl_util_get_serial(serial_file);
+
+			drive->status = st_drive_status_unknown;
+			drive->enable = true;
+
+			drive->density_code = format->density_code;
+			drive->mode = st_media_format_mode_disk;
+
+			drive->changer = &vtl_changer;
+			drive->index = i;
+
+			struct st_slot * sl = vtl_changer.slots + i;
+			sl->changer = &vtl_changer;
+			sl->index = i;
+			sl->drive = drive;
+			drive->slot = sl;
+
+			sl->full = false;
+			sl->enable = true;
+
+			struct st_value * vdrive = st_value_list_get(drives, i, false);
+			st_value_hashtable_put2(vdrive, "device", st_value_new_string(drive_dir), true);
+			st_value_hashtable_put2(vdrive, "serial number", st_value_new_string(drive->serial_number), true);
+
+			free(drive_dir);
 			free(serial_file);
+
+			// stchgr_drive_register(drive, vdrive, "vtl_drive");
 		}
 
 		for (i = 0; i < nb_slots; i++) {
 			char * media_dir;
-			asprintf(&media_dir, "%s/medias/%Ld", root_dir, i);
+			asprintf(&media_dir, "%s/medias/%Ld", vtl_root_dir, i);
 			st_file_mkdir(media_dir, 0700);
-			free(media_dir);
 
-			char * slot_dir;
-			asprintf(&slot_dir, "%s/slots/%Ld", root_dir, i);
-			st_file_mkdir(slot_dir, 0700);
-			free(slot_dir);
+			char * serial_file;
+			asprintf(&serial_file, "%s/medias/%Ld/serial_number", vtl_root_dir, i);
+
+			struct st_slot * sl = vtl_changer.slots + nb_drives + i;
+			sl->changer = &vtl_changer;
+			sl->index = nb_drives + i;
+
+			struct vtl_changer_slot * vtl_sl = sl->data = malloc(sizeof(struct vtl_changer_slot));
+			bzero(vtl_sl, sizeof(struct vtl_changer_slot));
+			asprintf(&vtl_sl->path, "%s/slots/%Ld", vtl_root_dir, i);
+			st_file_mkdir(vtl_sl->path, 0700);
+
+			struct st_media * media = sl->media = malloc(sizeof(struct st_media));
+			bzero(media, sizeof(struct st_media));
+			asprintf(&media->label, "%s%03Ld", prefix, i);
+			media->medium_serial_number = vtl_util_get_serial(serial_file);
+			media->name = strdup(media->label);
+			media->status = st_media_status_new;
+			media->first_used = time(NULL);
+			media->block_size = format->block_size;
+			media->free_block = media->total_block = format->capacity / format->block_size;
+			media->append = true;
+			media->type = st_media_type_rewritable;
+			media->format = format;
+
+			free(media_dir);
+			free(serial_file);
 		}
 	}
 
 	return 0;
 
 init_error:
-	free(root_dir);
+	free(vtl_root_dir);
 
 	return 1;
 }

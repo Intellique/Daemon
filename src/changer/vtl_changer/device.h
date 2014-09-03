@@ -27,6 +27,11 @@
 #ifndef __ST_VTLCHANGER_DEVICE_H__
 #define __ST_VTLCHANGER_DEVICE_H__
 
+struct vtl_changer_slot {
+	char * path;
+	struct st_slot * origin;
+};
+
 struct st_changer * vtl_changer_get_device(void);
 
 #endif
