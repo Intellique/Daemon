@@ -33,7 +33,7 @@
 #include <string.h>
 // bzero
 #include <strings.h>
-// access
+// access, symlink
 #include <unistd.h>
 // time
 #include <time.h>
@@ -112,6 +112,92 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 	vtl_changer.slots = calloc(vtl_changer.nb_slots, sizeof(struct st_slot));
 
 	if (access(vtl_root_dir, F_OK | R_OK | W_OK | X_OK) == 0) {
+		char * serial_file;
+		asprintf(&serial_file, "%s/serial_number", vtl_root_dir);
+
+		vtl_changer.serial_number = st_file_read_all_from(serial_file);
+		free(serial_file);
+
+		long long int i;
+		for (i = 0; i < nb_drives; i++) {
+			char * drive_dir;
+			asprintf(&drive_dir, "%s/drives/%Ld", vtl_root_dir, i);
+			asprintf(&serial_file, "%s/drives/%Ld/serial_number", vtl_root_dir, i);
+
+			struct st_drive * drive = vtl_changer.drives + i;
+			drive->model = "Stone vtl drive";
+			drive->vendor = "Intellique";
+			drive->revision = "A01";
+			drive->serial_number = st_file_read_all_from(serial_file);
+
+			drive->status = st_drive_status_unknown;
+			drive->enable = true;
+
+			drive->density_code = format->density_code;
+			drive->mode = st_media_format_mode_disk;
+
+			drive->changer = &vtl_changer;
+			drive->index = i;
+
+			struct st_slot * sl = vtl_changer.slots + i;
+			sl->changer = &vtl_changer;
+			sl->index = i;
+			sl->drive = drive;
+			drive->slot = sl;
+
+			sl->full = false;
+			sl->enable = true;
+
+			struct st_value * vdrive = st_value_list_get(drives, i, false);
+			st_value_hashtable_put2(vdrive, "device", st_value_new_string(drive_dir), true);
+			st_value_hashtable_put2(vdrive, "serial number", st_value_new_string(drive->serial_number), true);
+
+			char * media_link;
+			asprintf(&media_link, "%s/drives/%Ld/media", vtl_root_dir, i);
+			st_file_rm(media_link);
+
+			free(drive_dir);
+			free(serial_file);
+			free(media_link);
+
+			// stchgr_drive_register(drive, vdrive, "vtl_drive");
+		}
+
+		for (i = 0; i < nb_slots; i++) {
+			char * serial_file;
+			asprintf(&serial_file, "%s/medias/%s%03Ld/serial_number", vtl_root_dir, prefix, i);
+
+			struct st_slot * sl = vtl_changer.slots + nb_drives + i;
+			sl->changer = &vtl_changer;
+			sl->index = nb_drives + i;
+
+			struct vtl_changer_slot * vtl_sl = sl->data = malloc(sizeof(struct vtl_changer_slot));
+			bzero(vtl_sl, sizeof(struct vtl_changer_slot));
+			asprintf(&vtl_sl->path, "%s/slots/%Ld", vtl_root_dir, i);
+
+			char * media_link, * link;
+			asprintf(&media_link, "../../medias/%s%03Ld", prefix, i);
+			asprintf(&link, "%s/slots/%Ld/media", vtl_root_dir, i);
+			st_file_rm(link);
+			symlink(media_link, link);
+
+			struct st_media * media = sl->media = malloc(sizeof(struct st_media));
+			bzero(media, sizeof(struct st_media));
+			asprintf(&media->label, "%s%03Ld", prefix, i);
+			media->medium_serial_number = vtl_util_get_serial(serial_file);
+			media->name = strdup(media->label);
+			media->status = st_media_status_new;
+			media->first_used = time(NULL);
+			media->block_size = format->block_size;
+			media->free_block = media->total_block = format->capacity / format->block_size;
+			media->append = true;
+			media->type = st_media_type_rewritable;
+			media->format = format;
+
+			free(link);
+			free(media_link);
+			free(serial_file);
+		}
 	} else {
 		if (st_file_mkdir(vtl_root_dir, 0700))
 			goto init_error;
@@ -166,11 +252,11 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 
 		for (i = 0; i < nb_slots; i++) {
 			char * media_dir;
-			asprintf(&media_dir, "%s/medias/%Ld", vtl_root_dir, i);
+			asprintf(&media_dir, "%s/medias/%s%03Ld", vtl_root_dir, prefix, i);
 			st_file_mkdir(media_dir, 0700);
 
 			char * serial_file;
-			asprintf(&serial_file, "%s/medias/%Ld/serial_number", vtl_root_dir, i);
+			asprintf(&serial_file, "%s/medias/%s%03Ld/serial_number", vtl_root_dir, prefix, i);
 
 			struct st_slot * sl = vtl_changer.slots + nb_drives + i;
 			sl->changer = &vtl_changer;
@@ -180,6 +266,11 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 			bzero(vtl_sl, sizeof(struct vtl_changer_slot));
 			asprintf(&vtl_sl->path, "%s/slots/%Ld", vtl_root_dir, i);
 			st_file_mkdir(vtl_sl->path, 0700);
+
+			char * media_link, * link;
+			asprintf(&media_link, "../../medias/%s%03Ld", prefix, i);
+			asprintf(&link, "%s/slots/%Ld/media", vtl_root_dir, i);
+			symlink(media_link, link);
 
 			struct st_media * media = sl->media = malloc(sizeof(struct st_media));
 			bzero(media, sizeof(struct st_media));
@@ -194,7 +285,9 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 			media->type = st_media_type_rewritable;
 			media->format = format;
 
+			free(link);
 			free(media_dir);
+			free(media_link);
 			free(serial_file);
 		}
 	}
