@@ -1,0 +1,11 @@
+STONE_DRIVE_VTLDRIVE_SRC_DIR		:= src/drive/vtl_drive
+
+STONE_DRIVE_VTLDRIVE_BIN			:= bin/vtl_drive
+STONE_DRIVE_VTLDRIVE_CFLAG			:= -pthread
+STONE_DRIVE_VTLDRIVE_LD				:= -pthread -lstone -lstone-drive -Llib
+
+STONE_DRIVE_VTLDRIVE_DEPEND_LIB		:= lib/libstone-drive.so
+
+STONE_DRIVE_VTLDRIVE_CHCKSUM_FILE	:= drive-vtldrive.chcksum
+
+BIN_SYMS							+= STONE_DRIVE_VTLDRIVE

@@ -43,6 +43,7 @@
 #include <libstone/log.h>
 #include <libstone/media.h>
 #include <libstone/slot.h>
+#include <libstone-drive/time.h>
 
 #include "io.h"
 
@@ -132,9 +133,9 @@ static off_t tape_drive_reader_forward(struct st_stream_reader * io, off_t offse
 			st_log_write(st_log_level_info, "[%s | %s | #%u]: forward (#record %ld)", self->drive->vendor, self->drive->model, self->drive->index, nb_records);
 
 			struct mtop forward = { MTFSR, next_forward };
-			tape_drive_operation_start();
+			stdr_time_start();
 			int failed = ioctl(self->fd, MTIOCTOP, &forward);
-			tape_drive_operation_stop();
+			stdr_time_stop(self->drive);
 
 			if (failed != 0) {
 				self->last_errno = errno;
@@ -147,9 +148,9 @@ static off_t tape_drive_reader_forward(struct st_stream_reader * io, off_t offse
 		}
 
 		while (nb_records > 0) {
-			tape_drive_operation_start();
+			stdr_time_start();
 			ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
-			tape_drive_operation_stop();
+			stdr_time_stop(self->drive);
 
 			if (nb_read < 0) {
 				self->last_errno = errno;
@@ -165,9 +166,9 @@ static off_t tape_drive_reader_forward(struct st_stream_reader * io, off_t offse
 	if (nb_total_read == offset)
 		return self->position;
 
-	tape_drive_operation_start();
+	stdr_time_start();
 	ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
-	tape_drive_operation_stop();
+	stdr_time_stop(self->drive);
 
 	if (nb_read < 0) {
 		self->last_errno = errno;
@@ -263,9 +264,9 @@ static ssize_t tape_drive_reader_read(struct st_stream_reader * io, void * buffe
 
 	char * c_buffer = buffer;
 	while (length - nb_total_read >= self->block_size) {
-		tape_drive_operation_start();
+		stdr_time_start();
 		ssize_t nb_read = read(self->fd, c_buffer + nb_total_read, self->block_size);
-		tape_drive_operation_stop();
+		stdr_time_stop(self->drive);
 
 		if (nb_read < 0) {
 			self->last_errno = errno;
@@ -284,9 +285,9 @@ static ssize_t tape_drive_reader_read(struct st_stream_reader * io, void * buffe
 	if (nb_total_read == length)
 		return length;
 
-	tape_drive_operation_start();
+	stdr_time_start();
 	ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
-	tape_drive_operation_stop();
+	stdr_time_stop(self->drive);
 
 	if (nb_read < 0) {
 		self->last_errno = errno;

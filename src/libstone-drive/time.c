@@ -24,16 +24,25 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __ST_TAPEDRIVE_IO_H__
-#define __ST_TAPEDRIVE_IO_H__
+// clock_gettime
+#include <time.h>
 
-#include <libstone/io.h>
+#include <libstone/drive.h>
 
-struct st_drive;
+#include "time.h"
 
-ssize_t tape_drive_get_block_size(void);
-struct st_stream_reader * tape_drive_reader_get_raw_reader(struct st_drive * drive, int fd);
-struct st_stream_writer * tape_drive_writer_get_raw_writer(struct st_drive * drive, int fd);
+static struct timespec last_start;
 
-#endif
+__asm__(".symver stdr_time_start_v1, stdr_time_start@@LIBSTONE_DRIVE_1.2");
+void stdr_time_start_v1() {
+	clock_gettime(CLOCK_MONOTONIC, &last_start);
+}
+
+__asm__(".symver stdr_time_stop_v1, stdr_time_stop@@LIBSTONE_DRIVE_1.2");
+void stdr_time_stop_v1(struct st_drive * drive) {
+	struct timespec finish;
+	clock_gettime(CLOCK_MONOTONIC, &finish);
+
+	drive->operation_duration += (finish.tv_sec - last_start.tv_sec) + (finish.tv_nsec - last_start.tv_nsec) / 1000000000.0;
+}
 

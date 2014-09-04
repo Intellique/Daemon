@@ -24,16 +24,10 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __ST_TAPEDRIVE_IO_H__
-#define __ST_TAPEDRIVE_IO_H__
+#ifndef __ST_VTLDRIVE_DEVICE_H__
+#define __ST_VTLDRIVE_DEVICE_H__
 
-#include <libstone/io.h>
-
-struct st_drive;
-
-ssize_t tape_drive_get_block_size(void);
-struct st_stream_reader * tape_drive_reader_get_raw_reader(struct st_drive * drive, int fd);
-struct st_stream_writer * tape_drive_writer_get_raw_writer(struct st_drive * drive, int fd);
+struct st_drive * vtl_drive_get_device(void);
 
 #endif
 

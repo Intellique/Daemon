@@ -37,6 +37,8 @@
 #include <stdlib.h>
 // strrchr
 #include <string.h>
+// bzero
+#include <strings.h>
 // struct mtget
 #include <sys/mtio.h>
 // open
@@ -58,6 +60,7 @@
 #include <libstone/value.h>
 #include <libstone-drive/drive.h>
 #include <libstone-drive/media.h>
+#include <libstone-drive/time.h>
 
 #include "device.h"
 #include "io.h"
@@ -80,7 +83,6 @@ static char * scsi_device = NULL;
 static char * st_device = NULL;
 static int fd_nst = -1;
 static struct mtget status;
-static struct timespec last_start;
 
 
 static struct st_drive_ops tape_drive_ops = {
@@ -127,9 +129,9 @@ static bool tape_drive_check_header(struct st_database_connection * db) {
 	db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
 
 	static struct mtop rewind = { MTREW, 1 };
-	tape_drive_operation_start();
+	stdr_time_start();
 	int failed = ioctl(fd_nst, MTIOCTOP, &rewind);
-	tape_drive_operation_stop();
+	stdr_time_stop(&tape_drive);
 
 	tape_drive.status = failed != 0 ? st_drive_status_error : st_drive_status_reading;
 	db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
@@ -204,9 +206,9 @@ static ssize_t tape_drive_find_best_block_size(struct st_database_connection * d
 		db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
 
 		static struct mtop rewind = { MTREW, 1 };
-		tape_drive_operation_start();
+		stdr_time_start();
 		int failed = ioctl(fd_nst, MTIOCTOP, &rewind);
-		tape_drive_operation_stop();
+		stdr_time_stop(&tape_drive);
 
 		if (failed != 0) {
 			tape_drive.status = st_drive_status_error;
@@ -236,9 +238,9 @@ static ssize_t tape_drive_find_best_block_size(struct st_database_connection * d
 		clock_gettime(CLOCK_MONOTONIC, &end);
 
 		static struct mtop eof = { MTWEOF, 1 };
-		tape_drive_operation_start();
+		stdr_time_start();
 		failed = ioctl(fd_nst, MTIOCTOP, &eof);
-		tape_drive_operation_stop();
+		stdr_time_stop(&tape_drive);
 
 		if (failed != 0) {
 			tape_drive.status = st_drive_status_error;
@@ -263,9 +265,9 @@ static ssize_t tape_drive_find_best_block_size(struct st_database_connection * d
 	db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
 
 	static struct mtop rewind = { MTREW, 1 };
-	tape_drive_operation_start();
+	stdr_time_start();
 	int failed = ioctl(fd_nst, MTIOCTOP, &rewind);
-	tape_drive_operation_stop();
+	stdr_time_stop(&tape_drive);
 
 	tape_drive.status = failed != 0 ? st_drive_status_error : st_drive_status_loaded_idle;
 	db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
@@ -280,9 +282,9 @@ static int tape_drive_format_media(struct st_pool * pool, struct st_database_con
 	db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
 
 	static struct mtop rewind = { MTREW, 1 };
-	tape_drive_operation_start();
+	stdr_time_start();
 	int failed = ioctl(fd_nst, MTIOCTOP, &rewind);
-	tape_drive_operation_stop();
+	stdr_time_stop(&tape_drive);
 
 	tape_drive.status = failed != 0 ? st_drive_status_error : st_drive_status_loaded_idle;
 	db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
@@ -299,9 +301,9 @@ static int tape_drive_format_media(struct st_pool * pool, struct st_database_con
 	tape_drive.status = st_drive_status_writing;
 	db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
 
-	tape_drive_operation_start();
+	stdr_time_start();
 	ssize_t nb_write = write(fd_nst, header, block_size);
-	tape_drive_operation_stop();
+	stdr_time_stop(&tape_drive);
 
 	if (nb_write < 0) {
 		tape_drive.status = st_drive_status_error;
@@ -312,9 +314,9 @@ static int tape_drive_format_media(struct st_pool * pool, struct st_database_con
 	}
 
 	static struct mtop eof = { MTWEOF, 1 };
-	tape_drive_operation_start();
+	stdr_time_start();
 	failed = ioctl(fd_nst, MTIOCTOP, &eof);
-	tape_drive_operation_stop();
+	stdr_time_stop(&tape_drive);
 
 	tape_drive.status = failed != 0 ? st_drive_status_error : st_drive_status_loaded_idle;
 	db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
@@ -336,9 +338,9 @@ ssize_t tape_drive_get_block_size() {
 	tape_drive.status = st_drive_status_rewinding;
 
 	static struct mtop rewind = { MTREW, 1 };
-	tape_drive_operation_start();
+	stdr_time_start();
 	int failed = ioctl(fd_nst, MTIOCTOP, &rewind);
-	tape_drive_operation_stop();
+	stdr_time_stop(&tape_drive);
 
 	tape_drive.status = st_drive_status_loaded_idle;
 
@@ -349,15 +351,15 @@ ssize_t tape_drive_get_block_size() {
 	for (i = 0; i < 4 && buffer != NULL && failed == 0; i++) {
 		tape_drive.status = st_drive_status_reading;
 
-		tape_drive_operation_start();
+		stdr_time_start();
 		nb_read = read(fd_nst, buffer, block_size);
-		tape_drive_operation_stop();
+		stdr_time_stop(&tape_drive);
 
 		tape_drive.status = st_drive_status_loaded_idle;
 
-		tape_drive_operation_start();
+		stdr_time_start();
 		failed = ioctl(fd_nst, MTIOCGET, &status);
-		tape_drive_operation_stop();
+		stdr_time_stop(&tape_drive);
 
 		if (!failed && status.mt_blkno < 1)
 			break;
@@ -377,9 +379,9 @@ ssize_t tape_drive_get_block_size() {
 
 		tape_drive.status = st_drive_status_rewinding;
 
-		tape_drive_operation_start();
+		stdr_time_start();
 		failed = ioctl(fd_nst, MTIOCTOP, &rewind);
-		tape_drive_operation_stop();
+		stdr_time_stop(&tape_drive);
 
 		tape_drive.status = st_drive_status_loaded_idle;
 
@@ -487,9 +489,9 @@ static int tape_drive_init(struct st_value * config) {
 		tape_drive_scsi_read_density(&tape_drive, scsi_device);
 
 		fd_nst = open(st_device, O_RDWR | O_NONBLOCK);
-		tape_drive_operation_start();
+		stdr_time_start();
 		int failed = ioctl(fd_nst, MTIOCGET, &status);
-		tape_drive_operation_stop();
+		stdr_time_stop(&tape_drive);
 
 		if (failed != 0) {
 			if (GMT_ONLINE(status.mt_gstat)) {
@@ -514,17 +516,6 @@ static void tape_drive_on_failed(bool verbose, unsigned int sleep_time) {
 	fd_nst = open(st_device, O_RDWR | O_NONBLOCK);
 }
 
-void tape_drive_operation_start() {
-	clock_gettime(CLOCK_MONOTONIC, &last_start);
-}
-
-void tape_drive_operation_stop() {
-	struct timespec finish;
-	clock_gettime(CLOCK_MONOTONIC, &finish);
-
-	tape_drive.operation_duration += (finish.tv_sec - last_start.tv_sec) + (finish.tv_nsec - last_start.tv_nsec) / 1000000000.0;
-}
-
 static int tape_drive_reset(struct st_database_connection * db) {
 	tape_drive_on_failed(false, 1);
 	return tape_drive_update_status(db);
@@ -538,9 +529,9 @@ static int tape_drive_set_file_position(int file_position, struct st_database_co
 		db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
 
 		static struct mtop eod = { MTEOM, 1 };
-		tape_drive_operation_start();
+		stdr_time_start();
 		failed = ioctl(fd_nst, MTIOCTOP, &eod);
-		tape_drive_operation_stop();
+		stdr_time_stop(&tape_drive);
 
 		if (failed != 0)
 			st_log_write(st_log_level_error, "[%s | %s | #%u]: Fast forwarding to end of media finished with error (%m)", tape_drive.vendor, tape_drive.model, tape_drive.index);
@@ -555,9 +546,9 @@ static int tape_drive_set_file_position(int file_position, struct st_database_co
 		db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
 
 		static struct mtop rewind = { MTREW, 1 };
-		tape_drive_operation_start();
+		stdr_time_start();
 		failed = ioctl(fd_nst, MTIOCTOP, &rewind);
-		tape_drive_operation_stop();
+		stdr_time_stop(&tape_drive);
 
 		if (failed != 0) {
 			tape_drive.status = st_drive_status_error;
@@ -571,9 +562,9 @@ static int tape_drive_set_file_position(int file_position, struct st_database_co
 			db->ops->sync_drive(db, &tape_drive, st_database_sync_default);
 
 			struct mtop fsr = { MTFSF, file_position };
-			tape_drive_operation_start();
+			stdr_time_start();
 			failed = ioctl(fd_nst, MTIOCTOP, &fsr);
-			tape_drive_operation_stop();
+			stdr_time_stop(&tape_drive);
 
 			if (failed != 0)
 				st_log_write(st_log_level_error, "[%s | %s | #%u]: Positioning media to position #%d finished with error (%m)", tape_drive.vendor, tape_drive.model, tape_drive.index, file_position);
@@ -593,26 +584,26 @@ static int tape_drive_set_file_position(int file_position, struct st_database_co
 }
 
 static int tape_drive_update_status(struct st_database_connection * db) {
-	tape_drive_operation_start();
+	stdr_time_start();
 	int failed = ioctl(fd_nst, MTIOCGET, &status);
-	tape_drive_operation_stop();
+	stdr_time_stop(&tape_drive);
 
 	unsigned int i;
 	for (i = 0; i < 5 && failed != 0; i++) {
 		tape_drive_on_failed(true, 20);
 
-		tape_drive_operation_start();
+		stdr_time_start();
 		failed = ioctl(fd_nst, MTIOCGET, &status);
-		tape_drive_operation_stop();
+		stdr_time_stop(&tape_drive);
 	}
 
 	if (failed != 0) {
 		tape_drive.status = st_drive_status_error;
 
 		static struct mtop reset = { MTRESET, 1 };
-		tape_drive_operation_start();
+		stdr_time_start();
 		failed = ioctl(fd_nst, MTIOCTOP, &reset);
-		tape_drive_operation_stop();
+		stdr_time_stop(&tape_drive);
 	}
 
 	/**
@@ -627,9 +618,9 @@ static int tape_drive_update_status(struct st_database_connection * db) {
 		// get the tape status again
 		tape_drive_on_failed(true, 5);
 
-		tape_drive_operation_start();
+		stdr_time_start();
 		failed = ioctl(fd_nst, MTIOCGET, &status);
-		tape_drive_operation_stop();
+		stdr_time_stop(&tape_drive);
 	}
 
 	if (failed == 0) {

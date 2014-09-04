@@ -24,16 +24,24 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __ST_TAPEDRIVE_IO_H__
-#define __ST_TAPEDRIVE_IO_H__
+#include <libstone-drive/drive.h>
 
-#include <libstone/io.h>
+#include "device.h"
 
-struct st_drive;
+#include <drive-vtldrive.chcksum>
 
-ssize_t tape_drive_get_block_size(void);
-struct st_stream_reader * tape_drive_reader_get_raw_reader(struct st_drive * drive, int fd);
-struct st_stream_writer * tape_drive_writer_get_raw_writer(struct st_drive * drive, int fd);
+static struct st_drive_driver vtl_drive_driver = {
+	.name = "vtl drive",
 
-#endif
+	.api_level    = 0,
+	.src_checksum = STONE_DRIVE_VTLDRIVE_SRCSUM,
+};
+
+static void vtl_driver_init(void) __attribute__((constructor));
+
+
+static void vtl_driver_init() {
+	vtl_drive_driver.device = vtl_drive_get_device();
+	stdr_drive_register(&vtl_drive_driver);
+}
 

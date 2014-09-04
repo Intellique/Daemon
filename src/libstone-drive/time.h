@@ -24,16 +24,13 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __ST_TAPEDRIVE_IO_H__
-#define __ST_TAPEDRIVE_IO_H__
+#ifndef __STONEDRIVE_TIME_P_H__
+#define __STONEDRIVE_TIME_P_H__
 
-#include <libstone/io.h>
+#include <libstone-drive/time.h>
 
-struct st_drive;
-
-ssize_t tape_drive_get_block_size(void);
-struct st_stream_reader * tape_drive_reader_get_raw_reader(struct st_drive * drive, int fd);
-struct st_stream_writer * tape_drive_writer_get_raw_writer(struct st_drive * drive, int fd);
+void stdr_time_start_v1(void);
+void stdr_time_stop_v1(struct st_drive * drive) __attribute__((nonnull));
 
 #endif
 

@@ -5,6 +5,9 @@ LIBSTONE_DRIVE_1.2 {
 		stdr_media_check_header;
 		stdr_media_write_header;
 
+		stdr_time_start;
+		stdr_time_stop;
+
 	local:
 		stdr_changer_is_stopped;
 		stdr_changer_setup;
