@@ -25,7 +25,7 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
-// asprintf
+// asprintf, rename
 #include <stdio.h>
 // free
 #include <stdlib.h>
@@ -148,6 +148,10 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 			sl->full = false;
 			sl->enable = true;
 
+			struct vtl_changer_slot * vtl_sl = sl->data = malloc(sizeof(struct vtl_changer_slot));
+			bzero(vtl_sl, sizeof(struct vtl_changer_slot));
+			vtl_sl->path = drive_dir;
+
 			struct st_value * vdrive = st_value_list_get(drives, i, false);
 			st_value_hashtable_put2(vdrive, "device", st_value_new_string(drive_dir), true);
 			st_value_hashtable_put2(vdrive, "serial number", st_value_new_string(drive->serial_number), true);
@@ -156,7 +160,6 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 			asprintf(&media_link, "%s/drives/%Ld/media", vtl_root_dir, i);
 			st_file_rm(media_link);
 
-			free(drive_dir);
 			free(serial_file);
 			free(media_link);
 
@@ -240,11 +243,14 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 			sl->full = false;
 			sl->enable = true;
 
+			struct vtl_changer_slot * vtl_sl = sl->data = malloc(sizeof(struct vtl_changer_slot));
+			bzero(vtl_sl, sizeof(struct vtl_changer_slot));
+			vtl_sl->path = drive_dir;
+
 			struct st_value * vdrive = st_value_list_get(drives, i, false);
 			st_value_hashtable_put2(vdrive, "device", st_value_new_string(drive_dir), true);
 			st_value_hashtable_put2(vdrive, "serial number", st_value_new_string(drive->serial_number), true);
 
-			free(drive_dir);
 			free(serial_file);
 
 			// stchgr_drive_register(drive, vdrive, "vtl_drive");
@@ -301,17 +307,78 @@ init_error:
 }
 
 static int vtl_changer_load(struct st_slot * from, struct st_drive * to, struct st_database_connection * db_connection) {
+	struct vtl_changer_slot * vtl_from = from->data;
+	struct vtl_changer_slot * vtl_to = to->slot->data;
+
+	char * sfrom, * sto;
+	asprintf(&sfrom, "%s/media", vtl_from->path);
+	asprintf(&sto, "%s/media", vtl_to->path);
+
+	int failed = rename(sfrom, sto);
+
+	free(sfrom);
+	free(sto);
+
+	if (failed == 0) {
+		vtl_to->origin = from;
+
+		struct st_media * media = from->media;
+		from->media = NULL;
+		to->slot->volume_name = from->volume_name;
+		from->volume_name = NULL;
+		from->full = false;
+		to->slot->full = true;
+
+		media->load_count++;
+
+		to->ops->reset(to);
+	}
+
+	to->ops->update_status(to);
+
+	return failed;
 }
 
 static int vtl_changer_put_offline(struct st_database_connection * db_connection) {
+	return 0;
 }
 
 static int vtl_changer_put_online(struct st_database_connection * db_connection) {
+	return 0;
 }
 
 static int vtl_changer_shut_down(struct st_database_connection * db_connection) {
+	return 0;
 }
 
 static int vtl_changer_unload(struct st_drive * from, struct st_database_connection * db_connection) {
+	struct vtl_changer_slot * vtl_from = from->data;
+	struct vtl_changer_slot * vtl_to = vtl_from->origin->data;
+
+	char * sfrom, * sto;
+	asprintf(&sfrom, "%s/media", vtl_from->path);
+	asprintf(&sto, "%s/media", vtl_to->path);
+
+	int failed = rename(sfrom, sto);
+
+	free(sfrom);
+	free(sto);
+
+	if (failed == 0) {
+		vtl_from->origin->media = from->slot->media;
+		from->slot->media = NULL;
+		vtl_from->origin->volume_name = from->slot->volume_name;
+		from->slot->volume_name = NULL;
+		from->slot->full = false;
+		vtl_from->origin->full = true;
+
+		vtl_from->origin = NULL;
+
+		from->ops->reset(from);
+	}
+
+	from->ops->update_status(from);
+
+	return failed;
 }
 
