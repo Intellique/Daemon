@@ -68,8 +68,8 @@
 
 static bool tape_drive_check_header(struct st_database_connection * db);
 static bool tape_drive_check_support(struct st_media_format * format, bool for_writing, struct st_database_connection * db);
-static int tape_drive_format_media(struct st_pool * pool, struct st_database_connection * db);
 static void tape_drive_create_media(struct st_database_connection * db);
+static int tape_drive_format_media(struct st_pool * pool, struct st_database_connection * db);
 static ssize_t tape_drive_find_best_block_size(struct st_database_connection * db);
 static struct st_stream_reader * tape_drive_get_raw_reader(int file_position, struct st_database_connection * db);
 static struct st_stream_writer * tape_drive_get_raw_writer(bool append, struct st_database_connection * db);

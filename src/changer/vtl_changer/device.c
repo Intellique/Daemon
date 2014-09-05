@@ -154,6 +154,7 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 
 			struct st_value * vdrive = st_value_list_get(drives, i, false);
 			st_value_hashtable_put2(vdrive, "device", st_value_new_string(drive_dir), true);
+			st_value_hashtable_put2(vdrive, "format", vformat, false);
 			st_value_hashtable_put2(vdrive, "serial number", st_value_new_string(drive->serial_number), true);
 
 			char * media_link;

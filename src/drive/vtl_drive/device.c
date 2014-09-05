@@ -24,29 +24,48 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// malloc
+#define _GNU_SOURCE
+// open
+#include <fcntl.h>
+// glob, globfree
+#include <glob.h>
+// asprintf
+#include <stdio.h>
+// free, malloc
 #include <stdlib.h>
+// strdup
+#include <string.h>
 // bzero
 #include <strings.h>
+// open, stat
+#include <sys/stat.h>
+// open, stat
+#include <sys/types.h>
+// access, close, stat, unlink
+#include <unistd.h>
 
+#include <libstone/database.h>
+#include <libstone/file.h>
 #include <libstone/slot.h>
 #include <libstone/value.h>
 #include <libstone-drive/drive.h>
+#include <libstone-drive/media.h>
+#include <libstone-drive/time.h>
 
 #include "device.h"
 
 static bool vtl_drive_check_header(struct st_database_connection * db);
 static bool vtl_drive_check_support(struct st_media_format * format, bool for_writing, struct st_database_connection * db);
 static int vtl_drive_format_media(struct st_pool * pool, struct st_database_connection * db);
-static void vtl_drive_create_media(struct st_database_connection * db);
 static ssize_t vtl_drive_find_best_block_size(struct st_database_connection * db);
 static struct st_stream_reader * vtl_drive_get_raw_reader(int file_position, struct st_database_connection * db);
 static struct st_stream_writer * vtl_drive_get_raw_writer(bool append, struct st_database_connection * db);
 static int vtl_drive_init(struct st_value * config);
-static void vtl_drive_on_failed(bool verbose, unsigned int sleep_time);
 static int vtl_drive_reset(struct st_database_connection * db);
-static int vtl_drive_set_file_position(int file_position, struct st_database_connection * db);
 static int vtl_drive_update_status(struct st_database_connection * db);
+
+static char * vtl_media_dir = NULL;
+static struct st_media_format * vtl_media_format = NULL;
 
 static struct st_drive_ops vtl_drive_ops = {
 	.check_header         = vtl_drive_check_header,
@@ -85,13 +104,78 @@ static struct st_drive vtl_drive = {
 };
 
 
-static bool vtl_drive_check_header(struct st_database_connection * db) {}
+static bool vtl_drive_check_header(struct st_database_connection * db) {
+	char * file;
+	asprintf(&file, "%s/file_0", vtl_media_dir);
 
-static bool vtl_drive_check_support(struct st_media_format * format, bool for_writing, struct st_database_connection * db) {}
+	char * header = st_file_read_all_from(file);
+	free(file);
 
-static int vtl_drive_format_media(struct st_pool * pool, struct st_database_connection * db) {}
+	bool ok = stdr_media_check_header(vtl_drive.slot->media, header, db);
+	free(header);
 
-static ssize_t vtl_drive_find_best_block_size(struct st_database_connection * db) {}
+	return ok;
+}
+
+static bool vtl_drive_check_support(struct st_media_format * format, bool for_writing __attribute__((unused)), struct st_database_connection * db __attribute__((unused))) {
+	return st_media_format_cmp(format, vtl_media_format) == 0;
+}
+
+static int vtl_drive_format_media(struct st_pool * pool, struct st_database_connection * db) {
+	char * files;
+	asprintf(&files, "%s/file_*", vtl_media_dir);
+
+	vtl_drive.status = st_drive_status_writing;
+	db->ops->sync_drive(db, &vtl_drive, st_database_sync_default);
+
+	glob_t gl;
+	int ret = glob(files, 0, NULL, &gl);
+	if (ret != 0) {
+		globfree(&gl);
+		free(files);
+		return 1;
+	}
+
+	unsigned int i;
+	for (i = 0; i < gl.gl_pathc; i++)
+		unlink(gl.gl_pathv[i]);
+
+	globfree(&gl);
+	free(files);
+
+	ssize_t block_size = vtl_drive_find_best_block_size(db);
+	char * header = malloc(block_size);
+
+	if (!stdr_media_write_header(vtl_drive.slot->media, pool, header, block_size)) {
+		free(header);
+		return 1;
+	}
+
+	char * file;
+	asprintf(&file, "%s/file_0", vtl_media_dir);
+
+	stdr_time_start();
+	int fd = open(file, O_CREAT | O_TRUNC, 0700);
+	ssize_t nb_write = write(fd, header, block_size);
+	close(fd);
+	stdr_time_stop(&vtl_drive);
+
+	vtl_drive.status = nb_write != block_size ? st_drive_status_error : st_drive_status_loaded_idle;
+	db->ops->sync_drive(db, &vtl_drive, st_database_sync_default);
+
+	free(file);
+
+	return nb_write != block_size;
+}
+
+static ssize_t vtl_drive_find_best_block_size(struct st_database_connection * db __attribute__((unused))) {
+	struct stat st;
+	int failed = stat(vtl_media_dir, &st);
+	if (failed != 0)
+		return -1;
+
+	return st.st_blksize;
+}
 
 struct st_drive * vtl_drive_get_device() {
 	return &vtl_drive;
@@ -107,14 +191,64 @@ static int vtl_drive_init(struct st_value * config) {
 	sl->drive = &vtl_drive;
 
 	char * root_dir = NULL;
-	st_value_unpack(config, "{ssss}", "serial number", &vtl_drive.serial_number, "root directory", &root_dir);
+	struct st_value * format = NULL;
+	st_value_unpack(config, "{ssssso}", "serial number", &vtl_drive.serial_number, "device", &root_dir, "format", &format);
+
+	free(root_dir);
+
+	if (access(root_dir, R_OK | W_OK | X_OK) != 0)
+		return 1;
+
+	asprintf(&vtl_media_dir, "%s/media", root_dir);
+
+	vtl_media_format = malloc(sizeof(struct st_media_format));
+	bzero(format, sizeof(struct st_media_format));
+	st_media_format_sync(vtl_media_format, format);
+
+	return 0;
 }
 
-static void vtl_drive_on_failed(bool verbose, unsigned int sleep_time) {}
+static int vtl_drive_reset(struct st_database_connection * db) {
+	struct st_slot * slot = vtl_drive.slot;
+	struct st_media * media = slot->media;
+	vtl_drive.slot->media = NULL;
+	st_media_free(media);
 
-static int vtl_drive_reset(struct st_database_connection * db) {}
+	if (access(vtl_media_dir, F_OK) == 0) {
+		vtl_drive.status = st_drive_status_loaded_idle;
+		vtl_drive.is_empty = false;
 
-static int vtl_drive_set_file_position(int file_position, struct st_database_connection * db) {}
+		char * media_uuid = 0;
+		asprintf(&media_uuid, "%s/serial_number", vtl_media_dir);
 
-static int vtl_drive_update_status(struct st_database_connection * db) {}
+		char * uuid = st_file_read_all_from(media_uuid);
+		free(media_uuid);
+
+		media = vtl_drive.slot->media = db->ops->get_media(db, uuid, NULL, NULL);
+		free(uuid);
+
+		if (media == NULL)
+			return 1;
+
+		slot->volume_name = strdup(media->label);
+		slot->full = true;
+
+		bool ok = vtl_drive_check_header(db);
+		if (!ok)
+			return -1;
+	} else {
+		vtl_drive.status = st_drive_status_empty_idle;
+		vtl_drive.is_empty = true;
+		free(slot->volume_name);
+
+		slot->volume_name = NULL;
+		slot->full = false;
+	}
+
+	return 0;
+}
+
+static int vtl_drive_update_status(struct st_database_connection * db __attribute__((unused))) {
+	return 0;
+}
 
