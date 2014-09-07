@@ -194,15 +194,14 @@ static int vtl_drive_init(struct st_value * config) {
 	struct st_value * format = NULL;
 	st_value_unpack(config, "{ssssso}", "serial number", &vtl_drive.serial_number, "device", &root_dir, "format", &format);
 
-	free(root_dir);
-
 	if (access(root_dir, R_OK | W_OK | X_OK) != 0)
 		return 1;
 
 	asprintf(&vtl_media_dir, "%s/media", root_dir);
+	free(root_dir);
 
 	vtl_media_format = malloc(sizeof(struct st_media_format));
-	bzero(format, sizeof(struct st_media_format));
+	bzero(vtl_media_format, sizeof(struct st_media_format));
 	st_media_format_sync(vtl_media_format, format);
 
 	return 0;
