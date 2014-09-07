@@ -80,7 +80,7 @@ static struct st_drive_ops vtl_drive_ops = {
 };
 
 static struct st_drive vtl_drive = {
-	.status      = st_drive_status_unknown,
+	.status      = st_drive_status_empty_idle,
 	.enable      = true,
 
 	.density_code       = 0,

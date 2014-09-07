@@ -38,6 +38,7 @@
 // time
 #include <time.h>
 
+#include <libstone/database.h>
 #include <libstone/file.h>
 #include <libstone/slot.h>
 #include <libstone/value.h>
@@ -163,8 +164,6 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 
 			free(serial_file);
 			free(media_link);
-
-			stchgr_drive_register(drive, vdrive, "vtl_drive");
 		}
 
 		for (i = 0; i < nb_slots; i++) {
@@ -254,8 +253,6 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 			st_value_hashtable_put2(vdrive, "serial number", st_value_new_string(drive->serial_number), true);
 
 			free(serial_file);
-
-			stchgr_drive_register(drive, vdrive, "vtl_drive");
 		}
 
 		for (i = 0; i < nb_slots; i++) {
@@ -287,6 +284,7 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 			media->name = strdup(media->label);
 			media->status = st_media_status_new;
 			media->first_used = time(NULL);
+			media->use_before = media->first_used + format->life_span;
 			media->block_size = format->block_size;
 			media->free_block = media->total_block = format->capacity / format->block_size;
 			media->append = true;
@@ -298,6 +296,15 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 			free(media_link);
 			free(serial_file);
 		}
+	}
+
+	db_connection->ops->sync_changer(db_connection, &vtl_changer, st_database_sync_init);
+
+	unsigned int i;
+	for (i = 0; i < vtl_changer.nb_drives; i++) {
+		struct st_drive * drive = vtl_changer.drives + i;
+		struct st_value * vdrive = st_value_list_get(drives, i, false);
+		stchgr_drive_register(drive, vdrive, "vtl_drive");
 	}
 
 	return 0;

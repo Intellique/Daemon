@@ -1133,7 +1133,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 		else if (status == PGRES_TUPLES_OK && nb_result == 1) {
 			if (!PQgetisnull(result, 0, 0)) {
 				st_database_postgresql_get_string_dup(result, 0, 0, &driveformat_id);
-				st_value_hashtable_put2(db, "driveformat_id", st_value_new_string(driveformat_id), true);
+				st_value_hashtable_put2(db, "driveformat id", st_value_new_string(driveformat_id), true);
 			}
 
 			st_database_postgresql_get_bool(result, 0, 1, &drive->enable);
@@ -1173,7 +1173,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 
 			if (!PQgetisnull(result, 0, 3)) {
 				st_database_postgresql_get_string_dup(result, 0, 3, &driveformat_id);
-				st_value_hashtable_put2(db, "driveformat_id", st_value_new_string(driveformat_id), true);
+				st_value_hashtable_put2(db, "driveformat id", st_value_new_string(driveformat_id), true);
 			}
 
 			st_database_postgresql_get_bool(result, 0, 4, &drive->enable);
@@ -1227,7 +1227,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 				st_database_postgresql_get_error(result, query);
 			else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 				st_database_postgresql_get_string_dup(result, 0, 0, &driveformat_id);
-				st_value_hashtable_put2(db, "driveformat_id", st_value_new_string(driveformat_id), true);
+				st_value_hashtable_put2(db, "driveformat id", st_value_new_string(driveformat_id), true);
 			}
 
 			PQclear(result);
@@ -1273,7 +1273,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 			char * op_duration = NULL, * last_clean = NULL;
 			asprintf(&op_duration, "%.3f", drive->operation_duration);
 
-			db = st_value_hashtable_get(drive->changer->db_data, key, false, false);
+			db = st_value_hashtable_get(drive->db_data, key, false, false);
 
 			char * changer_id = NULL;
 			st_value_unpack(db, "{ss}", "changer id", &changer_id);
@@ -1545,8 +1545,13 @@ static int st_database_postgresql_sync_media(struct st_database_connection * con
 }
 
 static int st_database_postgresql_sync_slots(struct st_database_connection * connect, struct st_slot * slot, enum st_database_sync_method method) {
+	int failed = 0;
+
 	if (slot->media != NULL)
-		st_database_postgresql_sync_media(connect, slot->media, method);
+		failed = st_database_postgresql_sync_media(connect, slot->media, method);
+
+	if (failed != 0)
+		return failed;
 
 	struct st_database_postgresql_connection_private * self = connect->data;
 
@@ -1594,8 +1599,6 @@ static int st_database_postgresql_sync_slots(struct st_database_connection * con
 	}
 
 	st_value_free(key);
-
-	int failed = 0;
 
 	if (method != st_database_sync_init) {
 		const char * query = "select_changerslot_by_index";
