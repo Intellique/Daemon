@@ -100,7 +100,7 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 	long long nb_drives, nb_slots;
 	struct st_value * drives = NULL, * vformat = NULL;
 	char * prefix;
-	st_value_unpack(config, "{sssisisososs}", "path", &vtl_root_dir, "nb drives", &nb_drives, "nb slots", &nb_slots, "drives", &drives, "format", &vformat, "prefix", &prefix);
+	st_value_unpack(config, "{sssisisosossss}", "path", &vtl_root_dir, "nb drives", &nb_drives, "nb slots", &nb_slots, "drives", &drives, "format", &vformat, "prefix", &prefix, "serial number", &vtl_changer.serial_number);
 
 	struct st_media_format * format = malloc(sizeof(struct st_media_format));
 	bzero(format, sizeof(struct st_media_format));
@@ -113,15 +113,10 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 	vtl_changer.slots = calloc(vtl_changer.nb_slots, sizeof(struct st_slot));
 
 	if (access(vtl_root_dir, F_OK | R_OK | W_OK | X_OK) == 0) {
-		char * serial_file;
-		asprintf(&serial_file, "%s/serial_number", vtl_root_dir);
-
-		vtl_changer.serial_number = st_file_read_all_from(serial_file);
-		free(serial_file);
-
 		long long int i;
 		for (i = 0; i < nb_drives; i++) {
 			char * drive_dir;
+			char * serial_file;
 			asprintf(&drive_dir, "%s/drives/%Ld", vtl_root_dir, i);
 			asprintf(&serial_file, "%s/drives/%Ld/serial_number", vtl_root_dir, i);
 
@@ -201,15 +196,11 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 			free(media_link);
 			free(serial_file);
 		}
+
+		db_connection->ops->sync_changer(db_connection, &vtl_changer, st_database_sync_id_only);
 	} else {
 		if (st_file_mkdir(vtl_root_dir, 0700))
 			goto init_error;
-
-		char * serial_file;
-		asprintf(&serial_file, "%s/serial_number", vtl_root_dir);
-
-		vtl_changer.serial_number = vtl_util_get_serial(serial_file);
-		free(serial_file);
 
 		long long int i;
 		for (i = 0; i < nb_drives; i++) {
@@ -217,6 +208,7 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 			asprintf(&drive_dir, "%s/drives/%Ld", vtl_root_dir, i);
 			st_file_mkdir(drive_dir, 0700);
 
+			char * serial_file;
 			asprintf(&serial_file, "%s/drives/%Ld/serial_number", vtl_root_dir, i);
 
 			struct st_drive * drive = vtl_changer.drives + i;
@@ -296,9 +288,9 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 			free(media_link);
 			free(serial_file);
 		}
-	}
 
-	db_connection->ops->sync_changer(db_connection, &vtl_changer, st_database_sync_init);
+		db_connection->ops->sync_changer(db_connection, &vtl_changer, st_database_sync_init);
+	}
 
 	unsigned int i;
 	for (i = 0; i < vtl_changer.nb_drives; i++) {

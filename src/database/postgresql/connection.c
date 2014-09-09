@@ -218,7 +218,7 @@ static int st_database_postgresql_cancel_transaction(struct st_database_connecti
 	switch (status) {
 		case PQTRANS_INERROR:
 		case PQTRANS_INTRANS: {
-			PGresult * result = PQexec(self->connect, "ROLL BACK");
+			PGresult * result = PQexec(self->connect, "ROLLBACK");
 			ExecStatusType roll_back_status = PQresultStatus(result);
 			if (roll_back_status != PGRES_COMMAND_OK)
 				st_database_postgresql_get_error(result, NULL);

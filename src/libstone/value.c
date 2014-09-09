@@ -1369,7 +1369,10 @@ void st_value_hashtable_remove_v1(struct st_value * hash, struct st_value * key)
 	unsigned int index = h % hashtable->size_node;
 
 	struct st_value_hashtable_node * node = hashtable->nodes[index];
-	if (node != NULL && node->hash == h) {
+	if (node == NULL)
+		return;
+
+	if (node->hash == h) {
 		hashtable->nodes[index] = node->next;
 
 		st_value_hashtable_release_node(node, hashtable->weak_ref);
@@ -1381,7 +1384,7 @@ void st_value_hashtable_remove_v1(struct st_value * hash, struct st_value * key)
 	while (node->next != NULL && node->next->hash != h)
 		node = node->next;
 
-	if (node->next->hash == h) {
+	if (node->next != NULL && node->next->hash == h) {
 		struct st_value_hashtable_node * tmp = node->next;
 		node->next = tmp->next;
 
