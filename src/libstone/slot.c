@@ -69,16 +69,18 @@ void st_slot_sync_v1(struct st_slot * slot, struct st_value * new_slot) {
 	free(slot->volume_name);
 	slot->volume_name = NULL;
 
+	struct st_value * vol_name = NULL;
 	struct st_value * media = NULL;
 	long int index = -1;
 
-	st_value_unpack_v1(new_slot, "{sisssbsbso}",
+	st_value_unpack_v1(new_slot, "{sisosbsbso}",
 		"index", &index,
-		"volume name", &slot->volume_name,
+		"volume name", &vol_name,
 		"ie port", &slot->is_ie_port,
 		"enable", &slot->enable,
 		"media", &media
 	);
+	st_value_unpack(vol_name, "s", &slot->volume_name);
 
 	slot->index = index;
 

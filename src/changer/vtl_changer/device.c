@@ -100,7 +100,7 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 	long long nb_drives, nb_slots;
 	struct st_value * drives = NULL, * vformat = NULL;
 	char * prefix;
-	st_value_unpack(config, "{sssisisosossss}", "path", &vtl_root_dir, "nb drives", &nb_drives, "nb slots", &nb_slots, "drives", &drives, "format", &vformat, "prefix", &prefix, "serial number", &vtl_changer.serial_number);
+	st_value_unpack(config, "{sssisisosossss}", "path", &vtl_root_dir, "nb drives", &nb_drives, "nb slots", &nb_slots, "drives", &drives, "format", &vformat, "prefix", &prefix, "uuid", &vtl_changer.serial_number);
 
 	struct st_media_format * format = malloc(sizeof(struct st_media_format));
 	bzero(format, sizeof(struct st_media_format));
@@ -121,9 +121,9 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 			asprintf(&serial_file, "%s/drives/%Ld/serial_number", vtl_root_dir, i);
 
 			struct st_drive * drive = vtl_changer.drives + i;
-			drive->model = "Stone vtl drive";
-			drive->vendor = "Intellique";
-			drive->revision = "A01";
+			drive->model = strdup("Stone vtl drive");
+			drive->vendor = strdup("Intellique");
+			drive->revision = strdup("A01");
 			drive->serial_number = st_file_read_all_from(serial_file);
 
 			drive->status = st_drive_status_unknown;
@@ -168,6 +168,8 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 			struct st_slot * sl = vtl_changer.slots + nb_drives + i;
 			sl->changer = &vtl_changer;
 			sl->index = nb_drives + i;
+			asprintf(&sl->volume_name, "%s%03Ld", prefix, i);
+			sl->full = true;
 
 			struct vtl_changer_slot * vtl_sl = sl->data = malloc(sizeof(struct vtl_changer_slot));
 			bzero(vtl_sl, sizeof(struct vtl_changer_slot));
@@ -212,9 +214,9 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 			asprintf(&serial_file, "%s/drives/%Ld/serial_number", vtl_root_dir, i);
 
 			struct st_drive * drive = vtl_changer.drives + i;
-			drive->model = "Stone vtl drive";
-			drive->vendor = "Intellique";
-			drive->revision = "A01";
+			drive->model = strdup("Stone vtl drive");
+			drive->vendor = strdup("Intellique");
+			drive->revision = strdup("A01");
 			drive->serial_number = vtl_util_get_serial(serial_file);
 
 			drive->status = st_drive_status_unknown;
@@ -258,6 +260,8 @@ static int vtl_changer_init(struct st_value * config, struct st_database_connect
 			struct st_slot * sl = vtl_changer.slots + nb_drives + i;
 			sl->changer = &vtl_changer;
 			sl->index = nb_drives + i;
+			asprintf(&sl->volume_name, "%s%03Ld", prefix, i);
+			sl->full = true;
 
 			struct vtl_changer_slot * vtl_sl = sl->data = malloc(sizeof(struct vtl_changer_slot));
 			bzero(vtl_sl, sizeof(struct vtl_changer_slot));

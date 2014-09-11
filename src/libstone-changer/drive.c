@@ -104,7 +104,7 @@ static bool stchgr_drive_is_free(struct st_drive * drive) {
 	st_value_unpack(returned, "{sb}", "returned", &is_free);
 	st_value_free(returned);
 
-	return !is_free;
+	return is_free;
 }
 
 __asm__(".symver stchgr_drive_register_v1, stchgr_drive_register@@LIBSTONE_CHANGER_1.2");

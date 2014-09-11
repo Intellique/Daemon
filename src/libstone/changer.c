@@ -192,14 +192,14 @@ void st_changer_sync_v1(struct st_changer_v1 * changer, struct st_value * new_ch
 	changer->model = changer->vendor = changer->revision = changer->serial_number = changer->wwn = NULL;
 
 	char * status = NULL;
-	struct st_value * drives = NULL, * slots = NULL;
+	struct st_value * wwn = NULL, * drives = NULL, * slots = NULL;
 
-	st_value_unpack_v1(new_changer, "{sssssssssssbsssbsbsoso}",
+	st_value_unpack_v1(new_changer, "{sssssssssosbsssbsbsoso}",
 		"model", &changer->model,
 		"vendor", &changer->vendor,
 		"revision", &changer->revision,
 		"serial number", &changer->serial_number,
-		"wwn", &changer->wwn,
+		"wwn", &wwn,
 		"barcode", &changer->barcode,
 
 		"status", &status,
@@ -209,6 +209,7 @@ void st_changer_sync_v1(struct st_changer_v1 * changer, struct st_value * new_ch
 		"drives", &drives,
 		"slots", &slots
 	);
+	st_value_unpack_v1(wwn, "s", &changer->wwn);
 
 	if (status != NULL)
 		changer->status = st_changer_string_to_status_v1(status);

@@ -111,6 +111,9 @@ static bool vtl_drive_check_header(struct st_database_connection * db) {
 	char * header = st_file_read_all_from(file);
 	free(file);
 
+	if (header == NULL)
+		return true;
+
 	bool ok = stdr_media_check_header(vtl_drive.slot->media, header, db);
 	free(header);
 

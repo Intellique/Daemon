@@ -44,17 +44,16 @@
 
 static bool stop = false;
 
-static void daemon_request(int fd, short event, void * data);
+static void stchgr_daemon_hungup(int fd, short event, void * data);
+static void stchgr_daemon_request(int fd, short event, void * data);
 
 
-static void daemon_request(int fd, short event, void * data __attribute__((unused))) {
-	switch (event) {
-		case POLLHUP:
-			st_log_write(st_log_level_alert, "Stoned has hang up");
-			stop = true;
-			break;
-	}
+static void stchgr_daemon_hungup(int fd __attribute__((unused)), short event __attribute__((unused)), void * data __attribute__((unused))) {
+	st_log_write(st_log_level_alert, "Stoned has hang up");
+	stop = true;
+}
 
+static void stchgr_daemon_request(int fd, short event __attribute__((unused)), void * data __attribute__((unused))) {
 	struct st_value * request = st_json_parse_fd(fd, 1000);
 	char * command;
 	if (request == NULL || st_value_unpack(request, "{ss}", "command", &command) < 0) {
@@ -65,6 +64,11 @@ static void daemon_request(int fd, short event, void * data __attribute__((unuse
 
 	if (!strcmp("stop", command))
 		stop = true;
+	else if (!strcmp("ping", command)) {
+		struct st_value * response = st_value_pack("{ss}", "return", "pong");
+		st_json_encode_to_fd(response, 1, true);
+		st_value_free(response);
+	}
 
 	st_value_free(request);
 	free(command);
@@ -93,7 +97,8 @@ int main() {
 	stchgr_drive_set_config(log_config, db_config);
 	stchgr_listen_configure(socket);
 
-	st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
+	st_poll_register(0, POLLHUP, stchgr_daemon_hungup, NULL, NULL);
+	st_poll_register(0, POLLIN, stchgr_daemon_request, NULL, NULL);
 
 	struct st_database * db_driver = st_database_get_default_driver();
 	if (db_driver == NULL)

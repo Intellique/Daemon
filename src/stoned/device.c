@@ -48,6 +48,7 @@ struct std_device {
 	char * process_name;
 	struct st_process process;
 	int fd_in;
+	int fd_out;
 	struct st_value * config;
 };
 
@@ -79,7 +80,7 @@ void std_device_configure(struct st_value * logger, struct st_value * db_config,
 		dev->process_name = "scsi_changer";
 		st_process_new(&dev->process, dev->process_name, NULL, 0);
 		dev->fd_in = st_process_pipe_to(&dev->process);
-		st_process_close(&dev->process, st_process_stdout);
+		dev->fd_out = st_process_pipe_from(&dev->process, st_process_stdout);
 		st_process_close(&dev->process, st_process_stderr);
 
 		st_poll_register(dev->fd_in, POLLHUP, std_device_exited, dev, NULL);
@@ -145,7 +146,7 @@ void std_device_configure(struct st_value * logger, struct st_value * db_config,
 		dev->process_name = "vtl_changer";
 		st_process_new(&dev->process, dev->process_name, NULL, 0);
 		dev->fd_in = st_process_pipe_to(&dev->process);
-		st_process_close(&dev->process, st_process_stdout);
+		dev->fd_out = st_process_pipe_from(&dev->process, st_process_stdout);
 		st_process_close(&dev->process, st_process_stderr);
 
 		st_poll_register(dev->fd_in, POLLHUP, std_device_exited, dev, NULL);
@@ -168,6 +169,21 @@ void std_device_configure(struct st_value * logger, struct st_value * db_config,
 	}
 	st_value_iterator_free(iter);
 	st_value_free(vtl_changers);
+
+	iter = st_value_list_get_iterator(devices);
+	struct st_value * cmd_ping = st_value_pack("{ss}", "command", "ping");
+	while (st_value_iterator_has_next(iter)) {
+		struct st_value * elt = st_value_iterator_get_value(iter, false);
+		struct std_device * dev = st_value_custom_get(elt);
+
+		st_json_encode_to_fd(cmd_ping, dev->fd_in, true);
+
+		struct st_value * response = st_json_parse_fd(dev->fd_out, -1);
+		// TODO: check response
+		st_value_free(response);
+	}
+	st_value_free(cmd_ping);
+	st_value_iterator_free(iter);
 }
 
 static void std_device_exited(int fd __attribute__((unused)), short event, void * data) {
