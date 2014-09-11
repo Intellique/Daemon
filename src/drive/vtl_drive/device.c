@@ -133,7 +133,7 @@ static int vtl_drive_format_media(struct st_pool * pool, struct st_database_conn
 
 	glob_t gl;
 	int ret = glob(files, 0, NULL, &gl);
-	if (ret != 0) {
+	if (ret != 0 && ret != GLOB_NOMATCH) {
 		globfree(&gl);
 		free(files);
 		return 1;
@@ -158,7 +158,7 @@ static int vtl_drive_format_media(struct st_pool * pool, struct st_database_conn
 	asprintf(&file, "%s/file_0", vtl_media_dir);
 
 	stdr_time_start();
-	int fd = open(file, O_CREAT | O_TRUNC, 0700);
+	int fd = open(file, O_CREAT | O_WRONLY, 0600);
 	ssize_t nb_write = write(fd, header, block_size);
 	close(fd);
 	stdr_time_stop(&vtl_drive);
