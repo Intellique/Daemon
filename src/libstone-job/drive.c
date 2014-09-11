@@ -122,7 +122,7 @@ static int stj_drive_format_media(struct st_drive * drive, struct st_pool * pool
 
 	struct st_value * request = st_value_pack("{sss{so}}",
 		"command", "format media",
-		"params"
+		"params",
 			"pool", st_pool_convert(pool)
 	);
 	st_json_encode_to_fd(request, self->fd, true);
