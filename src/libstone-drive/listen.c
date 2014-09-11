@@ -168,7 +168,7 @@ static void stdr_socket_command_check_header(struct stdr_peer * peer, struct st_
 	struct st_drive * drive = driver->device;
 
 	bool ok = drive->ops->check_header(stdr_db);
-	struct st_value * response = st_value_pack("{si}", "returned", ok);
+	struct st_value * response = st_value_pack("{sb}", "returned", ok);
 	st_json_encode_to_fd(response, fd, true);
 	st_value_free(response);
 }
