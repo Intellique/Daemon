@@ -327,7 +327,7 @@ static int vtl_changer_load(struct st_slot * from, struct st_drive * to, struct 
 	if (failed == 0) {
 		vtl_to->origin = from;
 
-		struct st_media * media = from->media;
+		struct st_media * media = to->slot->media = from->media;
 		from->media = NULL;
 		to->slot->volume_name = from->volume_name;
 		from->volume_name = NULL;
@@ -370,12 +370,13 @@ static int vtl_changer_unload(struct st_drive * from, struct st_database_connect
 	free(sto);
 
 	if (failed == 0) {
-		vtl_from->origin->media = from->slot->media;
+		struct st_slot * sl = vtl_from->origin;
+		sl->media = from->slot->media;
 		from->slot->media = NULL;
-		vtl_from->origin->volume_name = from->slot->volume_name;
+		sl->volume_name = from->slot->volume_name;
 		from->slot->volume_name = NULL;
 		from->slot->full = false;
-		vtl_from->origin->full = true;
+		sl->full = true;
 
 		vtl_from->origin = NULL;
 
