@@ -29,7 +29,7 @@
 #include <stdio.h>
 // free, malloc
 #include <stdlib.h>
-// close
+// close, sleep
 #include <unistd.h>
 
 #include <libstone/changer.h>
@@ -169,6 +169,8 @@ void std_device_configure(struct st_value * logger, struct st_value * db_config,
 	}
 	st_value_iterator_free(iter);
 	st_value_free(vtl_changers);
+
+	sleep(5);
 
 	iter = st_value_list_get_iterator(devices);
 	struct st_value * cmd_ping = st_value_pack("{ss}", "command", "ping");

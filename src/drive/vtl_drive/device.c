@@ -43,6 +43,8 @@
 #include <sys/types.h>
 // access, close, stat, unlink
 #include <unistd.h>
+// time
+#include <time.h>
 
 #include <libstone/database.h>
 #include <libstone/file.h>
@@ -111,6 +113,12 @@ static bool vtl_drive_check_header(struct st_database_connection * db) {
 	char * header = st_file_read_all_from(file);
 	free(file);
 
+	struct st_media * media = vtl_drive.slot->media;
+	media->last_read = time(NULL);
+	media->read_count++;
+	media->operation_count++;
+	media->nb_total_read++;
+
 	if (header == NULL)
 		return true;
 
@@ -149,7 +157,16 @@ static int vtl_drive_format_media(struct st_pool * pool, struct st_database_conn
 	ssize_t block_size = vtl_drive_find_best_block_size(db);
 	char * header = malloc(block_size);
 
-	if (!stdr_media_write_header(vtl_drive.slot->media, pool, header, block_size)) {
+	struct st_media * media = vtl_drive.slot->media;
+	media->status = st_media_status_new;
+	media->operation_count++;
+	media->block_size = block_size;
+	media->total_block = media->format->capacity / block_size;
+	media->free_block = media->total_block;
+	media->nb_volumes = 0;
+	media->append = true;
+
+	if (!stdr_media_write_header(media, pool, header, block_size)) {
 		free(header);
 		return 1;
 	}
@@ -162,6 +179,15 @@ static int vtl_drive_format_media(struct st_pool * pool, struct st_database_conn
 	ssize_t nb_write = write(fd, header, block_size);
 	close(fd);
 	stdr_time_stop(&vtl_drive);
+
+	media->write_count++;
+	media->operation_count++;
+
+	if (nb_write == block_size) {
+		media->status = st_media_status_in_use;
+		media->last_write = time(NULL);
+		media->nb_total_write++;
+	}
 
 	vtl_drive.status = nb_write != block_size ? st_drive_status_error : st_drive_status_loaded_idle;
 	db->ops->sync_drive(db, &vtl_drive, st_database_sync_default);
