@@ -33,6 +33,7 @@ struct st_drive;
 struct st_value;
 
 struct st_stream_reader * stj_io_new_stream_reader(struct st_drive * drive, int fd_command, struct st_value * config);
+struct st_stream_writer * stj_io_new_stream_writer(struct st_drive * drive, int fd_command, struct st_value * config);
 
 #endif
 
