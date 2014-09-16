@@ -52,16 +52,16 @@ static bool stdr_media_read_header_v3(struct st_media * media, const char * buff
 __asm__(".symver stdr_media_check_header_v1, stdr_media_check_header@@LIBSTONE_DRIVE_1.2");
 bool stdr_media_check_header_v1(struct st_media * media, const char * buffer, struct st_database_connection * db_connection) {
 	char stone_version[65];
-	int tape_format_version = 0;
+	int media_format_version = 0;
 	int nb_parsed = 0;
 	bool ok = false;
 
-	int nb_params = sscanf(buffer, "STone (%64[^)])\nMedia format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed);
+	int nb_params = sscanf(buffer, "STone (%64[^)])\nMedia format: version=%d\n%n", stone_version, &media_format_version, &nb_parsed);
 	if (nb_params < 2)
-		nb_params = sscanf(buffer, "STone (%64[^)])\nTape format: version=%d\n%n", stone_version, &tape_format_version, &nb_parsed);
+		nb_params = sscanf(buffer, "STone (%64[^)])\nTape format: version=%d\n%n", stone_version, &media_format_version, &nb_parsed);
 
 	if (nb_params == 2) {
-		switch (tape_format_version) {
+		switch (media_format_version) {
 			case 1:
 				ok = stdr_media_read_header_v1(media, buffer, nb_parsed, true, db_connection);
 				break;
@@ -269,22 +269,22 @@ static bool stdr_media_read_header_v3(struct st_media * media, const char * buff
 	bool ok = true;
 	bool has_label = false;
 
-	if (ok && sscanf(buffer + nb_parsed, "Host: name=\"%64[^,]\", uuid=\"%36s\"\n%n", name, uuid, &nb_parsed2) == 2)
+	if (ok && sscanf(buffer + nb_parsed, "Host: name=\"%64[^\"]\", uuid=\"%36s\"\n%n", name, uuid, &nb_parsed2) == 2)
 		nb_parsed += nb_parsed2;
 	else
 		ok = false;
 
-	if (sscanf(buffer + nb_parsed, "Label: \"%36s\"\n%n", name, &nb_parsed2) == 1) {
+	if (sscanf(buffer + nb_parsed, "Label: \"%64[^\"]\"\n%n", name, &nb_parsed2) == 1) {
 		nb_parsed += nb_parsed2;
 		has_label = true;
 	}
 
-	if (ok && sscanf(buffer + nb_parsed, "Media id: uuid=\"%36s\"\n%n", uuid, &nb_parsed2) == 1)
+	if (ok && sscanf(buffer + nb_parsed, "Media id: uuid=\"%36[^\"]\"\n%n", uuid, &nb_parsed2) == 1)
 		nb_parsed += nb_parsed2;
 	else
 		ok = false;
 
-	if (ok && sscanf(buffer + nb_parsed, "Pool: name=\"%65[^,]\", uuid=\"%36s\"\n%n", pool_name, pool_id, &nb_parsed2) == 2)
+	if (ok && sscanf(buffer + nb_parsed, "Pool: name=\"%65[^\"]\", uuid=\"%36[^\"]\"\n%n", pool_name, pool_id, &nb_parsed2) == 2)
 		nb_parsed += nb_parsed2;
 	else
 		ok = false;
@@ -295,7 +295,7 @@ static bool stdr_media_read_header_v3(struct st_media * media, const char * buff
 		ok = false;
 
 	if (ok)
-		ok = sscanf(buffer + nb_parsed, "Checksum: %11[^=]=\"%63s\"\n", checksum_name, checksum_value) == 2;
+		ok = sscanf(buffer + nb_parsed, "Checksum: %11[^=]=\"%63[^\"]\"\n", checksum_name, checksum_value) == 2;
 
 	if (ok) {
 		char * digest = st_checksum_compute(checksum_name, buffer, nb_parsed);
