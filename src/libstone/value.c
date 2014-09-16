@@ -1303,14 +1303,18 @@ static void st_value_hashtable_put_inner(struct st_value_hashtable * hashtable, 
 			new_node->next = node->next;
 
 			st_value_hashtable_release_node(node, hashtable->weak_ref);
+			hashtable->nb_elements--;
 		} else {
 			short nb_elt = 1;
 			while (node->next != NULL) {
 				if (node->next->hash == new_node->hash) {
 					struct st_value_hashtable_node * old = node->next;
-					node->next = old->next;
+					node->next = new_node;
+					new_node->next = old->next;
 
 					st_value_hashtable_release_node(old, hashtable->weak_ref);
+					hashtable->nb_elements--;
+					return;
 				}
 
 				node = node->next;

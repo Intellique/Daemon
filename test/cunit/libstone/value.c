@@ -39,6 +39,7 @@
 
 static void test_libstone_value_hashtable_iter_0(void);
 static void test_libstone_value_hashtable_iter_1(void);
+static void test_libstone_value_hashtable_put_0(void);
 static void test_libstone_value_list_slice_0(void);
 static void test_libstone_value_pack_0(void);
 static void test_libstone_value_ref_cycle_0(void);
@@ -53,16 +54,18 @@ static struct {
 	{ test_libstone_value_hashtable_iter_0, "libstone: hashtable iter: #0" },
 	{ test_libstone_value_hashtable_iter_1, "libstone: hashtable iter: #1" },
 
-    { test_libstone_value_list_slice_0, "libstone: list slice: #0" },
+	{ test_libstone_value_hashtable_put_0, "libstone: hashtable put: #0" },
 
-    { test_libstone_value_pack_0, "libstone: value pack: #0" },
+	{ test_libstone_value_list_slice_0, "libstone: list slice: #0" },
 
-    { test_libstone_value_ref_cycle_0, "libstone: value ref cycle: #0" },
-    { test_libstone_value_ref_cycle_1, "libstone: value ref cycle: #1" },
+	{ test_libstone_value_pack_0, "libstone: value pack: #0" },
 
-    { test_libstone_value_share_0, "libstone: value share: #0" },
+	{ test_libstone_value_ref_cycle_0, "libstone: value ref cycle: #0" },
+	{ test_libstone_value_ref_cycle_1, "libstone: value ref cycle: #1" },
 
-    { test_libstone_value_unpack_0, "libstone: value unpack: #0" },
+	{ test_libstone_value_share_0, "libstone: value share: #0" },
+
+	{ test_libstone_value_unpack_0, "libstone: value unpack: #0" },
 
 	{ 0, 0 },
 };
@@ -132,6 +135,25 @@ static void test_libstone_value_hashtable_iter_1() {
 	st_value_free(hash);
 
 	CU_ASSERT_EQUAL(i, 1);
+}
+
+static void test_libstone_value_hashtable_put_0() {
+	struct st_value * hash = st_value_new_hashtable2();
+
+	unsigned int nb_elts = st_value_hashtable_get_length(hash);
+	CU_ASSERT_EQUAL(nb_elts, 0);
+
+	st_value_hashtable_put2(hash, "foo", st_value_new_boolean(false), true);
+	nb_elts = st_value_hashtable_get_length(hash);
+	CU_ASSERT_EQUAL(nb_elts, 1);
+
+	st_value_hashtable_put2(hash, "bar", st_value_new_boolean(true), true);
+	nb_elts = st_value_hashtable_get_length(hash);
+	CU_ASSERT_EQUAL(nb_elts, 2);
+
+	st_value_hashtable_put2(hash, "foo", st_value_new_boolean(false), true);
+	nb_elts = st_value_hashtable_get_length(hash);
+	CU_ASSERT_EQUAL(nb_elts, 2);
 }
 
 static void test_libstone_value_list_slice_0() {
