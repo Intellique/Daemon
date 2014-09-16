@@ -363,9 +363,8 @@ static void stdr_socket_command_get_raw_reader(struct stdr_peer * peer, struct s
 }
 
 static void stdr_socket_command_get_raw_writer(struct stdr_peer * peer, struct st_value * request, int fd) {
-	bool append = true;
 	char * cookie = NULL;
-	st_value_unpack(request, "{sbss}", "append", &append, "cookie", &cookie);
+	st_value_unpack(request, "{ss}", "cookie", &cookie);
 
 	if (cookie == NULL || peer->cookie == NULL || strcmp(cookie, peer->cookie) != 0) {
 		struct st_value * response = st_value_pack("{sb}", "status", false);
@@ -386,7 +385,7 @@ static void stdr_socket_command_get_raw_writer(struct stdr_peer * peer, struct s
 		return;
 	}
 
-	struct st_stream_writer * writer = drive->ops->get_raw_writer(append, stdr_db);
+	struct st_stream_writer * writer = drive->ops->get_raw_writer(stdr_db);
 
 	struct st_value * tmp_config = st_value_copy(stdr_config, true);
 	int tmp_socket = st_socket_server_temp(tmp_config);

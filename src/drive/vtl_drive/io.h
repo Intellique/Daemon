@@ -24,40 +24,28 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONEDRIVE_DRIVE_H__
-#define __STONEDRIVE_DRIVE_H__
+#ifndef __ST_VTLDRIVE_IO_H__
+#define __ST_VTLDRIVE_IO_H__
 
-#include <libstone/drive.h>
+#include <libstone/io.h>
 
-struct st_database_connection;
-struct st_pool;
-struct st_stream_reader;
-struct st_stream_writer;
-struct st_value;
+struct st_drive;
 
-struct st_drive_driver {
-	const char * name;
+struct vtl_drive_io {
+	int fd;
 
-	struct st_drive * device;
-	int (*configure_device)(struct st_value * config);
+	char * buffer;
+	ssize_t buffer_used;
+	ssize_t buffer_length;
 
-	unsigned int api_level;
-	const char * src_checksum;
+	ssize_t position;
+	int last_errno;
+
+	struct st_media * media;
 };
 
-struct st_drive_ops {
-	bool (*check_header)(struct st_database_connection * db);
-	bool (*check_support)(struct st_media_format * format, bool for_writing, struct st_database_connection * db);
-	ssize_t (*find_best_block_size)(struct st_database_connection * db);
-	int (*format_media)(struct st_pool * pool, struct st_database_connection * db);
-	int (*init)(struct st_value * config);
-	struct st_stream_reader * (*get_raw_reader)(int file_position, struct st_database_connection * db);
-	struct st_stream_writer * (*get_raw_writer)(struct st_database_connection * db);
-	int (*reset)(struct st_database_connection * db);
-	int (*update_status)(struct st_database_connection * db);
-};
-
-void stdr_drive_register(struct st_drive_driver * dr);
+struct st_stream_reader * vtl_drive_reader_get_raw_reader(struct st_drive * drive, int fd);
+struct st_stream_writer * vtl_drive_writer_get_raw_writer(struct st_drive * drive, const char * filename);
 
 #endif
 

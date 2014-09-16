@@ -31,6 +31,7 @@ struct st_value;
 
 void stchgr_listen_configure(struct st_value * config);
 unsigned int stchgr_listen_nb_clients(void);
+void stchgr_listen_set_db_connection(struct st_database_connection * db);
 
 #endif
 

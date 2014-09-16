@@ -55,13 +55,14 @@
 #include <libstone-drive/time.h>
 
 #include "device.h"
+#include "io.h"
 
 static bool vtl_drive_check_header(struct st_database_connection * db);
 static bool vtl_drive_check_support(struct st_media_format * format, bool for_writing, struct st_database_connection * db);
 static int vtl_drive_format_media(struct st_pool * pool, struct st_database_connection * db);
 static ssize_t vtl_drive_find_best_block_size(struct st_database_connection * db);
 static struct st_stream_reader * vtl_drive_get_raw_reader(int file_position, struct st_database_connection * db);
-static struct st_stream_writer * vtl_drive_get_raw_writer(bool append, struct st_database_connection * db);
+static struct st_stream_writer * vtl_drive_get_raw_writer(struct st_database_connection * db);
 static int vtl_drive_init(struct st_value * config);
 static int vtl_drive_reset(struct st_database_connection * db);
 static int vtl_drive_update_status(struct st_database_connection * db);
@@ -107,6 +108,9 @@ static struct st_drive vtl_drive = {
 
 
 static bool vtl_drive_check_header(struct st_database_connection * db) {
+	vtl_drive.status = st_drive_status_reading;
+	db->ops->sync_drive(db, &vtl_drive, st_database_sync_default);
+
 	char * file;
 	asprintf(&file, "%s/file_0", vtl_media_dir);
 
@@ -124,6 +128,9 @@ static bool vtl_drive_check_header(struct st_database_connection * db) {
 
 	bool ok = stdr_media_check_header(vtl_drive.slot->media, header, db);
 	free(header);
+
+	vtl_drive.status = st_drive_status_loaded_idle;
+	db->ops->sync_drive(db, &vtl_drive, st_database_sync_default);
 
 	return ok;
 }
@@ -212,7 +219,29 @@ struct st_drive * vtl_drive_get_device() {
 
 static struct st_stream_reader * vtl_drive_get_raw_reader(int file_position, struct st_database_connection * db) {}
 
-static struct st_stream_writer * vtl_drive_get_raw_writer(bool append, struct st_database_connection * db) {}
+static struct st_stream_writer * vtl_drive_get_raw_writer(struct st_database_connection * db) {
+	char * files;
+	asprintf(&files, "%s/file_*", vtl_media_dir);
+
+	glob_t gl;
+	int ret = glob(files, 0, NULL, &gl);
+	if (ret != 0)
+		return NULL;
+
+	int nb_files = gl.gl_pathc;
+	globfree(&gl);
+	free(files);
+
+	asprintf(&files, "%s/file_%d", vtl_media_dir, nb_files);
+
+	struct st_stream_writer * writer = vtl_drive_writer_get_raw_writer(&vtl_drive, files);
+
+	vtl_drive.status = st_drive_status_writing;
+	db->ops->sync_drive(db, &vtl_drive, st_database_sync_default);
+
+	free(files);
+	return writer;
+}
 
 static int vtl_drive_init(struct st_value * config) {
 	struct st_slot * sl = vtl_drive.slot = malloc(sizeof(struct st_slot));

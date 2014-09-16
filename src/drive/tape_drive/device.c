@@ -72,7 +72,7 @@ static void tape_drive_create_media(struct st_database_connection * db);
 static int tape_drive_format_media(struct st_pool * pool, struct st_database_connection * db);
 static ssize_t tape_drive_find_best_block_size(struct st_database_connection * db);
 static struct st_stream_reader * tape_drive_get_raw_reader(int file_position, struct st_database_connection * db);
-static struct st_stream_writer * tape_drive_get_raw_writer(bool append, struct st_database_connection * db);
+static struct st_stream_writer * tape_drive_get_raw_writer(struct st_database_connection * db);
 static int tape_drive_init(struct st_value * config);
 static void tape_drive_on_failed(bool verbose, unsigned int sleep_time);
 static int tape_drive_reset(struct st_database_connection * db);
@@ -420,11 +420,11 @@ static struct st_stream_reader * tape_drive_get_raw_reader(int file_position, st
 	return tape_drive_reader_get_raw_reader(&tape_drive, fd_nst);
 }
 
-static struct st_stream_writer * tape_drive_get_raw_writer(bool append, struct st_database_connection * db) {
+static struct st_stream_writer * tape_drive_get_raw_writer(struct st_database_connection * db) {
 	if (tape_drive.slot->media == NULL)
 		return NULL;
 
-	if (append && tape_drive_set_file_position(-1, db))
+	if (tape_drive_set_file_position(-1, db))
 		return NULL;
 
 	tape_drive.slot->media->write_count++;

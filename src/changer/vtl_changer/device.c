@@ -312,6 +312,9 @@ init_error:
 }
 
 static int vtl_changer_load(struct st_slot * from, struct st_drive * to, struct st_database_connection * db_connection) {
+	vtl_changer.status = st_changer_status_loading;
+	db_connection->ops->sync_changer(db_connection, &vtl_changer, st_database_sync_default);
+
 	struct vtl_changer_slot * vtl_from = from->data;
 	struct vtl_changer_slot * vtl_to = to->slot->data;
 
@@ -341,6 +344,9 @@ static int vtl_changer_load(struct st_slot * from, struct st_drive * to, struct 
 
 	to->ops->update_status(to);
 
+	vtl_changer.status = st_changer_status_idle;
+	db_connection->ops->sync_changer(db_connection, &vtl_changer, st_database_sync_default);
+
 	return failed;
 }
 
@@ -357,6 +363,9 @@ static int vtl_changer_shut_down(struct st_database_connection * db_connection) 
 }
 
 static int vtl_changer_unload(struct st_drive * from, struct st_database_connection * db_connection) {
+	vtl_changer.status = st_changer_status_unloading;
+	db_connection->ops->sync_changer(db_connection, &vtl_changer, st_database_sync_default);
+
 	struct vtl_changer_slot * vtl_from = from->data;
 	struct vtl_changer_slot * vtl_to = vtl_from->origin->data;
 
@@ -384,6 +393,9 @@ static int vtl_changer_unload(struct st_drive * from, struct st_database_connect
 	}
 
 	from->ops->update_status(from);
+
+	vtl_changer.status = st_changer_status_idle;
+	db_connection->ops->sync_changer(db_connection, &vtl_changer, st_database_sync_default);
 
 	return failed;
 }

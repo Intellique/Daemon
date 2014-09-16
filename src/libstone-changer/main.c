@@ -116,6 +116,7 @@ int main() {
 	if (failed != 0)
 		return 5;
 
+	stchgr_listen_set_db_connection(db_connect);
 	stchgr_media_init(changer);
 
 	db_connect->ops->sync_changer(db_connect, changer, st_database_sync_default);

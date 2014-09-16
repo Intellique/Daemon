@@ -340,10 +340,7 @@ static int scsi_changer_load(struct st_slot * from, struct st_drive * to, struct
 	scsi_changer_wait();
 
 	scsi_changer.status = st_changer_status_loading;
-	if (db_connection != NULL)
-		db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_default);
-
-	st_log_write(st_log_level_notice, "[%s | %s]: loading media '%s' from slot #%u to drive #%td", scsi_changer.vendor, scsi_changer.model, from->volume_name, from->index, to - scsi_changer.drives);
+	db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_default);
 
 	int failed = scsi_changer_scsi_move(scsi_changer_device, scsi_changer_transport_address, from, to->slot);
 
@@ -360,8 +357,6 @@ static int scsi_changer_load(struct st_slot * from, struct st_drive * to, struct
 	}
 
 	if (failed == 0) {
-		st_log_write(st_log_level_notice, "[%s | %s]: loading media '%s' from slot #%u to drive #%td finished with code = OK", scsi_changer.vendor, scsi_changer.model, from->volume_name, from->index, to - scsi_changer.drives);
-
 		struct st_media * media = to->slot->media = from->media;
 		from->media = NULL;
 
@@ -378,15 +373,12 @@ static int scsi_changer_load(struct st_slot * from, struct st_drive * to, struct
 		struct scsi_changer_slot * sto = to->slot->data;
 		sto->src_address = sfrom->address;
 		sto->src_slot = from;
-	} else {
-		st_log_write(st_log_level_notice, "[%s | %s]: loading media '%s' from slot #%u to drive #%td finished with code = OK", scsi_changer.vendor, scsi_changer.model, from->volume_name, from->index, to - scsi_changer.drives);
 	}
 
 	to->ops->reset(to);
 
 	scsi_changer.status = st_changer_status_idle;
-	if (db_connection != NULL)
-		db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_default);
+	db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_default);
 
 	return failed;
 }
@@ -440,10 +432,8 @@ static int scsi_changer_unload(struct st_drive * from, struct st_database_connec
 
 	scsi_changer_wait();
 
-	st_log_write(st_log_level_notice, "[%s | %s]: unloading media '%s' from drive #%td to slot #%u", scsi_changer.vendor, scsi_changer.model, from->slot->volume_name, from - scsi_changer.drives, to->index);
 	scsi_changer.status = st_changer_status_unloading;
-	if (db_connection != NULL)
-		db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_default);
+	db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_default);
 
 	failed = scsi_changer_scsi_move(scsi_changer_device, scsi_changer_transport_address, from->slot, to);
 
@@ -460,8 +450,6 @@ static int scsi_changer_unload(struct st_drive * from, struct st_database_connec
 	}
 
 	if (failed == 0) {
-		st_log_write(st_log_level_notice, "[%s | %s]: unloading media '%s' from drive #%u to slot #%td finished with code = OK", scsi_changer.vendor, scsi_changer.model, from->slot->volume_name, to->index, from - scsi_changer.drives);
-
 		to->media = from->slot->media;
 		from->slot->media = NULL;
 
@@ -473,14 +461,12 @@ static int scsi_changer_unload(struct st_drive * from, struct st_database_connec
 
 		struct scsi_changer_slot * sfrom = from->slot->data;
 		sfrom->src_address = 0;
-	} else
-		st_log_write(st_log_level_error, "[%s | %s]: unloading media '%s' from drive #%td to slot #%u finished with error", scsi_changer.vendor, scsi_changer.model, from->slot->volume_name, from - scsi_changer.drives, to->index);
+	}
 
 	from->ops->reset(from);
 
 	scsi_changer.status = st_changer_status_idle;
-	if (db_connection != NULL)
-		db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_default);
+	db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_default);
 
 	return failed;
 }

@@ -30,9 +30,10 @@
 #include <strings.h>
 
 #include <libstone/json.h>
-#include <libstone/socket.h>
+#include <libstone/log.h>
 #include <libstone/poll.h>
 #include <libstone/slot.h>
+#include <libstone/socket.h>
 #include <libstone/string.h>
 #include <libstone/value.h>
 
@@ -42,6 +43,7 @@
 #include "media.h"
 #include "peer.h"
 
+static struct st_database_connection * stchgr_db = NULL;
 static unsigned int stchgr_nb_clients = 0;
 
 static void stchgr_socket_accept(int fd_server, int fd_client, struct st_value * client);
@@ -127,6 +129,10 @@ static void stchgr_socket_message(int fd, short event, void * data) {
 	}
 }
 
+void stchgr_listen_set_db_connection(struct st_database_connection * db) {
+	stchgr_db = db;
+}
+
 
 static void stchgr_socket_command_find_free_drive(struct stchgr_peer * peer __attribute__((unused)), struct st_value * request, int fd) {
 	struct st_value * media_format = NULL;
@@ -202,7 +208,13 @@ static void stchgr_socket_command_load(struct stchgr_peer * peer, struct st_valu
 		return;
 	}
 
-	int failed = changer->ops->load(from, to->drive, NULL);
+	st_log_write(st_log_level_notice, "[%s | %s]: loading media '%s' from slot #%u to drive #%d", changer->vendor, changer->model, from->volume_name, from->index, to->index);
+
+	int failed = changer->ops->load(from, to->drive, stchgr_db);
+	if (failed != 0)
+		st_log_write(st_log_level_error, "[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = %d", changer->vendor, changer->model, from->volume_name, from->index, to->index, failed);
+	else
+		st_log_write(st_log_level_notice, "[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = OK", changer->vendor, changer->model, from->volume_name, from->index, to->index);
 
 	struct st_value * response = st_value_pack("{sb}", "status", failed != 0 ? false : true);
 	st_json_encode_to_fd(response, fd, true);
@@ -335,7 +347,13 @@ static void stchgr_socket_command_unload(struct stchgr_peer * peer, struct st_va
 		return;
 	}
 
-	int failed = changer->ops->unload(from->drive, NULL);
+	st_log_write(st_log_level_notice, "[%s | %s]: unloading media '%s' from drive #%d", changer->vendor, changer->model, from->volume_name, from->drive->index);
+
+	int failed = changer->ops->unload(from->drive, stchgr_db);
+	if (failed != 0)
+		st_log_write(st_log_level_error, "[%s | %s]: unloading media '%s' from drive #%d finished with code = %d", changer->vendor, changer->model, from->volume_name, from->drive->index, failed);
+	else
+		st_log_write(st_log_level_notice, "[%s | %s]: loading media '%s' from drive #%d finished with code = OK", changer->vendor, changer->model, from->volume_name, from->drive->index);
 
 	struct st_value * response = st_value_pack("{sb}", "status", failed != 0 ? false : true);
 	st_json_encode_to_fd(response, fd, true);
