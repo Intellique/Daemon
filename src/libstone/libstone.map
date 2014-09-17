@@ -45,6 +45,8 @@ LIBSTONE_1.2 {
 		st_host_get_info;
 		st_host_get_info2;
 
+		st_io_tmp_writer;
+
 		st_job_add_record;
 		st_job_convert;
 		st_job_free;

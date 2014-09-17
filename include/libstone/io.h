@@ -114,5 +114,7 @@ struct st_stream_writer {
 	void * data;
 };
 
+struct st_stream_writer * st_io_tmp_writer(void);
+
 #endif
 
