@@ -34,7 +34,7 @@
 #include <sys/statvfs.h>
 // fstat, lseek
 #include <sys/types.h>
-// close, fstat, lseek, unlink
+// close, fstat, lseek, read, unlink, write
 #include <unistd.h>
 
 #include "../io.h"
@@ -50,24 +50,24 @@ static int st_io_tmp_close(struct st_io_tmp_private * self);
 static ssize_t st_io_tmp_get_block_size(struct st_io_tmp_private * self);
 static ssize_t st_io_tmp_position(struct st_io_tmp_private * self);
 
-static int st_io_tmp_reader_close(struct st_stream_reader * sfr);
-static bool st_io_tmp_reader_end_of_file(struct st_stream_reader * sfr);
-static off_t st_io_tmp_reader_forward(struct st_stream_reader * sfr, off_t offset);
-static void st_io_tmp_reader_free(struct st_stream_reader * sfr);
-static ssize_t st_io_tmp_reader_get_block_size(struct st_stream_reader * sfr);
-static int st_io_tmp_reader_last_errno(struct st_stream_reader * sfr);
-static ssize_t st_io_tmp_reader_position(struct st_stream_reader * sfr);
-static ssize_t st_io_tmp_reader_read(struct st_stream_reader * sfr, void * buffer, ssize_t length);
+static int st_io_tmp_reader_close(struct st_stream_reader * sr);
+static bool st_io_tmp_reader_end_of_file(struct st_stream_reader * sr);
+static off_t st_io_tmp_reader_forward(struct st_stream_reader * sr, off_t offset);
+static void st_io_tmp_reader_free(struct st_stream_reader * sr);
+static ssize_t st_io_tmp_reader_get_block_size(struct st_stream_reader * sr);
+static int st_io_tmp_reader_last_errno(struct st_stream_reader * sr);
+static ssize_t st_io_tmp_reader_position(struct st_stream_reader * sr);
+static ssize_t st_io_tmp_reader_read(struct st_stream_reader * sr, void * buffer, ssize_t length);
 
-static ssize_t st_io_tmp_writer_before_close(struct st_stream_writer * sfw, void * buffer, ssize_t length);
-static int st_io_tmp_writer_close(struct st_stream_writer * sfw);
-static void st_io_tmp_writer_free(struct st_stream_writer * sfw);
-static ssize_t st_io_tmp_writer_get_available_size(struct st_stream_writer * sfw);
-static ssize_t st_io_tmp_writer_get_block_size(struct st_stream_writer * sfw);
-static int st_io_tmp_writer_last_errno(struct st_stream_writer * sfw);
-static ssize_t st_io_tmp_writer_position(struct st_stream_writer * sfw);
-static struct st_stream_reader * st_io_tmp_writer_reopen(struct st_stream_writer * sfw);
-static ssize_t st_io_tmp_writer_write(struct st_stream_writer * sfw, const void * buffer, ssize_t length);
+static ssize_t st_io_tmp_writer_before_close(struct st_stream_writer * sw, void * buffer, ssize_t length);
+static int st_io_tmp_writer_close(struct st_stream_writer * sw);
+static void st_io_tmp_writer_free(struct st_stream_writer * sw);
+static ssize_t st_io_tmp_writer_get_available_size(struct st_stream_writer * sw);
+static ssize_t st_io_tmp_writer_get_block_size(struct st_stream_writer * sw);
+static int st_io_tmp_writer_last_errno(struct st_stream_writer * sw);
+static ssize_t st_io_tmp_writer_position(struct st_stream_writer * sw);
+static struct st_stream_reader * st_io_tmp_writer_reopen(struct st_stream_writer * sw);
+static ssize_t st_io_tmp_writer_write(struct st_stream_writer * sw, const void * buffer, ssize_t length);
 
 static struct st_stream_reader_ops st_io_tmp_reader_ops = {
 	.close          = st_io_tmp_reader_close,
@@ -91,6 +91,28 @@ static struct st_stream_writer_ops st_io_tmp_writer_ops = {
 	.reopen             = st_io_tmp_writer_reopen,
 	.write              = st_io_tmp_writer_write,
 };
+
+
+__asm__(".symver st_io_tmp_writer_v1, st_io_tmp_writer@@LIBSTONE_1.2");
+struct st_stream_writer * st_io_tmp_writer_v1() {
+	char filename[64] = TMP_DIR "/stoned_XXXXXX";
+
+	int fd = mkstemp(filename);
+	if (fd < 0)
+		return NULL;
+
+	unlink(filename);
+
+	struct st_io_tmp_private * self = malloc(sizeof(struct st_io_tmp_private));
+	self->fd = fd;
+	self->last_errno = 0;
+
+	struct st_stream_writer * writer = malloc(sizeof(struct st_stream_writer));
+	writer->ops = &st_io_tmp_writer_ops;
+	writer->data = self;
+
+	return writer;
+}
 
 
 static int st_io_tmp_close(struct st_io_tmp_private * self) {
@@ -132,16 +154,16 @@ static ssize_t st_io_tmp_position(struct st_io_tmp_private * self) {
 }
 
 
-static int st_io_tmp_reader_close(struct st_stream_reader * sfr) {
-	return st_io_tmp_close(sfr->data);
+static int st_io_tmp_reader_close(struct st_stream_reader * sr) {
+	return st_io_tmp_close(sr->data);
 }
 
-static bool st_io_tmp_reader_end_of_file(struct st_stream_reader * sfr) {
-	ssize_t cur_pos = st_io_tmp_position(sfr->data);
+static bool st_io_tmp_reader_end_of_file(struct st_stream_reader * sr) {
+	ssize_t cur_pos = st_io_tmp_position(sr->data);
 	if (cur_pos < 0)
 		return true;
 
-	struct st_io_tmp_private * self = sfr->data;
+	struct st_io_tmp_private * self = sr->data;
 	struct stat st;
 	if (fstat(self->fd, &st)) {
 		self->last_errno = errno;
@@ -151,8 +173,8 @@ static bool st_io_tmp_reader_end_of_file(struct st_stream_reader * sfr) {
 	return cur_pos == st.st_size;
 }
 
-static off_t st_io_tmp_reader_forward(struct st_stream_reader * sfr, off_t offset) {
-	struct st_io_tmp_private * self = sfr->data;
+static off_t st_io_tmp_reader_forward(struct st_stream_reader * sr, off_t offset) {
+	struct st_io_tmp_private * self = sr->data;
 	self->last_errno = 0;
 	ssize_t new_pos = lseek(self->fd, offset, SEEK_CUR);
 	if (new_pos < 0)
@@ -160,37 +182,37 @@ static off_t st_io_tmp_reader_forward(struct st_stream_reader * sfr, off_t offse
 	return new_pos;
 }
 
-static void st_io_tmp_reader_free(struct st_stream_reader * sfr) {
-	struct st_io_tmp_private * self = sfr->data;
+static void st_io_tmp_reader_free(struct st_stream_reader * sr) {
+	struct st_io_tmp_private * self = sr->data;
 
 	if (self->fd >= 0)
-		st_io_tmp_reader_close(sfr);
+		st_io_tmp_reader_close(sr);
 
 	free(self);
-	free(sfr);
+	free(sr);
 }
 
-static ssize_t st_io_tmp_reader_get_block_size(struct st_stream_reader * sfr) {
-	return st_io_tmp_get_block_size(sfr->data);
+static ssize_t st_io_tmp_reader_get_block_size(struct st_stream_reader * sr) {
+	return st_io_tmp_get_block_size(sr->data);
 }
 
-static int st_io_tmp_reader_last_errno(struct st_stream_reader * sfr) {
-	struct st_io_tmp_private * self = sfr->data;
+static int st_io_tmp_reader_last_errno(struct st_stream_reader * sr) {
+	struct st_io_tmp_private * self = sr->data;
 	return self->last_errno;
 }
 
-static ssize_t st_io_tmp_reader_position(struct st_stream_reader * sfr) {
-	return st_io_tmp_position(sfr->data);
+static ssize_t st_io_tmp_reader_position(struct st_stream_reader * sr) {
+	return st_io_tmp_position(sr->data);
 }
 
-static ssize_t st_io_tmp_reader_read(struct st_stream_reader * sfr, void * buffer, ssize_t length) {
-	if (sfr == NULL || buffer == NULL || length < 0)
+static ssize_t st_io_tmp_reader_read(struct st_stream_reader * sr, void * buffer, ssize_t length) {
+	if (sr == NULL || buffer == NULL || length < 0)
 		return -1;
 
 	if (length == 0)
 		return 0;
 
-	struct st_io_tmp_private * self = sfr->data;
+	struct st_io_tmp_private * self = sr->data;
 	self->last_errno = 0;
 
 	ssize_t nb_read = read(self->fd, buffer, length);
@@ -201,30 +223,8 @@ static ssize_t st_io_tmp_reader_read(struct st_stream_reader * sfr, void * buffe
 }
 
 
-__asm__(".symver st_io_tmp_writer_v1, st_io_tmp_writer@@LIBSTONE_1.2");
-struct st_stream_writer * st_io_tmp_writer_v1() {
-	char filename[64] = TMP_DIR "/stoned_XXXXXX";
-
-	int fd = mkstemp(filename);
-	if (fd < 0)
-		return NULL;
-
-	unlink(filename);
-
-	struct st_io_tmp_private * self = malloc(sizeof(struct st_io_tmp_private));
-	self->fd = fd;
-	self->last_errno = 0;
-
-	struct st_stream_writer * writer = malloc(sizeof(struct st_stream_writer));
-	writer->ops = &st_io_tmp_writer_ops;
-	writer->data = self;
-
-	return writer;
-}
-
-
-static ssize_t st_io_tmp_writer_before_close(struct st_stream_writer * sfw, void * buffer __attribute__((unused)), ssize_t length __attribute__((unused))) {
-	struct st_io_tmp_private * self = sfw->data;
+static ssize_t st_io_tmp_writer_before_close(struct st_stream_writer * sw, void * buffer __attribute__((unused)), ssize_t length __attribute__((unused))) {
+	struct st_io_tmp_private * self = sw->data;
 
 	if (self->fd < 0) {
 		self->last_errno = EBADFD;
@@ -234,22 +234,22 @@ static ssize_t st_io_tmp_writer_before_close(struct st_stream_writer * sfw, void
 	return 0;
 }
 
-static int st_io_tmp_writer_close(struct st_stream_writer * sfw) {
-	return st_io_tmp_close(sfw->data);
+static int st_io_tmp_writer_close(struct st_stream_writer * sw) {
+	return st_io_tmp_close(sw->data);
 }
 
-static void st_io_tmp_writer_free(struct st_stream_writer * sfw) {
-	struct st_io_tmp_private * self = sfw->data;
+static void st_io_tmp_writer_free(struct st_stream_writer * sw) {
+	struct st_io_tmp_private * self = sw->data;
 
 	if (self->fd >= 0)
-		st_io_tmp_writer_close(sfw);
+		st_io_tmp_writer_close(sw);
 
 	free(self);
-	free(sfw);
+	free(sw);
 }
 
-static ssize_t st_io_tmp_writer_get_available_size(struct st_stream_writer * sfw) {
-	struct st_io_tmp_private * self = sfw->data;
+static ssize_t st_io_tmp_writer_get_available_size(struct st_stream_writer * sw) {
+	struct st_io_tmp_private * self = sw->data;
 	self->last_errno = 0;
 
 	struct statvfs st;
@@ -261,21 +261,21 @@ static ssize_t st_io_tmp_writer_get_available_size(struct st_stream_writer * sfw
 	return st.f_bavail * st.f_bsize;
 }
 
-static ssize_t st_io_tmp_writer_get_block_size(struct st_stream_writer * sfw) {
-	return st_io_tmp_get_block_size(sfw->data);
+static ssize_t st_io_tmp_writer_get_block_size(struct st_stream_writer * sw) {
+	return st_io_tmp_get_block_size(sw->data);
 }
 
-static int st_io_tmp_writer_last_errno(struct st_stream_writer * sfw) {
-	struct st_io_tmp_private * self = sfw->data;
+static int st_io_tmp_writer_last_errno(struct st_stream_writer * sw) {
+	struct st_io_tmp_private * self = sw->data;
 	return self->last_errno;
 }
 
-static ssize_t st_io_tmp_writer_position(struct st_stream_writer * sfw) {
-	return st_io_tmp_position(sfw->data);
+static ssize_t st_io_tmp_writer_position(struct st_stream_writer * sw) {
+	return st_io_tmp_position(sw->data);
 }
 
-static struct st_stream_reader * st_io_tmp_writer_reopen(struct st_stream_writer * sfw) {
-	struct st_io_tmp_private * self = sfw->data;
+static struct st_stream_reader * st_io_tmp_writer_reopen(struct st_stream_writer * sw) {
+	struct st_io_tmp_private * self = sw->data;
 	struct st_io_tmp_private * new_self = malloc(sizeof(struct st_io_tmp_private));
 	new_self->fd = self->fd;
 	new_self->last_errno = 0;
@@ -289,14 +289,14 @@ static struct st_stream_reader * st_io_tmp_writer_reopen(struct st_stream_writer
 	return reader;
 }
 
-static ssize_t st_io_tmp_writer_write(struct st_stream_writer * sfw, const void * buffer, ssize_t length) {
-	if (sfw == NULL || buffer == NULL || length < 0)
+static ssize_t st_io_tmp_writer_write(struct st_stream_writer * sw, const void * buffer, ssize_t length) {
+	if (sw == NULL || buffer == NULL || length < 0)
 		return -1;
 
 	if (length == 0)
 		return 0;
 
-	struct st_io_tmp_private * self = sfw->data;
+	struct st_io_tmp_private * self = sw->data;
 	ssize_t nb_write = write(self->fd, buffer, length);
 
 	if (nb_write < 0)
