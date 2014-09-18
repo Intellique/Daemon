@@ -182,6 +182,12 @@ struct st_database_config {
 	 */
 	struct st_database_config_ops {
 		/**
+		 * \brief Backup
+		 *
+		 * \returns a stream reader which contains data of database
+		 */
+		struct st_stream_reader * (*backup_db)(struct st_database_config * db_config);
+		/**
 		 * \brief Create a new connection to database
 		 *
 		 * \returns a database connection

@@ -34,23 +34,55 @@ struct st_drive;
 struct st_slot;
 struct st_value;
 
+/**
+ * \enum st_changer_action
+ * \brief Next action of changer
+ */
 enum st_changer_action {
+	/**
+	 * \brief No action
+	 */
 	st_changer_action_none = 0x1,
 	st_changer_action_put_offline = 0x2,
 	st_changer_action_put_online = 0x3,
 
+	/**
+	 * \brief Used in case of errors
+	 */
 	st_changer_action_unknown = 0x0,
 };
 
+/**
+ * \enum st_changer_status
+ * \brief Status of changer
+ */
 enum st_changer_status {
 	st_changer_status_error = 0x1,
 	st_changer_status_exporting = 0x2,
+	/**
+	 * \brief The library is going offline
+	 */
 	st_changer_status_go_offline = 0x3,
+	/**
+	 * \brief The library is going online
+	 */
 	st_changer_status_go_online = 0x4,
+	/**
+	 * \brief The library is waiting for a command
+	 */
 	st_changer_status_idle = 0x5,
 	st_changer_status_importing = 0x6,
+	/**
+	 * \brief The library is loading a media into a drive
+	 */
 	st_changer_status_loading = 0x7,
+	/**
+	 * \brief The library is offline
+	 */
 	st_changer_status_offline = 0x8,
+	/**
+	 * \brief The library is unloading a media from a drive
+	 */
 	st_changer_status_unloading = 0x9,
 
 	st_changer_status_unknown = 0x0,
@@ -124,7 +156,16 @@ struct st_changer {
 	struct st_value * db_data;
 };
 
+/**
+ * \brief Convert an enumeration info static allocated string
+ *
+ * \param[in] action : a value of enum st_changer_action
+ * \return a static allocated string representing \a action
+ */
 const char * st_changer_action_to_string(enum st_changer_action action);
+/**
+ * \brief Convert an instance of \a changer into an object
+ */
 struct st_value * st_changer_convert(struct st_changer * changer) __attribute__((nonnull,warn_unused_result));
 void st_changer_free(struct st_changer * changer) __attribute__((nonnull));
 void st_changer_free2(void * changer) __attribute__((nonnull));

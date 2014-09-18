@@ -600,6 +600,12 @@ CREATE TABLE ArchiveVolumeToChecksumResult (
     PRIMARY KEY (archiveVolume, checksumResult)
 );
 
+CREATE TABLE BackupVolumeToChecksumResult (
+    backupVolume BIGINT NOT NULL REFERENCES BackupVolume(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    checksumResult BIGINT NOT NULL REFERENCES ChecksumResult(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    PRIMARY KEY (backupVolume, checksumResult)
+);
+
 CREATE TABLE JobRecord (
     id BIGSERIAL PRIMARY KEY,
     jobrun BIGINT NOT NULL REFERENCES Jobrun(id) ON UPDATE CASCADE ON DELETE CASCADE,

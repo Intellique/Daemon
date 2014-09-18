@@ -47,6 +47,7 @@ struct st_database_postgresql_config_private {
 	char * port;
 };
 
+struct st_stream_reader * st_database_postgresql_backup_init(struct st_database_postgresql_config_private * config);
 
 void st_database_postgresql_config_free(void * data);
 /**

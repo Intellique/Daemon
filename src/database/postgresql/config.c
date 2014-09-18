@@ -43,14 +43,20 @@
 
 #include "common.h"
 
+static struct st_stream_reader * st_database_postgresql_backup_db(struct st_database_config * db_config);
 static struct st_database_connection * st_database_postgresql_connect(struct st_database_config * db_config);
 static int st_database_postgresql_ping(struct st_database_config * db_config);
 
 static struct st_database_config_ops st_database_postgresql_config_ops = {
-	.connect = st_database_postgresql_connect,
-	.ping    = st_database_postgresql_ping,
+	.backup_db = st_database_postgresql_backup_db,
+	.connect   = st_database_postgresql_connect,
+	.ping      = st_database_postgresql_ping,
 };
 
+
+static struct st_stream_reader * st_database_postgresql_backup_db(struct st_database_config * db_config) {
+	return st_database_postgresql_backup_init(db_config->data);
+}
 
 static struct st_database_connection * st_database_postgresql_connect(struct st_database_config * db_config) {
 	struct st_database_postgresql_config_private * self = db_config->data;

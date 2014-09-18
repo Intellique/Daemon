@@ -34,33 +34,33 @@
 #include "value.h"
 
 static struct st_changer_action2 {
+	unsigned long long hash;
 	const char * name;
 	const enum st_changer_action action;
-	unsigned long long hash;
 } st_library_actions[] = {
-	{ "none",        st_changer_action_none,        0 },
-	{ "put offline", st_changer_action_put_offline, 0 },
-	{ "put online",  st_changer_action_put_online,  0 },
+	[st_changer_action_none] =        { 0, "none",        st_changer_action_none },
+	[st_changer_action_put_offline] = { 0, "put offline", st_changer_action_put_offline },
+	[st_changer_action_put_online] =  { 0, "put online",  st_changer_action_put_online },
 
-	{ "unknown", st_changer_action_unknown, 0 },
+	[st_changer_action_unknown] = { 0, "unknown", st_changer_action_unknown },
 };
 
 static struct st_changer_status2 {
+	unsigned long long hash;
 	const char * name;
 	const enum st_changer_status status;
-	unsigned long long hash;
 } st_library_status[] = {
-	{ "error",		st_changer_status_error,      0 },
-	{ "exporting",	st_changer_status_exporting,  0 },
-	{ "idle",		st_changer_status_idle,       0 },
-	{ "go offline", st_changer_status_go_offline, 0 },
-	{ "go online",  st_changer_status_go_online,  0 },
-	{ "importing",	st_changer_status_importing,  0 },
-	{ "loading",	st_changer_status_loading,    0 },
-	{ "offline",    st_changer_status_offline,    0 },
-	{ "unloading",	st_changer_status_unloading,  0 },
+	[st_changer_status_error]      = { 0, "error",		st_changer_status_error },
+	[st_changer_status_exporting]  = { 0, "exporting",	st_changer_status_exporting },
+	[st_changer_status_idle]       = { 0, "idle",		st_changer_status_idle },
+	[st_changer_status_go_offline] = { 0, "go offline", st_changer_status_go_offline },
+	[st_changer_status_go_online]  = { 0, "go online",  st_changer_status_go_online },
+	[st_changer_status_importing]  = { 0, "importing",	st_changer_status_importing },
+	[st_changer_status_loading]    = { 0, "loading",	st_changer_status_loading },
+	[st_changer_status_offline]    = { 0, "offline",    st_changer_status_offline },
+	[st_changer_status_unloading]  = { 0, "unloading",	st_changer_status_unloading },
 
-	{ "unknown", st_changer_status_unknown, 0 },
+	[st_changer_status_unknown] = { 0, "unknown", st_changer_status_unknown },
 };
 
 static void st_changer_init(void) __attribute__((constructor));
@@ -68,12 +68,7 @@ static void st_changer_init(void) __attribute__((constructor));
 
 __asm__(".symver st_changer_action_to_string_v1, st_changer_action_to_string@@LIBSTONE_1.2");
 const char * st_changer_action_to_string_v1(enum st_changer_action action) {
-	unsigned int i;
-	for (i = 0; st_library_actions[i].action != st_changer_action_unknown; i++)
-		if (st_library_actions[i].action == action)
-			return st_library_actions[i].name;
-
-	return st_library_actions[i].name;
+	return st_library_actions[action].name;
 }
 
 __asm__(".symver st_changer_convert_v1, st_changer_convert@@LIBSTONE_1.2");
@@ -134,14 +129,12 @@ void st_changer_free2_v1(void * changer) {
 }
 
 static void st_changer_init() {
-	int i;
-	for (i = 0; st_library_actions[i].action != st_changer_action_unknown; i++)
+	unsigned int i;
+	for (i = 0; i < sizeof(st_library_actions) / sizeof(*st_library_actions) ; i++)
 		st_library_actions[i].hash = st_string_compute_hash2(st_library_actions[i].name);
-	st_library_actions[i].hash = st_string_compute_hash2(st_library_actions[i].name);
 
-	for (i = 0; st_library_status[i].status != st_changer_status_unknown; i++)
+	for (i = 0; i < sizeof(st_library_status) / sizeof(*st_library_status); i++)
 		st_library_status[i].hash = st_string_compute_hash2(st_library_status[i].name);
-	st_library_status[i].hash = st_string_compute_hash2(st_library_status[i].name);
 }
 
 __asm__(".symver st_changer_string_to_action_v1, st_changer_string_to_action@@LIBSTONE_1.2");
@@ -151,7 +144,7 @@ enum st_changer_action st_changer_string_to_action_v1(const char * action) {
 
 	unsigned int i;
 	const unsigned long long hash = st_string_compute_hash2(action);
-	for (i = 0; st_library_actions[i].action != st_changer_action_unknown; i++)
+	for (i = 0; i < sizeof(st_library_actions) / sizeof(*st_library_actions) ; i++)
 		if (hash == st_library_actions[i].hash)
 			return st_library_actions[i].action;
 
@@ -160,12 +153,7 @@ enum st_changer_action st_changer_string_to_action_v1(const char * action) {
 
 __asm__(".symver st_changer_status_to_string_v1, st_changer_status_to_string@@LIBSTONE_1.2");
 const char * st_changer_status_to_string_v1(enum st_changer_status status) {
-	unsigned int i;
-	for (i = 0; st_library_status[i].status != st_changer_status_unknown; i++)
-		if (st_library_status[i].status == status)
-			return st_library_status[i].name;
-
-	return st_library_status[i].name;
+	return st_library_status[status].name;
 }
 
 __asm__(".symver st_changer_string_to_status_v1, st_changer_string_to_status@@LIBSTONE_1.2");
@@ -175,7 +163,7 @@ enum st_changer_status st_changer_string_to_status_v1(const char * status) {
 
 	unsigned int i;
 	const unsigned long long hash = st_string_compute_hash2(status);
-	for (i = 0; st_library_status[i].status != st_changer_status_unknown; i++)
+	for (i = 0; i < sizeof(st_library_status) / sizeof(*st_library_status); i++)
 		if (hash == st_library_status[i].hash)
 			return st_library_status[i].status;
 
