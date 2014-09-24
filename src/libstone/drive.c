@@ -34,23 +34,23 @@
 #include "value.h"
 
 static struct st_drive_status2 {
+	unsigned long long hash;
 	const char * name;
 	const enum st_drive_status status;
-	unsigned long long hash;
 } st_drive_status[] = {
-	{ "cleaning",		st_drive_status_cleaning,    0 },
-	{ "empty idle",		st_drive_status_empty_idle,  0 },
-	{ "erasing",		st_drive_status_erasing,     0 },
-	{ "error",			st_drive_status_error,       0 },
-	{ "loaded idle",	st_drive_status_loaded_idle, 0 },
-	{ "loading",		st_drive_status_loading,     0 },
-	{ "positioning",	st_drive_status_positioning, 0 },
-	{ "reading",		st_drive_status_reading,     0 },
-	{ "rewinding",		st_drive_status_rewinding,   0 },
-	{ "unloading",		st_drive_status_unloading,   0 },
-	{ "writing",		st_drive_status_writing,     0 },
+	[st_drive_status_cleaning]    = { 0, "cleaning",	st_drive_status_cleaning },
+	[st_drive_status_empty_idle]  = { 0, "empty idle",	st_drive_status_empty_idle },
+	[st_drive_status_erasing]     = { 0, "erasing",		st_drive_status_erasing },
+	[st_drive_status_error]       = { 0, "error",		st_drive_status_error },
+	[st_drive_status_loaded_idle] = { 0, "loaded idle",	st_drive_status_loaded_idle },
+	[st_drive_status_loading]     = { 0, "loading",		st_drive_status_loading },
+	[st_drive_status_positioning] = { 0, "positioning",	st_drive_status_positioning },
+	[st_drive_status_reading]     = { 0, "reading",		st_drive_status_reading },
+	[st_drive_status_rewinding]   = { 0, "rewinding",	st_drive_status_rewinding },
+	[st_drive_status_unloading]   = { 0, "unloading",	st_drive_status_unloading },
+	[st_drive_status_writing]     = { 0, "writing",		st_drive_status_writing },
 
-	{ "unknown", st_drive_status_unknown, 0 },
+	[st_drive_status_unknown] = { 0, "unknown", st_drive_status_unknown },
 };
 
 static void st_drive_init(void) __attribute__((constructor));
@@ -103,20 +103,14 @@ void st_drive_free2_v1(void * drive) {
 }
 
 static void st_drive_init() {
-	int i;
-	for (i = 0; st_drive_status[i].status != st_drive_status_unknown; i++)
+	unsigned int i;
+	for (i = 0; i < sizeof(st_drive_status) / sizeof(*st_drive_status); i++)
 		st_drive_status[i].hash = st_string_compute_hash2(st_drive_status[i].name);
-	st_drive_status[i].hash = st_string_compute_hash2(st_drive_status[i].name);
 }
 
 __asm__(".symver st_drive_status_to_string_v1, st_drive_status_to_string@@LIBSTONE_1.2");
 const char * st_drive_status_to_string_v1(enum st_drive_status status) {
-	unsigned int i;
-	for (i = 0; st_drive_status[i].status != st_drive_status_unknown; i++)
-		if (st_drive_status[i].status == status)
-			return st_drive_status[i].name;
-
-	return st_drive_status[i].name;
+	return st_drive_status[status].name;
 }
 
 __asm__(".symver st_drive_string_to_status_v1, st_drive_string_to_status@@LIBSTONE_1.2");
@@ -126,7 +120,7 @@ enum st_drive_status st_drive_string_to_status_v1(const char * status) {
 
 	unsigned int i;
 	const unsigned long long hash = st_string_compute_hash2(status);
-	for (i = 0; st_drive_status[i].status != st_drive_status_unknown; i++)
+	for (i = 0; i < sizeof(st_drive_status) / sizeof(*st_drive_status); i++)
 		if (hash == st_drive_status[i].hash)
 			return st_drive_status[i].status;
 

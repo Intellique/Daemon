@@ -40,7 +40,7 @@ enum st_drive_status {
 	st_drive_status_cleaning = 0x1,
 	st_drive_status_empty_idle = 0x2,
 	st_drive_status_erasing = 0x3,
-	st_drive_status_error = 0x3,
+	st_drive_status_error = 0x4,
 	st_drive_status_loaded_idle = 0x5,
 	st_drive_status_loading = 0x6,
 	st_drive_status_positioning = 0x7,
