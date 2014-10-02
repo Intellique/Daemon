@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 16 Jun 2014 18:39:46 +0200                            *
+*  Last modified: Thu, 02 Oct 2014 09:50:23 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2603,7 +2603,7 @@ static int st_db_postgresql_get_user(struct st_database_connection * connect, st
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	const char * query = "select_user_by_id_or_login";
-	st_db_postgresql_prepare(self, query, "SELECT u.id, login, password, salt, fullname, email, homedirectory, isadmin, canarchive, canrestore, disabled, p.uuid FROM users u LEFT JOIN pool p ON u.pool = p.id WHERE login = $1 LIMIT 1");
+	st_db_postgresql_prepare(self, query, "SELECT id, login, password, salt, fullname, email, homedirectory, isadmin, canarchive, canrestore, disabled FROM users WHERE login = $1 LIMIT 1");
 
 	const char * param[] = { login };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -2629,8 +2629,6 @@ static int st_db_postgresql_get_user(struct st_database_connection * connect, st
 		st_db_postgresql_get_bool(result, 0, 8, &user->can_archive);
 		st_db_postgresql_get_bool(result, 0, 9, &user->can_restore);
 		st_db_postgresql_get_bool(result, 0, 10, &user->disabled);
-
-		user->pool = st_pool_get_by_uuid(PQgetvalue(result, 0, 11));
 	}
 
 	PQclear(result);
@@ -2644,7 +2642,7 @@ static int st_db_postgresql_sync_user(struct st_database_connection * connect, s
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	const char * query = "select_user_by_id";
-	st_db_postgresql_prepare(self, query, "SELECT login, password, salt, fullname, email, homedirectory, isadmin, canarchive, canrestore, disabled, uuid FROM users u LEFT JOIN pool p ON u.pool = p.id WHERE u.id = $1 LIMIT 1");
+	st_db_postgresql_prepare(self, query, "SELECT login, password, salt, fullname, email, homedirectory, isadmin, canarchive, canrestore, disabled FROM users WHERE u.id = $1 LIMIT 1");
 
 	struct st_db_postgresql_user_data * user_data = user->db_data;
 
@@ -2687,8 +2685,6 @@ static int st_db_postgresql_sync_user(struct st_database_connection * connect, s
 		st_db_postgresql_get_bool(result, 0, 8, &user->can_restore);
 
 		st_db_postgresql_get_bool(result, 0, 9, &user->disabled);
-
-		user->pool = st_pool_get_by_uuid(PQgetvalue(result, 0, 10));
 	}
 
 	PQclear(result);

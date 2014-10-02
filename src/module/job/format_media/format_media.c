@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 23 Jan 2014 13:34:47 +0100                            *
+*  Last modified: Thu, 02 Oct 2014 10:10:59 +0200                            *
 \****************************************************************************/
 
 // json_*
@@ -109,10 +109,6 @@ static bool st_job_format_media_check(struct st_job * job) {
 	}
 
 	struct st_pool * pool = st_pool_get_by_job(job, job->db_connect);
-	if (pool == NULL) {
-		pool = job->user->pool;
-		st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "using default pool '%s' of user '%s'", pool->name, job->user->login);
-	}
 
 	enum {
 		alert_user,
@@ -530,8 +526,8 @@ int st_job_format_media_run(struct st_job * job) {
 		st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Try to format a media with error status");
 
 	if (self->pool == NULL) {
-		self->pool = job->user->pool;
-		st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Using default pool '%s' of user '%s'", self->pool->name, job->user->login);
+		st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "No pool specified");
+		return 1;
 	}
 	if (self->pool->deleted) {
 		st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Try to format to a pool which is deleted");
