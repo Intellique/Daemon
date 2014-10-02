@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 02 Oct 2014 09:50:23 +0200                            *
+*  Last modified: Thu, 02 Oct 2014 13:39:03 +0200                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2642,7 +2642,7 @@ static int st_db_postgresql_sync_user(struct st_database_connection * connect, s
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	const char * query = "select_user_by_id";
-	st_db_postgresql_prepare(self, query, "SELECT login, password, salt, fullname, email, homedirectory, isadmin, canarchive, canrestore, disabled FROM users WHERE u.id = $1 LIMIT 1");
+	st_db_postgresql_prepare(self, query, "SELECT login, password, salt, fullname, email, homedirectory, isadmin, canarchive, canrestore, disabled FROM users WHERE id = $1 LIMIT 1");
 
 	struct st_db_postgresql_user_data * user_data = user->db_data;
 
