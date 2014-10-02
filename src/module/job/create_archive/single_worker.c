@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 16 Jun 2014 19:09:50 +0200                            *
+*  Last modified: Thu, 02 Oct 2014 10:06:36 +0200                            *
 \****************************************************************************/
 
 // asprintf
@@ -135,11 +135,6 @@ struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(s
 
 		if (self->pool != NULL)
 			st_job_add_record(connect, st_log_level_info, job, st_job_record_notif_important, "Using pool (%s) of archive (%s)", self->pool->name, self->archive->name);
-	}
-
-	if (self->pool == NULL) {
-		self->pool = job->user->pool;
-		st_job_add_record(connect, st_log_level_info, job, st_job_record_notif_important, "Using pool (%s) of user (%s)", self->pool->name, job->user->login);
 	}
 
 	self->total_done = 0;
