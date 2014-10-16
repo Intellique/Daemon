@@ -31,6 +31,7 @@
 #define DAEMON_SOCKET_DIR "/var/run/stoned"
 #define DAEMON_PID_FILE "/var/run/stoned.pid"
 #define DAEMON_BIN_DIR "/usr/lib/stoned/bin"
+#define LOCALE_DIR "/usr/share/locale/"
 #define MODULE_PATH "/usr/lib/stoned"
 #define SCRIPT_PATH "/var/lib/stoned"
 #define TMP_DIR "/tmp"

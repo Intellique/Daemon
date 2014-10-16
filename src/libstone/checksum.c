@@ -27,6 +27,8 @@
 #define _GNU_SOURCE
 // open
 #include <fcntl.h>
+// gettext
+#include <libintl.h>
 // pthread_mutex_lock, pthread_mutex_unlock,
 #include <pthread.h>
 // asprintf, snprintf, sscanf
@@ -130,13 +132,13 @@ struct st_checksum_driver_v1 * st_checksum_get_driver_v1(const char * driver) {
 
 		if (cookie == NULL) {
 			pthread_mutex_unlock(&st_checksum_lock);
-			st_log_write(st_log_level_error, "Failed to load checksum driver '%s'", driver);
+			st_log_write(st_log_level_error, gettext("Failed to load checksum driver '%s'"), driver);
 			return NULL;
 		}
 
 		if (!st_value_hashtable_has_key2(st_checksum_drivers, driver)) {
 			pthread_mutex_unlock(&st_checksum_lock);
-			st_log_write(st_log_level_warning, "Driver '%s' did not call 'register_driver'", driver);
+			st_log_write(st_log_level_warning, gettext("Driver '%s' did not call 'register_driver'"), driver);
 			return NULL;
 		}
 	}
@@ -159,7 +161,7 @@ static void st_checksum_init() {
 __asm__(".symver st_checksum_register_driver_v1, st_checksum_register_driver@@LIBSTONE_1.2");
 void st_checksum_register_driver_v1(struct st_checksum_driver_v1 * driver) {
 	if (driver == NULL) {
-		st_log_write(st_log_level_error, "Try to register with null driver");
+		st_log_write(st_log_level_error, gettext("Try to register with null driver"));
 		return;
 	}
 
@@ -167,7 +169,7 @@ void st_checksum_register_driver_v1(struct st_checksum_driver_v1 * driver) {
 
 	if (st_value_hashtable_has_key2(st_checksum_drivers, driver->name)) {
 		pthread_mutex_unlock(&st_checksum_lock);
-		st_log_write(st_log_level_warning, "Checksum driver '%s' is already registred", driver->name);
+		st_log_write(st_log_level_warning, gettext("Checksum driver '%s' is already registred"), driver->name);
 		return;
 	}
 
@@ -177,7 +179,7 @@ void st_checksum_register_driver_v1(struct st_checksum_driver_v1 * driver) {
 
 	pthread_mutex_unlock(&st_checksum_lock);
 
-	st_log_write(st_log_level_info, "Checksum driver '%s' is now registred", driver->name);
+	st_log_write(st_log_level_info, gettext("Checksum driver '%s' is now registred"), driver->name);
 }
 
 __asm__(".symver st_checksum_salt_password_v1, st_checksum_salt_password@@LIBSTONE_1.2");

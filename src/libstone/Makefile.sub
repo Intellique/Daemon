@@ -10,4 +10,6 @@ LIBSTONE_DEPEND_LIB		:= src/libstone/libstone.map
 
 LIBSTONE_CHCKSUM_FILE	:= libstone.chcksum
 
+LIBSTONE_LOCALE			:= libstone
+
 BIN_SYMS				+= LIBSTONE

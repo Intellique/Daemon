@@ -74,11 +74,11 @@ $(1)_DEP_FILES	:= $$(sort $$(shell test -d $${$(1)_DEPEND_DIR} && find $${$(1)_D
 prepare_$(1): ${CHCKSUM_DIR}/$${$(1)_CHCKSUM_FILE}
 
 ${CHCKSUM_DIR}/$${$(1)_CHCKSUM_FILE}: $${$(1)_SRC_FILES} $${$(1)_HEAD_FILES}
-	@echo " CHCKSUM  $$@"
+	@echo " CHCKSUM    $$@"
 	@./script/checksum.pl $(1) ${CHCKSUM_DIR}/$${$(1)_CHCKSUM_FILE} $$(sort $${$(1)_SRC_FILES} $${$(1)_HEAD_FILES})
 
 $$($(1)_BIN): $$($(1)_DEPEND_LIB) $$($(1)_OBJ_FILES)
-	@echo " LD       $$@"
+	@echo " LD         $$@"
 	@${CC} -o $$@ $$($(1)_OBJ_FILES) ${LDFLAGS} $$($(1)_LD)
 #	@${OBJCOPY} --only-keep-debug $$@ $$@.debug
 #	@${STRIP} $$@
@@ -86,7 +86,7 @@ $$($(1)_BIN): $$($(1)_DEPEND_LIB) $$($(1)_OBJ_FILES)
 #	@chmod -x $$@.debug
 
 $$($(1)_LIB): $$($(1)_DEPEND_LIB) $$($(1)_OBJ_FILES)
-	@echo " LD       $$@"
+	@echo " LD         $$@"
 	@${CC} -o $$@.$$($(1)_LIB_VERSION) $$($(1)_OBJ_FILES) -shared -Wl,-soname,$$($(1)_SONAME) ${LDFLAGS} $$($(1)_LD)
 #	@objcopy --only-keep-debug $$@.$$($(1)_LIB_VERSION) $$@.$$($(1)_LIB_VERSION).debug
 #	@strip $$@.$$($(1)_LIB_VERSION)
@@ -96,7 +96,7 @@ $$($(1)_LIB): $$($(1)_DEPEND_LIB) $$($(1)_OBJ_FILES)
 	@ln -sf $$($(1)_SONAME) $$@
 
 $$($(1)_BUILD_DIR)/%.o: $$($(1)_SRC_DIR)/%.c
-	@echo " CC       $$@"
+	@echo " CC         $$@"
 	@${CC} -c $${CFLAGS} $$($(1)_CFLAG) -Wp,-MD,$$($(1)_DEPEND_DIR)/$$*.d,-MT,$$@ -o $$@ $$<
 
 BINS		+= $$($(1)_BIN) $$($(1)_LIB)
@@ -104,6 +104,15 @@ SRC_FILES	+= $$($(1)_SRC_FILES)
 HEAD_FILES	+= $$($(1)_HEAD_FILES)
 DEP_FILES	+= $$($(1)_DEP_FILES)
 OBJ_FILES	+= $$($(1)_OBJ_FILES)
+
+ifneq (,$$($(1)_LOCALE))
+locale/$$($(1)_LOCALE).pot: $$($(1)_SRC_FILES)
+	@echo " XGETTEXT   $${$(1)_LOCALE}.pot"
+	@xgettext -d $$($(1)_LOCALE) -o $$@ --from-code=UTF-8 -i -w 128 -s $$($(1)_SRC_FILES)
+
+BINS		+= locale/$$($(1)_LOCALE).pot
+endif
+
 endef
 
 $(foreach prog,${BIN_SYMS},$(eval $(call BIN_template,${prog})))
@@ -120,11 +129,11 @@ $(1)_DEP_FILES	:= $$(sort $$(shell test -d $${$(1)_DEPEND_DIR} && find $${$(1)_D
 prepare_$(1): ${CHCKSUM_DIR}/$${$(1)_CHCKSUM_FILE}
 
 ${CHCKSUM_DIR}/$${$(1)_CHCKSUM_FILE}: $${$(1)_SRC_FILES} $${$(1)_HEAD_FILES}
-	@echo " CHCKSUM  $$@"
+	@echo " CHCKSUM    $$@"
 	@./script/checksum.pl $(1) ${CHCKSUM_DIR}/$${$(1)_CHCKSUM_FILE} $$(sort $${$(1)_SRC_FILES} $${$(1)_HEAD_FILES})
 
 $$($(1)_BIN): $$($(1)_LIB) $$($(1)_OBJ_FILES)
-	@echo " LD       $$@"
+	@echo " LD         $$@"
 	@${CC} -o $$@ $$($(1)_OBJ_FILES) ${LDFLAGS} $$($(1)_LD)
 #	@${OBJCOPY} --only-keep-debug $$@ $$@.debug
 #	@${STRIP} $$@
@@ -132,7 +141,7 @@ $$($(1)_BIN): $$($(1)_LIB) $$($(1)_OBJ_FILES)
 #	@chmod -x $$@.debug
 
 $$($(1)_BUILD_DIR)/%.o: $$($(1)_SRC_DIR)/%.c
-	@echo " CC       $$@"
+	@echo " CC         $$@"
 	@${CC} -c $${CFLAGS} $$($(1)_CFLAG) -Wp,-MD,$$($(1)_DEPEND_DIR)/$$*.d,-MT,$$@ -o $$@ $$<
 
 TEST_BINS		+= $$($(1)_BIN) $$($(1)_LIB)
@@ -165,11 +174,11 @@ check:
 #-@${CC} -fsyntax-only ${CFLAGS} ${SRC_FILES}
 
 clean:
-	@echo ' RM       -Rf $(foreach dir,${BIN_DIRS},$(word 1,$(subst /, ,$(dir)))) ${BUILD_DIR}'
+	@echo ' RM         -Rf $(foreach dir,${BIN_DIRS},$(word 1,$(subst /, ,$(dir)))) ${BUILD_DIR}'
 	@rm -Rf $(foreach dir,${BIN_DIRS},$(word 1,$(subst /, ,$(dir)))) ${BUILD_DIR}
 
 clean-depend: clean
-	@echo ' RM       -Rf depend'
+	@echo ' RM         -Rf depend'
 	@rm -Rf depend
 
 cscope: cscope.out
@@ -181,7 +190,7 @@ debug: binaries
 	${GDB} bin/stone
 
 distclean realclean: clean
-	@echo ' RM       -Rf cscope.out doc ${CHCKSUM_DIR} ${DEPEND_DIR} tags ${VERSION_FILE}'
+	@echo ' RM         -Rf cscope.out doc ${CHCKSUM_DIR} ${DEPEND_DIR} tags ${VERSION_FILE}'
 	@rm -Rf cscope.out doc ${CHCKSUM_DIR} ${DEPEND_DIR} tags ${VERSION_FILE}
 
 doc: Doxyfile ${LIBOBJECT_SRC_FILES} ${HEAD_FILES}
@@ -189,7 +198,7 @@ doc: Doxyfile ${LIBOBJECT_SRC_FILES} ${HEAD_FILES}
 	@${DOXYGEN}
 
 install:
-	@echo ' MKDIR     ${DESTDIR}'
+	@echo ' MKDIR       ${DESTDIR}'
 	@mkdir -p ${DESTDIR}/etc/storiq ${DESTDIR}/usr/bin ${DESTDIR}/usr/sbin ${DESTDIR}/usr/lib/stone ${DESTDIR}/var/lib/stoned
 	@echo ' CP'
 	@cp bin/stoned bin/stone-config ${DESTDIR}/usr/sbin
@@ -226,14 +235,14 @@ test: prepare $(sort ${TEST_BINS})
 
 # real target
 ${BIN_DIRS} ${CHCKSUM_DIR} ${DEP_DIRS} ${OBJ_DIRS}:
-	@echo " MKDIR    $@"
+	@echo " MKDIR      $@"
 	@mkdir -p $@
 
 ${NAME}.tar.bz2:
 	${GIT} archive --format=tar --prefix=${DIR_NAME}/ master | bzip2 -9c > $@
 
 ${VERSION_FILE}: ${GIT_HEAD}
-	@echo ' GEN      stone.version'
+	@echo ' GEN        stone.version'
 	@./script/version.pl ${VERSION_OPT}
 
 cscope.out: ${SRC_FILES} ${HEAD_FILES}

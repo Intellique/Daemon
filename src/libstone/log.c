@@ -25,6 +25,10 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
+// bindtextdomain, textdomain
+#include <libintl.h>
+// setlocale
+#include <locale.h>
 // pthread_mutex_lock, pthread_mutex_unlock
 #include <pthread.h>
 // va_end, va_start
@@ -49,6 +53,8 @@
 #include "json.h"
 #include "log.h"
 #include "socket.h"
+
+#include "config.h"
 
 static pthread_mutex_t st_log_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 static pthread_cond_t st_log_wait = PTHREAD_COND_INITIALIZER;
@@ -120,6 +126,10 @@ static void st_log_exit() {
 }
 
 static void st_log_init() {
+	setlocale(LC_ALL, "");
+	bindtextdomain("libstone", LOCALE_DIR);
+	textdomain("libstone");
+
 	st_log_messages = st_value_new_linked_list();
 }
 
