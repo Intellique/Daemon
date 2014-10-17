@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 17 Oct 2014 11:34:02 +0200                            *
+*  Last modified: Fri, 17 Oct 2014 12:22:03 +0200                            *
 \****************************************************************************/
 
 // asprintf, versionsort
@@ -325,8 +325,10 @@ static void st_job_create_archive_on_error(struct st_job * job) {
 static void st_job_create_archive_post_run(struct st_job * job) {
 	struct st_job_create_archive_private * self = job->data;
 
-	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_post, self->pool) == 0)
+	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_post, self->pool) == 0) {
+		job->done = 1;
 		return;
+	}
 
 	json_t * data = self->worker->ops->post_run(self->worker);
 
