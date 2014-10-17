@@ -36,6 +36,9 @@ HEAD_FILES	:= $(sort $(shell test -d include && find include -name '*.h'))
 DEP_FILES	:=
 OBJ_FILES	:=
 
+LOCALE_PO	:=
+LOCALE_MO	:=
+
 TEST_SRC_FILES	:=
 TEST_HEAD_FILES	:=
 
@@ -106,13 +109,27 @@ DEP_FILES	+= $$($(1)_DEP_FILES)
 OBJ_FILES	+= $$($(1)_OBJ_FILES)
 
 ifneq (,$$($(1)_LOCALE))
+$(1)_LOCALE_PO	:= $$(sort $$(shell test -d locale && find locale -name $$($(1)_LOCALE).*.po))
+$(1)_LOCALE_MO	:= $$(patsubst %.po,%.mo,$$($(1)_LOCALE_PO))
+
+LOCALE_PO		+= $$($(1)_LOCALE_PO)
+LOCALE_MO		+= $$($(1)_LOCALE_MO)
+
 locale/$$($(1)_LOCALE).pot: $$($(1)_SRC_FILES)
 	@echo " XGETTEXT   $${$(1)_LOCALE}.pot"
 	@xgettext -d $$($(1)_LOCALE) -o $$@ --from-code=UTF-8 -i -w 128 -s $$($(1)_SRC_FILES)
+	@echo $$($(1)_LOCALE_PO)
 
-BINS		+= locale/$$($(1)_LOCALE).pot
+$$($(1)_LOCALE_PO): locale/$$($(1)_LOCALE).pot
+	@echo " MSGMERGE   $$(@F)"
+	@msgmerge -q -F -U -i -w 128 $$@ $$<
+	@touch $$@
+
+%.mo: %.po
+	@echo " MSGFMT     $$(@F)"
+	@msgfmt -f --check --output-file $$@ $$<
+
 endif
-
 endef
 
 $(foreach prog,${BIN_SYMS},$(eval $(call BIN_template,${prog})))
@@ -161,10 +178,10 @@ DEP_DIRS	:= $(patsubst ${BUILD_DIR}/%,${DEPEND_DIR}/%,${OBJ_DIRS})
 
 # phony target
 .DEFAULT_GOAL	:= all
-.PHONY: all binaries clean clean-depend cscope ctags debug distclean lib package prepare realclean stat stat-extra TAGS tar test
+.PHONY: all binaries clean clean-depend cscope ctags debug distclean lib locales package prepare realclean stat stat-extra TAGS tar test
 .NOTPARALLEL: prepare
 
-all: binaries
+all: binaries locales
 
 binaries: prepare $(sort ${BINS})
 
@@ -174,8 +191,8 @@ check:
 #-@${CC} -fsyntax-only ${CFLAGS} ${SRC_FILES}
 
 clean:
-	@echo ' RM         -Rf $(foreach dir,${BIN_DIRS},$(word 1,$(subst /, ,$(dir)))) ${BUILD_DIR}'
-	@rm -Rf $(foreach dir,${BIN_DIRS},$(word 1,$(subst /, ,$(dir)))) ${BUILD_DIR}
+	@echo ' RM         -Rf $(foreach dir,${BIN_DIRS},$(word 1,$(subst /, ,$(dir)))) ${BUILD_DIR} locales'
+	@rm -Rf $(foreach dir,${BIN_DIRS},$(word 1,$(subst /, ,$(dir)))) ${BUILD_DIR} ${LOCALE_MO}
 
 clean-depend: clean
 	@echo ' RM         -Rf depend'
@@ -206,6 +223,8 @@ install:
 	@mv ${DESTDIR}/usr/lib/stone/libstone.so ${DESTDIR}/usr/lib
 	@cp script/stone.conf ${DESTDIR}/etc/storiq/stone.conf
 	@cp script/pre-post-run/* ${DESTDIR}/var/lib/stoned
+
+locales: $(sort ${LOCALE_MO})
 
 package:
 	@echo ' CLEAN'
