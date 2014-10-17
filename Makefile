@@ -45,8 +45,8 @@ endif
 
 
 # compilation flags
-CFLAGS		:= -std=gnu99 -pipe -O0 -ggdb3 -Wall -Wextra -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes $(addprefix -I,${INCLUDE_DIR})
-LDFLAGS		:=
+CFLAGS		:= -std=gnu99 -pipe -O0 -ggdb3 -Wall -Wextra -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes $(addprefix -I,${INCLUDE_DIR}) -fsanitize=address
+LDFLAGS		:= -fsanitize=address
 
 CSCOPE_OPT	:= -b -R -s src -U -I include
 CTAGS_OPT	:= -R src
@@ -153,7 +153,6 @@ DEP_DIRS	:= $(patsubst ${BUILD_DIR}/%,${DEPEND_DIR}/%,${OBJ_DIRS})
 # phony target
 .DEFAULT_GOAL	:= all
 .PHONY: all binaries clean clean-depend cscope ctags debug distclean lib package prepare realclean stat stat-extra TAGS tar test
-.NOTPARALLEL: prepare
 
 all: binaries cscope tags
 
