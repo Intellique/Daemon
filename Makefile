@@ -118,7 +118,6 @@ LOCALE_MO		+= $$($(1)_LOCALE_MO)
 locale/$$($(1)_LOCALE).pot: $$($(1)_SRC_FILES)
 	@echo " XGETTEXT   $${$(1)_LOCALE}.pot"
 	@xgettext -d $$($(1)_LOCALE) -o $$@ --from-code=UTF-8 -i -w 128 -s $$($(1)_SRC_FILES)
-	@echo $$($(1)_LOCALE_PO)
 
 $$($(1)_LOCALE_PO): locale/$$($(1)_LOCALE).pot
 	@echo " MSGMERGE   $$(@F)"

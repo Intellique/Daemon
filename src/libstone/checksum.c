@@ -99,8 +99,10 @@ char * st_checksum_gen_salt_v1(const char * checksum, size_t length) {
 		return NULL;
 
 	int fd = open("/dev/urandom", O_RDONLY);
-	if (fd < 0)
+	if (fd < 0) {
+		st_log_write(st_log_level_error, gettext("Failed to open \"/dev/urandom\" to generate salt parce %m"));
 		return NULL;
+	}
 
 	size_t half_len = length / 2;
 	unsigned char * buffer = malloc(half_len);

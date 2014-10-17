@@ -3,11 +3,10 @@
 # This file is distributed under the same license as the stone package.
 # Guillaume Clercin <gclercin@intellique.com>, 2014
 #
-#,
 msgid   ""
 msgstr  "Project-Id-Version: libstone v1.2\n"
-        "Report-Msgid-Bugs-To: stone@intellique.com\n"
-        "POT-Creation-Date: 2014-10-17 10:18+0200\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2014-10-17 11:18+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -16,26 +15,31 @@ msgstr  "Project-Id-Version: libstone v1.2\n"
         "Content-Type: text/plain; charset=UTF-8\n"
         "Content-Transfer-Encoding: 8bit\n"
 
-#: src/libstone/checksum.c:135
+#: src/libstone/checksum.c:103
+#, fuzzy, c-format
+msgid   "Failed to open \"/dev/urandom\" to generate salt parce %m"
+msgstr  "Erreur lors de l'ouverture de \"/dev/urandom\" pour générer un sel parce %m"
+
+#: src/libstone/checksum.c:137
 #, c-format
 msgid   "Failed to load checksum driver '%s'"
 msgstr  "Échec lors du chargement du pilote de calcul d'empreinte '%s'"
 
-#: src/libstone/checksum.c:141
+#: src/libstone/checksum.c:143
 #, c-format
 msgid   "Driver '%s' did not call 'register_driver'"
 msgstr  "Le pilote '%s' n'a pas appelé 'register_driver'"
 
-#: src/libstone/checksum.c:164
+#: src/libstone/checksum.c:166
 msgid   "Try to register with null driver"
 msgstr  "Tentative d'enregistrer un pilote null"
 
-#: src/libstone/checksum.c:172
+#: src/libstone/checksum.c:174
 #, c-format
 msgid   "Checksum driver '%s' is already registred"
 msgstr  "Le pilote de calcul d'empreinte '%s' est déjà chargé"
 
-#: src/libstone/checksum.c:182
+#: src/libstone/checksum.c:184
 #, c-format
 msgid   "Checksum driver '%s' is now registred"
 msgstr  "Le pilote de calcul d'empreinte '%s' est maintenant chargé"
