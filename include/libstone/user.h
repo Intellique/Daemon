@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 29 Jan 2013 19:56:11 +0100                            *
+*  Last modified: Thu, 02 Oct 2014 09:44:38 +0200                            *
 \****************************************************************************/
 
 #ifndef __STONE_USER_H__
@@ -45,8 +45,6 @@ struct st_user {
 	bool can_archive;
 	bool can_restore;
 	bool disabled;
-
-	struct st_pool * pool;
 
 	void * db_data;
 };
