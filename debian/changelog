@@ -1,3 +1,9 @@
+stone (1.1.19+wheezy) polisher; urgency=low
+
+  * Bug fix: archive job: release tape drive more earlier
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 17 Oct 2014 12:58:50 +0200
+
 stone (1.1.18+wheezy) polisher; urgency=low
 
   * Bug fix: job check archive: checksum
