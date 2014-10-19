@@ -178,7 +178,6 @@ DEP_DIRS	:= $(patsubst ${BUILD_DIR}/%,${DEPEND_DIR}/%,${OBJ_DIRS})
 # phony target
 .DEFAULT_GOAL	:= all
 .PHONY: all binaries clean clean-depend cscope ctags debug distclean lib locales package prepare realclean stat stat-extra TAGS tar test
-.NOTPARALLEL: prepare
 
 all: binaries locales
 

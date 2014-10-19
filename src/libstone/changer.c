@@ -38,9 +38,9 @@ static struct st_changer_action2 {
 	const char * name;
 	const enum st_changer_action action;
 } st_library_actions[] = {
-	[st_changer_action_none] =        { 0, "none",        st_changer_action_none },
+	[st_changer_action_none]        = { 0, "none",        st_changer_action_none },
 	[st_changer_action_put_offline] = { 0, "put offline", st_changer_action_put_offline },
-	[st_changer_action_put_online] =  { 0, "put online",  st_changer_action_put_online },
+	[st_changer_action_put_online]  = { 0, "put online",  st_changer_action_put_online },
 
 	[st_changer_action_unknown] = { 0, "unknown", st_changer_action_unknown },
 };
