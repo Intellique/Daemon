@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-10-20 00:12+0200\n"
+        "POT-Creation-Date: 2014-10-21 00:47+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -14,6 +14,7 @@ msgstr  "Project-Id-Version: libstone v1.2\n"
         "MIME-Version: 1.0\n"
         "Content-Type: text/plain; charset=UTF-8\n"
         "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: src/libstone/checksum.c:64
 #, c-format
@@ -109,16 +110,125 @@ msgstr  "st_database_get_driver : échec de chargement du module de base de donn
 msgid   "st_database_get_driver: driver '%s' did not call 'register_driver'"
 msgstr  "st_database_get_driver : le pilote '%s' n'a pas appelé 'register_driver'"
 
-#: src/libstone/database.c:127
+#: src/libstone/database.c:105
+msgid   "st_database_load_config: try to load database config with invalid config"
+msgstr  ""
+
+#: src/libstone/database.c:107
+msgid   "st_database_load_config: 'config' should not be null"
+msgstr  "st_database_load_config : 'config' ne doit pas être nulle"
+
+#: src/libstone/database.c:109
+msgid   "st_database_load_config: 'config' should not be a list"
+msgstr  "st_database_load_config : 'config' doit être une liste"
+
+#: src/libstone/database.c:133
 msgid   "st_database_register_driver: try to register with null driver"
 msgstr  "st_database_register_driver : tentative d'enregistrer un pilote null"
 
-#: src/libstone/database.c:135
+#: src/libstone/database.c:141
 #, c-format
 msgid   "st_database_register_driver: checksum driver '%s' is already registred"
 msgstr  "st_database_register_driver : le pilote de base de données '%s' est déjà chargé"
 
-#: src/libstone/database.c:148
+#: src/libstone/database.c:154
 #, c-format
 msgid   "st_database_register_driver: checksum driver '%s' is now registred"
 msgstr  "st_checksum_register_driver : le pilote de base de données '%s' est maintenant chargé"
+
+#: src/libstone/debug.c:59
+#, c-format
+msgid   "Dump %zd stack, stack addr: %p, stack size: %zd"
+msgid_plural    "Dump %zd stacks, stack addr: %p, stack size: %zd"
+msgstr[0]       "Vide %zd tas, adresse du tas: %p, taille du tas: %zd"
+msgstr[1]       "Vide %zd tas, adresse du tas: %p, taille du tas: %zd"
+
+#: src/libstone/debug.c:63
+#, c-format
+msgid   "#%zd %s"
+msgstr  "#%zd %s"
+
+#: src/libstone/file.c:148
+#, c-format
+msgid   "%zd B"
+msgstr  "%zd o"
+
+#: src/libstone/file.c:151
+#, c-format
+msgid   "%.*f KB"
+msgstr  "%.*f Ko"
+
+#: src/libstone/file.c:154
+#, c-format
+msgid   "%.*f MB"
+msgstr  "%.*f Mo"
+
+#: src/libstone/file.c:157
+#, c-format
+msgid   "%.*f GB"
+msgstr  "%.*f Go"
+
+#: src/libstone/file.c:160
+#, c-format
+msgid   "%.*f TB"
+msgstr  "%.*f To"
+
+#: src/libstone/file.c:182 src/libstone/file.c:196 src/libstone/file.c:219
+#, c-format
+msgid   "st_file_cp: can't get information of '%s' because %m"
+msgstr  "st_file_cp : n'a pas réussi à obtenir les informations de '%s' parce que %m"
+
+#: src/libstone/file.c:187
+#, c-format
+msgid   "st_file_cp: ignore socket file '%s'"
+msgstr  "st_file_cp : ignore les fichier du type socket '%s'"
+
+#: src/libstone/file.c:201 src/libstone/file.c:225
+#, c-format
+msgid   "st_file_cp: '%s' should be a directory"
+msgstr  "st_file_cp : '%s' doit être un répertoire"
+
+#: src/libstone/file.c:243
+#, c-format
+msgid   "st_file_cp: error while scanning directory '%s' because %m"
+msgstr  "st_file_cp : erreur lors du parcours du répertoire '%s' parce que %m"
+
+#: src/libstone/file.c:266
+#, c-format
+msgid   "st_file_cp: can't open file '%s' for reading because %m"
+msgstr  "st_file_cp : n'a pas réussi à ouvrir le fichier '%s' en lecture parce que %m"
+
+#: src/libstone/file.c:275
+#, c-format
+msgid   "st_file_cp: can't open file '%s' for writing because %m"
+msgstr  "st_file_cp : n'a pas réussi à ouvrir le fichier '%s' en écriture parce que %m"
+
+#: src/libstone/file.c:286
+#, c-format
+msgid   "st_file_cp: error while writing into '%s' because %m"
+msgstr  "st_file_cp : erreur lors de l'écriture dans '%s' parce que %m"
+
+#: src/libstone/file.c:293
+#, c-format
+msgid   "st_file_cp: error while reading from '%s' because %m"
+msgstr  "st_file_cp : erreur lors de la lecture depuis '%s' parce que %m"
+
+#: src/libstone/file.c:306
+#, c-format
+msgid   "st_file_cp: can't read link of '%s' because %m"
+msgstr  "st_file_cp : n'a pas réussi à lire le lien symbolique '%s' parce que %m"
+
+#: src/libstone/file.c:313
+#, c-format
+msgid   "st_file_cp: failed to create symlink '%s' -> '%s' because %m"
+msgstr  "st_file_cp : échec lors de la création du lien symbolique '%s' -> '%s' parce que %m"
+
+#: src/libstone/file.c:320
+#, c-format
+msgid   "st_file_cp: failed to create fifo '%s' because %m"
+msgstr  "st_file_cp : échec lors de la création du tube nommé '%s' parce que %m"
+
+#: src/libstone/file.c:326
+#, c-format
+msgid   "st_file_cp: failed to create device '%s' because %m"
+msgstr  "st_file_cp : échec lors de la création du périphérique '%s' parce que %m"

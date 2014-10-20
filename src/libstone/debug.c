@@ -27,6 +27,8 @@
 #define _GNU_SOURCE
 // backtrace, backtrace_symbols
 #include <execinfo.h>
+// gettext, ngettext
+#include <libintl.h>
 // pthread_self
 #include <pthread.h>
 // calloc, free
@@ -54,11 +56,11 @@ void st_debug_log_stack_v1(unsigned int nb_stacks) {
 	pthread_attr_getstack(&attr, &stack_addr, &stack_size);
 	pthread_attr_destroy(&attr);
 
-	st_log_write(st_log_level_debug, "Dump %zd stack%c, stack addr: %p, stack size: %zd", size, size != 1 ? 's' : '\0', stack_addr, stack_size);
+	st_log_write(st_log_level_debug, ngettext("Dump %zd stack, stack addr: %p, stack size: %zd", "Dump %zd stacks, stack addr: %p, stack size: %zd", size), size, stack_addr, stack_size);
 
 	ssize_t i;
 	for (i = 0; i < size; i++)
-		st_log_write(st_log_level_debug, "#%zd %s", i, strings[i]);
+		st_log_write(st_log_level_debug, gettext("#%zd %s"), i, strings[i]);
 
 	free(strings);
 	free(array);

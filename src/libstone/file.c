@@ -31,11 +31,15 @@
 #include <fcntl.h>
 // basename, dirname
 #include <libgen.h>
+// gettext
+#include <libintl.h>
+// localeconv
+#include <locale.h>
 // asprintf, rename, snprintf
 #include <stdio.h>
 // free, malloc
 #include <stdlib.h>
-// memmove, strchr, strcpy, strdup, strlen, strrchr
+// memmove, strchr, strcpy, strdup, strlen, strrchr, strstr
 #include <string.h>
 // fstat, lstat, mkdir, open
 #include <sys/stat.h>
@@ -141,22 +145,23 @@ void st_file_convert_size_to_string_v1(size_t size, char * str, ssize_t str_len)
 
 	switch (mult) {
 		case 0:
-			snprintf(str, str_len, "%zd Bytes", size);
+			snprintf(str, str_len, gettext("%zd B"), size);
 			break;
 		case 1:
-			snprintf(str, str_len, "%.*f KBytes", fixed, tsize);
+			snprintf(str, str_len, gettext("%.*f KB"), fixed, tsize);
 			break;
 		case 2:
-			snprintf(str, str_len, "%.*f MBytes", fixed, tsize);
+			snprintf(str, str_len, gettext("%.*f MB"), fixed, tsize);
 			break;
 		case 3:
-			snprintf(str, str_len, "%.*f GBytes", fixed, tsize);
+			snprintf(str, str_len, gettext("%.*f GB"), fixed, tsize);
 			break;
 		default:
-			snprintf(str, str_len, "%.*f TBytes", fixed, tsize);
+			snprintf(str, str_len, gettext("%.*f TB"), fixed, tsize);
 	}
 
-	if (strchr(str, '.') != NULL) {
+	struct lconv * locale_info = localeconv();
+	if (strstr(str, locale_info->decimal_point) != NULL) {
 		char * ptrEnd = strchr(str, ' ');
 		char * ptrBegin = ptrEnd - 1;
 		while (*ptrBegin == '0')
@@ -174,12 +179,12 @@ int st_file_cp_v1(const char * src, const char * dst) {
 	struct stat stsrc;
 	int failed = lstat(src, &stsrc);
 	if (failed != 0) {
-		st_log_write(st_log_level_error, "Copy files: Can't get information of '%s' because %m", src);
+		st_log_write(st_log_level_error, gettext("st_file_cp: can't get information of '%s' because %m"), src);
 		return failed;
 	}
 
 	if (S_ISSOCK(stsrc.st_mode)) {
-		st_log_write(st_log_level_info, "Copy files: Ignore socket file '%s'", src);
+		st_log_write(st_log_level_info, gettext("st_file_cp: ignore socket file '%s'"), src);
 		return 0;
 	}
 
@@ -188,12 +193,12 @@ int st_file_cp_v1(const char * src, const char * dst) {
 		struct stat stdst;
 		failed = lstat(dst, &stdst);
 		if (failed != 0) {
-			st_log_write(st_log_level_error, "Copy files: Can't get information of '%s' because %m", dst);
+			st_log_write(st_log_level_error, gettext("st_file_cp: can't get information of '%s' because %m"), dst);
 			return failed;
 		}
 
 		if (!S_ISDIR(stdst.st_mode)) {
-			st_log_write(st_log_level_error, "Copy files: '%s' should be a directory", dst);
+			st_log_write(st_log_level_error, gettext("st_file_cp: '%s' should be a directory"), dst);
 			return 2;
 		}
 
@@ -211,13 +216,13 @@ int st_file_cp_v1(const char * src, const char * dst) {
 		struct stat stdst;
 		failed = lstat(dirname_dst, &stdst);
 		if (failed != 0) {
-			st_log_write(st_log_level_error, "Copy files: Can't get information of '%s' because %m", dirname_dst);
+			st_log_write(st_log_level_error, gettext("st_file_cp: can't get information of '%s' because %m"), dirname_dst);
 			free(cpdst);
 			return 2;
 		}
 
 		if (!S_ISDIR(stdst.st_mode)) {
-			st_log_write(st_log_level_error, "Copy files: '%s' should be a directory", dirname_dst);
+			st_log_write(st_log_level_error, gettext("st_file_cp: '%s' should be a directory"), dirname_dst);
 			free(cpdst);
 			return 2;
 		}
@@ -233,9 +238,11 @@ int st_file_cp_v1(const char * src, const char * dst) {
 		struct dirent ** files = NULL;
 		int nb_files = 0;
 		if (failed == 0) {
-			nb_files = scandir(src, &files, st_file_basic_scandir_filter_v1, NULL);
-			if (nb_files < 0)
+			nb_files = scandir(src, &files, st_file_basic_scandir_filter_v1, versionsort);
+			if (nb_files < 0) {
+				st_log_write(st_log_level_error, gettext("st_file_cp: error while scanning directory '%s' because %m"), src);
 				failed = 3;
+			}
 		}
 
 		int i;
@@ -256,7 +263,7 @@ int st_file_cp_v1(const char * src, const char * dst) {
 	} else if (S_ISREG(stsrc.st_mode)) {
 		int fd_in = open(src, O_RDONLY);
 		if (fd_in < 0) {
-			st_log_write(st_log_level_error, "Copy files: Can't open file '%s' for reading because %m", src);
+			st_log_write(st_log_level_error, gettext("st_file_cp: can't open file '%s' for reading because %m"), src);
 			failed = 4;
 		}
 
@@ -265,7 +272,7 @@ int st_file_cp_v1(const char * src, const char * dst) {
 			fd_out = open(dst_file, O_WRONLY | O_CREAT, stsrc.st_mode);
 			if (fd_out < 0) {
 				close(fd_in);
-				st_log_write(st_log_level_error, "Copy files: Can't open file '%s' for writing because %m", dst_file);
+				st_log_write(st_log_level_error, gettext("st_file_cp: can't open file '%s' for writing because %m"), dst_file);
 				failed = 5;
 			}
 		}
@@ -276,14 +283,14 @@ int st_file_cp_v1(const char * src, const char * dst) {
 			while (nb_read = read(fd_in, buffer, 4096), nb_read > 0) {
 				ssize_t nb_write = write(fd_out, buffer, nb_read);
 				if (nb_write < 0) {
-					st_log_write(st_log_level_error, "Copy files: Error while writing into '%s' because %m", dst_file);
+					st_log_write(st_log_level_error, gettext("st_file_cp: error while writing into '%s' because %m"), dst_file);
 					failed = 6;
 					break;
 				}
 			}
 
 			if (nb_read < 0) {
-				st_log_write(st_log_level_error, "Copy files: Error while reading into '%s' because %m", src);
+				st_log_write(st_log_level_error, gettext("st_file_cp: error while reading from '%s' because %m"), src);
 				failed = 7;
 			}
 
@@ -296,27 +303,27 @@ int st_file_cp_v1(const char * src, const char * dst) {
 		if (length > 0)
 			link[length] = '\0';
 		if (length < 0) {
-			st_log_write(st_log_level_error, "Copy files: Can't read link of '%s' because %m", src);
+			st_log_write(st_log_level_error, gettext("st_file_cp: can't read link of '%s' because %m"), src);
 			failed = 8;
 		}
 
 		if (failed == 0) {
 			failed = symlink(link, dst_file);
 			if (failed != 0) {
-				st_log_write(st_log_level_error, "Copy files: Failed to create symlink '%s' -> '%s' because %m", dst_file, link);
+				st_log_write(st_log_level_error, gettext("st_file_cp: failed to create symlink '%s' -> '%s' because %m"), dst_file, link);
 				failed = 9;
 			}
 		}
 	} else if (S_ISFIFO(stsrc.st_mode)) {
 		failed = mkfifo(dst_file, stsrc.st_mode);
 		if (failed != 0) {
-			st_log_write(st_log_level_error, "Copy files: Failed to create fifo '%s' because %m", dst_file);
+			st_log_write(st_log_level_error, gettext("st_file_cp: failed to create fifo '%s' because %m"), dst_file);
 			failed = 10;
 		}
 	} else if (S_ISBLK(stsrc.st_mode) || S_ISCHR(stsrc.st_mode)) {
 		failed = mknod(dst_file, stsrc.st_mode, stsrc.st_rdev);
 		if (failed != 0) {
-			st_log_write(st_log_level_error, "Copy files: Failed to create device '%s' because %m", dst_file);
+			st_log_write(st_log_level_error, gettext("st_file_cp: failed to create device '%s' because %m"), dst_file);
 			failed = 10;
 		}
 	}

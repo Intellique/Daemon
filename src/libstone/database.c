@@ -101,8 +101,14 @@ static void st_database_init() {
 
 __asm__(".symver st_database_load_config_v1, st_database_load_config@@LIBSTONE_1.2");
 void st_database_load_config_v1(struct st_value * config) {
-	if (config == NULL || !(config->type == st_value_array || config->type == st_value_linked_list))
+	if (config == NULL || !(config->type == st_value_array || config->type == st_value_linked_list)) {
+		st_log_write(st_log_level_error, gettext("st_database_load_config: try to load database config with invalid config"));
+		if (config == NULL)
+			st_log_write(st_log_level_error, gettext("st_database_load_config: 'config' should not be null"));
+		if (!(config->type == st_value_array || config->type == st_value_linked_list))
+			st_log_write(st_log_level_error, gettext("st_database_load_config: 'config' should not be a list"));
 		return;
+	}
 
 	struct st_value_iterator * iter = st_value_list_get_iterator(config);
 	while (st_value_iterator_has_next(iter)) {
