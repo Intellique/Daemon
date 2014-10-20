@@ -27,6 +27,8 @@
 #include <stddef.h>
 
 #define _GNU_SOURCE
+// gettext
+#include <libintl.h>
 // pthread_mutex_lock, pthread_mutex_unlock,
 #include <pthread.h>
 // free
@@ -58,8 +60,10 @@ struct st_database_v1 * st_database_get_default_driver_v1() {
 
 __asm__(".symver st_database_get_driver_v1, st_database_get_driver@@LIBSTONE_1.2");
 struct st_database_v1 * st_database_get_driver_v1(const char * driver) {
-	if (driver == NULL)
+	if (driver == NULL) {
+		st_log_write(st_log_level_error, gettext("st_database_get_driver: invalide parameter, 'driver' should not be null"));
 		return NULL;
+	}
 
 	pthread_mutex_lock(&st_database_lock);
 
@@ -69,13 +73,13 @@ struct st_database_v1 * st_database_get_driver_v1(const char * driver) {
 
 		if (cookie == NULL) {
 			pthread_mutex_unlock(&st_database_lock);
-			st_log_write(st_log_level_error, "Failed to load database driver '%s'", driver);
+			st_log_write(st_log_level_error, gettext("st_database_get_driver: failed to load checksum driver '%s'"), driver);
 			return NULL;
 		}
 
 		if (!st_value_hashtable_has_key2(st_database_drivers, driver)) {
 			pthread_mutex_unlock(&st_database_lock);
-			st_log_write(st_log_level_warning, "Driver '%s' did not call 'register_driver'", driver);
+			st_log_write(st_log_level_warning, gettext("st_database_get_driver: driver '%s' did not call 'register_driver'"), driver);
 			return NULL;
 		}
 	}
@@ -120,7 +124,7 @@ void st_database_load_config_v1(struct st_value * config) {
 __asm__(".symver st_database_register_driver_v1, st_database_register_driver@@LIBSTONE_1.2");
 void st_database_register_driver_v1(struct st_database_v1 * driver) {
 	if (driver == NULL) {
-		st_log_write(st_log_level_error, "Try to register with null driver");
+		st_log_write(st_log_level_error, gettext("st_database_register_driver: try to register with null driver"));
 		return;
 	}
 
@@ -128,7 +132,7 @@ void st_database_register_driver_v1(struct st_database_v1 * driver) {
 
 	if (st_value_hashtable_has_key2(st_database_drivers, driver->name)) {
 		pthread_mutex_unlock(&st_database_lock);
-		st_log_write(st_log_level_warning, "Database driver '%s' is already registred", driver->name);
+		st_log_write(st_log_level_warning, gettext("st_database_register_driver: checksum driver '%s' is already registred"), driver->name);
 		return;
 	}
 
@@ -141,6 +145,6 @@ void st_database_register_driver_v1(struct st_database_v1 * driver) {
 
 	pthread_mutex_unlock(&st_database_lock);
 
-	st_log_write(st_log_level_info, "Database driver '%s' is now registred", driver->name);
+	st_log_write(st_log_level_info, gettext("st_database_register_driver: checksum driver '%s' is now registred"), driver->name);
 }
 

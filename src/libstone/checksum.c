@@ -31,7 +31,7 @@
 #include <libintl.h>
 // pthread_mutex_lock, pthread_mutex_unlock,
 #include <pthread.h>
-// asprintf, snprintf, sscanf
+// asprintf, snprintf
 #include <stdio.h>
 // free, malloc
 #include <stdlib.h>

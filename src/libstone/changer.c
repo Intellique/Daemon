@@ -144,7 +144,7 @@ enum st_changer_action st_changer_string_to_action_v1(const char * action) {
 
 	unsigned int i;
 	const unsigned long long hash = st_string_compute_hash2(action);
-	for (i = 0; i < sizeof(st_library_actions) / sizeof(*st_library_actions) ; i++)
+	for (i = 0; i < sizeof(st_library_actions) / sizeof(*st_library_actions); i++)
 		if (hash == st_library_actions[i].hash)
 			return st_library_actions[i].action;
 
