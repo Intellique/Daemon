@@ -27,6 +27,8 @@
 #define _GNU_SOURCE
 // open
 #include <fcntl.h>
+// gettext
+#include <libintl.h>
 // pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate
 // pthread_cond_init, pthread_cond_signal, pthread_cond_timedwait
 // pthread_create, pthread_join, pthread_mutex_init, pthread_mutex_lock
@@ -168,7 +170,7 @@ int st_thread_pool_run2_v1(const char * thread_name, void (*function)(void * arg
 
 	void * new_addr = realloc(st_thread_pool_threads, (st_thread_pool_nb_threads + 1) * sizeof(struct st_thread_pool_thread *));
 	if (new_addr == NULL) {
-		st_log_write(st_log_level_error, "Error, not enought memory to start new thread");
+		st_log_write(st_log_level_error, gettext("st_thread_pool_run2: error, not enought memory to start new thread"));
 		return 1;
 	}
 
@@ -224,7 +226,7 @@ static void * st_thread_pool_work(void * arg) {
 
 	pid_t tid = syscall(SYS_gettid);
 
-	st_log_write(st_log_level_debug, "Starting new thread #%ld (pid: %d) to function: %p with parameter: %p", th->thread, tid, th->function, th->arg);
+	st_log_write(st_log_level_debug, gettext("st_thread_pool_work: starting new thread #%ld (pid: %d) to function: %p with parameter: %p"), th->thread, tid, th->function, th->arg);
 
 	do {
 		setpriority(PRIO_PROCESS, tid, th->nice);
@@ -244,7 +246,7 @@ static void * st_thread_pool_work(void * arg) {
 		free(th->name);
 		th->name = NULL;
 
-		st_log_write(st_log_level_debug, "Thread #%ld (pid: %d) is going to sleep", th->thread, tid);
+		st_log_write(st_log_level_debug, gettext("st_thread_pool_work: thread #%ld (pid: %d) is going to sleep"), th->thread, tid);
 
 		pthread_mutex_lock(&th->lock);
 
@@ -266,11 +268,11 @@ static void * st_thread_pool_work(void * arg) {
 		pthread_mutex_unlock(&th->lock);
 
 		if (th->state == st_thread_pool_state_running)
-			st_log_write(st_log_level_debug, "Restarting thread #%ld (pid: %d) to function: %p with parameter: %p", th->thread, tid, th->function, th->arg);
+			st_log_write(st_log_level_debug, gettext("st_thread_pool_work: restarting thread #%ld (pid: %d) to function: %p with parameter: %p"), th->thread, tid, th->function, th->arg);
 
 	} while (th->state == st_thread_pool_state_running);
 
-	st_log_write(st_log_level_debug, "Thread #%ld is dead", th->thread);
+	st_log_write(st_log_level_debug, gettext("st_thread_pool_work: thread #%ld is dead"), th->thread);
 
 	return NULL;
 }

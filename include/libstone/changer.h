@@ -162,14 +162,14 @@ struct st_changer {
  * \param[in] action : a value of enum st_changer_action
  * \return a static allocated string representing \a action
  */
-const char * st_changer_action_to_string(enum st_changer_action action);
+const char * st_changer_action_to_string(enum st_changer_action action, bool translate);
 /**
  * \brief Convert an instance of \a changer into an object
  */
 struct st_value * st_changer_convert(struct st_changer * changer) __attribute__((nonnull,warn_unused_result));
 void st_changer_free(struct st_changer * changer) __attribute__((nonnull));
 void st_changer_free2(void * changer) __attribute__((nonnull));
-const char * st_changer_status_to_string(enum st_changer_status status);
+const char * st_changer_status_to_string(enum st_changer_status status, bool translate);
 enum st_changer_action st_changer_string_to_action(const char * action) __attribute__((nonnull));
 enum st_changer_status st_changer_string_to_status(const char * status) __attribute__((nonnull));
 void st_changer_sync(struct st_changer * changer, struct st_value * new_changer) __attribute__((nonnull));

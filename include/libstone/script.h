@@ -27,6 +27,9 @@
 #ifndef __LIBSTONE_SCRIPT_H__
 #define __LIBSTONE_SCRIPT_H__
 
+// bool
+#include <stdbool.h>
+
 enum st_script_type {
 	st_script_type_on_error = 0x1,
 	st_script_type_post_job = 0x2,
@@ -36,7 +39,7 @@ enum st_script_type {
 };
 
 enum st_script_type st_script_string_to_type(const char * string);
-const char * st_script_type_to_string(enum st_script_type type);
+const char * st_script_type_to_string(enum st_script_type type, bool translate);
 
 #endif
 

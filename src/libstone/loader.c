@@ -25,6 +25,8 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
+// gettext
+#include <libintl.h>
 // bool
 #include <stdbool.h>
 // pthread_mutex_lock, pthread_mutex_unlock,
@@ -67,7 +69,7 @@ void * st_loader_load(const char * module, const char * name) {
 
 static void * st_loader_load_file(const char * filename) {
 	if (access(filename, R_OK | X_OK)) {
-		st_log_write(st_log_level_debug, "Loader: access to file %s failed because %m", filename);
+		st_log_write(st_log_level_debug, gettext("libstone: loader: failed to access to file '%s' because %m"), filename);
 		return NULL;
 	}
 
@@ -79,7 +81,7 @@ static void * st_loader_load_file(const char * filename) {
 
 	void * cookie = dlopen(filename, RTLD_NOW);
 	if (cookie == NULL) {
-		st_log_write(st_log_level_debug, "Loader: failed to load '%s' because %s", filename, dlerror());
+		st_log_write(st_log_level_debug, gettext("libstone: loader: failed to load '%s' because %s"), filename, dlerror());
 	} else if (!st_loader_loaded) {
 		dlclose(cookie);
 		cookie = NULL;

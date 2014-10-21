@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-10-21 00:47+0200\n"
+        "POT-Creation-Date: 2014-10-21 22:18+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -15,6 +15,60 @@ msgstr  "Project-Id-Version: libstone v1.2\n"
         "Content-Type: text/plain; charset=UTF-8\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/libstone/changer.c:45 src/libstone/media.c:100 src/libstone/media.c:112
+msgid   "none"
+msgstr  "aucun"
+
+#: src/libstone/changer.c:46
+msgid   "put offline"
+msgstr  "mettre hors ligne"
+
+#: src/libstone/changer.c:47
+msgid   "put online"
+msgstr  "mettre en ligne"
+
+#: src/libstone/changer.c:49 src/libstone/changer.c:67 src/libstone/drive.c:57 src/libstone/job.c:57 src/libstone/job.c:69
+#: src/libstone/media.c:49 src/libstone/media.c:61 src/libstone/media.c:78 src/libstone/media.c:90 src/libstone/media.c:102
+#: src/libstone/media.c:114 src/libstone/script.c:46
+msgid   "unknown"
+msgstr  "inconnus"
+
+#: src/libstone/changer.c:57 src/libstone/drive.c:48 src/libstone/job.c:49 src/libstone/media.c:70
+msgid   "error"
+msgstr  "erreur"
+
+#: src/libstone/changer.c:58
+msgid   "exporting"
+msgstr  "exportation"
+
+#: src/libstone/changer.c:59
+msgid   "idle"
+msgstr  "au repos"
+
+#: src/libstone/changer.c:60
+msgid   "go offline"
+msgstr  "en cours de mise hors ligne"
+
+#: src/libstone/changer.c:61
+msgid   "go online"
+msgstr  "en cours de mise en ligne"
+
+#: src/libstone/changer.c:62
+msgid   "importing"
+msgstr  "importation"
+
+#: src/libstone/changer.c:63 src/libstone/drive.c:50
+msgid   "loading"
+msgstr  "en chargement"
+
+#: src/libstone/changer.c:64
+msgid   "offline"
+msgstr  "hors ligne"
+
+#: src/libstone/changer.c:65 src/libstone/drive.c:54
+msgid   "unloading"
+msgstr  "déchargement"
 
 #: src/libstone/checksum.c:64
 #, c-format
@@ -112,7 +166,8 @@ msgstr  "st_database_get_driver : le pilote '%s' n'a pas appelé 'register_drive
 
 #: src/libstone/database.c:105
 msgid   "st_database_load_config: try to load database config with invalid config"
-msgstr  ""
+msgstr  "st_database_load_config : essaie de changer la configuration de la base de données avec le paramètre 'config' qui est "
+        "invalide"
 
 #: src/libstone/database.c:107
 msgid   "st_database_load_config: 'config' should not be null"
@@ -147,6 +202,38 @@ msgstr[1]       "Vide %zd tas, adresse du tas: %p, taille du tas: %zd"
 #, c-format
 msgid   "#%zd %s"
 msgstr  "#%zd %s"
+
+#: src/libstone/drive.c:45 src/libstone/media.c:45 src/libstone/media.c:86
+msgid   "cleaning"
+msgstr  "en netoyage"
+
+#: src/libstone/drive.c:46
+msgid   "empty idle"
+msgstr  "vide"
+
+#: src/libstone/drive.c:47
+msgid   "erasing"
+msgstr  "en formatage"
+
+#: src/libstone/drive.c:49
+msgid   "loaded idle"
+msgstr  "chargé"
+
+#: src/libstone/drive.c:51
+msgid   "positioning"
+msgstr  "en positionnement"
+
+#: src/libstone/drive.c:52
+msgid   "reading"
+msgstr  "en lecture"
+
+#: src/libstone/drive.c:53
+msgid   "rewinding"
+msgstr  "rembobinage"
+
+#: src/libstone/drive.c:55
+msgid   "writing"
+msgstr  "en écriture"
 
 #: src/libstone/file.c:148
 #, c-format
@@ -232,3 +319,279 @@ msgstr  "st_file_cp : échec lors de la création du tube nommé '%s' parce que 
 #, c-format
 msgid   "st_file_cp: failed to create device '%s' because %m"
 msgstr  "st_file_cp : échec lors de la création du périphérique '%s' parce que %m"
+
+#: src/libstone/file.c:352 src/libstone/file.c:368 src/libstone/file.c:378
+#, c-format
+msgid   "st_file_mkdir: error while create directory '%s' because %m"
+msgstr  "st_file_mkdir : erreur lors de la création du répertoire '%s' parce que %m"
+
+#: src/libstone/file.c:391 src/libstone/file.c:401
+#, c-format
+msgid   "st_file_mv: can't get information of '%s' because %m"
+msgstr  "st_file_mv : n'a pas réussi à obtenir les informations de '%s' parce que %m"
+
+#: src/libstone/file.c:409
+#, c-format
+msgid   "st_file_mv: failed to rename '%s' to '%s' because %m"
+msgstr  "st_file_mv : échec lors du renommage du fichier '%s' en '%s' parce que %m"
+
+#: src/libstone/file.c:421
+#, c-format
+msgid   "st_file_read_all_from: failed to open '%s' because %m"
+msgstr  "st_file_read_all_from : échec lors de l'ouverture du fichier '%s' parce que %m"
+
+#: src/libstone/file.c:442
+#, c-format
+msgid   "st_file_read_all_from: failed while reading from '%s' because %m"
+msgstr  "st_file_read_all_from : échec en lisant depuis '%s' parce que %m"
+
+#: src/libstone/file.c:486
+#, c-format
+msgid   "st_file_rm: failed to get information of '%s' because %m"
+msgstr  "st_file_rm : échec lors de obtention des informations de '%s' parce que %m"
+
+#: src/libstone/job.c:48
+msgid   "disable"
+msgstr  "désactivé"
+
+#: src/libstone/job.c:50
+msgid   "finished"
+msgstr  "terminée"
+
+#: src/libstone/job.c:51
+msgid   "pause"
+msgstr  "en pause"
+
+#: src/libstone/job.c:52
+msgid   "running"
+msgstr  "en exécution"
+
+#: src/libstone/job.c:53
+msgid   "scheduled"
+msgstr  "programmée"
+
+#: src/libstone/job.c:54
+msgid   "stopped"
+msgstr  "arêtée"
+
+#: src/libstone/job.c:55
+msgid   "waiting"
+msgstr  "en attente"
+
+#: src/libstone/job.c:65
+msgid   "normal"
+msgstr  "normal"
+
+#: src/libstone/job.c:66
+msgid   "important"
+msgstr  "important"
+
+#: src/libstone/job.c:67
+msgid   "read"
+msgstr  "lu"
+
+#: src/libstone/loader.c:72
+#, c-format
+msgid   "libstone: loader: failed to access to file '%s' because %m"
+msgstr  "libstone: loader: échec lors de l'accès au fichier '%s' parce que %m"
+
+#: src/libstone/loader.c:84
+#, c-format
+msgid   "libstone: loader: failed to load '%s' because %s"
+msgstr  "libstone: loader: échec du chargemenet de '%s' parce que %s"
+
+#: src/libstone/log.c:79
+msgid   "Alert"
+msgstr  "Alerte"
+
+#: src/libstone/log.c:80
+msgid   "Critical"
+msgstr  "Critique"
+
+#: src/libstone/log.c:81
+msgid   "Debug"
+msgstr  "Debug"
+
+#: src/libstone/log.c:82
+msgid   "Emergency"
+msgstr  "Urgent"
+
+#: src/libstone/log.c:83
+msgid   "Error"
+msgstr  "Erreur"
+
+#: src/libstone/log.c:84
+msgid   "Info"
+msgstr  "Info"
+
+#: src/libstone/log.c:85
+msgid   "Notice"
+msgstr  "Avis"
+
+#: src/libstone/log.c:86
+msgid   "Warning"
+msgstr  "Attention"
+
+#: src/libstone/log.c:88
+msgid   "Unknown level"
+msgstr  "Niveau inconnus"
+
+#: src/libstone/log.c:96
+msgid   "Changer"
+msgstr  "Échangeur"
+
+#: src/libstone/log.c:97
+msgid   "Daemon"
+msgstr  "Démon"
+
+#: src/libstone/log.c:98
+msgid   "Drive"
+msgstr  "Lecteur"
+
+#: src/libstone/log.c:99
+msgid   "Job"
+msgstr  "Tâche"
+
+#: src/libstone/log.c:100
+msgid   "Logger"
+msgstr  "Enregistreur"
+
+#: src/libstone/log.c:101
+msgid   "Plugin Checksum"
+msgstr  "Greffon de somme de contrôle"
+
+#: src/libstone/log.c:102
+msgid   "Plugin Database"
+msgstr  "Greffon de la base de données"
+
+#: src/libstone/log.c:103
+msgid   "Plugin Log"
+msgstr  "Greffon d'enregistrement"
+
+#: src/libstone/log.c:104
+msgid   "Scheduler"
+msgstr  "Ordonnanceur"
+
+#: src/libstone/log.c:106
+msgid   "User Interface"
+msgstr  "Interface utilisateur"
+
+#: src/libstone/log.c:107
+msgid   "User Message"
+msgstr  "Message utilisateur"
+
+#: src/libstone/log.c:109
+msgid   "Unknown type"
+msgstr  "Type inconnu"
+
+#: src/libstone/media.c:44
+msgid   "audio"
+msgstr  "audio"
+
+#: src/libstone/media.c:46
+msgid   "data"
+msgstr  "données"
+
+#: src/libstone/media.c:47
+msgid   "video"
+msgstr  "vidéo"
+
+#: src/libstone/media.c:57
+msgid   "disk"
+msgstr  "disque"
+
+#: src/libstone/media.c:58
+msgid   "linear"
+msgstr  "linéaire"
+
+#: src/libstone/media.c:59
+msgid   "optical"
+msgstr  "optique"
+
+#: src/libstone/media.c:69
+msgid   "erasable"
+msgstr  "effaçable"
+
+#: src/libstone/media.c:71
+msgid   "foreign"
+msgstr  "étrangère"
+
+#: src/libstone/media.c:72
+msgid   "in use"
+msgstr  "en usage"
+
+#: src/libstone/media.c:73
+msgid   "locked"
+msgstr  "Verrouillée"
+
+#: src/libstone/media.c:74
+msgid   "needs replacement"
+msgstr  "à changer"
+
+#: src/libstone/media.c:75
+msgid   "new"
+msgstr  "neuve"
+
+#: src/libstone/media.c:76
+msgid   "pooled"
+msgstr  "groupé"
+
+#: src/libstone/media.c:87
+msgid   "rewritable"
+msgstr  "ré-inscriptible"
+
+#: src/libstone/media.c:88
+msgid   "worm"
+msgstr  "worm"
+
+#: src/libstone/media.c:98
+msgid   "quick mode"
+msgstr  "mode rapide"
+
+#: src/libstone/media.c:99
+msgid   "thorough mode"
+msgstr  "mode minutieux"
+
+#: src/libstone/media.c:110
+msgid   "archive"
+msgstr  "archive"
+
+#: src/libstone/media.c:111
+msgid   "file"
+msgstr  "fichier"
+
+#: src/libstone/script.c:42
+msgid   "on error"
+msgstr  "d'erreur"
+
+#: src/libstone/script.c:43
+msgid   "post job"
+msgstr  "post tâche"
+
+#: src/libstone/script.c:44
+msgid   "pre job"
+msgstr  "pré tâche"
+
+#: src/libstone/thread_pool.c:173
+msgid   "st_thread_pool_run2: error, not enought memory to start new thread"
+msgstr  "st_thread_pool_run2 : pas assez de mémoire pour démarrer un nouveau fil d'exécution"
+
+#: src/libstone/thread_pool.c:229
+#, c-format
+msgid   "st_thread_pool_work: starting new thread #%ld (pid: %d) to function: %p with parameter: %p"
+msgstr  "st_thread_pool_work : démarre un nouveau fil d'exécution #%ld (pid : %d) vers la fonction : %p avec comme paramètre : %p"
+
+#: src/libstone/thread_pool.c:249
+#, c-format
+msgid   "st_thread_pool_work: thread #%ld (pid: %d) is going to sleep"
+msgstr  "st_thread_pool_work : fil d'exécution #%ld (pid : %d) est mis en attente"
+
+#: src/libstone/thread_pool.c:271
+#, c-format
+msgid   "st_thread_pool_work: restarting thread #%ld (pid: %d) to function: %p with parameter: %p"
+msgstr  "st_thread_pool_work : redémarrage du fil d'exécution #%ld (pid : %d) vers la fonction : %p avec comme paramètre: %p"
+
+#: src/libstone/thread_pool.c:275
+#, c-format
+msgid   "st_thread_pool_work: thread #%ld is dead"
+msgstr  "st_thread_pool_work : fil d'exécution #%ld terminé"

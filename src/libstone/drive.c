@@ -24,8 +24,12 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// gettext
+#include <libintl.h>
 // free
 #include <stdlib.h>
+
+#define gettext_noop(String) String
 
 #include "drive.h"
 #include "media.h"
@@ -38,19 +42,19 @@ static struct st_drive_status2 {
 	const char * name;
 	const enum st_drive_status status;
 } st_drive_status[] = {
-	[st_drive_status_cleaning]    = { 0, "cleaning",	st_drive_status_cleaning },
-	[st_drive_status_empty_idle]  = { 0, "empty idle",	st_drive_status_empty_idle },
-	[st_drive_status_erasing]     = { 0, "erasing",		st_drive_status_erasing },
-	[st_drive_status_error]       = { 0, "error",		st_drive_status_error },
-	[st_drive_status_loaded_idle] = { 0, "loaded idle",	st_drive_status_loaded_idle },
-	[st_drive_status_loading]     = { 0, "loading",		st_drive_status_loading },
-	[st_drive_status_positioning] = { 0, "positioning",	st_drive_status_positioning },
-	[st_drive_status_reading]     = { 0, "reading",		st_drive_status_reading },
-	[st_drive_status_rewinding]   = { 0, "rewinding",	st_drive_status_rewinding },
-	[st_drive_status_unloading]   = { 0, "unloading",	st_drive_status_unloading },
-	[st_drive_status_writing]     = { 0, "writing",		st_drive_status_writing },
+	[st_drive_status_cleaning]    = { 0, gettext_noop("cleaning"),		st_drive_status_cleaning },
+	[st_drive_status_empty_idle]  = { 0, gettext_noop("empty idle"),	st_drive_status_empty_idle },
+	[st_drive_status_erasing]     = { 0, gettext_noop("erasing"),		st_drive_status_erasing },
+	[st_drive_status_error]       = { 0, gettext_noop("error"),			st_drive_status_error },
+	[st_drive_status_loaded_idle] = { 0, gettext_noop("loaded idle"),	st_drive_status_loaded_idle },
+	[st_drive_status_loading]     = { 0, gettext_noop("loading"),		st_drive_status_loading },
+	[st_drive_status_positioning] = { 0, gettext_noop("positioning"),	st_drive_status_positioning },
+	[st_drive_status_reading]     = { 0, gettext_noop("reading"),		st_drive_status_reading },
+	[st_drive_status_rewinding]   = { 0, gettext_noop("rewinding"),		st_drive_status_rewinding },
+	[st_drive_status_unloading]   = { 0, gettext_noop("unloading"),		st_drive_status_unloading },
+	[st_drive_status_writing]     = { 0, gettext_noop("writing"),		st_drive_status_writing },
 
-	[st_drive_status_unknown] = { 0, "unknown", st_drive_status_unknown },
+	[st_drive_status_unknown] = { 0, gettext_noop("unknown"), st_drive_status_unknown },
 };
 
 static void st_drive_init(void) __attribute__((constructor));
@@ -68,11 +72,11 @@ struct st_value * st_drive_convert_v1(struct st_drive_v1 * drive, bool with_slot
 		"revision", drive->revision,
 		"serial number", drive->serial_number,
 
-		"status", st_drive_status_to_string(drive->status),
+		"status", st_drive_status_to_string(drive->status, false),
 		"enable", drive->enable,
 
 		"density code", (long int) drive->density_code,
-		"mode", st_media_format_mode_to_string(drive->mode),
+		"mode", st_media_format_mode_to_string(drive->mode, false),
 		"operation duration", drive->operation_duration,
 		"last clean", last_clean,
 		"is empty", drive->is_empty
@@ -109,8 +113,11 @@ static void st_drive_init() {
 }
 
 __asm__(".symver st_drive_status_to_string_v1, st_drive_status_to_string@@LIBSTONE_1.2");
-const char * st_drive_status_to_string_v1(enum st_drive_status status) {
-	return st_drive_status[status].name;
+const char * st_drive_status_to_string_v1(enum st_drive_status status, bool translate) {
+	const char * value = st_drive_status[status].name;
+	if (translate)
+		value = gettext(value);
+	return value;
 }
 
 __asm__(".symver st_drive_string_to_status_v1, st_drive_string_to_status@@LIBSTONE_1.2");

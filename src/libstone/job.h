@@ -33,8 +33,8 @@ int st_job_add_record_v1(struct st_job * job, struct st_database_connection * db
 struct st_value * st_job_convert_v1(struct st_job * job) __attribute__((nonnull,warn_unused_result));
 void st_job_free_v1(struct st_job * job) __attribute__((nonnull));
 void st_job_free2_v1(void * job) __attribute__((nonnull));
-const char * st_job_report_notif_to_string_v1(enum st_job_record_notif notif);
-const char * st_job_status_to_string_v1(enum st_job_status status);
+const char * st_job_report_notif_to_string_v1(enum st_job_record_notif notif, bool translate);
+const char * st_job_status_to_string_v1(enum st_job_status status, bool translate);
 enum st_job_record_notif st_job_string_to_record_notif_v1(const char * notif) __attribute__((nonnull));
 enum st_job_status st_job_string_to_status_v1(const char * status) __attribute__((nonnull));
 void st_job_sync_v1(struct st_job * job, struct st_value * new_job) __attribute__((nonnull));

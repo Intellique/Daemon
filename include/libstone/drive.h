@@ -83,7 +83,7 @@ struct st_drive {
 struct st_value * st_drive_convert(struct st_drive * drive, bool with_slot) __attribute__((nonnull,warn_unused_result));
 void st_drive_free(struct st_drive * drive) __attribute__((nonnull));
 void st_drive_free2(void * drive) __attribute__((nonnull));
-const char * st_drive_status_to_string(enum st_drive_status status);
+const char * st_drive_status_to_string(enum st_drive_status status, bool translate);
 enum st_drive_status st_drive_string_to_status(const char * status) __attribute__((nonnull));
 void st_drive_sync(struct st_drive * drive, struct st_value * new_drive, bool with_slot) __attribute__((nonnull));
 

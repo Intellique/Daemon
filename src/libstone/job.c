@@ -25,10 +25,14 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
+// gettext
+#include <libintl.h>
 // free
 #include <stdlib.h>
 // vasprintf
 #include <stdio.h>
+
+#define gettext_noop(String) String
 
 #include "database.h"
 #include "job.h"
@@ -37,32 +41,32 @@
 #include "value.h"
 
 static struct st_job_status2 {
+	unsigned long long hash;
 	const char * name;
 	const enum st_job_status status;
-	unsigned long long hash;
 } st_job_status[] = {
-	{ "disable",   st_job_status_disable,   0 },
-	{ "error",     st_job_status_error,     0 },
-	{ "finished",  st_job_status_finished,  0 },
-	{ "pause",     st_job_status_pause,     0 },
-	{ "running",   st_job_status_running,   0 },
-	{ "scheduled", st_job_status_scheduled, 0 },
-	{ "stopped",   st_job_status_stopped,   0 },
-	{ "waiting",   st_job_status_waiting,   0 },
+	[st_job_status_disable]   = { 0, gettext_noop("disable"),   st_job_status_disable },
+	[st_job_status_error]     = { 0, gettext_noop("error"),     st_job_status_error },
+	[st_job_status_finished]  = { 0, gettext_noop("finished"),  st_job_status_finished },
+	[st_job_status_pause]     = { 0, gettext_noop("pause"),     st_job_status_pause },
+	[st_job_status_running]   = { 0, gettext_noop("running"),   st_job_status_running },
+	[st_job_status_scheduled] = { 0, gettext_noop("scheduled"), st_job_status_scheduled },
+	[st_job_status_stopped]   = { 0, gettext_noop("stopped"),   st_job_status_stopped },
+	[st_job_status_waiting]   = { 0, gettext_noop("waiting"),   st_job_status_waiting },
 
-	{ "unknown", st_job_status_unknown, 0 },
+	[st_job_status_unknown] = { 0, gettext_noop("unknown"), st_job_status_unknown },
 };
 
 static struct st_job_record_notif2 {
+	unsigned long long hash;
 	const char * name;
 	const enum st_job_record_notif notif;
-	unsigned long long hash;
 } st_job_record_notifs[] = {
-	{ "normal",    st_job_record_notif_normal,    0 },
-	{ "important", st_job_record_notif_important, 0 },
-	{ "read",      st_job_record_notif_read,      0 },
+	[st_job_record_notif_normal]    = { 0, gettext_noop("normal"),    st_job_record_notif_normal },
+	[st_job_record_notif_important] = { 0, gettext_noop("important"), st_job_record_notif_important },
+	[st_job_record_notif_read]      = { 0, gettext_noop("read"),      st_job_record_notif_read },
 
-	{ "unknown", st_job_record_notif_unknown, 0 },
+	[st_job_record_notif_unknown] = { 0, gettext_noop("unknown"), st_job_record_notif_unknown },
 };
 
 static void st_job_init(void) __attribute__((constructor));
@@ -98,7 +102,7 @@ struct st_value * st_job_convert_v1(struct st_job * job) {
 
 		"num runs", job->num_runs,
 		"done", job->done,
-		"status", st_job_status_to_string_v1(job->status),
+		"status", st_job_status_to_string_v1(job->status, false),
 
 		"exit code", (long int) job->exit_code,
 		"stopped by user", job->stopped_by_user
@@ -137,23 +141,19 @@ static void st_job_init() {
 }
 
 __asm__(".symver st_job_report_notif_to_string_v1, st_job_report_notif_to_string@@LIBSTONE_1.2");
-const char * st_job_report_notif_to_string_v1(enum st_job_record_notif notif) {
-	unsigned int i;
-	for (i = 0; st_job_record_notifs[i].notif != st_job_record_notif_unknown; i++)
-		if (st_job_record_notifs[i].notif == notif)
-			return st_job_record_notifs[i].name;
-
-	return st_job_record_notifs[i].name;
+const char * st_job_report_notif_to_string_v1(enum st_job_record_notif notif, bool translate) {
+	const char * value = st_job_record_notifs[notif].name;
+	if (translate)
+		value = gettext(value);
+	return value;
 }
 
 __asm__(".symver st_job_status_to_string_v1, st_job_status_to_string@@LIBSTONE_1.2");
-const char * st_job_status_to_string_v1(enum st_job_status status) {
-	unsigned int i;
-	for (i = 0; st_job_status[i].status != st_job_status_unknown; i++)
-		if (st_job_status[i].status == status)
-			return st_job_status[i].name;
-
-	return st_job_status[i].name;
+const char * st_job_status_to_string_v1(enum st_job_status status, bool translate) {
+	const char * value = st_job_status[status].name;
+	if (translate)
+		value = gettext(value);
+	return value;
 }
 
 __asm__(".symver st_job_string_to_record_notif_v1, st_job_string_to_record_notif@@LIBSTONE_1.2");

@@ -31,11 +31,11 @@
 #include <libstone/value.h>
 
 void st_log_configure_v1(struct st_value * config, enum st_log_type default_type);
-const char * st_log_level_to_string_v1(enum st_log_level level);
+const char * st_log_level_to_string_v1(enum st_log_level level, bool translate);
 void st_log_stop_logger_v1(void);
 enum st_log_level st_log_string_to_level_v1(const char * string) __attribute__((nonnull));
 enum st_log_type st_log_string_to_type_v1(const char * string) __attribute__((nonnull));
-const char * st_log_type_to_string_v1(enum st_log_type type);
+const char * st_log_type_to_string_v1(enum st_log_type type, bool translate);
 void st_log_write_v1(enum st_log_level level, const char * format, ...) __attribute__ ((format (printf, 2, 3)));
 void st_log_write2_v1(enum st_log_level level, enum st_log_type type, const char * format, ...) __attribute__ ((format (printf, 3, 4)));
 

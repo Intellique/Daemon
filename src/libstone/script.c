@@ -24,22 +24,26 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// gettext
+#include <libintl.h>
 // NULL
 #include <stddef.h>
+
+#define gettext_noop(String) String
 
 #include "script.h"
 #include "string.h"
 
 static struct st_script_type2 {
+	unsigned long long hash;
 	const char * name;
 	const enum st_script_type type;
-	unsigned long long hash;
 } st_script_types[] = {
-	{ "on error", st_script_type_on_error, 0 },
-	{ "post job", st_script_type_post_job, 0 },
-	{ "pre job",  st_script_type_pre_job,  0 },
+	[st_script_type_on_error] = { 0, gettext_noop("on error"), st_script_type_on_error },
+	[st_script_type_post_job] = { 0, gettext_noop("post job"), st_script_type_post_job },
+	[st_script_type_pre_job]  = { 0, gettext_noop("pre job"),  st_script_type_pre_job },
 
-	{ "unknown", st_script_type_unknown, 0 },
+	[st_script_type_unknown]  = { 0, gettext_noop("unknown"),  st_script_type_unknown },
 };
 
 static void st_script_init(void) __attribute__((constructor));
@@ -67,12 +71,10 @@ enum st_script_type st_script_string_to_type_v1(const char * string) {
 }
 
 __asm__(".symver st_script_type_to_string_v1, st_script_type_to_string@@LIBSTONE_1.2");
-const char * st_script_type_to_string_v1(enum st_script_type type) {
-	unsigned int i;
-	for (i = 0; st_script_types[i].type != st_script_type_unknown; i++)
-		if (st_script_types[i].type == type)
-			return st_script_types[i].name;
-
-	return st_script_types[i].name;
+const char * st_script_type_to_string_v1(enum st_script_type type, bool translate) {
+	const char * value = st_script_types[type].name;
+	if (translate)
+		value = gettext(value);
+	return value;
 }
 

@@ -25,7 +25,7 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
-// bindtextdomain, textdomain
+// bindtextdomain, gettext, textdomain
 #include <libintl.h>
 // setlocale
 #include <locale.h>
@@ -48,11 +48,14 @@
 // close, sleep
 #include <unistd.h>
 
+#define gettext_noop(String) String
+
 #include <libstone/thread_pool.h>
 
 #include "json.h"
 #include "log.h"
 #include "socket.h"
+#include "string.h"
 
 #include "config.h"
 
@@ -69,39 +72,41 @@ static void st_log_send_message(void * arg);
 static void st_log_write_inner(enum st_log_level level, enum st_log_type type, const char * format, va_list params);
 
 static struct st_log_level2 {
-	enum st_log_level level;
+	unsigned long long hash;
 	const char * name;
+	enum st_log_level level;
 } st_log_levels[] = {
-	{ st_log_level_alert,      "Alert" },
-	{ st_log_level_critical,   "Critical" },
-	{ st_log_level_debug,      "Debug" },
-	{ st_log_level_emergencey, "Emergency" },
-	{ st_log_level_error,      "Error" },
-	{ st_log_level_info,       "Info" },
-	{ st_log_level_notice,     "Notice" },
-	{ st_log_level_warning,    "Warning" },
+	[st_log_level_alert]      = { 0, gettext_noop("Alert"),     st_log_level_alert },
+	[st_log_level_critical]   = { 0, gettext_noop("Critical"),  st_log_level_critical },
+	[st_log_level_debug]      = { 0, gettext_noop("Debug"),     st_log_level_debug },
+	[st_log_level_emergencey] = { 0, gettext_noop("Emergency"), st_log_level_emergencey },
+	[st_log_level_error]      = { 0, gettext_noop("Error"),     st_log_level_error },
+	[st_log_level_info]       = { 0, gettext_noop("Info"),      st_log_level_info },
+	[st_log_level_notice]     = { 0, gettext_noop("Notice"),    st_log_level_notice },
+	[st_log_level_warning]    = { 0, gettext_noop("Warning"),   st_log_level_warning },
 
-	{ st_log_level_unknown, "Unknown level" },
+	[st_log_level_unknown]    = { 0, gettext_noop("Unknown level"), st_log_level_unknown },
 };
 
 static struct st_log_type2 {
-	enum st_log_type type;
+	unsigned long long hash;
 	const char * name;
+	enum st_log_type type;
 } st_log_types[] = {
-	{ st_log_type_changer,         "Changer" },
-	{ st_log_type_daemon,          "Daemon" },
-	{ st_log_type_drive,           "Drive" },
-	{ st_log_type_job,             "Job" },
-	{ st_log_type_logger,          "Logger" },
-	{ st_log_type_plugin_checksum, "Plugin Checksum" },
-	{ st_log_type_plugin_db,       "Plugin Database" },
-	{ st_log_type_plugin_log,      "Plugin Log" },
-	{ st_log_type_scheduler,       "Scheduler" },
+	[st_log_type_changer]         = { 0, gettext_noop("Changer"),         st_log_type_changer },
+	[st_log_type_daemon]          = { 0, gettext_noop("Daemon"),          st_log_type_daemon },
+	[st_log_type_drive]           = { 0, gettext_noop("Drive"),           st_log_type_drive },
+	[st_log_type_job]             = { 0, gettext_noop("Job"),             st_log_type_job },
+	[st_log_type_logger]          = { 0, gettext_noop("Logger"),          st_log_type_logger },
+	[st_log_type_plugin_checksum] = { 0, gettext_noop("Plugin Checksum"), st_log_type_plugin_checksum },
+	[st_log_type_plugin_db]       = { 0, gettext_noop("Plugin Database"), st_log_type_plugin_db },
+	[st_log_type_plugin_log]      = { 0, gettext_noop("Plugin Log"),      st_log_type_plugin_log },
+	[st_log_type_scheduler]       = { 0, gettext_noop("Scheduler"),       st_log_type_scheduler },
 
-	{ st_log_type_ui,              "User Interface" },
-	{ st_log_type_user_message,    "User Message" },
+	[st_log_type_ui]	          = { 0, gettext_noop("User Interface"), st_log_type_ui },
+	[st_log_type_user_message]    = { 0, gettext_noop("User Message"),   st_log_type_user_message },
 
-	{ st_log_type_unknown, "Unknown type" },
+	[st_log_type_unknown]         = { 0, gettext_noop("Unknown type"), st_log_type_unknown },
 };
 
 
@@ -134,13 +139,11 @@ static void st_log_init() {
 }
 
 __asm__(".symver st_log_level_to_string_v1, st_log_level_to_string@@LIBSTONE_1.2");
-const char * st_log_level_to_string_v1(enum st_log_level level) {
-	unsigned int i;
-	for (i = 0; st_log_levels[i].level != st_log_level_unknown; i++)
-		if (st_log_levels[i].level == level)
-			return st_log_levels[i].name;
-
-	return st_log_levels[i].name;
+const char * st_log_level_to_string_v1(enum st_log_level level, bool translate) {
+	const char * value = st_log_levels[level].name;
+	if (translate)
+		value = gettext(value);
+	return value;
 }
 
 __asm__(".symver st_log_stop_logger_v1, st_log_stop_logger@@LIBSTONE_1.2");
@@ -162,8 +165,9 @@ enum st_log_level st_log_string_to_level_v1(const char * level) {
 		return st_log_level_unknown;
 
 	unsigned int i;
-	for (i = 0; st_log_levels[i].level != st_log_level_unknown; i++)
-		if (!strcasecmp(st_log_levels[i].name, level))
+	const unsigned long long hash = st_string_compute_hash2(level);
+	for (i = 0; i < sizeof(st_log_levels) / sizeof(*st_log_levels); i++)
+		if (hash == st_log_levels[i].hash)
 			return st_log_levels[i].level;
 
 	return st_log_levels[i].level;
@@ -175,8 +179,9 @@ enum st_log_type st_log_string_to_type_v1(const char * type) {
 		return st_log_type_unknown;
 
 	unsigned int i;
-	for (i = 0; st_log_types[i].type != st_log_type_unknown; i++)
-		if (!strcasecmp(type, st_log_types[i].name))
+	const unsigned long long hash = st_string_compute_hash2(type);
+	for (i = 0; i < sizeof(st_log_types) / sizeof(*st_log_types); i++)
+		if (hash == st_log_types[i].hash)
 			return st_log_types[i].type;
 
 	return st_log_types[i].type;
@@ -256,13 +261,11 @@ static void st_log_send_message(void * arg) {
 }
 
 __asm__(".symver st_log_type_to_string_v1, st_log_type_to_string@@LIBSTONE_1.2");
-const char * st_log_type_to_string_v1(enum st_log_type type) {
-	unsigned int i;
-	for (i = 0; st_log_types[i].type != st_log_type_unknown; i++)
-		if (st_log_types[i].type == type)
-			return st_log_types[i].name;
-
-	return st_log_types[i].name;
+const char * st_log_type_to_string_v1(enum st_log_type type, bool translate) {
+	const char * value = st_log_types[type].name;
+	if (translate)
+		value = gettext(value);
+	return value;
 }
 
 __asm__(".symver st_log_write_v1, st_log_write@@LIBSTONE_1.2");
@@ -293,7 +296,7 @@ static void st_log_write_inner(enum st_log_level level, enum st_log_type type, c
 	char * str_message = NULL;
 	vasprintf(&str_message, format, params);
 
-	struct st_value * message = st_value_pack("{sssssiss}", "level", st_log_level_to_string_v1(level), "type", st_log_type_to_string_v1(type), "timestamp", timestamp, "message", str_message);
+	struct st_value * message = st_value_pack("{sssssiss}", "level", st_log_level_to_string_v1(level, false), "type", st_log_type_to_string_v1(type, false), "timestamp", timestamp, "message", str_message);
 
 	free(str_message);
 

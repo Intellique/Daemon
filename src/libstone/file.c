@@ -349,7 +349,7 @@ int st_file_mkdir_v1(const char * dirname, mode_t mode) {
 		failed = mkdir(dirname, mode);
 
 		if (failed != 0)
-			st_log_write(st_log_level_error, "Error while create directory '%s' because %m", dirname);
+			st_log_write(st_log_level_error, gettext("st_file_mkdir: error while create directory '%s' because %m"), dirname);
 
 		return failed;
 	}
@@ -365,7 +365,7 @@ int st_file_mkdir_v1(const char * dirname, mode_t mode) {
 		failed = mkdir(dir, mode);
 
 	if (failed != 0)
-		st_log_write(st_log_level_error, "Error while create directory '%s' because %m", dirname);
+		st_log_write(st_log_level_error, gettext("st_file_mkdir: error while create directory '%s' because %m"), dirname);
 
 	unsigned short i;
 	for (i = 0; i < nb && !failed; i++) {
@@ -375,7 +375,7 @@ int st_file_mkdir_v1(const char * dirname, mode_t mode) {
 		failed = mkdir(dir, mode);
 
 		if (failed != 0)
-			st_log_write(st_log_level_error, "Error while create directory '%s' because %m", dirname);
+			st_log_write(st_log_level_error, gettext("st_file_mkdir: error while create directory '%s' because %m"), dirname);
 	}
 
 	free(dir);
@@ -388,7 +388,7 @@ int st_file_mv_v1(const char * src, const char * dst) {
 	struct stat stsrc;
 	int failed = lstat(src, &stsrc);
 	if (failed != 0) {
-		st_log_write(st_log_level_error, "Move files: Can't get information of '%s' because %m", src);
+		st_log_write(st_log_level_error, gettext("st_file_mv: can't get information of '%s' because %m"), src);
 		return failed;
 	}
 
@@ -398,7 +398,7 @@ int st_file_mv_v1(const char * src, const char * dst) {
 	struct stat stdst;
 	failed = lstat(dirname_dst, &stdst);
 	if (failed != 0) {
-		st_log_write(st_log_level_error, "Move files: Can't get information of '%s' because %m", dst);
+		st_log_write(st_log_level_error, gettext("st_file_mv: can't get information of '%s' because %m"), dst);
 	} else if (stsrc.st_dev != stdst.st_dev) {
 		failed = st_file_cp_v1(src, dirname_dst);
 		if (failed == 0)
@@ -406,7 +406,7 @@ int st_file_mv_v1(const char * src, const char * dst) {
 	} else {
 		failed = rename(src, dst);
 		if (failed != 0)
-			st_log_write(st_log_level_error, "Move files: failed to rename '%s' to '%s' because %m", src, dst);
+			st_log_write(st_log_level_error, gettext("st_file_mv: failed to rename '%s' to '%s' because %m"), src, dst);
 	}
 
 	free(cpdst);
@@ -417,8 +417,10 @@ int st_file_mv_v1(const char * src, const char * dst) {
 __asm__(".symver st_file_read_all_from_v1, st_file_read_all_from@@LIBSTONE_1.2");
 char * st_file_read_all_from_v1(const char * filename) {
 	int fd = open(filename, O_RDONLY);
-	if (fd < 0)
+	if (fd < 0) {
+		st_log_write(st_log_level_error, gettext("st_file_read_all_from: failed to open '%s' because %m"), filename);
 		return NULL;
+	}
 
 	struct stat st;
 	int failed = fstat(fd, &st);
@@ -437,6 +439,7 @@ char * st_file_read_all_from_v1(const char * filename) {
 	if (nb_read < 0) {
 		free(data);
 		data = NULL;
+		st_log_write(st_log_level_error, gettext("st_file_read_all_from: failed while reading from '%s' because %m"), filename);
 	}
 
 	return data;
@@ -479,8 +482,10 @@ int st_file_rm_v1(const char * path) {
 		return 0;
 
 	struct stat st;
-	if (lstat(path, &st))
+	if (lstat(path, &st)) {
+		st_log_write(st_log_level_error, gettext("st_file_rm: failed to get information of '%s' because %m"), path);
 		return -1;
+	}
 
 	if (S_ISDIR(st.st_mode)) {
 		struct dirent ** files;

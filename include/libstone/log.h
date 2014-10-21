@@ -27,6 +27,8 @@
 #ifndef __LIBSTONE_LOG_H__
 #define __LIBSTONE_LOG_H__
 
+// bool
+#include <stdbool.h>
 // time_t
 #include <sys/time.h>
 
@@ -42,46 +44,46 @@ enum st_log_level {
 	/**
 	 * \brief action must be taken immendiately
 	 */
-	st_log_level_alert = 0x1,
+	st_log_level_alert = 0x2,
 
 	/**
 	 * \brief critical condictions
 	 */
-	st_log_level_critical = 0x2,
+	st_log_level_critical = 0x3,
 
 	/**
 	 * \brief Reserved for debugging
 	 */
-	st_log_level_debug = 0x7,
+	st_log_level_debug = 0x8,
 
 	/**
 	 * \brief System unstable
 	 */
-	st_log_level_emergencey = 0x0,
+	st_log_level_emergencey = 0x1,
 
 	/**
 	 * \brief Should be used to alert errors
 	 */
-	st_log_level_error = 0x3,
+	st_log_level_error = 0x4,
 
 	/**
 	 * \brief Should be used to inform what the server does.
 	 *
 	 * Example: server starts a new job
 	 */
-	st_log_level_info = 0x6,
+	st_log_level_info = 0x7,
 
 	/**
 	 * \brief normal but significant condition
 	 */
-	st_log_level_notice = 0x5,
+	st_log_level_notice = 0x6,
 
 	/**
 	 * \brief Should be used to alert errors which can be recovered
 	 *
 	 * Example: dns service not available
 	 */
-	st_log_level_warning = 0x4,
+	st_log_level_warning = 0x5,
 
 	/**
 	 * \brief Should not be used
@@ -89,7 +91,7 @@ enum st_log_level {
 	 * Used only by st_log_string_to_level to report an error
 	 * \see st_log_string_to_level
 	 */
-	st_log_level_unknown = -1,
+	st_log_level_unknown = 0x0,
 };
 
 /**
@@ -156,7 +158,7 @@ void st_log_configure(struct st_value * config, enum st_log_type default_type);
  * \return a statically allocated string
  * \note returned value should not be released
  */
-const char * st_log_level_to_string(enum st_log_level level);
+const char * st_log_level_to_string(enum st_log_level level, bool translate);
 
 void st_log_stop_logger(void);
 
@@ -184,7 +186,7 @@ enum st_log_type st_log_string_to_type(const char * string) __attribute__((nonnu
  *
  * \note st_log_type_to_string never returns NULL and you <b>SHOULD NOT RELEASE</b> returned value
  */
-const char * st_log_type_to_string(enum st_log_type type);
+const char * st_log_type_to_string(enum st_log_type type, bool translate);
 
 /**
  * \brief Write a message to all log modules

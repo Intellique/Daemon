@@ -24,90 +24,94 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// gettext
+#include <libintl.h>
 // free
 #include <stdlib.h>
 // strncpy
 #include <string.h>
 
+#define gettext_noop(String) String
+
 #include "media.h"
 #include "string.h"
 
 static struct st_media_format_data_type2 {
+	unsigned long long hash;
 	const char * name;
 	const enum st_media_format_data_type type;
-	unsigned long long hash;
 } st_media_format_data_types[] = {
-	{ "audio",    st_media_format_data_audio,    0 },
-	{ "cleaning", st_media_format_data_cleaning, 0 },
-	{ "data",     st_media_format_data_data,     0 },
-	{ "video",    st_media_format_data_video,    0 },
+	[st_media_format_data_audio]    = { 0, gettext_noop("audio"),    st_media_format_data_audio },
+	[st_media_format_data_cleaning] = { 0, gettext_noop("cleaning"), st_media_format_data_cleaning },
+	[st_media_format_data_data]     = { 0, gettext_noop("data"),     st_media_format_data_data },
+	[st_media_format_data_video]    = { 0, gettext_noop("video"),    st_media_format_data_video },
 
-	{ "unknown", st_media_format_data_unknown, 0 },
+	[st_media_format_data_unknown]  = { 0, gettext_noop("unknown"),  st_media_format_data_unknown },
 };
 
 static struct st_media_format_mode2 {
+	unsigned long long hash;
 	const char * name;
 	const enum st_media_format_mode mode;
-	unsigned long long hash;
 } st_media_format_modes[] = {
-	{ "disk",    st_media_format_mode_disk,    0 },
-	{ "linear",  st_media_format_mode_linear,  0 },
-	{ "optical", st_media_format_mode_optical, 0 },
+	[st_media_format_mode_disk]    = { 0, gettext_noop("disk"),    st_media_format_mode_disk },
+	[st_media_format_mode_linear]  = { 0, gettext_noop("linear"),  st_media_format_mode_linear },
+	[st_media_format_mode_optical] = { 0, gettext_noop("optical"), st_media_format_mode_optical },
 
-	{ "unknown", st_media_format_mode_unknown, 0 },
+	[st_media_format_mode_unknown] = { 0, gettext_noop("unknown"), st_media_format_mode_unknown },
 };
 
 static struct st_media_status2 {
+	unsigned long long hash;
 	const char * name;
 	const enum st_media_status status;
-	unsigned long long hash;
 } st_media_status[] = {
-	{ "erasable",          st_media_status_erasable,          0 },
-	{ "error",             st_media_status_error,             0 },
-	{ "foreign",           st_media_status_foreign,           0 },
-	{ "in use",            st_media_status_in_use,            0 },
-	{ "locked",            st_media_status_locked,            0 },
-	{ "needs replacement", st_media_status_needs_replacement, 0 },
-	{ "new",               st_media_status_new,               0 },
-	{ "pooled",            st_media_status_pooled,            0 },
+	[st_media_status_erasable]          = { 0, gettext_noop("erasable"),          st_media_status_erasable },
+	[st_media_status_error]             = { 0, gettext_noop("error"),             st_media_status_error },
+	[st_media_status_foreign]           = { 0, gettext_noop("foreign"),           st_media_status_foreign },
+	[st_media_status_in_use]            = { 0, gettext_noop("in use"),            st_media_status_in_use },
+	[st_media_status_locked]            = { 0, gettext_noop("locked"),            st_media_status_locked },
+	[st_media_status_needs_replacement] = { 0, gettext_noop("needs replacement"), st_media_status_needs_replacement },
+	[st_media_status_new]               = { 0, gettext_noop("new"),               st_media_status_new },
+	[st_media_status_pooled]            = { 0, gettext_noop("pooled"),            st_media_status_pooled },
 
-	{ "unknown", st_media_status_unknown, 0 },
+	[st_media_status_unknown]           = { 0, gettext_noop("unknown"),           st_media_status_unknown },
 };
 
 static struct st_media_type2 {
+	unsigned long long hash;
 	const char * name;
 	const enum st_media_type type;
-	unsigned long long hash;
 } st_media_types[] = {
-	{ "cleaning",   st_media_type_cleaning,   0 },
-	{ "rewritable", st_media_type_rewritable, 0 },
-	{ "worm",       st_media_type_worm,       0 },
+	[st_media_type_cleaning]   = { 0, gettext_noop("cleaning"),   st_media_type_cleaning },
+	[st_media_type_rewritable] = { 0, gettext_noop("rewritable"), st_media_type_rewritable },
+	[st_media_type_worm]       = { 0, gettext_noop("worm"),       st_media_type_worm },
 
-	{ "unknown", st_media_type_unknown, 0 },
+	[st_media_type_unknown]    = { 0, gettext_noop("unknown"),    st_media_type_unknown },
 };
 
 static struct st_pool_autocheck_mode2 {
+	unsigned long long hash;
 	const char * name;
 	const enum st_pool_autocheck_mode mode;
-	unsigned long long hash;
 } st_pool_autocheck_modes[] = {
-	{ "quick mode",    st_pool_autocheck_quick_mode,    0 },
-	{ "thorough mode", st_pool_autocheck_thorough_mode, 0 },
-	{ "none",          st_pool_autocheck_mode_none,     0 },
+	[st_pool_autocheck_quick_mode]    = { 0, gettext_noop("quick mode"),    st_pool_autocheck_quick_mode },
+	[st_pool_autocheck_thorough_mode] = { 0, gettext_noop("thorough mode"), st_pool_autocheck_thorough_mode },
+	[st_pool_autocheck_mode_none]     = { 0, gettext_noop("none"),          st_pool_autocheck_mode_none },
 
-	{ "unknown", st_pool_autocheck_mode_unknown, 0 },
+	[st_pool_autocheck_mode_unknown]  = { 0, gettext_noop("unknown"),       st_pool_autocheck_mode_unknown },
 };
 
 static struct st_pool_unbreakable_level2 {
+	unsigned long long hash;
 	const char * name;
 	const enum st_pool_unbreakable_level level;
-	unsigned long long hash;
 } st_pool_unbreakable_levels[] = {
-	{ "archive", st_pool_unbreakable_level_archive, 0 },
-	{ "file",    st_pool_unbreakable_level_file,    0 },
-	{ "none",    st_pool_unbreakable_level_none,    0 },
+	[st_pool_unbreakable_level_archive] = { 0, gettext_noop("archive"), st_pool_unbreakable_level_archive },
+	[st_pool_unbreakable_level_file]    = { 0, gettext_noop("file"),    st_pool_unbreakable_level_file },
+	[st_pool_unbreakable_level_none]    = { 0, gettext_noop("none"),    st_pool_unbreakable_level_none },
 
-	{ "unknown", st_pool_unbreakable_level_unknown, 0 },
+	[st_pool_unbreakable_level_unknown] = { 0, gettext_noop("unknown"), st_pool_unbreakable_level_unknown },
 };
 
 static void st_media_init(void) __attribute__((constructor));
@@ -149,7 +153,7 @@ struct st_value * st_media_convert_v1(struct st_media * media) {
 		"medium serial number", media->medium_serial_number,
 		"name", media->name,
 
-		"status", st_media_status_to_string_v1(media->status),
+		"status", st_media_status_to_string_v1(media->status, false),
 
 		"first used", media->first_used,
 		"use before", media->use_before,
@@ -171,7 +175,7 @@ struct st_value * st_media_convert_v1(struct st_media * media) {
 
 		"nb volumes", (unsigned long int) media->nb_volumes,
 		"append", media->append,
-		"type", st_media_type_to_string_v1(media->type),
+		"type", st_media_type_to_string_v1(media->type, false),
 		"write lock", media->write_lock,
 
 		"format", st_media_format_convert_v1(media->format)
@@ -201,8 +205,8 @@ struct st_value * st_media_format_convert_v1(struct st_media_format * format) {
 		"name", format->name,
 
 		"density code", (long int) format->density_code,
-		"type", st_media_format_data_type_to_string_v1(format->type),
-		"mode", st_media_format_mode_to_string_v1(format->mode),
+		"type", st_media_format_data_type_to_string_v1(format->type, false),
+		"mode", st_media_format_mode_to_string_v1(format->mode, false),
 
 		"max load count", format->max_load_count,
 		"max read count", format->max_read_count,
@@ -335,9 +339,9 @@ struct st_value * st_pool_convert_v1(struct st_pool * pool) {
 		"uuid", pool->uuid,
 		"name", pool->name,
 
-		"auto check", st_pool_autocheck_mode_to_string_v1(pool->auto_check),
+		"auto check", st_pool_autocheck_mode_to_string_v1(pool->auto_check, false),
 		"growable", pool->growable,
-		"unbreakable level", st_pool_unbreakable_level_to_string_v1(pool->unbreakable_level),
+		"unbreakable level", st_pool_unbreakable_level_to_string_v1(pool->unbreakable_level, false),
 		"rewritable", pool->rewritable,
 		"deleted", pool->deleted,
 
@@ -429,13 +433,11 @@ void st_pool_free_v1(struct st_pool * pool) {
 
 
 __asm__(".symver st_media_format_data_type_to_string_v1, st_media_format_data_type_to_string@@LIBSTONE_1.2");
-const char * st_media_format_data_type_to_string_v1(enum st_media_format_data_type type) {
-	unsigned int i;
-	for (i = 0; st_media_format_data_types[i].type != st_media_format_data_unknown; i++)
-		if (st_media_format_data_types[i].type == type)
-			return st_media_format_data_types[i].name;
-
-	return st_media_format_data_types[i].name;
+const char * st_media_format_data_type_to_string_v1(enum st_media_format_data_type type, bool translate) {
+	const char * value = st_media_format_data_types[type].name;
+	if (translate)
+		value = gettext(value);
+	return value;
 }
 
 __asm__(".symver st_media_string_to_format_data_type_v1, st_media_string_to_format_data_type@@LIBSTONE_1.2");
@@ -454,13 +456,11 @@ enum st_media_format_data_type st_media_string_to_format_data_type_v1(const char
 
 
 __asm__(".symver st_media_format_mode_to_string_v1, st_media_format_mode_to_string@@LIBSTONE_1.2");
-const char * st_media_format_mode_to_string_v1(enum st_media_format_mode mode) {
-	unsigned int i;
-	for (i = 0; st_media_format_modes[i].mode != st_media_format_mode_unknown; i++)
-		if (st_media_format_modes[i].mode == mode)
-			return st_media_format_modes[i].name;
-
-	return st_media_format_modes[i].name;
+const char * st_media_format_mode_to_string_v1(enum st_media_format_mode mode, bool translate) {
+	const char * value = st_media_format_modes[mode].name;
+	if (translate)
+		value = gettext(value);
+	return value;
 }
 
 __asm__(".symver st_media_string_to_format_mode_v1, st_media_string_to_format_mode@@LIBSTONE_1.2");
@@ -479,13 +479,11 @@ enum st_media_format_mode st_media_string_to_format_mode_v1(const char * mode) {
 
 
 __asm__(".symver st_media_status_to_string_v1, st_media_status_to_string@@LIBSTONE_1.2");
-const char * st_media_status_to_string_v1(enum st_media_status status) {
-	unsigned int i;
-	for (i = 0; st_media_status[i].status != st_media_status_unknown; i++)
-		if (st_media_status[i].status == status)
-			return st_media_status[i].name;
-
-	return st_media_status[i].name;
+const char * st_media_status_to_string_v1(enum st_media_status status, bool translate) {
+	const char * value = st_media_status[status].name;
+	if (translate)
+		value = gettext(value);
+	return value;
 }
 
 __asm__(".symver st_media_string_to_status_v1, st_media_string_to_status@@LIBSTONE_1.2");
@@ -518,24 +516,20 @@ enum st_media_type st_media_string_to_type_v1(const char * type) {
 }
 
 __asm__(".symver st_media_type_to_string_v1, st_media_type_to_string@@LIBSTONE_1.2");
-const char * st_media_type_to_string_v1(enum st_media_type type) {
-	unsigned int i;
-	for (i = 0; st_media_types[i].type != st_media_type_unknown; i++)
-		if (st_media_types[i].type == type)
-			return st_media_types[i].name;
-
-	return st_media_types[i].name;
+const char * st_media_type_to_string_v1(enum st_media_type type, bool translate) {
+	const char * value = st_media_types[type].name;
+	if (translate)
+		value = gettext(value);
+	return value;
 }
 
 
 __asm__(".symver st_pool_autocheck_mode_to_string_v1, st_pool_autocheck_mode_to_string@@LIBSTONE_1.2");
-const char * st_pool_autocheck_mode_to_string_v1(enum st_pool_autocheck_mode mode) {
-	unsigned int i;
-	for (i = 0; st_pool_autocheck_modes[i].mode != st_pool_autocheck_mode_unknown; i++)
-		if (st_pool_autocheck_modes[i].mode == mode)
-			return st_pool_autocheck_modes[i].name;
-
-	return st_pool_autocheck_modes[i].name;
+const char * st_pool_autocheck_mode_to_string_v1(enum st_pool_autocheck_mode mode, bool translate) {
+	const char * value = st_pool_autocheck_modes[mode].name;
+	if (translate)
+		value = gettext(value);
+	return value;
 }
 
 __asm__(".symver st_pool_string_to_autocheck_mode_v1, st_pool_string_to_autocheck_mode@@LIBSTONE_1.2");
@@ -568,12 +562,10 @@ enum st_pool_unbreakable_level st_pool_string_to_unbreakable_level_v1(const char
 }
 
 __asm__(".symver st_pool_unbreakable_level_to_string_v1, st_pool_unbreakable_level_to_string@@LIBSTONE_1.2");
-const char * st_pool_unbreakable_level_to_string_v1(enum st_pool_unbreakable_level level) {
-	unsigned int i;
-	for (i = 0; st_pool_unbreakable_levels[i].level != st_pool_unbreakable_level_unknown; i++)
-		if (st_pool_unbreakable_levels[i].level == level)
-			return st_pool_unbreakable_levels[i].name;
-
-	return st_pool_unbreakable_levels[i].name;
+const char * st_pool_unbreakable_level_to_string_v1(enum st_pool_unbreakable_level level, bool translate) {
+	const char * value = st_pool_unbreakable_levels[level].name;
+	if (translate)
+		value = gettext(value);
+	return value;
 }
 

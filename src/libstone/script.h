@@ -30,7 +30,7 @@
 #include <libstone/script.h>
 
 enum st_script_type st_script_string_to_type_v1(const char * string);
-const char * st_script_type_to_string_v1(enum st_script_type type);
+const char * st_script_type_to_string_v1(enum st_script_type type, bool translate);
 
 #endif
 

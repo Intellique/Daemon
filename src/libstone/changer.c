@@ -24,8 +24,12 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// gettext
+#include <libintl.h>
 // calloc, free
 #include <stdlib.h>
+
+#define gettext_noop(String) String
 
 #include "changer.h"
 #include "drive.h"
@@ -38,11 +42,11 @@ static struct st_changer_action2 {
 	const char * name;
 	const enum st_changer_action action;
 } st_library_actions[] = {
-	[st_changer_action_none]        = { 0, "none",        st_changer_action_none },
-	[st_changer_action_put_offline] = { 0, "put offline", st_changer_action_put_offline },
-	[st_changer_action_put_online]  = { 0, "put online",  st_changer_action_put_online },
+	[st_changer_action_none]        = { 0, gettext_noop("none"),        st_changer_action_none },
+	[st_changer_action_put_offline] = { 0, gettext_noop("put offline"), st_changer_action_put_offline },
+	[st_changer_action_put_online]  = { 0, gettext_noop("put online"),  st_changer_action_put_online },
 
-	[st_changer_action_unknown] = { 0, "unknown", st_changer_action_unknown },
+	[st_changer_action_unknown] = { 0, gettext_noop("unknown"), st_changer_action_unknown },
 };
 
 static struct st_changer_status2 {
@@ -50,25 +54,28 @@ static struct st_changer_status2 {
 	const char * name;
 	const enum st_changer_status status;
 } st_library_status[] = {
-	[st_changer_status_error]      = { 0, "error",		st_changer_status_error },
-	[st_changer_status_exporting]  = { 0, "exporting",	st_changer_status_exporting },
-	[st_changer_status_idle]       = { 0, "idle",		st_changer_status_idle },
-	[st_changer_status_go_offline] = { 0, "go offline", st_changer_status_go_offline },
-	[st_changer_status_go_online]  = { 0, "go online",  st_changer_status_go_online },
-	[st_changer_status_importing]  = { 0, "importing",	st_changer_status_importing },
-	[st_changer_status_loading]    = { 0, "loading",	st_changer_status_loading },
-	[st_changer_status_offline]    = { 0, "offline",    st_changer_status_offline },
-	[st_changer_status_unloading]  = { 0, "unloading",	st_changer_status_unloading },
+	[st_changer_status_error]      = { 0, gettext_noop("error"),		st_changer_status_error },
+	[st_changer_status_exporting]  = { 0, gettext_noop("exporting"),	st_changer_status_exporting },
+	[st_changer_status_idle]       = { 0, gettext_noop("idle"),			st_changer_status_idle },
+	[st_changer_status_go_offline] = { 0, gettext_noop("go offline"),	st_changer_status_go_offline },
+	[st_changer_status_go_online]  = { 0, gettext_noop("go online"),	st_changer_status_go_online },
+	[st_changer_status_importing]  = { 0, gettext_noop("importing"),	st_changer_status_importing },
+	[st_changer_status_loading]    = { 0, gettext_noop("loading"),		st_changer_status_loading },
+	[st_changer_status_offline]    = { 0, gettext_noop("offline"),		st_changer_status_offline },
+	[st_changer_status_unloading]  = { 0, gettext_noop("unloading"),	st_changer_status_unloading },
 
-	[st_changer_status_unknown] = { 0, "unknown", st_changer_status_unknown },
+	[st_changer_status_unknown] = { 0, gettext_noop("unknown"), st_changer_status_unknown },
 };
 
 static void st_changer_init(void) __attribute__((constructor));
 
 
 __asm__(".symver st_changer_action_to_string_v1, st_changer_action_to_string@@LIBSTONE_1.2");
-const char * st_changer_action_to_string_v1(enum st_changer_action action) {
-	return st_library_actions[action].name;
+const char * st_changer_action_to_string_v1(enum st_changer_action action, bool translate) {
+	const char * value = st_library_actions[action].name;
+	if (translate)
+		value = gettext(value);
+	return value;
 }
 
 __asm__(".symver st_changer_convert_v1, st_changer_convert@@LIBSTONE_1.2");
@@ -90,7 +97,7 @@ struct st_value * st_changer_convert_v1(struct st_changer_v1 * changer) {
 		"wwn", changer->wwn,
 		"barcode", changer->barcode,
 
-		"status", st_changer_status_to_string_v1(changer->status),
+		"status", st_changer_status_to_string_v1(changer->status, false),
 		"is online", changer->is_online,
 		"enable", changer->enable,
 
@@ -152,8 +159,11 @@ enum st_changer_action st_changer_string_to_action_v1(const char * action) {
 }
 
 __asm__(".symver st_changer_status_to_string_v1, st_changer_status_to_string@@LIBSTONE_1.2");
-const char * st_changer_status_to_string_v1(enum st_changer_status status) {
-	return st_library_status[status].name;
+const char * st_changer_status_to_string_v1(enum st_changer_status status, bool translate) {
+	const char * value = st_library_status[status].name;
+	if (translate)
+		value = gettext(value);
+	return value;
 }
 
 __asm__(".symver st_changer_string_to_status_v1, st_changer_string_to_status@@LIBSTONE_1.2");
