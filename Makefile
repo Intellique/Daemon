@@ -109,19 +109,19 @@ DEP_FILES	+= $$($(1)_DEP_FILES)
 OBJ_FILES	+= $$($(1)_OBJ_FILES)
 
 ifneq (,$$($(1)_LOCALE))
-$(1)_LOCALE_PO	:= $$(sort $$(shell test -d locale && find locale -name $$($(1)_LOCALE).*.po))
+$(1)_LOCALE_PO	:= $$(sort $$(wildcard $$($(1)_LOCALE).*.po))
 $(1)_LOCALE_MO	:= $$(patsubst %.po,%.mo,$$($(1)_LOCALE_PO))
 
 LOCALE_PO		+= $$($(1)_LOCALE_PO)
 LOCALE_MO		+= $$($(1)_LOCALE_MO)
 
-locale/$$($(1)_LOCALE).pot: $$($(1)_SRC_FILES)
+$$($(1)_LOCALE).pot: $$($(1)_SRC_FILES)
 	@echo " XGETTEXT   $${$(1)_LOCALE}.pot"
 	@xgettext -d $$($(1)_LOCALE) -o $$@ --from-code=UTF-8 -i -w 128 -s $$($(1)_SRC_FILES)
 
-$$($(1)_LOCALE_PO): locale/$$($(1)_LOCALE).pot
+$$($(1)_LOCALE_PO): $$($(1)_LOCALE).pot
 	@echo " MSGMERGE   $$(@F)"
-	@msgmerge -q -F -U -i -w 128 $$@ $$<
+	@msgmerge -q -F -N -U -i -w 128 $$@ $$<
 	@touch $$@
 
 %.mo: %.po

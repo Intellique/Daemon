@@ -24,12 +24,15 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// bindtextdomain, gettext, textdomain
+#include <libintl.h>
 // printf
 #include <stdio.h>
 
 #include <libstone/value.h>
 
 #include "common.h"
+#include "config.h"
 
 static void stctl_exit(void) __attribute__((destructor));
 static void stctl_init(void) __attribute__((constructor));
@@ -54,8 +57,11 @@ int main(int argc, char ** argv) {
 	if (argc < 1)
 		return 1;
 
+	bindtextdomain("libstone", LOCALE_DIR);
+	textdomain("libstone");
+
 	if (!st_value_hashtable_has_key2(commands, argv[1])) {
-		printf("Error: command not found (%s)\n", argv[1]);
+		printf(gettext("Error: command not found (%s)\n"), argv[1]);
 		return 2;
 	}
 

@@ -1,0 +1,61 @@
+# French translations for stonectl package.
+# Copyright (C) 2014
+# This file is distributed under the same license as the stone package.
+# Guillaume Clercin <gclercin@intellique.com>, 2014
+#
+msgid   ""
+msgstr  "Project-Id-Version: stonectl v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2014-10-22 10:49+0200\n"
+        "PO-Revision-Date: 2014-10-17 11:18+0200\n"
+        "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
+        "Language-Team: translation team stone <stone@intellique.com>\n"
+        "Language: fr\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/stonectl/config.c:75
+#, c-format
+msgid   "stonectl config : basic configuration\n"
+msgstr  "stonectl config : configuration basique\n"
+
+#: src/stonectl/config.c:76 src/stonectl/daemon.c:127 src/stonectl/daemon.c:181 src/stonectl/daemon.c:212
+#, c-format
+msgid   "  -h, --help : show this and exit\n"
+msgstr  "  -h, --help : affiche ceci et quitte\n"
+
+#: src/stonectl/daemon.c:126
+#, c-format
+msgid   "stonectl start : start stoned\n"
+msgstr  "stonectl start : démarre le démon\n"
+
+#: src/stonectl/daemon.c:180
+#, c-format
+msgid   "stonectl status : get status of stoned\n"
+msgstr  "stonectl status : récupère l'état du démon\n"
+
+#: src/stonectl/daemon.c:211
+#, c-format
+msgid   "stonectl stop : stop stoned daemon\n"
+msgstr  "stonectl stop : arrête le démon\n"
+
+#: src/stonectl/hardware.c:68
+#, c-format
+msgid   "stonectl: Found %zd drive\n"
+msgid_plural    "stonectl: Found %zd drives\n"
+msgstr[0]       "stonectl : %zd lecteur trouvé\n"
+msgstr[1]       "stonectl : %zd lecteurs trouvés\n"
+
+#: src/stonectl/hardware.c:126
+#, c-format
+msgid   "stonectl: Found %zd changer\n"
+msgid_plural    "stonectl: Found %zd changers\n"
+msgstr[0]       "stonectl : %zd échangeur trouvé\n"
+msgstr[1]       "stonectl : %zd échangeurs trouvés\n"
+
+#: src/stonectl/main.c:64
+#, c-format
+msgid   "Error: command not found (%s)\n"
+msgstr  "Erreur : commande non trouvée (%s)\n"

@@ -26,6 +26,8 @@
 
 // getopt_long
 #include <getopt.h>
+// gettext
+#include <libintl.h>
 // printf
 #include <stdio.h>
 // waitpid
@@ -121,8 +123,8 @@ int stctl_start_daemon(int argc, char ** argv) {
 				break;
 
 			case OPT_HELP:
-				printf("stonectl start : start stoned\n");
-				printf("  -h, --help : show this and exit\n");
+				printf(gettext("stonectl start : start stoned\n"));
+				printf(gettext("  -h, --help : show this and exit\n"));
 				return 0;
 
 			default:
@@ -175,8 +177,8 @@ int stctl_status_daemon(int argc, char ** argv) {
 				break;
 
 			case OPT_HELP:
-				printf("stonectl status : get status of stoned\n");
-				printf("  -h, --help : show this and exit\n");
+				printf(gettext("stonectl status : get status of stoned\n"));
+				printf(gettext("  -h, --help : show this and exit\n"));
 				return 0;
 
 			default:
@@ -206,8 +208,8 @@ int stctl_stop_daemon(int argc, char ** argv) {
 				break;
 
 			case OPT_HELP:
-				printf("stonectl stop : stop stoned daemon\n");
-				printf("  -h, --help : show this and exit\n");
+				printf(gettext("stonectl stop : stop stoned daemon\n"));
+				printf(gettext("  -h, --help : show this and exit\n"));
 				return 0;
 
 			default:

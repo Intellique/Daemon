@@ -1,4 +1,4 @@
-# libstone
+# French translations for libstone package.
 # Copyright (C) 2014
 # This file is distributed under the same license as the stone package.
 # Guillaume Clercin <gclercin@intellique.com>, 2014

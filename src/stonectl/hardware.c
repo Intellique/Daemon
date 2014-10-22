@@ -27,6 +27,8 @@
 #define _GNU_SOURCE
 // glob, globfree
 #include <glob.h>
+// ngettext
+#include <libintl.h>
 // printf, sscanf, snprintf
 #include <stdio.h>
 // free, malloc
@@ -63,7 +65,7 @@ struct st_value * stctl_detect_hardware() {
 	}
 
 	st_log_write2(st_log_level_info, st_log_type_user_message, "Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
-	printf("Library: Found %zd drive%s\n", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+	printf(ngettext("stonectl: Found %zd drive\n", "stonectl: Found %zd drives\n", gl.gl_pathc), gl.gl_pathc);
 
 	struct st_value * drives = st_value_new_hashtable2();
 
@@ -121,7 +123,7 @@ struct st_value * stctl_detect_hardware() {
 	glob("/sys/class/scsi_changer/*/device", 0, NULL, &gl);
 
 	st_log_write2(st_log_level_info, st_log_type_user_message, "Library: Found %zd changer%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
-	printf("Library: Found %zd changer%s\n", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+	printf(ngettext("stonectl: Found %zd changer\n", "stonectl: Found %zd changers\n", gl.gl_pathc), gl.gl_pathc);
 
 	for (i = 0; i < gl.gl_pathc; i++) {
 		char link[256];

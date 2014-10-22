@@ -28,6 +28,8 @@
 #include <getopt.h>
 // glob, globfree
 #include <glob.h>
+// gettext
+#include <libintl.h>
 // printf
 #include <stdio.h>
 // strchr
@@ -70,8 +72,8 @@ int stctl_config(int argc, char ** argv) {
 				break;
 
 			case OPT_HELP:
-				printf("stonectl config : basic configuration\n");
-				printf("  -h, --help : show this and exit\n");
+				printf(gettext("stonectl config : basic configuration\n"));
+				printf(gettext("  -h, --help : show this and exit\n"));
 				return 0;
 
 			default:

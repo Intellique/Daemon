@@ -8,4 +8,6 @@ STONECTL_DEPEND_LIB		:= lib/libstone.so
 
 STONECTL_CHCKSUM_FILE	:= stonectl.chcksum
 
+STONECTL_LOCALE			:= locale/stonectl
+
 BIN_SYMS				+= STONECTL
