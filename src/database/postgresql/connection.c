@@ -626,7 +626,7 @@ static struct st_media_format * st_database_postgresql_get_media_format(struct s
 	char * c_density_code = NULL;
 	asprintf(&c_density_code, "%d", density_code);
 
-	const char * param[] = { c_density_code, st_media_format_mode_to_string(mode) };
+	const char * param[] = { c_density_code, st_media_format_mode_to_string(mode, false) };
 	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
@@ -985,8 +985,8 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 			st_database_postgresql_prepare(self, query, "UPDATE changer SET status = $1, firmwarerev = $2, isonline = $3, action = $4 WHERE id = $5");
 
 			const char * params[] = {
-				st_changer_status_to_string(changer->status), changer->revision, st_database_postgresql_bool_to_string(changer->is_online),
-				st_changer_action_to_string(changer->next_action), changer_id
+				st_changer_status_to_string(changer->status, false), changer->revision, st_database_postgresql_bool_to_string(changer->is_online),
+				st_changer_action_to_string(changer->next_action, false), changer_id
 			};
 			PGresult * result = PQexecPrepared(self->connect, query, 5, params, NULL, NULL, 0);
 			ExecStatusType status = PQresultStatus(result);
@@ -1007,7 +1007,7 @@ static int st_database_postgresql_sync_changer(struct st_database_connection * c
 			st_database_postgresql_prepare(self, query, "INSERT INTO changer(status, barcode, model, vendor, firmwarerev, serialnumber, wwn, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id");
 
 			const char * param[] = {
-				st_changer_status_to_string(changer->status), changer->barcode ? "true" : "false",
+				st_changer_status_to_string(changer->status, false), changer->barcode ? "true" : "false",
 				changer->model, changer->vendor, changer->revision, changer->serial_number, changer->wwn, hostid,
 			};
 
@@ -1219,7 +1219,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 			char * densitycode = NULL;
 			asprintf(&densitycode, "%u", drive->density_code);
 
-			const char * param[] = { densitycode, st_media_format_mode_to_string(drive->mode), };
+			const char * param[] = { densitycode, st_media_format_mode_to_string(drive->mode, false), };
 			PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
 			ExecStatusType status = PQresultStatus(result);
 
@@ -1247,7 +1247,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 			}
 
 			const char * param[] = {
-				st_drive_status_to_string(drive->status), op_duration, last_clean, drive->revision, driveformat_id, drive_id,
+				st_drive_status_to_string(drive->status, false), op_duration, last_clean, drive->revision, driveformat_id, drive_id,
 			};
 			PGresult * result = PQexecPrepared(self->connect, query, 6, param, NULL, NULL, 0);
 			ExecStatusType status = PQresultStatus(result);
@@ -1284,7 +1284,7 @@ static int st_database_postgresql_sync_drive(struct st_database_connection * con
 			}
 
 			const char * param[] = {
-				st_drive_status_to_string(drive->status), op_duration, last_clean,
+				st_drive_status_to_string(drive->status, false), op_duration, last_clean,
 				drive->model, drive->vendor, drive->revision, drive->serial_number, changer_id, driveformat_id
 			};
 			PGresult * result = PQexecPrepared(self->connect, query, 9, param, NULL, NULL, 0);
@@ -1412,7 +1412,7 @@ static int st_database_postgresql_sync_media(struct st_database_connection * con
 				char * densitycode = NULL;
 				asprintf(&densitycode, "%hhu", media->format->density_code);
 
-				const char * param[] = { densitycode, st_media_format_mode_to_string(media->format->mode) };
+				const char * param[] = { densitycode, st_media_format_mode_to_string(media->format->mode, false) };
 				PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
 				ExecStatusType status = PQresultStatus(result);
 
@@ -1459,9 +1459,9 @@ static int st_database_postgresql_sync_media(struct st_database_connection * con
 		asprintf(&totalwriteerror, "%u", media->nb_write_errors);
 
 		const char * param[] = {
-			*media->uuid ? media->uuid : NULL, media->label, media->medium_serial_number, media->name, st_media_status_to_string(media->status),
+			*media->uuid ? media->uuid : NULL, media->label, media->medium_serial_number, media->name, st_media_status_to_string(media->status, false),
 			buffer_first_used, buffer_use_before, media->last_read > 0 ? buffer_last_read : NULL, media->last_write > 0 ? buffer_last_write : NULL,
-			load, read, write, totalblockread, totalblockwrite, totalreaderror, totalwriteerror, st_media_type_to_string(media->type), nbfiles,
+			load, read, write, totalblockread, totalblockwrite, totalreaderror, totalwriteerror, st_media_type_to_string(media->type, false), nbfiles,
 			blocksize, freeblock, totalblock, mediaformat_id, pool_id
 		};
 		PGresult * result = PQexecPrepared(self->connect, query, 23, param, NULL, NULL, 0);
@@ -1511,10 +1511,10 @@ static int st_database_postgresql_sync_media(struct st_database_connection * con
 		asprintf(&totalwriteerror, "%u", media->nb_write_errors);
 
 		const char * param2[] = {
-			*media->uuid ? media->uuid : NULL, media->name, st_media_status_to_string(media->status),
+			*media->uuid ? media->uuid : NULL, media->name, st_media_status_to_string(media->status, false),
 			media->last_read > 0 ? buffer_last_read : NULL, media->last_write > 0 ? buffer_last_write : NULL,
 			load, read, write, totalblockread, totalblockwrite, totalreaderror, totalwriteerror, nbfiles,
-			blocksize, freeblock, totalblock, pool_id, st_media_type_to_string(media->type), media_id
+			blocksize, freeblock, totalblock, pool_id, st_media_type_to_string(media->type, false), media_id
 		};
 		PGresult * result = PQexecPrepared(self->connect, query, 19, param2, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
@@ -1681,7 +1681,7 @@ static int st_database_postgresql_add_job_record(struct st_database_connection *
 	const char * query = "insert_new_jobrecord";
 	st_database_postgresql_prepare(self, query, "INSERT INTO jobrecord(jobrun, status, level, message, notif) VALUES ($1, $2, $3, $4, $5)");
 
-	const char * param[] = { jobrun_id, st_job_status_to_string(job->status), st_database_postgresql_log_level_to_string(level), message, st_job_report_notif_to_string(notif) };
+	const char * param[] = { jobrun_id, st_job_status_to_string(job->status, false), st_database_postgresql_log_level_to_string(level), message, st_job_report_notif_to_string(notif, false) };
 	PGresult * result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
@@ -1751,7 +1751,7 @@ static int st_database_postgresql_stop_job(struct st_database_connection * conne
 	asprintf(&done, "%f", job->done);
 	asprintf(&exitcode, "%d", job->exit_code);
 
-	const char * param[] = { st_job_status_to_string(job->status), done, exitcode, st_database_postgresql_bool_to_string(job->stopped_by_user), jobrun_id };
+	const char * param[] = { st_job_status_to_string(job->status, false), done, exitcode, st_database_postgresql_bool_to_string(job->stopped_by_user), jobrun_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
@@ -1811,7 +1811,7 @@ static int st_database_postgresql_sync_job(struct st_database_connection * conne
 	query = "update_job";
 	st_database_postgresql_prepare(self, query, "UPDATE job SET status = $1, update = NOW() WHERE id = $2");
 
-	const char * param2[] = { st_job_status_to_string(job->status), job_id };
+	const char * param2[] = { st_job_status_to_string(job->status, false), job_id };
 	result = PQexecPrepared(self->connect, query, 2, param2, NULL, NULL, 0);
 	status = PQresultStatus(result);
 
@@ -1831,7 +1831,7 @@ static int st_database_postgresql_sync_job(struct st_database_connection * conne
 	char * done = NULL;
 	asprintf(&done, "%f", job->done);
 
-	const char * param3[] = { st_job_status_to_string(job->status), done, jobrun_id };
+	const char * param3[] = { st_job_status_to_string(job->status, false), done, jobrun_id };
 	result = PQexecPrepared(self->connect, query, 3, param3, NULL, NULL, 0);
 	status = PQresultStatus(result);
 
@@ -1924,7 +1924,7 @@ static int st_database_postgresql_get_nb_scripts(struct st_database_connection *
 	const char * query = "select_nb_scripts_with_sequence_and_pool";
 	st_database_postgresql_prepare(self, query, "SELECT COUNT(DISTINCT script) FROM scripts ss LEFT JOIN jobtype jt ON ss.jobtype = jt.id AND jt.name = $1 LEFT JOIN pool p ON ss.pool = p.id AND p.uuid = $2 WHERE scripttype = $3");
 
-	const char * param[] = { job_type, pool->uuid, st_script_type_to_string(type) };
+	const char * param[] = { job_type, pool->uuid, st_script_type_to_string(type, false) };
 	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
@@ -1952,7 +1952,7 @@ static char * st_database_postgresql_get_script(struct st_database_connection * 
 	char * seq;
 	asprintf(&seq, "%u", sequence);
 
-	const char * param[] = { job_type, st_script_type_to_string(type), pool->uuid, seq };
+	const char * param[] = { job_type, st_script_type_to_string(type, false), pool->uuid, seq };
 	PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
