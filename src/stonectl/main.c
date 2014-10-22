@@ -51,14 +51,14 @@ static void stctl_init() {
 	st_value_hashtable_put2(commands, "start", st_value_new_custom(stctl_start_daemon, NULL), true);
 	st_value_hashtable_put2(commands, "status", st_value_new_custom(stctl_status_daemon, NULL), true);
 	st_value_hashtable_put2(commands, "stop", st_value_new_custom(stctl_stop_daemon, NULL), true);
+
+	bindtextdomain("stonectl", LOCALE_DIR);
+	textdomain("stonectl");
 }
 
 int main(int argc, char ** argv) {
 	if (argc < 1)
 		return 1;
-
-	bindtextdomain("libstone", LOCALE_DIR);
-	textdomain("libstone");
 
 	if (!st_value_hashtable_has_key2(commands, argv[1])) {
 		printf(gettext("Error: command not found (%s)\n"), argv[1]);
