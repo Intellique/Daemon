@@ -25,6 +25,8 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
+// gettext
+#include <libintl.h>
 // PQclear, PQexec, PQexecPrepared, PQfinish, PQresultStatus
 // PQsetErrorVerbosity, PQtransactionStatus
 #include <postgresql/libpq-fe.h>
@@ -200,7 +202,7 @@ static int st_database_postgresql_cancel_checkpoint(struct st_database_connectio
 		st_database_postgresql_get_error(result, NULL);
 
 	if (status != PGRES_COMMAND_OK)
-		st_log_write2(st_log_level_error, st_log_type_plugin_db, "Postgresql: error while rollbacking a savepoint => %s", PQerrorMessage(self->connect));
+		st_log_write2(st_log_level_error, st_log_type_plugin_db, gettext("PSQL: error while rolling back a savepoint => %s"), PQerrorMessage(self->connect));
 
 	PQclear(result);
 	free(query);
@@ -240,10 +242,10 @@ static int st_database_postgresql_create_checkpoint(struct st_database_connectio
 	PGTransactionStatusType transStatus = PQtransactionStatus(self->connect);
 
 	if (transStatus == PQTRANS_INERROR) {
-		st_log_write2(st_log_level_error, st_log_type_plugin_db, "Postgresql: Can't create checkpoint because there is an error into current transaction");
+		st_log_write2(st_log_level_error, st_log_type_plugin_db, gettext("PSQL: Can't create checkpoint because there is an error into current transaction"));
 		return -1;
 	} else if (transStatus == PQTRANS_IDLE) {
-		st_log_write2(st_log_level_error, st_log_type_plugin_db, "Postgresql: Can't create checkpoint because there is no active transaction");
+		st_log_write2(st_log_level_error, st_log_type_plugin_db, gettext("PSQL: Can't create checkpoint because there is no active transaction"));
 		return -1;
 	}
 
@@ -257,7 +259,7 @@ static int st_database_postgresql_create_checkpoint(struct st_database_connectio
 		st_database_postgresql_get_error(result, NULL);
 
 	if (status != PGRES_COMMAND_OK)
-		st_log_write2(st_log_level_error, st_log_type_plugin_db, "Postgresql: error while creating a savepoint => %s", PQerrorMessage(self->connect));
+		st_log_write2(st_log_level_error, st_log_type_plugin_db, gettext("PSQL: error while creating a savepoint => %s"), PQerrorMessage(self->connect));
 
 	PQclear(result);
 	free(query);
@@ -274,7 +276,7 @@ static int st_database_postgresql_finish_transaction(struct st_database_connecti
 	PGTransactionStatusType status = PQtransactionStatus(self->connect);
 	switch (status) {
 		case PQTRANS_INERROR: {
-			st_log_write2(st_log_level_error, st_log_type_plugin_db, "Postgresql: Rolling back transaction because current transaction is in error");
+			st_log_write2(st_log_level_error, st_log_type_plugin_db, gettext("PSQL: Rolling back transaction because current transaction is in error"));
 
 			PGresult * result = PQexec(self->connect, "ROLL BACK");
 			PQclear(result);
@@ -383,7 +385,7 @@ static char * st_database_postgresql_get_host(struct st_database_connection * co
 	if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
 		st_database_postgresql_get_string_dup(result, 0, 0, &hostid);
 	else
-		st_log_write2(st_log_level_error, st_log_type_plugin_db, "Postgresql: Host not found into database (%s)", name.nodename);
+		st_log_write2(st_log_level_error, st_log_type_plugin_db, gettext("PSQL: Host not found into database (%s)"), name.nodename);
 
 	PQclear(result);
 
@@ -2014,7 +2016,7 @@ static void st_database_postgresql_prepare(struct st_database_postgresql_connect
 		ExecStatusType status = PQresultStatus(prepare);
 		if (status == PGRES_FATAL_ERROR) {
 			st_database_postgresql_get_error(prepare, statement_name);
-			st_log_write2(status == PGRES_COMMAND_OK ? st_log_level_debug : st_log_level_error, st_log_type_plugin_db, "Postgresql: new query prepared (%s) => {%s}, status: %s", statement_name, query, PQresStatus(status));
+			st_log_write2(status == PGRES_COMMAND_OK ? st_log_level_debug : st_log_level_error, st_log_type_plugin_db, gettext("PSQL: new query prepared (%s) => {%s}, status: %s"), statement_name, query, PQresStatus(status));
 		} else
 			st_value_hashtable_put2(self->cached_query, statement_name, st_value_new_string(query), true);
 		PQclear(prepare);

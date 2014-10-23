@@ -24,6 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// gettext
+#include <libintl.h>
 // PQresultErrorField
 #include <postgresql/libpq-fe.h>
 // free
@@ -43,9 +45,9 @@ void st_database_postgresql_get_error(PGresult * result, const char * prepared_q
 
 	char * error = PQresultErrorField(result, PG_DIAG_MESSAGE_PRIMARY);
 	if (prepared_query == NULL)
-		st_log_write2(st_log_level_error, st_log_type_plugin_db, "Postgresql: error {%s} => %s", prepared_query, error);
+		st_log_write2(st_log_level_error, st_log_type_plugin_db, gettext("PSQL: error {%s} => %s"), prepared_query, error);
 	else
-		st_log_write2(st_log_level_error, st_log_type_plugin_db, "Postgresql: error => %s", error);
+		st_log_write2(st_log_level_error, st_log_type_plugin_db, gettext("PSQL: error => %s"), error);
 
 	error = PQresultErrorField(result, PG_DIAG_MESSAGE_DETAIL);
 	if (error != NULL) {
@@ -53,7 +55,7 @@ void st_database_postgresql_get_error(PGresult * result, const char * prepared_q
 		char * ptr;
 		char * line = strtok_r(error, "\n", &ptr);
 		while (line != NULL) {
-			st_log_write2(st_log_level_error, st_log_type_plugin_db, "Postgresql: detail => %s", line);
+			st_log_write2(st_log_level_error, st_log_type_plugin_db, gettext("PSQL: detail => %s"), line);
 			line = strtok_r(NULL, "\n", &ptr);
 		}
 		free(error);
@@ -65,7 +67,7 @@ void st_database_postgresql_get_error(PGresult * result, const char * prepared_q
 		char * ptr;
 		char * line = strtok_r(error, "\n", &ptr);
 		while (line != NULL) {
-			st_log_write2(st_log_level_error, st_log_type_plugin_db, "Postgresql: hint => %s", line);
+			st_log_write2(st_log_level_error, st_log_type_plugin_db, gettext("PSQL: hint => %s"), line);
 			line = strtok_r(NULL, "\n", &ptr);
 		}
 		free(error);

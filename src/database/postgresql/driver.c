@@ -24,6 +24,9 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// bindtextdomain, gettext, textdomain
+#include <libintl.h>
+// NULL
 #include <stddef.h>
 
 #include <libstone/log.h>
@@ -32,6 +35,8 @@
 #include <libdatabase-postgresql.chcksum>
 
 #include "common.h"
+
+#include "config.h"
 
 static struct st_database_config * st_database_postgresql_add(struct st_value * params);
 static struct st_database_config * st_database_postgresql_get_default_config(void);
@@ -79,6 +84,9 @@ static struct st_database_config * st_database_postgresql_get_default_config() {
 }
 
 static void st_database_postgresql_init() {
+	bindtextdomain("libstone-database-postgresql", LOCALE_DIR);
+	textdomain("libstone-database-postgresql");
+
 	st_database_postgresql_driver.configurations = st_value_new_hashtable2();
 	st_database_register_driver(&st_database_postgresql_driver);
 }
