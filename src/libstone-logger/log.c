@@ -25,6 +25,8 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
+// bindtextdomain, gettext, textdomain
+#include <libintl.h>
 // va_end, va_start
 #include <stdarg.h>
 // free
@@ -40,6 +42,8 @@
 
 #include "loader.h"
 #include "log.h"
+
+#include "config.h"
 
 static struct st_value_v1 * lgr_drivers = NULL;
 static struct st_value_v1 * lgr_messages = NULL;
@@ -62,6 +66,9 @@ static void lgr_log_free_module(void * module) {
 }
 
 static void lgr_log_init() {
+	bindtextdomain("libstone-logger", LOCALE_DIR);
+	textdomain("libstone-logger");
+
 	lgr_drivers = st_value_new_hashtable(st_string_compute_hash);
 	lgr_messages = st_value_new_linked_list();
 	lgr_modules = st_value_new_linked_list();
@@ -143,7 +150,7 @@ void lgr_log_write2_v1(enum st_log_level level, enum st_log_type type, const cha
 	vasprintf(&str_message, format, va);
 	va_end(va);
 
-	struct st_value_v1 * message = st_value_pack("{sssssiss}", "level", st_log_level_to_string(level), "type", st_log_type_to_string(type), "timestamp", timestamp, "message", str_message);
+	struct st_value_v1 * message = st_value_pack("{sssssiss}", "level", st_log_level_to_string(level, false), "type", st_log_type_to_string(type, false), "timestamp", timestamp, "message", str_message);
 
 	free(str_message);
 

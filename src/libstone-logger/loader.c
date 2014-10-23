@@ -25,6 +25,8 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
+// gettext
+#include <libintl.h>
 // bool
 #include <stdbool.h>
 // pthread_mutex_lock, pthread_mutex_unlock,
@@ -66,7 +68,7 @@ void * lgr_loader_load(const char * module, const char * name) {
 
 static void * lgr_loader_load_file(const char * filename) {
 	if (access(filename, R_OK | X_OK)) {
-		lgr_log_write2(st_log_level_debug, st_log_type_logger, "Loader: access to file %s failed because %m", filename);
+		lgr_log_write2(st_log_level_debug, st_log_type_logger, gettext("Loader: access to file %s failed because %m"), filename);
 		return NULL;
 	}
 
@@ -78,7 +80,7 @@ static void * lgr_loader_load_file(const char * filename) {
 
 	void * cookie = dlopen(filename, RTLD_NOW);
 	if (cookie == NULL) {
-		lgr_log_write2(st_log_level_debug, st_log_type_logger, "Loader: failed to load '%s' because %s", filename, dlerror());
+		lgr_log_write2(st_log_level_debug, st_log_type_logger, gettext("Loader: failed to load '%s' because %s"), filename, dlerror());
 	} else if (!lgr_loader_loaded) {
 		dlclose(cookie);
 		cookie = NULL;

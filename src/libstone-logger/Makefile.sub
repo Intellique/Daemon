@@ -10,4 +10,6 @@ LIBSTONELOGGER_DEPEND_LIB	:= src/libstone-logger/libstone-logger.map lib/libston
 
 LIBSTONELOGGER_CHCKSUM_FILE	:= libstone-logger.chcksum
 
+LIBSTONELOGGER_LOCALE		:= locale/libstone-logger
+
 BIN_SYMS					+= LIBSTONELOGGER
