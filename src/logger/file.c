@@ -26,6 +26,8 @@
 
 // open
 #include <fcntl.h>
+// gettext
+#include <libintl.h>
 // free, malloc
 #include <malloc.h>
 // dprintf
@@ -123,7 +125,7 @@ static void file_module_check_logrotate(struct logger_log_file_private * self) {
 		self->fd = open(self->path, O_WRONLY | O_APPEND | O_CREAT, 0640);
 		fstat(self->fd, &self->current);
 
-		lgr_log_write2(st_log_level_notice, st_log_type_plugin_log, "Log: file: logrotate detected");
+		lgr_log_write2(st_log_level_notice, st_log_type_plugin_log, gettext("Log: file: logrotate detected"));
 	}
 }
 

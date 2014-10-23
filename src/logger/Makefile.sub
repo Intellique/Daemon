@@ -8,4 +8,6 @@ LOGGER_DEPEND_LIB	:= lib/libstone-logger.so
 
 LOGGER_CHCKSUM_FILE	:= logger.chcksum
 
+LOGGER_LOCALE		:= locale/stone-logger
+
 BIN_SYMS			+= LOGGER

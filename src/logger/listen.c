@@ -24,6 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// gettext
+#include <libintl.h>
 // NULL
 #include <stddef.h>
 
@@ -50,13 +52,13 @@ static void lgr_socket_accept(int fd_server __attribute__((unused)), int fd_clie
 	st_poll_register(fd_client, POLLIN | POLLHUP, lgr_socket_message, NULL, NULL);
 	lgr_nb_clients++;
 
-	lgr_log_write2(st_log_level_debug, st_log_type_logger, "New connection...");
+	lgr_log_write2(st_log_level_debug, st_log_type_logger, gettext("New connection..."));
 }
 
 static void lgr_socket_message(int fd, short event, void * data __attribute__((unused))) {
 	if (event & POLLHUP) {
 		lgr_nb_clients--;
-		lgr_log_write2(st_log_level_debug, st_log_type_logger, "Connection closed");
+		lgr_log_write2(st_log_level_debug, st_log_type_logger, gettext("Connection closed"));
 		return;
 	}
 
