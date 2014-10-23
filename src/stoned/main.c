@@ -24,6 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// bindtextdomain, gettext, textdomain
+#include <libintl.h>
 // getopt_long
 #include <getopt.h>
 // bool
@@ -54,9 +56,12 @@ static bool std_daemon_run = true;
 static void std_show_help(void);
 
 int main(int argc, char ** argv) {
-	st_log_write2(st_log_level_notice, st_log_type_daemon, "stone, version: " STONE_VERSION ", build: " __DATE__ " " __TIME__);
-	st_log_write2(st_log_level_notice, st_log_type_daemon, "stone (pid: %d, sid: %d)", getpid(), getsid(0));
-	st_log_write2(st_log_level_debug, st_log_type_daemon, "Checksum: " STONED_SRCSUM ", last commit: " STONE_GIT_COMMIT);
+	bindtextdomain("stoned", LOCALE_DIR);
+	textdomain("stoned");
+
+	st_log_write2(st_log_level_notice, st_log_type_daemon, gettext("stone, version: %s, build: %s %s"), STONE_VERSION, __DATE__, __TIME__);
+	st_log_write2(st_log_level_notice, st_log_type_daemon, gettext("stone (pid: %d, sid: %d)"), getpid(), getsid(0));
+	st_log_write2(st_log_level_debug, st_log_type_daemon, gettext("Checksum: %s, last commit: %s"), STONED_SRCSUM, STONE_GIT_COMMIT);
 
 	enum {
 		OPT_CONFIG   = 'c',
@@ -88,8 +93,8 @@ int main(int argc, char ** argv) {
 				break;
 
 			case OPT_CONFIG:
+				st_log_write2(st_log_level_notice, st_log_type_daemon, gettext("Using configuration file: '%s' instead of '%s'"), optarg, config_file);
 				config_file = optarg;
-				st_log_write2(st_log_level_notice, st_log_type_daemon, "Using configuration file: '%s'", optarg);
 				break;
 
 			case OPT_HELP:
@@ -102,8 +107,8 @@ int main(int argc, char ** argv) {
 				break;
 
 			case OPT_VERSION:
-				printf("STone, version: " STONE_VERSION ", build: " __DATE__ " " __TIME__ "\n");
-				printf("Checksum: " STONED_SRCSUM ", last commit: " STONE_GIT_COMMIT "\n");
+				printf(gettext("stone, version: %s, build: %s %s\n"), STONE_VERSION, __DATE__, __TIME__);
+				printf(gettext("Checksum: %s, last commit: %s\n"), STONED_SRCSUM, STONE_GIT_COMMIT);
 				return 0;
 
 			default:
@@ -111,7 +116,7 @@ int main(int argc, char ** argv) {
 		}
 	} while (opt > -1);
 
-	st_log_write2(st_log_level_debug, st_log_type_daemon, "Parsing option: ok");
+	st_log_write2(st_log_level_debug, st_log_type_daemon, gettext("Parsing option: ok"));
 
 	struct st_value * config = st_json_parse_file(config_file);
 	if (config == NULL)
@@ -135,7 +140,7 @@ int main(int argc, char ** argv) {
 	if (admin_config != NULL && admin_config->type == st_value_hashtable)
 		std_admin_config(admin_config);
 	else
-		st_log_write2(st_log_level_warning, st_log_type_daemon, "No administration configured");
+		st_log_write2(st_log_level_warning, st_log_type_daemon, gettext("No administration configured"));
 
 	struct st_value * db_configs = st_value_hashtable_get2(config, "database", false, false);
 	if (db_configs != NULL)
@@ -166,7 +171,7 @@ int main(int argc, char ** argv) {
 
 	st_value_free(config);
 
-	st_log_write2(st_log_level_notice, st_log_type_daemon, "Daemon will shut down");
+	st_log_write2(st_log_level_notice, st_log_type_daemon, gettext("Daemon will shut down"));
 
 	std_device_stop();
 
@@ -177,11 +182,11 @@ int main(int argc, char ** argv) {
 }
 
 static void std_show_help(void) {
-	printf("STone, version: " STONE_VERSION ", build: " __DATE__ " " __TIME__ "\n");
-	printf("    --config,   -c : Read this config file instead of \"" DAEMON_CONFIG_FILE "\"\n");
-	printf("    --help,     -h : Show this and exit\n");
-	printf("    --pid-file, -p : Write the pid of daemon into instead of \"" DAEMON_PID_FILE "\"\n");
-	printf("    --version,  -V : Show the version of STone then exit\n");
+	printf(gettext("stone, version: %s, build: %s %s\n"), STONE_VERSION, __DATE__, __TIME__);
+	printf(gettext("    --config,   -c : Read this config file instead of \"%s\"\n"), DAEMON_CONFIG_FILE);
+	printf(gettext("    --help,     -h : Show this and exit\n"));
+	printf(gettext("    --pid-file, -p : Write the pid of daemon into instead of \"%s\"\n"), DAEMON_PID_FILE);
+	printf(gettext("    --version,  -V : Show the version of STone then exit\n"));
 }
 
 void std_shutdown() {

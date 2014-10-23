@@ -1,0 +1,91 @@
+# French translations for stoned package.
+# Copyright (C) 2014
+# This file is distributed under the same license as the stone package.
+# Guillaume Clercin <gclercin@intellique.com>, 2014
+msgid   ""
+msgstr  "Project-Id-Version: stoned v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2014-10-23 10:26+0200\n"
+        "PO-Revision-Date: 2014-10-17 11:18+0200\n"
+        "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
+        "Language-Team: translation team stone <stone@intellique.com>\n"
+        "Language: fr\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/stoned/admin.c:122
+msgid   "New connection 'admin'"
+msgstr  "Nouvelle connexion 'admin'"
+
+#: src/stoned/device.c:205
+#, c-format
+msgid   "Restart changer: %s"
+msgstr  "Redémarrage de l'échangeur : %s"
+
+#: src/stoned/logger.c:74
+msgid   "Restart logger"
+msgstr  "Redémarrage de l'enregistreur"
+
+#: src/stoned/main.c:62
+#, c-format
+msgid   "stone, version: %s, build: %s %s"
+msgstr  "stone, version : %s, build : %s %s"
+
+#: src/stoned/main.c:63
+#, c-format
+msgid   "stone (pid: %d, sid: %d)"
+msgstr  "stone (pid : %d, sid : %d)"
+
+#: src/stoned/main.c:64
+#, c-format
+msgid   "Checksum: %s, last commit: %s"
+msgstr  "Empreinte : %s, dernier commit : %s"
+
+#: src/stoned/main.c:96
+#, c-format
+msgid   "Using configuration file: '%s' instead of '%s'"
+msgstr  "Utilisation du fichier de configuration : '%s' au lieu de '%s'"
+
+#: src/stoned/main.c:110 src/stoned/main.c:185
+#, c-format
+msgid   "stone, version: %s, build: %s %s\n"
+msgstr  "stone, version : %s, build : %s %s\n"
+
+#: src/stoned/main.c:111
+#, c-format
+msgid   "Checksum: %s, last commit: %s\n"
+msgstr  "Empreinte : %s, dernier commit : %s\n"
+
+#: src/stoned/main.c:119
+msgid   "Parsing option: ok"
+msgstr  "L'analyse des options : ok"
+
+#: src/stoned/main.c:143
+msgid   "No administration configured"
+msgstr  "Pas d'administration configuré"
+
+#: src/stoned/main.c:174
+msgid   "Daemon will shut down"
+msgstr  "Le démon va s'arrêter"
+
+#: src/stoned/main.c:186
+#, c-format
+msgid   "    --config,   -c : Read this config file instead of \"%s\"\n"
+msgstr  "    --config,   -c : Li ce fichier de configuration à la place de \"%s\"\n"
+
+#: src/stoned/main.c:187
+#, c-format
+msgid   "    --help,     -h : Show this and exit\n"
+msgstr  "    --help,     -h : Affiche ceci et quitte\n"
+
+#: src/stoned/main.c:188
+#, c-format
+msgid   "    --pid-file, -p : Write the pid of daemon into instead of \"%s\"\n"
+msgstr  "    --pid-file, -p : Écrit le pid du démon dedans au lieu de \"%s\"\n"
+
+#: src/stoned/main.c:189
+#, c-format
+msgid   "    --version,  -V : Show the version of STone then exit\n"
+msgstr  "    --version,  -V : Affiche la version de STone puis quitte\n"

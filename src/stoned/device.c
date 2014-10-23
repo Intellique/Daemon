@@ -25,6 +25,8 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
+// gettext
+#include <libintl.h>
 // asprintf
 #include <stdio.h>
 // free, malloc
@@ -200,7 +202,7 @@ static void std_device_exited(int fd __attribute__((unused)), short event, void 
 	st_process_wait(&dev->process, 1);
 	st_process_free(&dev->process, 1);
 
-	st_log_write2(st_log_level_critical, st_log_type_daemon, "Restart changer: %s", dev->process_name);
+	st_log_write2(st_log_level_critical, st_log_type_daemon, gettext("Restart changer: %s"), dev->process_name);
 
 	st_process_new(&dev->process, dev->process_name, NULL, 0);
 	dev->fd_in = st_process_pipe_to(&dev->process);

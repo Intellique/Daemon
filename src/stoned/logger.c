@@ -24,6 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// gettext
+#include <libintl.h>
 // free
 #include <stdlib.h>
 // strlen
@@ -69,7 +71,7 @@ static void std_logger_exited(int fd __attribute__((unused)), short event, void 
 	st_process_wait(&logger, 1);
 	st_process_free(&logger, 1);
 
-	st_log_write2(st_log_level_critical, st_log_type_daemon, "Restart logger");
+	st_log_write2(st_log_level_critical, st_log_type_daemon, gettext("Restart logger"));
 
 	std_logger_start(NULL);
 }

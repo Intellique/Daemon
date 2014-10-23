@@ -24,6 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// gettext
+#include <libintl.h>
 // free, malloc
 #include <stdlib.h>
 // close
@@ -117,7 +119,7 @@ static void std_admin_exit() {
 }
 
 static void std_admin_new_connection(int fd_server __attribute__((unused)), int fd_client, struct st_value * client __attribute__((unused))) {
-	st_log_write2(st_log_level_notice, st_log_type_daemon, "New connection 'admin'");
+	st_log_write2(st_log_level_notice, st_log_type_daemon, gettext("New connection 'admin'"));
 
 	struct std_admin_client * new_client = malloc(sizeof(struct std_admin_client));
 	new_client->logged = false;

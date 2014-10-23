@@ -8,4 +8,6 @@ STONED_DEPEND_LIB	:= lib/libstone.so
 
 STONED_CHCKSUM_FILE	:= stoned.chcksum
 
+STONED_LOCALE		:= locale/stoned
+
 BIN_SYMS			+= STONED
