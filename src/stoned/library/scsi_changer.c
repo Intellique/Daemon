@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 16 Jun 2014 13:30:26 +0200                            *
+*  Last modified: Mon, 27 Oct 2014 16:58:49 +0100                            *
 \****************************************************************************/
 
 // open
@@ -346,7 +346,7 @@ void st_scsi_changer_setup(struct st_changer * changer, struct st_database_conne
 	struct st_scsi_changer_private * ch = malloc(sizeof(struct st_scsi_changer_private));
 	ch->fd = fd;
 	ch->current_action = st_changer_action_none;
-	ch->lock = st_ressource_new(false);
+	ch->lock = st_ressource_new(true);
 
 	st_scsi_loader_status_new(fd, changer, &ch->transport_address);
 
