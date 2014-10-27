@@ -147,17 +147,21 @@ static void file_module_free(struct lgr_log_module * module) {
 static void file_module_write(struct lgr_log_module * module, struct st_value * message) {
 	struct logger_log_file_private * self = module->data;
 
-	char * level = NULL, * stype = NULL, * smessage = NULL;
+	char * slevel = NULL, * stype = NULL, * smessage = NULL;
 	long long int iTimestamp;
 
-	int ret = st_value_unpack(message, "{sssssiss}", "level", &level, "type", &stype, "timestamp", &iTimestamp, "message", &smessage);
+	int ret = st_value_unpack(message, "{sssssiss}", "level", &slevel, "type", &stype, "timestamp", &iTimestamp, "message", &smessage);
+
+	enum st_log_level level = st_log_level_unknown;
+	if (ret == 4)
+		level = st_log_string_to_level(slevel);
 
 	enum st_log_type type = st_log_type_unknown;
 	if (ret == 4)
 		type = st_log_string_to_type(stype);
 
-	if (ret < 4 || type == st_log_type_unknown) {
-		free(level);
+	if (ret < 4 || level == st_log_level_unknown || type == st_log_type_unknown) {
+		free(slevel);
 		free(stype);
 		free(smessage);
 		return;
@@ -167,11 +171,11 @@ static void file_module_write(struct lgr_log_module * module, struct st_value * 
 
 	char strtime[32];
 	time_t timestamp = iTimestamp;
-	st_time_convert(&timestamp, "%F %T", strtime, 32);
+	st_time_convert(&timestamp, "%c", strtime, 32);
 
-	dprintf(self->fd, "[L:%-9s | T:%-15s | @%s]: %s\n", level, stype, strtime, smessage);
+	dprintf(self->fd, "[L:%-*s | T:%-*s | @%s]: %s\n", st_log_level_max_length(), st_log_level_to_string(level, true), st_log_type_max_length(), st_log_type_to_string(type, true), strtime, smessage);
 
-	free(level);
+	free(slevel);
 	free(stype);
 	free(smessage);
 }

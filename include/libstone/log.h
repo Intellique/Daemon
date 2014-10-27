@@ -151,6 +151,8 @@ enum st_log_type {
 
 void st_log_configure(struct st_value * config, enum st_log_type default_type);
 
+unsigned int st_log_level_max_length(void);
+
 /**
  * \brief Convert an enumeration to a statically allocated string
  *
@@ -177,6 +179,8 @@ enum st_log_level st_log_string_to_level(const char * string) __attribute__((non
  * \return an enumeration
  */
 enum st_log_type st_log_string_to_type(const char * string) __attribute__((nonnull));
+
+unsigned int st_log_type_max_length(void);
 
 /**
  * \brief Convert an enum st_log_type to a statically allocated c string

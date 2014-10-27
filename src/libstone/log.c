@@ -87,6 +87,7 @@ static struct st_log_level2 {
 
 	[st_log_level_unknown]    = { 0, gettext_noop("Unknown level"), st_log_level_unknown },
 };
+static unsigned int st_log_level_max = 0;
 
 static struct st_log_type2 {
 	unsigned long long hash;
@@ -108,6 +109,7 @@ static struct st_log_type2 {
 
 	[st_log_type_unknown]         = { 0, gettext_noop("Unknown type"), st_log_type_unknown },
 };
+static unsigned int st_log_type_max = 0;
 
 
 __asm__(".symver st_log_configure_v1, st_log_configure@@LIBSTONE_1.2");
@@ -136,6 +138,28 @@ static void st_log_init() {
 	textdomain("libstone");
 
 	st_log_messages = st_value_new_linked_list();
+
+	unsigned int i;
+	for (i = 0; i < sizeof(st_log_levels) / sizeof(*st_log_levels); i++) {
+		st_log_levels[i].hash = st_string_compute_hash2(st_log_levels[i].name);
+
+		unsigned int length = strlen(gettext(st_log_levels[i].name));
+		if (st_log_level_max < length)
+			st_log_level_max = length;
+	}
+
+	for (i = 0; i < sizeof(st_log_types) / sizeof(*st_log_types); i++) {
+		st_log_types[i].hash = st_string_compute_hash2(st_log_types[i].name);
+
+		unsigned int length = strlen(gettext(st_log_types[i].name));
+		if (st_log_type_max < length)
+			st_log_type_max = length;
+	}
+}
+
+__asm__(".symver st_log_level_max_length_v1, st_log_level_max_length@@LIBSTONE_1.2");
+unsigned int st_log_level_max_length_v1() {
+	return st_log_level_max;
 }
 
 __asm__(".symver st_log_level_to_string_v1, st_log_level_to_string@@LIBSTONE_1.2");
@@ -258,6 +282,11 @@ static void st_log_send_message(void * arg) {
 
 	st_value_free(messages);
 	st_value_free(config);
+}
+
+__asm__(".symver st_log_type_max_length_v1, st_log_type_max_length@@LIBSTONE_1.2");
+unsigned int st_log_type_max_length_v1() {
+	return st_log_type_max;
 }
 
 __asm__(".symver st_log_type_to_string_v1, st_log_type_to_string@@LIBSTONE_1.2");
