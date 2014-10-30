@@ -9,7 +9,7 @@ use POSIX q/nice/;
 use Sys::CPU q/cpu_count/;
 
 my $nb_cpu     = cpu_count();
-my $output_dir = '/var/www/stone/cache/movies/proxy';
+my $output_dir = '/usr/share/storiqone/cache/movies/proxy';
 
 my $param = shift;
 
