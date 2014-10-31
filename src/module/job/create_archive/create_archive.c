@@ -224,6 +224,7 @@ static void st_job_create_archive_init(void) {
 
 static void st_job_create_archive_new_job(struct st_job * job) {
 	struct st_job_create_archive_private * self = malloc(sizeof(struct st_job_create_archive_private));
+	bzero(self, sizeof(struct st_job_create_archive_private));
 	job->db_connect = job->db_config->ops->connect(job->db_config);
 
 	self->nb_selected_paths = 0;
