@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 07 Feb 2014 10:37:40 +0100                            *
+*  Last modified: Fri, 31 Oct 2014 10:48:07 +0100                            *
 \****************************************************************************/
 
 // free
@@ -138,6 +138,11 @@ int st_job_check_archive_thorough_mode(struct st_job_check_archive_private * sel
 		self->vol_checksums = (char **) st_hashtable_keys(vol->digests, NULL);
 
 		struct st_format_reader * reader = drive->ops->get_reader(drive, vol->media_position, st_job_check_archive_thorough_mode_add_filter, self);
+		if (reader == NULL) {
+			st_job_add_record(self->job->db_connect, st_log_level_error, self->job, st_job_record_notif_important, "Error while opening drive because %m");
+			goto end_of_work;
+		}
+
 		ssize_t block_size = reader->ops->get_block_size(reader);
 
 		unsigned int j;
