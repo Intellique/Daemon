@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-10-21 22:18+0200\n"
+        "POT-Creation-Date: 2014-11-01 12:08+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -436,51 +436,51 @@ msgstr  "Attention"
 msgid   "Unknown level"
 msgstr  "Niveau inconnus"
 
-#: src/libstone/log.c:96
+#: src/libstone/log.c:97
 msgid   "Changer"
 msgstr  "Échangeur"
 
-#: src/libstone/log.c:97
+#: src/libstone/log.c:98
 msgid   "Daemon"
 msgstr  "Démon"
 
-#: src/libstone/log.c:98
+#: src/libstone/log.c:99
 msgid   "Drive"
 msgstr  "Lecteur"
 
-#: src/libstone/log.c:99
+#: src/libstone/log.c:100
 msgid   "Job"
 msgstr  "Tâche"
 
-#: src/libstone/log.c:100
+#: src/libstone/log.c:101
 msgid   "Logger"
 msgstr  "Enregistreur"
 
-#: src/libstone/log.c:101
+#: src/libstone/log.c:102
 msgid   "Plugin Checksum"
 msgstr  "Greffon de somme de contrôle"
 
-#: src/libstone/log.c:102
+#: src/libstone/log.c:103
 msgid   "Plugin Database"
 msgstr  "Greffon de la base de données"
 
-#: src/libstone/log.c:103
+#: src/libstone/log.c:104
 msgid   "Plugin Log"
 msgstr  "Greffon d'enregistrement"
 
-#: src/libstone/log.c:104
+#: src/libstone/log.c:105
 msgid   "Scheduler"
 msgstr  "Ordonnanceur"
 
-#: src/libstone/log.c:106
+#: src/libstone/log.c:107
 msgid   "User Interface"
 msgstr  "Interface utilisateur"
 
-#: src/libstone/log.c:107
+#: src/libstone/log.c:108
 msgid   "User Message"
 msgstr  "Message utilisateur"
 
-#: src/libstone/log.c:109
+#: src/libstone/log.c:110
 msgid   "Unknown type"
 msgstr  "Type inconnu"
 
@@ -579,7 +579,8 @@ msgstr  "st_thread_pool_run2 : pas assez de mémoire pour démarrer un nouveau f
 #: src/libstone/thread_pool.c:229
 #, c-format
 msgid   "st_thread_pool_work: starting new thread #%ld (pid: %d) to function: %p with parameter: %p"
-msgstr  "st_thread_pool_work : démarre un nouveau fil d'exécution #%ld (pid : %d) vers la fonction : %p avec comme paramètre : %p"
+msgstr  "st_thread_pool_work : démarre un nouveau fil d'exécution #%ld (pid : %d) vers la fonction : %p avec comme paramètre : "
+        "%p"
 
 #: src/libstone/thread_pool.c:249
 #, c-format

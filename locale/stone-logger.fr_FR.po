@@ -5,7 +5,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: stone-logger v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-10-23 18:50+0200\n"
+        "POT-Creation-Date: 2014-11-01 12:08+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -15,41 +15,41 @@ msgstr  "Project-Id-Version: stone-logger v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/logger/main.c:83
-#, c-format
-msgid   "Checksum: %s, last commit: %s"
-msgstr  "Empreinte : %s, dernier commit : %s"
-
-#: src/logger/listen.c:61
-msgid   "Connection closed"
-msgstr  "Connexion fermé"
-
 #: src/logger/file.c:128
 msgid   "Log: file: logrotate detected"
 msgstr  "Log : file : logrotate détecté"
-
-#: src/logger/main.c:111
-#, c-format
-msgid   "Logger process (pid: %d) will now exit"
-msgstr  "Processus logger (pid : %d) va maintenant quitter"
-
-#: src/logger/main.c:98
-msgid   "Modules loaded"
-msgstr  "Modules chargés"
 
 #: src/logger/listen.c:55
 msgid   "New connection..."
 msgstr  "Nouvelle connexion..."
 
-#: src/logger/main.c:87
-msgid   "No configuration received from daemon, will quit"
-msgstr  "Pas de configuration reçu du démon, va maintenant quitter"
+#: src/logger/listen.c:61
+msgid   "Connection closed"
+msgstr  "Connexion fermé"
+
+#: src/logger/main.c:58
+msgid   "Stoned has hang up"
+msgstr  "Le démon a inopinément"
 
 #: src/logger/main.c:82
 #, c-format
 msgid   "Starting logger process (pid: %d, ppid: %d, sid: %d)"
 msgstr  "Démarrage du processus logger (pid : %d, ppid : %d : sid : %d)"
 
-#: src/logger/main.c:58
-msgid   "Stoned has hang up"
-msgstr  "Le démon a inopinément"
+#: src/logger/main.c:83
+#, c-format
+msgid   "Checksum: %s, last commit: %s"
+msgstr  "Empreinte : %s, dernier commit : %s"
+
+#: src/logger/main.c:87
+msgid   "No configuration received from daemon, will quit"
+msgstr  "Pas de configuration reçu du démon, va maintenant quitter"
+
+#: src/logger/main.c:102
+msgid   "Modules loaded"
+msgstr  "Modules chargés"
+
+#: src/logger/main.c:115
+#, c-format
+msgid   "Logger process (pid: %d) will now exit"
+msgstr  "Processus logger (pid : %d) va maintenant quitter"

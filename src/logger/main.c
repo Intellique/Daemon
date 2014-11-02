@@ -90,6 +90,10 @@ int main() {
 
 	st_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
 
+	bool c = false;
+	while (!c)
+		sleep(2);
+
 	struct st_value * module;
 	struct st_value * socket;
 	st_value_unpack(config, "{soso}", "modules", &module, "socket", &socket);

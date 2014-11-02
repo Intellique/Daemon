@@ -50,16 +50,16 @@ struct st_value * stj_script_run_v1(struct st_database_connection * db_connect, 
 	for (i = 0; i < nb_scripts && status == 0; i++) {
 		char * path = db_connect->ops->get_script(db_connect, job->type, i, type, pool);
 		if (path == NULL) {
-			st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "script has not found into database, %s, %d/%d", st_script_type_to_string(type), i, nb_scripts);
+			st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "script has not found into database, %s, %d/%d", st_script_type_to_string(type, false), i, nb_scripts);
 			status = 1;
 			break;
 		}
 
-		st_job_add_record(job, db_connect, st_log_level_debug, st_job_record_notif_normal, "running %s script: %s", st_script_type_to_string(type), path);
+		st_job_add_record(job, db_connect, st_log_level_debug, st_job_record_notif_normal, "running %s script: %s", st_script_type_to_string(type, false), path);
 
 		// run command & wait result
 		struct st_process process;
-		const char * params[] = { st_script_type_to_string(type) };
+		const char * params[] = { st_script_type_to_string(type, false) };
 		st_process_new(&process, path, params, 1);
 
 		int fd_write = st_process_pipe_to(&process);
