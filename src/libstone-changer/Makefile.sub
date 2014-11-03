@@ -10,4 +10,6 @@ LIBSTONECHANGER_DEPEND_LIB		:= src/libstone-changer/libstone-changer.map lib/lib
 
 LIBSTONECHANGER_CHCKSUM_FILE	:= libstone-changer.chcksum
 
+LIBSTONECHANGER_LOCALE			:= locale/libstone-changer
+
 BIN_SYMS						+= LIBSTONECHANGER

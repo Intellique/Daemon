@@ -24,6 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// gettext
+#include <libintl.h>
 // free, malloc
 #include <stdlib.h>
 // bzero
@@ -208,13 +210,13 @@ static void stchgr_socket_command_load(struct stchgr_peer * peer, struct st_valu
 		return;
 	}
 
-	st_log_write(st_log_level_notice, "[%s | %s]: loading media '%s' from slot #%u to drive #%d", changer->vendor, changer->model, from->volume_name, from->index, to->index);
+	st_log_write(st_log_level_notice, gettext("[%s | %s]: loading media '%s' from slot #%u to drive #%d"), changer->vendor, changer->model, from->volume_name, from->index, to->index);
 
 	int failed = changer->ops->load(from, to->drive, stchgr_db);
 	if (failed != 0)
-		st_log_write(st_log_level_error, "[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = %d", changer->vendor, changer->model, from->volume_name, from->index, to->index, failed);
+		st_log_write(st_log_level_error, gettext("[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = %d"), changer->vendor, changer->model, from->volume_name, from->index, to->index, failed);
 	else
-		st_log_write(st_log_level_notice, "[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = OK", changer->vendor, changer->model, from->volume_name, from->index, to->index);
+		st_log_write(st_log_level_notice, gettext("[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = OK"), changer->vendor, changer->model, from->volume_name, from->index, to->index);
 
 	struct st_value * response = st_value_pack("{sb}", "status", failed != 0 ? false : true);
 	st_json_encode_to_fd(response, fd, true);
@@ -347,13 +349,13 @@ static void stchgr_socket_command_unload(struct stchgr_peer * peer, struct st_va
 		return;
 	}
 
-	st_log_write(st_log_level_notice, "[%s | %s]: unloading media '%s' from drive #%d", changer->vendor, changer->model, from->volume_name, from->drive->index);
+	st_log_write(st_log_level_notice, gettext("[%s | %s]: unloading media '%s' from drive #%d"), changer->vendor, changer->model, from->volume_name, from->drive->index);
 
 	int failed = changer->ops->unload(from->drive, stchgr_db);
 	if (failed != 0)
-		st_log_write(st_log_level_error, "[%s | %s]: unloading media '%s' from drive #%d finished with code = %d", changer->vendor, changer->model, from->volume_name, from->drive->index, failed);
+		st_log_write(st_log_level_error, gettext("[%s | %s]: unloading media '%s' from drive #%d finished with code = %d"), changer->vendor, changer->model, from->volume_name, from->drive->index, failed);
 	else
-		st_log_write(st_log_level_notice, "[%s | %s]: loading media '%s' from drive #%d finished with code = OK", changer->vendor, changer->model, from->volume_name, from->drive->index);
+		st_log_write(st_log_level_notice, gettext("[%s | %s]: loading media '%s' from drive #%d finished with code = OK"), changer->vendor, changer->model, from->volume_name, from->drive->index);
 
 	struct st_value * response = st_value_pack("{sb}", "status", failed != 0 ? false : true);
 	st_json_encode_to_fd(response, fd, true);

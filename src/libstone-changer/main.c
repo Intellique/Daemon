@@ -24,6 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// bindtextdomain, gettext, textdomain
+#include <libintl.h>
 // bool
 #include <stdbool.h>
 // free
@@ -42,6 +44,8 @@
 #include "listen.h"
 #include "media.h"
 
+#include "config.h"
+
 static bool stop = false;
 
 static void stchgr_daemon_hungup(int fd, short event, void * data);
@@ -49,7 +53,7 @@ static void stchgr_daemon_request(int fd, short event, void * data);
 
 
 static void stchgr_daemon_hungup(int fd __attribute__((unused)), short event __attribute__((unused)), void * data __attribute__((unused))) {
-	st_log_write(st_log_level_alert, "Stoned has hang up");
+	st_log_write(st_log_level_alert, gettext("Stoned has hang up"));
 	stop = true;
 }
 
@@ -75,11 +79,14 @@ static void stchgr_daemon_request(int fd, short event __attribute__((unused)), v
 }
 
 int main() {
+	bindtextdomain("libstone-changer", LOCALE_DIR);
+	textdomain("libstone-changer");
+
 	struct st_changer_driver * driver = stchgr_changer_get();
 	if (driver == NULL)
 		return 1;
 
-	st_log_write(st_log_level_info, "Starting changer (type: %s)", driver->name);
+	st_log_write(st_log_level_info, gettext("Starting changer (type: %s)"), driver->name);
 
 	struct st_value * config = st_json_parse_fd(0, 5000);
 	if (config == NULL)
@@ -110,7 +117,7 @@ int main() {
 	if (db_connect == NULL)
 		return 4;
 
-	st_log_write(st_log_level_info, "Initialize changer (type: %s)", driver->name);
+	st_log_write(st_log_level_info, gettext("Initialize changer (type: %s)"), driver->name);
 	struct st_changer * changer = driver->device;
 	int failed = changer->ops->init(changer_config, db_connect);
 	if (failed != 0)
@@ -140,7 +147,7 @@ int main() {
 		}
 	}
 
-	st_log_write(st_log_level_info, "Changer (type: %s) will stop", driver->name);
+	st_log_write(st_log_level_info, gettext("Changer (type: %s) will stop"), driver->name);
 
 	failed = changer->ops->shut_down(db_connect);
 
