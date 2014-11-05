@@ -13,7 +13,7 @@ STRIP		:= ${TARGET}strip
 
 
 # variable
-NAME		:= STone
+NAME		:= StoriqOne
 DIR_NAME	:= $(lastword $(subst /, , $(realpath .)))
 
 
@@ -54,8 +54,8 @@ LDFLAGS		:=
 CSCOPE_OPT	:= -b -R -s src -U -I include
 CTAGS_OPT	:= -R src
 
-VERSION_FILE	:= stone.version
-VERSION_OPT		:= STONE ${VERSION_FILE}
+VERSION_FILE	:= storiqone.version
+VERSION_OPT		:= STORIQONE ${VERSION_FILE}
 
 
 # sub makefiles
@@ -202,7 +202,7 @@ ctags TAGS: tags
 
 debug: binaries
 	@echo ' GDB'
-	${GDB} bin/stone
+	${GDB} bin/storiqone
 
 distclean realclean: clean
 	@echo ' RM         -Rf cscope.out doc ${CHCKSUM_DIR} ${DEPEND_DIR} tags ${VERSION_FILE}'
@@ -214,9 +214,9 @@ doc: Doxyfile ${LIBOBJECT_SRC_FILES} ${HEAD_FILES}
 
 install:
 	@echo ' MKDIR       ${DESTDIR}'
-	@mkdir -p ${DESTDIR}/etc/storiq ${DESTDIR}/usr/bin ${DESTDIR}/usr/sbin ${DESTDIR}/usr/lib/stone ${DESTDIR}/var/lib/stoned
+	@mkdir -p ${DESTDIR}/etc/storiq ${DESTDIR}/usr/bin ${DESTDIR}/usr/sbin ${DESTDIR}/usr/lib/storiqone ${DESTDIR}/var/lib/storiqoned
 	@echo ' CP'
-	@cp bin/stoned bin/stone-config ${DESTDIR}/usr/sbin
+	@cp bin/storiqoned bin/stone-config ${DESTDIR}/usr/sbin
 	@cp lib/lib*.so ${DESTDIR}/usr/lib/stone
 	@mv ${DESTDIR}/usr/lib/stone/libstone.so ${DESTDIR}/usr/lib
 	@cp script/stone.conf ${DESTDIR}/etc/storiq/stone.conf
@@ -259,7 +259,7 @@ ${NAME}.tar.bz2:
 	${GIT} archive --format=tar --prefix=${DIR_NAME}/ master | bzip2 -9c > $@
 
 ${VERSION_FILE}: ${GIT_HEAD}
-	@echo ' GEN        stone.version'
+	@echo ' GEN        storiq one version'
 	@./script/version.pl ${VERSION_OPT}
 
 cscope.out: ${SRC_FILES} ${HEAD_FILES}

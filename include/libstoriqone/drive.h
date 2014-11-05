@@ -24,22 +24,68 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONECHANGER_DRIVE_H__
-#define __STONECHANGER_DRIVE_H__
+#ifndef __LIBSTORIQONE_DRIVE_H__
+#define __LIBSTORIQONE_DRIVE_H__
 
-#include <libstone/drive.h>
+// bool
+#include <stdbool.h>
+// time_t
+#include <sys/types.h>
 
-struct st_value;
+#include <libstoriqone/media.h>
 
-struct st_drive_ops {
-	bool (*check_cookie)(struct st_drive * drive, const char * cookie);
-	bool (*check_support)(struct st_drive * drive, struct st_media_format * format, bool for_writing);
-	bool (*is_free)(struct st_drive * drive);
-	int (*reset)(struct st_drive * drive);
-	int (*update_status)(struct st_drive * drive);
+struct so_value;
+
+enum so_drive_status {
+	so_drive_status_cleaning = 0x1,
+	so_drive_status_empty_idle = 0x2,
+	so_drive_status_erasing = 0x3,
+	so_drive_status_error = 0x4,
+	so_drive_status_loaded_idle = 0x5,
+	so_drive_status_loading = 0x6,
+	so_drive_status_positioning = 0x7,
+	so_drive_status_reading = 0x8,
+	so_drive_status_rewinding = 0x9,
+	so_drive_status_unloading = 0xa,
+	so_drive_status_writing = 0xb,
+
+	so_drive_status_unknown = 0x0,
 };
 
-void stchgr_drive_register(struct st_drive * drive, struct st_value * config, const char * process_name);
+struct so_drive {
+	char * model;
+	char * vendor;
+	char * revision;
+	char * serial_number;
+
+	enum so_drive_status status;
+	bool enable;
+
+	unsigned char density_code;
+	enum so_media_format_mode mode;
+	double operation_duration;
+	time_t laso_clean;
+	bool is_empty;
+
+	struct so_changer * changer;
+	unsigned int index;
+	struct so_slot * slot;
+
+	struct so_drive_ops * ops;
+
+	void * data;
+	/**
+	 * \brief Private data used by database plugin
+	 */
+	void * db_data;
+};
+
+struct so_value * so_drive_convert(struct so_drive * drive, bool with_slot) __attribute__((nonnull,warn_unused_result));
+void so_drive_free(struct so_drive * drive) __attribute__((nonnull));
+void so_drive_free2(void * drive) __attribute__((nonnull));
+const char * so_drive_status_to_string(enum so_drive_status status, bool translate);
+enum so_drive_status so_drive_string_to_status(const char * status) __attribute__((nonnull));
+void so_drive_sync(struct so_drive * drive, struct so_value * new_drive, bool with_slot) __attribute__((nonnull));
 
 #endif
 

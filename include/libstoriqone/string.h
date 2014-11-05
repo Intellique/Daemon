@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,10 +24,10 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_STRING_H__
-#define __LIBSTONE_STRING_H__
+#ifndef __LIBSTORIQONE_STRING_H__
+#define __LIBSTORIQONE_STRING_H__
 
-struct st_value;
+struct so_value;
 
 // bool
 #include <stdbool.h>
@@ -40,7 +40,7 @@ struct st_value;
  * \param[in] string : a utf8 string
  * \returns \b 1 if ok else 0
  */
-bool st_string_check_valid_utf8(const char * string);
+bool so_string_check_valid_utf8(const char * string);
 
 /**
  * \brief Compute hash of key
@@ -48,10 +48,10 @@ bool st_string_check_valid_utf8(const char * string);
  * \param[in] key : a c string
  * \returns computed hash
  *
- * \see st_hashtable_new
+ * \see so_hashtable_new
  */
-unsigned long long st_string_compute_hash(const struct st_value * value);
-unsigned long long st_string_compute_hash2(const char * value);
+unsigned long long so_string_compute_hash(const struct so_value * value);
+unsigned long long so_string_compute_hash2(const char * value);
 
 /**
  * \brief Remove from \a str a sequence of two or more of character \a delete_char
@@ -59,11 +59,11 @@ unsigned long long st_string_compute_hash2(const char * value);
  * \param[in,out] str : a string
  * \param[in] delete_char : a character
  */
-void st_string_delete_double_char(char * str, char delete_char);
+void so_string_delete_double_char(char * str, char delete_char);
 
-bool st_string_convert_unicode_to_utf8(unsigned int unicode, char * string, size_t length, bool end_string);
+bool so_string_convert_unicode_to_utf8(unsigned int unicode, char * string, size_t length, bool end_string);
 
-void st_string_middle_elipsis(char * string, size_t length);
+void so_string_middle_elipsis(char * string, size_t length);
 
 /**
  * \brief Remove characters \a trim at the end of \a str
@@ -71,9 +71,9 @@ void st_string_middle_elipsis(char * string, size_t length);
  * \param[in,out] str : a string
  * \param[in] trim : a character
  *
- * \see st_util_string_trim
+ * \see so_util_string_trim
  */
-void st_string_rtrim(char * str, char trim);
+void so_string_rtrim(char * str, char trim);
 
 /**
  * \brief Remove characters \a trim at the beginning and at the end of \a str
@@ -81,9 +81,9 @@ void st_string_rtrim(char * str, char trim);
  * \param[in,out] str : a string
  * \param[in] trim : a character
  */
-void st_string_trim(char * str, char trim);
+void so_string_trim(char * str, char trim);
 
-size_t st_string_unicode_length(unsigned int unicode);
+size_t so_string_unicode_length(unsigned int unicode);
 
 #endif
 
