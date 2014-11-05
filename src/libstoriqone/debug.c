@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -29,17 +29,16 @@
 #include <execinfo.h>
 // gettext, ngettext
 #include <libintl.h>
+// pthread_getattr_np, pthread_attr_destroy, pthread_attr_getstack,
 // pthread_self
 #include <pthread.h>
 // calloc, free
 #include <stdlib.h>
 
-#include <libstone/log.h>
+#include <libstoriqone/debug.h>
+#include <libstoriqone/log.h>
 
-#include "debug.h"
-
-__asm__(".symver st_debug_log_stack_v1, st_debug_log_stack@@LIBSTONE_1.2");
-void st_debug_log_stack_v1(unsigned int nb_stacks) {
+void so_debug_log_stack(unsigned int nb_stacks) {
 	if (nb_stacks < 1)
 		return;
 
@@ -56,11 +55,11 @@ void st_debug_log_stack_v1(unsigned int nb_stacks) {
 	pthread_attr_getstack(&attr, &stack_addr, &stack_size);
 	pthread_attr_destroy(&attr);
 
-	st_log_write(st_log_level_debug, ngettext("Dump %zd stack, stack addr: %p, stack size: %zd", "Dump %zd stacks, stack addr: %p, stack size: %zd", size), size, stack_addr, stack_size);
+	so_log_write(so_log_level_debug, ngettext("Dump %zd stack, stack addr: %p, stack size: %zd", "Dump %zd stacks, stack addr: %p, stack size: %zd", size), size, stack_addr, stack_size);
 
 	ssize_t i;
 	for (i = 0; i < size; i++)
-		st_log_write(st_log_level_debug, gettext("#%zd %s"), i, strings[i]);
+		so_log_write(so_log_level_debug, gettext("#%zd %s"), i, strings[i]);
 
 	free(strings);
 	free(array);

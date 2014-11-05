@@ -315,18 +315,18 @@ struct so_value * so_value_hashtable_values(struct so_value * hash) __attribute_
 
 long long int so_value_integer_get(const struct so_value * value) __attribute__((nonnull));
 
-void so_value_liso_clear(struct so_value * list) __attribute__((nonnull));
-struct so_value * so_value_liso_get(struct so_value * list, unsigned int index, bool shared) __attribute__((nonnull,warn_unused_result));
-struct so_value_iterator * so_value_liso_get_iterator(struct so_value * list) __attribute__((nonnull,warn_unused_result));
-unsigned int so_value_liso_get_length(struct so_value * list) __attribute__((nonnull));
-int so_value_liso_index_of(struct so_value * list, struct so_value * elt) __attribute__((nonnull));
-struct so_value * so_value_liso_pop(struct so_value * list) __attribute__((nonnull,warn_unused_result));
-bool so_value_liso_push(struct so_value * list, struct so_value * val, bool new_val) __attribute__((nonnull));
-bool so_value_liso_shift(struct so_value * list, struct so_value * val, bool new_val) __attribute__((nonnull));
-struct so_value * so_value_liso_slice(struct so_value * list, int index) __attribute__((nonnull,warn_unused_result));
-struct so_value * so_value_liso_slice2(struct so_value * list, int index, int end) __attribute__((nonnull,warn_unused_result));
-struct so_value * so_value_liso_splice(struct so_value * list, int index, int how_many, ...) __attribute__((nonnull(1),warn_unused_result));
-struct so_value * so_value_liso_unshift(struct so_value * list) __attribute__((nonnull,warn_unused_result));
+void so_value_list_clear(struct so_value * list) __attribute__((nonnull));
+struct so_value * so_value_list_get(struct so_value * list, unsigned int index, bool shared) __attribute__((nonnull,warn_unused_result));
+struct so_value_iterator * so_value_list_get_iterator(struct so_value * list) __attribute__((nonnull,warn_unused_result));
+unsigned int so_value_list_get_length(struct so_value * list) __attribute__((nonnull));
+int so_value_list_index_of(struct so_value * list, struct so_value * elt) __attribute__((nonnull));
+struct so_value * so_value_list_pop(struct so_value * list) __attribute__((nonnull,warn_unused_result));
+bool so_value_list_push(struct so_value * list, struct so_value * val, bool new_val) __attribute__((nonnull));
+bool so_value_list_shift(struct so_value * list, struct so_value * val, bool new_val) __attribute__((nonnull));
+struct so_value * so_value_list_slice(struct so_value * list, int index) __attribute__((nonnull,warn_unused_result));
+struct so_value * so_value_list_slice2(struct so_value * list, int index, int end) __attribute__((nonnull,warn_unused_result));
+struct so_value * so_value_list_splice(struct so_value * list, int index, int how_many, ...) __attribute__((nonnull(1),warn_unused_result));
+struct so_value * so_value_list_unshift(struct so_value * list) __attribute__((nonnull,warn_unused_result));
 
 const char * so_value_string_get(const struct so_value * value) __attribute__((nonnull));
 

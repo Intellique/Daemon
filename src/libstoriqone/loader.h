@@ -27,8 +27,8 @@
 #ifndef __LIBSTONE_LOADER_H__
 #define __LIBSTONE_LOADER_H__
 
-void * st_loader_load(const char * module, const char * name);
-void st_loader_register_ok(void);
+void * so_loader_load(const char * module, const char * name);
+void so_loader_register_ok(void);
 
 #endif
 

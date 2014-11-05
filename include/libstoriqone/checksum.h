@@ -278,10 +278,6 @@ struct so_checksum_driver {
 	 */
 	void * cookie;
 	/**
-	 * \brief Check if the driver use the correct api level
-	 */
-	unsigned int api_level;
-	/**
 	 * \brief Sha1 sum of plugins source code
 	 */
 	const char * src_checksum;

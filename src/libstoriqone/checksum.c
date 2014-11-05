@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -29,7 +29,7 @@
 #include <fcntl.h>
 // gettext
 #include <libintl.h>
-// pthread_mutex_lock, pthread_mutex_unlock,
+// pthread_mutex_lock, pthread_mutex_unlock
 #include <pthread.h>
 // asprintf, snprintf
 #include <stdio.h>
@@ -44,34 +44,33 @@
 // close, read
 #include <unistd.h>
 
-#include <libstone/log.h>
-#include <libstone/value.h>
+#include <libstoriqone/checksum.h>
+#include <libstoriqone/log.h>
+#include <libstoriqone/value.h>
 
-#include "checksum.h"
 #include "loader.h"
 
 
-static struct st_value * st_checksum_drivers = NULL;
-static pthread_mutex_t st_checksum_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+static struct so_value * so_checksum_drivers = NULL;
+static pthread_mutex_t so_checksum_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
-static void st_checksum_exit(void) __attribute__((destructor));
-static void st_checksum_init(void) __attribute__((constructor));
+static void so_checksum_exit(void) __attribute__((destructor));
+static void so_checksum_init(void) __attribute__((constructor));
 
 
-__asm__(".symver st_checksum_compute_v1, st_checksum_compute@@LIBSTONE_1.2");
-char * st_checksum_compute_v1(const char * checksum, const void * data, ssize_t length) {
+char * so_checksum_compute(const char * checksum, const void * data, ssize_t length) {
 	if (checksum == NULL || (data == NULL && length > 0) || length < 0) {
-		st_log_write(st_log_level_error, gettext("st_checksum_compute: parameter 'length' should be greater than 8 (instead of  %zd)"), length);
+		so_log_write(so_log_level_error, gettext("so_checksum_compute: invalid parameters (checksum: %p, data: %p, length: %zd"), checksum, data, length);
 		return NULL;
 	}
 
-	struct st_checksum_driver_v1 * driver = st_checksum_get_driver_v1(checksum);
+	struct so_checksum_driver * driver = so_checksum_get_driver(checksum);
 	if (driver == NULL) {
-		st_log_write(st_log_level_error, gettext("st_checksum_compute: failed to load checksum plugin '%s'"), checksum);
+		so_log_write(so_log_level_error, gettext("so_checksum_compute: failed to load checksum plugin '%s'"), checksum);
 		return NULL;
 	}
 
-	struct st_checksum_v1 * chck = driver->new_checksum();
+	struct so_checksum * chck = driver->new_checksum();
 	if (length > 0)
 		chck->ops->update(chck, data, length);
 
@@ -81,10 +80,9 @@ char * st_checksum_compute_v1(const char * checksum, const void * data, ssize_t 
 	return digest;
 }
 
-__asm__(".symver st_checksum_convert_to_hex_v1, st_checksum_convert_to_hex@@LIBSTONE_1.2");
-void st_checksum_convert_to_hex_v1(unsigned char * digest, ssize_t length, char * hex_digest) {
+void so_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * hex_digest) {
 	if (digest == NULL || length < 1 || hex_digest == NULL) {
-		st_log_write(st_log_level_error, gettext("st_checksum_convert_to_hex: invalid parameters (digest: %p, length: %zd, hex_digest: %s)"), digest, length, hex_digest);
+		so_log_write(so_log_level_error, gettext("so_checksum_convert_to_hex: invalid parameters (digest: %p, length: %zd, hex_digest: %s)"), digest, length, hex_digest);
 		return;
 	}
 
@@ -94,21 +92,20 @@ void st_checksum_convert_to_hex_v1(unsigned char * digest, ssize_t length, char 
 	hex_digest[j] = '\0';
 }
 
-static void st_checksum_exit() {
-	st_value_free(st_checksum_drivers);
-	st_checksum_drivers = NULL;
+static void so_checksum_exit() {
+	so_value_free(so_checksum_drivers);
+	so_checksum_drivers = NULL;
 }
 
-__asm__(".symver st_checksum_gen_salt_v1, st_checksum_gen_salt@@LIBSTONE_1.2");
-char * st_checksum_gen_salt_v1(const char * checksum, size_t length) {
+char * so_checksum_gen_salt(const char * checksum, size_t length) {
 	if (length < 8) {
-		st_log_write(st_log_level_error, gettext("st_checksum_gen_salt: parameter 'length' should be greater than 8 (instead of  %zd)"), length);
+		so_log_write(so_log_level_error, gettext("so_checksum_gen_salt: parameter 'length' should be greater than 8 (instead of  %zd)"), length);
 		return NULL;
 	}
 
 	int fd = open("/dev/urandom", O_RDONLY);
 	if (fd < 0) {
-		st_log_write(st_log_level_error, gettext("st_checksum_gen_salt: failed to open \"/dev/urandom\" to generate salt parce %m"));
+		so_log_write(so_log_level_error, gettext("so_checksum_gen_salt: failed to open \"/dev/urandom\" to generate salt parce %m"));
 		return NULL;
 	}
 
@@ -118,147 +115,106 @@ char * st_checksum_gen_salt_v1(const char * checksum, size_t length) {
 	int failed = close(fd);
 
 	if (failed != 0)
-		st_log_write(st_log_level_warning, gettext("st_checksum_gen_salt: warning, failed to close \"/dev/urandom\" (fd: %d) because %m"), fd);
+		so_log_write(so_log_level_warning, gettext("so_checksum_gen_salt: warning, failed to close \"/dev/urandom\" (fd: %d) because %m"), fd);
 
 	if (nb_read < 0) {
 		free(buffer);
-		st_log_write(st_log_level_error, gettext("st_checksum_gen_salt: error while reading from \"/dev/urandom\" because %m"));
+		so_log_write(so_log_level_error, gettext("so_checksum_gen_salt: error while reading from \"/dev/urandom\" because %m"));
 		return NULL;
 	}
 
 	if (nb_read < half_len) {
 		free(buffer);
-		st_log_write(st_log_level_error, gettext("st_checksum_gen_salt: read less than expected from \"/dev/urandom\" (nb read: %zd, read expected: %zd)"), nb_read, half_len);
+		so_log_write(so_log_level_error, gettext("so_checksum_gen_salt: read less than expected from \"/dev/urandom\" (nb read: %zd, read expected: %zd)"), nb_read, half_len);
 		return NULL;
 	}
 
 	char * result;
 	if (checksum != NULL)
-		result = st_checksum_compute_v1(checksum, buffer, half_len);
+		result = so_checksum_compute(checksum, buffer, half_len);
 	else {
 		result = malloc(length + 1);
-		st_checksum_convert_to_hex_v1(buffer, half_len, result);
+		so_checksum_convert_to_hex(buffer, half_len, result);
 	}
 
 	free(buffer);
 	return result;
 }
 
-__asm__(".symver st_checksum_get_driver_v1, st_checksum_get_driver@@LIBSTONE_1.2");
-struct st_checksum_driver_v1 * st_checksum_get_driver_v1(const char * driver) {
+struct so_checksum_driver * so_checksum_get_driver(const char * driver) {
 	if (driver == NULL) {
-		st_log_write(st_log_level_error, gettext("st_checksum_get_driver: invalide parameter, 'driver' should not be null"));
+		so_log_write(so_log_level_error, gettext("so_checksum_get_driver: invalide parameter, 'driver' should not be NULL"));
 		return NULL;
 	}
 
-	pthread_mutex_lock(&st_checksum_lock);
+	pthread_mutex_lock(&so_checksum_lock);
 
 	void * cookie = NULL;
-	if (!st_value_hashtable_has_key2(st_checksum_drivers, driver)) {
-		cookie = st_loader_load("checksum", driver);
+	if (!so_value_hashtable_has_key2(so_checksum_drivers, driver)) {
+		cookie = so_loader_load("checksum", driver);
 
 		if (cookie == NULL) {
-			pthread_mutex_unlock(&st_checksum_lock);
-			st_log_write(st_log_level_error, gettext("st_checksum_get_driver: failed to load checksum driver '%s'"), driver);
+			pthread_mutex_unlock(&so_checksum_lock);
+			so_log_write(so_log_level_error, gettext("so_checksum_get_driver: failed to load checksum driver '%s'"), driver);
 			return NULL;
 		}
 
-		if (!st_value_hashtable_has_key2(st_checksum_drivers, driver)) {
-			pthread_mutex_unlock(&st_checksum_lock);
-			st_log_write(st_log_level_warning, gettext("st_checksum_get_driver: driver '%s' did not call 'register_driver'"), driver);
+		if (!so_value_hashtable_has_key2(so_checksum_drivers, driver)) {
+			pthread_mutex_unlock(&so_checksum_lock);
+			so_log_write(so_log_level_warning, gettext("so_checksum_get_driver: driver '%s' did not call 'so_checksum_register_driver'"), driver);
 			return NULL;
 		}
 	}
 
-	struct st_value * vdriver = st_value_hashtable_get2(st_checksum_drivers, driver, false, false);
-	struct st_checksum_driver_v1 * dr = st_value_custom_get(vdriver);
+	struct so_value * vdriver = so_value_hashtable_get2(so_checksum_drivers, driver, false, false);
+	struct so_checksum_driver * dr = so_value_custom_get(vdriver);
 
 	if (cookie != NULL)
 		dr->cookie = cookie;
 
-	pthread_mutex_unlock(&st_checksum_lock);
+	pthread_mutex_unlock(&so_checksum_lock);
 
 	return dr;
 }
 
-static void st_checksum_init() {
-	st_checksum_drivers = st_value_new_hashtable2();
+static void so_checksum_init() {
+	so_checksum_drivers = so_value_new_hashtable2();
 }
 
-__asm__(".symver st_checksum_register_driver_v1, st_checksum_register_driver@@LIBSTONE_1.2");
-void st_checksum_register_driver_v1(struct st_checksum_driver_v1 * driver) {
+void so_checksum_register_driver(struct so_checksum_driver * driver) {
 	if (driver == NULL) {
-		st_log_write(st_log_level_error, gettext("st_checksum_register_driver: try to register with null driver"));
+		so_log_write(so_log_level_error, gettext("so_checksum_register_driver: try to register with NULL driver"));
 		return;
 	}
 
-	pthread_mutex_lock(&st_checksum_lock);
+	pthread_mutex_lock(&so_checksum_lock);
 
-	if (st_value_hashtable_has_key2(st_checksum_drivers, driver->name)) {
-		pthread_mutex_unlock(&st_checksum_lock);
-		st_log_write(st_log_level_warning, gettext("st_checksum_register_driver: checksum driver '%s' is already registred"), driver->name);
+	if (so_value_hashtable_has_key2(so_checksum_drivers, driver->name)) {
+		pthread_mutex_unlock(&so_checksum_lock);
+		so_log_write(so_log_level_warning, gettext("so_checksum_register_driver: checksum driver '%s' is already registred"), driver->name);
 		return;
 	}
 
-	st_value_hashtable_put2(st_checksum_drivers, driver->name, st_value_new_custom(driver, NULL), true);
-	driver->api_level = 1;
-	st_loader_register_ok();
+	so_value_hashtable_put2(so_checksum_drivers, driver->name, so_value_new_custom(driver, NULL), true);
+	so_loader_register_ok();
 
-	pthread_mutex_unlock(&st_checksum_lock);
+	pthread_mutex_unlock(&so_checksum_lock);
 
-	st_log_write(st_log_level_info, gettext("st_checksum_register_driver: checksum driver '%s' is now registred"), driver->name);
+	so_log_write(so_log_level_info, gettext("so_checksum_register_driver: checksum driver '%s' is now registred"), driver->name);
 }
 
-__asm__(".symver st_checksum_salt_password_v1, st_checksum_salt_password@@LIBSTONE_1.2");
-char * st_checksum_salt_password_v1(const char * checksum, const char * password, const char * salt) {
+char * so_checksum_salt_password(const char * checksum, const char * password, const char * salt) {
 	if (password == NULL || salt == NULL) {
-		st_log_write(st_log_level_error, gettext("st_checksum_salt_password: error while encrypting password"));
-		if (password == NULL)
-			st_log_write(st_log_level_error, gettext("st_checksum_salt_password: 'password' should not be null"));
-		if (salt == NULL)
-			st_log_write(st_log_level_error, gettext("st_checksum_salt_password: 'salt' should not be null"));
+		so_log_write(so_log_level_error, gettext("so_checksum_compute: invalid parameters (password: %p, salt: %p)"), password, salt);
 		return NULL;
 	}
 
 	char * pw_salt;
 	asprintf(&pw_salt, "%s%s", password, salt);
 
-	char * result = st_checksum_compute_v1(checksum, pw_salt, strlen(pw_salt));
+	char * result = so_checksum_compute(checksum, pw_salt, strlen(pw_salt));
 	free(pw_salt);
 
 	return result;
 }
-
-
-/*
-void st_checksum_sync_plugins(struct st_database_connection * connection) {
-	if (connection == NULL) {
-		st_log_write_all(st_log_level_error, st_log_type_checksum, "Try to synchronize checksum's plugins without database connection");
-		st_debug_log_stack(16);
-		return;
-	}
-
-	if (connection->ops->is_connection_closed(connection)) {
-		st_log_write_all(st_log_level_error, st_log_type_checksum, "Try to synchronize checksum's plugins with closed connection to database");
-		st_debug_log_stack(16);
-		return;
-	}
-
-	glob_t gl;
-	glob(MODULE_PATH "/libchecksum-*.so", 0, NULL, &gl);
-
-	unsigned int i;
-	for (i = 0; i < gl.gl_pathc; i++) {
-		char * ptr = strrchr(gl.gl_pathv[i], '/') + 1;
-
-		char plugin[64];
-		sscanf(ptr, "libchecksum-%64[^.].so", plugin);
-
-		if (connection->ops->sync_plugin_checksum(connection, plugin))
-			st_log_write_all(st_log_level_error, st_log_type_checksum, "Failed to synchronize plugin '%s'", plugin);
-	}
-
-	globfree(&gl);
-}
-*/
 

@@ -39,41 +39,45 @@
 
 static struct so_changer_action2 {
 	unsigned long long hash;
+	unsigned long long hash_translated;
+
 	const char * name;
 	const enum so_changer_action action;
-} so_library_actions[] = {
-	[so_changer_action_none]        = { 0, gettext_noop("none"),        so_changer_action_none },
-	[so_changer_action_put_offline] = { 0, gettext_noop("put offline"), so_changer_action_put_offline },
-	[so_changer_action_put_online]  = { 0, gettext_noop("put online"),  so_changer_action_put_online },
+} so_changer_actions[] = {
+	[so_changer_action_none]        = { 0, 0, gettext_noop("none"),        so_changer_action_none },
+	[so_changer_action_put_offline] = { 0, 0, gettext_noop("put offline"), so_changer_action_put_offline },
+	[so_changer_action_put_online]  = { 0, 0, gettext_noop("put online"),  so_changer_action_put_online },
 
-	[so_changer_action_unknown] = { 0, gettext_noop("unknown"), so_changer_action_unknown },
+	[so_changer_action_unknown] = { 0, 0, gettext_noop("unknown"), so_changer_action_unknown },
 };
-static const unsigned int so_library_nb_actions = sizeof(so_library_actions) / sizeof(*so_library_actions);
+static const unsigned int so_changer_nb_actions = sizeof(so_changer_actions) / sizeof(*so_changer_actions);
 
 static struct so_changer_status2 {
 	unsigned long long hash;
+	unsigned long long hash_translated;
+
 	const char * name;
 	const enum so_changer_status status;
-} so_library_status[] = {
-	[so_changer_status_error]      = { 0, gettext_noop("error"),		so_changer_status_error },
-	[so_changer_status_exporting]  = { 0, gettext_noop("exporting"),	so_changer_status_exporting },
-	[so_changer_status_idle]       = { 0, gettext_noop("idle"),			so_changer_status_idle },
-	[so_changer_status_go_offline] = { 0, gettext_noop("go offline"),	so_changer_status_go_offline },
-	[so_changer_status_go_online]  = { 0, gettext_noop("go online"),	so_changer_status_go_online },
-	[so_changer_status_importing]  = { 0, gettext_noop("importing"),	so_changer_status_importing },
-	[so_changer_status_loading]    = { 0, gettext_noop("loading"),		so_changer_status_loading },
-	[so_changer_status_offline]    = { 0, gettext_noop("offline"),		so_changer_status_offline },
-	[so_changer_status_unloading]  = { 0, gettext_noop("unloading"),	so_changer_status_unloading },
+} so_changer_status[] = {
+	[so_changer_status_error]      = { 0, 0, gettext_noop("error"),		so_changer_status_error },
+	[so_changer_status_exporting]  = { 0, 0, gettext_noop("exporting"),	so_changer_status_exporting },
+	[so_changer_status_idle]       = { 0, 0, gettext_noop("idle"),			so_changer_status_idle },
+	[so_changer_status_go_offline] = { 0, 0, gettext_noop("go offline"),	so_changer_status_go_offline },
+	[so_changer_status_go_online]  = { 0, 0, gettext_noop("go online"),	so_changer_status_go_online },
+	[so_changer_status_importing]  = { 0, 0, gettext_noop("importing"),	so_changer_status_importing },
+	[so_changer_status_loading]    = { 0, 0, gettext_noop("loading"),		so_changer_status_loading },
+	[so_changer_status_offline]    = { 0, 0, gettext_noop("offline"),		so_changer_status_offline },
+	[so_changer_status_unloading]  = { 0, 0, gettext_noop("unloading"),	so_changer_status_unloading },
 
-	[so_changer_status_unknown] = { 0, gettext_noop("unknown"), so_changer_status_unknown },
+	[so_changer_status_unknown] = { 0, 0, gettext_noop("unknown"), so_changer_status_unknown },
 };
-static const unsigned int so_library_nb_status = sizeof(so_library_status) / sizeof(*so_library_status);
+static const unsigned int so_changer_nb_status = sizeof(so_changer_status) / sizeof(*so_changer_status);
 
 static void so_changer_init(void) __attribute__((constructor));
 
 
 const char * so_changer_action_to_string(enum so_changer_action action, bool translate) {
-	const char * value = so_library_actions[action].name;
+	const char * value = so_changer_actions[action].name;
 	if (translate)
 		value = gettext(value);
 	return value;
@@ -83,11 +87,11 @@ struct so_value * so_changer_convert(struct so_changer * changer) {
 	struct so_value * drives = so_value_new_array(changer->nb_drives);
 	unsigned int i;
 	for (i = 0; i < changer->nb_drives; i++)
-		so_value_liso_push(drives, so_drive_convert(changer->drives + i, false), true);
+		so_value_list_push(drives, so_drive_convert(changer->drives + i, false), true);
 
 	struct so_value * slots = so_value_new_array(changer->nb_slots);
 	for (i = 0; i < changer->nb_slots; i++)
-		so_value_liso_push(slots, so_slot_convert(changer->slots + i), true);
+		so_value_list_push(slots, so_slot_convert(changer->slots + i), true);
 
 	return so_value_pack("{sssssssssssbsssbsbsoso}",
 		"model", changer->model,
@@ -135,44 +139,62 @@ void so_changer_free2(void * changer) {
 
 static void so_changer_init() {
 	unsigned int i;
-	for (i = 0; i < so_library_nb_actions; i++)
-		so_library_actions[i].hash = so_string_compute_hash2(so_library_actions[i].name);
+	for (i = 0; i < so_changer_nb_actions; i++) {
+		so_changer_actions[i].hash = so_string_compute_hash2(so_changer_actions[i].name);
+		so_changer_actions[i].hash_translated = so_string_compute_hash2(gettext(so_changer_actions[i].name));
+	}
 
-	for (i = 0; i < so_library_nb_status; i++)
-		so_library_status[i].hash = so_string_compute_hash2(so_library_status[i].name);
+	for (i = 0; i < so_changer_nb_status; i++) {
+		so_changer_status[i].hash = so_string_compute_hash2(so_changer_status[i].name);
+		so_changer_status[i].hash_translated = so_string_compute_hash2(gettext(so_changer_status[i].name));
+	}
 }
 
-enum so_changer_action so_changer_string_to_action(const char * action) {
+enum so_changer_action so_changer_string_to_action(const char * action, bool translate) {
 	if (action == NULL)
 		return so_changer_action_unknown;
 
 	unsigned int i;
 	const unsigned long long hash = so_string_compute_hash2(action);
-	for (i = 0; i < so_library_nb_actions; i++)
-		if (hash == so_library_actions[i].hash)
-			return so_library_actions[i].action;
 
-	return so_library_actions[i].action;
+	if (translate) {
+		for (i = 0; i < so_changer_nb_actions; i++)
+			if (hash == so_changer_actions[i].hash_translated)
+				return so_changer_actions[i].action;
+	} else {
+		for (i = 0; i < so_changer_nb_actions; i++)
+			if (hash == so_changer_actions[i].hash)
+				return so_changer_actions[i].action;
+	}
+
+	return so_changer_actions[i].action;
 }
 
 const char * so_changer_status_to_string(enum so_changer_status status, bool translate) {
-	const char * value = so_library_status[status].name;
+	const char * value = so_changer_status[status].name;
 	if (translate)
 		value = gettext(value);
 	return value;
 }
 
-enum so_changer_status so_changer_string_to_status(const char * status) {
+enum so_changer_status so_changer_string_to_status(const char * status, bool translate) {
 	if (status == NULL)
 		return so_changer_status_unknown;
 
 	unsigned int i;
 	const unsigned long long hash = so_string_compute_hash2(status);
-	for (i = 0; i < so_library_nb_status; i++)
-		if (hash == so_library_status[i].hash)
-			return so_library_status[i].status;
 
-	return so_library_status[i].status;
+	if (translate) {
+		for (i = 0; i < so_changer_nb_status; i++)
+			if (hash == so_changer_status[i].hash_translated)
+				return so_changer_status[i].status;
+	} else {
+		for (i = 0; i < so_changer_nb_status; i++)
+			if (hash == so_changer_status[i].hash)
+				return so_changer_status[i].status;
+	}
+
+	return so_changer_status[i].status;
 }
 
 void so_changer_sync(struct so_changer * changer, struct so_value * new_changer) {
@@ -204,11 +226,11 @@ void so_changer_sync(struct so_changer * changer, struct so_value * new_changer)
 	so_value_unpack(wwn, "s", &changer->wwn);
 
 	if (status != NULL)
-		changer->status = so_changer_string_to_status(status);
+		changer->status = so_changer_string_to_status(status, false);
 	free(status);
 
 	unsigned int i;
-	struct so_value_iterator * iter = so_value_liso_get_iterator(drives);
+	struct so_value_iterator * iter = so_value_list_get_iterator(drives);
 	for (i = 0; i < changer->nb_drives; i++) {
 		struct so_value * drive = so_value_iterator_get_value(iter, false);
 		so_drive_sync(changer->drives + i, drive, false);
@@ -216,7 +238,7 @@ void so_changer_sync(struct so_changer * changer, struct so_value * new_changer)
 	so_value_iterator_free(iter);
 
 	if (changer->nb_slots == 0) {
-		changer->nb_slots = so_value_liso_get_length(slots);
+		changer->nb_slots = so_value_list_get_length(slots);
 		changer->slots = calloc(changer->nb_slots, sizeof(struct so_slot));
 
 		for (i = 0; i < changer->nb_slots; i++) {
@@ -231,7 +253,7 @@ void so_changer_sync(struct so_changer * changer, struct so_value * new_changer)
 		}
 	}
 
-	iter = so_value_liso_get_iterator(slots);
+	iter = so_value_list_get_iterator(slots);
 	for (i = 0; i < changer->nb_slots; i++) {
 		struct so_value * slot = so_value_iterator_get_value(iter, false);
 		so_slot_sync(changer->slots + i, slot);

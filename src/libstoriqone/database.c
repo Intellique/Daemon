@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,8 +24,6 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#include <stddef.h>
-
 #define _GNU_SOURCE
 // gettext
 #include <libintl.h>
@@ -34,123 +32,114 @@
 // free
 #include <stdlib.h>
 
-#include <libstone/log.h>
-#include <libstone/value.h>
+#include <libstoriqone/database.h>
+#include <libstoriqone/log.h>
+#include <libstoriqone/value.h>
 
-#include "database.h"
 #include "loader.h"
 
-static struct st_value * st_database_drivers = NULL;
-static struct st_database_v1 * st_database_default_driver = NULL;
-static pthread_mutex_t st_database_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+static struct so_value * so_database_drivers = NULL;
+static struct so_database * so_database_default_driver = NULL;
+static pthread_mutex_t so_database_lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 
-static void st_database_exit(void) __attribute__((destructor));
-static void st_database_init(void) __attribute__((constructor));
+static void so_database_exit(void) __attribute__((destructor));
+static void so_database_init(void) __attribute__((constructor));
 
 
-static void st_database_exit() {
-	st_value_free(st_database_drivers);
-	st_database_drivers = NULL;
+static void so_database_exit() {
+	so_value_free(so_database_drivers);
+	so_database_drivers = NULL;
 }
 
-__asm__(".symver st_database_get_default_driver_v1, st_database_get_default_driver@@LIBSTONE_1.2");
-struct st_database_v1 * st_database_get_default_driver_v1() {
-	return st_database_default_driver;
+struct so_database * so_database_get_default_driver() {
+	return so_database_default_driver;
 }
 
-__asm__(".symver st_database_get_driver_v1, st_database_get_driver@@LIBSTONE_1.2");
-struct st_database_v1 * st_database_get_driver_v1(const char * driver) {
+struct so_database * so_database_get_driver(const char * driver) {
 	if (driver == NULL) {
-		st_log_write(st_log_level_error, gettext("st_database_get_driver: invalide parameter, 'driver' should not be null"));
+		so_log_write(so_log_level_error, gettext("so_database_get_driver: invalide parameter, 'driver' should not be NULL"));
 		return NULL;
 	}
 
-	pthread_mutex_lock(&st_database_lock);
+	pthread_mutex_lock(&so_database_lock);
 
 	void * cookie = NULL;
-	if (!st_value_hashtable_has_key2(st_database_drivers, driver)) {
-		cookie = st_loader_load("database", driver);
+	if (!so_value_hashtable_has_key2(so_database_drivers, driver)) {
+		cookie = so_loader_load("database", driver);
 
 		if (cookie == NULL) {
-			pthread_mutex_unlock(&st_database_lock);
-			st_log_write(st_log_level_error, gettext("st_database_get_driver: failed to load checksum driver '%s'"), driver);
+			pthread_mutex_unlock(&so_database_lock);
+			so_log_write(so_log_level_error, gettext("so_database_get_driver: failed to load checksum driver '%s'"), driver);
 			return NULL;
 		}
 
-		if (!st_value_hashtable_has_key2(st_database_drivers, driver)) {
-			pthread_mutex_unlock(&st_database_lock);
-			st_log_write(st_log_level_warning, gettext("st_database_get_driver: driver '%s' did not call 'register_driver'"), driver);
+		if (!so_value_hashtable_has_key2(so_database_drivers, driver)) {
+			pthread_mutex_unlock(&so_database_lock);
+			so_log_write(so_log_level_warning, gettext("so_database_get_driver: driver '%s' did not call 'so_database_register_driver'"), driver);
 			return NULL;
 		}
 	}
 
-	struct st_value * vdriver = st_value_hashtable_get2(st_database_drivers, driver, false, false);
-	struct st_database_v1 * dr = st_value_custom_get(vdriver);
+	struct so_value * vdriver = so_value_hashtable_get2(so_database_drivers, driver, false, false);
+	struct so_database * dr = so_value_custom_get(vdriver);
 
 	if (cookie != NULL)
 		dr->cookie = cookie;
 
-	pthread_mutex_unlock(&st_database_lock);
+	pthread_mutex_unlock(&so_database_lock);
 
 	return dr;
 }
 
-static void st_database_init() {
-	st_database_drivers = st_value_new_hashtable2();
+static void so_database_init() {
+	so_database_drivers = so_value_new_hashtable2();
 }
 
-__asm__(".symver st_database_load_config_v1, st_database_load_config@@LIBSTONE_1.2");
-void st_database_load_config_v1(struct st_value * config) {
-	if (config == NULL || !(config->type == st_value_array || config->type == st_value_linked_list)) {
-		st_log_write(st_log_level_error, gettext("st_database_load_config: try to load database config with invalid config"));
-		if (config == NULL)
-			st_log_write(st_log_level_error, gettext("st_database_load_config: 'config' should not be null"));
-		if (!(config->type == st_value_array || config->type == st_value_linked_list))
-			st_log_write(st_log_level_error, gettext("st_database_load_config: 'config' should not be a list"));
+void so_database_load_config(struct so_value * config) {
+	if (config == NULL || !(config->type == so_value_array || config->type == so_value_linked_list)) {
+		so_log_write(so_log_level_error, gettext("so_database_load_config: invalid parameters (config: %p"), config);
 		return;
 	}
 
-	struct st_value_iterator * iter = st_value_list_get_iterator(config);
-	while (st_value_iterator_has_next(iter)) {
-		struct st_value * conf = st_value_iterator_get_value(iter, false);
+	struct so_value_iterator * iter = so_value_list_get_iterator(config);
+	while (so_value_iterator_has_next(iter)) {
+		struct so_value * conf = so_value_iterator_get_value(iter, false);
 
 		char * type;
-		if (st_value_unpack(conf, "{ss}", "type", &type) < 1)
+		if (so_value_unpack(conf, "{ss}", "type", &type) < 1)
 			continue;
 
-		struct st_database_v1 * driver = st_database_get_driver_v1(type);
+		struct so_database * driver = so_database_get_driver(type);
 		if (driver != NULL)
 			driver->ops->add(conf);
 
 		free(type);
 	}
-	st_value_iterator_free(iter);
+	so_value_iterator_free(iter);
 }
 
-__asm__(".symver st_database_register_driver_v1, st_database_register_driver@@LIBSTONE_1.2");
-void st_database_register_driver_v1(struct st_database_v1 * driver) {
+void so_database_register_driver(struct so_database * driver) {
 	if (driver == NULL) {
-		st_log_write(st_log_level_error, gettext("st_database_register_driver: try to register with null driver"));
+		so_log_write(so_log_level_error, gettext("so_database_register_driver: try to register with NULL driver"));
 		return;
 	}
 
-	pthread_mutex_lock(&st_database_lock);
+	pthread_mutex_lock(&so_database_lock);
 
-	if (st_value_hashtable_has_key2(st_database_drivers, driver->name)) {
-		pthread_mutex_unlock(&st_database_lock);
-		st_log_write(st_log_level_warning, gettext("st_database_register_driver: checksum driver '%s' is already registred"), driver->name);
+	if (so_value_hashtable_has_key2(so_database_drivers, driver->name)) {
+		pthread_mutex_unlock(&so_database_lock);
+		so_log_write(so_log_level_warning, gettext("so_database_register_driver: checksum driver '%s' is already registred"), driver->name);
 		return;
 	}
 
-	st_value_hashtable_put2(st_database_drivers, driver->name, st_value_new_custom(driver, NULL), true);
-	driver->api_level = 1;
-	st_loader_register_ok();
+	so_value_hashtable_put2(so_database_drivers, driver->name, so_value_new_custom(driver, NULL), true);
+	so_loader_register_ok();
 
-	if (st_database_default_driver == NULL)
-		st_database_default_driver = driver;
+	if (so_database_default_driver == NULL)
+		so_database_default_driver = driver;
 
-	pthread_mutex_unlock(&st_database_lock);
+	pthread_mutex_unlock(&so_database_lock);
 
-	st_log_write(st_log_level_info, gettext("st_database_register_driver: checksum driver '%s' is now registred"), driver->name);
+	so_log_write(so_log_level_info, gettext("so_database_register_driver: checksum driver '%s' is now registred"), driver->name);
 }
 

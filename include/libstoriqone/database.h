@@ -255,12 +255,6 @@ struct so_database {
 	 */
 	void * cookie;
 	/**
-	 * \brief api level supported by this driver
-	 *
-	 * Should be define by using STONE_DATABASE_API_LEVEL only
-	 */
-	unsigned int api_level;
-	/**
 	 * \brief Sha1 sum of plugins source code
 	 */
 	const char * src_checksum;

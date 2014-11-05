@@ -218,9 +218,9 @@ const char * so_changer_status_to_string(enum so_changer_status status, bool tra
  * \param[in] action : action name
  * \return an enumeration value of \a action
  */
-enum so_changer_action so_changer_string_to_action(const char * action) __attribute__((nonnull));
+enum so_changer_action so_changer_string_to_action(const char * action, bool translate) __attribute__((nonnull));
 
-enum so_changer_status so_changer_string_to_status(const char * status) __attribute__((nonnull));
+enum so_changer_status so_changer_string_to_status(const char * status, bool translate) __attribute__((nonnull));
 
 /**
  * \brief Synchronize data of \a changer with \a new_changer
