@@ -44,17 +44,17 @@ static struct so_drive_status2 {
 	const char * name;
 	const enum so_drive_status status;
 } so_drive_status[] = {
-	[so_drive_status_cleaning]    = { 0, 0, gettext_noop("cleaning"),		so_drive_status_cleaning },
-	[so_drive_status_empty_idle]  = { 0, 0, gettext_noop("empty idle"),	so_drive_status_empty_idle },
-	[so_drive_status_erasing]     = { 0, 0, gettext_noop("erasing"),		so_drive_status_erasing },
-	[so_drive_status_error]       = { 0, 0, gettext_noop("error"),			so_drive_status_error },
-	[so_drive_status_loaded_idle] = { 0, 0, gettext_noop("loaded idle"),	so_drive_status_loaded_idle },
-	[so_drive_status_loading]     = { 0, 0, gettext_noop("loading"),		so_drive_status_loading },
-	[so_drive_status_positioning] = { 0, 0, gettext_noop("positioning"),	so_drive_status_positioning },
-	[so_drive_status_reading]     = { 0, 0, gettext_noop("reading"),		so_drive_status_reading },
-	[so_drive_status_rewinding]   = { 0, 0, gettext_noop("rewinding"),		so_drive_status_rewinding },
-	[so_drive_status_unloading]   = { 0, 0, gettext_noop("unloading"),		so_drive_status_unloading },
-	[so_drive_status_writing]     = { 0, 0, gettext_noop("writing"),		so_drive_status_writing },
+	[so_drive_status_cleaning]    = { 0, 0, gettext_noop("cleaning"),    so_drive_status_cleaning },
+	[so_drive_status_empty_idle]  = { 0, 0, gettext_noop("empty idle"),  so_drive_status_empty_idle },
+	[so_drive_status_erasing]     = { 0, 0, gettext_noop("erasing"),     so_drive_status_erasing },
+	[so_drive_status_error]       = { 0, 0, gettext_noop("error"),       so_drive_status_error },
+	[so_drive_status_loaded_idle] = { 0, 0, gettext_noop("loaded idle"), so_drive_status_loaded_idle },
+	[so_drive_status_loading]     = { 0, 0, gettext_noop("loading"),     so_drive_status_loading },
+	[so_drive_status_positioning] = { 0, 0, gettext_noop("positioning"), so_drive_status_positioning },
+	[so_drive_status_reading]     = { 0, 0, gettext_noop("reading"),     so_drive_status_reading },
+	[so_drive_status_rewinding]   = { 0, 0, gettext_noop("rewinding"),   so_drive_status_rewinding },
+	[so_drive_status_unloading]   = { 0, 0, gettext_noop("unloading"),   so_drive_status_unloading },
+	[so_drive_status_writing]     = { 0, 0, gettext_noop("writing"),     so_drive_status_writing },
 
 	[so_drive_status_unknown] = { 0, 0, gettext_noop("unknown"), so_drive_status_unknown },
 };

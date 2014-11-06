@@ -59,15 +59,15 @@ static struct so_changer_status2 {
 	const char * name;
 	const enum so_changer_status status;
 } so_changer_status[] = {
-	[so_changer_status_error]      = { 0, 0, gettext_noop("error"),		so_changer_status_error },
-	[so_changer_status_exporting]  = { 0, 0, gettext_noop("exporting"),	so_changer_status_exporting },
-	[so_changer_status_idle]       = { 0, 0, gettext_noop("idle"),			so_changer_status_idle },
-	[so_changer_status_go_offline] = { 0, 0, gettext_noop("go offline"),	so_changer_status_go_offline },
-	[so_changer_status_go_online]  = { 0, 0, gettext_noop("go online"),	so_changer_status_go_online },
-	[so_changer_status_importing]  = { 0, 0, gettext_noop("importing"),	so_changer_status_importing },
-	[so_changer_status_loading]    = { 0, 0, gettext_noop("loading"),		so_changer_status_loading },
-	[so_changer_status_offline]    = { 0, 0, gettext_noop("offline"),		so_changer_status_offline },
-	[so_changer_status_unloading]  = { 0, 0, gettext_noop("unloading"),	so_changer_status_unloading },
+	[so_changer_status_error]      = { 0, 0, gettext_noop("error"),      so_changer_status_error },
+	[so_changer_status_exporting]  = { 0, 0, gettext_noop("exporting"),  so_changer_status_exporting },
+	[so_changer_status_idle]       = { 0, 0, gettext_noop("idle"),       so_changer_status_idle },
+	[so_changer_status_go_offline] = { 0, 0, gettext_noop("go offline"), so_changer_status_go_offline },
+	[so_changer_status_go_online]  = { 0, 0, gettext_noop("go online"),  so_changer_status_go_online },
+	[so_changer_status_importing]  = { 0, 0, gettext_noop("importing"),  so_changer_status_importing },
+	[so_changer_status_loading]    = { 0, 0, gettext_noop("loading"),    so_changer_status_loading },
+	[so_changer_status_offline]    = { 0, 0, gettext_noop("offline"),    so_changer_status_offline },
+	[so_changer_status_unloading]  = { 0, 0, gettext_noop("unloading"),  so_changer_status_unloading },
 
 	[so_changer_status_unknown] = { 0, 0, gettext_noop("unknown"), so_changer_status_unknown },
 };
