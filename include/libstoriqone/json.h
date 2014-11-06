@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,22 +24,22 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_JSON_H__
-#define __LIBSTONE_JSON_H__
+#ifndef __LIBSTORIQONE_JSON_H__
+#define __LIBSTORIQONE_JSON_H__
 
 // bool
 #include <stdbool.h>
 // ssize_t
 #include <sys/types.h>
 
-struct st_value;
+struct so_value;
 
-ssize_t st_json_encode_to_fd(struct st_value * value, int fd, bool use_buffer);
-ssize_t st_json_encode_to_file(struct st_value * value, const char * filename);
-char * st_json_encode_to_string(struct st_value * value);
-struct st_value * st_json_parse_fd(int fd, int timeout);
-struct st_value * st_json_parse_file(const char * file);
-struct st_value * st_json_parse_string(const char * json);
+ssize_t so_json_encode_to_fd(struct so_value * value, int fd, bool use_buffer);
+ssize_t so_json_encode_to_file(struct so_value * value, const char * filename);
+char * so_json_encode_to_string(struct so_value * value);
+struct so_value * so_json_parse_fd(int fd, int timeout);
+struct so_value * so_json_parse_file(const char * file);
+struct so_value * so_json_parse_string(const char * json);
 
 #endif
 

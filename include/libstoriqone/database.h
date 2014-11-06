@@ -126,7 +126,7 @@ struct so_database_connection {
 
 		int (*add_host)(struct so_database_connection * connect, const char * uuid, const char * name, const char * domaine, const char * description) __attribute__((nonnull(1,2,3)));
 		bool (*find_host)(struct so_database_connection * connect, const char * uuid, const char * hostname) __attribute__((nonnull(1)));
-		int (*get_hoso_by_name)(struct so_database_connection * connect, struct so_host * host, const char * name) __attribute__((nonnull));
+		int (*get_host_by_name)(struct so_database_connection * connect, struct so_host * host, const char * name) __attribute__((nonnull));
 
 		struct so_value * (*get_changers)(struct so_database_connection * connect) __attribute__((nonnull));
 		struct so_media * (*get_media)(struct so_database_connection * connect, const char * medium_serial_number, const char * label, struct so_job * job) __attribute__((nonnull(1),warn_unused_result));

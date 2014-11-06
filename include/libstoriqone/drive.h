@@ -64,7 +64,7 @@ struct so_drive {
 	unsigned char density_code;
 	enum so_media_format_mode mode;
 	double operation_duration;
-	time_t laso_clean;
+	time_t last_clean;
 	bool is_empty;
 
 	struct so_changer * changer;
@@ -84,7 +84,7 @@ struct so_value * so_drive_convert(struct so_drive * drive, bool with_slot) __at
 void so_drive_free(struct so_drive * drive) __attribute__((nonnull));
 void so_drive_free2(void * drive) __attribute__((nonnull));
 const char * so_drive_status_to_string(enum so_drive_status status, bool translate);
-enum so_drive_status so_drive_string_to_status(const char * status) __attribute__((nonnull));
+enum so_drive_status so_drive_string_to_status(const char * status, bool translate) __attribute__((nonnull));
 void so_drive_sync(struct so_drive * drive, struct so_value * new_drive, bool with_slot) __attribute__((nonnull));
 
 #endif

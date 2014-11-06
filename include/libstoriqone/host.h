@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,23 +24,23 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_HOST_H__
-#define __LIBSTONE_HOST_H__
+#ifndef __LIBSTORIQONE_HOST_H__
+#define __LIBSTORIQONE_HOST_H__
 
 // bool
 #include <stdbool.h>
 
-struct st_database_connection;
-struct st_value;
+struct so_database_connection;
+struct so_value;
 
-struct st_host {
+struct so_host {
 	char * hostname;
 	char * uuid;
 };
 
-bool st_host_init(struct st_database_connection * connect);
-struct st_host * st_host_get_info(void);
-struct st_value * st_host_get_info2(void);
+bool so_host_init(struct so_database_connection * connect);
+struct so_host * so_host_get_info(void);
+struct so_value * so_host_get_info2(void);
 
 #endif
 

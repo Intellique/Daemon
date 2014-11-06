@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -31,65 +31,66 @@
 
 #define gettext_noop(String) String
 
-#include "drive.h"
-#include "media.h"
-#include "slot.h"
-#include "string.h"
-#include "value.h"
+#include <libstoriqone/drive.h>
+#include <libstoriqone/media.h>
+#include <libstoriqone/slot.h>
+#include <libstoriqone/string.h>
+#include <libstoriqone/value.h>
 
-static struct st_drive_status2 {
+static struct so_drive_status2 {
 	unsigned long long hash;
+	unsigned long long hash_translated;
+
 	const char * name;
-	const enum st_drive_status status;
-} st_drive_status[] = {
-	[st_drive_status_cleaning]    = { 0, gettext_noop("cleaning"),		st_drive_status_cleaning },
-	[st_drive_status_empty_idle]  = { 0, gettext_noop("empty idle"),	st_drive_status_empty_idle },
-	[st_drive_status_erasing]     = { 0, gettext_noop("erasing"),		st_drive_status_erasing },
-	[st_drive_status_error]       = { 0, gettext_noop("error"),			st_drive_status_error },
-	[st_drive_status_loaded_idle] = { 0, gettext_noop("loaded idle"),	st_drive_status_loaded_idle },
-	[st_drive_status_loading]     = { 0, gettext_noop("loading"),		st_drive_status_loading },
-	[st_drive_status_positioning] = { 0, gettext_noop("positioning"),	st_drive_status_positioning },
-	[st_drive_status_reading]     = { 0, gettext_noop("reading"),		st_drive_status_reading },
-	[st_drive_status_rewinding]   = { 0, gettext_noop("rewinding"),		st_drive_status_rewinding },
-	[st_drive_status_unloading]   = { 0, gettext_noop("unloading"),		st_drive_status_unloading },
-	[st_drive_status_writing]     = { 0, gettext_noop("writing"),		st_drive_status_writing },
+	const enum so_drive_status status;
+} so_drive_status[] = {
+	[so_drive_status_cleaning]    = { 0, 0, gettext_noop("cleaning"),		so_drive_status_cleaning },
+	[so_drive_status_empty_idle]  = { 0, 0, gettext_noop("empty idle"),	so_drive_status_empty_idle },
+	[so_drive_status_erasing]     = { 0, 0, gettext_noop("erasing"),		so_drive_status_erasing },
+	[so_drive_status_error]       = { 0, 0, gettext_noop("error"),			so_drive_status_error },
+	[so_drive_status_loaded_idle] = { 0, 0, gettext_noop("loaded idle"),	so_drive_status_loaded_idle },
+	[so_drive_status_loading]     = { 0, 0, gettext_noop("loading"),		so_drive_status_loading },
+	[so_drive_status_positioning] = { 0, 0, gettext_noop("positioning"),	so_drive_status_positioning },
+	[so_drive_status_reading]     = { 0, 0, gettext_noop("reading"),		so_drive_status_reading },
+	[so_drive_status_rewinding]   = { 0, 0, gettext_noop("rewinding"),		so_drive_status_rewinding },
+	[so_drive_status_unloading]   = { 0, 0, gettext_noop("unloading"),		so_drive_status_unloading },
+	[so_drive_status_writing]     = { 0, 0, gettext_noop("writing"),		so_drive_status_writing },
 
-	[st_drive_status_unknown] = { 0, gettext_noop("unknown"), st_drive_status_unknown },
+	[so_drive_status_unknown] = { 0, 0, gettext_noop("unknown"), so_drive_status_unknown },
 };
+static unsigned int so_drive_nb_status = sizeof(so_drive_status) / sizeof(*so_drive_status);
 
-static void st_drive_init(void) __attribute__((constructor));
+static void so_drive_init(void) __attribute__((constructor));
 
 
-__asm__(".symver st_drive_convert_v1, st_drive_convert@@LIBSTONE_1.2");
-struct st_value * st_drive_convert_v1(struct st_drive_v1 * drive, bool with_slot) {
-	struct st_value * last_clean = st_value_new_null();
+struct so_value * so_drive_convert(struct so_drive * drive, bool with_slot) {
+	struct so_value * last_clean = so_value_new_null();
 	if (drive->last_clean > 0)
-		last_clean = st_value_new_integer(drive->last_clean);
+		last_clean = so_value_new_integer(drive->last_clean);
 
-	struct st_value * dr = st_value_pack("{sssssssssssbsisssfsosb}",
+	struct so_value * dr = so_value_pack("{sssssssssssbsisssfsosb}",
 		"model", drive->model,
 		"vendor", drive->vendor,
 		"revision", drive->revision,
 		"serial number", drive->serial_number,
 
-		"status", st_drive_status_to_string(drive->status, false),
+		"status", so_drive_status_to_string(drive->status, false),
 		"enable", drive->enable,
 
 		"density code", (long int) drive->density_code,
-		"mode", st_media_format_mode_to_string(drive->mode, false),
+		"mode", so_media_format_mode_to_string(drive->mode, false),
 		"operation duration", drive->operation_duration,
 		"last clean", last_clean,
 		"is empty", drive->is_empty
 	);
 
 	if (with_slot)
-		st_value_hashtable_put2_v1(dr, "slot", st_slot_convert_v1(drive->slot), true);
+		so_value_hashtable_put2(dr, "slot", so_slot_convert(drive->slot), true);
 
 	return dr;
 }
 
-__asm__(".symver st_drive_free_v1, st_drive_free@@LIBSTONE_1.2");
-void st_drive_free_v1(struct st_drive_v1 * drive) {
+void so_drive_free(struct so_drive * drive) {
 	if (drive == NULL)
 		return;
 
@@ -101,42 +102,47 @@ void st_drive_free_v1(struct st_drive_v1 * drive) {
 	free(drive->data);
 }
 
-__asm__(".symver st_drive_free2_v1, st_drive_free2@@LIBSTONE_1.2");
-void st_drive_free2_v1(void * drive) {
-	st_drive_free_v1(drive);
+void so_drive_free2(void * drive) {
+	so_drive_free(drive);
 }
 
-static void st_drive_init() {
+static void so_drive_init() {
 	unsigned int i;
-	for (i = 0; i < sizeof(st_drive_status) / sizeof(*st_drive_status); i++)
-		st_drive_status[i].hash = st_string_compute_hash2(st_drive_status[i].name);
+	for (i = 0; i < so_drive_nb_status; i++) {
+		so_drive_status[i].hash = so_string_compute_hash2(so_drive_status[i].name);
+		so_drive_status[i].hash_translated = so_string_compute_hash2(gettext(so_drive_status[i].name));
+	}
 }
 
-__asm__(".symver st_drive_status_to_string_v1, st_drive_status_to_string@@LIBSTONE_1.2");
-const char * st_drive_status_to_string_v1(enum st_drive_status status, bool translate) {
-	const char * value = st_drive_status[status].name;
+const char * so_drive_status_to_string(enum so_drive_status status, bool translate) {
+	const char * value = so_drive_status[status].name;
 	if (translate)
 		value = gettext(value);
 	return value;
 }
 
-__asm__(".symver st_drive_string_to_status_v1, st_drive_string_to_status@@LIBSTONE_1.2");
-enum st_drive_status st_drive_string_to_status_v1(const char * status) {
+enum so_drive_status so_drive_string_to_status(const char * status, bool translate) {
 	if (status == NULL)
-		return st_drive_status_unknown;
+		return so_drive_status_unknown;
 
 	unsigned int i;
-	const unsigned long long hash = st_string_compute_hash2(status);
-	for (i = 0; i < sizeof(st_drive_status) / sizeof(*st_drive_status); i++)
-		if (hash == st_drive_status[i].hash)
-			return st_drive_status[i].status;
+	const unsigned long long hash = so_string_compute_hash2(status);
 
-	return st_drive_status[i].status;
+	if (translate) {
+		for (i = 0; i < so_drive_nb_status; i++)
+			if (hash == so_drive_status[i].hash_translated)
+				return so_drive_status[i].status;
+	} else {
+		for (i = 0; i < so_drive_nb_status; i++)
+			if (hash == so_drive_status[i].hash)
+				return so_drive_status[i].status;
+	}
+
+	return so_drive_status[i].status;
 }
 
-__asm__(".symver st_drive_sync_v1, st_drive_sync@@LIBSTONE_1.2");
-void st_drive_sync_v1(struct st_drive_v1 * drive, struct st_value * new_drive, bool with_slot) {
-	struct st_slot * sl = drive->slot;
+void so_drive_sync(struct so_drive * drive, struct so_value * new_drive, bool with_slot) {
+	struct so_slot * sl = drive->slot;
 
 	free(drive->model);
 	free(drive->vendor);
@@ -152,10 +158,10 @@ void st_drive_sync_v1(struct st_drive_v1 * drive, struct st_value * new_drive, b
 		sl->volume_name = NULL;
 	}
 
-	struct st_value * last_clean = NULL;
-	struct st_value * slot = NULL;
+	struct so_value * last_clean = NULL;
+	struct so_value * slot = NULL;
 
-	st_value_unpack(new_drive, "{sssssssssssbsisssfsosbso}",
+	so_value_unpack(new_drive, "{sssssssssssbsisssfsosbso}",
 		"model", &drive->model,
 		"vendor", &drive->vendor,
 		"revision", &drive->revision,
@@ -174,19 +180,19 @@ void st_drive_sync_v1(struct st_drive_v1 * drive, struct st_value * new_drive, b
 	);
 
 	if (status != NULL)
-		drive->status = st_drive_string_to_status_v1(status);
+		drive->status = so_drive_string_to_status(status, false);
 	free(status);
 
 	if (mode != NULL)
-		drive->mode = st_media_string_to_format_mode_v1(mode);
+		drive->mode = so_media_string_to_format_mode(mode);
 	free(mode);
 
-	if (last_clean->type == st_value_null)
+	if (last_clean->type == so_value_null)
 		drive->last_clean = 0;
 	else
-		drive->last_clean = st_value_integer_get_v1(last_clean);
+		drive->last_clean = so_value_integer_get(last_clean);
 
 	if (with_slot && slot != NULL)
-		st_slot_sync(drive->slot, slot);
+		so_slot_sync(drive->slot, slot);
 }
 

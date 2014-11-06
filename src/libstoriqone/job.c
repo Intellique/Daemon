@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -34,46 +34,51 @@
 
 #define gettext_noop(String) String
 
-#include "database.h"
-#include "job.h"
-#include "log.h"
-#include "string.h"
-#include "value.h"
+#include <libstoriqone/database.h>
+#include <libstoriqone/job.h>
+#include <libstoriqone/log.h>
+#include <libstoriqone/string.h>
+#include <libstoriqone/value.h>
 
-static struct st_job_status2 {
+static struct so_job_status2 {
 	unsigned long long hash;
+	unsigned long long hash_translated;
+
 	const char * name;
-	const enum st_job_status status;
-} st_job_status[] = {
-	[st_job_status_disable]   = { 0, gettext_noop("disable"),   st_job_status_disable },
-	[st_job_status_error]     = { 0, gettext_noop("error"),     st_job_status_error },
-	[st_job_status_finished]  = { 0, gettext_noop("finished"),  st_job_status_finished },
-	[st_job_status_pause]     = { 0, gettext_noop("pause"),     st_job_status_pause },
-	[st_job_status_running]   = { 0, gettext_noop("running"),   st_job_status_running },
-	[st_job_status_scheduled] = { 0, gettext_noop("scheduled"), st_job_status_scheduled },
-	[st_job_status_stopped]   = { 0, gettext_noop("stopped"),   st_job_status_stopped },
-	[st_job_status_waiting]   = { 0, gettext_noop("waiting"),   st_job_status_waiting },
+	const enum so_job_status status;
+} so_job_status[] = {
+	[so_job_status_disable]   = { 0, 0, gettext_noop("disable"),   so_job_status_disable },
+	[so_job_status_error]     = { 0, 0, gettext_noop("error"),     so_job_status_error },
+	[so_job_status_finished]  = { 0, 0, gettext_noop("finished"),  so_job_status_finished },
+	[so_job_status_pause]     = { 0, 0, gettext_noop("pause"),     so_job_status_pause },
+	[so_job_status_running]   = { 0, 0, gettext_noop("running"),   so_job_status_running },
+	[so_job_status_scheduled] = { 0, 0, gettext_noop("scheduled"), so_job_status_scheduled },
+	[so_job_status_stopped]   = { 0, 0, gettext_noop("stopped"),   so_job_status_stopped },
+	[so_job_status_waiting]   = { 0, 0, gettext_noop("waiting"),   so_job_status_waiting },
 
-	[st_job_status_unknown] = { 0, gettext_noop("unknown"), st_job_status_unknown },
+	[so_job_status_unknown] = { 0, 0, gettext_noop("unknown"), so_job_status_unknown },
 };
+static const unsigned int so_job_nb_status = sizeof(so_job_status) / sizeof(*so_job_status);
 
-static struct st_job_record_notif2 {
+static struct so_job_record_notif2 {
 	unsigned long long hash;
+	unsigned long long hash_translated;
+
 	const char * name;
-	const enum st_job_record_notif notif;
-} st_job_record_notifs[] = {
-	[st_job_record_notif_normal]    = { 0, gettext_noop("normal"),    st_job_record_notif_normal },
-	[st_job_record_notif_important] = { 0, gettext_noop("important"), st_job_record_notif_important },
-	[st_job_record_notif_read]      = { 0, gettext_noop("read"),      st_job_record_notif_read },
+	const enum so_job_record_notif notif;
+} so_job_record_notifs[] = {
+	[so_job_record_notif_normal]    = { 0, 0, gettext_noop("normal"),    so_job_record_notif_normal },
+	[so_job_record_notif_important] = { 0, 0, gettext_noop("important"), so_job_record_notif_important },
+	[so_job_record_notif_read]      = { 0, 0, gettext_noop("read"),      so_job_record_notif_read },
 
-	[st_job_record_notif_unknown] = { 0, gettext_noop("unknown"), st_job_record_notif_unknown },
+	[so_job_record_notif_unknown] = { 0, 0, gettext_noop("unknown"), so_job_record_notif_unknown },
 };
+static const unsigned int so_job_record_notif2 = sizeof(so_job_record_notifs) / sizeof(*so_job_record_notifs);
 
-static void st_job_init(void) __attribute__((constructor));
+static void so_job_init(void) __attribute__((constructor));
 
 
-__asm__(".symver st_job_add_record_v1, st_job_add_record@@LIBSTONE_1.2");
-int st_job_add_record_v1(struct st_job * job, struct st_database_connection * db_connect, enum st_log_level level, enum st_job_record_notif notif, const char * format, ...) {
+int so_job_add_record(struct so_job * job, struct so_database_connection * db_connect, enum so_log_level level, enum so_job_record_notif notif, const char * format, ...) {
 	char * message = NULL;
 
 	va_list va;
@@ -81,7 +86,7 @@ int st_job_add_record_v1(struct st_job * job, struct st_database_connection * db
 	vasprintf(&message, format, va);
 	va_end(va);
 
-	st_log_write(level, message);
+	so_log_write(level, message);
 	int failed = db_connect->ops->add_job_record(db_connect, job, level, notif, message);
 
 	free(message);
@@ -89,9 +94,8 @@ int st_job_add_record_v1(struct st_job * job, struct st_database_connection * db
 	return failed;
 }
 
-__asm__(".symver st_job_convert_v1, st_job_convert@@LIBSTONE_1.2");
-struct st_value * st_job_convert_v1(struct st_job * job) {
-	return st_value_pack("{sssssssisisisisfsssisb}",
+struct so_value * so_job_convert(struct so_job * job) {
+	return so_value_pack("{sssssssisisisisfsssisb}",
 		"id", job->key,
 		"name", job->name,
 		"type", job->type,
@@ -102,90 +106,99 @@ struct st_value * st_job_convert_v1(struct st_job * job) {
 
 		"num runs", job->num_runs,
 		"done", job->done,
-		"status", st_job_status_to_string_v1(job->status, false),
+		"status", so_job_status_to_string(job->status, false),
 
 		"exit code", (long int) job->exit_code,
 		"stopped by user", job->stopped_by_user
 	);
 }
 
-__asm__(".symver st_job_free_v1, st_job_free@@LIBSTONE_1.2");
-void st_job_free_v1(struct st_job * job) {
+void so_job_free(struct so_job * job) {
 	if (job == NULL)
 		return;
 
 	free(job->key);
 	free(job->name);
 	free(job->type);
-	st_value_free(job->meta);
-	st_value_free(job->option);
-	st_value_free(job->db_data);
+	so_value_free(job->meta);
+	so_value_free(job->option);
+	so_value_free(job->db_data);
 
 	free(job);
 }
 
-__asm__(".symver st_job_free2_v1, st_job_free2@@LIBSTONE_1.2");
-void st_job_free2_v1(void * job) {
-	st_job_free_v1(job);
+void so_job_free2(void * job) {
+	so_job_free(job);
 }
 
-static void st_job_init() {
-	int i;
-	for (i = 0; st_job_status[i].status != st_job_status_unknown; i++)
-		st_job_status[i].hash = st_string_compute_hash2(st_job_status[i].name);
-	st_job_status[i].hash = st_string_compute_hash2(st_job_status[i].name);
+static void so_job_init() {
+	unsigned int i;
+	for (i = 0; i < so_job_nb_status; i++) {
+		so_job_status[i].hash = so_string_compute_hash2(so_job_status[i].name);
+		so_job_status[i].hash_translated = so_string_compute_hash2(gettext(so_job_status[i].name));
+	}
 
-	for (i = 0; st_job_record_notifs[i].notif != st_job_record_notif_unknown; i++)
-		st_job_record_notifs[i].hash = st_string_compute_hash2(st_job_record_notifs[i].name);
-	st_job_record_notifs[i].hash = st_string_compute_hash2(st_job_record_notifs[i].name);
+	for (i = 0; i < so_job_record_notif2; i++) {
+		so_job_record_notifs[i].hash = so_string_compute_hash2(so_job_record_notifs[i].name);
+		so_job_record_notifs[i].hash_translated = so_string_compute_hash2(gettext(so_job_record_notifs[i].name));
+	}
 }
 
-__asm__(".symver st_job_report_notif_to_string_v1, st_job_report_notif_to_string@@LIBSTONE_1.2");
-const char * st_job_report_notif_to_string_v1(enum st_job_record_notif notif, bool translate) {
-	const char * value = st_job_record_notifs[notif].name;
+const char * so_job_report_notif_to_string(enum so_job_record_notif notif, bool translate) {
+	const char * value = so_job_record_notifs[notif].name;
 	if (translate)
 		value = gettext(value);
 	return value;
 }
 
-__asm__(".symver st_job_status_to_string_v1, st_job_status_to_string@@LIBSTONE_1.2");
-const char * st_job_status_to_string_v1(enum st_job_status status, bool translate) {
-	const char * value = st_job_status[status].name;
+const char * so_job_status_to_string(enum so_job_status status, bool translate) {
+	const char * value = so_job_status[status].name;
 	if (translate)
 		value = gettext(value);
 	return value;
 }
 
-__asm__(".symver st_job_string_to_record_notif_v1, st_job_string_to_record_notif@@LIBSTONE_1.2");
-enum st_job_record_notif st_job_string_to_record_notif_v1(const char * notif) {
+enum so_job_record_notif so_job_string_to_record_notif(const char * notif, bool translate) {
 	if (notif == NULL)
-		return st_job_record_notif_unknown;
+		return so_job_record_notif_unknown;
 
 	unsigned int i;
-	const unsigned long long hash = st_string_compute_hash2(notif);
-	for (i = 0; st_job_record_notifs[i].notif != st_job_record_notif_unknown; i++)
-		if (st_job_record_notifs[i].hash == hash)
-			return st_job_record_notifs[i].notif;
+	const unsigned long long hash = so_string_compute_hash2(notif);
 
-	return st_job_record_notifs[i].notif;
+	if (translate) {
+		for (i = 0; so_job_record_notifs[i].notif != so_job_record_notif_unknown; i++)
+			if (so_job_record_notifs[i].hash_translated == hash)
+				return so_job_record_notifs[i].notif;
+	} else {
+		for (i = 0; so_job_record_notifs[i].notif != so_job_record_notif_unknown; i++)
+			if (so_job_record_notifs[i].hash == hash)
+				return so_job_record_notifs[i].notif;
+	}
+
+	return so_job_record_notifs[i].notif;
 }
 
-__asm__(".symver st_job_string_to_status_v1, st_job_string_to_status@@LIBSTONE_1.2");
-enum st_job_status st_job_string_to_status_v1(const char * status) {
+enum so_job_status so_job_string_to_status(const char * status, bool translate) {
 	if (status == NULL)
-		return st_job_status_unknown;
+		return so_job_status_unknown;
 
 	unsigned int i;
-	const unsigned long long hash = st_string_compute_hash2(status);
-	for (i = 0; st_job_status[i].status != st_job_status_unknown; i++)
-		if (st_job_status[i].hash == hash)
-			return st_job_status[i].status;
+	const unsigned long long hash = so_string_compute_hash2(status);
 
-	return st_job_status[i].status;
+	if (translate) {
+		for (i = 0; so_job_status[i].status != so_job_status_unknown; i++)
+			if (so_job_status[i].hash_translated == hash)
+				return so_job_status[i].status;
+	} else {
+		for (i = 0; so_job_status[i].status != so_job_status_unknown; i++)
+			if (so_job_status[i].hash == hash)
+				return so_job_status[i].status;
+	}
+
+	return so_job_status[i].status;
 }
 
-__asm__(".symver st_job_sync_v1, st_job_sync@@LIBSTONE_1.2");
-void st_job_sync_v1(struct st_job * job, struct st_value * new_job) {
+void so_job_sync(struct so_job * job, struct so_value * new_job) {
 	free(job->key);
 	free(job->name);
 	free(job->type);
@@ -195,7 +208,7 @@ void st_job_sync_v1(struct st_job * job, struct st_value * new_job) {
 	double done = 0;
 	long int exit_code = 0;
 
-	st_value_unpack(new_job, "{sssssssisisisisfsssisb}",
+	so_value_unpack(new_job, "{sssssssisisisisfsssisb}",
 		"id", &job->key,
 		"name", &job->name,
 		"type", &job->type,
@@ -213,7 +226,7 @@ void st_job_sync_v1(struct st_job * job, struct st_value * new_job) {
 	);
 
 	job->done = done;
-	job->status = st_job_string_to_status_v1(status);
+	job->status = so_job_string_to_status(status, false);
 	free(status);
 	job->exit_code = exit_code;
 }

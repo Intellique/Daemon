@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -29,23 +29,21 @@
 // uname
 #include <sys/utsname.h>
 
-#include <libstone/database.h>
-#include <libstone/value.h>
+#include <libstoriqone/database.h>
+#include <libstoriqone/host.h>
+#include <libstoriqone/value.h>
 
-#include "host.h"
+static struct so_host host = { NULL, NULL };
 
-static struct st_host host = { NULL, NULL };
-
-static void st_host_exit(void) __attribute__((destructor));
+static void so_host_exit(void) __attribute__((destructor));
 
 
-static void st_host_exit() {
+static void so_host_exit() {
 	free(host.hostname);
 	free(host.uuid);
 }
 
-__asm__(".symver st_host_init_v1, st_host_init@@LIBSTONE_1.2");
-bool st_host_init_v1(struct st_database_connection * connect) {
+bool so_host_init(struct so_database_connection * connect) {
 	if (connect == NULL)
 		return false;
 
@@ -57,14 +55,12 @@ bool st_host_init_v1(struct st_database_connection * connect) {
 	return failed == 0;
 }
 
-__asm__(".symver st_host_get_info_v1, st_host_get_info@@LIBSTONE_1.2");
-struct st_host * st_host_get_info_v1() {
+struct so_host * so_host_get_info() {
 	return &host;
 }
 
-__asm__(".symver st_host_get_info2_v1, st_host_get_info2@@LIBSTONE_1.2");
-struct st_value * st_host_get_info2_v1() {
-	return st_value_pack("{ssss}",
+struct so_value * so_host_get_info2() {
+	return so_value_pack("{ssss}",
 		"name", host.hostname,
 		"uuid", host.uuid
 	);
