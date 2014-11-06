@@ -36,24 +36,26 @@ struct so_value;
 
 /**
  * \enum so_changer_action
- * \brief Next action of changer
+ * \brief Next action to be performed on changer
  */
 enum so_changer_action {
 	/**
-	 * \brief No action
+	 * \brief No action scheduled
 	 */
 	so_changer_action_none = 0x1,
 	/**
-	 * \brief Resquest offline
+	 * \brief Resquest changer to be offline
 	 */
 	so_changer_action_put_offline = 0x2,
 	/**
-	 * \brief Request online
+	 * \brief Request changer to be online
 	 */
 	so_changer_action_put_online = 0x3,
 
 	/**
 	 * \brief Used in case of errors
+	 *
+	 * \note Should not be used
 	 */
 	so_changer_action_unknown = 0x0,
 };
@@ -94,6 +96,11 @@ enum so_changer_status {
 	 */
 	so_changer_status_unloading = 0x9,
 
+	/**
+	 * \brief Used in case of errors
+	 *
+	 * \note Should not be used
+	 */
 	so_changer_status_unknown = 0x0,
 };
 
@@ -184,6 +191,7 @@ struct so_changer {
  * \brief Convert an enumeration info static allocated string
  *
  * \param[in] action : a value of enum so_changer_action
+ * \param[in] translate : translate returned value
  * \return a static allocated string representing \a action
  */
 const char * so_changer_action_to_string(enum so_changer_action action, bool translate);
@@ -213,13 +221,21 @@ void so_changer_free2(void * changer) __attribute__((nonnull));
 const char * so_changer_status_to_string(enum so_changer_status status, bool translate);
 
 /**
- * \brief Convert an untranslate action to an enumeration
+ * \brief Convert an action to an enumeration
  *
  * \param[in] action : action name
+ * \param[in] translate : compare with translated value
  * \return an enumeration value of \a action
  */
 enum so_changer_action so_changer_string_to_action(const char * action, bool translate) __attribute__((nonnull));
 
+/**
+ * \brief Convert a status to an enumeration
+ *
+ * \param[in] status : status name
+ * \param[in] translate : compare with translated value
+ * \return an enumeration value of \a status
+ */
 enum so_changer_status so_changer_string_to_status(const char * status, bool translate) __attribute__((nonnull));
 
 /**
