@@ -27,7 +27,8 @@
 // memmove, strlen, strspn, strstr
 #include <string.h>
 
-#include "string.h"
+#include <libstoriqone/string.h>
+#include <libstoriqone/value.h>
 
 
 /**
@@ -36,17 +37,16 @@
  * \param[in] string : a string which contains one or more UTF8 characters
  * \returns size of first character or \b -1
  */
-static int st_string_valid_utf8_char_v1(const char * string);
-static int st_string_valid_utf8_char2_v1(const unsigned char * ptr, unsigned short length);
+static int so_string_valid_utf8_char(const char * string);
+static int so_string_valid_utf8_char2(const unsigned char * ptr, unsigned short length);
 
-__asm__(".symver st_string_check_valid_utf8_v1, st_string_check_valid_utf8@@LIBSTONE_1.2");
-bool st_string_check_valid_utf8_v1(const char * string) {
+bool so_string_check_valid_utf8(const char * string) {
 	if (string == NULL)
 		return false;
 
 	const char * ptr = string;
 	while (*ptr) {
-		int size = st_string_valid_utf8_char_v1(ptr);
+		int size = so_string_valid_utf8_char(ptr);
 
 		if (!size)
 			return false;
@@ -57,16 +57,14 @@ bool st_string_check_valid_utf8_v1(const char * string) {
 	return true;
 }
 
-__asm__(".symver st_string_compute_hash_v1, st_string_compute_hash@@LIBSTONE_1.2");
-unsigned long long st_string_compute_hash_v1(const struct st_value * value) {
-	if (value == NULL || value->type != st_value_string)
+unsigned long long so_string_compute_hash(const struct so_value * value) {
+	if (value == NULL || value->type != so_value_string)
 		return 0;
 
-	return st_string_compute_hash2_v1(st_value_string_get(value));
+	return so_string_compute_hash2(so_value_string_get(value));
 }
 
-__asm__(".symver st_string_compute_hash2_v1, st_string_compute_hash2@@LIBSTONE_1.2");
-unsigned long long st_string_compute_hash2_v1(const char * str) {
+unsigned long long so_string_compute_hash2(const char * str) {
 	if (str == NULL)
 		return 0;
 
@@ -77,8 +75,7 @@ unsigned long long st_string_compute_hash2_v1(const char * str) {
 	return hash;
 }
 
-__asm__(".symver st_string_convert_unicode_to_utf8_v1, st_string_convert_unicode_to_utf8@@LIBSTONE_1.2");
-bool st_string_convert_unicode_to_utf8_v1(unsigned int unicode, char * string, size_t length, bool end_string) {
+bool so_string_convert_unicode_to_utf8(unsigned int unicode, char * string, size_t length, bool end_string) {
 	if (unicode < 0x80 && length > 1) {
 		string[0] = unicode & 0x7F;
 		if (end_string)
@@ -110,8 +107,7 @@ bool st_string_convert_unicode_to_utf8_v1(unsigned int unicode, char * string, s
 	return false;
 }
 
-__asm__(".symver st_string_delete_double_char_v1, st_string_delete_double_char@@LIBSTONE_1.2");
-void st_string_delete_double_char_v1(char * str, char delete_char) {
+void so_string_delete_double_char(char * str, char delete_char) {
 	char double_char[3] = { delete_char, delete_char, '\0' };
 
 	char * ptr = strstr(str, double_char);
@@ -127,8 +123,7 @@ void st_string_delete_double_char_v1(char * str, char delete_char) {
 	}
 }
 
-__asm__(".symver st_string_middle_elipsis_v1, st_string_middle_elipsis@@LIBSTONE_1.2");
-void st_string_middle_elipsis_v1(char * string, size_t length) {
+void so_string_middle_elipsis(char * string, size_t length) {
 	size_t str_length = strlen(string);
 	if (str_length <= length)
 		return;
@@ -139,7 +134,7 @@ void st_string_middle_elipsis_v1(char * string, size_t length) {
 	char * ptrA = string;
 	char * ptrB = string + str_length;
 	while (used < length) {
-		int char_length = st_string_valid_utf8_char_v1(ptrA);
+		int char_length = so_string_valid_utf8_char(ptrA);
 		if (char_length == 0)
 			return;
 
@@ -150,7 +145,7 @@ void st_string_middle_elipsis_v1(char * string, size_t length) {
 		ptrA += char_length;
 
 		int offset = 1;
-		while (char_length = st_string_valid_utf8_char_v1(ptrB - offset), ptrA < ptrB - offset && char_length == 0)
+		while (char_length = so_string_valid_utf8_char(ptrB - offset), ptrA < ptrB - offset && char_length == 0)
 			offset++;
 
 		if (char_length == 0)
@@ -167,8 +162,7 @@ void st_string_middle_elipsis_v1(char * string, size_t length) {
 	memmove(ptrA + 1, ptrB, strlen(ptrB) + 1);
 }
 
-__asm__(".symver st_string_rtrim_v1, st_string_rtrim@@LIBSTONE_1.2");
-void st_string_rtrim_v1(char * str, char trim) {
+void so_string_rtrim(char * str, char trim) {
 	size_t length = strlen(str);
 
 	char * ptr;
@@ -178,8 +172,7 @@ void st_string_rtrim_v1(char * str, char trim) {
 		ptr[1] = '\0';
 }
 
-__asm__(".symver st_string_trim_v1, st_string_trim@@LIBSTONE_1.2");
-void st_string_trim_v1(char * str, char trim) {
+void so_string_trim(char * str, char trim) {
 	size_t length = strlen(str);
 
 	char * ptr;
@@ -200,8 +193,7 @@ void st_string_trim_v1(char * str, char trim) {
 		ptr[1] = '\0';
 }
 
-__asm__(".symver st_string_unicode_length_v1, st_string_unicode_length@@LIBSTONE_1.2");
-size_t st_string_unicode_length_v1(unsigned int unicode) {
+size_t so_string_unicode_length(unsigned int unicode) {
 	if (unicode < 0x80)
 		return 1;
 	else if (unicode < 0x800)
@@ -214,7 +206,7 @@ size_t st_string_unicode_length_v1(unsigned int unicode) {
 	return 0;
 }
 
-static int st_string_valid_utf8_char_v1(const char * string) {
+static int so_string_valid_utf8_char(const char * string) {
 	const unsigned char * ptr = (const unsigned char *) string;
 	if ((*ptr & 0x7F) == *ptr)
 		return 1;
@@ -223,14 +215,14 @@ static int st_string_valid_utf8_char_v1(const char * string) {
 	else if ((*ptr & 0xDF) == *ptr)
 	  return ((ptr[1] & 0xBF) != ptr[1] || ((ptr[1] & 0x80) != 0x80)) ? 0 : 2;
 	else if ((*ptr & 0xEF) == *ptr)
-	  return st_string_valid_utf8_char2_v1(ptr, 2) ? 0 : 3;
+	  return so_string_valid_utf8_char2(ptr, 2) ? 0 : 3;
 	else if ((*ptr & 0xF7) == *ptr)
-	  return st_string_valid_utf8_char2_v1(ptr, 3) ? 0 : 4;
+	  return so_string_valid_utf8_char2(ptr, 3) ? 0 : 4;
 	else
 		return 0;
 }
 
-static int st_string_valid_utf8_char2_v1(const unsigned char * ptr, unsigned short length) {
+static int so_string_valid_utf8_char2(const unsigned char * ptr, unsigned short length) {
 	unsigned short i;
 	for (i = 1; i <= length; i++)
 		if ((ptr[i] & 0xBF) != ptr[i] || ((ptr[i] & 0x80) != 0x80))

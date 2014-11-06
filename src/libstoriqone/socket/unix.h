@@ -24,16 +24,14 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_SOCKET_UNIX_P_H__
-#define __LIBSTONE_SOCKET_UNIX_P_H__
+#ifndef __LIBSTORIQONE_SOCKET_UNIX_P_H__
+#define __LIBSTORIQONE_SOCKET_UNIX_P_H__
 
-#include "../socket.h"
-
-int st_socket_unix_v1(struct st_value * config);
-int st_socket_unix_accept_and_close_v1(int fd, struct st_value * config);
-int st_socket_unix_close_v1(int fd, struct st_value * config);
-bool st_socket_unix_server_v1(struct st_value * config, st_socket_accept_f accept_callback);
-int st_socket_server_temp_unix_v1(struct st_value * config);
+int so_socket_unix(struct so_value * config);
+int so_socket_unix_accept_and_close(int fd, struct so_value * config);
+int so_socket_unix_close(int fd, struct so_value * config);
+bool so_socket_unix_server(struct so_value * config, so_socket_accept_f accept_callback);
+int so_socket_server_temp_unix(struct so_value * config);
 
 #endif
 

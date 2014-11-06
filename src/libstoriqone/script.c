@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -31,48 +31,57 @@
 
 #define gettext_noop(String) String
 
-#include "script.h"
-#include "string.h"
+#include <libstoriqone/script.h>
+#include <libstoriqone/string.h>
 
-static struct st_script_type2 {
+static struct so_script_type2 {
 	unsigned long long hash;
+	unsigned long long hash_translated;
+
 	const char * name;
-	const enum st_script_type type;
-} st_script_types[] = {
-	[st_script_type_on_error] = { 0, gettext_noop("on error"), st_script_type_on_error },
-	[st_script_type_post_job] = { 0, gettext_noop("post job"), st_script_type_post_job },
-	[st_script_type_pre_job]  = { 0, gettext_noop("pre job"),  st_script_type_pre_job },
+	const enum so_script_type type;
+} so_script_types[] = {
+	[so_script_type_on_error] = { 0, 0, gettext_noop("on error"), so_script_type_on_error },
+	[so_script_type_post_job] = { 0, 0, gettext_noop("post job"), so_script_type_post_job },
+	[so_script_type_pre_job]  = { 0, 0, gettext_noop("pre job"),  so_script_type_pre_job },
 
-	[st_script_type_unknown]  = { 0, gettext_noop("unknown"),  st_script_type_unknown },
+	[so_script_type_unknown]  = { 0, 0, gettext_noop("unknown"),  so_script_type_unknown },
 };
+static const unsigned int so_script_nb_types = sizeof(so_script_types) / sizeof(*so_script_types);
 
-static void st_script_init(void) __attribute__((constructor));
+static void so_script_init(void) __attribute__((constructor));
 
 
-static void st_script_init() {
+static void so_script_init() {
 	unsigned int i;
-	for (i = 0; st_script_types[i].type != st_script_type_unknown; i++)
-		st_script_types[i].hash = st_string_compute_hash2(st_script_types[i].name);
-	st_script_types[i].hash = st_string_compute_hash2(st_script_types[i].name);
+	for (i = 0; i < so_script_nb_types; i++) {
+		so_script_types[i].hash = so_string_compute_hash2(so_script_types[i].name);
+		so_script_types[i].hash_translated = so_string_compute_hash2(gettext(so_script_types[i].name));
+	}
 }
 
-__asm__(".symver st_script_string_to_type_v1, st_script_string_to_type@@LIBSTONE_1.2");
-enum st_script_type st_script_string_to_type_v1(const char * string) {
+enum so_script_type so_script_string_to_type(const char * string, bool translate) {
 	if (string == NULL)
-		return st_script_type_unknown;
+		return so_script_type_unknown;
 
 	unsigned int i;
-	const unsigned long long hash = st_string_compute_hash2(string);
-	for (i = 0; st_script_types[i].type != st_script_type_unknown; i++)
-		if (hash == st_script_types[i].hash)
-			return st_script_types[i].type;
+	const unsigned long long hash = so_string_compute_hash2(string);
 
-	return st_script_type_unknown;
+	if (translate) {
+		for (i = 0; i < so_script_nb_types; i++)
+			if (hash == so_script_types[i].hash_translated)
+				return so_script_types[i].type;
+	} else {
+		for (i = 0; i < so_script_nb_types; i++)
+			if (hash == so_script_types[i].hash)
+				return so_script_types[i].type;
+	}
+
+	return so_script_type_unknown;
 }
 
-__asm__(".symver st_script_type_to_string_v1, st_script_type_to_string@@LIBSTONE_1.2");
-const char * st_script_type_to_string_v1(enum st_script_type type, bool translate) {
-	const char * value = st_script_types[type].name;
+const char * so_script_type_to_string(enum so_script_type type, bool translate) {
+	const char * value = so_script_types[type].name;
 	if (translate)
 		value = gettext(value);
 	return value;

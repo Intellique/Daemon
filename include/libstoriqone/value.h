@@ -332,7 +332,7 @@ const char * so_value_string_get(const struct so_value * value) __attribute__((n
 
 void so_value_iterator_free(struct so_value_iterator * iter) __attribute__((nonnull));
 struct so_value * so_value_iterator_get_key(struct so_value_iterator * iter, bool move_to_next, bool shared) __attribute__((nonnull,warn_unused_result));
-struct so_value * so_value_iterator_get_value(struct so_value_iterator * iter, bool shared) __attribute__((nonnull,warn_unused_result));
+struct so_value * so_value_iterator_get_value(struct so_value_iterator * iter, bool shared) __attribute__((nonnull));
 bool so_value_iterator_has_next(struct so_value_iterator * iter) __attribute__((nonnull));
 
 #endif

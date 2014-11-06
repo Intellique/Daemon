@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -27,27 +27,27 @@
 #ifndef __LIBSTONE_PROCESS_H__
 #define __LIBSTONE_PROCESS_H__
 
-struct st_value;
+struct so_value;
 
-enum st_process_fd_type {
-	st_process_fd_type_default,
-	st_process_fd_type_close,
-	st_process_fd_type_set,
-	st_process_fd_type_dup,
+enum so_process_fd_type {
+	so_process_fd_type_default,
+	so_process_fd_type_close,
+	so_process_fd_type_set,
+	so_process_fd_type_dup,
 };
 
-struct st_process_fd {
+struct so_process_fd {
 	int fd;
-	enum st_process_fd_type type;
+	enum so_process_fd_type type;
 };
 
-enum st_process_std {
-    st_process_stdin  = 0,
-    st_process_stdout = 1,
-    st_process_stderr = 2,
+enum so_process_std {
+    so_process_stdin  = 0,
+    so_process_stdout = 1,
+    so_process_stderr = 2,
 };
 
-struct st_process {
+struct so_process {
 	/**
 	 * \brief Command name
 	 */
@@ -59,14 +59,14 @@ struct st_process {
 	char ** params;
 	unsigned int nb_parameters;
 
-	struct st_value * environment;
+	struct so_value * environment;
 	int nice;
 
 	/**
 	 * \brief Pid of process or -1
 	 */
 	int pid;
-	struct st_process_fd fds[3];
+	struct so_process_fd fds[3];
 
 	/**
 	 * \brief code that process has returned
@@ -74,21 +74,21 @@ struct st_process {
 	int exited_code;
 };
 
-void st_process_close(struct st_process * process, enum st_process_std std);
-void st_process_drop_environment(struct st_process * process, const char * key);
-void st_process_free(struct st_process * process, unsigned int nb_process);
-void st_process_new(struct st_process * process, const char * process_name, const char ** params, unsigned int nb_params);
-void st_process_pipe(struct st_process * process_out, enum st_process_std out, struct st_process * process_in);
-int st_process_pipe_from(struct st_process * process_out, enum st_process_std out);
-int st_process_pipe_to(struct st_process * process_in);
-void st_process_put_environment(struct st_process * process, const char * key, const char * value);
-void st_process_redir_err_to_out(struct st_process * process);
-void st_process_redir_out_to_err(struct st_process * process);
-void st_process_set_environment(struct st_process * process, struct st_value * environment);
-void st_process_set_fd(struct st_process * process, enum st_process_std fd_process, int new_fd);
-void st_process_set_nice(struct st_process * process, int nice);
-void st_process_start(struct st_process * process, unsigned int nb_process);
-void st_process_wait(struct st_process * process, unsigned int nb_process);
+void so_process_close(struct so_process * process, enum so_process_std std);
+void so_process_drop_environment(struct so_process * process, const char * key);
+void so_process_free(struct so_process * process, unsigned int nb_process);
+void so_process_new(struct so_process * process, const char * process_name, const char ** params, unsigned int nb_params);
+void so_process_pipe(struct so_process * process_out, enum so_process_std out, struct so_process * process_in);
+int so_process_pipe_from(struct so_process * process_out, enum so_process_std out);
+int so_process_pipe_to(struct so_process * process_in);
+void so_process_put_environment(struct so_process * process, const char * key, const char * value);
+void so_process_redir_err_to_out(struct so_process * process);
+void so_process_redir_out_to_err(struct so_process * process);
+void so_process_set_environment(struct so_process * process, struct so_value * environment);
+void so_process_set_fd(struct so_process * process, enum so_process_std fd_process, int new_fd);
+void so_process_set_nice(struct so_process * process, int nice);
+void so_process_start(struct so_process * process, unsigned int nb_process);
+void so_process_wait(struct so_process * process, unsigned int nb_process);
 
 #endif
 

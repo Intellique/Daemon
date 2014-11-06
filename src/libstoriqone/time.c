@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -27,15 +27,14 @@
 // localtime_r, time
 #include <time.h>
 
-#include "time.h"
+#include <libstoriqone/time.h>
 
-__asm__(".symver st_time_cmp_v1, st_time_cmp@@LIBSTONE_1.2");
-int st_time_cmp_v1(struct timespec * ta, struct timespec * tb) {
+int so_time_cmp(struct timespec * ta, struct timespec * tb) {
 	if (ta->tv_nsec < 0 || ta->tv_nsec > 1000000000L)
-		st_time_fix_v1(ta);
+		so_time_fix(ta);
 
 	if (tb->tv_nsec < 0 || tb->tv_nsec > 1000000000L)
-		st_time_fix_v1(tb);
+		so_time_fix(tb);
 
 	if (ta->tv_sec == tb->tv_sec) {
 		if (ta->tv_nsec < tb->tv_nsec)
@@ -46,8 +45,7 @@ int st_time_cmp_v1(struct timespec * ta, struct timespec * tb) {
 	return ta->tv_sec < tb->tv_sec ? -1 : 1;
 }
 
-__asm__(".symver st_time_convert_v1, st_time_convert@@LIBSTONE_1.2");
-size_t st_time_convert_v1(time_t * clock, const char * format, char * buffer, size_t buffer_length) {
+size_t so_time_convert(time_t * clock, const char * format, char * buffer, size_t buffer_length) {
 	struct tm lnow;
 	if (clock == NULL) {
 		time_t lclock = time(NULL);
@@ -59,19 +57,17 @@ size_t st_time_convert_v1(time_t * clock, const char * format, char * buffer, si
 	return strftime(buffer, buffer_length, format, &lnow);
 }
 
-__asm__(".symver st_time_diff_v1, st_time_diff@@LIBSTONE_1.2");
-long long int st_time_diff_v1(struct timespec * ta, struct timespec * tb) {
+long long int so_time_diff(struct timespec * ta, struct timespec * tb) {
 	if (ta->tv_nsec < 0 || ta->tv_nsec > 1000000000L)
-		st_time_fix_v1(ta);
+		so_time_fix(ta);
 
 	if (tb->tv_nsec < 0 || tb->tv_nsec > 1000000000L)
-		st_time_fix_v1(tb);
+		so_time_fix(tb);
 
 	return 1000000000L * (ta->tv_sec - tb->tv_sec) + ta->tv_nsec - tb->tv_nsec;
 }
 
-__asm__(".symver st_time_fix_v1, st_time_fix@@LIBSTONE_1.2");
-void st_time_fix_v1(struct timespec * time) {
+void so_time_fix(struct timespec * time) {
 	if (time->tv_nsec < 0 || time->tv_nsec > 1000000000L) {
 		time->tv_sec += time->tv_nsec / 1000000000L;
 		time->tv_nsec %= 1000000000L;

@@ -95,10 +95,10 @@ struct so_media {
 
 	enum so_media_status status;
 
-	time_t firso_used;
+	time_t first_used;
 	time_t use_before;
-	time_t laso_read;
-	time_t laso_write;
+	time_t last_read;
+	time_t last_write;
 
 	long load_count;
 	long read_count;
@@ -178,21 +178,21 @@ void so_media_format_free(struct so_media_format * format) __attribute__((nonnul
 void so_pool_free(struct so_pool * pool) __attribute__((nonnull));
 
 const char * so_media_format_data_type_to_string(enum so_media_format_data_type type, bool translate);
-enum so_media_format_data_type so_media_string_to_format_data_type(const char * type) __attribute__((nonnull));
+enum so_media_format_data_type so_media_string_to_format_data_type(const char * type, bool translate) __attribute__((nonnull));
 
 const char * so_media_format_mode_to_string(enum so_media_format_mode mode, bool translate);
-enum so_media_format_mode so_media_string_to_format_mode(const char * mode) __attribute__((nonnull));
+enum so_media_format_mode so_media_string_to_format_mode(const char * mode, bool translate) __attribute__((nonnull));
 
 const char * so_media_status_to_string(enum so_media_status status, bool translate);
-enum so_media_status so_media_string_to_status(const char * status) __attribute__((nonnull));
+enum so_media_status so_media_string_to_status(const char * status, bool translate) __attribute__((nonnull));
 
-enum so_media_type so_media_string_to_type(const char * type) __attribute__((nonnull));
+enum so_media_type so_media_string_to_type(const char * type, bool translate) __attribute__((nonnull));
 const char * so_media_type_to_string(enum so_media_type type, bool translate);
 
 const char * so_pool_autocheck_mode_to_string(enum so_pool_autocheck_mode mode, bool translate);
-enum so_pool_autocheck_mode so_pool_string_to_autocheck_mode(const char * mode) __attribute__((nonnull));
+enum so_pool_autocheck_mode so_pool_string_to_autocheck_mode(const char * mode, bool translate) __attribute__((nonnull));
 
-enum so_pool_unbreakable_level so_pool_string_to_unbreakable_level(const char * level) __attribute__((nonnull));
+enum so_pool_unbreakable_level so_pool_string_to_unbreakable_level(const char * level, bool translate) __attribute__((nonnull));
 const char * so_pool_unbreakable_level_to_string(enum so_pool_unbreakable_level level, bool translate);
 
 #endif

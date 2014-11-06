@@ -24,21 +24,19 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_SOCKET_TCP_P_H__
-#define __LIBSTONE_SOCKET_TCP_P_H__
+#ifndef __LIBSTORIQONE_SOCKET_TCP_P_H__
+#define __LIBSTORIQONE_SOCKET_TCP_P_H__
 
-#include "../socket.h"
-
-int st_socket_tcp_v1(struct st_value * config);
-int st_socket_tcp_accept_and_close_v1(int fd, struct st_value * config);
-int st_socket_tcp6_accept_and_close_v1(int fd, struct st_value * config);
-int st_socket_tcp_close_v1(int fd, struct st_value * config);
-int st_socket_tcp6_v1(struct st_value * config);
-int st_socket_tcp6_close_v1(int fd, struct st_value * config);
-bool st_socket_tcp_server_v1(struct st_value * config, st_socket_accept_f accept_callback);
-bool st_socket_tcp6_server_v1(struct st_value * config, st_socket_accept_f accept_callback);
-int st_socket_server_temp_tcp_v1(struct st_value * config);
-int st_socket_server_temp_tcp6_v1(struct st_value * config);
+int so_socket_tcp(struct so_value * config);
+int so_socket_tcp_accept_and_close(int fd, struct so_value * config);
+int so_socket_tcp6_accept_and_close(int fd, struct so_value * config);
+int so_socket_tcp_close(int fd, struct so_value * config);
+int so_socket_tcp6(struct so_value * config);
+int so_socket_tcp6_close(int fd, struct so_value * config);
+bool so_socket_tcp_server(struct so_value * config, so_socket_accept_f accept_callback);
+bool so_socket_tcp6_server(struct so_value * config, so_socket_accept_f accept_callback);
+int so_socket_server_temp_tcp(struct so_value * config);
+int so_socket_server_temp_tcp6(struct so_value * config);
 
 #endif
 

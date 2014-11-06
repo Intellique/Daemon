@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -48,29 +48,30 @@
 // close, unlink
 #include <unistd.h>
 
-#include <libstone/poll.h>
-#include <libstone/value.h>
+#include <libstoriqone/checksum.h>
+#include <libstoriqone/poll.h>
+#include <libstoriqone/socket.h>
+#include <libstoriqone/value.h>
 
-#include "../checksum.h"
 #include "unix.h"
 
-struct st_unix_socket_server_v1 {
+struct so_unix_socket_server {
 	int fd;
-	st_socket_accept_f callback;
+	so_socket_accept_f callback;
 };
 
-static void st_socket_unix_server_callback_v1(int fd, short event, void * data);
+static void so_socket_unix_server_callback(int fd, short event, void * data);
 
 
-int st_socket_unix_v1(struct st_value * config) {
+int so_socket_unix(struct so_value * config) {
 	int type = SOCK_STREAM;
 
-	struct st_value * vtype = st_value_hashtable_get2(config, "type", false, false);
-	if (vtype->type == st_value_string && !strcmp(st_value_string_get(vtype), "datagram"))
+	struct so_value * vtype = so_value_hashtable_get2(config, "type", false, false);
+	if (vtype->type == so_value_string && !strcmp(so_value_string_get(vtype), "datagram"))
 		type = SOCK_DGRAM;
 
-	struct st_value * vpath = st_value_hashtable_get2(config, "path", false, false);
-	if (vpath->type != st_value_string)
+	struct so_value * vpath = so_value_hashtable_get2(config, "path", false, false);
+	if (vpath->type != so_value_string)
 		return -1;
 
 	int fd = socket(AF_UNIX, type, 0);
@@ -80,7 +81,7 @@ int st_socket_unix_v1(struct st_value * config) {
 	struct sockaddr_un addr;
 	bzero(&addr, sizeof(addr));
 	addr.sun_family = AF_UNIX;
-	snprintf(addr.sun_path, sizeof(addr.sun_path), st_value_string_get(vpath));
+	snprintf(addr.sun_path, sizeof(addr.sun_path), so_value_string_get(vpath));
 
 	if (connect(fd, (struct sockaddr *) &addr, sizeof(addr)) != 0) {
 		close(fd);
@@ -90,20 +91,20 @@ int st_socket_unix_v1(struct st_value * config) {
 	return fd;
 }
 
-int st_socket_unix_accept_and_close_v1(int fd, struct st_value * config) {
+int so_socket_unix_accept_and_close(int fd, struct so_value * config) {
 	struct sockaddr_un new_addr;
 	bzero(&new_addr, sizeof(new_addr));
 	socklen_t length;
 	int new_fd = accept(fd, (struct sockaddr *) &new_addr, &length);
 
-	st_socket_unix_close_v1(fd, config);
+	so_socket_unix_close(fd, config);
 
 	return new_fd;
 }
 
-int st_socket_unix_close_v1(int fd, struct st_value * config) {
+int so_socket_unix_close(int fd, struct so_value * config) {
 	char * path = NULL;
-	st_value_unpack(config, "{ss}", "path", &path);
+	so_value_unpack(config, "{ss}", "path", &path);
 
 	int failed = close(fd);
 
@@ -115,15 +116,15 @@ int st_socket_unix_close_v1(int fd, struct st_value * config) {
 	return failed;
 }
 
-bool st_socket_unix_server_v1(struct st_value * config, st_socket_accept_f accept_callback) {
+bool so_socket_unix_server(struct so_value * config, so_socket_accept_f accept_callback) {
 	int type = SOCK_STREAM;
 
-	struct st_value * vtype = st_value_hashtable_get2(config, "type", false, false);
-	if (vtype->type == st_value_string && !strcmp(st_value_string_get(vtype), "datagram"))
+	struct so_value * vtype = so_value_hashtable_get2(config, "type", false, false);
+	if (vtype->type == so_value_string && !strcmp(so_value_string_get(vtype), "datagram"))
 		type = SOCK_DGRAM;
 
-	struct st_value * vpath = st_value_hashtable_get2(config, "path", false, false);
-	if (vpath->type != st_value_string)
+	struct so_value * vpath = so_value_hashtable_get2(config, "path", false, false);
+	if (vpath->type != so_value_string)
 		return false;
 
 	int fd = socket(AF_UNIX, type, 0);
@@ -133,50 +134,50 @@ bool st_socket_unix_server_v1(struct st_value * config, st_socket_accept_f accep
 	struct sockaddr_un addr;
 	bzero(&addr, sizeof(addr));
 	addr.sun_family = AF_UNIX;
-	snprintf(addr.sun_path, sizeof(addr.sun_path), st_value_string_get(vpath));
+	snprintf(addr.sun_path, sizeof(addr.sun_path), so_value_string_get(vpath));
 
 	int failed = bind(fd, (struct sockaddr *) &addr, sizeof(addr));
 	if (failed != 0) {
 		close(fd);
-		unlink(st_value_string_get(vpath));
+		unlink(so_value_string_get(vpath));
 		return false;
 	}
 
 	listen(fd, 16);
 
-	struct st_unix_socket_server_v1 * self = malloc(sizeof(struct st_unix_socket_server_v1));
+	struct so_unix_socket_server * self = malloc(sizeof(struct so_unix_socket_server));
 	self->fd = fd;
 	self->callback = accept_callback;
 
-	st_poll_register(fd, POLLIN | POLLPRI, st_socket_unix_server_callback_v1, self, free);
+	so_poll_register(fd, POLLIN | POLLPRI, so_socket_unix_server_callback, self, free);
 
 	return true;
 }
 
-static void st_socket_unix_server_callback_v1(int fd, short event __attribute__((unused)), void * data) {
-	struct st_unix_socket_server_v1 * self = data;
+static void so_socket_unix_server_callback(int fd, short event __attribute__((unused)), void * data) {
+	struct so_unix_socket_server * self = data;
 
 	struct sockaddr_un new_addr;
 	bzero(&new_addr, sizeof(new_addr));
 	socklen_t length;
 	int new_fd = accept(fd, (struct sockaddr *) &new_addr, &length);
 
-	struct st_value * client_info = st_value_pack("{ssss}", "type", "unix", "path", new_addr.sun_path);
+	struct so_value * client_info = so_value_pack("{ssss}", "type", "unix", "path", new_addr.sun_path);
 
 	self->callback(fd, new_fd, client_info);
 
-	st_value_free(client_info);
+	so_value_free(client_info);
 }
 
-int st_socket_server_temp_unix_v1(struct st_value * config) {
+int so_socket_server_temp_unix(struct so_value * config) {
 	int type = SOCK_STREAM;
 
-	struct st_value * vtype = st_value_hashtable_get2(config, "type", false, false);
-	if (vtype->type == st_value_string && !strcmp(st_value_string_get(vtype), "datagram"))
+	struct so_value * vtype = so_value_hashtable_get2(config, "type", false, false);
+	if (vtype->type == so_value_string && !strcmp(so_value_string_get(vtype), "datagram"))
 		type = SOCK_DGRAM;
 
 	char * path = NULL;
-	st_value_unpack(config, "{ss}", "path", &path);
+	so_value_unpack(config, "{ss}", "path", &path);
 	if (path == NULL)
 		return -1;
 
@@ -187,7 +188,7 @@ int st_socket_server_temp_unix_v1(struct st_value * config) {
 	while (fd < 0) {
 		free(salt);
 
-		salt = st_checksum_gen_salt(NULL, 16);
+		salt = so_checksum_gen_salt(NULL, 16);
 		char * new_path;
 		asprintf(&new_path, "%s/%s.socket", dir, salt);
 
@@ -202,7 +203,7 @@ int st_socket_server_temp_unix_v1(struct st_value * config) {
 		addr.sun_family = AF_UNIX;
 		strncpy(addr.sun_path, new_path, sizeof(addr.sun_path));
 
-		st_value_hashtable_put2(config, "path", st_value_new_string(new_path), true);
+		so_value_hashtable_put2(config, "path", so_value_new_string(new_path), true);
 		free(new_path);
 
 		int failed = bind(fd, (struct sockaddr *) &addr, sizeof(addr));

@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,23 +24,23 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTONE_POLL_H__
-#define __LIBSTONE_POLL_H__
+#ifndef __LIBSTORIQONE_POLL_H__
+#define __LIBSTORIQONE_POLL_H__
 
 // bool
 #include <stdbool.h>
 // pool events
 #include <poll.h>
 
-typedef void (*st_poll_callback_f)(int fd, short event, void * data);
-typedef void (*st_poll_free_f)(void * data);
-typedef void (*st_poll_timeout_f)(int fd, void * data);
+typedef void (*so_poll_callback_f)(int fd, short event, void * data);
+typedef void (*so_poll_free_f)(void * data);
+typedef void (*so_poll_timeout_f)(int fd, void * data);
 
-int st_poll(int timeout);
-unsigned int st_poll_nb_handlers(void);
-bool st_poll_register(int fd, short event, st_poll_callback_f callback, void * data, st_poll_free_f release);
-bool st_poll_set_timeout(int fd, int timeout, st_poll_timeout_f callback);
-void st_poll_unregister(int fd, short event);
+int so_poll(int timeout);
+unsigned int so_poll_nb_handlers(void);
+bool so_poll_register(int fd, short event, so_poll_callback_f callback, void * data, so_poll_free_f release);
+bool so_poll_set_timeout(int fd, int timeout, so_poll_timeout_f callback);
+void so_poll_unregister(int fd, short event);
 
 #endif
 

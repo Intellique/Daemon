@@ -58,7 +58,7 @@ static struct so_drive_status2 {
 
 	[so_drive_status_unknown] = { 0, 0, gettext_noop("unknown"), so_drive_status_unknown },
 };
-static unsigned int so_drive_nb_status = sizeof(so_drive_status) / sizeof(*so_drive_status);
+static const unsigned int so_drive_nb_status = sizeof(so_drive_status) / sizeof(*so_drive_status);
 
 static void so_drive_init(void) __attribute__((constructor));
 
@@ -184,7 +184,7 @@ void so_drive_sync(struct so_drive * drive, struct so_value * new_drive, bool wi
 	free(status);
 
 	if (mode != NULL)
-		drive->mode = so_media_string_to_format_mode(mode);
+		drive->mode = so_media_string_to_format_mode(mode, false);
 	free(mode);
 
 	if (last_clean->type == so_value_null)

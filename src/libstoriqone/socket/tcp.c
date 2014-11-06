@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -43,33 +43,34 @@
 // close
 #include <unistd.h>
 
-#include <libstone/poll.h>
-#include <libstone/value.h>
+#include <libstoriqone/poll.h>
+#include <libstoriqone/socket.h>
+#include <libstoriqone/value.h>
 
 #include "tcp.h"
 
-struct st_tcp_socket_server_v1 {
+struct so_tcp_socket_server {
 	int fd;
-	st_socket_accept_f callback;
+	so_socket_accept_f callback;
 	int af;
 };
 
-static void st_socket_tcp_server_callback(int fd, short event, void * data);
+static void so_socket_tcp_server_callback(int fd, short event, void * data);
 
 
-int st_socket_tcp_v1(struct st_value * config) {
+int so_socket_tcp(struct so_value * config) {
 	int stype = SOCK_STREAM;
 
 	char * type = NULL;
 	char * saddr = NULL;
 	long long int port;
 
-	if (st_value_unpack(config, "{sssi}", "address", &saddr, "port", &port) < 2) {
+	if (so_value_unpack(config, "{sssi}", "address", &saddr, "port", &port) < 2) {
 		free(saddr);
 		return -1;
 	}
 
-	if (st_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+	if (so_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
 	free(type);
 
@@ -114,19 +115,19 @@ int st_socket_tcp_v1(struct st_value * config) {
 	return fd;
 }
 
-int st_socket_tcp6_v1(struct st_value * config) {
+int so_socket_tcp6(struct so_value * config) {
 	int stype = SOCK_STREAM;
 
 	char * type = NULL;
 	char * saddr = NULL;
 	long long int port;
 
-	if (st_value_unpack(config, "{sssi}", "address", &saddr, "port", &port) < 2) {
+	if (so_value_unpack(config, "{sssi}", "address", &saddr, "port", &port) < 2) {
 		free(saddr);
 		return -1;
 	}
 
-	if (st_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+	if (so_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
 	free(type);
 
@@ -171,49 +172,49 @@ int st_socket_tcp6_v1(struct st_value * config) {
 	return fd;
 }
 
-int st_socket_tcp_accept_and_close_v1(int fd, struct st_value * config) {
+int so_socket_tcp_accept_and_close(int fd, struct so_value * config) {
 	struct sockaddr_in addr_v4;
 	bzero(&addr_v4, sizeof(addr_v4));
 	socklen_t length;
 
 	int new_fd = accept(fd, (struct sockaddr *) &addr_v4, &length);
 
-	st_socket_tcp_close_v1(fd, config);
+	so_socket_tcp_close(fd, config);
 
 	return new_fd;
 }
 
-int st_socket_tcp6_accept_and_close_v1(int fd, struct st_value * config) {
+int so_socket_tcp6_accept_and_close(int fd, struct so_value * config) {
 	struct sockaddr_in6 addr_v6;
 	bzero(&addr_v6, sizeof(addr_v6));
 	socklen_t length;
 
 	int new_fd = accept(fd, (struct sockaddr *) &addr_v6, &length);
 
-	st_socket_tcp_close_v1(fd, config);
+	so_socket_tcp_close(fd, config);
 
 	return new_fd;
 }
 
-int st_socket_tcp_close_v1(int fd, struct st_value * config __attribute__((unused))) {
+int so_socket_tcp_close(int fd, struct so_value * config __attribute__((unused))) {
 	return close(fd);
 }
 
-int st_socket_tcp6_close_v1(int fd, struct st_value * config __attribute__((unused))) {
+int so_socket_tcp6_close(int fd, struct so_value * config __attribute__((unused))) {
 	return close(fd);
 }
 
-bool st_socket_tcp_server_v1(struct st_value * config, st_socket_accept_f accept_callback) {
+bool so_socket_tcp_server(struct so_value * config, so_socket_accept_f accept_callback) {
 	int stype = SOCK_STREAM;
 
 	char * type = NULL;
 	char * saddr = NULL;
 	long long int port;
 
-	if (st_value_unpack(config, "{siss}", "port", &port, "address", &saddr) < 1)
+	if (so_value_unpack(config, "{siss}", "port", &port, "address", &saddr) < 1)
 		return -1;
 
-	if (st_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+	if (so_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
 	free(type);
 
@@ -275,27 +276,27 @@ bool st_socket_tcp_server_v1(struct st_value * config, st_socket_accept_f accept
 
 	failed = listen(fd, 16);
 
-	struct st_tcp_socket_server_v1 * self = malloc(sizeof(struct st_tcp_socket_server_v1));
+	struct so_tcp_socket_server * self = malloc(sizeof(struct so_tcp_socket_server));
 	self->fd = fd;
 	self->callback = accept_callback;
 	self->af = AF_INET;
 
-	st_poll_register(fd, POLLIN | POLLPRI, st_socket_tcp_server_callback, self, free);
+	so_poll_register(fd, POLLIN | POLLPRI, so_socket_tcp_server_callback, self, free);
 
 	return true;
 }
 
-bool st_socket_tcp6_server_v1(struct st_value * config, st_socket_accept_f accept_callback) {
+bool so_socket_tcp6_server(struct so_value * config, so_socket_accept_f accept_callback) {
 	int stype = SOCK_STREAM;
 
 	char * type = NULL;
 	char * saddr = NULL;
 	long long int port;
 
-	if (st_value_unpack(config, "{siss}", "port", &port, "address", &saddr) < 1)
+	if (so_value_unpack(config, "{siss}", "port", &port, "address", &saddr) < 1)
 		return -1;
 
-	if (st_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+	if (so_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
 	free(type);
 
@@ -356,22 +357,22 @@ bool st_socket_tcp6_server_v1(struct st_value * config, st_socket_accept_f accep
 
 	failed = listen(fd, 16);
 
-	struct st_tcp_socket_server_v1 * self = malloc(sizeof(struct st_tcp_socket_server_v1));
+	struct so_tcp_socket_server * self = malloc(sizeof(struct so_tcp_socket_server));
 	self->fd = fd;
 	self->callback = accept_callback;
 	self->af = AF_INET6;
 
-	st_poll_register(fd, POLLIN | POLLPRI, st_socket_tcp_server_callback, self, free);
+	so_poll_register(fd, POLLIN | POLLPRI, so_socket_tcp_server_callback, self, free);
 
 	return true;
 }
 
-static void st_socket_tcp_server_callback(int fd, short event __attribute__((unused)), void * data) {
-	struct st_tcp_socket_server_v1 * self = data;
+static void so_socket_tcp_server_callback(int fd, short event __attribute__((unused)), void * data) {
+	struct so_tcp_socket_server * self = data;
 
 	int new_fd = -1;
 	socklen_t length = 0;
-	struct st_value * client_info;
+	struct so_value * client_info;
 
 	if (self->af == AF_INET) {
 		struct sockaddr_in addr_v4;
@@ -383,7 +384,7 @@ static void st_socket_tcp_server_callback(int fd, short event __attribute__((unu
 		inet_ntop(AF_INET, &addr_v4, str_addr, INET_ADDRSTRLEN);
 		long long int port = ntohs(addr_v4.sin_port);
 
-		client_info = st_value_pack("{sssssi}", "type", "inet", "addr", str_addr, "port", port);
+		client_info = so_value_pack("{sssssi}", "type", "inet", "addr", str_addr, "port", port);
 	} else {
 		struct sockaddr_in6 addr_v6;
 		bzero(&addr_v6, sizeof(addr_v6));
@@ -394,25 +395,25 @@ static void st_socket_tcp_server_callback(int fd, short event __attribute__((unu
 		inet_ntop(AF_INET6, &addr_v6, str_addr, INET6_ADDRSTRLEN);
 		long long int port = ntohs(addr_v6.sin6_port);
 
-		client_info = st_value_pack("{sssssi}", "type", "inet6", "addr", str_addr, "port", port);
+		client_info = so_value_pack("{sssssi}", "type", "inet6", "addr", str_addr, "port", port);
 	}
 
 	self->callback(fd, new_fd, client_info);
 
-	st_value_free(client_info);
+	so_value_free(client_info);
 }
 
-int st_socket_server_temp_tcp_v1(struct st_value * config) {
+int so_socket_server_temp_tcp(struct so_value * config) {
 	int stype = SOCK_STREAM;
 
 	char * type = NULL;
 	char * saddr = NULL;
 	long long int port;
 
-	if (st_value_unpack(config, "{siss}", "port", &port, "address", &saddr) < 1)
+	if (so_value_unpack(config, "{siss}", "port", &port, "address", &saddr) < 1)
 		return -1;
 
-	if (st_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+	if (so_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
 	free(type);
 
@@ -462,7 +463,7 @@ int st_socket_server_temp_tcp_v1(struct st_value * config) {
 			}
 		}
 
-		st_value_hashtable_put2(config, "port", st_value_new_integer(port), true);
+		so_value_hashtable_put2(config, "port", so_value_new_integer(port), true);
 
 		freeaddrinfo(addr);
 		free(saddr);
@@ -488,7 +489,7 @@ int st_socket_server_temp_tcp_v1(struct st_value * config) {
 			}
 		}
 
-		st_value_hashtable_put2(config, "port", st_value_new_integer(port), true);
+		so_value_hashtable_put2(config, "port", so_value_new_integer(port), true);
 	}
 
 	if (fd < 0)
@@ -499,17 +500,17 @@ int st_socket_server_temp_tcp_v1(struct st_value * config) {
 	return fd;
 }
 
-int st_socket_server_temp_tcp6_v1(struct st_value * config) {
+int so_socket_server_temp_tcp6(struct so_value * config) {
 	int stype = SOCK_STREAM;
 
 	char * type = NULL;
 	char * saddr = NULL;
 	long long int port;
 
-	if (st_value_unpack(config, "{siss}", "port", &port, "address", &saddr) < 1)
+	if (so_value_unpack(config, "{siss}", "port", &port, "address", &saddr) < 1)
 		return -1;
 
-	if (st_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+	if (so_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
 		stype = SOCK_DGRAM;
 	free(type);
 
@@ -559,7 +560,7 @@ int st_socket_server_temp_tcp6_v1(struct st_value * config) {
 			}
 		}
 
-		st_value_hashtable_put2(config, "port", st_value_new_integer(port), true);
+		so_value_hashtable_put2(config, "port", so_value_new_integer(port), true);
 
 		freeaddrinfo(addr);
 		free(saddr);
@@ -585,7 +586,7 @@ int st_socket_server_temp_tcp6_v1(struct st_value * config) {
 			}
 		}
 
-		st_value_hashtable_put2(config, "port", st_value_new_integer(port), true);
+		so_value_hashtable_put2(config, "port", so_value_new_integer(port), true);
 	}
 
 	if (fd < 0)

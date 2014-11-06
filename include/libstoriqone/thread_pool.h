@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -27,7 +27,7 @@
 #ifndef __STONE_THREADPOOL_H__
 #define __STONE_THREADPOOL_H__
 
-typedef void (*st_thread_pool_f)(void * arg);
+typedef void (*so_thread_pool_f)(void * arg);
 
 /**
  * \brief Run this function into another thread
@@ -40,7 +40,7 @@ typedef void (*st_thread_pool_f)(void * arg);
  *
  * \note All threads which are not used while 5 minutes are stopped
  */
-int st_thread_pool_run(const char * thread_name, st_thread_pool_f callback, void * arg);
+int so_thread_pool_run(const char * thread_name, so_thread_pool_f callback, void * arg);
 
 /**
  * \brief Run this function into another thread with specified
@@ -55,7 +55,7 @@ int st_thread_pool_run(const char * thread_name, st_thread_pool_f callback, void
  *
  * \note All threads which are not used while 5 minutes are stopped
  */
-int st_thread_pool_run2(const char * thread_name, st_thread_pool_f callback, void * arg, int nice);
+int so_thread_pool_run2(const char * thread_name, so_thread_pool_f callback, void * arg, int nice);
 
 #endif
 

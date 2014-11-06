@@ -170,7 +170,7 @@ void so_log_stop_logger(void);
  * \param string : one string level
  * \return an enumeration
  */
-enum so_log_level so_log_string_to_level(const char * string) __attribute__((nonnull));
+enum so_log_level so_log_string_to_level(const char * string, bool translate) __attribute__((nonnull));
 
 /**
  * \brief Convert a c string to an enum so_log_type
@@ -178,7 +178,7 @@ enum so_log_level so_log_string_to_level(const char * string) __attribute__((non
  * \param string : one string type
  * \return an enumeration
  */
-enum so_log_type so_log_string_to_type(const char * string) __attribute__((nonnull));
+enum so_log_type so_log_string_to_type(const char * string, bool translate) __attribute__((nonnull));
 
 unsigned int so_log_type_max_length(void);
 

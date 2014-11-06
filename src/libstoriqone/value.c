@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -33,124 +33,175 @@
 // bzero
 #include <strings.h>
 
-#include "string.h"
-#include "value.h"
+#include <libstoriqone/string.h>
+#include <libstoriqone/value.h>
 
-struct st_value_ref {
+struct so_value_array {
+	struct so_value ** values;
+	unsigned int nb_vals, nb_preallocated;
+};
+
+struct so_value_custom {
+	void * data;
+	/**
+	 * \brief Function used to release custom value
+	 */
+	so_value_free_f release;
+};
+
+struct so_value_hashtable {
+	struct so_value_hashtable_node {
+		unsigned long long hash;
+		struct so_value * key;
+		struct so_value * value;
+		struct so_value_hashtable_node * next;
+	} ** nodes;
+	unsigned int nb_elements;
+	unsigned int size_node;
+
+	bool allow_rehash;
+	bool weak_ref;
+
+	so_value_hashtable_compupte_hash_f compute_hash;
+};
+
+struct so_value_linked_list {
+	struct so_value_linked_list_node {
+		struct so_value * value;
+		struct so_value_linked_list_node * next;
+		struct so_value_linked_list_node * previous;
+	} * first, * last;
+	unsigned int nb_vals;
+};
+
+struct so_value_iterator_array {
+	unsigned int index;
+};
+
+struct so_value_iterator_hashtable {
+	struct so_value_hashtable_node * node;
+	unsigned int i_elements;
+};
+
+struct so_value_iterator_linked_list {
+	struct so_value_linked_list_node * current;
+	struct so_value_linked_list_node * next;
+};
+
+struct so_value_ref {
 	unsigned int nb_ref;
 	unsigned int nb_total_ref;
 };
 
-static bool st_value_count_ref(struct st_value * base);
-static void st_value_count_ref2(struct st_value * elt, struct st_value * found, struct st_value_ref * refs);
-static struct st_value * st_value_new(enum st_value_type type, size_t extra);
-static struct st_value * st_value_new_hashtable3(st_value_hashtable_compupte_hash_f compute_hash, bool weak_ref) __attribute__((warn_unused_result));
-static struct st_value * st_value_pack_inner(const char ** format, va_list params);
-static int st_value_unpack_inner(struct st_value * root, const char ** format, va_list params);
-static bool st_value_valid_inner(struct st_value * value, const char ** format, va_list params);
+static bool so_value_count_ref(struct so_value * base);
+static void so_value_count_ref2(struct so_value * elt, struct so_value * found, struct so_value_ref * refs);
+static struct so_value * so_value_new(enum so_value_type type, size_t extra);
+static struct so_value * so_value_new_hashtable3(so_value_hashtable_compupte_hash_f compute_hash, bool weak_ref) __attribute__((warn_unused_result));
+static struct so_value * so_value_pack_inner(const char ** format, va_list params);
+static int so_value_unpack_inner(struct so_value * root, const char ** format, va_list params);
+static bool so_value_valid_inner(struct so_value * value, const char ** format, va_list params);
 
-static struct st_value_iterator * st_value_hashtable_get_iterator2(struct st_value * hash, bool weak_ref) __attribute__((nonnull,warn_unused_result));
-static void st_value_hashtable_put_inner(struct st_value_hashtable * hash, unsigned int index, struct st_value_hashtable_node * new_node);
-static void st_value_hashtable_rehash(struct st_value_hashtable * hash);
-static void st_value_hashtable_release_node(struct st_value_hashtable_node * node, bool weak_ref);
+static struct so_value_iterator * so_value_hashtable_get_iterator2(struct so_value * hash, bool weak_ref) __attribute__((nonnull,warn_unused_result));
+static void so_value_hashtable_put_inner(struct so_value_hashtable * hash, unsigned int index, struct so_value_hashtable_node * new_node);
+static void so_value_hashtable_rehash(struct so_value_hashtable * hash);
+static void so_value_hashtable_release_node(struct so_value_hashtable_node * node, bool weak_ref);
 
-static struct st_value_iterator * st_value_list_get_iterator2(struct st_value * list, bool weak_ref) __attribute__((nonnull,warn_unused_result));
+static struct so_value_iterator * so_value_list_get_iterator2(struct so_value * list, bool weak_ref) __attribute__((nonnull,warn_unused_result));
 
-static unsigned long long st_value_compute_addr(const struct st_value * key);
+static unsigned long long so_value_compute_addr(const struct so_value * key);
 
-static struct st_value null_value = {
-	.type = st_value_null,
+static struct so_value null_value = {
+	.type = so_value_null,
 	.shared = 0,
 };
 
 
-__asm__(".symver st_value_can_convert_v1, st_value_can_convert@@LIBSTONE_1.2");
-bool st_value_can_convert_v1(struct st_value * val, enum st_value_type type) {
+bool so_value_can_convert(struct so_value * val, enum so_value_type type) {
 	if (val == NULL)
-		return type == st_value_null;
+		return type == so_value_null;
 
 	switch (val->type) {
-		case st_value_array:
+		case so_value_array:
 			switch (type) {
-				case st_value_array:
-				case st_value_linked_list:
+				case so_value_array:
+				case so_value_linked_list:
 					return true;
 
 				default:
 					return false;
 			}
 
-		case st_value_boolean:
+		case so_value_boolean:
 			switch (type) {
-				case st_value_boolean:
-				case st_value_integer:
+				case so_value_boolean:
+				case so_value_integer:
 					return true;
 
 				default:
 					return false;
 			}
 
-		case st_value_custom:
+		case so_value_custom:
 			switch (type) {
-				case st_value_custom:
+				case so_value_custom:
 					return true;
 
 				default:
 					return false;
 			}
 
-		case st_value_float:
+		case so_value_float:
 			switch (type) {
-				case st_value_integer:
-				case st_value_float:
+				case so_value_integer:
+				case so_value_float:
 					return true;
 
 				default:
 					return false;
 			}
 
-		case st_value_hashtable:
+		case so_value_hashtable:
 			switch (type) {
-				case st_value_hashtable:
+				case so_value_hashtable:
 					return true;
 
 				default:
 					return false;
 			}
 
-		case st_value_integer:
+		case so_value_integer:
 			switch (type) {
-				case st_value_boolean:
-				case st_value_integer:
-				case st_value_float:
+				case so_value_boolean:
+				case so_value_integer:
+				case so_value_float:
 					return true;
 
 				default:
 					return false;
 			}
 
-		case st_value_linked_list:
+		case so_value_linked_list:
 			switch (type) {
-				case st_value_array:
-				case st_value_linked_list:
+				case so_value_array:
+				case so_value_linked_list:
 					return true;
 
 				default:
 					return false;
 			}
 
-		case st_value_null:
+		case so_value_null:
 			switch (type) {
-				case st_value_null:
+				case so_value_null:
 					return true;
 
 				default:
 					return false;
 			}
 
-		case st_value_string:
+		case so_value_string:
 			switch (type) {
-				case st_value_null:
+				case so_value_null:
 					return false;
 
 				default:
@@ -161,25 +212,24 @@ bool st_value_can_convert_v1(struct st_value * val, enum st_value_type type) {
 	return false;
 }
 
-__asm__(".symver st_value_convert_v1, st_value_convert@@LIBSTONE_1.2");
-struct st_value * st_value_convert_v1(struct st_value * val, enum st_value_type type) {
+struct so_value * so_value_convert(struct so_value * val, enum so_value_type type) {
 	if (val == NULL)
 		return &null_value;
 
 	switch (val->type) {
-		case st_value_array:
+		case so_value_array:
 			switch (type) {
-				case st_value_array:
-					return st_value_share_v1(val);
+				case so_value_array:
+					return so_value_share(val);
 
-				case st_value_linked_list: {
-						struct st_value * ret = st_value_new_linked_list_v1();
-						struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
-						while (st_value_iterator_has_next_v1(iter)) {
-							struct st_value * elt = st_value_iterator_get_value_v1(iter, true);
-							st_value_list_push_v1(ret, elt, true);
+				case so_value_linked_list: {
+						struct so_value * ret = so_value_new_linked_list();
+						struct so_value_iterator * iter = so_value_list_get_iterator(val);
+						while (so_value_iterator_has_next(iter)) {
+							struct so_value * elt = so_value_iterator_get_value(iter, true);
+							so_value_list_push(ret, elt, true);
 						}
-						st_value_iterator_free_v1(iter);
+						so_value_iterator_free(iter);
 						return ret;
 					}
 
@@ -187,90 +237,90 @@ struct st_value * st_value_convert_v1(struct st_value * val, enum st_value_type 
 					return &null_value;
 			}
 
-		case st_value_boolean:
+		case so_value_boolean:
 			switch (type) {
-				case st_value_boolean:
-					return st_value_share_v1(val);
+				case so_value_boolean:
+					return so_value_share(val);
 
-				case st_value_integer:
-					return st_value_new_integer_v1(st_value_boolean_get_v1(val));
+				case so_value_integer:
+					return so_value_new_integer(so_value_boolean_get(val));
 
 				default:
 					return &null_value;
 			}
 
-		case st_value_custom:
+		case so_value_custom:
 			switch (type) {
-				case st_value_custom:
-					return st_value_share_v1(val);
+				case so_value_custom:
+					return so_value_share(val);
 
 				default:
 					return &null_value;
 			}
 
-		case st_value_float:
+		case so_value_float:
 			switch (type) {
-				case st_value_integer:
-					return st_value_new_integer_v1(st_value_float_get_v1(val));
+				case so_value_integer:
+					return so_value_new_integer(so_value_float_get(val));
 
-				case st_value_float:
-					return st_value_share_v1(val);
+				case so_value_float:
+					return so_value_share(val);
 
 				default:
 					return &null_value;
 			}
 
-		case st_value_hashtable:
+		case so_value_hashtable:
 			switch (type) {
-				case st_value_hashtable:
-					return st_value_share_v1(val);
+				case so_value_hashtable:
+					return so_value_share(val);
 
 				default:
 					return &null_value;
 			}
 
-		case st_value_integer:
+		case so_value_integer:
 			switch (type) {
-				case st_value_boolean:
-					return st_value_new_boolean_v1(st_value_integer_get_v1(val) != 0);
+				case so_value_boolean:
+					return so_value_new_boolean(so_value_integer_get(val) != 0);
 
-				case st_value_integer:
-					return st_value_share_v1(val);
+				case so_value_integer:
+					return so_value_share(val);
 
-				case st_value_float:
-					return st_value_new_float_v1(st_value_integer_get_v1(val));
+				case so_value_float:
+					return so_value_new_float(so_value_integer_get(val));
 
 				default:
 					return &null_value;
 			}
 
-		case st_value_linked_list:
+		case so_value_linked_list:
 			switch (type) {
-				case st_value_array: {
-					struct st_value * ret = st_value_new_array_v1(st_value_list_get_length_v1(val));
-					struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
-					while (st_value_iterator_has_next_v1(iter)) {
-						struct st_value * elt = st_value_iterator_get_value_v1(iter, true);
-						st_value_list_push_v1(ret, elt, true);
+				case so_value_array: {
+					struct so_value * ret = so_value_new_array(so_value_list_get_length(val));
+					struct so_value_iterator * iter = so_value_list_get_iterator(val);
+					while (so_value_iterator_has_next(iter)) {
+						struct so_value * elt = so_value_iterator_get_value(iter, true);
+						so_value_list_push(ret, elt, true);
 					}
-					st_value_iterator_free_v1(iter);
+					so_value_iterator_free(iter);
 					return ret;
 				}
 
-				case st_value_linked_list:
-					return st_value_share_v1(val);
+				case so_value_linked_list:
+					return so_value_share(val);
 
 				default:
 					return &null_value;
 			}
 
-		case st_value_null:
+		case so_value_null:
 			return &null_value;
 
-		case st_value_string:
+		case so_value_string:
 			switch (type) {
-				case st_value_string:
-					return st_value_share_v1(val);
+				case so_value_string:
+					return so_value_share(val);
 
 				default:
 					return &null_value;
@@ -280,133 +330,132 @@ struct st_value * st_value_convert_v1(struct st_value * val, enum st_value_type 
 	return &null_value;
 }
 
-__asm__(".symver st_value_copy_v1, st_value_copy@@LIBSTONE_1.2");
-struct st_value * st_value_copy_v1(struct st_value * val, bool deep_copy) {
-	struct st_value * ret = &null_value;
+struct so_value * so_value_copy(struct so_value * val, bool deep_copy) {
+	struct so_value * ret = &null_value;
 
 	if (val == NULL)
 		return ret;
 
 	switch (val->type) {
-		case st_value_array: {
-				ret = st_value_new_array_v1(st_value_list_get_length_v1(val));
+		case so_value_array: {
+				ret = so_value_new_array(so_value_list_get_length(val));
 
-				struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
-				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, !deep_copy);
+				struct so_value_iterator * iter = so_value_list_get_iterator(val);
+				while (so_value_iterator_has_next(iter)) {
+					struct so_value * elt = so_value_iterator_get_value(iter, !deep_copy);
 					if (deep_copy)
-						elt = st_value_copy_v1(elt, true);
-					st_value_list_push_v1(ret, val, false);
+						elt = so_value_copy(elt, true);
+					so_value_list_push(ret, val, false);
 				}
-				st_value_iterator_free_v1(iter);
+				so_value_iterator_free(iter);
 			}
 			break;
 
-		case st_value_boolean:
-			ret = st_value_new_boolean_v1(st_value_boolean_get_v1(val));
+		case so_value_boolean:
+			ret = so_value_new_boolean(so_value_boolean_get(val));
 			break;
 
-		case st_value_custom:
-			ret = st_value_share_v1(val);
+		case so_value_custom:
+			ret = so_value_share(val);
 			break;
 
-		case st_value_float:
-			ret = st_value_new_float_v1(st_value_float_get_v1(val));
+		case so_value_float:
+			ret = so_value_new_float(so_value_float_get(val));
 			break;
 
-		case st_value_hashtable: {
-				struct st_value_hashtable * hashtable = (struct st_value_hashtable *) (val + 1);
-				ret = st_value_new_hashtable_v1(hashtable->compute_hash);
+		case so_value_hashtable: {
+				struct so_value_hashtable * hashtable = (struct so_value_hashtable *) (val + 1);
+				ret = so_value_new_hashtable(hashtable->compute_hash);
 
-				struct st_value_iterator * iter = st_value_hashtable_get_iterator_v1(val);
-				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * key = st_value_iterator_get_key_v1(iter, false, false);
-					struct st_value * value = st_value_iterator_get_value_v1(iter, false);
+				struct so_value_iterator * iter = so_value_hashtable_get_iterator(val);
+				while (so_value_iterator_has_next(iter)) {
+					struct so_value * key = so_value_iterator_get_key(iter, false, false);
+					struct so_value * value = so_value_iterator_get_value(iter, false);
 
 					if (deep_copy) {
-						key = st_value_copy_v1(key, true);
-						value = st_value_copy_v1(value, true);
+						key = so_value_copy(key, true);
+						value = so_value_copy(value, true);
 					} else {
-						key = st_value_share_v1(key);
-						value = st_value_share_v1(value);
+						key = so_value_share(key);
+						value = so_value_share(value);
 					}
 
-					st_value_hashtable_put_v1(ret, key, true, value, true);
+					so_value_hashtable_put(ret, key, true, value, true);
 				}
-				st_value_iterator_free_v1(iter);
+				so_value_iterator_free(iter);
 			}
 			break;
 
-		case st_value_integer:
-			ret = st_value_new_integer_v1(st_value_integer_get_v1(val));
+		case so_value_integer:
+			ret = so_value_new_integer(so_value_integer_get(val));
 			break;
 
-		case st_value_null:
+		case so_value_null:
 			break;
 
-		case st_value_linked_list: {
-				ret = st_value_new_linked_list_v1();
+		case so_value_linked_list: {
+				ret = so_value_new_linked_list();
 
-				struct st_value_iterator * iter = st_value_list_get_iterator_v1(val);
-				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, !deep_copy);
+				struct so_value_iterator * iter = so_value_list_get_iterator(val);
+				while (so_value_iterator_has_next(iter)) {
+					struct so_value * elt = so_value_iterator_get_value(iter, !deep_copy);
 					if (deep_copy)
-						elt = st_value_copy_v1(elt, true);
-					st_value_list_push_v1(ret, val, false);
+						elt = so_value_copy(elt, true);
+					so_value_list_push(ret, val, false);
 				}
-				st_value_iterator_free_v1(iter);
+				so_value_iterator_free(iter);
 			}
 			break;
 
-		case st_value_string:
-			ret = st_value_new_string_v1(st_value_string_get_v1(val));
+		case so_value_string:
+			ret = so_value_new_string(so_value_string_get(val));
 			break;
 	}
 
 	return ret;
 }
 
-static bool st_value_count_ref(struct st_value * base) {
-	struct st_value_ref refs = { 0, 0 };
+static bool so_value_count_ref(struct so_value * base) {
+	struct so_value_ref refs = { 0, 0 };
 
 	switch (base->type) {
-		case st_value_array:
-		case st_value_linked_list: {
+		case so_value_array:
+		case so_value_linked_list: {
 				refs.nb_ref++;
 				refs.nb_total_ref += base->shared;
 
-				struct st_value * found = st_value_new_hashtable3(st_value_compute_addr, true);
-				st_value_hashtable_put_v1(found, base, true, &null_value, true);
+				struct so_value * found = so_value_new_hashtable3(so_value_compute_addr, true);
+				so_value_hashtable_put(found, base, true, &null_value, true);
 
-				struct st_value_iterator * iter = st_value_list_get_iterator2(base, true);
-				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
-					st_value_count_ref2(elt, found, &refs);
+				struct so_value_iterator * iter = so_value_list_get_iterator2(base, true);
+				while (so_value_iterator_has_next(iter)) {
+					struct so_value * elt = so_value_iterator_get_value(iter, false);
+					so_value_count_ref2(elt, found, &refs);
 				}
-				st_value_iterator_free_v1(iter);
+				so_value_iterator_free(iter);
 
-				st_value_free_v1(found);
+				so_value_free(found);
 				break;
 			}
 
-		case st_value_hashtable: {
+		case so_value_hashtable: {
 				refs.nb_ref++;
 				refs.nb_total_ref += base->shared;
 
-				struct st_value * found = st_value_new_hashtable3(st_value_compute_addr, true);
-				st_value_hashtable_put_v1(found, base, true, &null_value, true);
+				struct so_value * found = so_value_new_hashtable3(so_value_compute_addr, true);
+				so_value_hashtable_put(found, base, true, &null_value, true);
 
-				struct st_value_iterator * iter = st_value_hashtable_get_iterator2(base, true);
-				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * key = st_value_iterator_get_key_v1(iter, false, false);
-					st_value_count_ref2(key, found, &refs);
+				struct so_value_iterator * iter = so_value_hashtable_get_iterator2(base, true);
+				while (so_value_iterator_has_next(iter)) {
+					struct so_value * key = so_value_iterator_get_key(iter, false, false);
+					so_value_count_ref2(key, found, &refs);
 
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
-					st_value_count_ref2(elt, found, &refs);
+					struct so_value * elt = so_value_iterator_get_value(iter, false);
+					so_value_count_ref2(elt, found, &refs);
 				}
-				st_value_iterator_free_v1(iter);
+				so_value_iterator_free(iter);
 
-				st_value_free_v1(found);
+				so_value_free(found);
 				break;
 			}
 
@@ -417,40 +466,40 @@ static bool st_value_count_ref(struct st_value * base) {
 	return refs.nb_ref == refs.nb_total_ref && refs.nb_ref > 0;
 }
 
-static void st_value_count_ref2(struct st_value * elt, struct st_value * found, struct st_value_ref * refs) {
+static void so_value_count_ref2(struct so_value * elt, struct so_value * found, struct so_value_ref * refs) {
 	if (elt->shared == 0)
 		return;
 
 	refs->nb_ref++;
 
-	if (st_value_hashtable_has_key_v1(found, elt))
+	if (so_value_hashtable_has_key(found, elt))
 		return;
 
 	refs->nb_total_ref += elt->shared;
-	st_value_hashtable_put_v1(found, elt, true, &null_value, true);
+	so_value_hashtable_put(found, elt, true, &null_value, true);
 
 	switch (elt->type) {
-		case st_value_array:
-		case st_value_linked_list: {
-				struct st_value_iterator * iter = st_value_list_get_iterator2(elt, true);
-				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * lst_elt = st_value_iterator_get_value_v1(iter, false);
-					st_value_count_ref2(lst_elt, found, refs);
+		case so_value_array:
+		case so_value_linked_list: {
+				struct so_value_iterator * iter = so_value_list_get_iterator2(elt, true);
+				while (so_value_iterator_has_next(iter)) {
+					struct so_value * lst_elt = so_value_iterator_get_value(iter, false);
+					so_value_count_ref2(lst_elt, found, refs);
 				}
-				st_value_iterator_free_v1(iter);
+				so_value_iterator_free(iter);
 				break;
 			}
 
-		case st_value_hashtable: {
-				struct st_value_iterator * iter = st_value_hashtable_get_iterator2(elt, true);
-				while (st_value_iterator_has_next_v1(iter)) {
-					struct st_value * key = st_value_iterator_get_key_v1(iter, false, false);
-					st_value_count_ref2(key, found, refs);
+		case so_value_hashtable: {
+				struct so_value_iterator * iter = so_value_hashtable_get_iterator2(elt, true);
+				while (so_value_iterator_has_next(iter)) {
+					struct so_value * key = so_value_iterator_get_key(iter, false, false);
+					so_value_count_ref2(key, found, refs);
 
-					struct st_value * hsh_elt = st_value_iterator_get_value_v1(iter, false);
-					st_value_count_ref2(hsh_elt, found, refs);
+					struct so_value * hsh_elt = so_value_iterator_get_value(iter, false);
+					so_value_count_ref2(hsh_elt, found, refs);
 				}
-				st_value_iterator_free_v1(iter);
+				so_value_iterator_free(iter);
 				break;
 			}
 
@@ -459,8 +508,7 @@ static void st_value_count_ref2(struct st_value * elt, struct st_value * found, 
 	}
 }
 
-__asm__(".symver st_value_equals_v1, st_value_equals@@LIBSTONE_1.2");
-bool st_value_equals_v1(struct st_value * a, struct st_value * b) {
+bool so_value_equals(struct so_value * a, struct so_value * b) {
 	if (a == NULL && b == NULL)
 		return true;
 
@@ -468,27 +516,27 @@ bool st_value_equals_v1(struct st_value * a, struct st_value * b) {
 		return false;
 
 	switch (a->type) {
-		case st_value_array:
-		case st_value_linked_list:
+		case so_value_array:
+		case so_value_linked_list:
 			switch (b->type) {
-				case st_value_array:
-				case st_value_linked_list: {
-						struct st_value_iterator * iter_a = st_value_list_get_iterator_v1(a);
-						struct st_value_iterator * iter_b = st_value_list_get_iterator_v1(b);
+				case so_value_array:
+				case so_value_linked_list: {
+						struct so_value_iterator * iter_a = so_value_list_get_iterator(a);
+						struct so_value_iterator * iter_b = so_value_list_get_iterator(b);
 
 						bool equals = true;
-						while (equals && st_value_iterator_has_next_v1(iter_a) && st_value_iterator_has_next_v1(iter_b)) {
-							struct st_value * v_a = st_value_iterator_get_value_v1(iter_a, false);
-							struct st_value * v_b = st_value_iterator_get_value_v1(iter_b, false);
+						while (equals && so_value_iterator_has_next(iter_a) && so_value_iterator_has_next(iter_b)) {
+							struct so_value * v_a = so_value_iterator_get_value(iter_a, false);
+							struct so_value * v_b = so_value_iterator_get_value(iter_b, false);
 
-							equals = st_value_equals_v1(v_a, v_b);
+							equals = so_value_equals(v_a, v_b);
 						}
 
 						if (equals)
-							equals = !st_value_iterator_has_next_v1(iter_a) && !st_value_iterator_has_next_v1(iter_b);
+							equals = !so_value_iterator_has_next(iter_a) && !so_value_iterator_has_next(iter_b);
 
-						st_value_iterator_free_v1(iter_a);
-						st_value_iterator_free_v1(iter_b);
+						so_value_iterator_free(iter_a);
+						so_value_iterator_free(iter_b);
 
 						return equals;
 					}
@@ -497,95 +545,95 @@ bool st_value_equals_v1(struct st_value * a, struct st_value * b) {
 					return false;
 			}
 
-		case st_value_boolean:
+		case so_value_boolean:
 			switch (b->type) {
-				case st_value_boolean:
+				case so_value_boolean:
 					return false;
 
-				case st_value_float:
-					return (st_value_boolean_get_v1(a) && st_value_float_get_v1(b) != 0) || (!st_value_boolean_get_v1(a) && st_value_float_get_v1(b) == 0);
+				case so_value_float:
+					return (so_value_boolean_get(a) && so_value_float_get(b) != 0) || (!so_value_boolean_get(a) && so_value_float_get(b) == 0);
 
-				case st_value_integer:
-					return (st_value_boolean_get_v1(a) && st_value_integer_get_v1(b) != 0) || (!st_value_boolean_get_v1(a) && st_value_integer_get_v1(b) == 0);
+				case so_value_integer:
+					return (so_value_boolean_get(a) && so_value_integer_get(b) != 0) || (!so_value_boolean_get(a) && so_value_integer_get(b) == 0);
 
 				default:
 					return false;
 			}
 
-		case st_value_custom:
-			if (b->type == st_value_custom) {
-				struct st_value_custom * ca = st_value_get_v1(a);
-				struct st_value_custom * cb = st_value_get_v1(b);
+		case so_value_custom:
+			if (b->type == so_value_custom) {
+				struct so_value_custom * ca = so_value_get(a);
+				struct so_value_custom * cb = so_value_get(b);
 				return ca->data == cb->data;
 			}
 			return false;
 
-		case st_value_float:
+		case so_value_float:
 			switch (b->type) {
-				case st_value_boolean:
-					return (st_value_float_get_v1(a) != 0 && st_value_boolean_get_v1(b)) || (st_value_float_get_v1(a) == 0 && !st_value_boolean_get_v1(b));
+				case so_value_boolean:
+					return (so_value_float_get(a) != 0 && so_value_boolean_get(b)) || (so_value_float_get(a) == 0 && !so_value_boolean_get(b));
 
-				case st_value_float:
-					return st_value_float_get_v1(a) == st_value_float_get_v1(b);
+				case so_value_float:
+					return so_value_float_get(a) == so_value_float_get(b);
 
-				case st_value_integer:
-					return st_value_float_get_v1(a) == st_value_integer_get_v1(b);
+				case so_value_integer:
+					return so_value_float_get(a) == so_value_integer_get(b);
 
 				default:
 					return false;
 			}
 
-		case st_value_hashtable:
-			if (b->type == st_value_hashtable) {
-				struct st_value_hashtable * ha = st_value_get_v1(a);
-				struct st_value_hashtable * hb = st_value_get_v1(b);
+		case so_value_hashtable:
+			if (b->type == so_value_hashtable) {
+				struct so_value_hashtable * ha = so_value_get(a);
+				struct so_value_hashtable * hb = so_value_get(b);
 
 				if (ha->nb_elements != hb->nb_elements)
 					return false;
 
-				struct st_value_iterator * iter = st_value_hashtable_get_iterator_v1(a);
+				struct so_value_iterator * iter = so_value_hashtable_get_iterator(a);
 				bool equals = true;
-				while (equals && st_value_iterator_has_next_v1(iter)) {
-					struct st_value * key = st_value_iterator_get_key_v1(iter, true, false);
+				while (equals && so_value_iterator_has_next(iter)) {
+					struct so_value * key = so_value_iterator_get_key(iter, true, false);
 
-					if (!st_value_hashtable_has_key_v1(b, key)) {
+					if (!so_value_hashtable_has_key(b, key)) {
 						equals = false;
 						break;
 					}
 
-					struct st_value * val_a = st_value_hashtable_get_v1(a, key, false, false);
-					struct st_value * val_b = st_value_hashtable_get_v1(b, key, false, false);
-					equals = st_value_equals_v1(val_a, val_b);
+					struct so_value * val_a = so_value_hashtable_get(a, key, false, false);
+					struct so_value * val_b = so_value_hashtable_get(b, key, false, false);
+					equals = so_value_equals(val_a, val_b);
 				}
-				st_value_iterator_free_v1(iter);
+				so_value_iterator_free(iter);
 
 				return equals;
 			}
 			return false;
 
-		case st_value_integer:
+		case so_value_integer:
 			switch (b->type) {
-				case st_value_boolean:
-					return (st_value_integer_get_v1(a) != 0 && st_value_boolean_get_v1(b)) || (st_value_integer_get_v1(a) == 0 && !st_value_boolean_get_v1(b));
+				case so_value_boolean:
+					return (so_value_integer_get(a) != 0 && so_value_boolean_get(b)) || (so_value_integer_get(a) == 0 && !so_value_boolean_get(b));
 
-				case st_value_float:
-					return st_value_integer_get_v1(a) == st_value_float_get_v1(b);
+				case so_value_float:
+					return so_value_integer_get(a) == so_value_float_get(b);
 
-				case st_value_integer:
-					return st_value_integer_get_v1(a) == st_value_integer_get_v1(b);
+				case so_value_integer:
+					return so_value_integer_get(a) == so_value_integer_get(b);
 
 				default:
 					return false;
 			}
 
-		case st_value_null:
-			return b->type == st_value_null;
+		case so_value_null:
+			return b->type == so_value_null;
 
-		case st_value_string:
+		case so_value_string:
 			switch (b->type) {
-				case st_value_string: {
-						const char * sa = st_value_string_get_v1(a);
-						const char * sb = st_value_string_get_v1(b);
+				case so_value_string: {
+						const char * sa = so_value_string_get(a);
+						const char * sb = so_value_string_get(b);
 						return !strcmp(sa, sb);
 					}
 
@@ -597,12 +645,11 @@ bool st_value_equals_v1(struct st_value * a, struct st_value * b) {
 	return false;
 }
 
-__asm__(".symver st_value_free_v1, st_value_free@@LIBSTONE_1.2");
-void st_value_free_v1(struct st_value * value) {
+void so_value_free(struct so_value * value) {
 	if (value == NULL || value == &null_value || value->shared == 0)
 		return;
 
-	if (value->shared > 1 && !st_value_count_ref(value)) {
+	if (value->shared > 1 && !so_value_count_ref(value)) {
 		value->shared--;
 		return;
 	}
@@ -610,29 +657,29 @@ void st_value_free_v1(struct st_value * value) {
 	value->shared = 0;
 
 	switch (value->type) {
-		case st_value_array: {
-				st_value_list_clear_v1(value);
-				struct st_value_array * array = st_value_get_v1(value);
+		case so_value_array: {
+				so_value_list_clear(value);
+				struct so_value_array * array = so_value_get(value);
 				free(array->values);
 			}
 			break;
 
-		case st_value_custom: {
-				struct st_value_custom * custom = st_value_get_v1(value);
+		case so_value_custom: {
+				struct so_value_custom * custom = so_value_get(value);
 				if (custom->release != NULL)
 					custom->release(custom->data);
 			}
 			break;
 
-		case st_value_hashtable: {
-				st_value_hashtable_clear_v1(value);
-				struct st_value_hashtable * hashtable = st_value_get_v1(value);
+		case so_value_hashtable: {
+				so_value_hashtable_clear(value);
+				struct so_value_hashtable * hashtable = so_value_get(value);
 				free(hashtable->nodes);
 			}
 			break;
 
-		case st_value_linked_list:
-			st_value_list_clear_v1(value);
+		case so_value_linked_list:
+			so_value_list_clear(value);
 			break;
 
 		default:
@@ -641,70 +688,64 @@ void st_value_free_v1(struct st_value * value) {
 	free(value);
 }
 
-void * st_value_get_v1(const struct st_value * value) {
+void * so_value_get(const struct so_value * value) {
 	return (void *) (value + 1);
 }
 
-static struct st_value * st_value_new(enum st_value_type type, size_t extra) {
-	struct st_value * val = malloc(sizeof(struct st_value) + extra);
-	bzero(val, sizeof(struct st_value) + extra);
+static struct so_value * so_value_new(enum so_value_type type, size_t extra) {
+	struct so_value * val = malloc(sizeof(struct so_value) + extra);
+	bzero(val, sizeof(struct so_value) + extra);
 
 	val->type = type;
 	val->shared = 1;
 	return val;
 }
 
-__asm__(".symver st_value_new_array_v1, st_value_new_array@@LIBSTONE_1.2");
-struct st_value * st_value_new_array_v1(unsigned int size) {
-	struct st_value * val = st_value_new(st_value_array, sizeof(struct st_value_array));
+struct so_value * so_value_new_array(unsigned int size) {
+	struct so_value * val = so_value_new(so_value_array, sizeof(struct so_value_array));
 	if (size == 0)
 		size = 16;
-	struct st_value_array * array = st_value_get_v1(val);
-	array->values = calloc(sizeof(struct st_value *), size);
+	struct so_value_array * array = so_value_get(val);
+	array->values = calloc(sizeof(struct so_value *), size);
 	array->nb_vals = 0;
 	array->nb_preallocated = size;
 	return val;
 }
 
-__asm__(".symver st_value_new_boolean_v1, st_value_new_boolean@@LIBSTONE_1.2");
-struct st_value * st_value_new_boolean_v1(bool value) {
-	struct st_value * val = st_value_new(st_value_boolean, sizeof(bool));
-	bool * boolean = st_value_get_v1(val);
+struct so_value * so_value_new_boolean(bool value) {
+	struct so_value * val = so_value_new(so_value_boolean, sizeof(bool));
+	bool * boolean = so_value_get(val);
 	*boolean = value;
 	return val;
 }
 
-__asm__(".symver st_value_new_custom_v1, st_value_new_custom@@LIBSTONE_1.2");
-struct st_value * st_value_new_custom_v1(void * value, st_value_free_f release) {
-	struct st_value * val = st_value_new(st_value_custom, sizeof(struct st_value_custom));
-	struct st_value_custom * custom = st_value_get_v1(val);
+struct so_value * so_value_new_custom(void * value, so_value_free_f release) {
+	struct so_value * val = so_value_new(so_value_custom, sizeof(struct so_value_custom));
+	struct so_value_custom * custom = so_value_get(val);
 	custom->data = value;
 	custom->release = release;
 	return val;
 }
 
-__asm__(".symver st_value_new_float_v1, st_value_new_float@@LIBSTONE_1.2");
-struct st_value * st_value_new_float_v1(double value) {
-	struct st_value * val = st_value_new(st_value_float, sizeof(double));
-	double * floating = st_value_get_v1(val);
+struct so_value * so_value_new_float(double value) {
+	struct so_value * val = so_value_new(so_value_float, sizeof(double));
+	double * floating = so_value_get(val);
 	*floating = value;
 	return val;
 }
 
-__asm__(".symver st_value_new_hashtable_v1, st_value_new_hashtable@@LIBSTONE_1.2");
-struct st_value * st_value_new_hashtable_v1(st_value_hashtable_compupte_hash_f compute_hash) {
-	return st_value_new_hashtable3(compute_hash, false);
+struct so_value * so_value_new_hashtable(so_value_hashtable_compupte_hash_f compute_hash) {
+	return so_value_new_hashtable3(compute_hash, false);
 }
 
-__asm__(".symver st_value_new_hashtable2_v1, st_value_new_hashtable2@@LIBSTONE_1.2");
-struct st_value * st_value_new_hashtable2_v1() {
-	return st_value_new_hashtable_v1(st_string_compute_hash_v1);
+struct so_value * so_value_new_hashtable2() {
+	return so_value_new_hashtable(so_string_compute_hash);
 }
 
-static struct st_value * st_value_new_hashtable3(st_value_hashtable_compupte_hash_f compute_hash, bool weak_ref) {
-	struct st_value * val = st_value_new(st_value_hashtable, sizeof(struct st_value_hashtable));
-	struct st_value_hashtable * hashtable = st_value_get_v1(val);
-	hashtable->nodes = calloc(16, sizeof(struct st_value_hashtable_node));
+static struct so_value * so_value_new_hashtable3(so_value_hashtable_compupte_hash_f compute_hash, bool weak_ref) {
+	struct so_value * val = so_value_new(so_value_hashtable, sizeof(struct so_value_hashtable));
+	struct so_value_hashtable * hashtable = so_value_get(val);
+	hashtable->nodes = calloc(16, sizeof(struct so_value_hashtable_node));
 	hashtable->nb_elements = 0;
 	hashtable->size_node = 16;
 	hashtable->allow_rehash = true;
@@ -713,82 +754,78 @@ static struct st_value * st_value_new_hashtable3(st_value_hashtable_compupte_has
 	return val;
 }
 
-__asm__(".symver st_value_new_integer_v1, st_value_new_integer@@LIBSTONE_1.2");
-struct st_value * st_value_new_integer_v1(long long int value) {
-	struct st_value * val = st_value_new(st_value_integer, sizeof(long long int));
-	long long int * integer = st_value_get_v1(val);
+struct so_value * so_value_new_integer(long long int value) {
+	struct so_value * val = so_value_new(so_value_integer, sizeof(long long int));
+	long long int * integer = so_value_get(val);
 	*integer = value;
 	return val;
 }
 
-__asm__(".symver st_value_new_linked_list_v1, st_value_new_linked_list@@LIBSTONE_1.2");
-struct st_value * st_value_new_linked_list_v1() {
-	struct st_value * val = st_value_new(st_value_linked_list, sizeof(struct st_value_linked_list));
-	struct st_value_linked_list * list = st_value_get_v1(val);
+struct so_value * so_value_new_linked_list() {
+	struct so_value * val = so_value_new(so_value_linked_list, sizeof(struct so_value_linked_list));
+	struct so_value_linked_list * list = so_value_get(val);
 	list->first = list->last = NULL;
 	list->nb_vals = 0;
 	return val;
 }
 
-__asm__(".symver st_value_new_null_v1, st_value_new_null@@LIBSTONE_1.2");
-struct st_value * st_value_new_null_v1() {
+struct so_value * so_value_new_null() {
 	return &null_value;
 }
 
-__asm__(".symver st_value_new_string_v1, st_value_new_string@@LIBSTONE_1.2");
-struct st_value * st_value_new_string_v1(const char * value) {
-	struct st_value * val = st_value_new(st_value_string, strlen(value) + 1);
-	char * string = st_value_get_v1(val);
+struct so_value * so_value_new_string(const char * value) {
+	struct so_value * val = so_value_new(so_value_string, strlen(value) + 1);
+	char * string = so_value_get(val);
 	strcpy(string, value);
 	return val;
 }
 
-static struct st_value * st_value_pack_inner(const char ** format, va_list params) {
+static struct so_value * so_value_pack_inner(const char ** format, va_list params) {
 	switch (**format) {
 		case 'b':
-			return st_value_new_boolean_v1(va_arg(params, int));
+			return so_value_new_boolean(va_arg(params, int));
 
 		case 'f':
-			return st_value_new_float_v1(va_arg(params, double));
+			return so_value_new_float(va_arg(params, double));
 
 		case 'i':
-			return st_value_new_integer_v1(va_arg(params, long long int));
+			return so_value_new_integer(va_arg(params, long long int));
 
 		case 'n':
 			return &null_value;
 
 		case 'o': {
-				struct st_value * value = va_arg(params, struct st_value *);
+				struct so_value * value = va_arg(params, struct so_value *);
 				if (value != NULL)
 					return value;
 				return &null_value;
 			}
 
 		case 'O': {
-				struct st_value * value = va_arg(params, struct st_value *);
+				struct so_value * value = va_arg(params, struct so_value *);
 				if (value != NULL)
-					return st_value_share_v1(value);
+					return so_value_share(value);
 				return &null_value;
 			}
 
 		case 's': {
 				const char * str_val = va_arg(params, const char *);
 				if (str_val != NULL)
-					return st_value_new_string_v1(str_val);
+					return so_value_new_string(str_val);
 				return &null_value;
 			}
 
 		case '[': {
-				struct st_value * array = st_value_new_linked_list_v1();
+				struct so_value * array = so_value_new_linked_list();
 				(*format)++;
 
 				while (**format != ']') {
-					struct st_value * elt = st_value_pack_inner(format, params);
+					struct so_value * elt = so_value_pack_inner(format, params);
 					if (elt == NULL) {
-						st_value_free_v1(array);
+						so_value_free(array);
 						return NULL;
 					}
-					st_value_list_push_v1(array, elt, true);
+					so_value_list_push(array, elt, true);
 					(*format)++;
 				}
 
@@ -796,26 +833,26 @@ static struct st_value * st_value_pack_inner(const char ** format, va_list param
 			}
 
 		case '{': {
-				struct st_value * object = st_value_new_hashtable2_v1();
+				struct so_value * object = so_value_new_hashtable2();
 				(*format)++;
 
 				while (**format != '}') {
 					if (**format != 's') {
-						st_value_free_v1(object);
+						so_value_free(object);
 						return NULL;
 					}
 
-					struct st_value * key = st_value_pack_inner(format, params);
+					struct so_value * key = so_value_pack_inner(format, params);
 					(*format)++;
 
-					struct st_value * value = st_value_pack_inner(format, params);
+					struct so_value * value = so_value_pack_inner(format, params);
 					if (value == NULL) {
-						st_value_free_v1(object);
-						st_value_free_v1(key);
+						so_value_free(object);
+						so_value_free(key);
 						return NULL;
 					}
 
-					st_value_hashtable_put_v1(object, key, true, value, true);
+					so_value_hashtable_put(object, key, true, value, true);
 					(*format)++;
 				}
 
@@ -825,23 +862,21 @@ static struct st_value * st_value_pack_inner(const char ** format, va_list param
 	return NULL;
 }
 
-__asm__(".symver st_value_pack_v1, st_value_pack@@LIBSTONE_1.2");
-struct st_value * st_value_pack_v1(const char * format, ...) {
+struct so_value * so_value_pack(const char * format, ...) {
 	if (format == NULL)
 		return NULL;
 
 	va_list va;
 	va_start(va, format);
 
-	struct st_value * new_value = st_value_pack_inner(&format, va);
+	struct so_value * new_value = so_value_pack_inner(&format, va);
 
 	va_end(va);
 
 	return new_value;
 }
 
-__asm__(".symver st_value_share_v1, st_value_share@@LIBSTONE_1.2");
-struct st_value * st_value_share_v1(struct st_value * value) {
+struct so_value * so_value_share(struct so_value * value) {
 	if (value == NULL)
 		return NULL;
 
@@ -852,52 +887,52 @@ struct st_value * st_value_share_v1(struct st_value * value) {
 	return value;
 }
 
-static int st_value_unpack_inner(struct st_value * value, const char ** format, va_list params) {
+static int so_value_unpack_inner(struct so_value * value, const char ** format, va_list params) {
 	if (value == NULL)
 		return 0;
 
 	switch (**format) {
 		case 'b':
-			if (value->type == st_value_boolean) {
+			if (value->type == so_value_boolean) {
 				bool * val = va_arg(params, bool *);
 				if (val != NULL) {
-					*val = st_value_boolean_get_v1(value);
+					*val = so_value_boolean_get(value);
 					return 1;
 				}
 			}
 			break;
 
 		case 'f':
-			if (value->type == st_value_float) {
+			if (value->type == so_value_float) {
 				double * val = va_arg(params, double *);
 				if (val != NULL) {
-					*val = st_value_float_get_v1(value);
+					*val = so_value_float_get(value);
 					return 1;
 				}
-			} else if (value->type == st_value_integer) {
+			} else if (value->type == so_value_integer) {
 				double * val = va_arg(params, double *);
 				if (val != NULL) {
-					*val = st_value_integer_get_v1(value);
+					*val = so_value_integer_get(value);
 					return 1;
 				}
 			}
 			break;
 
 		case 'i':
-			if (value->type == st_value_integer) {
+			if (value->type == so_value_integer) {
 				long long int * val = va_arg(params, long long int *);
 				if (val != NULL) {
-					*val = st_value_integer_get_v1(value);
+					*val = so_value_integer_get(value);
 					return 1;
 				}
 			}
 			break;
 
 		case 'n':
-			return value->type == st_value_null;
+			return value->type == so_value_null;
 
 		case 'o': {
-				struct st_value ** val = va_arg(params, struct st_value **);
+				struct so_value ** val = va_arg(params, struct so_value **);
 				if (val != NULL) {
 					*val = value;
 					return 1;
@@ -906,19 +941,19 @@ static int st_value_unpack_inner(struct st_value * value, const char ** format, 
 			break;
 
 		case 'O': {
-				struct st_value ** val = va_arg(params, struct st_value **);
+				struct so_value ** val = va_arg(params, struct so_value **);
 				if (val != NULL) {
-					*val = st_value_share_v1(value);
+					*val = so_value_share(value);
 					return 1;
 				}
 			}
 			break;
 
 		case 's':
-			if (value->type == st_value_string) {
+			if (value->type == so_value_string) {
 				char ** val = va_arg(params, char **);
 				if (val != NULL) {
-					*val = strdup(st_value_string_get_v1(value));
+					*val = strdup(so_value_string_get(value));
 					return 1;
 				}
 			}
@@ -928,16 +963,16 @@ static int st_value_unpack_inner(struct st_value * value, const char ** format, 
 				(*format)++;
 
 				int ret = 0;
-				struct st_value_iterator * iter = st_value_list_get_iterator_v1(value);
+				struct so_value_iterator * iter = so_value_list_get_iterator(value);
 				while (**format != ']') {
-					if (!st_value_iterator_has_next_v1(iter))
+					if (!so_value_iterator_has_next(iter))
 						break;
 
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
-					ret += st_value_unpack_inner(elt, format, params);
+					struct so_value * elt = so_value_iterator_get_value(iter, false);
+					ret += so_value_unpack_inner(elt, format, params);
 					(*format)++;
 				}
-				st_value_iterator_free_v1(iter);
+				so_value_iterator_free(iter);
 
 				(*format)++;
 				return ret;
@@ -948,18 +983,18 @@ static int st_value_unpack_inner(struct st_value * value, const char ** format, 
 
 				int ret = 0;
 				while (**format != '}') {
-					struct st_value * key = st_value_pack_inner(format, params);
-					if (key == NULL || !st_value_hashtable_has_key_v1(value, key)) {
-						st_value_free_v1(key);
+					struct so_value * key = so_value_pack_inner(format, params);
+					if (key == NULL || !so_value_hashtable_has_key(value, key)) {
+						so_value_free(key);
 						return ret;
 					}
 
 					(*format)++;
 
-					struct st_value * child = st_value_hashtable_get_v1(value, key, false, false);
-					ret += st_value_unpack_inner(child, format, params);
+					struct so_value * child = so_value_hashtable_get(value, key, false, false);
+					ret += so_value_unpack_inner(child, format, params);
 
-					st_value_free_v1(key);
+					so_value_free(key);
 
 					(*format)++;
 				}
@@ -973,60 +1008,59 @@ static int st_value_unpack_inner(struct st_value * value, const char ** format, 
 	return 0;
 }
 
-__asm__(".symver st_value_unpack_v1, st_value_unpack@@LIBSTONE_1.2");
-int st_value_unpack_v1(struct st_value * root, const char * format, ...) {
+int so_value_unpack(struct so_value * root, const char * format, ...) {
 	if (root == NULL || format == NULL)
 		return false;
 
 	va_list va;
 	va_start(va, format);
 
-	int ret = st_value_unpack_inner(root, &format, va);
+	int ret = so_value_unpack_inner(root, &format, va);
 
 	va_end(va);
 
 	return ret;
 }
 
-static bool st_value_valid_inner(struct st_value * value, const char ** format, va_list params) {
+static bool so_value_valid_inner(struct so_value * value, const char ** format, va_list params) {
 	if (value == NULL)
 		return false;
 
 	switch (**format) {
 		case 'b':
-			return value->type == st_value_boolean;
+			return value->type == so_value_boolean;
 
 		case 'f':
-			return value->type == st_value_float;
+			return value->type == so_value_float;
 
 		case 'i':
-			return value->type == st_value_integer;
+			return value->type == so_value_integer;
 
 		case 'n':
-			return value->type == st_value_null;
+			return value->type == so_value_null;
 
 		case 'o':
 		case 'O':
 			return true;
 
 		case 's':
-			return value->type == st_value_string;
+			return value->type == so_value_string;
 
 		case '[': {
 				(*format)++;
 
 				bool ok = true;
-				struct st_value_iterator * iter = st_value_list_get_iterator_v1(value);
+				struct so_value_iterator * iter = so_value_list_get_iterator(value);
 				while (ok && **format != ']') {
-					ok = st_value_iterator_has_next_v1(iter);
+					ok = so_value_iterator_has_next(iter);
 					if (!ok)
 						break;
 
-					struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
-					ok = st_value_valid_inner(elt, format, params);
+					struct so_value * elt = so_value_iterator_get_value(iter, false);
+					ok = so_value_valid_inner(elt, format, params);
 					(*format)++;
 				}
-				st_value_iterator_free_v1(iter);
+				so_value_iterator_free(iter);
 
 				(*format)++;
 				return ok;
@@ -1037,18 +1071,18 @@ static bool st_value_valid_inner(struct st_value * value, const char ** format, 
 
 				bool ok = true;
 				while (ok && **format != '}') {
-					struct st_value * key = st_value_pack_inner(format, params);
-					if (key == NULL || !st_value_hashtable_has_key_v1(value, key)) {
-						st_value_free_v1(key);
+					struct so_value * key = so_value_pack_inner(format, params);
+					if (key == NULL || !so_value_hashtable_has_key(value, key)) {
+						so_value_free(key);
 						return false;
 					}
 
 					(*format)++;
 
-					struct st_value * child = st_value_hashtable_get_v1(value, key, false, false);
-					ok = st_value_valid_inner(child, format, params);
+					struct so_value * child = so_value_hashtable_get(value, key, false, false);
+					ok = so_value_valid_inner(child, format, params);
 
-					st_value_free_v1(key);
+					so_value_free(key);
 
 					(*format)++;
 				}
@@ -1061,145 +1095,133 @@ static bool st_value_valid_inner(struct st_value * value, const char ** format, 
 	return false;
 }
 
-__asm__(".symver st_value_valid_v1, st_value_valid@@LIBSTONE_1.2");
-bool st_value_valid_v1(struct st_value * value, const char * format, ...) {
+bool so_value_valid(struct so_value * value, const char * format, ...) {
 	if (format == NULL)
 		return NULL;
 
 	va_list va;
 	va_start(va, format);
 
-	bool ok = st_value_valid_inner(value, &format, va);
+	bool ok = so_value_valid_inner(value, &format, va);
 
 	va_end(va);
 
 	return ok;
 }
 
-__asm__(".symver st_value_vpack_v1, st_value_vpack@@LIBSTONE_1.2");
-struct st_value * st_value_vpack_v1(const char * format, va_list params) {
+struct so_value * so_value_vpack(const char * format, va_list params) {
 	if (format == NULL)
 		return NULL;
 
-	return st_value_pack_inner(&format, params);
+	return so_value_pack_inner(&format, params);
 }
 
-__asm__(".symver st_value_vunpack_v1, st_value_vunpack@@LIBSTONE_1.2");
-int st_value_vunpack_v1(struct st_value * root, const char * format, va_list params) {
+int so_value_vunpack(struct so_value * root, const char * format, va_list params) {
 	if (root == NULL || format == NULL)
 		return false;
 
-	return st_value_unpack_inner(root, &format, params);
+	return so_value_unpack_inner(root, &format, params);
 }
 
-__asm__(".symver st_value_vvalid_v1, st_value_vvalid@@LIBSTONE_1.2");
-bool st_value_vvalid_v1(struct st_value * value, const char * format, va_list params) {
+bool so_value_vvalid(struct so_value * value, const char * format, va_list params) {
 	if (format == NULL)
 		return NULL;
 
-	return st_value_valid_inner(value, &format, params);
+	return so_value_valid_inner(value, &format, params);
 }
 
 
-__asm__(".symver st_value_boolean_get_v1, st_value_boolean_get@@LIBSTONE_1.2");
-bool st_value_boolean_get_v1(const struct st_value * value) {
-	bool * boolean = st_value_get_v1(value);
+bool so_value_boolean_get(const struct so_value * value) {
+	bool * boolean = so_value_get(value);
 	return *boolean;
 }
 
 
-__asm__(".symver st_value_custom_compute_hash_v1, st_value_custom_compute_hash@@LIBSTONE_1.2");
-unsigned long long st_value_custom_compute_hash_v1(const struct st_value * value) {
-	struct st_value_custom * custom = st_value_get_v1(value);
+unsigned long long so_value_custom_compute_hash(const struct so_value * value) {
+	struct so_value_custom * custom = so_value_get(value);
 	return (unsigned long) custom->data;
 }
 
-__asm__(".symver st_value_custom_get_v1, st_value_custom_get@@LIBSTONE_1.2");
-void * st_value_custom_get_v1(const struct st_value * value) {
-	struct st_value_custom * custom = st_value_get_v1(value);
+void * so_value_custom_get(const struct so_value * value) {
+	struct so_value_custom * custom = so_value_get(value);
 	return custom->data;
 }
 
 
-__asm__(".symver st_value_float_get_v1, st_value_float_get@@LIBSTONE_1.2");
-double st_value_float_get_v1(const struct st_value * value) {
-	double * floating = st_value_get_v1(value);
+double so_value_float_get(const struct so_value * value) {
+	double * floating = so_value_get(value);
 	return *floating;
 }
 
 
-__asm__(".symver st_value_hashtable_clear_v1, st_value_hashtable_clear@@LIBSTONE_1.2");
-void st_value_hashtable_clear_v1(struct st_value * hash) {
-	if (hash == NULL || hash->type != st_value_hashtable)
+void so_value_hashtable_clear(struct so_value * hash) {
+	if (hash == NULL || hash->type != so_value_hashtable)
 		return;
 
 	unsigned int i;
-	struct st_value_hashtable * hashtable = st_value_get_v1(hash);
+	struct so_value_hashtable * hashtable = so_value_get(hash);
 	for (i = 0; i < hashtable->size_node; i++) {
-		struct st_value_hashtable_node * node = hashtable->nodes[i];
+		struct so_value_hashtable_node * node = hashtable->nodes[i];
 		hashtable->nodes[i] = NULL;
 
 		while (node != NULL) {
-			struct st_value_hashtable_node * tmp = node;
+			struct so_value_hashtable_node * tmp = node;
 			node = node->next;
 
-			st_value_hashtable_release_node(tmp, hashtable->weak_ref);
+			so_value_hashtable_release_node(tmp, hashtable->weak_ref);
 		}
 	}
 
 	hashtable->nb_elements = 0;
 }
 
-__asm__(".symver st_value_hashtable_get_v1, st_value_hashtable_get@@LIBSTONE_1.2");
-struct st_value * st_value_hashtable_get_v1(struct st_value * hash, struct st_value * key, bool shared, bool detach) {
-	if (hash == NULL || hash->type != st_value_hashtable || key == NULL)
+struct so_value * so_value_hashtable_get(struct so_value * hash, struct so_value * key, bool shared, bool detach) {
+	if (hash == NULL || hash->type != so_value_hashtable || key == NULL)
 		return &null_value;
 
-	struct st_value_hashtable * hashtable = st_value_get_v1(hash);
+	struct so_value_hashtable * hashtable = so_value_get(hash);
 	unsigned long long h = hashtable->compute_hash(key);
 	unsigned int index = h % hashtable->size_node;
 
-	struct st_value_hashtable_node * node = hashtable->nodes[index];
+	struct so_value_hashtable_node * node = hashtable->nodes[index];
 	while (node != NULL && node->hash != h)
 		node = node->next;
 
-	struct st_value * ret = &null_value;
+	struct so_value * ret = &null_value;
 	if (node != NULL && node->hash == h) {
 		if (shared || detach)
-			ret = st_value_share_v1(node->value);
+			ret = so_value_share(node->value);
 		else
 			ret = node->value;
 
 		if (detach)
-			st_value_hashtable_remove_v1(hash, key);
+			so_value_hashtable_remove(hash, key);
 	}
 
 	return ret;
 }
 
-__asm__(".symver st_value_hashtable_get2_v1, st_value_hashtable_get2@@LIBSTONE_1.2");
-struct st_value * st_value_hashtable_get2_v1(struct st_value * hash, const char * key, bool shared, bool detach) {
-	struct st_value * k = st_value_new_string_v1(key);
-	struct st_value * returned = st_value_hashtable_get_v1(hash, k, shared, detach);
-	st_value_free_v1(k);
+struct so_value * so_value_hashtable_get2(struct so_value * hash, const char * key, bool shared, bool detach) {
+	struct so_value * k = so_value_new_string(key);
+	struct so_value * returned = so_value_hashtable_get(hash, k, shared, detach);
+	so_value_free(k);
 	return returned;
 }
 
-__asm__(".symver st_value_hashtable_get_iterator_v1, st_value_hashtable_get_iterator@@LIBSTONE_1.2");
-struct st_value_iterator * st_value_hashtable_get_iterator_v1(struct st_value * hash) {
-	return st_value_hashtable_get_iterator2(hash, false);
+struct so_value_iterator * so_value_hashtable_get_iterator(struct so_value * hash) {
+	return so_value_hashtable_get_iterator2(hash, false);
 }
 
-static struct st_value_iterator * st_value_hashtable_get_iterator2(struct st_value * hash, bool weak_ref) {
-	if (hash == NULL || hash->type != st_value_hashtable)
+static struct so_value_iterator * so_value_hashtable_get_iterator2(struct so_value * hash, bool weak_ref) {
+	if (hash == NULL || hash->type != so_value_hashtable)
 		return NULL;
 
 	if (!weak_ref)
-		st_value_share_v1(hash);
+		hash = so_value_share(hash);
 
-	struct st_value_hashtable * value_hash = st_value_get_v1(hash);
-	struct st_value_iterator * iter = malloc(sizeof(struct st_value_iterator) + sizeof(struct st_value_iterator_hashtable));
-	struct st_value_iterator_hashtable * iter_hash = (struct st_value_iterator_hashtable *) (iter + 1);
+	struct so_value_hashtable * value_hash = so_value_get(hash);
+	struct so_value_iterator * iter = malloc(sizeof(struct so_value_iterator) + sizeof(struct so_value_iterator_hashtable));
+	struct so_value_iterator_hashtable * iter_hash = (struct so_value_iterator_hashtable *) (iter + 1);
 
 	iter->value = hash;
 	iter->weak_ref = weak_ref;
@@ -1212,51 +1234,47 @@ static struct st_value_iterator * st_value_hashtable_get_iterator2(struct st_val
 	return iter;
 }
 
-__asm__(".symver st_value_hashtable_get_length_v1, st_value_hashtable_get_length@@LIBSTONE_1.2");
-unsigned int st_value_hashtable_get_length_v1(struct st_value * hash) {
-	if (hash == NULL || hash->type != st_value_hashtable)
+unsigned int so_value_hashtable_get_length(struct so_value * hash) {
+	if (hash == NULL || hash->type != so_value_hashtable)
 		return 0;
 
-	struct st_value_hashtable * hashtable = st_value_get_v1(hash);
+	struct so_value_hashtable * hashtable = so_value_get(hash);
 	return hashtable->nb_elements;
 }
 
-__asm__(".symver st_value_hashtable_has_key_v1, st_value_hashtable_has_key@@LIBSTONE_1.2");
-bool st_value_hashtable_has_key_v1(struct st_value * hash, struct st_value * key) {
-	if (hash == NULL || hash->type != st_value_hashtable || key == NULL)
+bool so_value_hashtable_has_key(struct so_value * hash, struct so_value * key) {
+	if (hash == NULL || hash->type != so_value_hashtable || key == NULL)
 		return false;
 
-	struct st_value_hashtable * hashtable = st_value_get_v1(hash);
+	struct so_value_hashtable * hashtable = so_value_get(hash);
 	unsigned long long h = hashtable->compute_hash(key);
 	unsigned int index = h % hashtable->size_node;
 
-	struct st_value_hashtable_node * node = hashtable->nodes[index];
+	struct so_value_hashtable_node * node = hashtable->nodes[index];
 	while (node != NULL && node->hash != h)
 		node = node->next;
 
 	return node != NULL && node->hash == h;
 }
 
-__asm__(".symver st_value_hashtable_has_key2_v1, st_value_hashtable_has_key2@@LIBSTONE_1.2");
-bool st_value_hashtable_has_key2_v1(struct st_value * hash, const char * key) {
-	struct st_value * k = st_value_new_string_v1(key);
-	bool returned = st_value_hashtable_has_key_v1(hash, k);
-	st_value_free_v1(k);
+bool so_value_hashtable_has_key2(struct so_value * hash, const char * key) {
+	struct so_value * k = so_value_new_string(key);
+	bool returned = so_value_hashtable_has_key(hash, k);
+	so_value_free(k);
 	return returned;
 }
 
-__asm__(".symver st_value_hashtable_keys_v1, st_value_hashtable_keys@@LIBSTONE_1.2");
-struct st_value * st_value_hashtable_keys_v1(struct st_value * hash) {
-	if (hash == NULL || hash->type != st_value_hashtable)
+struct so_value * so_value_hashtable_keys(struct so_value * hash) {
+	if (hash == NULL || hash->type != so_value_hashtable)
 		return &null_value;
 
-	struct st_value_hashtable * hashtable = st_value_get_v1(hash);
-	struct st_value * list = st_value_new_array_v1(hashtable->nb_elements);
+	struct so_value_hashtable * hashtable = so_value_get(hash);
+	struct so_value * list = so_value_new_array(hashtable->nb_elements);
 	unsigned int i;
 	for (i = 0; i < hashtable->size_node; i++) {
-		struct st_value_hashtable_node * node = hashtable->nodes[i];
+		struct so_value_hashtable_node * node = hashtable->nodes[i];
 		while (node != NULL) {
-			st_value_list_push_v1(list, node->key, false);
+			so_value_list_push(list, node->key, false);
 			node = node->next;
 		}
 	}
@@ -1264,55 +1282,53 @@ struct st_value * st_value_hashtable_keys_v1(struct st_value * hash) {
 	return list;
 }
 
-__asm__(".symver st_value_hashtable_put_v1, st_value_hashtable_put@@LIBSTONE_1.2");
-void st_value_hashtable_put_v1(struct st_value * hash, struct st_value * key, bool new_key, struct st_value * value, bool new_value) {
-	if (hash == NULL || hash->type != st_value_hashtable || key == NULL || key->type == st_value_null || value == NULL)
+void so_value_hashtable_put(struct so_value * hash, struct so_value * key, bool new_key, struct so_value * value, bool new_value) {
+	if (hash == NULL || hash->type != so_value_hashtable || key == NULL || key->type == so_value_null || value == NULL)
 		return;
 
-	struct st_value_hashtable * hashtable = st_value_get_v1(hash);
+	struct so_value_hashtable * hashtable = so_value_get(hash);
 	unsigned long long h = hashtable->compute_hash(key);
 	unsigned int index = h % hashtable->size_node;
 
 	if (!hashtable->weak_ref && !new_key)
-		key = st_value_share_v1(key);
+		key = so_value_share(key);
 	if (!hashtable->weak_ref && !new_value)
-		value = st_value_share_v1(value);
+		value = so_value_share(value);
 
-	struct st_value_hashtable_node * node = malloc(sizeof(struct st_value_hashtable_node));
+	struct so_value_hashtable_node * node = malloc(sizeof(struct so_value_hashtable_node));
 	node->hash = h;
 	node->key = key;
 	node->value = value;
 	node->next = NULL;
 
-	st_value_hashtable_put_inner(hashtable, index, node);
+	so_value_hashtable_put_inner(hashtable, index, node);
 	hashtable->nb_elements++;
 }
 
-__asm__(".symver st_value_hashtable_put2_v1, st_value_hashtable_put2@@LIBSTONE_1.2");
-void st_value_hashtable_put2_v1(struct st_value * hash, const char * key, struct st_value * value, bool new_value) {
-	struct st_value * k = st_value_new_string_v1(key);
-	st_value_hashtable_put_v1(hash, k, true, value, new_value);
+void so_value_hashtable_put2(struct so_value * hash, const char * key, struct so_value * value, bool new_value) {
+	struct so_value * k = so_value_new_string(key);
+	so_value_hashtable_put(hash, k, true, value, new_value);
 }
 
-static void st_value_hashtable_put_inner(struct st_value_hashtable * hashtable, unsigned int index, struct st_value_hashtable_node * new_node) {
-	struct st_value_hashtable_node * node = hashtable->nodes[index];
+static void so_value_hashtable_put_inner(struct so_value_hashtable * hashtable, unsigned int index, struct so_value_hashtable_node * new_node) {
+	struct so_value_hashtable_node * node = hashtable->nodes[index];
 
 	if (node != NULL) {
 		if (node->hash == new_node->hash) {
 			hashtable->nodes[index] = new_node;
 			new_node->next = node->next;
 
-			st_value_hashtable_release_node(node, hashtable->weak_ref);
+			so_value_hashtable_release_node(node, hashtable->weak_ref);
 			hashtable->nb_elements--;
 		} else {
 			short nb_elt = 1;
 			while (node->next != NULL) {
 				if (node->next->hash == new_node->hash) {
-					struct st_value_hashtable_node * old = node->next;
+					struct so_value_hashtable_node * old = node->next;
 					node->next = new_node;
 					new_node->next = old->next;
 
-					st_value_hashtable_release_node(old, hashtable->weak_ref);
+					so_value_hashtable_release_node(old, hashtable->weak_ref);
 					hashtable->nb_elements--;
 					return;
 				}
@@ -1323,63 +1339,62 @@ static void st_value_hashtable_put_inner(struct st_value_hashtable * hashtable, 
 
 			node->next = new_node;
 			if (nb_elt > 4)
-				st_value_hashtable_rehash(hashtable);
+				so_value_hashtable_rehash(hashtable);
 		}
 	} else
 		hashtable->nodes[index] = new_node;
 }
 
-static void st_value_hashtable_rehash(struct st_value_hashtable * hashtable) {
+static void so_value_hashtable_rehash(struct so_value_hashtable * hashtable) {
 	if (!hashtable->allow_rehash)
 		return;
 
 	hashtable->allow_rehash = false;
 
-	struct st_value_hashtable_node ** old_nodes = hashtable->nodes;
+	struct so_value_hashtable_node ** old_nodes = hashtable->nodes;
 	unsigned int old_size_nodes = hashtable->size_node;
 
 	hashtable->size_node <<= 1;
-	hashtable->nodes = calloc(hashtable->size_node, sizeof(struct st_value_hashtable_node *));
+	hashtable->nodes = calloc(hashtable->size_node, sizeof(struct so_value_hashtable_node *));
 
 	unsigned int i;
 	for (i = 0; i < old_size_nodes; i++) {
-		struct st_value_hashtable_node * node = old_nodes[i];
+		struct so_value_hashtable_node * node = old_nodes[i];
 		while (node != NULL) {
-			struct st_value_hashtable_node * current_node = node;
+			struct so_value_hashtable_node * current_node = node;
 			node = node->next;
 			current_node->next = NULL;
 
 			unsigned long long h = current_node->hash % hashtable->size_node;
-			st_value_hashtable_put_inner(hashtable, h, current_node);
+			so_value_hashtable_put_inner(hashtable, h, current_node);
 		}
 	}
 }
 
-static void st_value_hashtable_release_node(struct st_value_hashtable_node * node, bool weak_ref) {
+static void so_value_hashtable_release_node(struct so_value_hashtable_node * node, bool weak_ref) {
 	if (!weak_ref) {
-		st_value_free_v1(node->key);
-		st_value_free_v1(node->value);
+		so_value_free(node->key);
+		so_value_free(node->value);
 	}
 	free(node);
 }
 
-__asm__(".symver st_value_hashtable_remove_v1, st_value_hashtable_remove@@LIBSTONE_1.2");
-void st_value_hashtable_remove_v1(struct st_value * hash, struct st_value * key) {
-	if (hash == NULL || hash->type != st_value_hashtable || key == NULL)
+void so_value_hashtable_remove(struct so_value * hash, struct so_value * key) {
+	if (hash == NULL || hash->type != so_value_hashtable || key == NULL)
 		return;
 
-	struct st_value_hashtable * hashtable = st_value_get_v1(hash);
+	struct so_value_hashtable * hashtable = so_value_get(hash);
 	unsigned long long h = hashtable->compute_hash(key);
 	unsigned int index = h % hashtable->size_node;
 
-	struct st_value_hashtable_node * node = hashtable->nodes[index];
+	struct so_value_hashtable_node * node = hashtable->nodes[index];
 	if (node == NULL)
 		return;
 
 	if (node->hash == h) {
 		hashtable->nodes[index] = node->next;
 
-		st_value_hashtable_release_node(node, hashtable->weak_ref);
+		so_value_hashtable_release_node(node, hashtable->weak_ref);
 		hashtable->nb_elements--;
 
 		return;
@@ -1389,33 +1404,31 @@ void st_value_hashtable_remove_v1(struct st_value * hash, struct st_value * key)
 		node = node->next;
 
 	if (node->next != NULL && node->next->hash == h) {
-		struct st_value_hashtable_node * tmp = node->next;
+		struct so_value_hashtable_node * tmp = node->next;
 		node->next = tmp->next;
 
-		st_value_hashtable_release_node(tmp, hashtable->weak_ref);
+		so_value_hashtable_release_node(tmp, hashtable->weak_ref);
 		hashtable->nb_elements--;
 	}
 }
 
-__asm__(".symver st_value_hashtable_remove2_v1, st_value_hashtable_remove2@@LIBSTONE_1.2");
-void st_value_hashtable_remove2_v1(struct st_value * hash, const char * key) {
-	struct st_value * k = st_value_new_string_v1(key);
-	st_value_hashtable_remove_v1(hash, k);
-	st_value_free_v1(k);
+void so_value_hashtable_remove2(struct so_value * hash, const char * key) {
+	struct so_value * k = so_value_new_string(key);
+	so_value_hashtable_remove(hash, k);
+	so_value_free(k);
 }
 
-__asm__(".symver st_value_hashtable_values_v1, st_value_hashtable_values@@LIBSTONE_1.2");
-struct st_value * st_value_hashtable_values_v1(struct st_value * hash) {
-	if (hash == NULL || hash->type != st_value_hashtable)
+struct so_value * so_value_hashtable_values(struct so_value * hash) {
+	if (hash == NULL || hash->type != so_value_hashtable)
 		return &null_value;
 
-	struct st_value_hashtable * hashtable = st_value_get_v1(hash);
-	struct st_value * list = st_value_new_array_v1(hashtable->nb_elements);
+	struct so_value_hashtable * hashtable = so_value_get(hash);
+	struct so_value * list = so_value_new_array(hashtable->nb_elements);
 	unsigned int i;
 	for (i = 0; i < hashtable->size_node; i++) {
-		struct st_value_hashtable_node * node = hashtable->nodes[i];
+		struct so_value_hashtable_node * node = hashtable->nodes[i];
 		while (node != NULL) {
-			st_value_list_push_v1(list, node->value, false);
+			so_value_list_push(list, node->value, false);
 			node = node->next;
 		}
 	}
@@ -1424,39 +1437,37 @@ struct st_value * st_value_hashtable_values_v1(struct st_value * hash) {
 }
 
 
-__asm__(".symver st_value_integer_get_v1, st_value_integer_get@@LIBSTONE_1.2");
-long long int st_value_integer_get_v1(const struct st_value * value) {
-	long long int * integer = st_value_get_v1(value);
+long long int so_value_integer_get(const struct so_value * value) {
+	long long int * integer = so_value_get(value);
 	return *integer;
 }
 
 
-__asm__(".symver st_value_list_clear_v1, st_value_list_clear@@LIBSTONE_1.2");
-void st_value_list_clear_v1(struct st_value * list) {
-	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
+void so_value_list_clear(struct so_value * list) {
+	if (list == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
 		return;
 
-	if (list->type == st_value_array) {
-		struct st_value_array * array = st_value_get_v1(list);
+	if (list->type == so_value_array) {
+		struct so_value_array * array = so_value_get(list);
 		unsigned int i;
 		for (i = 0; i < array->nb_vals; i++) {
-			st_value_free_v1(array->values[i]);
+			so_value_free(array->values[i]);
 			array->values[i] = NULL;
 		}
 		array->nb_vals = 0;
 	} else {
-		struct st_value_linked_list * linked = st_value_get_v1(list);
+		struct so_value_linked_list * linked = so_value_get(list);
 
 		if (linked->nb_vals == 0)
 			return;
 
-		struct st_value_linked_list_node * ptr;
+		struct so_value_linked_list_node * ptr;
 		for (ptr = linked->first->next; ptr != NULL; ptr = ptr->next) {
-			st_value_free_v1(ptr->previous->value);
+			so_value_free(ptr->previous->value);
 			free(ptr->previous);
 		}
 		if (linked->last != NULL) {
-			st_value_free_v1(linked->last->value);
+			so_value_free(linked->last->value);
 			free(linked->last);
 		}
 		linked->first = linked->last = NULL;
@@ -1464,26 +1475,25 @@ void st_value_list_clear_v1(struct st_value * list) {
 	}
 }
 
-__asm__(".symver st_value_list_get_v1, st_value_list_get@@LIBSTONE_1.2");
-struct st_value * st_value_list_get_v1(struct st_value * list, unsigned int index, bool shared) {
-	struct st_value * ret = &null_value;
+struct so_value * so_value_list_get(struct so_value * list, unsigned int index, bool shared) {
+	struct so_value * ret = &null_value;
 
-	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
+	if (list == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
 		return ret;
 
-	if (list->type == st_value_array) {
-		struct st_value_array * array = st_value_get_v1(list);
+	if (list->type == so_value_array) {
+		struct so_value_array * array = so_value_get(list);
 		if (index < array->nb_vals)
 			ret = array->values[index];
 	} else {
-		struct st_value_linked_list * linked_list = st_value_get_v1(list);
+		struct so_value_linked_list * linked_list = so_value_get(list);
 		if (linked_list->nb_vals >= index) {
 			if (index == 0)
 				ret = linked_list->first->value;
 			else if (linked_list->nb_vals == index)
 				ret = linked_list->last->value;
 			else {
-				struct st_value_linked_list_node * node = linked_list->first;
+				struct so_value_linked_list_node * node = linked_list->first;
 				while (index > 0) {
 					node = node->next;
 					index--;
@@ -1494,34 +1504,33 @@ struct st_value * st_value_list_get_v1(struct st_value * list, unsigned int inde
 	}
 
 	if (shared)
-		st_value_share_v1(ret);
+		ret = so_value_share(ret);
 
 	return ret;
 }
 
-__asm__(".symver st_value_list_get_iterator_v1, st_value_list_get_iterator@@LIBSTONE_1.2");
-struct st_value_iterator * st_value_list_get_iterator_v1(struct st_value * list) {
-	return st_value_list_get_iterator2(list, false);
+struct so_value_iterator * so_value_list_get_iterator(struct so_value * list) {
+	return so_value_list_get_iterator2(list, false);
 }
 
-static struct st_value_iterator * st_value_list_get_iterator2(struct st_value * list, bool weak_ref) {
-	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
+static struct so_value_iterator * so_value_list_get_iterator2(struct so_value * list, bool weak_ref) {
+	if (list == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
 		return NULL;
 
 	if (!weak_ref)
-		st_value_share_v1(list);
+		list = so_value_share(list);
 
-	struct st_value_iterator * iter = NULL;
-	if (list->type == st_value_array) {
-		iter = malloc(sizeof(struct st_value_iterator) + sizeof(struct st_value_iterator_array));
-		struct st_value_iterator_array * iter_array = (struct st_value_iterator_array *) (iter + 1);
+	struct so_value_iterator * iter = NULL;
+	if (list->type == so_value_array) {
+		iter = malloc(sizeof(struct so_value_iterator) + sizeof(struct so_value_iterator_array));
+		struct so_value_iterator_array * iter_array = (struct so_value_iterator_array *) (iter + 1);
 
 		iter_array->index = 0;
 	} else {
-		struct st_value_linked_list * value_linked_list = st_value_get_v1(list);
+		struct so_value_linked_list * value_linked_list = so_value_get(list);
 
-		iter = malloc(sizeof(struct st_value_iterator) + sizeof(struct st_value_iterator_linked_list));
-		struct st_value_iterator_linked_list * iter_linked_list = (struct st_value_iterator_linked_list *) (iter + 1);
+		iter = malloc(sizeof(struct so_value_iterator) + sizeof(struct so_value_iterator_linked_list));
+		struct so_value_iterator_linked_list * iter_linked_list = (struct so_value_iterator_linked_list *) (iter + 1);
 
 		iter_linked_list->current = NULL;
 		iter_linked_list->next = value_linked_list->first;
@@ -1533,55 +1542,52 @@ static struct st_value_iterator * st_value_list_get_iterator2(struct st_value * 
 	return iter;
 }
 
-__asm__(".symver st_value_list_get_length_v1, st_value_list_get_length@@LIBSTONE_1.2");
-unsigned int st_value_list_get_length_v1(struct st_value * list) {
-	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
+unsigned int so_value_list_get_length(struct so_value * list) {
+	if (list == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
 		return 0;
 
-	if (list->type == st_value_array) {
-		struct st_value_array * array = st_value_get_v1(list);
+	if (list->type == so_value_array) {
+		struct so_value_array * array = so_value_get(list);
 		return array->nb_vals;
 	} else {
-		struct st_value_linked_list * linked = st_value_get_v1(list);
+		struct so_value_linked_list * linked = so_value_get(list);
 		return linked->nb_vals;
 	}
 }
 
-__asm__(".symver st_value_list_index_of_v1, st_value_list_index_of@@LIBSTONE_1.2");
-int st_value_list_index_of_v1(struct st_value * list, struct st_value * elt) {
-	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
+int so_value_list_index_of(struct so_value * list, struct so_value * elt) {
+	if (list == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
 		return -1;
 
 	bool found = false;
 	int index = -1;
-	struct st_value_iterator * iter = st_value_list_get_iterator_v1(list);
-	while (!found && st_value_iterator_has_next_v1(iter)) {
-		struct st_value * i_elt = st_value_iterator_get_value_v1(iter, false);
-		found = st_value_equals_v1(elt, i_elt);
+	struct so_value_iterator * iter = so_value_list_get_iterator(list);
+	while (!found && so_value_iterator_has_next(iter)) {
+		struct so_value * i_elt = so_value_iterator_get_value(iter, false);
+		found = so_value_equals(elt, i_elt);
 		index++;
 	}
-	st_value_iterator_free_v1(iter);
+	so_value_iterator_free(iter);
 
 	return found ? index : -1;
 }
 
-__asm__(".symver st_value_list_pop_v1, st_value_list_pop@@LIBSTONE_1.2");
-struct st_value * st_value_list_pop_v1(struct st_value * list) {
-	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
+struct so_value * so_value_list_pop(struct so_value * list) {
+	if (list == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
 		return NULL;
 
-	struct st_value * ret = NULL;
+	struct so_value * ret = NULL;
 
-	if (list->type == st_value_array) {
-		struct st_value_array * array = st_value_get_v1(list);
+	if (list->type == so_value_array) {
+		struct so_value_array * array = so_value_get(list);
 		if (array->nb_vals > 0) {
 			array->nb_vals--;
 			ret = array->values[array->nb_vals];
 			array->values[array->nb_vals] = NULL;
 		}
 	} else {
-		struct st_value_linked_list * linked = st_value_get_v1(list);
-		struct st_value_linked_list_node * node = linked->last;
+		struct so_value_linked_list * linked = so_value_get(list);
+		struct so_value_linked_list_node * node = linked->last;
 		if (node != NULL) {
 			linked->last = node->previous;
 			if (linked->last == NULL)
@@ -1597,15 +1603,14 @@ struct st_value * st_value_list_pop_v1(struct st_value * list) {
 	return ret;
 }
 
-__asm__(".symver st_value_list_push_v1, st_value_list_push@@LIBSTONE_1.2");
-bool st_value_list_push_v1(struct st_value * list, struct st_value * val, bool new_val) {
-	if (list == NULL || val == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
+bool so_value_list_push(struct so_value * list, struct so_value * val, bool new_val) {
+	if (list == NULL || val == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
 		return false;
 
-	if (list->type == st_value_array) {
-		struct st_value_array * array = st_value_get_v1(list);
+	if (list->type == so_value_array) {
+		struct so_value_array * array = so_value_get(list);
 		if (array->nb_vals == array->nb_preallocated) {
-			void * new_addr = realloc(array->values, (array->nb_vals + 16) * sizeof(struct st_value *));
+			void * new_addr = realloc(array->values, (array->nb_vals + 16) * sizeof(struct so_value *));
 			if (new_addr == NULL)
 				return false;
 
@@ -1614,20 +1619,20 @@ bool st_value_list_push_v1(struct st_value * list, struct st_value * val, bool n
 		}
 
 		if (!new_val)
-			val = st_value_share_v1(val);
+			val = so_value_share(val);
 
 		array->values[array->nb_vals] = val;
 		array->nb_vals++;
 
 		return true;
 	} else {
-		struct st_value_linked_list * linked = st_value_get_v1(list);
-		struct st_value_linked_list_node * node = malloc(sizeof(struct st_value_linked_list_node));
+		struct so_value_linked_list * linked = so_value_get(list);
+		struct so_value_linked_list_node * node = malloc(sizeof(struct so_value_linked_list_node));
 		if (node == NULL)
 			return false;
 
 		if (!new_val)
-			val = st_value_share_v1(val);
+			val = so_value_share(val);
 
 		node->value = val;
 		node->next = NULL;
@@ -1644,15 +1649,14 @@ bool st_value_list_push_v1(struct st_value * list, struct st_value * val, bool n
 	}
 }
 
-__asm__(".symver st_value_list_shift_v1, st_value_list_shift@@LIBSTONE_1.2");
-bool st_value_list_shift_v1(struct st_value * list, struct st_value * val, bool new_val) {
-	if (list == NULL || val == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
+bool so_value_list_shift(struct so_value * list, struct so_value * val, bool new_val) {
+	if (list == NULL || val == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
 		return false;
 
-	if (list->type == st_value_array) {
-		struct st_value_array * array = st_value_get_v1(list);
+	if (list->type == so_value_array) {
+		struct so_value_array * array = so_value_get(list);
 		if (array->nb_vals == array->nb_preallocated) {
-			void * new_addr = realloc(array->values, (array->nb_vals + 16) * sizeof(struct st_value *));
+			void * new_addr = realloc(array->values, (array->nb_vals + 16) * sizeof(struct so_value *));
 			if (new_addr == NULL)
 				return false;
 
@@ -1661,22 +1665,22 @@ bool st_value_list_shift_v1(struct st_value * list, struct st_value * val, bool 
 		}
 
 		if (!new_val)
-			val = st_value_share_v1(val);
+			val = so_value_share(val);
 
-		memmove(array->values + 1, array->values, array->nb_vals * sizeof(struct st_value *));
+		memmove(array->values + 1, array->values, array->nb_vals * sizeof(struct so_value *));
 		array->values[0] = val;
 		array->nb_vals++;
 
 		return true;
 	} else {
-		struct st_value_linked_list_node * node = malloc(sizeof(struct st_value_linked_list_node));
+		struct so_value_linked_list_node * node = malloc(sizeof(struct so_value_linked_list_node));
 		if (node == NULL)
 			return false;
 
 		if (!new_val)
-			val = st_value_share_v1(val);
+			val = so_value_share(val);
 
-		struct st_value_linked_list * linked = st_value_get_v1(list);
+		struct so_value_linked_list * linked = so_value_get(list);
 		node->value = val;
 		node->next = linked->first;
 		node->previous = NULL;
@@ -1692,13 +1696,12 @@ bool st_value_list_shift_v1(struct st_value * list, struct st_value * val, bool 
 	}
 }
 
-__asm__(".symver st_value_list_slice_v1, st_value_list_slice@@LIBSTONE_1.2");
-struct st_value * st_value_list_slice_v1(struct st_value * list, int index) {
-	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
-		return st_value_new_linked_list_v1();
+struct so_value * so_value_list_slice(struct so_value * list, int index) {
+	if (list == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
+		return so_value_new_linked_list();
 
-	int length = st_value_list_get_length_v1(list);
-	struct st_value * ret = st_value_new_array_v1(length);
+	int length = so_value_list_get_length(list);
+	struct so_value * ret = so_value_new_array(length);
 
 	if (index < 0) {
 		index += length;
@@ -1707,28 +1710,27 @@ struct st_value * st_value_list_slice_v1(struct st_value * list, int index) {
 	} else if (index >= length)
 		return ret;
 
-	struct st_value_iterator * iter = st_value_list_get_iterator_v1(list);
-	while (index > 0 && st_value_iterator_has_next_v1(iter)) {
-		st_value_iterator_get_value_v1(iter, false);
+	struct so_value_iterator * iter = so_value_list_get_iterator(list);
+	while (index > 0 && so_value_iterator_has_next(iter)) {
+		so_value_iterator_get_value(iter, false);
 		index--;
 	}
 
 	if (index == 0)
-		while (st_value_iterator_has_next(iter))
-			st_value_list_push_v1(ret, st_value_iterator_get_value_v1(iter, true), true);
+		while (so_value_iterator_has_next(iter))
+			so_value_list_push(ret, so_value_iterator_get_value(iter, true), true);
 
-	st_value_iterator_free_v1(iter);
+	so_value_iterator_free(iter);
 
 	return ret;
 }
 
-__asm__(".symver st_value_list_slice2_v1, st_value_list_slice2@@LIBSTONE_1.2");
-struct st_value * st_value_list_slice2_v1(struct st_value * list, int index, int end) {
-	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
-		return st_value_new_linked_list_v1();
+struct so_value * so_value_list_slice2(struct so_value * list, int index, int end) {
+	if (list == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
+		return so_value_new_linked_list();
 
-	int length = st_value_list_get_length_v1(list);
-	struct st_value * ret = st_value_new_array_v1(length);
+	int length = so_value_list_get_length(list);
+	struct so_value * ret = so_value_new_array(length);
 
 	if (index < 0) {
 		index += length;
@@ -1747,31 +1749,30 @@ struct st_value * st_value_list_slice2_v1(struct st_value * list, int index, int
 	if (index >= end)
 		return ret;
 
-	struct st_value_iterator * iter = st_value_list_get_iterator_v1(list);
-	while (index > 0 && st_value_iterator_has_next_v1(iter)) {
-		st_value_iterator_get_value_v1(iter, false);
+	struct so_value_iterator * iter = so_value_list_get_iterator(list);
+	while (index > 0 && so_value_iterator_has_next(iter)) {
+		so_value_iterator_get_value(iter, false);
 		index--;
 		end--;
 	}
 
 	if (index == 0)
-		while (end > 0 && st_value_iterator_has_next(iter)) {
-			st_value_list_push_v1(ret, st_value_iterator_get_value_v1(iter, true), true);
+		while (end > 0 && so_value_iterator_has_next(iter)) {
+			so_value_list_push(ret, so_value_iterator_get_value(iter, true), true);
 			end--;
 		}
 
-	st_value_iterator_free_v1(iter);
+	so_value_iterator_free(iter);
 
 	return ret;
 }
 
-__asm__(".symver st_value_list_splice_v1, st_value_list_splice@@LIBSTONE_1.2");
-struct st_value * st_value_list_splice_v1(struct st_value * list, int index, int how_many, ...) {
-	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
-		return st_value_new_linked_list_v1();
+struct so_value * so_value_list_splice(struct so_value * list, int index, int how_many, ...) {
+	if (list == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
+		return so_value_new_linked_list();
 
-	int length = st_value_list_get_length_v1(list);
-	struct st_value * ret = st_value_new_array_v1(length);
+	int length = so_value_list_get_length(list);
+	struct so_value * ret = so_value_new_array(length);
 
 	if (index < 0) {
 		index += length;
@@ -1780,20 +1781,20 @@ struct st_value * st_value_list_splice_v1(struct st_value * list, int index, int
 	} else if (index >= length)
 		index = length;
 
-	if (list->type == st_value_array) {
-		struct st_value_array * array = st_value_get_v1(list);
-		struct st_value * tmp_elts = st_value_new_linked_list_v1();
+	if (list->type == so_value_array) {
+		struct so_value_array * array = so_value_get(list);
+		struct so_value * tmp_elts = so_value_new_linked_list();
 
 		if (index < length && how_many > 0) {
 			int i;
 			for (i = index; i < index + how_many && i < length; i++) {
-				st_value_list_push_v1(ret, array->values[i], false);
+				so_value_list_push(ret, array->values[i], false);
 				array->values[i] = NULL;
 				array->nb_vals--;
 			}
 
 			for (; i < length; i++) {
-				st_value_list_push_v1(tmp_elts, array->values[i], false);
+				so_value_list_push(tmp_elts, array->values[i], false);
 				array->values[i] = NULL;
 				array->nb_vals--;
 			}
@@ -1802,24 +1803,24 @@ struct st_value * st_value_list_splice_v1(struct st_value * list, int index, int
 		va_list args;
 		va_start(args, how_many);
 
-		struct st_value * new_val = va_arg(args, struct st_value *);
+		struct so_value * new_val = va_arg(args, struct so_value *);
 		while (new_val != NULL) {
-			st_value_list_push_v1(list, new_val, false);
-			new_val = va_arg(args, struct st_value *);
+			so_value_list_push(list, new_val, false);
+			new_val = va_arg(args, struct so_value *);
 		}
 
 		va_end(args);
 
-		struct st_value_iterator * iter = st_value_list_get_iterator_v1(tmp_elts);
-		while (st_value_iterator_has_next_v1(iter)) {
-			struct st_value * elt = st_value_iterator_get_value_v1(iter, false);
-			st_value_list_push_v1(list, elt, false);
+		struct so_value_iterator * iter = so_value_list_get_iterator(tmp_elts);
+		while (so_value_iterator_has_next(iter)) {
+			struct so_value * elt = so_value_iterator_get_value(iter, false);
+			so_value_list_push(list, elt, false);
 		}
-		st_value_iterator_free_v1(iter);
-		st_value_free_v1(tmp_elts);
+		so_value_iterator_free(iter);
+		so_value_free(tmp_elts);
 	} else {
-		struct st_value_linked_list * llist = st_value_get_v1(list);
-		struct st_value_linked_list_node * node = llist->first;
+		struct so_value_linked_list * llist = so_value_get(list);
+		struct so_value_linked_list_node * node = llist->first;
 
 		while (node != NULL && index > 0) {
 			node = node->next;
@@ -1827,7 +1828,7 @@ struct st_value * st_value_list_splice_v1(struct st_value * list, int index, int
 		}
 
 		while (node != NULL && how_many > 0) {
-			st_value_list_push_v1(ret, node->value, true);
+			so_value_list_push(ret, node->value, true);
 			node->value = NULL;
 
 			if (node == llist->first) {
@@ -1849,13 +1850,13 @@ struct st_value * st_value_list_splice_v1(struct st_value * list, int index, int
 		va_list args;
 		va_start(args, how_many);
 
-		struct st_value * new_val = va_arg(args, struct st_value *);
+		struct so_value * new_val = va_arg(args, struct so_value *);
 		while (new_val != NULL) {
 			if (node == NULL || node->next == NULL)
-				st_value_list_push(list, new_val, false);
+				so_value_list_push(list, new_val, false);
 			else {
-				struct st_value_linked_list_node * new_node = malloc(sizeof(struct st_value_linked_list_node));
-				new_node->value = st_value_share_v1(new_val);
+				struct so_value_linked_list_node * new_node = malloc(sizeof(struct so_value_linked_list_node));
+				new_node->value = so_value_share(new_val);
 				new_node->next = node;
 				new_node->previous = node->previous;
 
@@ -1868,7 +1869,7 @@ struct st_value * st_value_list_splice_v1(struct st_value * list, int index, int
 				llist->nb_vals++;
 			}
 
-			new_val = va_arg(args, struct st_value *);
+			new_val = va_arg(args, struct so_value *);
 		}
 
 		va_end(args);
@@ -1877,24 +1878,23 @@ struct st_value * st_value_list_splice_v1(struct st_value * list, int index, int
 	return ret;
 }
 
-__asm__(".symver st_value_list_unshift_v1, st_value_list_unshift@@LIBSTONE_1.2");
-struct st_value * st_value_list_unshift_v1(struct st_value * list) {
-	if (list == NULL || (list->type != st_value_array && list->type != st_value_linked_list))
+struct so_value * so_value_list_unshift(struct so_value * list) {
+	if (list == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
 		return NULL;
 
-	struct st_value * ret = NULL;
+	struct so_value * ret = NULL;
 
-	if (list->type == st_value_array) {
-		struct st_value_array * array = st_value_get_v1(list);
+	if (list->type == so_value_array) {
+		struct so_value_array * array = so_value_get(list);
 		if (array->nb_vals > 0) {
 			ret = array->values[0];
 			array->nb_vals--;
-			memmove(array->values, array->values + 1, array->nb_vals * sizeof(struct st_value *));
+			memmove(array->values, array->values + 1, array->nb_vals * sizeof(struct so_value *));
 			array->values[array->nb_vals] = NULL;
 		}
 	} else {
-		struct st_value_linked_list * linked = st_value_get_v1(list);
-		struct st_value_linked_list_node * node = linked->last;
+		struct so_value_linked_list * linked = so_value_get(list);
+		struct so_value_linked_list_node * node = linked->last;
 		if (node != NULL) {
 			linked->last = node->previous;
 			if (linked->last == NULL)
@@ -1911,38 +1911,35 @@ struct st_value * st_value_list_unshift_v1(struct st_value * list) {
 }
 
 
-__asm__(".symver st_value_string_get_v1, st_value_string_get@@LIBSTONE_1.2");
-const char * st_value_string_get_v1(const struct st_value * value) {
-	return st_value_get_v1(value);
+const char * so_value_string_get(const struct so_value * value) {
+	return so_value_get(value);
 }
 
 
-__asm__(".symver st_value_iterator_free_v1, st_value_iterator_free@@LIBSTONE_1.2");
-void st_value_iterator_free_v1(struct st_value_iterator * iter) {
+void so_value_iterator_free(struct so_value_iterator * iter) {
 	if (iter == NULL)
 		return;
 
 	if (iter->value != NULL && !iter->weak_ref)
-		st_value_free_v1(iter->value);
+		so_value_free(iter->value);
 	iter->value = NULL;
 
 	free(iter);
 }
 
-__asm__(".symver st_value_iterator_get_key_v1, st_value_iterator_get_key@@LIBSTONE_1.2");
-struct st_value * st_value_iterator_get_key_v1(struct st_value_iterator * iter, bool move_to_next, bool shared) {
-	if (iter == NULL || iter->value == NULL || iter->value->type != st_value_hashtable)
+struct so_value * so_value_iterator_get_key(struct so_value_iterator * iter, bool move_to_next, bool shared) {
+	if (iter == NULL || iter->value == NULL || iter->value->type != so_value_hashtable)
 		return &null_value;
 
-	struct st_value_iterator_hashtable * iter_hash = (struct st_value_iterator_hashtable *) (iter + 1);
-	struct st_value_hashtable_node * node = iter_hash->node;
-	struct st_value * key = node->key;
+	struct so_value_iterator_hashtable * iter_hash = (struct so_value_iterator_hashtable *) (iter + 1);
+	struct so_value_hashtable_node * node = iter_hash->node;
+	struct so_value * key = node->key;
 
 	if (shared)
-		key = st_value_share_v1(key);
+		key = so_value_share(key);
 
 	if (move_to_next) {
-		struct st_value_hashtable * hash = st_value_get_v1(iter->value);
+		struct so_value_hashtable * hash = so_value_get(iter->value);
 		iter_hash->node = node->next;
 
 		if (iter_hash->node == NULL)
@@ -1953,16 +1950,15 @@ struct st_value * st_value_iterator_get_key_v1(struct st_value_iterator * iter, 
 	return key;
 }
 
-__asm__(".symver st_value_iterator_get_value_v1, st_value_iterator_get_value@@LIBSTONE_1.2");
-struct st_value * st_value_iterator_get_value_v1(struct st_value_iterator * iter, bool shared) {
+struct so_value * so_value_iterator_get_value(struct so_value_iterator * iter, bool shared) {
 	if (iter == NULL || iter->value == NULL)
 		return &null_value;
 
-	struct st_value * ret = &null_value;
+	struct so_value * ret = &null_value;
 	switch (iter->value->type) {
-		case st_value_array: {
-				struct st_value_array * array = st_value_get_v1(iter->value);
-				struct st_value_iterator_array * iter_array = (struct st_value_iterator_array *) (iter + 1);
+		case so_value_array: {
+				struct so_value_array * array = so_value_get(iter->value);
+				struct so_value_iterator_array * iter_array = (struct so_value_iterator_array *) (iter + 1);
 
 				if (iter_array->index >= array->nb_vals)
 					break;
@@ -1972,14 +1968,14 @@ struct st_value * st_value_iterator_get_value_v1(struct st_value_iterator * iter
 				break;
 			}
 
-		case st_value_hashtable: {
-				struct st_value_iterator_hashtable * iter_hash = (struct st_value_iterator_hashtable *) (iter + 1);
+		case so_value_hashtable: {
+				struct so_value_iterator_hashtable * iter_hash = (struct so_value_iterator_hashtable *) (iter + 1);
 
 				if (iter_hash->node == NULL)
 					break;
 
-				struct st_value_hashtable * hash = st_value_get_v1(iter->value);
-				struct st_value_hashtable_node * node = iter_hash->node;
+				struct so_value_hashtable * hash = so_value_get(iter->value);
+				struct so_value_hashtable_node * node = iter_hash->node;
 				ret = node->value;
 
 				iter_hash->node = node->next;
@@ -1991,8 +1987,8 @@ struct st_value * st_value_iterator_get_value_v1(struct st_value_iterator * iter
 			}
 			break;
 
-		case st_value_linked_list: {
-				struct st_value_iterator_linked_list * iter_list = (struct st_value_iterator_linked_list *) (iter + 1);
+		case so_value_linked_list: {
+				struct so_value_iterator_linked_list * iter_list = (struct so_value_iterator_linked_list *) (iter + 1);
 				iter_list->current = iter_list->next;
 				if (iter_list->current != NULL) {
 					ret = iter_list->current->value;
@@ -2006,31 +2002,30 @@ struct st_value * st_value_iterator_get_value_v1(struct st_value_iterator * iter
 	}
 
 	if (ret != &null_value && shared)
-		ret = st_value_share_v1(ret);
+		ret = so_value_share(ret);
 
 	return ret;
 }
 
-__asm__(".symver st_value_iterator_has_next_v1, st_value_iterator_has_next@@LIBSTONE_1.2");
-bool st_value_iterator_has_next_v1(struct st_value_iterator * iter) {
+bool so_value_iterator_has_next(struct so_value_iterator * iter) {
 	if (iter == NULL)
 		return false;
 
 	switch (iter->value->type) {
-		case st_value_array: {
-				struct st_value_array * array = st_value_get_v1(iter->value);
-				struct st_value_iterator_array * iter_array = (struct st_value_iterator_array *) (iter + 1);
+		case so_value_array: {
+				struct so_value_array * array = so_value_get(iter->value);
+				struct so_value_iterator_array * iter_array = (struct so_value_iterator_array *) (iter + 1);
 
 				return iter_array->index < array->nb_vals;
 			}
 
-		case st_value_hashtable: {
-				struct st_value_iterator_hashtable * iter_hash = (struct st_value_iterator_hashtable *) (iter + 1);
+		case so_value_hashtable: {
+				struct so_value_iterator_hashtable * iter_hash = (struct so_value_iterator_hashtable *) (iter + 1);
 				return iter_hash->node != NULL;
 			}
 
-		case st_value_linked_list: {
-				struct st_value_iterator_linked_list * iter_list = (struct st_value_iterator_linked_list *) (iter + 1);
+		case so_value_linked_list: {
+				struct so_value_iterator_linked_list * iter_list = (struct so_value_iterator_linked_list *) (iter + 1);
 				if (iter_list->next != NULL)
 					return true;
 				if (iter_list->current == NULL)
@@ -2050,7 +2045,7 @@ bool st_value_iterator_has_next_v1(struct st_value_iterator * iter) {
 }
 
 
-static unsigned long long st_value_compute_addr(const struct st_value * key) {
+static unsigned long long so_value_compute_addr(const struct so_value * key) {
 	return (unsigned long int) key;
 }
 
