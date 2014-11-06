@@ -27,6 +27,8 @@
 #ifndef __LIBSTONE_PROCESS_H__
 #define __LIBSTONE_PROCESS_H__
 
+typedef int (*so_process_sub_callback)(void * arg);
+
 struct so_value;
 
 enum so_process_fd_type {
@@ -89,6 +91,8 @@ void so_process_set_fd(struct so_process * process, enum so_process_std fd_proce
 void so_process_set_nice(struct so_process * process, int nice);
 void so_process_start(struct so_process * process, unsigned int nb_process);
 void so_process_wait(struct so_process * process, unsigned int nb_process);
+
+int so_process_fork_and_do(so_process_sub_callback function, void * arg);
 
 #endif
 

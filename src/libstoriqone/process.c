@@ -31,7 +31,7 @@
 #include <stdbool.h>
 // asprintf
 #include <stdio.h>
-// calloc, free, getenv, setenv, unsetenv
+// calloc, exit, free, getenv, setenv, unsetenv
 #include <stdlib.h>
 // strchr, strdup, strrchr
 #include <string.h>
@@ -328,5 +328,27 @@ void so_process_wait(struct so_process * process, unsigned int nb_process) {
 		if (err > 0)
 			process[i].exited_code = WEXITSTATUS(status);
 	}
+}
+
+
+int so_process_fork_and_do(so_process_sub_callback function, void * arg) {
+	if (function == NULL)
+		return -1;
+
+	int child = fork();
+	if (child < 0)
+		return -1;
+
+	if (child > 0) {
+		int status = 0;
+		int err = waitpid(child, &status, 0);
+		if (err > 0)
+			return WEXITSTATUS(status);
+	} else {
+		int ret = function(arg);
+		exit(ret);
+	}
+
+	return -2;
 }
 
