@@ -2,9 +2,9 @@ CUNIT_SRC_DIR		:= test/cunit
 
 CUNIT_BIN			:= bin/cunit
 CUNIT_CFLAG			:=
-CUNIT_LD			:= -lstone -lcunit -Llib -Wl,-rpath,lib
+CUNIT_LD			:= -lstoriqone -lcunit -Llib -Wl,-rpath,lib
 
-CUNIT_DEPEND_LIB	:= lib/libstone.so
+CUNIT_DEPEND_LIB	:= lib/libstoriqone.so
 
 CUNIT_CHCKSUM_FILE	:= cunit.chcksum
 
