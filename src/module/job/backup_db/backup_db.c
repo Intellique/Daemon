@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 04 Nov 2014 17:57:24 +0100                            *
+*  Last modified: Fri, 07 Nov 2014 16:28:59 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -586,7 +586,7 @@ static bool st_job_backup_db_select_media(struct st_job * job, struct st_job_bac
 				// wait
 
 				job->sched_status = st_job_status_pause;
-				sleep(60);
+				sleep(20);
 				job->sched_status = st_job_status_running;
 
 				if (job->db_status == st_job_status_stopped)
