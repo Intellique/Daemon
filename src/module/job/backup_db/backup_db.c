@@ -375,7 +375,8 @@ read_failed:
 	}
 
 tmp_writer_failed:
-	db_reader->ops->free(db_reader);
+	if (db_reader != NULL)
+		db_reader->ops->free(db_reader);
 	return 1;
 }
 
