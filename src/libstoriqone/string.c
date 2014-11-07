@@ -30,6 +30,13 @@
 #include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
 
+#include "../../build/libstoriqone/unicode.h"
+static unsigned int so_string_nb_top_characters = sizeof(so_string_characters) / sizeof(*so_string_characters);
+
+static const struct so_string_character so_string_unknow_character = {
+	NULL, NULL, so_string_character_category_other, so_string_character_subcategory_other_not_assigned, so_string_bidi_class_other_neutrals, false, 0
+};
+
 
 /**
  * \brief Compute size of a UTF8 character
@@ -121,6 +128,26 @@ void so_string_delete_double_char(char * str, char delete_char) {
 
 		ptr = strstr(ptr, double_char);
 	}
+}
+
+const struct so_string_character * so_string_get_character_info(unsigned int unicode_character) {
+	unsigned int i0 = unicode_character / 0x8000;
+	if (i0 >= so_string_nb_top_characters)
+		return &so_string_unknow_character;
+
+	const struct so_string_character *** c0 = so_string_characters[i0];
+	if (c0 == NULL)
+		return &so_string_unknow_character;
+
+	unsigned int l0 = unicode_character & 0x7FFF;
+	unsigned int i1 = l0 / 0x400;
+
+	const struct so_string_character ** c1 = c0[i1];
+	if (c1 == NULL)
+		return &so_string_unknow_character;
+
+	unsigned int i2 = (l0 & 0x3FF) / 0x20;
+	return c1[i2];
 }
 
 void so_string_middle_elipsis(char * string, size_t length) {

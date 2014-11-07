@@ -102,42 +102,42 @@ enum so_log_type {
 	/**
 	 * \brief used by changer
 	 */
-	so_log_type_changer,
+	so_log_type_changer = 0x1,
 	/**
 	 * \brief generic message from daemon
 	 */
-	so_log_type_daemon,
+	so_log_type_daemon = 0x2,
 	/**
 	 * \brief used by tape drive
 	 */
-	so_log_type_drive,
+	so_log_type_drive = 0x3,
 	/**
 	 * \brief used by jobs
 	 */
-	so_log_type_job,
-	so_log_type_logger,
+	so_log_type_job = 0x4,
+	so_log_type_logger = 0x5,
 	/**
 	 * \brief used by checksum module
 	 */
-	so_log_type_plugin_checksum,
+	so_log_type_plugin_checksum = 0x6,
 	/**
 	 * \brief used by database module
 	 */
-	so_log_type_plugin_db,
+	so_log_type_plugin_db = 0x7,
 	/**
 	 * \brief used by log module
 	 */
-	so_log_type_plugin_log,
+	so_log_type_plugin_log = 0x8,
 	/**
 	 * \brief used by scheduler
 	 */
-	so_log_type_scheduler,
+	so_log_type_scheduler = 0x9,
 
 	/**
 	 * \brief used by user interface
 	 */
-	so_log_type_ui,
-	so_log_type_user_message,
+	so_log_type_ui = 0xa,
+	so_log_type_user_message = 0xb,
 
 	/**
 	 * \brief Should not be used
@@ -145,7 +145,7 @@ enum so_log_type {
 	 * Used only by so_log_string_to_type to report an error
 	 * \see so_log_string_to_type
 	 */
-	so_log_type_unknown,
+	so_log_type_unknown = 0x0,
 };
 
 

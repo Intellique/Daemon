@@ -159,7 +159,7 @@ static void so_log_init() {
 	for (i = 0; i < so_log_nb_types; i++) {
 		so_log_types[i].hash = so_string_compute_hash2(so_log_types[i].name);
 
-		const char * translated = gettext(so_log_levels[i].name);
+		const char * translated = gettext(so_log_types[i].name);
 		so_log_types[i].hash_translated = so_string_compute_hash2(translated);
 
 		unsigned int length = strlen(translated);

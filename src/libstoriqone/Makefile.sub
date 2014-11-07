@@ -12,4 +12,9 @@ LIBSTORIQONE_CHCKSUM_FILE	:= libstoriqone.chcksum
 
 LIBSTORIQONE_LOCALE			:= locale/libstoriqone
 
+build/libstoriqone/string.o: build/libstoriqone/unicode.h
+build/libstoriqone/unicode.h: util/unicode/UnicodeData.txt
+	@echo " GEN        unicode datas"
+	@./script/gen_unicode_table.pl
+
 BIN_SYMS					+= LIBSTORIQONE

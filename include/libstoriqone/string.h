@@ -34,6 +34,85 @@ struct so_value;
 // size_t
 #include <sys/types.h>
 
+enum so_string_bidi_class {
+	so_string_bidi_class_arabic_number,              // AN
+	so_string_bidi_class_boundary_neutral,           // BM
+	so_string_bidi_class_common_number_separator,    // CS
+	so_string_bidi_class_european_number,            // EN
+	so_string_bidi_class_european_number_separator,  // ES
+	so_string_bidi_class_european_number_terminator, // ET
+	so_string_bidi_class_first_strong_isolate,       // FSI
+	so_string_bidi_class_left_to_right,              // L
+	so_string_bidi_class_left_to_right_embedding,    // LRE
+	so_string_bidi_class_left_to_right_isolate,      // LRI
+	so_string_bidi_class_left_to_right_override,     // LRO
+	so_string_bidi_class_non_spacing_mark,           // NSM
+	so_string_bidi_class_other_neutrals,             // ON
+	so_string_bidi_class_paragraph_separator,        // B
+	so_string_bidi_class_pop_directional_format,     // PDF
+	so_string_bidi_class_pop_directional_isolate,    // PDI
+	so_string_bidi_class_right_to_left,              // R
+	so_string_bidi_class_right_to_left_arabic,       // AL
+	so_string_bidi_class_right_to_left_embedding,    // RLE
+	so_string_bidi_class_right_to_left_isolate,      // RLI
+	so_string_bidi_class_right_to_left_override,     // RLO
+	so_string_bidi_class_segment_separator,          // S
+	so_string_bidi_class_whitespace,                 // WS
+};
+
+enum so_string_character_category {
+	so_string_character_category_letter,      // L
+	so_string_character_category_mark,        // M
+	so_string_character_category_number,      // N
+	so_string_character_category_other,       // C
+	so_string_character_category_punctuation, // P
+	so_string_character_category_separator,   // Z
+	so_string_character_category_symbol,      // S
+};
+
+enum so_string_character_subcategory {
+	so_string_character_subcategory_letter_lowercase,          // Ll
+	so_string_character_subcategory_letter_modifier,           // Lm
+	so_string_character_subcategory_letter_other,              // Lo
+	so_string_character_subcategory_letter_titlecase,          // Lt
+	so_string_character_subcategory_letter_uppercase,          // Lu
+	so_string_character_subcategory_mark_enclosing,            // Me
+	so_string_character_subcategory_mark_nonspacing,           // Mn
+	so_string_character_subcategory_mark_spacing_combining,    // Mc
+	so_string_character_subcategory_number_decimal_digit,      // Nd
+	so_string_character_subcategory_number_letter,             // Nl
+	so_string_character_subcategory_number_other,              // No
+	so_string_character_subcategory_other_control,             // Cc
+	so_string_character_subcategory_other_format,              // Cf
+	so_string_character_subcategory_other_not_assigned,        // Cn
+	so_string_character_subcategory_other_private_use,         // Co
+	so_string_character_subcategory_other_surrogate,           // Cs
+	so_string_character_subcategory_punctuation_close,         // Pe
+	so_string_character_subcategory_punctuation_connector,     // Pc
+	so_string_character_subcategory_punctuation_dash,          // Pd
+	so_string_character_subcategory_punctuation_finial_quote,  // Pf
+	so_string_character_subcategory_punctuation_initial_quote, // Pi
+	so_string_character_subcategory_punctuation_open,          // Ps
+	so_string_character_subcategory_punctuation_other,         // Po
+	so_string_character_subcategory_separator_line,            // Zl
+	so_string_character_subcategory_separator_paragraph,       // Zp
+	so_string_character_subcategory_separator_space,           // Zs
+	so_string_character_subcategory_symbol_currency,           // Sc
+	so_string_character_subcategory_symbol_math,               // Sm
+	so_string_character_subcategory_symbol_modifier,           // Sk
+	so_string_character_subcategory_symbol_other,              // So
+};
+
+struct so_string_character {
+	char * name;
+	char * unicode_name;
+	enum so_string_character_category category:5;
+	enum so_string_character_subcategory sub_category:5;
+	enum so_string_bidi_class bidirectonal_class:5;
+	bool mirrored:1;
+	int offset:24;
+} __attribute__((packed));
+
 /**
  * \brief Check if \a string is a valid utf8 string
  *
@@ -53,6 +132,8 @@ bool so_string_check_valid_utf8(const char * string);
 unsigned long long so_string_compute_hash(const struct so_value * value);
 unsigned long long so_string_compute_hash2(const char * value);
 
+bool so_string_convert_unicode_to_utf8(unsigned int unicode, char * string, size_t length, bool end_string);
+
 /**
  * \brief Remove from \a str a sequence of two or more of character \a delete_char
  *
@@ -61,7 +142,7 @@ unsigned long long so_string_compute_hash2(const char * value);
  */
 void so_string_delete_double_char(char * str, char delete_char);
 
-bool so_string_convert_unicode_to_utf8(unsigned int unicode, char * string, size_t length, bool end_string);
+const struct so_string_character * so_string_get_character_info(unsigned int unicode_character);
 
 void so_string_middle_elipsis(char * string, size_t length);
 
