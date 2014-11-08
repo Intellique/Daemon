@@ -133,6 +133,7 @@ unsigned long long so_string_compute_hash(const struct so_value * value);
 unsigned long long so_string_compute_hash2(const char * value);
 
 bool so_string_convert_unicode_to_utf8(unsigned int unicode, char * string, size_t length, bool end_string);
+unsigned int so_string_convert_utf8_to_unicode(const char * character);
 
 /**
  * \brief Remove from \a str a sequence of two or more of character \a delete_char
@@ -155,6 +156,10 @@ void so_string_middle_elipsis(char * string, size_t length);
  * \see so_util_string_trim
  */
 void so_string_rtrim(char * str, char trim);
+
+void so_string_to_lowercase(char * str);
+
+void so_string_to_uppercase(char * str);
 
 /**
  * \brief Remove characters \a trim at the beginning and at the end of \a str

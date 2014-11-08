@@ -47,6 +47,7 @@ static const struct so_string_character so_string_unknow_character = {
 static int so_string_valid_utf8_char(const char * string);
 static int so_string_valid_utf8_char2(const unsigned char * ptr, unsigned short length);
 
+
 bool so_string_check_valid_utf8(const char * string) {
 	if (string == NULL)
 		return false;
@@ -114,6 +115,30 @@ bool so_string_convert_unicode_to_utf8(unsigned int unicode, char * string, size
 	return false;
 }
 
+unsigned int so_string_convert_utf8_to_unicode(const char * character) {
+	size_t length = so_string_valid_utf8_char(character);
+	if (length < 1)
+		return 0;
+
+	const unsigned char * uchar = (const unsigned char *) character;
+	switch (length) {
+		case 1:
+			return uchar[0] & 0x7F;
+
+		case 2:
+			return ((uchar[0] & 0x1F) << 6) + (uchar[1] & 0x3F);
+
+		case 3:
+			return ((uchar[0] & 0x0F) << 12) + ((uchar[1] & 0x3F) << 6) + (uchar[2] & 0x3F);
+
+		case 4:
+			return ((uchar[0] & 0x07) << 18) + ((uchar[1] & 0x3F) << 12) + ((uchar[2] & 0x3F) << 6) + (uchar[3] & 0x3F);
+
+		default:
+			return 0;
+	}
+}
+
 void so_string_delete_double_char(char * str, char delete_char) {
 	char double_char[3] = { delete_char, delete_char, '\0' };
 
@@ -146,8 +171,8 @@ const struct so_string_character * so_string_get_character_info(unsigned int uni
 	if (c1 == NULL)
 		return &so_string_unknow_character;
 
-	unsigned int i2 = (l0 & 0x3FF) / 0x20;
-	return c1[i2];
+	unsigned int l1 = l0 & 0x3FF;
+	return c1[l1 / 0x20] + (l1 & 0x1F);
 }
 
 void so_string_middle_elipsis(char * string, size_t length) {
@@ -218,6 +243,42 @@ void so_string_trim(char * str, char trim) {
 
 	if (ptr[1] != '\0')
 		ptr[1] = '\0';
+}
+
+void so_string_to_lowercase(char * str) {
+	while (*str) {
+		unsigned int unicode = so_string_convert_utf8_to_unicode(str);
+		unsigned int length = so_string_unicode_length(unicode);
+		const struct so_string_character * character = so_string_get_character_info(unicode);
+
+		if (character->sub_category == so_string_character_subcategory_letter_uppercase) {
+			unicode += character->offset;
+			so_string_convert_unicode_to_utf8(unicode, str, length + 1, false);
+		}
+
+		if (length > 0)
+			str += length;
+		else
+			break;
+	}
+}
+
+void so_string_to_uppercase(char * str) {
+	while (*str) {
+		unsigned int unicode = so_string_convert_utf8_to_unicode(str);
+		unsigned int length = so_string_unicode_length(unicode);
+		const struct so_string_character * character = so_string_get_character_info(unicode);
+
+		if (character->sub_category == so_string_character_subcategory_letter_lowercase) {
+			unicode += character->offset;
+			so_string_convert_unicode_to_utf8(unicode, str, length + 1, false);
+		}
+
+		if (length > 0)
+			str += length;
+		else
+			break;
+	}
 }
 
 size_t so_string_unicode_length(unsigned int unicode) {
