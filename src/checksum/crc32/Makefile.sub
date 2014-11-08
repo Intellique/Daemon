@@ -2,9 +2,9 @@ STORIQONE_CHECKSUM_CRC32_SRC_DIR		:= src/checksum/crc32
 
 STORIQONE_CHECKSUM_CRC32_BIN			:= lib/libchecksum-crc32.so
 STORIQONE_CHECKSUM_CRC32_CFLAG			:= -pthread -fPIC -fvisibility=hidden
-STORIQONE_CHECKSUM_CRC32_LD				:= -pthread -shared -lstoriqone -Llib -lz
+STORIQONE_CHECKSUM_CRC32_LD				:= -pthread -shared -Llib -lz
 
-STORIQONE_CHECKSUM_CRC32_DEPEND_LIB		:= lib/libstoriqone.so
+STORIQONE_CHECKSUM_CRC32_DEPEND_LIB		:=
 
 STORIQONE_CHECKSUM_CRC32_CHCKSUM_FILE	:= libchecksum-crc32.chcksum
 
