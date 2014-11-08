@@ -70,7 +70,7 @@ void * so_loader_load(const char * module, const char * name) {
 
 static void * so_loader_load_file(const char * filename) {
 	if (access(filename, R_OK | X_OK)) {
-		so_log_write(so_log_level_debug, gettext("libstone: loader: failed to access to file '%s' because %m"), filename);
+		so_log_write(so_log_level_debug, gettext("libstoriqone: loader: failed to access to file '%s' because %m"), filename);
 		return NULL;
 	}
 
@@ -82,7 +82,7 @@ static void * so_loader_load_file(const char * filename) {
 
 	void * cookie = dlopen(filename, RTLD_NOW);
 	if (cookie == NULL) {
-		so_log_write(so_log_level_debug, gettext("libstone: loader: failed to load '%s' because %s"), filename, dlerror());
+		so_log_write(so_log_level_debug, gettext("libstoriqone: loader: failed to load '%s' because %s"), filename, dlerror());
 	} else if (!so_loader_loaded) {
 		dlclose(cookie);
 		cookie = NULL;

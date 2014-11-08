@@ -60,7 +60,7 @@ static void so_checksum_init(void) __attribute__((constructor));
 
 char * so_checksum_compute(const char * checksum, const void * data, ssize_t length) {
 	if (checksum == NULL || (data == NULL && length > 0) || length < 0) {
-		so_log_write(so_log_level_error, gettext("so_checksum_compute: invalid parameters (checksum: %p, data: %p, length: %zd"), checksum, data, length);
+		so_log_write(so_log_level_error, gettext("so_checksum_compute: invalid parameters (checksum: %p, data: %p, length: %zd)"), checksum, data, length);
 		return NULL;
 	}
 
@@ -205,7 +205,7 @@ void so_checksum_register_driver(struct so_checksum_driver * driver) {
 
 char * so_checksum_salt_password(const char * checksum, const char * password, const char * salt) {
 	if (password == NULL || salt == NULL) {
-		so_log_write(so_log_level_error, gettext("so_checksum_compute: invalid parameters (password: %p, salt: %p)"), password, salt);
+		so_log_write(so_log_level_error, gettext("so_checksum_salt_password: invalid parameters (password: %p, salt: %p)"), password, salt);
 		return NULL;
 	}
 

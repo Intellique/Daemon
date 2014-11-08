@@ -69,7 +69,7 @@ struct so_database * so_database_get_driver(const char * driver) {
 
 		if (cookie == NULL) {
 			pthread_mutex_unlock(&so_database_lock);
-			so_log_write(so_log_level_error, gettext("so_database_get_driver: failed to load checksum driver '%s'"), driver);
+			so_log_write(so_log_level_error, gettext("so_database_get_driver: failed to load database driver '%s'"), driver);
 			return NULL;
 		}
 
@@ -97,7 +97,7 @@ static void so_database_init() {
 
 void so_database_load_config(struct so_value * config) {
 	if (config == NULL || !(config->type == so_value_array || config->type == so_value_linked_list)) {
-		so_log_write(so_log_level_error, gettext("so_database_load_config: invalid parameters (config: %p"), config);
+		so_log_write(so_log_level_error, gettext("so_database_load_config: invalid parameters (config: %p)"), config);
 		return;
 	}
 
@@ -128,7 +128,7 @@ void so_database_register_driver(struct so_database * driver) {
 
 	if (so_value_hashtable_has_key2(so_database_drivers, driver->name)) {
 		pthread_mutex_unlock(&so_database_lock);
-		so_log_write(so_log_level_warning, gettext("so_database_register_driver: checksum driver '%s' is already registred"), driver->name);
+		so_log_write(so_log_level_warning, gettext("so_database_register_driver: database driver '%s' is already registred"), driver->name);
 		return;
 	}
 
@@ -140,6 +140,6 @@ void so_database_register_driver(struct so_database * driver) {
 
 	pthread_mutex_unlock(&so_database_lock);
 
-	so_log_write(so_log_level_info, gettext("so_database_register_driver: checksum driver '%s' is now registred"), driver->name);
+	so_log_write(so_log_level_info, gettext("so_database_register_driver: database driver '%s' is now registred"), driver->name);
 }
 
