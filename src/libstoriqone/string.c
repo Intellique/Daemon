@@ -24,7 +24,9 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// memmove, strlen, strspn, strstr
+// free
+#include <stdlib.h>
+// memmove, strdup, strlen, strspn, strstr
 #include <string.h>
 
 #include <libstoriqone/string.h>
@@ -80,6 +82,20 @@ unsigned long long so_string_compute_hash2(const char * str) {
 	int length = strlen(str), i;
 	for (i = 0; i < length; i++)
 		hash = str[i] + (hash << 6) + (hash << 16) - hash;
+	return hash;
+}
+
+unsigned long long so_string_compute_hash3(const char * str) {
+	if (str == NULL)
+		return 0;
+
+	char * lower = strdup(str);
+	so_string_to_lowercase(lower);
+
+	unsigned long long hash = so_string_compute_hash2(lower);
+
+	free(lower);
+
 	return hash;
 }
 

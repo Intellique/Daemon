@@ -131,6 +131,7 @@ bool so_string_check_valid_utf8(const char * string);
  */
 unsigned long long so_string_compute_hash(const struct so_value * value);
 unsigned long long so_string_compute_hash2(const char * value);
+unsigned long long so_string_compute_hash3(const char * value);
 
 bool so_string_convert_unicode_to_utf8(unsigned int unicode, char * string, size_t length, bool end_string);
 unsigned int so_string_convert_utf8_to_unicode(const char * character);
