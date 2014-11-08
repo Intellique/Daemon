@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -31,42 +31,41 @@
 // strdup
 #include <string.h>
 
-#include <libstone/checksum.h>
+#include <libstoriqone/checksum.h>
 
 #include <libchecksum-sha1.chcksum>
 
-struct st_checksum_sha1_private {
+struct so_checksum_sha1_private {
 	SHA_CTX sha1;
 	char digest[SHA_DIGEST_LENGTH * 2 + 1];
 };
 
-static char * st_checksum_sha1_digest(struct st_checksum * checksum);
-static void st_checksum_sha1_free(struct st_checksum * checksum);
-static struct st_checksum * st_checksum_sha1_new_checksum(void);
-static void st_checksum_sha1_init(void) __attribute__((constructor));
-static ssize_t st_checksum_sha1_update(struct st_checksum * checksum, const void * data, ssize_t length);
+static char * so_checksum_sha1_digest(struct so_checksum * checksum);
+static void so_checksum_sha1_free(struct so_checksum * checksum);
+static struct so_checksum * so_checksum_sha1_new_checksum(void);
+static void so_checksum_sha1_init(void) __attribute__((constructor));
+static ssize_t so_checksum_sha1_update(struct so_checksum * checksum, const void * data, ssize_t length);
 
-static struct st_checksum_driver st_checksum_sha1_driver = {
+static struct so_checksum_driver so_checksum_sha1_driver = {
 	.name			  = "sha1",
 	.default_checksum = true,
-	.new_checksum	  = st_checksum_sha1_new_checksum,
+	.new_checksum	  = so_checksum_sha1_new_checksum,
 	.cookie			  = NULL,
-	.api_level        = 0,
-	.src_checksum     = STONE_CHECKSUM_SHA1_SRCSUM,
+	.src_checksum     = STORIQONE_CHECKSUM_SHA1_SRCSUM,
 };
 
-static struct st_checksum_ops st_checksum_sha1_ops = {
-	.digest	= st_checksum_sha1_digest,
-	.free	= st_checksum_sha1_free,
-	.update	= st_checksum_sha1_update,
+static struct so_checksum_ops so_checksum_sha1_ops = {
+	.digest	= so_checksum_sha1_digest,
+	.free	= so_checksum_sha1_free,
+	.update	= so_checksum_sha1_update,
 };
 
 
-static char * st_checksum_sha1_digest(struct st_checksum * checksum) {
+static char * so_checksum_sha1_digest(struct so_checksum * checksum) {
 	if (checksum == NULL)
 		return NULL;
 
-	struct st_checksum_sha1_private * self = checksum->data;
+	struct so_checksum_sha1_private * self = checksum->data;
 	if (self->digest[0] != '\0')
 		return strdup(self->digest);
 
@@ -75,16 +74,16 @@ static char * st_checksum_sha1_digest(struct st_checksum * checksum) {
 	if (!SHA1_Final(digest, &sha1))
 		return NULL;
 
-	st_checksum_convert_to_hex(digest, SHA_DIGEST_LENGTH, self->digest);
+	so_checksum_convert_to_hex(digest, SHA_DIGEST_LENGTH, self->digest);
 
 	return strdup(self->digest);
 }
 
-static void st_checksum_sha1_free(struct st_checksum * checksum) {
+static void so_checksum_sha1_free(struct so_checksum * checksum) {
 	if (checksum == NULL)
 		return;
 
-	struct st_checksum_sha1_private * self = checksum->data;
+	struct so_checksum_sha1_private * self = checksum->data;
 
 	unsigned char digest[SHA_DIGEST_LENGTH];
 	SHA1_Final(digest, &self->sha1);
@@ -98,16 +97,16 @@ static void st_checksum_sha1_free(struct st_checksum * checksum) {
 	free(checksum);
 }
 
-static void st_checksum_sha1_init(void) {
-	st_checksum_register_driver(&st_checksum_sha1_driver);
+static void so_checksum_sha1_init(void) {
+	so_checksum_register_driver(&so_checksum_sha1_driver);
 }
 
-static struct st_checksum * st_checksum_sha1_new_checksum(void) {
-	struct st_checksum * checksum = malloc(sizeof(struct st_checksum));
-	checksum->ops = &st_checksum_sha1_ops;
-	checksum->driver = &st_checksum_sha1_driver;
+static struct so_checksum * so_checksum_sha1_new_checksum(void) {
+	struct so_checksum * checksum = malloc(sizeof(struct so_checksum));
+	checksum->ops = &so_checksum_sha1_ops;
+	checksum->driver = &so_checksum_sha1_driver;
 
-	struct st_checksum_sha1_private * self = malloc(sizeof(struct st_checksum_sha1_private));
+	struct so_checksum_sha1_private * self = malloc(sizeof(struct so_checksum_sha1_private));
 	SHA1_Init(&self->sha1);
 	*self->digest = '\0';
 
@@ -115,11 +114,11 @@ static struct st_checksum * st_checksum_sha1_new_checksum(void) {
 	return checksum;
 }
 
-static ssize_t st_checksum_sha1_update(struct st_checksum * checksum, const void * data, ssize_t length) {
+static ssize_t so_checksum_sha1_update(struct so_checksum * checksum, const void * data, ssize_t length) {
 	if (checksum == NULL || data == NULL || length < 1)
 		return -1;
 
-	struct st_checksum_sha1_private * self = checksum->data;
+	struct so_checksum_sha1_private * self = checksum->data;
 	if (SHA1_Update(&self->sha1, data, length)) {
 		*self->digest = '\0';
 		return length;
