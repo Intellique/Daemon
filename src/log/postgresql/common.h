@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,13 +24,13 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONE_LOG_POSTGRESQL_H__
-#define __STONE_LOG_POSTGRESQL_H__
+#ifndef __STORIQONE_LOG_POSTGRESQL_H__
+#define __STORIQONE_LOG_POSTGRESQL_H__
 
-#include <libstone-logger/log.h>
-#include <libstone/value.h>
+#include <libstoriqone-logger/log.h>
+#include <libstoriqone/value.h>
 
-struct lgr_log_module * st_log_postgresql_new_module(struct st_value * params);
+struct solgr_log_module * so_log_postgresql_new_module(struct so_value * params);
 
 #endif
 
