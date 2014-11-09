@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -44,30 +44,30 @@
 // readlink, stat
 #include <unistd.h>
 
-#include <libstone/changer.h>
-#include <libstone/drive.h>
-#include <libstone/file.h>
-#include <libstone/log.h>
-#include <libstone/value.h>
+#include <libstoriqone/changer.h>
+#include <libstoriqone/drive.h>
+#include <libstoriqone/file.h>
+#include <libstoriqone/log.h>
+#include <libstoriqone/value.h>
 
 #include "hardware.h"
 #include "scsi.h"
 
-struct st_value * stctl_detect_hardware() {
-	struct st_value * changers = st_value_new_linked_list();
+struct so_value * soctl_detect_hardware() {
+	struct so_value * changers = so_value_new_linked_list();
 
 	glob_t gl;
 	glob("/sys/class/scsi_device/*/device/scsi_tape", 0, NULL, &gl);
 
 	if (gl.gl_pathc == 0) {
-		st_log_write2(st_log_level_notice, st_log_type_user_message, "There is drive found");
+		so_log_write2(so_log_level_notice, so_log_type_user_message, "There is drive found");
 		return changers;
 	}
 
-	st_log_write2(st_log_level_info, st_log_type_user_message, "Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
-	printf(ngettext("stonectl: Found %zd drive\n", "stonectl: Found %zd drives\n", gl.gl_pathc), gl.gl_pathc);
+	so_log_write2(so_log_level_info, so_log_type_user_message, "Library: Found %zd drive%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+	printf(ngettext("storiqonectl: Found %zd drive\n", "storiqonectl: Found %zd drives\n", gl.gl_pathc), gl.gl_pathc);
 
-	struct st_value * drives = st_value_new_hashtable2();
+	struct so_value * drives = so_value_new_hashtable2();
 
 	unsigned int i;
 	for (i = 0; i < gl.gl_pathc; i++) {
@@ -99,13 +99,13 @@ struct st_value * stctl_detect_hardware() {
 		ptr = strrchr(link, '/') + 1;
 		asprintf(&device, "/dev/n%s", ptr);
 
-		// struct st_value * drive = st_value_pack("{sssssssssbsfsis{}}", "device", device, "scsi device", scsi_device, "status", "unknown", "mode", "linear", "enabled", true, "operation duration", 0.0, "last clean", 0, "db");
-		struct st_drive * drive = malloc(sizeof(struct st_drive));
-		bzero(drive, sizeof(struct st_drive));
-		drive->status = st_drive_status_unknown;
+		// struct so_value * drive = so_value_pack("{sssssssssbsfsis{}}", "device", device, "scsi device", scsi_device, "status", "unknown", "mode", "linear", "enabled", true, "operation duration", 0.0, "last clean", 0, "db");
+		struct so_drive * drive = malloc(sizeof(struct so_drive));
+		bzero(drive, sizeof(struct so_drive));
+		drive->status = so_drive_status_unknown;
 		// drive->mode
 
-		stctl_scsi_tapeinfo(scsi_device, drive);
+		soctl_scsi_tapeinfo(scsi_device, drive);
 
 		char dev[35];
 		dev[34] = '\0';
@@ -116,14 +116,14 @@ struct st_value * stctl_detect_hardware() {
 		dev[23] = ' ';
 		strcpy(dev + 24, drive->serial_number);
 
-		st_value_hashtable_put2(drives, dev, st_value_new_custom(drive, st_drive_free2), true);
+		so_value_hashtable_put2(drives, dev, so_value_new_custom(drive, so_drive_free2), true);
 	}
 	globfree(&gl);
 
 	glob("/sys/class/scsi_changer/*/device", 0, NULL, &gl);
 
-	st_log_write2(st_log_level_info, st_log_type_user_message, "Library: Found %zd changer%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
-	printf(ngettext("stonectl: Found %zd changer\n", "stonectl: Found %zd changers\n", gl.gl_pathc), gl.gl_pathc);
+	so_log_write2(so_log_level_info, so_log_type_user_message, "Library: Found %zd changer%s", gl.gl_pathc, gl.gl_pathc != 1 ? "s" : "");
+	printf(ngettext("storiqonectl: Found %zd changer\n", "storiqonectl: Found %zd changers\n", gl.gl_pathc), gl.gl_pathc);
 
 	for (i = 0; i < gl.gl_pathc; i++) {
 		char link[256];
@@ -144,9 +144,9 @@ struct st_value * stctl_detect_hardware() {
 		ptr = strrchr(link, '/');
 		asprintf(&device, "/dev%s", ptr);
 
-		struct st_changer * changer = malloc(sizeof(struct st_changer));
-		bzero(changer, sizeof(struct st_changer));
-		changer->status = st_changer_status_unknown;
+		struct so_changer * changer = malloc(sizeof(struct so_changer));
+		bzero(changer, sizeof(struct so_changer));
+		changer->status = so_changer_status_unknown;
 		changer->enable = true;
 
 		asprintf(&path, "/sys/class/sas_host/host%d", host);
@@ -163,7 +163,7 @@ struct st_value * stctl_detect_hardware() {
 				free(path);
 				asprintf(&path, "/sys/class/sas_device/%s/sas_address", ptr);
 
-				char * data = st_file_read_all_from(path);
+				char * data = so_file_read_all_from(path);
 				cp = strchr(data, '\n');
 				if (cp != NULL)
 					*cp = '\0';
@@ -175,14 +175,14 @@ struct st_value * stctl_detect_hardware() {
 		}
 		free(path);
 
-		stctl_scsi_loaderinfo(device, changer, drives);
+		soctl_scsi_loaderinfo(device, changer, drives);
 		free(device);
 
-		st_value_list_push(changers, st_value_new_custom(changer, st_changer_free2), true);
+		so_value_list_push(changers, so_value_new_custom(changer, so_changer_free2), true);
 	}
 	globfree(&gl);
 
-	st_value_free(drives);
+	so_value_free(drives);
 
 	return changers;
 }

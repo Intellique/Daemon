@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -29,44 +29,44 @@
 // printf
 #include <stdio.h>
 
-#include <libstone/value.h>
+#include <libstoriqone/value.h>
 
 #include "common.h"
 #include "config.h"
 
-static void stctl_exit(void) __attribute__((destructor));
-static void stctl_init(void) __attribute__((constructor));
+static void soctl_exit(void) __attribute__((destructor));
+static void soctl_init(void) __attribute__((constructor));
 
-static struct st_value * commands = NULL;
+static struct so_value * commands = NULL;
 
 
-static void stctl_exit() {
-	st_value_free(commands);
+static void soctl_exit() {
+	so_value_free(commands);
 	commands = NULL;
 }
 
-static void stctl_init() {
-	commands = st_value_new_hashtable2();
-	st_value_hashtable_put2(commands, "config", st_value_new_custom(stctl_config, NULL), true);
-	st_value_hashtable_put2(commands, "start", st_value_new_custom(stctl_start_daemon, NULL), true);
-	st_value_hashtable_put2(commands, "status", st_value_new_custom(stctl_status_daemon, NULL), true);
-	st_value_hashtable_put2(commands, "stop", st_value_new_custom(stctl_stop_daemon, NULL), true);
+static void soctl_init() {
+	commands = so_value_new_hashtable2();
+	so_value_hashtable_put2(commands, "config", so_value_new_custom(soctl_config, NULL), true);
+	so_value_hashtable_put2(commands, "start", so_value_new_custom(soctl_start_daemon, NULL), true);
+	so_value_hashtable_put2(commands, "status", so_value_new_custom(soctl_status_daemon, NULL), true);
+	so_value_hashtable_put2(commands, "stop", so_value_new_custom(soctl_stop_daemon, NULL), true);
 
-	bindtextdomain("stonectl", LOCALE_DIR);
-	textdomain("stonectl");
+	bindtextdomain("storiqonectl", LOCALE_DIR);
+	textdomain("storiqonectl");
 }
 
 int main(int argc, char ** argv) {
 	if (argc < 1)
 		return 1;
 
-	if (!st_value_hashtable_has_key2(commands, argv[1])) {
+	if (!so_value_hashtable_has_key2(commands, argv[1])) {
 		printf(gettext("Error: command not found (%s)\n"), argv[1]);
 		return 2;
 	}
 
-	struct st_value * com = st_value_hashtable_get2(commands, argv[1], false, false);
-	command_f command = st_value_custom_get(com);
+	struct so_value * com = so_value_hashtable_get2(commands, argv[1], false, false);
+	command_f command = so_value_custom_get(com);
 
 	return command(argc - 1, argv + 1);
 }

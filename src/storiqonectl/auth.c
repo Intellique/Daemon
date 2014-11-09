@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -27,26 +27,26 @@
 // free
 #include <stdlib.h>
 
-#include <libstone/checksum.h>
-#include <libstone/json.h>
-#include <libstone/value.h>
+#include <libstoriqone/checksum.h>
+#include <libstoriqone/json.h>
+#include <libstoriqone/value.h>
 
 #include "auth.h"
 
-bool stctl_auth_do_authentification(int fd, const char * password) {
+bool soctl_auth_do_authentification(int fd, const char * password) {
 	// step 1
-	struct st_value * request = st_value_pack("{siss}", "step", 1, "method", "login");
-	st_json_encode_to_fd(request, fd, true);
-	st_value_free(request);
+	struct so_value * request = so_value_pack("{siss}", "step", 1, "method", "login");
+	so_json_encode_to_fd(request, fd, true);
+	so_value_free(request);
 
-	struct st_value * response = st_json_parse_fd(fd, 10000);
+	struct so_value * response = so_json_parse_fd(fd, 10000);
 	if (response == NULL)
 		return false;
 
 	char * salt = NULL;
 	bool error = true;
-	st_value_unpack(response, "{sbss}", "error", &error, "salt", &salt);
-	st_value_free(response);
+	so_value_unpack(response, "{sbss}", "error", &error, "salt", &salt);
+	so_value_free(response);
 
 	if (salt == NULL || error) {
 		free(salt);
@@ -55,23 +55,23 @@ bool stctl_auth_do_authentification(int fd, const char * password) {
 
 
 	// step 2
-	char * hash = st_checksum_salt_password("sha1", password, salt);
+	char * hash = so_checksum_salt_password("sha1", password, salt);
 	free(salt);
 	if (hash == NULL)
 		return false;
 
-	request = st_value_pack("{sissss}", "step", 2, "method", "login", "password", hash);
+	request = so_value_pack("{sissss}", "step", 2, "method", "login", "password", hash);
 	free(hash);
 
-	st_json_encode_to_fd(request, fd, true);
-	st_value_free(request);
+	so_json_encode_to_fd(request, fd, true);
+	so_value_free(request);
 
-	response = st_json_parse_fd(fd, 10000);
+	response = so_json_parse_fd(fd, 10000);
 	if (response == NULL)
 		return false;
 
-	st_value_unpack(response, "{sb}", "error", &error);
-	st_value_free(response);
+	so_value_unpack(response, "{sb}", "error", &error);
+	so_value_free(response);
 
 	return !error;
 }

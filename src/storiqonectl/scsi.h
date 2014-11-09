@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,15 +24,15 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONECTL_SCSI_H__
-#define __STONECTL_SCSI_H__
+#ifndef __STORIQONECTL_SCSI_H__
+#define __STORIQONECTL_SCSI_H__
 
 // bool
 #include <stdbool.h>
 
-struct st_changer;
-struct st_drive;
-struct st_value;
+struct so_changer;
+struct so_drive;
+struct so_value;
 
 /**
  * \brief Inquiry the changer
@@ -41,7 +41,7 @@ struct st_value;
  * \param[out] changer : an already allocated changer
  * \returns 0 if ok
  */
-int stctl_scsi_loaderinfo(const char * filename, struct st_changer * changer, struct st_value * available_drives);
+int soctl_scsi_loaderinfo(const char * filename, struct so_changer * changer, struct so_value * available_drives);
 
 /**
  * \brief Inquiry the drive
@@ -50,7 +50,7 @@ int stctl_scsi_loaderinfo(const char * filename, struct st_changer * changer, st
  * \param[out] drive : an already allocated drive
  * \returns 0 if ok
  */
-int stctl_scsi_tapeinfo(const char * filename, struct st_drive * drive);
+int soctl_scsi_tapeinfo(const char * filename, struct so_drive * drive);
 
 #endif
 

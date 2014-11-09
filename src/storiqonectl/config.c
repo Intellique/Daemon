@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -39,9 +39,9 @@
 // uuid_generate, uuid_unparse_lower
 #include <uuid/uuid.h>
 
-#include <libstone/database.h>
-#include <libstone/json.h>
-#include <libstone/value.h>
+#include <libstoriqone/database.h>
+#include <libstoriqone/json.h>
+#include <libstoriqone/value.h>
 
 #include "common.h"
 #include "config.h"
@@ -51,7 +51,7 @@ enum {
 	OPT_HELP = 'h',
 };
 
-int stctl_config(int argc, char ** argv) {
+int soctl_config(int argc, char ** argv) {
 	int option_index = 0;
 	static struct option long_options[] = {
 		{ "help",     0, NULL, OPT_HELP },
@@ -72,7 +72,7 @@ int stctl_config(int argc, char ** argv) {
 				break;
 
 			case OPT_HELP:
-				printf(gettext("stonectl config : basic configuration\n"));
+				printf(gettext("storiqonectl config : basic configuration\n"));
 				printf(gettext("  -h, --help : show this and exit\n"));
 				return 0;
 
@@ -81,23 +81,23 @@ int stctl_config(int argc, char ** argv) {
 		}
 	} while (opt > -1);
 
-	struct st_value * config = st_json_parse_file(config_file);
+	struct so_value * config = so_json_parse_file(config_file);
 	if (config == 0)
 		return 1;
 
-	struct st_value * db_configs = st_value_hashtable_get2(config, "database", false, false);
+	struct so_value * db_configs = so_value_hashtable_get2(config, "database", false, false);
 	if (db_configs != NULL)
-		st_database_load_config(db_configs);
+		so_database_load_config(db_configs);
 
-	struct st_database * db_driver = st_database_get_default_driver();
+	struct so_database * db_driver = so_database_get_default_driver();
 	if (db_driver == NULL)
 		return 2;
 
-	struct st_database_config * db_config = db_driver->ops->get_default_config();
+	struct so_database_config * db_config = db_driver->ops->get_default_config();
 	if (db_config == NULL)
 		return 3;
 
-	struct st_database_connection * db_connection = db_config->ops->connect(db_config);
+	struct so_database_connection * db_connection = db_config->ops->connect(db_config);
 	if (db_connection == NULL)
 		return 4;
 
@@ -120,21 +120,21 @@ int stctl_config(int argc, char ** argv) {
 		db_connection->ops->add_host(db_connection, uuid, name.nodename, domaine, NULL);
 	}
 
-	struct st_value * changers = stctl_detect_hardware();
+	struct so_value * changers = soctl_detect_hardware();
 
 	int failed = 0;
-	struct st_value_iterator * iter = st_value_list_get_iterator(changers);
-	while (failed == 0 && st_value_iterator_has_next(iter)) {
-		struct st_value * val_changer = st_value_iterator_get_value(iter, false);
-		struct st_changer * changer = st_value_custom_get(val_changer);
-		failed = db_connection->ops->sync_changer(db_connection, changer, st_database_sync_init);
+	struct so_value_iterator * iter = so_value_list_get_iterator(changers);
+	while (failed == 0 && so_value_iterator_has_next(iter)) {
+		struct so_value * val_changer = so_value_iterator_get_value(iter, false);
+		struct so_changer * changer = so_value_custom_get(val_changer);
+		failed = db_connection->ops->sync_changer(db_connection, changer, so_database_sync_init);
 	}
-	st_value_iterator_free(iter);
+	so_value_iterator_free(iter);
 
 	db_connection->ops->close(db_connection);
 
-	st_value_free(changers);
-	st_value_free(config);
+	so_value_free(changers);
+	so_value_free(config);
 
 	return failed;
 }
