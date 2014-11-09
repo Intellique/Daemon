@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,20 +24,16 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONED_ADMIN_COMMON_H__
-#define __STONED_ADMIN_COMMON_H__
+#ifndef __STORIQONED_LOGGER_H__
+#define __STORIQONED_LOGGER_H__
 
-#include <libstone/value.h>
+// bool
+#include <stdbool.h>
 
-struct std_admin_client {
-	bool logged;
-	char * salt;
-};
+struct so_value;
 
-typedef struct st_value * (*std_admin_f)(struct std_admin_client * client, struct st_value * request, struct st_value * config);
-
-struct st_value * std_admin_login(struct std_admin_client * client, struct st_value * request, struct st_value * config);
-struct st_value * std_admin_server_shutdown(struct std_admin_client * client, struct st_value * request, struct st_value * config);
+bool sod_logger_start(struct so_value * config);
+void sod_logger_stop(void);
 
 #endif
 

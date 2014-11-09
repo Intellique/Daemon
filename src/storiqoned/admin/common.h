@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,23 +24,20 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// getpid
-#include <sys/types.h>
-// getpid
-#include <unistd.h>
+#ifndef __STORIQONED_ADMIN_COMMON_H__
+#define __STORIQONED_ADMIN_COMMON_H__
 
-#include <libstone/value.h>
+#include <libstoriqone/value.h>
 
-#include "common.h"
-#include "../main.h"
+struct sod_admin_client {
+	bool logged;
+	char * salt;
+};
 
-struct st_value * std_admin_server_shutdown(struct std_admin_client * client, struct st_value * request __attribute__((unused)), struct st_value * config __attribute__((unused))) {
-	if (!client->logged)
-		return st_value_pack("{sbss}", "error", true, "message", "client should be authenticated");
+typedef struct so_value * (*sod_admin_f)(struct sod_admin_client * client, struct so_value * request, struct so_value * config);
 
-	std_shutdown();
+struct so_value * sod_admin_login(struct sod_admin_client * client, struct so_value * request, struct so_value * config);
+struct so_value * sod_admin_server_shutdown(struct sod_admin_client * client, struct so_value * request, struct so_value * config);
 
-	long long int pid = getpid();
-	return st_value_pack("{sbsssi}", "error", false, "message", "shut down in progress", "pid", pid);
-}
+#endif
 

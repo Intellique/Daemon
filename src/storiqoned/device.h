@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,13 +24,14 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONED_SCHEDULER_H__
-#define __STONED_SCHEDULER_H__
+#ifndef __STORIQONED_DEVICE_H__
+#define __STORIQONED_DEVICE_H__
 
-struct st_database_connection;
+struct so_value;
 
-void std_scheduler_do(struct st_value * logger, struct st_value * db_config, struct st_database_connection * connection);
-void std_scheduler_init(struct st_database_connection * connection);
+struct so_value * sod_device_get(bool shared) __attribute__((warn_unused_result));
+void sod_device_configure(struct so_value * logger, struct so_value * db_config, struct so_database_connection * connection) __attribute__((nonnull));
+void sod_device_stop(void);
 
 #endif
 

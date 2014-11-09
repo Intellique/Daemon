@@ -1,0 +1,13 @@
+STORIQONED_SRC_DIR		:= src/storiqoned
+
+STORIQONED_BIN			:= bin/storiqoned
+STORIQONED_CFLAG		:= -fPIC -pthread
+STORIQONED_LD			:= -pthread -lstoriqone -Llib -Wl,-rpath,lib
+
+STORIQONED_DEPEND_LIB	:= lib/libstoriqone.so
+
+STORIQONED_CHCKSUM_FILE	:= storiqoned.chcksum
+
+STORIQONED_LOCALE		:= locale/storiqoned
+
+BIN_SYMS				+= STORIQONED

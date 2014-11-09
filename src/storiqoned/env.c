@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,14 +24,43 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONED_DEVICE_H__
-#define __STONED_DEVICE_H__
+#define _GNU_SOURCE
+// pthread_sigmask, sigaddset, sigemptyset
+#include <signal.h>
+// asprintf
+#include <stdio.h>
+// free, getenv, setenv
+#include <stdlib.h>
+// strstr
+#include <string.h>
+// access
+#include <unistd.h>
 
-struct st_value;
+#include <libstoriqone/file.h>
 
-struct st_value * std_device_get(bool shared) __attribute__((warn_unused_result));
-void std_device_configure(struct st_value * logger, struct st_value * db_config, struct st_database_connection * connection) __attribute__((nonnull));
-void std_device_stop(void);
+#include "env.h"
 
-#endif
+#include "config.h"
+
+bool sod_env_setup() {
+	if (!access(DAEMON_SOCKET_DIR, F_OK))
+		so_file_rm(DAEMON_SOCKET_DIR);
+
+	if (so_file_mkdir(DAEMON_SOCKET_DIR, 0700) != 0)
+		return false;
+
+	char * path = getenv("PATH");
+	char * new_path;
+	asprintf(&new_path, DAEMON_BIN_DIR ":%s", path);
+	setenv("PATH", new_path, true);
+	free(new_path);
+
+	// ignore SIGPIPE
+	sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set, SIGPIPE);
+	pthread_sigmask(SIG_BLOCK, &set, NULL);
+
+	return true;
+}
 
