@@ -355,7 +355,7 @@ static void sochgr_socket_command_unload(struct sochgr_peer * peer, struct so_va
 	if (failed != 0)
 		so_log_write(so_log_level_error, gettext("[%s | %s]: unloading media '%s' from drive #%d finished with code = %d"), changer->vendor, changer->model, from->volume_name, from->drive->index, failed);
 	else
-		so_log_write(so_log_level_notice, gettext("[%s | %s]: loading media '%s' from drive #%d finished with code = OK"), changer->vendor, changer->model, from->volume_name, from->drive->index);
+		so_log_write(so_log_level_notice, gettext("[%s | %s]: unloading media '%s' from drive #%d finished with code = OK"), changer->vendor, changer->model, from->volume_name, from->drive->index);
 
 	struct so_value * response = so_value_pack("{sb}", "status", failed != 0 ? false : true);
 	so_json_encode_to_fd(response, fd, true);
