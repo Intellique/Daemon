@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,14 +24,20 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONECHANGER_LISTEN_H__
-#define __STONECHANGER_LISTEN_H__
+#ifndef __LIBSTORIQONE_CHANGER_DRIVE_P_H__
+#define __LIBSTORIQONE_CHANGER_DRIVE_P_H__
 
-struct st_value;
+#include <libstoriqone/process.h>
+#include <libstoriqone-changer/drive.h>
 
-void stchgr_listen_configure(struct st_value * config);
-unsigned int stchgr_listen_nb_clients(void);
-void stchgr_listen_set_db_connection(struct st_database_connection * db);
+struct sochgr_drive {
+	struct so_process process;
+	int fd_in;
+	int fd_out;
+	struct so_value * config;
+};
+
+void sochgr_drive_set_config(struct so_value * logger, struct so_value * db_config);
 
 #endif
 

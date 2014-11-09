@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,23 +24,22 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// bzero
-#include <strings.h>
-// free, malloc
-#include <stdlib.h>
+#ifndef __LIBSTORIQONE_CHANGER_DRIVE_H__
+#define __LIBSTORIQONE_CHANGER_DRIVE_H__
 
-#include "peer.h"
+#include <libstoriqone/drive.h>
 
-void stchgr_peer_free(struct stchgr_peer * peer) {
-	free(peer);
-}
+struct so_value;
 
-struct stchgr_peer * stchgr_peer_new(int fd) {
-	struct stchgr_peer * peer = malloc(sizeof(struct stchgr_peer));
-	bzero(peer, sizeof(struct stchgr_peer));
+struct so_drive_ops {
+	bool (*check_cookie)(struct so_drive * drive, const char * cookie);
+	bool (*check_support)(struct so_drive * drive, struct so_media_format * format, bool for_writing);
+	bool (*is_free)(struct so_drive * drive);
+	int (*reset)(struct so_drive * drive);
+	int (*update_status)(struct so_drive * drive);
+};
 
-	peer->fd = fd;
+void sochgr_drive_register(struct so_drive * drive, struct so_value * config, const char * process_name);
 
-	return peer;
-}
+#endif
 

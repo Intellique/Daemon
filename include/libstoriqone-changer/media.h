@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,16 +24,16 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONECHANGER_MEDIA_P__H__
-#define __STONECHANGER_MEDIA_P__H__
+#ifndef __LIBSTORIQONE_CHANGER_MEDIA_H__
+#define __LIBSTORIQONE_CHANGER_MEDIA_H__
 
-#include <libstone-changer/media.h>
+#include <libstoriqone/media.h>
 
-struct st_changer;
-struct st_slot;
+struct sochgr_peer;
 
-void stchgr_media_init(struct st_changer * changer);
-void stchgr_media_init_slot(struct st_slot * slot);
+struct sochgr_media {
+	struct sochgr_peer * peer;
+};
 
 #endif
 

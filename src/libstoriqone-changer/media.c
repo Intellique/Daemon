@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,21 +24,26 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONECHANGER_DRIVE_P_H__
-#define __STONECHANGER_DRIVE_P_H__
+// malloc
+#include <stdlib.h>
 
-#include <libstone/process.h>
-#include <libstone-changer/drive.h>
+#include <libstoriqone/changer.h>
+#include <libstoriqone/media.h>
+#include <libstoriqone/slot.h>
 
-struct stchgr_drive {
-	struct st_process process;
-	int fd_in;
-	int fd_out;
-	struct st_value * config;
-};
+#include "media.h"
 
-void stchgr_drive_register_v1(struct st_drive * drive, struct st_value * config, const char * process_name);
-void stchgr_drive_set_config(struct st_value * logger, struct st_value * db_config);
+void sochgr_media_init(struct so_changer * changer) {
+	unsigned int i;
+	for (i = 0; i < changer->nb_slots; i++)
+		sochgr_media_init_slot(changer->slots + i);
+}
 
-#endif
+void sochgr_media_init_slot(struct so_slot * slot) {
+	struct so_media * media = slot->media;
+	if (media != NULL && media->changer_data == NULL) {
+		struct sochgr_media * md = media->changer_data = malloc(sizeof(struct sochgr_media));
+		md->peer = NULL;
+	}
+}
 

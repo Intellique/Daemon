@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,26 +24,16 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// malloc
-#include <stdlib.h>
+#ifndef __LIBSTORIQONE_CHANGER_MEDIA_P_H__
+#define __LIBSTORIQONE_CHANGER_MEDIA_P_H__
 
-#include <libstone/changer.h>
-#include <libstone/media.h>
-#include <libstone/slot.h>
+#include <libstoriqone-changer/media.h>
 
-#include "media.h"
+struct so_changer;
+struct so_slot;
 
-void stchgr_media_init(struct st_changer * changer) {
-	unsigned int i;
-	for (i = 0; i < changer->nb_slots; i++)
-		stchgr_media_init_slot(changer->slots + i);
-}
+void sochgr_media_init(struct so_changer * changer);
+void sochgr_media_init_slot(struct so_slot * slot);
 
-void stchgr_media_init_slot(struct st_slot * slot) {
-	struct st_media * media = slot->media;
-	if (media != NULL && media->changer_data == NULL) {
-		struct stchgr_media * md = media->changer_data = malloc(sizeof(struct stchgr_media));
-		md->peer = NULL;
-	}
-}
+#endif
 

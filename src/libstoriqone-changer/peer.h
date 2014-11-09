@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,15 +24,15 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONECHANGER_PEER_H__
-#define __STONECHANGER_PEER_H__
+#ifndef __LIBSTORIQONE_CHANGER_PEER_H__
+#define __LIBSTORIQONE_CHANGER_PEER_H__
 
-struct stchgr_peer {
+struct sochgr_peer {
 	int fd;
 };
 
-void stchgr_peer_free(struct stchgr_peer * peer);
-struct stchgr_peer * stchgr_peer_new(int fd);
+void sochgr_peer_free(struct sochgr_peer * peer);
+struct sochgr_peer * sochgr_peer_new(int fd);
 
 #endif
 

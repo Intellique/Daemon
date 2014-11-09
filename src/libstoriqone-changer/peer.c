@@ -24,22 +24,23 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONECHANGER_DRIVE_H__
-#define __STONECHANGER_DRIVE_H__
+// bzero
+#include <strings.h>
+// free, malloc
+#include <stdlib.h>
 
-#include <libstone/drive.h>
+#include "peer.h"
 
-struct st_value;
+void sochgr_peer_free(struct sochgr_peer * peer) {
+	free(peer);
+}
 
-struct st_drive_ops {
-	bool (*check_cookie)(struct st_drive * drive, const char * cookie);
-	bool (*check_support)(struct st_drive * drive, struct st_media_format * format, bool for_writing);
-	bool (*is_free)(struct st_drive * drive);
-	int (*reset)(struct st_drive * drive);
-	int (*update_status)(struct st_drive * drive);
-};
+struct sochgr_peer * sochgr_peer_new(int fd) {
+	struct sochgr_peer * peer = malloc(sizeof(struct sochgr_peer));
+	bzero(peer, sizeof(struct sochgr_peer));
 
-void stchgr_drive_register(struct st_drive * drive, struct st_value * config, const char * process_name);
+	peer->fd = fd;
 
-#endif
+	return peer;
+}
 

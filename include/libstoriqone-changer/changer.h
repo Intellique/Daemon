@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,35 +24,35 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONECHANGER_CHANGER_H__
-#define __STONECHANGER_CHANGER_H__
+#ifndef __LIBSTORIQONE_CHANGER_CHANGER_H__
+#define __LIBSTORIQONE_CHANGER_CHANGER_H__
 
-#include <libstone/changer.h>
+#include <libstoriqone/changer.h>
 
-struct st_database_connection;
-struct st_media;
-struct st_value;
+struct so_database_connection;
+struct so_media;
+struct so_value;
 
-struct st_changer_driver {
+struct so_changer_driver {
 	const char * name;
 
-	struct st_changer * device;
-	int (*configure_device)(struct st_value * config);
+	struct so_changer * device;
+	int (*configure_device)(struct so_value * config);
 
 	unsigned int api_level;
 	const char * src_checksum;
 };
 
-struct st_changer_ops {
-	int (*init)(struct st_value * config, struct st_database_connection * db_connection);
-	int (*load)(struct st_slot * from, struct st_drive * to, struct st_database_connection * db_connection);
-	int (*put_offline)(struct st_database_connection * db_connection);
-	int (*put_online)(struct st_database_connection * db_connection);
-	int (*shut_down)(struct st_database_connection * db_connection);
-	int (*unload)(struct st_drive * from, struct st_database_connection * db_connection);
+struct so_changer_ops {
+	int (*init)(struct so_value * config, struct so_database_connection * db_connection);
+	int (*load)(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
+	int (*put_offline)(struct so_database_connection * db_connection);
+	int (*put_online)(struct so_database_connection * db_connection);
+	int (*shut_down)(struct so_database_connection * db_connection);
+	int (*unload)(struct so_drive * from, struct so_database_connection * db_connection);
 };
 
-void stchgr_changer_register(struct st_changer_driver * chngr);
+void sochgr_changer_register(struct so_changer_driver * chngr);
 
 #endif
 

@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,19 +24,14 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#include <stddef.h>
+#ifndef __LIBSTORIQONE_CHANGER_LISTEN_H__
+#define __LIBSTORIQONE_CHANGER_LISTEN_H__
 
-#include "changer.h"
+struct so_value;
 
-static struct st_changer_driver * current_changer = NULL;
+void sochgr_listen_configure(struct so_value * config);
+unsigned int sochgr_listen_nb_clients(void);
+void sochgr_listen_set_db_connection(struct so_database_connection * db);
 
-
-struct st_changer_driver * stchgr_changer_get() {
-	return current_changer;
-}
-
-__asm__(".symver stchgr_changer_register_v1, stchgr_changer_register@@LIBSTONE_CHANGER_1.2");
-void stchgr_changer_register_v1(struct st_changer_driver * chngr) {
-	current_changer = chngr;
-}
+#endif
 
