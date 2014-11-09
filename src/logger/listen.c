@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -29,49 +29,49 @@
 // NULL
 #include <stddef.h>
 
-#include <libstone/json.h>
-#include <libstone/poll.h>
-#include <libstone/socket.h>
-#include <libstone/value.h>
+#include <libstoriqone/json.h>
+#include <libstoriqone/poll.h>
+#include <libstoriqone/socket.h>
+#include <libstoriqone/value.h>
 
-#include <libstone-logger/log.h>
+#include <libstoriqone-logger/log.h>
 
 #include "listen.h"
 
-static unsigned int lgr_nb_clients = 0;
+static unsigned int solgr_nb_clients = 0;
 
-static void lgr_socket_accept(int fd_server, int fd_client, struct st_value * client);
-static void lgr_socket_message(int fd, short event, void * data);
+static void solgr_socket_accept(int fd_server, int fd_client, struct so_value * client);
+static void solgr_socket_message(int fd, short event, void * data);
 
 
-void lgr_listen_configure(struct st_value * config) {
-	st_socket_server(config, lgr_socket_accept);
+void solgr_listen_configure(struct so_value * config) {
+	so_socket_server(config, solgr_socket_accept);
 }
 
-static void lgr_socket_accept(int fd_server __attribute__((unused)), int fd_client, struct st_value * client __attribute__((unused))) {
-	st_poll_register(fd_client, POLLIN | POLLHUP, lgr_socket_message, NULL, NULL);
-	lgr_nb_clients++;
+static void solgr_socket_accept(int fd_server __attribute__((unused)), int fd_client, struct so_value * client __attribute__((unused))) {
+	so_poll_register(fd_client, POLLIN | POLLHUP, solgr_socket_message, NULL, NULL);
+	solgr_nb_clients++;
 
-	lgr_log_write2(st_log_level_debug, st_log_type_logger, gettext("New connection..."));
+	solgr_log_write2(so_log_level_debug, so_log_type_logger, gettext("New connection..."));
 }
 
-static void lgr_socket_message(int fd, short event, void * data __attribute__((unused))) {
+static void solgr_socket_message(int fd, short event, void * data __attribute__((unused))) {
 	if (event & POLLHUP) {
-		lgr_nb_clients--;
-		lgr_log_write2(st_log_level_debug, st_log_type_logger, gettext("Connection closed"));
+		solgr_nb_clients--;
+		solgr_log_write2(so_log_level_debug, so_log_type_logger, gettext("Connection closed"));
 		return;
 	}
 
-	struct st_value * message = st_json_parse_fd(fd, -1);
-	lgr_log_write(message);
-	st_value_free(message);
+	struct so_value * message = so_json_parse_fd(fd, -1);
+	solgr_log_write(message);
+	so_value_free(message);
 
-	struct st_value * response = st_value_new_boolean(true);
-	st_json_encode_to_fd(response, fd, true);
-	st_value_free(response);
+	struct so_value * response = so_value_new_boolean(true);
+	so_json_encode_to_fd(response, fd, true);
+	so_value_free(response);
 }
 
-unsigned int lgr_listen_nb_clients() {
-	return lgr_nb_clients;
+unsigned int solgr_listen_nb_clients() {
+	return solgr_nb_clients;
 }
 

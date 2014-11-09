@@ -59,7 +59,6 @@ struct solgr_log_driver {
 	 * Is a value returns by dlopen and should not be used nor released
 	 */
 	void * cookie;
-	unsigned int api_level;
 	const char * src_checksum;
 };
 

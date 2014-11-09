@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -27,10 +27,10 @@
 #ifndef __LOGGER_LISTEN_H__
 #define __LOGGER_LISTEN_H__
 
-struct st_value;
+struct so_value;
 
-void lgr_listen_configure(struct st_value * config);
-unsigned int lgr_listen_nb_clients(void);
+void solgr_listen_configure(struct so_value * config);
+unsigned int solgr_listen_nb_clients(void);
 
 #endif
 

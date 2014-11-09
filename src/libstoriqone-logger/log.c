@@ -113,7 +113,6 @@ void solgr_log_register_driver(struct solgr_log_driver * driver) {
 
 	if (!so_value_hashtable_has_key2(solgr_drivers, driver->name)) {
 		so_value_hashtable_put(solgr_drivers, so_value_new_string(driver->name), true, so_value_new_custom(driver, NULL), true);
-		driver->api_level = 1;
 		solgr_loader_register_ok();
 	}
 }

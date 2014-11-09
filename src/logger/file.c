@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -43,11 +43,11 @@
 // close, fstat, sleep, stat
 #include <unistd.h>
 
-#include <libstone/time.h>
-#include <libstone/value.h>
-#include <libstone-logger/log.h>
+#include <libstoriqone/time.h>
+#include <libstoriqone/value.h>
+#include <libstoriqone-logger/log.h>
 
-#include <checksum/libstone-logger.chcksum>
+#include <checksum/logger.chcksum>
 
 struct logger_log_file_private {
 	char * path;
@@ -57,33 +57,32 @@ struct logger_log_file_private {
 };
 
 static void file_driver_init(void) __attribute__((constructor));
-static struct lgr_log_module * file_driver_new_module(struct st_value * param);
+static struct solgr_log_module * file_driver_new_module(struct so_value * param);
 
 static void file_module_check_logrotate(struct logger_log_file_private * self);
-static void file_module_free(struct lgr_log_module * module);
-static void file_module_write(struct lgr_log_module * module, struct st_value * message);
+static void file_module_free(struct solgr_log_module * module);
+static void file_module_write(struct solgr_log_module * module, struct so_value * message);
 
-static struct lgr_log_driver file_driver = {
+static struct solgr_log_driver file_driver = {
 	.name         = "file",
 	.new_module   = file_driver_new_module,
 	.cookie       = NULL,
-	.api_level    = 0,
-	.src_checksum = LIBSTONELOGGER_SRCSUM,
+	.src_checksum = LOGGER_SRCSUM,
 };
 
-static struct lgr_log_module_ops file_module_ops = {
+static struct solgr_log_module_ops file_module_ops = {
 	.free  = file_module_free,
 	.write = file_module_write,
 };
 
 
 static void file_driver_init() {
-	lgr_log_register_driver(&file_driver);
+	solgr_log_register_driver(&file_driver);
 }
 
-static struct lgr_log_module * file_driver_new_module(struct st_value * param) {
+static struct solgr_log_module * file_driver_new_module(struct so_value * param) {
 	char * path = NULL, * level;
-	if (st_value_unpack(param, "{ssss}", "path", &path, "verbosity", &level) < 2) {
+	if (so_value_unpack(param, "{ssss}", "path", &path, "verbosity", &level) < 2) {
 		free(path);
 		return NULL;
 	}
@@ -97,8 +96,8 @@ static struct lgr_log_module * file_driver_new_module(struct st_value * param) {
 	self->fd = fd;
 	fstat(self->fd, &self->current);
 
-	struct lgr_log_module * mod = malloc(sizeof(struct lgr_log_module));
-	mod->level = st_log_string_to_level(level);
+	struct solgr_log_module * mod = malloc(sizeof(struct solgr_log_module));
+	mod->level = so_log_string_to_level(level, false);
 	mod->ops = &file_module_ops;
 	mod->driver = &file_driver;
 	mod->data = self;
@@ -125,11 +124,11 @@ static void file_module_check_logrotate(struct logger_log_file_private * self) {
 		self->fd = open(self->path, O_WRONLY | O_APPEND | O_CREAT, 0640);
 		fstat(self->fd, &self->current);
 
-		lgr_log_write2(st_log_level_notice, st_log_type_plugin_log, gettext("Log: file: logrotate detected"));
+		solgr_log_write2(so_log_level_notice, so_log_type_plugin_log, gettext("Log: file: logrotate detected"));
 	}
 }
 
-static void file_module_free(struct lgr_log_module * module) {
+static void file_module_free(struct solgr_log_module * module) {
 	struct logger_log_file_private * self = module->data;
 
 	module->ops = NULL;
@@ -144,23 +143,23 @@ static void file_module_free(struct lgr_log_module * module) {
 	free(self);
 }
 
-static void file_module_write(struct lgr_log_module * module, struct st_value * message) {
+static void file_module_write(struct solgr_log_module * module, struct so_value * message) {
 	struct logger_log_file_private * self = module->data;
 
 	char * slevel = NULL, * stype = NULL, * smessage = NULL;
 	long long int iTimestamp;
 
-	int ret = st_value_unpack(message, "{sssssiss}", "level", &slevel, "type", &stype, "timestamp", &iTimestamp, "message", &smessage);
+	int ret = so_value_unpack(message, "{sssssiss}", "level", &slevel, "type", &stype, "timestamp", &iTimestamp, "message", &smessage);
 
-	enum st_log_level level = st_log_level_unknown;
+	enum so_log_level level = so_log_level_unknown;
 	if (ret == 4)
-		level = st_log_string_to_level(slevel);
+		level = so_log_string_to_level(slevel, false);
 
-	enum st_log_type type = st_log_type_unknown;
+	enum so_log_type type = so_log_type_unknown;
 	if (ret == 4)
-		type = st_log_string_to_type(stype);
+		type = so_log_string_to_type(stype, false);
 
-	if (ret < 4 || level == st_log_level_unknown || type == st_log_type_unknown) {
+	if (ret < 4 || level == so_log_level_unknown || type == so_log_type_unknown) {
 		free(slevel);
 		free(stype);
 		free(smessage);
@@ -171,9 +170,9 @@ static void file_module_write(struct lgr_log_module * module, struct st_value * 
 
 	char strtime[32];
 	time_t timestamp = iTimestamp;
-	st_time_convert(&timestamp, "%c", strtime, 32);
+	so_time_convert(&timestamp, "%c", strtime, 32);
 
-	dprintf(self->fd, "[L:%-*s | T:%-*s | @%s]: %s\n", st_log_level_max_length(), st_log_level_to_string(level, true), st_log_type_max_length(), st_log_type_to_string(type, true), strtime, smessage);
+	dprintf(self->fd, "[L:%-*s | T:%-*s | @%s]: %s\n", so_log_level_max_length(), so_log_level_to_string(level, true), so_log_type_max_length(), so_log_type_to_string(type, true), strtime, smessage);
 
 	free(slevel);
 	free(stype);
