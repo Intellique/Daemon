@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -36,24 +36,24 @@
 
 #include "common.h"
 
-static struct st_database_postgresql_log_level2 {
-	enum st_log_level level;
+static struct so_database_postgresql_log_level2 {
+	enum so_log_level level;
 	const char * name;
-} st_database_postgresql_log_levels[] = {
-	{ st_log_level_alert,      "alert" },
-	{ st_log_level_critical,   "critical" },
-	{ st_log_level_debug,      "debug" },
-	{ st_log_level_emergencey, "emergency" },
-	{ st_log_level_error,      "error" },
-	{ st_log_level_info,       "info" },
-	{ st_log_level_notice,     "notice" },
-	{ st_log_level_warning,    "warning" },
+} so_database_postgresql_log_levels[] = {
+	{ so_log_level_alert,      "alert" },
+	{ so_log_level_critical,   "critical" },
+	{ so_log_level_debug,      "debug" },
+	{ so_log_level_emergencey, "emergency" },
+	{ so_log_level_error,      "error" },
+	{ so_log_level_info,       "info" },
+	{ so_log_level_notice,     "notice" },
+	{ so_log_level_warning,    "warning" },
 
-	{ st_log_level_unknown, "Unknown level" },
+	{ so_log_level_unknown, "Unknown level" },
 };
 
 
-const char * st_database_postgresql_bool_to_string(bool value) {
+const char * so_database_postgresql_bool_to_string(bool value) {
 	if (value)
 		return "TRUE";
 	else
@@ -61,7 +61,7 @@ const char * st_database_postgresql_bool_to_string(bool value) {
 }
 
 
-int st_database_postgresql_get_bool(PGresult * result, int row, int column, bool * val) {
+int so_database_postgresql_get_bool(PGresult * result, int row, int column, bool * val) {
 	if (column < 0)
 		return -1;
 
@@ -72,7 +72,7 @@ int st_database_postgresql_get_bool(PGresult * result, int row, int column, bool
 	return value != NULL;
 }
 
-int st_database_postgresql_get_double(PGresult * result, int row, int column, double * val) {
+int so_database_postgresql_get_double(PGresult * result, int row, int column, double * val) {
 	if (column < 0)
 		return -1;
 
@@ -83,7 +83,7 @@ int st_database_postgresql_get_double(PGresult * result, int row, int column, do
 	return value != NULL;
 }
 
-int st_database_postgresql_get_float(PGresult * result, int row, int column, float * val) {
+int so_database_postgresql_get_float(PGresult * result, int row, int column, float * val) {
 	if (column < 0)
 		return -1;
 
@@ -94,7 +94,7 @@ int st_database_postgresql_get_float(PGresult * result, int row, int column, flo
 	return value != NULL;
 }
 
-int st_database_postgresql_get_int(PGresult * result, int row, int column, int * val) {
+int so_database_postgresql_get_int(PGresult * result, int row, int column, int * val) {
 	if (column < 0)
 		return -1;
 
@@ -105,7 +105,7 @@ int st_database_postgresql_get_int(PGresult * result, int row, int column, int *
 	return value != NULL;
 }
 
-int st_database_postgresql_get_long(PGresult * result, int row, int column, long * val) {
+int so_database_postgresql_get_long(PGresult * result, int row, int column, long * val) {
 	if (column < 0)
 		return -1;
 
@@ -116,10 +116,10 @@ int st_database_postgresql_get_long(PGresult * result, int row, int column, long
 	return value != NULL;
 }
 
-int st_database_postgresql_get_long_add(PGresult * result, int row, int column, long * val) {
+int so_database_postgresql_get_long_add(PGresult * result, int row, int column, long * val) {
 	long current = 0;
 
-	int failed = st_database_postgresql_get_long(result, row, column, &current);
+	int failed = so_database_postgresql_get_long(result, row, column, &current);
 
 	if (failed == 0 && val != NULL)
 		*val += current;
@@ -127,7 +127,7 @@ int st_database_postgresql_get_long_add(PGresult * result, int row, int column, 
 	return failed;
 }
 
-int st_database_postgresql_get_long_long(PGresult * result, int row, int column, long long * val) {
+int so_database_postgresql_get_long_long(PGresult * result, int row, int column, long long * val) {
 	if (column < 0)
 		return -1;
 
@@ -138,7 +138,7 @@ int st_database_postgresql_get_long_long(PGresult * result, int row, int column,
 	return value != NULL;
 }
 
-int st_database_postgresql_get_ssize(PGresult * result, int row, int column, ssize_t * val) {
+int so_database_postgresql_get_ssize(PGresult * result, int row, int column, ssize_t * val) {
 	if (column < 0)
 		return -1;
 
@@ -149,7 +149,7 @@ int st_database_postgresql_get_ssize(PGresult * result, int row, int column, ssi
 	return value != NULL;
 }
 
-int st_database_postgresql_get_string(PGresult * result, int row, int column, char * string, size_t length) {
+int so_database_postgresql_get_string(PGresult * result, int row, int column, char * string, size_t length) {
 	if (column < 0)
 		return -1;
 
@@ -162,7 +162,7 @@ int st_database_postgresql_get_string(PGresult * result, int row, int column, ch
 	return value != NULL;
 }
 
-int st_database_postgresql_get_string_dup(PGresult * result, int row, int column, char ** string) {
+int so_database_postgresql_get_string_dup(PGresult * result, int row, int column, char ** string) {
 	if (row < 0 || column < 0)
 		return -1;
 
@@ -176,7 +176,7 @@ int st_database_postgresql_get_string_dup(PGresult * result, int row, int column
 	return value != NULL;
 }
 
-int st_database_postgresql_get_time(PGresult * result, int row, int column, time_t * val) {
+int so_database_postgresql_get_time(PGresult * result, int row, int column, time_t * val) {
 	if (column < 0)
 		return -1;
 
@@ -195,10 +195,10 @@ int st_database_postgresql_get_time(PGresult * result, int row, int column, time
 	return failed;
 }
 
-int st_database_postgresql_get_time_max(PGresult * result, int row, int column, time_t * val) {
+int so_database_postgresql_get_time_max(PGresult * result, int row, int column, time_t * val) {
 	time_t current = 0;
 
-	int failed = st_database_postgresql_get_time(result, row, column, &current);
+	int failed = so_database_postgresql_get_time(result, row, column, &current);
 	if (failed == 0 && val != NULL) {
 		if (*val < current)
 			*val = current;
@@ -207,7 +207,7 @@ int st_database_postgresql_get_time_max(PGresult * result, int row, int column, 
 	return failed;
 }
 
-int st_database_postgresql_get_uchar(PGresult * result, int row, int column, unsigned char * val) {
+int so_database_postgresql_get_uchar(PGresult * result, int row, int column, unsigned char * val) {
 	if (column < 0)
 		return -1;
 
@@ -218,7 +218,7 @@ int st_database_postgresql_get_uchar(PGresult * result, int row, int column, uns
 	return value != NULL;
 }
 
-int st_database_postgresql_get_uint(PGresult * result, int row, int column, unsigned int * val) {
+int so_database_postgresql_get_uint(PGresult * result, int row, int column, unsigned int * val) {
 	if (column < 0)
 		return -1;
 
@@ -229,10 +229,10 @@ int st_database_postgresql_get_uint(PGresult * result, int row, int column, unsi
 	return value != NULL;
 }
 
-int st_database_postgresql_get_uint_add(PGresult * result, int row, int column, unsigned int * val) {
+int so_database_postgresql_get_uint_add(PGresult * result, int row, int column, unsigned int * val) {
 	unsigned int current = 0;
 
-	int failed = st_database_postgresql_get_uint(result, row, column, &current);
+	int failed = so_database_postgresql_get_uint(result, row, column, &current);
 
 	if (failed == 0 && val != NULL)
 		*val += current;
@@ -240,12 +240,12 @@ int st_database_postgresql_get_uint_add(PGresult * result, int row, int column, 
 	return failed;
 }
 
-const char * st_database_postgresql_log_level_to_string(enum st_log_level level) {
+const char * so_database_postgresql_log_level_to_string(enum so_log_level level) {
 	unsigned int i;
-	for (i = 0; st_database_postgresql_log_levels[i].level != st_log_level_unknown; i++)
-		if (st_database_postgresql_log_levels[i].level == level)
-			return st_database_postgresql_log_levels[i].name;
+	for (i = 0; so_database_postgresql_log_levels[i].level != so_log_level_unknown; i++)
+		if (so_database_postgresql_log_levels[i].level == level)
+			return so_database_postgresql_log_levels[i].name;
 
-	return st_database_postgresql_log_levels[i].name;
+	return so_database_postgresql_log_levels[i].name;
 }
 

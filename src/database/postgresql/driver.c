@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -29,8 +29,8 @@
 // NULL
 #include <stddef.h>
 
-#include <libstone/log.h>
-#include <libstone/value.h>
+#include <libstoriqone/log.h>
+#include <libstoriqone/value.h>
 
 #include <libdatabase-postgresql.chcksum>
 
@@ -38,56 +38,55 @@
 
 #include "config.h"
 
-static struct st_database_config * st_database_postgresql_add(struct st_value * params);
-static struct st_database_config * st_database_postgresql_get_default_config(void);
-static void st_database_postgresql_init(void) __attribute__((constructor));
+static struct so_database_config * so_database_postgresql_add(struct so_value * params);
+static struct so_database_config * so_database_postgresql_get_default_config(void);
+static void so_database_postgresql_init(void) __attribute__((constructor));
 
 
-static struct st_database_ops st_database_postgresql_driver_ops = {
-	.add	            = st_database_postgresql_add,
-	.get_default_config = st_database_postgresql_get_default_config,
+static struct so_database_ops so_database_postgresql_driver_ops = {
+	.add	            = so_database_postgresql_add,
+	.get_default_config = so_database_postgresql_get_default_config,
 };
 
-static struct st_database st_database_postgresql_driver = {
+static struct so_database so_database_postgresql_driver = {
 	.name = "postgresql",
-	.ops  = &st_database_postgresql_driver_ops,
+	.ops  = &so_database_postgresql_driver_ops,
 
 	.configurations = NULL,
 
 	.cookie       = NULL,
-	.api_level    = 0,
-	.src_checksum = STONE_DATABASE_POSTGRESQL_SRCSUM,
+	.src_checksum = STORIQONE_DATABASE_POSTGRESQL_SRCSUM,
 };
 
 
-static struct st_database_config * st_database_postgresql_add(struct st_value * params) {
+static struct so_database_config * so_database_postgresql_add(struct so_value * params) {
 	if (params == NULL)
 		return NULL;
 
-	struct st_database_config * config = st_database_postgresql_config_init(params);
+	struct so_database_config * config = so_database_postgresql_config_init(params);
 	if (config != NULL) {
-		config->driver = &st_database_postgresql_driver;
+		config->driver = &so_database_postgresql_driver;
 
-		struct st_value * vconfig = st_value_new_custom(config, st_database_postgresql_config_free);
-		st_value_hashtable_put2(st_database_postgresql_driver.configurations, "default", vconfig, true);
-		st_value_hashtable_put(st_database_postgresql_driver.configurations, st_value_new_string(config->name), true, vconfig, false);
+		struct so_value * vconfig = so_value_new_custom(config, so_database_postgresql_config_free);
+		so_value_hashtable_put2(so_database_postgresql_driver.configurations, "default", vconfig, true);
+		so_value_hashtable_put(so_database_postgresql_driver.configurations, so_value_new_string(config->name), true, vconfig, false);
 	}
 
 	return config;
 }
 
-static struct st_database_config * st_database_postgresql_get_default_config() {
-	struct st_value * vconfig = st_value_hashtable_get2(st_database_postgresql_driver.configurations, "default", false, false);
-	if (vconfig->type == st_value_custom)
-		return st_value_custom_get(vconfig);
+static struct so_database_config * so_database_postgresql_get_default_config() {
+	struct so_value * vconfig = so_value_hashtable_get2(so_database_postgresql_driver.configurations, "default", false, false);
+	if (vconfig->type == so_value_custom)
+		return so_value_custom_get(vconfig);
 	return NULL;
 }
 
-static void st_database_postgresql_init() {
-	bindtextdomain("libstone-database-postgresql", LOCALE_DIR);
-	textdomain("libstone-database-postgresql");
+static void so_database_postgresql_init() {
+	bindtextdomain("libstoriqone-database-postgresql", LOCALE_DIR);
+	textdomain("libstoriqone-database-postgresql");
 
-	st_database_postgresql_driver.configurations = st_value_new_hashtable2();
-	st_database_register_driver(&st_database_postgresql_driver);
+	so_database_postgresql_driver.configurations = so_value_new_hashtable2();
+	so_database_register_driver(&so_database_postgresql_driver);
 }
 

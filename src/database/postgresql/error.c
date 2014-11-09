@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -33,21 +33,21 @@
 // strdup, strcmp, strtok_r
 #include <string.h>
 
-#include <libstone/log.h>
-#include <libstone/debug.h>
+#include <libstoriqone/log.h>
+#include <libstoriqone/debug.h>
 
 #include "common.h"
 
-void st_database_postgresql_get_error(PGresult * result, const char * prepared_query) {
+void so_database_postgresql_get_error(PGresult * result, const char * prepared_query) {
 	char * error_code = PQresultErrorField(result, PG_DIAG_SQLSTATE);
 	if (error_code != NULL && !strcmp("55P03", error_code))
 		return;
 
 	char * error = PQresultErrorField(result, PG_DIAG_MESSAGE_PRIMARY);
 	if (prepared_query == NULL)
-		st_log_write2(st_log_level_error, st_log_type_plugin_db, gettext("PSQL: error {%s} => %s"), prepared_query, error);
+		so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: error {%s} => %s"), prepared_query, error);
 	else
-		st_log_write2(st_log_level_error, st_log_type_plugin_db, gettext("PSQL: error => %s"), error);
+		so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: error => %s"), error);
 
 	error = PQresultErrorField(result, PG_DIAG_MESSAGE_DETAIL);
 	if (error != NULL) {
@@ -55,7 +55,7 @@ void st_database_postgresql_get_error(PGresult * result, const char * prepared_q
 		char * ptr;
 		char * line = strtok_r(error, "\n", &ptr);
 		while (line != NULL) {
-			st_log_write2(st_log_level_error, st_log_type_plugin_db, gettext("PSQL: detail => %s"), line);
+			so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: detail => %s"), line);
 			line = strtok_r(NULL, "\n", &ptr);
 		}
 		free(error);
@@ -67,12 +67,12 @@ void st_database_postgresql_get_error(PGresult * result, const char * prepared_q
 		char * ptr;
 		char * line = strtok_r(error, "\n", &ptr);
 		while (line != NULL) {
-			st_log_write2(st_log_level_error, st_log_type_plugin_db, gettext("PSQL: hint => %s"), line);
+			so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: hint => %s"), line);
 			line = strtok_r(NULL, "\n", &ptr);
 		}
 		free(error);
 	}
 
-	st_debug_log_stack(16);
+	so_debug_log_stack(16);
 }
 
