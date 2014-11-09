@@ -1,26 +1,26 @@
-# French translations for libstone-logger package.
+# French translations for libstoriqone-logger package.
 # Copyright (C) 2014
-# This file is distributed under the same license as the stone package.
+# This file is distributed under the same license as the storiqone package.
 # Guillaume Clercin <gclercin@intellique.com>, 2014
 msgid   ""
-msgstr  "Project-Id-Version: libstone-logger v1.2\n"
+msgstr  "Project-Id-Version: libstoriqone-logger v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-10-21 22:18+0200\n"
+        "POT-Creation-Date: 2014-11-09 19:04+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
-        "Language-Team: translation team stone <stone@intellique.com>\n"
+        "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
         "Language: fr\n"
         "MIME-Version: 1.0\n"
         "Content-Type: text/plain; charset=UTF-8\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/libstone-logger/loader.c:71
+#: src/libstoriqone-logger/loader.c:72
 #, c-format
 msgid   "Loader: access to file %s failed because %m"
 msgstr  "Loader : l'accès au fichier %s a échoué parce que %m"
 
-#: src/libstone-logger/loader.c:83
+#: src/libstoriqone-logger/loader.c:84
 #, c-format
 msgid   "Loader: failed to load '%s' because %s"
 msgstr  "Loader : échec au chargement de '%s' parce que %s"

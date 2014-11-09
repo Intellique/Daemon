@@ -1,0 +1,15 @@
+LIBSTORIQONELOGGER_SRC_DIR		:= src/libstoriqone-logger
+
+LIBSTORIQONELOGGER_CFLAG		:= -fPIC -pthread
+LIBSTORIQONELOGGER_LIB			:= lib/libstoriqone-logger.so
+LIBSTORIQONELOGGER_LD			:= -shared -pthread -ldl -lstoriqone -Llib
+LIBSTORIQONELOGGER_SONAME		:= libstoriqone-logger.so.1
+LIBSTORIQONELOGGER_LIB_VERSION	:= 1.2
+
+LIBSTORIQONELOGGER_DEPEND_LIB	:= lib/libstoriqone.so
+
+LIBSTORIQONELOGGER_CHCKSUM_FILE	:= libstoriqone-logger.chcksum
+
+LIBSTORIQONELOGGER_LOCALE		:= locale/libstoriqone-logger
+
+BIN_SYMS						+= LIBSTORIQONELOGGER

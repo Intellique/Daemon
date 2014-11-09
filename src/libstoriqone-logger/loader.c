@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -42,58 +42,59 @@
 // access
 #include <unistd.h>
 
+#include <libstoriqone-logger/log.h>
+
 #include "config.h"
 #include "loader.h"
-#include "log.h"
 
-static void * lgr_loader_load_file(const char * filename);
+static void * solgr_loader_load_file(const char * filename);
 
-static volatile bool lgr_loader_loading = false;
-static volatile bool lgr_loader_loaded = false;
+static volatile bool solgr_loader_loading = false;
+static volatile bool solgr_loader_loaded = false;
 
 
-void * lgr_loader_load(const char * module, const char * name) {
+void * solgr_loader_load(const char * module, const char * name) {
 	if (module == NULL || name == NULL)
 		return NULL;
 
 	char * path;
 	asprintf(&path, MODULE_PATH "/lib%s-%s.so", module, name);
 
-	void * cookie = lgr_loader_load_file(path);
+	void * cookie = solgr_loader_load_file(path);
 
 	free(path);
 
 	return cookie;
 }
 
-static void * lgr_loader_load_file(const char * filename) {
+static void * solgr_loader_load_file(const char * filename) {
 	if (access(filename, R_OK | X_OK)) {
-		lgr_log_write2(st_log_level_debug, st_log_type_logger, gettext("Loader: access to file %s failed because %m"), filename);
+		solgr_log_write2(so_log_level_debug, so_log_type_logger, gettext("Loader: access to file %s failed because %m"), filename);
 		return NULL;
 	}
 
 	static pthread_mutex_t lock = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 	pthread_mutex_lock(&lock);
 
-	lgr_loader_loading = true;
-	lgr_loader_loaded = false;
+	solgr_loader_loading = true;
+	solgr_loader_loaded = false;
 
 	void * cookie = dlopen(filename, RTLD_NOW);
 	if (cookie == NULL) {
-		lgr_log_write2(st_log_level_debug, st_log_type_logger, gettext("Loader: failed to load '%s' because %s"), filename, dlerror());
-	} else if (!lgr_loader_loaded) {
+		solgr_log_write2(so_log_level_debug, so_log_type_logger, gettext("Loader: failed to load '%s' because %s"), filename, dlerror());
+	} else if (!solgr_loader_loaded) {
 		dlclose(cookie);
 		cookie = NULL;
 	}
 
-	lgr_loader_loading = false;
+	solgr_loader_loading = false;
 
 	pthread_mutex_unlock(&lock);
 	return cookie;
 }
 
-void lgr_loader_register_ok(void) {
-	if (lgr_loader_loading)
-		lgr_loader_loaded = true;
+void solgr_loader_register_ok(void) {
+	if (solgr_loader_loading)
+		solgr_loader_loaded = true;
 }
 
