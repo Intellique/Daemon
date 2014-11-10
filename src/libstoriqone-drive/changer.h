@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,18 +24,17 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONEDRIVE_MEDIA_H__
-#define __STONEDRIVE_MEDIA_H__
+#ifndef __LIBSTORIQONE_DRIVE_CHANGER_P_H__
+#define __LIBSTORIQONE_DRIVE_CHANGER_P_H__
 
-// size_t
-#include <sys/types.h>
+// bool
+#include <stdbool.h>
 
-#include <libstone/media.h>
+struct so_database_connection;
 
-struct st_database_connection;
-
-bool stdr_media_check_header(struct st_media * media, const char * buffer, struct st_database_connection * db_connection);
-bool stdr_media_write_header(struct st_media * media, struct st_pool * pool, char * buffer, size_t length);
+bool sodr_changer_is_stopped(void);
+void sodr_changer_setup(struct so_database_connection * db_connect);
+void sodr_changer_stop(void);
 
 #endif
 

@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,13 +24,13 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONEDRIVE_MEDIA_P_H__
-#define __STONEDRIVE_MEDIA_P_H__
+#ifndef __LIBSTORIQONE_DRIVE_MEDIA_P_H__
+#define __LIBSTORIQONE_DRIVE_MEDIA_P_H__
 
-#include <libstone-drive/media.h>
+#include <libstoriqone-drive/media.h>
 
-bool stdr_media_check_header_v1(struct st_media * media, const char * buffer, struct st_database_connection * db_connection);
-bool stdr_media_write_header_v1(struct st_media * media, struct st_pool * pool, char * buffer, size_t length);
+bool sodr_media_check_header_v1(struct so_media * media, const char * buffer, struct so_database_connection * db_connection);
+bool sodr_media_write_header_v1(struct so_media * media, struct so_pool * pool, char * buffer, size_t length);
 
 #endif
 

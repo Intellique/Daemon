@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,27 +24,17 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// bzero
-#include <strings.h>
-// free, malloc
-#include <stdlib.h>
-// close
-#include <unistd.h>
+#ifndef __LIBSTORIQONE_DRIVE_PEER_H__
+#define __LIBSTORIQONE_DRIVE_PEER_H__
 
-#include <libstone/io.h>
+struct sodr_peer {
+	int fd;
 
-#include "peer.h"
+	char * cookie;
+};
 
-void stdr_peer_free(struct stdr_peer * peer) {
-	free(peer->cookie);
-	free(peer);
-}
+void sodr_peer_free(struct sodr_peer * peer);
+struct sodr_peer * sodr_peer_new(int fd);
 
-struct stdr_peer * stdr_peer_new(int fd) {
-	struct stdr_peer * peer = malloc(sizeof(struct stdr_peer));
-	bzero(peer, sizeof(struct stdr_peer));
-	peer->fd = fd;
-
-	return peer;
-}
+#endif
 

@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,18 +24,27 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONEDRIVE_LISTEN_H__
-#define __STONEDRIVE_LISTEN_H__
+// bzero
+#include <strings.h>
+// free, malloc
+#include <stdlib.h>
+// close
+#include <unistd.h>
 
-// bool
-#include <stdbool.h>
+#include <libstoriqone/io.h>
 
-struct st_value;
+#include "peer.h"
 
-void stdr_listen_configure(struct st_value * config);
-bool stdr_listen_is_locked(void);
-unsigned int stdr_listen_nb_clients(void);
-void stdr_listen_set_db_connection(struct st_database_connection * db);
+void sodr_peer_free(struct sodr_peer * peer) {
+	free(peer->cookie);
+	free(peer);
+}
 
-#endif
+struct sodr_peer * sodr_peer_new(int fd) {
+	struct sodr_peer * peer = malloc(sizeof(struct sodr_peer));
+	bzero(peer, sizeof(struct sodr_peer));
+	peer->fd = fd;
+
+	return peer;
+}
 

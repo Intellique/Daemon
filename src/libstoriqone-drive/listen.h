@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,23 +24,18 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#include <stddef.h>
+#ifndef __LIBSTORIQONE_DRIVE_LISTEN_H__
+#define __LIBSTORIQONE_DRIVE_LISTEN_H__
 
-#include <libstone/media.h>
-#include <libstone/slot.h>
-#include <libstone/value.h>
+// bool
+#include <stdbool.h>
 
-#include "drive.h"
+struct so_value;
 
-static struct st_drive_driver * current_drive = NULL;
+void sodr_listen_configure(struct so_value * config);
+bool sodr_listen_is_locked(void);
+unsigned int sodr_listen_nb_clients(void);
+void sodr_listen_set_db_connection(struct so_database_connection * db);
 
-
-struct st_drive_driver * stdr_drive_get() {
-	return current_drive;
-}
-
-__asm__(".symver stdr_drive_register_v1, stdr_drive_register@@LIBSTONE_DRIVE_1.2");
-void stdr_drive_register_v1(struct st_drive_driver * dr) {
-	current_drive = dr;
-}
+#endif
 

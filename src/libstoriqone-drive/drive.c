@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,15 +24,22 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONEDRIVE_DRIVE_P_H__
-#define __STONEDRIVE_DRIVE_P_H__
+#include <stddef.h>
 
-#include <libstone-drive/drive.h>
+#include <libstoriqone/media.h>
+#include <libstoriqone/slot.h>
+#include <libstoriqone/value.h>
 
-struct st_value;
+#include "drive.h"
 
-struct st_drive_driver * stdr_drive_get(void);
-void stdr_drive_register_v1(struct st_drive_driver * dr);
+static struct so_drive_driver * current_drive = NULL;
 
-#endif
+
+struct so_drive_driver * sodr_drive_get() {
+	return current_drive;
+}
+
+void sodr_drive_register(struct so_drive_driver * dr) {
+	current_drive = dr;
+}
 

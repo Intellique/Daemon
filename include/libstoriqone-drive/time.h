@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,17 +24,13 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONEDRIVE_CHANGER_P_H__
-#define __STONEDRIVE_CHANGER_P_H__
+#ifndef __LIBSTORIQONE_DRIVE_TIME_H__
+#define __LIBSTORIQONE_DRIVE_TIME_H__
 
-// bool
-#include <stdbool.h>
+struct so_drive;
 
-struct st_database_connection;
-
-bool stdr_changer_is_stopped(void);
-void stdr_changer_setup(struct st_database_connection * db_connect);
-void stdr_changer_stop(void);
+void sodr_time_start(void);
+void sodr_time_stop(struct so_drive * drive) __attribute__((nonnull));
 
 #endif
 
