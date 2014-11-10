@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 27 Oct 2014 16:58:49 +0100                            *
+*  Last modified: Mon, 10 Nov 2014 12:05:27 +0100                            *
 \****************************************************************************/
 
 // open
@@ -234,6 +234,8 @@ static int st_scsi_changer_load_slot(struct st_changer * ch, struct st_slot * fr
 static bool st_scsi_changer_put_offline(struct st_changer * ch) {
 	struct st_scsi_changer_private * self = ch->data;
 
+	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: put offline in progress", ch->vendor, ch->model);
+
 	self->lock->ops->lock(self->lock);
 	unsigned int i;
 	for (i = 0; i < ch->nb_drives; i++) {
@@ -261,11 +263,15 @@ static bool st_scsi_changer_put_offline(struct st_changer * ch) {
 	ch->next_action = self->current_action = st_changer_action_none;
 	ch->is_online = false;
 
+	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: changer is offline", ch->vendor, ch->model);
+
 	return true;
 }
 
 static bool st_scsi_changer_put_online(struct st_changer * ch) {
 	struct st_scsi_changer_private * self = ch->data;
+
+	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: put online in progress", ch->vendor, ch->model);
 
 	st_scsi_loader_medium_removal(self->fd, false);
 
@@ -330,6 +336,8 @@ static bool st_scsi_changer_put_online(struct st_changer * ch) {
 	ch->is_online = true;
 
 	self->lock->ops->unlock(self->lock);
+
+	st_log_write_all(st_log_level_info, st_log_type_changer, "[%s | %s]: changer is online", ch->vendor, ch->model);
 
 	return true;
 }
