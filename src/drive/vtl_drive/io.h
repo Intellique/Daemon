@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -27,11 +27,11 @@
 #ifndef __ST_VTLDRIVE_IO_H__
 #define __ST_VTLDRIVE_IO_H__
 
-#include <libstone/io.h>
+#include <libstoriqone/io.h>
 
-struct st_drive;
+struct so_drive;
 
-struct vtl_drive_io {
+struct sodr_vtl_drive_io {
 	int fd;
 
 	char * buffer;
@@ -41,11 +41,11 @@ struct vtl_drive_io {
 	ssize_t position;
 	int last_errno;
 
-	struct st_media * media;
+	struct so_media * media;
 };
 
-struct st_stream_reader * vtl_drive_reader_get_raw_reader(struct st_drive * drive, int fd);
-struct st_stream_writer * vtl_drive_writer_get_raw_writer(struct st_drive * drive, const char * filename);
+struct so_stream_reader * sodr_vtl_drive_reader_get_raw_reader(struct so_drive * drive, int fd);
+struct so_stream_writer * sodr_vtl_drive_writer_get_raw_writer(struct so_drive * drive, const char * filename);
 
 #endif
 
