@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,25 +24,24 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#include <libstone-changer/changer.h>
+#include <libstoriqone-changer/changer.h>
 
 #include "device.h"
 
 #include <changer-vtlchanger.chcksum>
 
-static struct st_changer_driver vtl_changer_driver = {
+static struct so_changer_driver sochr_vtl_changer_driver = {
 	.name = "vtl changer",
 
-	.api_level    = 0,
-	.src_checksum = STONE_CHANGER_VTLCHANGER_SRCSUM,
+	.src_checksum = STORIQONE_CHANGER_VTLCHANGER_SRCSUM,
 };
 
-static void vtl_changer_driver_init(void) __attribute__((constructor));
+static void sochr_vtl_changer_driver_init(void) __attribute__((constructor));
 
 
-static void vtl_changer_driver_init() {
-	vtl_changer_driver.device = vtl_changer_get_device();
-	stchgr_changer_register(&vtl_changer_driver);
+static void sochr_vtl_changer_driver_init() {
+	sochr_vtl_changer_driver.device = sochr_vtl_changer_get_device();
+	sochgr_changer_register(&sochr_vtl_changer_driver);
 }
 
 

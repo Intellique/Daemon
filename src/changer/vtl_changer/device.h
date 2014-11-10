@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,15 +24,15 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __ST_VTLCHANGER_DEVICE_H__
-#define __ST_VTLCHANGER_DEVICE_H__
+#ifndef __STORIQONE_CHANGER_VTL_DEVICE_H__
+#define __STORIQONE_CHANGER_VTL_DEVICE_H__
 
-struct vtl_changer_slot {
+struct sochr_vtl_changer_slot {
 	char * path;
-	struct st_slot * origin;
+	struct so_slot * origin;
 };
 
-struct st_changer * vtl_changer_get_device(void);
+struct so_changer * sochr_vtl_changer_get_device(void);
 
 #endif
 
