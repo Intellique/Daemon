@@ -5,7 +5,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-logger v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-11-09 19:56+0100\n"
+        "POT-Creation-Date: 2014-11-10 16:40+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -45,11 +45,11 @@ msgstr  "Empreinte : %s, dernier commit : %s"
 msgid   "No configuration received from daemon, will quit"
 msgstr  "Pas de configuration reçu du démon, va maintenant quitter"
 
-#: src/logger/main.c:102
+#: src/logger/main.c:98
 msgid   "Modules loaded"
 msgstr  "Modules chargés"
 
-#: src/logger/main.c:115
+#: src/logger/main.c:111
 #, c-format
 msgid   "Logger process (pid: %d) will now exit"
 msgstr  "Processus logger (pid : %d) va maintenant quitter"
