@@ -720,12 +720,13 @@ static struct so_value * so_json_parse_string_inner(const char ** json) {
 				sscanf(*json, "%le%n", &val_d, &nb_parsed_d);
 				sscanf(*json, "%Ld%n", &val_i, &nb_parsed_i);
 
-				if (nb_parsed_d == nb_parsed_i)
+				if (nb_parsed_d == nb_parsed_i || val_d == val_i) {
 					ret_val = so_value_new_integer(val_i);
-				else
+					(*json) += nb_parsed_i;
+				} else {
 					ret_val = so_value_new_float(val_d);
-
-				(*json) += nb_parsed_d;
+					(*json) += nb_parsed_d;
+				}
 
 				return ret_val;
 			}
