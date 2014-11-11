@@ -5,7 +5,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqoned v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-11-09 18:23+0100\n"
+        "POT-Creation-Date: 2014-11-11 16:08+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -72,21 +72,20 @@ msgstr  "Le démon va s'arrêter"
 
 #: src/storiqoned/main.c:186
 #, c-format
-msgid   "    --config,   -c : Read this config file instead of \"%s\"\n"
-msgstr  "    --config,   -c : Li ce fichier de configuration à la place de \"%s\"\n"
+msgid   "    --config=FILE,   -c : Read this configuration FILE instead of “%s”\n"
+msgstr  "    --config=FICHIER,   -c : Li ce FICHIER de configuration à la place de « %s »\n"
 
 #: src/storiqoned/main.c:187
 #, c-format
-msgid   "    --help,     -h : Show this and exit\n"
-msgstr  "    --help,     -h : Affiche ceci et quitte\n"
+msgid   "    --help,          -h : Show this and exit\n"
+msgstr  "    --help,             -h : Affiche ceci et quitte\n"
 
 #: src/storiqoned/main.c:188
 #, c-format
-msgid   "    --pid-file, -p : Write the pid of daemon into instead of \"%s\"\n"
-msgstr  "    --pid-file, -p : Écrit le pid du démon dedans au lieu de \"%s\"\n"
+msgid   "    --pid-file=FILE, -p : Write the pid of daemon into FILE instead of “%s”\n"
+msgstr  "    --pid-file=FICHIER, -p : Écrit le pid du démon dans FICHIER au lieu de « %s »\n"
 
 #: src/storiqoned/main.c:189
 #, c-format
-msgid   "    --version,  -V : Show the version of STone then exit\n"
-msgstr  "    --version,  -V : Affiche la version de STone puis quitte\n"
-
+msgid   "    --version,       -V : Show the version of StoriqOne then exit\n"
+msgstr  "    --version,          -V : Affiche la version de StoriqOne puis quitte\n"

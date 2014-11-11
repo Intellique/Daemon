@@ -183,10 +183,10 @@ int main(int argc, char ** argv) {
 
 static void sod_show_help(void) {
 	printf(gettext("storiqone, version: %s, build: %s %s\n"), STORIQONE_VERSION, __DATE__, __TIME__);
-	printf(gettext("    --config,   -c : Read this config file instead of \"%s\"\n"), DAEMON_CONFIG_FILE);
-	printf(gettext("    --help,     -h : Show this and exit\n"));
-	printf(gettext("    --pid-file, -p : Write the pid of daemon into instead of \"%s\"\n"), DAEMON_PID_FILE);
-	printf(gettext("    --version,  -V : Show the version of STone then exit\n"));
+	printf(gettext("    --config=FILE,   -c : Read this configuration FILE instead of “%s”\n"), DAEMON_CONFIG_FILE);
+	printf(gettext("    --help,          -h : Show this and exit\n"));
+	printf(gettext("    --pid-file=FILE, -p : Write the pid of daemon into FILE instead of “%s”\n"), DAEMON_PID_FILE);
+	printf(gettext("    --version,       -V : Show the version of StoriqOne then exit\n"));
 }
 
 void sod_shutdown() {
