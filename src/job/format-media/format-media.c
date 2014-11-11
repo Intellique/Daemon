@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -33,31 +33,31 @@
 // sleep
 #include <unistd.h>
 
-#include <libstone/database.h>
-#include <libstone/host.h>
-#include <libstone/log.h>
-#include <libstone/media.h>
-#include <libstone/slot.h>
-#include <libstone/value.h>
-#include <libstone-job/changer.h>
-#include <libstone-job/drive.h>
-#include <libstone-job/job.h>
-#include <libstone-job/script.h>
+#include <libstoriqone/database.h>
+#include <libstoriqone/host.h>
+#include <libstoriqone/log.h>
+#include <libstoriqone/media.h>
+#include <libstoriqone/slot.h>
+#include <libstoriqone/value.h>
+#include <libstoriqone-job/changer.h>
+#include <libstoriqone-job/drive.h>
+#include <libstoriqone-job/job.h>
+#include <libstoriqone-job/script.h>
 
 #include <job_format-media.chcksum>
 
-static struct st_pool * formatmedia_pool = NULL;
-static struct st_slot * formatmedia_slot = NULL;
+static struct so_pool * formatmedia_pool = NULL;
+static struct so_slot * formatmedia_slot = NULL;
 
-static void formatmedia_exit(struct st_job * job, struct st_database_connection * db_connect);
+static void formatmedia_exit(struct so_job * job, struct so_database_connection * db_connect);
 static void formatmedia_init(void) __attribute__((constructor));
-static int formatmedia_run(struct st_job * job, struct st_database_connection * db_connect);
-static int formatmedia_simulate(struct st_job * job, struct st_database_connection * db_connect);
-static void formatmedia_script_on_error(struct st_job * job, struct st_database_connection * db_connect);
-static void formatmedia_script_post_run(struct st_job * job, struct st_database_connection * db_connect);
-static bool formatmedia_script_pre_run(struct st_job * job, struct st_database_connection * db_connect);
+static int formatmedia_run(struct so_job * job, struct so_database_connection * db_connect);
+static int formatmedia_simulate(struct so_job * job, struct so_database_connection * db_connect);
+static void formatmedia_script_on_error(struct so_job * job, struct so_database_connection * db_connect);
+static void formatmedia_script_post_run(struct so_job * job, struct so_database_connection * db_connect);
+static bool formatmedia_script_pre_run(struct so_job * job, struct so_database_connection * db_connect);
 
-static struct st_job_driver formatmedia = {
+static struct so_job_driver formatmedia = {
 	.name = "format-media",
 
 	.exit            = formatmedia_exit,
@@ -69,16 +69,16 @@ static struct st_job_driver formatmedia = {
 };
 
 
-static void formatmedia_exit(struct st_job * job __attribute__((unused)), struct st_database_connection * db_connect __attribute__((unused))) {
-	st_pool_free(formatmedia_pool);
+static void formatmedia_exit(struct so_job * job __attribute__((unused)), struct so_database_connection * db_connect __attribute__((unused))) {
+	so_pool_free(formatmedia_pool);
 	formatmedia_pool = NULL;
 }
 
 static void formatmedia_init() {
-	stj_job_register(&formatmedia);
+	soj_job_register(&formatmedia);
 }
 
-static int formatmedia_run(struct st_job * job, struct st_database_connection * db_connect) {
+static int formatmedia_run(struct so_job * job, struct so_database_connection * db_connect) {
 	enum {
 		changer_has_free_drive,
 		check_write_support,
@@ -89,8 +89,8 @@ static int formatmedia_run(struct st_job * job, struct st_database_connection * 
 	} state = reserve_media;
 
 	char * cookie = NULL;
-	struct st_changer * changer = formatmedia_slot->changer;
-	struct st_drive * drive = NULL;
+	struct so_changer * changer = formatmedia_slot->changer;
+	struct so_drive * drive = NULL;
 
 	int failed;
 	bool stop = false;
@@ -116,15 +116,15 @@ static int formatmedia_run(struct st_job * job, struct st_database_connection * 
 				if (drive->ops->check_support(drive, formatmedia_slot->media->format, true)) {
 					state = drive_is_free;
 				} else {
-					st_job_add_record(job, db_connect, st_log_level_warning, st_job_record_notif_important, "Unload media because drive can not write into this support");
+					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, "Unload media because drive can not write into this support");
 
 					if (changer->nb_drives == changer->nb_slots)
-						st_job_add_record(job, db_connect, st_log_level_warning, st_job_record_notif_important, "You should load media into a suitable drive because current drive can not write into it");
+						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, "You should load media into a suitable drive because current drive can not write into it");
 
 					failed = changer->ops->unload(changer, drive);
 
 					if (failed != 0) {
-						st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Error while unloading media (%s)", drive->slot->media->label);
+						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Error while unloading media (%s)", drive->slot->media->label);
 						return 2;
 					}
 
@@ -150,14 +150,14 @@ static int formatmedia_run(struct st_job * job, struct st_database_connection * 
 				break;
 
 			case look_for_media:
-				stj_changer_sync_all();
-				formatmedia_slot = stj_changer_find_media_by_job(job, db_connect);
+				soj_changer_sync_all();
+				formatmedia_slot = soj_changer_find_media_by_job(job, db_connect);
 				if (formatmedia_slot != NULL) {
 					changer = formatmedia_slot->changer;
 					state = reserve_media;
 				} else {
 					if (!has_alert_user)
-						st_job_add_record(job, db_connect, st_log_level_warning, st_job_record_notif_important, "Waiting for media");
+						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, "Waiting for media");
 					has_alert_user = true;
 
 					sleep(20);
@@ -187,14 +187,14 @@ static int formatmedia_run(struct st_job * job, struct st_database_connection * 
 	if (job->stopped_by_user)
 		return 1;
 
-	job->status = st_job_status_running;
+	job->status = so_job_status_running;
 	job->done = 0.2;
 
 	if (formatmedia_slot->drive == NULL && drive->slot->media != NULL) {
 		failed = changer->ops->unload(changer, drive);
 
 		if (failed != 0) {
-			st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Error while unloading media (%s)", drive->slot->media->label);
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Error while unloading media (%s)", drive->slot->media->label);
 			return 2;
 		}
 	}
@@ -202,14 +202,14 @@ static int formatmedia_run(struct st_job * job, struct st_database_connection * 
 	if (job->stopped_by_user)
 		return 1;
 
-	job->status = st_job_status_running;
+	job->status = so_job_status_running;
 	job->done = 0.4;
 
 	if (formatmedia_slot->drive == NULL) {
 		failed = changer->ops->load(changer, formatmedia_slot, drive);
 
 		if (failed != 0) {
-			st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Error while loading media (%s)", formatmedia_slot->media->label);
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Error while loading media (%s)", formatmedia_slot->media->label);
 			return 2;
 		}
 	}
@@ -217,14 +217,14 @@ static int formatmedia_run(struct st_job * job, struct st_database_connection * 
 	if (job->stopped_by_user)
 		return 1;
 
-	job->status = st_job_status_running;
+	job->status = so_job_status_running;
 	job->done = 0.6;
 
 	drive->ops->sync(drive);
 
 	// check for write lock
 	if (drive->slot->media->write_lock) {
-		st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Try to format a write protected media");
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Try to format a write protected media");
 		return 3;
 	}
 
@@ -234,166 +234,166 @@ static int formatmedia_run(struct st_job * job, struct st_database_connection * 
 	if (job->stopped_by_user)
 		return 1;
 
-	st_job_add_record(job, db_connect, st_log_level_info, st_job_record_notif_important, "Formatting media in progress (block size used: %zd)", block_size);
+	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, "Formatting media in progress (block size used: %zd)", block_size);
 
 	// write header
 	failed = drive->ops->format_media(drive, formatmedia_pool);
 	if (failed != 0) {
-		st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Failed to format media");
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Failed to format media");
 		return 4;
 	}
 
-	job->status = st_job_status_running;
+	job->status = so_job_status_running;
 	job->done = 0.8;
 
 	// check header
-	st_job_add_record(job, db_connect, st_log_level_info, st_job_record_notif_important, "Checking media header in progress");
+	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, "Checking media header in progress");
 	if (drive->ops->check_header(drive)) {
-		st_job_add_record(job, db_connect, st_log_level_info, st_job_record_notif_important, "Checking media header: success");
+		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, "Checking media header: success");
 
-		job->status = st_job_status_running;
+		job->status = so_job_status_running;
 		job->done = 1;
 		return 0;
 	} else {
-		st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Checking media header: failed");
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Checking media header: failed");
 
-		job->status = st_job_status_error;
+		job->status = so_job_status_error;
 		return 5;
 	}
 }
 
-static int formatmedia_simulate(struct st_job * job, struct st_database_connection * db_connect) {
-	st_job_add_record(job, db_connect, st_log_level_info, st_job_record_notif_important, "Start (simulation) format media job (job name: %s), key: %s, num runs %ld", job->name, job->key, job->num_runs);
+static int formatmedia_simulate(struct so_job * job, struct so_database_connection * db_connect) {
+	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, "Start (simulation) format media job (job name: %s), key: %s, num runs %ld", job->name, job->key, job->num_runs);
 
 	formatmedia_pool = db_connect->ops->get_pool(db_connect, NULL, job);
-	formatmedia_slot = stj_changer_find_media_by_job(job, db_connect);
+	formatmedia_slot = soj_changer_find_media_by_job(job, db_connect);
 
 	if (formatmedia_pool == NULL) {
-		st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Pool not found");
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Pool not found");
 		return 1;
 	}
 	if (formatmedia_pool->deleted) {
-		st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Try to format to a pool which is deleted");
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Try to format to a pool which is deleted");
 		return 1;
 	}
 
 	if (formatmedia_slot == NULL) {
-		st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Media not found");
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Media not found");
 		return 1;
 	}
 	if (formatmedia_slot->media == NULL) {
-		st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "BUG: slot should not be empty");
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "BUG: slot should not be empty");
 		return 1;
 	}
 
-	struct st_media * media = formatmedia_slot->media;
-	if (media->type == st_media_type_cleaning) {
-		st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Try to format a cleaning media");
+	struct so_media * media = formatmedia_slot->media;
+	if (media->type == so_media_type_cleaning) {
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Try to format a cleaning media");
 		return 1;
 	}
-	if (media->type == st_media_type_worm && media->nb_volumes > 0) {
-		st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Try to format a worm media with data");
-		return 1;
-	}
-
-	if (media->status == st_media_status_error)
-		st_job_add_record(job, db_connect, st_log_level_warning, st_job_record_notif_important, "Try to format a media with error status");
-
-	if (st_media_format_cmp(media->format, formatmedia_pool->format) != 0) {
-		st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Try to format a media whose type does not match the format of pool");
+	if (media->type == so_media_type_worm && media->nb_volumes > 0) {
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Try to format a worm media with data");
 		return 1;
 	}
 
-	if (!stj_changer_has_apt_drive(media->format, true)) {
-		st_job_add_record(job, db_connect, st_log_level_error, st_job_record_notif_important, "Failed to find suitable drive to format media");
+	if (media->status == so_media_status_error)
+		so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, "Try to format a media with error status");
+
+	if (so_media_format_cmp(media->format, formatmedia_pool->format) != 0) {
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Try to format a media whose type does not match the format of pool");
+		return 1;
+	}
+
+	if (!soj_changer_has_apt_drive(media->format, true)) {
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Failed to find suitable drive to format media");
 		return 1;
 	}
 
 	return 0;
 }
 
-static void formatmedia_script_on_error(struct st_job * job, struct st_database_connection * db_connect) {
-	if (db_connect->ops->get_nb_scripts(db_connect, job->type, st_script_type_on_error, formatmedia_pool) < 1)
+static void formatmedia_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, formatmedia_pool) < 1)
 		return;
 
-	struct st_value * json = st_value_pack("{sosososo}",
-		"job", st_job_convert(job),
-		"host", st_host_get_info2(),
-		"media", st_media_convert(formatmedia_slot->media),
-		"pool", st_pool_convert(formatmedia_pool)
+	struct so_value * json = so_value_pack("{sosososo}",
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"media", so_media_convert(formatmedia_slot->media),
+		"pool", so_pool_convert(formatmedia_pool)
 	);
 
-	struct st_value * returned = stj_script_run(db_connect, job, st_script_type_on_error, formatmedia_pool, json);
-	st_value_free(json);
-	st_value_free(returned);
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_on_error, formatmedia_pool, json);
+	so_value_free(json);
+	so_value_free(returned);
 }
 
-static void formatmedia_script_post_run(struct st_job * job, struct st_database_connection * db_connect) {
-	if (db_connect->ops->get_nb_scripts(db_connect, job->type, st_script_type_post_job, formatmedia_pool) < 1)
+static void formatmedia_script_post_run(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_post_job, formatmedia_pool) < 1)
 		return;
 
-	struct st_value * json = st_value_pack("{sosososo}",
-		"job", st_job_convert(job),
-		"host", st_host_get_info2(),
-		"media", st_media_convert(formatmedia_slot->media),
-		"pool", st_pool_convert(formatmedia_pool)
+	struct so_value * json = so_value_pack("{sosososo}",
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"media", so_media_convert(formatmedia_slot->media),
+		"pool", so_pool_convert(formatmedia_pool)
 	);
 
-	struct st_value * returned = stj_script_run(db_connect, job, st_script_type_post_job, formatmedia_pool, json);
-	st_value_free(json);
-	st_value_free(returned);
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_post_job, formatmedia_pool, json);
+	so_value_free(json);
+	so_value_free(returned);
 }
 
-static bool formatmedia_script_pre_run(struct st_job * job, struct st_database_connection * db_connect) {
-	if (db_connect->ops->get_nb_scripts(db_connect, job->type, st_script_type_pre_job, formatmedia_pool) < 1)
+static bool formatmedia_script_pre_run(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_pre_job, formatmedia_pool) < 1)
 		return true;
 
-	struct st_value * json = st_value_pack("{sosososo}",
-		"job", st_job_convert(job),
-		"host", st_host_get_info2(),
-		"media", st_media_convert(formatmedia_slot->media),
-		"pool", st_pool_convert(formatmedia_pool)
+	struct so_value * json = so_value_pack("{sosososo}",
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"media", so_media_convert(formatmedia_slot->media),
+		"pool", so_pool_convert(formatmedia_pool)
 	);
 
-	struct st_value * returned = stj_script_run(db_connect, job, st_script_type_pre_job, formatmedia_pool, json);
-	st_value_free(json);
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_pre_job, formatmedia_pool, json);
+	so_value_free(json);
 
 	bool should_run = false;
-	st_value_unpack(returned, "{sb}", "should run", &should_run);
+	so_value_unpack(returned, "{sb}", "should run", &should_run);
 	if (should_run) {
-		struct st_value * datas = NULL;
-		st_value_unpack(returned, "{so}", "datas", &datas);
+		struct so_value * datas = NULL;
+		so_value_unpack(returned, "{so}", "datas", &datas);
 
-		struct st_value_iterator * iter = st_value_list_get_iterator(datas);
-		while (st_value_iterator_has_next(iter)) {
-			struct st_value * data = st_value_iterator_get_value(iter, false);
+		struct so_value_iterator * iter = so_value_list_get_iterator(datas);
+		while (so_value_iterator_has_next(iter)) {
+			struct so_value * data = so_value_iterator_get_value(iter, false);
 
 			char * uuid = NULL;
-			st_value_unpack(data, "{s{ss}}", "media", "uuid", &uuid);
+			so_value_unpack(data, "{s{ss}}", "media", "uuid", &uuid);
 			if (uuid != NULL) {
 				uuid_t tmp;
 				if (uuid_parse(uuid, tmp) != 0) {
-					st_job_add_record(job, db_connect, st_log_level_warning, st_job_record_notif_normal, "Invalid uuid provide by script, ignoring it");
+					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal, "Invalid uuid provide by script, ignoring it");
 				} else {
-					st_job_add_record(job, db_connect, st_log_level_warning, st_job_record_notif_normal, "Script request to format media with this uuid (%s) instead of (%s)", uuid, formatmedia_slot->media->uuid);
+					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal, "Script request to format media with this uuid (%s) instead of (%s)", uuid, formatmedia_slot->media->uuid);
 					strcpy(formatmedia_slot->media->uuid, uuid);
 				}
 				free(uuid);
 			}
 
 			char * name = NULL;
-			st_value_unpack(data, "{s{ss}}", "media", "name", &name);
+			so_value_unpack(data, "{s{ss}}", "media", "name", &name);
 			if (name != NULL) {
-				st_job_add_record(job, db_connect, st_log_level_warning, st_job_record_notif_normal, "Script request to format media with this name (%s) instead of (%s)", name, formatmedia_slot->media->name);
+				so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal, "Script request to format media with this name (%s) instead of (%s)", name, formatmedia_slot->media->name);
 
 				free(formatmedia_slot->media->name);
 				formatmedia_slot->media->name = name;
 			}
 		}
-		st_value_iterator_free(iter);
+		so_value_iterator_free(iter);
 	}
 
-	st_value_free(returned);
+	so_value_free(returned);
 
 	return should_run;
 }
