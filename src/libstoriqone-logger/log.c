@@ -25,7 +25,7 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
-// bindtextdomain, gettext, textdomain
+// bindtextdomain, textdomain
 #include <libintl.h>
 // va_end, va_start
 #include <stdarg.h>
