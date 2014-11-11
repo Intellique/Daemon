@@ -25,6 +25,7 @@
 \****************************************************************************/
 
 #include "checksum.h"
+#include "json.h"
 #include "log.h"
 #include "process.h"
 #include "test.h"
@@ -32,6 +33,7 @@
 
 void test_libstoriqone_add_suite() {
     test_libstoriqone_checksum_add_suite();
+	test_libstoriqone_json_add_suite();
 	test_libstoriqone_log_add_suite();
 	test_libstoriqone_process_add_suite();
 	test_libstoriqone_value_add_suite();
