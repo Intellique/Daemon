@@ -24,7 +24,7 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// gettext
+// dgettext, gettext
 #include <libintl.h>
 // NULL
 #include <stddef.h>
@@ -56,7 +56,7 @@ static void so_script_init() {
 	unsigned int i;
 	for (i = 0; i < so_script_nb_types; i++) {
 		so_script_types[i].hash = so_string_compute_hash2(so_script_types[i].name);
-		so_script_types[i].hash_translated = so_string_compute_hash2(gettext(so_script_types[i].name));
+		so_script_types[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_script_types[i].name));
 	}
 }
 
@@ -83,7 +83,7 @@ enum so_script_type so_script_string_to_type(const char * string, bool translate
 const char * so_script_type_to_string(enum so_script_type type, bool translate) {
 	const char * value = so_script_types[type].name;
 	if (translate)
-		value = gettext(value);
+		value = dgettext("libstoriqone", value);
 	return value;
 }
 

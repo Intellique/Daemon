@@ -24,7 +24,7 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// gettext
+// dgettext, gettext
 #include <libintl.h>
 // free
 #include <stdlib.h>
@@ -110,14 +110,14 @@ static void so_drive_init() {
 	unsigned int i;
 	for (i = 0; i < so_drive_nb_status; i++) {
 		so_drive_status[i].hash = so_string_compute_hash2(so_drive_status[i].name);
-		so_drive_status[i].hash_translated = so_string_compute_hash2(gettext(so_drive_status[i].name));
+		so_drive_status[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_drive_status[i].name));
 	}
 }
 
 const char * so_drive_status_to_string(enum so_drive_status status, bool translate) {
 	const char * value = so_drive_status[status].name;
 	if (translate)
-		value = gettext(value);
+		value = dgettext("libstoriqone", value);
 	return value;
 }
 

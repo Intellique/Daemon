@@ -400,7 +400,7 @@ msgstr  "Critique"
 
 #: src/libstoriqone/log.c:83
 msgid   "Debug"
-msgstr  "Debug"
+msgstr  "Débogage"
 
 #: src/libstoriqone/log.c:84
 msgid   "Emergency"
@@ -424,7 +424,7 @@ msgstr  "Attention"
 
 #: src/libstoriqone/log.c:90
 msgid   "Unknown level"
-msgstr  "Niveau inconnus"
+msgstr  "Niveau inconnu"
 
 #: src/libstoriqone/log.c:102
 msgid   "Changer"

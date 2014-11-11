@@ -25,7 +25,7 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
-// gettext
+// dgettext, gettext
 #include <libintl.h>
 // free
 #include <stdlib.h>
@@ -135,26 +135,26 @@ static void so_job_init() {
 	unsigned int i;
 	for (i = 0; i < so_job_nb_status; i++) {
 		so_job_status[i].hash = so_string_compute_hash2(so_job_status[i].name);
-		so_job_status[i].hash_translated = so_string_compute_hash2(gettext(so_job_status[i].name));
+		so_job_status[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_job_status[i].name));
 	}
 
 	for (i = 0; i < so_job_record_notif2; i++) {
 		so_job_record_notifs[i].hash = so_string_compute_hash2(so_job_record_notifs[i].name);
-		so_job_record_notifs[i].hash_translated = so_string_compute_hash2(gettext(so_job_record_notifs[i].name));
+		so_job_record_notifs[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_job_record_notifs[i].name));
 	}
 }
 
 const char * so_job_report_notif_to_string(enum so_job_record_notif notif, bool translate) {
 	const char * value = so_job_record_notifs[notif].name;
 	if (translate)
-		value = gettext(value);
+		value = dgettext("libstoriqone", value);
 	return value;
 }
 
 const char * so_job_status_to_string(enum so_job_status status, bool translate) {
 	const char * value = so_job_status[status].name;
 	if (translate)
-		value = gettext(value);
+		value = dgettext("libstoriqone", value);
 	return value;
 }
 

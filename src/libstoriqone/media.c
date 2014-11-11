@@ -24,7 +24,7 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// gettext
+// dgettext, gettext
 #include <libintl.h>
 // free
 #include <stdlib.h>
@@ -140,32 +140,32 @@ static void so_media_init(void) {
 	unsigned int i;
 	for (i = 0; i < so_media_format_nb_data_types; i++) {
 		so_media_format_data_types[i].hash = so_string_compute_hash2(so_media_format_data_types[i].name);
-		so_media_format_data_types[i].hash_translated = so_string_compute_hash2(gettext(so_media_format_data_types[i].name));
+		so_media_format_data_types[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_media_format_data_types[i].name));
 	}
 
 	for (i = 0; i < so_media_format_nb_modes; i++) {
 		so_media_format_modes[i].hash = so_string_compute_hash2(so_media_format_modes[i].name);
-		so_media_format_modes[i].hash_translated = so_string_compute_hash2(gettext(so_media_format_modes[i].name));
+		so_media_format_modes[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_media_format_modes[i].name));
 	}
 
 	for (i = 0; i < so_media_nb_status; i++) {
 		so_media_status[i].hash = so_string_compute_hash2(so_media_status[i].name);
-		so_media_status[i].hash_translated = so_string_compute_hash2(gettext(so_media_status[i].name));
+		so_media_status[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_media_status[i].name));
 	}
 
 	for (i = 0; i < so_media_nb_types; i++) {
 		so_media_types[i].hash = so_string_compute_hash2(so_media_types[i].name);
-		so_media_types[i].hash_translated = so_string_compute_hash2(gettext(so_media_types[i].name));
+		so_media_types[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_media_types[i].name));
 	}
 
 	for (i = 0; i < so_pool_nb_autocheck_modes; i++) {
 		so_pool_autocheck_modes[i].hash = so_string_compute_hash2(so_pool_autocheck_modes[i].name);
-		so_pool_autocheck_modes[i].hash_translated = so_string_compute_hash2(gettext(so_pool_autocheck_modes[i].name));
+		so_pool_autocheck_modes[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_pool_autocheck_modes[i].name));
 	}
 
 	for (i = 0; i < so_pool_nb_unbreakable_levels; i++) {
 		so_pool_unbreakable_levels[i].hash = so_string_compute_hash2(so_pool_unbreakable_levels[i].name);
-		so_pool_unbreakable_levels[i].hash_translated = so_string_compute_hash2(gettext(so_pool_unbreakable_levels[i].name));
+		so_pool_unbreakable_levels[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_pool_unbreakable_levels[i].name));
 	}
 }
 
@@ -450,7 +450,7 @@ void so_pool_free(struct so_pool * pool) {
 const char * so_media_format_data_type_to_string(enum so_media_format_data_type type, bool translate) {
 	const char * value = so_media_format_data_types[type].name;
 	if (translate)
-		value = gettext(value);
+		value = dgettext("libstoriqone", value);
 	return value;
 }
 
@@ -478,7 +478,7 @@ enum so_media_format_data_type so_media_string_to_format_data_type(const char * 
 const char * so_media_format_mode_to_string(enum so_media_format_mode mode, bool translate) {
 	const char * value = so_media_format_modes[mode].name;
 	if (translate)
-		value = gettext(value);
+		value = dgettext("libstoriqone", value);
 	return value;
 }
 
@@ -506,7 +506,7 @@ enum so_media_format_mode so_media_string_to_format_mode(const char * mode, bool
 const char * so_media_status_to_string(enum so_media_status status, bool translate) {
 	const char * value = so_media_status[status].name;
 	if (translate)
-		value = gettext(value);
+		value = dgettext("libstoriqone", value);
 	return value;
 }
 
@@ -554,7 +554,7 @@ enum so_media_type so_media_string_to_type(const char * type, bool translate) {
 const char * so_media_type_to_string(enum so_media_type type, bool translate) {
 	const char * value = so_media_types[type].name;
 	if (translate)
-		value = gettext(value);
+		value = dgettext("libstoriqone", value);
 	return value;
 }
 
@@ -562,7 +562,7 @@ const char * so_media_type_to_string(enum so_media_type type, bool translate) {
 const char * so_pool_autocheck_mode_to_string(enum so_pool_autocheck_mode mode, bool translate) {
 	const char * value = so_pool_autocheck_modes[mode].name;
 	if (translate)
-		value = gettext(value);
+		value = dgettext("libstoriqone", value);
 	return value;
 }
 
@@ -610,7 +610,7 @@ enum so_pool_unbreakable_level so_pool_string_to_unbreakable_level(const char * 
 const char * so_pool_unbreakable_level_to_string(enum so_pool_unbreakable_level level, bool translate) {
 	const char * value = so_pool_unbreakable_levels[level].name;
 	if (translate)
-		value = gettext(value);
+		value = dgettext("libstoriqone", value);
 	return value;
 }
 

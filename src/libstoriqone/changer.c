@@ -24,7 +24,7 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// gettext
+// dgettext, gettext
 #include <libintl.h>
 // calloc, free
 #include <stdlib.h>
@@ -79,7 +79,7 @@ static void so_changer_init(void) __attribute__((constructor));
 const char * so_changer_action_to_string(enum so_changer_action action, bool translate) {
 	const char * value = so_changer_actions[action].name;
 	if (translate)
-		value = gettext(value);
+		value = dgettext("libstoriqone", value);
 	return value;
 }
 
@@ -141,12 +141,12 @@ static void so_changer_init() {
 	unsigned int i;
 	for (i = 0; i < so_changer_nb_actions; i++) {
 		so_changer_actions[i].hash = so_string_compute_hash2(so_changer_actions[i].name);
-		so_changer_actions[i].hash_translated = so_string_compute_hash2(gettext(so_changer_actions[i].name));
+		so_changer_actions[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_changer_actions[i].name));
 	}
 
 	for (i = 0; i < so_changer_nb_status; i++) {
 		so_changer_status[i].hash = so_string_compute_hash2(so_changer_status[i].name);
-		so_changer_status[i].hash_translated = so_string_compute_hash2(gettext(so_changer_status[i].name));
+		so_changer_status[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_changer_status[i].name));
 	}
 }
 
@@ -173,7 +173,7 @@ enum so_changer_action so_changer_string_to_action(const char * action, bool tra
 const char * so_changer_status_to_string(enum so_changer_status status, bool translate) {
 	const char * value = so_changer_status[status].name;
 	if (translate)
-		value = gettext(value);
+		value = dgettext("libstoriqone", value);
 	return value;
 }
 

@@ -25,7 +25,7 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
-// bindtextdomain, gettext, textdomain
+// bindtextdomain, dgettext, gettext, textdomain
 #include <libintl.h>
 // setlocale
 #include <locale.h>
@@ -148,7 +148,7 @@ static void so_log_init() {
 	for (i = 0; i < so_log_nb_levels; i++) {
 		so_log_levels[i].hash = so_string_compute_hash2(so_log_levels[i].name);
 
-		const char * translated = gettext(so_log_levels[i].name);
+		const char * translated = dgettext("libstoriqone", so_log_levels[i].name);
 		so_log_levels[i].hash_translated = so_string_compute_hash2(translated);
 
 		unsigned int length = strlen(translated);
@@ -159,7 +159,7 @@ static void so_log_init() {
 	for (i = 0; i < so_log_nb_types; i++) {
 		so_log_types[i].hash = so_string_compute_hash2(so_log_types[i].name);
 
-		const char * translated = gettext(so_log_types[i].name);
+		const char * translated = dgettext("libstoriqone", so_log_types[i].name);
 		so_log_types[i].hash_translated = so_string_compute_hash2(translated);
 
 		unsigned int length = strlen(translated);
@@ -175,7 +175,7 @@ unsigned int so_log_level_max_length() {
 const char * so_log_level_to_string(enum so_log_level level, bool translate) {
 	const char * value = so_log_levels[level].name;
 	if (translate)
-		value = gettext(value);
+		value = dgettext("libstoriqone", value);
 	return value;
 }
 
@@ -311,7 +311,7 @@ unsigned int so_log_type_max_length() {
 const char * so_log_type_to_string(enum so_log_type type, bool translate) {
 	const char * value = so_log_types[type].name;
 	if (translate)
-		value = gettext(value);
+		value = dgettext("libstoriqone", value);
 	return value;
 }
 

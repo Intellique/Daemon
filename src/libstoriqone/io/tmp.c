@@ -26,7 +26,7 @@
 
 // errno
 #include <errno.h>
-// gettext
+// dgettext
 #include <libintl.h>
 // mkstemp
 #include <stdlib.h>
@@ -101,7 +101,7 @@ struct so_stream_writer * so_io_tmp_writer() {
 
 	int fd = mkstemp(filename);
 	if (fd < 0) {
-		so_log_write(so_log_level_error, gettext("so_io_tmp_writer: Can't create temporary file into directory '%s' because %m"), TMP_DIR);
+		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_io_tmp_writer: Can't create temporary file into directory '%s' because %m"), TMP_DIR);
 		return NULL;
 	}
 

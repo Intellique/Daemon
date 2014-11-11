@@ -33,6 +33,8 @@
 // strcmp
 #include <string.h>
 
+#include <unistd.h>
+
 #include <libstoriqone/database.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
@@ -87,6 +89,10 @@ int main() {
 		return 1;
 
 	so_log_write(so_log_level_info, gettext("Starting changer (type: %s)"), driver->name);
+
+	bool c = false;
+	while (!c)
+		sleep(2);
 
 	struct so_value * config = so_json_parse_fd(0, 5000);
 	if (config == NULL)

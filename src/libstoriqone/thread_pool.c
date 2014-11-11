@@ -27,7 +27,7 @@
 #define _GNU_SOURCE
 // open
 #include <fcntl.h>
-// gettext
+// dgettext
 #include <libintl.h>
 // pthread_attr_destroy, pthread_attr_init, pthread_attr_setdetachstate
 // pthread_cond_init, pthread_cond_signal, pthread_cond_timedwait
@@ -167,7 +167,7 @@ int so_thread_pool_run2(const char * thread_name, void (*function)(void * arg), 
 
 	void * new_addr = realloc(so_thread_pool_threads, (so_thread_pool_nb_threads + 1) * sizeof(struct so_thread_pool_thread *));
 	if (new_addr == NULL) {
-		so_log_write(so_log_level_error, gettext("so_thread_pool_run2: error, not enought memory to start new thread"));
+		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_thread_pool_run2: error, not enought memory to start new thread"));
 		return 1;
 	}
 
@@ -223,7 +223,7 @@ static void * so_thread_pool_work(void * arg) {
 
 	pid_t tid = syscall(SYS_gettid);
 
-	so_log_write(so_log_level_debug, gettext("so_thread_pool_work: starting new thread #%ld (pid: %d) to function: %p with parameter: %p"), th->thread, tid, th->function, th->arg);
+	so_log_write(so_log_level_debug, dgettext("libstoriqone", "so_thread_pool_work: starting new thread #%ld (pid: %d) to function: %p with parameter: %p"), th->thread, tid, th->function, th->arg);
 
 	do {
 		setpriority(PRIO_PROCESS, tid, th->nice);
@@ -243,7 +243,7 @@ static void * so_thread_pool_work(void * arg) {
 		free(th->name);
 		th->name = NULL;
 
-		so_log_write(so_log_level_debug, gettext("so_thread_pool_work: thread #%ld (pid: %d) is going to sleep"), th->thread, tid);
+		so_log_write(so_log_level_debug, dgettext("libstoriqone", "so_thread_pool_work: thread #%ld (pid: %d) is going to sleep"), th->thread, tid);
 
 		pthread_mutex_lock(&th->lock);
 
@@ -265,11 +265,11 @@ static void * so_thread_pool_work(void * arg) {
 		pthread_mutex_unlock(&th->lock);
 
 		if (th->state == so_thread_pool_state_running)
-			so_log_write(so_log_level_debug, gettext("so_thread_pool_work: restarting thread #%ld (pid: %d) to function: %p with parameter: %p"), th->thread, tid, th->function, th->arg);
+			so_log_write(so_log_level_debug, dgettext("libstoriqone", "so_thread_pool_work: restarting thread #%ld (pid: %d) to function: %p with parameter: %p"), th->thread, tid, th->function, th->arg);
 
 	} while (th->state == so_thread_pool_state_running);
 
-	so_log_write(so_log_level_debug, gettext("so_thread_pool_work: thread #%ld is dead"), th->thread);
+	so_log_write(so_log_level_debug, dgettext("libstoriqone", "so_thread_pool_work: thread #%ld is dead"), th->thread);
 
 	return NULL;
 }

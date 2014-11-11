@@ -27,7 +27,7 @@
 #define _GNU_SOURCE
 // open
 #include <fcntl.h>
-// gettext
+// dgettext
 #include <libintl.h>
 // pthread_mutex_lock, pthread_mutex_unlock
 #include <pthread.h>
@@ -60,13 +60,13 @@ static void so_checksum_init(void) __attribute__((constructor));
 
 char * so_checksum_compute(const char * checksum, const void * data, ssize_t length) {
 	if (checksum == NULL || (data == NULL && length > 0) || length < 0) {
-		so_log_write(so_log_level_error, gettext("so_checksum_compute: invalid parameters (checksum: %p, data: %p, length: %zd)"), checksum, data, length);
+		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_compute: invalid parameters (checksum: %p, data: %p, length: %zd)"), checksum, data, length);
 		return NULL;
 	}
 
 	struct so_checksum_driver * driver = so_checksum_get_driver(checksum);
 	if (driver == NULL) {
-		so_log_write(so_log_level_error, gettext("so_checksum_compute: failed to load checksum plugin '%s'"), checksum);
+		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_compute: failed to load checksum plugin '%s'"), checksum);
 		return NULL;
 	}
 
@@ -82,7 +82,7 @@ char * so_checksum_compute(const char * checksum, const void * data, ssize_t len
 
 void so_checksum_convert_to_hex(unsigned char * digest, ssize_t length, char * hex_digest) {
 	if (digest == NULL || length < 1 || hex_digest == NULL) {
-		so_log_write(so_log_level_error, gettext("so_checksum_convert_to_hex: invalid parameters (digest: %p, length: %zd, hex_digest: %s)"), digest, length, hex_digest);
+		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_convert_to_hex: invalid parameters (digest: %p, length: %zd, hex_digest: %s)"), digest, length, hex_digest);
 		return;
 	}
 
@@ -99,13 +99,13 @@ static void so_checksum_exit() {
 
 char * so_checksum_gen_salt(const char * checksum, size_t length) {
 	if (length < 8) {
-		so_log_write(so_log_level_error, gettext("so_checksum_gen_salt: parameter 'length' should be greater than 8 (instead of  %zd)"), length);
+		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_gen_salt: parameter 'length' should be greater than 8 (instead of  %zd)"), length);
 		return NULL;
 	}
 
 	int fd = open("/dev/urandom", O_RDONLY);
 	if (fd < 0) {
-		so_log_write(so_log_level_error, gettext("so_checksum_gen_salt: failed to open \"/dev/urandom\" to generate salt parce %m"));
+		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_gen_salt: failed to open \"/dev/urandom\" to generate salt parce %m"));
 		return NULL;
 	}
 
@@ -115,17 +115,17 @@ char * so_checksum_gen_salt(const char * checksum, size_t length) {
 	int failed = close(fd);
 
 	if (failed != 0)
-		so_log_write(so_log_level_warning, gettext("so_checksum_gen_salt: warning, failed to close \"/dev/urandom\" (fd: %d) because %m"), fd);
+		so_log_write(so_log_level_warning, dgettext("libstoriqone", "so_checksum_gen_salt: warning, failed to close \"/dev/urandom\" (fd: %d) because %m"), fd);
 
 	if (nb_read < 0) {
 		free(buffer);
-		so_log_write(so_log_level_error, gettext("so_checksum_gen_salt: error while reading from \"/dev/urandom\" because %m"));
+		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_gen_salt: error while reading from \"/dev/urandom\" because %m"));
 		return NULL;
 	}
 
 	if (nb_read < half_len) {
 		free(buffer);
-		so_log_write(so_log_level_error, gettext("so_checksum_gen_salt: read less than expected from \"/dev/urandom\" (nb read: %zd, read expected: %zd)"), nb_read, half_len);
+		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_gen_salt: read less than expected from \"/dev/urandom\" (nb read: %zd, read expected: %zd)"), nb_read, half_len);
 		return NULL;
 	}
 
@@ -143,7 +143,7 @@ char * so_checksum_gen_salt(const char * checksum, size_t length) {
 
 struct so_checksum_driver * so_checksum_get_driver(const char * driver) {
 	if (driver == NULL) {
-		so_log_write(so_log_level_error, gettext("so_checksum_get_driver: invalide parameter, 'driver' should not be NULL"));
+		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_get_driver: invalide parameter, 'driver' should not be NULL"));
 		return NULL;
 	}
 
@@ -155,13 +155,13 @@ struct so_checksum_driver * so_checksum_get_driver(const char * driver) {
 
 		if (cookie == NULL) {
 			pthread_mutex_unlock(&so_checksum_lock);
-			so_log_write(so_log_level_error, gettext("so_checksum_get_driver: failed to load checksum driver '%s'"), driver);
+			so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_get_driver: failed to load checksum driver '%s'"), driver);
 			return NULL;
 		}
 
 		if (!so_value_hashtable_has_key2(so_checksum_drivers, driver)) {
 			pthread_mutex_unlock(&so_checksum_lock);
-			so_log_write(so_log_level_warning, gettext("so_checksum_get_driver: driver '%s' did not call 'so_checksum_register_driver'"), driver);
+			so_log_write(so_log_level_warning, dgettext("libstoriqone", "so_checksum_get_driver: driver '%s' did not call 'so_checksum_register_driver'"), driver);
 			return NULL;
 		}
 	}
@@ -183,7 +183,7 @@ static void so_checksum_init() {
 
 void so_checksum_register_driver(struct so_checksum_driver * driver) {
 	if (driver == NULL) {
-		so_log_write(so_log_level_error, gettext("so_checksum_register_driver: try to register with NULL driver"));
+		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_register_driver: try to register with NULL driver"));
 		return;
 	}
 
@@ -191,7 +191,7 @@ void so_checksum_register_driver(struct so_checksum_driver * driver) {
 
 	if (so_value_hashtable_has_key2(so_checksum_drivers, driver->name)) {
 		pthread_mutex_unlock(&so_checksum_lock);
-		so_log_write(so_log_level_warning, gettext("so_checksum_register_driver: checksum driver '%s' is already registred"), driver->name);
+		so_log_write(so_log_level_warning, dgettext("libstoriqone", "so_checksum_register_driver: checksum driver '%s' is already registred"), driver->name);
 		return;
 	}
 
@@ -200,12 +200,12 @@ void so_checksum_register_driver(struct so_checksum_driver * driver) {
 
 	pthread_mutex_unlock(&so_checksum_lock);
 
-	so_log_write(so_log_level_info, gettext("so_checksum_register_driver: checksum driver '%s' is now registred"), driver->name);
+	so_log_write(so_log_level_info, dgettext("libstoriqone", "so_checksum_register_driver: checksum driver '%s' is now registred"), driver->name);
 }
 
 char * so_checksum_salt_password(const char * checksum, const char * password, const char * salt) {
 	if (password == NULL || salt == NULL) {
-		so_log_write(so_log_level_error, gettext("so_checksum_salt_password: invalid parameters (password: %p, salt: %p)"), password, salt);
+		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_salt_password: invalid parameters (password: %p, salt: %p)"), password, salt);
 		return NULL;
 	}
 
