@@ -310,6 +310,22 @@ size_t so_string_unicode_length(unsigned int unicode) {
 	return 0;
 }
 
+size_t so_string_utf8_length(const char * str) {
+	size_t length = 0;
+	size_t offset = 0;
+
+	while (str[offset] != '\0') {
+		int char_length = so_string_valid_utf8_char(str + offset);
+		if (char_length == 0)
+			break;
+
+		length++;
+		offset += char_length;
+	}
+
+	return length;
+}
+
 static int so_string_valid_utf8_char(const char * string) {
 	const unsigned char * ptr = (const unsigned char *) string;
 	if ((*ptr & 0x7F) == *ptr)

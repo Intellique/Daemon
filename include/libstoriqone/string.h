@@ -172,5 +172,7 @@ void so_string_trim(char * str, char trim);
 
 size_t so_string_unicode_length(unsigned int unicode);
 
+size_t so_string_utf8_length(const char * str);
+
 #endif
 
