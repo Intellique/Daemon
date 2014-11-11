@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,17 +24,16 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONEJOB_SCRIPT_H__
-#define __STONEJOB_SCRIPT_H__
+#ifndef __LIBSTORIQONE_JOB_IO_H__
+#define __LIBSTORIQONE_JOB_IO_H__
 
-#include <libstone/script.h>
+#include <libstoriqone/io.h>
 
-struct st_database_connection;
-struct st_job;
-struct st_pool;
-struct st_value;
+struct so_drive;
+struct so_value;
 
-struct st_value * stj_script_run(struct st_database_connection * db_connect, struct st_job * job, enum st_script_type type, struct st_pool * pool, struct st_value * data);
+struct so_stream_reader * soj_io_new_stream_reader(struct so_drive * drive, int fd_command, struct so_value * config);
+struct so_stream_writer * soj_io_new_stream_writer(struct so_drive * drive, int fd_command, struct so_value * config);
 
 #endif
 

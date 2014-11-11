@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,15 +24,12 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONEJOB_CHANGER_P_H__
-#define __STONEJOB_CHANGER_P_H__
+#ifndef __LIBSTORIQONE_JOB_DRIVE_P_H__
+#define __LIBSTORIQONE_JOB_DRIVE_P_H__
 
-#include <libstone-job/changer.h>
+#include <libstoriqone-job/drive.h>
 
-struct st_slot * stj_changer_find_media_by_job_v1(struct st_job * job, struct st_database_connection * db_connection);
-bool stj_changer_has_apt_drive_v1(struct st_media_format * format, bool for_writing);
-void stj_changer_set_config_v1(struct st_value * config);
-int stj_changer_sync_all_v1(void);
+void soj_drive_init(struct so_drive * drive, struct so_value * config);
 
 #endif
 

@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,20 +24,17 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// NULL
-#include <stddef.h>
+#ifndef __LIBSTORIQONE_JOB_SCRIPT_H__
+#define __LIBSTORIQONE_JOB_SCRIPT_H__
 
-#include "job.h"
+#include <libstoriqone/script.h>
 
-static struct st_job_driver * stj_driver = NULL;
+struct so_database_connection;
+struct so_job;
+struct so_pool;
+struct so_value;
 
+struct so_value * soj_script_run(struct so_database_connection * db_connect, struct so_job * job, enum so_script_type type, struct so_pool * pool, struct so_value * data);
 
-struct st_job_driver * stj_job_get_driver() {
-	return stj_driver;
-}
-
-__asm__(".symver stj_job_register_v1, stj_job_register@@LIBSTONE_JOB_1.2");
-void stj_job_register_v1(struct st_job_driver * driver) {
-	stj_driver = driver;
-}
+#endif
 

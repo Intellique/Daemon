@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,26 +24,19 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONEJOB_JOB_H__
-#define __STONEJOB_JOB_H__
+// NULL
+#include <stddef.h>
 
-#include <libstone/job.h>
+#include "job.h"
 
-struct st_database_connection;
-struct st_job;
+static struct so_job_driver * soj_driver = NULL;
 
-struct st_job_driver {
-	char * name;
 
-	void (*exit)(struct st_job * job, struct st_database_connection * db_connect);
-	int (*run)(struct st_job * job, struct st_database_connection * db_connect);
-	int (*simulate)(struct st_job * job, struct st_database_connection * db_connect);
-	void (*script_on_error)(struct st_job * job, struct st_database_connection * db_connect);
-	void (*script_post_run)(struct st_job * job, struct st_database_connection * db_connect);
-	bool (*script_pre_run)(struct st_job * job, struct st_database_connection * db_connect);
-};
+struct so_job_driver * soj_job_get_driver() {
+	return soj_driver;
+}
 
-void stj_job_register(struct st_job_driver * driver) __attribute__((nonnull));
-
-#endif
+void soj_job_register(struct so_job_driver * driver) {
+	soj_driver = driver;
+}
 

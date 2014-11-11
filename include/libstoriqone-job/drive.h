@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,23 +24,23 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __STONEJOB_DRIVE_H__
-#define __STONEJOB_DRIVE_H__
+#ifndef __LIBSTORIQONE_JOB_DRIVE_H__
+#define __LIBSTORIQONE_JOB_DRIVE_H__
 
-#include <libstone/drive.h>
+#include <libstoriqone/drive.h>
 
-struct st_drive;
-struct st_pool;
+struct so_drive;
+struct so_pool;
 
-struct st_drive_ops {
-	bool (*check_header)(struct st_drive * drive);
-	bool (*check_support)(struct st_drive * drive, struct st_media_format * format, bool for_writing);
-	ssize_t (*find_best_block_size)(struct st_drive * drive);
-	int (*format_media)(struct st_drive * drive, struct st_pool * pool);
-	struct st_stream_reader * (*get_raw_reader)(struct st_drive * drive, int file_position, const char * cookie);
-	struct st_stream_writer * (*get_raw_writer)(struct st_drive * drive, const char * cookie);
-	char * (*lock)(struct st_drive * drive);
-	int (*sync)(struct st_drive * drive);
+struct so_drive_ops {
+	bool (*check_header)(struct so_drive * drive);
+	bool (*check_support)(struct so_drive * drive, struct so_media_format * format, bool for_writing);
+	ssize_t (*find_best_block_size)(struct so_drive * drive);
+	int (*format_media)(struct so_drive * drive, struct so_pool * pool);
+	struct so_stream_reader * (*get_raw_reader)(struct so_drive * drive, int file_position, const char * cookie);
+	struct so_stream_writer * (*get_raw_writer)(struct so_drive * drive, const char * cookie);
+	char * (*lock)(struct so_drive * drive);
+	int (*sync)(struct so_drive * drive);
 };
 
 #endif

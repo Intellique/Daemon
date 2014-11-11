@@ -1,0 +1,13 @@
+LIBSTORIQONEJOB_SRC_DIR			:= src/libstoriqone-job
+
+LIBSTORIQONEJOB_CFLAG			:= -fPIC -pthread
+LIBSTORIQONEJOB_LIB				:= lib/libstoriqone-job.so
+LIBSTORIQONEJOB_LD				:= -shared -pthread -ldl -lstoriqone -Llib
+LIBSTORIQONEJOB_SONAME			:= libstoriqone-job.so.1
+LIBSTORIQONEJOB_LIB_VERSION		:= 1.2
+
+LIBSTORIQONEJOB_DEPEND_LIB		:= lib/libstoriqone.so
+
+LIBSTORIQONEJOB_CHCKSUM_FILE	:= libstoriqone-job.chcksum
+
+BIN_SYMS						+= LIBSTORIQONEJOB
