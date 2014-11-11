@@ -278,7 +278,7 @@ msgstr  "so_file_cp : n'a pas réussi à ouvrir le fichier '%s' en écriture par
 #: src/libstoriqone/file.c:280
 #, c-format
 msgid   "so_file_cp: error while writing into '%s' because %m"
-msgstr  "st_file_cp : erreur lors de l'écriture dans '%s' parce que %m"
+msgstr  "so_file_cp : erreur lors de l'écriture dans '%s' parce que %m"
 
 #: src/libstoriqone/file.c:287
 #, c-format
@@ -323,7 +323,7 @@ msgstr  "so_file_mv : échec lors du renommage du fichier '%s' en '%s' parce que
 #: src/libstoriqone/file.c:412
 #, c-format
 msgid   "so_file_read_all_from: failed to open '%s' because %m"
-msgstr  "st_file_read_all_from : échec lors de l'ouverture du fichier '%s' parce que %m"
+msgstr  "so_file_read_all_from : échec lors de l'ouverture du fichier '%s' parce que %m"
 
 #: src/libstoriqone/file.c:433
 #, c-format
@@ -569,7 +569,7 @@ msgstr  "so_thread_pool_run2 : pas assez de mémoire pour démarrer un nouveau f
 #: src/libstoriqone/thread_pool.c:226
 #, c-format
 msgid   "so_thread_pool_work: starting new thread #%ld (pid: %d) to function: %p with parameter: %p"
-msgstr  "st_thread_pool_work : démarrage d'un nouveau fil d'exécution #%ld (pid : %d) vers la fonction : %p avec comme "
+msgstr  "so_thread_pool_work : démarrage d'un nouveau fil d'exécution #%ld (pid : %d) vers la fonction : %p avec comme "
         "paramètre : %p"
 
 #: src/libstoriqone/thread_pool.c:246
