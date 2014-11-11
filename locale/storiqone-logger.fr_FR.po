@@ -15,7 +15,7 @@ msgstr  "Project-Id-Version: storiqone-logger v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/logger/file.c:127
+#: src/logger/file.c:149
 msgid   "Log: file: logrotate detected"
 msgstr  "Log : file : logrotate détecté"
 

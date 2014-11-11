@@ -25,7 +25,7 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
-// bindtextdomain, dgettext, gettext, textdomain
+// bindtextdomain, dgettext, gettext
 #include <libintl.h>
 // setlocale
 #include <locale.h>
@@ -140,7 +140,6 @@ static void so_log_exit() {
 static void so_log_init() {
 	setlocale(LC_ALL, "");
 	bindtextdomain("libstoriqone", LOCALE_DIR);
-	textdomain("libstoriqone");
 
 	so_log_messages = so_value_new_linked_list();
 

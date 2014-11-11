@@ -25,7 +25,7 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
-// bindtextdomain, textdomain
+// bindtextdomain
 #include <libintl.h>
 // va_end, va_start
 #include <stdarg.h>
@@ -66,7 +66,6 @@ static void solgr_log_free_module(void * module) {
 
 static void solgr_log_init() {
 	bindtextdomain("libstoriqone-logger", LOCALE_DIR);
-	textdomain("libstoriqone-logger");
 
 	solgr_drivers = so_value_new_hashtable(so_string_compute_hash);
 	solgr_messages = so_value_new_linked_list();

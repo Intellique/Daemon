@@ -24,7 +24,7 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// bindtextdomain, dgettext, textdomain
+// bindtextdomain, dgettext
 #include <libintl.h>
 // bool
 #include <stdbool.h>
@@ -80,7 +80,6 @@ static void sochgr_daemon_request(int fd, short event __attribute__((unused)), v
 
 int main() {
 	bindtextdomain("libstoriqone-changer", LOCALE_DIR);
-	textdomain("libstoriqone-changer");
 
 	struct so_changer_driver * driver = sochgr_changer_get();
 	if (driver == NULL)
