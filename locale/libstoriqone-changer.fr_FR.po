@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-changer v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-11-09 22:39+0100\n"
+        "POT-Creation-Date: 2014-11-11 15:30+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -50,18 +50,17 @@ msgstr  "[%s | %s] : déchargement du média '%s' depuis le lecteur #%d terminé
 msgid   "Stoned has hang up"
 msgstr  "Le démon a inopinément quitté"
 
-#: src/libstoriqone-changer/main.c:89
+#: src/libstoriqone-changer/main.c:88
 #, c-format
 msgid   "Starting changer (type: %s)"
 msgstr  "Démarrage de l'échanger (type : %s)"
 
-#: src/libstoriqone-changer/main.c:120
+#: src/libstoriqone-changer/main.c:119
 #, c-format
 msgid   "Initialize changer (type: %s)"
 msgstr  "Initialisation de l'échanger (type : %s)"
 
-#: src/libstoriqone-changer/main.c:150
+#: src/libstoriqone-changer/main.c:149
 #, c-format
 msgid   "Changer (type: %s) will stop"
 msgstr  "Échanger (type : %s) va s'arrêter"
-

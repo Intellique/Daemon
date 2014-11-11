@@ -47,6 +47,7 @@
 #include "logger.h"
 #include "main.h"
 #include "scheduler.h"
+#include "plugin.h"
 
 #include "checksum/storiqoned.chcksum"
 #include "config.h"
@@ -153,6 +154,8 @@ int main(int argc, char ** argv) {
 	struct so_database_config * db_config = db->ops->get_default_config();
 	if (db_config == NULL)
 		return 3;
+
+	sod_plugin_sync_checksum(db_config);
 
 	struct so_database_connection * connection = db_config->ops->connect(db_config);
 	if (connection == NULL)

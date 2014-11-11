@@ -42,6 +42,7 @@
 #include <sys/utsname.h>
 
 #include <libstoriqone/changer.h>
+#include <libstoriqone/checksum.h>
 #include <libstoriqone/drive.h>
 #include <libstoriqone/host.h>
 #include <libstoriqone/job.h>
@@ -97,6 +98,8 @@ static int so_database_postgresql_sync_jobs(struct so_database_connection * conn
 static int so_database_postgresql_get_nb_scripts(struct so_database_connection * connect, const char * job_type, enum so_script_type type, struct so_pool * pool);
 static char * so_database_postgresql_get_script(struct so_database_connection * connect, const char * job_type, unsigned int sequence, enum so_script_type type, struct so_pool * pool);
 
+static bool so_database_postgresql_find_plugin_checksum(struct so_database_connection * connect, const char * checksum);
+static int so_database_postgresql_sync_plugin_checksum(struct so_database_connection * connect, struct so_checksum_driver * driver);
 static int so_database_postgresql_sync_plugin_job(struct so_database_connection * connect, const char * job);
 
 static void so_database_postgresql_prepare(struct so_database_postgresql_connection_private * self, const char * statement_name, const char * query);
@@ -132,7 +135,9 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.get_nb_scripts = so_database_postgresql_get_nb_scripts,
 	.get_script     = so_database_postgresql_get_script,
 
-	.sync_plugin_job = so_database_postgresql_sync_plugin_job,
+	.find_plugin_checksum = so_database_postgresql_find_plugin_checksum,
+	.sync_plugin_checksum = so_database_postgresql_sync_plugin_checksum,
+	.sync_plugin_job      = so_database_postgresql_sync_plugin_job,
 };
 
 
@@ -1971,6 +1976,54 @@ static char * so_database_postgresql_get_script(struct so_database_connection * 
 	return script;
 }
 
+
+static bool so_database_postgresql_find_plugin_checksum(struct so_database_connection * connect, const char * checksum) {
+	if (connect == NULL || checksum == NULL)
+		return false;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_checksum_by_name";
+	so_database_postgresql_prepare(self, query, "SELECT name FROM checksum WHERE name = $1 LIMIT 1");
+
+	const char * param[] = { checksum };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	bool found = false;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		found = true;
+
+	PQclear(result);
+
+	return found;
+}
+
+static int so_database_postgresql_sync_plugin_checksum(struct so_database_connection * connect, struct so_checksum_driver * driver) {
+	if (connect == NULL || driver == NULL)
+		return -1;
+
+	if (so_database_postgresql_find_plugin_checksum(connect, driver->name))
+		return 0;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "insert_checksum";
+	so_database_postgresql_prepare(self, query, "INSERT INTO checksum(name, deflt) VALUES ($1, $2)");
+
+	const char * param[] = { driver->name, so_database_postgresql_bool_to_string(driver->default_checksum) };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+
+	return status == PGRES_FATAL_ERROR;
+}
 
 static int so_database_postgresql_sync_plugin_job(struct so_database_connection * connect, const char * job) {
 	if (connect == NULL || job == NULL)
