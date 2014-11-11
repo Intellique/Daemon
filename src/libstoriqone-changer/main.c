@@ -24,7 +24,7 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// bindtextdomain, gettext, textdomain
+// bindtextdomain, dgettext, textdomain
 #include <libintl.h>
 // bool
 #include <stdbool.h>
@@ -32,8 +32,6 @@
 #include <stdlib.h>
 // strcmp
 #include <string.h>
-
-#include <unistd.h>
 
 #include <libstoriqone/database.h>
 #include <libstoriqone/json.h>
@@ -55,7 +53,7 @@ static void sochgr_daemon_request(int fd, short event, void * data);
 
 
 static void sochgr_daemon_hungup(int fd __attribute__((unused)), short event __attribute__((unused)), void * data __attribute__((unused))) {
-	so_log_write(so_log_level_alert, gettext("Stoned has hang up"));
+	so_log_write(so_log_level_alert, dgettext("libstoriqone-changer", "Stoned has hang up"));
 	stop = true;
 }
 
@@ -88,11 +86,7 @@ int main() {
 	if (driver == NULL)
 		return 1;
 
-	so_log_write(so_log_level_info, gettext("Starting changer (type: %s)"), driver->name);
-
-	bool c = false;
-	while (!c)
-		sleep(2);
+	so_log_write(so_log_level_info, dgettext("libstoriqone-changer", "Starting changer (type: %s)"), driver->name);
 
 	struct so_value * config = so_json_parse_fd(0, 5000);
 	if (config == NULL)
@@ -123,7 +117,7 @@ int main() {
 	if (db_connect == NULL)
 		return 4;
 
-	so_log_write(so_log_level_info, gettext("Initialize changer (type: %s)"), driver->name);
+	so_log_write(so_log_level_info, dgettext("libstoriqone-changer", "Initialize changer (type: %s)"), driver->name);
 	struct so_changer * changer = driver->device;
 	int failed = changer->ops->init(changer_config, db_connect);
 	if (failed != 0)
@@ -153,7 +147,7 @@ int main() {
 		}
 	}
 
-	so_log_write(so_log_level_info, gettext("Changer (type: %s) will stop"), driver->name);
+	so_log_write(so_log_level_info, dgettext("libstoriqone-changer", "Changer (type: %s) will stop"), driver->name);
 
 	failed = changer->ops->shut_down(db_connect);
 
