@@ -32,8 +32,10 @@
 #include <malloc.h>
 // dprintf
 #include <stdio.h>
-// strdup
+// memset, strdup, strlen, strncpy
 #include <string.h>
+// bzero
+#include <strings.h>
 // fstat, open, stat
 #include <sys/stat.h>
 // gettimeofday
@@ -43,6 +45,7 @@
 // close, fstat, sleep, stat
 #include <unistd.h>
 
+#include <libstoriqone/string.h>
 #include <libstoriqone/time.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-logger/log.h>
@@ -54,12 +57,21 @@ struct logger_log_file_private {
 	int fd;
 
 	struct stat current;
+
+	char * buf_level;
+	size_t buf_level_length;
+	char * buf_type;
+	size_t buf_type_length;
+
+	size_t level_width;
+	size_t type_width;
 };
 
 static void file_driver_init(void) __attribute__((constructor));
 static struct solgr_log_module * file_driver_new_module(struct so_value * param);
 
 static void file_module_check_logrotate(struct logger_log_file_private * self);
+static void file_module_format_string(char * buffer, size_t length, const char * string, size_t width);
 static void file_module_free(struct solgr_log_module * module);
 static void file_module_write(struct solgr_log_module * module, struct so_value * message);
 
@@ -96,6 +108,16 @@ static struct solgr_log_module * file_driver_new_module(struct so_value * param)
 	self->fd = fd;
 	fstat(self->fd, &self->current);
 
+	self->level_width = so_log_level_max_length();
+	self->type_width = so_log_type_max_length();
+
+	self->buf_level_length = 4 * self->level_width;
+	self->buf_level = malloc(self->buf_level_length + 1);
+	bzero(self->buf_level, self->buf_level_length + 1);
+	self->buf_type_length = 4 * self->type_width;
+	self->buf_type = malloc(self->buf_type_length + 1);
+	bzero(self->buf_type, self->buf_type_length + 1);
+
 	struct solgr_log_module * mod = malloc(sizeof(struct solgr_log_module));
 	mod->level = so_log_string_to_level(level, false);
 	mod->ops = &file_module_ops;
@@ -128,6 +150,16 @@ static void file_module_check_logrotate(struct logger_log_file_private * self) {
 	}
 }
 
+static void file_module_format_string(char * buffer, size_t length, const char * string, size_t width) {
+	memset(buffer, ' ', length);
+
+	size_t string_utf8_length = strlen(string);
+	size_t string_length = so_string_utf8_length(string);
+
+	strncpy(buffer, string, string_utf8_length);
+	buffer[width + string_utf8_length - string_length] = '\0';
+}
+
 static void file_module_free(struct solgr_log_module * module) {
 	struct logger_log_file_private * self = module->data;
 
@@ -139,6 +171,9 @@ static void file_module_free(struct solgr_log_module * module) {
 	if (self->fd >= 0)
 		close(self->fd);
 	self->fd = -1;
+
+	free(self->buf_level);
+	free(self->buf_type);
 
 	free(self);
 }
@@ -168,11 +203,14 @@ static void file_module_write(struct solgr_log_module * module, struct so_value 
 
 	file_module_check_logrotate(self);
 
-	char strtime[32];
-	time_t timestamp = iTimestamp;
-	so_time_convert(&timestamp, "%c", strtime, 32);
+	file_module_format_string(self->buf_level, self->buf_level_length, so_log_level_to_string(level, true), self->level_width);
+	file_module_format_string(self->buf_type, self->buf_type_length, so_log_type_to_string(type, true), self->type_width);
 
-	dprintf(self->fd, "[L:%-*s | T:%-*s | @%s]: %s\n", so_log_level_max_length(), so_log_level_to_string(level, true), so_log_type_max_length(), so_log_type_to_string(type, true), strtime, smessage);
+	char strtime[36];
+	time_t timestamp = iTimestamp;
+	so_time_convert(&timestamp, "%c", strtime, 36);
+
+	dprintf(self->fd, "[L:%s | T:%s | @%s]: %s\n", self->buf_level, self->buf_type, strtime, smessage);
 
 	free(slevel);
 	free(stype);
