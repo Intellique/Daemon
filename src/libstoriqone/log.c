@@ -76,18 +76,19 @@ static struct so_log_level2 {
 	unsigned long long hash_translated;
 
 	const char * name;
+	const char * translation;
 	enum so_log_level level;
 } so_log_levels[] = {
-	[so_log_level_alert]      = { 0, 0, gettext_noop("Alert"),     so_log_level_alert },
-	[so_log_level_critical]   = { 0, 0, gettext_noop("Critical"),  so_log_level_critical },
-	[so_log_level_debug]      = { 0, 0, gettext_noop("Debug"),     so_log_level_debug },
-	[so_log_level_emergencey] = { 0, 0, gettext_noop("Emergency"), so_log_level_emergencey },
-	[so_log_level_error]      = { 0, 0, gettext_noop("Error"),     so_log_level_error },
-	[so_log_level_info]       = { 0, 0, gettext_noop("Info"),      so_log_level_info },
-	[so_log_level_notice]     = { 0, 0, gettext_noop("Notice"),    so_log_level_notice },
-	[so_log_level_warning]    = { 0, 0, gettext_noop("Warning"),   so_log_level_warning },
+	[so_log_level_alert]      = { 0, 0, gettext_noop("Alert"),     NULL, so_log_level_alert },
+	[so_log_level_critical]   = { 0, 0, gettext_noop("Critical"),  NULL, so_log_level_critical },
+	[so_log_level_debug]      = { 0, 0, gettext_noop("Debug"),     NULL, so_log_level_debug },
+	[so_log_level_emergencey] = { 0, 0, gettext_noop("Emergency"), NULL, so_log_level_emergencey },
+	[so_log_level_error]      = { 0, 0, gettext_noop("Error"),     NULL, so_log_level_error },
+	[so_log_level_info]       = { 0, 0, gettext_noop("Info"),      NULL, so_log_level_info },
+	[so_log_level_notice]     = { 0, 0, gettext_noop("Notice"),    NULL, so_log_level_notice },
+	[so_log_level_warning]    = { 0, 0, gettext_noop("Warning"),   NULL, so_log_level_warning },
 
-	[so_log_level_unknown]    = { 0, 0, gettext_noop("Unknown level"), so_log_level_unknown },
+	[so_log_level_unknown]    = { 0, 0, gettext_noop("Unknown level"), NULL, so_log_level_unknown },
 };
 static const unsigned int so_log_nb_levels = sizeof(so_log_levels) / sizeof(*so_log_levels);
 static unsigned int so_log_level_max = 0;
@@ -97,22 +98,23 @@ static struct so_log_type2 {
 	unsigned long long hash_translated;
 
 	const char * name;
+	const char * translation;
 	enum so_log_type type;
 } so_log_types[] = {
-	[so_log_type_changer]         = { 0, 0, gettext_noop("Changer"),         so_log_type_changer },
-	[so_log_type_daemon]          = { 0, 0, gettext_noop("Daemon"),          so_log_type_daemon },
-	[so_log_type_drive]           = { 0, 0, gettext_noop("Drive"),           so_log_type_drive },
-	[so_log_type_job]             = { 0, 0, gettext_noop("Job"),             so_log_type_job },
-	[so_log_type_logger]          = { 0, 0, gettext_noop("Logger"),          so_log_type_logger },
-	[so_log_type_plugin_checksum] = { 0, 0, gettext_noop("Plugin Checksum"), so_log_type_plugin_checksum },
-	[so_log_type_plugin_db]       = { 0, 0, gettext_noop("Plugin Database"), so_log_type_plugin_db },
-	[so_log_type_plugin_log]      = { 0, 0, gettext_noop("Plugin Log"),      so_log_type_plugin_log },
-	[so_log_type_scheduler]       = { 0, 0, gettext_noop("Scheduler"),       so_log_type_scheduler },
+	[so_log_type_changer]         = { 0, 0, gettext_noop("Changer"),         NULL, so_log_type_changer },
+	[so_log_type_daemon]          = { 0, 0, gettext_noop("Daemon"),          NULL, so_log_type_daemon },
+	[so_log_type_drive]           = { 0, 0, gettext_noop("Drive"),           NULL, so_log_type_drive },
+	[so_log_type_job]             = { 0, 0, gettext_noop("Job"),             NULL, so_log_type_job },
+	[so_log_type_logger]          = { 0, 0, gettext_noop("Logger"),          NULL, so_log_type_logger },
+	[so_log_type_plugin_checksum] = { 0, 0, gettext_noop("Plugin Checksum"), NULL, so_log_type_plugin_checksum },
+	[so_log_type_plugin_db]       = { 0, 0, gettext_noop("Plugin Database"), NULL, so_log_type_plugin_db },
+	[so_log_type_plugin_log]      = { 0, 0, gettext_noop("Plugin Log"),      NULL, so_log_type_plugin_log },
+	[so_log_type_scheduler]       = { 0, 0, gettext_noop("Scheduler"),       NULL, so_log_type_scheduler },
 
-	[so_log_type_ui]	          = { 0, 0, gettext_noop("User Interface"), so_log_type_ui },
-	[so_log_type_user_message]    = { 0, 0, gettext_noop("User Message"),   so_log_type_user_message },
+	[so_log_type_ui]	          = { 0, 0, gettext_noop("User Interface"), NULL, so_log_type_ui },
+	[so_log_type_user_message]    = { 0, 0, gettext_noop("User Message"),   NULL, so_log_type_user_message },
 
-	[so_log_type_unknown]         = { 0, 0, gettext_noop("Unknown type"), so_log_type_unknown },
+	[so_log_type_unknown]         = { 0, 0, gettext_noop("Unknown type"), NULL, so_log_type_unknown },
 };
 static const unsigned int so_log_nb_types = sizeof(so_log_types) / sizeof(*so_log_types);
 static unsigned int so_log_type_max = 0;
@@ -147,10 +149,10 @@ static void so_log_init() {
 	for (i = 0; i < so_log_nb_levels; i++) {
 		so_log_levels[i].hash = so_string_compute_hash2(so_log_levels[i].name);
 
-		const char * translated = dgettext("libstoriqone", so_log_levels[i].name);
-		so_log_levels[i].hash_translated = so_string_compute_hash2(translated);
+		so_log_levels[i].translation = dgettext("libstoriqone", so_log_levels[i].name);
+		so_log_levels[i].hash_translated = so_string_compute_hash2(so_log_levels[i].translation);
 
-		unsigned int length = strlen(translated);
+		unsigned int length = strlen(so_log_levels[i].translation);
 		if (so_log_level_max < length)
 			so_log_level_max = length;
 	}
@@ -158,10 +160,10 @@ static void so_log_init() {
 	for (i = 0; i < so_log_nb_types; i++) {
 		so_log_types[i].hash = so_string_compute_hash2(so_log_types[i].name);
 
-		const char * translated = dgettext("libstoriqone", so_log_types[i].name);
-		so_log_types[i].hash_translated = so_string_compute_hash2(translated);
+		so_log_types[i].translation = dgettext("libstoriqone", so_log_types[i].name);
+		so_log_types[i].hash_translated = so_string_compute_hash2(so_log_types[i].translation);
 
-		unsigned int length = strlen(translated);
+		unsigned int length = strlen(so_log_types[i].translation);
 		if (so_log_type_max < length)
 			so_log_type_max = length;
 	}
@@ -172,10 +174,10 @@ unsigned int so_log_level_max_length() {
 }
 
 const char * so_log_level_to_string(enum so_log_level level, bool translate) {
-	const char * value = so_log_levels[level].name;
 	if (translate)
-		value = dgettext("libstoriqone", value);
-	return value;
+		return so_log_levels[level].translation;
+	else
+		return so_log_levels[level].name;
 }
 
 void so_log_stop_logger() {
@@ -308,10 +310,10 @@ unsigned int so_log_type_max_length() {
 }
 
 const char * so_log_type_to_string(enum so_log_type type, bool translate) {
-	const char * value = so_log_types[type].name;
 	if (translate)
-		value = dgettext("libstoriqone", value);
-	return value;
+		return so_log_types[type].translation;
+	else
+		return so_log_types[type].name;
 }
 
 void so_log_write(enum so_log_level level, const char * format, ...) {

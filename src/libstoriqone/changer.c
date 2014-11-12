@@ -24,7 +24,7 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// dgettext, gettext
+// dgettext
 #include <libintl.h>
 // calloc, free
 #include <stdlib.h>
@@ -42,13 +42,14 @@ static struct so_changer_action2 {
 	unsigned long long hash_translated;
 
 	const char * name;
+	const char * translation;
 	const enum so_changer_action action;
 } so_changer_actions[] = {
-	[so_changer_action_none]        = { 0, 0, gettext_noop("none"),        so_changer_action_none },
-	[so_changer_action_put_offline] = { 0, 0, gettext_noop("put offline"), so_changer_action_put_offline },
-	[so_changer_action_put_online]  = { 0, 0, gettext_noop("put online"),  so_changer_action_put_online },
+	[so_changer_action_none]        = { 0, 0, gettext_noop("none"),        NULL, so_changer_action_none },
+	[so_changer_action_put_offline] = { 0, 0, gettext_noop("put offline"), NULL, so_changer_action_put_offline },
+	[so_changer_action_put_online]  = { 0, 0, gettext_noop("put online"),  NULL, so_changer_action_put_online },
 
-	[so_changer_action_unknown] = { 0, 0, gettext_noop("unknown"), so_changer_action_unknown },
+	[so_changer_action_unknown] = { 0, 0, gettext_noop("unknown action"), NULL, so_changer_action_unknown },
 };
 static const unsigned int so_changer_nb_actions = sizeof(so_changer_actions) / sizeof(*so_changer_actions);
 
@@ -57,19 +58,20 @@ static struct so_changer_status2 {
 	unsigned long long hash_translated;
 
 	const char * name;
+	const char * translation;
 	const enum so_changer_status status;
 } so_changer_status[] = {
-	[so_changer_status_error]      = { 0, 0, gettext_noop("error"),      so_changer_status_error },
-	[so_changer_status_exporting]  = { 0, 0, gettext_noop("exporting"),  so_changer_status_exporting },
-	[so_changer_status_idle]       = { 0, 0, gettext_noop("idle"),       so_changer_status_idle },
-	[so_changer_status_go_offline] = { 0, 0, gettext_noop("go offline"), so_changer_status_go_offline },
-	[so_changer_status_go_online]  = { 0, 0, gettext_noop("go online"),  so_changer_status_go_online },
-	[so_changer_status_importing]  = { 0, 0, gettext_noop("importing"),  so_changer_status_importing },
-	[so_changer_status_loading]    = { 0, 0, gettext_noop("loading"),    so_changer_status_loading },
-	[so_changer_status_offline]    = { 0, 0, gettext_noop("offline"),    so_changer_status_offline },
-	[so_changer_status_unloading]  = { 0, 0, gettext_noop("unloading"),  so_changer_status_unloading },
+	[so_changer_status_error]      = { 0, 0, gettext_noop("error"),      NULL, so_changer_status_error },
+	[so_changer_status_exporting]  = { 0, 0, gettext_noop("exporting"),  NULL, so_changer_status_exporting },
+	[so_changer_status_idle]       = { 0, 0, gettext_noop("idle"),       NULL, so_changer_status_idle },
+	[so_changer_status_go_offline] = { 0, 0, gettext_noop("go offline"), NULL, so_changer_status_go_offline },
+	[so_changer_status_go_online]  = { 0, 0, gettext_noop("go online"),  NULL, so_changer_status_go_online },
+	[so_changer_status_importing]  = { 0, 0, gettext_noop("importing"),  NULL, so_changer_status_importing },
+	[so_changer_status_loading]    = { 0, 0, gettext_noop("loading"),    NULL, so_changer_status_loading },
+	[so_changer_status_offline]    = { 0, 0, gettext_noop("offline"),    NULL, so_changer_status_offline },
+	[so_changer_status_unloading]  = { 0, 0, gettext_noop("unloading"),  NULL, so_changer_status_unloading },
 
-	[so_changer_status_unknown] = { 0, 0, gettext_noop("unknown"), so_changer_status_unknown },
+	[so_changer_status_unknown] = { 0, 0, gettext_noop("unknown status"), NULL, so_changer_status_unknown },
 };
 static const unsigned int so_changer_nb_status = sizeof(so_changer_status) / sizeof(*so_changer_status);
 
@@ -77,10 +79,10 @@ static void so_changer_init(void) __attribute__((constructor));
 
 
 const char * so_changer_action_to_string(enum so_changer_action action, bool translate) {
-	const char * value = so_changer_actions[action].name;
 	if (translate)
-		value = dgettext("libstoriqone", value);
-	return value;
+		return so_changer_actions[action].translation;
+	else
+		return so_changer_actions[action].name;
 }
 
 struct so_value * so_changer_convert(struct so_changer * changer) {
@@ -141,12 +143,14 @@ static void so_changer_init() {
 	unsigned int i;
 	for (i = 0; i < so_changer_nb_actions; i++) {
 		so_changer_actions[i].hash = so_string_compute_hash2(so_changer_actions[i].name);
-		so_changer_actions[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_changer_actions[i].name));
+		so_changer_actions[i].translation = dgettext("libstoriqone", so_changer_actions[i].name);
+		so_changer_actions[i].hash_translated = so_string_compute_hash2(so_changer_actions[i].translation);
 	}
 
 	for (i = 0; i < so_changer_nb_status; i++) {
 		so_changer_status[i].hash = so_string_compute_hash2(so_changer_status[i].name);
-		so_changer_status[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_changer_status[i].name));
+		so_changer_status[i].translation = dgettext("libstoriqone", so_changer_status[i].name);
+		so_changer_status[i].hash_translated = so_string_compute_hash2(so_changer_status[i].translation);
 	}
 }
 
@@ -171,10 +175,10 @@ enum so_changer_action so_changer_string_to_action(const char * action, bool tra
 }
 
 const char * so_changer_status_to_string(enum so_changer_status status, bool translate) {
-	const char * value = so_changer_status[status].name;
 	if (translate)
-		value = dgettext("libstoriqone", value);
-	return value;
+		return so_changer_status[status].translation;
+	else
+		return so_changer_status[status].name;
 }
 
 enum so_changer_status so_changer_string_to_status(const char * status, bool translate) {

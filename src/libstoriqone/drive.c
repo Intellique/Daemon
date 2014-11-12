@@ -42,21 +42,22 @@ static struct so_drive_status2 {
 	unsigned long long hash_translated;
 
 	const char * name;
+	const char * translation;
 	const enum so_drive_status status;
 } so_drive_status[] = {
-	[so_drive_status_cleaning]    = { 0, 0, gettext_noop("cleaning"),    so_drive_status_cleaning },
-	[so_drive_status_empty_idle]  = { 0, 0, gettext_noop("empty idle"),  so_drive_status_empty_idle },
-	[so_drive_status_erasing]     = { 0, 0, gettext_noop("erasing"),     so_drive_status_erasing },
-	[so_drive_status_error]       = { 0, 0, gettext_noop("error"),       so_drive_status_error },
-	[so_drive_status_loaded_idle] = { 0, 0, gettext_noop("loaded idle"), so_drive_status_loaded_idle },
-	[so_drive_status_loading]     = { 0, 0, gettext_noop("loading"),     so_drive_status_loading },
-	[so_drive_status_positioning] = { 0, 0, gettext_noop("positioning"), so_drive_status_positioning },
-	[so_drive_status_reading]     = { 0, 0, gettext_noop("reading"),     so_drive_status_reading },
-	[so_drive_status_rewinding]   = { 0, 0, gettext_noop("rewinding"),   so_drive_status_rewinding },
-	[so_drive_status_unloading]   = { 0, 0, gettext_noop("unloading"),   so_drive_status_unloading },
-	[so_drive_status_writing]     = { 0, 0, gettext_noop("writing"),     so_drive_status_writing },
+	[so_drive_status_cleaning]    = { 0, 0, gettext_noop("cleaning"),    NULL, so_drive_status_cleaning },
+	[so_drive_status_empty_idle]  = { 0, 0, gettext_noop("empty idle"),  NULL, so_drive_status_empty_idle },
+	[so_drive_status_erasing]     = { 0, 0, gettext_noop("erasing"),     NULL, so_drive_status_erasing },
+	[so_drive_status_error]       = { 0, 0, gettext_noop("error"),       NULL, so_drive_status_error },
+	[so_drive_status_loaded_idle] = { 0, 0, gettext_noop("loaded idle"), NULL, so_drive_status_loaded_idle },
+	[so_drive_status_loading]     = { 0, 0, gettext_noop("loading"),     NULL, so_drive_status_loading },
+	[so_drive_status_positioning] = { 0, 0, gettext_noop("positioning"), NULL, so_drive_status_positioning },
+	[so_drive_status_reading]     = { 0, 0, gettext_noop("reading"),     NULL, so_drive_status_reading },
+	[so_drive_status_rewinding]   = { 0, 0, gettext_noop("rewinding"),   NULL, so_drive_status_rewinding },
+	[so_drive_status_unloading]   = { 0, 0, gettext_noop("unloading"),   NULL, so_drive_status_unloading },
+	[so_drive_status_writing]     = { 0, 0, gettext_noop("writing"),     NULL, so_drive_status_writing },
 
-	[so_drive_status_unknown] = { 0, 0, gettext_noop("unknown"), so_drive_status_unknown },
+	[so_drive_status_unknown] = { 0, 0, gettext_noop("unknown status"), NULL, so_drive_status_unknown },
 };
 static const unsigned int so_drive_nb_status = sizeof(so_drive_status) / sizeof(*so_drive_status);
 
@@ -110,15 +111,16 @@ static void so_drive_init() {
 	unsigned int i;
 	for (i = 0; i < so_drive_nb_status; i++) {
 		so_drive_status[i].hash = so_string_compute_hash2(so_drive_status[i].name);
-		so_drive_status[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_drive_status[i].name));
+		so_drive_status[i].translation = dgettext("libstoriqone", so_drive_status[i].name);
+		so_drive_status[i].hash_translated = so_string_compute_hash2(so_drive_status[i].translation);
 	}
 }
 
 const char * so_drive_status_to_string(enum so_drive_status status, bool translate) {
-	const char * value = so_drive_status[status].name;
 	if (translate)
-		value = dgettext("libstoriqone", value);
-	return value;
+		return so_drive_status[status].translation;
+	else
+		return so_drive_status[status].name;
 }
 
 enum so_drive_status so_drive_string_to_status(const char * status, bool translate) {

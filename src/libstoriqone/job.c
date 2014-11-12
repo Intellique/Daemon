@@ -45,18 +45,19 @@ static struct so_job_status2 {
 	unsigned long long hash_translated;
 
 	const char * name;
+	const char * translation;
 	const enum so_job_status status;
 } so_job_status[] = {
-	[so_job_status_disable]   = { 0, 0, gettext_noop("disable"),   so_job_status_disable },
-	[so_job_status_error]     = { 0, 0, gettext_noop("error"),     so_job_status_error },
-	[so_job_status_finished]  = { 0, 0, gettext_noop("finished"),  so_job_status_finished },
-	[so_job_status_pause]     = { 0, 0, gettext_noop("pause"),     so_job_status_pause },
-	[so_job_status_running]   = { 0, 0, gettext_noop("running"),   so_job_status_running },
-	[so_job_status_scheduled] = { 0, 0, gettext_noop("scheduled"), so_job_status_scheduled },
-	[so_job_status_stopped]   = { 0, 0, gettext_noop("stopped"),   so_job_status_stopped },
-	[so_job_status_waiting]   = { 0, 0, gettext_noop("waiting"),   so_job_status_waiting },
+	[so_job_status_disable]   = { 0, 0, gettext_noop("disable"),   NULL, so_job_status_disable },
+	[so_job_status_error]     = { 0, 0, gettext_noop("error"),     NULL, so_job_status_error },
+	[so_job_status_finished]  = { 0, 0, gettext_noop("finished"),  NULL, so_job_status_finished },
+	[so_job_status_pause]     = { 0, 0, gettext_noop("pause"),     NULL, so_job_status_pause },
+	[so_job_status_running]   = { 0, 0, gettext_noop("running"),   NULL, so_job_status_running },
+	[so_job_status_scheduled] = { 0, 0, gettext_noop("scheduled"), NULL, so_job_status_scheduled },
+	[so_job_status_stopped]   = { 0, 0, gettext_noop("stopped"),   NULL, so_job_status_stopped },
+	[so_job_status_waiting]   = { 0, 0, gettext_noop("waiting"),   NULL, so_job_status_waiting },
 
-	[so_job_status_unknown] = { 0, 0, gettext_noop("unknown"), so_job_status_unknown },
+	[so_job_status_unknown] = { 0, 0, gettext_noop("unknown status"), NULL, so_job_status_unknown },
 };
 static const unsigned int so_job_nb_status = sizeof(so_job_status) / sizeof(*so_job_status);
 
@@ -65,13 +66,14 @@ static struct so_job_record_notif2 {
 	unsigned long long hash_translated;
 
 	const char * name;
+	const char * translation;
 	const enum so_job_record_notif notif;
 } so_job_record_notifs[] = {
-	[so_job_record_notif_normal]    = { 0, 0, gettext_noop("normal"),    so_job_record_notif_normal },
-	[so_job_record_notif_important] = { 0, 0, gettext_noop("important"), so_job_record_notif_important },
-	[so_job_record_notif_read]      = { 0, 0, gettext_noop("read"),      so_job_record_notif_read },
+	[so_job_record_notif_normal]    = { 0, 0, gettext_noop("normal"),    NULL, so_job_record_notif_normal },
+	[so_job_record_notif_important] = { 0, 0, gettext_noop("important"), NULL, so_job_record_notif_important },
+	[so_job_record_notif_read]      = { 0, 0, gettext_noop("read"),      NULL, so_job_record_notif_read },
 
-	[so_job_record_notif_unknown] = { 0, 0, gettext_noop("unknown"), so_job_record_notif_unknown },
+	[so_job_record_notif_unknown] = { 0, 0, gettext_noop("unknown notif"), NULL, so_job_record_notif_unknown },
 };
 static const unsigned int so_job_record_notif2 = sizeof(so_job_record_notifs) / sizeof(*so_job_record_notifs);
 
@@ -135,27 +137,29 @@ static void so_job_init() {
 	unsigned int i;
 	for (i = 0; i < so_job_nb_status; i++) {
 		so_job_status[i].hash = so_string_compute_hash2(so_job_status[i].name);
+		so_job_status[i].translation = dgettext("libstoriqone", so_job_status[i].name);
 		so_job_status[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_job_status[i].name));
 	}
 
 	for (i = 0; i < so_job_record_notif2; i++) {
 		so_job_record_notifs[i].hash = so_string_compute_hash2(so_job_record_notifs[i].name);
+		so_job_record_notifs[i].translation = dgettext("libstoriqone", so_job_record_notifs[i].name);
 		so_job_record_notifs[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_job_record_notifs[i].name));
 	}
 }
 
 const char * so_job_report_notif_to_string(enum so_job_record_notif notif, bool translate) {
-	const char * value = so_job_record_notifs[notif].name;
 	if (translate)
-		value = dgettext("libstoriqone", value);
-	return value;
+		return so_job_record_notifs[notif].translation;
+	else
+		return so_job_record_notifs[notif].name;
 }
 
 const char * so_job_status_to_string(enum so_job_status status, bool translate) {
-	const char * value = so_job_status[status].name;
 	if (translate)
-		value = dgettext("libstoriqone", value);
-	return value;
+		return so_job_status[status].translation;
+	else
+		return so_job_status[status].name;
 }
 
 enum so_job_record_notif so_job_string_to_record_notif(const char * notif, bool translate) {

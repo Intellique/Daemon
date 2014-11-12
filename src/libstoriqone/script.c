@@ -39,13 +39,14 @@ static struct so_script_type2 {
 	unsigned long long hash_translated;
 
 	const char * name;
+	const char * translation;
 	const enum so_script_type type;
 } so_script_types[] = {
-	[so_script_type_on_error] = { 0, 0, gettext_noop("on error"), so_script_type_on_error },
-	[so_script_type_post_job] = { 0, 0, gettext_noop("post job"), so_script_type_post_job },
-	[so_script_type_pre_job]  = { 0, 0, gettext_noop("pre job"),  so_script_type_pre_job },
+	[so_script_type_on_error] = { 0, 0, gettext_noop("on error"), NULL, so_script_type_on_error },
+	[so_script_type_post_job] = { 0, 0, gettext_noop("post job"), NULL, so_script_type_post_job },
+	[so_script_type_pre_job]  = { 0, 0, gettext_noop("pre job"),  NULL, so_script_type_pre_job },
 
-	[so_script_type_unknown]  = { 0, 0, gettext_noop("unknown"),  so_script_type_unknown },
+	[so_script_type_unknown]  = { 0, 0, gettext_noop("unknown"),  NULL, so_script_type_unknown },
 };
 static const unsigned int so_script_nb_types = sizeof(so_script_types) / sizeof(*so_script_types);
 
@@ -56,7 +57,8 @@ static void so_script_init() {
 	unsigned int i;
 	for (i = 0; i < so_script_nb_types; i++) {
 		so_script_types[i].hash = so_string_compute_hash2(so_script_types[i].name);
-		so_script_types[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_script_types[i].name));
+		so_script_types[i].translation = dgettext("libstoriqone", so_script_types[i].name);
+		so_script_types[i].hash_translated = so_string_compute_hash2(so_script_types[i].translation);
 	}
 }
 
@@ -81,9 +83,9 @@ enum so_script_type so_script_string_to_type(const char * string, bool translate
 }
 
 const char * so_script_type_to_string(enum so_script_type type, bool translate) {
-	const char * value = so_script_types[type].name;
 	if (translate)
-		value = dgettext("libstoriqone", value);
-	return value;
+		return so_script_types[type].translation;
+	else
+		return so_script_types[type].name;
 }
 
