@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 17 Oct 2014 12:18:30 +0200                            *
+*  Last modified: Thu, 30 Oct 2014 13:52:15 +0100                            *
 \****************************************************************************/
 
 // asprintf
@@ -828,11 +828,21 @@ static int st_job_create_archive_single_worker_write_meta(struct st_job_create_a
 	struct st_job_create_archive_single_worker_private * self = worker->data;
 	struct st_stream_writer * writer = self->drive->ops->get_raw_writer(self->drive, true);
 
-	ssize_t nb_write = st_io_json_writer(writer, self->archive);
+	if (writer != NULL) {
+		ssize_t nb_write = st_io_json_writer(writer, self->archive);
 
-	writer->ops->close(writer);
-	writer->ops->free(writer);
+		writer->ops->close(writer);
+		writer->ops->free(writer);
 
-	return nb_write < 1;
+		if (nb_write < 0) {
+			st_job_add_record(self->job->db_connect, st_log_level_error, self->job, st_job_record_notif_important, "Write meta file: error while writing file because %m");
+			return 1;
+		}
+	} else {
+		st_job_add_record(self->job->db_connect, st_log_level_error, self->job, st_job_record_notif_important, "Write meta file: error while opening file because %m");
+		return 1;
+	}
+
+	return 0;
 }
 

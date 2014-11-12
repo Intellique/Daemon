@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 08 Oct 2013 11:27:14 +0200                            *
+*  Last modified: Fri, 31 Oct 2014 11:52:19 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -203,11 +203,11 @@ static void st_thread_pool_set_name(pid_t tid, const char * name) {
 	asprintf(&path, "/proc/%d/task/%d/comm", st_thread_pool_pid, tid);
 
 	int fd = open(path, O_WRONLY);
-	if (fd < 0)
-		return;
+	if (fd > -1) {
+		write(fd, th_name, strlen(th_name) + 1);
+		close(fd);
+	}
 
-	write(fd, th_name, strlen(th_name) + 1);
-	close(fd);
 	free(path);
 	free(th_name);
 }
