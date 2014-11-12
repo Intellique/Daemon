@@ -5,7 +5,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqoned v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-11-11 17:59+0100\n"
+        "POT-Creation-Date: 2014-11-13 00:18+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -28,64 +28,64 @@ msgstr  "Redémarrage de l'échangeur : %s"
 msgid   "Restart logger"
 msgstr  "Redémarrage de l'enregistreur"
 
-#: src/storiqoned/main.c:63
+#: src/storiqoned/main.c:64
 #, c-format
 msgid   "storiqone, version: %s, build: %s %s"
 msgstr  "storiqone, version : %s, build : %s %s"
 
-#: src/storiqoned/main.c:64
+#: src/storiqoned/main.c:65
 #, c-format
 msgid   "storiqone (pid: %d, sid: %d)"
 msgstr  "storiqone (pid : %d, sid : %d)"
 
-#: src/storiqoned/main.c:65
+#: src/storiqoned/main.c:66
 #, c-format
 msgid   "Checksum: %s, last commit: %s"
 msgstr  "Empreinte : %s, dernier commit : %s"
 
-#: src/storiqoned/main.c:97
+#: src/storiqoned/main.c:98
 #, c-format
 msgid   "Using configuration file: '%s' instead of '%s'"
 msgstr  "Utilisation du fichier de configuration : '%s' au lieu de '%s'"
 
-#: src/storiqoned/main.c:111 src/storiqoned/main.c:188
+#: src/storiqoned/main.c:112 src/storiqoned/main.c:194
 #, c-format
 msgid   "storiqone, version: %s, build: %s %s\n"
 msgstr  "storiqone, version : %s, build : %s %s\n"
 
-#: src/storiqoned/main.c:112
+#: src/storiqoned/main.c:113
 #, c-format
 msgid   "Checksum: %s, last commit: %s\n"
 msgstr  "Empreinte : %s, dernier commit : %s\n"
 
-#: src/storiqoned/main.c:120
+#: src/storiqoned/main.c:121
 msgid   "Parsing option: ok"
 msgstr  "L'analyse des options : ok"
 
-#: src/storiqoned/main.c:144
+#: src/storiqoned/main.c:145
 msgid   "No administration configured"
 msgstr  "Pas d'administration configuré"
 
-#: src/storiqoned/main.c:177
+#: src/storiqoned/main.c:183
 msgid   "Daemon will shut down"
 msgstr  "Le démon va s'arrêter"
 
-#: src/storiqoned/main.c:189
+#: src/storiqoned/main.c:195
 #, c-format
 msgid   "    --config=FILE,   -c : Read this configuration FILE instead of “%s”\n"
 msgstr  "    --config=FICHIER,   -c : Li ce FICHIER de configuration à la place de « %s »\n"
 
-#: src/storiqoned/main.c:190
+#: src/storiqoned/main.c:196
 #, c-format
 msgid   "    --help,          -h : Show this and exit\n"
 msgstr  "    --help,             -h : Affiche ceci et quitte\n"
 
-#: src/storiqoned/main.c:191
+#: src/storiqoned/main.c:197
 #, c-format
 msgid   "    --pid-file=FILE, -p : Write the pid of daemon into FILE instead of “%s”\n"
 msgstr  "    --pid-file=FICHIER, -p : Écrit le pid du démon dans FICHIER au lieu de « %s »\n"
 
-#: src/storiqoned/main.c:192
+#: src/storiqoned/main.c:198
 #, c-format
 msgid   "    --version,       -V : Show the version of StoriqOne then exit\n"
 msgstr  "    --version,          -V : Affiche la version de StoriqOne puis quitte\n"

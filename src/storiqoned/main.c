@@ -36,6 +36,7 @@
 #include <unistd.h>
 
 #include <libstoriqone/database.h>
+#include <libstoriqone/host.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/poll.h>
@@ -161,15 +162,20 @@ int main(int argc, char ** argv) {
 	if (connection == NULL)
 		return 3;
 
+	so_host_init(connection);
+	struct so_host * host_info = so_host_get_info();
+
 	if (logger_config != NULL && db_configs != NULL)
 		sod_device_configure(log_file, db_configs, connection);
 
 	sod_scheduler_init(connection);
 
 	while (sod_daemon_run) {
+		connection->ops->update_host(connection, host_info->uuid);
+
 		sod_scheduler_do(log_file, db_configs, connection);
 
-		so_poll(5);
+		so_poll(5000);
 	}
 
 	so_value_free(config);

@@ -158,7 +158,9 @@ void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, str
 			char * process_name;
 			asprintf(&process_name, "job_%s", job->type);
 
-			so_process_new(&self->process, process_name, NULL, 0);
+			const char * params[] = { job->key, job->name };
+			so_process_new(&self->process, process_name, params, 2);
+
 			self->fd_in = so_process_pipe_to(&self->process);
 			self->fd_out = so_process_pipe_from(&self->process, so_process_stdout);
 			self->config = so_value_pack("{sOsOsOso}",

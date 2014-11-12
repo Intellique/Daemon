@@ -75,6 +75,7 @@ static int so_database_postgresql_add_host(struct so_database_connection * conne
 static bool so_database_postgresql_find_host(struct so_database_connection * connect, const char * uuid, const char * hostname);
 static char * so_database_postgresql_get_host(struct so_database_connection * connect);
 static int so_database_postgresql_get_host_by_name(struct so_database_connection * connect, struct so_host * host, const char * name);
+static int so_database_postgresql_update_host(struct so_database_connection * connect, const char * uuid);
 
 static struct so_value * so_database_postgresql_get_changers(struct so_database_connection * connect);
 static struct so_value * so_database_postgresql_get_drives_by_changer(struct so_database_connection * connect, const char * changer_id);
@@ -116,6 +117,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.add_host         = so_database_postgresql_add_host,
 	.find_host        = so_database_postgresql_find_host,
 	.get_host_by_name = so_database_postgresql_get_host_by_name,
+	.update_host      = so_database_postgresql_update_host,
 
 	.get_changers          = so_database_postgresql_get_changers,
 	.get_media             = so_database_postgresql_get_media,
@@ -421,6 +423,23 @@ static int so_database_postgresql_get_host_by_name(struct so_database_connection
 	PQclear(result);
 
 	return status != PGRES_TUPLES_OK;
+}
+
+static int so_database_postgresql_update_host(struct so_database_connection * connect, const char * uuid) {
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "update_host_by_uuid";
+	so_database_postgresql_prepare(self, query, "UPDATE host SET updated = NOW() WHERE uuid = $1");
+
+	const char * param[] = { uuid };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	PQclear(result);
+
+	return status != PGRES_COMMAND_OK;
 }
 
 
