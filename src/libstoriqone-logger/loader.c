@@ -69,7 +69,7 @@ void * solgr_loader_load(const char * module, const char * name) {
 
 static void * solgr_loader_load_file(const char * filename) {
 	if (access(filename, R_OK | X_OK)) {
-		solgr_log_write2(so_log_level_debug, so_log_type_logger, dgettext("libstoriqone-logger", "Loader: access to file %s failed because %m"), filename);
+		solgr_log_write2(so_log_level_debug, so_log_type_logger, dgettext("libstoriqone-logger", "Loader: access to file '%s' failed because %m"), filename);
 		return NULL;
 	}
 

@@ -5,7 +5,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-logger v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-11-09 19:04+0100\n"
+        "POT-Creation-Date: 2014-11-12 21:12+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -17,10 +17,10 @@ msgstr  "Project-Id-Version: libstoriqone-logger v1.2\n"
 
 #: src/libstoriqone-logger/loader.c:72
 #, c-format
-msgid   "Loader: access to file %s failed because %m"
-msgstr  "Loader : l'accès au fichier %s a échoué parce que %m"
+msgid   "Loader: access to file '%s' failed because %m"
+msgstr  "Loader : l'accès au fichier « %s » a échoué parce que %m"
 
 #: src/libstoriqone-logger/loader.c:84
 #, c-format
 msgid   "Loader: failed to load '%s' because %s"
-msgstr  "Loader : échec au chargement de '%s' parce que %s"
+msgstr  "Loader : échec au chargement de « %s » parce que %s"
