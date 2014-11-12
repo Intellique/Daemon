@@ -25,10 +25,6 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
-// scandir
-#include <dirent.h>
-// fnmatch
-#include <fnmatch.h>
 // stdio
 #include <stdio.h>
 // malloc
@@ -68,7 +64,6 @@ struct so_job_private {
 static struct so_value * jobs = NULL;
 
 static void sod_job_exited(int fd, short event, void * data);
-static int sod_job_filter(const struct dirent *);
 
 
 static void sod_job_exited(int fd, short event, void * data) {
@@ -110,10 +105,6 @@ static void sod_job_exited(int fd, short event, void * data) {
 
 	so_value_free(request);
 	free(command);
-}
-
-static int sod_job_filter(const struct dirent * file) {
-	return !fnmatch("job_*", file->d_name, 0);
 }
 
 void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, struct so_database_connection * db_connection) {
@@ -191,16 +182,7 @@ void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, str
 	so_value_iterator_free(iter);
 }
 
-void sod_scheduler_init(struct so_database_connection * connection) {
+void sod_scheduler_init(void) {
 	jobs = so_value_new_hashtable2();
-
-	struct dirent ** files = NULL;
-	int nb_files = scandir(DAEMON_BIN_DIR, &files, sod_job_filter, NULL);
-	int i;
-	for (i = 0; i < nb_files; i++) {
-		connection->ops->sync_plugin_job(connection, files[i]->d_name + 4);
-		free(files[i]);
-	}
-	free(files);
 }
 

@@ -165,10 +165,12 @@ int main(int argc, char ** argv) {
 	so_host_init(connection);
 	struct so_host * host_info = so_host_get_info();
 
+	sod_plugin_sync_job(connection);
+
 	if (logger_config != NULL && db_configs != NULL)
 		sod_device_configure(log_file, db_configs, connection);
 
-	sod_scheduler_init(connection);
+	sod_scheduler_init();
 
 	while (sod_daemon_run) {
 		connection->ops->update_host(connection, host_info->uuid);

@@ -24,10 +24,16 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// scandir
+#include <dirent.h>
+// fnmatch
+#include <fnmatch.h>
 // glob, globfree
 #include <glob.h>
 // sscanf
 #include <stdio.h>
+// free
+#include <stdlib.h>
 // strrchr
 #include <string.h>
 
@@ -39,7 +45,13 @@
 
 #include "config.h"
 
+static int sod_plugin_job_filter(const struct dirent * dirent);
 static int sod_plugin_sync_checksum_inner(void * arg);
+
+
+static int sod_plugin_job_filter(const struct dirent * file) {
+	return !fnmatch("job_*", file->d_name, 0);
+}
 
 void sod_plugin_sync_checksum(struct so_database_config * config) {
 	so_process_fork_and_do(sod_plugin_sync_checksum_inner, config);
@@ -76,5 +88,16 @@ int sod_plugin_sync_checksum_inner(void * arg) {
 	connection->ops->free(connection);
 
 	return 0;
+}
+
+void sod_plugin_sync_job(struct so_database_connection * connection) {
+	struct dirent ** files = NULL;
+	int nb_files = scandir(DAEMON_BIN_DIR, &files, sod_plugin_job_filter, NULL);
+	int i;
+	for (i = 0; i < nb_files; i++) {
+		connection->ops->sync_plugin_job(connection, files[i]->d_name + 4);
+		free(files[i]);
+	}
+	free(files);
 }
 

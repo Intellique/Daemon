@@ -30,7 +30,7 @@
 struct so_database_connection;
 
 void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, struct so_database_connection * connection);
-void sod_scheduler_init(struct so_database_connection * connection);
+void sod_scheduler_init(void);
 
 #endif
 

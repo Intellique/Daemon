@@ -28,8 +28,10 @@
 #define __STORIQONED_PLUGIN_H__
 
 struct so_database_config;
+struct so_database_connection;
 
 void sod_plugin_sync_checksum(struct so_database_config * config);
+void sod_plugin_sync_job(struct so_database_connection * connection);
 
 #endif
 

@@ -5,7 +5,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqoned v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-11-13 00:18+0100\n"
+        "POT-Creation-Date: 2014-11-13 00:46+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -48,7 +48,7 @@ msgstr  "Empreinte : %s, dernier commit : %s"
 msgid   "Using configuration file: '%s' instead of '%s'"
 msgstr  "Utilisation du fichier de configuration : '%s' au lieu de '%s'"
 
-#: src/storiqoned/main.c:112 src/storiqoned/main.c:194
+#: src/storiqoned/main.c:112 src/storiqoned/main.c:196
 #, c-format
 msgid   "storiqone, version: %s, build: %s %s\n"
 msgstr  "storiqone, version : %s, build : %s %s\n"
@@ -66,26 +66,26 @@ msgstr  "L'analyse des options : ok"
 msgid   "No administration configured"
 msgstr  "Pas d'administration configuré"
 
-#: src/storiqoned/main.c:183
+#: src/storiqoned/main.c:185
 msgid   "Daemon will shut down"
 msgstr  "Le démon va s'arrêter"
 
-#: src/storiqoned/main.c:195
+#: src/storiqoned/main.c:197
 #, c-format
 msgid   "    --config=FILE,   -c : Read this configuration FILE instead of “%s”\n"
 msgstr  "    --config=FICHIER,   -c : Li ce FICHIER de configuration à la place de « %s »\n"
 
-#: src/storiqoned/main.c:196
+#: src/storiqoned/main.c:198
 #, c-format
 msgid   "    --help,          -h : Show this and exit\n"
 msgstr  "    --help,             -h : Affiche ceci et quitte\n"
 
-#: src/storiqoned/main.c:197
+#: src/storiqoned/main.c:199
 #, c-format
 msgid   "    --pid-file=FILE, -p : Write the pid of daemon into FILE instead of “%s”\n"
 msgstr  "    --pid-file=FICHIER, -p : Écrit le pid du démon dans FICHIER au lieu de « %s »\n"
 
-#: src/storiqoned/main.c:198
+#: src/storiqoned/main.c:200
 #, c-format
 msgid   "    --version,       -V : Show the version of StoriqOne then exit\n"
 msgstr  "    --version,          -V : Affiche la version de StoriqOne puis quitte\n"
