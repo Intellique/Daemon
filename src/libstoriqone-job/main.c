@@ -24,6 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// bindtextdomain, dgettext
+#include <libintl.h>
 // pthread_mutex
 #include <pthread.h>
 // malloc
@@ -45,6 +47,8 @@
 #include <libstoriqone-job/changer.h>
 
 #include "job.h"
+
+#include "config.h"
 
 static struct so_job * job = NULL;
 static bool stop = false;
@@ -135,6 +139,8 @@ error:
 }
 
 int main() {
+	bindtextdomain("libstoriqone-job", LOCALE_DIR);
+
 	struct so_job_driver * job_dr = soj_job_get_driver();
 	if (job_dr == NULL)
 		return 1;
@@ -147,6 +153,8 @@ int main() {
 	so_value_unpack(config, "{sosososo}", "logger", &log_config, "database", &db_config, "devices", &devices, "job", &vjob);
 	if (log_config == NULL || db_config == NULL || devices == NULL || vjob == NULL)
 		return 3;
+
+	so_log_write(so_log_level_info, dgettext("libstoriqone-job", "Starting job (type: %s)"), job_dr->name);
 
 	so_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
 
@@ -172,6 +180,7 @@ int main() {
 		return 5;
 
 	job->status = so_job_status_running;
+	so_log_write(so_log_level_info, dgettext("libstoriqone-job", "Initialize job (type: %s)"), job_dr->name);
 
 	db_connect->ops->sync_job(db_connect, job);
 	db_connect->ops->start_job(db_connect, job);
