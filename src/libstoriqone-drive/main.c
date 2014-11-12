@@ -24,6 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// bindtextdomain, dgettext
+#include <libintl.h>
 // bool
 #include <stdbool.h>
 // free
@@ -43,6 +45,8 @@
 #include "drive.h"
 #include "listen.h"
 
+#include "config.h"
+
 static void changer_request(int fd, short event, void * data);
 
 
@@ -53,6 +57,8 @@ static void changer_request(int fd, short event __attribute__((unused)), void * 
 }
 
 int main() {
+	bindtextdomain("libstoriqone-drive", LOCALE_DIR);
+
 	struct so_drive_driver * driver = sodr_drive_get();
 	if (driver == NULL)
 		return 1;
@@ -60,6 +66,8 @@ int main() {
 	struct so_value * config = so_json_parse_fd(0, 5000);
 	if (config == NULL)
 		return 2;
+
+	so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Starting drive (type: %s)"), driver->name);
 
 	struct so_value * log_config = NULL, * drive_config = NULL, * db_config = NULL;
 	so_value_unpack(config, "{sososo}", "logger", &log_config, "drive", &drive_config, "database", &db_config);
@@ -93,6 +101,7 @@ int main() {
 	sodr_listen_set_db_connection(db_connect);
 
 	struct so_drive * drive = driver->device;
+	so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Initialize drive (type: %s)"), driver->name);
 	int failed = drive->ops->init(drive_config);
 	if (failed != 0)
 		return 4;
@@ -108,7 +117,7 @@ int main() {
 		db_connect->ops->sync_drive(db_connect, drive, so_database_sync_default);
 	}
 
-	so_log_write(so_log_level_info, "Changer (type: %s) will stop", driver->name);
+	so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Drive (type: %s) will stop"), driver->name);
 
 	so_log_stop_logger();
 
