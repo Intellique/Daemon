@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 16 Jun 2014 19:09:50 +0200                            *
+*  Last modified: Thu, 30 Oct 2014 13:52:15 +0100                            *
 \****************************************************************************/
 
 // asprintf
@@ -135,11 +135,6 @@ struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(s
 
 		if (self->pool != NULL)
 			st_job_add_record(connect, st_log_level_info, job, st_job_record_notif_important, "Using pool (%s) of archive (%s)", self->pool->name, self->archive->name);
-	}
-
-	if (self->pool == NULL) {
-		self->pool = job->user->pool;
-		st_job_add_record(connect, st_log_level_info, job, st_job_record_notif_important, "Using pool (%s) of user (%s)", self->pool->name, job->user->login);
 	}
 
 	self->total_done = 0;
@@ -332,6 +327,9 @@ static void st_job_create_archive_single_worker_close(struct st_job_create_archi
 	self->first_file = self->last_file = NULL;
 	last_volume->nb_files = self->nb_files;
 	self->nb_files = 0;
+
+	if (self->drive != NULL)
+		self->drive->lock->ops->unlock(self->drive->lock);
 }
 
 static int st_job_create_archive_single_worker_end_file(struct st_job_create_archive_data_worker * worker) {
@@ -344,10 +342,8 @@ static int st_job_create_archive_single_worker_end_file(struct st_job_create_arc
 static void st_job_create_archive_single_worker_free(struct st_job_create_archive_data_worker * worker) {
 	struct st_job_create_archive_single_worker_private * self = worker->data;
 
-	if (self->drive != NULL)
-		self->drive->lock->ops->unlock(self->drive->lock);
-
-	self->writer->ops->free(self->writer);
+	if (self->writer != NULL)
+		self->writer->ops->free(self->writer);
 	self->archive = NULL;
 
 	unsigned int i;
@@ -832,11 +828,21 @@ static int st_job_create_archive_single_worker_write_meta(struct st_job_create_a
 	struct st_job_create_archive_single_worker_private * self = worker->data;
 	struct st_stream_writer * writer = self->drive->ops->get_raw_writer(self->drive, true);
 
-	ssize_t nb_write = st_io_json_writer(writer, self->archive);
+	if (writer != NULL) {
+		ssize_t nb_write = st_io_json_writer(writer, self->archive);
 
-	writer->ops->close(writer);
-	writer->ops->free(writer);
+		writer->ops->close(writer);
+		writer->ops->free(writer);
 
-	return nb_write < 1;
+		if (nb_write < 0) {
+			st_job_add_record(self->job->db_connect, st_log_level_error, self->job, st_job_record_notif_important, "Write meta file: error while writing file because %m");
+			return 1;
+		}
+	} else {
+		st_job_add_record(self->job->db_connect, st_log_level_error, self->job, st_job_record_notif_important, "Write meta file: error while opening file because %m");
+		return 1;
+	}
+
+	return 0;
 }
 

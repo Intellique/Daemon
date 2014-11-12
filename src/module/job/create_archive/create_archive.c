@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 24 Jan 2014 12:12:01 +0100                            *
+*  Last modified: Fri, 17 Oct 2014 12:22:03 +0200                            *
 \****************************************************************************/
 
 // asprintf, versionsort
@@ -142,7 +142,7 @@ static int st_job_create_archive_archive(struct st_job * job, struct st_job_sele
 				failed = -2;
 
 			float done = self->total_done += nb_write;
-			job->done = 0.02 + done * 0.96 / self->total_size;
+			job->done = 0.02 + done * 0.95 / self->total_size;
 		}
 
 		if (nb_read < 0) {
@@ -224,6 +224,7 @@ static void st_job_create_archive_init(void) {
 
 static void st_job_create_archive_new_job(struct st_job * job) {
 	struct st_job_create_archive_private * self = malloc(sizeof(struct st_job_create_archive_private));
+	bzero(self, sizeof(struct st_job_create_archive_private));
 	job->db_connect = job->db_config->ops->connect(job->db_config);
 
 	self->nb_selected_paths = 0;
@@ -325,8 +326,10 @@ static void st_job_create_archive_on_error(struct st_job * job) {
 static void st_job_create_archive_post_run(struct st_job * job) {
 	struct st_job_create_archive_private * self = job->data;
 
-	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_post, self->pool) == 0)
+	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_post, self->pool) == 0) {
+		job->done = 1;
 		return;
+	}
 
 	json_t * data = self->worker->ops->post_run(self->worker);
 
@@ -334,6 +337,8 @@ static void st_job_create_archive_post_run(struct st_job * job) {
 
 	json_decref(returned_data);
 	json_decref(data);
+
+	job->done = 1;
 }
 
 static bool st_job_create_archive_pre_run(struct st_job * job) {
@@ -553,11 +558,11 @@ static int st_job_create_archive_run(struct st_job * job) {
 		self->worker->ops->close(self->worker);
 		self->meta->ops->wait(self->meta, true);
 
-		job->done = 0.98;
+		job->done = 0.97;
 		st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_normal, "Synchronize database");
 		self->worker->ops->sync_db(self->worker);
 
-		job->done = 0.99;
+		job->done = 0.98;
 		st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_normal, "Writing index file");
 		self->worker->ops->write_meta(self->worker);
 
@@ -589,7 +594,7 @@ static int st_job_create_archive_run(struct st_job * job) {
 		if (stopped)
 			st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Job stopped by user request");
 
-		job->done = 1;
+		job->done = 0.99;
 		st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_important, "Archive job (named: %s) finished", job->name);
 	} else {
 		if (self->worker != NULL)

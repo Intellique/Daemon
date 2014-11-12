@@ -9,7 +9,7 @@ use POSIX q/nice/;
 use Sys::CPU q/cpu_count/;
 
 my $nb_cpu     = cpu_count();
-my $output_dir = '/var/www/stone/cache/movies/proxy';
+my $output_dir = '/usr/share/storiqone/cache/movies/proxy';
 
 my $param = shift;
 
@@ -44,17 +44,34 @@ my $archive = decode_json $data_in;
 my %file_done;
 my $nb_processes = 0;
 
+my %codec = (
+    'mp4' => {
+        'audio' => 'libmp3lame',
+        'video' => 'libx264'
+    },
+    'ogv' => {
+        'audio' => 'libvorbis',
+        'video' => 'libtheora'
+    },
+);
+
 sub process {
     my ( $input, $format ) = @_;
 
     my $pid = fork();
+
+    return unless defined $pid;
+
     if ( $pid == 0 ) {
         nice(10);
 
-        my $filename = md5_hex($input) . '.mp4';
-        exec $encoder, '-v', 'quiet', '-i', $input, '-acodec', 'libvorbis',
-            '-ac', '2', '-ab', '96k', '-ar', '44100', '-b', '500k', '-s',
-            '320x240', '-t', '0:0:30', "$output_dir/$filename";
+        my $filename = md5_hex($input) . '.' . $format;
+        exec $encoder, '-v', 'quiet', '-i', $input, '-t', '0:0:30',
+            '-vcodec', $codec{$format}->{video}, '-b',  '500k', '-s',  'cif',
+            '-acodec', $codec{$format}->{audio}, '-ac', '2',    '-ab', '96k',
+            '-ar', '44100', "$output_dir/$filename";
+
+        exit 1;
     }
 
     $nb_processes++;
@@ -72,8 +89,8 @@ foreach my $vol ( @{ $archive->{volumes} } ) {
 
         next unless $file->{'mime type'} =~ m{^video/};
 
-        process( $file->{path}, '.mp4' );
-        process( $file->{path}, '.ogv' );
+        process( $file->{path}, 'mp4' );
+        process( $file->{path}, 'ogv' );
     }
 }
 

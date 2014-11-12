@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 07 Feb 2014 10:37:02 +0100                            *
+*  Last modified: Fri, 31 Oct 2014 10:47:32 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -315,8 +315,13 @@ static void st_job_check_archive_quick_mode_work(void * arg) {
 		unsigned int nb_checksums = connect->ops->get_checksums_of_archive_volume(connect, vol);
 		const void ** checksums = st_hashtable_keys(vol->digests, NULL);
 
-		struct st_stream_writer * writer = st_checksum_writer_new(NULL, (char **) checksums, nb_checksums, true);
 		struct st_stream_reader * reader = dr->ops->get_raw_reader(dr, vol->media_position);
+		if (reader == NULL) {
+			st_job_add_record(connect, st_log_level_info, qm->jp->job, st_job_record_notif_important, "Error while opening drive because %m");
+			goto end_of_work;
+		}
+
+		struct st_stream_writer * writer = st_checksum_writer_new(NULL, (char **) checksums, nb_checksums, true);
 
 		free(checksums);
 		checksums = NULL;
