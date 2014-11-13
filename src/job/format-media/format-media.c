@@ -24,6 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// bindtextdomain, gettext, textdomain
+#include <libintl.h>
 // free
 #include <stdlib.h>
 // strcpy
@@ -45,6 +47,8 @@
 #include <libstoriqone-job/script.h>
 
 #include <job_format-media.chcksum>
+
+#include "config.h"
 
 static struct so_pool * formatmedia_pool = NULL;
 static struct so_slot * formatmedia_slot = NULL;
@@ -76,6 +80,9 @@ static void formatmedia_exit(struct so_job * job __attribute__((unused)), struct
 
 static void formatmedia_init() {
 	soj_job_register(&formatmedia);
+
+	bindtextdomain("storiqone-job-format-media", LOCALE_DIR);
+	textdomain("storiqone-job-format-media");
 }
 
 static int formatmedia_run(struct so_job * job, struct so_database_connection * db_connect) {
@@ -116,15 +123,15 @@ static int formatmedia_run(struct so_job * job, struct so_database_connection * 
 				if (drive->ops->check_support(drive, formatmedia_slot->media->format, true)) {
 					state = drive_is_free;
 				} else {
-					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, "Unload media because drive can not write into this support");
+					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, gettext("Unload media because drive can not write into this support"));
 
 					if (changer->nb_drives == changer->nb_slots)
-						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, "You should load media into a suitable drive because current drive can not write into it");
+						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, gettext("You should load media into a suitable drive because current drive can not write into it"));
 
 					failed = changer->ops->unload(changer, drive);
 
 					if (failed != 0) {
-						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Error while unloading media (%s)", drive->slot->media->label);
+						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, gettext("Error while unloading media (%s)"), drive->slot->media->label);
 						return 2;
 					}
 
@@ -157,7 +164,7 @@ static int formatmedia_run(struct so_job * job, struct so_database_connection * 
 					state = reserve_media;
 				} else {
 					if (!has_alert_user)
-						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, "Waiting for media");
+						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, gettext("Waiting for media"));
 					has_alert_user = true;
 
 					sleep(20);
@@ -194,7 +201,7 @@ static int formatmedia_run(struct so_job * job, struct so_database_connection * 
 		failed = changer->ops->unload(changer, drive);
 
 		if (failed != 0) {
-			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Error while unloading media (%s)", drive->slot->media->label);
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, gettext("Error while unloading media (%s)"), drive->slot->media->label);
 			return 2;
 		}
 	}
@@ -209,7 +216,7 @@ static int formatmedia_run(struct so_job * job, struct so_database_connection * 
 		failed = changer->ops->load(changer, formatmedia_slot, drive);
 
 		if (failed != 0) {
-			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Error while loading media (%s)", formatmedia_slot->media->label);
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, gettext("Error while loading media (%s)"), formatmedia_slot->media->label);
 			return 2;
 		}
 	}
@@ -224,7 +231,7 @@ static int formatmedia_run(struct so_job * job, struct so_database_connection * 
 
 	// check for write lock
 	if (drive->slot->media->write_lock) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Try to format a write protected media");
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, gettext("Try to format a write protected media"));
 		return 3;
 	}
 
@@ -234,12 +241,12 @@ static int formatmedia_run(struct so_job * job, struct so_database_connection * 
 	if (job->stopped_by_user)
 		return 1;
 
-	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, "Formatting media in progress (block size used: %zd)", block_size);
+	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, gettext("Formatting media in progress (block size used: %zd)"), block_size);
 
 	// write header
 	failed = drive->ops->format_media(drive, formatmedia_pool);
 	if (failed != 0) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Failed to format media");
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, gettext("Failed to format media"));
 		return 4;
 	}
 
@@ -247,15 +254,15 @@ static int formatmedia_run(struct so_job * job, struct so_database_connection * 
 	job->done = 0.8;
 
 	// check header
-	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, "Checking media header in progress");
+	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, gettext("Checking media header in progress"));
 	if (drive->ops->check_header(drive)) {
-		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, "Checking media header: success");
+		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, gettext("Checking media header: success"));
 
 		job->status = so_job_status_running;
 		job->done = 1;
 		return 0;
 	} else {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Checking media header: failed");
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, gettext("Checking media header: failed"));
 
 		job->status = so_job_status_error;
 		return 5;
@@ -263,49 +270,49 @@ static int formatmedia_run(struct so_job * job, struct so_database_connection * 
 }
 
 static int formatmedia_simulate(struct so_job * job, struct so_database_connection * db_connect) {
-	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, "Start (simulation) format media job (job name: %s), key: %s, num runs %ld", job->name, job->key, job->num_runs);
+	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, gettext("Start (simulation) format media job (job name: %s), key: %s, num runs %ld"), job->name, job->key, job->num_runs);
 
 	formatmedia_pool = db_connect->ops->get_pool(db_connect, NULL, job);
 	formatmedia_slot = soj_changer_find_media_by_job(job, db_connect);
 
 	if (formatmedia_pool == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Pool not found");
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, gettext("Pool not found"));
 		return 1;
 	}
 	if (formatmedia_pool->deleted) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Try to format to a pool which is deleted");
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, gettext("Try to format to a pool which is deleted"));
 		return 1;
 	}
 
 	if (formatmedia_slot == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Media not found");
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, gettext("Media not found"));
 		return 1;
 	}
 	if (formatmedia_slot->media == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "BUG: slot should not be empty");
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, gettext("BUG: slot should not be empty"));
 		return 1;
 	}
 
 	struct so_media * media = formatmedia_slot->media;
 	if (media->type == so_media_type_cleaning) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Try to format a cleaning media");
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, gettext("Try to format a cleaning media"));
 		return 1;
 	}
 	if (media->type == so_media_type_worm && media->nb_volumes > 0) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Try to format a worm media with data");
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, gettext("Try to format a worm media with data"));
 		return 1;
 	}
 
 	if (media->status == so_media_status_error)
-		so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, "Try to format a media with error status");
+		so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, gettext("Try to format a media with error status"));
 
 	if (so_media_format_cmp(media->format, formatmedia_pool->format) != 0) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Try to format a media whose type does not match the format of pool");
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, gettext("Try to format a media whose type does not match the format of pool"));
 		return 1;
 	}
 
 	if (!soj_changer_has_apt_drive(media->format, true)) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, "Failed to find suitable drive to format media");
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, gettext("Failed to find suitable drive to format media"));
 		return 1;
 	}
 
@@ -373,9 +380,9 @@ static bool formatmedia_script_pre_run(struct so_job * job, struct so_database_c
 			if (uuid != NULL) {
 				uuid_t tmp;
 				if (uuid_parse(uuid, tmp) != 0) {
-					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal, "Invalid uuid provide by script, ignoring it");
+					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal, gettext("Invalid uuid provide by script, ignoring it"));
 				} else {
-					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal, "Script request to format media with this uuid (%s) instead of (%s)", uuid, formatmedia_slot->media->uuid);
+					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal, gettext("Script request to format media with this uuid (%s) instead of (%s)"), uuid, formatmedia_slot->media->uuid);
 					strcpy(formatmedia_slot->media->uuid, uuid);
 				}
 				free(uuid);
@@ -384,7 +391,7 @@ static bool formatmedia_script_pre_run(struct so_job * job, struct so_database_c
 			char * name = NULL;
 			so_value_unpack(data, "{s{ss}}", "media", "name", &name);
 			if (name != NULL) {
-				so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal, "Script request to format media with this name (%s) instead of (%s)", name, formatmedia_slot->media->name);
+				so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal, gettext("Script request to format media with this name (%s) instead of (%s)"), name, formatmedia_slot->media->name);
 
 				free(formatmedia_slot->media->name);
 				formatmedia_slot->media->name = name;

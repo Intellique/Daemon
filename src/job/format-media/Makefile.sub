@@ -8,4 +8,6 @@ STORIQONE_JOB_FORMATMEDIA_DEPEND_LIB	:= lib/libstoriqone-job.so
 
 STORIQONE_JOB_FORMATMEDIA_CHCKSUM_FILE	:= job_format-media.chcksum
 
+STORIQONE_JOB_FORMATMEDIA_LOCALE		:= locale/storiqone-job-format-media
+
 BIN_SYMS								+= STORIQONE_JOB_FORMATMEDIA
