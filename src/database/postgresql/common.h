@@ -78,6 +78,8 @@ int so_database_postgresql_get_uchar(PGresult * result, int row, int column, uns
 int so_database_postgresql_get_uint(PGresult * result, int row, int column, unsigned int * value);
 int so_database_postgresql_get_uint_add(PGresult * result, int row, int column, unsigned int * value);
 
+char * so_database_postgresql_set_float(double fl);
+
 const char * so_database_postgresql_log_level_to_string(enum so_log_level level);
 
 #endif

@@ -1773,8 +1773,8 @@ static int so_database_postgresql_stop_job(struct so_database_connection * conne
 	const char * query = "finish_jobrun";
 	so_database_postgresql_prepare(self, query, "UPDATE jobrun SET endtime = NOW(), status = $1, done = $2, exitcode = $3, stoppedbyuser = $4 WHERE id = $5");
 
-	char * done = NULL, * exitcode = NULL;
-	asprintf(&done, "%f", job->done);
+	char * done = so_database_postgresql_set_float(job->done);
+	char * exitcode = NULL;
 	asprintf(&exitcode, "%d", job->exit_code);
 
 	const char * param[] = { so_job_status_to_string(job->status, false), done, exitcode, so_database_postgresql_bool_to_string(job->stopped_by_user), jobrun_id };
@@ -1854,8 +1854,7 @@ static int so_database_postgresql_sync_job(struct so_database_connection * conne
 	query = "update_jobrun";
 	so_database_postgresql_prepare(self, query, "UPDATE jobrun SET status = $1, done = $2 WHERE id = $3");
 
-	char * done = NULL;
-	asprintf(&done, "%f", job->done);
+	char * done = so_database_postgresql_set_float(job->done);
 
 	const char * param3[] = { so_job_status_to_string(job->status, false), done, jobrun_id };
 	result = PQexecPrepared(self->connect, query, 3, param3, NULL, NULL, 0);

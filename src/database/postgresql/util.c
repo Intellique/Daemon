@@ -24,10 +24,13 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 #define _XOPEN_SOURCE 500
+// localeconv
+#include <locale.h>
 // PQgetvalue
 #include <postgresql/libpq-fe.h>
-// strcmp, strdup, strncpy
+// memmove, strcmp, strdup, strlen, strncpy, strstr
 #include <string.h>
 // bzero
 #include <strings.h>
@@ -247,5 +250,24 @@ const char * so_database_postgresql_log_level_to_string(enum so_log_level level)
 			return so_database_postgresql_log_levels[i].name;
 
 	return so_database_postgresql_log_levels[i].name;
+}
+
+
+char * so_database_postgresql_set_float(double fl) {
+	char * str_float;
+	asprintf(&str_float, "%lf", fl);
+
+	struct lconv * info_locale = localeconv();
+	if (strcmp(info_locale->decimal_point, ".") != 0) {
+		char * decimal = strstr(str_float, info_locale->decimal_point);
+		if (decimal != NULL) {
+			size_t length = strlen(info_locale->decimal_point);
+			if (length > 0)
+				memmove(decimal + 1, decimal + 2, strlen(decimal + 1));
+			*decimal = '.';
+		}
+	}
+
+	return str_float;
 }
 
