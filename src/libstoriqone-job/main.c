@@ -62,7 +62,7 @@ static void job_worker(void * arg);
 static void daemon_request(int fd, short event, void * data __attribute__((unused))) {
 	switch (event) {
 		case POLLHUP:
-			so_log_write(so_log_level_alert, "Stoned has hang up");
+			so_log_write(so_log_level_alert, dgettext("libstoriqone-job", "Stoned has hang up"));
 			stop = true;
 			break;
 	}
@@ -99,11 +99,11 @@ static void job_worker(void * arg) {
 	if (db_connect == NULL)
 		goto error;
 
-	so_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important, "Starting simulation of job (type: %s, key: %s, name: %s)", j->type, j->key, j->name);
+	so_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important, dgettext("libstoriqone-job", "Starting simulation of job (type: %s, key: %s, name: %s)"), j->type, j->key, j->name);
 
 	int failed = job_dr->simulate(j, db_connect);
 	if (failed != 0) {
-		so_job_add_record(j, db_connect, so_log_level_error, so_job_record_notif_important, "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d", j->type, j->key, j->name, failed);
+		so_job_add_record(j, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("libstoriqone-job", "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d"), j->type, j->key, j->name, failed);
 		job->exit_code = failed;
 		job->status = so_job_status_error;
 		goto error;
@@ -115,9 +115,9 @@ static void job_worker(void * arg) {
 		goto error;
 	}
 
-	so_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important, "Starting job (type: %s, key: %s, name: %s)", j->type, j->key, j->name);
+	so_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important, dgettext("libstoriqone-job", "Starting job (type: %s, key: %s, name: %s)"), j->type, j->key, j->name);
 	failed = job_dr->run(j, db_connect);
-	so_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important, "Job exit (type: %s, key: %s, name: %s), exit code: %d", j->type, j->key, j->name, failed);
+	so_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important, dgettext("libstoriqone-job", "Job exit (type: %s, key: %s, name: %s), exit code: %d"), j->type, j->key, j->name, failed);
 
 	if (failed != 0 && job->stopped_by_user)
 		goto error;
@@ -130,8 +130,10 @@ static void job_worker(void * arg) {
 error:
 	job_dr->exit(j, db_connect);
 
-	db_connect->ops->close(db_connect);
-	db_connect->ops->free(db_connect);
+	if (db_connect != NULL) {
+		db_connect->ops->close(db_connect);
+		db_connect->ops->free(db_connect);
+	}
 
 	pthread_mutex_lock(&lock);
 	finished = true;

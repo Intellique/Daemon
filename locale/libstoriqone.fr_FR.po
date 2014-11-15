@@ -75,17 +75,17 @@ msgstr  "statut inconnu"
 #: src/libstoriqone/checksum.c:63
 #, c-format
 msgid   "so_checksum_compute: invalid parameters (checksum: %p, data: %p, length: %zd)"
-msgstr  "so_checksum_compute : paramètres invalide (checksum : %p, data : %p, length : %zd)"
+msgstr  "so_checksum_compute : paramètres invalides (checksum : %p, data : %p, length : %zd)"
 
 #: src/libstoriqone/checksum.c:69
 #, c-format
 msgid   "so_checksum_compute: failed to load checksum plugin '%s'"
-msgstr  "so_checksum_compute : échec lors du chargement du module de calcul d'empreinte « %s »"
+msgstr  "so_checksum_compute : échec lors du chargement du module de calcul d’empreinte « %s »"
 
 #: src/libstoriqone/checksum.c:85
 #, c-format
 msgid   "so_checksum_convert_to_hex: invalid parameters (digest: %p, length: %zd, hex_digest: %s)"
-msgstr  "so_checksum_convert_to_hex : paramètres invalide (digest : %p, length : %zd, hex_digest : %s)"
+msgstr  "so_checksum_convert_to_hex : paramètres invalides (digest : %p, length : %zd, hex_digest : %s)"
 
 #: src/libstoriqone/checksum.c:102
 #, c-format

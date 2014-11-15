@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-11-12 22:51+0100\n"
+        "POT-Creation-Date: 2014-11-16 00:38+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -16,12 +16,78 @@ msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/libstoriqone-job/main.c:183
+#: src/libstoriqone-job/main.c:65
+msgid   "Stoned has hang up"
+msgstr  "Le démon a inopinément quitté"
+
+#: src/libstoriqone-job/main.c:102
+#, c-format
+msgid   "Starting simulation of job (type: %s, key: %s, name: %s)"
+msgstr  "Démarrage de la simulation de la tâche (type : %s, clef : %s, nom : %s)"
+
+#: src/libstoriqone-job/main.c:106
+#, c-format
+msgid   "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d"
+msgstr  "La simulation de la tâche (type : %s, clef : %s, nom : %s) a échoué avec le code : %d"
+
+#: src/libstoriqone-job/main.c:118
+#, c-format
+msgid   "Starting job (type: %s, key: %s, name: %s)"
+msgstr  "Démarrage de la tâche (type : %s, clef : %s, nom : %s)"
+
+#: src/libstoriqone-job/main.c:120
+#, c-format
+msgid   "Job exit (type: %s, key: %s, name: %s), exit code: %d"
+msgstr  "Fin de la tâche (type : %s, clef : %s, nom : %s), code de sorti : %d"
+
+#: src/libstoriqone-job/main.c:159
+#, c-format
+msgid   "Starting job (type: %s)"
+msgstr  "Démarrage de la tâche (type : %s)"
+
+#: src/libstoriqone-job/main.c:185
 #, c-format
 msgid   "Initialize job (type: %s)"
 msgstr  "Initialisation de la tâche (type : %s)"
 
-#: src/libstoriqone-job/main.c:157
+#: src/libstoriqone-job/script.c:43
 #, c-format
-msgid   "Starting job (type: %s)"
-msgstr  "Démarrage de la tâche (type : %s)"
+msgid   "run script: %d script found, type: %s"
+msgid_plural    "run script: %d scripts found, type: %s"
+msgstr[0]       "Exécution de scripte : %d scripte trouvé, type : %s"
+msgstr[1]       "Exécution de scripte : %d scriptes trouvés, type : %s"
+
+#: src/libstoriqone-job/script.c:54
+#, c-format
+msgid   "script has not found into database, %s, %d/%d"
+msgstr  "le scripte n'a pas été trouvé dans la base de données, %s, %d/%d"
+
+#: src/libstoriqone-job/script.c:59
+#, c-format
+msgid   "start script (type: %s, path: %s)"
+msgstr  "démarrage du scripte (type : %s, chemain : %s)"
+
+#: src/libstoriqone-job/script.c:79
+#, c-format
+msgid   "script '%s' has exited with code %d"
+msgstr  "le script « %s » a quitté avec le code %d"
+
+#: src/libstoriqone-job/script.c:81
+#, c-format
+msgid   "script '%s' has exited with code OK"
+msgstr  "le script « %s » a quitté avec le code ok"
+
+#: src/libstoriqone-job/script.c:84
+#, c-format
+msgid   "script '%s' has not returned data"
+msgstr  "le script « %s » n‘a pas retouné de donnée"
+
+#: src/libstoriqone-job/script.c:94
+#, c-format
+msgid   "script '%s' has not returned data 'should run'"
+msgstr  "le script « %s » n’a pas retouné « should run »"
+
+#: src/libstoriqone-job/script.c:109
+#, c-format
+msgid   "script '%s' return message: %s"
+msgstr  "le script « %s » a retouné le message : %s"
