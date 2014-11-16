@@ -24,6 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// dgettext
+#include <libintl.h>
 // snprintf
 #include <stdio.h>
 // free
@@ -55,7 +57,7 @@ bool sodr_media_check_header(struct so_media * media, const char * buffer, struc
 	int nb_parsed = 0;
 	bool ok = false;
 
-	int nb_params = sscanf(buffer, "STone (%64[^)])\nMedia format: version=%d\n%n", storiqone_version, &media_format_version, &nb_parsed);
+	int nb_params = sscanf(buffer, "Storiq One (%64[^)])\nMedia format: version=%d\n%n", storiqone_version, &media_format_version, &nb_parsed);
 	if (nb_params < 2)
 		nb_params = sscanf(buffer, "STone (%64[^)])\nTape format: version=%d\n%n", storiqone_version, &media_format_version, &nb_parsed);
 
@@ -137,9 +139,9 @@ static bool sodr_media_read_header_v1(struct so_media * media, const char * buff
 		if (check) {
 			ok = !strcmp(media->uuid, uuid) && !strcmp(media->pool->uuid, pool_id);
 
-			so_log_write(so_log_level_info, "Checking STone header in media: %s", ok ? "OK" : "Failed");
+			so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Checking Storiq One header in media: %s"), ok ? "OK" : "Failed");
 		} else {
-			so_log_write(so_log_level_debug, "Found STone header in media with (uuid=%s, label=%s, blocksize=%zd)", uuid, name, block_size);
+			so_log_write(so_log_level_debug, dgettext("libstoriqone-drive", "Found Storiq One header in media with (uuid: %s, label: %s, blocksize: %zd)"), uuid, name, block_size);
 
 			strcpy(media->uuid, uuid);
 			if (has_label) {
@@ -152,7 +154,7 @@ static bool sodr_media_read_header_v1(struct so_media * media, const char * buff
 			media->block_size = block_size;
 		}
 	} else if (check)
-		so_log_write(so_log_level_info, "Checking STone header in media: Failed");
+		so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Checking Storiq One header in media: Failed"));
 	else
 		media->status = so_media_status_foreign;
 
@@ -224,9 +226,9 @@ static bool sodr_media_read_header_v2(struct so_media * media, const char * buff
 		if (check) {
 			ok = !strcmp(media->uuid, uuid) && !strcmp(media->pool->uuid, pool_id);
 
-			so_log_write(so_log_level_info, "Checking STone header in media: %s", ok ? "OK" : "Failed");
+			so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Checking Storiq One header in media: %s"), ok ? "OK" : "Failed");
 		} else {
-			so_log_write(so_log_level_debug, "Found STone header in media with (uuid=%s, label=%s, blocksize=%zd)", uuid, name, block_size);
+			so_log_write(so_log_level_debug, dgettext("libstoriqone-drive", "Found Storiq One header in media with (uuid: %s, label: %s, blocksize: %zd)"), uuid, name, block_size);
 
 			strcpy(media->uuid, uuid);
 			if (has_label) {
@@ -239,7 +241,7 @@ static bool sodr_media_read_header_v2(struct so_media * media, const char * buff
 			media->block_size = block_size;
 		}
 	} else if (check)
-		so_log_write(so_log_level_info, "Checking STone header in media: Failed");
+		so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Checking Storiq One header in media: Failed"));
 	else
 		media->status = so_media_status_foreign;
 
@@ -311,9 +313,9 @@ static bool sodr_media_read_header_v3(struct so_media * media, const char * buff
 		if (check) {
 			ok = !strcmp(media->uuid, uuid) && !strcmp(media->pool->uuid, pool_id);
 
-			so_log_write(so_log_level_info, "Checking STone header in media: %s", ok ? "OK" : "Failed");
+			so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Checking Storiq One header in media: %s"), ok ? "OK" : "Failed");
 		} else {
-			so_log_write(so_log_level_debug, "Found STone header in media with (uuid=%s, label=%s, blocksize=%zd)", uuid, name, block_size);
+			so_log_write(so_log_level_debug, dgettext("libstoriqone-drive", "Found Storiq One header in media with (uuid: %s, label: %s, blocksize: %zd)"), uuid, name, block_size);
 
 			strcpy(media->uuid, uuid);
 			if (has_label) {
@@ -326,7 +328,7 @@ static bool sodr_media_read_header_v3(struct so_media * media, const char * buff
 			media->block_size = block_size;
 		}
 	} else if (check)
-		so_log_write(so_log_level_info, "Checking STone header in media: Failed");
+		so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Checking Storiq One header in media: Failed"));
 	else
 		media->status = so_media_status_foreign;
 
@@ -344,7 +346,7 @@ bool sodr_media_write_header(struct so_media * media, struct so_pool * pool, cha
 
 	struct so_host * host = so_host_get_info();
 
-	// M | STone (v1.2)
+	// M | Storiq One (v1.2)
 	// M | Media format: version=3
 	// M | Host: name="kazoo", uuid="40e576d7-cb14-42c2-95c5-edd14fbb638d"
 	// O | Label: "A0000002"
@@ -352,7 +354,7 @@ bool sodr_media_write_header(struct so_media * media, struct so_pool * pool, cha
 	// M | Pool: name="Foo", uuid="07117f1a-2b13-11e1-8bcb-80ee73001df6"
 	// M | Block size: 32768
 	// M | Checksum: sha1="ff3ac5ae13653067030b56c5f1899eefd4ff2584"
-	size_t nb_write = snprintf(buffer, length, "STone (" STORIQONE_VERSION ")\nMedia format: version=3\nHost: name=\"%s\", uuid=\"%s\"\n", host->hostname, host->uuid);
+	size_t nb_write = snprintf(buffer, length, "Storiq One (" STORIQONE_VERSION ")\nMedia format: version=3\nHost: name=\"%s\", uuid=\"%s\"\n", host->hostname, host->uuid);
 	size_t position = nb_write;
 
 	/**
@@ -371,7 +373,7 @@ bool sodr_media_write_header(struct so_media * media, struct so_pool * pool, cha
 	// compute header's checksum
 	char * digest = so_checksum_compute("sha1", buffer, position);
 	if (digest == NULL) {
-		so_log_write(so_log_level_info, "Failed to compute digest before write media header");
+		so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Failed to compute digest before write media header"));
 		return false;
 	}
 
