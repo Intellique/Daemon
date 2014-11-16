@@ -53,7 +53,7 @@ msgstr  "Échec du formatge du média"
 #: src/job/format-media/format-media.c:244
 #, c-format
 msgid   "Formatting media in progress (block size used: %zd)"
-msgstr  "Formatage du média en cours (taille de bloque utilisée : %zd)"
+msgstr  "Formatage du média en cours (taille de bloc utilisée : %zd)"
 
 #: src/job/format-media/format-media.c:383
 msgid   "Invalid uuid provide by script, ignoring it"
