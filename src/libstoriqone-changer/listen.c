@@ -98,7 +98,7 @@ static void sochgr_socket_accept(int fd_server __attribute__((unused)), int fd_c
 static void sochgr_socket_message(int fd, short event, void * data) {
 	struct sochgr_peer * peer = data;
 
-	if ((event & POLLHUP) && !(event & POLLIN)) {
+	if (event & POLLHUP) {
 		sochgr_nb_clients--;
 
 		sochgr_socket_command_release_all_media(peer, NULL, -1);
@@ -342,7 +342,7 @@ static void sochgr_socket_command_unload(struct sochgr_peer * peer, struct so_va
 	}
 
 	struct sochgr_media * mp = from->media->changer_data;
-	if (mp->peer != peer) {
+	if (mp->peer != NULL && mp->peer != peer) {
 		struct so_value * response = so_value_pack("{sb}", "status", false);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);

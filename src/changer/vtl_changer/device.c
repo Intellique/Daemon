@@ -366,7 +366,7 @@ static int sochr_vtl_changer_unload(struct so_drive * from, struct so_database_c
 	sochr_vtl_changer.status = so_changer_status_unloading;
 	db_connection->ops->sync_changer(db_connection, &sochr_vtl_changer, so_database_sync_default);
 
-	struct sochr_vtl_changer_slot * vtl_from = from->data;
+	struct sochr_vtl_changer_slot * vtl_from = from->slot->data;
 	struct sochr_vtl_changer_slot * vtl_to = vtl_from->origin->data;
 
 	char * sfrom, * sto;
