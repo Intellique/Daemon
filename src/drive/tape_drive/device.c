@@ -29,6 +29,8 @@
 #include <glob.h>
 // open
 #include <fcntl.h>
+// gettext
+#include <libintl.h>
 // bool
 #include <stdbool.h>
 // printf, sscanf, snprintf
@@ -659,7 +661,7 @@ static int tape_drive_update_status(struct st_database_connection * db) {
 			media->write_lock = GMT_WR_PROT(status.mt_gstat);
 
 			if (is_empty && media->status == st_media_status_in_use) {
-				st_log_write(st_log_level_info, "[%s | %s | #%u]: Checking media header", tape_drive.vendor, tape_drive.model, tape_drive.index);
+				st_log_write(st_log_level_info, gettext("[%s | %s | #%u]: Checking media header"), tape_drive.vendor, tape_drive.model, tape_drive.index);
 				/*
 				if (!st_media_check_header(drive)) {
 					media->status = st_media_status_error;
