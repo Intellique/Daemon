@@ -1765,21 +1765,34 @@ static int so_database_postgresql_stop_job(struct so_database_connection * conne
 	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
 	so_value_free(key);
 
-	char * jobrun_id = NULL;
-	so_value_unpack(db, "{ss}", "jobrun id", &jobrun_id);
+	char * job_id = NULL, * jobrun_id = NULL;
+	so_value_unpack(db, "{ssss}", "id", &job_id, "jobrun id", &jobrun_id);
 
 	struct so_database_postgresql_connection_private * self = connect->data;
 
-	const char * query = "finish_jobrun";
+	const char * query = "finish_job";
+	so_database_postgresql_prepare(self, query, "UPDATE job SET status = $1, update = NOW() WHERE id = $2");
+
+	const char * param_job[] = { so_job_status_to_string(job->status, false), job_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param_job, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+	free(job_id);
+
+	query = "finish_jobrun";
 	so_database_postgresql_prepare(self, query, "UPDATE jobrun SET endtime = NOW(), status = $1, done = $2, exitcode = $3, stoppedbyuser = $4 WHERE id = $5");
 
 	char * done = so_database_postgresql_set_float(job->done);
 	char * exitcode = NULL;
 	asprintf(&exitcode, "%d", job->exit_code);
 
-	const char * param[] = { so_job_status_to_string(job->status, false), done, exitcode, so_database_postgresql_bool_to_string(job->stopped_by_user), jobrun_id };
-	PGresult * result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);
-	ExecStatusType status = PQresultStatus(result);
+	const char * param_jobrun[] = { so_job_status_to_string(job->status, false), done, exitcode, so_database_postgresql_bool_to_string(job->stopped_by_user), jobrun_id };
+	result = PQexecPrepared(self->connect, query, 5, param_jobrun, NULL, NULL, 0);
+	status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)
 		so_database_postgresql_get_error(result, query);

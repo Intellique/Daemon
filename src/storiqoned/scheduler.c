@@ -25,7 +25,7 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
-// stdio
+// asprintf
 #include <stdio.h>
 // malloc
 #include <stdlib.h>
@@ -70,7 +70,7 @@ static void sod_job_exited(int fd, short event, void * data) {
 	struct so_job * job = data;
 	struct so_job_private * self = job->data;
 
-	if (event & POLLHUP) {
+	if ((event & POLLHUP) && !(event & POLLIN)) {
 		so_poll_unregister(fd, POLLHUP | POLLIN);
 
 		if (!self->finished) {
