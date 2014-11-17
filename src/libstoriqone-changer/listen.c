@@ -216,7 +216,7 @@ static void sochgr_socket_command_load(struct sochgr_peer * peer, struct so_valu
 	if (failed != 0)
 		so_log_write(so_log_level_error, dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = %d"), changer->vendor, changer->model, from->volume_name, from->index, to->index, failed);
 	else
-		so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = OK"), changer->vendor, changer->model, from->volume_name, to->index, to->index);
+		so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = OK"), changer->vendor, changer->model, to->volume_name, to->index, to->index);
 
 	struct so_value * response = so_value_pack("{sb}", "status", failed != 0 ? false : true);
 	so_json_encode_to_fd(response, fd, true);
