@@ -27,7 +27,7 @@
 #ifndef __STORIQONE_CHANGER_VTL_UTIL_H__
 #define __STORIQONE_CHANGER_VTL_UTIL_H__
 
-char * sochr_vtl_util_get_serial(const char * filename);
+char * sochgr_vtl_util_get_serial(const char * filename);
 
 #endif
 

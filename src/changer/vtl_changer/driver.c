@@ -30,18 +30,18 @@
 
 #include <changer-vtlchanger.chcksum>
 
-static struct so_changer_driver sochr_vtl_changer_driver = {
+static struct so_changer_driver sochgr_vtl_changer_driver = {
 	.name = "vtl changer",
 
 	.src_checksum = STORIQONE_CHANGER_VTLCHANGER_SRCSUM,
 };
 
-static void sochr_vtl_changer_driver_init(void) __attribute__((constructor));
+static void sochgr_vtl_changer_driver_init(void) __attribute__((constructor));
 
 
-static void sochr_vtl_changer_driver_init() {
-	sochr_vtl_changer_driver.device = sochr_vtl_changer_get_device();
-	sochgr_changer_register(&sochr_vtl_changer_driver);
+static void sochgr_vtl_changer_driver_init() {
+	sochgr_vtl_changer_driver.device = sochgr_vtl_changer_get_device();
+	sochgr_changer_register(&sochgr_vtl_changer_driver);
 }
 
 

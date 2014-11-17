@@ -41,7 +41,7 @@
 
 #include "util.h"
 
-char * sochr_vtl_util_get_serial(const char * filename) {
+char * sochgr_vtl_util_get_serial(const char * filename) {
 	char * serial = so_file_read_all_from(filename);
 	if (serial == NULL) {
 		uuid_t id;

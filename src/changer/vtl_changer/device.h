@@ -27,12 +27,12 @@
 #ifndef __STORIQONE_CHANGER_VTL_DEVICE_H__
 #define __STORIQONE_CHANGER_VTL_DEVICE_H__
 
-struct sochr_vtl_changer_slot {
+struct sochgr_vtl_changer_slot {
 	char * path;
 	struct so_slot * origin;
 };
 
-struct so_changer * sochr_vtl_changer_get_device(void);
+struct so_changer * sochgr_vtl_changer_get_device(void);
 
 #endif
 
