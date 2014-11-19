@@ -1265,7 +1265,7 @@ static int so_database_postgresql_sync_drive(struct so_database_connection * con
 			so_database_postgresql_prepare(self, query, "UPDATE drive SET status = $1, operationduration = $2, lastclean = $3, firmwarerev = $4, driveformat = $5 WHERE id = $6");
 
 			char * op_duration = NULL, * last_clean = NULL;
-			asprintf(&op_duration, "%.3f", drive->operation_duration);
+			op_duration = so_database_postgresql_set_float(drive->operation_duration);
 
 			if (drive->last_clean > 0) {
 				last_clean = malloc(24);
@@ -1273,7 +1273,7 @@ static int so_database_postgresql_sync_drive(struct so_database_connection * con
 			}
 
 			const char * param[] = {
-				so_drive_status_to_string(drive->status, false), op_duration, last_clean, drive->revision, driveformat_id, drive_id,
+				so_database_postgresql_drive_status_to_string(drive->status), op_duration, last_clean, drive->revision, driveformat_id, drive_id,
 			};
 			PGresult * result = PQexecPrepared(self->connect, query, 6, param, NULL, NULL, 0);
 			ExecStatusType status = PQresultStatus(result);
@@ -1297,7 +1297,7 @@ static int so_database_postgresql_sync_drive(struct so_database_connection * con
 			so_database_postgresql_prepare(self, query, "INSERT INTO drive (status, operationduration, lastclean, model, vendor, firmwarerev, serialnumber, changer, driveformat) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id");
 
 			char * op_duration = NULL, * last_clean = NULL;
-			asprintf(&op_duration, "%.3f", drive->operation_duration);
+			op_duration = so_database_postgresql_set_float(drive->operation_duration);
 
 			db = so_value_hashtable_get(drive->db_data, key, false, false);
 
@@ -1310,7 +1310,7 @@ static int so_database_postgresql_sync_drive(struct so_database_connection * con
 			}
 
 			const char * param[] = {
-				so_drive_status_to_string(drive->status, false), op_duration, last_clean,
+				so_database_postgresql_drive_status_to_string(drive->status), op_duration, last_clean,
 				drive->model, drive->vendor, drive->revision, drive->serial_number, changer_id, driveformat_id
 			};
 			PGresult * result = PQexecPrepared(self->connect, query, 9, param, NULL, NULL, 0);

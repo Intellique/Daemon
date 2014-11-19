@@ -125,12 +125,10 @@ int main() {
 	sochgr_listen_set_db_connection(db_connect);
 	sochgr_media_init(changer);
 
-	db_connect->ops->sync_changer(db_connect, changer, so_database_sync_default);
-
 	while (!stop) {
-		so_poll(10000);
-
 		db_connect->ops->sync_changer(db_connect, changer, so_database_sync_default);
+
+		so_poll(10000);
 
 		switch (changer->next_action) {
 			case so_changer_action_put_offline:

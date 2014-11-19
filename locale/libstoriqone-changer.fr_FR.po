@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-changer v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-11-16 13:35+0100\n"
+        "POT-Creation-Date: 2014-11-19 15:48+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -60,7 +60,7 @@ msgstr  "Démarrage de l'échanger (type : %s)"
 msgid   "Initialize changer (type: %s)"
 msgstr  "Initialisation de l'échanger (type : %s)"
 
-#: src/libstoriqone-changer/main.c:149
+#: src/libstoriqone-changer/main.c:147
 #, c-format
 msgid   "Changer (type: %s) will stop"
 msgstr  "Échanger (type : %s) va s'arrêter"

@@ -181,25 +181,33 @@ static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_
 			so_file_rm(link);
 			symlink(media_link, link);
 
-			struct so_media * media = sl->media = malloc(sizeof(struct so_media));
-			bzero(media, sizeof(struct so_media));
-			asprintf(&media->label, "%s%03Ld", prefix, i);
-			media->medium_serial_number = sochgr_vtl_util_get_serial(serial_file);
-			media->name = strdup(media->label);
-			media->status = so_media_status_new;
-			media->first_used = time(NULL);
-			media->block_size = format->block_size;
-			media->free_block = media->total_block = format->capacity / format->block_size;
-			media->append = true;
-			media->type = so_media_type_rewritable;
-			media->format = format;
+			char * serial_number = sochgr_vtl_util_get_serial(serial_file);
+			struct so_media * media = db_connection->ops->get_media(db_connection, serial_number, NULL, NULL);
+
+			if (media != NULL)
+				free(serial_number);
+			else {
+				media = malloc(sizeof(struct so_media));
+				bzero(media, sizeof(struct so_media));
+				asprintf(&media->label, "%s%03Ld", prefix, i);
+				media->medium_serial_number = serial_number;
+				media->name = strdup(media->label);
+				media->status = so_media_status_new;
+				media->first_used = time(NULL);
+				media->use_before = media->first_used + format->life_span;
+				media->block_size = format->block_size;
+				media->free_block = media->total_block = format->capacity / format->block_size;
+				media->append = true;
+				media->type = so_media_type_rewritable;
+				media->format = format;
+			}
+
+			sl->media = media;
 
 			free(link);
 			free(media_link);
 			free(serial_file);
 		}
-
-		db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_id_only);
 	} else {
 		if (so_file_mkdir(vtl_root_dir, 0700))
 			goto init_error;
@@ -273,28 +281,37 @@ static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_
 			asprintf(&link, "%s/slots/%Ld/media", vtl_root_dir, i);
 			symlink(media_link, link);
 
-			struct so_media * media = sl->media = malloc(sizeof(struct so_media));
-			bzero(media, sizeof(struct so_media));
-			asprintf(&media->label, "%s%03Ld", prefix, i);
-			media->medium_serial_number = sochgr_vtl_util_get_serial(serial_file);
-			media->name = strdup(media->label);
-			media->status = so_media_status_new;
-			media->first_used = time(NULL);
-			media->use_before = media->first_used + format->life_span;
-			media->block_size = format->block_size;
-			media->free_block = media->total_block = format->capacity / format->block_size;
-			media->append = true;
-			media->type = so_media_type_rewritable;
-			media->format = format;
+			char * serial_number = sochgr_vtl_util_get_serial(serial_file);
+			struct so_media * media = db_connection->ops->get_media(db_connection, serial_number, NULL, NULL);
+
+			if (media != NULL)
+				free(serial_number);
+			else {
+				media = malloc(sizeof(struct so_media));
+				bzero(media, sizeof(struct so_media));
+				asprintf(&media->label, "%s%03Ld", prefix, i);
+				media->medium_serial_number = serial_number;
+				media->name = strdup(media->label);
+				media->status = so_media_status_new;
+				media->first_used = time(NULL);
+				media->use_before = media->first_used + format->life_span;
+				media->block_size = format->block_size;
+				media->free_block = media->total_block = format->capacity / format->block_size;
+				media->append = true;
+				media->type = so_media_type_rewritable;
+				media->format = format;
+			}
+
+			sl->media = media;
 
 			free(link);
 			free(media_dir);
 			free(media_link);
 			free(serial_file);
 		}
-
-		db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_init);
 	}
+
+	db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_init);
 
 	unsigned int i;
 	for (i = 0; i < sochgr_vtl_changer.nb_drives; i++) {

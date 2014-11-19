@@ -37,23 +37,62 @@
 // mktime, strptime
 #include <time.h>
 
+#include <libstoriqone/drive.h>
+#include <libstoriqone/string.h>
+
 #include "common.h"
 
-static struct so_database_postgresql_log_level2 {
-	enum so_log_level level;
-	const char * name;
-} so_database_postgresql_log_levels[] = {
-	{ so_log_level_alert,      "alert" },
-	{ so_log_level_critical,   "critical" },
-	{ so_log_level_debug,      "debug" },
-	{ so_log_level_emergencey, "emergency" },
-	{ so_log_level_error,      "error" },
-	{ so_log_level_info,       "info" },
-	{ so_log_level_notice,     "notice" },
-	{ so_log_level_warning,    "warning" },
+static void so_database_postgresql_util_init(void) __attribute__((constructor));
 
-	{ so_log_level_unknown, "Unknown level" },
+
+static struct so_database_postgresql_drive_status2 {
+	unsigned long long hash;
+	const char * name;
+	const enum so_drive_status status;
+} so_database_postgresql_drive_status[] = {
+	[so_drive_status_cleaning]    = { 0, "cleaning",    so_drive_status_cleaning },
+	[so_drive_status_empty_idle]  = { 0, "empty idle",  so_drive_status_empty_idle },
+	[so_drive_status_erasing]     = { 0, "erasing",     so_drive_status_erasing },
+	[so_drive_status_error]       = { 0, "error",       so_drive_status_error },
+	[so_drive_status_loaded_idle] = { 0, "loaded idle", so_drive_status_loaded_idle },
+	[so_drive_status_loading]     = { 0, "loading",     so_drive_status_loading },
+	[so_drive_status_positioning] = { 0, "positioning", so_drive_status_positioning },
+	[so_drive_status_reading]     = { 0, "reading",     so_drive_status_reading },
+	[so_drive_status_rewinding]   = { 0, "rewinding",   so_drive_status_rewinding },
+	[so_drive_status_unloading]   = { 0, "unloading",   so_drive_status_unloading },
+	[so_drive_status_writing]     = { 0, "writing",     so_drive_status_writing },
+
+	[so_drive_status_unknown] = { 0, "unknown", so_drive_status_unknown },
 };
+static const unsigned int so_database_postgresql_drive_nb_status = sizeof(so_database_postgresql_drive_status) / sizeof(*so_database_postgresql_drive_status);
+
+static struct so_database_postgresql_log_level2 {
+	unsigned long long hash;
+	const char * name;
+	enum so_log_level level;
+} so_database_postgresql_log_levels[] = {
+	[so_log_level_alert]      = { 0, "alert",     so_log_level_alert },
+	[so_log_level_critical]   = { 0, "critical",  so_log_level_critical },
+	[so_log_level_debug]      = { 0, "debug",     so_log_level_debug },
+	[so_log_level_emergencey] = { 0, "emergency", so_log_level_emergencey },
+	[so_log_level_error]      = { 0, "error",     so_log_level_error },
+	[so_log_level_info]       = { 0, "info",      so_log_level_info },
+	[so_log_level_notice]     = { 0, "notice",    so_log_level_notice },
+	[so_log_level_warning]    = { 0, "warning",   so_log_level_warning },
+
+	[so_log_level_unknown]    = { 0, "unknown",   so_log_level_unknown },
+};
+static const unsigned int so_database_postgresql_log_nb_level = sizeof(so_database_postgresql_log_levels) / sizeof(*so_database_postgresql_log_levels);
+
+
+static void so_database_postgresql_util_init() {
+	unsigned int i;
+	for (i = 0; i < so_database_postgresql_drive_nb_status; i++)
+		so_database_postgresql_drive_status[i].hash = so_string_compute_hash2(so_database_postgresql_drive_status[i].name);
+
+	for (i = 0; i < so_database_postgresql_log_nb_level; i++)
+		so_database_postgresql_log_levels[i].hash = so_string_compute_hash2(so_database_postgresql_log_levels[i].name);
+}
 
 
 const char * so_database_postgresql_bool_to_string(bool value) {
@@ -243,15 +282,6 @@ int so_database_postgresql_get_uint_add(PGresult * result, int row, int column, 
 	return failed;
 }
 
-const char * so_database_postgresql_log_level_to_string(enum so_log_level level) {
-	unsigned int i;
-	for (i = 0; so_database_postgresql_log_levels[i].level != so_log_level_unknown; i++)
-		if (so_database_postgresql_log_levels[i].level == level)
-			return so_database_postgresql_log_levels[i].name;
-
-	return so_database_postgresql_log_levels[i].name;
-}
-
 
 char * so_database_postgresql_set_float(double fl) {
 	char * str_float;
@@ -269,5 +299,14 @@ char * so_database_postgresql_set_float(double fl) {
 	}
 
 	return str_float;
+}
+
+
+const char * so_database_postgresql_drive_status_to_string(enum so_drive_status status) {
+	return so_database_postgresql_drive_status[status].name;
+}
+
+const char * so_database_postgresql_log_level_to_string(enum so_log_level level) {
+	return so_database_postgresql_log_levels[level].name;
 }
 
