@@ -1076,11 +1076,14 @@ static int so_database_postgresql_sync_changer(struct so_database_connection * c
 
 		if (failed != 0) {
 			so_database_postgresql_cancel_checkpoint(connect, "after_changers");
+			failed = 0;
 			so_log_write2(so_log_level_warning, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: error while synchronizing drive with database"));
 		}
 	}
 
 	if (method == so_database_sync_init) {
+		so_database_postgresql_create_checkpoint(connect, "after_drives");
+
 		const char * query = "delete_from_changerslot_by_changer";
 		so_database_postgresql_prepare(self, query, "DELETE FROM changerslot WHERE changer = $1");
 
@@ -1093,17 +1096,25 @@ static int so_database_postgresql_sync_changer(struct so_database_connection * c
 		PQclear(result);
 
 		if (failed != 0) {
-			so_database_postgresql_cancel_checkpoint(connect, "after_changers");
+			so_database_postgresql_cancel_checkpoint(connect, "after_drives");
 			failed = 0;
+			so_log_write2(so_log_level_warning, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: error while synchronizing changer slots with database"));
 		}
 	}
 
 	free(changer_id);
 
+	so_database_postgresql_create_checkpoint(connect, "after_slots");
+
 	for (i = 0; failed == 0 && i < changer->nb_slots; i++)
 		failed = so_database_postgresql_sync_slots(connect, changer->slots + i, method);
 
-	if (transStatus == PQTRANS_IDLE && failed == 0)
+	if (failed != 0) {
+		so_database_postgresql_cancel_checkpoint(connect, "after_slots");
+		so_log_write2(so_log_level_warning, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: error while synchronizing changer slots with database"));
+	}
+
+	if (transStatus == PQTRANS_IDLE)
 		so_database_postgresql_finish_transaction(connect);
 
 	return 0;

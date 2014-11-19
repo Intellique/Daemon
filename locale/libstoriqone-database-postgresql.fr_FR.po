@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-11-19 16:04+0100\n"
+        "POT-Creation-Date: 2014-11-19 16:14+0100\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -43,11 +43,15 @@ msgstr  "PSQL : Annulation de la transcation parce qu’elle est en erreur"
 msgid   "PSQL: Host not found into database (%s)"
 msgstr  "PSQL : Hôte non trouvé dans la base de données (%s)"
 
-#: src/database/postgresql/connection.c:1079
+#: src/database/postgresql/connection.c:1080
 msgid   "PSQL: error while synchronizing drive with database"
 msgstr  "PSQL : erreur lors de la synchronisation d’un lecteur avec la base de données"
 
-#: src/database/postgresql/connection.c:2108
+#: src/database/postgresql/connection.c:1101 src/database/postgresql/connection.c:1114
+msgid   "PSQL: error while synchronizing changer slots with database"
+msgstr  "PSQL : erreur lors de la synchronisation des emplacements d'une librairie de bande avec la base de données"
+
+#: src/database/postgresql/connection.c:2119
 #, c-format
 msgid   "PSQL: new query prepared (%s) => {%s}, status: %s"
 msgstr  "PSQL : nouvelle requête préparée (%s) => {%s}, status : %s"
