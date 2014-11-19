@@ -25,7 +25,7 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
-// gettext
+// dgettext
 #include <libintl.h>
 // PQclear, PQexec, PQexecPrepared, PQfinish, PQresultStatus
 // PQsetErrorVerbosity, PQtransactionStatus
@@ -209,7 +209,7 @@ static int so_database_postgresql_cancel_checkpoint(struct so_database_connectio
 		so_database_postgresql_get_error(result, NULL);
 
 	if (status != PGRES_COMMAND_OK)
-		so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: error while rolling back a savepoint => %s"), PQerrorMessage(self->connect));
+		so_log_write2(so_log_level_error, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: error while rolling back a savepoint => %s"), PQerrorMessage(self->connect));
 
 	PQclear(result);
 	free(query);
@@ -249,10 +249,10 @@ static int so_database_postgresql_create_checkpoint(struct so_database_connectio
 	PGTransactionStatusType transStatus = PQtransactionStatus(self->connect);
 
 	if (transStatus == PQTRANS_INERROR) {
-		so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: Can't create checkpoint because there is an error into current transaction"));
+		so_log_write2(so_log_level_error, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: Can't create checkpoint because there is an error into current transaction"));
 		return -1;
 	} else if (transStatus == PQTRANS_IDLE) {
-		so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: Can't create checkpoint because there is no active transaction"));
+		so_log_write2(so_log_level_error, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: Can't create checkpoint because there is no active transaction"));
 		return -1;
 	}
 
@@ -266,7 +266,7 @@ static int so_database_postgresql_create_checkpoint(struct so_database_connectio
 		so_database_postgresql_get_error(result, NULL);
 
 	if (status != PGRES_COMMAND_OK)
-		so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: error while creating a savepoint => %s"), PQerrorMessage(self->connect));
+		so_log_write2(so_log_level_error, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: error while creating a savepoint => %s"), PQerrorMessage(self->connect));
 
 	PQclear(result);
 	free(query);
@@ -283,7 +283,7 @@ static int so_database_postgresql_finish_transaction(struct so_database_connecti
 	PGTransactionStatusType status = PQtransactionStatus(self->connect);
 	switch (status) {
 		case PQTRANS_INERROR: {
-			so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: Rolling back transaction because current transaction is in error"));
+			so_log_write2(so_log_level_error, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: Rolling back transaction because current transaction is in error"));
 
 			PGresult * result = PQexec(self->connect, "ROLL BACK");
 			PQclear(result);
@@ -392,7 +392,7 @@ static char * so_database_postgresql_get_host(struct so_database_connection * co
 	if (PQresultStatus(result) == PGRES_TUPLES_OK && PQntuples(result) == 1)
 		so_database_postgresql_get_string_dup(result, 0, 0, &hostid);
 	else
-		so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: Host not found into database (%s)"), name.nodename);
+		so_log_write2(so_log_level_error, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: Host not found into database (%s)"), name.nodename);
 
 	PQclear(result);
 
@@ -1073,6 +1073,11 @@ static int so_database_postgresql_sync_changer(struct so_database_connection * c
 		for (i = 0; failed == 0 && i < changer->nb_drives; i++)
 			if (changer->drives[i].enable)
 				failed = so_database_postgresql_sync_drive(connect, changer->drives + i, method);
+
+		if (failed != 0) {
+			so_database_postgresql_cancel_checkpoint(connect, "after_changers");
+			so_log_write2(so_log_level_warning, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: error while synchronizing drive with database"));
+		}
 	}
 
 	if (method == so_database_sync_init) {
@@ -2100,7 +2105,7 @@ static void so_database_postgresql_prepare(struct so_database_postgresql_connect
 		ExecStatusType status = PQresultStatus(prepare);
 		if (status == PGRES_FATAL_ERROR) {
 			so_database_postgresql_get_error(prepare, statement_name);
-			so_log_write2(status == PGRES_COMMAND_OK ? so_log_level_debug : so_log_level_error, so_log_type_plugin_db, gettext("PSQL: new query prepared (%s) => {%s}, status: %s"), statement_name, query, PQresStatus(status));
+			so_log_write2(status == PGRES_COMMAND_OK ? so_log_level_debug : so_log_level_error, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: new query prepared (%s) => {%s}, status: %s"), statement_name, query, PQresStatus(status));
 		} else
 			so_value_hashtable_put2(self->cached_query, statement_name, so_value_new_string(query), true);
 		PQclear(prepare);

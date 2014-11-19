@@ -24,7 +24,7 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-// bindtextdomain, gettext, textdomain
+// bindtextdomain
 #include <libintl.h>
 // NULL
 #include <stddef.h>
@@ -84,7 +84,6 @@ static struct so_database_config * so_database_postgresql_get_default_config() {
 
 static void so_database_postgresql_init() {
 	bindtextdomain("libstoriqone-database-postgresql", LOCALE_DIR);
-	textdomain("libstoriqone-database-postgresql");
 
 	so_database_postgresql_driver.configurations = so_value_new_hashtable2();
 	so_database_register_driver(&so_database_postgresql_driver);
