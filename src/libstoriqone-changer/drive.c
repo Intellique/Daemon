@@ -39,6 +39,7 @@
 static bool sochgr_drive_check_cookie(struct so_drive * dr, const char * cookie);
 static bool sochgr_drive_check_support(struct so_drive * drive, struct so_media_format * format, bool for_writing);
 static bool sochgr_drive_is_free(struct so_drive * drive);
+static int sochgr_drive_load_media(struct so_drive * drive, struct so_media * media);
 static int sochgr_drive_reset(struct so_drive * drive);
 static int sochgr_drive_update_status(struct so_drive * drive);
 
@@ -46,6 +47,7 @@ static struct so_drive_ops drive_ops = {
 	.check_cookie  = sochgr_drive_check_cookie,
 	.check_support = sochgr_drive_check_support,
 	.is_free       = sochgr_drive_is_free,
+	.load_media    = sochgr_drive_load_media,
 	.reset         = sochgr_drive_reset,
 	.update_status = sochgr_drive_update_status,
 };
@@ -105,6 +107,26 @@ static bool sochgr_drive_is_free(struct so_drive * drive) {
 	so_value_free(returned);
 
 	return is_free;
+}
+
+static int sochgr_drive_load_media(struct so_drive * drive, struct so_media * media) {
+	struct sochgr_drive * self = drive->data;
+
+	struct so_value * command = so_value_pack("{sss{so}}",
+		"command", "load media",
+		"params",
+			"media", so_media_convert(media)
+	);
+	so_json_encode_to_fd(command, self->fd_in, true);
+	so_value_free(command);
+
+	struct so_value * returned = so_json_parse_fd(self->fd_out, -1);
+	long long int status;
+
+	so_value_unpack(returned, "{sb}", "status", &status);
+	so_value_free(returned);
+
+	return (int) status;
 }
 
 void sochgr_drive_register(struct so_drive * drive, struct so_value * config, const char * process_name) {

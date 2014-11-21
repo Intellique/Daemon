@@ -26,10 +26,12 @@
 
 // dgettext, gettext
 #include <libintl.h>
-// free
+// free, malloc
 #include <stdlib.h>
 // strncpy
 #include <string.h>
+// bzero
+#include <strings.h>
 
 #define gettext_noop(String) String
 
@@ -183,7 +185,11 @@ static void so_media_init(void) {
 
 
 struct so_value * so_media_convert(struct so_media * media) {
-	struct so_value * md = so_value_pack("{sssssssssssisisisisisisisisisisisisisisbsssbso}",
+	struct so_value * pool = so_value_new_null();
+	if (media->pool != NULL)
+		pool = so_pool_convert(media->pool);
+
+	struct so_value * md = so_value_pack("{sssssssssssisisisisisisisisisisisisisisbsssbsoso}",
 		"uuid", media->uuid[0] != '\0' ? media->uuid : NULL,
 		"label", media->label,
 		"medium serial number", media->medium_serial_number,
@@ -214,7 +220,8 @@ struct so_value * so_media_convert(struct so_media * media) {
 		"type", so_media_type_to_string(media->type, false),
 		"write lock", media->write_lock,
 
-		"format", so_media_format_convert(media->format)
+		"format", so_media_format_convert(media->format),
+		"pool", pool
 	);
 
 	if (media->last_read > 0)
@@ -296,6 +303,15 @@ void so_media_format_sync(struct so_media_format * format, struct so_value * new
 	free(mode);
 }
 
+struct so_media * so_media_new(struct so_value * media) {
+	struct so_media * new_media = malloc(sizeof(struct so_media));
+	bzero(new_media, sizeof(struct so_media));
+
+	so_media_sync(new_media, media);
+
+	return new_media;
+}
+
 void so_media_sync(struct so_media * media, struct so_value * new_media) {
 	free(media->label);
 	free(media->medium_serial_number);
@@ -304,12 +320,13 @@ void so_media_sync(struct so_media * media, struct so_value * new_media) {
 
 	struct so_value * uuid = NULL;
 	struct so_value * format = NULL;
+	struct so_value * pool = NULL;
 
 	char * status = NULL, * type = NULL;
 	long int nb_read_errors = 0, nb_write_errors = 0;
 	long int nb_volumes = 0;
 
-	so_value_unpack(new_media, "{sosssssssssisisisisisisisisisisisisisisbsssbso}",
+	so_value_unpack(new_media, "{sosssssssssisisisisisisisisisisisisisisbsssbsoso}",
 		"uuid", &uuid,
 		"label", &media->label,
 		"medium serial number", &media->medium_serial_number,
@@ -340,7 +357,8 @@ void so_media_sync(struct so_media * media, struct so_value * new_media) {
 		"type", &type,
 		"write lock", &media->write_lock,
 
-		"format", &format
+		"format", &format,
+		"pool", &pool
 	);
 
 	if (uuid->type != so_value_null) {

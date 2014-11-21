@@ -109,7 +109,7 @@ static struct so_drive sodr_vtl_drive = {
 
 static bool sodr_vtl_drive_check_header(struct so_database_connection * db) {
 	sodr_vtl_drive.status = so_drive_status_reading;
-	db->ops->sync_drive(db, &sodr_vtl_drive, so_database_sync_default);
+	db->ops->sync_drive(db, &sodr_vtl_drive, true, so_database_sync_default);
 
 	char * file;
 	asprintf(&file, "%s/file_0", sodr_vtl_media_dir);
@@ -130,7 +130,7 @@ static bool sodr_vtl_drive_check_header(struct so_database_connection * db) {
 	free(header);
 
 	sodr_vtl_drive.status = so_drive_status_loaded_idle;
-	db->ops->sync_drive(db, &sodr_vtl_drive, so_database_sync_default);
+	db->ops->sync_drive(db, &sodr_vtl_drive, true, so_database_sync_default);
 
 	return ok;
 }
@@ -144,7 +144,7 @@ static int sodr_vtl_drive_format_media(struct so_pool * pool, struct so_database
 	asprintf(&files, "%s/file_*", sodr_vtl_media_dir);
 
 	sodr_vtl_drive.status = so_drive_status_writing;
-	db->ops->sync_drive(db, &sodr_vtl_drive, so_database_sync_default);
+	db->ops->sync_drive(db, &sodr_vtl_drive, true, so_database_sync_default);
 
 	glob_t gl;
 	int ret = glob(files, 0, NULL, &gl);
@@ -194,10 +194,12 @@ static int sodr_vtl_drive_format_media(struct so_pool * pool, struct so_database
 		media->status = so_media_status_in_use;
 		media->last_write = time(NULL);
 		media->nb_total_write++;
+		media->nb_volumes = 1;
+		media->free_block--;
 	}
 
 	sodr_vtl_drive.status = nb_write != block_size ? so_drive_status_error : so_drive_status_loaded_idle;
-	db->ops->sync_drive(db, &sodr_vtl_drive, so_database_sync_default);
+	db->ops->sync_drive(db, &sodr_vtl_drive, true, so_database_sync_default);
 
 	free(file);
 
@@ -237,7 +239,7 @@ static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct so_databas
 	struct so_stream_writer * writer = sodr_vtl_drive_writer_get_raw_writer(&sodr_vtl_drive, files);
 
 	sodr_vtl_drive.status = so_drive_status_writing;
-	db->ops->sync_drive(db, &sodr_vtl_drive, so_database_sync_default);
+	db->ops->sync_drive(db, &sodr_vtl_drive, true, so_database_sync_default);
 
 	free(files);
 	return writer;

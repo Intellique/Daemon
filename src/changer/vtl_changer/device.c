@@ -356,7 +356,9 @@ static int sochgr_vtl_changer_load(struct so_slot * from, struct so_drive * to, 
 
 		media->load_count++;
 
-		to->ops->reset(to);
+		db_connection->ops->sync_media(db_connection, media, so_database_sync_default);
+
+		to->ops->load_media(to, media);
 	}
 
 	to->ops->update_status(to);

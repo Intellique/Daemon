@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-11-19 15:53+0100\n"
+        "POT-Creation-Date: 2014-11-19 20:48+0100\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -76,7 +76,7 @@ msgstr  "Démarrage du lecteur (type : %s)"
 msgid   "Initialize drive (type: %s)"
 msgstr  "Initialisation du lecteur (type : %s)"
 
-#: src/libstoriqone-drive/main.c:120
+#: src/libstoriqone-drive/main.c:119
 #, c-format
 msgid   "Drive (type: %s) will stop"
 msgstr  "Le lecteur (type : %s) va s'arrêter"

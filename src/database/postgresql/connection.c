@@ -86,9 +86,9 @@ static struct so_value * so_database_postgresql_get_slot_by_drive(struct so_data
 static struct so_value * so_database_postgresql_get_standalone_drives(struct so_database_connection * connect);
 static struct so_value * so_database_postgresql_get_vtls(struct so_database_connection * connect);
 static int so_database_postgresql_sync_changer(struct so_database_connection * connect, struct so_changer * changer, enum so_database_sync_method method);
-static int so_database_postgresql_sync_drive(struct so_database_connection * connect, struct so_drive * drive, enum so_database_sync_method method);
-static int so_database_postgresql_sync_slots(struct so_database_connection * connect, struct so_slot * slot, enum so_database_sync_method method);
+static int so_database_postgresql_sync_drive(struct so_database_connection * connect, struct so_drive * drive, bool sync_media, enum so_database_sync_method method);
 static int so_database_postgresql_sync_media(struct so_database_connection * connect, struct so_media * media, enum so_database_sync_method method);
+static int so_database_postgresql_sync_slots(struct so_database_connection * connect, struct so_slot * slot, enum so_database_sync_method method);
 
 static int so_database_postgresql_add_job_record(struct so_database_connection * connect, struct so_job * job, enum so_log_level level, enum so_job_record_notif notif, const char * message);
 static int so_database_postgresql_start_job(struct so_database_connection * connect, struct so_job * job);
@@ -127,6 +127,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.get_vtls              = so_database_postgresql_get_vtls,
 	.sync_changer          = so_database_postgresql_sync_changer,
 	.sync_drive            = so_database_postgresql_sync_drive,
+	.sync_media            = so_database_postgresql_sync_media,
 
 	.add_job_record = so_database_postgresql_add_job_record,
 	.start_job      = so_database_postgresql_start_job,
@@ -1072,7 +1073,7 @@ static int so_database_postgresql_sync_changer(struct so_database_connection * c
 
 		for (i = 0; failed == 0 && i < changer->nb_drives; i++)
 			if (changer->drives[i].enable)
-				failed = so_database_postgresql_sync_drive(connect, changer->drives + i, method);
+				failed = so_database_postgresql_sync_drive(connect, changer->drives + i, false, method);
 
 		if (failed != 0) {
 			so_database_postgresql_cancel_checkpoint(connect, "after_changers");
@@ -1120,7 +1121,7 @@ static int so_database_postgresql_sync_changer(struct so_database_connection * c
 	return 0;
 }
 
-static int so_database_postgresql_sync_drive(struct so_database_connection * connect, struct so_drive * drive, enum so_database_sync_method method) {
+static int so_database_postgresql_sync_drive(struct so_database_connection * connect, struct so_drive * drive, bool sync_media, enum so_database_sync_method method) {
 	if (connect == NULL || drive == NULL)
 		return -1;
 
@@ -1357,7 +1358,7 @@ static int so_database_postgresql_sync_drive(struct so_database_connection * con
 	free(driveformat_id);
 	free(drive_id);
 
-	if (drive->slot != NULL && drive->slot->media != NULL)
+	if (sync_media && drive->slot != NULL && drive->slot->media != NULL)
 		so_database_postgresql_sync_media(connect, drive->slot->media, method);
 
 	if (transStatus == PQTRANS_IDLE)
@@ -1589,7 +1590,8 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 static int so_database_postgresql_sync_slots(struct so_database_connection * connect, struct so_slot * slot, enum so_database_sync_method method) {
 	int failed = 0;
 
-	if (slot->media != NULL)
+	// media in drive are updated directly by sync_drive
+	if (slot->drive == NULL && slot->media != NULL)
 		failed = so_database_postgresql_sync_media(connect, slot->media, method);
 
 	if (failed != 0)

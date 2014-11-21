@@ -109,12 +109,11 @@ int main() {
 	so_log_write(so_log_level_info, "Starting drive (type: %s, vendor: %s, model: %s, serial number: %s)", driver->name, drive->vendor, drive->model, drive->serial_number);
 
 	drive->ops->update_status(db_connect);
-	db_connect->ops->sync_drive(db_connect, drive, so_database_sync_default);
 
 	while (!sodr_changer_is_stopped()) {
-		so_poll(-1);
+		db_connect->ops->sync_drive(db_connect, drive, true, so_database_sync_default);
 
-		db_connect->ops->sync_drive(db_connect, drive, so_database_sync_default);
+		so_poll(-1);
 	}
 
 	so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Drive (type: %s) will stop"), driver->name);

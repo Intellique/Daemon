@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-11-12 20:48+0100\n"
+        "POT-Creation-Date: 2014-11-21 16:10+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -16,7 +16,7 @@ msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/libstoriqone/changer.c:48 src/libstoriqone/media.c:120 src/libstoriqone/media.c:136
+#: src/libstoriqone/changer.c:48 src/libstoriqone/media.c:122 src/libstoriqone/media.c:138
 msgid   "none"
 msgstr  "aucun"
 
@@ -32,7 +32,7 @@ msgstr  "mettre en ligne"
 msgid   "unknown action"
 msgstr  "action inconnue"
 
-#: src/libstoriqone/changer.c:64 src/libstoriqone/drive.c:51 src/libstoriqone/job.c:52 src/libstoriqone/media.c:82
+#: src/libstoriqone/changer.c:64 src/libstoriqone/drive.c:51 src/libstoriqone/job.c:52 src/libstoriqone/media.c:84
 msgid   "error"
 msgstr  "erreur"
 
@@ -190,7 +190,7 @@ msgstr[1]       "Vide %zd tas, adresse du tas: %p, taille du tas: %zd"
 msgid   "#%zd %s"
 msgstr  "#%zd %s"
 
-#: src/libstoriqone/drive.c:48 src/libstoriqone/media.c:49 src/libstoriqone/media.c:102
+#: src/libstoriqone/drive.c:48 src/libstoriqone/media.c:51 src/libstoriqone/media.c:104
 msgid   "cleaning"
 msgstr  "en netoyage"
 
@@ -480,84 +480,84 @@ msgstr  "Message utilisateur"
 msgid   "Unknown type"
 msgstr  "Type inconnu"
 
-#: src/libstoriqone/media.c:48
+#: src/libstoriqone/media.c:50
 msgid   "audio"
 msgstr  "audio"
 
-#: src/libstoriqone/media.c:50
+#: src/libstoriqone/media.c:52
 msgid   "data"
 msgstr  "données"
 
-#: src/libstoriqone/media.c:51
+#: src/libstoriqone/media.c:53
 msgid   "video"
 msgstr  "vidéo"
 
-#: src/libstoriqone/media.c:53 src/libstoriqone/media.c:69 src/libstoriqone/media.c:90 src/libstoriqone/media.c:106
-#: src/libstoriqone/media.c:122 src/libstoriqone/media.c:138 src/libstoriqone/script.c:49
+#: src/libstoriqone/media.c:55 src/libstoriqone/media.c:71 src/libstoriqone/media.c:92 src/libstoriqone/media.c:108
+#: src/libstoriqone/media.c:124 src/libstoriqone/media.c:140 src/libstoriqone/script.c:49
 msgid   "unknown"
 msgstr  "inconnus"
 
-#: src/libstoriqone/media.c:65
+#: src/libstoriqone/media.c:67
 msgid   "disk"
 msgstr  "disque"
 
-#: src/libstoriqone/media.c:66
+#: src/libstoriqone/media.c:68
 msgid   "linear"
 msgstr  "linéaire"
 
-#: src/libstoriqone/media.c:67
+#: src/libstoriqone/media.c:69
 msgid   "optical"
 msgstr  "optique"
 
-#: src/libstoriqone/media.c:81
+#: src/libstoriqone/media.c:83
 msgid   "erasable"
 msgstr  "effaçable"
 
-#: src/libstoriqone/media.c:83
+#: src/libstoriqone/media.c:85
 msgid   "foreign"
 msgstr  "étrangère"
 
-#: src/libstoriqone/media.c:84
+#: src/libstoriqone/media.c:86
 msgid   "in use"
 msgstr  "en usage"
 
-#: src/libstoriqone/media.c:85
+#: src/libstoriqone/media.c:87
 msgid   "locked"
 msgstr  "Verrouillée"
 
-#: src/libstoriqone/media.c:86
+#: src/libstoriqone/media.c:88
 msgid   "needs replacement"
 msgstr  "à changer"
 
-#: src/libstoriqone/media.c:87
+#: src/libstoriqone/media.c:89
 msgid   "new"
 msgstr  "neuve"
 
-#: src/libstoriqone/media.c:88
+#: src/libstoriqone/media.c:90
 msgid   "pooled"
 msgstr  "groupé"
 
-#: src/libstoriqone/media.c:103
+#: src/libstoriqone/media.c:105
 msgid   "rewritable"
 msgstr  "ré-inscriptible"
 
-#: src/libstoriqone/media.c:104
+#: src/libstoriqone/media.c:106
 msgid   "worm"
 msgstr  "worm"
 
-#: src/libstoriqone/media.c:118
+#: src/libstoriqone/media.c:120
 msgid   "quick mode"
 msgstr  "mode rapide"
 
-#: src/libstoriqone/media.c:119
+#: src/libstoriqone/media.c:121
 msgid   "thorough mode"
 msgstr  "mode minutieux"
 
-#: src/libstoriqone/media.c:134
+#: src/libstoriqone/media.c:136
 msgid   "archive"
 msgstr  "archive"
 
-#: src/libstoriqone/media.c:135
+#: src/libstoriqone/media.c:137
 msgid   "file"
 msgstr  "fichier"
 

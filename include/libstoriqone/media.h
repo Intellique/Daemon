@@ -167,6 +167,7 @@ struct so_pool {
 struct so_value * so_media_convert(struct so_media * media) __attribute__((nonnull,warn_unused_result));
 struct so_value * so_media_format_convert(struct so_media_format * format) __attribute__((nonnull,warn_unused_result));
 void so_media_format_sync(struct so_media_format * format, struct so_value * new_format) __attribute__((nonnull));
+struct so_media * so_media_new(struct so_value * media) __attribute__((nonnull,warn_unused_result));
 void so_media_sync(struct so_media * media, struct so_value * new_media) __attribute__((nonnull));
 struct so_value * so_pool_convert(struct so_pool * pool) __attribute__((nonnull,warn_unused_result));
 void so_pool_sync(struct so_pool * pool, struct so_value * new_pool) __attribute__((nonnull));

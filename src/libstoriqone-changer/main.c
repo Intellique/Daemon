@@ -130,6 +130,12 @@ int main() {
 
 		so_poll(10000);
 
+		unsigned int i;
+		for (i = 0; i < changer->nb_drives; i++) {
+			struct so_drive * dr = changer->drives + i;
+			dr->ops->update_status(dr);
+		}
+
 		switch (changer->next_action) {
 			case so_changer_action_put_offline:
 				changer->ops->put_offline(db_connect);
