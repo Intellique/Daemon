@@ -36,6 +36,7 @@ enum so_process_fd_type {
 	so_process_fd_type_close,
 	so_process_fd_type_set,
 	so_process_fd_type_dup,
+	so_process_fd_type_set_null,
 };
 
 struct so_process_fd {
@@ -89,6 +90,7 @@ void so_process_redir_out_to_err(struct so_process * process);
 void so_process_set_environment(struct so_process * process, struct so_value * environment);
 void so_process_set_fd(struct so_process * process, enum so_process_std fd_process, int new_fd);
 void so_process_set_nice(struct so_process * process, int nice);
+void so_process_set_null(struct so_process * process, enum so_process_std fd);
 void so_process_start(struct so_process * process, unsigned int nb_process);
 void so_process_wait(struct so_process * process, unsigned int nb_process);
 

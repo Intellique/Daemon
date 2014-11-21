@@ -92,8 +92,8 @@ bool sod_logger_start(struct so_value * config) {
 
 	so_process_new(&logger, "logger", NULL, 0);
 	logger_in = so_process_pipe_to(&logger);
-	so_process_close(&logger, so_process_stdout);
-	so_process_close(&logger, so_process_stderr);
+	so_process_set_null(&logger, so_process_stdout);
+	so_process_set_null(&logger, so_process_stderr);
 	so_process_set_nice(&logger, 4);
 	so_process_start(&logger, 1);
 

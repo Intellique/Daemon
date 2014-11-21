@@ -25,7 +25,7 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
-// fcntl
+// fcntl, open
 #include <fcntl.h>
 // bool
 #include <stdbool.h>
@@ -37,9 +37,9 @@
 #include <string.h>
 // bzero
 #include <strings.h>
-// stat
+// open, stat
 #include <sys/stat.h>
-// stat, waitpid
+// open, stat, waitpid
 #include <sys/types.h>
 // waitpid
 #include <sys/wait.h>
@@ -243,6 +243,13 @@ void so_process_set_nice(struct so_process * process, int nice) {
 	process->nice = nice;
 }
 
+void so_process_set_null(struct so_process * process, enum so_process_std fd) {
+	if (process == NULL)
+		return;
+
+	process->fds[fd].type = so_process_fd_type_set_null;
+}
+
 static void so_process_set_close_exe_flag(int fd, bool on) {
 	int flag = fcntl(fd, F_GETFD);
 
@@ -281,6 +288,9 @@ void so_process_start(struct so_process * process, unsigned int nb_process) {
 					dup2(process[i].fds[j].fd, j);
 					close(process[i].fds[j].fd);
 				}
+
+				if (process[i].fds[j].type == so_process_fd_type_set_null)
+					process[i].fds[j].fd = open("/dev/null", j == 0 ? O_RDONLY : O_WRONLY);
 			}
 			for (j = 0; j < 3; j++) {
 				if (process[i].fds[j].type == so_process_fd_type_dup)

@@ -83,7 +83,7 @@ void sod_device_configure(struct so_value * logger, struct so_value * db_config,
 		so_process_new(&dev->process, dev->process_name, NULL, 0);
 		dev->fd_in = so_process_pipe_to(&dev->process);
 		dev->fd_out = so_process_pipe_from(&dev->process, so_process_stdout);
-		so_process_close(&dev->process, so_process_stderr);
+		so_process_set_null(&dev->process, so_process_stderr);
 
 		so_poll_register(dev->fd_in, POLLHUP, sod_device_exited, dev, NULL);
 
@@ -149,7 +149,7 @@ void sod_device_configure(struct so_value * logger, struct so_value * db_config,
 		so_process_new(&dev->process, dev->process_name, NULL, 0);
 		dev->fd_in = so_process_pipe_to(&dev->process);
 		dev->fd_out = so_process_pipe_from(&dev->process, so_process_stdout);
-		so_process_close(&dev->process, so_process_stderr);
+		so_process_set_null(&dev->process, so_process_stderr);
 
 		so_poll_register(dev->fd_in, POLLHUP, sod_device_exited, dev, NULL);
 
