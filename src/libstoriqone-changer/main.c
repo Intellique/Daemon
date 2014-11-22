@@ -128,17 +128,13 @@ int main() {
 	while (!stop) {
 		db_connect->ops->sync_changer(db_connect, changer, so_database_sync_default);
 
-		so_poll(10000);
-
-		unsigned int i;
-		for (i = 0; i < changer->nb_drives; i++) {
-			struct so_drive * dr = changer->drives + i;
-			dr->ops->update_status(dr);
-		}
-
 		switch (changer->next_action) {
 			case so_changer_action_put_offline:
-				changer->ops->put_offline(db_connect);
+				so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: changer will be offline"), changer->vendor, changer->model);
+				if (changer->ops->put_offline(db_connect) == 0)
+					so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: changer is now offline"), changer->vendor, changer->model);
+				else
+					so_log_write(so_log_level_warning, dgettext("libstoriqone-changer", "[%s | %s]: failed to put changer offline"), changer->vendor, changer->model);
 				break;
 
 			case so_changer_action_put_online:
@@ -146,7 +142,14 @@ int main() {
 				break;
 
 			default:
+				so_poll(12000);
 				break;
+		}
+
+		unsigned int i;
+		for (i = 0; i < changer->nb_drives; i++) {
+			struct so_drive * dr = changer->drives + i;
+			dr->ops->update_status(dr);
 		}
 	}
 

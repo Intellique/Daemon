@@ -370,6 +370,30 @@ static int sochgr_vtl_changer_load(struct so_slot * from, struct so_drive * to, 
 }
 
 static int sochgr_vtl_changer_put_offline(struct so_database_connection * db_connection) {
+	unsigned int i;
+	for (i = 0; i < sochgr_vtl_changer.nb_drives; i++) {
+		struct so_drive * dr = sochgr_vtl_changer.drives + i;
+
+		while (!dr->ops->is_free(dr))
+			sleep(5);
+
+		if (dr->slot->full)
+			sochgr_vtl_changer_unload(dr, db_connection);
+	}
+
+	for (i = sochgr_vtl_changer.nb_drives; i < sochgr_vtl_changer.nb_slots; i++) {
+		struct so_slot * sl = sochgr_vtl_changer.slots + i;
+		so_media_free(sl->media);
+		sl->media = NULL;
+		free(sl->volume_name);
+		sl->volume_name = NULL;
+		sl->full = false;
+	}
+
+	sochgr_vtl_changer.is_online = false;
+	sochgr_vtl_changer.next_action = so_changer_action_none;
+	db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_default);
+
 	return 0;
 }
 
