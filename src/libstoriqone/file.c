@@ -27,7 +27,7 @@
 #define _GNU_SOURCE
 // scandir
 #include <dirent.h>
-// open
+// fcntl, open
 #include <fcntl.h>
 // basename, dirname
 #include <libgen.h>
@@ -45,7 +45,7 @@
 #include <sys/stat.h>
 // fstat, lstat, mkdir, mkfifo, mknod, open
 #include <sys/types.h>
-// access, close, fstat, lstat, mkfifo, read, readlink, rmdir, symlink, unlink, write
+// access, close, fcntl, fstat, lstat, mkfifo, read, readlink, rmdir, symlink, unlink, write
 #include <unistd.h>
 
 #include <libstoriqone/file.h>
@@ -73,6 +73,17 @@ bool so_file_check_link(const char * file) {
 		return false;
 
 	return !access(link, F_OK);
+}
+
+bool so_file_close_fd_on_exec(int fd, bool close) {
+	int flag = fcntl(fd, F_GETFD);
+
+	if (close)
+		flag |= FD_CLOEXEC;
+	else
+		flag &= !FD_CLOEXEC;
+
+	return fcntl(fd, F_SETFD, flag) == 0;
 }
 
 void so_file_convert_mode(char * buffer, mode_t mode) {

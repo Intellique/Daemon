@@ -49,6 +49,7 @@
 #include <unistd.h>
 
 #include <libstoriqone/checksum.h>
+#include <libstoriqone/file.h>
 #include <libstoriqone/poll.h>
 #include <libstoriqone/socket.h>
 #include <libstoriqone/value.h>
@@ -77,6 +78,9 @@ int so_socket_unix(struct so_value * config) {
 	int fd = socket(AF_UNIX, type, 0);
 	if (fd < 0)
 		return -1;
+
+	// close this socket on exec
+	so_file_close_fd_on_exec(fd, true);
 
 	struct sockaddr_un addr;
 	bzero(&addr, sizeof(addr));
@@ -130,6 +134,9 @@ bool so_socket_unix_server(struct so_value * config, so_socket_accept_f accept_c
 	int fd = socket(AF_UNIX, type, 0);
 	if (fd < 0)
 		return false;
+
+	// close this socket on exec
+	so_file_close_fd_on_exec(fd, true);
 
 	struct sockaddr_un addr;
 	bzero(&addr, sizeof(addr));

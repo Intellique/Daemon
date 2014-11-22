@@ -46,6 +46,8 @@ int so_file_basic_scandir_filter(const struct dirent * d);
 
 bool so_file_check_link(const char * file) __attribute__((nonnull));
 
+bool so_file_close_fd_on_exec(int fd, bool close);
+
 /**
  * \brief Convert a file mode to \b buffer with `ls -l` style
  * \param[out] buffer : a 10 bytes already allocated buffer

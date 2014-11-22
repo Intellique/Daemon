@@ -43,6 +43,7 @@
 // close
 #include <unistd.h>
 
+#include <libstoriqone/file.h>
 #include <libstoriqone/poll.h>
 #include <libstoriqone/socket.h>
 #include <libstoriqone/value.h>
@@ -100,6 +101,9 @@ int so_socket_tcp(struct so_value * config) {
 			continue;
 		}
 
+		// close this socket on exec
+		so_file_close_fd_on_exec(fd, true);
+
 		addr_v4->sin_port = htons(port);
 
 		int failed = connect(fd, ptr->ai_addr, ptr->ai_addrlen);
@@ -156,6 +160,9 @@ int so_socket_tcp6(struct so_value * config) {
 			ptr = ptr->ai_next;
 			continue;
 		}
+
+		// close this socket on exec
+		so_file_close_fd_on_exec(fd, true);
 
 		addr_v6->sin6_port = htons(port);
 
@@ -242,6 +249,9 @@ bool so_socket_tcp_server(struct so_value * config, so_socket_accept_f accept_ca
 				continue;
 			}
 
+			// close this socket on exec
+			so_file_close_fd_on_exec(fd, true);
+
 			struct sockaddr_in * addr_v4 = (struct sockaddr_in *) ptr->ai_addr;
 			addr_v4->sin_port = htons(port);
 
@@ -259,6 +269,9 @@ bool so_socket_tcp_server(struct so_value * config, so_socket_accept_f accept_ca
 		fd = socket(AF_INET, stype, 0);
 		if (fd < 0)
 			return false;
+
+		// close this socket on exec
+		so_file_close_fd_on_exec(fd, true);
 
 		struct sockaddr_in addr_v4;
 		bzero(&addr_v4, sizeof(addr_v4));
@@ -324,6 +337,9 @@ bool so_socket_tcp6_server(struct so_value * config, so_socket_accept_f accept_c
 				continue;
 			}
 
+			// close this socket on exec
+			so_file_close_fd_on_exec(fd, true);
+
 			struct sockaddr_in6 * addr_v6 = (struct sockaddr_in6 *) ptr->ai_addr;
 			addr_v6->sin6_port = htons(port);
 
@@ -340,6 +356,9 @@ bool so_socket_tcp6_server(struct so_value * config, so_socket_accept_f accept_c
 		fd = socket(AF_INET6, stype, 0);
 		if (fd < 0)
 			return false;
+
+		// close this socket on exec
+		so_file_close_fd_on_exec(fd, true);
 
 		struct sockaddr_in6 addr_v6;
 		bzero(&addr_v6, sizeof(addr_v6));
