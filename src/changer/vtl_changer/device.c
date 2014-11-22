@@ -27,13 +27,13 @@
 #define _GNU_SOURCE
 // asprintf, rename
 #include <stdio.h>
-// free
+// calloc, free, malloc
 #include <stdlib.h>
 // strdup
 #include <string.h>
 // bzero
 #include <strings.h>
-// access, symlink
+// access, sleep, symlink
 #include <unistd.h>
 // time
 #include <time.h>
@@ -422,6 +422,19 @@ static int sochgr_vtl_changer_put_online(struct so_database_connection * db_conn
 }
 
 static int sochgr_vtl_changer_shut_down(struct so_database_connection * db_connection) {
+	unsigned int i;
+	for (i = 0; i < sochgr_vtl_changer.nb_drives; i++) {
+		struct so_drive * dr = sochgr_vtl_changer.drives + i;
+
+		while (!dr->ops->is_free(dr))
+			sleep(5);
+
+		if (dr->slot->full)
+			sochgr_vtl_changer_unload(dr, db_connection);
+	}
+
+	db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_default);
+
 	return 0;
 }
 
