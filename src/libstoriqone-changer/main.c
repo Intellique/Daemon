@@ -138,7 +138,11 @@ int main() {
 				break;
 
 			case so_changer_action_put_online:
-				changer->ops->put_online(db_connect);
+				so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: changer will be online"), changer->vendor, changer->model);
+				if (changer->ops->put_online(db_connect) == 0)
+					so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: changer is now online"), changer->vendor, changer->model);
+				else
+					so_log_write(so_log_level_warning, dgettext("libstoriqone-changer", "[%s | %s]: failed to put changer online"), changer->vendor, changer->model);
 				break;
 
 			default:
