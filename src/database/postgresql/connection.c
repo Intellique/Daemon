@@ -1024,11 +1024,12 @@ static int so_database_postgresql_sync_changer(struct so_database_connection * c
 			PGresult * result = PQexecPrepared(self->connect, query, 5, params, NULL, NULL, 0);
 			ExecStatusType status = PQresultStatus(result);
 
+			if (status == PGRES_FATAL_ERROR)
+				so_database_postgresql_get_error(result, query);
+
 			PQclear(result);
 
 			if (status == PGRES_FATAL_ERROR) {
-				so_database_postgresql_get_error(result, query);
-
 				free(hostid);
 
 				if (transStatus == PQTRANS_IDLE)
@@ -1455,7 +1456,7 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 			key = so_value_new_custom(connect->config, NULL);
 			struct so_value * pool_db = so_value_hashtable_get(media->pool->db_data, key, false, false);
 			so_value_unpack(pool_db, "{ss}", "id", &pool_id);
-			so_value_hashtable_put2(db, "id", so_value_new_string(pool_id), true);
+			so_value_hashtable_put2(db, "pool id", so_value_new_string(pool_id), true);
 		}
 	}
 
