@@ -473,6 +473,7 @@ void so_pool_free(struct so_pool * pool) {
 
 	free(pool->name);
 	so_media_format_free(pool->format);
+	so_value_free(pool->db_data);
 	free(pool);
 }
 

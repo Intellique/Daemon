@@ -707,13 +707,13 @@ static struct so_pool * so_database_postgresql_get_pool(struct so_database_conne
 
 	if (uuid != NULL) {
 		query = "select_pool_by_uuid";
-		so_database_postgresql_prepare(self, query, "SELECT uuid, p.name, autocheck, growable, unbreakablelevel, rewritable, deleted, densitycode, mode FROM pool p LEFT JOIN mediaformat mf ON p.mediaformat = mf.id WHERE uuid = $1 LIMIT 1");
+		so_database_postgresql_prepare(self, query, "SELECT p.id, uuid, p.name, autocheck, growable, unbreakablelevel, rewritable, deleted, densitycode, mode FROM pool p LEFT JOIN mediaformat mf ON p.mediaformat = mf.id WHERE uuid = $1 LIMIT 1");
 
 		const char * param[] = { uuid };
 		result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 	} else {
 		query = "select_pool_by_job";
-		so_database_postgresql_prepare(self, query, "SELECT uuid, p.name, autocheck, growable, unbreakablelevel, rewritable, deleted, densitycode, mode FROM job j INNER JOIN pool p ON j.pool = p.id LEFT JOIN mediaformat mf ON p.mediaformat = mf.id WHERE j.id = $1 LIMIT 1");
+		so_database_postgresql_prepare(self, query, "SELECT p.id, uuid, p.name, autocheck, growable, unbreakablelevel, rewritable, deleted, densitycode, mode FROM job j INNER JOIN pool p ON j.pool = p.id LEFT JOIN mediaformat mf ON p.mediaformat = mf.id WHERE j.id = $1 LIMIT 1");
 
 		char * job_id = NULL;
 
@@ -737,17 +737,23 @@ static struct so_pool * so_database_postgresql_get_pool(struct so_database_conne
 		pool = malloc(sizeof(struct so_pool));
 		bzero(pool, sizeof(struct so_pool));
 
-		so_database_postgresql_get_string(result, 0, 0, pool->uuid, 37);
-		so_database_postgresql_get_string_dup(result, 0, 1, &pool->name);
-		pool->auto_check = so_pool_string_to_autocheck_mode(PQgetvalue(result, 0, 2), false);
-		so_database_postgresql_get_bool(result, 0, 3, &pool->growable);
-		pool->unbreakable_level = so_pool_string_to_unbreakable_level(PQgetvalue(result, 0, 4), false);
-		so_database_postgresql_get_bool(result, 0, 5, &pool->rewritable);
-		so_database_postgresql_get_bool(result, 0, 6, &pool->deleted);
+		struct so_value * key = so_value_new_custom(connect->config, NULL);
+		struct so_value * db = so_value_new_hashtable2();
+		pool->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
+		so_value_hashtable_put2(db, "id", so_value_new_string(PQgetvalue(result, 0, 0)), true);
+		so_value_hashtable_put(pool->db_data, key, true, db, true);
+
+		so_database_postgresql_get_string(result, 0, 1, pool->uuid, 37);
+		so_database_postgresql_get_string_dup(result, 0, 2, &pool->name);
+		pool->auto_check = so_pool_string_to_autocheck_mode(PQgetvalue(result, 0, 3), false);
+		so_database_postgresql_get_bool(result, 0, 4, &pool->growable);
+		pool->unbreakable_level = so_pool_string_to_unbreakable_level(PQgetvalue(result, 0, 5), false);
+		so_database_postgresql_get_bool(result, 0, 6, &pool->rewritable);
+		so_database_postgresql_get_bool(result, 0, 7, &pool->deleted);
 
 		unsigned char density_code;
-		so_database_postgresql_get_uchar(result, 0, 7, &density_code);
-		enum so_media_format_mode mode = so_media_string_to_format_mode(PQgetvalue(result, 0, 8), false);
+		so_database_postgresql_get_uchar(result, 0, 8, &density_code);
+		enum so_media_format_mode mode = so_media_string_to_format_mode(PQgetvalue(result, 0, 9), false);
 		pool->format = so_database_postgresql_get_media_format(connect, density_code, mode);
 	}
 
@@ -1442,6 +1448,17 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 		PQclear(result);
 	}
 
+	if (media->pool != NULL) {
+		so_value_unpack(db, "{ss}", "pool id", &pool_id);
+
+		if (pool_id == NULL) {
+			key = so_value_new_custom(connect->config, NULL);
+			struct so_value * pool_db = so_value_hashtable_get(media->pool->db_data, key, false, false);
+			so_value_unpack(pool_db, "{ss}", "id", &pool_id);
+			so_value_hashtable_put2(db, "id", so_value_new_string(pool_id), true);
+		}
+	}
+
 	if (media_id == NULL) {
 		if (mediaformat_id == NULL) {
 			if (media->format->db_data != NULL) {
@@ -1469,9 +1486,6 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 				free(densitycode);
 				PQclear(result);
 			}
-		}
-
-		if (pool_id == NULL && media->pool != NULL) {
 		}
 
 		const char * query = "insert_into_media";

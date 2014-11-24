@@ -161,6 +161,8 @@ struct so_pool {
 	bool deleted;
 
 	struct so_media_format * format;
+
+	struct so_value * db_data;
 };
 
 
