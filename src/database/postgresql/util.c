@@ -180,6 +180,17 @@ int so_database_postgresql_get_long_long(PGresult * result, int row, int column,
 	return value != NULL;
 }
 
+int so_database_postgresql_get_size(PGresult * result, int row, int column, size_t * val) {
+	if (column < 0)
+		return -1;
+
+	char * value = PQgetvalue(result, row, column);
+	if (value != NULL && sscanf(value, "%zd", val) == 1)
+		return 0;
+
+	return value != NULL;
+}
+
 int so_database_postgresql_get_ssize(PGresult * result, int row, int column, ssize_t * val) {
 	if (column < 0)
 		return -1;

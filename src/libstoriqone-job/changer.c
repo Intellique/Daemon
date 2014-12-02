@@ -121,6 +121,28 @@ struct so_slot * soj_changer_find_media_by_job(struct so_job * job, struct so_da
 	return NULL;
 }
 
+struct so_slot * soj_changer_find_slot(struct so_media * media) {
+	if (media == NULL)
+		return NULL;
+
+	unsigned int i;
+	for (i = 0; i < soj_nb_changers; i++) {
+		struct so_changer * ch = soj_changers + i;
+
+		unsigned int j;
+		for (j = 0; j < ch->nb_slots; j++) {
+			struct so_slot * sl = ch->slots + j;
+			if (sl->media == NULL)
+				continue;
+
+			if (!strcmp(sl->media->medium_serial_number, media->medium_serial_number))
+				return sl;
+		}
+	}
+
+	return NULL;
+}
+
 bool soj_changer_has_apt_drive(struct so_media_format * format, bool for_writing) {
 	if (format == NULL)
 		return false;

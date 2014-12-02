@@ -24,34 +24,118 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_JOB_CHANGER_H__
-#define __LIBSTORIQONE_JOB_CHANGER_H__
+#ifndef __LIBSTORIQONE_ARCHIVE_H__
+#define __LIBSTORIQONE_ARCHIVE_H__
 
-#include <libstoriqone/changer.h>
+// bool
+#include <stdbool.h>
+// time_t
+#include <sys/time.h>
+// ssize_t
+#include <sys/types.h>
 
-struct so_database_connection;
-struct so_drive;
-struct so_job;
+struct so_archive_file;
+struct so_archive_volume;
 struct so_media;
-struct so_media_format;
-struct so_slot;
 struct so_value;
 
-struct so_changer_ops {
-	struct so_drive * (*find_free_drive)(struct so_changer * changer, struct so_media_format * format, bool for_writing);
-	int (*load)(struct so_changer * changer, struct so_slot * from, struct so_drive * to);
-	int (*release_all_media)(struct so_changer * changer);
-	int (*release_media)(struct so_changer * changer, struct so_slot * slot);
-	int (*reserve_media)(struct so_changer * changer, struct so_slot * slot);
-	int (*sync)(struct so_changer * changer);
-	int (*unload)(struct so_changer * changer, struct so_drive * from);
+enum so_archive_file_type {
+	so_archive_file_type_block_device,
+	so_archive_file_type_character_device,
+	so_archive_file_type_directory,
+	so_archive_file_type_fifo,
+	so_archive_file_type_regular_file,
+	so_archive_file_type_socket,
+	so_archive_file_type_symbolic_link,
+
+	so_archive_file_type_unknown,
 };
 
-struct so_slot * soj_changer_find_media_by_job(struct so_job * job, struct so_database_connection * db_connection) __attribute__((nonnull));
-struct so_slot * soj_changer_find_slot(struct so_media * media) __attribute__((nonnull,warn_unused_result));
-bool soj_changer_has_apt_drive(struct so_media_format * format, bool for_writing);
-void soj_changer_set_config(struct so_value * config) __attribute__((nonnull));
-int soj_changer_sync_all(void);
+struct so_archive {
+	char uuid[37];
+	char * name;
+
+	ssize_t size;
+
+	time_t start_time;
+	time_t end_time;
+
+	bool check_ok;
+	time_t check_time;
+
+	struct so_archive_volume * volumes;
+	unsigned int nb_volumes;
+
+	struct so_value * db_data;
+};
+
+struct so_archive_volume {
+	unsigned int sequence;
+	ssize_t size;
+
+	time_t start_time;
+	time_t end_time;
+
+	bool check_ok;
+	time_t check_time;
+
+	struct so_archive * archive;
+	struct so_media * media;
+	unsigned int media_position;
+	// struct so_job * job;
+
+	struct st_value * digests;
+
+	struct st_archive_files {
+		struct st_archive_file * file;
+		ssize_t position;
+	} * files;
+	unsigned int nb_files;
+
+	struct st_value * db_data;
+};
+
+struct so_archive_file {
+	char * name;
+	mode_t perm;
+	enum st_archive_file_type type;
+	uid_t ownerid;
+	char owner[32];
+	gid_t groupid;
+	char group[32];
+
+	time_t create_time;
+	time_t modify_time;
+	time_t archived_time;
+
+	bool check_ok;
+	time_t check_time;
+
+	ssize_t size;
+
+	char * mime_type;
+
+	struct st_value * digests;
+
+	struct st_archive * archive;
+	// struct st_job_selected_path * selected_path;
+
+	struct st_value * db_data;
+};
+
+struct so_backup {
+	time_t timestamp;
+	long nb_medias;
+	long nb_archives;
+
+	struct so_backup_volume {
+		struct st_media * media;
+		unsigned int position;
+	} * volumes;
+	unsigned int nb_volumes;
+
+	struct so_job * job;
+};
 
 #endif
 

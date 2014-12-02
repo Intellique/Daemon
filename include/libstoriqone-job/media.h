@@ -24,34 +24,23 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_JOB_CHANGER_H__
-#define __LIBSTORIQONE_JOB_CHANGER_H__
+#ifndef __LIBSTORIQONE_JOB_MEDIA_H__
+#define __LIBSTORIQONE_JOB_MEDIA_H__
 
-#include <libstoriqone/changer.h>
+// ssize_t
+#include <sys/types.h>
 
 struct so_database_connection;
 struct so_drive;
-struct so_job;
-struct so_media;
 struct so_media_format;
-struct so_slot;
+struct so_pool;
+enum so_pool_unbreakable_level;
 struct so_value;
 
-struct so_changer_ops {
-	struct so_drive * (*find_free_drive)(struct so_changer * changer, struct so_media_format * format, bool for_writing);
-	int (*load)(struct so_changer * changer, struct so_slot * from, struct so_drive * to);
-	int (*release_all_media)(struct so_changer * changer);
-	int (*release_media)(struct so_changer * changer, struct so_slot * slot);
-	int (*reserve_media)(struct so_changer * changer, struct so_slot * slot);
-	int (*sync)(struct so_changer * changer);
-	int (*unload)(struct so_changer * changer, struct so_drive * from);
-};
-
-struct so_slot * soj_changer_find_media_by_job(struct so_job * job, struct so_database_connection * db_connection) __attribute__((nonnull));
-struct so_slot * soj_changer_find_slot(struct so_media * media) __attribute__((nonnull,warn_unused_result));
-bool soj_changer_has_apt_drive(struct so_media_format * format, bool for_writing);
-void soj_changer_set_config(struct so_value * config) __attribute__((nonnull));
-int soj_changer_sync_all(void);
+struct so_drive * soj_media_load(struct so_media * media);
+ssize_t soj_media_prepare(struct so_pool * pool, struct so_database_connection * db_connection);
+ssize_t soj_media_prepare_unformatted(struct so_pool * pool, bool online, struct so_database_connection * db_connection);
+struct so_value * soj_media_reserve(struct so_pool * pool, size_t space_need, enum so_pool_unbreakable_level unbreakable_level);
 
 #endif
 

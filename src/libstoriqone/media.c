@@ -462,6 +462,10 @@ void so_media_free(struct so_media * media) {
 	free(media);
 }
 
+void so_media_free2(void * media) {
+	so_media_free(media);
+}
+
 void so_media_format_free(struct so_media_format * format) {
 	so_value_free(format->db_data);
 	free(format);

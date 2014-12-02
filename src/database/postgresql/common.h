@@ -71,6 +71,7 @@ int so_database_postgresql_get_int(PGresult * result, int row, int column, int *
 int so_database_postgresql_get_long(PGresult * result, int row, int column, long * value);
 int so_database_postgresql_get_long_add(PGresult * result, int row, int column, long * value);
 int so_database_postgresql_get_long_long(PGresult * result, int row, int column, long long * value);
+int so_database_postgresql_get_size(PGresult * result, int row, int column, size_t * value);
 int so_database_postgresql_get_ssize(PGresult * result, int row, int column, ssize_t * value);
 int so_database_postgresql_get_string(PGresult * result, int row, int column, char * string, size_t length);
 int so_database_postgresql_get_string_dup(PGresult * result, int row, int column, char ** string);

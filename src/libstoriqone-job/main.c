@@ -190,7 +190,7 @@ int main() {
 	so_thread_pool_run("job_worker", job_worker, job);
 
 	while (!stop) {
-		so_poll(5000);
+		so_poll(2000);
 
 		pthread_mutex_lock(&lock);
 		if (finished)

@@ -29,7 +29,7 @@
 
 // bool
 #include <stdbool.h>
-// ssize_t, time_t
+// size_t, ssize_t, time_t
 #include <sys/types.h>
 
 enum so_media_format_data_type {
@@ -111,9 +111,9 @@ struct so_media {
 	unsigned int nb_read_errors;
 	unsigned int nb_write_errors;
 
-	ssize_t block_size;
-	ssize_t free_block; // in block size, not in bytes
-	ssize_t total_block; // size in block
+	size_t block_size;
+	size_t free_block; // in block size, not in bytes
+	size_t total_block; // size in block
 
 	unsigned int nb_volumes;
 	bool append;
@@ -177,6 +177,7 @@ void so_pool_sync(struct so_pool * pool, struct so_value * new_pool) __attribute
 int so_media_format_cmp(struct so_media_format * f1, struct so_media_format * f2) __attribute__((nonnull));
 
 void so_media_free(struct so_media * media) __attribute__((nonnull));
+void so_media_free2(void * media) __attribute__((nonnull));
 void so_media_format_free(struct so_media_format * format) __attribute__((nonnull));
 void so_pool_free(struct so_pool * pool) __attribute__((nonnull));
 
