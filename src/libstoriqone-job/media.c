@@ -51,7 +51,7 @@ struct so_drive * soj_media_load(struct so_media * media) {
 			sleep(5);
 	}
 
-	if (sl->index != dr->slot->index)
+	if (sl->index != dr->slot->index && dr->slot->full)
 		sl->changer->ops->unload(sl->changer, dr);
 
 	if (!dr->slot->full)
@@ -146,7 +146,11 @@ struct so_value * soj_media_reserve(struct so_pool * pool, size_t space_need, en
 		}
 
 		if (sl->changer->ops->reserve_media(sl->changer, sl) == 0) {
-			space_need -= media->free_block * media->block_size;
+			size_t free_size = media->free_block * media->block_size;
+			if (free_size > space_need)
+				space_need = 0;
+			else
+				space_need -= free_size;
 
 			so_value_list_push(reserved_medias, vmedia, false);
 

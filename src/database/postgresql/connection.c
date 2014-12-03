@@ -79,6 +79,7 @@ static int so_database_postgresql_update_host(struct so_database_connection * co
 
 static struct so_value * so_database_postgresql_get_changers(struct so_database_connection * connect);
 static struct so_value * so_database_postgresql_get_drives_by_changer(struct so_database_connection * connect, const char * changer_id);
+static struct so_value * so_database_postgresql_get_free_medias(struct so_database_connection * connect, struct so_media_format * media_format, bool online);
 static struct so_media * so_database_postgresql_get_media(struct so_database_connection * connect, const char * medium_serial_number, const char * label, struct so_job * job);
 static struct so_value * so_database_postgresql_get_medias_of_pool(struct so_database_connection * connect, struct so_pool * pool);
 static struct so_media_format * so_database_postgresql_get_media_format(struct so_database_connection * connect, unsigned int density_code, enum so_media_format_mode mode);
@@ -121,6 +122,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.update_host      = so_database_postgresql_update_host,
 
 	.get_changers          = so_database_postgresql_get_changers,
+	.get_free_medias       = so_database_postgresql_get_free_medias,
 	.get_media             = so_database_postgresql_get_media,
 	.get_media_format      = so_database_postgresql_get_media_format,
 	.get_medias_of_pool    = so_database_postgresql_get_medias_of_pool,
@@ -542,6 +544,102 @@ static struct so_value * so_database_postgresql_get_drives_by_changer(struct so_
 	return drives;
 }
 
+static struct so_value * so_database_postgresql_get_free_medias(struct so_database_connection * connect, struct so_media_format * media_format, bool online) {
+	if (connect == NULL || media_format == NULL)
+		return NULL;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	const char * query;
+
+	if (online) {
+		query = "select_online_medias";
+		so_database_postgresql_prepare(self, query, "SELECT m.id, mf.id, m.uuid, m.label, m.mediumserialnumber, m.name, m.status, firstused, usebefore, lastread, lastwrite, loadcount, readcount, writecount, operationcount, nbtotalblockread, nbtotalblockwrite, nbreaderror, nbwriteerror, m.blocksize, freeblock, totalblock, append, m.type, writelock, nbfiles, densitycode, mode, p.uuid FROM media m INNER JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE m.id IN (SELECT media FROM changerslot) AND mf.densitycode = $1 AND mf.mode = $2 ORDER BY m.label");
+
+	} else {
+		query = "select_offline_medias";
+		so_database_postgresql_prepare(self, query, "SELECT m.id, mf.id, m.uuid, m.label, m.mediumserialnumber, m.name, m.status, firstused, usebefore, lastread, lastwrite, loadcount, readcount, writecount, operationcount, nbtotalblockread, nbtotalblockwrite, nbreaderror, nbwriteerror, m.blocksize, freeblock, totalblock, append, m.type, writelock, nbfiles, densitycode, mode, p.uuid FROM media m INNER JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE m.id NOT IN (SELECT media FROM changerslot) AND mf.densitycode = $1 AND mf.mode = $2 ORDER BY m.label");
+	}
+
+	char * density_code;
+	asprintf(&density_code, "%d", media_format->density_code);
+
+	const char * param[] = { density_code, so_media_format_mode_to_string(media_format->mode, false) };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+	int nb_result = PQntuples(result);
+
+	struct so_value * medias = so_value_new_null();
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && nb_result > 0) {
+		medias = so_value_new_array(nb_result);
+
+		int i;
+		for (i = 0; i < nb_result; i++) {
+			struct so_media * media = malloc(sizeof(struct so_media));
+			bzero(media, sizeof(struct so_media));
+
+			media->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
+			struct so_value * key = so_value_new_custom(connect->config, NULL);
+			struct so_value * db = so_value_new_hashtable2();
+			so_value_hashtable_put(media->db_data, key, true, db, true);
+
+			so_value_hashtable_put2(db, "id", so_value_new_string(PQgetvalue(result, i, 0)), true);
+			so_value_hashtable_put2(db, "media format id", so_value_new_string(PQgetvalue(result, i, 1)), true);
+
+			so_database_postgresql_get_string(result, i, 2, media->uuid, 37);
+			so_database_postgresql_get_string_dup(result, i, 3, &media->label);
+			so_database_postgresql_get_string_dup(result, i, 4, &media->medium_serial_number);
+			so_database_postgresql_get_string_dup(result, i, 5, &media->name);
+
+			media->status = so_media_string_to_status(PQgetvalue(result, i, 6), false);
+
+			so_database_postgresql_get_time(result, i, 7, &media->first_used);
+			so_database_postgresql_get_time(result, i, 8, &media->use_before);
+			if (!PQgetisnull(result, i, 9))
+				so_database_postgresql_get_time(result, i, 9, &media->last_read);
+			if (!PQgetisnull(result, i, 10))
+				so_database_postgresql_get_time(result, i, 10, &media->last_write);
+
+			so_database_postgresql_get_long(result, i, 11, &media->load_count);
+			so_database_postgresql_get_long(result, i, 12, &media->read_count);
+			so_database_postgresql_get_long(result, i, 13, &media->write_count);
+			so_database_postgresql_get_long(result, i, 14, &media->operation_count);
+
+			so_database_postgresql_get_long(result, i, 15, &media->nb_total_read);
+			so_database_postgresql_get_long(result, i, 16, &media->nb_total_write);
+
+			so_database_postgresql_get_uint(result, i, 17, &media->nb_read_errors);
+			so_database_postgresql_get_uint(result, i, 18, &media->nb_write_errors);
+
+			so_database_postgresql_get_size(result, i, 19, &media->block_size);
+			so_database_postgresql_get_size(result, i, 20, &media->free_block);
+			so_database_postgresql_get_size(result, i, 21, &media->total_block);
+
+			so_database_postgresql_get_bool(result, i, 22, &media->append);
+			media->type = so_media_string_to_type(PQgetvalue(result, i, 23), false);
+			so_database_postgresql_get_bool(result, i, 24, &media->write_lock);
+			so_database_postgresql_get_uint(result, i, 25, &media->nb_volumes);
+
+			unsigned char density_code;
+			so_database_postgresql_get_uchar(result, i, 26, &density_code);
+			enum so_media_format_mode mode = so_media_string_to_format_mode(PQgetvalue(result, i, 27), false);
+			media->format = so_database_postgresql_get_media_format(connect, density_code, mode);
+
+			if (!PQgetisnull(result, i, 28))
+				media->pool = so_database_postgresql_get_pool(connect, PQgetvalue(result, i, 28), NULL);
+
+			so_value_list_push(medias, so_value_new_custom(media, so_media_free2), true);
+		}
+	}
+
+	PQclear(result);
+
+	return medias;
+}
+
 static struct so_media * so_database_postgresql_get_media(struct so_database_connection * connect, const char * medium_serial_number, const char * label, struct so_job * job) {
 	if (connect == NULL || (medium_serial_number == NULL && label == NULL && job == NULL))
 		return NULL;
@@ -673,50 +771,50 @@ static struct so_value * so_database_postgresql_get_medias_of_pool(struct so_dat
 			struct so_value * db = so_value_new_hashtable2();
 			so_value_hashtable_put(media->db_data, key, true, db, true);
 
-			so_value_hashtable_put2(db, "id", so_value_new_string(PQgetvalue(result, 1, 0)), true);
-			so_value_hashtable_put2(db, "media format id", so_value_new_string(PQgetvalue(result, 1, 1)), true);
+			so_value_hashtable_put2(db, "id", so_value_new_string(PQgetvalue(result, i, 0)), true);
+			so_value_hashtable_put2(db, "media format id", so_value_new_string(PQgetvalue(result, i, 1)), true);
 
-			so_database_postgresql_get_string(result, 1, 2, media->uuid, 37);
-			so_database_postgresql_get_string_dup(result, 1, 3, &media->label);
-			so_database_postgresql_get_string_dup(result, 1, 4, &media->medium_serial_number);
-			so_database_postgresql_get_string_dup(result, 1, 5, &media->name);
+			so_database_postgresql_get_string(result, i, 2, media->uuid, 37);
+			so_database_postgresql_get_string_dup(result, i, 3, &media->label);
+			so_database_postgresql_get_string_dup(result, i, 4, &media->medium_serial_number);
+			so_database_postgresql_get_string_dup(result, i, 5, &media->name);
 
-			media->status = so_media_string_to_status(PQgetvalue(result, 1, 6), false);
+			media->status = so_media_string_to_status(PQgetvalue(result, i, 6), false);
 
-			so_database_postgresql_get_time(result, 1, 7, &media->first_used);
-			so_database_postgresql_get_time(result, 1, 8, &media->use_before);
-			if (!PQgetisnull(result, 1, 9))
-				so_database_postgresql_get_time(result, 1, 9, &media->last_read);
-			if (!PQgetisnull(result, 1, 10))
-				so_database_postgresql_get_time(result, 1, 10, &media->last_write);
+			so_database_postgresql_get_time(result, i, 7, &media->first_used);
+			so_database_postgresql_get_time(result, i, 8, &media->use_before);
+			if (!PQgetisnull(result, i, 9))
+				so_database_postgresql_get_time(result, i, 9, &media->last_read);
+			if (!PQgetisnull(result, i, 10))
+				so_database_postgresql_get_time(result, i, 10, &media->last_write);
 
-			so_database_postgresql_get_long(result, 1, 11, &media->load_count);
-			so_database_postgresql_get_long(result, 1, 12, &media->read_count);
-			so_database_postgresql_get_long(result, 1, 13, &media->write_count);
-			so_database_postgresql_get_long(result, 1, 14, &media->operation_count);
+			so_database_postgresql_get_long(result, i, 11, &media->load_count);
+			so_database_postgresql_get_long(result, i, 12, &media->read_count);
+			so_database_postgresql_get_long(result, i, 13, &media->write_count);
+			so_database_postgresql_get_long(result, i, 14, &media->operation_count);
 
-			so_database_postgresql_get_long(result, 1, 15, &media->nb_total_read);
-			so_database_postgresql_get_long(result, 1, 16, &media->nb_total_write);
+			so_database_postgresql_get_long(result, i, 15, &media->nb_total_read);
+			so_database_postgresql_get_long(result, i, 16, &media->nb_total_write);
 
-			so_database_postgresql_get_uint(result, 1, 17, &media->nb_read_errors);
-			so_database_postgresql_get_uint(result, 1, 18, &media->nb_write_errors);
+			so_database_postgresql_get_uint(result, i, 17, &media->nb_read_errors);
+			so_database_postgresql_get_uint(result, i, 18, &media->nb_write_errors);
 
-			so_database_postgresql_get_size(result, 1, 19, &media->block_size);
-			so_database_postgresql_get_size(result, 1, 20, &media->free_block);
-			so_database_postgresql_get_size(result, 1, 21, &media->total_block);
+			so_database_postgresql_get_size(result, i, 19, &media->block_size);
+			so_database_postgresql_get_size(result, i, 20, &media->free_block);
+			so_database_postgresql_get_size(result, i, 21, &media->total_block);
 
-			so_database_postgresql_get_bool(result, 1, 22, &media->append);
-			media->type = so_media_string_to_type(PQgetvalue(result, 1, 23), false);
-			so_database_postgresql_get_bool(result, 1, 24, &media->write_lock);
-			so_database_postgresql_get_uint(result, 1, 25, &media->nb_volumes);
+			so_database_postgresql_get_bool(result, i, 22, &media->append);
+			media->type = so_media_string_to_type(PQgetvalue(result, i, 23), false);
+			so_database_postgresql_get_bool(result, i, 24, &media->write_lock);
+			so_database_postgresql_get_uint(result, i, 25, &media->nb_volumes);
 
 			unsigned char density_code;
-			so_database_postgresql_get_uchar(result, 1, 26, &density_code);
-			enum so_media_format_mode mode = so_media_string_to_format_mode(PQgetvalue(result, 1, 27), false);
+			so_database_postgresql_get_uchar(result, i, 26, &density_code);
+			enum so_media_format_mode mode = so_media_string_to_format_mode(PQgetvalue(result, i, 27), false);
 			media->format = so_database_postgresql_get_media_format(connect, density_code, mode);
 
-			if (!PQgetisnull(result, 1, 28))
-				media->pool = so_database_postgresql_get_pool(connect, PQgetvalue(result, 1, 28), NULL);
+			if (!PQgetisnull(result, i, 28))
+				media->pool = so_database_postgresql_get_pool(connect, PQgetvalue(result, i, 28), NULL);
 
 			so_value_list_push(medias, so_value_new_custom(media, so_media_free2), true);
 		}

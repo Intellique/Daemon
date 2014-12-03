@@ -95,7 +95,7 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 	// write backup into temporary file
 	static char buffer[16384];
 	ssize_t nb_read, nb_total_read = 0;
-	while (nb_read = db_reader->ops->read(db_reader, buffer, 16384), nb_read < 0) {
+	while (nb_read = db_reader->ops->read(db_reader, buffer, 16384), nb_read > 0) {
 		nb_total_read += nb_read;
 
 		ssize_t nb_total_write = 0;
@@ -189,5 +189,6 @@ static void backupdb_script_post_run(struct so_job * job, struct so_database_con
 }
 
 static bool backupdb_script_pre_run(struct so_job * job, struct so_database_connection * db_connect) {
+	return true;
 }
 
