@@ -85,5 +85,11 @@ struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(s
 
 struct st_job_create_archive_meta_worker * st_job_create_archive_meta_worker_new(struct st_job * job, struct st_database_connection * connect);
 
+void st_job_create_archive_report_add_file(struct st_job_create_archive_report * report, struct st_archive_volume * volume, struct st_archive_files * file);
+void st_job_create_archive_report_add_volume(struct st_job_create_archive_report * report, struct st_archive_volume * volume);
+void st_job_create_archive_report_free(struct st_job_create_archive_report * report);
+char * st_job_create_archive_report_make(struct st_job_create_archive_report * report);
+struct st_job_create_archive_report * st_job_create_archive_report_new(struct st_job * job, struct st_archive * archive, struct st_pool * pool);
+
 #endif
 
