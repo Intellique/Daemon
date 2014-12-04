@@ -30,9 +30,10 @@
 
 struct st_archive;
 struct st_hashtable;
+struct st_job;
 
 struct st_hashtable * st_util_json_from_string(const char * string);
-char * st_util_json_archive_to_string(struct st_archive * archive);
+char * st_util_json_archive_to_string(struct st_archive * archive, struct st_job * job);
 
 #endif
 
