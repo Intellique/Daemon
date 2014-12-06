@@ -27,10 +27,20 @@
 #ifndef __LIBSTORIQONE_DRIVE_PEER_H__
 #define __LIBSTORIQONE_DRIVE_PEER_H__
 
+// ssize_t
+#include <sys/types.h>
+
 struct sodr_peer {
 	int fd;
 
 	char * cookie;
+
+	struct so_stream_reader * reader;
+	struct so_stream_writer * writer;
+
+	int fd_data;
+	char * buffer;
+	ssize_t buffer_length;
 };
 
 void sodr_peer_free(struct sodr_peer * peer);

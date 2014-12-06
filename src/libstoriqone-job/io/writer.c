@@ -51,7 +51,7 @@ struct soj_io_writer {
 	ssize_t block_size;
 	ssize_t available_size;
 
-	int last_errno;
+	long int last_errno;
 };
 
 static ssize_t soj_io_writer_before_close(struct so_stream_writer * sfw, void * buffer, ssize_t length);
@@ -80,22 +80,25 @@ static struct so_stream_writer_ops soj_writer_ops = {
 static ssize_t soj_io_writer_before_close(struct so_stream_writer * sfw, void * buffer, ssize_t length) {
 	struct soj_io_writer * self = sfw->data;
 
-	struct so_value * request = so_value_pack("{sbsssi}", "stop", false, "command", "before close", "length", length);
+	struct so_value * request = so_value_pack("{sss{si}}", "command", "writer before close", "params", "length", length);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
-	ssize_t nb_read = recv(self->data_fd, buffer, length, 0);
-
+	ssize_t nb_read = 0;
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	so_value_unpack(response, "{si}", "returned", &nb_read);
+	if (nb_read < 0)
+		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+
 	so_value_free(response);
 
-	return nb_read;
+	return recv(self->data_fd, buffer, nb_read, 0);
 }
 
 static int soj_io_writer_close(struct so_stream_writer * sfw) {
 	struct soj_io_writer * self = sfw->data;
 
-	struct so_value * request = so_value_pack("{sb}", "stop", true);
+	struct so_value * request = so_value_pack("{ss}", "command", "writer close");
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
@@ -106,11 +109,13 @@ static int soj_io_writer_close(struct so_stream_writer * sfw) {
 	if (response == NULL)
 		return 1;
 
-	bool closed = false;
-	so_value_unpack(response, "{sb}", "close", &closed);
+	long int failed = 0;
+	so_value_unpack(response, "{sb}", "returned", &failed);
+	if (failed != 0)
+		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	so_value_free(response);
 
-	return closed ? 0 : 1;
+	return failed ? 1 : 0;
 }
 
 static void soj_io_writer_free(struct so_stream_writer * sfw) {
@@ -150,13 +155,17 @@ static struct so_stream_reader * soj_io_writer_reopen(struct so_stream_writer * 
 static ssize_t soj_io_writer_write(struct so_stream_writer * sfw, const void * buffer, ssize_t length) {
 	struct soj_io_writer * self = sfw->data;
 
-	struct so_value * request = so_value_pack("{sbsssi}", "stop", false, "command", "write", "length", length);
+	struct so_value * request = so_value_pack("{sss{si}}", "command", "writer write", "params", "length", length);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
-	ssize_t nb_write = send(self->data_fd, buffer, length, 0);
+	send(self->data_fd, buffer, length, 0);
 
+	ssize_t nb_write = 0;
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	so_value_unpack(response, "{si}", "returned", &nb_write);
+	if (nb_write < 0)
+		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	so_value_free(response);
 
 	return nb_write;

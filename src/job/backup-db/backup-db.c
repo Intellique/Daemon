@@ -142,11 +142,36 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 
 		struct so_drive * drive = soj_media_load(media);
 		// TODO: when drive is null
+
+		const char * cookie = drive->ops->lock(drive);
+		struct so_stream_writer * dr_writer = drive->ops->get_raw_writer(drive, cookie);
+
+		nb_total_read = 0;
+		while (nb_read = tmp_reader->ops->read(tmp_reader, buffer, 16384), nb_read > 0) {
+			nb_total_read += nb_read;
+
+			ssize_t nb_total_write = 0;
+			while (nb_total_write < nb_read) {
+				ssize_t nb_write = dr_writer->ops->write(dr_writer, buffer, nb_read);
+				if (nb_write < 0) {
+				} else {
+					nb_total_write += nb_write;
+				}
+			}
+		}
+
+		dr_writer->ops->close(dr_writer);
+		dr_writer->ops->free(dr_writer);
+
+		if (nb_read < 0) {
+		}
 	}
 	so_value_iterator_free(iter);
 
 	tmp_reader->ops->close(tmp_reader);
 	tmp_reader->ops->free(tmp_reader);
+
+	return 0;
 
 tmp_writer:
 	if (tmp_writer != NULL) {

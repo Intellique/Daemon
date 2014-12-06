@@ -290,6 +290,8 @@ static struct so_stream_reader * so_io_tmp_writer_reopen(struct so_stream_writer
 	reader->ops = &so_io_tmp_reader_ops;
 	reader->data = new_self;
 
+	lseek(new_self->fd, 0, SEEK_SET);
+
 	return reader;
 }
 

@@ -37,13 +37,37 @@
 
 void sodr_peer_free(struct sodr_peer * peer) {
 	free(peer->cookie);
+
+	if (peer->reader != NULL) {
+		peer->reader->ops->close(peer->reader);
+		peer->reader->ops->free(peer->reader);
+	}
+
+	if (peer->writer != NULL) {
+		peer->writer->ops->close(peer->writer);
+		peer->writer->ops->free(peer->writer);
+	}
+
+	if (peer->fd_data >= 0)
+		close(peer->fd_data);
+
+	free(peer->buffer);
+
 	free(peer);
 }
 
 struct sodr_peer * sodr_peer_new(int fd) {
 	struct sodr_peer * peer = malloc(sizeof(struct sodr_peer));
 	bzero(peer, sizeof(struct sodr_peer));
+
 	peer->fd = fd;
+
+	peer->reader = NULL;
+	peer->writer = NULL;
+
+	peer->fd_data = -1;
+	peer->buffer = NULL;
+	peer->buffer_length = 0;
 
 	return peer;
 }
