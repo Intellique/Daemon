@@ -65,15 +65,15 @@ static struct so_stream_reader * soj_io_writer_reopen(struct so_stream_writer * 
 static ssize_t soj_io_writer_write(struct so_stream_writer * sfw, const void * buffer, ssize_t length);
 
 static struct so_stream_writer_ops soj_writer_ops = {
-	.before_close = soj_io_writer_before_close,
-	.close = soj_io_writer_close,
-	.free = soj_io_writer_free,
+	.before_close       = soj_io_writer_before_close,
+	.close              = soj_io_writer_close,
+	.free               = soj_io_writer_free,
 	.get_available_size = soj_io_writer_get_available_size,
-	.get_block_size = soj_io_writer_get_block_size,
-	.last_errno = soj_io_writer_last_errno,
-	.position = soj_io_writer_position,
-	.reopen = soj_io_writer_reopen,
-	.write = soj_io_writer_write,
+	.get_block_size     = soj_io_writer_get_block_size,
+	.last_errno         = soj_io_writer_last_errno,
+	.position           = soj_io_writer_position,
+	.reopen             = soj_io_writer_reopen,
+	.write              = soj_io_writer_write,
 };
 
 

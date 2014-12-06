@@ -42,6 +42,7 @@
 #include <libstoriqone-job/drive.h>
 #include <libstoriqone-job/job.h>
 #include <libstoriqone-job/media.h>
+#include <libstoriqone-job/script.h>
 
 #include <job_backup-db.chcksum>
 
@@ -70,7 +71,11 @@ static struct so_job_driver backupdb = {
 };
 
 
-static void backupdb_exit(struct so_job * job, struct so_database_connection * db_connect) {
+static void backupdb_exit(struct so_job * job __attribute__((unused)), struct so_database_connection * db_connect __attribute__((unused))) {
+	so_value_free(backupdb_medias);
+	backupdb_medias = NULL;
+	so_pool_free(backupdb_pool);
+	backupdb_pool = NULL;
 }
 
 static void backupdb_init() {
@@ -91,6 +96,12 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Failed to create temporary file"));
 		goto tmp_writer;
 	}
+
+	if (job->stopped_by_user)
+		goto tmp_writer;
+
+	job->status = so_job_status_running;
+	job->done = 0.01;
 
 	// write backup into temporary file
 	static char buffer[16384];
@@ -119,6 +130,8 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 	db_reader->ops->free(db_reader);
 	db_reader = NULL;
 
+	job->done = 0.02;
+
 	ssize_t size_available = soj_media_prepare(backupdb_pool, db_connect);
 	if (size_available < nb_total_read) {
 		size_available += soj_media_prepare_unformatted(backupdb_pool, true, db_connect);
@@ -146,10 +159,7 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 		const char * cookie = drive->ops->lock(drive);
 		struct so_stream_writer * dr_writer = drive->ops->get_raw_writer(drive, cookie);
 
-		nb_total_read = 0;
 		while (nb_read = tmp_reader->ops->read(tmp_reader, buffer, 16384), nb_read > 0) {
-			nb_total_read += nb_read;
-
 			ssize_t nb_total_write = 0;
 			while (nb_total_write < nb_read) {
 				ssize_t nb_write = dr_writer->ops->write(dr_writer, buffer, nb_read);
@@ -158,6 +168,8 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 					nb_total_write += nb_write;
 				}
 			}
+
+			job->done = 0.02 + 0.98 * ((float) (nb_total_write)) / nb_total_read;
 		}
 
 		dr_writer->ops->close(dr_writer);
@@ -170,6 +182,8 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 
 	tmp_reader->ops->close(tmp_reader);
 	tmp_reader->ops->free(tmp_reader);
+
+	job->done = 1;
 
 	return 0;
 
@@ -208,12 +222,19 @@ static int backupdb_simulate(struct so_job * job, struct so_database_connection 
 }
 
 static void backupdb_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, backupdb_pool) < 1)
+		return;
 }
 
 static void backupdb_script_post_run(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, backupdb_pool) < 1)
+		return;
 }
 
 static bool backupdb_script_pre_run(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_pre_job, backupdb_pool) < 1)
+		return true;
+
 	return true;
 }
 
