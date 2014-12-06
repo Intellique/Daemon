@@ -133,6 +133,7 @@ struct so_database_connection {
 		int (*update_host)(struct so_database_connection * connect, const char * uuid) __attribute__((nonnull));
 
 		struct so_value * (*get_changers)(struct so_database_connection * connect) __attribute__((nonnull));
+		struct so_value * (*get_checksums_from_pool)(struct so_database_connection * connect, struct so_pool * pool) __attribute__((nonnull,warn_unused_result));
 		struct so_value * (*get_free_medias)(struct so_database_connection * connect, struct so_media_format * media_format, bool online) __attribute__((nonnull,warn_unused_result));
 		struct so_media * (*get_media)(struct so_database_connection * connect, const char * medium_serial_number, const char * label, struct so_job * job) __attribute__((nonnull(1),warn_unused_result));
 		struct so_value * (*get_medias_of_pool)(struct so_database_connection * connect, struct so_pool * pool) __attribute__((nonnull,warn_unused_result));

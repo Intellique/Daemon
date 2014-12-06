@@ -78,6 +78,7 @@ static int so_database_postgresql_get_host_by_name(struct so_database_connection
 static int so_database_postgresql_update_host(struct so_database_connection * connect, const char * uuid);
 
 static struct so_value * so_database_postgresql_get_changers(struct so_database_connection * connect);
+static struct so_value * so_database_postgresql_get_checksums_from_pool(struct so_database_connection * connect, struct so_pool * pool);
 static struct so_value * so_database_postgresql_get_drives_by_changer(struct so_database_connection * connect, const char * changer_id);
 static struct so_value * so_database_postgresql_get_free_medias(struct so_database_connection * connect, struct so_media_format * media_format, bool online);
 static struct so_media * so_database_postgresql_get_media(struct so_database_connection * connect, const char * medium_serial_number, const char * label, struct so_job * job);
@@ -121,17 +122,18 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.get_host_by_name = so_database_postgresql_get_host_by_name,
 	.update_host      = so_database_postgresql_update_host,
 
-	.get_changers          = so_database_postgresql_get_changers,
-	.get_free_medias       = so_database_postgresql_get_free_medias,
-	.get_media             = so_database_postgresql_get_media,
-	.get_media_format      = so_database_postgresql_get_media_format,
-	.get_medias_of_pool    = so_database_postgresql_get_medias_of_pool,
-	.get_pool              = so_database_postgresql_get_pool,
-	.get_standalone_drives = so_database_postgresql_get_standalone_drives,
-	.get_vtls              = so_database_postgresql_get_vtls,
-	.sync_changer          = so_database_postgresql_sync_changer,
-	.sync_drive            = so_database_postgresql_sync_drive,
-	.sync_media            = so_database_postgresql_sync_media,
+	.get_changers            = so_database_postgresql_get_changers,
+	.get_checksums_from_pool = so_database_postgresql_get_checksums_from_pool,
+	.get_free_medias         = so_database_postgresql_get_free_medias,
+	.get_media               = so_database_postgresql_get_media,
+	.get_media_format        = so_database_postgresql_get_media_format,
+	.get_medias_of_pool      = so_database_postgresql_get_medias_of_pool,
+	.get_pool                = so_database_postgresql_get_pool,
+	.get_standalone_drives   = so_database_postgresql_get_standalone_drives,
+	.get_vtls                = so_database_postgresql_get_vtls,
+	.sync_changer            = so_database_postgresql_sync_changer,
+	.sync_drive              = so_database_postgresql_sync_drive,
+	.sync_media              = so_database_postgresql_sync_media,
 
 	.add_job_record = so_database_postgresql_add_job_record,
 	.start_job      = so_database_postgresql_start_job,
@@ -502,6 +504,32 @@ static struct so_value * so_database_postgresql_get_changers(struct so_database_
 	free(host_id);
 
 	return changers;
+}
+
+static struct so_value * so_database_postgresql_get_checksums_from_pool(struct so_database_connection * connect, struct so_pool * pool) {
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_checksums_by_pools";
+	so_database_postgresql_prepare(self, query, "SELECT c.name FROM checksum c INNER JOIN pooltochecksum pc ON c.id = pc.checksum LEFT JOIN pool p ON pc.pool = p.id AND p.uuid = $1");
+
+	const char * param[] = { pool->uuid };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+	int nb_result = PQntuples(result);
+
+	struct so_value * checksums = so_value_new_linked_list();
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && nb_result > 0) {
+		int i;
+		for (i = 0; i < nb_result; i++)
+			so_value_list_push(checksums, so_value_new_string(PQgetvalue(result, i, 0)), true);
+	}
+
+	PQclear(result);
+
+	return checksums;
 }
 
 static struct so_value * so_database_postgresql_get_drives_by_changer(struct so_database_connection * connect, const char * changer_id) {
