@@ -24,6 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
+// poll
+#include <poll.h>
 // free, malloc
 #include <stdlib.h>
 // bzero
@@ -199,7 +201,19 @@ static ssize_t soj_io_reader_read(struct so_stream_reader * io, void * buffer, s
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
-	ssize_t nb_read = recv(self->data_fd, buffer, length, 0);
+	struct pollfd fds[] = {
+		{ self->command_fd, POLLIN | POLLHUP, 0 },
+		{ self->data_fd,    POLLIN | POLLHUP, 0 },
+	};
+
+	poll(fds, 2, -1);
+
+	if (fds[0].revents & POLLHUP)
+		return -1;
+
+	ssize_t nb_read = -1;
+	if (fds[1].revents & POLLIN)
+		nb_read = recv(self->data_fd, buffer, length, 0);
 
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
 	if (nb_read < 0)
