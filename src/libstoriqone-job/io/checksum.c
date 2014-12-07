@@ -103,6 +103,8 @@ static void soj_stream_checksum_backend_finish(struct soj_stream_checksum_backen
 		char * hash = ck->ops->digest(ck);
 
 		so_value_hashtable_put2(self->digests, ck->driver->name, so_value_new_string(hash), true);
+
+		free(hash);
 	}
 }
 
@@ -123,7 +125,7 @@ struct soj_stream_checksum_backend * soj_stream_checksum_backend_new(struct so_v
 
 	struct soj_stream_checksum_backend_private * self = malloc(sizeof(struct soj_stream_checksum_backend_private));
 	self->checksums = calloc(nb_checksums, sizeof(struct st_checksum *));
-	self->digests = calloc(nb_checksums, sizeof(char *));
+	self->digests = so_value_new_hashtable2();
 	self->nb_checksums = nb_checksums;
 	self->computed = false;
 
