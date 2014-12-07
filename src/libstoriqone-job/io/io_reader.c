@@ -77,7 +77,7 @@ static struct so_stream_reader_ops soj_reader_ops = {
 static int soj_io_reader_close(struct so_stream_reader * io) {
 	struct soj_io_reader * self = io->data;
 
-	struct so_value * request = so_value_pack("{sb}", "stop", true);
+	struct so_value * request = so_value_pack("{ss}", "command", "reader: close");
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
@@ -88,26 +88,53 @@ static int soj_io_reader_close(struct so_stream_reader * io) {
 	if (response == NULL)
 		return 1;
 
-	bool closed = false;
-	so_value_unpack(response, "{sb}", "close", &closed);
+	long int failed = 0;
+	so_value_unpack(response, "{sb}", "returned", &failed);
+	if (failed != 0)
+		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	so_value_free(response);
 
-	return closed ? 0 : 1;
+	return failed ? 1 : 0;
 }
 
 static bool soj_io_reader_end_of_file(struct so_stream_reader * io __attribute__((unused))) {
-	return false;
+	struct soj_io_reader * self = io->data;
+
+	struct so_value * request = so_value_pack("{ss}", "command", "reader: end of file");
+	so_json_encode_to_fd(request, self->command_fd, true);
+	so_value_free(request);
+
+	close(self->data_fd);
+	self->data_fd = -1;
+
+	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	if (response == NULL)
+		return 1;
+
+	long int failed = 0;
+	so_value_unpack(response, "{sb}", "returned", &failed);
+	if (failed != 0)
+		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+	so_value_free(response);
+
+	return failed ? 1 : 0;
 }
 
 static off_t soj_io_reader_forward(struct so_stream_reader * io, off_t offset) {
 	struct soj_io_reader * self = io->data;
 
-	struct so_value * request = so_value_pack("{sbsssi}", "stop", false, "command", "forward", "offset", offset);
+	struct so_value * request = so_value_pack("{sss{si}}", "command", "reader: forward", "params", "offset", offset);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
+	off_t new_position = (off_t) -1;
+
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
-	so_value_unpack(response, "{si}", "new position", &self->position);
+	so_value_unpack(response, "{si}", "returned", &new_position);
+	if (new_position == (off_t) -1)
+		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+	else
+		self->position = new_position;
 	so_value_free(response);
 
 	self->position += offset;
@@ -168,13 +195,15 @@ static ssize_t soj_io_reader_position(struct so_stream_reader * io) {
 static ssize_t soj_io_reader_read(struct so_stream_reader * io, void * buffer, ssize_t length) {
 	struct soj_io_reader * self = io->data;
 
-	struct so_value * request = so_value_pack("{sbsssi}", "stop", false, "command", "read", "length", length);
+	struct so_value * request = so_value_pack("{sss{si}}", "command", "reader: read", "params", "length", length);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
 	ssize_t nb_read = recv(self->data_fd, buffer, length, 0);
 
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	if (nb_read < 0)
+		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	so_value_free(response);
 
 	return nb_read;

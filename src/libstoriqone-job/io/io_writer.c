@@ -80,7 +80,7 @@ static struct so_stream_writer_ops soj_writer_ops = {
 static ssize_t soj_io_writer_before_close(struct so_stream_writer * sfw, void * buffer, ssize_t length) {
 	struct soj_io_writer * self = sfw->data;
 
-	struct so_value * request = so_value_pack("{sss{si}}", "command", "writer before close", "params", "length", length);
+	struct so_value * request = so_value_pack("{sss{si}}", "command", "writer: before close", "params", "length", length);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
@@ -98,7 +98,7 @@ static ssize_t soj_io_writer_before_close(struct so_stream_writer * sfw, void * 
 static int soj_io_writer_close(struct so_stream_writer * sfw) {
 	struct soj_io_writer * self = sfw->data;
 
-	struct so_value * request = so_value_pack("{ss}", "command", "writer close");
+	struct so_value * request = so_value_pack("{ss}", "command", "writer: close");
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
@@ -155,7 +155,7 @@ static struct so_stream_reader * soj_io_writer_reopen(struct so_stream_writer * 
 static ssize_t soj_io_writer_write(struct so_stream_writer * sfw, const void * buffer, ssize_t length) {
 	struct soj_io_writer * self = sfw->data;
 
-	struct so_value * request = so_value_pack("{sss{si}}", "command", "writer write", "params", "length", length);
+	struct so_value * request = so_value_pack("{sss{si}}", "command", "writer: write", "params", "length", length);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 

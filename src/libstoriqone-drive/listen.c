@@ -74,6 +74,10 @@ static void sodr_socket_command_lock(struct sodr_peer * peer, struct so_value * 
 static void sodr_socket_command_release(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_sync(struct sodr_peer * peer, struct so_value * request, int fd);
 
+static void sodr_socket_command_reader_close(struct sodr_peer * peer, struct so_value * request, int fd);
+static void sodr_socket_command_reader_end_of_file(struct sodr_peer * peer, struct so_value * request, int fd);
+static void sodr_socket_command_reader_forward(struct sodr_peer * peer, struct so_value * request, int fd);
+
 static void sodr_socket_command_writer_before_close(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_writer_close(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_writer_write(struct sodr_peer * peer, struct so_value * request, int fd);
@@ -93,9 +97,13 @@ static struct sodr_socket_command {
 	{ 0, "release",              sodr_socket_command_release },
 	{ 0, "sync",                 sodr_socket_command_sync },
 
-	{ 0, "writer before close", sodr_socket_command_writer_before_close },
-	{ 0, "writer close", sodr_socket_command_writer_close },
-	{ 0, "writer write", sodr_socket_command_writer_write },
+	{ 0, "reader: close",       sodr_socket_command_reader_close },
+	{ 0, "reader: end of file", sodr_socket_command_reader_end_of_file },
+	{ 0, "reader: forward",     sodr_socket_command_reader_forward },
+
+	{ 0, "writer: before close", sodr_socket_command_writer_before_close },
+	{ 0, "writer: close", sodr_socket_command_writer_close },
+	{ 0, "writer: write", sodr_socket_command_writer_write },
 
 	{ 0, NULL, NULL }
 };
@@ -317,7 +325,10 @@ static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct s
 
 	so_log_write(so_log_level_notice, dgettext("libstoriqone-drive", "[%s %s #%u]: open media (%s) for reading at position #%ld"), drive->vendor, drive->model, drive->index, media_name, position);
 
-	struct so_stream_reader * reader = drive->ops->get_raw_reader(position, sodr_db);
+	peer->reader = drive->ops->get_raw_reader(position, sodr_db);
+
+	peer->buffer_length = peer->reader->ops->get_block_size(peer->reader);
+	peer->buffer = malloc(peer->buffer_length);
 
 	struct so_value * tmp_config = so_value_copy(sodr_config, true);
 	int tmp_socket = so_socket_server_temp(tmp_config);
@@ -325,99 +336,13 @@ static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct s
 	struct so_value * response = so_value_pack("{sbsOsi}",
 		"status", true,
 		"socket", tmp_config,
-		"block size", reader->ops->get_block_size(reader)
+		"block size", peer->buffer_length
 	);
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);
 
-	int data_socket = so_socket_accept_and_close(tmp_socket, tmp_config);
+	peer->fd_data = so_socket_accept_and_close(tmp_socket, tmp_config);
 	so_value_free(tmp_config);
-
-	ssize_t buffer_size = reader->ops->get_block_size(reader);
-	char * buffer = malloc(buffer_size);
-
-	struct so_value * command = so_json_parse_fd(fd, -1);
-
-	bool stop = true;
-	so_value_unpack(command, "{sbsi}", "stop", &stop);
-	so_value_free(command);
-
-	long int l_errno = 0;
-	while (!stop) {
-		char * str_command = NULL;
-		so_value_unpack(command, "{ss}", "command", &str_command);
-
-		if (!strcmp(str_command, "forward")) {
-			off_t offset = 0;
-			so_value_unpack(command, "{si}", "offset", &offset);
-			so_value_free(command);
-
-			ssize_t new_position = reader->ops->forward(reader, offset);
-
-			response = so_value_pack("{sbsisisb}",
-				"status", true,
-				"new position", new_position,
-				"errno", l_errno,
-				"close", false
-			);
-			so_json_encode_to_fd(response, fd, true);
-			so_value_free(response);
-		} else if (!strcmp(str_command, "read")) {
-			long int length = -1;
-			ssize_t nb_total_read = 0;
-
-			while (nb_total_read < length) {
-				ssize_t will_read = length - nb_total_read;
-				if (will_read > buffer_size)
-					will_read = buffer_size;
-
-				ssize_t nb_read = reader->ops->read(reader, buffer, will_read);
-				if (nb_read < 0) {
-					l_errno = reader->ops->last_errno(reader);
-					break;
-				}
-				if (nb_read == 0)
-					break;
-
-				ssize_t nb_write = send(data_socket, buffer, nb_read, MSG_NOSIGNAL);
-				if (nb_write > 0) {
-					nb_total_read += nb_write;
-				} else if (nb_write < 0) {
-					break;
-				}
-			}
-
-			response = so_value_pack("{sbsisisb}",
-				"status", true,
-				"nb read", nb_total_read,
-				"errno", l_errno,
-				"close", false
-			);
-
-			so_json_encode_to_fd(response, fd, true);
-			so_value_free(response);
-		}
-
-		command = so_json_parse_fd(fd, -1);
-
-		if (command != NULL)
-			so_value_unpack(command, "{sbsi}", "stop", &stop);
-		else
-			break;
-		so_value_free(command);
-	}
-
-	so_log_write(so_log_level_notice, dgettext("libstoriqone-drive", "[%s %s #%u]: close media (%s)"), drive->vendor, drive->model, drive->index, media_name);
-
-	free(buffer);
-	close(data_socket);
-
-	response = so_value_pack("{sbsb}",
-		"status", true,
-		"close", true
-	);
-	so_json_encode_to_fd(response, fd, true);
-	so_value_free(response);
 }
 
 static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct so_value * request, int fd) {
@@ -453,11 +378,11 @@ static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct s
 
 	peer->writer = drive->ops->get_raw_writer(sodr_db);
 
-	struct so_value * tmp_config = so_value_copy(sodr_config, true);
-	int tmp_socket = so_socket_server_temp(tmp_config);
-
 	peer->buffer_length = peer->writer->ops->get_block_size(peer->writer);
 	peer->buffer = malloc(peer->buffer_length);
+
+	struct so_value * tmp_config = so_value_copy(sodr_config, true);
+	int tmp_socket = so_socket_server_temp(tmp_config);
 
 	struct so_value * response = so_value_pack("{sbsOsi}",
 		"status", true,
@@ -469,67 +394,6 @@ static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct s
 
 	peer->fd_data = so_socket_accept_and_close(tmp_socket, tmp_config);
 	so_value_free(tmp_config);
-
-	/*
-	struct so_value * command = so_json_parse_fd(fd, -1);
-
-	long int length = -1;
-	bool stop = true;
-	so_value_unpack(command, "{sbsi}", "stop", &stop, "length", &length);
-	so_value_free(command);
-
-	long int l_errno = 0;
-	while (!stop && length >= 0) {
-		ssize_t nb_total_write = 0;
-
-		while (nb_total_write < length) {
-			ssize_t will_write = length - nb_total_write;
-			if (will_write > buffer_size)
-				will_write = buffer_size;
-
-			ssize_t nb_read = recv(data_socket, buffer, will_write, 0);
-			if (nb_read < 0)
-				break;
-
-			ssize_t nb_write = peer->writer->ops->write(peer->writer, buffer, nb_read);
-			if (nb_write > 0)
-				nb_total_write += nb_write;
-			else if (nb_write < 0) {
-				l_errno = peer->writer->ops->last_errno(peer->writer);
-				break;
-			}
-		}
-
-		response = so_value_pack("{sbsisisb}",
-			"status", true,
-			"nb write", nb_total_write,
-			"errno", l_errno,
-			"close", false
-		);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-
-		command = so_json_parse_fd(fd, -1);
-
-		if (command != NULL)
-			so_value_unpack(command, "{sbsi}", "stop", &stop, "length", &length);
-		else
-			break;
-		so_value_free(command);
-	}
-
-	so_log_write(so_log_level_notice, dgettext("libstoriqone-drive", "[%s %s #%u]: close media (%s)"), drive->vendor, drive->model, drive->index, media_name);
-
-	free(buffer);
-	close(data_socket);
-
-	response = so_value_pack("{sbsb}",
-		"status", true,
-		"close", false
-	);
-	so_json_encode_to_fd(response, fd, true);
-	so_value_free(response);
-	*/
 }
 
 static void sodr_socket_command_lock(struct sodr_peer * peer, struct so_value * request __attribute__((unused)), int fd) {
@@ -570,6 +434,65 @@ static void sodr_socket_command_sync(struct sodr_peer * peer __attribute__((unus
 	struct so_value * response = so_value_pack("{so}", "returned", so_drive_convert(dr, true));
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);
+}
+
+
+static void sodr_socket_command_reader_close(struct sodr_peer * peer, struct so_value * request __attribute__((unused)), int fd) {
+	if (peer->reader == NULL) {
+		struct so_value * response = so_value_pack("{si}", "returned", -1L);
+		so_json_encode_to_fd(response, fd, true);
+		so_value_free(response);
+	} else {
+		long int failed = peer->reader->ops->close(peer->reader);
+		long int last_errno = peer->reader->ops->last_errno(peer->reader);
+
+		if (failed == 0) {
+			peer->reader->ops->free(peer->reader);
+			peer->reader = NULL;
+			close(peer->fd_data);
+			peer->fd_data = -1;
+			free(peer->buffer);
+			peer->buffer = NULL;
+			peer->buffer_length = 0;
+		}
+
+		struct so_value * response = so_value_pack("{sisi}", "returned", failed, "last errno", last_errno);
+		so_json_encode_to_fd(response, fd, true);
+		so_value_free(response);
+	}
+}
+
+static void sodr_socket_command_reader_end_of_file(struct sodr_peer * peer, struct so_value * request __attribute__((unused)), int fd) {
+	if (peer->reader == NULL) {
+		struct so_value * response = so_value_pack("{sb}", "returned", true);
+		so_json_encode_to_fd(response, fd, true);
+		so_value_free(response);
+	} else {
+		bool eof = peer->reader->ops->end_of_file(peer->reader);
+		long int last_errno = peer->reader->ops->last_errno(peer->reader);
+
+		struct so_value * response = so_value_pack("{sbsi}", "returned", eof, "last errno", last_errno);
+		so_json_encode_to_fd(response, fd, true);
+		so_value_free(response);
+	}
+}
+
+static void sodr_socket_command_reader_forward(struct sodr_peer * peer, struct so_value * request, int fd) {
+	if (peer->reader == NULL) {
+		struct so_value * response = so_value_pack("{si}", "returned", -1);
+		so_json_encode_to_fd(response, fd, true);
+		so_value_free(response);
+	} else {
+		off_t next_position = 0;
+		so_value_unpack(request, "{s{sosb}}", "params", "offset", &next_position);
+
+		off_t new_position = peer->reader->ops->forward(peer->reader, next_position);
+		long int last_errno = peer->reader->ops->last_errno(peer->reader);
+
+		struct so_value * response = so_value_pack("{sisi}", "returned", new_position, "last errno", last_errno);
+		so_json_encode_to_fd(response, fd, true);
+		so_value_free(response);
+	}
 }
 
 
