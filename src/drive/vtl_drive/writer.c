@@ -83,8 +83,9 @@ static ssize_t sodr_vtl_drive_writer_before_close(struct so_stream_writer * sfw,
 
 	struct sodr_vtl_drive_io * self = sfw->data;
 	if (self->buffer_used > 0 && self->buffer_used < self->buffer_length) {
-		if (self->buffer_used < length)
-			length = self->buffer_used;
+		ssize_t remain = self->buffer_length - self->buffer_used;
+		if (remain < length)
+			length = remain;
 
 		bzero(buffer, length);
 

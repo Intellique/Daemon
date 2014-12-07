@@ -542,7 +542,7 @@ static void sodr_socket_command_writer_before_close(struct sodr_peer * peer, str
 		so_value_free(response);
 	} else {
 		ssize_t length = 0;
-		so_value_unpack(request, "{s{sosb}}", "params", "length", &length);
+		so_value_unpack(request, "{s{si}}", "params", "length", &length);
 
 		if (length > peer->buffer_length)
 			length = peer->buffer_length;

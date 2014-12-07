@@ -118,7 +118,10 @@ static ssize_t soj_io_writer_before_close(struct so_stream_writer * sfw, void * 
 
 	so_value_free(response);
 
-	return recv(self->data_fd, buffer, nb_read, 0);
+	if (nb_read > 0)
+		return recv(self->data_fd, buffer, nb_read, 0);
+
+	return 0;
 }
 
 static int soj_io_writer_close(struct so_stream_writer * sfw) {

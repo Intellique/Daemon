@@ -33,13 +33,13 @@
 
 #include <libstoriqone/database.h>
 #include <libstoriqone/file.h>
-#include <libstoriqone/io.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/changer.h>
 #include <libstoriqone-job/drive.h>
+#include <libstoriqone-job/io.h>
 #include <libstoriqone-job/job.h>
 #include <libstoriqone-job/media.h>
 #include <libstoriqone-job/script.h>
@@ -48,6 +48,7 @@
 
 #include "config.h"
 
+static struct so_value * backupdb_checksums = NULL;
 static struct so_value * backupdb_medias = NULL;
 static struct so_pool * backupdb_pool = NULL;
 
@@ -72,6 +73,8 @@ static struct so_job_driver backupdb = {
 
 
 static void backupdb_exit(struct so_job * job __attribute__((unused)), struct so_database_connection * db_connect __attribute__((unused))) {
+	so_value_free(backupdb_checksums);
+	backupdb_checksums = NULL;
 	so_value_free(backupdb_medias);
 	backupdb_medias = NULL;
 	so_pool_free(backupdb_pool);
@@ -157,25 +160,37 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 
 		const char * cookie = drive->ops->lock(drive);
 		struct so_stream_writer * dr_writer = drive->ops->get_raw_writer(drive, cookie);
+		struct so_stream_writer * cksum_writer = dr_writer;
 
+		if (so_value_list_get_length(backupdb_checksums) > 0)
+			cksum_writer = soj_checksum_writer_new(dr_writer, backupdb_checksums, true);
+
+		off_t position = 0;
 		while (nb_read = tmp_reader->ops->read(tmp_reader, buffer, 16384), nb_read > 0) {
 			ssize_t nb_total_write = 0;
 			while (nb_total_write < nb_read) {
-				ssize_t nb_write = dr_writer->ops->write(dr_writer, buffer, nb_read);
+				ssize_t nb_write = cksum_writer->ops->write(cksum_writer, buffer, nb_read);
 				if (nb_write < 0) {
 				} else {
 					nb_total_write += nb_write;
+					position += nb_write;
 				}
 			}
 
-			job->done = 0.02 + 0.98 * ((float) (nb_total_write)) / nb_total_read;
+			job->done = 0.02 + 0.98 * ((float) (position)) / nb_total_read;
 		}
-
-		dr_writer->ops->close(dr_writer);
-		dr_writer->ops->free(dr_writer);
 
 		if (nb_read < 0) {
 		}
+
+		cksum_writer->ops->close(cksum_writer);
+
+		if (dr_writer != cksum_writer) {
+			struct so_value * checksums = soj_checksum_writer_get_checksums(cksum_writer);
+			so_value_free(checksums);
+		}
+
+		cksum_writer->ops->free(cksum_writer);
 	}
 	so_value_iterator_free(iter);
 
@@ -216,6 +231,8 @@ static int backupdb_simulate(struct so_job * job, struct so_database_connection 
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Try to back up database into a pool whose is not growable and without any medias"));
 		return 1;
 	}
+
+	backupdb_checksums = db_connect->ops->get_checksums_from_pool(db_connect, backupdb_pool);
 
 	return 0;
 }
