@@ -36,11 +36,11 @@
 #include <strings.h>
 // open
 #include <sys/stat.h>
-// open
+// lseek, open
 #include <sys/types.h>
 // time
 #include <time.h>
-// write
+// lseek, write
 #include <unistd.h>
 
 #include <libstoriqone/drive.h>
@@ -147,18 +147,14 @@ static int sodr_vtl_drive_writer_close(struct so_stream_writer * sfw) {
 	}
 
 	if (self->fd > -1) {
-		sodr_time_start();
-		int failed = close(self->fd);
-		sodr_time_stop(dr);
+		int failed = sodr_vtl_drive_io_close(self);
 
-		if (failed != 0) {
-			self->last_errno = errno;
+		if (failed != 0)
 			self->media->nb_write_errors++;
-			return -1;
-		}
+		else
+			self->media->last_write = time(NULL);
 
-		self->fd = -1;
-		self->media->last_write = time(NULL);
+		return failed;
 	}
 
 	return 0;
@@ -172,7 +168,7 @@ static void sodr_vtl_drive_writer_free(struct so_stream_writer * sfw) {
 	if (self->fd > -1)
 		sodr_vtl_drive_writer_close(sfw);
 
-	free(self);
+	sodr_vtl_drive_io_free(self);
 	free(sfw);
 }
 
@@ -192,7 +188,9 @@ static ssize_t sodr_vtl_drive_writer_get_block_size(struct so_stream_writer * sf
 	return self->buffer_length;
 }
 
-struct so_stream_writer * sodr_vtl_drive_writer_get_raw_writer(struct so_drive * drive, const char * filename) {
+struct so_stream_writer * sodr_vtl_drive_writer_get_raw_writer(const char * filename) {
+	struct so_drive * drive = sodr_vtl_drive_get_device();
+
 	int fd = open(filename, O_RDWR | O_CREAT | O_TRUNC, 0644);
 	if (fd < 0) {
 		so_log_write(so_log_level_error, "[%s %s %d] Error while opening file (%s) because %m", drive->vendor, drive->model, drive->index, filename);
@@ -232,7 +230,38 @@ static ssize_t sodr_vtl_drive_writer_position(struct so_stream_writer * sfw) {
 }
 
 static struct so_stream_reader * sodr_vtl_drive_writer_reopen(struct so_stream_writer * sfw) {
-	return NULL;
+	struct sodr_vtl_drive_io * self = sfw->data;
+	struct so_drive * dr = sodr_vtl_drive_get_device();
+
+	if (self->buffer_used > 0) {
+		bzero(self->buffer + self->buffer_used, self->buffer_length - self->buffer_used);
+
+		sodr_time_start();
+		ssize_t nb_write = write(self->fd, self->buffer, self->buffer_length);
+		sodr_time_stop(dr);
+
+		if (nb_write < 0) {
+			self->last_errno = errno;
+			self->media->nb_write_errors++;
+			return NULL;
+		}
+
+		self->position += nb_write;
+		self->buffer_used = 0;
+		self->media->free_block--;
+		self->media->nb_total_write++;
+	}
+
+	off_t new_position = lseek(self->fd, 0, SEEK_SET);
+	if (new_position == (off_t) -1) {
+		// error
+		return NULL;
+	}
+
+	int fd = self->fd;
+	self->fd = -1;
+
+	return sodr_vtl_drive_reader_get_raw_reader(fd);
 }
 
 static ssize_t sodr_vtl_drive_writer_write(struct so_stream_writer * sfw, const void * buffer, ssize_t length) {

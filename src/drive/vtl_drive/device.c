@@ -219,7 +219,26 @@ struct so_drive * sodr_vtl_drive_get_device() {
 	return &sodr_vtl_drive;
 }
 
-static struct so_stream_reader * sodr_vtl_drive_get_raw_reader(int file_position, struct so_database_connection * db) {}
+static struct so_stream_reader * sodr_vtl_drive_get_raw_reader(int file_position, struct so_database_connection * db) {
+	char * filename;
+	asprintf(&filename, "%s/file_%d", sodr_vtl_media_dir, file_position);
+
+	int fd = open(filename, O_RDONLY);
+
+	struct so_stream_reader * reader = NULL;
+	if (fd >= 0) {
+		sodr_vtl_drive.status = so_drive_status_reading;
+		db->ops->sync_drive(db, &sodr_vtl_drive, true, so_database_sync_default);
+
+		reader = sodr_vtl_drive_reader_get_raw_reader(fd);
+	} else {
+		// error invalid position
+	}
+
+	free(filename);
+
+	return reader;
+}
 
 static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct so_database_connection * db) {
 	char * files;
@@ -236,7 +255,7 @@ static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct so_databas
 
 	asprintf(&files, "%s/file_%d", sodr_vtl_media_dir, nb_files);
 
-	struct so_stream_writer * writer = sodr_vtl_drive_writer_get_raw_writer(&sodr_vtl_drive, files);
+	struct so_stream_writer * writer = sodr_vtl_drive_writer_get_raw_writer(files);
 
 	sodr_vtl_drive.status = so_drive_status_writing;
 	db->ops->sync_drive(db, &sodr_vtl_drive, true, so_database_sync_default);

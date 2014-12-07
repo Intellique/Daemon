@@ -24,31 +24,44 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __ST_VTLDRIVE_IO_H__
-#define __ST_VTLDRIVE_IO_H__
+// errno
+#include <errno.h>
+// free
+#include <stdlib.h>
+// close
+#include <unistd.h>
 
-#include <libstoriqone/io.h>
+#include <libstoriqone-drive/time.h>
 
-struct so_drive;
+#include "device.h"
+#include "io.h"
 
-struct sodr_vtl_drive_io {
-	int fd;
+int sodr_vtl_drive_io_close(struct sodr_vtl_drive_io * io) {
+	struct so_drive * dr = sodr_vtl_drive_get_device();
 
-	char * buffer;
-	ssize_t buffer_used;
-	ssize_t buffer_length;
+	if (io->fd < 0)
+		return 0;
 
-	ssize_t position;
-	int last_errno;
+	sodr_time_start();
+	int failed = close(io->fd);
+	sodr_time_stop(dr);
 
-	struct so_media * media;
-};
+	if (failed != 0)
+		io->last_errno = errno;
+	else
+		io->fd = -1;
 
-struct so_stream_reader * sodr_vtl_drive_reader_get_raw_reader(int fd);
-struct so_stream_writer * sodr_vtl_drive_writer_get_raw_writer(const char * filename);
+	return failed;
+}
 
-int sodr_vtl_drive_io_close(struct sodr_vtl_drive_io * io);
-void sodr_vtl_drive_io_free(struct sodr_vtl_drive_io * io);
+void sodr_vtl_drive_io_free(struct sodr_vtl_drive_io * io) {
+	if (io == NULL)
+		return;
 
-#endif
+	if (io->fd >= 0)
+		sodr_vtl_drive_io_close(io);
+
+	free(io->buffer);
+	free(io);
+}
 
