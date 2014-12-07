@@ -33,6 +33,7 @@ struct so_drive;
 struct so_value;
 
 struct so_stream_reader * soj_io_new_stream_reader(struct so_drive * drive, int fd_command, struct so_value * config);
+struct so_stream_reader * soj_io_new_stream_reader2(struct so_drive * drive, int fd_command, int fd_data, ssize_t block_size);
 struct so_stream_writer * soj_io_new_stream_writer(struct so_drive * drive, int fd_command, struct so_value * config);
 
 #endif

@@ -77,6 +77,32 @@ static struct so_stream_writer_ops soj_writer_ops = {
 };
 
 
+struct so_stream_writer * soj_io_new_stream_writer(struct so_drive * drive, int fd_command, struct so_value * config) {
+	struct so_value * socket = NULL;
+	long int block_size = 0;
+	if (so_value_unpack(config, "{sosi}", "socket", &socket, "block size", &block_size) < 2)
+		return NULL;
+
+	int data_socket = so_socket(socket);
+
+	struct soj_io_writer * self = malloc(sizeof(struct soj_io_writer));
+	bzero(self, sizeof(struct soj_io_writer));
+	self->drive = drive;
+	self->command_fd = fd_command;
+	self->data_fd = data_socket;
+	self->position = 0;
+	self->block_size = block_size;
+	self->last_errno = 0;
+
+	struct so_stream_writer * writer = malloc(sizeof(struct so_stream_writer));
+	bzero(writer, sizeof(struct so_stream_writer));
+	writer->ops = &soj_writer_ops;
+	writer->data = self;
+
+	return writer;
+}
+
+
 static ssize_t soj_io_writer_before_close(struct so_stream_writer * sfw, void * buffer, ssize_t length) {
 	struct soj_io_writer * self = sfw->data;
 
@@ -102,7 +128,8 @@ static int soj_io_writer_close(struct so_stream_writer * sfw) {
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
-	close(self->data_fd);
+	if (self->data_fd >= 0)
+		close(self->data_fd);
 	self->data_fd = -1;
 
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
@@ -148,8 +175,29 @@ static ssize_t soj_io_writer_position(struct so_stream_writer * sfw) {
 	return self->position;
 }
 
-static struct so_stream_reader * soj_io_writer_reopen(struct so_stream_writer * sfw __attribute__((unused))) {
-	return NULL;
+static struct so_stream_reader * soj_io_writer_reopen(struct so_stream_writer * sfw) {
+	struct soj_io_writer * self = sfw->data;
+
+	struct so_value * request = so_value_pack("{ss}", "command", "writer: reopen");
+	so_json_encode_to_fd(request, self->command_fd, true);
+	so_value_free(request);
+
+	bool ok = false;
+	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	so_value_unpack(response, "{sb}", "returned", &ok);
+	if (!ok)
+		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+	so_value_free(response);
+
+	if (!ok)
+		return NULL;
+
+	struct so_stream_reader * new_reader = soj_io_new_stream_reader2(self->drive, self->command_fd, self->data_fd, self->block_size);
+
+	self->command_fd = -1;
+	self->data_fd = -1;
+
+	return new_reader;
 }
 
 static ssize_t soj_io_writer_write(struct so_stream_writer * sfw, const void * buffer, ssize_t length) {
@@ -169,30 +217,5 @@ static ssize_t soj_io_writer_write(struct so_stream_writer * sfw, const void * b
 	so_value_free(response);
 
 	return nb_write;
-}
-
-struct so_stream_writer * soj_io_new_stream_writer(struct so_drive * drive, int fd_command, struct so_value * config) {
-	struct so_value * socket = NULL;
-	long int block_size = 0;
-	if (so_value_unpack(config, "{sosi}", "socket", &socket, "block size", &block_size) < 2)
-		return NULL;
-
-	int data_socket = so_socket(socket);
-
-	struct soj_io_writer * self = malloc(sizeof(struct soj_io_writer));
-	bzero(self, sizeof(struct soj_io_writer));
-	self->drive = drive;
-	self->command_fd = fd_command;
-	self->data_fd = data_socket;
-	self->position = 0;
-	self->block_size = block_size;
-	self->last_errno = 0;
-
-	struct so_stream_writer * writer = malloc(sizeof(struct so_stream_writer));
-	bzero(writer, sizeof(struct so_stream_writer));
-	writer->ops = &soj_writer_ops;
-	writer->data = self;
-
-	return writer;
 }
 

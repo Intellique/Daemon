@@ -81,6 +81,7 @@ static void sodr_socket_command_reader_read(struct sodr_peer * peer, struct so_v
 
 static void sodr_socket_command_writer_before_close(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_writer_close(struct sodr_peer * peer, struct so_value * request, int fd);
+static void sodr_socket_command_writer_reopen(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_writer_write(struct sodr_peer * peer, struct so_value * request, int fd);
 
 static struct sodr_socket_command {
@@ -104,8 +105,9 @@ static struct sodr_socket_command {
 	{ 0, "reader: read",        sodr_socket_command_reader_read },
 
 	{ 0, "writer: before close", sodr_socket_command_writer_before_close },
-	{ 0, "writer: close", sodr_socket_command_writer_close },
-	{ 0, "writer: write", sodr_socket_command_writer_write },
+	{ 0, "writer: close",        sodr_socket_command_writer_close },
+	{ 0, "writer: reopen",       sodr_socket_command_writer_reopen },
+	{ 0, "writer: write",        sodr_socket_command_writer_write },
 
 	{ 0, NULL, NULL }
 };
@@ -577,6 +579,27 @@ static void sodr_socket_command_writer_close(struct sodr_peer * peer, struct so_
 		}
 
 		struct so_value * response = so_value_pack("{sisi}", "returned", failed, "last errno", last_errno);
+		so_json_encode_to_fd(response, fd, true);
+		so_value_free(response);
+	}
+}
+
+static void sodr_socket_command_writer_reopen(struct sodr_peer * peer, struct so_value * request __attribute__((unused)), int fd) {
+	if (peer->writer == NULL) {
+		struct so_value * response = so_value_pack("{sb}", "returned", false);
+		so_json_encode_to_fd(response, fd, true);
+		so_value_free(response);
+	} else {
+		peer->reader = peer->writer->ops->reopen(peer->writer);
+		long int last_errno = 0;
+		if (peer->reader == NULL)
+			last_errno = peer->writer->ops->last_errno(peer->writer);
+		else {
+			peer->writer->ops->free(peer->writer);
+			peer->writer = NULL;
+		}
+
+		struct so_value * response = so_value_pack("{sbsi}", "returned", peer->reader != NULL, "last errno", last_errno);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 	}

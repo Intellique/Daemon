@@ -144,7 +144,6 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 	}
 
 	struct so_stream_reader * tmp_reader = tmp_writer->ops->reopen(tmp_writer);
-	tmp_writer->ops->close(tmp_writer);
 	tmp_writer->ops->free(tmp_writer);
 
 	struct so_value * reserved_medias = soj_media_reserve(backupdb_pool, nb_total_read, so_pool_unbreakable_level_none);

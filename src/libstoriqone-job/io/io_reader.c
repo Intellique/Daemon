@@ -76,6 +76,36 @@ static struct so_stream_reader_ops soj_reader_ops = {
 };
 
 
+struct so_stream_reader * soj_io_new_stream_reader(struct so_drive * drive, int fd_command, struct so_value * config) {
+	struct so_value * socket = NULL;
+	long int block_size = 0;
+	if (so_value_unpack(config, "{sosi}", "socket", &socket, "block size", &block_size) < 2)
+		return NULL;
+
+	int data_socket = so_socket(socket);
+
+	return soj_io_new_stream_reader2(drive, fd_command, data_socket, block_size);
+}
+
+struct so_stream_reader * soj_io_new_stream_reader2(struct so_drive * drive, int fd_command, int fd_data, ssize_t block_size) {
+	struct soj_io_reader * self = malloc(sizeof(struct soj_io_reader));
+	bzero(self, sizeof(struct soj_io_reader));
+	self->drive = drive;
+	self->command_fd = fd_command;
+	self->data_fd = fd_data;
+	self->position = 0;
+	self->block_size = block_size;
+	self->last_errno = 0;
+
+	struct so_stream_reader * reader = malloc(sizeof(struct so_stream_reader));
+	bzero(reader, sizeof(struct so_stream_reader));
+	reader->ops = &soj_reader_ops;
+	reader->data = self;
+
+	return reader;
+}
+
+
 static int soj_io_reader_close(struct so_stream_reader * io) {
 	struct soj_io_reader * self = io->data;
 
@@ -162,31 +192,6 @@ static ssize_t soj_io_reader_get_block_size(struct so_stream_reader * io) {
 static int soj_io_reader_last_errno(struct so_stream_reader * io) {
 	struct soj_io_reader * self = io->data;
 	return self->last_errno;
-}
-
-struct so_stream_reader * soj_io_new_stream_reader(struct so_drive * drive, int fd_command, struct so_value * config) {
-	struct so_value * socket = NULL;
-	long int block_size = 0;
-	if (so_value_unpack(config, "{sosi}", "socket", &socket, "block size", &block_size) < 2)
-		return NULL;
-
-	int data_socket = so_socket(socket);
-
-	struct soj_io_reader * self = malloc(sizeof(struct soj_io_reader));
-	bzero(self, sizeof(struct soj_io_reader));
-	self->drive = drive;
-	self->command_fd = fd_command;
-	self->data_fd = data_socket;
-	self->position = 0;
-	self->block_size = block_size;
-	self->last_errno = 0;
-
-	struct so_stream_reader * reader = malloc(sizeof(struct so_stream_reader));
-	bzero(reader, sizeof(struct so_stream_reader));
-	reader->ops = &soj_reader_ops;
-	reader->data = self;
-
-	return reader;
 }
 
 static ssize_t soj_io_reader_position(struct so_stream_reader * io) {
