@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 07 Nov 2014 16:28:59 +0100                            *
+*  Last modified: Thu, 04 Dec 2014 18:47:01 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -580,7 +580,7 @@ static bool st_job_backup_db_select_media(struct st_job * job, struct st_job_bac
 				if (self->pool->growable && !has_alerted_user) {
 					st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Please, insert new media which will be a part of pool %s", self->pool->name);
 				} else if (!has_alerted_user) {
-					st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Please, you must to extent the pool (%s)", self->pool->name);
+					st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "No media available, you must add a media to the pool (%s)", self->pool->name);
 				}
 
 				has_alerted_user = true;

@@ -747,7 +747,7 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 				if (self->pool->growable && !has_alerted_user) {
 					st_job_add_record(self->connect, st_log_level_warning, self->job, st_job_record_notif_important, "Please, insert new media which will be a part of pool %s", self->pool->name);
 				} else if (!has_alerted_user) {
-					st_job_add_record(self->connect, st_log_level_warning, self->job, st_job_record_notif_important, "Please, you must to extent the pool (%s)", self->pool->name);
+					st_job_add_record(self->connect, st_log_level_warning, self->job, st_job_record_notif_important, "No media available, you must add a media to the pool (%s)", self->pool->name);
 				}
 
 				has_alerted_user = true;
