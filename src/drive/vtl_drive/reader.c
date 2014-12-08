@@ -185,6 +185,7 @@ struct so_stream_reader * sodr_vtl_drive_reader_get_raw_reader(int fd) {
 	self->buffer = malloc(self->buffer_length);
 	self->buffer_used = 0;
 	self->position = 0;
+	self->file_position = 0;
 	self->last_errno = 0;
 	self->media = drive->slot->media;
 

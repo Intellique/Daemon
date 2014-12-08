@@ -39,13 +39,14 @@ struct sodr_vtl_drive_io {
 	ssize_t buffer_length;
 
 	ssize_t position;
+	int file_position;
 	int last_errno;
 
 	struct so_media * media;
 };
 
 struct so_stream_reader * sodr_vtl_drive_reader_get_raw_reader(int fd);
-struct so_stream_writer * sodr_vtl_drive_writer_get_raw_writer(const char * filename);
+struct so_stream_writer * sodr_vtl_drive_writer_get_raw_writer(const char * filename, int file_position);
 
 int sodr_vtl_drive_io_close(struct sodr_vtl_drive_io * io);
 void sodr_vtl_drive_io_free(struct sodr_vtl_drive_io * io);

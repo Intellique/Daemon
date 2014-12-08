@@ -255,7 +255,7 @@ static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct so_databas
 
 	asprintf(&files, "%s/file_%d", sodr_vtl_media_dir, nb_files);
 
-	struct so_stream_writer * writer = sodr_vtl_drive_writer_get_raw_writer(files);
+	struct so_stream_writer * writer = sodr_vtl_drive_writer_get_raw_writer(files, nb_files);
 
 	sodr_vtl_drive.status = so_drive_status_writing;
 	db->ops->sync_drive(db, &sodr_vtl_drive, true, so_database_sync_default);

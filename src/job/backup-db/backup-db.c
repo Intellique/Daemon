@@ -37,6 +37,7 @@
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
+#include <libstoriqone-job/backup.h>
 #include <libstoriqone-job/changer.h>
 #include <libstoriqone-job/drive.h>
 #include <libstoriqone-job/io.h>
@@ -88,6 +89,8 @@ static void backupdb_init() {
 }
 
 static int backupdb_run(struct so_job * job, struct so_database_connection * db_connect) {
+	struct so_backup * backup = soj_backup_new(job);
+
 	struct so_stream_reader * db_reader = db_connect->config->ops->backup_db(db_connect->config);
 	if (db_reader == NULL) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Failed to get database hander"));
@@ -185,10 +188,13 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 
 		cksum_writer->ops->close(cksum_writer);
 
+		int file_position = cksum_writer->ops->file_position(cksum_writer);
+
 		if (dr_writer != cksum_writer) {
 			struct so_value * checksums = soj_checksum_writer_get_checksums(cksum_writer);
-			so_value_free(checksums);
-		}
+			soj_backup_add_volume(backup, media, file_position, checksums);
+		} else
+			soj_backup_add_volume(backup, media, file_position, NULL);
 
 		cksum_writer->ops->free(cksum_writer);
 	}
@@ -196,6 +202,10 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 
 	tmp_reader->ops->close(tmp_reader);
 	tmp_reader->ops->free(tmp_reader);
+
+	db_connect->ops->backup_add(db_connect, backup);
+
+	soj_backup_free(backup);
 
 	job->done = 1;
 
@@ -210,6 +220,9 @@ tmp_writer:
 		db_reader->ops->close(db_reader);
 		db_reader->ops->free(db_reader);
 	}
+
+	soj_backup_free(backup);
+
 	return 1;
 }
 

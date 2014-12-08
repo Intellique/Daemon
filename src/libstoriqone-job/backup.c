@@ -24,105 +24,50 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_ARCHIVE_H__
-#define __LIBSTORIQONE_ARCHIVE_H__
+// free, malloc, realloc
+#include <stdlib.h>
+// bzero
+#include <strings.h>
+// time
+#include <time.h>
 
-// bool
-#include <stdbool.h>
-// time_t
-#include <sys/time.h>
-// ssize_t
-#include <sys/types.h>
+#include <libstoriqone/value.h>
+#include <libstoriqone-job/backup.h>
 
-struct so_archive_file;
-enum st_archive_file_type;
-struct so_archive_volume;
-struct so_media;
-struct so_value;
+void soj_backup_add_volume(struct so_backup * backup, struct so_media * media, unsigned int position, struct so_value * digests) {
+	void * addr = realloc(backup->volumes, (backup->nb_volumes + 1) * sizeof(struct so_backup_volume));
+	if (addr == NULL)
+		return;
 
-enum so_archive_file_type {
-	so_archive_file_type_block_device,
-	so_archive_file_type_character_device,
-	so_archive_file_type_directory,
-	so_archive_file_type_fifo,
-	so_archive_file_type_regular_file,
-	so_archive_file_type_socket,
-	so_archive_file_type_symbolic_link,
+	backup->volumes = addr;
+	struct so_backup_volume * vol = backup->volumes + backup->nb_volumes;
+	vol->media = media;
+	vol->position = position;
+	vol->digests = digests;
+	backup->nb_volumes++;
+}
 
-	so_archive_file_type_unknown,
-};
+void soj_backup_free(struct so_backup * backup) {
+	if (backup == NULL)
+		return;
 
-struct so_archive {
-	char uuid[37];
-	char * name;
+	unsigned int i;
+	for (i = 0; i < backup->nb_volumes; i++) {
+		struct so_backup_volume * vol = backup->volumes + i;
+		so_value_free(vol->digests);
+	}
 
-	ssize_t size;
+	free(backup->volumes);
+	free(backup);
+}
 
-	time_t start_time;
-	time_t end_time;
+struct so_backup * soj_backup_new(struct so_job * job) {
+	struct so_backup * backup = malloc(sizeof(struct so_backup));
+	bzero(backup, sizeof(struct so_backup));
 
-	bool check_ok;
-	time_t check_time;
+	backup->timestamp = time(NULL);
+	backup->job = job;
 
-	struct so_archive_volume * volumes;
-	unsigned int nb_volumes;
-
-	struct so_value * db_data;
-};
-
-struct so_archive_volume {
-	unsigned int sequence;
-	ssize_t size;
-
-	time_t start_time;
-	time_t end_time;
-
-	bool check_ok;
-	time_t check_time;
-
-	struct so_archive * archive;
-	struct so_media * media;
-	unsigned int media_position;
-	// struct so_job * job;
-
-	struct st_value * digests;
-
-	struct st_archive_files {
-		struct st_archive_file * file;
-		ssize_t position;
-	} * files;
-	unsigned int nb_files;
-
-	struct st_value * db_data;
-};
-
-struct so_archive_file {
-	char * name;
-	mode_t perm;
-	enum st_archive_file_type type;
-	uid_t ownerid;
-	char owner[32];
-	gid_t groupid;
-	char group[32];
-
-	time_t create_time;
-	time_t modify_time;
-	time_t archived_time;
-
-	bool check_ok;
-	time_t check_time;
-
-	ssize_t size;
-
-	char * mime_type;
-
-	struct st_value * digests;
-
-	struct st_archive * archive;
-	// struct st_job_selected_path * selected_path;
-
-	struct st_value * db_data;
-};
-
-#endif
+	return backup;
+}
 

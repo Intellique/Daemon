@@ -40,58 +40,58 @@ struct so_stream_reader {
 		/**
 		 * \brief Close stream
 		 *
-		 * \param[in] io : a stream reader
+		 * \param[in] sr : a stream reader
 		 * \return 0 if ok
 		 */
-		int (*close)(struct so_stream_reader * io);
+		int (*close)(struct so_stream_reader * sr);
 		/**
 		 * \brief Test if we are at the end of stream
 		 *
-		 * \param[in] io : a stream reader
+		 * \param[in] sr : a stream reader
 		 * \return 0 if remain data
 		 */
-		bool (*end_of_file)(struct so_stream_reader * io);
+		bool (*end_of_file)(struct so_stream_reader * sr);
 		/**
 		 * \brief Forward into the stream
 		 *
-		 * \param[in] io : a stream reader
+		 * \param[in] sr : a stream reader
 		 * \param[in] offset : length of forward
 		 * \returns new position into the stream or -1 if error
 		 */
-		off_t (*forward)(struct so_stream_reader * io, off_t offset);
+		off_t (*forward)(struct so_stream_reader * sr, off_t offset);
 		/**
-		 * \brief Release all resource associated to \a io
+		 * \brief Release all resource associated to \a sr
 		 *
-		 * \param[in] io : a stream reader
+		 * \param[in] sr : a stream reader
 		 */
-		void (*free)(struct so_stream_reader * io);
+		void (*free)(struct so_stream_reader * sr);
 		/**
 		 * \brief Get block size of this <a>stream reader</a>
 		 */
-		ssize_t (*get_block_size)(struct so_stream_reader * io);
+		ssize_t (*get_block_size)(struct so_stream_reader * sr);
 		/**
 		 * \brief Get the latest errno
 		 *
-		 * \param[in] io : a stream reader
+		 * \param[in] sr : a stream reader
 		 * \returns latest errno or 0
 		 */
-		int (*last_errno)(struct so_stream_reader * io);
+		int (*last_errno)(struct so_stream_reader * sr);
 		/**
-		 * \brief Get current position into stream \a io
+		 * \brief Get current position into stream \a sr
 		 *
-		 * \param[in] io : a stream reader
+		 * \param[in] sr : a stream reader
 		 * \returns current position
 		 */
-		ssize_t (*position)(struct so_stream_reader * io);
+		ssize_t (*position)(struct so_stream_reader * sr);
 		/**
-		 * \brief Read from the stream \a io
+		 * \brief Read from the stream \a sr
 		 *
-		 * \param[in] io : a stream reader
+		 * \param[in] sr : a stream reader
 		 * \param[out] buffer : write data read into it
 		 * \param[in] length : length of \a buffer
 		 * \returns length read or -1 if error
 		 */
-		ssize_t (*read)(struct so_stream_reader * io, void * buffer, ssize_t length);
+		ssize_t (*read)(struct so_stream_reader * sr, void * buffer, ssize_t length);
 	} * ops;
 	/**
 	 * \brief private data
@@ -101,15 +101,16 @@ struct so_stream_reader {
 
 struct so_stream_writer {
 	struct so_stream_writer_ops {
-		ssize_t (*before_close)(struct so_stream_writer * sfw, void * buffer, ssize_t length);
-		int (*close)(struct so_stream_writer * sfw);
-		void (*free)(struct so_stream_writer * sfw);
-		ssize_t (*get_available_size)(struct so_stream_writer * sfw);
-		ssize_t (*get_block_size)(struct so_stream_writer * sfw);
-		int (*last_errno)(struct so_stream_writer * sfw);
-		ssize_t (*position)(struct so_stream_writer * sfw);
-		struct so_stream_reader * (*reopen)(struct so_stream_writer * sfw);
-		ssize_t (*write)(struct so_stream_writer * sfw, const void * buffer, ssize_t length);
+		ssize_t (*before_close)(struct so_stream_writer * sw, void * buffer, ssize_t length);
+		int (*close)(struct so_stream_writer * sw);
+		int (*file_position)(struct so_stream_writer * sw);
+		void (*free)(struct so_stream_writer * sw);
+		ssize_t (*get_available_size)(struct so_stream_writer * sw);
+		ssize_t (*get_block_size)(struct so_stream_writer * sw);
+		int (*last_errno)(struct so_stream_writer * sw);
+		ssize_t (*position)(struct so_stream_writer * sw);
+		struct so_stream_reader * (*reopen)(struct so_stream_writer * sw);
+		ssize_t (*write)(struct so_stream_writer * sw, const void * buffer, ssize_t length);
 	} * ops;
 	void * data;
 };

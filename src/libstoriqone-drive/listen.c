@@ -385,13 +385,16 @@ static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct s
 	peer->buffer_length = peer->writer->ops->get_block_size(peer->writer);
 	peer->buffer = malloc(peer->buffer_length);
 
+	long file_position = peer->writer->ops->file_position(peer->writer);
+
 	struct so_value * tmp_config = so_value_copy(sodr_config, true);
 	int tmp_socket = so_socket_server_temp(tmp_config);
 
-	struct so_value * response = so_value_pack("{sbsOsi}",
+	struct so_value * response = so_value_pack("{sbsOsisi}",
 		"status", true,
 		"socket", tmp_config,
-		"block size", peer->buffer_length
+		"block size", peer->buffer_length,
+		"file position", file_position
 	);
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);

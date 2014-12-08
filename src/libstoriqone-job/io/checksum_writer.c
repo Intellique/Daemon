@@ -44,6 +44,7 @@ struct soj_stream_checksum_writer_private {
 
 static ssize_t soj_checksum_writer_before_close(struct so_stream_writer * sw, void * buffer, ssize_t length);
 static int soj_checksum_writer_close(struct so_stream_writer * sw);
+static int soj_checksum_writer_file_position(struct so_stream_writer * sw);
 static void soj_checksum_writer_free(struct so_stream_writer * sw);
 static ssize_t soj_checksum_writer_get_available_size(struct so_stream_writer * sw);
 static ssize_t soj_checksum_writer_get_block_size(struct so_stream_writer * sw);
@@ -55,6 +56,7 @@ static ssize_t soj_checksum_writer_write(struct so_stream_writer * sw, const voi
 static struct so_stream_writer_ops soj_writer_ops = {
 	.before_close       = soj_checksum_writer_before_close,
 	.close              = soj_checksum_writer_close,
+	.file_position      = soj_checksum_writer_file_position,
 	.free               = soj_checksum_writer_free,
 	.get_available_size = soj_checksum_writer_get_available_size,
 	.get_block_size     = soj_checksum_writer_get_block_size,
@@ -101,6 +103,11 @@ static int soj_checksum_writer_close(struct so_stream_writer * sw) {
 	}
 
 	return failed;
+}
+
+static int soj_checksum_writer_file_position(struct so_stream_writer * sw) {
+	struct soj_stream_checksum_writer_private * self = sw->data;
+	return self->out->ops->file_position(self->out);
 }
 
 static void soj_checksum_writer_free(struct so_stream_writer * sw) {

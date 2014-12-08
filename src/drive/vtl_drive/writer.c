@@ -51,19 +51,21 @@
 #include "device.h"
 #include "io.h"
 
-static ssize_t sodr_vtl_drive_writer_before_close(struct so_stream_writer * sfw, void * buffer, ssize_t length);
-static int sodr_vtl_drive_writer_close(struct so_stream_writer * sfw);
-static void sodr_vtl_drive_writer_free(struct so_stream_writer * sfw);
-static ssize_t sodr_vtl_drive_writer_get_available_size(struct so_stream_writer * sfw);
-static ssize_t sodr_vtl_drive_writer_get_block_size(struct so_stream_writer * sfw);
-static int sodr_vtl_drive_writer_last_errno(struct so_stream_writer * sfw);
-static ssize_t sodr_vtl_drive_writer_position(struct so_stream_writer * sfw);
-static struct so_stream_reader * sodr_vtl_drive_writer_reopen(struct so_stream_writer * sfw);
-static ssize_t sodr_vtl_drive_writer_write(struct so_stream_writer * sfw, const void * buffer, ssize_t length);
+static ssize_t sodr_vtl_drive_writer_before_close(struct so_stream_writer * sw, void * buffer, ssize_t length);
+static int sodr_vtl_drive_writer_close(struct so_stream_writer * sw);
+static int sodr_vtl_drive_writer_file_position(struct so_stream_writer * sw);
+static void sodr_vtl_drive_writer_free(struct so_stream_writer * sw);
+static ssize_t sodr_vtl_drive_writer_get_available_size(struct so_stream_writer * sw);
+static ssize_t sodr_vtl_drive_writer_get_block_size(struct so_stream_writer * sw);
+static int sodr_vtl_drive_writer_last_errno(struct so_stream_writer * sw);
+static ssize_t sodr_vtl_drive_writer_position(struct so_stream_writer * sw);
+static struct so_stream_reader * sodr_vtl_drive_writer_reopen(struct so_stream_writer * sw);
+static ssize_t sodr_vtl_drive_writer_write(struct so_stream_writer * sw, const void * buffer, ssize_t length);
 
 static struct so_stream_writer_ops sodr_vtl_drive_writer_ops = {
 	.before_close       = sodr_vtl_drive_writer_before_close,
 	.close              = sodr_vtl_drive_writer_close,
+	.file_position      = sodr_vtl_drive_writer_file_position,
 	.free               = sodr_vtl_drive_writer_free,
 	.get_available_size = sodr_vtl_drive_writer_get_available_size,
 	.get_block_size     = sodr_vtl_drive_writer_get_block_size,
@@ -74,14 +76,14 @@ static struct so_stream_writer_ops sodr_vtl_drive_writer_ops = {
 };
 
 
-static ssize_t sodr_vtl_drive_writer_before_close(struct so_stream_writer * sfw, void * buffer, ssize_t length) {
-	if (sfw == NULL || buffer == NULL || length < 0)
+static ssize_t sodr_vtl_drive_writer_before_close(struct so_stream_writer * sw, void * buffer, ssize_t length) {
+	if (sw == NULL || buffer == NULL || length < 0)
 		return -1;
 
 	if (length == 0)
 		return 0;
 
-	struct sodr_vtl_drive_io * self = sfw->data;
+	struct sodr_vtl_drive_io * self = sw->data;
 	if (self->buffer_used > 0 && self->buffer_used < self->buffer_length) {
 		ssize_t remain = self->buffer_length - self->buffer_used;
 		if (remain < length)
@@ -116,11 +118,11 @@ static ssize_t sodr_vtl_drive_writer_before_close(struct so_stream_writer * sfw,
 	return 0;
 }
 
-static int sodr_vtl_drive_writer_close(struct so_stream_writer * sfw) {
-	if (sfw == NULL)
+static int sodr_vtl_drive_writer_close(struct so_stream_writer * sw) {
+	if (sw == NULL)
 		return -1;
 
-	struct sodr_vtl_drive_io * self = sfw->data;
+	struct sodr_vtl_drive_io * self = sw->data;
 	self->last_errno = 0;
 
 	if (self->fd < 0)
@@ -161,35 +163,40 @@ static int sodr_vtl_drive_writer_close(struct so_stream_writer * sfw) {
 	return 0;
 }
 
-static void sodr_vtl_drive_writer_free(struct so_stream_writer * sfw) {
-	if (sfw == NULL)
-		return;
-
-	struct sodr_vtl_drive_io * self = sfw->data;
-	if (self->fd > -1)
-		sodr_vtl_drive_writer_close(sfw);
-
-	sodr_vtl_drive_io_free(self);
-	free(sfw);
+static int sodr_vtl_drive_writer_file_position(struct so_stream_writer * sw) {
+	struct sodr_vtl_drive_io * self = sw->data;
+	return self->file_position;
 }
 
-static ssize_t sodr_vtl_drive_writer_get_available_size(struct so_stream_writer * sfw) {
-	if (sfw == NULL)
+static void sodr_vtl_drive_writer_free(struct so_stream_writer * sw) {
+	if (sw == NULL)
+		return;
+
+	struct sodr_vtl_drive_io * self = sw->data;
+	if (self->fd > -1)
+		sodr_vtl_drive_writer_close(sw);
+
+	sodr_vtl_drive_io_free(self);
+	free(sw);
+}
+
+static ssize_t sodr_vtl_drive_writer_get_available_size(struct so_stream_writer * sw) {
+	if (sw == NULL)
 		return -1;
 
-	struct sodr_vtl_drive_io * self = sfw->data;
+	struct sodr_vtl_drive_io * self = sw->data;
 	return self->media->free_block * self->buffer_length - self->buffer_used;
 }
 
-static ssize_t sodr_vtl_drive_writer_get_block_size(struct so_stream_writer * sfw) {
-	if (sfw == NULL)
+static ssize_t sodr_vtl_drive_writer_get_block_size(struct so_stream_writer * sw) {
+	if (sw == NULL)
 		return -1;
 
-	struct sodr_vtl_drive_io * self = sfw->data;
+	struct sodr_vtl_drive_io * self = sw->data;
 	return self->buffer_length;
 }
 
-struct so_stream_writer * sodr_vtl_drive_writer_get_raw_writer(const char * filename) {
+struct so_stream_writer * sodr_vtl_drive_writer_get_raw_writer(const char * filename, int file_position) {
 	struct so_drive * drive = sodr_vtl_drive_get_device();
 
 	int fd = open(filename, O_RDWR | O_CREAT | O_TRUNC, 0644);
@@ -204,6 +211,7 @@ struct so_stream_writer * sodr_vtl_drive_writer_get_raw_writer(const char * file
 	self->buffer = malloc(self->buffer_length);
 	self->buffer_used = 0;
 	self->position = 0;
+	self->file_position = file_position;
 	self->last_errno = 0;
 	self->media = drive->slot->media;
 
@@ -214,24 +222,24 @@ struct so_stream_writer * sodr_vtl_drive_writer_get_raw_writer(const char * file
 	return writer;
 }
 
-static int sodr_vtl_drive_writer_last_errno(struct so_stream_writer * sfw) {
-	if (sfw == NULL)
+static int sodr_vtl_drive_writer_last_errno(struct so_stream_writer * sw) {
+	if (sw == NULL)
 		return -1;
 
-	struct sodr_vtl_drive_io * self = sfw->data;
+	struct sodr_vtl_drive_io * self = sw->data;
 	return self->last_errno;
 }
 
-static ssize_t sodr_vtl_drive_writer_position(struct so_stream_writer * sfw) {
-	if (sfw == NULL)
+static ssize_t sodr_vtl_drive_writer_position(struct so_stream_writer * sw) {
+	if (sw == NULL)
 		return -1;
 
-	struct sodr_vtl_drive_io * self = sfw->data;
+	struct sodr_vtl_drive_io * self = sw->data;
 	return self->position;
 }
 
-static struct so_stream_reader * sodr_vtl_drive_writer_reopen(struct so_stream_writer * sfw) {
-	struct sodr_vtl_drive_io * self = sfw->data;
+static struct so_stream_reader * sodr_vtl_drive_writer_reopen(struct so_stream_writer * sw) {
+	struct sodr_vtl_drive_io * self = sw->data;
 	struct so_drive * dr = sodr_vtl_drive_get_device();
 
 	if (self->buffer_used > 0) {
@@ -265,15 +273,15 @@ static struct so_stream_reader * sodr_vtl_drive_writer_reopen(struct so_stream_w
 	return sodr_vtl_drive_reader_get_raw_reader(fd);
 }
 
-static ssize_t sodr_vtl_drive_writer_write(struct so_stream_writer * sfw, const void * buffer, ssize_t length) {
-	if (sfw == NULL || buffer == NULL || length < 0)
+static ssize_t sodr_vtl_drive_writer_write(struct so_stream_writer * sw, const void * buffer, ssize_t length) {
+	if (sw == NULL || buffer == NULL || length < 0)
 		return -1;
 
 	if (length == 0)
 		return 0;
 
 	struct so_drive * dr = sodr_vtl_drive_get_device();
-	struct sodr_vtl_drive_io * self = sfw->data;
+	struct sodr_vtl_drive_io * self = sw->data;
 	self->last_errno = 0;
 
 	ssize_t buffer_available = self->buffer_length - self->buffer_used;
