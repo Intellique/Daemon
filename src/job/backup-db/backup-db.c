@@ -124,6 +124,9 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 			} else {
 				nb_total_write += nb_write;
 			}
+
+			if (job->stopped_by_user)
+				goto tmp_writer;
 		}
 	}
 
@@ -152,6 +155,9 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 	struct so_stream_reader * tmp_reader = tmp_writer->ops->reopen(tmp_writer);
 	tmp_writer->ops->free(tmp_writer);
 
+	if (job->stopped_by_user)
+		goto tmp_writer;
+
 	struct so_value * reserved_medias = soj_media_reserve(backupdb_pool, nb_total_read, so_pool_unbreakable_level_none);
 	struct so_value_iterator * iter = so_value_list_get_iterator(reserved_medias);
 	while (so_value_iterator_has_next(iter)) {
@@ -160,6 +166,9 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 
 		struct so_drive * drive = soj_media_load(media);
 		// TODO: when drive is null
+
+		if (job->stopped_by_user)
+			goto tmp_writer;
 
 		const char * cookie = drive->ops->lock(drive);
 		struct so_stream_writer * dr_writer = drive->ops->get_raw_writer(drive, cookie);
@@ -174,6 +183,7 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 			while (nb_total_write < nb_read) {
 				ssize_t nb_write = cksum_writer->ops->write(cksum_writer, buffer, nb_read);
 				if (nb_write < 0) {
+					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Error while writting into drive"));
 				} else {
 					nb_total_write += nb_write;
 					position += nb_write;
@@ -181,9 +191,13 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 			}
 
 			job->done = 0.02 + 0.98 * ((float) (position)) / nb_total_read;
+
+			if (job->stopped_by_user)
+				goto tmp_writer;
 		}
 
 		if (nb_read < 0) {
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Error while reading from temporary file"));
 		}
 
 		cksum_writer->ops->close(cksum_writer);
@@ -227,7 +241,7 @@ tmp_writer:
 }
 
 static int backupdb_simulate(struct so_job * job, struct so_database_connection * db_connect) {
-	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Start (simulation) format media job (job name: %s), key: %s, num runs %ld"), job->name, job->key, job->num_runs);
+	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Start (simulation) backup database (job name: %s), key: %s, num runs %ld"), job->name, job->key, job->num_runs);
 
 	backupdb_pool = db_connect->ops->get_pool(db_connect, "d9f976d4-e087-4d0a-ab79-96267f6613f0", NULL);
 	if (backupdb_pool == NULL) {

@@ -1,0 +1,58 @@
+# French translations for job-backupdb package.
+# Copyright (C) 2014
+# This file is distributed under the same license as the storiqone package.
+# Guillaume Clercin <gclercin@intellique.com>, 2014
+#
+msgid   ""
+msgstr  "Project-Id-Version: job-backupdb v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2014-12-09 09:09+0100\n"
+        "PO-Revision-Date: 2014-11-13 09:03+0100\n"
+        "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
+        "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
+        "Language: fr\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/job/backup-db/backup-db.c:96
+msgid   "Failed to get database hander"
+msgstr  ""
+
+#: src/job/backup-db/backup-db.c:102
+msgid   "Failed to create temporary file"
+msgstr  "Échec de la création du fichier temporaire"
+
+#: src/job/backup-db/backup-db.c:122
+msgid   "Error while writting into temporary file"
+msgstr  "Erreur lors de l’écriture dans le fichier temporaire"
+
+#: src/job/backup-db/backup-db.c:134
+msgid   "Error while reading from database"
+msgstr  "Erreur lors de la lecture depuis la base de donées"
+
+#: src/job/backup-db/backup-db.c:186
+msgid   "Error while writting into drive"
+msgstr  "Erreur lors de l’écriture dans le lecteur"
+
+#: src/job/backup-db/backup-db.c:200
+msgid   "Error while reading from temporary file"
+msgstr  "Erreur lors de la lecture depuis le fichier temporaire"
+
+#: src/job/backup-db/backup-db.c:244
+#, c-format
+msgid   "Start (simulation) backup database (job name: %s), key: %s, num runs %ld"
+msgstr  "Démarrage (simulation) sauvegarde de la base de données (nom de la tâche : %s), clef : %s, n°exécution %ld"
+
+#: src/job/backup-db/backup-db.c:248
+msgid   "Pool (Storiq one database backup) not found"
+msgstr  "Pool (Storiq one database backup) non trouvé"
+
+#: src/job/backup-db/backup-db.c:252
+msgid   "Try to back up database into a pool which is deleted"
+msgstr  "Tentation de sauvegarder dans un pool qui est supprimé"
+
+#: src/job/backup-db/backup-db.c:258
+msgid   "Try to back up database into a pool whose is not growable and without any medias"
+msgstr  "Tentation de sauvegarder dans un pool qui n’est pas extensible et qui ne contient pas de médias"
