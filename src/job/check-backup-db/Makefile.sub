@@ -1,0 +1,13 @@
+STORIQONE_JOB_CHECKBACKUPDB_SRC_DIR			:= src/job/check-backup-db
+
+STORIQONE_JOB_CHECKBACKUPDB_BIN				:= bin/job_check-backup-db
+STORIQONE_JOB_CHECKBACKUPDB_CFLAG			:= -pthread
+STORIQONE_JOB_CHECKBACKUPDB_LD				:= -pthread -lstoriqone -lstoriqone-job -luuid -Llib
+
+STORIQONE_JOB_CHECKBACKUPDB_DEPEND_LIB		:= lib/libstoriqone-job.so
+
+STORIQONE_JOB_CHECKBACKUPDB_CHCKSUM_FILE	:= job_check-backup-db.chcksum
+
+STORIQONE_JOB_CHECKBACKUPDB_LOCALE			:= locale/storiqone-job-check-backup-db
+
+BIN_SYMS									+= STORIQONE_JOB_CHECKBACKUPDB

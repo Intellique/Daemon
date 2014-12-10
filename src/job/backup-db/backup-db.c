@@ -203,12 +203,13 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 		cksum_writer->ops->close(cksum_writer);
 
 		int file_position = cksum_writer->ops->file_position(cksum_writer);
+		ssize_t size = cksum_writer->ops->position(cksum_writer);
 
 		if (dr_writer != cksum_writer) {
 			struct so_value * checksums = soj_checksum_writer_get_checksums(cksum_writer);
-			soj_backup_add_volume(backup, media, file_position, checksums);
+			soj_backup_add_volume(backup, media, size, file_position, checksums);
 		} else
-			soj_backup_add_volume(backup, media, file_position, NULL);
+			soj_backup_add_volume(backup, media, size, file_position, NULL);
 
 		cksum_writer->ops->free(cksum_writer);
 	}
@@ -241,8 +242,6 @@ tmp_writer:
 }
 
 static int backupdb_simulate(struct so_job * job, struct so_database_connection * db_connect) {
-	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Start (simulation) backup database (job name: %s), key: %s, num runs %ld"), job->name, job->key, job->num_runs);
-
 	backupdb_pool = db_connect->ops->get_pool(db_connect, "d9f976d4-e087-4d0a-ab79-96267f6613f0", NULL);
 	if (backupdb_pool == NULL) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Pool (Storiq one database backup) not found"));

@@ -27,6 +27,8 @@
 #ifndef __LIBSTORIQONE_BACKUP_H__
 #define __LIBSTORIQONE_BACKUP_H__
 
+// bool
+#include <stdbool.h>
 // time_t
 #include <time.h>
 
@@ -40,6 +42,11 @@ struct so_backup {
 	struct so_backup_volume {
 		struct so_media * media;
 		unsigned int position;
+
+		size_t size;
+
+		time_t checktime;
+		bool checksum_ok;
 
 		struct so_value * digests;
 	} * volumes;

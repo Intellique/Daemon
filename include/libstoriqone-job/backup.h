@@ -27,9 +27,12 @@
 #ifndef __LIBSTORIQONE_JOB_BACKUP_H__
 #define __LIBSTORIQONE_JOB_BACKUP_H__
 
+// ssize_t
+#include <sys/types.h>
+
 #include <libstoriqone/backup.h>
 
-void soj_backup_add_volume(struct so_backup * backup, struct so_media * media, unsigned int position, struct so_value * digests);
+void soj_backup_add_volume(struct so_backup * backup, struct so_media * media, ssize_t size, unsigned int position, struct so_value * digests);
 void soj_backup_free(struct so_backup * backup);
 struct so_backup * soj_backup_new(struct so_job * job);
 

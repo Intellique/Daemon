@@ -34,7 +34,7 @@
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/backup.h>
 
-void soj_backup_add_volume(struct so_backup * backup, struct so_media * media, unsigned int position, struct so_value * digests) {
+void soj_backup_add_volume(struct so_backup * backup, struct so_media * media, ssize_t size, unsigned int position, struct so_value * digests) {
 	void * addr = realloc(backup->volumes, (backup->nb_volumes + 1) * sizeof(struct so_backup_volume));
 	if (addr == NULL)
 		return;
@@ -42,6 +42,7 @@ void soj_backup_add_volume(struct so_backup * backup, struct so_media * media, u
 	backup->volumes = addr;
 	struct so_backup_volume * vol = backup->volumes + backup->nb_volumes;
 	vol->media = media;
+	vol->size = size;
 	vol->position = position;
 	vol->digests = digests;
 	backup->nb_volumes++;

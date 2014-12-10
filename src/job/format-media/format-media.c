@@ -269,8 +269,6 @@ static int formatmedia_run(struct so_job * job, struct so_database_connection * 
 }
 
 static int formatmedia_simulate(struct so_job * job, struct so_database_connection * db_connect) {
-	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Start (simulation) format media job (job name: %s), key: %s, num runs %ld"), job->name, job->key, job->num_runs);
-
 	formatmedia_pool = db_connect->ops->get_pool(db_connect, NULL, job);
 	formatmedia_slot = soj_changer_find_media_by_job(job, db_connect);
 

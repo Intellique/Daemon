@@ -108,6 +108,7 @@ static int so_database_postgresql_sync_plugin_checksum(struct so_database_connec
 static int so_database_postgresql_sync_plugin_job(struct so_database_connection * connect, const char * job);
 
 static int so_database_postgresql_backup_add(struct so_database_connection * connect, struct so_backup * backup);
+static struct so_backup * so_database_postgresql_backup_get(struct so_database_connection * connect, struct so_job * job);
 
 static int so_database_postgresql_checksumresult_add(struct so_database_connection * connect, const char * checksum, const char * digest, char ** digest_id);
 
@@ -154,6 +155,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.sync_plugin_job      = so_database_postgresql_sync_plugin_job,
 
 	.backup_add = so_database_postgresql_backup_add,
+	.backup_get = so_database_postgresql_backup_get,
 };
 
 
@@ -2423,7 +2425,7 @@ static int so_database_postgresql_backup_add(struct so_database_connection * con
 	}
 
 	query = "insert_backup_volume";
-	so_database_postgresql_prepare(self, query, "INSERT INTO backupvolume(sequence, backup, media, mediaposition) VALUES ($1, $2, $3, $4) RETURNING id");
+	so_database_postgresql_prepare(self, query, "INSERT INTO backupvolume(sequence, size, media, mediaposition, backup) VALUES ($1, $2, $3, $4, $5) RETURNING id");
 
 	unsigned int i;
 	for (i = 0; i < backup->nb_volumes; i++) {
@@ -2435,13 +2437,14 @@ static int so_database_postgresql_backup_add(struct so_database_connection * con
 		struct so_value * media_db = so_value_hashtable_get(bv->media->db_data, key, false, false);
 		so_value_free(key);
 
-		char * seq, * media_id, * media_position;
+		char * seq, * size, * media_id, * media_position;
 		asprintf(&seq, "%u", i);
+		asprintf(&size, "%zd", bv->size);
 		so_value_unpack(media_db, "{ss}", "id", &media_id);
 		asprintf(&media_position, "%u", bv->position);
 
-		const char * param[] = { seq, backup_id, media_id, media_position };
-		result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+		const char * param[] = { seq, size, media_id, media_position, backup_id };
+		result = PQexecPrepared(self->connect, query, 5, param, NULL, NULL, 0);
 		status = PQresultStatus(result);
 
 		char * backupvolume_id = NULL;
@@ -2455,6 +2458,7 @@ static int so_database_postgresql_backup_add(struct so_database_connection * con
 		free(media_position);
 		free(media_id);
 		free(seq);
+		free(size);
 
 		if (backupvolume_id != NULL && so_value_hashtable_get_length(bv->digests) > 0) {
 			struct so_value_iterator * iter = so_value_hashtable_get_iterator(bv->digests);
@@ -2490,8 +2494,105 @@ static int so_database_postgresql_backup_add(struct so_database_connection * con
 	return status == PGRES_FATAL_ERROR ? -5 : 0;
 }
 
+static struct so_backup * so_database_postgresql_backup_get(struct so_database_connection * connect, struct so_job * job) {
+	if (connect == NULL || job == NULL)
+		return NULL;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
+	so_value_free(key);
+
+	char * job_id = NULL;
+	so_value_unpack(db, "{ss}", "id", &job_id);
+
+	const char * query = "select_backup_by_job";
+	so_database_postgresql_prepare(self, query, "SELECT id, timestamp, nbmedia, nbarchive FROM backup WHERE id = $1 LIMIT 1");
+
+	const char * param[] = { job_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	struct so_backup * backup = NULL;
+	char * backup_id = NULL;
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK) {
+		backup = malloc(sizeof(struct so_backup));
+		bzero(backup, sizeof(struct so_backup));
+
+		so_database_postgresql_get_string_dup(result, 0, 0, &backup_id);
+		so_database_postgresql_get_time(result, 0, 1, &backup->timestamp);
+		so_database_postgresql_get_long(result, 0, 2, &backup->nb_medias);
+		so_database_postgresql_get_long(result, 0, 3, &backup->nb_archives);
+	}
+
+	PQclear(result);
+	free(job_id);
+
+	if (status == PGRES_FATAL_ERROR)
+		return NULL;
+
+	query = "select_backupvolume_by_backup";
+	so_database_postgresql_prepare(self, query, "SELECT bv.id, m.mediumserialnumber, bv.size, bv.mediaposition, bv.checktime, bv.checksumok FROM backupvolume bv INNER JOIN media m ON bv.media = m.id WHERE bv.backup = $1 ORDER BY bv.sequence");
+
+	const char * param2[] = { backup_id };
+	result = PQexecPrepared(self->connect, query, 1, param2, NULL, NULL, 0);
+	status = PQresultStatus(result);
+	int nb_result = PQntuples(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && nb_result > 0) {
+		backup->volumes = calloc(nb_result, sizeof(struct so_backup_volume));
+		backup->nb_volumes = nb_result;
+
+		int i;
+		for (i = 0; i < nb_result; i++) {
+			struct so_backup_volume * vol = backup->volumes + 1;
+
+			char * backupvolume_id = PQgetvalue(result, i, 0);
+			char * media_id = PQgetvalue(result, i, 1);
+			vol->media = so_database_postgresql_get_media(connect, media_id, NULL, NULL);
+			so_database_postgresql_get_size(result, i, 2, &vol->size);
+			so_database_postgresql_get_uint(result, i, 3, &vol->position);
+			so_database_postgresql_get_time(result, i, 4, &vol->checktime);
+			so_database_postgresql_get_bool(result, i, 5, &vol->checksum_ok);
+			vol->digests = so_value_new_hashtable2();
+
+			const char * query3 = "select_checksum_from_backupvolume";
+			so_database_postgresql_prepare(self, query3, "SELECT c.name, cr.result FROM backupvolumetochecksumresult bv2cr INNER JOIN checksumresult cr ON bv2cr.backupvolume = $1 AND bv2cr.checksumresult = cr.id LEFT JOIN checksum c ON cr.checksum = c.id");
+
+			const char * param3[] = { backupvolume_id };
+			PGresult * result3 = PQexecPrepared(self->connect, query3, 1, param3, NULL, NULL, 0);
+			ExecStatusType status3 = PQresultStatus(result);
+			int nb_result3 = PQntuples(result3);
+
+			if (status == PGRES_FATAL_ERROR)
+				so_database_postgresql_get_error(result3, query3);
+			else if (status3 == PGRES_TUPLES_OK && nb_result3 > 0) {
+				int j;
+				for (j = 0; j < nb_result3; j++)
+					so_value_hashtable_put2(vol->digests, PQgetvalue(result3, j, 0), so_value_new_string(PQgetvalue(result3, j, 1)), true);
+			}
+
+			PQclear(result3);
+		}
+	}
+
+	PQclear(result);
+	free(backup_id);
+
+	return backup;
+}
+
 
 static int so_database_postgresql_checksumresult_add(struct so_database_connection * connect, const char * checksum, const char * digest, char ** digest_id) {
+	if (connect == NULL || checksum == NULL || digest == NULL || digest_id == NULL)
+		return -1;
+
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	char * query = "select_checksum_by_name";
