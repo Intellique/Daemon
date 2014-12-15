@@ -37,6 +37,12 @@
 
 struct so_value * soj_medias = NULL;
 
+static void soj_media_init(void) __attribute__((constructor));
+
+
+static void soj_media_init() {
+	soj_medias = so_value_pack("{}");
+}
 
 struct so_drive * soj_media_load(struct so_media * media) {
 	struct so_slot * sl = soj_changer_find_slot(media);
@@ -61,9 +67,6 @@ struct so_drive * soj_media_load(struct so_media * media) {
 }
 
 ssize_t soj_media_prepare(struct so_pool * pool, struct so_database_connection * db_connect) {
-	if (soj_medias == NULL)
-		soj_medias = so_value_pack("{s[]}", pool->uuid);
-
 	if (!so_value_hashtable_has_key2(soj_medias, pool->uuid))
 		so_value_hashtable_put2(soj_medias, pool->uuid, so_value_new_linked_list(), true);
 

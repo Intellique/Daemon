@@ -123,8 +123,10 @@ static ssize_t soj_io_writer_before_close(struct so_stream_writer * sw, void * b
 
 	so_value_free(response);
 
-	if (nb_read > 0)
+	if (nb_read > 0) {
+		self->position += nb_read;
 		return recv(self->data_fd, buffer, nb_read, 0);
+	}
 
 	return 0;
 }
@@ -228,6 +230,9 @@ static ssize_t soj_io_writer_write(struct so_stream_writer * sw, const void * bu
 	if (nb_write < 0)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	so_value_free(response);
+
+	if (nb_write > 0)
+		self->position += nb_write;
 
 	return nb_write;
 }

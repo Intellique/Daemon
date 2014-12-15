@@ -42,6 +42,7 @@ struct so_changer_ops {
 	int (*load)(struct so_changer * changer, struct so_slot * from, struct so_drive * to);
 	int (*release_all_media)(struct so_changer * changer);
 	int (*release_media)(struct so_changer * changer, struct so_slot * slot);
+	int (*reserve_medias)(struct so_changer * changer, struct so_value * medias);
 	int (*reserve_media)(struct so_changer * changer, struct so_slot * slot);
 	int (*sync)(struct so_changer * changer);
 	int (*unload)(struct so_changer * changer, struct so_drive * from);

@@ -32,8 +32,11 @@
 #include <libstoriqone/database.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/media.h>
+#include <libstoriqone/slot.h>
 #include <libstoriqone-job/backup.h>
+#include <libstoriqone-job/changer.h>
 #include <libstoriqone-job/job.h>
+#include <libstoriqone-job/script.h>
 
 #include <job_check-backup-db.chcksum>
 
@@ -41,6 +44,7 @@
 
 struct so_backup * checkbackupdb_backup = NULL;
 size_t checkbackupdb_backup_size = 0;
+struct so_pool * checkbackupdb_pool = NULL;
 
 static void checkbackupdb_exit(struct so_job * job, struct so_database_connection * db_connect);
 static void checkbackupdb_init(void) __attribute__((constructor));
@@ -73,6 +77,17 @@ static void checkbackupdb_init() {
 }
 
 static int checkbackupdb_run(struct so_job * job, struct so_database_connection * db_connect) {
+	unsigned int i;
+	for (i = 0; i < checkbackupdb_backup->nb_volumes; i++) {
+		struct so_backup_volume * vol = checkbackupdb_backup->volumes + i;
+		struct so_slot * sl = soj_changer_find_slot(vol->media);
+
+		bool reserved = sl->changer->ops->reserve_media(sl->changer, sl);
+		if (!reserved) {
+		}
+	}
+
+	return 0;
 }
 
 static int checkbackupdb_simulate(struct so_job * job, struct so_database_connection * db_connect) {
@@ -85,7 +100,10 @@ static int checkbackupdb_simulate(struct so_job * job, struct so_database_connec
 	unsigned int i;
 	for (i = 0; i < checkbackupdb_backup->nb_volumes; i++) {
 		struct so_backup_volume * vol = checkbackupdb_backup->volumes + i;
-		// checkbackupdb_backup_size += vol->
+		checkbackupdb_backup_size += vol->size;
+
+		if (checkbackupdb_pool == 0)
+			checkbackupdb_pool = vol->media->pool;
 
 		if (vol->media == NULL) {
 			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-check-backup-db", "BUG: media should not be empty"));
@@ -93,17 +111,31 @@ static int checkbackupdb_simulate(struct so_job * job, struct so_database_connec
 		}
 		if (vol->media->status == so_media_status_error)
 			so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-check-backup-db", "Try to read a media with error status"));
+
+		struct so_slot * sl = soj_changer_find_slot(vol->media);
+		if (sl == NULL) {
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-check-backup-db", "Media (%s) not found"), vol->media->name);
+			return 1;
+		}
 	}
 
 	return 0;
 }
 
 static void checkbackupdb_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, checkbackupdb_pool) < 1)
+		return;
 }
 
 static void checkbackupdb_script_post_run(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, checkbackupdb_pool) < 1)
+		return;
 }
 
 static bool checkbackupdb_script_pre_run(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_pre_job, checkbackupdb_pool) < 1)
+		return true;
+
+	return true;
 }
 

@@ -225,6 +225,9 @@ static ssize_t soj_io_reader_read(struct so_stream_reader * io, void * buffer, s
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	so_value_free(response);
 
+	if (nb_read > 0)
+		self->position += nb_read;
+
 	return nb_read;
 }
 
