@@ -348,6 +348,8 @@ static int st_job_backup_db_run(struct st_job * job) {
 
 	job->done = 1;
 
+	st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_important, "Backup job finished (job name: %s), num runs %ld, status: OK", job->name, job->num_runs);
+
 	return 0;
 
 write_failed:
@@ -377,6 +379,9 @@ read_failed:
 tmp_writer_failed:
 	if (db_reader != NULL)
 		db_reader->ops->free(db_reader);
+
+	st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_important, "Backup job finished (job name: %s), num runs %ld, status: failed", job->name, job->num_runs);
+
 	return 1;
 }
 
