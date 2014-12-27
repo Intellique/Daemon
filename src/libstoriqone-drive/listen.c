@@ -32,7 +32,7 @@
 #include <stdlib.h>
 // strcmp
 #include <string.h>
-// bzero
+// bzero, strdup
 #include <strings.h>
 // recv
 #include <sys/socket.h>
@@ -268,15 +268,14 @@ static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_
 		struct so_pool * pool = malloc(sizeof(struct so_pool));
 		bzero(pool, sizeof(struct so_pool));
 		so_pool_sync(pool, vpool);
-		so_value_free(vpool);
 
 		struct so_drive_driver * driver = sodr_drive_get();
 		struct so_drive * drive = driver->device;
 		struct so_media * media = drive->slot->media;
 
-		const char * media_name = NULL;
+		char * media_name = NULL;
 		if (media != NULL)
-			media_name = media->name;
+			media_name = strdup(media->name);
 
 		so_log_write(so_log_level_notice, dgettext("libstoriqone-drive", "[%s %s #%u]: formatting media (%s)"), drive->vendor, drive->model, drive->index, media_name);
 
@@ -290,6 +289,8 @@ static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_
 			so_log_write(so_log_level_notice, dgettext("libstoriqone-drive", "[%s %s #%u]: media (%s) formatted with success"), drive->vendor, drive->model, drive->index, media_name);
 		else
 			so_log_write(so_log_level_error, dgettext("libstoriqone-drive", "[%s %s #%u]: failed to format media (%s)"), drive->vendor, drive->model, drive->index, media_name);
+
+		free(media_name);
 	} else {
 		struct so_value * response = so_value_pack("{si}", "returned", -1L);
 		so_json_encode_to_fd(response, fd, true);

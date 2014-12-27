@@ -317,7 +317,7 @@ const char * so_log_type_to_string(enum so_log_type type, bool translate) {
 }
 
 void so_log_write(enum so_log_level level, const char * format, ...) {
-	if (so_log_finished)
+	if (format == NULL || so_log_finished)
 		return;
 
 	va_list va;
@@ -327,7 +327,7 @@ void so_log_write(enum so_log_level level, const char * format, ...) {
 }
 
 void so_log_write2(enum so_log_level level, enum so_log_type type, const char * format, ...) {
-	if (so_log_finished)
+	if (format == NULL || so_log_finished)
 		return;
 
 	va_list va;

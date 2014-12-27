@@ -148,7 +148,7 @@ struct so_value * soj_media_reserve(struct so_pool * pool, size_t space_need, en
 			break;
 		}
 
-		if (sl->changer->ops->reserve_media(sl->changer, sl) == 0) {
+		if (sl->changer->ops->reserve_media(sl->changer, sl, false, so_pool_autocheck_mode_none) == 0) {
 			size_t free_size = media->free_block * media->block_size;
 			if (free_size > space_need)
 				space_need = 0;

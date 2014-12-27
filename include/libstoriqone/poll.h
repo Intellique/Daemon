@@ -41,6 +41,7 @@ unsigned int so_poll_nb_handlers(void);
 bool so_poll_register(int fd, short event, so_poll_callback_f callback, void * data, so_poll_free_f release);
 bool so_poll_set_timeout(int fd, int timeout, so_poll_timeout_f callback);
 void so_poll_unregister(int fd, short event);
+bool so_poll_unset_timeout(int fd);
 
 #endif
 

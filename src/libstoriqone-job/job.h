@@ -29,7 +29,9 @@
 
 #include <libstoriqone-job/job.h>
 
+struct so_job * soj_job_get(void);
 struct so_job_driver * soj_job_get_driver(void);
+void soj_job_set(struct so_job * current_job);
 
 #endif
 

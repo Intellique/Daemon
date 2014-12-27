@@ -26,12 +26,49 @@
 
 // malloc
 #include <stdlib.h>
+// bzero
+#include <strings.h>
 
 #include <libstoriqone/changer.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
 
 #include "media.h"
+
+void sochgr_media_add_reader(struct sochgr_media * media, struct sochgr_peer * peer) {
+	struct sochgr_peer_list * pl = malloc(sizeof(struct sochgr_peer_list));
+	bzero(pl, sizeof(struct sochgr_peer_list));
+
+	pl->peer = peer;
+
+	if (media->first == NULL)
+		media->first = media->last = pl;
+	else
+		media->last = media->last->next = pl;
+}
+
+void sochgr_media_add_writer(struct sochgr_media * media, struct sochgr_peer * peer, size_t size_need) {
+	struct sochgr_peer_list * pl = malloc(sizeof(struct sochgr_peer_list));
+	bzero(pl, sizeof(struct sochgr_peer_list));
+
+	pl->peer = peer;
+	pl->size_need = size_need;
+	media->size_reserved += size_need;
+
+	if (media->first == NULL)
+		media->first = media->last = pl;
+	else
+		media->last = media->last->next = pl;
+}
+
+struct sochgr_peer_list * sochgr_media_find_peer(struct sochgr_media * media, struct sochgr_peer * peer) {
+	struct sochgr_peer_list * ptr;
+	for (ptr = media->first; ptr != NULL; ptr = ptr->next)
+		if (ptr->peer == peer)
+			return ptr;
+
+	return NULL;
+}
 
 void sochgr_media_init(struct so_changer * changer) {
 	unsigned int i;
@@ -43,7 +80,38 @@ void sochgr_media_init_slot(struct so_slot * slot) {
 	struct so_media * media = slot->media;
 	if (media != NULL && media->changer_data == NULL) {
 		struct sochgr_media * md = media->changer_data = malloc(sizeof(struct sochgr_media));
-		md->peer = NULL;
+		md->first = md->last = NULL;
+		md->size_reserved = 0;
 	}
+}
+
+void sochgr_media_remove_peer(struct sochgr_media * media, struct sochgr_peer * peer) {
+	if (media->first == NULL)
+		return;
+
+	struct sochgr_peer_list * old = NULL;
+
+	if (media->first->peer == peer) {
+		old = media->first;
+		media->first = old->next;
+		if (media->first == NULL)
+			media->last = NULL;
+	} else {
+		struct sochgr_peer_list * ptr;
+		for (ptr = media->first; ptr->next != NULL; ptr = ptr->next)
+			if (ptr->next->peer == peer) {
+				old = ptr->next;
+				ptr->next = old->next;
+				if (ptr->next == NULL)
+					media->last = ptr;
+				break;
+			}
+	}
+
+	if (old == NULL)
+		return;
+
+	media->size_reserved -= old->size_need;
+	free(old);
 }
 

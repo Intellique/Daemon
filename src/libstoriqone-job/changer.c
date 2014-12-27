@@ -40,6 +40,7 @@
 #include <libstoriqone-job/changer.h>
 
 #include "drive.h"
+#include "job.h"
 
 struct soj_changer {
 	int fd;
@@ -49,51 +50,18 @@ struct soj_changer {
 static struct so_changer * soj_changers = NULL;
 static unsigned int soj_nb_changers = 0;
 
-static struct so_drive * soj_changer_find_free_drive(struct so_changer * changer, struct so_media_format * format, bool for_writing);
-static int soj_changer_load(struct so_changer * changer, struct so_slot * from, struct so_drive * to);
-static int soj_changer_release_all_media(struct so_changer * changer);
+static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_slot * slot);
+static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_slot * slot, size_t size_need, enum so_pool_unbreakable_level unbreakable_level);
 static int soj_changer_release_media(struct so_changer * changer, struct so_slot * slot);
-static int soj_changer_reserve_media(struct so_changer * changer, struct so_slot * slot);
 static int soj_changer_sync(struct so_changer * changer);
-static int soj_changer_unload(struct so_changer * changer, struct so_drive * from);
 
 static struct so_changer_ops soj_changer_ops = {
-	.find_free_drive   = soj_changer_find_free_drive,
-	.load              = soj_changer_load,
-	.release_all_media = soj_changer_release_all_media,
-	.release_media     = soj_changer_release_media,
-	.reserve_media     = soj_changer_reserve_media,
-	.sync              = soj_changer_sync,
-	.unload            = soj_changer_unload,
+	.get_media     = soj_changer_get_media,
+	.release_media = soj_changer_release_media,
+	.reserve_media = soj_changer_reserve_media,
+	.sync          = soj_changer_sync,
 };
 
-
-static struct so_drive * soj_changer_find_free_drive(struct so_changer * changer, struct so_media_format * format, bool for_writing) {
-	struct soj_changer * self = changer->data;
-
-	struct so_value * request = so_value_pack("{sss{sosb}}",
-		"command", "find free drive",
-		"params",
-			"media format", so_media_format_convert(format),
-			"for writing", for_writing
-	);
-	so_json_encode_to_fd(request, self->fd, true);
-	so_value_free(request);
-
-	struct so_value * response = so_json_parse_fd(self->fd, -1);
-	if (response == NULL)
-		return NULL;
-
-	bool found = false;
-	long int index = -1;
-	so_value_unpack(response, "{sbsi}", "found", &found, "index", &index);
-	so_value_free(response);
-
-	if (found)
-		return changer->drives + index;
-
-	return NULL;
-}
 
 struct so_slot * soj_changer_find_media_by_job(struct so_job * job, struct so_database_connection * db_connection) {
 	if (job == NULL || db_connection == NULL)
@@ -143,59 +111,31 @@ struct so_slot * soj_changer_find_slot(struct so_media * media) {
 	return NULL;
 }
 
-bool soj_changer_has_apt_drive(struct so_media_format * format, bool for_writing) {
-	if (format == NULL)
-		return false;
+static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_slot * slot) {
+	struct soj_changer * self = changer->data;
 
-	unsigned int i;
-	for (i = 0; i < soj_nb_changers; i++) {
-		struct so_changer * ch = soj_changers + i;
+	struct so_value * request = so_value_pack("{sss{si}}", "command", "get media", "params", "slot", slot->index);
+	so_json_encode_to_fd(request, self->fd, true);
+	so_value_free(request);
 
-		unsigned int j;
-		for (j = 0; j < ch->nb_drives; j++) {
-			struct so_drive * dr = ch->drives + i;
-			if (dr->ops->check_support(dr, format, for_writing))
-				return true;
-		}
+	struct so_job * job = soj_job_get();
+	job->status = so_job_status_waiting;
+
+	bool error = false;
+	while (!job->stopped_by_user && !error) {
+		struct so_value * response = so_json_parse_fd(self->fd, 5000);
+		if (response == NULL)
+			continue;
+
+		long int index = -1;
+		so_value_unpack(response, "{sbsi}", "error", &error, "index", &index);
+		so_value_free(response);
+
+		if (!error)
+			return changer->drives + index;
 	}
 
-	return false;
-}
-
-static int soj_changer_load(struct so_changer * changer, struct so_slot * from, struct so_drive * to) {
-	struct soj_changer * self = changer->data;
-
-	struct so_value * request = so_value_pack("{sss{sisi}}", "command", "load", "params", "from", (long int) from->index, "to", (long int) to->slot->index);
-	so_json_encode_to_fd(request, self->fd, true);
-	so_value_free(request);
-
-	struct so_value * response = so_json_parse_fd(self->fd, -1);
-	if (response == NULL)
-		return 1;
-
-	bool ok = false;
-	so_value_unpack(response, "{sb}", "status", &ok);
-	so_value_free(response);
-
-	return ok ? 0 : 1;
-}
-
-static int soj_changer_release_all_media(struct so_changer * changer) {
-	struct soj_changer * self = changer->data;
-
-	struct so_value * request = so_value_pack("{ss}", "command", "release all media");
-	so_json_encode_to_fd(request, self->fd, true);
-	so_value_free(request);
-
-	struct so_value * response = so_json_parse_fd(self->fd, -1);
-	if (response == NULL)
-		return 1;
-
-	bool ok = false;
-	so_value_unpack(response, "{sb}", "status", &ok);
-	so_value_free(response);
-
-	return ok ? 0 : 1;
+	return NULL;
 }
 
 static int soj_changer_release_media(struct so_changer * changer, struct so_slot * slot) {
@@ -216,10 +156,16 @@ static int soj_changer_release_media(struct so_changer * changer, struct so_slot
 	return ok ? 0 : 1;
 }
 
-static int soj_changer_reserve_media(struct so_changer * changer, struct so_slot * slot) {
+static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_slot * slot, size_t size_need, enum so_pool_unbreakable_level unbreakable_level) {
 	struct soj_changer * self = changer->data;
 
-	struct so_value * request = so_value_pack("{sss{si}}", "command", "reserve media", "params", "slot", slot->index);
+	struct so_value * request = so_value_pack("{sss{sisiss}}",
+		"command", "reserve media",
+		"params",
+			"slot", slot->index,
+			"size need", size_need,
+			"unbreakable level", so_pool_unbreakable_level_to_string(unbreakable_level, false)
+	);
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
@@ -227,11 +173,11 @@ static int soj_changer_reserve_media(struct so_changer * changer, struct so_slot
 	if (response == NULL)
 		return 1;
 
-	bool ok = false;
-	so_value_unpack(response, "{sb}", "status", &ok);
+	ssize_t returned = 0;
+	so_value_unpack(response, "{si}", "returned", &returned);
 	so_value_free(response);
 
-	return ok ? 0 : 1;
+	return returned;
 }
 
 void soj_changer_set_config(struct so_value * config) {
@@ -303,21 +249,23 @@ int soj_changer_sync_all() {
 	return failed;
 }
 
-static int soj_changer_unload(struct so_changer * changer, struct so_drive * from) {
-	struct soj_changer * self = changer->data;
 
-	struct so_value * request = so_value_pack("{sss{si}}", "command", "unload", "params", "from", (long int) from->slot->index);
-	so_json_encode_to_fd(request, self->fd, true);
-	so_value_free(request);
+bool soj_changer_has_apt_drive(struct so_media_format * format, bool for_writing) {
+	if (format == NULL)
+		return false;
 
-	struct so_value * response = so_json_parse_fd(self->fd, -1);
-	if (response == NULL)
-		return 1;
+	unsigned int i;
+	for (i = 0; i < soj_nb_changers; i++) {
+		struct so_changer * ch = soj_changers + i;
 
-	bool ok = false;
-	so_value_unpack(response, "{sb}", "status", &ok);
-	so_value_free(response);
+		unsigned int j;
+		for (j = 0; j < ch->nb_drives; j++) {
+			struct so_drive * dr = ch->drives + i;
+			if (dr->ops->check_support(dr, format, for_writing))
+				return true;
+		}
+	}
 
-	return ok ? 0 : 1;
+	return false;
 }
 

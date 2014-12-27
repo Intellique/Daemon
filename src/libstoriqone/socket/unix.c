@@ -166,7 +166,7 @@ static void so_socket_unix_server_callback(int fd, short event __attribute__((un
 
 	struct sockaddr_un new_addr;
 	bzero(&new_addr, sizeof(new_addr));
-	socklen_t length;
+	socklen_t length = 0;
 	int new_fd = accept(fd, (struct sockaddr *) &new_addr, &length);
 
 	struct so_value * client_info = so_value_pack("{ssss}", "type", "unix", "path", new_addr.sun_path);

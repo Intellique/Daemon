@@ -85,143 +85,12 @@ static void formatmedia_init() {
 }
 
 static int formatmedia_run(struct so_job * job, struct so_database_connection * db_connect) {
-	enum {
-		changer_has_free_drive,
-		check_write_support,
-		drive_is_free,
-		look_for_media,
-		media_in_drive,
-		reserve_media
-	} state = reserve_media;
-
-	char * cookie = NULL;
 	struct so_changer * changer = formatmedia_slot->changer;
-	struct so_drive * drive = NULL;
 
-	int failed;
-	bool stop = false;
-	bool has_alert_user = false;
-	while (!stop && !job->stopped_by_user) {
-		switch (state) {
-			case changer_has_free_drive:
-				drive = changer->ops->find_free_drive(changer, formatmedia_slot->media->format, true);
-				if (drive != NULL)
-					state = drive_is_free;
-				else {
-					changer->ops->release_all_media(changer);
-					changer = NULL;
-					drive = NULL;
+	changer->ops->reserve_media(changer, formatmedia_slot, formatmedia_slot->media->format->block_size, so_pool_unbreakable_level_none);
 
-					sleep(20);
-
-					state = look_for_media;
-				}
-				break;
-
-			case check_write_support:
-				if (drive->ops->check_support(drive, formatmedia_slot->media->format, true)) {
-					state = drive_is_free;
-				} else {
-					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Unload media because drive can not write into this support"));
-
-					if (changer->nb_drives == changer->nb_slots)
-						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-format-media", "You should load media into a suitable drive because current drive can not write into it"));
-
-					failed = changer->ops->unload(changer, drive);
-
-					if (failed != 0) {
-						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Error while unloading media (%s)"), drive->slot->media->label);
-						return 2;
-					}
-
-					changer = NULL;
-					drive = NULL;
-
-					state = look_for_media;
-				}
-				break;
-
-			case drive_is_free:
-				cookie = drive->ops->lock(drive);
-				if (cookie == NULL) {
-					changer->ops->release_all_media(changer);
-					changer = NULL;
-					drive = NULL;
-
-					sleep(20);
-
-					state = look_for_media;
-				} else
-					stop = true;
-				break;
-
-			case look_for_media:
-				soj_changer_sync_all();
-				formatmedia_slot = soj_changer_find_media_by_job(job, db_connect);
-				if (formatmedia_slot != NULL) {
-					changer = formatmedia_slot->changer;
-					state = reserve_media;
-				} else {
-					if (!has_alert_user)
-						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Waiting for media"));
-					has_alert_user = true;
-
-					sleep(20);
-				}
-				break;
-
-			case media_in_drive:
-				drive = formatmedia_slot->drive;
-				state = drive != NULL ? drive_is_free : changer_has_free_drive;
-				break;
-
-			case reserve_media:
-				failed = changer->ops->reserve_media(changer, formatmedia_slot);
-				if (failed == 0)
-					state = media_in_drive;
-				else {
-					sleep(20);
-
-					changer = NULL;
-					drive = NULL;
-					state = look_for_media;
-				}
-				break;
-		}
-	}
-
-	if (job->stopped_by_user)
-		return 1;
-
-	job->status = so_job_status_running;
-	job->done = 0.2;
-
-	if (formatmedia_slot->drive == NULL && drive->slot->media != NULL) {
-		failed = changer->ops->unload(changer, drive);
-
-		if (failed != 0) {
-			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Error while unloading media (%s)"), drive->slot->media->label);
-			return 2;
-		}
-	}
-
-	if (job->stopped_by_user)
-		return 1;
-
-	job->status = so_job_status_running;
-	job->done = 0.4;
-
-	if (formatmedia_slot->drive == NULL) {
-		failed = changer->ops->load(changer, formatmedia_slot, drive);
-
-		if (failed != 0) {
-			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Error while loading media (%s)"), formatmedia_slot->media->label);
-			return 2;
-		}
-	}
-
-	if (job->stopped_by_user)
-		return 1;
+	struct so_drive * drive = changer->ops->get_media(changer, formatmedia_slot);
+	char * cookie = drive->ops->lock(drive);
 
 	job->status = so_job_status_running;
 	job->done = 0.6;
@@ -243,7 +112,7 @@ static int formatmedia_run(struct so_job * job, struct so_database_connection * 
 	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Formatting media in progress (block size used: %zd)"), block_size);
 
 	// write header
-	failed = drive->ops->format_media(drive, formatmedia_pool);
+	int failed = drive->ops->format_media(drive, formatmedia_pool);
 	if (failed != 0) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Failed to format media"));
 		return 4;

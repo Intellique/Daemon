@@ -29,8 +29,13 @@
 
 #include "job.h"
 
+static struct so_job * soj_current_job = NULL;
 static struct so_job_driver * soj_driver = NULL;
 
+
+struct so_job * soj_job_get() {
+	return soj_current_job;
+}
 
 struct so_job_driver * soj_job_get_driver() {
 	return soj_driver;
@@ -38,5 +43,9 @@ struct so_job_driver * soj_job_get_driver() {
 
 void soj_job_register(struct so_job_driver * driver) {
 	soj_driver = driver;
+}
+
+void soj_job_set(struct so_job * current_job) {
+	soj_current_job = current_job;
 }
 

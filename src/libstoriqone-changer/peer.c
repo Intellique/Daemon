@@ -40,6 +40,8 @@ struct sochgr_peer * sochgr_peer_new(int fd) {
 	bzero(peer, sizeof(struct sochgr_peer));
 
 	peer->fd = fd;
+	peer->waiting = false;
+	peer->next = NULL;
 
 	return peer;
 }

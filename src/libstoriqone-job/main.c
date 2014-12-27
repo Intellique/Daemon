@@ -167,6 +167,7 @@ int main() {
 	job = malloc(sizeof(struct so_job));
 	bzero(job, sizeof(struct so_job));
 	so_job_sync(job, vjob);
+	soj_job_set(job);
 
 	struct so_database * db_driver = so_database_get_default_driver();
 	if (db_driver == NULL)

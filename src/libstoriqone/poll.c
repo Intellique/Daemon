@@ -227,3 +227,22 @@ void so_poll_unregister(int fd, short event) {
 	so_poll_restart = true;
 }
 
+bool so_poll_unset_timeout(int fd) {
+	if (fd < 0)
+		return false;
+
+	unsigned int i;
+	for (i = 0; i < so_nb_used_polls; i++) {
+		if (so_polls[i].fd == fd) {
+			struct so_poll_info * info = so_poll_infos + i;
+
+			info->timeout = -1;
+			info->timeout_callback = NULL;
+
+			return true;
+		}
+	}
+
+	return false;
+}
+

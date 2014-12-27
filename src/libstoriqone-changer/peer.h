@@ -27,8 +27,13 @@
 #ifndef __LIBSTORIQONE_CHANGER_PEER_H__
 #define __LIBSTORIQONE_CHANGER_PEER_H__
 
+// bool
+#include <stdbool.h>
+
 struct sochgr_peer {
 	int fd;
+	bool waiting;
+	struct sochgr_peer * next;
 };
 
 void sochgr_peer_free(struct sochgr_peer * peer);
