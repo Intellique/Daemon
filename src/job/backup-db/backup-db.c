@@ -170,8 +170,7 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 		if (job->stopped_by_user)
 			goto tmp_writer;
 
-		const char * cookie = drive->ops->lock(drive);
-		struct so_stream_writer * dr_writer = drive->ops->get_raw_writer(drive, cookie);
+		struct so_stream_writer * dr_writer = drive->ops->get_raw_writer(drive);
 		struct so_stream_writer * cksum_writer = dr_writer;
 
 		if (so_value_list_get_length(backupdb_checksums) > 0)

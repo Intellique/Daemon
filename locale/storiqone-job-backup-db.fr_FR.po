@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-backupdb v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-12-10 20:53+0100\n"
+        "POT-Creation-Date: 2014-12-29 22:46+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -32,22 +32,22 @@ msgstr  "Erreur lors de l’écriture dans le fichier temporaire"
 msgid   "Error while reading from database"
 msgstr  "Erreur lors de la lecture depuis la base de donées"
 
-#: src/job/backup-db/backup-db.c:186
+#: src/job/backup-db/backup-db.c:185
 msgid   "Error while writting into drive"
 msgstr  "Erreur lors de l’écriture dans le lecteur"
 
-#: src/job/backup-db/backup-db.c:200
+#: src/job/backup-db/backup-db.c:199
 msgid   "Error while reading from temporary file"
 msgstr  "Erreur lors de la lecture depuis le fichier temporaire"
 
-#: src/job/backup-db/backup-db.c:247
+#: src/job/backup-db/backup-db.c:246
 msgid   "Pool (Storiq one database backup) not found"
 msgstr  "Pool (Storiq one database backup) non trouvé"
 
-#: src/job/backup-db/backup-db.c:251
+#: src/job/backup-db/backup-db.c:250
 msgid   "Try to back up database into a pool which is deleted"
 msgstr  "Tentation de sauvegarder dans un pool qui est supprimé"
 
-#: src/job/backup-db/backup-db.c:257
+#: src/job/backup-db/backup-db.c:256
 msgid   "Try to back up database into a pool whose is not growable and without any medias"
 msgstr  "Tentation de sauvegarder dans un pool qui n’est pas extensible et qui ne contient pas de médias"

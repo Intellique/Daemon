@@ -33,8 +33,6 @@
 struct sodr_peer {
 	int fd;
 
-	char * cookie;
-
 	struct so_stream_reader * reader;
 	struct so_stream_writer * writer;
 

@@ -36,8 +36,6 @@
 #include "peer.h"
 
 void sodr_peer_free(struct sodr_peer * peer) {
-	free(peer->cookie);
-
 	if (peer->reader != NULL) {
 		peer->reader->ops->close(peer->reader);
 		peer->reader->ops->free(peer->reader);

@@ -32,6 +32,7 @@
 
 struct sochgr_peer {
 	int fd;
+	char * key;
 	bool waiting;
 	struct sochgr_peer * next;
 };

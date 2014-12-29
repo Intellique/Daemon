@@ -35,6 +35,7 @@
 
 #include "drive.h"
 #include "io.h"
+#include "job.h"
 
 struct soj_drive {
 	int fd;
@@ -45,9 +46,8 @@ static bool soj_drive_check_header(struct so_drive * drive);
 static bool soj_drive_check_support(struct so_drive * drive, struct so_media_format * format, bool for_writing);
 static ssize_t soj_drive_find_best_block_size(struct so_drive * drive);
 static int soj_drive_format_media(struct so_drive * drive, struct so_pool * pool);
-static struct so_stream_reader * soj_drive_get_raw_reader(struct so_drive * drive, int file_position, const char * cookie);
-static struct so_stream_writer * soj_drive_get_raw_writer(struct so_drive * drive, const char * cookie);
-static char * soj_drive_lock(struct so_drive * drive);
+static struct so_stream_reader * soj_drive_get_raw_reader(struct so_drive * drive, int file_position);
+static struct so_stream_writer * soj_drive_get_raw_writer(struct so_drive * drive);
 static int soj_drive_sync(struct so_drive * drive);
 
 static struct so_drive_ops soj_drive_ops = {
@@ -57,7 +57,6 @@ static struct so_drive_ops soj_drive_ops = {
 	.format_media         = soj_drive_format_media,
 	.get_raw_reader       = soj_drive_get_raw_reader,
 	.get_raw_writer       = soj_drive_get_raw_writer,
-	.lock                 = soj_drive_lock,
 	.sync                 = soj_drive_sync,
 };
 
@@ -103,8 +102,13 @@ static bool soj_drive_check_support(struct so_drive * drive, struct so_media_for
 
 static ssize_t soj_drive_find_best_block_size(struct so_drive * drive) {
 	struct soj_drive * self = drive->data;
+	struct so_job * job = soj_job_get();
 
-	struct so_value * request = so_value_pack("{ss}", "command", "find best block size");
+	struct so_value * request = so_value_pack("{sss{ss}}",
+			"command", "find best block size",
+			"params",
+				"job key", job->key
+	);
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
@@ -121,10 +125,12 @@ static ssize_t soj_drive_find_best_block_size(struct so_drive * drive) {
 
 static int soj_drive_format_media(struct so_drive * drive, struct so_pool * pool) {
 	struct soj_drive * self = drive->data;
+	struct so_job * job = soj_job_get();
 
-	struct so_value * request = so_value_pack("{sss{so}}",
+	struct so_value * request = so_value_pack("{sss{ssso}}",
 		"command", "format media",
 		"params",
+			"job key", job->key,
 			"pool", so_pool_convert(pool)
 	);
 	so_json_encode_to_fd(request, self->fd, true);
@@ -141,10 +147,16 @@ static int soj_drive_format_media(struct so_drive * drive, struct so_pool * pool
 	return failed;
 }
 
-static struct so_stream_reader * soj_drive_get_raw_reader(struct so_drive * drive, int file_position, const char * cookie) {
+static struct so_stream_reader * soj_drive_get_raw_reader(struct so_drive * drive, int file_position) {
 	struct soj_drive * self = drive->data;
+	struct so_job * job = soj_job_get();
 
-	struct so_value * request = so_value_pack("{sssiss}", "command", "get raw reader", "file position", (long int) file_position, "cookie", cookie);
+	struct so_value * request = so_value_pack("{sss{sssi}}",
+			"command", "get raw reader",
+			"params",
+				"job key", job->key,
+				"file position", (long int) file_position
+	);
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
@@ -165,10 +177,15 @@ static struct so_stream_reader * soj_drive_get_raw_reader(struct so_drive * driv
 	return reader;
 }
 
-static struct so_stream_writer * soj_drive_get_raw_writer(struct so_drive * drive, const char * cookie) {
+static struct so_stream_writer * soj_drive_get_raw_writer(struct so_drive * drive) {
 	struct soj_drive * self = drive->data;
+	struct so_job * job = soj_job_get();
 
-	struct so_value * request = so_value_pack("{ssss}", "command", "get raw writer", "cookie", cookie);
+	struct so_value * request = so_value_pack("{sss{ss}}",
+			"command", "get raw reader",
+			"params",
+				"job key", job->key
+	);
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
@@ -200,25 +217,6 @@ void soj_drive_init(struct so_drive * drive, struct so_value * config) {
 	self->config = socket;
 
 	drive->ops = &soj_drive_ops;
-}
-
-static char * soj_drive_lock(struct so_drive * drive) {
-	struct soj_drive * self = drive->data;
-
-	struct so_value * request = so_value_pack("{ss}", "command", "lock");
-	so_json_encode_to_fd(request, self->fd, true);
-	so_value_free(request);
-
-	struct so_value * returned = so_json_parse_fd(self->fd, -1);
-	if (returned == NULL)
-		return NULL;
-
-	bool locked = false;
-	char * cookie = NULL;
-	so_value_unpack(returned, "{s{sbss}}", "returned", "locked", &locked, "cookie", &cookie);
-	so_value_free(returned);
-
-	return cookie;
 }
 
 static int soj_drive_sync(struct so_drive * drive) {

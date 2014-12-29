@@ -113,12 +113,12 @@ struct so_slot * soj_changer_find_slot(struct so_media * media) {
 
 static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_slot * slot) {
 	struct soj_changer * self = changer->data;
+	struct so_job * job = soj_job_get();
 
-	struct so_value * request = so_value_pack("{sss{si}}", "command", "get media", "params", "slot", slot->index);
+	struct so_value * request = so_value_pack("{sss{sssi}}", "command", "get media", "params", "job key", job->key, "slot", slot->index);
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
-	struct so_job * job = soj_job_get();
 	job->status = so_job_status_waiting;
 
 	bool error = false;

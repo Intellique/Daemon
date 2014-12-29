@@ -36,6 +36,7 @@ struct so_drive_ops {
 	bool (*check_support)(struct so_drive * drive, struct so_media_format * format, bool for_writing);
 	bool (*is_free)(struct so_drive * drive);
 	int (*load_media)(struct so_drive * drive, struct so_media * media);
+	int (*lock)(struct so_drive * drive, const char * job_key);
 	int (*reset)(struct so_drive * drive);
 	int (*update_status)(struct so_drive * drive);
 };

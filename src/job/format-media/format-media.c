@@ -50,8 +50,8 @@
 
 #include "config.h"
 
+static struct so_media * formatmedia_media = NULL;
 static struct so_pool * formatmedia_pool = NULL;
-static struct so_slot * formatmedia_slot = NULL;
 
 static void formatmedia_exit(struct so_job * job, struct so_database_connection * db_connect);
 static void formatmedia_init(void) __attribute__((constructor));
@@ -85,12 +85,66 @@ static void formatmedia_init() {
 }
 
 static int formatmedia_run(struct so_job * job, struct so_database_connection * db_connect) {
-	struct so_changer * changer = formatmedia_slot->changer;
+	enum {
+		alert_user,
+		get_media,
+		look_for_media,
+		reserve_media,
+	} state = look_for_media;
+	bool stop = false, has_alert_user = false;
+	struct so_slot * slot = NULL;
+	ssize_t reserved_size = 0;
+	struct so_drive * drive = NULL;
 
-	changer->ops->reserve_media(changer, formatmedia_slot, formatmedia_slot->media->format->block_size, so_pool_unbreakable_level_none);
+	while (!stop && !job->stopped_by_user) {
+		switch (state) {
+			case alert_user:
+				job->status = so_job_status_waiting;
+				if (!has_alert_user)
+					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Media not found (named: %s)"), formatmedia_media->name);
+				has_alert_user = true;
 
-	struct so_drive * drive = changer->ops->get_media(changer, formatmedia_slot);
-	char * cookie = drive->ops->lock(drive);
+				sleep(15);
+
+				state = look_for_media;
+				job->status = so_job_status_running;
+				soj_changer_sync_all();
+				break;
+
+			case get_media:
+				drive = slot->changer->ops->get_media(slot->changer, slot);
+				if (drive == NULL) {
+					job->status = so_job_status_waiting;
+
+					sleep(15);
+
+					state = look_for_media;
+					job->status = so_job_status_running;
+					soj_changer_sync_all();
+				} else
+					stop = true;
+				break;
+
+			case look_for_media:
+				slot = soj_changer_find_media_by_job(job, db_connect);
+				state = slot != NULL ? reserve_media : alert_user;
+				break;
+
+			case reserve_media:
+				reserved_size = slot->changer->ops->reserve_media(slot->changer, slot, formatmedia_media->format->block_size, so_pool_unbreakable_level_none);
+				if (reserved_size < 0) {
+					job->status = so_job_status_waiting;
+
+					sleep(15);
+
+					state = look_for_media;
+					job->status = so_job_status_running;
+					soj_changer_sync_all();
+				} else
+					state = get_media;
+				break;
+		}
+	}
 
 	job->status = so_job_status_running;
 	job->done = 0.6;
@@ -139,7 +193,6 @@ static int formatmedia_run(struct so_job * job, struct so_database_connection * 
 
 static int formatmedia_simulate(struct so_job * job, struct so_database_connection * db_connect) {
 	formatmedia_pool = db_connect->ops->get_pool(db_connect, NULL, job);
-	formatmedia_slot = soj_changer_find_media_by_job(job, db_connect);
 
 	if (formatmedia_pool == NULL) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Pool not found"));
@@ -150,37 +203,39 @@ static int formatmedia_simulate(struct so_job * job, struct so_database_connecti
 		return 1;
 	}
 
-	if (formatmedia_slot == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Media not found"));
-		return 1;
-	}
-	if (formatmedia_slot->media == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "BUG: slot should not be empty"));
-		return 1;
-	}
-
-	struct so_media * media = formatmedia_slot->media;
-	if (media->type == so_media_type_cleaning) {
+	formatmedia_media = db_connect->ops->get_media(db_connect, NULL, NULL, job);
+	if (formatmedia_media->type == so_media_type_cleaning) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Try to format a cleaning media"));
 		return 1;
 	}
-	if (media->type == so_media_type_worm && media->nb_volumes > 0) {
+	if (formatmedia_media->type == so_media_type_worm && formatmedia_media->nb_volumes > 0) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Try to format a worm media with data"));
 		return 1;
 	}
-
-	if (media->status == so_media_status_error)
+	if (formatmedia_media->status == so_media_status_error)
 		so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Try to format a media with error status"));
 
-	if (so_media_format_cmp(media->format, formatmedia_pool->format) != 0) {
+	if (so_media_format_cmp(formatmedia_media->format, formatmedia_pool->format) != 0) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Try to format a media whose type does not match the format of pool"));
 		return 1;
 	}
 
-	if (!soj_changer_has_apt_drive(media->format, true)) {
+	if (!soj_changer_has_apt_drive(formatmedia_media->format, true)) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Failed to find suitable drive to format media"));
 		return 1;
 	}
+
+	/*
+	formatmedia_slot = soj_changer_find_media_by_job(job, db_connect);
+	if (formatmedia_slot == NULL) {
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Media not found"));
+		return 1;
+	}
+	if (formatmedia_slot->media == NULL || !formatmedia_slot->full) {
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "BUG: slot should not be empty"));
+		return 1;
+	}
+	*/
 
 	return 0;
 }
@@ -192,7 +247,7 @@ static void formatmedia_script_on_error(struct so_job * job, struct so_database_
 	struct so_value * json = so_value_pack("{sosososo}",
 		"job", so_job_convert(job),
 		"host", so_host_get_info2(),
-		"media", so_media_convert(formatmedia_slot->media),
+		"media", so_media_convert(formatmedia_media),
 		"pool", so_pool_convert(formatmedia_pool)
 	);
 
@@ -208,7 +263,7 @@ static void formatmedia_script_post_run(struct so_job * job, struct so_database_
 	struct so_value * json = so_value_pack("{sosososo}",
 		"job", so_job_convert(job),
 		"host", so_host_get_info2(),
-		"media", so_media_convert(formatmedia_slot->media),
+		"media", so_media_convert(formatmedia_media),
 		"pool", so_pool_convert(formatmedia_pool)
 	);
 
@@ -224,7 +279,7 @@ static bool formatmedia_script_pre_run(struct so_job * job, struct so_database_c
 	struct so_value * json = so_value_pack("{sosososo}",
 		"job", so_job_convert(job),
 		"host", so_host_get_info2(),
-		"media", so_media_convert(formatmedia_slot->media),
+		"media", so_media_convert(formatmedia_media),
 		"pool", so_pool_convert(formatmedia_pool)
 	);
 
@@ -248,8 +303,8 @@ static bool formatmedia_script_pre_run(struct so_job * job, struct so_database_c
 				if (uuid_parse(uuid, tmp) != 0) {
 					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal, dgettext("storiqone-job-format-media", "Invalid uuid provide by script, ignoring it"));
 				} else {
-					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal, dgettext("storiqone-job-format-media", "Script request to format media with this uuid (%s) instead of (%s)"), uuid, formatmedia_slot->media->uuid);
-					strcpy(formatmedia_slot->media->uuid, uuid);
+					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal, dgettext("storiqone-job-format-media", "Script request to format media with this uuid (%s) instead of (%s)"), uuid, formatmedia_media->uuid);
+					strcpy(formatmedia_media->uuid, uuid);
 				}
 				free(uuid);
 			}
@@ -257,10 +312,10 @@ static bool formatmedia_script_pre_run(struct so_job * job, struct so_database_c
 			char * name = NULL;
 			so_value_unpack(data, "{s{ss}}", "media", "name", &name);
 			if (name != NULL) {
-				so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal, dgettext("storiqone-job-format-media", "Script request to format media with this name (%s) instead of (%s)"), name, formatmedia_slot->media->name);
+				so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal, dgettext("storiqone-job-format-media", "Script request to format media with this name (%s) instead of (%s)"), name, formatmedia_media->name);
 
-				free(formatmedia_slot->media->name);
-				formatmedia_slot->media->name = name;
+				free(formatmedia_media->name);
+				formatmedia_media->name = name;
 			}
 		}
 		so_value_iterator_free(iter);

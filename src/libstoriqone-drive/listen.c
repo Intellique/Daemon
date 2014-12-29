@@ -30,7 +30,7 @@
 #include <libintl.h>
 // free
 #include <stdlib.h>
-// strcmp
+// strcmp, strdup
 #include <string.h>
 // bzero, strdup
 #include <strings.h>
@@ -60,6 +60,7 @@ static struct so_database_connection * sodr_db = NULL;
 static struct so_value * sodr_config = NULL;
 static unsigned int sodr_nb_clients = 0;
 static struct sodr_peer * sodr_current_peer = NULL;
+static char * sodr_current_key = NULL;
 
 static void sodr_socket_accept(int fd_server, int fd_client, struct so_value * client);
 static void sodr_socket_message(int fd, short event, void * data);
@@ -70,8 +71,6 @@ static void sodr_socket_command_find_best_block_size(struct sodr_peer * peer, st
 static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct so_value * request, int fd);
-static void sodr_socket_command_lock(struct sodr_peer * peer, struct so_value * request, int fd);
-static void sodr_socket_command_release(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_sync(struct sodr_peer * peer, struct so_value * request, int fd);
 
 static void sodr_socket_command_reader_close(struct sodr_peer * peer, struct so_value * request, int fd);
@@ -95,8 +94,6 @@ static struct sodr_socket_command {
 	{ 0, "format media",         sodr_socket_command_format_media },
 	{ 0, "get raw reader",       sodr_socket_command_get_raw_reader },
 	{ 0, "get raw writer",       sodr_socket_command_get_raw_writer },
-	{ 0, "lock",                 sodr_socket_command_lock },
-	{ 0, "release",              sodr_socket_command_release },
 	{ 0, "sync",                 sodr_socket_command_sync },
 
 	{ 0, "reader: close",       sodr_socket_command_reader_close },
@@ -135,6 +132,11 @@ unsigned int sodr_listen_nb_clients() {
 
 void sodr_listen_set_db_connection(struct so_database_connection * db) {
 	sodr_db = db;
+}
+
+void sodr_listen_set_peer_key(const char * key) {
+	free(sodr_current_key);
+	sodr_current_key = strdup(key);
 }
 
 
@@ -228,13 +230,19 @@ static void sodr_socket_command_check_support(struct sodr_peer * peer __attribut
 	so_value_free(returned);
 }
 
-static void sodr_socket_command_find_best_block_size(struct sodr_peer * peer, struct so_value * request __attribute__((unused)), int fd) {
-	if (sodr_current_peer != peer) {
+static void sodr_socket_command_find_best_block_size(struct sodr_peer * peer __attribute__((unused)), struct so_value * request, int fd) {
+	char * job_key = NULL;
+	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
+
+	if (strcmp(sodr_current_key, job_key) != 0) {
 		struct so_value * response = so_value_pack("{sb}", "returned", -1L);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
+		free(job_key);
 		return;
 	}
+
+	free(job_key);
 
 	struct so_drive_driver * driver = sodr_drive_get();
 	struct so_drive * drive = driver->device;
@@ -260,8 +268,11 @@ static void sodr_socket_command_find_best_block_size(struct sodr_peer * peer, st
 		so_log_write(so_log_level_error, dgettext("libstoriqone-drive", "[%s %s #%u]: failed to find best block size (%s)"), drive->vendor, drive->model, drive->index, media_name);
 }
 
-static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_value * request, int fd) {
-	if (sodr_current_peer == peer) {
+static void sodr_socket_command_format_media(struct sodr_peer * peer __attribute__((unused)), struct so_value * request, int fd) {
+	char * job_key = NULL;
+	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
+
+	if (!strcmp(sodr_current_key, job_key)) {
 		struct so_value * vpool = NULL;
 		so_value_unpack(request, "{s{so}}", "params", "pool", &vpool);
 
@@ -296,21 +307,23 @@ static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 	}
+
+	free(job_key);
 }
 
 static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct so_value * request, int fd) {
 	long int position = -1;
-	char * cookie = NULL;
-	so_value_unpack(request, "{siss}", "file position", &position, "cookie", &cookie);
+	char * job_key = NULL;
+	so_value_unpack(request, "{s{sssi}}", "params", "job key", &job_key, "file position", &position);
 
-	if (cookie == NULL || peer->cookie == NULL || strcmp(cookie, peer->cookie) != 0) {
+	if (job_key == NULL || sodr_current_key == NULL || strcmp(job_key, sodr_current_key) != 0) {
 		struct so_value * response = so_value_pack("{sb}", "status", false);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 		return;
 	}
 
-	free(cookie);
+	free(job_key);
 
 	struct so_drive_driver * driver = sodr_drive_get();
 	struct so_drive * drive = driver->device;
@@ -351,17 +364,17 @@ static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct s
 }
 
 static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * cookie = NULL;
-	so_value_unpack(request, "{ss}", "cookie", &cookie);
+	char * job_key = NULL;
+	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
 
-	if (cookie == NULL || peer->cookie == NULL || strcmp(cookie, peer->cookie) != 0) {
+	if (job_key == NULL || sodr_current_key == NULL || strcmp(job_key, sodr_current_key) != 0) {
 		struct so_value * response = so_value_pack("{sb}", "status", false);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 		return;
 	}
 
-	free(cookie);
+	free(job_key);
 
 	struct so_drive_driver * driver = sodr_drive_get();
 	struct so_drive * drive = driver->device;
@@ -402,37 +415,6 @@ static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct s
 
 	peer->fd_data = so_socket_accept_and_close(tmp_socket, tmp_config);
 	so_value_free(tmp_config);
-}
-
-static void sodr_socket_command_lock(struct sodr_peer * peer, struct so_value * request __attribute__((unused)), int fd) {
-	if (sodr_current_peer == NULL) {
-		sodr_current_peer = peer;
-
-		free(peer->cookie);
-		peer->cookie = so_checksum_gen_salt(NULL, 32);
-
-		struct so_value * returned = so_value_pack("{s{sbss}}", "returned", "locked", true, "cookie", peer->cookie);
-		so_json_encode_to_fd(returned, fd, true);
-		so_value_free(returned);
-	} else {
-		struct so_value * returned = so_value_pack("{s{sbsn}}", "returned", "locked", false, "cookie");
-		so_json_encode_to_fd(returned, fd, true);
-		so_value_free(returned);
-	}
-}
-
-static void sodr_socket_command_release(struct sodr_peer * peer, struct so_value * request __attribute__((unused)), int fd) {
-	bool ok = sodr_current_peer == peer;
-
-	if (ok)
-		sodr_current_peer = NULL;
-
-	free(peer->cookie);
-	peer->cookie = NULL;
-
-	struct so_value * response = so_value_pack("{sb}", "status", ok);
-	so_json_encode_to_fd(response, fd, true);
-	so_value_free(response);
 }
 
 static void sodr_socket_command_sync(struct sodr_peer * peer __attribute__((unused)), struct so_value * request __attribute__((unused)), int fd) {

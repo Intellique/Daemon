@@ -48,6 +48,7 @@ static void sodr_changer_process(int fd, short event, void * data);
 static void sodr_changer_process_check_support(struct so_value * request, struct so_database_connection * db);
 static void sodr_changer_process_is_free(struct so_value * request, struct so_database_connection * db);
 static void sodr_changer_process_load_media(struct so_value * request, struct so_database_connection * db);
+static void sodr_changer_process_lock(struct so_value * request, struct so_database_connection * db);
 static void sodr_changer_process_reset(struct so_value * request, struct so_database_connection * db);
 static void sodr_changer_process_stop(struct so_value * request, struct so_database_connection * db);
 static void sodr_changer_process_update_status(struct so_value * request, struct so_database_connection * db);
@@ -61,6 +62,7 @@ static struct sodr_socket_command {
 	{ 0, "check support", sodr_changer_process_check_support },
 	{ 0, "is free",       sodr_changer_process_is_free },
 	{ 0, "load media",    sodr_changer_process_load_media },
+	{ 0, "lock",          sodr_changer_process_lock },
 	{ 0, "reset",         sodr_changer_process_reset },
 	{ 0, "stop",          sodr_changer_process_stop },
 	{ 0, "update status", sodr_changer_process_update_status },
@@ -167,6 +169,24 @@ static void sodr_changer_process_load_media(struct so_value * request, struct so
 	}
 
 	struct so_value * returned = so_value_pack("{si}", "status", media != NULL);
+	so_json_encode_to_fd(returned, 1, true);
+	so_value_free(returned);
+}
+
+static void sodr_changer_process_lock(struct so_value * request, struct so_database_connection * db __attribute__((unused))) {
+	if (sodr_listen_is_locked()) {
+		struct so_value * returned = so_value_pack("{sb}", "returned", false);
+		so_json_encode_to_fd(returned, 1, true);
+		so_value_free(returned);
+		return;
+	}
+
+	char * job_key = NULL;
+	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
+	sodr_listen_set_peer_key(job_key);
+	free(job_key);
+
+	struct so_value * returned = so_value_pack("{sb}", "returned", true);
 	so_json_encode_to_fd(returned, 1, true);
 	so_value_free(returned);
 }

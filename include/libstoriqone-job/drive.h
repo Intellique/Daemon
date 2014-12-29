@@ -37,9 +37,8 @@ struct so_drive_ops {
 	bool (*check_support)(struct so_drive * drive, struct so_media_format * format, bool for_writing);
 	ssize_t (*find_best_block_size)(struct so_drive * drive);
 	int (*format_media)(struct so_drive * drive, struct so_pool * pool);
-	struct so_stream_reader * (*get_raw_reader)(struct so_drive * drive, int file_position, const char * cookie);
-	struct so_stream_writer * (*get_raw_writer)(struct so_drive * drive, const char * cookie);
-	char * (*lock)(struct so_drive * drive);
+	struct so_stream_reader * (*get_raw_reader)(struct so_drive * drive, int file_position);
+	struct so_stream_writer * (*get_raw_writer)(struct so_drive * drive);
 	int (*sync)(struct so_drive * drive);
 };
 

@@ -67,7 +67,7 @@ struct sochgr_socket_command {
 	void (*function)(struct sochgr_peer * peer, struct so_value * request, int fd);
 } commands[] = {
 	{ 0, "get media",     sochgr_socket_command_get_media },
-	{ 0, "release media",     sochgr_socket_command_release_media },
+	{ 0, "release media", sochgr_socket_command_release_media },
 	{ 0, "reserve media", sochgr_socket_command_reserve_media },
 	{ 0, "sync",          sochgr_socket_command_sync },
 
@@ -213,6 +213,8 @@ static void sochgr_socket_unlock() {
 			}
 		}
 
+		drive->ops->lock(drive, peer->key);
+
 		lp->peer->waiting = false;
 		sochgr_socket_remove_peer(lp->peer);
 
@@ -284,6 +286,8 @@ static void sochgr_socket_unlock() {
 			} else
 				so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = OK"), changer->vendor, changer->model, drive->slot->volume_name, sl->index, drive->index);
 
+			drive->ops->lock(drive, peer->key);
+
 			struct so_value * response = so_value_pack("{sbsi}", "error", false, "index", (long int) drive->index);
 			so_json_encode_to_fd(response, peer->fd, true);
 			so_value_free(response);
@@ -298,8 +302,10 @@ static void sochgr_socket_unlock() {
 
 static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so_value * request, int fd) {
 	long int slot = -1;
+	free(peer->key);
+	peer->key = NULL;
 
-	so_value_unpack(request, "{s{si}}", "params", "slot", &slot);
+	so_value_unpack(request, "{s{sssi}}", "params", "job key", &peer->key, "slot", &slot);
 
 	struct so_changer_driver * driver = sochgr_changer_get();
 	struct so_changer * changer = driver->device;

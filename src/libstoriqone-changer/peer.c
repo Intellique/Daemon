@@ -32,6 +32,7 @@
 #include "peer.h"
 
 void sochgr_peer_free(struct sochgr_peer * peer) {
+	free(peer->key);
 	free(peer);
 }
 
@@ -40,6 +41,7 @@ struct sochgr_peer * sochgr_peer_new(int fd) {
 	bzero(peer, sizeof(struct sochgr_peer));
 
 	peer->fd = fd;
+	peer->key = NULL;
 	peer->waiting = false;
 	peer->next = NULL;
 
