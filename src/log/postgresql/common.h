@@ -27,8 +27,8 @@
 #ifndef __STORIQONE_LOG_POSTGRESQL_H__
 #define __STORIQONE_LOG_POSTGRESQL_H__
 
-#include <libstoriqone-logger/log.h>
 #include <libstoriqone/value.h>
+#include <logger/log.h>
 
 struct solgr_log_module * so_log_postgresql_new_module(struct so_value * params);
 

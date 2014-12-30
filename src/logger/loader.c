@@ -42,7 +42,7 @@
 // access
 #include <unistd.h>
 
-#include <libstoriqone-logger/log.h>
+#include <logger/log.h>
 
 #include "config.h"
 #include "loader.h"

@@ -24,8 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONELOGGER_LOADER_H__
-#define __LIBSTORIQONELOGGER_LOADER_H__
+#ifndef __LOGGER_LOADER_H__
+#define __LOGGER_LOADER_H__
 
 void * solgr_loader_load(const char * module, const char * name);
 void solgr_loader_register_ok(void);

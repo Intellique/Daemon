@@ -24,8 +24,8 @@
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONELOGGER_LOG_H__
-#define __LIBSTORIQONELOGGER_LOG_H__
+#ifndef __LOGGER_LOG_H__
+#define __LOGGER_LOG_H__
 
 // bool
 #include <stdbool.h>

@@ -38,8 +38,7 @@
 #include <libstoriqone/json.h>
 #include <libstoriqone/poll.h>
 #include <libstoriqone/value.h>
-
-#include <libstoriqone-logger/log.h>
+#include <logger/log.h>
 
 #include "listen.h"
 

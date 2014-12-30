@@ -48,7 +48,7 @@
 #include <libstoriqone/string.h>
 #include <libstoriqone/time.h>
 #include <libstoriqone/value.h>
-#include <libstoriqone-logger/log.h>
+#include <logger/log.h>
 
 #include <checksum/logger.chcksum>
 
@@ -67,32 +67,32 @@ struct logger_log_file_private {
 	size_t type_width;
 };
 
-static void file_driver_init(void) __attribute__((constructor));
-static struct solgr_log_module * file_driver_new_module(struct so_value * param);
+static void solgr_file_driver_init(void) __attribute__((constructor));
+static struct solgr_log_module * solgr_file_driver_new_module(struct so_value * param);
 
-static void file_module_check_logrotate(struct logger_log_file_private * self);
-static void file_module_format_string(char * buffer, size_t length, const char * string, size_t width);
-static void file_module_free(struct solgr_log_module * module);
-static void file_module_write(struct solgr_log_module * module, struct so_value * message);
+static void solgr_file_module_check_logrotate(struct logger_log_file_private * self);
+static void solgr_file_module_format_string(char * buffer, size_t length, const char * string, size_t width);
+static void solgr_file_module_free(struct solgr_log_module * module);
+static void solgr_file_module_write(struct solgr_log_module * module, struct so_value * message);
 
-static struct solgr_log_driver file_driver = {
+static struct solgr_log_driver solgr_file_driver = {
 	.name         = "file",
-	.new_module   = file_driver_new_module,
+	.new_module   = solgr_file_driver_new_module,
 	.cookie       = NULL,
 	.src_checksum = LOGGER_SRCSUM,
 };
 
-static struct solgr_log_module_ops file_module_ops = {
-	.free  = file_module_free,
-	.write = file_module_write,
+static struct solgr_log_module_ops solgr_file_module_ops = {
+	.free  = solgr_file_module_free,
+	.write = solgr_file_module_write,
 };
 
 
-static void file_driver_init() {
-	solgr_log_register_driver(&file_driver);
+static void solgr_file_driver_init() {
+	solgr_log_register_driver(&solgr_file_driver);
 }
 
-static struct solgr_log_module * file_driver_new_module(struct so_value * param) {
+static struct solgr_log_module * solgr_file_driver_new_module(struct so_value * param) {
 	char * path = NULL, * level;
 	if (so_value_unpack(param, "{ssss}", "path", &path, "verbosity", &level) < 2) {
 		free(path);
@@ -120,8 +120,8 @@ static struct solgr_log_module * file_driver_new_module(struct so_value * param)
 
 	struct solgr_log_module * mod = malloc(sizeof(struct solgr_log_module));
 	mod->level = so_log_string_to_level(level, false);
-	mod->ops = &file_module_ops;
-	mod->driver = &file_driver;
+	mod->ops = &solgr_file_module_ops;
+	mod->driver = &solgr_file_driver;
 	mod->data = self;
 
 	free(level);
@@ -130,7 +130,7 @@ static struct solgr_log_module * file_driver_new_module(struct so_value * param)
 }
 
 
-static void file_module_check_logrotate(struct logger_log_file_private * self) {
+static void solgr_file_module_check_logrotate(struct logger_log_file_private * self) {
 	struct stat reference;
 	int failed = 0;
 	do {
@@ -150,7 +150,7 @@ static void file_module_check_logrotate(struct logger_log_file_private * self) {
 	}
 }
 
-static void file_module_format_string(char * buffer, size_t length, const char * string, size_t width) {
+static void solgr_file_module_format_string(char * buffer, size_t length, const char * string, size_t width) {
 	memset(buffer, ' ', length);
 
 	size_t string_utf8_length = strlen(string);
@@ -160,7 +160,7 @@ static void file_module_format_string(char * buffer, size_t length, const char *
 	buffer[width + string_utf8_length - string_length] = '\0';
 }
 
-static void file_module_free(struct solgr_log_module * module) {
+static void solgr_file_module_free(struct solgr_log_module * module) {
 	struct logger_log_file_private * self = module->data;
 
 	module->ops = NULL;
@@ -178,7 +178,7 @@ static void file_module_free(struct solgr_log_module * module) {
 	free(self);
 }
 
-static void file_module_write(struct solgr_log_module * module, struct so_value * message) {
+static void solgr_file_module_write(struct solgr_log_module * module, struct so_value * message) {
 	struct logger_log_file_private * self = module->data;
 
 	char * slevel = NULL, * stype = NULL, * smessage = NULL;
@@ -201,10 +201,10 @@ static void file_module_write(struct solgr_log_module * module, struct so_value 
 		return;
 	}
 
-	file_module_check_logrotate(self);
+	solgr_file_module_check_logrotate(self);
 
-	file_module_format_string(self->buf_level, self->buf_level_length, so_log_level_to_string(level, true), self->level_width);
-	file_module_format_string(self->buf_type, self->buf_type_length, so_log_type_to_string(type, true), self->type_width);
+	solgr_file_module_format_string(self->buf_level, self->buf_level_length, so_log_level_to_string(level, true), self->level_width);
+	solgr_file_module_format_string(self->buf_type, self->buf_type_length, so_log_type_to_string(type, true), self->type_width);
 
 	char strtime[36];
 	time_t timestamp = iTimestamp;

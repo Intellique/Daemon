@@ -38,7 +38,7 @@
 
 #include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
-#include <libstoriqone-logger/log.h>
+#include <logger/log.h>
 
 #include "loader.h"
 
