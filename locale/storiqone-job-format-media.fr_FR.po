@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-format-media v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2014-12-29 22:49+0100\n"
+        "POT-Creation-Date: 2014-12-30 00:43+0100\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -88,23 +88,3 @@ msgstr  "Le script demande de formater le média avec cet uuid (%s) au lieur de 
 msgid   "Script request to format media with this name (%s) instead of (%s)"
 msgstr  "Le scripte demande de formater le média avec ce nom (%s) au lieur de (%s)"
 
-#~ msgid        "Unload media because drive can not write into this support"
-#~ msgstr       "Déchargement du média parce que le lecteur ne supporte pas ce format en écriture"
-
-#~ msgid        "You should load media into a suitable drive because current drive can not write into it"
-#~ msgstr       "Vous devez chargé votre média dans un lecteur qui le supporte en écriture"
-
-#~ msgid        "Error while unloading media (%s)"
-#~ msgstr       "Erreur lors de déchargement du média (%s)"
-
-#~ msgid        "Waiting for media"
-#~ msgstr       "En attente d'un média"
-
-#~ msgid        "Error while loading media (%s)"
-#~ msgstr       "Erreur lors du chargement du média (%s)"
-
-#~ msgid        "BUG: slot should not be empty"
-#~ msgstr       "Boggue : l'emplacement ne devait pas être vide"
-
-#~ msgid        "Media not found"
-#~ msgstr       "Média non trouvé"
