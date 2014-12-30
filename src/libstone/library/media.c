@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 16 Jun 2014 16:33:00 +0200                            *
+*  Last modified: Mon, 22 Dec 2014 13:22:05 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -1115,5 +1115,29 @@ static struct st_pool * st_pool_retreive(struct st_database_connection * connect
 	}
 
 	return pool;
+}
+
+int st_pool_sync(struct st_pool * pool, struct st_database_connection * connection) {
+	struct st_database * db = NULL;
+	struct st_database_config * config = NULL;
+
+	if (connection == NULL)
+		db = st_database_get_default_driver();
+	if (db != NULL)
+		config = db->ops->get_default_config();
+	if (config != NULL)
+		connection = config->ops->connect(config);
+
+	if (connection == NULL)
+		return -1;
+
+	int failed = connection->ops->sync_pool(connection, pool);
+
+	if (db != NULL && connection != NULL) {
+		connection->ops->close(connection);
+		connection->ops->free(connection);
+	}
+
+	return failed;
 }
 

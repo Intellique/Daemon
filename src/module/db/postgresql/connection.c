@@ -156,6 +156,7 @@ static int st_db_postgresql_get_media_format(struct st_database_connection * con
 static struct st_pool * st_db_postgresql_get_pool(struct st_database_connection * connect, struct st_archive * archive, struct st_job * job, const char * uuid);
 static int st_db_postgresql_sync_media(struct st_database_connection * connect, struct st_media * media);
 static int st_db_postgresql_sync_media_format(struct st_database_connection * connect, struct st_media_format * format);
+static int st_db_postgresql_sync_pool(struct st_database_connection * connect, struct st_pool * pool);
 static int st_db_postgresql_sync_slot(struct st_database_connection * connect, struct st_slot * slot);
 
 static int st_db_postgresql_add_check_archive_job(struct st_database_connection * connect, struct st_job * job, struct st_archive * archive, time_t starttime, bool quick_mode);
@@ -231,6 +232,7 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.get_pool                                      = st_db_postgresql_get_pool,
 	.sync_media                                    = st_db_postgresql_sync_media,
 	.sync_media_format                             = st_db_postgresql_sync_media_format,
+	.sync_pool                                     = st_db_postgresql_sync_pool,
 
 	.add_check_archive_job = st_db_postgresql_add_check_archive_job,
 	.add_job_record        = st_db_postgresql_add_job_record,
@@ -2023,6 +2025,43 @@ static int st_db_postgresql_sync_media_format(struct st_database_connection * co
 		st_db_postgresql_get_ssize(result, 0, 7, &format->capacity);
 
 	PQclear(result);
+
+	return status != PGRES_TUPLES_OK;
+}
+
+static int st_db_postgresql_sync_pool(struct st_database_connection * connect, struct st_pool * pool) {
+	if (connect == NULL || pool == NULL)
+		return -1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_pool_by_id";
+	st_db_postgresql_prepare(self, query, "SELECT p.id, p.uuid, p.name, autocheck, growable, unbreakablelevel, rewritable, densitycode, mode, deleted FROM pool p LEFT JOIN mediaformat mf ON p.mediaformat = mf.id WHERE p.uuid = $1 LIMIT 1");
+
+	const char * param[] = { pool->uuid };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		free(pool->name);
+		pool->name = NULL;
+
+		st_db_postgresql_get_string(result, 0, 1, pool->uuid, 37);
+		st_db_postgresql_get_string_dup(result, 0, 2, &pool->name);
+		pool->auto_check = st_pool_autocheck_string_to_mode(PQgetvalue(result, 0, 3));
+		st_db_postgresql_get_bool(result, 0, 4, &pool->growable);
+		pool->unbreakable_level = st_pool_unbreakable_string_to_level(PQgetvalue(result, 0, 5));
+		st_db_postgresql_get_bool(result, 0, 6, &pool->rewritable);
+		st_db_postgresql_get_bool(result, 0, 9, &pool->deleted);
+
+		unsigned char density_code;
+		st_db_postgresql_get_uchar(result, 0, 7, &density_code);
+		enum st_media_format_mode mode = st_media_string_to_format_mode(PQgetvalue(result, 0, 8));
+
+		pool->format = st_media_format_get_by_density_code(density_code, mode);
+	}
 
 	return status != PGRES_TUPLES_OK;
 }
