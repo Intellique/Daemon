@@ -67,7 +67,7 @@ struct logger_log_file_private {
 	size_t type_width;
 };
 
-static void solgr_file_driver_init(void) __attribute__((constructor));
+static void solgr_file_driver_init(void) __attribute__((constructor(1001)));
 static struct solgr_log_module * solgr_file_driver_new_module(struct so_value * param);
 
 static void solgr_file_module_check_logrotate(struct logger_log_file_private * self);

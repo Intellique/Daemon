@@ -48,9 +48,9 @@ static struct so_value * solgr_drivers = NULL;
 static struct so_value * solgr_messages = NULL;
 static struct so_value * solgr_modules = NULL;
 
-static void solgr_log_exit(void) __attribute__((destructor));
+static void solgr_log_exit(void) __attribute__((destructor(101)));
 static void solgr_log_free_module(void * module);
-static void solgr_log_init(void) __attribute__((constructor));
+static void solgr_log_init(void) __attribute__((constructor(101)));
 
 
 static void solgr_log_exit() {
