@@ -382,6 +382,17 @@ void so_media_sync(struct so_media * media, struct so_value * new_media) {
 		bzero(media->format, sizeof(struct so_media_format));
 	}
 	so_media_format_sync(media->format, format);
+
+	if (media->pool != NULL && pool->type == so_value_hashtable) {
+		so_pool_sync(media->pool, pool);
+	} else if (media->pool == NULL && pool->type == so_value_hashtable) {
+		media->pool = malloc(sizeof(struct so_pool));
+		bzero(media->pool, sizeof(struct so_pool));
+		so_pool_sync(media->pool, pool);
+	} else if (media->pool != NULL && pool->type == so_value_null) {
+		so_pool_free(media->pool);
+		media->pool = NULL;
+	}
 }
 
 struct so_value * so_pool_convert(struct so_pool * pool) {

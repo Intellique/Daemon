@@ -294,7 +294,6 @@ static void sodr_socket_command_format_media(struct sodr_peer * peer __attribute
 		struct so_value * response = so_value_pack("{si}", "returned", failed);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
-		so_pool_free(pool);
 
 		if (failed == 0)
 			so_log_write(so_log_level_notice, dgettext("libstoriqone-drive", "[%s %s #%u]: media (%s) formatted with success"), drive->vendor, drive->model, drive->index, media_name);

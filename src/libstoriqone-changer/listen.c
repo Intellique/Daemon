@@ -176,6 +176,11 @@ static void sochgr_socket_unlock() {
 	for (i = 0; i < changer->nb_drives; i++) {
 		struct so_drive * drive = changer->drives + i;
 
+		if (!drive->enable)
+			continue;
+
+		drive->ops->update_status(drive);
+
 		if (!drive->ops->is_free(drive))
 			continue;
 

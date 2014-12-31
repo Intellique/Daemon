@@ -92,6 +92,7 @@ static struct so_value * so_database_postgresql_get_vtls(struct so_database_conn
 static int so_database_postgresql_sync_changer(struct so_database_connection * connect, struct so_changer * changer, enum so_database_sync_method method);
 static int so_database_postgresql_sync_drive(struct so_database_connection * connect, struct so_drive * drive, bool sync_media, enum so_database_sync_method method);
 static int so_database_postgresql_sync_media(struct so_database_connection * connect, struct so_media * media, enum so_database_sync_method method);
+static int so_database_postgresql_sync_pool(struct so_database_connection * connect, struct so_pool * pool, enum so_database_sync_method method);
 static int so_database_postgresql_sync_slots(struct so_database_connection * connect, struct so_slot * slot, enum so_database_sync_method method);
 
 static int so_database_postgresql_add_job_record(struct so_database_connection * connect, struct so_job * job, enum so_log_level level, enum so_job_record_notif notif, const char * message);
@@ -1674,6 +1675,8 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 		so_value_unpack(db, "{ss}", "pool id", &pool_id);
 
 		if (pool_id == NULL) {
+			so_database_postgresql_sync_pool(connect, media->pool, so_database_sync_id_only);
+
 			key = so_value_new_custom(connect->config, NULL);
 			struct so_value * pool_db = so_value_hashtable_get(media->pool->db_data, key, false, false);
 			so_value_unpack(pool_db, "{ss}", "id", &pool_id);
@@ -1821,6 +1824,45 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 	}
 
 	return failed;
+}
+
+static int so_database_postgresql_sync_pool(struct so_database_connection * connect, struct so_pool * pool, enum so_database_sync_method method) {
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = NULL;
+	if (pool->db_data == NULL) {
+		pool->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
+
+		db = so_value_new_hashtable2();
+		so_value_hashtable_put(pool->db_data, key, true, db, true);
+	} else {
+		db = so_value_hashtable_get(pool->db_data, key, false, false);
+		so_value_free(key);
+	}
+
+	if (method == so_database_sync_id_only) {
+		const char * query = "select_pool_by_uuid";
+		so_database_postgresql_prepare(self, query, "SELECT id FROM pool WHERE uuid = $1 LIMIT 1");
+
+		const char * param[] = { pool->uuid };
+
+		PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			so_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+			char * pool_id = PQgetvalue(result, 0, 0);
+			so_value_hashtable_put2(db, "id", so_value_new_string(pool_id), true);
+		}
+
+		PQclear(result);
+
+		return status != PGRES_TUPLES_OK;
+	}
+
+	return 0;
 }
 
 static int so_database_postgresql_sync_slots(struct so_database_connection * connect, struct so_slot * slot, enum so_database_sync_method method) {

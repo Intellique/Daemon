@@ -196,7 +196,11 @@ static int sodr_vtl_drive_format_media(struct so_pool * pool, struct so_database
 		media->nb_total_write++;
 		media->nb_volumes = 1;
 		media->free_block--;
-	}
+
+		so_pool_free(media->pool);
+		media->pool = pool;
+	} else
+		so_pool_free(pool);
 
 	sodr_vtl_drive.status = nb_write != block_size ? so_drive_status_error : so_drive_status_loaded_idle;
 	db->ops->sync_drive(db, &sodr_vtl_drive, true, so_database_sync_default);
