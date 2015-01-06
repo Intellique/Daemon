@@ -22,17 +22,23 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 10 Jun 2014 19:20:37 +0200                            *
+*  Last modified: Tue, 06 Jan 2015 16:57:20 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
+// open
+#include <fcntl.h>
 // asprintf, rename
 #include <stdio.h>
 // calloc, malloc
 #include <stdlib.h>
-// memmove, strcmp, strdup
+// memmove, strcmp, strdup, strlen
 #include <string.h>
-// sleep, symlink
+// open
+#include <sys/stat.h>
+// open
+#include <sys/types.h>
+// close, sleep, symlink, write
 #include <unistd.h>
 
 #include <libstone/library/changer.h>
@@ -149,8 +155,9 @@ struct st_changer * st_vtl_changer_init(struct st_vtl_config * cfg) {
 	char * serial_file;
 	asprintf(&serial_file, "%s/serial_number", cfg->path);
 
-	char * serial = st_util_file_get_serial(serial_file);
-	free(serial_file);
+	int fd = open(serial_file, O_WRONLY | O_TRUNC | O_CREAT, 0666);
+	write(fd, cfg->uuid, strlen(cfg->uuid));
+	close(fd);
 
 	struct st_vtl_changer * self = malloc(sizeof(struct st_vtl_changer));
 	self->path = strdup(cfg->path);
@@ -174,9 +181,12 @@ struct st_changer * st_vtl_changer_init(struct st_vtl_config * cfg) {
 	ch->model = strdup("Stone vtl changer");
 	ch->vendor = strdup("Intellique");
 	ch->revision = strdup("A00");
-	ch->serial_number = serial;
+	ch->serial_number = strdup(cfg->uuid);
 	ch->wwn = NULL;
 	ch->barcode = true;
+
+	ch->next_action = st_changer_action_none;
+	ch->is_online = true;
 
 	ch->drives = calloc(cfg->nb_drives, sizeof(struct st_drive));
 	ch->nb_drives = cfg->nb_drives;
