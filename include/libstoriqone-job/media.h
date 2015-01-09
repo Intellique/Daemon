@@ -37,8 +37,9 @@ struct so_pool;
 enum so_pool_unbreakable_level;
 struct so_value;
 
+struct so_value_iterator * soj_media_get_iterator(struct so_pool * pool);
 struct so_drive * soj_media_load(struct so_media * media);
-ssize_t soj_media_prepare(struct so_pool * pool, struct so_database_connection * db_connection);
+ssize_t soj_media_prepare(struct so_pool * pool, ssize_t size_needed, struct so_database_connection * db_connection);
 ssize_t soj_media_prepare_unformatted(struct so_pool * pool, bool online, struct so_database_connection * db_connection);
 struct so_value * soj_media_reserve(struct so_pool * pool, size_t space_need, enum so_pool_unbreakable_level unbreakable_level);
 

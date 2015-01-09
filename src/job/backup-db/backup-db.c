@@ -135,90 +135,154 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 		goto tmp_writer;
 	}
 
+	ssize_t backup_done = 0, backup_size = db_reader->ops->position(db_reader);
+
 	db_reader->ops->close(db_reader);
 	db_reader->ops->free(db_reader);
 	db_reader = NULL;
 
 	job->done = 0.02;
 
-	ssize_t size_available = soj_media_prepare(backupdb_pool, db_connect);
-	if (size_available < nb_total_read) {
-		size_available += soj_media_prepare_unformatted(backupdb_pool, true, db_connect);
+	enum {
+		check_media,
+		copy_backup,
+		get_media,
+		get_media_iterator,
+		reopen_tmp_file,
+		release_medias,
+		reserve_media,
+	} state = reserve_media;
 
-		if (size_available < nb_total_read)
-			size_available += soj_media_prepare_unformatted(backupdb_pool, false, db_connect);
+	bool stop = false;
+	ssize_t size_available, backup_remain = backup_done;
+	struct so_stream_reader * tmp_reader = NULL;
+	struct so_value_iterator * iter = NULL;
+	struct so_value * vmedia = NULL;
+	struct so_media * media = NULL;
+	struct so_drive * drive = NULL;
 
-		if (size_available < nb_total_read)
-			goto tmp_writer;
-	}
+	while (!stop && !job->stopped_by_user) {
+		switch (state) {
+			case check_media:
+				state = copy_backup;
+				break;
 
-	struct so_stream_reader * tmp_reader = tmp_writer->ops->reopen(tmp_writer);
-	tmp_writer->ops->free(tmp_writer);
+			case copy_backup: {
+					struct so_stream_writer * dr_writer = drive->ops->get_raw_writer(drive);
+					struct so_stream_writer * cksum_writer = dr_writer;
 
-	if (job->stopped_by_user)
-		goto tmp_writer;
+					if (so_value_list_get_length(backupdb_checksums) > 0)
+						cksum_writer = soj_checksum_writer_new(dr_writer, backupdb_checksums, true);
 
-	struct so_value * reserved_medias = soj_media_reserve(backupdb_pool, nb_total_read, so_pool_unbreakable_level_none);
-	struct so_value_iterator * iter = so_value_list_get_iterator(reserved_medias);
-	while (so_value_iterator_has_next(iter)) {
-		struct so_value * vmedia = so_value_iterator_get_value(iter, false);
-		struct so_media * media = so_value_custom_get(vmedia);
+					off_t position = 0;
+					while (nb_read = tmp_reader->ops->read(tmp_reader, buffer, 16384), nb_read > 0) {
+						ssize_t nb_total_write = 0;
+						while (nb_total_write < nb_read) {
+							ssize_t nb_write = cksum_writer->ops->write(cksum_writer, buffer, nb_read);
+							if (nb_write < 0) {
+								so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Error while writting into drive"));
+							} else {
+								nb_total_write += nb_write;
+								position += nb_write;
+							}
+						}
 
-		struct so_drive * drive = soj_media_load(media);
-		// TODO: when drive is null
+						job->done = 0.02 + 0.98 * ((float) (position)) / nb_total_read;
 
-		if (job->stopped_by_user)
-			goto tmp_writer;
+						if (job->stopped_by_user)
+							goto tmp_writer;
+					}
 
-		struct so_stream_writer * dr_writer = drive->ops->get_raw_writer(drive);
-		struct so_stream_writer * cksum_writer = dr_writer;
+					if (nb_read < 0) {
+						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Error while reading from temporary file"));
+					}
 
-		if (so_value_list_get_length(backupdb_checksums) > 0)
-			cksum_writer = soj_checksum_writer_new(dr_writer, backupdb_checksums, true);
+					cksum_writer->ops->close(cksum_writer);
 
-		off_t position = 0;
-		while (nb_read = tmp_reader->ops->read(tmp_reader, buffer, 16384), nb_read > 0) {
-			ssize_t nb_total_write = 0;
-			while (nb_total_write < nb_read) {
-				ssize_t nb_write = cksum_writer->ops->write(cksum_writer, buffer, nb_read);
-				if (nb_write < 0) {
-					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Error while writting into drive"));
-				} else {
-					nb_total_write += nb_write;
-					position += nb_write;
+					int file_position = cksum_writer->ops->file_position(cksum_writer);
+					ssize_t size = cksum_writer->ops->position(cksum_writer);
+
+					if (dr_writer != cksum_writer) {
+						struct so_value * checksums = soj_checksum_writer_get_checksums(cksum_writer);
+						soj_backup_add_volume(backup, media, size, file_position, checksums);
+					} else
+						soj_backup_add_volume(backup, media, size, file_position, NULL);
+
+					cksum_writer->ops->free(cksum_writer);
 				}
-			}
+				break;
 
-			job->done = 0.02 + 0.98 * ((float) (position)) / nb_total_read;
+			case get_media:
+				if (!so_value_iterator_has_next(iter)) {
+					// TODO: no more medias
+					stop = true;
+					break;
+				}
 
-			if (job->stopped_by_user)
-				goto tmp_writer;
+				vmedia = so_value_iterator_get_value(iter, false);
+				media = so_value_custom_get(vmedia);
+
+				drive = soj_media_load(media);
+
+				if (drive != NULL)
+					state = check_media;
+				else
+					state = release_medias;
+
+				break;
+
+			case get_media_iterator:
+				iter = soj_media_get_iterator(backupdb_pool);
+				if (iter == NULL)
+					goto tmp_writer;
+				state = get_media;
+				break;
+
+			case reopen_tmp_file:
+				tmp_reader = tmp_writer->ops->reopen(tmp_writer);
+				if (tmp_reader == NULL)
+					goto tmp_writer;
+
+				tmp_writer->ops->free(tmp_writer);
+				if (tmp_writer == NULL)
+					goto tmp_writer;
+
+				if (iter == NULL)
+					state = get_media_iterator;
+				else
+					state = get_media;
+
+				break;
+
+			case reserve_media:
+				size_available = soj_media_prepare(backupdb_pool, backup_size, db_connect);
+
+				backup_remain = backup_size - backup_done;
+				if (size_available < backup_remain) {
+					size_available += soj_media_prepare_unformatted(backupdb_pool, true, db_connect);
+
+					if (size_available < backup_remain)
+						size_available += soj_media_prepare_unformatted(backupdb_pool, false, db_connect);
+
+					if (size_available < backup_remain)
+						goto tmp_writer;
+				}
+
+				if (tmp_reader == NULL)
+					state = reopen_tmp_file;
+				else if (iter == NULL)
+					state = get_media_iterator;
+				else
+					state = get_media;
+
+				break;
 		}
-
-		if (nb_read < 0) {
-			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Error while reading from temporary file"));
-		}
-
-		cksum_writer->ops->close(cksum_writer);
-
-		int file_position = cksum_writer->ops->file_position(cksum_writer);
-		ssize_t size = cksum_writer->ops->position(cksum_writer);
-
-		if (dr_writer != cksum_writer) {
-			struct so_value * checksums = soj_checksum_writer_get_checksums(cksum_writer);
-			soj_backup_add_volume(backup, media, size, file_position, checksums);
-		} else
-			soj_backup_add_volume(backup, media, size, file_position, NULL);
-
-		cksum_writer->ops->free(cksum_writer);
 	}
-	so_value_iterator_free(iter);
 
 	tmp_reader->ops->close(tmp_reader);
 	tmp_reader->ops->free(tmp_reader);
 
 	db_connect->ops->backup_add(db_connect, backup);
-
 	soj_backup_free(backup);
 
 	job->done = 1;

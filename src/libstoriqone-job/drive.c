@@ -63,8 +63,13 @@ static struct so_drive_ops soj_drive_ops = {
 
 static bool soj_drive_check_header(struct so_drive * drive) {
 	struct soj_drive * self = drive->data;
+	struct so_job * job = soj_job_get();
 
-	struct so_value * request = so_value_pack("{ss}", "command", "check header");
+	struct so_value * request = so_value_pack("{sss{ss}}",
+		"command", "check header",
+		"params",
+			"job key", job->key
+	);
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
@@ -105,9 +110,9 @@ static ssize_t soj_drive_find_best_block_size(struct so_drive * drive) {
 	struct so_job * job = soj_job_get();
 
 	struct so_value * request = so_value_pack("{sss{ss}}",
-			"command", "find best block size",
-			"params",
-				"job key", job->key
+		"command", "find best block size",
+		"params",
+			"job key", job->key
 	);
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
@@ -152,10 +157,10 @@ static struct so_stream_reader * soj_drive_get_raw_reader(struct so_drive * driv
 	struct so_job * job = soj_job_get();
 
 	struct so_value * request = so_value_pack("{sss{sssi}}",
-			"command", "get raw reader",
-			"params",
-				"job key", job->key,
-				"file position", (long int) file_position
+		"command", "get raw reader",
+		"params",
+			"job key", job->key,
+			"file position", (long int) file_position
 	);
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
@@ -182,9 +187,9 @@ static struct so_stream_writer * soj_drive_get_raw_writer(struct so_drive * driv
 	struct so_job * job = soj_job_get();
 
 	struct so_value * request = so_value_pack("{sss{ss}}",
-			"command", "get raw reader",
-			"params",
-				"job key", job->key
+		"command", "get raw reader",
+		"params",
+			"job key", job->key
 	);
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);

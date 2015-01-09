@@ -40,33 +40,39 @@ struct so_value * soj_medias = NULL;
 static void soj_media_init(void) __attribute__((constructor));
 
 
+struct so_value_iterator * soj_media_get_iterator(struct so_pool * pool) {
+	struct so_value * medias = so_value_hashtable_get2(soj_medias, pool->uuid, false, false);
+	if (medias == NULL || medias->type == so_value_null)
+		return NULL;
+
+	return so_value_list_get_iterator(medias);
+}
+
 static void soj_media_init() {
 	soj_medias = so_value_pack("{}");
 }
 
 struct so_drive * soj_media_load(struct so_media * media) {
-	struct so_slot * sl = soj_changer_find_slot(media);
-	if (sl == NULL)
-		return NULL;
+	struct so_slot * sl = NULL;
+	struct so_drive * dr = NULL;
 
-	struct so_drive * dr = sl->drive;
 	while (dr == NULL) {
-		dr = sl->changer->ops->find_free_drive(sl->changer, media->format, true);
+		sl = soj_changer_find_slot(media);
+		if (sl == NULL)
+			return NULL;
 
-		if (dr == NULL)
+		dr = sl->changer->ops->get_media(sl->changer, sl);
+
+		if (dr == NULL) {
 			sleep(5);
+			soj_changer_sync_all();
+		}
 	}
-
-	if (sl->index != dr->slot->index && dr->slot->full)
-		sl->changer->ops->unload(sl->changer, dr);
-
-	if (!dr->slot->full)
-		sl->changer->ops->load(sl->changer, sl, dr);
 
 	return dr;
 }
 
-ssize_t soj_media_prepare(struct so_pool * pool, struct so_database_connection * db_connect) {
+ssize_t soj_media_prepare(struct so_pool * pool, ssize_t size_needed, struct so_database_connection * db_connect) {
 	if (!so_value_hashtable_has_key2(soj_medias, pool->uuid))
 		so_value_hashtable_put2(soj_medias, pool->uuid, so_value_new_linked_list(), true);
 
@@ -89,8 +95,11 @@ ssize_t soj_media_prepare(struct so_pool * pool, struct so_database_connection *
 		if (sl == NULL)
 			continue;
 
-		total_size_available += media->free_block * media->block_size;
-		so_value_list_push(medias, vmedia, false);
+		ssize_t reserved_size = sl->changer->ops->reserve_media(sl->changer, sl, size_needed - total_size_available, pool->unbreakable_level);
+		if (reserved_size > 0) {
+			total_size_available += reserved_size;
+			so_value_list_push(medias, vmedia, false);
+		}
 	}
 	so_value_iterator_free(iter);
 	so_value_free(selected_medias);
@@ -103,9 +112,9 @@ ssize_t soj_media_prepare_unformatted(struct so_pool * pool, bool online, struct
 	if (medias == NULL)
 		return 0;
 
+	struct so_value * free_medias = db_connect->ops->get_free_medias(db_connect, pool->format, online);
 	ssize_t total_size_available = 0;
 
-	struct so_value * free_medias = db_connect->ops->get_free_medias(db_connect, pool->format, online);
 	struct so_value_iterator * iter = so_value_list_get_iterator(free_medias);
 	while (so_value_iterator_has_next(iter)) {
 		struct so_value * vmedia = so_value_iterator_get_value(iter, false);

@@ -321,12 +321,14 @@ void so_media_sync(struct so_media * media, struct so_value * new_media) {
 	struct so_value * uuid = NULL;
 	struct so_value * format = NULL;
 	struct so_value * pool = NULL;
+	struct so_value * last_read = NULL;
+	struct so_value * last_write = NULL;
 
 	char * status = NULL, * type = NULL;
 	long int nb_read_errors = 0, nb_write_errors = 0;
 	long int nb_volumes = 0;
 
-	so_value_unpack(new_media, "{sosssssssssisisisisisisisisisisisisisisbsssbsoso}",
+	so_value_unpack(new_media, "{sosssssssssisisososisisisisisisisisisisisisbsssbsoso}",
 		"uuid", &uuid,
 		"label", &media->label,
 		"medium serial number", &media->medium_serial_number,
@@ -336,6 +338,8 @@ void so_media_sync(struct so_media * media, struct so_value * new_media) {
 
 		"first used", &media->first_used,
 		"use before", &media->use_before,
+		"last read", &last_read,
+		"last write", &last_write,
 
 		"load count", &media->load_count,
 		"read count", &media->read_count,
@@ -369,6 +373,16 @@ void so_media_sync(struct so_media * media, struct so_value * new_media) {
 
 	media->status = so_media_string_to_status(status, false);
 	free(status);
+
+	if (last_read->type != so_value_integer)
+		media->last_read = 0;
+	else
+		media->last_read = so_value_integer_get(last_read);
+
+	if (last_write->type != so_value_integer)
+		media->last_write = 0;
+	else
+		media->last_write = so_value_integer_get(last_write);
 
 	media->nb_read_errors = nb_read_errors;
 	media->nb_write_errors = nb_write_errors;

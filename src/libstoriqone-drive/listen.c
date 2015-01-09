@@ -184,8 +184,11 @@ static void sodr_socket_message(int fd, short event, void * data) {
 }
 
 
-static void sodr_socket_command_check_header(struct sodr_peer * peer, struct so_value * request __attribute__((unused)), int fd) {
-	if (sodr_current_peer != peer) {
+static void sodr_socket_command_check_header(struct sodr_peer * peer __attribute__((unused)), struct so_value * request __attribute__((unused)), int fd) {
+	char * job_key = NULL;
+	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
+
+	if (strcmp(sodr_current_key, job_key) != 0) {
 		struct so_value * response = so_value_pack("{sb}", "returned", -1L);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
