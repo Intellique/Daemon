@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 17 Oct 2014 12:22:03 +0200                            *
+*  Last modified: Fri, 09 Jan 2015 12:52:23 +0100                            *
 \****************************************************************************/
 
 // asprintf, versionsort
@@ -240,6 +240,9 @@ static void st_job_create_archive_new_job(struct st_job * job) {
 	if (self->pool == NULL)
 		self->pool = st_pool_get_by_archive(self->archive, job->db_connect);
 
+	if (self->pool == NULL)
+		return;
+
 	unsigned int i;
 	for (i = 0; i < self->nb_selected_paths; i++) {
 		struct st_job_selected_path * p = self->selected_paths + i;
@@ -343,6 +346,9 @@ static void st_job_create_archive_post_run(struct st_job * job) {
 
 static bool st_job_create_archive_pre_run(struct st_job * job) {
 	struct st_job_create_archive_private * self = job->data;
+
+	if (self->pool == NULL)
+		return false;
 
 	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_pre, self->pool) == 0)
 		return true;
