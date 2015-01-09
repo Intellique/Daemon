@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 02 Oct 2014 13:39:03 +0200                            *
+*  Last modified: Fri, 09 Jan 2015 11:07:51 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -1516,16 +1516,16 @@ static struct st_media * st_db_postgresql_get_media(struct st_database_connectio
 		if (!PQgetisnull(result, 0, 10))
 			st_db_postgresql_get_time(result, 0, 10, &media->last_write);
 
-		st_db_postgresql_get_long(result, 0, 11, &media->nb_total_read);
-		st_db_postgresql_get_long(result, 0, 12, &media->nb_total_write);
+		st_db_postgresql_get_long(result, 0, 11, &media->load_count);
+		st_db_postgresql_get_long(result, 0, 12, &media->read_count);
+		st_db_postgresql_get_long(result, 0, 13, &media->write_count);
+		st_db_postgresql_get_long(result, 0, 14, &media->operation_count);
 
-		st_db_postgresql_get_uint(result, 0, 13, &media->nb_read_errors);
-		st_db_postgresql_get_uint(result, 0, 14, &media->nb_write_errors);
+		st_db_postgresql_get_long(result, 0, 15, &media->nb_total_read);
+		st_db_postgresql_get_long(result, 0, 16, &media->nb_total_write);
 
-		st_db_postgresql_get_long(result, 0, 15, &media->load_count);
-		st_db_postgresql_get_long(result, 0, 16, &media->read_count);
-		st_db_postgresql_get_long(result, 0, 17, &media->write_count);
-		st_db_postgresql_get_long(result, 0, 18, &media->operation_count);
+		st_db_postgresql_get_uint(result, 0, 17, &media->nb_read_errors);
+		st_db_postgresql_get_uint(result, 0, 18, &media->nb_write_errors);
 
 		st_db_postgresql_get_ssize(result, 0, 19, &media->block_size);
 		st_db_postgresql_get_ssize(result, 0, 20, &media->free_block);
