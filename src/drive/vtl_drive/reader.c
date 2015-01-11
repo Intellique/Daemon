@@ -138,6 +138,8 @@ static off_t sodr_vtl_drive_reader_forward(struct so_stream_reader * sr, off_t o
 		}
 
 		self->position = new_position;
+		self->media->last_read = time(NULL);
+		self->media->nb_total_read++;
 		offset -= move;
 	}
 
@@ -154,6 +156,8 @@ static off_t sodr_vtl_drive_reader_forward(struct so_stream_reader * sr, off_t o
 
 		self->buffer_used += offset;
 		self->position += offset;
+		self->media->last_read = time(NULL);
+		self->media->nb_total_read++;
 	}
 
 	return self->position;
@@ -187,7 +191,11 @@ struct so_stream_reader * sodr_vtl_drive_reader_get_raw_reader(int fd) {
 	self->position = 0;
 	self->file_position = 0;
 	self->last_errno = 0;
-	self->media = drive->slot->media;
+	struct so_media * media = self->media = drive->slot->media;
+
+	media->last_read = time(NULL);
+	media->read_count++;
+	media->operation_count++;
 
 	struct so_stream_reader * reader = malloc(sizeof(struct so_stream_reader));
 	reader->ops = &sodr_vtl_drive_reader_ops;
@@ -247,6 +255,8 @@ static ssize_t sodr_vtl_drive_reader_read(struct so_stream_reader * sr, void * b
 			return nb_total_read;
 
 		self->position += nb_read;
+		self->media->last_read = time(NULL);
+		self->media->nb_total_read++;
 		nb_total_read += nb_read;
 	}
 
@@ -261,6 +271,9 @@ static ssize_t sodr_vtl_drive_reader_read(struct so_stream_reader * sr, void * b
 
 	if (nb_read == 0)
 		return nb_total_read;
+
+	self->media->last_read = time(NULL);
+	self->media->nb_total_read++;
 
 	self->buffer_used = length - nb_total_read;
 	memcpy(buffer + nb_total_read, self->buffer, self->buffer_used);

@@ -110,6 +110,7 @@ static ssize_t sodr_vtl_drive_writer_before_close(struct so_stream_writer * sw, 
 			self->buffer_used = 0;
 			self->media->free_block--;
 			self->media->nb_total_write++;
+			self->media->last_write = time(NULL);
 		}
 
 		return length;
@@ -213,7 +214,12 @@ struct so_stream_writer * sodr_vtl_drive_writer_get_raw_writer(const char * file
 	self->position = 0;
 	self->file_position = file_position;
 	self->last_errno = 0;
-	self->media = drive->slot->media;
+	struct so_media * media = self->media = drive->slot->media;
+
+	media->nb_volumes++;
+	media->last_write = time(NULL);
+	media->write_count++;
+	media->operation_count++;
 
 	struct so_stream_writer * writer = malloc(sizeof(struct so_stream_writer));
 	writer->ops = &sodr_vtl_drive_writer_ops;
@@ -259,6 +265,7 @@ static struct so_stream_reader * sodr_vtl_drive_writer_reopen(struct so_stream_w
 		self->buffer_used = 0;
 		self->media->free_block--;
 		self->media->nb_total_write++;
+		self->media->last_write = time(NULL);
 	}
 
 	off_t new_position = lseek(self->fd, 0, SEEK_SET);
@@ -307,6 +314,7 @@ static ssize_t sodr_vtl_drive_writer_write(struct so_stream_writer * sw, const v
 
 	self->media->free_block--;
 	self->media->nb_total_write++;
+	self->media->last_write = time(NULL);
 
 	ssize_t nb_total_write = buffer_available;
 	self->buffer_used = 0;
@@ -328,6 +336,7 @@ static ssize_t sodr_vtl_drive_writer_write(struct so_stream_writer * sw, const v
 		self->position += nb_write;
 		self->media->free_block--;
 		self->media->nb_total_write++;
+		self->media->last_write = time(NULL);
 	}
 
 	if (length == nb_total_write)

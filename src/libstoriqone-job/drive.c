@@ -187,7 +187,7 @@ static struct so_stream_writer * soj_drive_get_raw_writer(struct so_drive * driv
 	struct so_job * job = soj_job_get();
 
 	struct so_value * request = so_value_pack("{sss{ss}}",
-		"command", "get raw reader",
+		"command", "get raw writer",
 		"params",
 			"job key", job->key
 	);

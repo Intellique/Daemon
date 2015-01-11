@@ -49,46 +49,46 @@
 
 #include "config.h"
 
-static struct so_value * backupdb_checksums = NULL;
-static struct so_value * backupdb_medias = NULL;
-static struct so_pool * backupdb_pool = NULL;
+static struct so_value * soj_backupdb_checksums = NULL;
+static struct so_value * soj_backupdb_medias = NULL;
+static struct so_pool * soj_backupdb_pool = NULL;
 
-static void backupdb_exit(struct so_job * job, struct so_database_connection * db_connect);
-static void backupdb_init(void) __attribute__((constructor));
-static int backupdb_run(struct so_job * job, struct so_database_connection * db_connect);
-static int backupdb_simulate(struct so_job * job, struct so_database_connection * db_connect);
-static void backupdb_script_on_error(struct so_job * job, struct so_database_connection * db_connect);
-static void backupdb_script_post_run(struct so_job * job, struct so_database_connection * db_connect);
-static bool backupdb_script_pre_run(struct so_job * job, struct so_database_connection * db_connect);
+static void soj_backupdb_exit(struct so_job * job, struct so_database_connection * db_connect);
+static void soj_backupdb_init(void) __attribute__((constructor));
+static int soj_backupdb_run(struct so_job * job, struct so_database_connection * db_connect);
+static int soj_backupdb_simulate(struct so_job * job, struct so_database_connection * db_connect);
+static void soj_backupdb_script_on_error(struct so_job * job, struct so_database_connection * db_connect);
+static void soj_backupdb_script_post_run(struct so_job * job, struct so_database_connection * db_connect);
+static bool soj_backupdb_script_pre_run(struct so_job * job, struct so_database_connection * db_connect);
 
 static struct so_job_driver backupdb = {
 	.name = "backup-db",
 
-	.exit            = backupdb_exit,
-	.run             = backupdb_run,
-	.simulate        = backupdb_simulate,
-	.script_on_error = backupdb_script_on_error,
-	.script_post_run = backupdb_script_post_run,
-	.script_pre_run  = backupdb_script_pre_run,
+	.exit            = soj_backupdb_exit,
+	.run             = soj_backupdb_run,
+	.simulate        = soj_backupdb_simulate,
+	.script_on_error = soj_backupdb_script_on_error,
+	.script_post_run = soj_backupdb_script_post_run,
+	.script_pre_run  = soj_backupdb_script_pre_run,
 };
 
 
-static void backupdb_exit(struct so_job * job __attribute__((unused)), struct so_database_connection * db_connect __attribute__((unused))) {
-	so_value_free(backupdb_checksums);
-	backupdb_checksums = NULL;
-	so_value_free(backupdb_medias);
-	backupdb_medias = NULL;
-	so_pool_free(backupdb_pool);
-	backupdb_pool = NULL;
+static void soj_backupdb_exit(struct so_job * job __attribute__((unused)), struct so_database_connection * db_connect __attribute__((unused))) {
+	so_value_free(soj_backupdb_checksums);
+	soj_backupdb_checksums = NULL;
+	so_value_free(soj_backupdb_medias);
+	soj_backupdb_medias = NULL;
+	so_pool_free(soj_backupdb_pool);
+	soj_backupdb_pool = NULL;
 }
 
-static void backupdb_init() {
+static void soj_backupdb_init() {
 	soj_job_register(&backupdb);
 
 	bindtextdomain("storiqone-job-backup-db", LOCALE_DIR);
 }
 
-static int backupdb_run(struct so_job * job, struct so_database_connection * db_connect) {
+static int soj_backupdb_run(struct so_job * job, struct so_database_connection * db_connect) {
 	struct so_backup * backup = soj_backup_new(job);
 
 	struct so_stream_reader * db_reader = db_connect->config->ops->backup_db(db_connect->config);
@@ -171,8 +171,8 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 					struct so_stream_writer * dr_writer = drive->ops->get_raw_writer(drive);
 					struct so_stream_writer * cksum_writer = dr_writer;
 
-					if (so_value_list_get_length(backupdb_checksums) > 0)
-						cksum_writer = soj_checksum_writer_new(dr_writer, backupdb_checksums, true);
+					if (so_value_list_get_length(soj_backupdb_checksums) > 0)
+						cksum_writer = soj_checksum_writer_new(dr_writer, soj_backupdb_checksums, true);
 
 					off_t position = 0;
 					while (nb_read = tmp_reader->ops->read(tmp_reader, buffer, 16384), nb_read > 0) {
@@ -209,6 +209,8 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 						soj_backup_add_volume(backup, media, size, file_position, NULL);
 
 					cksum_writer->ops->free(cksum_writer);
+
+					stop = true;
 				}
 				break;
 
@@ -232,7 +234,7 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 				break;
 
 			case get_media_iterator:
-				iter = soj_media_get_iterator(backupdb_pool);
+				iter = soj_media_get_iterator(soj_backupdb_pool);
 				if (iter == NULL)
 					goto tmp_writer;
 				state = get_media;
@@ -244,8 +246,7 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 					goto tmp_writer;
 
 				tmp_writer->ops->free(tmp_writer);
-				if (tmp_writer == NULL)
-					goto tmp_writer;
+				tmp_writer = NULL;
 
 				if (iter == NULL)
 					state = get_media_iterator;
@@ -255,14 +256,14 @@ static int backupdb_run(struct so_job * job, struct so_database_connection * db_
 				break;
 
 			case reserve_media:
-				size_available = soj_media_prepare(backupdb_pool, backup_size, db_connect);
+				size_available = soj_media_prepare(soj_backupdb_pool, backup_size, db_connect);
 
 				backup_remain = backup_size - backup_done;
 				if (size_available < backup_remain) {
-					size_available += soj_media_prepare_unformatted(backupdb_pool, true, db_connect);
+					size_available += soj_media_prepare_unformatted(soj_backupdb_pool, true, db_connect);
 
 					if (size_available < backup_remain)
-						size_available += soj_media_prepare_unformatted(backupdb_pool, false, db_connect);
+						size_available += soj_media_prepare_unformatted(soj_backupdb_pool, false, db_connect);
 
 					if (size_available < backup_remain)
 						goto tmp_writer;
@@ -304,40 +305,40 @@ tmp_writer:
 	return 1;
 }
 
-static int backupdb_simulate(struct so_job * job, struct so_database_connection * db_connect) {
-	backupdb_pool = db_connect->ops->get_pool(db_connect, "d9f976d4-e087-4d0a-ab79-96267f6613f0", NULL);
-	if (backupdb_pool == NULL) {
+static int soj_backupdb_simulate(struct so_job * job, struct so_database_connection * db_connect) {
+	soj_backupdb_pool = db_connect->ops->get_pool(db_connect, "d9f976d4-e087-4d0a-ab79-96267f6613f0", NULL);
+	if (soj_backupdb_pool == NULL) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Pool (Storiq one database backup) not found"));
 		return 1;
 	}
-	if (backupdb_pool->deleted) {
+	if (soj_backupdb_pool->deleted) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Try to back up database into a pool which is deleted"));
 		return 1;
 	}
 
-	backupdb_medias = db_connect->ops->get_medias_of_pool(db_connect, backupdb_pool);
-	if (!backupdb_pool->growable && so_value_list_get_length(backupdb_medias) == 0) {
+	soj_backupdb_medias = db_connect->ops->get_medias_of_pool(db_connect, soj_backupdb_pool);
+	if (!soj_backupdb_pool->growable && so_value_list_get_length(soj_backupdb_medias) == 0) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Try to back up database into a pool whose is not growable and without any medias"));
 		return 1;
 	}
 
-	backupdb_checksums = db_connect->ops->get_checksums_from_pool(db_connect, backupdb_pool);
+	soj_backupdb_checksums = db_connect->ops->get_checksums_from_pool(db_connect, soj_backupdb_pool);
 
 	return 0;
 }
 
-static void backupdb_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
-	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, backupdb_pool) < 1)
+static void soj_backupdb_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, soj_backupdb_pool) < 1)
 		return;
 }
 
-static void backupdb_script_post_run(struct so_job * job, struct so_database_connection * db_connect) {
-	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, backupdb_pool) < 1)
+static void soj_backupdb_script_post_run(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, soj_backupdb_pool) < 1)
 		return;
 }
 
-static bool backupdb_script_pre_run(struct so_job * job, struct so_database_connection * db_connect) {
-	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_pre_job, backupdb_pool) < 1)
+static bool soj_backupdb_script_pre_run(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_pre_job, soj_backupdb_pool) < 1)
 		return true;
 
 	return true;

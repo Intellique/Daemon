@@ -84,7 +84,7 @@ ssize_t soj_media_prepare(struct so_pool * pool, ssize_t size_needed, struct so_
 
 	struct so_value * selected_medias = db_connect->ops->get_medias_of_pool(db_connect, pool);
 	struct so_value_iterator * iter = so_value_list_get_iterator(selected_medias);
-	while (so_value_iterator_has_next(iter)) {
+	while (so_value_iterator_has_next(iter) && total_size_available < size_needed) {
 		struct so_value * vmedia = so_value_iterator_get_value(iter, false);
 		struct so_media * media = so_value_custom_get(vmedia);
 
