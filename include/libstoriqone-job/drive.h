@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Copyright (C) 2015, Guillaume Clercin <gclercin@intellique.com>           *
 \****************************************************************************/
 
 #ifndef __LIBSTORIQONE_JOB_DRIVE_H__
