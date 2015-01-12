@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Mon, 12 Jan 2015 15:30:15 +0100                            *
+*  Last modified: Mon, 12 Jan 2015 15:34:54 +0100                            *
 \****************************************************************************/
 
 // asprintf, versionsort
@@ -208,7 +208,8 @@ static void st_job_create_archive_free(struct st_job * job) {
 		self->nb_selected_paths = 0;
 	}
 
-	st_archive_free(self->archive);
+	if (self->archive != NULL)
+		st_archive_free(self->archive);
 	if (self->worker != NULL)
 		self->worker->ops->free(self->worker);
 	if (self->meta != NULL)
