@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 09 Jan 2015 12:52:23 +0100                            *
+*  Last modified: Mon, 12 Jan 2015 15:30:15 +0100                            *
 \****************************************************************************/
 
 // asprintf, versionsort
@@ -237,6 +237,12 @@ static void st_job_create_archive_new_job(struct st_job * job) {
 	self->archive_size = 0;
 	self->nb_files = 0;
 
+	self->worker = NULL;
+
+	job->data = self;
+	job->ops = &st_job_create_archive_ops;
+
+
 	if (self->pool == NULL)
 		self->pool = st_pool_get_by_archive(self->archive, job->db_connect);
 
@@ -276,11 +282,6 @@ static void st_job_create_archive_new_job(struct st_job * job) {
 			job->db_connect->ops->get_checksums_of_file(job->db_connect, file);
 		}
 	}
-
-	self->worker = NULL;
-
-	job->data = self;
-	job->ops = &st_job_create_archive_ops;
 }
 
 static void st_job_create_archive_on_error(struct st_job * job) {
