@@ -31,6 +31,7 @@
 #include <stdbool.h>
 
 struct so_backup;
+struct so_backup_volume;
 struct so_changer;
 struct so_checksum_driver;
 struct so_database;
@@ -160,7 +161,7 @@ struct so_database_connection {
 		int (*sync_plugin_job)(struct so_database_connection * connect, const char * job) __attribute__((nonnull));
 
 		int (*backup_add)(struct so_database_connection * connect, struct so_backup * backup) __attribute__((nonnull));
-		struct so_backup * (*backup_get)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull,warn_unused_result));
+		struct so_backup * (*get_backup)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull,warn_unused_result));
 	} * ops;
 
 	/**

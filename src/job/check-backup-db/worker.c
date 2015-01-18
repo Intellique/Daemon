@@ -24,40 +24,46 @@
 *  Copyright (C) 2015, Guillaume Clercin <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_BACKUP_H__
-#define __LIBSTORIQONE_BACKUP_H__
+#include <libstoriqone/value.h>
 
-// bool
-#include <stdbool.h>
-// time_t
-#include <time.h>
+// free
+#include <stdlib.h>
+// bzero
+#include <strings.h>
 
-struct so_value;
+#include "common.h"
 
-struct so_backup {
-	time_t timestamp;
-	long nb_medias;
-	long nb_archives;
 
-	struct so_backup_volume {
-		struct so_media * media;
-		unsigned int position;
+void soj_checkbackupdb_worker_do(void * arg) {
+	struct soj_checkbackupdb_worker * worker = arg;
+	worker->working = true;
+}
 
-		size_t size;
+void soj_checkbackupdb_worker_free(struct soj_checkbackupdb_worker * worker) {
+	while (worker != NULL) {
+		struct soj_checkbackupdb_worker * ptr = worker;
+		worker = ptr->next;
+		free(worker);
+	}
+}
 
-		time_t checktime;
-		bool checksum_ok;
+struct soj_checkbackupdb_worker * soj_checkbackupdb_worker_new(struct so_backup * backup, struct so_backup_volume * volume, size_t size, struct so_database_config * config, struct soj_checkbackupdb_worker * previous_worker) {
+	struct soj_checkbackupdb_worker * worker = malloc(sizeof(struct soj_checkbackupdb_worker));
+	bzero(worker, sizeof(struct soj_checkbackupdb_worker));
 
-		struct so_value * digests;
+	worker->backup = backup;
+	worker->volume = volume;
 
-		struct so_value * db_data;
-	} * volumes;
-	unsigned int nb_volumes;
+	worker->position = 0;
+	worker->size = size;
 
-	struct so_job * job;
+	worker->working = false;
 
-	struct so_value * db_data;
-};
+	worker->db_config = config;
 
-#endif
+	if (previous_worker != NULL)
+		previous_worker = worker;
+
+	return worker;
+}
 

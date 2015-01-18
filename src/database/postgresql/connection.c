@@ -109,7 +109,7 @@ static int so_database_postgresql_sync_plugin_checksum(struct so_database_connec
 static int so_database_postgresql_sync_plugin_job(struct so_database_connection * connect, const char * job);
 
 static int so_database_postgresql_backup_add(struct so_database_connection * connect, struct so_backup * backup);
-static struct so_backup * so_database_postgresql_backup_get(struct so_database_connection * connect, struct so_job * job);
+static struct so_backup * so_database_postgresql_get_backup(struct so_database_connection * connect, struct so_job * job);
 
 static int so_database_postgresql_checksumresult_add(struct so_database_connection * connect, const char * checksum, const char * digest, char ** digest_id);
 
@@ -156,7 +156,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.sync_plugin_job      = so_database_postgresql_sync_plugin_job,
 
 	.backup_add = so_database_postgresql_backup_add,
-	.backup_get = so_database_postgresql_backup_get,
+	.get_backup = so_database_postgresql_get_backup,
 };
 
 
@@ -2536,7 +2536,7 @@ static int so_database_postgresql_backup_add(struct so_database_connection * con
 	return status == PGRES_FATAL_ERROR ? -5 : 0;
 }
 
-static struct so_backup * so_database_postgresql_backup_get(struct so_database_connection * connect, struct so_job * job) {
+static struct so_backup * so_database_postgresql_get_backup(struct so_database_connection * connect, struct so_job * job) {
 	if (connect == NULL || job == NULL)
 		return NULL;
 
@@ -2544,7 +2544,6 @@ static struct so_backup * so_database_postgresql_backup_get(struct so_database_c
 
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
-	so_value_free(key);
 
 	char * job_id = NULL;
 	so_value_unpack(db, "{ss}", "id", &job_id);
@@ -2569,13 +2568,20 @@ static struct so_backup * so_database_postgresql_backup_get(struct so_database_c
 		so_database_postgresql_get_time(result, 0, 1, &backup->timestamp);
 		so_database_postgresql_get_long(result, 0, 2, &backup->nb_medias);
 		so_database_postgresql_get_long(result, 0, 3, &backup->nb_archives);
+
+		backup->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
+		struct so_value * db = so_value_new_hashtable2();
+		so_value_hashtable_put(backup->db_data, key, false, db, true);
+		so_value_hashtable_put2(db, "id", so_value_new_string(backup_id), true);
 	}
 
 	PQclear(result);
 	free(job_id);
 
-	if (status == PGRES_FATAL_ERROR)
+	if (status == PGRES_FATAL_ERROR) {
+		so_value_free(key);
 		return NULL;
+	}
 
 	query = "select_backupvolume_by_backup";
 	so_database_postgresql_prepare(self, query, "SELECT bv.id, m.mediumserialnumber, bv.size, bv.mediaposition, bv.checktime, bv.checksumok FROM backupvolume bv INNER JOIN media m ON bv.media = m.id WHERE bv.backup = $1 ORDER BY bv.sequence");
@@ -2604,6 +2610,12 @@ static struct so_backup * so_database_postgresql_backup_get(struct so_database_c
 			so_database_postgresql_get_bool(result, i, 5, &vol->checksum_ok);
 			vol->digests = so_value_new_hashtable2();
 
+			vol->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
+			struct so_value * db = so_value_new_hashtable2();
+			so_value_hashtable_put(vol->db_data, key, false, db, true);
+			so_value_hashtable_put2(db, "id", so_value_new_string(backupvolume_id), true);
+			so_value_hashtable_put2(db, "backup id", so_value_new_string(backup_id), true);
+
 			const char * query3 = "select_checksum_from_backupvolume";
 			so_database_postgresql_prepare(self, query3, "SELECT c.name, cr.result FROM backupvolumetochecksumresult bv2cr INNER JOIN checksumresult cr ON bv2cr.backupvolume = $1 AND bv2cr.checksumresult = cr.id LEFT JOIN checksum c ON cr.checksum = c.id");
 
@@ -2626,6 +2638,7 @@ static struct so_backup * so_database_postgresql_backup_get(struct so_database_c
 
 	PQclear(result);
 	free(backup_id);
+	so_value_free(key);
 
 	return backup;
 }

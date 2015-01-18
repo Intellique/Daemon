@@ -24,40 +24,33 @@
 *  Copyright (C) 2015, Guillaume Clercin <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_BACKUP_H__
-#define __LIBSTORIQONE_BACKUP_H__
+#ifndef __STORIQONE_JOB_CHECKBACKUP_COMMON_H__
+#define __STORIQONE_JOB_CHECKBACKUP_COMMON_H__
 
 // bool
 #include <stdbool.h>
-// time_t
-#include <time.h>
+// size_t
+#include <sys/types.h>
 
-struct so_value;
+struct so_database_config;
 
-struct so_backup {
-	time_t timestamp;
-	long nb_medias;
-	long nb_archives;
+struct soj_checkbackupdb_worker {
+	struct so_backup * backup;
+	struct so_backup_volume * volume;
 
-	struct so_backup_volume {
-		struct so_media * media;
-		unsigned int position;
+	size_t position;
+	size_t size;
 
-		size_t size;
+	volatile bool working;
 
-		time_t checktime;
-		bool checksum_ok;
+	struct so_database_config * db_config;
 
-		struct so_value * digests;
-
-		struct so_value * db_data;
-	} * volumes;
-	unsigned int nb_volumes;
-
-	struct so_job * job;
-
-	struct so_value * db_data;
+	struct soj_checkbackupdb_worker * next;
 };
+
+void soj_checkbackupdb_worker_do(void * arg);
+void soj_checkbackupdb_worker_free(struct soj_checkbackupdb_worker * worker);
+struct soj_checkbackupdb_worker * soj_checkbackupdb_worker_new(struct so_backup * backup, struct so_backup_volume * volume, size_t size, struct so_database_config * config, struct soj_checkbackupdb_worker * previous_worker);
 
 #endif
 

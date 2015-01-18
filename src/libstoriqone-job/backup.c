@@ -56,9 +56,11 @@ void soj_backup_free(struct so_backup * backup) {
 	for (i = 0; i < backup->nb_volumes; i++) {
 		struct so_backup_volume * vol = backup->volumes + i;
 		so_value_free(vol->digests);
+		so_value_free(vol->db_data);
 	}
 
 	free(backup->volumes);
+	so_value_free(backup->db_data);
 	free(backup);
 }
 

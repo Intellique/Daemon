@@ -24,15 +24,23 @@
 *  Copyright (C) 2015, Guillaume Clercin <gclercin@intellique.com>           *
 \****************************************************************************/
 
+#define _GNU_SOURCE
 // bindtextdomain, dgettext
 #include <libintl.h>
+// bool
+#include <stdbool.h>
+// asprintf
+#include <stdio.h>
 // free
 #include <stdlib.h>
+// sleep
+#include <unistd.h>
 
 #include <libstoriqone/database.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
+#include <libstoriqone/thread_pool.h>
 #include <libstoriqone-job/backup.h>
 #include <libstoriqone-job/changer.h>
 #include <libstoriqone-job/job.h>
@@ -41,69 +49,96 @@
 #include <job_check-backup-db.chcksum>
 
 #include "config.h"
+#include "common.h"
 
-struct so_backup * checkbackupdb_backup = NULL;
-size_t checkbackupdb_backup_size = 0;
-struct so_pool * checkbackupdb_pool = NULL;
+static struct so_backup * soj_checkbackupdb_backup = NULL;
+static size_t soj_checkbackupdb_backup_size = 0;
+static struct so_pool * soj_checkbackupdb_pool = NULL;
 
-static void checkbackupdb_exit(struct so_job * job, struct so_database_connection * db_connect);
-static void checkbackupdb_init(void) __attribute__((constructor));
-static int checkbackupdb_run(struct so_job * job, struct so_database_connection * db_connect);
-static int checkbackupdb_simulate(struct so_job * job, struct so_database_connection * db_connect);
-static void checkbackupdb_script_on_error(struct so_job * job, struct so_database_connection * db_connect);
-static void checkbackupdb_script_post_run(struct so_job * job, struct so_database_connection * db_connect);
-static bool checkbackupdb_script_pre_run(struct so_job * job, struct so_database_connection * db_connect);
+static void soj_checkbackupdb_exit(struct so_job * job, struct so_database_connection * db_connect);
+static void soj_checkbackupdb_init(void) __attribute__((constructor));
+static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connection * db_connect);
+static int soj_checkbackupdb_simulate(struct so_job * job, struct so_database_connection * db_connect);
+static void soj_checkbackupdb_script_on_error(struct so_job * job, struct so_database_connection * db_connect);
+static void soj_checkbackupdb_script_post_run(struct so_job * job, struct so_database_connection * db_connect);
+static bool soj_checkbackupdb_script_pre_run(struct so_job * job, struct so_database_connection * db_connect);
 
 static struct so_job_driver checkbackupdb = {
 	.name = "check-backup-db",
 
-	.exit            = checkbackupdb_exit,
-	.run             = checkbackupdb_run,
-	.simulate        = checkbackupdb_simulate,
-	.script_on_error = checkbackupdb_script_on_error,
-	.script_post_run = checkbackupdb_script_post_run,
-	.script_pre_run  = checkbackupdb_script_pre_run,
+	.exit            = soj_checkbackupdb_exit,
+	.run             = soj_checkbackupdb_run,
+	.simulate        = soj_checkbackupdb_simulate,
+	.script_on_error = soj_checkbackupdb_script_on_error,
+	.script_post_run = soj_checkbackupdb_script_post_run,
+	.script_pre_run  = soj_checkbackupdb_script_pre_run,
 };
 
 
-static void checkbackupdb_exit(struct so_job * job __attribute__((unused)), struct so_database_connection * db_connect __attribute__((unused))) {
-	soj_backup_free(checkbackupdb_backup);
+static void soj_checkbackupdb_exit(struct so_job * job __attribute__((unused)), struct so_database_connection * db_connect __attribute__((unused))) {
+	soj_backup_free(soj_checkbackupdb_backup);
 }
 
-static void checkbackupdb_init() {
+static void soj_checkbackupdb_init() {
 	soj_job_register(&checkbackupdb);
 
 	bindtextdomain("storiqone-job-check-backup-db", LOCALE_DIR);
 }
 
-static int checkbackupdb_run(struct so_job * job, struct so_database_connection * db_connect) {
+static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connection * db_connect) {
 	unsigned int i;
-	for (i = 0; i < checkbackupdb_backup->nb_volumes; i++) {
-		struct so_backup_volume * vol = checkbackupdb_backup->volumes + i;
-		struct so_slot * sl = soj_changer_find_slot(vol->media);
+	struct soj_checkbackupdb_worker * worker = NULL, * ptr = NULL;
+	for (i = 0; i < soj_checkbackupdb_backup->nb_volumes; i++) {
+		struct so_backup_volume * vol = soj_checkbackupdb_backup->volumes + i;
 
-		bool reserved = sl->changer->ops->reserve_media(sl->changer, sl);
-		if (!reserved) {
+		ptr = soj_checkbackupdb_worker_new(soj_checkbackupdb_backup, vol, soj_checkbackupdb_backup_size, db_connect->config, ptr);
+		if (worker == NULL)
+			worker = ptr;
+	}
+
+	for (ptr = worker, i = 0; ptr != NULL; ptr = ptr->next, i++) {
+		char * name;
+		asprintf(&name, "worker: vol #%u", i);
+
+		so_thread_pool_run(name, soj_checkbackupdb_worker_do, ptr);
+
+		free(name);
+	}
+
+	sleep(1);
+
+	bool stop = false;
+	while (!stop) {
+		bool is_running = false;
+		float done = 0;
+
+		for (ptr = worker; ptr != NULL; ptr = ptr->next) {
+			is_running |= ptr->working;
+
+			done += ((float) ptr->position) / ptr->size;
 		}
+
+		job->done = done;
+		stop = !is_running;
 	}
 
 	return 0;
 }
 
-static int checkbackupdb_simulate(struct so_job * job, struct so_database_connection * db_connect) {
-	checkbackupdb_backup = db_connect->ops->backup_get(db_connect, job);
-	if (checkbackupdb_backup == NULL) {
+static int soj_checkbackupdb_simulate(struct so_job * job, struct so_database_connection * db_connect) {
+	soj_checkbackupdb_backup = db_connect->ops->get_backup(db_connect, job);
+	if (soj_checkbackupdb_backup == NULL) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-check-backup-db", "Backup not found"));
 		return 1;
 	}
 
 	unsigned int i;
-	for (i = 0; i < checkbackupdb_backup->nb_volumes; i++) {
-		struct so_backup_volume * vol = checkbackupdb_backup->volumes + i;
-		checkbackupdb_backup_size += vol->size;
+	for (i = 0; i < soj_checkbackupdb_backup->nb_volumes; i++) {
+		struct so_backup_volume * vol = soj_checkbackupdb_backup->volumes + i;
+		soj_checkbackupdb_backup_size += vol->size;
 
-		if (checkbackupdb_pool == 0)
-			checkbackupdb_pool = vol->media->pool;
+		if (soj_checkbackupdb_pool == NULL)
+			soj_checkbackupdb_pool = vol->media->pool;
 
 		if (vol->media == NULL) {
 			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-check-backup-db", "BUG: media should not be empty"));
@@ -111,29 +146,23 @@ static int checkbackupdb_simulate(struct so_job * job, struct so_database_connec
 		}
 		if (vol->media->status == so_media_status_error)
 			so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-check-backup-db", "Try to read a media with error status"));
-
-		struct so_slot * sl = soj_changer_find_slot(vol->media);
-		if (sl == NULL) {
-			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-check-backup-db", "Media (%s) not found"), vol->media->name);
-			return 1;
-		}
 	}
 
 	return 0;
 }
 
-static void checkbackupdb_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
-	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, checkbackupdb_pool) < 1)
+static void soj_checkbackupdb_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, soj_checkbackupdb_pool) < 1)
 		return;
 }
 
-static void checkbackupdb_script_post_run(struct so_job * job, struct so_database_connection * db_connect) {
-	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, checkbackupdb_pool) < 1)
+static void soj_checkbackupdb_script_post_run(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, soj_checkbackupdb_pool) < 1)
 		return;
 }
 
-static bool checkbackupdb_script_pre_run(struct so_job * job, struct so_database_connection * db_connect) {
-	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_pre_job, checkbackupdb_pool) < 1)
+static bool soj_checkbackupdb_script_pre_run(struct so_job * job, struct so_database_connection * db_connect) {
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_pre_job, soj_checkbackupdb_pool) < 1)
 		return true;
 
 	return true;
