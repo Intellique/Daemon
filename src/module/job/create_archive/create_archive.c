@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 17 Oct 2014 12:22:03 +0200                            *
+*  Last modified: Mon, 12 Jan 2015 15:34:54 +0100                            *
 \****************************************************************************/
 
 // asprintf, versionsort
@@ -208,7 +208,8 @@ static void st_job_create_archive_free(struct st_job * job) {
 		self->nb_selected_paths = 0;
 	}
 
-	st_archive_free(self->archive);
+	if (self->archive != NULL)
+		st_archive_free(self->archive);
 	if (self->worker != NULL)
 		self->worker->ops->free(self->worker);
 	if (self->meta != NULL)
@@ -237,8 +238,17 @@ static void st_job_create_archive_new_job(struct st_job * job) {
 	self->archive_size = 0;
 	self->nb_files = 0;
 
+	self->worker = NULL;
+
+	job->data = self;
+	job->ops = &st_job_create_archive_ops;
+
+
 	if (self->pool == NULL)
 		self->pool = st_pool_get_by_archive(self->archive, job->db_connect);
+
+	if (self->pool == NULL)
+		return;
 
 	unsigned int i;
 	for (i = 0; i < self->nb_selected_paths; i++) {
@@ -273,11 +283,6 @@ static void st_job_create_archive_new_job(struct st_job * job) {
 			job->db_connect->ops->get_checksums_of_file(job->db_connect, file);
 		}
 	}
-
-	self->worker = NULL;
-
-	job->data = self;
-	job->ops = &st_job_create_archive_ops;
 }
 
 static void st_job_create_archive_on_error(struct st_job * job) {
@@ -343,6 +348,9 @@ static void st_job_create_archive_post_run(struct st_job * job) {
 
 static bool st_job_create_archive_pre_run(struct st_job * job) {
 	struct st_job_create_archive_private * self = job->data;
+
+	if (self->pool == NULL)
+		return false;
 
 	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_pre, self->pool) == 0)
 		return true;

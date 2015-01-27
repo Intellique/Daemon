@@ -43,7 +43,10 @@ INSERT INTO Pool(uuid, name, mediaFormat) VALUES
 	('b9650cc3-12ec-4a0f-88db-d70f0b269a6b', 'storiq', 1),
 	('d9f976d4-e087-4d0a-ab79-96267f6613f0', 'Stone_Db_Backup', 1);
 
-INSERT INTO Users(login, password, salt, fullname, email, homedirectory, isAdmin, canArchive, canRestore, pool, meta) VALUES
+INSERT INTO PoolGroup(uuid, name) VALUES
+	('7a9102a2-6f4d-c85f-1553-e8d769569558', 'storiq');
+
+INSERT INTO Users(login, password, salt, fullname, email, homedirectory, isAdmin, canArchive, canRestore, poolgroup, meta) VALUES
 	('storiq', '8a6eb1d3b4fecbf8a1d6528a6aecb064e801b1e0', 'cd8c63688e0c2cff', 'storiq', 'storiq@localhost', '/mnt/raid', TRUE, TRUE, TRUE, 1, hstore('step', '0') || hstore('showHelp', '1'));
 
 INSERT INTO UserEvent(event) VALUES

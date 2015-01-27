@@ -88,6 +88,7 @@ struct st_job_create_archive_single_worker_private {
 
 	struct st_stream_writer * checksum_writer;
 	struct st_job_create_archive_meta_worker * meta_worker;
+	struct st_job_create_archive_report * report;
 };
 
 static int st_job_create_archive_single_worker_add_file(struct st_job_create_archive_data_worker * worker, const char * path);
@@ -154,6 +155,8 @@ struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(s
 	self->first_media = self->last_media = NULL;
 
 	self->file_position = 0;
+
+	self->report = st_job_create_archive_report_new(self->job, archive, self->pool);
 
 	struct st_job_create_archive_data_worker * worker = malloc(sizeof(struct st_job_create_archive_data_worker));
 	worker->ops = &st_job_create_archive_single_worker_ops;
@@ -253,6 +256,8 @@ static int st_job_create_archive_single_worker_change_volume(struct st_job_creat
 		to_file->file = f;
 		to_file->position = from_file->block_position;
 
+		st_job_create_archive_report_add_file(self->report, last_volume, to_file);
+
 		struct st_linked_list_files * next = from_file->next;
 		if (from_file->next != NULL) {
 			free(from_file->path);
@@ -280,6 +285,7 @@ static int st_job_create_archive_single_worker_change_volume(struct st_job_creat
 	int position = self->drive->ops->get_position(self->drive);
 
 	st_archive_add_volume(self->archive, self->drive->slot->media, position, self->job);
+	st_job_create_archive_report_add_volume(self->report, self->archive->volumes + (self->archive->nb_volumes - 1));
 
 	struct st_linked_list_files * f = self->first_file = self->last_file;
 	f->block_position = 0;
@@ -316,6 +322,8 @@ static void st_job_create_archive_single_worker_close(struct st_job_create_archi
 		struct st_archive_files * to_file = last_volume->files + i;
 		to_file->file = f;
 		to_file->position = from_file->block_position;
+
+		st_job_create_archive_report_add_file(self->report, last_volume, to_file);
 
 		struct st_linked_list_files * next = from_file->next;
 		free(from_file->path);
@@ -358,6 +366,8 @@ static void st_job_create_archive_single_worker_free(struct st_job_create_archiv
 		media = next;
 	}
 
+	st_job_create_archive_report_free(self->report);
+
 	free(worker->data);
 	free(worker);
 }
@@ -379,6 +389,8 @@ static bool st_job_create_archive_single_worker_load_media(struct st_job_create_
 
 		int position = self->drive->ops->get_position(self->drive);
 		st_archive_add_volume(self->archive, self->drive->slot->media, position, self->job);
+
+		st_job_create_archive_report_add_volume(self->report, self->archive->volumes + (self->archive->nb_volumes - 1));
 
 		return self->writer != NULL;
 	}
@@ -735,7 +747,7 @@ static bool st_job_create_archive_single_worker_select_media(struct st_job_creat
 				if (self->pool->growable && !has_alerted_user) {
 					st_job_add_record(self->connect, st_log_level_warning, self->job, st_job_record_notif_important, "Please, insert new media which will be a part of pool %s", self->pool->name);
 				} else if (!has_alerted_user) {
-					st_job_add_record(self->connect, st_log_level_warning, self->job, st_job_record_notif_important, "Please, you must to extent the pool (%s)", self->pool->name);
+					st_job_add_record(self->connect, st_log_level_warning, self->job, st_job_record_notif_important, "No media available, you must add a media to the pool (%s)", self->pool->name);
 				}
 
 				has_alerted_user = true;
@@ -771,7 +783,7 @@ static int st_job_create_archive_single_worker_sync_db(struct st_job_create_arch
 
 	int failed = self->connect->ops->sync_archive(self->connect, self->archive);
 
-	char * report = st_util_json_archive_to_string(self->archive);
+	char * report = st_job_create_archive_report_make(self->report);
 	if (report != NULL)
 		self->connect->ops->add_report(self->connect, self->job, self->archive, report);
 	free(report);
