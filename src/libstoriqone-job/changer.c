@@ -131,10 +131,13 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 		so_value_unpack(response, "{sbsi}", "error", &error, "index", &index);
 		so_value_free(response);
 
-		if (!error)
+		if (!error) {
+			job->status = so_job_status_running;
 			return changer->drives + index;
+		}
 	}
 
+	job->status = so_job_status_error;
 	return NULL;
 }
 

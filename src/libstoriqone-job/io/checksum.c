@@ -31,6 +31,10 @@
 #include <stdlib.h>
 // memcpy
 #include <string.h>
+// bzero
+#include <strings.h>
+// sysinfo
+#include <sys/sysinfo.h>
 
 #include <libstoriqone/checksum.h>
 #include <libstoriqone/thread_pool.h>
@@ -53,6 +57,8 @@ struct soj_stream_checksum_threaded_backend_private {
 		ssize_t length;
 		struct soj_linked_list_block * next;
 	} * volatile first_block, * volatile last_block;
+	volatile unsigned long used;
+	volatile unsigned long limit;
 
 	volatile bool stop;
 
@@ -165,7 +171,11 @@ static void soj_stream_checksum_threaded_backend_finish(struct soj_stream_checks
 	struct soj_stream_checksum_threaded_backend_private * self = worker->data;
 
 	pthread_mutex_lock(&self->lock);
+	if (self->first_block != NULL)
+		pthread_cond_wait(&self->wait, &self->lock);
+
 	self->stop = true;
+
 	pthread_cond_signal(&self->wait);
 	pthread_cond_wait(&self->wait, &self->lock);
 	pthread_mutex_unlock(&self->lock);
@@ -179,8 +189,14 @@ static void soj_stream_checksum_threaded_backend_free(struct soj_stream_checksum
 }
 
 struct soj_stream_checksum_backend * soj_stream_checksum_threaded_backend_new(struct so_value * checksums) {
+	struct sysinfo info;
+	bzero(&info, sizeof(info));
+	sysinfo(&info);
+
 	struct soj_stream_checksum_threaded_backend_private * self = malloc(sizeof(struct soj_stream_checksum_threaded_backend_private));
 	self->first_block = self->last_block = NULL;
+	self->used = 0;
+	self->limit = info.totalram >> 5;
 
 	self->stop = false;
 
@@ -208,10 +224,17 @@ static void soj_stream_checksum_threaded_backend_update(struct soj_stream_checks
 	block->next = NULL;
 
 	pthread_mutex_lock(&self->lock);
+
+	if (self->used > 0 && self->used + length > self->limit)
+		pthread_cond_wait(&self->wait, &self->lock);
+
 	if (self->first_block == NULL)
 		self->first_block = self->last_block = block;
 	else
 		self->last_block = self->last_block->next = block;
+
+	self->used += length;
+
 	pthread_cond_signal(&self->wait);
 	pthread_mutex_unlock(&self->lock);
 }
@@ -224,11 +247,14 @@ static void soj_stream_checksum_threaded_backend_work(void * arg) {
 		if (self->stop && self->first_block == NULL)
 			break;
 
+		pthread_cond_signal(&self->wait);
+
 		if (self->first_block == NULL)
 			pthread_cond_wait(&self->wait, &self->lock);
 
 		struct soj_linked_list_block * block = self->first_block;
 		self->first_block = self->last_block = NULL;
+		self->used = 0;
 		pthread_mutex_unlock(&self->lock);
 
 		while (block != NULL) {

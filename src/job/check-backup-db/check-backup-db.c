@@ -91,7 +91,7 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 	for (i = 0; i < soj_checkbackupdb_backup->nb_volumes; i++) {
 		struct so_backup_volume * vol = soj_checkbackupdb_backup->volumes + i;
 
-		ptr = soj_checkbackupdb_worker_new(soj_checkbackupdb_backup, vol, soj_checkbackupdb_backup_size, db_connect->config, ptr);
+		ptr = soj_checkbackupdb_worker_new(soj_checkbackupdb_backup, vol, soj_checkbackupdb_backup_size, ptr);
 		if (worker == NULL)
 			worker = ptr;
 	}
@@ -120,7 +120,16 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 
 		job->done = done;
 		stop = !is_running;
+
+		if (is_running)
+			sleep(1);
 	}
+
+	if (!job->stopped_by_user)
+		for (ptr = worker; ptr != NULL; ptr = ptr->next)
+			db_connect->ops->mark_backup_volume_checked(db_connect, ptr->volume);
+
+	soj_checkbackupdb_worker_free(worker);
 
 	return 0;
 }

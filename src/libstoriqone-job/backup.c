@@ -41,6 +41,7 @@ void soj_backup_add_volume(struct so_backup * backup, struct so_media * media, s
 
 	backup->volumes = addr;
 	struct so_backup_volume * vol = backup->volumes + backup->nb_volumes;
+	bzero(vol, sizeof(struct so_backup_volume));
 	vol->media = media;
 	vol->size = size;
 	vol->position = position;

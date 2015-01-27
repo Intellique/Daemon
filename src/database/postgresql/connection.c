@@ -110,6 +110,7 @@ static int so_database_postgresql_sync_plugin_job(struct so_database_connection 
 
 static int so_database_postgresql_backup_add(struct so_database_connection * connect, struct so_backup * backup);
 static struct so_backup * so_database_postgresql_get_backup(struct so_database_connection * connect, struct so_job * job);
+static int so_database_postgresql_mark_backup_volume_checked(struct so_database_connection * connect, struct so_backup_volume * volume);
 
 static int so_database_postgresql_checksumresult_add(struct so_database_connection * connect, const char * checksum, const char * digest, char ** digest_id);
 
@@ -155,8 +156,9 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.sync_plugin_checksum = so_database_postgresql_sync_plugin_checksum,
 	.sync_plugin_job      = so_database_postgresql_sync_plugin_job,
 
-	.backup_add = so_database_postgresql_backup_add,
-	.get_backup = so_database_postgresql_get_backup,
+	.backup_add                 = so_database_postgresql_backup_add,
+	.get_backup                 = so_database_postgresql_get_backup,
+	.mark_backup_volume_checked = so_database_postgresql_mark_backup_volume_checked,
 };
 
 
@@ -2641,6 +2643,37 @@ static struct so_backup * so_database_postgresql_get_backup(struct so_database_c
 	so_value_free(key);
 
 	return backup;
+}
+
+static int so_database_postgresql_mark_backup_volume_checked(struct so_database_connection * connect, struct so_backup_volume * volume) {
+	if (connect == NULL || volume == NULL)
+		return -1;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(volume->db_data, key, false, false);
+
+	char * backup_id = NULL;
+	so_value_unpack(db, "{ss}", "id", &backup_id);
+
+	char * query = "update_backup_volume";
+	so_database_postgresql_prepare(self, query, "UPDATE backupvolume SET checktime = $1, checksumok = $2 WHERE id = $3");
+
+	char * checktime = NULL;
+	asprintf(&checktime, "%ld", volume->checktime);
+
+	const char * param[] = { checktime, so_database_postgresql_bool_to_string(volume->checksum_ok), backup_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+
+	free(checktime);
+	free(backup_id);
+
+	return status == PGRES_FATAL_ERROR ? 1 : 0;
 }
 
 
