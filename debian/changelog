@@ -1,3 +1,10 @@
+stone (1.1.25+wheezy) polisher; urgency=low
+
+  * Bug fix: correctif
+  * Améliration du checksum worker
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 27 Jan 2015 19:17:06 +0100
+
 stone (1.1.21+wheezy) polisher; urgency=low
 
   * Bug fix: correctif
