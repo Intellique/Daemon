@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 27 Jan 2015 17:41:26 +0100                            *
+*  Last modified: Wed, 28 Jan 2015 13:03:41 +0100                            *
 \****************************************************************************/
 
 // pthread_cond_destroy, pthread_cond_init, pthread_cond_signal, pthread_cond_wait
@@ -454,7 +454,7 @@ static struct st_stream_checksum_backend * st_stream_checksum_threaded_backend_n
 	struct st_stream_checksum_threaded_backend_private * self = malloc(sizeof(struct st_stream_checksum_threaded_backend_private));
 	self->first_block = self->last_block = NULL;
 	self->used = 0;
-	self->limit = info.totalram >> 4;
+	self->limit = info.totalram >> 6;
 
 	self->stop = false;
 
