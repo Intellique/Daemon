@@ -277,7 +277,7 @@ static struct so_stream_reader * sodr_vtl_drive_writer_reopen(struct so_stream_w
 	int fd = self->fd;
 	self->fd = -1;
 
-	return sodr_vtl_drive_reader_get_raw_reader(fd);
+	return sodr_vtl_drive_reader_get_raw_reader(fd, self->file_position);
 }
 
 static ssize_t sodr_vtl_drive_writer_write(struct so_stream_writer * sw, const void * buffer, ssize_t length) {

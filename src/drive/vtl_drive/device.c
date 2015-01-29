@@ -234,7 +234,7 @@ static struct so_stream_reader * sodr_vtl_drive_get_raw_reader(int file_position
 		sodr_vtl_drive.status = so_drive_status_reading;
 		db->ops->sync_drive(db, &sodr_vtl_drive, true, so_database_sync_default);
 
-		reader = sodr_vtl_drive_reader_get_raw_reader(fd);
+		reader = sodr_vtl_drive_reader_get_raw_reader(fd, file_position);
 	} else {
 		// error invalid position
 	}

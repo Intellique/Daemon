@@ -47,8 +47,6 @@
 
 void soj_checkbackupdb_worker_do(void * arg) {
 	struct soj_checkbackupdb_worker * worker = arg;
-	worker->working = true;
-
 	struct so_job * job = soj_job_get();
 
 	enum {
@@ -57,7 +55,7 @@ void soj_checkbackupdb_worker_do(void * arg) {
 		get_media,
 		open_file,
 		reserve_media,
-	} state = reserve_media;
+	} state = find_media;
 
 	struct so_slot * slot = NULL;
 	struct so_drive * dr = NULL;
@@ -100,6 +98,7 @@ void soj_checkbackupdb_worker_do(void * arg) {
 
 			case reserve_media:
 				slot->changer->ops->reserve_media(slot->changer, slot, 0, so_pool_unbreakable_level_none);
+				state = get_media;
 				break;
 		}
 	}
@@ -149,7 +148,7 @@ struct soj_checkbackupdb_worker * soj_checkbackupdb_worker_new(struct so_backup 
 	worker->position = 0;
 	worker->size = size;
 
-	worker->working = false;
+	worker->working = true;
 
 	if (previous_worker != NULL)
 		previous_worker = worker;

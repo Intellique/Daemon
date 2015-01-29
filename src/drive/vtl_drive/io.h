@@ -45,7 +45,7 @@ struct sodr_vtl_drive_io {
 	struct so_media * media;
 };
 
-struct so_stream_reader * sodr_vtl_drive_reader_get_raw_reader(int fd);
+struct so_stream_reader * sodr_vtl_drive_reader_get_raw_reader(int fd, int file_position);
 struct so_stream_writer * sodr_vtl_drive_writer_get_raw_writer(const char * filename, int file_position);
 
 int sodr_vtl_drive_io_close(struct sodr_vtl_drive_io * io);

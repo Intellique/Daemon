@@ -105,6 +105,8 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 		free(name);
 	}
 
+	job->done = 0.01;
+
 	sleep(1);
 
 	bool stop = false;
@@ -114,22 +116,25 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 
 		for (ptr = worker; ptr != NULL; ptr = ptr->next) {
 			is_running |= ptr->working;
-
 			done += ((float) ptr->position) / ptr->size;
 		}
 
-		job->done = done;
+		job->done = 0.01 + done * 0.98;
 		stop = !is_running;
 
 		if (is_running)
 			sleep(1);
 	}
 
+	job->done = 0.99;
+
 	if (!job->stopped_by_user)
 		for (ptr = worker; ptr != NULL; ptr = ptr->next)
 			db_connect->ops->mark_backup_volume_checked(db_connect, ptr->volume);
 
 	soj_checkbackupdb_worker_free(worker);
+
+	job->done = 1;
 
 	return 0;
 }

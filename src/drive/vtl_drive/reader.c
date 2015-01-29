@@ -180,16 +180,15 @@ static ssize_t sodr_vtl_drive_reader_get_block_size(struct so_stream_reader * sr
 	return self->buffer_length;
 }
 
-struct so_stream_reader * sodr_vtl_drive_reader_get_raw_reader(int fd) {
+struct so_stream_reader * sodr_vtl_drive_reader_get_raw_reader(int fd, int file_position) {
 	struct so_drive * drive = sodr_vtl_drive_get_device();
 
 	struct sodr_vtl_drive_io * self = malloc(sizeof(struct sodr_vtl_drive_io));
 	self->fd = fd;
-	self->buffer_length = drive->slot->media->block_size;
+	self->buffer_used = self->buffer_length = drive->slot->media->block_size;
 	self->buffer = malloc(self->buffer_length);
-	self->buffer_used = 0;
 	self->position = 0;
-	self->file_position = 0;
+	self->file_position = file_position;
 	self->last_errno = 0;
 	struct so_media * media = self->media = drive->slot->media;
 
@@ -222,6 +221,7 @@ static ssize_t sodr_vtl_drive_reader_read(struct so_stream_reader * sr, void * b
 		return 0;
 
 	struct sodr_vtl_drive_io * self = sr->data;
+	self->last_errno = 0;
 
 	ssize_t available = self->buffer_length - self->buffer_used;
 	if (available > 0) {
@@ -232,6 +232,7 @@ static ssize_t sodr_vtl_drive_reader_read(struct so_stream_reader * sr, void * b
 		memcpy(buffer, self->buffer + self->buffer_used, will_copy);
 
 		self->buffer_used += will_copy;
+		self->position += will_copy;
 
 		if (length == will_copy)
 			return length;
@@ -239,7 +240,6 @@ static ssize_t sodr_vtl_drive_reader_read(struct so_stream_reader * sr, void * b
 
 	struct so_drive * dr = sodr_vtl_drive_get_device();
 
-	self->buffer_used = 0;
 	ssize_t nb_total_read = available;
 	while (nb_total_read + self->buffer_length <= length) {
 		sodr_time_start();
@@ -248,17 +248,21 @@ static ssize_t sodr_vtl_drive_reader_read(struct so_stream_reader * sr, void * b
 
 		if (nb_read < 0) {
 			self->last_errno = errno;
-			return -1;
+			self->media->nb_read_errors++;
+			return nb_read;
 		}
 
 		if (nb_read == 0)
 			return nb_total_read;
 
+		nb_total_read += nb_read;
 		self->position += nb_read;
 		self->media->last_read = time(NULL);
 		self->media->nb_total_read++;
-		nb_total_read += nb_read;
 	}
+
+	if (nb_total_read == length)
+		return length;
 
 	sodr_time_start();
 	ssize_t nb_read = read(self->fd, self->buffer, self->buffer_length);
@@ -266,17 +270,18 @@ static ssize_t sodr_vtl_drive_reader_read(struct so_stream_reader * sr, void * b
 
 	if (nb_read < 0) {
 		self->last_errno = errno;
-		return -1;
+		self->media->nb_read_errors++;
+		return nb_read;
 	}
 
 	if (nb_read == 0)
 		return nb_total_read;
 
-	self->media->last_read = time(NULL);
-	self->media->nb_total_read++;
-
 	self->buffer_used = length - nb_total_read;
 	memcpy(buffer + nb_total_read, self->buffer, self->buffer_used);
+	self->position += self->buffer_used;
+	self->media->last_read = time(NULL);
+	self->media->nb_total_read++;
 
 	return length;
 }

@@ -2551,7 +2551,7 @@ static struct so_backup * so_database_postgresql_get_backup(struct so_database_c
 	so_value_unpack(db, "{ss}", "id", &job_id);
 
 	const char * query = "select_backup_by_job";
-	so_database_postgresql_prepare(self, query, "SELECT id, timestamp, nbmedia, nbarchive FROM backup WHERE id = $1 LIMIT 1");
+	so_database_postgresql_prepare(self, query, "SELECT b.id, b.timestamp, b.nbmedia, b.nbarchive FROM backup b INNER JOIN job j ON j.id = $1 AND b.id = j.backup LIMIT 1");
 
 	const char * param[] = { job_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -2601,7 +2601,7 @@ static struct so_backup * so_database_postgresql_get_backup(struct so_database_c
 
 		int i;
 		for (i = 0; i < nb_result; i++) {
-			struct so_backup_volume * vol = backup->volumes + 1;
+			struct so_backup_volume * vol = backup->volumes + i;
 
 			char * backupvolume_id = PQgetvalue(result, i, 0);
 			char * media_id = PQgetvalue(result, i, 1);
@@ -2654,24 +2654,23 @@ static int so_database_postgresql_mark_backup_volume_checked(struct so_database_
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 	struct so_value * db = so_value_hashtable_get(volume->db_data, key, false, false);
 
-	char * backup_id = NULL;
-	so_value_unpack(db, "{ss}", "id", &backup_id);
+	char * backup_volume_id = NULL;
+	so_value_unpack(db, "{ss}", "id", &backup_volume_id);
 
 	char * query = "update_backup_volume";
 	so_database_postgresql_prepare(self, query, "UPDATE backupvolume SET checktime = $1, checksumok = $2 WHERE id = $3");
 
-	char * checktime = NULL;
-	asprintf(&checktime, "%ld", volume->checktime);
+	char checktime[24];
+	so_time_convert(&volume->checktime, "%F %T", checktime, 24);
 
-	const char * param[] = { checktime, so_database_postgresql_bool_to_string(volume->checksum_ok), backup_id };
+	const char * param[] = { checktime, so_database_postgresql_bool_to_string(volume->checksum_ok), backup_volume_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)
 		so_database_postgresql_get_error(result, query);
 
-	free(checktime);
-	free(backup_id);
+	free(backup_volume_id);
 
 	return status == PGRES_FATAL_ERROR ? 1 : 0;
 }

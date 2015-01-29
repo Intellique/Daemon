@@ -510,6 +510,8 @@ static void sodr_socket_command_reader_read(struct sodr_peer * peer, struct so_v
 				so_value_free(response);
 				return;
 			}
+			if (nb_read == 0)
+				break;
 
 			nb_total_read += nb_read;
 

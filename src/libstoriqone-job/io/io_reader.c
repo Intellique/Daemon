@@ -206,28 +206,37 @@ static ssize_t soj_io_reader_read(struct so_stream_reader * io, void * buffer, s
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
-	struct pollfd fds[] = {
-		{ self->command_fd, POLLIN | POLLHUP, 0 },
-		{ self->data_fd,    POLLIN | POLLHUP, 0 },
-	};
+	size_t nb_total_read = 0;
+	for (;;) {
+		struct pollfd fds[] = {
+			{ self->command_fd, POLLIN | POLLHUP, 0 },
+			{ self->data_fd,    POLLIN | POLLHUP, 0 },
+		};
 
-	poll(fds, 2, -1);
+		poll(fds, 2, -1);
 
-	if (fds[0].revents & POLLHUP)
-		return -1;
+		if (fds[0].revents & POLLHUP)
+			return -1;
 
-	ssize_t nb_read = -1;
-	if (fds[1].revents & POLLIN)
-		nb_read = recv(self->data_fd, buffer, length, 0);
+		ssize_t nb_read = -1;
+		if (fds[1].revents & POLLIN)
+			nb_read = recv(self->data_fd, buffer + nb_total_read, length - nb_total_read, 0);
 
-	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
-	if (nb_read < 0)
-		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
-	so_value_free(response);
+		if (nb_read > 0) {
+			self->position += nb_read;
+			nb_total_read += nb_read;
+		}
 
-	if (nb_read > 0)
-		self->position += nb_read;
+		if (fds[0].revents & POLLIN) {
+			struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+			if (nb_read < 0)
+				so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+			so_value_free(response);
 
-	return nb_read;
+			return nb_total_read;
+		}
+	}
+
+	return -1;
 }
 
