@@ -128,9 +128,25 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 
 	job->done = 0.99;
 
-	if (!job->stopped_by_user)
-		for (ptr = worker; ptr != NULL; ptr = ptr->next)
+	if (!job->stopped_by_user) {
+		unsigned int i;
+		bool checksum_ok = true;
+		for (ptr = worker, i = 0; ptr != NULL; ptr = ptr->next, i++) {
+			if (ptr->volume->checksum_ok)
+				so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-check-backup-db", "Checking backup volume #%u: success"), i);
+			else {
+				so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-check-backup-db", "Checking backup volume #%u: failed"), i);
+				checksum_ok = false;
+			}
+
 			db_connect->ops->mark_backup_volume_checked(db_connect, ptr->volume);
+		}
+
+		if (checksum_ok)
+			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-check-backup-db", "Checking backup: success"));
+		else
+			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-check-backup-db", "Checking backup: failed"));
+	}
 
 	soj_checkbackupdb_worker_free(worker);
 

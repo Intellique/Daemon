@@ -1,0 +1,47 @@
+# French translations for job-check-backupdb package.
+# Copyright (C) 2015
+# This file is distributed under the same license as the storiqone package.
+# Guillaume Clercin <gclercin@intellique.com>, 2014
+#
+msgid   ""
+msgstr  "Project-Id-Version: job-check-backupdb v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-01-31 20:07+0100\n"
+        "PO-Revision-Date: 2014-11-13 09:03+0100\n"
+        "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
+        "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
+        "Language: fr\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/job/check-backup-db/check-backup-db.c:136
+#, c-format
+msgid   "Checking backup volume #%u: success"
+msgstr  "Vérification du volume n°%u de la sauvegarde : réussi"
+
+#: src/job/check-backup-db/check-backup-db.c:138
+#, c-format
+msgid   "Checking backup volume #%u: failed"
+msgstr  "Vérification du volume n°%u de la sauvegarde : échec"
+
+#: src/job/check-backup-db/check-backup-db.c:146
+msgid   "Checking backup: success"
+msgstr  "Vérification de la sauvegarde : réussi"
+
+#: src/job/check-backup-db/check-backup-db.c:148
+msgid   "Checking backup: failed"
+msgstr  "Vérification de la sauvegarde : échec"
+
+#: src/job/check-backup-db/check-backup-db.c:161
+msgid   "Backup not found"
+msgstr  "Sauvegarde non trouvée"
+
+#: src/job/check-backup-db/check-backup-db.c:174
+msgid   "BUG: media should not be empty"
+msgstr  "BOGUE : le média ne doit pas être vide"
+
+#: src/job/check-backup-db/check-backup-db.c:178
+msgid   "Try to read a media with error status"
+msgstr  "Tentative de lire un média dont son statut est en erreur"
