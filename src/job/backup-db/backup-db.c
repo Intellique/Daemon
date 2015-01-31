@@ -33,6 +33,7 @@
 
 #include <libstoriqone/database.h>
 #include <libstoriqone/file.h>
+#include <libstoriqone/host.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
@@ -49,6 +50,7 @@
 
 #include "config.h"
 
+static struct so_backup * soj_backupdb_backup = NULL;
 static struct so_value * soj_backupdb_checksums = NULL;
 static struct so_value * soj_backupdb_medias = NULL;
 static struct so_pool * soj_backupdb_pool = NULL;
@@ -80,6 +82,7 @@ static void soj_backupdb_exit(struct so_job * job __attribute__((unused)), struc
 	soj_backupdb_medias = NULL;
 	so_pool_free(soj_backupdb_pool);
 	soj_backupdb_pool = NULL;
+	soj_backup_free(soj_backupdb_backup);
 }
 
 static void soj_backupdb_init() {
@@ -89,8 +92,6 @@ static void soj_backupdb_init() {
 }
 
 static int soj_backupdb_run(struct so_job * job, struct so_database_connection * db_connect) {
-	struct so_backup * backup = soj_backup_new(job);
-
 	struct so_stream_reader * db_reader = db_connect->config->ops->backup_db(db_connect->config);
 	if (db_reader == NULL) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Failed to get database hander"));
@@ -119,7 +120,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 		while (nb_total_write < nb_read) {
 			ssize_t nb_write = tmp_writer->ops->write(tmp_writer, buffer + nb_total_write, nb_read - nb_total_write);
 			if (nb_write < 0) {
-				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Error while writting into temporary file"));
+				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Error while writting into temporary file becase %m"));
 				goto tmp_writer;
 			} else {
 				nb_total_write += nb_write;
@@ -131,7 +132,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 	}
 
 	if (nb_read < 0) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Error while reading from database"));
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Error while reading from database because %m"));
 		goto tmp_writer;
 	}
 
@@ -180,7 +181,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 						while (nb_total_write < nb_read) {
 							ssize_t nb_write = cksum_writer->ops->write(cksum_writer, buffer, nb_read);
 							if (nb_write < 0) {
-								so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Error while writting into drive"));
+								so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Error while writting into drive because %m"));
 							} else {
 								nb_total_write += nb_write;
 								position += nb_write;
@@ -194,7 +195,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 					}
 
 					if (nb_read < 0) {
-						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Error while reading from temporary file"));
+						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-backup-db", "Error while reading from temporary file because %m"));
 					}
 
 					cksum_writer->ops->close(cksum_writer);
@@ -204,9 +205,9 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 
 					if (dr_writer != cksum_writer) {
 						struct so_value * checksums = soj_checksum_writer_get_checksums(cksum_writer);
-						soj_backup_add_volume(backup, media, size, file_position, checksums);
+						soj_backup_add_volume(soj_backupdb_backup, media, size, file_position, checksums);
 					} else
-						soj_backup_add_volume(backup, media, size, file_position, NULL);
+						soj_backup_add_volume(soj_backupdb_backup, media, size, file_position, NULL);
 
 					cksum_writer->ops->free(cksum_writer);
 
@@ -255,6 +256,13 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 
 				break;
 
+			case release_medias:
+				so_value_iterator_free(iter);
+				iter = NULL;
+				soj_media_release_all_medias(soj_backupdb_pool);
+				state = reserve_media;
+				break;
+
 			case reserve_media:
 				size_available = soj_media_prepare(soj_backupdb_pool, backup_size, db_connect);
 
@@ -283,8 +291,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 	tmp_reader->ops->close(tmp_reader);
 	tmp_reader->ops->free(tmp_reader);
 
-	db_connect->ops->backup_add(db_connect, backup);
-	soj_backup_free(backup);
+	db_connect->ops->backup_add(db_connect, soj_backupdb_backup);
 
 	job->done = 1;
 
@@ -299,8 +306,6 @@ tmp_writer:
 		db_reader->ops->close(db_reader);
 		db_reader->ops->free(db_reader);
 	}
-
-	soj_backup_free(backup);
 
 	return 1;
 }
@@ -324,23 +329,62 @@ static int soj_backupdb_simulate(struct so_job * job, struct so_database_connect
 
 	soj_backupdb_checksums = db_connect->ops->get_checksums_from_pool(db_connect, soj_backupdb_pool);
 
+	soj_backupdb_backup = soj_backup_new(job);
+
 	return 0;
 }
 
 static void soj_backupdb_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
 	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, soj_backupdb_pool) < 1)
 		return;
+
+	struct so_value * json = so_value_pack("{sOsososo}",
+		"checksums", soj_backupdb_checksums,
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"pool", so_pool_convert(soj_backupdb_pool)
+	);
+
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_on_error, soj_backupdb_pool, json);
+	so_value_free(json);
+	so_value_free(returned);
 }
 
 static void soj_backupdb_script_post_run(struct so_job * job, struct so_database_connection * db_connect) {
 	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, soj_backupdb_pool) < 1)
 		return;
+
+	struct so_value * json = so_value_pack("{sosOsososo}",
+		"backup", soj_backup_convert(soj_backupdb_backup),
+		"checksums", soj_backupdb_checksums,
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"pool", so_pool_convert(soj_backupdb_pool)
+	);
+
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_post_job, soj_backupdb_pool, json);
+	so_value_free(json);
+	so_value_free(returned);
 }
 
 static bool soj_backupdb_script_pre_run(struct so_job * job, struct so_database_connection * db_connect) {
 	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_pre_job, soj_backupdb_pool) < 1)
 		return true;
 
-	return true;
+	struct so_value * json = so_value_pack("{sOsososo}",
+		"checksums", soj_backupdb_checksums,
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"pool", so_pool_convert(soj_backupdb_pool)
+	);
+
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_pre_job, soj_backupdb_pool, json);
+	so_value_free(json);
+
+	bool should_run = false;
+	so_value_unpack(returned, "{sb}", "should run", &should_run);
+	so_value_free(returned);
+
+	return should_run;
 }
 

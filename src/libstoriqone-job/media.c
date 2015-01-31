@@ -129,6 +129,21 @@ ssize_t soj_media_prepare_unformatted(struct so_pool * pool, bool online, struct
 	return total_size_available;
 }
 
+void soj_media_release_all_medias(struct so_pool * pool) {
+	struct so_value * medias = so_value_hashtable_get2(soj_medias, pool->uuid, false, false);
+	if (medias == NULL)
+		return;
+
+	struct so_value_iterator * iter = so_value_list_get_iterator(medias);
+	while (so_value_iterator_has_next(iter)) {
+		struct so_value * vmedia = so_value_iterator_get_value(iter, false);
+		struct so_media * media = so_value_custom_get(vmedia);
+		struct so_slot * sl = soj_changer_find_slot(media);
+		sl->changer->ops->release_media(sl->changer, sl);
+	}
+	so_value_iterator_free(iter);
+}
+
 struct so_value * soj_media_reserve(struct so_pool * pool, size_t space_need, enum so_pool_unbreakable_level unbreakable_level) {
 	struct so_value * medias = so_value_hashtable_get2(soj_medias, pool->uuid, false, false);
 	if (medias == NULL)

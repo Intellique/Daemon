@@ -225,18 +225,6 @@ static int soj_formatmedia_simulate(struct so_job * job, struct so_database_conn
 		return 1;
 	}
 
-	/*
-	soj_formatmedia_slot = soj_changer_find_media_by_job(job, db_connect);
-	if (soj_formatmedia_slot == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Media not found"));
-		return 1;
-	}
-	if (soj_formatmedia_slot->media == NULL || !soj_formatmedia_slot->full) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "BUG: slot should not be empty"));
-		return 1;
-	}
-	*/
-
 	return 0;
 }
 

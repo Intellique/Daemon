@@ -31,6 +31,7 @@
 // time
 #include <time.h>
 
+#include <libstoriqone/media.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/backup.h>
 
@@ -47,6 +48,36 @@ void soj_backup_add_volume(struct so_backup * backup, struct so_media * media, s
 	vol->position = position;
 	vol->digests = digests;
 	backup->nb_volumes++;
+}
+
+struct so_value * soj_backup_convert(struct so_backup * backup) {
+	struct so_value * volumes = so_value_new_array(backup->nb_volumes);
+	struct so_value * vbackup = so_value_pack("{sisisiso}"
+		"timestamp", backup->timestamp,
+		"nb archives", backup->nb_medias,
+		"nb medias", backup->nb_medias,
+		"volumes", volumes
+	);
+
+	unsigned int i;
+	for (i = 0; i < backup->nb_volumes; i++) {
+		struct so_backup_volume * vol = backup->volumes + i;
+
+		struct so_value * checktime = so_value_new_null();
+		if (vol->checktime > 0)
+			checktime = so_value_new_integer(vol->checktime);
+
+		so_value_list_push(volumes, so_value_pack("{sosisisosbsO}",
+			"media", so_media_convert(vol->media),
+			"position", (long) vol->position,
+			"size", vol->size,
+			"checktime", checktime,
+			"checksum ok", vol->checksum_ok,
+			"digests", vol->digests
+		), true);
+	}
+
+	return vbackup;
 }
 
 void soj_backup_free(struct so_backup * backup) {

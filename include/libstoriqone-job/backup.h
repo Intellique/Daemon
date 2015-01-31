@@ -30,9 +30,12 @@
 // ssize_t
 #include <sys/types.h>
 
+struct so_value;
+
 #include <libstoriqone/backup.h>
 
 void soj_backup_add_volume(struct so_backup * backup, struct so_media * media, ssize_t size, unsigned int position, struct so_value * digests);
+struct so_value * soj_backup_convert(struct so_backup * backup);
 void soj_backup_free(struct so_backup * backup);
 struct so_backup * soj_backup_new(struct so_job * job);
 
