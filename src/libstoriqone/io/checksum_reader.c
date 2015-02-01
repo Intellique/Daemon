@@ -27,40 +27,40 @@
 // free, malloc
 #include <stdlib.h>
 
-#include <libstoriqone-job/io.h>
+#include <libstoriqone/io.h>
 
 #include "checksum.h"
 
-struct soj_stream_checksum_reader_private {
+struct so_io_stream_checksum_reader_private {
 	struct so_stream_reader * in;
 	bool closed;
 
-	struct soj_stream_checksum_backend * worker;
+	struct so_io_stream_checksum_backend * worker;
 };
 
-static int soj_checksum_reader_close(struct so_stream_reader * sr);
-static bool soj_checksum_reader_end_of_file(struct so_stream_reader * sr);
-static off_t soj_checksum_reader_forward(struct so_stream_reader * sr, off_t offset);
-static void soj_checksum_reader_free(struct so_stream_reader * sr);
-static ssize_t soj_checksum_reader_get_block_size(struct so_stream_reader * sr);
-static int soj_checksum_reader_last_errno(struct so_stream_reader * sr);
-static ssize_t soj_checksum_reader_position(struct so_stream_reader * sr);
-static ssize_t soj_checksum_reader_read(struct so_stream_reader * sr, void * buffer, ssize_t length);
+static int so_io_checksum_reader_close(struct so_stream_reader * sr);
+static bool so_io_checksum_reader_end_of_file(struct so_stream_reader * sr);
+static off_t so_io_checksum_reader_forward(struct so_stream_reader * sr, off_t offset);
+static void so_io_checksum_reader_free(struct so_stream_reader * sr);
+static ssize_t so_io_checksum_reader_get_block_size(struct so_stream_reader * sr);
+static int so_io_checksum_reader_last_errno(struct so_stream_reader * sr);
+static ssize_t so_io_checksum_reader_position(struct so_stream_reader * sr);
+static ssize_t so_io_checksum_reader_read(struct so_stream_reader * sr, void * buffer, ssize_t length);
 
-static struct so_stream_reader_ops soj_checksum_reader_ops = {
-	.close          = soj_checksum_reader_close,
-	.end_of_file    = soj_checksum_reader_end_of_file,
-	.forward        = soj_checksum_reader_forward,
-	.free           = soj_checksum_reader_free,
-	.get_block_size = soj_checksum_reader_get_block_size,
-	.last_errno     = soj_checksum_reader_last_errno,
-	.position       = soj_checksum_reader_position,
-	.read           = soj_checksum_reader_read,
+static struct so_stream_reader_ops so_io_checksum_reader_ops = {
+	.close          = so_io_checksum_reader_close,
+	.end_of_file    = so_io_checksum_reader_end_of_file,
+	.forward        = so_io_checksum_reader_forward,
+	.free           = so_io_checksum_reader_free,
+	.get_block_size = so_io_checksum_reader_get_block_size,
+	.last_errno     = so_io_checksum_reader_last_errno,
+	.position       = so_io_checksum_reader_position,
+	.read           = so_io_checksum_reader_read,
 };
 
 
-static int soj_checksum_reader_close(struct so_stream_reader * sr) {
-	struct soj_stream_checksum_reader_private * self = sr->data;
+static int so_io_checksum_reader_close(struct so_stream_reader * sr) {
+	struct so_io_stream_checksum_reader_private * self = sr->data;
 
 	if (self->closed)
 		return 0;
@@ -78,13 +78,13 @@ static int soj_checksum_reader_close(struct so_stream_reader * sr) {
 	return failed;
 }
 
-static bool soj_checksum_reader_end_of_file(struct so_stream_reader * sr) {
-	struct soj_stream_checksum_reader_private * self = sr->data;
+static bool so_io_checksum_reader_end_of_file(struct so_stream_reader * sr) {
+	struct so_io_stream_checksum_reader_private * self = sr->data;
 	return self->in->ops->end_of_file(self->in);
 }
 
-static off_t soj_checksum_reader_forward(struct so_stream_reader * sr, off_t offset) {
-	struct soj_stream_checksum_reader_private * self = sr->data;
+static off_t so_io_checksum_reader_forward(struct so_stream_reader * sr, off_t offset) {
+	struct so_io_stream_checksum_reader_private * self = sr->data;
 
 	off_t nb_total_read = 0;
 	while (nb_total_read < offset) {
@@ -105,8 +105,8 @@ static off_t soj_checksum_reader_forward(struct so_stream_reader * sr, off_t off
 	return self->in->ops->position(self->in);
 }
 
-static void soj_checksum_reader_free(struct so_stream_reader * sr) {
-	struct soj_stream_checksum_reader_private * self = sr->data;
+static void so_io_checksum_reader_free(struct so_stream_reader * sr) {
+	struct so_io_stream_checksum_reader_private * self = sr->data;
 
 	if (!self->closed)
 		self->in->ops->close(self->in);
@@ -119,45 +119,45 @@ static void soj_checksum_reader_free(struct so_stream_reader * sr) {
 	free(sr);
 }
 
-static ssize_t soj_checksum_reader_get_block_size(struct so_stream_reader * sr) {
-	struct soj_stream_checksum_reader_private * self = sr->data;
+static ssize_t so_io_checksum_reader_get_block_size(struct so_stream_reader * sr) {
+	struct so_io_stream_checksum_reader_private * self = sr->data;
 	return self->in->ops->get_block_size(self->in);
 }
 
-struct so_value * soj_checksum_reader_get_checksums(struct so_stream_reader * sr) {
-	struct soj_stream_checksum_reader_private * self = sr->data;
+struct so_value * so_io_checksum_reader_get_checksums(struct so_stream_reader * sr) {
+	struct so_io_stream_checksum_reader_private * self = sr->data;
 	return self->worker->ops->digest(self->worker);
 }
 
-static int soj_checksum_reader_last_errno(struct so_stream_reader * sr) {
-	struct soj_stream_checksum_reader_private * self = sr->data;
+static int so_io_checksum_reader_last_errno(struct so_stream_reader * sr) {
+	struct so_io_stream_checksum_reader_private * self = sr->data;
 	return self->in->ops->last_errno(self->in);
 }
 
-struct so_stream_reader * soj_checksum_reader_new(struct so_stream_reader * stream, struct so_value * checksums, bool thread_helper) {
-	struct soj_stream_checksum_reader_private * self = malloc(sizeof(struct soj_stream_checksum_reader_private));
+struct so_stream_reader * so_io_checksum_reader_new(struct so_stream_reader * stream, struct so_value * checksums, bool thread_helper) {
+	struct so_io_stream_checksum_reader_private * self = malloc(sizeof(struct so_io_stream_checksum_reader_private));
 	self->in = stream;
 	self->closed = false;
 
 	if (thread_helper)
-		self->worker = soj_stream_checksum_threaded_backend_new(checksums);
+		self->worker = so_io_stream_checksum_threaded_backend_new(checksums);
 	else
-		self->worker = soj_stream_checksum_backend_new(checksums);
+		self->worker = so_io_stream_checksum_backend_new(checksums);
 
 	struct so_stream_reader * reader = malloc(sizeof(struct so_stream_reader));
-	reader->ops = &soj_checksum_reader_ops;
+	reader->ops = &so_io_checksum_reader_ops;
 	reader->data = self;
 
 	return reader;
 }
 
-static ssize_t soj_checksum_reader_position(struct so_stream_reader * sr) {
-	struct soj_stream_checksum_reader_private * self = sr->data;
+static ssize_t so_io_checksum_reader_position(struct so_stream_reader * sr) {
+	struct so_io_stream_checksum_reader_private * self = sr->data;
 	return self->in->ops->position(self->in);
 }
 
-static ssize_t soj_checksum_reader_read(struct so_stream_reader * sr, void * buffer, ssize_t length) {
-	struct soj_stream_checksum_reader_private * self = sr->data;
+static ssize_t so_io_checksum_reader_read(struct so_stream_reader * sr, void * buffer, ssize_t length) {
+	struct so_io_stream_checksum_reader_private * self = sr->data;
 
 	if (self->closed)
 		return 0;

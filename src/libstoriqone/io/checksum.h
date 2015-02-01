@@ -24,17 +24,21 @@
 *  Copyright (C) 2015, Guillaume Clercin <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_JOB_IO_H__
-#define __LIBSTORIQONE_JOB_IO_H__
+#ifndef __LIBSTORIQONE_IO_CHECKSUM_H__
+#define __LIBSTORIQONE_IO_CHECKSUM_H__
 
-struct so_value;
+struct so_io_stream_checksum_backend {
+	struct so_io_stream_checksum_backend_ops {
+		struct so_value * (*digest)(struct so_io_stream_checksum_backend * worker);
+		void (*finish)(struct so_io_stream_checksum_backend * worker);
+		void (*free)(struct so_io_stream_checksum_backend * worker);
+		void (*update)(struct so_io_stream_checksum_backend * worker, const void * buffer, ssize_t length);
+	} * ops;
+	void * data;
+};
 
-#include <libstoriqone/io.h>
-
-struct so_stream_reader * soj_checksum_reader_new(struct so_stream_reader * stream, struct so_value * checksums, bool thread_helper);
-struct so_stream_writer * soj_checksum_writer_new(struct so_stream_writer * stream, struct so_value * checksums, bool thread_helper);
-struct so_value * soj_checksum_reader_get_checksums(struct so_stream_reader * stream);
-struct so_value * soj_checksum_writer_get_checksums(struct so_stream_writer * stream);
+struct so_io_stream_checksum_backend * so_io_stream_checksum_backend_new(struct so_value * checksums);
+struct so_io_stream_checksum_backend * so_io_stream_checksum_threaded_backend_new(struct so_value * checksums);
 
 #endif
 

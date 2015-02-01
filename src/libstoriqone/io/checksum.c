@@ -37,25 +37,25 @@
 #include <sys/sysinfo.h>
 
 #include <libstoriqone/checksum.h>
+#include <libstoriqone/io.h>
 #include <libstoriqone/thread_pool.h>
 #include <libstoriqone/value.h>
-#include <libstoriqone-job/io.h>
 
 #include "checksum.h"
 
 
-struct soj_stream_checksum_backend_private {
+struct so_io_stream_checksum_backend_private {
 	struct so_checksum ** checksums;
 	unsigned int nb_checksums;
 	struct so_value * digests;
 	bool computed;
 };
 
-struct soj_stream_checksum_threaded_backend_private {
-	struct soj_linked_list_block {
+struct so_io_stream_checksum_threaded_backend_private {
+	struct so_io_linked_list_block {
 		void * data;
 		ssize_t length;
-		struct soj_linked_list_block * next;
+		struct so_io_linked_list_block * next;
 	} * volatile first_block, * volatile last_block;
 	volatile unsigned long used;
 	volatile unsigned long limit;
@@ -65,43 +65,43 @@ struct soj_stream_checksum_threaded_backend_private {
 	pthread_mutex_t lock;
 	pthread_cond_t wait;
 
-	struct soj_stream_checksum_backend * backend;
+	struct so_io_stream_checksum_backend * backend;
 };
 
 
-static struct so_value * soj_stream_checksum_backend_digest(struct soj_stream_checksum_backend * worker);
-static void soj_stream_checksum_backend_finish(struct soj_stream_checksum_backend * worker);
-static void soj_stream_checksum_backend_free(struct soj_stream_checksum_backend * worker);
-static void soj_stream_checksum_backend_update(struct soj_stream_checksum_backend * worker, const void * buffer, ssize_t length);
+static struct so_value * so_io_stream_checksum_backend_digest(struct so_io_stream_checksum_backend * worker);
+static void so_io_stream_checksum_backend_finish(struct so_io_stream_checksum_backend * worker);
+static void so_io_stream_checksum_backend_free(struct so_io_stream_checksum_backend * worker);
+static void so_io_stream_checksum_backend_update(struct so_io_stream_checksum_backend * worker, const void * buffer, ssize_t length);
 
-static struct so_value * soj_stream_checksum_threaded_backend_digest(struct soj_stream_checksum_backend * worker);
-static void soj_stream_checksum_threaded_backend_finish(struct soj_stream_checksum_backend * worker);
-static void soj_stream_checksum_threaded_backend_free(struct soj_stream_checksum_backend * worker);
-static void soj_stream_checksum_threaded_backend_update(struct soj_stream_checksum_backend * worker, const void * buffer, ssize_t length);
-static void soj_stream_checksum_threaded_backend_work(void * arg);
+static struct so_value * so_io_stream_checksum_threaded_backend_digest(struct so_io_stream_checksum_backend * worker);
+static void so_io_stream_checksum_threaded_backend_finish(struct so_io_stream_checksum_backend * worker);
+static void so_io_stream_checksum_threaded_backend_free(struct so_io_stream_checksum_backend * worker);
+static void so_io_stream_checksum_threaded_backend_update(struct so_io_stream_checksum_backend * worker, const void * buffer, ssize_t length);
+static void so_io_stream_checksum_threaded_backend_work(void * arg);
 
-static struct soj_stream_checksum_backend_ops soj_stream_checksum_backend_ops = {
-	.digest = soj_stream_checksum_backend_digest,
-	.finish = soj_stream_checksum_backend_finish,
-	.free   = soj_stream_checksum_backend_free,
-	.update = soj_stream_checksum_backend_update,
+static struct so_io_stream_checksum_backend_ops so_io_stream_checksum_backend_ops = {
+	.digest = so_io_stream_checksum_backend_digest,
+	.finish = so_io_stream_checksum_backend_finish,
+	.free   = so_io_stream_checksum_backend_free,
+	.update = so_io_stream_checksum_backend_update,
 };
 
-static struct soj_stream_checksum_backend_ops soj_stream_checksum_threaded_backend_ops = {
-	.digest = soj_stream_checksum_threaded_backend_digest,
-	.finish = soj_stream_checksum_threaded_backend_finish,
-	.free   = soj_stream_checksum_threaded_backend_free,
-	.update = soj_stream_checksum_threaded_backend_update,
+static struct so_io_stream_checksum_backend_ops so_io_stream_checksum_threaded_backend_ops = {
+	.digest = so_io_stream_checksum_threaded_backend_digest,
+	.finish = so_io_stream_checksum_threaded_backend_finish,
+	.free   = so_io_stream_checksum_threaded_backend_free,
+	.update = so_io_stream_checksum_threaded_backend_update,
 };
 
 
-static struct so_value * soj_stream_checksum_backend_digest(struct soj_stream_checksum_backend * worker) {
-	struct soj_stream_checksum_backend_private * self = worker->data;
+static struct so_value * so_io_stream_checksum_backend_digest(struct so_io_stream_checksum_backend * worker) {
+	struct so_io_stream_checksum_backend_private * self = worker->data;
 	return so_value_copy(self->digests, true);
 }
 
-static void soj_stream_checksum_backend_finish(struct soj_stream_checksum_backend * worker) {
-	struct soj_stream_checksum_backend_private * self = worker->data;
+static void so_io_stream_checksum_backend_finish(struct so_io_stream_checksum_backend * worker) {
+	struct so_io_stream_checksum_backend_private * self = worker->data;
 
 	unsigned int i;
 	for (i = 0; i < self->nb_checksums; i++) {
@@ -114,8 +114,8 @@ static void soj_stream_checksum_backend_finish(struct soj_stream_checksum_backen
 	}
 }
 
-static void soj_stream_checksum_backend_free(struct soj_stream_checksum_backend * worker) {
-	struct soj_stream_checksum_backend_private * self = worker->data;
+static void so_io_stream_checksum_backend_free(struct so_io_stream_checksum_backend * worker) {
+	struct so_io_stream_checksum_backend_private * self = worker->data;
 
 	unsigned int i;
 	for (i = 0; i < self->nb_checksums; i++) {
@@ -126,10 +126,10 @@ static void soj_stream_checksum_backend_free(struct soj_stream_checksum_backend 
 	free(self);
 }
 
-struct soj_stream_checksum_backend * soj_stream_checksum_backend_new(struct so_value * checksums) {
+struct so_io_stream_checksum_backend * so_io_stream_checksum_backend_new(struct so_value * checksums) {
 	unsigned int nb_checksums = so_value_list_get_length(checksums);
 
-	struct soj_stream_checksum_backend_private * self = malloc(sizeof(struct soj_stream_checksum_backend_private));
+	struct so_io_stream_checksum_backend_private * self = malloc(sizeof(struct so_io_stream_checksum_backend_private));
 	self->checksums = calloc(nb_checksums, sizeof(struct st_checksum *));
 	self->digests = so_value_new_hashtable2();
 	self->nb_checksums = nb_checksums;
@@ -144,15 +144,15 @@ struct soj_stream_checksum_backend * soj_stream_checksum_backend_new(struct so_v
 		self->checksums[i] = driver->new_checksum();
 	}
 
-	struct soj_stream_checksum_backend * backend = malloc(sizeof(struct soj_stream_checksum_backend));
-	backend->ops = &soj_stream_checksum_backend_ops;
+	struct so_io_stream_checksum_backend * backend = malloc(sizeof(struct so_io_stream_checksum_backend));
+	backend->ops = &so_io_stream_checksum_backend_ops;
 	backend->data = self;
 
 	return backend;
 }
 
-static void soj_stream_checksum_backend_update(struct soj_stream_checksum_backend * worker, const void * buffer, ssize_t length) {
-	struct soj_stream_checksum_backend_private * self = worker->data;
+static void so_io_stream_checksum_backend_update(struct so_io_stream_checksum_backend * worker, const void * buffer, ssize_t length) {
+	struct so_io_stream_checksum_backend_private * self = worker->data;
 
 	unsigned int i;
 	for (i = 0; i < self->nb_checksums; i++) {
@@ -162,13 +162,13 @@ static void soj_stream_checksum_backend_update(struct soj_stream_checksum_backen
 }
 
 
-static struct so_value * soj_stream_checksum_threaded_backend_digest(struct soj_stream_checksum_backend * worker) {
-	struct soj_stream_checksum_threaded_backend_private * self = worker->data;
+static struct so_value * so_io_stream_checksum_threaded_backend_digest(struct so_io_stream_checksum_backend * worker) {
+	struct so_io_stream_checksum_threaded_backend_private * self = worker->data;
 	return self->backend->ops->digest(self->backend);
 }
 
-static void soj_stream_checksum_threaded_backend_finish(struct soj_stream_checksum_backend * worker) {
-	struct soj_stream_checksum_threaded_backend_private * self = worker->data;
+static void so_io_stream_checksum_threaded_backend_finish(struct so_io_stream_checksum_backend * worker) {
+	struct so_io_stream_checksum_threaded_backend_private * self = worker->data;
 
 	pthread_mutex_lock(&self->lock);
 	if (self->first_block != NULL)
@@ -181,19 +181,19 @@ static void soj_stream_checksum_threaded_backend_finish(struct soj_stream_checks
 	pthread_mutex_unlock(&self->lock);
 }
 
-static void soj_stream_checksum_threaded_backend_free(struct soj_stream_checksum_backend * worker) {
-	struct soj_stream_checksum_threaded_backend_private * self = worker->data;
+static void so_io_stream_checksum_threaded_backend_free(struct so_io_stream_checksum_backend * worker) {
+	struct so_io_stream_checksum_threaded_backend_private * self = worker->data;
 	self->backend->ops->free(self->backend);
 	free(self);
 	free(worker);
 }
 
-struct soj_stream_checksum_backend * soj_stream_checksum_threaded_backend_new(struct so_value * checksums) {
+struct so_io_stream_checksum_backend * so_io_stream_checksum_threaded_backend_new(struct so_value * checksums) {
 	struct sysinfo info;
 	bzero(&info, sizeof(info));
 	sysinfo(&info);
 
-	struct soj_stream_checksum_threaded_backend_private * self = malloc(sizeof(struct soj_stream_checksum_threaded_backend_private));
+	struct so_io_stream_checksum_threaded_backend_private * self = malloc(sizeof(struct so_io_stream_checksum_threaded_backend_private));
 	self->first_block = self->last_block = NULL;
 	self->used = 0;
 	self->limit = info.totalram >> 5;
@@ -203,21 +203,21 @@ struct soj_stream_checksum_backend * soj_stream_checksum_threaded_backend_new(st
 	pthread_mutex_init(&self->lock, NULL);
 	pthread_cond_init(&self->wait, NULL);
 
-	self->backend = soj_stream_checksum_backend_new(checksums);
+	self->backend = so_io_stream_checksum_backend_new(checksums);
 
-	so_thread_pool_run2("checksum worker", soj_stream_checksum_threaded_backend_work, self, 8);
+	so_thread_pool_run2("checksum worker", so_io_stream_checksum_threaded_backend_work, self, 8);
 
-	struct soj_stream_checksum_backend * backend = malloc(sizeof(struct soj_stream_checksum_backend));
-	backend->ops = &soj_stream_checksum_threaded_backend_ops;
+	struct so_io_stream_checksum_backend * backend = malloc(sizeof(struct so_io_stream_checksum_backend));
+	backend->ops = &so_io_stream_checksum_threaded_backend_ops;
 	backend->data = self;
 
 	return backend;
 }
 
-static void soj_stream_checksum_threaded_backend_update(struct soj_stream_checksum_backend * worker, const void * buffer, ssize_t length) {
-	struct soj_stream_checksum_threaded_backend_private * self = worker->data;
+static void so_io_stream_checksum_threaded_backend_update(struct so_io_stream_checksum_backend * worker, const void * buffer, ssize_t length) {
+	struct so_io_stream_checksum_threaded_backend_private * self = worker->data;
 
-	struct soj_linked_list_block * block = malloc(sizeof(struct soj_linked_list_block));
+	struct so_io_linked_list_block * block = malloc(sizeof(struct so_io_linked_list_block));
 	block->data = malloc(length);
 	memcpy(block->data, buffer, length);
 	block->length = length;
@@ -239,8 +239,8 @@ static void soj_stream_checksum_threaded_backend_update(struct soj_stream_checks
 	pthread_mutex_unlock(&self->lock);
 }
 
-static void soj_stream_checksum_threaded_backend_work(void * arg) {
-	struct soj_stream_checksum_threaded_backend_private * self = arg;
+static void so_io_stream_checksum_threaded_backend_work(void * arg) {
+	struct so_io_stream_checksum_threaded_backend_private * self = arg;
 
 	for (;;) {
 		pthread_mutex_lock(&self->lock);
@@ -252,7 +252,7 @@ static void soj_stream_checksum_threaded_backend_work(void * arg) {
 		if (self->first_block == NULL)
 			pthread_cond_wait(&self->wait, &self->lock);
 
-		struct soj_linked_list_block * block = self->first_block;
+		struct so_io_linked_list_block * block = self->first_block;
 		self->first_block = self->last_block = NULL;
 		self->used = 0;
 		pthread_mutex_unlock(&self->lock);
@@ -260,7 +260,7 @@ static void soj_stream_checksum_threaded_backend_work(void * arg) {
 		while (block != NULL) {
 			self->backend->ops->update(self->backend, block->data, block->length);
 
-			struct soj_linked_list_block * next = block->next;
+			struct so_io_linked_list_block * next = block->next;
 			free(block->data);
 			free(block);
 

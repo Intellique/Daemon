@@ -25,12 +25,12 @@
 \****************************************************************************/
 
 #include <libstoriqone/backup.h>
+#include <libstoriqone/io.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/changer.h>
 #include <libstoriqone-job/drive.h>
-#include <libstoriqone-job/io.h>
 #include <libstoriqone-job/job.h>
 
 // free, malloc
@@ -104,7 +104,7 @@ void soj_checkbackupdb_worker_do(void * arg) {
 	}
 
 	struct so_value * checksums = so_value_hashtable_keys(worker->volume->digests);
-	struct so_stream_reader * ck_dr = soj_checksum_reader_new(sr_dr, checksums, true);
+	struct so_stream_reader * ck_dr = so_io_checksum_reader_new(sr_dr, checksums, true);
 
 	char * buffer = malloc(65536);
 	ssize_t nb_read;
@@ -117,7 +117,7 @@ void soj_checkbackupdb_worker_do(void * arg) {
 	free(buffer);
 	ck_dr->ops->close(ck_dr);
 
-	struct so_value * digests = soj_checksum_reader_get_checksums(ck_dr);
+	struct so_value * digests = so_io_checksum_reader_get_checksums(ck_dr);
 	worker->volume->checksum_ok = so_value_equals(worker->volume->digests, digests);
 	worker->volume->checktime = time(NULL);
 

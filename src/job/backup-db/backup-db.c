@@ -34,6 +34,7 @@
 #include <libstoriqone/database.h>
 #include <libstoriqone/file.h>
 #include <libstoriqone/host.h>
+#include <libstoriqone/io.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
@@ -41,7 +42,6 @@
 #include <libstoriqone-job/backup.h>
 #include <libstoriqone-job/changer.h>
 #include <libstoriqone-job/drive.h>
-#include <libstoriqone-job/io.h>
 #include <libstoriqone-job/job.h>
 #include <libstoriqone-job/media.h>
 #include <libstoriqone-job/script.h>
@@ -173,7 +173,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 					struct so_stream_writer * cksum_writer = dr_writer;
 
 					if (so_value_list_get_length(soj_backupdb_checksums) > 0)
-						cksum_writer = soj_checksum_writer_new(dr_writer, soj_backupdb_checksums, true);
+						cksum_writer = so_io_checksum_writer_new(dr_writer, soj_backupdb_checksums, true);
 
 					off_t position = 0;
 					while (nb_read = tmp_reader->ops->read(tmp_reader, buffer, 16384), nb_read > 0) {
@@ -204,7 +204,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 					ssize_t size = cksum_writer->ops->position(cksum_writer);
 
 					if (dr_writer != cksum_writer) {
-						struct so_value * checksums = soj_checksum_writer_get_checksums(cksum_writer);
+						struct so_value * checksums = so_io_checksum_writer_get_checksums(cksum_writer);
 						soj_backup_add_volume(soj_backupdb_backup, media, size, file_position, checksums);
 					} else
 						soj_backup_add_volume(soj_backupdb_backup, media, size, file_position, NULL);

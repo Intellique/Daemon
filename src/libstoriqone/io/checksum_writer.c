@@ -27,48 +27,48 @@
 // free, malloc
 #include <stdlib.h>
 
+#include <libstoriqone/io.h>
 #include <libstoriqone/value.h>
-#include <libstoriqone-job/io.h>
 
 #include "checksum.h"
 
-struct soj_stream_checksum_writer_private {
+struct so_io_stream_checksum_writer_private {
 	struct so_value * checksums;
 	bool thread_helper;
 
 	struct so_stream_writer * out;
 	bool closed;
 
-	struct soj_stream_checksum_backend * worker;
+	struct so_io_stream_checksum_backend * worker;
 };
 
-static ssize_t soj_checksum_writer_before_close(struct so_stream_writer * sw, void * buffer, ssize_t length);
-static int soj_checksum_writer_close(struct so_stream_writer * sw);
-static int soj_checksum_writer_file_position(struct so_stream_writer * sw);
-static void soj_checksum_writer_free(struct so_stream_writer * sw);
-static ssize_t soj_checksum_writer_get_available_size(struct so_stream_writer * sw);
-static ssize_t soj_checksum_writer_get_block_size(struct so_stream_writer * sw);
-static int soj_checksum_writer_last_errno(struct so_stream_writer * sw);
-static ssize_t soj_checksum_writer_position(struct so_stream_writer * sw);
-static struct so_stream_reader * soj_checksum_writer_reopen(struct so_stream_writer * sw);
-static ssize_t soj_checksum_writer_write(struct so_stream_writer * sw, const void * buffer, ssize_t length);
+static ssize_t so_io_checksum_writer_before_close(struct so_stream_writer * sw, void * buffer, ssize_t length);
+static int so_io_checksum_writer_close(struct so_stream_writer * sw);
+static int so_io_checksum_writer_file_position(struct so_stream_writer * sw);
+static void so_io_checksum_writer_free(struct so_stream_writer * sw);
+static ssize_t so_io_checksum_writer_get_available_size(struct so_stream_writer * sw);
+static ssize_t so_io_checksum_writer_get_block_size(struct so_stream_writer * sw);
+static int so_io_checksum_writer_last_errno(struct so_stream_writer * sw);
+static ssize_t so_io_checksum_writer_position(struct so_stream_writer * sw);
+static struct so_stream_reader * so_io_checksum_writer_reopen(struct so_stream_writer * sw);
+static ssize_t so_io_checksum_writer_write(struct so_stream_writer * sw, const void * buffer, ssize_t length);
 
-static struct so_stream_writer_ops soj_writer_ops = {
-	.before_close       = soj_checksum_writer_before_close,
-	.close              = soj_checksum_writer_close,
-	.file_position      = soj_checksum_writer_file_position,
-	.free               = soj_checksum_writer_free,
-	.get_available_size = soj_checksum_writer_get_available_size,
-	.get_block_size     = soj_checksum_writer_get_block_size,
-	.last_errno         = soj_checksum_writer_last_errno,
-	.position           = soj_checksum_writer_position,
-	.reopen             = soj_checksum_writer_reopen,
-	.write              = soj_checksum_writer_write,
+static struct so_stream_writer_ops so_io_writer_ops = {
+	.before_close       = so_io_checksum_writer_before_close,
+	.close              = so_io_checksum_writer_close,
+	.file_position      = so_io_checksum_writer_file_position,
+	.free               = so_io_checksum_writer_free,
+	.get_available_size = so_io_checksum_writer_get_available_size,
+	.get_block_size     = so_io_checksum_writer_get_block_size,
+	.last_errno         = so_io_checksum_writer_last_errno,
+	.position           = so_io_checksum_writer_position,
+	.reopen             = so_io_checksum_writer_reopen,
+	.write              = so_io_checksum_writer_write,
 };
 
 
-static ssize_t soj_checksum_writer_before_close(struct so_stream_writer * sw, void * buffer, ssize_t length) {
-	struct soj_stream_checksum_writer_private * self = sw->data;
+static ssize_t so_io_checksum_writer_before_close(struct so_stream_writer * sw, void * buffer, ssize_t length) {
+	struct so_io_stream_checksum_writer_private * self = sw->data;
 
 	ssize_t nb_read = self->out->ops->before_close(self->out, buffer, length);
 
@@ -78,8 +78,8 @@ static ssize_t soj_checksum_writer_before_close(struct so_stream_writer * sw, vo
 	return nb_read;
 }
 
-static int soj_checksum_writer_close(struct so_stream_writer * sw) {
-	struct soj_stream_checksum_writer_private * self = sw->data;
+static int so_io_checksum_writer_close(struct so_stream_writer * sw) {
+	struct so_io_stream_checksum_writer_private * self = sw->data;
 
 	if (self->closed)
 		return 0;
@@ -105,13 +105,13 @@ static int soj_checksum_writer_close(struct so_stream_writer * sw) {
 	return failed;
 }
 
-static int soj_checksum_writer_file_position(struct so_stream_writer * sw) {
-	struct soj_stream_checksum_writer_private * self = sw->data;
+static int so_io_checksum_writer_file_position(struct so_stream_writer * sw) {
+	struct so_io_stream_checksum_writer_private * self = sw->data;
 	return self->out->ops->file_position(self->out);
 }
 
-static void soj_checksum_writer_free(struct so_stream_writer * sw) {
-	struct soj_stream_checksum_writer_private * self = sw->data;
+static void so_io_checksum_writer_free(struct so_stream_writer * sw) {
+	struct so_io_stream_checksum_writer_private * self = sw->data;
 
 	so_value_free(self->checksums);
 
@@ -126,60 +126,60 @@ static void soj_checksum_writer_free(struct so_stream_writer * sw) {
 	free(sw);
 }
 
-static ssize_t soj_checksum_writer_get_available_size(struct so_stream_writer * sw) {
-	struct soj_stream_checksum_writer_private * self = sw->data;
+static ssize_t so_io_checksum_writer_get_available_size(struct so_stream_writer * sw) {
+	struct so_io_stream_checksum_writer_private * self = sw->data;
 	if (self->out != NULL)
 		return self->out->ops->get_available_size(self->out);
 	return 0;
 }
 
-static ssize_t soj_checksum_writer_get_block_size(struct so_stream_writer * sw) {
-	struct soj_stream_checksum_writer_private * self = sw->data;
+static ssize_t so_io_checksum_writer_get_block_size(struct so_stream_writer * sw) {
+	struct so_io_stream_checksum_writer_private * self = sw->data;
 	if (self->out != NULL)
 		return self->out->ops->get_block_size(self->out);
 	return 0;
 }
 
-struct so_value * soj_checksum_writer_get_checksums(struct so_stream_writer * sw) {
-	struct soj_stream_checksum_writer_private * self = sw->data;
+struct so_value * so_io_checksum_writer_get_checksums(struct so_stream_writer * sw) {
+	struct so_io_stream_checksum_writer_private * self = sw->data;
 	return self->worker->ops->digest(self->worker);
 }
 
-static int soj_checksum_writer_last_errno(struct so_stream_writer * sw) {
-	struct soj_stream_checksum_writer_private * self = sw->data;
+static int so_io_checksum_writer_last_errno(struct so_stream_writer * sw) {
+	struct so_io_stream_checksum_writer_private * self = sw->data;
 	if (self->out != NULL)
 		return self->out->ops->last_errno(self->out);
 	return 0;
 }
 
-struct so_stream_writer * soj_checksum_writer_new(struct so_stream_writer * stream, struct so_value * checksums, bool thread_helper) {
-	struct soj_stream_checksum_writer_private * self = malloc(sizeof(struct soj_stream_checksum_writer_private));
+struct so_stream_writer * so_io_checksum_writer_new(struct so_stream_writer * stream, struct so_value * checksums, bool thread_helper) {
+	struct so_io_stream_checksum_writer_private * self = malloc(sizeof(struct so_io_stream_checksum_writer_private));
 	self->checksums = so_value_share(checksums);
 	self->thread_helper = thread_helper;
 	self->out = stream;
 	self->closed = false;
 
 	if (thread_helper)
-		self->worker = soj_stream_checksum_threaded_backend_new(checksums);
+		self->worker = so_io_stream_checksum_threaded_backend_new(checksums);
 	else
-		self->worker = soj_stream_checksum_backend_new(checksums);
+		self->worker = so_io_stream_checksum_backend_new(checksums);
 
 	struct so_stream_writer * writer = malloc(sizeof(struct so_stream_writer));
-	writer->ops = &soj_writer_ops;
+	writer->ops = &so_io_writer_ops;
 	writer->data = self;
 
 	return writer;
 }
 
-static ssize_t soj_checksum_writer_position(struct so_stream_writer * sw) {
-	struct soj_stream_checksum_writer_private * self = sw->data;
+static ssize_t so_io_checksum_writer_position(struct so_stream_writer * sw) {
+	struct so_io_stream_checksum_writer_private * self = sw->data;
 	if (self->out != NULL)
 		return self->out->ops->position(self->out);
 	return 0;
 }
 
-static struct so_stream_reader * soj_checksum_writer_reopen(struct so_stream_writer * sw) {
-	struct soj_stream_checksum_writer_private * self = sw->data;
+static struct so_stream_reader * so_io_checksum_writer_reopen(struct so_stream_writer * sw) {
+	struct so_io_stream_checksum_writer_private * self = sw->data;
 
 	if (self->closed)
 		return NULL;
@@ -195,14 +195,14 @@ static struct so_stream_reader * soj_checksum_writer_reopen(struct so_stream_wri
 
 		struct so_stream_reader * new_in = self->out->ops->reopen(self->out);
 		if (new_in != NULL)
-			return soj_checksum_reader_new(new_in, self->checksums, self->thread_helper);
+			return so_io_checksum_reader_new(new_in, self->checksums, self->thread_helper);
 	}
 
 	return NULL;
 }
 
-static ssize_t soj_checksum_writer_write(struct so_stream_writer * sw, const void * buffer, ssize_t length) {
-	struct soj_stream_checksum_writer_private * self = sw->data;
+static ssize_t so_io_checksum_writer_write(struct so_stream_writer * sw, const void * buffer, ssize_t length) {
+	struct so_io_stream_checksum_writer_private * self = sw->data;
 
 	if (self->closed)
 		return -1;

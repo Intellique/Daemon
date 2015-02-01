@@ -32,6 +32,8 @@
 // ssize_t
 #include <sys/types.h>
 
+struct so_value;
+
 struct so_stream_reader {
 	/**
 	 * \brief stream operation
@@ -116,6 +118,11 @@ struct so_stream_writer {
 };
 
 struct so_stream_writer * so_io_tmp_writer(void);
+
+struct so_stream_reader * so_io_checksum_reader_new(struct so_stream_reader * stream, struct so_value * checksums, bool thread_helper);
+struct so_stream_writer * so_io_checksum_writer_new(struct so_stream_writer * stream, struct so_value * checksums, bool thread_helper);
+struct so_value * so_io_checksum_reader_get_checksums(struct so_stream_reader * stream);
+struct so_value * so_io_checksum_writer_get_checksums(struct so_stream_writer * stream);
 
 #endif
 
