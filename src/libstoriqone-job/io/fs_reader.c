@@ -200,14 +200,11 @@ static enum so_format_reader_header_status soj_format_reader_filesystem_get_head
 		}
 
 		struct soj_format_reader_filesystem_node * parent = self->current->parent;
-		if (parent == NULL) {
-			soj_format_reader_filesystem_node_free(self->root, self->current);
-			self->root = self->current = NULL;
-			break;
-		}
-
 		soj_format_reader_filesystem_node_free(self->root, self->current);
 		self->current = parent;
+		if (parent == NULL)
+			self->root = NULL;
+
 	}
 
 	return so_format_reader_header_not_found;
@@ -257,6 +254,7 @@ static enum so_format_reader_header_status soj_format_reader_filesystem_skip_fil
 static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_node_add(struct soj_format_reader_filesystem_node * node) {
 	char * path;
 	asprintf(&path, "%s/%s", node->path, node->files[node->i_file]->d_name);
+	free(node->files[node->i_file]);
 	node->i_file++;
 
 	node->child = soj_format_reader_filesystem_node_new(path);
