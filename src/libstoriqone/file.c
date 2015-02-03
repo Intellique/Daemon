@@ -29,12 +29,16 @@
 #include <dirent.h>
 // fcntl, open
 #include <fcntl.h>
+// getgrgid_r
+#include <grp.h>
 // basename, dirname
 #include <libgen.h>
 // dgettext
 #include <libintl.h>
 // localeconv
 #include <locale.h>
+// getpwuid_r
+#include <pwd.h>
 // asprintf, rename, snprintf
 #include <stdio.h>
 // free, malloc
@@ -338,6 +342,21 @@ int so_file_cp(const char * src, const char * dst) {
 	return failed;
 }
 
+char * so_file_gid2name(gid_t gid) {
+	char buffer[128];
+
+	struct group gr;
+	struct group * tmp_gr;
+
+	if (!getgrgid_r(gid, &gr, buffer, 512, &tmp_gr))
+		return strdup(buffer);
+	else {
+		char * name;
+		asprintf(&name, "%d", gid);
+		return name;
+	}
+}
+
 int so_file_mkdir(const char * dirname, mode_t mode) {
 	if (!access(dirname, F_OK))
 		return 0;
@@ -520,6 +539,21 @@ int so_file_rm(const char * path) {
 		return rmdir(path);
 	} else {
 		return unlink(path);
+	}
+}
+
+char * so_file_uid2name(uid_t uid) {
+	char buffer[128];
+
+	struct passwd pw;
+	struct passwd * tmp_pw;
+
+	if (!getpwuid_r(uid, &pw, buffer, 512, &tmp_pw))
+		return strdup(buffer);
+	else {
+		char * name;
+		asprintf(&name, "%d", uid);
+		return name;
 	}
 }
 

@@ -37,8 +37,14 @@
 
 struct so_value * soj_medias = NULL;
 
+static void soj_media_exit(void) __attribute__((destructor));
 static void soj_media_init(void) __attribute__((constructor));
 
+
+static void soj_media_exit() {
+	so_value_free(soj_medias);
+	soj_medias = NULL;
+}
 
 struct so_value_iterator * soj_media_get_iterator(struct so_pool * pool) {
 	struct so_value * medias = so_value_hashtable_get2(soj_medias, pool->uuid, false, false);

@@ -29,7 +29,7 @@
 
 // bool
 #include <stdbool.h>
-// gid_t, mode_t, ssize_t
+// gid_t, mode_t, ssize_t, uid_t
 #include <sys/types.h>
 
 struct dirent;
@@ -66,6 +66,8 @@ void so_file_convert_size_to_string(size_t size, char * str, ssize_t str_len) __
 
 int so_file_cp(const char * src, const char * dst) __attribute__((nonnull));
 
+char * so_file_gid2name(gid_t gid);
+
 /**
  * \brief Create directory recursively
  *
@@ -88,6 +90,8 @@ char * so_file_rename(const char * filename) __attribute__((nonnull));
  * \returns 0 if ok or read errno
  */
 int so_file_rm(const char * path) __attribute__((nonnull));
+
+char * so_file_uid2name(uid_t uid);
 
 #endif
 

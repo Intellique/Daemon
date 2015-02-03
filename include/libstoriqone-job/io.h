@@ -24,26 +24,13 @@
 *  Copyright (C) 2015, Guillaume Clercin <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_JOB_DRIVE_H__
-#define __LIBSTORIQONE_JOB_DRIVE_H__
+#ifndef __LIBSTORIQONE_JOB_IO_H__
+#define __LIBSTORIQONE_JOB_IO_H__
 
-#include <libstoriqone/drive.h>
+#include <libstoriqone/io.h>
 
-struct so_drive;
-struct so_pool;
-struct so_value;
-
-struct so_drive_ops {
-	bool (*check_header)(struct so_drive * drive);
-	bool (*check_support)(struct so_drive * drive, struct so_media_format * format, bool for_writing);
-	ssize_t (*find_best_block_size)(struct so_drive * drive);
-	int (*format_media)(struct so_drive * drive, struct so_pool * pool);
-	struct so_stream_reader * (*get_raw_reader)(struct so_drive * drive, int file_position);
-	struct so_stream_writer * (*get_raw_writer)(struct so_drive * drive);
-	struct so_format_reader * (*get_reader)(struct so_drive * drive, int file_position, struct so_value * checksums);
-	struct so_format_writer * (*get_writer)(struct so_drive * drive, struct so_value * checksums);
-	int (*sync)(struct so_drive * drive);
-};
+struct so_format_reader * soj_io_filesystem_reader(const char * path);
+struct so_format_writer * soj_io_filesystem_writer(const char * path);
 
 #endif
 
