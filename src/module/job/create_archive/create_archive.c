@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 12 Jan 2015 15:34:54 +0100                            *
+*  Last modified: Tue, 03 Feb 2015 17:54:41 +0100                            *
 \****************************************************************************/
 
 // asprintf, versionsort
@@ -349,8 +349,10 @@ static void st_job_create_archive_post_run(struct st_job * job) {
 static bool st_job_create_archive_pre_run(struct st_job * job) {
 	struct st_job_create_archive_private * self = job->data;
 
-	if (self->pool == NULL)
+	if (self->pool == NULL) {
+		st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Error, no pool with this archive job");
 		return false;
+	}
 
 	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_pre, self->pool) == 0)
 		return true;
