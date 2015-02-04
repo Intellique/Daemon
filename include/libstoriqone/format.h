@@ -88,12 +88,9 @@ struct so_format_reader {
 
 struct so_format_writer {
 	struct so_format_writer_ops {
-		enum so_format_writer_status (*add)(struct so_format_writer * fw, struct so_value * file);
-		enum so_format_writer_status (*add_file)(struct so_format_writer * fw, const char * file);
-		enum so_format_writer_status (*add_file_at)(struct so_format_writer * fw, int dir_fd, const char * file);
+		enum so_format_writer_status (*add_file)(struct so_format_writer * fw, struct so_format_file * file);
 		enum so_format_writer_status (*add_label)(struct so_format_writer * fw, const char * label);
 		int (*close)(struct so_format_writer * fw);
-		ssize_t (*compute_size_of_file)(struct so_format_writer * fw, const char * file, bool recursive);
 		ssize_t (*end_of_file)(struct so_format_writer * fw);
 		void (*free)(struct so_format_writer * fw);
 		ssize_t (*get_available_size)(struct so_format_writer * fw);
@@ -101,8 +98,11 @@ struct so_format_writer {
 		struct so_value * (*get_digests)(struct so_format_writer * fw);
 		int (*last_errno)(struct so_format_writer * fw);
 		ssize_t (*position)(struct so_format_writer * fw);
-		int (*restart_file)(struct so_format_writer * fw, const char * filename, ssize_t position);
 		ssize_t (*write)(struct so_format_writer * fw, const void * buffer, ssize_t length);
+
+		// enum so_format_writer_status (*add_file)(struct so_format_writer * fw, const char * file);
+		enum so_format_writer_status (*add_file_at)(struct so_format_writer * fw, int dir_fd, const char * file);
+		ssize_t (*compute_size_of_file)(struct so_format_writer * fw, const char * file, bool recursive);
 	} * ops;
 	void * data;
 };
