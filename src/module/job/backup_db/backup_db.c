@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Fri, 07 Nov 2014 16:28:59 +0100                            *
+*  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Thu, 04 Dec 2014 18:47:01 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -348,6 +348,8 @@ static int st_job_backup_db_run(struct st_job * job) {
 
 	job->done = 1;
 
+	st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_important, "Backup job finished (job name: %s), num runs %ld, status: OK", job->name, job->num_runs);
+
 	return 0;
 
 write_failed:
@@ -377,6 +379,9 @@ read_failed:
 tmp_writer_failed:
 	if (db_reader != NULL)
 		db_reader->ops->free(db_reader);
+
+	st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_important, "Backup job finished (job name: %s), num runs %ld, status: failed", job->name, job->num_runs);
+
 	return 1;
 }
 
@@ -580,7 +585,7 @@ static bool st_job_backup_db_select_media(struct st_job * job, struct st_job_bac
 				if (self->pool->growable && !has_alerted_user) {
 					st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Please, insert new media which will be a part of pool %s", self->pool->name);
 				} else if (!has_alerted_user) {
-					st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "Please, you must to extent the pool (%s)", self->pool->name);
+					st_job_add_record(job->db_connect, st_log_level_warning, job, st_job_record_notif_important, "No media available, you must add a media to the pool (%s)", self->pool->name);
 				}
 
 				has_alerted_user = true;

@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 23 Jan 2014 13:27:06 +0100                            *
+*  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Thu, 04 Dec 2014 18:47:45 +0100                            *
 \****************************************************************************/
 
 // free, malloc
@@ -352,7 +352,7 @@ bool st_job_copy_archive_select_output_media(struct st_job_copy_archive_private 
 				if (self->pool->growable && !has_alerted_user) {
 					st_job_add_record(self->job->db_connect, st_log_level_warning, self->job, st_job_record_notif_important, "Please, insert new media which will be a part of pool %s", self->pool->name);
 				} else if (!has_alerted_user) {
-					st_job_add_record(self->job->db_connect, st_log_level_warning, self->job, st_job_record_notif_important, "Please, you must to extent the pool (%s)", self->pool->name);
+					st_job_add_record(self->job->db_connect, st_log_level_warning, self->job, st_job_record_notif_important, "No media available, you must add a media to the pool (%s)", self->pool->name);
 				}
 
 				has_alerted_user = true;

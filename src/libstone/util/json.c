@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
 *  Last modified: Fri, 24 Jan 2014 13:17:33 +0100                            *
 \****************************************************************************/
 
@@ -30,6 +30,7 @@
 // strdup
 #include <string.h>
 
+#include <libstone/job.h>
 #include <libstone/util/hashtable.h>
 #include <libstone/util/json.h>
 #include <libstone/util/string.h>
@@ -62,10 +63,12 @@ struct st_hashtable * st_util_json_from_string(const char * string) {
 	return values;
 }
 
-char * st_util_json_archive_to_string(struct st_archive * archive) {
-	json_t * jarchive = st_io_json_archive(archive);
-	char * str = json_dumps(jarchive, JSON_COMPACT);
-	json_decref(jarchive);
+char * st_util_json_archive_to_string(struct st_archive * archive, struct st_job * job) {
+	json_t * json = json_pack("{sos{ss}}", "archive", st_io_json_archive(archive), "job", "type", job->driver->name);
+
+	char * str = json_dumps(json, JSON_COMPACT);
+	json_decref(json);
+
 	return str;
 }
 

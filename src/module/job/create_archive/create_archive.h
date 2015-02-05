@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
+*  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
 *  Last modified: Fri, 24 Jan 2014 13:05:47 +0100                            *
 \****************************************************************************/
 
@@ -84,6 +84,12 @@ struct st_job_create_archive_private {
 struct st_job_create_archive_data_worker * st_job_create_archive_single_worker(struct st_job * job, struct st_archive * archive, ssize_t archive_size, struct st_database_connection * connect, struct st_job_create_archive_meta_worker * meta_worker);
 
 struct st_job_create_archive_meta_worker * st_job_create_archive_meta_worker_new(struct st_job * job, struct st_database_connection * connect);
+
+void st_job_create_archive_report_add_file(struct st_job_create_archive_report * report, struct st_archive_volume * volume, struct st_archive_files * file);
+void st_job_create_archive_report_add_volume(struct st_job_create_archive_report * report, struct st_archive_volume * volume);
+void st_job_create_archive_report_free(struct st_job_create_archive_report * report);
+char * st_job_create_archive_report_make(struct st_job_create_archive_report * report);
+struct st_job_create_archive_report * st_job_create_archive_report_new(struct st_job * job, struct st_archive * archive, struct st_pool * pool);
 
 #endif
 

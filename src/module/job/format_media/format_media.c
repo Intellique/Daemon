@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Thu, 02 Oct 2014 10:10:59 +0200                            *
+*  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Mon, 02 Feb 2015 18:16:37 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -423,6 +423,15 @@ static void st_job_format_media_post_run(struct st_job * j) {
 static bool st_job_format_media_pre_run(struct st_job * j) {
 	struct st_job_format_media_private * self = j->data;
 
+	if (self->media == NULL) {
+		st_job_add_record(j->db_connect, st_log_level_error, j, st_job_record_notif_important, "Error: no media associated with this job");
+		return false;
+	}
+	if (self->pool == NULL) {
+		st_job_add_record(j->db_connect, st_log_level_error, j, st_job_record_notif_important, "Error: no pool associated with this job");
+		return false;
+	}
+
 	if (j->db_connect->ops->get_nb_scripts(j->db_connect, j->driver->name, st_script_type_pre, self->pool) == 0)
 		return true;
 
@@ -529,6 +538,7 @@ int st_job_format_media_run(struct st_job * job) {
 		st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "No pool specified");
 		return 1;
 	}
+	st_pool_sync(self->pool, job->db_connect);
 	if (self->pool->deleted) {
 		st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Try to format to a pool which is deleted");
 		job->sched_status = st_job_status_error;

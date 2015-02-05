@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 10 Jun 2014 19:05:34 +0200                            *
+*  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Mon, 22 Dec 2014 13:22:27 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -221,6 +221,7 @@ struct st_database_connection {
 		struct st_pool * (*get_pool)(struct st_database_connection * connect, struct st_archive * archive, struct st_job * job, const char * uuid);
 		int (*sync_media)(struct st_database_connection * connnect, struct st_media * media);
 		int (*sync_media_format)(struct st_database_connection * connect, struct st_media_format * format);
+		int (*sync_pool)(struct st_database_connection * connect, struct st_pool * pool);
 
 		int (*add_check_archive_job)(struct st_database_connection * connect, struct st_job * job, struct st_archive * archive, time_t starttime, bool quick_mode);
 		int (*add_job_record)(struct st_database_connection * connect, struct st_job * job, const char * message, enum st_job_record_notif notif);

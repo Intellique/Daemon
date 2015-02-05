@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Tue, 08 Oct 2013 11:10:07 +0200                            *
+*  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Wed, 28 Jan 2015 13:03:41 +0100                            *
 \****************************************************************************/
 
 // pthread_cond_destroy, pthread_cond_init, pthread_cond_signal, pthread_cond_wait
@@ -34,6 +34,10 @@
 #include <stdlib.h>
 // memcpy, strdup
 #include <string.h>
+// bzero
+#include <strings.h>
+// sysinfo
+#include <sys/sysinfo.h>
 
 #include <libstone/checksum.h>
 #include <libstone/io.h>
@@ -79,6 +83,8 @@ struct st_stream_checksum_threaded_backend_private {
 		ssize_t length;
 		struct st_linked_list_block * next;
 	} * volatile first_block, * volatile last_block;
+	volatile unsigned long used;
+	volatile unsigned long limit;
 
 	volatile bool stop;
 
@@ -423,7 +429,11 @@ static void st_stream_checksum_threaded_backend_finish(struct st_stream_checksum
 	struct st_stream_checksum_threaded_backend_private * self = worker->data;
 
 	pthread_mutex_lock(&self->lock);
+	if (self->first_block != NULL)
+		pthread_cond_wait(&self->wait, &self->lock);
+
 	self->stop = true;
+
 	pthread_cond_signal(&self->wait);
 	pthread_cond_wait(&self->wait, &self->lock);
 	pthread_mutex_unlock(&self->lock);
@@ -437,8 +447,14 @@ static void st_stream_checksum_threaded_backend_free(struct st_stream_checksum_b
 }
 
 static struct st_stream_checksum_backend * st_stream_checksum_threaded_backend_new(char ** checksums, unsigned int nb_checksums) {
+	struct sysinfo info;
+	bzero(&info, sizeof(info));
+	sysinfo(&info);
+
 	struct st_stream_checksum_threaded_backend_private * self = malloc(sizeof(struct st_stream_checksum_threaded_backend_private));
 	self->first_block = self->last_block = NULL;
+	self->used = 0;
+	self->limit = info.totalram >> 6;
 
 	self->stop = false;
 
@@ -466,10 +482,17 @@ static void st_stream_checksum_threaded_backend_update(struct st_stream_checksum
 	block->next = NULL;
 
 	pthread_mutex_lock(&self->lock);
+
+	if (self->used > 0 && self->used + length > self->limit)
+		pthread_cond_wait(&self->wait, &self->lock);
+
 	if (self->first_block == NULL)
 		self->first_block = self->last_block = block;
 	else
 		self->last_block = self->last_block->next = block;
+
+	self->used += length;
+
 	pthread_cond_signal(&self->wait);
 	pthread_mutex_unlock(&self->lock);
 }
@@ -479,14 +502,18 @@ static void st_stream_checksum_threaded_backend_work(void * arg) {
 
 	for (;;) {
 		pthread_mutex_lock(&self->lock);
+
 		if (self->stop && self->first_block == NULL)
 			break;
+
+		pthread_cond_signal(&self->wait);
 
 		if (self->first_block == NULL)
 			pthread_cond_wait(&self->wait, &self->lock);
 
 		struct st_linked_list_block * block = self->first_block;
 		self->first_block = self->last_block = NULL;
+		self->used = 0;
 		pthread_mutex_unlock(&self->lock);
 
 		while (block != NULL) {

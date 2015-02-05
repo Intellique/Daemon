@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 14 Oct 2013 12:28:00 +0200                            *
+*  Last modified: Fri, 14 Nov 2014 11:36:20 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -39,9 +39,9 @@
 #include <libstone/user.h>
 #include <libstone/util/time.h>
 
-#include "common.h"
+#include "create_archive.h"
 
-struct st_job_restore_archive_report {
+struct st_job_create_archive_report {
 	json_t * root;
 	json_t * job;
 	json_t * archive;
@@ -49,15 +49,14 @@ struct st_job_restore_archive_report {
 	json_t * volumes;
 	json_t * files;
 
-	pthread_mutex_t lock;
+	json_t * last_file;
 };
 
 
-void st_job_restore_archive_report_add_file(struct st_job_restore_archive_report * report, struct st_archive_volume * volume, struct st_archive_files * f, const char * restore_to) {
+void st_job_create_archive_report_add_file(struct st_job_create_archive_report * report, struct st_archive_volume * volume, struct st_archive_files * f) {
 	struct st_archive_file * file = f->file;
 	json_t * jfile = json_object();
 	json_object_set_new(jfile, "filename", json_string(file->name));
-	json_object_set_new(jfile, "restore to", json_string(restore_to));
 	json_object_set_new(jfile, "filetype", json_string(st_archive_file_type_to_string(file->type)));
 	json_object_set_new(jfile, "mime type", json_string(file->mime_type));
 	json_object_set_new(jfile, "owner", json_string(file->owner));
@@ -79,18 +78,16 @@ void st_job_restore_archive_report_add_file(struct st_job_restore_archive_report
 	char * vol_seq;
 	asprintf(&vol_seq, "%ld", volume->sequence);
 
-	pthread_mutex_lock(&report->lock);
 	json_object_set_new(report->files, file->name, jfile);
 
 	json_t * vol = json_object_get(report->volumes, vol_seq);
 	json_t * files = json_object_get(vol, "files");
 	json_array_append(files, jfile);
-	pthread_mutex_unlock(&report->lock);
 
 	free(vol_seq);
 }
 
-void st_job_restore_archive_report_add_volume(struct st_job_restore_archive_report * report, struct st_archive_volume * volume, struct st_archive_file * file) {
+void st_job_create_archive_report_add_volume(struct st_job_create_archive_report * report, struct st_archive_volume * volume) {
 	json_t * jmedia = json_object();
 	json_object_set_new(jmedia, "uuid", json_string(volume->media->uuid));
 	json_object_set_new(jmedia, "medium serial number", json_string(volume->media->medium_serial_number));
@@ -107,48 +104,22 @@ void st_job_restore_archive_report_add_volume(struct st_job_restore_archive_repo
 	char * vol_seq;
 	asprintf(&vol_seq, "%ld", volume->sequence);
 
-	pthread_mutex_lock(&report->lock);
-	if (file != NULL) {
-		json_t * jfile = json_object_get(report->files, file->name);
-		json_array_append(files, jfile);
-	}
-
 	json_object_set_new(report->volumes, vol_seq, vol);
 
 	json_t * vols = json_object_get(report->archive, "volumes");
 	json_array_append(vols, vol);
-	pthread_mutex_unlock(&report->lock);
 
 	free(vol_seq);
 }
 
-void st_job_restore_archive_report_check_file(struct st_job_restore_archive_report * report, struct st_archive_file * file, bool ok) {
-	char buffer[20];
-	st_util_time_convert(NULL, "%F %T", buffer, 20);
-
-	pthread_mutex_lock(&report->lock);
-	json_t * jfile = json_object_get(report->files, file->name);
-
-	if (json_object_get(jfile, "checktime"))
-		json_object_del(jfile, "checktime");
-	if (json_object_get(jfile, "checksum ok"))
-		json_object_del(jfile, "checksum ok");
-
-	json_object_set_new(jfile, "checktime", json_string(buffer));
-	json_object_set_new(jfile, "checksum ok", ok ? json_true() : json_false());
-
-	pthread_mutex_unlock(&report->lock);
-}
-
-void st_job_restore_archive_report_free(struct st_job_restore_archive_report * report) {
-	pthread_mutex_destroy(&report->lock);
+void st_job_create_archive_report_free(struct st_job_create_archive_report * report) {
 	json_decref(report->root);
 	json_decref(report->volumes);
 	json_decref(report->files);
 	free(report);
 }
 
-char * st_job_restore_archive_report_make(struct st_job_restore_archive_report * report) {
+char * st_job_create_archive_report_make(struct st_job_create_archive_report * report) {
 	char buffer[20];
 	st_util_time_convert(NULL, "%F %T", buffer, 20);
 	json_object_set_new(report->job, "endtime", json_string(buffer));
@@ -156,11 +127,11 @@ char * st_job_restore_archive_report_make(struct st_job_restore_archive_report *
 	return json_dumps(report->root, JSON_COMPACT);
 }
 
-struct st_job_restore_archive_report * st_job_restore_archive_report_new(struct st_job * job, struct st_archive * archive) {
-	struct st_job_restore_archive_report * self = malloc(sizeof(struct st_job_restore_archive_report));
+struct st_job_create_archive_report * st_job_create_archive_report_new(struct st_job * job, struct st_archive * archive, struct st_pool * pool) {
+	struct st_job_create_archive_report * self = malloc(sizeof(struct st_job_create_archive_report));
 
 	self->job = json_object();
-	json_object_set_new(self->job, "type", json_string("restore-archive"));
+	json_object_set_new(self->job, "type", json_string("create-archive"));
 	char buffer[20];
 	st_util_time_convert(NULL, "%F %T", buffer, 20);
 	json_object_set_new(self->job, "start time", json_string(buffer));
@@ -183,7 +154,9 @@ struct st_job_restore_archive_report * st_job_restore_archive_report_new(struct 
 	}
 	json_object_set_new(self->archive, "size", json_integer(total_size));
 
-	struct st_pool * pool = archive->volumes->media->pool;
+	if (pool == NULL)
+		pool = archive->volumes->media->pool;
+
 	json_t * jpool = json_object();
 	json_object_set_new(jpool, "name", json_string(pool->name));
 	json_object_set_new(jpool, "uuid", json_string(pool->uuid));
@@ -197,7 +170,7 @@ struct st_job_restore_archive_report * st_job_restore_archive_report_new(struct 
 	self->volumes = json_object();
 	self->files = json_object();
 
-	pthread_mutex_init(&self->lock, NULL);
+	self->last_file = NULL;
 
 	return self;
 }

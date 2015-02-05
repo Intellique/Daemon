@@ -21,8 +21,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2014, Clercin guillaume <gclercin@intellique.com>           *
-*  Last modified: Wed, 05 Feb 2014 12:44:39 +0100                            *
+*  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
+*  Last modified: Mon, 22 Dec 2014 13:22:00 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_LIBRARY_MEDIA_H__
@@ -215,7 +215,7 @@ struct st_media_format * st_media_format_get_by_name(const char * format, enum s
 struct st_pool * st_pool_get_by_archive(struct st_archive * archive, struct st_database_connection * connection);
 struct st_pool * st_pool_get_by_job(struct st_job * job, struct st_database_connection * connection);
 struct st_pool * st_pool_get_by_uuid(const char * uuid);
-int st_pool_sync(struct st_pool * pool);
+int st_pool_sync(struct st_pool * pool, struct st_database_connection * connection);
 
 #endif
 
