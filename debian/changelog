@@ -1,3 +1,22 @@
+stone (1.1.27+squeeze) polisher; urgency=low
+
+  * Correctif divers
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 05 Feb 2015 11:18:27 +0100
+
+stone (1.1.26+squeeze) UNRELEASE; urgency=low
+
+  * Bug fix: correctif
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 28 Jan 2015 16:37:40 +0100
+
+stone (1.1.25+squeeze) UNRELEASE; urgency=low
+
+   * Bug fix: correctif
+   * Améliration du checksum worker
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 27 Jan 2015 19:17:06 +0100
+
 stone (1.1.21+squeeze) polisher; urgency=low
 
   * Correctif divers
