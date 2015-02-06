@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 06 Feb 2015 11:45:28 +0100                            *
+*  Last modified: Fri, 06 Feb 2015 12:12:18 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -92,16 +92,19 @@ static void st_job_copy_archive_free(struct st_job * job) {
 	struct st_job_copy_archive_private * self = job->data;
 
 	unsigned int i;
-	for (i = 0; i < self->copy->nb_volumes; i++) {
-		struct st_archive_volume * vol = self->copy->volumes + i;
-		free(vol->files);
-		vol->files = NULL;
-		vol->nb_files = 0;
-	}
+	if (self->copy != NULL) {
+		for (i = 0; i < self->copy->nb_volumes; i++) {
+			struct st_archive_volume * vol = self->copy->volumes + i;
+			free(vol->files);
+			vol->files = NULL;
+			vol->nb_files = 0;
+		}
 
-	self->copy->copy_of = NULL;
-	st_archive_free(self->archive);
-	st_archive_free(self->copy);
+		self->copy->copy_of = NULL;
+		st_archive_free(self->copy);
+	}
+	if (self->archive != NULL)
+		st_archive_free(self->archive);
 
 	self->job->db_connect->ops->free(self->job->db_connect);
 	self->job->db_connect = NULL;
@@ -122,6 +125,7 @@ static void st_job_copy_archive_init() {
 static void st_job_copy_archive_new_job(struct st_job * job) {
 	struct st_job_copy_archive_private * self = malloc(sizeof(struct st_job_copy_archive_private));
 	bzero(self, sizeof(*self));
+
 	self->job = job;
 	job->db_connect = job->db_config->ops->connect(job->db_config);
 
