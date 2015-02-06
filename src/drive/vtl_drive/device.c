@@ -21,7 +21,7 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.     *
 *                                                                            *
 *  ------------------------------------------------------------------------  *
-*  Copyright (C) 2015, Guillaume Clercin <gclercin@intellique.com>           *
+*  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -236,7 +236,7 @@ static struct so_stream_reader * sodr_vtl_drive_get_raw_reader(int file_position
 
 		reader = sodr_vtl_drive_reader_get_raw_reader(fd, file_position);
 	} else {
-		// error invalid position
+		// TODO: error invalid position
 	}
 
 	free(filename);
