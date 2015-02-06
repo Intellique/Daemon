@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 14 Mar 2014 12:38:24 +0100                            *
+*  Last modified: Fri, 06 Feb 2015 11:00:32 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -123,8 +123,15 @@ static void st_job_restore_archive_new_job(struct st_job * job) {
 	self->job = job;
 	job->db_connect = job->db_config->ops->connect(job->db_config);
 
+	job->data = self;
+	job->ops = &st_job_restore_archive_ops;
+
 	self->archive = job->db_connect->ops->get_archive_volumes_by_job(job->db_connect, job);
 	self->archive_size = 0;
+
+	if (self->archive == NULL)
+		return;
+
 	self->pool = st_pool_get_by_archive(self->archive, job->db_connect);
 
 	unsigned int i;
@@ -143,9 +150,6 @@ static void st_job_restore_archive_new_job(struct st_job * job) {
 
 	self->first_worker = self->last_worker = NULL;
 	self->checks = NULL;
-
-	job->data = self;
-	job->ops = &st_job_restore_archive_ops;
 }
 
 static void st_job_restore_archive_on_error(struct st_job * job) {
@@ -382,6 +386,11 @@ static void st_job_restore_archive_post_run(struct st_job * job) {
 
 static bool st_job_restore_archive_pre_run(struct st_job * job) {
 	struct st_job_restore_archive_private * self = job->data;
+
+	if (self->archive == NULL) {
+		st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Fatal error, restore job without archive");
+		return false;
+	}
 
 	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_pre, self->pool) == 0)
 		return true;
