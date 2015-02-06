@@ -22,13 +22,15 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 06 Feb 2015 11:00:32 +0100                            *
+*  Last modified: Fri, 06 Feb 2015 12:07:45 +0100                            *
 \****************************************************************************/
 
 // json_*
 #include <jansson.h>
 // free, malloc
 #include <stdlib.h>
+// bzero
+#include <strings.h>
 // chmod
 #include <sys/stat.h>
 // utimes
@@ -106,9 +108,12 @@ static void st_job_restore_archive_free(struct st_job * job) {
 		st_archive_free(self->archive);
 	self->archive = NULL;
 
-	st_job_restore_archive_checks_worker_free(self->checks);
-	st_job_restore_archive_report_free(self->report);
-	st_job_restore_archive_path_free(self->restore_path);
+	if (self->checks != NULL)
+		st_job_restore_archive_checks_worker_free(self->checks);
+	if (self->report != NULL)
+		st_job_restore_archive_report_free(self->report);
+	if (self->restore_path != NULL)
+		st_job_restore_archive_path_free(self->restore_path);
 
 	free(self);
 	job->data = NULL;
@@ -120,6 +125,7 @@ static void st_job_restore_archive_init(void) {
 
 static void st_job_restore_archive_new_job(struct st_job * job) {
 	struct st_job_restore_archive_private * self = malloc(sizeof(struct st_job_restore_archive_private));
+	bzero(self, sizeof(struct st_job_restore_archive_private));
 	self->job = job;
 	job->db_connect = job->db_config->ops->connect(job->db_config);
 
