@@ -31,19 +31,25 @@
 // close
 #include <unistd.h>
 
+#include <libstoriqone/format.h>
 #include <libstoriqone/io.h>
 
 #include "peer.h"
 
 void sodr_peer_free(struct sodr_peer * peer) {
-	if (peer->reader != NULL) {
-		peer->reader->ops->close(peer->reader);
-		peer->reader->ops->free(peer->reader);
+	if (peer->stream_reader != NULL) {
+		peer->stream_reader->ops->close(peer->stream_reader);
+		peer->stream_reader->ops->free(peer->stream_reader);
 	}
 
-	if (peer->writer != NULL) {
-		peer->writer->ops->close(peer->writer);
-		peer->writer->ops->free(peer->writer);
+	if (peer->stream_writer != NULL) {
+		peer->stream_writer->ops->close(peer->stream_writer);
+		peer->stream_writer->ops->free(peer->stream_writer);
+	}
+
+	if (peer->format_reader != NULL) {
+		peer->format_reader->ops->close(peer->format_reader);
+		peer->format_reader->ops->free(peer->format_reader);
 	}
 
 	if (peer->fd_data >= 0)
@@ -60,8 +66,11 @@ struct sodr_peer * sodr_peer_new(int fd) {
 
 	peer->fd = fd;
 
-	peer->reader = NULL;
-	peer->writer = NULL;
+	peer->stream_reader = NULL;
+	peer->stream_writer = NULL;
+
+	peer->format_reader = NULL;
+	peer->format_writer = NULL;
 
 	peer->fd_data = -1;
 	peer->buffer = NULL;

@@ -24,20 +24,82 @@
 *  Copyright (C) 2015, Guillaume Clercin <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_JOB_IO_H__
-#define __LIBSTORIQONE_JOB_IO_H__
+// free
+#include <stdlib.h>
+// bzero
+#include <strings.h>
 
-#include <libstoriqone/io.h>
+#include <libstoriqone/format.h>
+#include <libstoriqone/value.h>
 
-struct so_drive;
-struct so_value;
 
-struct so_format_reader * soj_format_new_reader(struct so_drive * drive, int fd_command, struct so_value * config);
-struct so_format_reader * soj_format_new_reader2(struct so_drive * drive, int fd_command, int fd_data, ssize_t block_size);
+struct so_value * so_format_file_convert(struct so_format_file * file) {
+	struct so_value * vlink = so_value_new_null();
+	if (file->link)
+		vlink = so_value_new_string(file->link);
 
-struct so_stream_reader * soj_stream_new_reader(struct so_drive * drive, int fd_command, struct so_value * config);
-struct so_stream_reader * soj_stream_new_reader2(struct so_drive * drive, int fd_command, int fd_data, ssize_t block_size);
-struct so_stream_writer * soj_stream_new_writer(struct so_drive * drive, int fd_command, struct so_value * config);
+	return so_value_pack("{sssosisisisisisisssisssisisb}",
+		"filename", file->filename,
+		"link", vlink,
 
-#endif
+		"position", file->position,
+		"size", file->size,
+
+		"dev", (long) file->dev,
+		"rdev", (long) file->rdev,
+		"mode", (long) file->mode,
+		"uid", (long) file->uid,
+		"user", file->user,
+		"gid", (long) file->gid,
+		"group", file->group,
+
+		"ctime", file->ctime,
+		"mtime", file->mtime,
+
+		"is label", file->is_label
+	);
+}
+
+void so_format_file_free(struct so_format_file * file) {
+	free(file->filename);
+	free(file->link);
+	free(file->user);
+	free(file->group);
+}
+
+void so_format_file_init(struct so_format_file * file) {
+	bzero(file, sizeof(struct so_format_file));
+}
+
+void so_format_file_sync(struct so_format_file * file, struct so_value * new_file) {
+	struct so_value * vlink = NULL;
+	long dev, rdev, mode, uid, gid;
+
+	so_value_unpack(new_file, "{sssosisisisisisisssisssisisb}",
+		"filename", &file->filename,
+		"link", &vlink,
+
+		"position", &file->position,
+		"size", &file->size,
+
+		"dev", &dev,
+		"rdev", &rdev,
+		"mode", &mode,
+		"uid", &uid,
+		"user", &file->user,
+		"gid", &gid,
+		"group", &file->group,
+
+		"ctime", &file->ctime,
+		"mtime", &file->mtime,
+
+		"is label", &file->is_label
+	);
+
+	file->dev = dev;
+	file->rdev = rdev;
+	file->mode = mode;
+	file->uid = uid;
+	file->gid = gid;
+}
 

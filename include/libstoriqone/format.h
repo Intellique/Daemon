@@ -72,7 +72,7 @@ struct so_format_reader {
 	struct so_format_reader_ops {
 		int (*close)(struct so_format_reader * fr);
 		bool (*end_of_file)(struct so_format_reader * fr);
-		enum so_format_reader_header_status (*forward)(struct so_format_reader * fr, ssize_t block_position);
+		enum so_format_reader_header_status (*forward)(struct so_format_reader * fr, off_t offset);
 		void (*free)(struct so_format_reader * fr);
 		ssize_t (*get_block_size)(struct so_format_reader * fr);
 		struct so_value * (*get_digests)(struct so_format_reader * fr);
@@ -101,11 +101,16 @@ struct so_format_writer {
 		ssize_t (*write)(struct so_format_writer * fw, const void * buffer, ssize_t length);
 
 		// enum so_format_writer_status (*add_file)(struct so_format_writer * fw, const char * file);
-		enum so_format_writer_status (*add_file_at)(struct so_format_writer * fw, int dir_fd, const char * file);
-		ssize_t (*compute_size_of_file)(struct so_format_writer * fw, const char * file, bool recursive);
+		// enum so_format_writer_status (*add_file_at)(struct so_format_writer * fw, int dir_fd, const char * file);
+		// ssize_t (*compute_size_of_file)(struct so_format_writer * fw, const char * file, bool recursive);
 	} * ops;
 	void * data;
 };
+
+struct so_value * so_format_file_convert(struct so_format_file * file);
+void so_format_file_free(struct so_format_file * file);
+void so_format_file_init(struct so_format_file * file);
+void so_format_file_sync(struct so_format_file * file, struct so_value * new_file);
 
 #endif
 

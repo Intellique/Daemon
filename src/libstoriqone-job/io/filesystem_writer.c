@@ -72,17 +72,17 @@ static ssize_t soj_format_writer_filesystem_write(struct so_format_writer * fw, 
 static ssize_t soj_format_writer_filesystem_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
 
 static struct so_format_writer_ops soj_format_writer_filesystem_ops = {
-	.add_file = soj_format_writer_filesystem_add_file,
-	.add_label = soj_format_writer_filesystem_add_label,
-	.close = soj_format_writer_filesystem_close,
-	.end_of_file = soj_format_writer_filesystem_end_of_file,
-	.free = soj_format_writer_filesystem_free,
+	.add_file           = soj_format_writer_filesystem_add_file,
+	.add_label          = soj_format_writer_filesystem_add_label,
+	.close              = soj_format_writer_filesystem_close,
+	.end_of_file        = soj_format_writer_filesystem_end_of_file,
+	.free               = soj_format_writer_filesystem_free,
 	.get_available_size = soj_format_writer_filesystem_get_available_size,
-	.get_block_size = soj_format_writer_filesystem_get_block_size,
-	.get_digests = soj_format_writer_filesystem_get_digests,
-	.last_errno = soj_format_writer_filesystem_last_errno,
-	.position = soj_format_writer_filesystem_position,
-	.write = soj_format_writer_filesystem_write,
+	.get_block_size     = soj_format_writer_filesystem_get_block_size,
+	.get_digests        = soj_format_writer_filesystem_get_digests,
+	.last_errno         = soj_format_writer_filesystem_last_errno,
+	.position           = soj_format_writer_filesystem_position,
+	.write              = soj_format_writer_filesystem_write,
 };
 
 

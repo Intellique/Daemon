@@ -33,8 +33,11 @@
 struct sodr_peer {
 	int fd;
 
-	struct so_stream_reader * reader;
-	struct so_stream_writer * writer;
+	struct so_stream_reader * stream_reader;
+	struct so_stream_writer * stream_writer;
+
+	struct so_format_reader * format_reader;
+	struct so_format_writer * format_writer;
 
 	int fd_data;
 	char * buffer;

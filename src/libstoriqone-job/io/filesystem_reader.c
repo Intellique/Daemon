@@ -71,7 +71,7 @@ struct soj_format_reader_filesystem_private {
 
 static int soj_format_reader_filesystem_close(struct so_format_reader * fr);
 static bool soj_format_reader_filesystem_end_of_file(struct so_format_reader * fr);
-static enum so_format_reader_header_status soj_format_reader_filesystem_forward(struct so_format_reader * fr, ssize_t block_position);
+static enum so_format_reader_header_status soj_format_reader_filesystem_forward(struct so_format_reader * fr, off_t offset);
 static void soj_format_reader_filesystem_free(struct so_format_reader * fr);
 static ssize_t soj_format_reader_filesystem_get_block_size(struct so_format_reader * fr);
 static struct so_value * soj_format_reader_filesystem_get_digests(struct so_format_reader * fr);
@@ -88,18 +88,18 @@ static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_n
 static void soj_format_reader_filesystem_node_sync(struct soj_format_reader_filesystem_node * node, struct so_format_file * file);
 
 static struct so_format_reader_ops soj_format_reader_filesystem_ops = {
-		.close = soj_format_reader_filesystem_close,
-		.end_of_file = soj_format_reader_filesystem_end_of_file,
-		.forward = soj_format_reader_filesystem_forward,
-		.free = soj_format_reader_filesystem_free,
-		.get_block_size = soj_format_reader_filesystem_get_block_size,
-		.get_digests = soj_format_reader_filesystem_get_digests,
-		.get_header = soj_format_reader_filesystem_get_header,
-		.last_errno = soj_format_reader_filesystem_last_errno,
-		.position = soj_format_reader_filesystem_position,
-		.read = soj_format_reader_filesystem_read,
+		.close               = soj_format_reader_filesystem_close,
+		.end_of_file         = soj_format_reader_filesystem_end_of_file,
+		.forward             = soj_format_reader_filesystem_forward,
+		.free                = soj_format_reader_filesystem_free,
+		.get_block_size      = soj_format_reader_filesystem_get_block_size,
+		.get_digests         = soj_format_reader_filesystem_get_digests,
+		.get_header          = soj_format_reader_filesystem_get_header,
+		.last_errno          = soj_format_reader_filesystem_last_errno,
+		.position            = soj_format_reader_filesystem_position,
+		.read                = soj_format_reader_filesystem_read,
 		.read_to_end_of_data = soj_format_reader_filesystem_read_to_end_of_data,
-		.skip_file = soj_format_reader_filesystem_skip_file,
+		.skip_file           = soj_format_reader_filesystem_skip_file,
 };
 
 
@@ -134,14 +134,14 @@ static bool soj_format_reader_filesystem_end_of_file(struct so_format_reader * f
 	return self->current == NULL;
 }
 
-static enum so_format_reader_header_status soj_format_reader_filesystem_forward(struct so_format_reader * fr, ssize_t block_position) {
+static enum so_format_reader_header_status soj_format_reader_filesystem_forward(struct so_format_reader * fr, off_t offset) {
 	struct soj_format_reader_filesystem_private * self = fr->data;
 
 	if (self->current == NULL)
 		return so_format_reader_header_not_found;
 
-	off_t offset = lseek(self->current->fd, block_position * self->root->st.st_blksize, SEEK_CUR);
-	if (offset == (off_t) -1) {
+	off_t position = lseek(self->current->fd, offset * self->root->st.st_blksize, SEEK_CUR);
+	if (position == (off_t) -1) {
 		self->last_errno = errno;
 		return so_format_reader_header_not_found;
 	}
