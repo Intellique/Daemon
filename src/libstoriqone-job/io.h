@@ -34,6 +34,7 @@ struct so_value;
 
 struct so_format_reader * soj_format_new_reader(struct so_drive * drive, int fd_command, struct so_value * config);
 struct so_format_reader * soj_format_new_reader2(struct so_drive * drive, int fd_command, int fd_data, ssize_t block_size);
+struct so_format_writer * soj_format_new_writer(struct so_drive * drive, int fd_command, struct so_value * config);
 
 struct so_stream_reader * soj_stream_new_reader(struct so_drive * drive, int fd_command, struct so_value * config);
 struct so_stream_reader * soj_stream_new_reader2(struct so_drive * drive, int fd_command, int fd_data, ssize_t block_size);
