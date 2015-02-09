@@ -49,7 +49,8 @@ struct so_format_tar {
 	char padding2[131];
 };
 
-struct so_format_reader * so_format_tar_new_reader(struct so_stream_reader * reader, struct so_value * checksums);
+struct so_format_reader * sodr_format_tar_new_reader(struct so_stream_reader * reader, struct so_value * checksums);
+struct so_format_writer * sodr_format_tar_new_writer(struct so_stream_writer * writer, struct so_value * checksums);
 
 #endif
 

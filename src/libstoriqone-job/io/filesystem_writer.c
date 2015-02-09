@@ -69,7 +69,6 @@ static struct so_value * soj_format_writer_filesystem_get_digests(struct so_form
 static int soj_format_writer_filesystem_last_errno(struct so_format_writer * fw);
 static ssize_t soj_format_writer_filesystem_position(struct so_format_writer * fw);
 static ssize_t soj_format_writer_filesystem_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
-static ssize_t soj_format_writer_filesystem_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
 
 static struct so_format_writer_ops soj_format_writer_filesystem_ops = {
 	.add_file           = soj_format_writer_filesystem_add_file,

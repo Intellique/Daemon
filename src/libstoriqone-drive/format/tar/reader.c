@@ -91,7 +91,7 @@ static struct so_format_reader_ops sodr_format_tar_reader_ops = {
 };
 
 
-struct so_format_reader * so_format_tar_new_reader(struct so_stream_reader * reader, struct so_value * checksums) {
+struct so_format_reader * sodr_format_tar_new_reader(struct so_stream_reader * reader, struct so_value * checksums) {
 	struct so_format_tar_reader_private * self = malloc(sizeof(struct so_format_tar_reader_private));
 	bzero(self, sizeof(struct so_format_tar_reader_private));
 
