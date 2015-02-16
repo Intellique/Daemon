@@ -22,11 +22,13 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 11 Jul 2014 17:11:32 +0200                            *
+*  Last modified: Wed, 11 Feb 2015 12:53:12 +0100                            *
 \****************************************************************************/
 
 // errno
 #include <errno.h>
+// json_*
+#include <jansson.h>
 // open
 #include <fcntl.h>
 // bool
@@ -52,8 +54,10 @@
 // close, read, sleep
 #include <unistd.h>
 
+#include <libstone/database.h>
 #include <libstone/format.h>
 #include <libstone/io.h>
+#include <libstone/library/archive.h>
 #include <libstone/library/drive.h>
 #include <libstone/library/media.h>
 #include <libstone/library/ressource.h>
@@ -219,6 +223,73 @@ static void st_scsi_tape_drive_create_media(struct st_drive * drive) {
 	st_media_read_header(drive);
 
 	st_media_add(media);
+
+	if (media->status == st_media_status_in_use) {
+		ssize_t buffer_size = 10 * media->block_size;
+		char * buffer = malloc(10 * media->block_size);
+
+		struct st_database * db = st_database_get_default_driver();
+		struct st_database_config * config = NULL;
+		struct st_database_connection * connection = NULL;
+
+		if (db != NULL)
+			config = db->ops->get_default_config();
+		if (config != NULL)
+			connection = config->ops->connect(config);
+
+		connection->ops->sync_media(connection, media);
+
+		unsigned int i;
+		for (i = 1;; i++) {
+			struct st_stream_reader * reader = drive->ops->get_raw_reader(drive, i);
+			if (reader == NULL)
+				break;
+
+			bool ok = false;
+			ssize_t position = 0;
+			json_t * meta = NULL;
+			while (!ok) {
+				ssize_t nb_read = reader->ops->read(reader, buffer + position, buffer_size - position);
+
+				if (nb_read <= 0)
+					break;
+
+				if (nb_read > 0)
+					position += nb_read;
+
+				json_error_t error;
+				meta = json_loads(buffer, 0, &error);
+
+				if (meta != NULL) {
+					ok = true;
+				} else if (error.position > media->block_size / 2) {
+					buffer_size <<= 1;
+					void * addr = realloc(buffer, buffer_size);
+					if (addr == NULL)
+						break;
+					buffer = addr;
+				} else {
+					break;
+				}
+			}
+
+			reader->ops->close(reader);
+			reader->ops->free(reader);
+
+			if (ok) {
+				json_t * jarchive = json_object_get(meta, "archive");
+				struct st_archive * archive = st_archive_parse(jarchive, i - 1);
+				if (archive != NULL) {
+					connection->ops->sync_archive(connection, archive);
+					st_archive_free(archive);
+				}
+			}
+		}
+
+		connection->ops->free(connection);
+
+		free(buffer);
+	}
 
 	drive->slot->media = media;
 }

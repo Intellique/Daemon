@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 09 Jan 2015 11:07:51 +0100                            *
+*  Last modified: Thu, 12 Feb 2015 17:25:12 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2651,23 +2651,41 @@ static int st_db_postgresql_get_user(struct st_database_connection * connect, st
 
 	if (status == PGRES_FATAL_ERROR)
 		st_db_postgresql_get_error(result, query);
-	else if (status == PGRES_TUPLES_OK && nb_result == 1) {
-		struct st_db_postgresql_user_data * user_data = user->db_data;
-		if (!user_data)
-			user->db_data = user_data = malloc(sizeof(struct st_db_postgresql_user_data));
+	else if (status == PGRES_TUPLES_OK) {
+		if (nb_result == 0) {
+			PQclear(result);
 
-		st_db_postgresql_get_long(result, 0, 0, &user_data->id);
-		st_db_postgresql_get_string_dup(result, 0, 1, &user->login);
-		st_db_postgresql_get_string_dup(result, 0, 2, &user->password);
-		st_db_postgresql_get_string_dup(result, 0, 3, &user->salt);
-		st_db_postgresql_get_string_dup(result, 0, 4, &user->fullname);
-		st_db_postgresql_get_string_dup(result, 0, 5, &user->email);
-		st_db_postgresql_get_string_dup(result, 0, 6, &user->home_directory);
+			const char * query_insert = "insert_missing_user";
+			st_db_postgresql_prepare(self, query_insert, "INSERT INTO users (login, password, salt, email, homedirectory, disabled, meta) VALUES ($1, '8a6eb1d3b4fecbf8a1d6528a6aecb064e801b1e0', 'cd8c63688e0c2cff', 'storiq@intellique.com', '/', TRUE, '')");
+			result = PQexecPrepared(self->connect, query_insert, 1, param, NULL, NULL, 0);
+			status = PQresultStatus(result);
+			if (status == PGRES_FATAL_ERROR)
+				st_db_postgresql_get_error(result, query_insert);
+			PQclear(result);
 
-		st_db_postgresql_get_bool(result, 0, 7, &user->is_admin);
-		st_db_postgresql_get_bool(result, 0, 8, &user->can_archive);
-		st_db_postgresql_get_bool(result, 0, 9, &user->can_restore);
-		st_db_postgresql_get_bool(result, 0, 10, &user->disabled);
+			result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+			status = PQresultStatus(result);
+			nb_result = PQntuples(result);
+		}
+
+		if (nb_result == 1) {
+			struct st_db_postgresql_user_data * user_data = user->db_data;
+			if (!user_data)
+				user->db_data = user_data = malloc(sizeof(struct st_db_postgresql_user_data));
+
+			st_db_postgresql_get_long(result, 0, 0, &user_data->id);
+			st_db_postgresql_get_string_dup(result, 0, 1, &user->login);
+			st_db_postgresql_get_string_dup(result, 0, 2, &user->password);
+			st_db_postgresql_get_string_dup(result, 0, 3, &user->salt);
+			st_db_postgresql_get_string_dup(result, 0, 4, &user->fullname);
+			st_db_postgresql_get_string_dup(result, 0, 5, &user->email);
+			st_db_postgresql_get_string_dup(result, 0, 6, &user->home_directory);
+
+			st_db_postgresql_get_bool(result, 0, 7, &user->is_admin);
+			st_db_postgresql_get_bool(result, 0, 8, &user->can_archive);
+			st_db_postgresql_get_bool(result, 0, 9, &user->can_restore);
+			st_db_postgresql_get_bool(result, 0, 10, &user->disabled);
+		}
 	}
 
 	PQclear(result);
@@ -3716,6 +3734,38 @@ static int st_db_postgresql_sync_file(struct st_database_connection * connect, s
 	struct st_db_postgresql_connection_private * self = connect->data;
 
 	struct st_db_postgresql_selected_path_data * selected_data = file->selected_path->db_data;
+	if (selected_data == NULL) {
+		const char * query_select = "select_default_path";
+		st_db_postgresql_prepare(self, query_select, "SELECT id FROM selectedfile WHERE path = '/' LIMIT 1");
+
+		PGresult * result = PQexecPrepared(self->connect, query_select, 0, NULL, 0, 0, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(result, query_select);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+			selected_data = file->selected_path->db_data = malloc(sizeof(struct st_db_postgresql_selected_path_data));
+			st_db_postgresql_get_long(result, 0, 0, &selected_data->id);
+		}
+
+		PQclear(result);
+	}
+	if (selected_data == NULL) {
+		const char * query_select = "insert_default_path";
+		st_db_postgresql_prepare(self, query_select, "INSERT INTO selectedfile(path) VALUES ('/') RETURNING id");
+
+		PGresult * result = PQexecPrepared(self->connect, query_select, 0, NULL, 0, 0, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			st_db_postgresql_get_error(result, query_select);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+			selected_data = file->selected_path->db_data = malloc(sizeof(struct st_db_postgresql_selected_path_data));
+			st_db_postgresql_get_long(result, 0, 0, &selected_data->id);
+		}
+
+		PQclear(result);
+	}
 
 	const char * query = "insert_archive_file";
 	st_db_postgresql_prepare(self, query, "INSERT INTO archivefile(name, type, mimetype, ownerid, owner, groupid, groups, perm, ctime, mtime, size, parent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id");
@@ -3839,7 +3889,7 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 	struct st_db_postgresql_connection_private * self = connect->data;
 	struct st_db_postgresql_archive_data * archive_data = archive->db_data;
 	struct st_db_postgresql_archive_volume_data * archive_volume_data = volume->db_data;
-	struct st_db_postgresql_job_data * job_data = volume->job->db_data;
+	struct st_db_postgresql_job_data * job_data = volume->job != NULL ? volume->job->db_data : NULL;
 	struct st_db_postgresql_media_data * media_data = volume->media->db_data;
 
 	if (archive_volume_data == NULL) {
@@ -3857,12 +3907,13 @@ static int st_db_postgresql_sync_volume(struct st_database_connection * connect,
 		st_util_time_convert(&volume->start_time, "%F %T", buffer_ctime, 32);
 		st_util_time_convert(&volume->end_time, "%F %T", buffer_endtime, 32);
 
-		char * sequence, * size, * archiveid, * mediaid, * jobrunid, * mediaposition;
+		char * sequence, * size, * archiveid, * mediaid, * jobrunid = NULL, * mediaposition;
 		asprintf(&sequence, "%ld", volume->sequence);
 		asprintf(&size, "%zd", volume->size);
 		asprintf(&archiveid, "%ld", archive_data->id);
 		asprintf(&mediaid, "%ld", media_data->id);
-		asprintf(&jobrunid, "%ld", job_data->jobrun_id);
+		if (job_data != NULL)
+			asprintf(&jobrunid, "%ld", job_data->jobrun_id);
 		asprintf(&mediaposition, "%ld", volume->media_position);
 
 		const char * param[] = {
