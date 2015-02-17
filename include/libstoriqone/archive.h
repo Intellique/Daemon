@@ -99,7 +99,7 @@ struct so_archive_volume {
 struct so_archive_file {
 	char * name;
 	mode_t perm;
-	enum st_archive_file_type type;
+	enum so_archive_file_type type;
 	uid_t ownerid;
 	char owner[32];
 	gid_t groupid;
@@ -123,6 +123,9 @@ struct so_archive_file {
 
 	struct st_value * db_data;
 };
+
+enum so_archive_file_type so_archive_file_string_to_type(const char * type, bool translate);
+const char * so_archive_file_type_to_string(enum so_archive_file_type type, bool translate);
 
 #endif
 

@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-02-03 21:56+0100\n"
+        "POT-Creation-Date: 2015-02-13 13:14+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -15,6 +15,38 @@ msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Content-Type: text/plain; charset=UTF-8\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/libstoriqone/archive.c:44
+msgid   "block device"
+msgstr  "fichier spécial de type bloc"
+
+#: src/libstoriqone/archive.c:45
+msgid   "character device"
+msgstr  "fichier spécial de type caractère"
+
+#: src/libstoriqone/archive.c:46
+msgid   "directory"
+msgstr  "répertoire"
+
+#: src/libstoriqone/archive.c:47
+msgid   "fifo"
+msgstr  "tube nommé"
+
+#: src/libstoriqone/archive.c:48
+msgid   "regular file"
+msgstr  "fichier"
+
+#: src/libstoriqone/archive.c:49
+msgid   "socket"
+msgstr  "socket"
+
+#: src/libstoriqone/archive.c:50
+msgid   "symbolic link"
+msgstr  "lien symbolique"
+
+#: src/libstoriqone/archive.c:52
+msgid   "unknown file type"
+msgstr  "type de fichier inconnu"
 
 #: src/libstoriqone/changer.c:48 src/libstoriqone/media.c:122 src/libstoriqone/media.c:138
 msgid   "none"
@@ -176,7 +208,7 @@ msgstr  "so_database_register_driver : le pilote de base de données « %s »
 #: src/libstoriqone/database.c:143
 #, c-format
 msgid   "so_database_register_driver: database driver '%s' is now registred"
-msgstr  "so_checksum_register_driver : le pilote de base de données « %s » est maintenant chargé"
+msgstr  "so_database_register_driver : le pilote de base de données « %s » est maintenant chargé"
 
 #: src/libstoriqone/debug.c:58
 #, c-format
@@ -222,117 +254,117 @@ msgstr  "rembobinage"
 msgid   "writing"
 msgstr  "en écriture"
 
-#: src/libstoriqone/file.c:158
+#: src/libstoriqone/file.c:208
 #, c-format
 msgid   "%zd B"
 msgstr  "%zd o"
 
-#: src/libstoriqone/file.c:161
+#: src/libstoriqone/file.c:211
 #, c-format
 msgid   "%.*f KB"
 msgstr  "%.*f Ko"
 
-#: src/libstoriqone/file.c:164
+#: src/libstoriqone/file.c:214
 #, c-format
 msgid   "%.*f MB"
 msgstr  "%.*f Mo"
 
-#: src/libstoriqone/file.c:167
+#: src/libstoriqone/file.c:217
 #, c-format
 msgid   "%.*f GB"
 msgstr  "%.*f Go"
 
-#: src/libstoriqone/file.c:170
+#: src/libstoriqone/file.c:220
 #, c-format
 msgid   "%.*f TB"
 msgstr  "%.*f To"
 
-#: src/libstoriqone/file.c:191 src/libstoriqone/file.c:205 src/libstoriqone/file.c:228
+#: src/libstoriqone/file.c:241 src/libstoriqone/file.c:255 src/libstoriqone/file.c:278
 #, c-format
 msgid   "so_file_cp: can't get information of '%s' because %m"
 msgstr  "so_file_cp : n'a pas réussi à obtenir les informations de « %s » parce que %m"
 
-#: src/libstoriqone/file.c:196
+#: src/libstoriqone/file.c:246
 #, c-format
 msgid   "so_file_cp: ignore socket file '%s'"
 msgstr  "so_file_cp : ignore les fichier du type socket « %s »"
 
-#: src/libstoriqone/file.c:210 src/libstoriqone/file.c:234
+#: src/libstoriqone/file.c:260 src/libstoriqone/file.c:284
 #, c-format
 msgid   "so_file_cp: '%s' should be a directory"
 msgstr  "so_file_cp : « %s » doit être un répertoire"
 
-#: src/libstoriqone/file.c:252
+#: src/libstoriqone/file.c:302
 #, c-format
 msgid   "so_file_cp: error while scanning directory '%s' because %m"
 msgstr  "so_file_cp : erreur lors du parcours du répertoire « %s » parce que %m"
 
-#: src/libstoriqone/file.c:275
+#: src/libstoriqone/file.c:325
 #, c-format
 msgid   "so_file_cp: can't open file '%s' for reading because %m"
 msgstr  "so_file_cp : n'a pas réussi à ouvrir le fichier « %s » en lecture parce que %m"
 
-#: src/libstoriqone/file.c:284
+#: src/libstoriqone/file.c:334
 #, c-format
 msgid   "so_file_cp: can't open file '%s' for writing because %m"
 msgstr  "so_file_cp : n'a pas réussi à ouvrir le fichier « %s » en écriture parce que %m"
 
-#: src/libstoriqone/file.c:295
+#: src/libstoriqone/file.c:345
 #, c-format
 msgid   "so_file_cp: error while writing into '%s' because %m"
 msgstr  "so_file_cp : erreur lors de l'écriture dans « %s » parce que %m"
 
-#: src/libstoriqone/file.c:302
+#: src/libstoriqone/file.c:352
 #, c-format
 msgid   "so_file_cp: error while reading from '%s' because %m"
 msgstr  "so_file_cp : erreur lors de la lecture depuis « %s » parce que %m"
 
-#: src/libstoriqone/file.c:315
+#: src/libstoriqone/file.c:365
 #, c-format
 msgid   "so_file_cp: can't read link of '%s' because %m"
 msgstr  "so_file_cp : n'a pas réussi à lire le lien symbolique « %s » parce que %m"
 
-#: src/libstoriqone/file.c:322
+#: src/libstoriqone/file.c:372
 #, c-format
 msgid   "so_file_cp: failed to create symlink '%s' -> '%s' because %m"
 msgstr  "so_file_cp : échec lors de la création du lien symbolique « %s » -> « %s » parce que %m"
 
-#: src/libstoriqone/file.c:329
+#: src/libstoriqone/file.c:379
 #, c-format
 msgid   "so_file_cp: failed to create fifo '%s' because %m"
 msgstr  "so_file_cp : échec lors de la création du tube nommé « %s » parce que %m"
 
-#: src/libstoriqone/file.c:335
+#: src/libstoriqone/file.c:385
 #, c-format
 msgid   "so_file_cp: failed to create device '%s' because %m"
 msgstr  "so_file_cp : échec lors de la création du périphérique « %s » parce que %m"
 
-#: src/libstoriqone/file.c:375 src/libstoriqone/file.c:391 src/libstoriqone/file.c:401
+#: src/libstoriqone/file.c:425 src/libstoriqone/file.c:441 src/libstoriqone/file.c:451
 #, c-format
 msgid   "so_file_mkdir: error while create directory '%s' because %m"
 msgstr  "so_file_mkdir : erreur lors de la création du répertoire « %s » parce que %m"
 
-#: src/libstoriqone/file.c:413 src/libstoriqone/file.c:423
+#: src/libstoriqone/file.c:463 src/libstoriqone/file.c:473
 #, c-format
 msgid   "so_file_mv: can't get information of '%s' because %m"
 msgstr  "so_file_mv : n'a pas réussi à obtenir les informations de « %s » parce que %m"
 
-#: src/libstoriqone/file.c:431
+#: src/libstoriqone/file.c:481
 #, c-format
 msgid   "so_file_mv: failed to rename '%s' to '%s' because %m"
 msgstr  "so_file_mv : échec lors du renommage du fichier « %s » en « %s » parce que %m"
 
-#: src/libstoriqone/file.c:442
+#: src/libstoriqone/file.c:492
 #, c-format
 msgid   "so_file_read_all_from: failed to open '%s' because %m"
 msgstr  "so_file_read_all_from : échec lors de l'ouverture du fichier « %s » parce que %m"
 
-#: src/libstoriqone/file.c:463
+#: src/libstoriqone/file.c:513
 #, c-format
 msgid   "so_file_read_all_from: failed while reading from '%s' because %m"
 msgstr  "so_file_read_all_from : échec en lisant depuis « %s » parce que %m"
 
-#: src/libstoriqone/file.c:505
+#: src/libstoriqone/file.c:555
 #, c-format
 msgid   "so_file_rm: failed to get information of '%s' because %m"
 msgstr  "so_file_rm : échec lors de obtention des informations de « %s » parce que %m"

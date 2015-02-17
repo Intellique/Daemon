@@ -140,7 +140,9 @@ struct so_database_connection {
 		struct so_media * (*get_media)(struct so_database_connection * connect, const char * medium_serial_number, const char * label, struct so_job * job) __attribute__((nonnull(1),warn_unused_result));
 		struct so_value * (*get_medias_of_pool)(struct so_database_connection * connect, struct so_pool * pool) __attribute__((nonnull,warn_unused_result));
 		struct so_media_format * (*get_media_format)(struct so_database_connection * connect, unsigned int density_code, enum so_media_format_mode mode);
-		struct so_pool * (*get_pool)(struct so_database_connection * connect, const char * uuid, struct so_job * job) __attribute__((nonnull(1),warn_unused_result));;
+		struct so_pool * (*get_pool)(struct so_database_connection * connect, const char * uuid, struct so_job * job) __attribute__((nonnull(1),warn_unused_result));
+		struct so_value * (*get_pool_by_pool_mirror)(struct so_database_connection * connect, struct so_pool * pool) __attribute__((nonnull,warn_unused_result));
+		struct so_value * (*get_selected_files_by_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull,warn_unused_result));
 		struct so_value * (*get_standalone_drives)(struct so_database_connection * connect) __attribute__((nonnull));
 		struct so_value * (*get_vtls)(struct so_database_connection * connect) __attribute__((nonnull));
 		int (*sync_changer)(struct so_database_connection * connect, struct so_changer * changer, enum so_database_sync_method method) __attribute__((nonnull));

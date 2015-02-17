@@ -90,6 +90,56 @@ bool so_file_close_fd_on_exec(int fd, bool close) {
 	return fcntl(fd, F_SETFD, flag) == 0;
 }
 
+ssize_t so_file_compute_size(const char * file, bool recursive) {
+	struct stat st;
+	int failed = stat(file, &st);
+	if (failed != 0)
+		return -1;
+
+	if (S_ISREG(st.st_mode))
+		return st.st_size;
+	else if (recursive && S_ISDIR(st.st_mode)) {
+		struct dirent ** files;
+		int nb_files = scandir(file, &files, so_file_basic_scandir_filter, NULL);
+		if (nb_files < 0)
+			return -1;
+
+		size_t file_length = strlen(file);
+		ssize_t total = 0;
+
+		int i;
+		bool failed = false;
+		for (i = 0; i < nb_files; i++) {
+			if (!failed) {
+				size_t sub_file_length = strlen(files[i]->d_name);
+				char * sub_file = malloc(file_length + sub_file_length + 2);
+
+				strcpy(sub_file, file);
+				sub_file[file_length] = '/';
+				strcpy(sub_file + file_length + 1, files[i]->d_name);
+
+				ssize_t sub_total = so_file_compute_size(sub_file, true);
+				if (sub_total < 0)
+					failed = true;
+				else
+					total += sub_total;
+
+				free(sub_file);
+			}
+
+			free(files[i]);
+		}
+		free(files);
+
+		if (failed)
+			return -1;
+
+		return total;
+	}
+
+	return 0;
+}
+
 void so_file_convert_mode(char * buffer, mode_t mode) {
 	strcpy(buffer, "----------");
 

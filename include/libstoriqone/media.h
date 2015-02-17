@@ -180,6 +180,7 @@ void so_media_free(struct so_media * media) __attribute__((nonnull));
 void so_media_free2(void * media) __attribute__((nonnull));
 void so_media_format_free(struct so_media_format * format) __attribute__((nonnull));
 void so_pool_free(struct so_pool * pool) __attribute__((nonnull));
+void so_pool_free2(void * pool) __attribute__((nonnull));
 
 const char * so_media_format_data_type_to_string(enum so_media_format_data_type type, bool translate);
 enum so_media_format_data_type so_media_string_to_format_data_type(const char * type, bool translate) __attribute__((nonnull));

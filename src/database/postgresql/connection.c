@@ -86,6 +86,8 @@ static struct so_media * so_database_postgresql_get_media(struct so_database_con
 static struct so_value * so_database_postgresql_get_medias_of_pool(struct so_database_connection * connect, struct so_pool * pool);
 static struct so_media_format * so_database_postgresql_get_media_format(struct so_database_connection * connect, unsigned int density_code, enum so_media_format_mode mode);
 static struct so_pool * so_database_postgresql_get_pool(struct so_database_connection * connect, const char * uuid, struct so_job * job);
+static struct so_value * so_database_postgresql_get_pool_by_pool_mirror(struct so_database_connection * connect, struct so_pool * pool);
+static struct so_value * so_database_postgresql_get_selected_files_by_job(struct so_database_connection * connect, struct so_job * job);
 static struct so_value * so_database_postgresql_get_slot_by_drive(struct so_database_connection * connect, const char * drive_id);
 static struct so_value * so_database_postgresql_get_standalone_drives(struct so_database_connection * connect);
 static struct so_value * so_database_postgresql_get_vtls(struct so_database_connection * connect);
@@ -130,18 +132,20 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.get_host_by_name = so_database_postgresql_get_host_by_name,
 	.update_host      = so_database_postgresql_update_host,
 
-	.get_changers            = so_database_postgresql_get_changers,
-	.get_checksums_from_pool = so_database_postgresql_get_checksums_from_pool,
-	.get_free_medias         = so_database_postgresql_get_free_medias,
-	.get_media               = so_database_postgresql_get_media,
-	.get_media_format        = so_database_postgresql_get_media_format,
-	.get_medias_of_pool      = so_database_postgresql_get_medias_of_pool,
-	.get_pool                = so_database_postgresql_get_pool,
-	.get_standalone_drives   = so_database_postgresql_get_standalone_drives,
-	.get_vtls                = so_database_postgresql_get_vtls,
-	.sync_changer            = so_database_postgresql_sync_changer,
-	.sync_drive              = so_database_postgresql_sync_drive,
-	.sync_media              = so_database_postgresql_sync_media,
+	.get_changers              = so_database_postgresql_get_changers,
+	.get_checksums_from_pool   = so_database_postgresql_get_checksums_from_pool,
+	.get_free_medias           = so_database_postgresql_get_free_medias,
+	.get_media                 = so_database_postgresql_get_media,
+	.get_media_format          = so_database_postgresql_get_media_format,
+	.get_medias_of_pool        = so_database_postgresql_get_medias_of_pool,
+	.get_pool                  = so_database_postgresql_get_pool,
+	.get_pool_by_pool_mirror   = so_database_postgresql_get_pool_by_pool_mirror,
+	.get_selected_files_by_job = so_database_postgresql_get_selected_files_by_job,
+	.get_standalone_drives     = so_database_postgresql_get_standalone_drives,
+	.get_vtls                  = so_database_postgresql_get_vtls,
+	.sync_changer              = so_database_postgresql_sync_changer,
+	.sync_drive                = so_database_postgresql_sync_drive,
+	.sync_media                = so_database_postgresql_sync_media,
 
 	.add_job_record = so_database_postgresql_add_job_record,
 	.start_job      = so_database_postgresql_start_job,
@@ -984,6 +988,91 @@ static struct so_pool * so_database_postgresql_get_pool(struct so_database_conne
 	PQclear(result);
 
 	return pool;
+}
+
+static struct so_value * so_database_postgresql_get_pool_by_pool_mirror(struct so_database_connection * connect, struct so_pool * pool) {
+	if (connect == NULL || pool == NULL)
+		return NULL;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_pool_by_pool_mirror";
+	so_database_postgresql_prepare(self, query, "SELECT id, uuid, name, autocheck, growable, unbreakablelevel, rewritable, deleted, densitycode, mode FROM pool WHERE uuid != $1 AND poolmirror IN (SELECT poolmirror FROM pool WHERE uuid = $1)");
+
+	const char * param[] = { pool->uuid };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+	int nb_result = PQntuples(result);
+
+	struct so_value * pools = so_value_new_linked_list();
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (nb_result > 0) {
+		int i;
+		for (i = 0; i < nb_result; i++) {
+			struct so_pool * new_pool = malloc(sizeof(struct so_pool));
+			bzero(new_pool, sizeof(struct so_pool));
+
+			struct so_value * key = so_value_new_custom(connect->config, NULL);
+			struct so_value * db = so_value_new_hashtable2();
+			new_pool->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
+			so_value_hashtable_put2(db, "id", so_value_new_string(PQgetvalue(result, 0, 0)), true);
+			so_value_hashtable_put(new_pool->db_data, key, true, db, true);
+
+			so_database_postgresql_get_string(result, i, 1, new_pool->uuid, 37);
+			so_database_postgresql_get_string_dup(result, i, 2, &new_pool->name);
+			new_pool->auto_check = so_pool_string_to_autocheck_mode(PQgetvalue(result, i, 3), false);
+			so_database_postgresql_get_bool(result, i, 4, &new_pool->growable);
+			new_pool->unbreakable_level = so_pool_string_to_unbreakable_level(PQgetvalue(result, i, 5), false);
+			so_database_postgresql_get_bool(result, i, 6, &new_pool->rewritable);
+			so_database_postgresql_get_bool(result, i, 7, &new_pool->deleted);
+
+			unsigned char density_code;
+			so_database_postgresql_get_uchar(result, i, 8, &density_code);
+			enum so_media_format_mode mode = so_media_string_to_format_mode(PQgetvalue(result, i, 9), false);
+			new_pool->format = so_database_postgresql_get_media_format(connect, density_code, mode);
+
+			so_value_list_push(pools, so_value_new_custom(new_pool, so_pool_free2), true);
+		}
+	}
+
+	return pools;
+}
+
+static struct so_value * so_database_postgresql_get_selected_files_by_job(struct so_database_connection * connect, struct so_job * job) {
+	if (connect == NULL || job == NULL)
+		return NULL;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * selected_files = so_value_new_linked_list();
+	const char * query = "select_selected_path_by_job";
+	so_database_postgresql_prepare(self, query, "SELECT path FROM selectedfile WHERE id IN (SELECT selectedfile FROM jobtoselectedfile WHERE job = $1) ORDER BY path");
+
+	char * job_id = NULL;
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * job_data = so_value_hashtable_get(job->db_data, key, false, false);
+	so_value_unpack(job_data, "{ss}", "id", &job_id);
+	so_value_free(key);
+
+	const char * param[] = { job_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+	int nb_result = PQntuples(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK) {
+		int i;
+		for (i = 0; i < nb_result; i++)
+			so_value_list_push(selected_files, so_value_new_string(PQgetvalue(result, i, 0)), true);
+	}
+
+	PQclear(result);
+	free(job_id);
+
+	return selected_files;
 }
 
 static struct so_value * so_database_postgresql_get_standalone_drives(struct so_database_connection * connect) {

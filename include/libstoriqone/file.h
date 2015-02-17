@@ -46,6 +46,8 @@ int so_file_basic_scandir_filter(const struct dirent * d);
 
 bool so_file_check_link(const char * file) __attribute__((nonnull));
 
+ssize_t so_file_compute_size(const char * file, bool recursive) __attribute__((nonnull));
+
 bool so_file_close_fd_on_exec(int fd, bool close);
 
 /**
