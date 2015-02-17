@@ -250,6 +250,7 @@ struct st_database_connection {
 		bool (*mark_archive_file_as_checked)(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_file * file, bool ok);
 		bool (*mark_archive_volume_as_checked)(struct st_database_connection * connect, struct st_archive_volume * volume, bool ok);
 		int (*sync_archive)(struct st_database_connection * connect, struct st_archive * archive);
+		int (*sync_archive_mirror)(struct st_database_connection * connect, struct st_archive * a1, struct st_archive * a2);
 
 		struct st_vtl_config * (*get_vtls)(struct st_database_connection * connect, unsigned int * nb_vtls);
 		int (*delete_vtl)(struct st_database_connection * connect, struct st_vtl_config * config);

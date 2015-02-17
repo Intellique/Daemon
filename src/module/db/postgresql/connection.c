@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 12 Feb 2015 17:25:12 +0100                            *
+*  Last modified: Tue, 17 Feb 2015 12:39:32 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -188,6 +188,7 @@ static bool st_db_postgresql_has_selected_files_by_job(struct st_database_connec
 static bool st_db_postgresql_mark_archive_file_as_checked(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_file * file, bool ok);
 static bool st_db_postgresql_mark_archive_volume_as_checked(struct st_database_connection * connect, struct st_archive_volume * volume, bool ok);
 static int st_db_postgresql_sync_archive(struct st_database_connection * connect, struct st_archive * archive);
+static int st_db_postgresql_sync_archive_mirror(struct st_database_connection * connect, struct st_archive * a1, struct st_archive * a2);
 static int st_db_postgresql_sync_file(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_file * file, char ** file_id);
 static int st_db_postgresql_sync_volume(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_volume * volume);
 
@@ -261,6 +262,7 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.mark_archive_file_as_checked                = st_db_postgresql_mark_archive_file_as_checked,
 	.mark_archive_volume_as_checked              = st_db_postgresql_mark_archive_volume_as_checked,
 	.sync_archive                                = st_db_postgresql_sync_archive,
+	.sync_archive_mirror                         = st_db_postgresql_sync_archive_mirror,
 
 	.get_vtls   = st_db_postgresql_get_vtls,
 	.delete_vtl = st_db_postgresql_delete_vtl,
@@ -3618,23 +3620,17 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 
 	struct st_db_postgresql_connection_private * self = connect->data;
 	struct st_db_postgresql_archive_data * archive_data = archive->db_data;
-	struct st_db_postgresql_archive_data * copy_data = NULL;
 
-	char * archiveid = NULL, * copyid = NULL;
+	char * archiveid = NULL;
 	if (archive_data == NULL) {
 		archive->db_data = archive_data = malloc(sizeof(struct st_db_postgresql_archive_data));
 		archive_data->id = -1;
 	} else
 		asprintf(&archiveid, "%ld", archive_data->id);
 
-	if (archive->copy_of != NULL) {
-		copy_data = archive->copy_of->db_data;
-		asprintf(&copyid, "%ld", copy_data->id);
-	}
-
 	if (archive_data->id < 0) {
 		const char * query = "insert_archive";
-		st_db_postgresql_prepare(self, query, "INSERT INTO archive(uuid, name, creator, owner, copyof) VALUES ($1, $2, $3, $3, $4) RETURNING id");
+		st_db_postgresql_prepare(self, query, "INSERT INTO archive(uuid, name, creator, owner) VALUES ($1, $2, $3, $3) RETURNING id");
 
 		char * userid = NULL;
 
@@ -3642,9 +3638,9 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 		asprintf(&userid, "%ld", user_data->id);
 
 		const char * param[] = {
-			archive->uuid, archive->name, userid, copyid
+			archive->uuid, archive->name, userid
 		};
-		PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+		PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -3708,7 +3704,6 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 
 	PQclear(result);
 	free(archiveid);
-	free(copyid);
 
 	unsigned int i;
 	int failed = 0;
@@ -3719,6 +3714,52 @@ static int st_db_postgresql_sync_archive(struct st_database_connection * connect
 	}
 
 	return failed;
+}
+
+static int st_db_postgresql_sync_archive_mirror(struct st_database_connection * connect, struct st_archive * a1, struct st_archive * a2) {
+	if (connect == NULL || a1 == NULL || a2 == NULL)
+		return -1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_archive_data * am1 = a1->db_data;
+	struct st_db_postgresql_archive_data * am2 = a2->db_data;
+
+	char * archive_mirror = NULL;
+
+	const char * query = "insert_archive_mirror";
+	st_db_postgresql_prepare(self, query, "INSERT INTO archivemirror DEFAULT VALUES RETURNING id");
+	PGresult * result = PQexecPrepared(self->connect, query, 0, NULL, 0, 0, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		st_db_postgresql_get_string_dup(result, 0, 0, &archive_mirror);
+
+	PQclear(result);
+
+	if (archive_mirror == NULL)
+		return 1;
+
+	query = "insert_archive_mirror2";
+	st_db_postgresql_prepare(self, query, "INSERT INTO archivetoarchivemirror VALUES ($2, $1), ($3, $1)");
+
+	char * sa1, * sa2;
+	asprintf(&sa1, "%ld", am1->id);
+	asprintf(&sa2, "%ld", am2->id);
+
+	const char * param[] = { archive_mirror, sa1, sa2 };
+	result = PQexecPrepared(self->connect, query, 3, param, 0, 0, 0);
+	status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+
+	PQclear(result);
+	free(sa1);
+	free(sa2);
+
+	return 0;
 }
 
 static int st_db_postgresql_sync_file(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_file * file, char ** file_id) {
