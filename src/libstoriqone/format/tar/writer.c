@@ -49,7 +49,7 @@
 
 #include "common.h"
 
-struct sodr_format_tar_writer_private {
+struct so_format_tar_writer_private {
 	struct so_stream_writer * io;
 
 	off_t position;
@@ -64,42 +64,42 @@ struct sodr_format_tar_writer_private {
 	bool has_cheksum;
 };
 
-static enum so_format_writer_status sodr_format_tar_writer_add_file(struct so_format_writer * fw, struct so_format_file * file);
-static enum so_format_writer_status sodr_format_tar_writer_add_label(struct so_format_writer * fw, const char * label);
-static int sodr_format_tar_writer_close(struct so_format_writer * fw);
-static void sodr_format_tar_writer_compute_checksum(const void * header, char * checksum);
-static void sodr_format_tar_writer_compute_link(struct so_format_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile, struct so_format_file * file);
-static void sodr_format_tar_writer_compute_size(char * csize, long long size);
-static ssize_t sodr_format_tar_writer_end_of_file(struct so_format_writer * fw);
-static void sodr_format_tar_writer_free(struct so_format_writer * fw);
-static ssize_t sodr_format_tar_writer_get_available_size(struct so_format_writer * fw);
-static ssize_t sodr_format_tar_writer_get_block_size(struct so_format_writer * fw);
-static struct so_value * sodr_format_tar_writer_get_digests(struct so_format_writer * fw);
-static void sodr_format_tar_writer_gid2name(char * name, ssize_t length, gid_t uid);
-static int sodr_format_tar_writer_last_errno(struct so_format_writer * fw);
-static ssize_t sodr_format_tar_writer_position(struct so_format_writer * fw);
-static void sodr_format_tar_writer_uid2name(char * name, ssize_t length, uid_t uid);
-static ssize_t sodr_format_tar_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
-static enum so_format_writer_status sodr_format_tar_writer_write_header(struct sodr_format_tar_writer_private * f, void * data, ssize_t length);
+static enum so_format_writer_status so_format_tar_writer_add_file(struct so_format_writer * fw, struct so_format_file * file);
+static enum so_format_writer_status so_format_tar_writer_add_label(struct so_format_writer * fw, const char * label);
+static int so_format_tar_writer_close(struct so_format_writer * fw);
+static void so_format_tar_writer_compute_checksum(const void * header, char * checksum);
+static void so_format_tar_writer_compute_link(struct so_format_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile, struct so_format_file * file);
+static void so_format_tar_writer_compute_size(char * csize, long long size);
+static ssize_t so_format_tar_writer_end_of_file(struct so_format_writer * fw);
+static void so_format_tar_writer_free(struct so_format_writer * fw);
+static ssize_t so_format_tar_writer_get_available_size(struct so_format_writer * fw);
+static ssize_t so_format_tar_writer_get_block_size(struct so_format_writer * fw);
+static struct so_value * so_format_tar_writer_get_digests(struct so_format_writer * fw);
+static void so_format_tar_writer_gid2name(char * name, ssize_t length, gid_t uid);
+static int so_format_tar_writer_last_errno(struct so_format_writer * fw);
+static ssize_t so_format_tar_writer_position(struct so_format_writer * fw);
+static void so_format_tar_writer_uid2name(char * name, ssize_t length, uid_t uid);
+static ssize_t so_format_tar_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
+static enum so_format_writer_status so_format_tar_writer_write_header(struct so_format_tar_writer_private * f, void * data, ssize_t length);
 
-static struct so_format_writer_ops sodr_format_tar_writer_ops = {
-	.add_file           = sodr_format_tar_writer_add_file,
-	.add_label          = sodr_format_tar_writer_add_label,
-	.close              = sodr_format_tar_writer_close,
-	.end_of_file        = sodr_format_tar_writer_end_of_file,
-	.free               = sodr_format_tar_writer_free,
-	.get_available_size = sodr_format_tar_writer_get_available_size,
-	.get_block_size     = sodr_format_tar_writer_get_block_size,
-	.get_digests        = sodr_format_tar_writer_get_digests,
-	.last_errno         = sodr_format_tar_writer_last_errno,
-	.position           = sodr_format_tar_writer_position,
-	.write              = sodr_format_tar_writer_write,
+static struct so_format_writer_ops so_format_tar_writer_ops = {
+	.add_file           = so_format_tar_writer_add_file,
+	.add_label          = so_format_tar_writer_add_label,
+	.close              = so_format_tar_writer_close,
+	.end_of_file        = so_format_tar_writer_end_of_file,
+	.free               = so_format_tar_writer_free,
+	.get_available_size = so_format_tar_writer_get_available_size,
+	.get_block_size     = so_format_tar_writer_get_block_size,
+	.get_digests        = so_format_tar_writer_get_digests,
+	.last_errno         = so_format_tar_writer_last_errno,
+	.position           = so_format_tar_writer_position,
+	.write              = so_format_tar_writer_write,
 };
 
 
-struct so_format_writer * sodr_format_tar_new_writer(struct so_stream_writer * writer, struct so_value * checksums) {
-	struct sodr_format_tar_writer_private * self = malloc(sizeof(struct sodr_format_tar_writer_private));
-	bzero(self, sizeof(struct sodr_format_tar_writer_private));
+struct so_format_writer * so_format_tar_new_writer(struct so_stream_writer * writer, struct so_value * checksums) {
+	struct so_format_tar_writer_private * self = malloc(sizeof(struct so_format_tar_writer_private));
+	bzero(self, sizeof(struct so_format_tar_writer_private));
 
 	self->has_cheksum = checksums == NULL && so_value_list_get_length(checksums) > 0;
 	if (self->has_cheksum)
@@ -114,14 +114,14 @@ struct so_format_writer * sodr_format_tar_new_writer(struct so_stream_writer * w
 	self->remain_size = 0;
 
 	struct so_format_writer * new_writer = malloc(sizeof(struct so_format_writer));
-	new_writer->ops = &sodr_format_tar_writer_ops;
+	new_writer->ops = &so_format_tar_writer_ops;
 	new_writer->data = self;
 
 	return new_writer;
 }
 
 
-static enum so_format_writer_status sodr_format_tar_writer_add_file(struct so_format_writer * fw, struct so_format_file * file) {
+static enum so_format_writer_status so_format_tar_writer_add_file(struct so_format_writer * fw, struct so_format_file * file) {
 	ssize_t block_size = 512;
 	struct so_format_tar * header = malloc(block_size);
 	struct so_format_tar * current_header = header;
@@ -134,8 +134,8 @@ static enum so_format_writer_status sodr_format_tar_writer_add_file(struct so_fo
 			current_header = header = realloc(header, block_size);
 
 			bzero(current_header, block_size - 512);
-			sodr_format_tar_writer_compute_link(current_header, (char *) (current_header + 1), file->link, link_length, 'K', NULL, file);
-			sodr_format_tar_writer_compute_link(current_header + 2, (char *) (current_header + 3), file->filename, filename_length, 'L', NULL, file);
+			so_format_tar_writer_compute_link(current_header, (char *) (current_header + 1), file->link, link_length, 'K', NULL, file);
+			so_format_tar_writer_compute_link(current_header + 2, (char *) (current_header + 3), file->filename, filename_length, 'L', NULL, file);
 
 			current_header += 4;
 		} else if (filename_length > 100) {
@@ -143,20 +143,20 @@ static enum so_format_writer_status sodr_format_tar_writer_add_file(struct so_fo
 			current_header = header = realloc(header, block_size);
 
 			bzero(current_header, block_size - 512);
-			sodr_format_tar_writer_compute_link(current_header, (char *) (current_header + 1), file->filename, filename_length, 'L', NULL, file);
+			so_format_tar_writer_compute_link(current_header, (char *) (current_header + 1), file->filename, filename_length, 'L', NULL, file);
 
 			current_header += 2;
 		} else if (link_length > 100) {
 			block_size += 1024 + link_length - link_length % 512;
 			current_header = header = realloc(header, block_size);
 			bzero(current_header, block_size - 512);
-			sodr_format_tar_writer_compute_link(current_header, (char *) (current_header + 1), file->link, link_length, 'K', NULL, file);
+			so_format_tar_writer_compute_link(current_header, (char *) (current_header + 1), file->link, link_length, 'K', NULL, file);
 
 			current_header += 2;
 		}
 	}
 
-	struct sodr_format_tar_writer_private * format = fw->data;
+	struct so_format_tar_writer_private * format = fw->data;
 	bzero(current_header, 512);
 	strncpy(current_header->filename, file->filename, 100);
 	snprintf(current_header->filemode, 8, "%07o", file->mode & 07777);
@@ -165,7 +165,7 @@ static enum so_format_writer_status sodr_format_tar_writer_add_file(struct so_fo
 	snprintf(current_header->mtime, 12, "%0*o", 11, (unsigned int) file->mtime);
 
 	if (S_ISREG(file->mode)) {
-		sodr_format_tar_writer_compute_size(current_header->size, file->size);
+		so_format_tar_writer_compute_size(current_header->size, file->size);
 		current_header->flag = '0';
 		format->size = file->size;
 	} else if (S_ISLNK(file->mode)) {
@@ -190,17 +190,17 @@ static enum so_format_writer_status sodr_format_tar_writer_add_file(struct so_fo
 	}
 
 	strcpy(current_header->magic, "ustar  ");
-	sodr_format_tar_writer_uid2name(current_header->uname, 32, file->uid);
-	sodr_format_tar_writer_gid2name(current_header->gname, 32, file->gid);
+	so_format_tar_writer_uid2name(current_header->uname, 32, file->uid);
+	so_format_tar_writer_gid2name(current_header->gname, 32, file->gid);
 
-	sodr_format_tar_writer_compute_checksum(current_header, current_header->checksum);
+	so_format_tar_writer_compute_checksum(current_header, current_header->checksum);
 
 	format->position = 0;
 
-	return sodr_format_tar_writer_write_header(format, header, block_size);
+	return so_format_tar_writer_write_header(format, header, block_size);
 }
 
-static enum so_format_writer_status sodr_format_tar_writer_add_label(struct so_format_writer * fw, const char * label) {
+static enum so_format_writer_status so_format_tar_writer_add_label(struct so_format_writer * fw, const char * label) {
 	if (label == NULL)
 		return so_format_writer_error;
 
@@ -210,21 +210,21 @@ static enum so_format_writer_status sodr_format_tar_writer_add_label(struct so_f
 	snprintf(header->mtime, 12, "%0*o", 11, (unsigned int) time(NULL));
 	header->flag = 'V';
 
-	sodr_format_tar_writer_compute_checksum(header, header->checksum);
+	so_format_tar_writer_compute_checksum(header, header->checksum);
 
-	struct sodr_format_tar_writer_private * format = fw->data;
+	struct so_format_tar_writer_private * format = fw->data;
 	format->position = 0;
 	format->size = 0;
 
-	return sodr_format_tar_writer_write_header(format, header, 512);
+	return so_format_tar_writer_write_header(format, header, 512);
 }
 
-static int sodr_format_tar_writer_close(struct so_format_writer * fw) {
-	struct sodr_format_tar_writer_private * format = fw->data;
+static int so_format_tar_writer_close(struct so_format_writer * fw) {
+	struct so_format_tar_writer_private * format = fw->data;
 	return format->io->ops->close(format->io);
 }
 
-static void sodr_format_tar_writer_compute_checksum(const void * header, char * checksum) {
+static void so_format_tar_writer_compute_checksum(const void * header, char * checksum) {
 	const unsigned char * ptr = header;
 
 	memset(checksum, ' ', 8);
@@ -236,29 +236,29 @@ static void sodr_format_tar_writer_compute_checksum(const void * header, char * 
 	snprintf(checksum, 7, "%06o", sum);
 }
 
-static void sodr_format_tar_writer_compute_link(struct so_format_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile, struct so_format_file * file) {
+static void so_format_tar_writer_compute_link(struct so_format_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile, struct so_format_file * file) {
 	strcpy(header->filename, "././@LongLink");
 	memset(header->filemode, '0', 7);
 	memset(header->uid, '0', 7);
 	memset(header->gid, '0', 7);
-	sodr_format_tar_writer_compute_size(header->size, filename_length);
+	so_format_tar_writer_compute_size(header->size, filename_length);
 	memset(header->mtime, '0', 11);
 	header->flag = flag;
 	strcpy(header->magic, "ustar  ");
 	if (sfile != NULL) {
-		sodr_format_tar_writer_uid2name(header->uname, 32, sfile->st_uid);
-		sodr_format_tar_writer_gid2name(header->gname, 32, sfile->st_gid);
+		so_format_tar_writer_uid2name(header->uname, 32, sfile->st_uid);
+		so_format_tar_writer_gid2name(header->gname, 32, sfile->st_gid);
 	} else {
-		sodr_format_tar_writer_uid2name(header->uname, 32, file->uid);
-		sodr_format_tar_writer_gid2name(header->gname, 32, file->gid);
+		so_format_tar_writer_uid2name(header->uname, 32, file->uid);
+		so_format_tar_writer_gid2name(header->gname, 32, file->gid);
 	}
 
-	sodr_format_tar_writer_compute_checksum(header, header->checksum);
+	so_format_tar_writer_compute_checksum(header, header->checksum);
 
 	strcpy(link, filename);
 }
 
-static void sodr_format_tar_writer_compute_size(char * csize, long long size) {
+static void so_format_tar_writer_compute_size(char * csize, long long size) {
 	if (size > 077777777777) {
 		*csize = (char) 0x80;
 		unsigned int i;
@@ -271,8 +271,8 @@ static void sodr_format_tar_writer_compute_size(char * csize, long long size) {
 	}
 }
 
-static ssize_t sodr_format_tar_writer_end_of_file(struct so_format_writer * fw) {
-	struct sodr_format_tar_writer_private * self = fw->data;
+static ssize_t so_format_tar_writer_end_of_file(struct so_format_writer * fw) {
+	struct so_format_tar_writer_private * self = fw->data;
 
 	unsigned short mod = self->position % 512;
 	if (mod > 0) {
@@ -289,8 +289,8 @@ static ssize_t sodr_format_tar_writer_end_of_file(struct so_format_writer * fw) 
 	return 0;
 }
 
-static void sodr_format_tar_writer_free(struct so_format_writer * fw) {
-	struct sodr_format_tar_writer_private * self = fw->data;
+static void so_format_tar_writer_free(struct so_format_writer * fw) {
+	struct so_format_tar_writer_private * self = fw->data;
 
 	if (self->io != NULL) {
 		self->io->ops->close(self->io);
@@ -301,20 +301,20 @@ static void sodr_format_tar_writer_free(struct so_format_writer * fw) {
 	free(fw);
 }
 
-static ssize_t sodr_format_tar_writer_get_available_size(struct so_format_writer * fw) {
-	struct sodr_format_tar_writer_private * format = fw->data;
+static ssize_t so_format_tar_writer_get_available_size(struct so_format_writer * fw) {
+	struct so_format_tar_writer_private * format = fw->data;
 	return format->io->ops->get_available_size(format->io);
 }
 
-static ssize_t sodr_format_tar_writer_get_block_size(struct so_format_writer * fw) {
-	struct sodr_format_tar_writer_private * format = fw->data;
+static ssize_t so_format_tar_writer_get_block_size(struct so_format_writer * fw) {
+	struct so_format_tar_writer_private * format = fw->data;
 	return format->io->ops->get_block_size(format->io);
 }
 
-static struct so_value * sodr_format_tar_writer_get_digests(struct so_format_writer * fw) {
+static struct so_value * so_format_tar_writer_get_digests(struct so_format_writer * fw) {
 }
 
-static void sodr_format_tar_writer_gid2name(char * name, ssize_t length, gid_t uid) {
+static void so_format_tar_writer_gid2name(char * name, ssize_t length, gid_t uid) {
 	char * buffer = malloc(512);
 
 	struct group gr;
@@ -330,19 +330,19 @@ static void sodr_format_tar_writer_gid2name(char * name, ssize_t length, gid_t u
 	free(buffer);
 }
 
-static int sodr_format_tar_writer_last_errno(struct so_format_writer * fw) {
-	struct sodr_format_tar_writer_private * format = fw->data;
+static int so_format_tar_writer_last_errno(struct so_format_writer * fw) {
+	struct so_format_tar_writer_private * format = fw->data;
 	if (format->last_errno != 0)
 		return format->last_errno;
 	return format->io->ops->last_errno(format->io);
 }
 
-static ssize_t sodr_format_tar_writer_position(struct so_format_writer * fw) {
-	struct sodr_format_tar_writer_private * format = fw->data;
+static ssize_t so_format_tar_writer_position(struct so_format_writer * fw) {
+	struct so_format_tar_writer_private * format = fw->data;
 	return format->io->ops->position(format->io);
 }
 
-static void sodr_format_tar_writer_uid2name(char * name, ssize_t length, uid_t uid) {
+static void so_format_tar_writer_uid2name(char * name, ssize_t length, uid_t uid) {
 	char * buffer = malloc(512);
 
 	struct passwd pw;
@@ -358,8 +358,8 @@ static void sodr_format_tar_writer_uid2name(char * name, ssize_t length, uid_t u
 	free(buffer);
 }
 
-static ssize_t sodr_format_tar_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length) {
-	struct sodr_format_tar_writer_private * format = fw->data;
+static ssize_t so_format_tar_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length) {
+	struct so_format_tar_writer_private * format = fw->data;
 
 	if (format->position >= format->size)
 		return 0;
@@ -375,7 +375,7 @@ static ssize_t sodr_format_tar_writer_write(struct so_format_writer * fw, const 
 	return nb_write;
 }
 
-static enum so_format_writer_status sodr_format_tar_writer_write_header(struct sodr_format_tar_writer_private * f, void * data, ssize_t length) {
+static enum so_format_writer_status so_format_tar_writer_write_header(struct so_format_tar_writer_private * f, void * data, ssize_t length) {
 	ssize_t available = f->io->ops->get_available_size(f->io);
 
 	ssize_t nb_write = 0;

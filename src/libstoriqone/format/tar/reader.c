@@ -56,42 +56,42 @@ struct so_format_tar_reader_private {
 	bool has_cheksum;
 };
 
-static int sodr_format_tar_reader_check_header(struct so_format_tar * header);
-static int sodr_format_tar_reader_close(struct so_format_reader * fr);
-static dev_t sodr_format_tar_reader_convert_dev(struct so_format_tar * header);
-static gid_t sodr_format_tar_reader_convert_gid(struct so_format_tar * header);
-static ssize_t sodr_format_tar_reader_convert_size(const char * size);
-static time_t sodr_format_tar_reader_convert_time(struct so_format_tar * header);
-static uid_t sodr_format_tar_reader_convert_uid(struct so_format_tar * header);
-static bool sodr_format_tar_reader_end_of_file(struct so_format_reader * fr);
-static enum so_format_reader_header_status sodr_format_tar_reader_forward(struct so_format_reader * fr, off_t offset);
-static void sodr_format_tar_reader_free(struct so_format_reader * fr);
-static ssize_t sodr_format_tar_reader_get_block_size(struct so_format_reader * fr);
-static struct so_value * sodr_format_tar_reader_get_digests(struct so_format_reader * fr);
-static enum so_format_reader_header_status sodr_format_tar_reader_get_header(struct so_format_reader * fr, struct so_format_file * file);
-static int sodr_format_tar_reader_last_errno(struct so_format_reader * fr);
-static ssize_t sodr_format_tar_reader_position(struct so_format_reader * fr);
-static ssize_t sodr_format_tar_reader_read(struct so_format_reader * fr, void * buffer, ssize_t length);
-static ssize_t sodr_format_tar_reader_read_to_end_of_data(struct so_format_reader * fr);
-static enum so_format_reader_header_status sodr_format_tar_reader_skip_file(struct so_format_reader * fr);
+static int so_format_tar_reader_check_header(struct so_format_tar * header);
+static int so_format_tar_reader_close(struct so_format_reader * fr);
+static dev_t so_format_tar_reader_convert_dev(struct so_format_tar * header);
+static gid_t so_format_tar_reader_convert_gid(struct so_format_tar * header);
+static ssize_t so_format_tar_reader_convert_size(const char * size);
+static time_t so_format_tar_reader_convert_time(struct so_format_tar * header);
+static uid_t so_format_tar_reader_convert_uid(struct so_format_tar * header);
+static bool so_format_tar_reader_end_of_file(struct so_format_reader * fr);
+static enum so_format_reader_header_status so_format_tar_reader_forward(struct so_format_reader * fr, off_t offset);
+static void so_format_tar_reader_free(struct so_format_reader * fr);
+static ssize_t so_format_tar_reader_get_block_size(struct so_format_reader * fr);
+static struct so_value * so_format_tar_reader_get_digests(struct so_format_reader * fr);
+static enum so_format_reader_header_status so_format_tar_reader_get_header(struct so_format_reader * fr, struct so_format_file * file);
+static int so_format_tar_reader_last_errno(struct so_format_reader * fr);
+static ssize_t so_format_tar_reader_position(struct so_format_reader * fr);
+static ssize_t so_format_tar_reader_read(struct so_format_reader * fr, void * buffer, ssize_t length);
+static ssize_t so_format_tar_reader_read_to_end_of_data(struct so_format_reader * fr);
+static enum so_format_reader_header_status so_format_tar_reader_skip_file(struct so_format_reader * fr);
 
-static struct so_format_reader_ops sodr_format_tar_reader_ops = {
-	.close               = sodr_format_tar_reader_close,
-	.end_of_file         = sodr_format_tar_reader_end_of_file,
-	.forward             = sodr_format_tar_reader_forward,
-	.free                = sodr_format_tar_reader_free,
-	.get_block_size      = sodr_format_tar_reader_get_block_size,
-	.get_digests         = sodr_format_tar_reader_get_digests,
-	.get_header          = sodr_format_tar_reader_get_header,
-	.last_errno          = sodr_format_tar_reader_last_errno,
-	.position            = sodr_format_tar_reader_position,
-	.read                = sodr_format_tar_reader_read,
-	.read_to_end_of_data = sodr_format_tar_reader_read_to_end_of_data,
-	.skip_file           = sodr_format_tar_reader_skip_file,
+static struct so_format_reader_ops so_format_tar_reader_ops = {
+	.close               = so_format_tar_reader_close,
+	.end_of_file         = so_format_tar_reader_end_of_file,
+	.forward             = so_format_tar_reader_forward,
+	.free                = so_format_tar_reader_free,
+	.get_block_size      = so_format_tar_reader_get_block_size,
+	.get_digests         = so_format_tar_reader_get_digests,
+	.get_header          = so_format_tar_reader_get_header,
+	.last_errno          = so_format_tar_reader_last_errno,
+	.position            = so_format_tar_reader_position,
+	.read                = so_format_tar_reader_read,
+	.read_to_end_of_data = so_format_tar_reader_read_to_end_of_data,
+	.skip_file           = so_format_tar_reader_skip_file,
 };
 
 
-struct so_format_reader * sodr_format_tar_new_reader(struct so_stream_reader * reader, struct so_value * checksums) {
+struct so_format_reader * so_format_tar_new_reader(struct so_stream_reader * reader, struct so_value * checksums) {
 	struct so_format_tar_reader_private * self = malloc(sizeof(struct so_format_tar_reader_private));
 	bzero(self, sizeof(struct so_format_tar_reader_private));
 
@@ -108,14 +108,14 @@ struct so_format_reader * sodr_format_tar_new_reader(struct so_stream_reader * r
 	self->skip_size = 0;
 
 	struct so_format_reader * new_reader = malloc(sizeof(struct so_format_reader));
-	new_reader->ops = &sodr_format_tar_reader_ops;
+	new_reader->ops = &so_format_tar_reader_ops;
 	new_reader->data = self;
 
 	return new_reader;
 }
 
 
-static int sodr_format_tar_reader_check_header(struct so_format_tar * header) {
+static int so_format_tar_reader_check_header(struct so_format_tar * header) {
 	char checksum[8];
 	strncpy(checksum, header->checksum, 8);
 	memset(header->checksum, ' ', 8);
@@ -129,12 +129,12 @@ static int sodr_format_tar_reader_check_header(struct so_format_tar * header) {
 	return strncmp(checksum, header->checksum, 8);
 }
 
-static int sodr_format_tar_reader_close(struct so_format_reader * fr) {
+static int so_format_tar_reader_close(struct so_format_reader * fr) {
 	struct so_format_tar_reader_private * self = fr->data;
 	return self->io->ops->close(self->io);
 }
 
-static dev_t sodr_format_tar_reader_convert_dev(struct so_format_tar * header) {
+static dev_t so_format_tar_reader_convert_dev(struct so_format_tar * header) {
 	unsigned int major = 0, minor = 0;
 
 	sscanf(header->devmajor, "%o", &major);
@@ -143,13 +143,13 @@ static dev_t sodr_format_tar_reader_convert_dev(struct so_format_tar * header) {
 	return (major << 8 ) | minor;
 }
 
-static gid_t sodr_format_tar_reader_convert_gid(struct so_format_tar * header) {
+static gid_t so_format_tar_reader_convert_gid(struct so_format_tar * header) {
 	unsigned int result;
 	sscanf(header->gid, "%o", &result);
 	return result;
 }
 
-static ssize_t sodr_format_tar_reader_convert_size(const char * size) {
+static ssize_t so_format_tar_reader_convert_size(const char * size) {
 	if (size[0] == (char) 0x80) {
 		short i;
 		ssize_t result = 0;
@@ -166,24 +166,24 @@ static ssize_t sodr_format_tar_reader_convert_size(const char * size) {
 	return 0;
 }
 
-static time_t sodr_format_tar_reader_convert_time(struct so_format_tar * header) {
+static time_t so_format_tar_reader_convert_time(struct so_format_tar * header) {
 	unsigned int result;
 	sscanf(header->mtime, "%o", &result);
 	return result;
 }
 
-static uid_t sodr_format_tar_reader_convert_uid(struct so_format_tar * header) {
+static uid_t so_format_tar_reader_convert_uid(struct so_format_tar * header) {
 	unsigned int result;
 	sscanf(header->uid, "%o", &result);
 	return result;
 }
 
-static bool sodr_format_tar_reader_end_of_file(struct so_format_reader * fr) {
+static bool so_format_tar_reader_end_of_file(struct so_format_reader * fr) {
 	struct so_format_tar_reader_private * self = fr->data;
 	return self->io->ops->end_of_file(self->io);
 }
 
-static enum so_format_reader_header_status sodr_format_tar_reader_forward(struct so_format_reader * fr, off_t block_position) {
+static enum so_format_reader_header_status so_format_tar_reader_forward(struct so_format_reader * fr, off_t block_position) {
 	struct so_format_tar_reader_private * self = fr->data;
 
 	ssize_t current_position = self->io->ops->position(self->io);
@@ -204,7 +204,7 @@ static enum so_format_reader_header_status sodr_format_tar_reader_forward(struct
 	return so_format_reader_header_ok;
 }
 
-static void sodr_format_tar_reader_free(struct so_format_reader * fr) {
+static void so_format_tar_reader_free(struct so_format_reader * fr) {
 	struct so_format_tar_reader_private * self = fr->data;
 
 	if (self->io != NULL)
@@ -219,12 +219,12 @@ static void sodr_format_tar_reader_free(struct so_format_reader * fr) {
 	free(fr);
 }
 
-static ssize_t sodr_format_tar_reader_get_block_size(struct so_format_reader * fr) {
+static ssize_t so_format_tar_reader_get_block_size(struct so_format_reader * fr) {
 	struct so_format_tar_reader_private * self = fr->data;
 	return self->io->ops->get_block_size(self->io);
 }
 
-static struct so_value * sodr_format_tar_reader_get_digests(struct so_format_reader * fr) {
+static struct so_value * so_format_tar_reader_get_digests(struct so_format_reader * fr) {
 	struct so_format_tar_reader_private * self = fr->data;
 	if (self->has_cheksum)
 		return so_io_checksum_reader_get_checksums(self->io);
@@ -232,7 +232,7 @@ static struct so_value * sodr_format_tar_reader_get_digests(struct so_format_rea
 		return so_value_new_linked_list();
 }
 
-static enum so_format_reader_header_status sodr_format_tar_reader_get_header(struct so_format_reader * fr, struct so_format_file * file) {
+static enum so_format_reader_header_status so_format_tar_reader_get_header(struct so_format_reader * fr, struct so_format_file * file) {
 	struct so_format_tar_reader_private * self = fr->data;
 
 	if (self->io->ops->end_of_file(self->io))
@@ -246,7 +246,7 @@ static enum so_format_reader_header_status sodr_format_tar_reader_get_header(str
 
 	struct so_format_tar * raw_header = (struct so_format_tar *) self->buffer;
 
-	if (sodr_format_tar_reader_check_header(raw_header))
+	if (so_format_tar_reader_check_header(raw_header))
 		return so_format_reader_header_bad_header;
 
 	so_format_file_init(file);
@@ -255,7 +255,7 @@ static enum so_format_reader_header_status sodr_format_tar_reader_get_header(str
 		ssize_t next_read;
 		switch (raw_header->flag) {
 			case 'L':
-				next_read = 512 + sodr_format_tar_reader_convert_size(raw_header->size);
+				next_read = 512 + so_format_tar_reader_convert_size(raw_header->size);
 				if (next_read % 512)
 					next_read -= next_read % 512;
 
@@ -270,14 +270,14 @@ static enum so_format_reader_header_status sodr_format_tar_reader_get_header(str
 				file->filename = strdup(self->buffer);
 
 				nb_read = self->io->ops->read(self->io, self->buffer, 512);
-				if (nb_read < 512 || sodr_format_tar_reader_check_header(raw_header)) {
+				if (nb_read < 512 || so_format_tar_reader_check_header(raw_header)) {
 					so_format_file_free(file);
 					return so_format_reader_header_bad_header;
 				}
 				continue;
 
 			case 'K':
-				next_read = 512 + sodr_format_tar_reader_convert_size(raw_header->size);
+				next_read = 512 + so_format_tar_reader_convert_size(raw_header->size);
 				if (next_read % 512)
 					next_read -= next_read % 512;
 
@@ -292,14 +292,14 @@ static enum so_format_reader_header_status sodr_format_tar_reader_get_header(str
 				file->link = strdup(self->buffer);
 
 				nb_read = self->io->ops->read(self->io, self->buffer, 512);
-				if (nb_read < 512 || sodr_format_tar_reader_check_header(raw_header)) {
+				if (nb_read < 512 || so_format_tar_reader_check_header(raw_header)) {
 					so_format_file_free(file);
 					return so_format_reader_header_bad_header;
 				}
 				continue;
 
 			case 'M':
-				file->position = sodr_format_tar_reader_convert_size(raw_header->position);
+				file->position = so_format_tar_reader_convert_size(raw_header->position);
 				break;
 
 			case '1':
@@ -317,7 +317,7 @@ static enum so_format_reader_header_status sodr_format_tar_reader_get_header(str
 
 			case '3':
 			case '4':
-				file->dev = sodr_format_tar_reader_convert_dev(raw_header);
+				file->dev = so_format_tar_reader_convert_dev(raw_header);
 				break;
 
 			case 'V':
@@ -334,12 +334,12 @@ static enum so_format_reader_header_status sodr_format_tar_reader_get_header(str
 				file->filename = strdup(raw_header->filename);
 			}
 		}
-		file->size = sodr_format_tar_reader_convert_size(raw_header->size);
+		file->size = so_format_tar_reader_convert_size(raw_header->size);
 		sscanf(raw_header->filemode, "%o", &file->mode);
-		file->mtime = sodr_format_tar_reader_convert_time(raw_header);
-		file->uid = sodr_format_tar_reader_convert_uid(raw_header);
+		file->mtime = so_format_tar_reader_convert_time(raw_header);
+		file->uid = so_format_tar_reader_convert_uid(raw_header);
 		file->user = strdup(raw_header->uname);
-		file->gid = sodr_format_tar_reader_convert_gid(raw_header);
+		file->gid = so_format_tar_reader_convert_gid(raw_header);
 		file->group = strdup(raw_header->gname);
 
 		switch (raw_header->flag) {
@@ -381,17 +381,17 @@ static enum so_format_reader_header_status sodr_format_tar_reader_get_header(str
 	return so_format_reader_header_ok;
 }
 
-static int sodr_format_tar_reader_last_errno(struct so_format_reader * fr) {
+static int so_format_tar_reader_last_errno(struct so_format_reader * fr) {
 	struct so_format_tar_reader_private * self = fr->data;
 	return self->io->ops->last_errno(self->io);
 }
 
-static ssize_t sodr_format_tar_reader_position(struct so_format_reader * fr) {
+static ssize_t so_format_tar_reader_position(struct so_format_reader * fr) {
 	struct so_format_tar_reader_private * self = fr->data;
 	return self->io->ops->position(self->io);
 }
 
-static ssize_t sodr_format_tar_reader_read(struct so_format_reader * fr, void * buffer, ssize_t length) {
+static ssize_t so_format_tar_reader_read(struct so_format_reader * fr, void * buffer, ssize_t length) {
 	if (fr == NULL || buffer == NULL)
 		return -1;
 
@@ -409,12 +409,12 @@ static ssize_t sodr_format_tar_reader_read(struct so_format_reader * fr, void * 
 	}
 
 	if (self->file_size == 0 && self->skip_size > 0)
-		sodr_format_tar_reader_skip_file(fr);
+		so_format_tar_reader_skip_file(fr);
 
 	return nb_read;
 }
 
-static ssize_t sodr_format_tar_reader_read_to_end_of_data(struct so_format_reader * fr) {
+static ssize_t so_format_tar_reader_read_to_end_of_data(struct so_format_reader * fr) {
 	if (fr == NULL)
 		return -1;
 
@@ -430,7 +430,7 @@ static ssize_t sodr_format_tar_reader_read_to_end_of_data(struct so_format_reade
 	return nb_total_read;
 }
 
-static enum so_format_reader_header_status sodr_format_tar_reader_skip_file(struct so_format_reader * fr) {
+static enum so_format_reader_header_status so_format_tar_reader_skip_file(struct so_format_reader * fr) {
 	struct so_format_tar_reader_private * self = fr->data;
 
 	if (self->skip_size == 0)
