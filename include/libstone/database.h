@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 22 Dec 2014 13:22:27 +0100                            *
+*  Last modified: Thu, 19 Feb 2015 11:56:41 +0100                            *
 \****************************************************************************/
 
 #ifndef __STONE_DATABASE_H__
@@ -237,6 +237,7 @@ struct st_database_connection {
 		bool (*check_checksums_of_archive_volume)(struct st_database_connection * connect, struct st_archive_volume * volume);
 		bool (*check_checksums_of_file)(struct st_database_connection * connect, struct st_archive_file * file);
 		struct st_archive * (*get_archive_by_job)(struct st_database_connection * connect, struct st_job * job);
+		struct st_archive ** (*get_archive_by_media)(struct st_database_connection * connect, struct st_media * media, unsigned int * nb_archive);
 		struct st_archive_file * (*get_archive_file_for_restore_directory)(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_files);
 		int (*get_archive_files_by_job_and_archive_volume)(struct st_database_connection * connect, struct st_job * job, struct st_archive_volume * volume);
 		struct st_archive * (*get_archive_volumes_by_job)(struct st_database_connection * connect, struct st_job * job);
@@ -247,6 +248,7 @@ struct st_database_connection {
 		char * (*get_restore_path_of_job)(struct st_database_connection * connect, struct st_job * job);
 		ssize_t (*get_restore_size_by_job)(struct st_database_connection * connect, struct st_job * job);
 		bool (*has_restore_to_by_job)(struct st_database_connection * connect, struct st_job * job);
+		int (*mark_archive_as_purged)(struct st_database_connection * connect, struct st_media * media, struct st_job * job);
 		bool (*mark_archive_file_as_checked)(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_file * file, bool ok);
 		bool (*mark_archive_volume_as_checked)(struct st_database_connection * connect, struct st_archive_volume * volume, bool ok);
 		int (*sync_archive)(struct st_database_connection * connect, struct st_archive * archive);
