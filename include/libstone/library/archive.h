@@ -69,6 +69,7 @@ struct st_archive {
 	struct st_user * user;
 
 	char * metadatas;
+	bool deleted;
 
 	void * db_data;
 };

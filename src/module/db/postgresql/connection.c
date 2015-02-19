@@ -175,6 +175,7 @@ static bool st_db_postgresql_check_checksums_of_file(struct st_database_connecti
 static int st_db_postgresql_add_checksum_result(struct st_database_connection * connect, const char * checksum, char * result, char ** checksum_result_id);
 static struct st_archive_file * st_db_postgresql_get_archive_file_for_restore_directory(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_files);
 static struct st_archive * st_db_postgresql_get_archive_by_job(struct st_database_connection * connect, struct st_job * job);
+static struct st_archive ** st_db_postgresql_get_archive_by_media(struct st_database_connection * connect, struct st_media * media, unsigned int * nb_archive);
 static int st_db_postgresql_get_archive_files_by_job_and_archive_volume(struct st_database_connection * connect, struct st_job * job, struct st_archive_volume * volume);
 static struct st_archive * st_db_postgresql_get_archive_volumes_by_job(struct st_database_connection * connect, struct st_job * job);
 static unsigned int st_db_postgresql_get_checksums_of_archive_volume(struct st_database_connection * connect, struct st_archive_volume * volume);
@@ -185,6 +186,7 @@ static char * st_db_postgresql_get_restore_path_of_job(struct st_database_connec
 static ssize_t st_db_postgresql_get_restore_size_by_job(struct st_database_connection * connect, struct st_job * job);
 static bool st_db_postgresql_has_restore_to_by_job(struct st_database_connection * connect, struct st_job * job);
 static bool st_db_postgresql_has_selected_files_by_job(struct st_database_connection * connect, struct st_job * job);
+static int st_db_postgresql_mark_archive_as_purged(struct st_database_connection * connect, struct st_media * media, struct st_job * job);
 static bool st_db_postgresql_mark_archive_file_as_checked(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_file * file, bool ok);
 static bool st_db_postgresql_mark_archive_volume_as_checked(struct st_database_connection * connect, struct st_archive_volume * volume, bool ok);
 static int st_db_postgresql_sync_archive(struct st_database_connection * connect, struct st_archive * archive);
@@ -249,6 +251,7 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.check_checksums_of_archive_volume           = st_db_postgresql_check_checksums_of_archive_volume,
 	.check_checksums_of_file                     = st_db_postgresql_check_checksums_of_file,
 	.get_archive_by_job                          = st_db_postgresql_get_archive_by_job,
+	.get_archive_by_media                        = st_db_postgresql_get_archive_by_media,
 	.get_archive_file_for_restore_directory      = st_db_postgresql_get_archive_file_for_restore_directory,
 	.get_archive_files_by_job_and_archive_volume = st_db_postgresql_get_archive_files_by_job_and_archive_volume,
 	.get_archive_volumes_by_job                  = st_db_postgresql_get_archive_volumes_by_job,
@@ -259,6 +262,7 @@ static struct st_database_connection_ops st_db_postgresql_connection_ops = {
 	.get_restore_path_of_job                     = st_db_postgresql_get_restore_path_of_job,
 	.get_restore_size_by_job                     = st_db_postgresql_get_restore_size_by_job,
 	.has_restore_to_by_job                       = st_db_postgresql_has_restore_to_by_job,
+	.mark_archive_as_purged                      = st_db_postgresql_mark_archive_as_purged,
 	.mark_archive_file_as_checked                = st_db_postgresql_mark_archive_file_as_checked,
 	.mark_archive_volume_as_checked              = st_db_postgresql_mark_archive_volume_as_checked,
 	.sync_archive                                = st_db_postgresql_sync_archive,
@@ -2979,6 +2983,101 @@ static struct st_archive * st_db_postgresql_get_archive_by_job(struct st_databas
 	return archive;
 }
 
+static struct st_archive ** st_db_postgresql_get_archive_by_media(struct st_database_connection * connect, struct st_media * media, unsigned int * nb_archive) {
+	if (connect == NULL || media == NULL)
+		return NULL;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_media_data * media_data = media->db_data;
+
+	const char * query = "select_archive_by_media";
+	st_db_postgresql_prepare(self, query, "SELECT a.id, a.uuid, name FROM archive a INNER JOIN archivevolume av ON a.id = av.archive AND av.media = $1 AND purged IS NULL ORDER BY av.mediaposition");
+
+	char * media_id = NULL;
+	asprintf(&media_id, "%ld", media_data->id);
+
+	const char * param[] = { media_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+	unsigned int nb_tuples = PQntuples(result);
+
+	struct st_archive ** archives = NULL;
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && nb_tuples > 0) {
+		if (nb_archive != NULL)
+			*nb_archive = nb_tuples;
+
+		archives = calloc(nb_tuples, sizeof(struct st_archive *));
+		unsigned int i;
+		for (i = 0; i < nb_tuples; i++) {
+			struct st_archive * archive = archives[i] = malloc(sizeof(struct st_archive));
+			bzero(archive, sizeof(struct st_archive));
+
+			st_db_postgresql_get_string(result, i, 1, archive->uuid, 36);
+			st_db_postgresql_get_string_dup(result, i, 2, &archive->name);
+
+			archive->volumes = NULL;
+			archive->nb_volumes = 0;
+
+			struct st_db_postgresql_archive_data * archive_data = archive->db_data = malloc(sizeof(struct st_db_postgresql_archive_data));
+			st_db_postgresql_get_long(result, i, 0, &archive_data->id);
+
+			const char * query = "select_archive_volume_by_archive";
+			st_db_postgresql_prepare(self, query, "SELECT av.id, av.sequence, av.starttime, av.endtime, av.checksumok, av.checktime, av.size, m.uuid, av.mediaposition FROM archivevolume av LEFT JOIN media m ON av.media = m.id WHERE av.archive = $1 ORDER BY sequence");
+
+			const char * param[] = { PQgetvalue(result, i, 0) };
+			PGresult * result2 = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+			ExecStatusType status2 = PQresultStatus(result);
+			unsigned int nb_tuples2 = PQntuples(result);
+
+			if (status2 == PGRES_FATAL_ERROR)
+				st_db_postgresql_get_error(result2, query);
+			else if (status2 == PGRES_TUPLES_OK && nb_tuples2 > 0) {
+				archive->volumes = calloc(nb_tuples2, sizeof(struct st_archive_volume));
+				archive->nb_volumes = nb_tuples2;
+
+				unsigned int j;
+				for (j = 0; j < archive->nb_volumes; j++) {
+					struct st_archive_volume * vol = archive->volumes + j;
+
+					st_db_postgresql_get_long(result, i, 1, &vol->sequence);
+					st_db_postgresql_get_time(result, i, 2, &vol->start_time);
+					st_db_postgresql_get_time(result, i, 3, &vol->end_time);
+					st_db_postgresql_get_bool(result, i, 4, &vol->check_ok);
+					vol->check_time = 0;
+					if (!PQgetisnull(result, i, 5))
+						st_db_postgresql_get_time(result, i, 5, &vol->check_time);
+
+					st_db_postgresql_get_ssize(result, i, 6, &vol->size);
+					vol->archive = archive;
+					vol->job = NULL;
+
+					char uuid[38];
+					st_db_postgresql_get_string(result, i, 7, uuid, 37);
+					vol->media = st_media_get_by_uuid(uuid);
+					st_db_postgresql_get_long(result, i, 8, &vol->media_position);
+
+					vol->digests = NULL;
+
+					vol->files = NULL;
+					vol->nb_files = 0;
+
+					struct st_db_postgresql_archive_volume_data * archive_volume_data = vol->db_data = malloc(sizeof(struct st_db_postgresql_archive_volume_data));
+					st_db_postgresql_get_long(result, i, 0, &archive_volume_data->id);
+				}
+			}
+
+			PQclear(result2);
+		}
+	}
+
+	PQclear(result);
+
+	return archives;
+}
+
 static struct st_archive_file * st_db_postgresql_get_archive_file_for_restore_directory(struct st_database_connection * connect, struct st_job * job, unsigned int * nb_files) {
 	if (connect == NULL || job == NULL || nb_files == NULL)
 		return NULL;
@@ -3542,6 +3641,35 @@ static bool st_db_postgresql_has_selected_files_by_job(struct st_database_connec
 	free(jobid);
 
 	return has_selected_files;
+}
+
+static int st_db_postgresql_mark_archive_as_purged(struct st_database_connection * connect, struct st_media * media, struct st_job * job) {
+	if (connect == NULL || media == NULL || job == NULL)
+		return -1;
+
+	struct st_db_postgresql_connection_private * self = connect->data;
+	struct st_db_postgresql_media_data * media_data = media->db_data;
+	struct st_db_postgresql_job_data * job_data = job->db_data;
+
+	char * media_id = NULL, * jobrun_id = NULL;
+	asprintf(&media_id, "%ld", media_data->id);
+	asprintf(&jobrun_id, "%ld", job_data->jobrun_id);
+
+	const char * query = "mark_archive_as_purged";
+	st_db_postgresql_prepare(self, query, "UPDATE archivevolume SET purged = $2 WHERE media = $1");
+
+	const char * param[] = { media_id, jobrun_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		st_db_postgresql_get_error(result, query);
+
+	PQclear(result);
+	free(jobrun_id);
+	free(media_id);
+
+	return status != PGRES_COMMAND_OK;
 }
 
 static bool st_db_postgresql_mark_archive_file_as_checked(struct st_database_connection * connect, struct st_archive * archive, struct st_archive_file * file, bool ok) {
