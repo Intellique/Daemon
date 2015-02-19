@@ -58,6 +58,7 @@ struct st_job_erase_media_private {
 static bool st_job_erase_media_check(struct st_job * job);
 static void st_job_erase_media_free(struct st_job * job);
 static void st_job_erase_media_init(void) __attribute__((constructor));
+static char * st_job_erase_media_make_report(struct st_job * job);
 static void st_job_erase_media_new_job(struct st_job * job);
 static void st_job_erase_media_on_error(struct st_job * job);
 static void st_job_erase_media_post_run(struct st_job * job);
@@ -103,6 +104,46 @@ static void st_job_erase_media_free(struct st_job * job) {
 
 static void st_job_erase_media_init() {
 	st_job_register_driver(&st_job_erase_media_driver);
+}
+
+static char * st_job_erase_media_make_report(struct st_job * job) {
+	struct st_job_erase_media_private * self = job->data;
+
+	json_t * archives = json_array();
+	unsigned int i;
+	for (i = 0; i < self->nb_archives; i++) {
+		struct st_archive * archive = self->archives[i];
+		json_t * jarchive = json_pack("{sssssb}",
+			"name", archive->name,
+			"uuid", archive->uuid,
+			"deleted", archive->deleted
+		);
+
+		json_array_append_new(archives, jarchive);
+	}
+
+	json_t * jjob = json_object();
+
+	json_t * media = json_object();
+	if (self->media->uuid[0] != '\0')
+		json_object_set_new(media, "uuid", json_string(self->media->uuid));
+	else
+		json_object_set_new(media, "uuid", json_null());
+	if (self->media->label != NULL)
+		json_object_set_new(media, "label", json_string(self->media->label));
+	else
+		json_object_set_new(media, "label", json_null());
+	json_object_set_new(media, "name", json_string(self->media->name));
+
+	json_t * sdata = json_object();
+	json_object_set_new(sdata, "archives", archives);
+	json_object_set_new(sdata, "job", jjob);
+	json_object_set_new(sdata, "host", st_host_get_info());
+	json_object_set_new(sdata, "media", media);
+
+	char * report = json_dumps(sdata, JSON_COMPACT);
+	json_decref(sdata);
+	return report;
 }
 
 static void st_job_erase_media_new_job(struct st_job * job) {
@@ -458,6 +499,11 @@ static int st_job_erase_media_run(struct st_job * job) {
 			status = 1;
 		} else {
 			job->db_connect->ops->mark_archive_as_purged(job->db_connect, self->media, job);
+
+			char * report = st_job_erase_media_make_report(job);
+			if (report != NULL)
+				job->db_connect->ops->add_report(job->db_connect, job, NULL, self->media, report);
+			free(report);
 
 			job->done = 1;
 			st_job_add_record(job->db_connect, st_log_level_info, job, st_job_record_notif_important, "Job: erase media finished with code = OK, num runs %ld", job->num_runs);

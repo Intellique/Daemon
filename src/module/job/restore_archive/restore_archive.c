@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 06 Feb 2015 12:07:45 +0100                            *
+*  Last modified: Thu, 19 Feb 2015 18:06:39 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -715,7 +715,7 @@ static int st_job_restore_archive_run(struct st_job * job) {
 
 	char * report = st_job_restore_archive_report_make(self->report);
 	if (report != NULL)
-		job->db_connect->ops->add_report(job->db_connect, job, self->archive, report);
+		job->db_connect->ops->add_report(job->db_connect, job, self->archive, NULL, report);
 	free(report);
 
 	job->done = 1;

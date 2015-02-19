@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Tue, 17 Feb 2015 12:39:32 +0100                            *
+*  Last modified: Thu, 19 Feb 2015 18:03:05 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -169,7 +169,7 @@ static int st_db_postgresql_sync_job(struct st_database_connection * connect, st
 static int st_db_postgresql_get_user(struct st_database_connection * connect, struct st_user * user, const char * login);
 static int st_db_postgresql_sync_user(struct st_database_connection * connect, struct st_user * user);
 
-static bool st_db_postgresql_add_report(struct st_database_connection * connect, struct st_job * job, struct st_archive * archive, const char * report);
+static bool st_db_postgresql_add_report(struct st_database_connection * connect, struct st_job * job, struct st_archive * archive, struct st_media * media, const char * report);
 static bool st_db_postgresql_check_checksums_of_archive_volume(struct st_database_connection * connect, struct st_archive_volume * volume);
 static bool st_db_postgresql_check_checksums_of_file(struct st_database_connection * connect, struct st_archive_file * file);
 static int st_db_postgresql_add_checksum_result(struct st_database_connection * connect, const char * checksum, char * result, char ** checksum_result_id);
@@ -2757,26 +2757,28 @@ static int st_db_postgresql_sync_user(struct st_database_connection * connect, s
 }
 
 
-static bool st_db_postgresql_add_report(struct st_database_connection * connect, struct st_job * job, struct st_archive * archive, const char * report) {
-	if (connect == NULL || job == NULL || archive == NULL || report == NULL)
+static bool st_db_postgresql_add_report(struct st_database_connection * connect, struct st_job * job, struct st_archive * archive, struct st_media * media, const char * report) {
+	if (connect == NULL || job == NULL || (archive == NULL && media == NULL) || report == NULL)
 		return false;
 
 	struct st_db_postgresql_connection_private * self = connect->data;
-	struct st_db_postgresql_archive_data * archive_data = archive->db_data;
+	struct st_db_postgresql_archive_data * archive_data = archive != NULL ? archive->db_data : NULL;
+	struct st_db_postgresql_media_data * media_data = media != NULL ? media->db_data : NULL;
 	struct st_db_postgresql_job_data * job_data = job->db_data;
 
-	if (archive_data == NULL || job_data == NULL)
+	if ((archive == NULL && media == NULL) || job_data == NULL)
 		return false;
 
 	const char * query = "insert_report";
-	st_db_postgresql_prepare(self, query, "INSERT INTO report(archive, jobrun, data) VALUES ($1, $2, $3)");
+	st_db_postgresql_prepare(self, query, "INSERT INTO report(archive, media, jobrun, data) VALUES ($1, $2, $3, $4)");
 
-	char * jobrunid, * archiveid;
+	char * jobrunid, * archiveid = NULL, * mediaid = NULL;
 	asprintf(&jobrunid, "%ld", job_data->jobrun_id);
 	asprintf(&archiveid, "%ld", archive_data->id);
+	asprintf(&mediaid, "%ld", media_data->id);
 
-	const char * param[] = { archiveid, jobrunid, report };
-	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+	const char * param[] = { archiveid, mediaid, jobrunid, report };
+	PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)
@@ -2785,6 +2787,7 @@ static bool st_db_postgresql_add_report(struct st_database_connection * connect,
 	PQclear(result);
 	free(jobrunid);
 	free(archiveid);
+	free(mediaid);
 
 	return status == PGRES_COMMAND_OK;
 }

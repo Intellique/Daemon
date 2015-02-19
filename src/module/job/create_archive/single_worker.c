@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 30 Oct 2014 13:52:15 +0100                            *
+*  Last modified: Thu, 19 Feb 2015 18:06:00 +0100                            *
 \****************************************************************************/
 
 // asprintf
@@ -785,7 +785,7 @@ static int st_job_create_archive_single_worker_sync_db(struct st_job_create_arch
 
 	char * report = st_job_create_archive_report_make(self->report);
 	if (report != NULL)
-		self->connect->ops->add_report(self->connect, self->job, self->archive, report);
+		self->connect->ops->add_report(self->connect, self->job, self->archive, NULL, report);
 	free(report);
 
 	return failed;
