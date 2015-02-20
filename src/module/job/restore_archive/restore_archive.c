@@ -22,13 +22,15 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 14 Mar 2014 12:38:24 +0100                            *
+*  Last modified: Thu, 19 Feb 2015 18:06:39 +0100                            *
 \****************************************************************************/
 
 // json_*
 #include <jansson.h>
 // free, malloc
 #include <stdlib.h>
+// bzero
+#include <strings.h>
 // chmod
 #include <sys/stat.h>
 // utimes
@@ -106,9 +108,12 @@ static void st_job_restore_archive_free(struct st_job * job) {
 		st_archive_free(self->archive);
 	self->archive = NULL;
 
-	st_job_restore_archive_checks_worker_free(self->checks);
-	st_job_restore_archive_report_free(self->report);
-	st_job_restore_archive_path_free(self->restore_path);
+	if (self->checks != NULL)
+		st_job_restore_archive_checks_worker_free(self->checks);
+	if (self->report != NULL)
+		st_job_restore_archive_report_free(self->report);
+	if (self->restore_path != NULL)
+		st_job_restore_archive_path_free(self->restore_path);
 
 	free(self);
 	job->data = NULL;
@@ -120,11 +125,19 @@ static void st_job_restore_archive_init(void) {
 
 static void st_job_restore_archive_new_job(struct st_job * job) {
 	struct st_job_restore_archive_private * self = malloc(sizeof(struct st_job_restore_archive_private));
+	bzero(self, sizeof(struct st_job_restore_archive_private));
 	self->job = job;
 	job->db_connect = job->db_config->ops->connect(job->db_config);
 
+	job->data = self;
+	job->ops = &st_job_restore_archive_ops;
+
 	self->archive = job->db_connect->ops->get_archive_volumes_by_job(job->db_connect, job);
 	self->archive_size = 0;
+
+	if (self->archive == NULL)
+		return;
+
 	self->pool = st_pool_get_by_archive(self->archive, job->db_connect);
 
 	unsigned int i;
@@ -143,9 +156,6 @@ static void st_job_restore_archive_new_job(struct st_job * job) {
 
 	self->first_worker = self->last_worker = NULL;
 	self->checks = NULL;
-
-	job->data = self;
-	job->ops = &st_job_restore_archive_ops;
 }
 
 static void st_job_restore_archive_on_error(struct st_job * job) {
@@ -382,6 +392,11 @@ static void st_job_restore_archive_post_run(struct st_job * job) {
 
 static bool st_job_restore_archive_pre_run(struct st_job * job) {
 	struct st_job_restore_archive_private * self = job->data;
+
+	if (self->archive == NULL) {
+		st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Fatal error, restore job without archive");
+		return false;
+	}
 
 	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_pre, self->pool) == 0)
 		return true;
@@ -700,7 +715,7 @@ static int st_job_restore_archive_run(struct st_job * job) {
 
 	char * report = st_job_restore_archive_report_make(self->report);
 	if (report != NULL)
-		job->db_connect->ops->add_report(job->db_connect, job, self->archive, report);
+		job->db_connect->ops->add_report(job->db_connect, job, self->archive, NULL, report);
 	free(report);
 
 	job->done = 1;

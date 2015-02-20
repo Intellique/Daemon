@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 16 Jun 2014 19:31:30 +0200                            *
+*  Last modified: Thu, 19 Feb 2015 18:05:30 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -112,6 +112,9 @@ static void st_job_check_archive_new_job(struct st_job * job) {
 	self->job = job;
 	job->db_connect = job->db_config->ops->connect(job->db_config);
 
+	job->data = self;
+	job->ops = &st_job_check_archive_ops;
+
 	self->quick_mode = false;
 	if (st_hashtable_has_key(job->option, "quick_mode")) {
 		struct st_hashtable_value qm = st_hashtable_get(job->option, "quick_mode");
@@ -123,6 +126,9 @@ static void st_job_check_archive_new_job(struct st_job * job) {
 	}
 
 	self->archive = job->db_connect->ops->get_archive_volumes_by_job(job->db_connect, job);
+	if (self->archive == NULL)
+		return;
+
 	self->archive_size = 0;
 	self->pool = st_pool_get_by_archive(self->archive, job->db_connect);
 
@@ -144,9 +150,6 @@ static void st_job_check_archive_new_job(struct st_job * job) {
 	self->nb_vol_checksums = 0;
 	self->checksum_reader = NULL;
 	self->report = NULL;
-
-	job->data = self;
-	job->ops = &st_job_check_archive_ops;
 }
 
 static void st_job_check_archive_on_error(struct st_job * job) {
@@ -381,6 +384,11 @@ static void st_job_check_archive_post_run(struct st_job * job) {
 static bool st_job_check_archive_pre_run(struct st_job * job) {
 	struct st_job_check_archive_private * self = job->data;
 
+	if (self->archive == NULL) {
+		st_job_add_record(job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Error, no archive with this check job");
+		return false;
+	}
+
 	if (job->db_connect->ops->get_nb_scripts(job->db_connect, job->driver->name, st_script_type_pre, self->pool) == 0)
 		return true;
 
@@ -526,7 +534,7 @@ static int st_job_check_archive_run(struct st_job * job) {
 
 	char * report = st_job_check_archive_report_make(self->report);
 	if (report != NULL)
-		job->db_connect->ops->add_report(job->db_connect, job, self->archive, report);
+		job->db_connect->ops->add_report(job->db_connect, job, self->archive, NULL, report);
 	free(report);
 
 	st_job_check_archive_report_free(self->report);

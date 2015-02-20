@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Mon, 22 Dec 2014 13:22:45 +0100                            *
+*  Last modified: Mon, 02 Feb 2015 18:16:37 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -422,6 +422,15 @@ static void st_job_format_media_post_run(struct st_job * j) {
 
 static bool st_job_format_media_pre_run(struct st_job * j) {
 	struct st_job_format_media_private * self = j->data;
+
+	if (self->media == NULL) {
+		st_job_add_record(j->db_connect, st_log_level_error, j, st_job_record_notif_important, "Error: no media associated with this job");
+		return false;
+	}
+	if (self->pool == NULL) {
+		st_job_add_record(j->db_connect, st_log_level_error, j, st_job_record_notif_important, "Error: no pool associated with this job");
+		return false;
+	}
 
 	if (j->db_connect->ops->get_nb_scripts(j->db_connect, j->driver->name, st_script_type_pre, self->pool) == 0)
 		return true;
