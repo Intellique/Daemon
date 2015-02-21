@@ -26,12 +26,16 @@
 
 // dgettext, gettext
 #include <libintl.h>
-#include <stddef.h>
+// free, malloc
+#include <stdlib.h>
+// bzero
+#include <strings.h>
 
 #define gettext_noop(String) String
 
 #include <libstoriqone/archive.h>
 #include <libstoriqone/string.h>
+#include <libstoriqone/value.h>
 
 static struct so_archive_file_type2 {
 	unsigned long long hash;
@@ -52,6 +56,30 @@ static struct so_archive_file_type2 {
 	[so_archive_file_type_unknown] = { 0, 0, gettext_noop("unknown file type"), NULL, so_archive_file_type_unknown },
 };
 static const unsigned int so_archive_file_nb_data_types = sizeof(so_archive_file_types) / sizeof(*so_archive_file_types);
+
+
+void so_archive_free(struct so_archive * archive) {
+	if (archive == NULL)
+		return;
+
+	free(archive->name);
+
+	unsigned int i;
+	for (i = 0; i < archive->nb_volumes; i++) {
+		// struct so_archive_volume * vol = archive->volumes + i;
+	}
+	free(archive->volumes);
+
+	so_value_free(archive->db_data);
+	free(archive);
+}
+
+struct so_archive * so_archive_new() {
+	struct so_archive * archive = malloc(sizeof(struct so_archive));
+	bzero(archive, sizeof(struct so_archive));
+
+	return archive;
+}
 
 
 enum so_archive_file_type so_archive_file_string_to_type(const char * type, bool translate) {

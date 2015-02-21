@@ -24,111 +24,38 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_ARCHIVE_H__
-#define __LIBSTORIQONE_ARCHIVE_H__
+// strlen
+#include <string.h>
+// S_*
+#include <sys/stat.h>
 
-// bool
-#include <stdbool.h>
-// time_t
-#include <sys/time.h>
-// ssize_t
-#include <sys/types.h>
+#include <libstoriqone-job/format.h>
 
-struct so_archive_file;
-enum st_archive_file_type;
-struct so_archive_volume;
-struct so_media;
-struct so_value;
+ssize_t soj_format_compute_tar_size(struct so_format_reader * reader) {
+	ssize_t sum = 0;
+	enum so_format_reader_header_status status;
+	struct so_format_file file;
+	while (status = reader->ops->get_header(reader, &file), status == so_format_reader_header_ok) {
+		sum += 512;
+		ssize_t path_length = strlen(file.filename);
+		if (S_ISLNK(file.mode)) {
+			ssize_t link_length = strlen(file.link);
+			if (path_length > 100 && link_length > 100) {
+				sum += 2048 + path_length - path_length % 512 + link_length - link_length % 512;
+			} else if (path_length > 100) {
+				sum += 1024 + path_length - path_length % 512;
+			} else if (link_length > 100) {
+				sum += 1024 + link_length - link_length % 512;
+			}
+		} else if (path_length > 100) {
+			sum += 512 + path_length - path_length % 512;
+		}
 
-enum so_archive_file_type {
-	so_archive_file_type_block_device,
-	so_archive_file_type_character_device,
-	so_archive_file_type_directory,
-	so_archive_file_type_fifo,
-	so_archive_file_type_regular_file,
-	so_archive_file_type_socket,
-	so_archive_file_type_symbolic_link,
+		if (S_ISREG(file.mode))
+			sum += 512 + file.size - file.size % 512;
 
-	so_archive_file_type_unknown,
-};
-
-struct so_archive {
-	char uuid[37];
-	char * name;
-
-	ssize_t size;
-
-	time_t start_time;
-	time_t end_time;
-
-	bool check_ok;
-	time_t check_time;
-
-	struct so_archive_volume * volumes;
-	unsigned int nb_volumes;
-
-	struct so_value * db_data;
-};
-
-struct so_archive_volume {
-	unsigned int sequence;
-	ssize_t size;
-
-	time_t start_time;
-	time_t end_time;
-
-	bool check_ok;
-	time_t check_time;
-
-	struct so_archive * archive;
-	struct so_media * media;
-	unsigned int media_position;
-	// struct so_job * job;
-
-	struct st_value * digests;
-
-	struct st_archive_files {
-		struct st_archive_file * file;
-		ssize_t position;
-	} * files;
-	unsigned int nb_files;
-
-	struct st_value * db_data;
-};
-
-struct so_archive_file {
-	char * name;
-	mode_t perm;
-	enum so_archive_file_type type;
-	uid_t ownerid;
-	char owner[32];
-	gid_t groupid;
-	char group[32];
-
-	time_t create_time;
-	time_t modify_time;
-	time_t archived_time;
-
-	bool check_ok;
-	time_t check_time;
-
-	ssize_t size;
-
-	char * mime_type;
-
-	struct st_value * digests;
-
-	struct st_archive * archive;
-	// struct st_job_selected_path * selected_path;
-
-	struct st_value * db_data;
-};
-
-void so_archive_free(struct so_archive * archive);
-struct so_archive * so_archive_new(void);
-
-enum so_archive_file_type so_archive_file_string_to_type(const char * type, bool translate);
-const char * so_archive_file_type_to_string(enum so_archive_file_type type, bool translate);
-
-#endif
+		so_format_file_free(&file);
+	}
+	return sum;
+}
 

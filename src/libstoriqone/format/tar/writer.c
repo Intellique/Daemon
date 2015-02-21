@@ -24,13 +24,16 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+#define _GNU_SOURCE
+// scandir
+#include <dirent.h>
 // errno
 #include <errno.h>
 // getgrgid_r
 #include <grp.h>
 // getpwuid_r
 #include <pwd.h>
-// snprintf
+// asprintf, snprintf
 #include <stdio.h>
 // free, malloc
 #include <stdlib.h>
@@ -42,7 +45,10 @@
 #include <sys/stat.h>
 // time
 #include <time.h>
+// readlink
+#include <unistd.h>
 
+#include <libstoriqone/file.h>
 #include <libstoriqone/format.h>
 #include <libstoriqone/io.h>
 #include <libstoriqone/value.h>
@@ -78,6 +84,7 @@ static struct so_value * so_format_tar_writer_get_digests(struct so_format_write
 static void so_format_tar_writer_gid2name(char * name, ssize_t length, gid_t uid);
 static int so_format_tar_writer_last_errno(struct so_format_writer * fw);
 static ssize_t so_format_tar_writer_position(struct so_format_writer * fw);
+static const char * so_format_tar_writer_skip_leading_slash(const char * str);
 static void so_format_tar_writer_uid2name(char * name, ssize_t length, uid_t uid);
 static ssize_t so_format_tar_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
 static enum so_format_writer_status so_format_tar_writer_write_header(struct so_format_tar_writer_private * f, void * data, ssize_t length);
@@ -118,6 +125,56 @@ struct so_format_writer * so_format_tar_new_writer(struct so_stream_writer * wri
 	new_writer->data = self;
 
 	return new_writer;
+}
+
+
+ssize_t so_format_tar_compute_size(const char * path) {
+	struct stat sfile;
+	if (lstat(path, &sfile))
+		return -1;
+
+	const char * path2 = so_format_tar_writer_skip_leading_slash(path);
+	int path_length = strlen(path2);
+
+	ssize_t file_size = 512;
+	if (S_ISLNK(sfile.st_mode)) {
+		char link[257];
+		ssize_t link_length = readlink(path, link, 256);
+		link[link_length] = '\0';
+
+		if (path_length > 100 && link_length > 100) {
+			file_size += 2048 + path_length - path_length % 512 + link_length - link_length % 512;
+		} else if (path_length > 100) {
+			file_size += 1024 + path_length - path_length % 512;
+		} else if (link_length > 100) {
+			file_size += 1024 + link_length - link_length % 512;
+		}
+	} else if (path_length > 100) {
+		file_size += 512 + path_length - path_length % 512;
+	}
+
+	if (S_ISREG(sfile.st_mode))
+		file_size += 512 + sfile.st_size - sfile.st_size % 512;
+	else if (S_ISDIR(sfile.st_mode)) {
+		struct dirent ** dl = NULL;
+		int nb_paths = scandir(path, &dl, so_file_basic_scandir_filter, NULL);
+		int i;
+		for (i = 0; i < nb_paths; i++) {
+			char * subpath = NULL;
+			asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
+
+			ssize_t size = so_format_tar_compute_size(subpath);
+			if (size > 0)
+				file_size += size;
+
+			free(subpath);
+			free(dl[i]);
+		}
+
+		free(dl);
+	}
+
+	return file_size;
 }
 
 
@@ -312,6 +369,7 @@ static ssize_t so_format_tar_writer_get_block_size(struct so_format_writer * fw)
 }
 
 static struct so_value * so_format_tar_writer_get_digests(struct so_format_writer * fw) {
+	return NULL;
 }
 
 static void so_format_tar_writer_gid2name(char * name, ssize_t length, gid_t uid) {
@@ -340,6 +398,17 @@ static int so_format_tar_writer_last_errno(struct so_format_writer * fw) {
 static ssize_t so_format_tar_writer_position(struct so_format_writer * fw) {
 	struct so_format_tar_writer_private * format = fw->data;
 	return format->io->ops->position(format->io);
+}
+
+static const char * so_format_tar_writer_skip_leading_slash(const char * str) {
+	if (str == NULL)
+		return NULL;
+
+	const char * ptr;
+	size_t i = 0, length = strlen(str);
+	for (ptr = str; *ptr == '/' && i < length; i++, ptr++);
+
+	return ptr;
 }
 
 static void so_format_tar_writer_uid2name(char * name, ssize_t length, uid_t uid) {

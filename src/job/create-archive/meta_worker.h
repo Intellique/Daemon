@@ -24,111 +24,12 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_ARCHIVE_H__
-#define __LIBSTORIQONE_ARCHIVE_H__
+#ifndef __STORIQONE_JOB_CREATE_ARCHIVE_META_H__
+#define __STORIQONE_JOB_CREATE_ARCHIVE_META_H__
 
-// bool
-#include <stdbool.h>
-// time_t
-#include <sys/time.h>
-// ssize_t
-#include <sys/types.h>
-
-struct so_archive_file;
-enum st_archive_file_type;
-struct so_archive_volume;
-struct so_media;
-struct so_value;
-
-enum so_archive_file_type {
-	so_archive_file_type_block_device,
-	so_archive_file_type_character_device,
-	so_archive_file_type_directory,
-	so_archive_file_type_fifo,
-	so_archive_file_type_regular_file,
-	so_archive_file_type_socket,
-	so_archive_file_type_symbolic_link,
-
-	so_archive_file_type_unknown,
-};
-
-struct so_archive {
-	char uuid[37];
-	char * name;
-
-	ssize_t size;
-
-	time_t start_time;
-	time_t end_time;
-
-	bool check_ok;
-	time_t check_time;
-
-	struct so_archive_volume * volumes;
-	unsigned int nb_volumes;
-
-	struct so_value * db_data;
-};
-
-struct so_archive_volume {
-	unsigned int sequence;
-	ssize_t size;
-
-	time_t start_time;
-	time_t end_time;
-
-	bool check_ok;
-	time_t check_time;
-
-	struct so_archive * archive;
-	struct so_media * media;
-	unsigned int media_position;
-	// struct so_job * job;
-
-	struct st_value * digests;
-
-	struct st_archive_files {
-		struct st_archive_file * file;
-		ssize_t position;
-	} * files;
-	unsigned int nb_files;
-
-	struct st_value * db_data;
-};
-
-struct so_archive_file {
-	char * name;
-	mode_t perm;
-	enum so_archive_file_type type;
-	uid_t ownerid;
-	char owner[32];
-	gid_t groupid;
-	char group[32];
-
-	time_t create_time;
-	time_t modify_time;
-	time_t archived_time;
-
-	bool check_ok;
-	time_t check_time;
-
-	ssize_t size;
-
-	char * mime_type;
-
-	struct st_value * digests;
-
-	struct st_archive * archive;
-	// struct st_job_selected_path * selected_path;
-
-	struct st_value * db_data;
-};
-
-void so_archive_free(struct so_archive * archive);
-struct so_archive * so_archive_new(void);
-
-enum so_archive_file_type so_archive_file_string_to_type(const char * type, bool translate);
-const char * so_archive_file_type_to_string(enum so_archive_file_type type, bool translate);
+void soj_create_archive_meta_worker_add_file(const char * filename);
+void soj_create_archive_meta_worker_start(void);
+void soj_create_archive_meta_worker_wait(void);
 
 #endif
 

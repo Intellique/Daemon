@@ -68,6 +68,14 @@ enum so_format_writer_status {
 	so_format_writer_unsupported,
 };
 
+struct so_archive_format {
+	char * name;
+
+	bool selectable;
+	bool readable;
+	bool writable;
+};
+
 struct so_format_reader {
 	struct so_format_reader_ops {
 		int (*close)(struct so_format_reader * fr);
@@ -107,10 +115,14 @@ struct so_format_writer {
 	void * data;
 };
 
+struct so_archive_format * so_archive_format_get_default(void);
+
 struct so_value * so_format_file_convert(struct so_format_file * file);
 void so_format_file_free(struct so_format_file * file);
 void so_format_file_init(struct so_format_file * file);
 void so_format_file_sync(struct so_format_file * file, struct so_value * new_file);
+
+ssize_t so_format_tar_compute_size(const char * path);
 
 #endif
 
