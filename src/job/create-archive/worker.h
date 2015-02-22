@@ -31,10 +31,13 @@
 #include <sys/types.h>
 
 struct so_database_connection;
+struct so_format_file;
 struct so_pool;
 struct so_value;
 
+enum so_format_writer_status soj_create_archive_worker_add_file(struct so_format_file * file);
 void soj_create_archive_worker_init(struct so_pool * primary_pool, struct so_value * mirrors);
+void soj_create_archive_worker_prepare_medias(struct so_database_connection * db_connect);
 void soj_create_archive_worker_reserve_medias(ssize_t archive_size, struct so_database_connection * db_connect);
 
 #endif

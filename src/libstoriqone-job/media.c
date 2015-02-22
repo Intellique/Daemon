@@ -58,7 +58,7 @@ static void soj_media_init() {
 	soj_medias = so_value_pack("{}");
 }
 
-struct so_drive * soj_media_load(struct so_media * media) {
+struct so_drive * soj_media_load(struct so_media * media, bool no_wait) {
 	struct so_slot * sl = NULL;
 	struct so_drive * dr = NULL;
 
@@ -67,7 +67,7 @@ struct so_drive * soj_media_load(struct so_media * media) {
 		if (sl == NULL)
 			return NULL;
 
-		dr = sl->changer->ops->get_media(sl->changer, sl);
+		dr = sl->changer->ops->get_media(sl->changer, sl, no_wait);
 
 		if (dr == NULL) {
 			sleep(5);

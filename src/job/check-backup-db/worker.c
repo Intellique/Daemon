@@ -78,7 +78,7 @@ void soj_checkbackupdb_worker_do(void * arg) {
 				break;
 
 			case get_media:
-				dr = slot->changer->ops->get_media(slot->changer, slot);
+				dr = slot->changer->ops->get_media(slot->changer, slot, false);
 				if (dr == NULL) {
 					state = find_media;
 					sleep(5);

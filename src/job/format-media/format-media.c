@@ -112,7 +112,7 @@ static int soj_formatmedia_run(struct so_job * job, struct so_database_connectio
 				break;
 
 			case get_media:
-				drive = slot->changer->ops->get_media(slot->changer, slot);
+				drive = slot->changer->ops->get_media(slot->changer, slot, false);
 				if (drive == NULL) {
 					job->status = so_job_status_waiting;
 

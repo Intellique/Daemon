@@ -27,6 +27,8 @@
 #ifndef __LIBSTORIQONE_JOB_CHANGER_H__
 #define __LIBSTORIQONE_JOB_CHANGER_H__
 
+// bool
+#include <stdbool.h>
 // ssize_t
 #include <sys/types.h>
 
@@ -42,7 +44,7 @@ struct so_slot;
 struct so_value;
 
 struct so_changer_ops {
-	struct so_drive * (*get_media)(struct so_changer * changer, struct so_slot * slot);
+	struct so_drive * (*get_media)(struct so_changer * changer, struct so_slot * slot, bool no_wait);
 	int (*release_media)(struct so_changer * changer, struct so_slot * slot);
 	ssize_t (*reserve_media)(struct so_changer * changer, struct so_slot * slot, size_t size_need, enum so_pool_unbreakable_level unbreakable_level);
 	int (*sync)(struct so_changer * changer);

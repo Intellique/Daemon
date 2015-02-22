@@ -53,6 +53,8 @@ struct soj_format_reader_private {
 	ssize_t block_size;
 
 	int last_errno;
+
+	struct so_value * digest;
 };
 
 static int soj_format_reader_close(struct so_format_reader * fr);
@@ -103,6 +105,7 @@ struct so_format_reader * soj_format_new_reader2(struct so_drive * drive, int fd
 	self->data_fd = fd_data;
 	self->block_size = block_size;
 	self->last_errno = 0;
+	self->digest = so_value_new_linked_list();
 
 	struct so_format_reader * reader = malloc(sizeof(struct so_format_reader));
 	reader->ops = &soj_format_reader_ops;
@@ -130,6 +133,10 @@ static int soj_format_reader_close(struct so_format_reader * fr) {
 	so_value_unpack(response, "{sb}", "returned", &failed);
 	if (failed != 0)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+	else if (so_value_hashtable_has_key2(response, "digests")) {
+		so_value_free(self->digest);
+		so_value_unpack(response, "digests", &self->digest);
+	}
 	so_value_free(response);
 
 	return failed ? 1 : 0;
@@ -179,6 +186,7 @@ static void soj_format_reader_free(struct so_format_reader * fr) {
 	if (self->data_fd > -1)
 		soj_format_reader_close(fr);
 
+	so_value_free(self->digest);
 	free(self);
 	free(fr);
 }
@@ -189,6 +197,8 @@ static ssize_t soj_format_reader_get_block_size(struct so_format_reader * fr) {
 }
 
 static struct so_value * soj_format_reader_get_digests(struct so_format_reader * fr) {
+	struct soj_format_reader_private * self = fr->data;
+	return self->digest;
 }
 
 static enum so_format_reader_header_status soj_format_reader_get_header(struct so_format_reader * fr, struct so_format_file * file) {

@@ -50,7 +50,7 @@ struct soj_changer {
 static struct so_changer * soj_changers = NULL;
 static unsigned int soj_nb_changers = 0;
 
-static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_slot * slot);
+static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_slot * slot, bool no_wait);
 static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_slot * slot, size_t size_need, enum so_pool_unbreakable_level unbreakable_level);
 static int soj_changer_release_media(struct so_changer * changer, struct so_slot * slot);
 static int soj_changer_sync(struct so_changer * changer);
@@ -111,11 +111,17 @@ struct so_slot * soj_changer_find_slot(struct so_media * media) {
 	return NULL;
 }
 
-static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_slot * slot) {
+static struct so_drive * soj_changer_get_media(struct so_changer * changer, struct so_slot * slot, bool no_wait) {
 	struct soj_changer * self = changer->data;
 	struct so_job * job = soj_job_get();
 
-	struct so_value * request = so_value_pack("{sss{sssi}}", "command", "get media", "params", "job key", job->key, "slot", slot->index);
+	struct so_value * request = so_value_pack("{sss{sssisb}}",
+		"command", "get media",
+		"params",
+			"job key", job->key,
+			"slot", slot->index,
+			"no wait", no_wait
+	);
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
@@ -137,7 +143,10 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 		}
 	}
 
-	job->status = so_job_status_error;
+	if (no_wait)
+		job->status = so_job_status_running;
+	else
+		job->status = so_job_status_error;
 	return NULL;
 }
 

@@ -83,7 +83,7 @@ struct so_archive_volume {
 	struct so_archive * archive;
 	struct so_media * media;
 	unsigned int media_position;
-	// struct so_job * job;
+	struct so_job * job;
 
 	struct st_value * digests;
 
@@ -124,6 +124,7 @@ struct so_archive_file {
 	struct st_value * db_data;
 };
 
+struct so_archive_volume * so_archive_add_volume(struct so_archive * archive);
 void so_archive_free(struct so_archive * archive);
 struct so_archive * so_archive_new(void);
 

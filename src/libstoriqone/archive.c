@@ -30,6 +30,8 @@
 #include <stdlib.h>
 // bzero
 #include <strings.h>
+// time
+#include <time.h>
 
 #define gettext_noop(String) String
 
@@ -57,6 +59,24 @@ static struct so_archive_file_type2 {
 };
 static const unsigned int so_archive_file_nb_data_types = sizeof(so_archive_file_types) / sizeof(*so_archive_file_types);
 
+
+struct so_archive_volume * so_archive_add_volume(struct so_archive * archive) {
+	void * new_addr = realloc(archive->volumes, (archive->nb_volumes + 1) * sizeof(struct so_archive_volume));
+	if (new_addr == NULL)
+		return NULL;
+
+	archive->volumes = new_addr;
+	struct so_archive_volume * vol = archive->volumes + archive->nb_volumes;
+
+	bzero(vol, sizeof(struct so_archive_volume));
+	vol->sequence = archive->nb_volumes;
+	vol->start_time = time(NULL);
+	vol->archive = archive;
+
+	archive->nb_volumes++;
+
+	return vol;
+}
 
 void so_archive_free(struct so_archive * archive) {
 	if (archive == NULL)

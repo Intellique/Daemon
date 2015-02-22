@@ -54,7 +54,7 @@ static unsigned int sochgr_nb_clients = 0;
 static void sochgr_socket_accept(int fd_server, int fd_client, struct so_value * client);
 static void sochgr_socket_message(int fd, short event, void * data);
 static void sochgr_socket_remove_peer(struct sochgr_peer * peer);
-static void sochgr_socket_unlock(void);
+static void sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait);
 
 static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so_value * request, int fd);
 static void sochgr_socket_command_release_media(struct sochgr_peer * peer, struct so_value * request, int fd);
@@ -121,7 +121,7 @@ static void sochgr_socket_message(int fd, short event, void * data) {
 
 		if (first_peer != NULL) {
 			sleep(1);
-			sochgr_socket_unlock();
+			sochgr_socket_unlock(peer, false);
 		}
 
 		return;
@@ -168,7 +168,7 @@ static void sochgr_socket_remove_peer(struct sochgr_peer * peer) {
 	}
 }
 
-static void sochgr_socket_unlock() {
+static void sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 	struct so_changer_driver * driver = sochgr_changer_get();
 	struct so_changer * changer = driver->device;
 
@@ -302,15 +302,27 @@ static void sochgr_socket_unlock() {
 			nb_free_drives--;
 		}
 	}
+
+	if (no_wait) {
+		struct so_value * response = so_value_pack("{sb}", "error", true);
+		so_json_encode_to_fd(response, current_peer->fd, true);
+		so_value_free(response);
+	}
 }
 
 
 static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so_value * request, int fd) {
 	long int slot = -1;
+	bool no_wait = false;
 	free(peer->key);
 	peer->key = NULL;
 
-	so_value_unpack(request, "{s{sssi}}", "params", "job key", &peer->key, "slot", &slot);
+	so_value_unpack(request, "{s{sssisb}}",
+		"params",
+			"job key", &peer->key,
+			"slot", &slot,
+			"no wait", &no_wait
+	);
 
 	struct so_changer_driver * driver = sochgr_changer_get();
 	struct so_changer * changer = driver->device;
@@ -335,55 +347,10 @@ static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so
 	else
 		last_peer = last_peer->next = peer;
 
-	sochgr_socket_unlock();
+	sochgr_socket_unlock(peer, no_wait);
 	return;
 
-	struct so_drive * drive = sl->drive;
-
-	if (drive != NULL && !drive->ops->check_support(drive, media->format, lp->size_need > 0)) {
-		if (changer->nb_drives < changer->nb_slots) {
-			so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d"), changer->vendor, changer->model, sl->volume_name, drive->index);
-
-			int failed = changer->ops->unload(drive, sochgr_db);
-			if (failed != 0) {
-				so_log_write(so_log_level_error, dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d finished with code = %d"), changer->vendor, changer->model, sl->volume_name, drive->index, failed);
-				goto error;
-			} else
-				so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d finished with code = OK"), changer->vendor, changer->model, sl->volume_name, drive->index);
-		} else {
-			so_log_write(so_log_level_error, dgettext("libstoriqone-changer", "[%s | %s]: you should change drive because drive (%s#%u) has no support for format (%s)"), changer->vendor, changer->model, drive->model, drive->index, media->format->name);
-			goto error;
-		}
-	}
-
-	unsigned int i;
-	for (i = 0; i < changer->nb_drives && drive == NULL; i++) {
-		struct so_drive * dr = changer->drives + i;
-
-		if (dr->enable && dr->ops->is_free(dr) && dr->ops->check_support(dr, media->format, lp->size_need > 0))
-			drive = dr;
-	}
-
-	if (drive == NULL) {
-		peer->waiting = lp->waiting = true;
-		return;
-	}
-
-	if (drive->slot != sl) {
-		so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d"), changer->vendor, changer->model, sl->volume_name, sl->index, drive->index);
-		int failed = changer->ops->load(sl, drive, sochgr_db);
-		if (failed != 0) {
-			so_log_write(so_log_level_error, dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = %d"), changer->vendor, changer->model, sl->volume_name, sl->index, drive->index, failed);
-			goto error;
-		} else
-			so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = OK"), changer->vendor, changer->model, drive->slot->volume_name, drive->index, drive->index);
-	}
-
-	struct so_value * response = so_value_pack("{sbsi}", "error", false, "index", (long int) drive->index);
-	so_json_encode_to_fd(response, fd, true);
-	so_value_free(response);
-	return;
-
+	struct so_value * response;
 error:
 	response = so_value_pack("{sbsi}", "error", true, "index", -1L);
 	so_json_encode_to_fd(response, fd, true);

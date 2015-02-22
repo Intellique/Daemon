@@ -41,6 +41,7 @@
 #include <libstoriqone-job/media.h>
 #include <libstoriqone-job/script.h>
 
+#include "meta_worker.h"
 #include "worker.h"
 
 #include <job_create-archive.chcksum>
@@ -99,6 +100,19 @@ static void soj_create_archive_init() {
 static int soj_create_archive_run(struct so_job * job, struct so_database_connection * db_connect) {
 	soj_create_archive_worker_init(primary_pool, pool_mirrors);
 	soj_create_archive_worker_reserve_medias(archive_size, db_connect);
+	soj_create_archive_worker_prepare_medias(db_connect);
+
+	unsigned int i;
+	for (i = 0; i < nb_src_files; i++) {
+		struct so_format_file file;
+		enum so_format_reader_header_status status;
+		while (status = src_files[i]->ops->get_header(src_files[i], &file), status == so_format_reader_header_ok) {
+			soj_create_archive_meta_worker_add_file(file.filename);
+
+			enum so_format_writer_status write_status = soj_create_archive_worker_add_file(&file);
+			so_format_file_free(&file);
+		}
+	}
 
 	return 0;
 }

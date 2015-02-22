@@ -27,6 +27,8 @@
 #ifndef __LIBSTORIQONE_JOB_MEDIA_H__
 #define __LIBSTORIQONE_JOB_MEDIA_H__
 
+// bool
+#include <stdbool.h>
 // ssize_t
 #include <sys/types.h>
 
@@ -38,7 +40,7 @@ enum so_pool_unbreakable_level;
 struct so_value;
 
 struct so_value_iterator * soj_media_get_iterator(struct so_pool * pool);
-struct so_drive * soj_media_load(struct so_media * media);
+struct so_drive * soj_media_load(struct so_media * media, bool no_wait);
 ssize_t soj_media_prepare(struct so_pool * pool, ssize_t size_needed, struct so_database_connection * db_connection);
 ssize_t soj_media_prepare_unformatted(struct so_pool * pool, bool online, struct so_database_connection * db_connection);
 void soj_media_release_all_medias(struct so_pool * pool);
