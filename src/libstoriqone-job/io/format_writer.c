@@ -50,11 +50,12 @@ struct soj_format_writer_private {
 
 	ssize_t block_size;
 	int last_errno;
+	int file_position;
 
 	struct so_value * digest;
 };
 
-static enum so_format_writer_status soj_format_writer_add_file(struct so_format_writer * fw, struct so_format_file * file);
+static enum so_format_writer_status soj_format_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file);
 static enum so_format_writer_status soj_format_writer_add_label(struct so_format_writer * fw, const char * label);
 static int soj_format_writer_close(struct so_format_writer * fw);
 static ssize_t soj_format_writer_end_of_file(struct so_format_writer * fw);
@@ -62,8 +63,10 @@ static void soj_format_writer_free(struct so_format_writer * fw);
 static ssize_t soj_format_writer_get_available_size(struct so_format_writer * fw);
 static ssize_t soj_format_writer_get_block_size(struct so_format_writer * fw);
 static struct so_value * soj_format_writer_get_digests(struct so_format_writer * fw);
+static int soj_format_writer_file_position(struct so_format_writer * fw);
 static int soj_format_writer_last_errno(struct so_format_writer * fw);
 static ssize_t soj_format_writer_position(struct so_format_writer * fw);
+static enum so_format_writer_status soj_format_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file, ssize_t position);
 static ssize_t soj_format_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
 static ssize_t soj_format_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
 
@@ -72,12 +75,14 @@ static struct so_format_writer_ops soj_format_writer_ops = {
 	.add_label          = soj_format_writer_add_label,
 	.close              = soj_format_writer_close,
 	.end_of_file        = soj_format_writer_end_of_file,
+	.file_position      = soj_format_writer_file_position,
 	.free               = soj_format_writer_free,
 	.get_available_size = soj_format_writer_get_available_size,
 	.get_block_size     = soj_format_writer_get_block_size,
 	.get_digests        = soj_format_writer_get_digests,
 	.last_errno         = soj_format_writer_last_errno,
 	.position           = soj_format_writer_position,
+	.restart_file       = soj_format_writer_restart_file,
 	.write              = soj_format_writer_write,
 };
 
@@ -107,7 +112,7 @@ struct so_format_writer * soj_format_new_writer(struct so_drive * drive, int fd_
 }
 
 
-static enum so_format_writer_status soj_format_writer_add_file(struct so_format_writer * fw, struct so_format_file * file) {
+static enum so_format_writer_status soj_format_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file) {
 	struct soj_format_writer_private * self = fw->data;
 
 	struct so_value * request = so_value_pack("{sss{so}}", "command", "format writer: add file", "params", "file", so_format_file_convert(file));
@@ -198,6 +203,11 @@ static ssize_t soj_format_writer_end_of_file(struct so_format_writer * fw) {
 	return failed != 0;
 }
 
+static int soj_format_writer_file_position(struct so_format_writer * fw) {
+	struct soj_format_writer_private * self = fw->data;
+	return self->file_position;
+}
+
 static void soj_format_writer_free(struct so_format_writer * fw) {
 	struct soj_format_writer_private * self = fw->data;
 
@@ -262,6 +272,33 @@ static ssize_t soj_format_writer_position(struct so_format_writer * fw) {
 	so_value_free(response);
 
 	return position;
+}
+
+static enum so_format_writer_status soj_format_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file, ssize_t position) {
+	struct soj_format_writer_private * self = fw->data;
+
+	struct so_value * request = so_value_pack("{sss{sosi}}",
+		"command", "format writer: restart file",
+		"params",
+			"file", so_format_file_convert(file),
+			"position", position
+	);
+	so_json_encode_to_fd(request, self->command_fd, true);
+	so_value_free(request);
+
+	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	if (response == NULL)
+		return so_format_writer_error;
+
+	long tmp_status = 0;
+	so_value_unpack(response, "{si}", "returned", &tmp_status);
+
+	enum so_format_writer_status status = tmp_status;
+	if (status == so_format_writer_error)
+		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+	so_value_free(response);
+
+	return status;
 }
 
 static ssize_t soj_format_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length) {

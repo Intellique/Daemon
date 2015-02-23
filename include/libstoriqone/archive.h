@@ -85,11 +85,12 @@ struct so_archive_volume {
 	unsigned int media_position;
 	struct so_job * job;
 
-	struct st_value * digests;
+	struct so_value * digests;
 
-	struct st_archive_files {
-		struct st_archive_file * file;
+	struct so_archive_files {
+		struct so_archive_file * file;
 		ssize_t position;
+		time_t archived_time;
 	} * files;
 	unsigned int nb_files;
 
@@ -107,7 +108,6 @@ struct so_archive_file {
 
 	time_t create_time;
 	time_t modify_time;
-	time_t archived_time;
 
 	bool check_ok;
 	time_t check_time;

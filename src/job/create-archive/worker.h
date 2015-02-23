@@ -36,9 +36,12 @@ struct so_pool;
 struct so_value;
 
 enum so_format_writer_status soj_create_archive_worker_add_file(struct so_format_file * file);
+int soj_create_archive_worker_close(void);
 void soj_create_archive_worker_init(struct so_pool * primary_pool, struct so_value * mirrors);
 void soj_create_archive_worker_prepare_medias(struct so_database_connection * db_connect);
+float soj_create_archive_progress(void);
 void soj_create_archive_worker_reserve_medias(ssize_t archive_size, struct so_database_connection * db_connect);
+ssize_t soj_create_archive_worker_write(struct so_format_file * file, const char * buffer, ssize_t length);
 
 #endif
 

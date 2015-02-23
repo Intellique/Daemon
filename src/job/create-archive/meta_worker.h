@@ -27,9 +27,13 @@
 #ifndef __STORIQONE_JOB_CREATE_ARCHIVE_META_H__
 #define __STORIQONE_JOB_CREATE_ARCHIVE_META_H__
 
+// bool
+#include <stdbool.h>
+
 void soj_create_archive_meta_worker_add_file(const char * filename);
+struct so_value * soj_create_archive_meta_worker_get_files(void);
 void soj_create_archive_meta_worker_start(void);
-void soj_create_archive_meta_worker_wait(void);
+void soj_create_archive_meta_worker_wait(bool stop);
 
 #endif
 

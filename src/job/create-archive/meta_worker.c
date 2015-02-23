@@ -68,6 +68,10 @@ void soj_create_archive_meta_worker_add_file(const char * filename) {
 	pthread_mutex_unlock(&lock);
 }
 
+struct so_value * soj_create_archive_meta_worker_get_files() {
+	return files;
+}
+
 static void soj_create_archive_meta_worker_do(void * arg __attribute__((unused))) {
 	meta_worker_do = true;
 	files = so_value_new_hashtable2();
@@ -105,9 +109,9 @@ void soj_create_archive_meta_worker_start() {
 	}
 }
 
-void soj_create_archive_meta_worker_wait() {
+void soj_create_archive_meta_worker_wait(bool stop) {
 	pthread_mutex_lock(&lock);
-	meta_worker_stop = true;
+	meta_worker_stop = stop;
 	pthread_cond_signal(&wait);
 	pthread_cond_wait(&wait, &lock);
 	pthread_mutex_unlock(&lock);

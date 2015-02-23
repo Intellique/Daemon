@@ -33,7 +33,7 @@
 #include <libstoriqone/value.h>
 
 
-struct so_value * so_format_file_convert(struct so_format_file * file) {
+struct so_value * so_format_file_convert(const struct so_format_file * file) {
 	struct so_value * vlink = so_value_new_null();
 	if (file->link)
 		vlink = so_value_new_string(file->link);

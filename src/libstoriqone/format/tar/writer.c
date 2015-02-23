@@ -70,11 +70,11 @@ struct so_format_tar_writer_private {
 	bool has_cheksum;
 };
 
-static enum so_format_writer_status so_format_tar_writer_add_file(struct so_format_writer * fw, struct so_format_file * file);
+static enum so_format_writer_status so_format_tar_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file);
 static enum so_format_writer_status so_format_tar_writer_add_label(struct so_format_writer * fw, const char * label);
 static int so_format_tar_writer_close(struct so_format_writer * fw);
 static void so_format_tar_writer_compute_checksum(const void * header, char * checksum);
-static void so_format_tar_writer_compute_link(struct so_format_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile, struct so_format_file * file);
+static void so_format_tar_writer_compute_link(struct so_format_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile, const struct so_format_file * file);
 static void so_format_tar_writer_compute_size(char * csize, long long size);
 static ssize_t so_format_tar_writer_compute_size_of_file(struct so_format_writer * fw, const char * file, bool recursive);
 static ssize_t so_format_tar_writer_end_of_file(struct so_format_writer * fw);
@@ -83,9 +83,11 @@ static ssize_t so_format_tar_writer_get_available_size(struct so_format_writer *
 static ssize_t so_format_tar_writer_get_block_size(struct so_format_writer * fw);
 static struct so_value * so_format_tar_writer_get_digests(struct so_format_writer * fw);
 static void so_format_tar_writer_gid2name(char * name, ssize_t length, gid_t uid);
+static int so_format_tar_writer_file_position(struct so_format_writer * fw);
 static int so_format_tar_writer_last_errno(struct so_format_writer * fw);
 static ssize_t so_format_tar_writer_position(struct so_format_writer * fw);
 static const char * so_format_tar_writer_skip_leading_slash(const char * str);
+static enum so_format_writer_status so_format_tar_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file, ssize_t position);
 static void so_format_tar_writer_uid2name(char * name, ssize_t length, uid_t uid);
 static ssize_t so_format_tar_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
 static enum so_format_writer_status so_format_tar_writer_write_header(struct so_format_tar_writer_private * f, void * data, ssize_t length);
@@ -100,8 +102,10 @@ static struct so_format_writer_ops so_format_tar_writer_ops = {
 	.get_available_size   = so_format_tar_writer_get_available_size,
 	.get_block_size       = so_format_tar_writer_get_block_size,
 	.get_digests          = so_format_tar_writer_get_digests,
+	.file_position        = so_format_tar_writer_file_position,
 	.last_errno           = so_format_tar_writer_last_errno,
 	.position             = so_format_tar_writer_position,
+	.restart_file         = so_format_tar_writer_restart_file,
 	.write                = so_format_tar_writer_write,
 };
 
@@ -180,7 +184,7 @@ ssize_t so_format_tar_compute_size(const char * path) {
 }
 
 
-static enum so_format_writer_status so_format_tar_writer_add_file(struct so_format_writer * fw, struct so_format_file * file) {
+static enum so_format_writer_status so_format_tar_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file) {
 	ssize_t block_size = 512;
 	struct so_format_tar * header = malloc(block_size);
 	struct so_format_tar * current_header = header;
@@ -295,7 +299,7 @@ static void so_format_tar_writer_compute_checksum(const void * header, char * ch
 	snprintf(checksum, 7, "%06o", sum);
 }
 
-static void so_format_tar_writer_compute_link(struct so_format_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile, struct so_format_file * file) {
+static void so_format_tar_writer_compute_link(struct so_format_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile, const struct so_format_file * file) {
 	strcpy(header->filename, "././@LongLink");
 	memset(header->filemode, '0', 7);
 	memset(header->uid, '0', 7);
@@ -442,6 +446,11 @@ static void so_format_tar_writer_gid2name(char * name, ssize_t length, gid_t uid
 	free(buffer);
 }
 
+static int so_format_tar_writer_file_position(struct so_format_writer * fw) {
+	struct so_format_tar_writer_private * format = fw->data;
+	return format->io->ops->file_position(format->io);
+}
+
 static int so_format_tar_writer_last_errno(struct so_format_writer * fw) {
 	struct so_format_tar_writer_private * format = fw->data;
 	if (format->last_errno != 0)
@@ -463,6 +472,38 @@ static const char * so_format_tar_writer_skip_leading_slash(const char * str) {
 	for (ptr = str; *ptr == '/' && i < length; i++, ptr++);
 
 	return ptr;
+}
+
+static enum so_format_writer_status so_format_tar_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file, ssize_t position) {
+	ssize_t block_size = 512;
+	struct so_format_tar * header = malloc(block_size);
+	struct so_format_tar * current_header = header;
+
+	struct so_format_tar_writer_private * format = fw->data;
+	bzero(current_header, 512);
+	strncpy(current_header->filename, so_format_tar_writer_skip_leading_slash(file->filename), 100);
+	so_format_tar_writer_compute_size(current_header->size, file->size - position);
+	current_header->flag = 'M';
+	so_format_tar_writer_uid2name(header->uname, 32, file->uid);
+	so_format_tar_writer_gid2name(header->gname, 32, file->gid);
+	so_format_tar_writer_compute_size(current_header->position, position);
+
+	so_format_tar_writer_compute_checksum(current_header, current_header->checksum);
+
+	format->position = 0;
+	format->size = position;
+
+	if (block_size > format->io->ops->get_available_size(format->io)) {
+		format->last_errno = ENOSPC;
+		free(header);
+		return so_format_writer_error;
+	}
+
+	ssize_t nbWrite = format->io->ops->write(format->io, header, block_size);
+
+	free(header);
+
+	return block_size != nbWrite ? so_format_writer_error : so_format_writer_ok;
 }
 
 static void so_format_tar_writer_uid2name(char * name, ssize_t length, uid_t uid) {

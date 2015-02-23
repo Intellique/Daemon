@@ -88,6 +88,7 @@ static void sodr_socket_command_format_writer_close(struct sodr_peer * peer, str
 static void sodr_socket_command_format_writer_end_of_file(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_format_writer_get_available_size(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_format_writer_position(struct sodr_peer * peer, struct so_value * request, int fd);
+static void sodr_socket_command_format_writer_restart_file(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_format_writer_write(struct sodr_peer * peer, struct so_value * request, int fd);
 
 static void sodr_socket_command_stream_reader_close(struct sodr_peer * peer, struct so_value * request, int fd);
@@ -127,6 +128,7 @@ static struct sodr_socket_command {
 	{ 0, "format writer: end of file",        sodr_socket_command_format_writer_end_of_file },
 	{ 0, "format writer: get available size", sodr_socket_command_format_writer_get_available_size },
 	{ 0, "format writer: position",           sodr_socket_command_format_writer_position },
+	{ 0, "format writer: restart file",       sodr_socket_command_format_writer_restart_file },
 	{ 0, "format writer: write",              sodr_socket_command_format_writer_write },
 
 	{ 0, "stream reader: close",       sodr_socket_command_stream_reader_close },
@@ -727,6 +729,34 @@ static void sodr_socket_command_format_writer_position(struct sodr_peer * peer, 
 		long int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 
 		struct so_value * response = so_value_pack("{sisi}", "returned", available_size, "last errno", last_errno);
+		so_json_encode_to_fd(response, fd, true);
+		so_value_free(response);
+	}
+}
+
+static void sodr_socket_command_format_writer_restart_file(struct sodr_peer * peer, struct so_value * request, int fd) {
+	if (peer->format_writer == NULL) {
+		struct so_value * response = so_value_pack("{si}", "returned", -1L);
+		so_json_encode_to_fd(response, fd, true);
+		so_value_free(response);
+	} else {
+		struct so_value * vfile = NULL;
+		ssize_t position = 0;
+		so_value_unpack(request, "{s{sosi}}", "params", "file", &vfile, "position", &position);
+
+		struct so_format_file file;
+		so_format_file_init(&file);
+		so_format_file_sync(&file, vfile);
+
+		enum so_format_writer_status status = peer->format_writer->ops->restart_file(peer->format_writer, &file, position);
+		long int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
+
+		so_format_file_free(&file);
+
+		struct so_value * response = so_value_pack("{sisi",
+			"returned", (long) status,
+			"last errno", last_errno
+		);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 	}

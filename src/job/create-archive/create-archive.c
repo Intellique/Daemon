@@ -28,6 +28,8 @@
 #include <libintl.h>
 // calloc
 #include <stdlib.h>
+// S_*
+#include <sys/stat.h>
 
 #include <libstoriqone/database.h>
 #include <libstoriqone/file.h>
@@ -103,6 +105,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 	soj_create_archive_worker_prepare_medias(db_connect);
 
 	unsigned int i;
+	int failed = 0;
 	for (i = 0; i < nb_src_files; i++) {
 		struct so_format_file file;
 		enum so_format_reader_header_status status;
@@ -110,11 +113,35 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 			soj_create_archive_meta_worker_add_file(file.filename);
 
 			enum so_format_writer_status write_status = soj_create_archive_worker_add_file(&file);
+			if (write_status != so_format_writer_ok)
+				break;
+
+			if (S_ISREG(file.mode)) {
+				static char buffer[65536];
+				ssize_t nb_read;
+				while (nb_read = src_files[i]->ops->read(src_files[i], buffer, 65536), nb_read > 0) {
+					ssize_t nb_write = soj_create_archive_worker_write(&file, buffer, nb_read);
+					if (nb_write < 0) {
+						failed = -2;
+						break;
+					}
+
+					float done = 0.96 * soj_create_archive_progress();
+					job->done = 0.02 + done;
+				}
+
+				if (nb_read < 0) {
+					failed = -1;
+				} else {
+					// end of file
+				}
+			}
+
 			so_format_file_free(&file);
 		}
 	}
 
-	return 0;
+	return failed;
 }
 
 static int soj_create_archive_simulate(struct so_job * job, struct so_database_connection * db_connect) {
