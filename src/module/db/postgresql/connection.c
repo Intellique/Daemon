@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 19 Feb 2015 18:03:05 +0100                            *
+*  Last modified: Fri, 20 Feb 2015 12:52:46 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -3032,8 +3032,8 @@ static struct st_archive ** st_db_postgresql_get_archive_by_media(struct st_data
 
 			const char * param[] = { PQgetvalue(result, i, 0) };
 			PGresult * result2 = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
-			ExecStatusType status2 = PQresultStatus(result);
-			unsigned int nb_tuples2 = PQntuples(result);
+			ExecStatusType status2 = PQresultStatus(result2);
+			unsigned int nb_tuples2 = PQntuples(result2);
 
 			if (status2 == PGRES_FATAL_ERROR)
 				st_db_postgresql_get_error(result2, query);
@@ -3045,22 +3045,22 @@ static struct st_archive ** st_db_postgresql_get_archive_by_media(struct st_data
 				for (j = 0; j < archive->nb_volumes; j++) {
 					struct st_archive_volume * vol = archive->volumes + j;
 
-					st_db_postgresql_get_long(result, i, 1, &vol->sequence);
-					st_db_postgresql_get_time(result, i, 2, &vol->start_time);
-					st_db_postgresql_get_time(result, i, 3, &vol->end_time);
-					st_db_postgresql_get_bool(result, i, 4, &vol->check_ok);
+					st_db_postgresql_get_long(result2, j, 1, &vol->sequence);
+					st_db_postgresql_get_time(result2, j, 2, &vol->start_time);
+					st_db_postgresql_get_time(result2, j, 3, &vol->end_time);
+					st_db_postgresql_get_bool(result2, j, 4, &vol->check_ok);
 					vol->check_time = 0;
-					if (!PQgetisnull(result, i, 5))
-						st_db_postgresql_get_time(result, i, 5, &vol->check_time);
+					if (!PQgetisnull(result2, j, 5))
+						st_db_postgresql_get_time(result2, j, 5, &vol->check_time);
 
-					st_db_postgresql_get_ssize(result, i, 6, &vol->size);
+					st_db_postgresql_get_ssize(result2, j, 6, &vol->size);
 					vol->archive = archive;
 					vol->job = NULL;
 
 					char uuid[38];
-					st_db_postgresql_get_string(result, i, 7, uuid, 37);
+					st_db_postgresql_get_string(result2, j, 7, uuid, 37);
 					vol->media = st_media_get_by_uuid(uuid);
-					st_db_postgresql_get_long(result, i, 8, &vol->media_position);
+					st_db_postgresql_get_long(result2, j, 8, &vol->media_position);
 
 					vol->digests = NULL;
 
@@ -3068,7 +3068,7 @@ static struct st_archive ** st_db_postgresql_get_archive_by_media(struct st_data
 					vol->nb_files = 0;
 
 					struct st_db_postgresql_archive_volume_data * archive_volume_data = vol->db_data = malloc(sizeof(struct st_db_postgresql_archive_volume_data));
-					st_db_postgresql_get_long(result, i, 0, &archive_volume_data->id);
+					st_db_postgresql_get_long(result2, j, 0, &archive_volume_data->id);
 				}
 			}
 

@@ -22,13 +22,15 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Thu, 19 Feb 2015 11:56:45 +0100                            *
+*  Last modified: Fri, 20 Feb 2015 11:44:03 +0100                            *
 \****************************************************************************/
 
 // json_*
 #include <jansson.h>
 // free, malloc
 #include <stdlib.h>
+// bzero
+#include <strings.h>
 // sleep
 #include <unistd.h>
 
@@ -148,6 +150,7 @@ static char * st_job_erase_media_make_report(struct st_job * job) {
 
 static void st_job_erase_media_new_job(struct st_job * job) {
 	struct st_job_erase_media_private * self = malloc(sizeof(struct st_job_erase_media_private));
+	bzero(self, sizeof(struct st_job_erase_media_private));
 	job->db_connect = job->db_config->ops->connect(job->db_config);
 	self->media = st_media_get_by_job(job, job->db_connect);
 
