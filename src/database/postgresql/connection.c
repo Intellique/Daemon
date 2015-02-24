@@ -997,7 +997,7 @@ static struct so_value * so_database_postgresql_get_pool_by_pool_mirror(struct s
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_pool_by_pool_mirror";
-	so_database_postgresql_prepare(self, query, "SELECT id, uuid, name, autocheck, growable, unbreakablelevel, rewritable, deleted, densitycode, mode FROM pool WHERE uuid != $1 AND poolmirror IN (SELECT poolmirror FROM pool WHERE uuid = $1)");
+	so_database_postgresql_prepare(self, query, "SELECT p.id, uuid, p.name, autocheck, growable, unbreakablelevel, rewritable, deleted, densitycode, mode FROM pool p INNER JOIN mediaformat mf ON p.mediaformat = mf.id WHERE uuid::TEXT != $1 AND poolmirror IN (SELECT poolmirror FROM pool WHERE uuid::TEXT = $1)");
 
 	const char * param[] = { pool->uuid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
