@@ -30,6 +30,8 @@
 #include <libstoriqone/drive.h>
 
 struct so_database_connection;
+struct so_format_reader;
+struct so_format_writer;
 struct so_pool;
 struct so_stream_reader;
 struct so_stream_writer;
@@ -52,6 +54,8 @@ struct so_drive_ops {
 	int (*init)(struct so_value * config);
 	struct so_stream_reader * (*get_raw_reader)(int file_position, struct so_database_connection * db);
 	struct so_stream_writer * (*get_raw_writer)(struct so_database_connection * db);
+	struct so_format_reader * (*get_reader)(int file_position, struct so_value * checksums, struct so_database_connection * db);
+	struct so_format_writer * (*get_writer)(struct so_value * checksums, struct so_database_connection * db);
 	int (*reset)(struct so_database_connection * db);
 	int (*update_status)(struct so_database_connection * db);
 };

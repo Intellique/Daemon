@@ -32,6 +32,8 @@
 // dev_t, gid_t, mode_t, ssize_t, time_t, uid_t
 #include <sys/types.h>
 
+struct so_stream_reader;
+struct so_stream_writer;
 struct so_value;
 
 struct so_format_file {
@@ -122,6 +124,9 @@ void so_format_file_init(struct so_format_file * file);
 void so_format_file_sync(struct so_format_file * file, struct so_value * new_file);
 
 ssize_t so_format_tar_compute_size(const char * path);
+
+struct so_format_reader * so_format_tar_new_reader(struct so_stream_reader * reader, struct so_value * checksums);
+struct so_format_writer * so_format_tar_new_writer(struct so_stream_writer * writer, struct so_value * checksums);
 
 #endif
 

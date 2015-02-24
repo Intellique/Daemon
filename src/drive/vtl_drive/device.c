@@ -48,6 +48,7 @@
 
 #include <libstoriqone/database.h>
 #include <libstoriqone/file.h>
+#include <libstoriqone/format.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-drive/drive.h>
@@ -63,6 +64,8 @@ static int sodr_vtl_drive_format_media(struct so_pool * pool, struct so_database
 static ssize_t sodr_vtl_drive_find_best_block_size(struct so_database_connection * db);
 static struct so_stream_reader * sodr_vtl_drive_get_raw_reader(int file_position, struct so_database_connection * db);
 static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct so_database_connection * db);
+static struct so_format_reader * sodr_vtl_drive_get_reader(int file_position, struct so_value * checksums, struct so_database_connection * db);
+static struct so_format_writer * sodr_vtl_drive_get_writer(struct so_value * checksums, struct so_database_connection * db);
 static int sodr_vtl_drive_init(struct so_value * config);
 static int sodr_vtl_drive_reset(struct so_database_connection * db);
 static int sodr_vtl_drive_update_status(struct so_database_connection * db);
@@ -77,6 +80,8 @@ static struct so_drive_ops sodr_vtl_drive_ops = {
 	.format_media         = sodr_vtl_drive_format_media,
 	.get_raw_reader       = sodr_vtl_drive_get_raw_reader,
 	.get_raw_writer       = sodr_vtl_drive_get_raw_writer,
+	.get_reader           = sodr_vtl_drive_get_reader,
+	.get_writer           = sodr_vtl_drive_get_writer,
 	.init                 = sodr_vtl_drive_init,
 	.reset                = sodr_vtl_drive_reset,
 	.update_status        = sodr_vtl_drive_update_status,
@@ -266,6 +271,22 @@ static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct so_databas
 
 	free(files);
 	return writer;
+}
+
+static struct so_format_reader * sodr_vtl_drive_get_reader(int file_position, struct so_value * checksums, struct so_database_connection * db) {
+	struct so_stream_reader * raw_reader = sodr_vtl_drive_get_raw_reader(file_position, db);
+	if (raw_reader == NULL)
+		return NULL;
+
+	return so_format_tar_new_reader(raw_reader, checksums);
+}
+
+static struct so_format_writer * sodr_vtl_drive_get_writer(struct so_value * checksums, struct so_database_connection * db) {
+	struct so_stream_writer * raw_writer = sodr_vtl_drive_get_raw_writer(db);
+	if (raw_writer == NULL)
+		return NULL;
+
+	return so_format_tar_new_writer(raw_writer, checksums);
 }
 
 static int sodr_vtl_drive_init(struct so_value * config) {
