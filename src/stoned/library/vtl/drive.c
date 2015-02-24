@@ -54,6 +54,7 @@
 #include <libstone/library/ressource.h>
 #include <libstone/library/slot.h>
 #include <libstone/log.h>
+#include <libstone/util/command.h>
 #include <libstone/util/file.h>
 
 #include "common.h"
@@ -172,7 +173,7 @@ static int st_vtl_drive_eject(struct st_drive * drive __attribute__((unused))) {
 	return 0;
 }
 
-static int st_vtl_drive_format(struct st_drive * drive, int file_position, bool quick_mode __attribute__((unused))) {
+static int st_vtl_drive_format(struct st_drive * drive, int file_position, bool quick_mode) {
 	struct st_vtl_drive * vdr = drive->data;
 
 	char * files;
@@ -184,8 +185,24 @@ static int st_vtl_drive_format(struct st_drive * drive, int file_position, bool 
 		return 1;
 
 	unsigned int i;
-	for (i = file_position; i < gl.gl_pathc; i++)
-		unlink(gl.gl_pathv[i]);
+	if (quick_mode) {
+		for (i = file_position; i < gl.gl_pathc; i++) {
+			int failed = unlink(gl.gl_pathv[i]);
+			if (failed != 0)
+				st_log_write_all(st_log_level_error, st_log_type_drive, "[%s | %s | #%td]: error while removing file (%s) because %m", drive->vendor, drive->model, drive - drive->changer->drives, gl.gl_pathv[i]);
+		}
+	} else {
+		for (i = file_position; i < gl.gl_pathc; i++) {
+			const char * params[] = { "-z", "-u", gl.gl_pathv[i] };
+			struct st_util_command shred;
+			st_util_command_new(&shred, "shred", params, 3);
+			st_util_command_start(&shred, 1);
+			st_util_command_wait(&shred, 1);
+			if (shred.exited_code != 0)
+				st_log_write_all(st_log_level_error, st_log_type_drive, "[%s | %s | #%td]: error while shredding file (%s), exiting code : %d", drive->vendor, drive->model, drive - drive->changer->drives, gl.gl_pathv[i], shred.exited_code);
+			st_util_command_free(&shred, 1);
+		}
+	}
 
 	globfree(&gl);
 
