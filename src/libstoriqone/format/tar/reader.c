@@ -95,7 +95,7 @@ struct so_format_reader * so_format_tar_new_reader(struct so_stream_reader * rea
 	struct so_format_tar_reader_private * self = malloc(sizeof(struct so_format_tar_reader_private));
 	bzero(self, sizeof(struct so_format_tar_reader_private));
 
-	self->has_cheksum = checksums == NULL && so_value_list_get_length(checksums) > 0;
+	self->has_cheksum = checksums != NULL && so_value_list_get_length(checksums) > 0;
 	if (self->has_cheksum)
 		self->io = so_io_checksum_reader_new(reader, checksums, true);
 	else

@@ -133,7 +133,8 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 				if (nb_read < 0) {
 					failed = -1;
 				} else {
-					// end of file
+					failed = soj_create_archive_worker_end_of_file();
+					// if (failed != 0)
 				}
 			}
 

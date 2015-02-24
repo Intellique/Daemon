@@ -114,7 +114,7 @@ struct so_format_writer * so_format_tar_new_writer(struct so_stream_writer * wri
 	struct so_format_tar_writer_private * self = malloc(sizeof(struct so_format_tar_writer_private));
 	bzero(self, sizeof(struct so_format_tar_writer_private));
 
-	self->has_cheksum = checksums == NULL && so_value_list_get_length(checksums) > 0;
+	self->has_cheksum = checksums != NULL && so_value_list_get_length(checksums) > 0;
 	if (self->has_cheksum)
 		self->io = so_io_checksum_writer_new(writer, checksums, true);
 	else

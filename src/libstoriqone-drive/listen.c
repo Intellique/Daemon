@@ -624,7 +624,7 @@ static void sodr_socket_command_format_reader_get_header(struct sodr_peer * peer
 		enum so_format_reader_header_status status = peer->format_reader->ops->get_header(peer->format_reader, &file);
 		long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
 
-		struct so_value * response = so_value_pack("{s{siso}si",
+		struct so_value * response = so_value_pack("{s{siso}si}",
 			"returned",
 				"status", (long) status,
 				"file", so_format_file_convert(&file),
@@ -649,7 +649,7 @@ static void sodr_socket_command_format_reader_position(struct sodr_peer * peer, 
 		ssize_t new_position = peer->format_reader->ops->position(peer->format_reader);
 		long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
 
-		struct so_value * response = so_value_pack("{sisi",
+		struct so_value * response = so_value_pack("{sisi}",
 			"returned", new_position,
 			"last errno", last_errno
 		);
@@ -704,7 +704,7 @@ static void sodr_socket_command_format_reader_read_to_end_of_data(struct sodr_pe
 		ssize_t new_position = peer->format_reader->ops->read_to_end_of_data(peer->format_reader);
 		long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
 
-		struct so_value * response = so_value_pack("{sisi",
+		struct so_value * response = so_value_pack("{sisi}",
 			"returned", new_position,
 			"last errno", last_errno
 		);
@@ -722,7 +722,7 @@ static void sodr_socket_command_format_reader_skip_file(struct sodr_peer * peer,
 		enum so_format_reader_header_status status = peer->format_reader->ops->skip_file(peer->format_reader);
 		long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
 
-		struct so_value * response = so_value_pack("{s{siso}si",
+		struct so_value * response = so_value_pack("{sisi}",
 			"returned", (long) status,
 			"last errno", last_errno
 		);
@@ -750,7 +750,7 @@ static void sodr_socket_command_format_writer_add_file(struct sodr_peer * peer, 
 
 		so_format_file_free(&file);
 
-		struct so_value * response = so_value_pack("{sisi",
+		struct so_value * response = so_value_pack("{sisi}",
 			"returned", (long) status,
 			"last errno", last_errno
 		);
@@ -773,7 +773,7 @@ static void sodr_socket_command_format_writer_add_label(struct sodr_peer * peer,
 
 		free(label);
 
-		struct so_value * response = so_value_pack("{sisi",
+		struct so_value * response = so_value_pack("{sisi}",
 			"returned", (long) status,
 			"last errno", last_errno
 		);
@@ -843,10 +843,10 @@ static void sodr_socket_command_format_writer_position(struct sodr_peer * peer, 
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 	} else {
-		ssize_t available_size = peer->format_writer->ops->position(peer->format_writer);
+		ssize_t position = peer->format_writer->ops->position(peer->format_writer);
 		long int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 
-		struct so_value * response = so_value_pack("{sisi}", "returned", available_size, "last errno", last_errno);
+		struct so_value * response = so_value_pack("{sisi}", "returned", position, "last errno", last_errno);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 	}
@@ -871,7 +871,7 @@ static void sodr_socket_command_format_writer_restart_file(struct sodr_peer * pe
 
 		so_format_file_free(&file);
 
-		struct so_value * response = so_value_pack("{sisi",
+		struct so_value * response = so_value_pack("{sisi}",
 			"returned", (long) status,
 			"last errno", last_errno
 		);

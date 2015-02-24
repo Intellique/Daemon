@@ -263,6 +263,26 @@ static int soj_create_archive_worker_close2(struct soj_create_archive_worker * w
 	return 0;
 }
 
+ssize_t soj_create_archive_worker_end_of_file() {
+	ssize_t nb_write = primary_worker->writer->ops->end_of_file(primary_worker->writer);
+	if (nb_write != 0)
+		return nb_write;
+
+	unsigned int i;
+	for (i = 0; i < nb_mirror_workers; i++) {
+		struct soj_create_archive_worker * worker = mirror_workers[i];
+
+		if (worker->state != soj_worker_status_ready)
+			continue;
+
+		nb_write = worker->writer->ops->end_of_file(worker->writer);
+		if (nb_write != 0)
+			return nb_write;
+	}
+
+	return nb_write;
+}
+
 static void soj_create_archive_worker_exit() {}
 
 static void soj_create_archive_worker_free(struct soj_create_archive_worker * worker) {
