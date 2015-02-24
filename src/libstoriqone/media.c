@@ -506,6 +506,10 @@ void so_pool_free(struct so_pool * pool) {
 	free(pool);
 }
 
+void so_pool_free2(void * pool) {
+	so_pool_free(pool);
+}
+
 
 const char * so_media_format_data_type_to_string(enum so_media_format_data_type type, bool translate) {
 	if (translate)
