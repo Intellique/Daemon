@@ -526,7 +526,7 @@ static struct so_value * so_database_postgresql_get_checksums_from_pool(struct s
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_checksums_by_pools";
-	so_database_postgresql_prepare(self, query, "SELECT c.name FROM checksum c INNER JOIN pooltochecksum pc ON c.id = pc.checksum LEFT JOIN pool p ON pc.pool = p.id AND p.uuid = $1");
+	so_database_postgresql_prepare(self, query, "SELECT c.name FROM checksum c INNER JOIN pooltochecksum pc ON c.id = pc.checksum INNER JOIN pool p ON pc.pool = p.id AND p.uuid::TEXT = $1");
 
 	const char * param[] = { pool->uuid };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
