@@ -329,6 +329,8 @@ static struct soj_create_archive_worker * soj_create_archive_worker_new(struct s
 }
 
 void soj_create_archive_worker_prepare_medias(struct so_database_connection * db_connect) {
+	struct so_value * checksums = so_value_new_hashtable2();
+
 	primary_worker->media_iterator = soj_media_get_iterator(primary_worker->pool);
 	struct so_value * vmedia = so_value_iterator_get_value(primary_worker->media_iterator, false);
 	primary_worker->media = so_value_custom_get(vmedia);
@@ -342,6 +344,14 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 		vol->media = primary_worker->media;
 		vol->media_position = primary_worker->writer->ops->file_position(primary_worker->writer);
 		vol->job = soj_job_get();
+
+		struct so_value_iterator * iter = so_value_list_get_iterator(primary_worker->checksums);
+		while (so_value_iterator_has_next(iter)) {
+			struct so_value * val = so_value_iterator_get_value(iter, false);
+			if (!so_value_hashtable_has_key(checksums, val))
+				so_value_hashtable_put(checksums, val, false, val, false);
+		}
+		so_value_iterator_free(iter);
 	}
 
 	unsigned int i;
@@ -361,7 +371,20 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 
 		worker->checksums = db_connect->ops->get_checksums_from_pool(db_connect, worker->pool);
 		worker->writer = worker->drive->ops->get_writer(worker->drive, worker->checksums);
+
+		struct so_value_iterator * iter = so_value_list_get_iterator(worker->checksums);
+		while (so_value_iterator_has_next(iter)) {
+			struct so_value * val = so_value_iterator_get_value(iter, false);
+			if (!so_value_hashtable_has_key(checksums, val))
+				so_value_hashtable_put(checksums, val, false, val, false);
+		}
+		so_value_iterator_free(iter);
 	}
+
+	struct so_value * unique_checksums = so_value_hashtable_keys(checksums);
+	so_value_free(checksums);
+	soj_create_archive_meta_worker_start(unique_checksums);
+	so_value_free(unique_checksums);
 }
 
 float soj_create_archive_progress() {

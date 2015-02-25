@@ -30,9 +30,11 @@
 // bool
 #include <stdbool.h>
 
+struct so_value;
+
 void soj_create_archive_meta_worker_add_file(const char * filename);
 struct so_value * soj_create_archive_meta_worker_get_files(void);
-void soj_create_archive_meta_worker_start(void);
+void soj_create_archive_meta_worker_start(struct so_value * checksums);
 void soj_create_archive_meta_worker_wait(bool stop);
 
 #endif

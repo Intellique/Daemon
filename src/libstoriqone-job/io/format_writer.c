@@ -51,6 +51,7 @@ struct soj_format_writer_private {
 	ssize_t block_size;
 	int last_errno;
 	int file_position;
+	ssize_t position;
 
 	struct so_value * digest;
 };
@@ -90,7 +91,8 @@ static struct so_format_writer_ops soj_format_writer_ops = {
 struct so_format_writer * soj_format_new_writer(struct so_drive * drive, int fd_command, struct so_value * config) {
 	struct so_value * socket = NULL;
 	long int block_size = 0;
-	if (so_value_unpack(config, "{sosi}", "socket", &socket, "block size", &block_size) < 2)
+	long int file_position = -1;
+	if (so_value_unpack(config, "{sosisi}", "socket", &socket, "block size", &block_size, "file position", &file_position) < 3)
 		return NULL;
 
 	int data_socket = so_socket(socket);
@@ -102,6 +104,8 @@ struct so_format_writer * soj_format_new_writer(struct so_drive * drive, int fd_
 	self->data_fd = data_socket;
 	self->block_size = block_size;
 	self->last_errno = 0;
+	self->file_position = file_position;
+	self->position = 0;
 	self->digest = so_value_new_linked_list();
 
 	struct so_format_writer * writer = malloc(sizeof(struct so_format_writer));
@@ -129,6 +133,8 @@ static enum so_format_writer_status soj_format_writer_add_file(struct so_format_
 	enum so_format_writer_status status = tmp_status;
 	if (status == so_format_writer_error)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+	else
+		so_value_unpack(response, "{si}", "position", &self->position);
 	so_value_free(response);
 
 	return status;
@@ -151,6 +157,8 @@ static enum so_format_writer_status soj_format_writer_add_label(struct so_format
 	enum so_format_writer_status status = tmp_status;
 	if (status == so_format_writer_error)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+	else
+		so_value_unpack(response, "{si}", "position", &self->position);
 	so_value_free(response);
 
 	return status;
@@ -198,6 +206,8 @@ static ssize_t soj_format_writer_end_of_file(struct so_format_writer * fw) {
 	so_value_unpack(response, "{si}", "returned", &failed);
 	if (failed != 0)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+	else
+		so_value_unpack(response, "{si}", "position", &self->position);
 	so_value_free(response);
 
 	return failed != 0;
@@ -256,22 +266,7 @@ static int soj_format_writer_last_errno(struct so_format_writer * fw) {
 
 static ssize_t soj_format_writer_position(struct so_format_writer * fw) {
 	struct soj_format_writer_private * self = fw->data;
-
-	struct so_value * request = so_value_pack("{ss}", "command", "format writer: position");
-	so_json_encode_to_fd(request, self->command_fd, true);
-	so_value_free(request);
-
-	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
-	if (response == NULL)
-		return -1;
-
-	ssize_t position = -1;
-	so_value_unpack(response, "{si}", "returned", &position);
-	if (position < 0)
-		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
-	so_value_free(response);
-
-	return position;
+	return self->position;
 }
 
 static enum so_format_writer_status soj_format_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file, ssize_t position) {
@@ -296,6 +291,8 @@ static enum so_format_writer_status soj_format_writer_restart_file(struct so_for
 	enum so_format_writer_status status = tmp_status;
 	if (status == so_format_writer_error)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+	else
+		so_value_unpack(response, "{si}", "position", &self->position);
 	so_value_free(response);
 
 	return status;
@@ -315,6 +312,8 @@ static ssize_t soj_format_writer_write(struct so_format_writer * fw, const void 
 	so_value_unpack(response, "{si}", "returned", &nb_write);
 	if (nb_write < 0)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+	else
+		so_value_unpack(response, "{si}", "position", &self->position);
 	so_value_free(response);
 
 	return nb_write;

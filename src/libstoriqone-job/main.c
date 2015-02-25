@@ -188,7 +188,7 @@ int main() {
 	db_connect->ops->sync_job(db_connect, job);
 	db_connect->ops->start_job(db_connect, job);
 
-	so_thread_pool_run("job_worker", job_worker, job);
+	so_thread_pool_run("job worker", job_worker, job);
 
 	while (!stop) {
 		so_poll(2000);

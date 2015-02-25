@@ -24,6 +24,10 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+// open
+#include <fcntl.h>
+// magic_file, magic_open
+#include <magic.h>
 // pthread_mutex_*
 #include <pthread.h>
 // bool
@@ -32,7 +36,17 @@
 #include <stdlib.h>
 // strdup
 #include <string.h>
+// bzero
+#include <strings.h>
+// lstat, open
+#include <sys/stat.h>
+// lstat, open
+#include <sys/types.h>
+// lstat
+#include <unistd.h>
 
+#include <libstoriqone/archive.h>
+#include <libstoriqone/io.h>
 #include <libstoriqone/thread_pool.h>
 #include <libstoriqone/value.h>
 
@@ -44,11 +58,13 @@ struct meta_worker_list {
 };
 
 static void soj_create_archive_meta_worker_do(void * arg);
+static void soj_create_archive_meta_worker_do2(const char * filename, struct so_value * checksums);
 
 static volatile bool meta_worker_do = false;
 static volatile bool meta_worker_stop = false;
 static struct meta_worker_list * file_first = NULL, * file_last = NULL;
 static struct so_value * files = NULL;
+static magic_t magicFile;
 
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t wait = PTHREAD_COND_INITIALIZER;
@@ -72,7 +88,11 @@ struct so_value * soj_create_archive_meta_worker_get_files() {
 	return files;
 }
 
-static void soj_create_archive_meta_worker_do(void * arg __attribute__((unused))) {
+static void soj_create_archive_meta_worker_do(void * arg) {
+	struct so_value * checksums = arg;
+	magicFile = magic_open(MAGIC_MIME_TYPE);
+	magic_load(magicFile, NULL);
+
 	meta_worker_do = true;
 	files = so_value_new_hashtable2();
 
@@ -91,6 +111,7 @@ static void soj_create_archive_meta_worker_do(void * arg __attribute__((unused))
 		pthread_mutex_unlock(&lock);
 
 		while (files != NULL) {
+			soj_create_archive_meta_worker_do2(files->filename, checksums);
 
 			struct meta_worker_list * next = files->next;
 			free(files->filename);
@@ -101,12 +122,68 @@ static void soj_create_archive_meta_worker_do(void * arg __attribute__((unused))
 
 	pthread_cond_signal(&wait);
 	pthread_mutex_unlock(&lock);
+
+	magic_close(magicFile);
+	so_value_free(checksums);
 }
 
-void soj_create_archive_meta_worker_start() {
-	if (!meta_worker_do) {
-		so_thread_pool_run2("meta worker", soj_create_archive_meta_worker_do, NULL, 8);
+static void soj_create_archive_meta_worker_do2(const char * filename, struct so_value * checksums) {
+	struct stat st;
+	if (lstat(filename, &st) != 0)
+		return;
+
+	struct so_archive_file * file = malloc(sizeof(struct so_archive_file));
+	bzero(file, sizeof(struct so_archive_file));
+
+	file->name = strdup(filename);
+	file->perm = st.st_mode;
+	// file->type
+	file->ownerid = st.st_uid;
+	// file->owner
+	file->groupid = st.st_gid;
+	// file->group
+
+	file->create_time = st.st_ctime;
+	file->modify_time = st.st_mtime;
+
+	file->check_ok = false;
+	file->check_time = 0;
+
+	file->size = st.st_size;
+
+	const char * mime_type = magic_file(magicFile, filename);
+	if (mime_type == NULL) {
+		file->mime_type = strdup("");
+		// st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "File (%s) has not mime type", f->file);
+	} else {
+		file->mime_type = strdup(mime_type);
+		// st_job_add_record(self->connect, st_log_level_info, self->job, st_job_record_notif_normal, "Mime type of file '%s' is '%s'", f->file, mime_type);
 	}
+
+	if (S_ISREG(st.st_mode)) {
+		int fd = open(filename, O_RDONLY);
+		struct so_stream_writer * writer = so_io_checksum_writer_new(NULL, checksums, false);
+
+		static char buffer[65536];
+		ssize_t nb_read;
+
+		while (nb_read = read(fd, buffer, 65536), nb_read > 0)
+			writer->ops->write(writer, buffer, nb_read);
+
+		close(fd);
+		writer->ops->close(writer);
+
+		file->digests = so_io_checksum_writer_get_checksums(writer);
+
+		writer->ops->free(writer);
+	}
+
+	so_value_hashtable_put2(files, filename, so_value_new_custom(file, NULL), true);
+}
+
+void soj_create_archive_meta_worker_start(struct so_value * checksums) {
+	if (!meta_worker_do)
+		so_thread_pool_run2("meta worker", soj_create_archive_meta_worker_do, so_value_share(checksums), 8);
 }
 
 void soj_create_archive_meta_worker_wait(bool stop) {

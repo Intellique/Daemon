@@ -234,7 +234,6 @@ static struct so_format_reader * soj_drive_get_reader(struct so_drive * drive, i
 	);
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
-	so_value_free(tmp_checksums);
 
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
 	if (response == NULL)
@@ -271,7 +270,6 @@ static struct so_format_writer * soj_drive_get_writer(struct so_drive * drive, s
 	);
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
-	so_value_free(tmp_checksums);
 
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
 	if (response == NULL)

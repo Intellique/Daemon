@@ -86,7 +86,22 @@ void so_archive_free(struct so_archive * archive) {
 
 	unsigned int i;
 	for (i = 0; i < archive->nb_volumes; i++) {
-		// struct so_archive_volume * vol = archive->volumes + i;
+		struct so_archive_volume * vol = archive->volumes + i;
+		so_value_free(vol->digests);
+
+		unsigned int j;
+		for (j = 0; j < vol->nb_files; j++) {
+			struct so_archive_file * file = vol->files[i].file;
+			free(file->name);
+			free(file->owner);
+			free(file->group);
+			free(file->mime_type);
+			so_value_free(file->digests);
+			so_value_free(file->db_data);
+			free(file);
+		}
+		free(vol->files);
+		so_value_free(vol->db_data);
 	}
 	free(archive->volumes);
 

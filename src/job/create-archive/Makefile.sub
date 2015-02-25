@@ -2,7 +2,7 @@ STORIQONE_JOB_CREATE_ARCHIVE_SRC_DIR		:= src/job/create-archive
 
 STORIQONE_JOB_CREATE_ARCHIVE_BIN			:= bin/job_create-archive
 STORIQONE_JOB_CREATE_ARCHIVE_CFLAG			:= -pthread
-STORIQONE_JOB_CREATE_ARCHIVE_LD				:= -pthread -lstoriqone -lstoriqone-job -luuid -Llib
+STORIQONE_JOB_CREATE_ARCHIVE_LD				:= -pthread -lstoriqone -lstoriqone-job -lmagic -Llib
 
 STORIQONE_JOB_CREATE_ARCHIVE_DEPEND_LIB		:= lib/libstoriqone-job.so
 

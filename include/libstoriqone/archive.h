@@ -94,7 +94,7 @@ struct so_archive_volume {
 	} * files;
 	unsigned int nb_files;
 
-	struct st_value * db_data;
+	struct so_value * db_data;
 };
 
 struct so_archive_file {
@@ -102,9 +102,9 @@ struct so_archive_file {
 	mode_t perm;
 	enum so_archive_file_type type;
 	uid_t ownerid;
-	char owner[32];
+	char * owner;
 	gid_t groupid;
-	char group[32];
+	char * group;
 
 	time_t create_time;
 	time_t modify_time;
@@ -116,12 +116,10 @@ struct so_archive_file {
 
 	char * mime_type;
 
-	struct st_value * digests;
-
-	struct st_archive * archive;
+	struct so_value * digests;
 	// struct st_job_selected_path * selected_path;
 
-	struct st_value * db_data;
+	struct so_value * db_data;
 };
 
 struct so_archive_volume * so_archive_add_volume(struct so_archive * archive);

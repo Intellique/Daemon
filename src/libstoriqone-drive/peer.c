@@ -52,6 +52,11 @@ void sodr_peer_free(struct sodr_peer * peer) {
 		peer->format_reader->ops->free(peer->format_reader);
 	}
 
+	if (peer->format_writer != NULL) {
+		peer->format_writer->ops->close(peer->format_writer);
+		peer->format_writer->ops->free(peer->format_writer);
+	}
+
 	if (peer->fd_data >= 0)
 		close(peer->fd_data);
 
