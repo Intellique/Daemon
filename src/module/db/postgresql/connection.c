@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 20 Feb 2015 12:52:46 +0100                            *
+*  Last modified: Thu, 26 Feb 2015 16:05:10 +0100                            *
 \****************************************************************************/
 
 #define _GNU_SOURCE
@@ -2774,8 +2774,10 @@ static bool st_db_postgresql_add_report(struct st_database_connection * connect,
 
 	char * jobrunid, * archiveid = NULL, * mediaid = NULL;
 	asprintf(&jobrunid, "%ld", job_data->jobrun_id);
-	asprintf(&archiveid, "%ld", archive_data->id);
-	asprintf(&mediaid, "%ld", media_data->id);
+	if (archive_data != NULL)
+		asprintf(&archiveid, "%ld", archive_data->id);
+	if (media_data != NULL)
+		asprintf(&mediaid, "%ld", media_data->id);
 
 	const char * param[] = { archiveid, mediaid, jobrunid, report };
 	PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
