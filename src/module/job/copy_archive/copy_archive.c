@@ -22,7 +22,7 @@
 *                                                                            *
 *  ------------------------------------------------------------------------  *
 *  Copyright (C) 2013-2015, Clercin guillaume <gclercin@intellique.com>      *
-*  Last modified: Fri, 07 Feb 2014 10:32:30 +0100                            *
+*  Last modified: Fri, 06 Feb 2015 12:12:18 +0100                            *
 \****************************************************************************/
 
 // json_*
@@ -92,16 +92,19 @@ static void st_job_copy_archive_free(struct st_job * job) {
 	struct st_job_copy_archive_private * self = job->data;
 
 	unsigned int i;
-	for (i = 0; i < self->copy->nb_volumes; i++) {
-		struct st_archive_volume * vol = self->copy->volumes + i;
-		free(vol->files);
-		vol->files = NULL;
-		vol->nb_files = 0;
-	}
+	if (self->copy != NULL) {
+		for (i = 0; i < self->copy->nb_volumes; i++) {
+			struct st_archive_volume * vol = self->copy->volumes + i;
+			free(vol->files);
+			vol->files = NULL;
+			vol->nb_files = 0;
+		}
 
-	self->copy->copy_of = NULL;
-	st_archive_free(self->archive);
-	st_archive_free(self->copy);
+		self->copy->copy_of = NULL;
+		st_archive_free(self->copy);
+	}
+	if (self->archive != NULL)
+		st_archive_free(self->archive);
 
 	self->job->db_connect->ops->free(self->job->db_connect);
 	self->job->db_connect = NULL;
@@ -122,11 +125,18 @@ static void st_job_copy_archive_init() {
 static void st_job_copy_archive_new_job(struct st_job * job) {
 	struct st_job_copy_archive_private * self = malloc(sizeof(struct st_job_copy_archive_private));
 	bzero(self, sizeof(*self));
+
 	self->job = job;
 	job->db_connect = job->db_config->ops->connect(job->db_config);
 
+	job->data = self;
+	job->ops = &st_job_copy_archive_ops;
+
 	self->archive = self->job->db_connect->ops->get_archive_volumes_by_job(self->job->db_connect, job);
 	self->pool = st_pool_get_by_job(job, self->job->db_connect);
+
+	if (self->archive == NULL || self->pool == NULL)
+		return;
 
 	unsigned int i;
 	for (i = 0; i < self->archive->nb_volumes; i++) {
@@ -144,9 +154,6 @@ static void st_job_copy_archive_new_job(struct st_job * job) {
 		self->copy->metadatas = strdup(self->archive->metadatas);
 
 	self->checksums = self->job->db_connect->ops->get_checksums_by_pool(self->job->db_connect, self->pool, &self->nb_checksums);
-
-	job->data = self;
-	job->ops = &st_job_copy_archive_ops;
 }
 
 static void st_job_copy_archive_on_error(struct st_job * job) {
@@ -461,6 +468,15 @@ static void st_job_copy_archive_post_run(struct st_job * job) {
 
 static bool st_job_copy_archive_pre_run(struct st_job * job) {
 	struct st_job_copy_archive_private * self = job->data;
+
+	if (self->archive == NULL) {
+		st_job_add_record(self->job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Fatal error, try to start a copy without archive");
+		return false;
+	}
+	if (self->pool == NULL) {
+		st_job_add_record(self->job->db_connect, st_log_level_error, job, st_job_record_notif_important, "Fatal error, try to start a copy without pool");
+		return false;
+	}
 
 	if (self->job->db_connect->ops->get_nb_scripts(self->job->db_connect, job->driver->name, st_script_type_pre, self->pool) == 0)
 		return true;

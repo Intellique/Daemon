@@ -1,0 +1,11 @@
+STONE_JOB_ERASEMEDIA_SRC_DIR		:= src/module/job/erase_media
+
+STONE_JOB_ERASEMEDIA_BIN			:= lib/libjob-erase-media.so
+STONE_JOB_ERASEMEDIA_CFLAG			:= -pthread -fPIC -fvisibility=hidden
+STONE_JOB_ERASEMEDIA_LD				:= -pthread -shared -ljansson -luuid
+
+STONE_JOB_ERASEMEDIA_DEPEND_LIB		:=
+
+STONE_JOB_ERASEMEDIA_CHCKSUM_FILE	:= libjob-erase-media.chcksum
+
+BIN_SYMS							+= STONE_JOB_ERASEMEDIA

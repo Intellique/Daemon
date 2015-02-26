@@ -156,6 +156,7 @@ int st_job_copy_archive_direct_copy(struct st_job_copy_archive_private * self) {
 
 	// sync with database
 	self->job->db_connect->ops->sync_archive(self->job->db_connect, self->copy);
+	self->job->db_connect->ops->sync_archive_mirror(self->job->db_connect, self->archive, self->copy);
 
 	st_job_add_record(self->job->db_connect, st_log_level_info, self->job, st_job_record_notif_normal, "Write metadatas on media");
 	self->job->done = 0.99;

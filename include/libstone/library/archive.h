@@ -28,6 +28,8 @@
 #ifndef __STONE_ARCHIVE_H__
 #define __STONE_ARCHIVE_H__
 
+// json_t
+#include <jansson.h>
 // bool
 #include <stdbool.h>
 // time_t
@@ -67,6 +69,7 @@ struct st_archive {
 	struct st_user * user;
 
 	char * metadatas;
+	bool deleted;
 
 	void * db_data;
 };
@@ -128,6 +131,7 @@ struct st_archive_file {
 struct st_archive_volume * st_archive_add_volume(struct st_archive * archive, struct st_media * media, long media_position, struct st_job * job);
 void st_archive_free(struct st_archive * archive);
 struct st_archive * st_archive_new(const char * name, struct st_user * user);
+struct st_archive * st_archive_parse(json_t * archive, unsigned int position);
 void st_archive_file_free(struct st_archive_file * file);
 struct st_archive_file * st_archive_file_new(struct stat * file, const char * filename);
 enum st_archive_file_type st_archive_file_string_to_type(const char * type);
