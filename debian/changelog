@@ -1,3 +1,9 @@
+stone (1.1.27.2+squeeze) polisher; urgency=low
+
+  * Correctif divers
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 27 Feb 2015 14:43:18 +0100
+
 stone (1.1.27.1+squeeze) polisher; urgency=low
 
   * Correctif divers
