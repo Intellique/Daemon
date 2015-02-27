@@ -1,3 +1,9 @@
+stone (1.1.27.2+wheezy) polisher; urgency=low
+
+  * Bug fix: correctif
+
+ -- guillaume clercin <gclercin@intellique.com>  Fri, 27 Feb 2015 18:55:21 +0100
+
 stone (1.1.27+wheezy) polisher; urgency=low
 
   * Bug fix: correctif
