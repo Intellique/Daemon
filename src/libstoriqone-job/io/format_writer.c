@@ -52,6 +52,7 @@ struct soj_format_writer_private {
 	int last_errno;
 	int file_position;
 	ssize_t position;
+	ssize_t available_size;
 
 	struct so_value * digest;
 };
@@ -106,6 +107,7 @@ struct so_format_writer * soj_format_new_writer(struct so_drive * drive, int fd_
 	self->last_errno = 0;
 	self->file_position = file_position;
 	self->position = 0;
+	self->available_size = 0;
 	self->digest = so_value_new_linked_list();
 
 	struct so_format_writer * writer = malloc(sizeof(struct so_format_writer));
@@ -134,7 +136,10 @@ static enum so_format_writer_status soj_format_writer_add_file(struct so_format_
 	if (status == so_format_writer_error)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	else
-		so_value_unpack(response, "{si}", "position", &self->position);
+		so_value_unpack(response, "{sisi}",
+			"position", &self->position,
+			"available size", &self->available_size
+		);
 	so_value_free(response);
 
 	return status;
@@ -158,7 +163,10 @@ static enum so_format_writer_status soj_format_writer_add_label(struct so_format
 	if (status == so_format_writer_error)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	else
-		so_value_unpack(response, "{si}", "position", &self->position);
+		so_value_unpack(response, "{sisi}",
+			"position", &self->position,
+			"available size", &self->available_size
+		);
 	so_value_free(response);
 
 	return status;
@@ -207,7 +215,10 @@ static ssize_t soj_format_writer_end_of_file(struct so_format_writer * fw) {
 	if (failed != 0)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	else
-		so_value_unpack(response, "{si}", "position", &self->position);
+		so_value_unpack(response, "{sisi}",
+			"position", &self->position,
+			"available size", &self->available_size
+		);
 	so_value_free(response);
 
 	return failed != 0;
@@ -231,22 +242,7 @@ static void soj_format_writer_free(struct so_format_writer * fw) {
 
 static ssize_t soj_format_writer_get_available_size(struct so_format_writer * fw) {
 	struct soj_format_writer_private * self = fw->data;
-
-	struct so_value * request = so_value_pack("{ss}", "command", "format writer: get available size");
-	so_json_encode_to_fd(request, self->command_fd, true);
-	so_value_free(request);
-
-	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
-	if (response == NULL)
-		return -1;
-
-	ssize_t available_size = -1;
-	so_value_unpack(response, "{si}", "returned", &available_size);
-	if (available_size < 0)
-		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
-	so_value_free(response);
-
-	return available_size;
+	return self->available_size;
 }
 
 static ssize_t soj_format_writer_get_block_size(struct so_format_writer * fw) {
@@ -292,7 +288,10 @@ static enum so_format_writer_status soj_format_writer_restart_file(struct so_for
 	if (status == so_format_writer_error)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	else
-		so_value_unpack(response, "{si}", "position", &self->position);
+		so_value_unpack(response, "{sisi}",
+			"position", &self->position,
+			"available size", &self->available_size
+		);
 	so_value_free(response);
 
 	return status;
@@ -313,7 +312,10 @@ static ssize_t soj_format_writer_write(struct so_format_writer * fw, const void 
 	if (nb_write < 0)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	else
-		so_value_unpack(response, "{si}", "position", &self->position);
+		so_value_unpack(response, "{sisi}",
+			"position", &self->position,
+			"available size", &self->available_size
+		);
 	so_value_free(response);
 
 	return nb_write;

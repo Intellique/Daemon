@@ -42,6 +42,7 @@ struct sodr_peer {
 	int fd_data;
 	char * buffer;
 	ssize_t buffer_length;
+	bool has_checksums;
 };
 
 void sodr_peer_free(struct sodr_peer * peer);

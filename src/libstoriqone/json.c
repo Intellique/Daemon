@@ -445,6 +445,17 @@ char * so_json_encode_to_string(struct so_value * value) {
 }
 
 struct so_value * so_json_parse_fd(int fd, int timeout) {
+	struct pollfd pfd = {
+		.fd = fd,
+		.events = POLLIN | POLLHUP,
+		.revents = 0,
+	};
+	if (poll(&pfd, 1, timeout) == 0)
+		return NULL;
+
+	if (pfd.revents & POLLHUP)
+		return NULL;
+
 	ssize_t buffer_size = 4096, nb_total_read = 0, size;
 	char * buffer = malloc(buffer_size + 1);
 	buffer[0] = '\0';
@@ -459,11 +470,7 @@ struct so_value * so_json_parse_fd(int fd, int timeout) {
 		if (ret_val != NULL)
 			break;
 
-		struct pollfd pfd = {
-			.fd = fd,
-			.events = POLLIN | POLLHUP,
-			.revents = 0,
-		};
+		pfd.revents = 0;
 		if (poll(&pfd, 1, timeout) == 0)
 			break;
 		if (pfd.revents & POLLHUP)

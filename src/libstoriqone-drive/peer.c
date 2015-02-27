@@ -80,6 +80,7 @@ struct sodr_peer * sodr_peer_new(int fd) {
 	peer->fd_data = -1;
 	peer->buffer = NULL;
 	peer->buffer_length = 0;
+	peer->has_checksums = false;
 
 	return peer;
 }
