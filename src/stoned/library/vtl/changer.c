@@ -237,7 +237,7 @@ struct st_changer * st_vtl_changer_init(struct st_vtl_config * cfg) {
 		sl->type = st_slot_type_storage;
 		sl->enable = true;
 
-		sl->lock = st_ressource_new(false);
+		sl->lock = st_ressource_new(true);
 
 		sl->db_data = NULL;
 
@@ -448,7 +448,7 @@ void st_vtl_changer_sync(struct st_changer * ch, struct st_vtl_config * cfg) {
 			sl->type = st_slot_type_storage;
 			sl->enable = true;
 
-			sl->lock = st_ressource_new(false);
+			sl->lock = st_ressource_new(true);
 
 			sl->db_data = NULL;
 
