@@ -26,8 +26,6 @@
 
 // errno
 #include <errno.h>
-// poll
-#include <poll.h>
 // free
 #include <stdlib.h>
 // recv
@@ -66,42 +64,7 @@ static struct sodr_command commands[] = {
 
 
 void sodr_io_format_writer(void * arg) {
-	struct sodr_peer * peer = arg;
-	struct pollfd fd_cmd = { peer->fd_cmd, POLLIN | POLLHUP, 0 };
-
-	int nb_events;
-	while (nb_events = poll(&fd_cmd, 1, -1), nb_events > 0) {
-		if (fd_cmd.revents & POLLHUP)
-			break;
-
-		struct so_value * request = so_json_parse_fd(peer->fd_cmd, -1);
-		char * command = NULL;
-		if (request == NULL || so_value_unpack(request, "{ss}", "command", &command) < 0) {
-			if (request != NULL)
-				so_value_free(request);
-			break;
-		}
-
-		const unsigned long hash = so_string_compute_hash2(command);
-		unsigned int i;
-		for (i = 0; commands[i].name != NULL; i++)
-			if (hash == commands[i].hash) {
-				commands[i].function(peer, request);
-				break;
-			}
-		so_value_free(request);
-
-		if (commands[i].name == NULL) {
-			struct so_value * response = so_value_new_boolean(true);
-			so_json_encode_to_fd(response, peer->fd_cmd, true);
-			so_value_free(response);
-		}
-
-		if (peer->fd_cmd < 0)
-			break;
-
-		fd_cmd.revents = 0;
-	}
+	sodr_io_process(arg, commands);
 }
 
 static void sodr_io_format_writer_init() {

@@ -181,7 +181,7 @@ static struct so_stream_reader * soj_drive_get_raw_reader(struct so_drive * driv
 		return NULL;
 	}
 
-	struct so_stream_reader * reader = soj_stream_new_reader(drive, self->fd, response);
+	struct so_stream_reader * reader = soj_stream_new_reader(drive, response);
 	so_value_free(response);
 	return reader;
 }

@@ -24,21 +24,53 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_JOB_IO_H__
-#define __LIBSTORIQONE_JOB_IO_H__
+// poll
+#include <poll.h>
+// NULL
+#include <stddef.h>
 
-#include <libstoriqone/io.h>
+#include <libstoriqone/json.h>
+#include <libstoriqone/string.h>
+#include <libstoriqone/value.h>
 
-struct so_drive;
-struct so_value;
+#include "io.h"
+#include "../peer.h"
 
-struct so_format_reader * soj_format_new_reader(struct so_drive * drive, int fd_command, struct so_value * config);
-struct so_format_reader * soj_format_new_reader2(struct so_drive * drive, int fd_command, int fd_data, ssize_t block_size);
-struct so_format_writer * soj_format_new_writer(struct so_drive * drive, struct so_value * config);
+void sodr_io_process(struct sodr_peer * peer, struct sodr_command commands[]) {
+	struct pollfd fd_cmd = { peer->fd_cmd, POLLIN | POLLHUP, 0 };
 
-struct so_stream_reader * soj_stream_new_reader(struct so_drive * drive, struct so_value * config);
-struct so_stream_reader * soj_stream_new_reader2(struct so_drive * drive, int fd_command, int fd_data, ssize_t block_size);
-struct so_stream_writer * soj_stream_new_writer(struct so_drive * drive, int fd_command, struct so_value * config);
+	int nb_events;
+	while (nb_events = poll(&fd_cmd, 1, -1), nb_events > 0) {
+		if (fd_cmd.revents & POLLHUP)
+			break;
 
-#endif
+		struct so_value * request = so_json_parse_fd(peer->fd_cmd, -1);
+		char * command = NULL;
+		if (request == NULL || so_value_unpack(request, "{ss}", "command", &command) < 0) {
+			if (request != NULL)
+				so_value_free(request);
+			break;
+		}
+
+		const unsigned long hash = so_string_compute_hash2(command);
+		unsigned int i;
+		for (i = 0; commands[i].name != NULL; i++)
+			if (hash == commands[i].hash) {
+				commands[i].function(peer, request);
+				break;
+			}
+		so_value_free(request);
+
+		if (commands[i].name == NULL) {
+			struct so_value * response = so_value_new_boolean(true);
+			so_json_encode_to_fd(response, peer->fd_cmd, true);
+			so_value_free(response);
+		}
+
+		if (peer->fd_cmd < 0)
+			break;
+
+		fd_cmd.revents = 0;
+	}
+}
 

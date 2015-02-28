@@ -76,15 +76,16 @@ static struct so_stream_reader_ops soj_reader_ops = {
 };
 
 
-struct so_stream_reader * soj_stream_new_reader(struct so_drive * drive, int fd_command, struct so_value * config) {
-	struct so_value * socket = NULL;
+struct so_stream_reader * soj_stream_new_reader(struct so_drive * drive, struct so_value * config) {
+	struct so_value * socket_cmd = NULL, * socket_data = NULL;
 	long int block_size = 0;
-	if (so_value_unpack(config, "{sosi}", "socket", &socket, "block size", &block_size) < 2)
+	if (so_value_unpack(config, "{s{soso}si}", "socket", "command", &socket_cmd, "data", &socket_data, "block size", &block_size) < 2)
 		return NULL;
 
-	int data_socket = so_socket(socket);
+	int cmd_socket = so_socket(socket_cmd);
+	int data_socket = so_socket(socket_data);
 
-	return soj_stream_new_reader2(drive, fd_command, data_socket, block_size);
+	return soj_stream_new_reader2(drive, cmd_socket, data_socket, block_size);
 }
 
 struct so_stream_reader * soj_stream_new_reader2(struct so_drive * drive, int fd_command, int fd_data, ssize_t block_size) {
@@ -109,7 +110,7 @@ struct so_stream_reader * soj_stream_new_reader2(struct so_drive * drive, int fd
 static int soj_stream_reader_close(struct so_stream_reader * sr) {
 	struct soj_stream_reader_private * self = sr->data;
 
-	struct so_value * request = so_value_pack("{ss}", "command", "stream reader: close");
+	struct so_value * request = so_value_pack("{ss}", "command", "close");
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
@@ -132,7 +133,7 @@ static int soj_stream_reader_close(struct so_stream_reader * sr) {
 static bool soj_stream_reader_end_of_file(struct so_stream_reader * sr __attribute__((unused))) {
 	struct soj_stream_reader_private * self = sr->data;
 
-	struct so_value * request = so_value_pack("{ss}", "command", "stream reader: end of file");
+	struct so_value * request = so_value_pack("{ss}", "command", "end of file");
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
@@ -155,7 +156,7 @@ static bool soj_stream_reader_end_of_file(struct so_stream_reader * sr __attribu
 static off_t soj_stream_reader_forward(struct so_stream_reader * sr, off_t offset) {
 	struct soj_stream_reader_private * self = sr->data;
 
-	struct so_value * request = so_value_pack("{sss{si}}", "command", "stream reader: forward", "params", "offset", offset);
+	struct so_value * request = so_value_pack("{sss{si}}", "command", "forward", "params", "offset", offset);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
@@ -202,7 +203,7 @@ static ssize_t soj_stream_reader_position(struct so_stream_reader * sr) {
 static ssize_t soj_stream_reader_read(struct so_stream_reader * sr, void * buffer, ssize_t length) {
 	struct soj_stream_reader_private * self = sr->data;
 
-	struct so_value * request = so_value_pack("{sss{si}}", "command", "stream reader: read", "params", "length", length);
+	struct so_value * request = so_value_pack("{sss{si}}", "command", "read", "params", "length", length);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
