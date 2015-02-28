@@ -283,7 +283,7 @@ static struct so_format_writer * soj_drive_get_writer(struct so_drive * drive, s
 		return NULL;
 	}
 
-	struct so_format_writer * writer = soj_format_new_writer(drive, self->fd, response);
+	struct so_format_writer * writer = soj_format_new_writer(drive, response);
 	so_value_free(response);
 	return writer;
 }

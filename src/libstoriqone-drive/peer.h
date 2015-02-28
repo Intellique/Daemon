@@ -27,6 +27,8 @@
 #ifndef __LIBSTORIQONE_DRIVE_PEER_H__
 #define __LIBSTORIQONE_DRIVE_PEER_H__
 
+// bool
+#include <stdbool.h>
 // ssize_t
 #include <sys/types.h>
 
@@ -39,6 +41,7 @@ struct sodr_peer {
 	struct so_format_reader * format_reader;
 	struct so_format_writer * format_writer;
 
+	int fd_cmd;
 	int fd_data;
 	char * buffer;
 	ssize_t buffer_length;

@@ -89,20 +89,18 @@ static struct so_format_writer_ops soj_format_writer_ops = {
 };
 
 
-struct so_format_writer * soj_format_new_writer(struct so_drive * drive, int fd_command, struct so_value * config) {
-	struct so_value * socket = NULL;
+struct so_format_writer * soj_format_new_writer(struct so_drive * drive, struct so_value * config) {
+	struct so_value * socket_cmd = NULL, * socket_data = NULL;
 	long int block_size = 0;
 	long int file_position = -1;
-	if (so_value_unpack(config, "{sosisi}", "socket", &socket, "block size", &block_size, "file position", &file_position) < 3)
+	if (so_value_unpack(config, "{s{soso}sisi}", "socket", "command", &socket_cmd, "data", &socket_data, "block size", &block_size, "file position", &file_position) < 4)
 		return NULL;
-
-	int data_socket = so_socket(socket);
 
 	struct soj_format_writer_private * self = malloc(sizeof(struct soj_format_writer_private));
 	bzero(self, sizeof(struct soj_format_writer_private));
 	self->drive = drive;
-	self->command_fd = fd_command;
-	self->data_fd = data_socket;
+	self->command_fd = so_socket(socket_cmd);
+	self->data_fd = so_socket(socket_data);
 	self->block_size = block_size;
 	self->last_errno = 0;
 	self->file_position = file_position;
@@ -121,7 +119,7 @@ struct so_format_writer * soj_format_new_writer(struct so_drive * drive, int fd_
 static enum so_format_writer_status soj_format_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file) {
 	struct soj_format_writer_private * self = fw->data;
 
-	struct so_value * request = so_value_pack("{sss{so}}", "command", "format writer: add file", "params", "file", so_format_file_convert(file));
+	struct so_value * request = so_value_pack("{sss{so}}", "command", "add file", "params", "file", so_format_file_convert(file));
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
@@ -148,7 +146,7 @@ static enum so_format_writer_status soj_format_writer_add_file(struct so_format_
 static enum so_format_writer_status soj_format_writer_add_label(struct so_format_writer * fw, const char * label) {
 	struct soj_format_writer_private * self = fw->data;
 
-	struct so_value * request = so_value_pack("{sss{ss}}", "command", "format writer: add label", "params", "label", label);
+	struct so_value * request = so_value_pack("{sss{ss}}", "command", "add label", "params", "label", label);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
@@ -175,7 +173,7 @@ static enum so_format_writer_status soj_format_writer_add_label(struct so_format
 static int soj_format_writer_close(struct so_format_writer * fw) {
 	struct soj_format_writer_private * self = fw->data;
 
-	struct so_value * request = so_value_pack("{ss}", "command", "format writer: close");
+	struct so_value * request = so_value_pack("{ss}", "command", "close");
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
@@ -202,7 +200,7 @@ static int soj_format_writer_close(struct so_format_writer * fw) {
 static ssize_t soj_format_writer_end_of_file(struct so_format_writer * fw) {
 	struct soj_format_writer_private * self = fw->data;
 
-	struct so_value * request = so_value_pack("{ss}", "command", "format writer: end of file");
+	struct so_value * request = so_value_pack("{ss}", "command", "end of file");
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
@@ -269,7 +267,7 @@ static enum so_format_writer_status soj_format_writer_restart_file(struct so_for
 	struct soj_format_writer_private * self = fw->data;
 
 	struct so_value * request = so_value_pack("{sss{sosi}}",
-		"command", "format writer: restart file",
+		"command", "restart file",
 		"params",
 			"file", so_format_file_convert(file),
 			"position", position
@@ -300,7 +298,7 @@ static enum so_format_writer_status soj_format_writer_restart_file(struct so_for
 static ssize_t soj_format_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length) {
 	struct soj_format_writer_private * self = fw->data;
 
-	struct so_value * request = so_value_pack("{sss{si}}", "command", "format writer: write", "params", "length", length);
+	struct so_value * request = so_value_pack("{sss{si}}", "command", "write", "params", "length", length);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 

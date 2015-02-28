@@ -24,21 +24,19 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_JOB_IO_H__
-#define __LIBSTORIQONE_JOB_IO_H__
+#ifndef __LIBSTORIQONE_DRIVE_IO_H__
+#define __LIBSTORIQONE_DRIVE_IO_H__
 
-#include <libstoriqone/io.h>
-
-struct so_drive;
+struct sodr_peer;
 struct so_value;
 
-struct so_format_reader * soj_format_new_reader(struct so_drive * drive, int fd_command, struct so_value * config);
-struct so_format_reader * soj_format_new_reader2(struct so_drive * drive, int fd_command, int fd_data, ssize_t block_size);
-struct so_format_writer * soj_format_new_writer(struct so_drive * drive, struct so_value * config);
+struct sodr_command {
+	unsigned long hash;
+	char * name;
+	void (*function)(struct sodr_peer * peer, struct so_value * request);
+};
 
-struct so_stream_reader * soj_stream_new_reader(struct so_drive * drive, int fd_command, struct so_value * config);
-struct so_stream_reader * soj_stream_new_reader2(struct so_drive * drive, int fd_command, int fd_data, ssize_t block_size);
-struct so_stream_writer * soj_stream_new_writer(struct so_drive * drive, int fd_command, struct so_value * config);
+void sodr_io_format_writer(void * arg);
 
 #endif
 
