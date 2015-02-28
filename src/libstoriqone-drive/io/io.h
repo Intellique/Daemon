@@ -37,8 +37,10 @@ struct sodr_command {
 };
 
 void sodr_io_format_writer(void * arg);
+void sodr_io_init(struct sodr_command commands[]);
 void sodr_io_process(struct sodr_peer * peer, struct sodr_command commands[]);
 void sodr_io_raw_reader(void * arg);
+void sodr_io_raw_writer(void * arg);
 
 #endif
 

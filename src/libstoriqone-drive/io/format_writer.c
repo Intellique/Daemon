@@ -37,7 +37,6 @@
 
 #include <libstoriqone/format.h>
 #include <libstoriqone/json.h>
-#include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
 
 #include "io.h"
@@ -68,9 +67,7 @@ void sodr_io_format_writer(void * arg) {
 }
 
 static void sodr_io_format_writer_init() {
-	unsigned int i;
-	for (i = 0; commands[i].name != NULL; i++)
-		commands[i].hash = so_string_compute_hash2(commands[i].name);
+	sodr_io_init(commands);
 }
 
 

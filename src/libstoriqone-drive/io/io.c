@@ -36,6 +36,13 @@
 #include "io.h"
 #include "../peer.h"
 
+
+void sodr_io_init(struct sodr_command commands[]) {
+	unsigned int i;
+	for (i = 0; commands[i].name != NULL; i++)
+		commands[i].hash = so_string_compute_hash2(commands[i].name);
+}
+
 void sodr_io_process(struct sodr_peer * peer, struct sodr_command commands[]) {
 	struct pollfd fd_cmd = { peer->fd_cmd, POLLIN | POLLHUP, 0 };
 

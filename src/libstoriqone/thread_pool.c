@@ -81,7 +81,7 @@ static pid_t so_thread_pool_pid = -1;
 
 static void so_thread_pool_exit(void) __attribute__((destructor));
 static void so_thread_pool_init(void) __attribute__((constructor));
-static void so_thread_pool_set_name(pid_t tid, const char * name);
+static void so_thread_pool_set_name2(pid_t tid, const char * name);
 static void * so_thread_pool_work(void * arg);
 
 
@@ -199,7 +199,11 @@ int so_thread_pool_run2(const char * thread_name, void (*function)(void * arg), 
 	return 0;
 }
 
-static void so_thread_pool_set_name(pid_t tid, const char * name) {
+void so_thread_pool_set_name(const char * name) {
+	so_thread_pool_set_name2(getpid(), name);
+}
+
+static void so_thread_pool_set_name2(pid_t tid, const char * name) {
 	char * path;
 	asprintf(&path, "/proc/%d/task/%d/comm", so_thread_pool_pid, tid);
 
@@ -229,16 +233,16 @@ static void * so_thread_pool_work(void * arg) {
 		setpriority(PRIO_PROCESS, tid, th->nice);
 
 		if (th->name != NULL)
-			so_thread_pool_set_name(tid, th->name);
+			so_thread_pool_set_name2(tid, th->name);
 		else {
 			char buffer[16];
 			snprintf(buffer, 16, "thread %p", th->function);
-			so_thread_pool_set_name(tid, buffer);
+			so_thread_pool_set_name2(tid, buffer);
 		}
 
 		th->function(th->arg);
 
-		so_thread_pool_set_name(tid, "idle");
+		so_thread_pool_set_name2(tid, "idle");
 
 		free(th->name);
 		th->name = NULL;

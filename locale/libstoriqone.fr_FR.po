@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-02-22 23:41+0100\n"
+        "POT-Creation-Date: 2015-02-28 22:53+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -609,23 +609,23 @@ msgstr  "pré tâche"
 msgid   "so_thread_pool_run2: error, not enought memory to start new thread"
 msgstr  "so_thread_pool_run2 : pas assez de mémoire pour démarrer un nouveau fil d'exécution"
 
-#: src/libstoriqone/thread_pool.c:226
+#: src/libstoriqone/thread_pool.c:230
 #, c-format
 msgid   "so_thread_pool_work: starting new thread #%ld (pid: %d) to function: %p with parameter: %p"
 msgstr  "so_thread_pool_work : démarrage d'un nouveau fil d'exécution #%ld (pid : %d) vers la fonction : %p avec comme "
         "paramètre : %p"
 
-#: src/libstoriqone/thread_pool.c:246
+#: src/libstoriqone/thread_pool.c:250
 #, c-format
 msgid   "so_thread_pool_work: thread #%ld (pid: %d) is going to sleep"
 msgstr  "so_thread_pool_work : fil d'exécution #%ld (pid : %d) est mis en attente"
 
-#: src/libstoriqone/thread_pool.c:268
+#: src/libstoriqone/thread_pool.c:272
 #, c-format
 msgid   "so_thread_pool_work: restarting thread #%ld (pid: %d) to function: %p with parameter: %p"
 msgstr  "so_thread_pool_work : redémarrage du fil d'exécution #%ld (pid : %d) vers la fonction : %p avec comme paramètre : %p"
 
-#: src/libstoriqone/thread_pool.c:272
+#: src/libstoriqone/thread_pool.c:276
 #, c-format
 msgid   "so_thread_pool_work: thread #%ld is dead"
 msgstr  "so_thread_pool_work : fil d'exécution #%ld terminé"

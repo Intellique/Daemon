@@ -57,5 +57,7 @@ int so_thread_pool_run(const char * thread_name, so_thread_pool_f callback, void
  */
 int so_thread_pool_run2(const char * thread_name, so_thread_pool_f callback, void * arg, int nice);
 
+void so_thread_pool_set_name(const char * name);
+
 #endif
 
