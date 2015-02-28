@@ -891,7 +891,10 @@ static int so_value_unpack_inner(struct so_value * value, const char ** format, 
 	if (value == NULL)
 		return 0;
 
-	switch (**format) {
+	char f = **format;
+	(*format)++;
+
+	switch (f) {
 		case 'b':
 			if (value->type == so_value_boolean) {
 				bool * val = va_arg(params, bool *);
@@ -960,8 +963,6 @@ static int so_value_unpack_inner(struct so_value * value, const char ** format, 
 			break;
 
 		case '[': {
-				(*format)++;
-
 				int ret = 0;
 				struct so_value_iterator * iter = so_value_list_get_iterator(value);
 				while (**format != ']') {
@@ -970,7 +971,6 @@ static int so_value_unpack_inner(struct so_value * value, const char ** format, 
 
 					struct so_value * elt = so_value_iterator_get_value(iter, false);
 					ret += so_value_unpack_inner(elt, format, params);
-					(*format)++;
 				}
 				so_value_iterator_free(iter);
 
@@ -979,8 +979,6 @@ static int so_value_unpack_inner(struct so_value * value, const char ** format, 
 			}
 
 		case '{': {
-				(*format)++;
-
 				int ret = 0;
 				while (**format != '}') {
 					struct so_value * key = so_value_pack_inner(format, params);
@@ -995,8 +993,6 @@ static int so_value_unpack_inner(struct so_value * value, const char ** format, 
 					ret += so_value_unpack_inner(child, format, params);
 
 					so_value_free(key);
-
-					(*format)++;
 				}
 
 				(*format)++;
@@ -1026,7 +1022,10 @@ static bool so_value_valid_inner(struct so_value * value, const char ** format, 
 	if (value == NULL)
 		return false;
 
-	switch (**format) {
+	char f = **format;
+	(*format)++;
+
+	switch (f) {
 		case 'b':
 			return value->type == so_value_boolean;
 
@@ -1047,8 +1046,6 @@ static bool so_value_valid_inner(struct so_value * value, const char ** format, 
 			return value->type == so_value_string;
 
 		case '[': {
-				(*format)++;
-
 				bool ok = true;
 				struct so_value_iterator * iter = so_value_list_get_iterator(value);
 				while (ok && **format != ']') {
@@ -1058,7 +1055,6 @@ static bool so_value_valid_inner(struct so_value * value, const char ** format, 
 
 					struct so_value * elt = so_value_iterator_get_value(iter, false);
 					ok = so_value_valid_inner(elt, format, params);
-					(*format)++;
 				}
 				so_value_iterator_free(iter);
 
@@ -1083,8 +1079,6 @@ static bool so_value_valid_inner(struct so_value * value, const char ** format, 
 					ok = so_value_valid_inner(child, format, params);
 
 					so_value_free(key);
-
-					(*format)++;
 				}
 
 				(*format)++;

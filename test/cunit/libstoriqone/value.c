@@ -46,6 +46,7 @@ static void test_libstoriqone_value_ref_cycle_0(void);
 static void test_libstoriqone_value_ref_cycle_1(void);
 static void test_libstoriqone_value_share_0(void);
 static void test_libstoriqone_value_unpack_0(void);
+static void test_libstoriqone_value_unpack_1(void);
 
 static struct {
 	void (*function)(void);
@@ -66,6 +67,7 @@ static struct {
 	{ test_libstoriqone_value_share_0, "libstoriqone: value share: #0" },
 
 	{ test_libstoriqone_value_unpack_0, "libstoriqone: value unpack: #0" },
+	{ test_libstoriqone_value_unpack_1, "libstoriqone: value unpack: #1" },
 
 	{ 0, 0 },
 };
@@ -246,6 +248,21 @@ void test_libstoriqone_value_unpack_0() {
 	CU_ASSERT_STRING_EQUAL(value, "bar");
 
 	free(value);
+	so_value_free(pack);
+}
+
+static void test_libstoriqone_value_unpack_1() {
+	struct so_value * pack = so_value_pack("{s{si}sb}", "foo", "bar", 5L, "baz", false);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(pack);
+
+	long i = 0;
+	bool baz = true;
+	int ret = so_value_unpack(pack, "{s{si}sb}", "foo", "bar", &i, "baz", &baz);
+
+	CU_ASSERT_EQUAL(ret, 2);
+	CU_ASSERT_EQUAL(i, 5);
+	CU_ASSERT_EQUAL(baz, false);
+
 	so_value_free(pack);
 }
 
