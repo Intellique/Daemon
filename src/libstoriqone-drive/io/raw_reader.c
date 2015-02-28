@@ -28,9 +28,9 @@
 #include <errno.h>
 // free
 #include <stdlib.h>
-// recv
+// send
 #include <sys/socket.h>
-// recv
+// send
 #include <sys/types.h>
 // close
 #include <unistd.h>

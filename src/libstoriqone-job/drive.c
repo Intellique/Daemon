@@ -210,7 +210,7 @@ static struct so_stream_writer * soj_drive_get_raw_writer(struct so_drive * driv
 		return NULL;
 	}
 
-	struct so_stream_writer * writer = soj_stream_new_writer(drive, self->fd, response);
+	struct so_stream_writer * writer = soj_stream_new_writer(drive, response);
 	so_value_free(response);
 	return writer;
 }
@@ -247,7 +247,7 @@ static struct so_format_reader * soj_drive_get_reader(struct so_drive * drive, i
 		return NULL;
 	}
 
-	struct so_format_reader * reader = soj_format_new_reader(drive, self->fd, response);
+	struct so_format_reader * reader = soj_format_new_reader(drive, response);
 	so_value_free(response);
 	return reader;
 }

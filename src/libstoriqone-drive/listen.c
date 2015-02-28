@@ -76,14 +76,6 @@ static void sodr_socket_command_get_reader(struct sodr_peer * peer, struct so_va
 static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_sync(struct sodr_peer * peer, struct so_value * request, int fd);
 
-static void sodr_socket_command_format_reader_close(struct sodr_peer * peer, struct so_value * request, int fd);
-static void sodr_socket_command_format_reader_end_of_file(struct sodr_peer * peer, struct so_value * request, int fd);
-static void sodr_socket_command_format_reader_get_header(struct sodr_peer * peer, struct so_value * request, int fd);
-static void sodr_socket_command_format_reader_position(struct sodr_peer * peer, struct so_value * request, int fd);
-static void sodr_socket_command_format_reader_read(struct sodr_peer * peer, struct so_value * request, int fd);
-static void sodr_socket_command_format_reader_read_to_end_of_data(struct sodr_peer * peer, struct so_value * request, int fd);
-static void sodr_socket_command_format_reader_skip_file(struct sodr_peer * peer, struct so_value * request, int fd);
-
 static struct sodr_socket_command {
 	unsigned long hash;
 	char * name;
@@ -98,14 +90,6 @@ static struct sodr_socket_command {
 	{ 0, "get reader",           sodr_socket_command_get_reader },
 	{ 0, "get writer",           sodr_socket_command_get_writer },
 	{ 0, "sync",                 sodr_socket_command_sync },
-
-	{ 0, "format reader: close",               sodr_socket_command_format_reader_close },
-	{ 0, "format reader: end of file",         sodr_socket_command_format_reader_end_of_file },
-	{ 0, "format reader: get header",          sodr_socket_command_format_reader_get_header },
-	{ 0, "format reader: position",            sodr_socket_command_format_reader_position },
-	{ 0, "format reader: read",                sodr_socket_command_format_reader_read },
-	{ 0, "format reader: read to end of data", sodr_socket_command_format_reader_read_to_end_of_data },
-	{ 0, "format reader: skip file",           sodr_socket_command_format_reader_skip_file },
 
 	{ 0, NULL, NULL }
 };
@@ -478,22 +462,32 @@ static void sodr_socket_command_get_reader(struct sodr_peer * peer, struct so_va
 
 	peer->format_reader = drive->ops->get_reader(position, checksums, sodr_db);
 
-	peer->buffer_length = peer->format_reader->ops->get_block_size(peer->format_reader);
+	peer->buffer_length = 16384;
 	peer->buffer = malloc(peer->buffer_length);
 
-	struct so_value * tmp_config = so_value_copy(sodr_config, true);
-	int tmp_socket = so_socket_server_temp(tmp_config);
+	struct so_value * socket_cmd_config = so_value_copy(sodr_config, true);
+	struct so_value * socket_data_config = so_value_copy(sodr_config, true);
 
-	struct so_value * response = so_value_pack("{sbsOsi}",
+	int cmd_socket = so_socket_server_temp(socket_cmd_config);
+	int data_socket = so_socket_server_temp(socket_data_config);
+
+	struct so_value * response = so_value_pack("{sbs{sOsO}si}",
 		"status", true,
-		"socket", tmp_config,
-		"block size", peer->buffer_length
+		"socket",
+			"command", socket_cmd_config,
+			"data", socket_data_config,
+		"block size", peer->format_reader->ops->get_block_size(peer->format_reader)
 	);
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);
 
-	peer->fd_data = so_socket_accept_and_close(tmp_socket, tmp_config);
-	so_value_free(tmp_config);
+	peer->fd_cmd = so_socket_accept_and_close(cmd_socket, socket_cmd_config);
+	peer->fd_data = so_socket_accept_and_close(data_socket, socket_data_config);
+
+	so_value_free(socket_cmd_config);
+	so_value_free(socket_data_config);
+
+	so_thread_pool_run("format reader", sodr_io_format_reader, peer);
 }
 
 static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_value * request, int fd) {
@@ -573,155 +567,5 @@ static void sodr_socket_command_sync(struct sodr_peer * peer __attribute__((unus
 	struct so_value * response = so_value_pack("{so}", "returned", so_drive_convert(dr, true));
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);
-}
-
-
-static void sodr_socket_command_format_reader_close(struct sodr_peer * peer, struct so_value * request __attribute__((unused)), int fd) {
-	if (peer->format_reader == NULL) {
-		struct so_value * response = so_value_pack("{si}", "returned", -1L);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-	} else {
-		long int failed = peer->format_reader->ops->close(peer->format_reader);
-		long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
-
-		struct so_value * response = so_value_pack("{sisi}", "returned", failed, "last errno", last_errno);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-	}
-}
-
-static void sodr_socket_command_format_reader_end_of_file(struct sodr_peer * peer, struct so_value * request __attribute__((unused)), int fd) {
-	if (peer->format_reader == NULL) {
-		struct so_value * response = so_value_pack("{sb}", "returned", true);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-	} else {
-		bool eof = peer->format_reader->ops->end_of_file(peer->format_reader);
-		long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
-
-		struct so_value * response = so_value_pack("{sbsi}", "returned", eof, "last errno", last_errno);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-	}
-}
-
-static void sodr_socket_command_format_reader_get_header(struct sodr_peer * peer, struct so_value * request __attribute__((unused)), int fd) {
-	if (peer->format_reader == NULL) {
-		struct so_value * response = so_value_pack("{si}", "returned", -1L);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-	} else {
-		struct so_format_file file;
-		so_format_file_init(&file);
-
-		enum so_format_reader_header_status status = peer->format_reader->ops->get_header(peer->format_reader, &file);
-		long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
-
-		struct so_value * response = so_value_pack("{s{siso}si}",
-			"returned",
-				"status", (long) status,
-				"file", so_format_file_convert(&file),
-			"last errno", last_errno
-		);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-
-		so_format_file_free(&file);
-	}
-}
-
-static void sodr_socket_command_format_reader_position(struct sodr_peer * peer, struct so_value * request __attribute__((unused)), int fd) {
-	if (peer->format_reader == NULL) {
-		struct so_value * response = so_value_pack("{si}", "returned", -1L);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-	} else {
-		struct so_format_file file;
-		so_format_file_init(&file);
-
-		ssize_t new_position = peer->format_reader->ops->position(peer->format_reader);
-		long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
-
-		struct so_value * response = so_value_pack("{sisi}",
-			"returned", new_position,
-			"last errno", last_errno
-		);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-	}
-}
-
-static void sodr_socket_command_format_reader_read(struct sodr_peer * peer, struct so_value * request, int fd) {
-	if (peer->format_reader == NULL) {
-		struct so_value * response = so_value_pack("{si}", "returned", -1);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-	} else {
-		ssize_t length = 0;
-		so_value_unpack(request, "{s{si}}", "params", "length", &length);
-
-		ssize_t nb_total_read = 0;
-		while (nb_total_read < length) {
-			ssize_t nb_will_read = length - nb_total_read;
-			if (nb_will_read > peer->buffer_length)
-				nb_will_read = peer->buffer_length;
-
-			ssize_t nb_read = peer->format_reader->ops->read(peer->format_reader, peer->buffer, nb_will_read);
-			if (nb_read < 0) {
-				long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
-				struct so_value * response = so_value_pack("{sisi}", "returned", -1L, "last errno", (long) last_errno);
-				so_json_encode_to_fd(response, fd, true);
-				so_value_free(response);
-				return;
-			}
-			if (nb_read == 0)
-				break;
-
-			nb_total_read += nb_read;
-
-			send(peer->fd_data, peer->buffer, nb_read, 0);
-		}
-
-		struct so_value * response = so_value_pack("{sisi}", "returned", nb_total_read, "last errno", 0L);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-	}
-}
-
-static void sodr_socket_command_format_reader_read_to_end_of_data(struct sodr_peer * peer, struct so_value * request __attribute__((unused)), int fd) {
-	if (peer->format_reader == NULL) {
-		struct so_value * response = so_value_pack("{si}", "returned", -1L);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-	} else {
-		ssize_t new_position = peer->format_reader->ops->read_to_end_of_data(peer->format_reader);
-		long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
-
-		struct so_value * response = so_value_pack("{sisi}",
-			"returned", new_position,
-			"last errno", last_errno
-		);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-	}
-}
-
-static void sodr_socket_command_format_reader_skip_file(struct sodr_peer * peer, struct so_value * request __attribute__((unused)), int fd) {
-	if (peer->format_reader == NULL) {
-		struct so_value * response = so_value_pack("{si}", "returned", -1L);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-	} else {
-		enum so_format_reader_header_status status = peer->format_reader->ops->skip_file(peer->format_reader);
-		long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
-
-		struct so_value * response = so_value_pack("{sisi}",
-			"returned", (long) status,
-			"last errno", last_errno
-		);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-	}
 }
 
