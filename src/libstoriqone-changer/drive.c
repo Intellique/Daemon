@@ -156,6 +156,13 @@ void sochgr_drive_register(struct so_drive * drive, struct so_value * config, co
 	struct sochgr_drive * self = malloc(sizeof(struct sochgr_drive));
 	bzero(self, sizeof(struct sochgr_drive));
 
+	/**
+	 * valgrind
+	 * valgrind -v --log-file=valgrind.log --num-callers=24 --leak-check=full --show-reachable=yes --track-origins=yes ./bin/stoned
+	 * const char * params[] = { "-v", "--log-file=valgrind.log", "--num-callers=24", "--leak-check=full", "--show-reachable=yes", "--track-origins=yes", process_name };
+	 * so_process_new(&self->process, "valgrind", params, 7);
+	 */
+
 	so_process_new(&self->process, process_name, NULL, 0);
 	self->fd_in = so_process_pipe_to(&self->process);
 	self->fd_out = so_process_pipe_from(&self->process, so_process_stdout);

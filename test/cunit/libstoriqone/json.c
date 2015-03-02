@@ -38,12 +38,19 @@
 #include <libstoriqone/json.h>
 #include <libstoriqone/value.h>
 
+static void test_libstoriqone_json_encode_to_string_0(void);
+static void test_libstoriqone_json_encode_to_string_1(void);
+static void test_libstoriqone_json_encode_to_string_2(void);
 static void test_libstoriqone_json_parse_string_0(void);
 
 static struct {
 	void (*function)(void);
 	char * name;
 } test_functions[] = {
+	{ test_libstoriqone_json_encode_to_string_0, "libstoriqone: json encode string: #0" },
+	{ test_libstoriqone_json_encode_to_string_1, "libstoriqone: json encode string: #1" },
+	{ test_libstoriqone_json_encode_to_string_2, "libstoriqone: json encode string: #2" },
+
     { test_libstoriqone_json_parse_string_0, "libstoriqone: json parse string: #0" },
 
 	{ 0, 0 },
@@ -66,6 +73,45 @@ void test_libstoriqone_json_add_suite() {
 			_exit(3);
 		}
 	}
+}
+
+static void test_libstoriqone_json_encode_to_string_0() {
+	struct so_value * boolean = so_value_new_boolean(true);
+	CU_ASSERT_EQUAL(boolean->shared, 1);
+
+	char * string = so_json_encode_to_string(boolean);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(string);
+	CU_ASSERT_EQUAL(boolean->shared, 1);
+
+	free(string);
+
+	so_value_free(boolean);
+}
+
+static void test_libstoriqone_json_encode_to_string_1() {
+	struct so_value * list = so_value_pack("[bb]", false, true);
+	CU_ASSERT_EQUAL(list->shared, 1);
+
+	char * string = so_json_encode_to_string(list);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(string);
+	CU_ASSERT_EQUAL(list->shared, 1);
+
+	free(string);
+
+	so_value_free(list);
+}
+
+static void test_libstoriqone_json_encode_to_string_2() {
+	struct so_value * object = so_value_pack("{sb}", "foo", true);
+	CU_ASSERT_EQUAL(object->shared, 1);
+
+	char * string = so_json_encode_to_string(object);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(string);
+	CU_ASSERT_EQUAL(object->shared, 1);
+
+	free(string);
+
+	so_value_free(object);
 }
 
 static void test_libstoriqone_json_parse_string_0() {

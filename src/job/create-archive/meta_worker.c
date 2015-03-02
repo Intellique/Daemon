@@ -96,7 +96,7 @@ static void soj_create_archive_meta_worker_do(void * arg) {
 	meta_worker_do = true;
 	files = so_value_new_hashtable2();
 
-	while (!meta_worker_stop) {
+	for (;;) {
 		pthread_mutex_lock(&lock);
 		if (meta_worker_stop && file_first == NULL)
 			break;

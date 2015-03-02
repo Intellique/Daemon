@@ -156,6 +156,8 @@ static void test_libstoriqone_value_hashtable_put_0() {
 	so_value_hashtable_put2(hash, "foo", so_value_new_boolean(false), true);
 	nb_elts = so_value_hashtable_get_length(hash);
 	CU_ASSERT_EQUAL(nb_elts, 2);
+
+	so_value_free(hash);
 }
 
 static void test_libstoriqone_value_list_slice_0() {
