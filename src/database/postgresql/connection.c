@@ -1735,6 +1735,7 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 			if (!PQgetisnull(result, 0, 4)) {
 				so_database_postgresql_get_string_dup(result, 0, 4, &pool_id);
 				so_value_hashtable_put2(db, "pool id", so_value_new_string(pool_id), true);
+				free(pool_id);
 			}
 		}
 

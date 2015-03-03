@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-02-28 23:37+0100\n"
+        "POT-Creation-Date: 2015-03-03 20:07+0100\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -16,47 +16,47 @@ msgstr  "Project-Id-Version: libstoriqone-drive v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/libstoriqone-drive/listen.c:191
+#: src/libstoriqone-drive/listen.c:195
 #, c-format
 msgid   "[%s %s #%u]: checking header of media (%s)"
 msgstr  "[%s %s #%u] : vérification de l’entête du média (%s)"
 
-#: src/libstoriqone-drive/listen.c:243
+#: src/libstoriqone-drive/listen.c:247
 #, c-format
 msgid   "[%s %s #%u]: looking for best block size for media (%s)"
 msgstr  "[%s %s #%u] : recherche de la meilleur taille de bloc pour le média (%s)"
 
-#: src/libstoriqone-drive/listen.c:254
+#: src/libstoriqone-drive/listen.c:258
 #, c-format
 msgid   "[%s %s #%u]: block size found for media (%s): %s"
 msgstr  "[%s %s #%u] : taille de bloc trouvée pour le média (%s) : %s"
 
-#: src/libstoriqone-drive/listen.c:256
+#: src/libstoriqone-drive/listen.c:260
 #, c-format
 msgid   "[%s %s #%u]: failed to find best block size (%s)"
 msgstr  "[%s %s #%u] : échec lors de la recherche de la meilleur taille de bloc (%s)"
 
-#: src/libstoriqone-drive/listen.c:279
+#: src/libstoriqone-drive/listen.c:283
 #, c-format
 msgid   "[%s %s #%u]: formatting media (%s)"
 msgstr  "[%s %s #%u] : formatage du média (%s)"
 
-#: src/libstoriqone-drive/listen.c:287
+#: src/libstoriqone-drive/listen.c:291
 #, c-format
 msgid   "[%s %s #%u]: media (%s) formatted with success"
 msgstr  "[%s %s #%u] : formatage du média (%s) a réussi"
 
-#: src/libstoriqone-drive/listen.c:289
+#: src/libstoriqone-drive/listen.c:293
 #, c-format
 msgid   "[%s %s #%u]: failed to format media (%s)"
 msgstr  "[%s %s #%u] : échec du formatage du média (%s)"
 
-#: src/libstoriqone-drive/listen.c:331 src/libstoriqone-drive/listen.c:461
+#: src/libstoriqone-drive/listen.c:335 src/libstoriqone-drive/listen.c:465
 #, c-format
 msgid   "[%s %s #%u]: open media (%s) for reading at position #%ld"
 msgstr  "[%s %s #%u] : ouverture du média (%s) en lecture à la position #%ld"
 
-#: src/libstoriqone-drive/listen.c:392 src/libstoriqone-drive/listen.c:527
+#: src/libstoriqone-drive/listen.c:396 src/libstoriqone-drive/listen.c:531
 #, c-format
 msgid   "[%s %s #%u]: open media (%s) for writing"
 msgstr  "[%s %s #%u] : ouverture du média (%s) en écriture"

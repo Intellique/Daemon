@@ -192,6 +192,8 @@ static int sodr_vtl_drive_format_media(struct so_pool * pool, struct so_database
 	close(fd);
 	sodr_time_stop(&sodr_vtl_drive);
 
+	free(header);
+
 	media->write_count++;
 	media->operation_count++;
 

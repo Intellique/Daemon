@@ -153,6 +153,8 @@ static void sodr_socket_message(int fd, short event, void * data) {
 	}
 
 	const unsigned long hash = so_string_compute_hash2(command);
+	free(command);
+
 	unsigned int i;
 	for (i = 0; commands[i].name != NULL; i++)
 		if (hash == commands[i].hash) {
@@ -179,6 +181,8 @@ static void sodr_socket_command_check_header(struct sodr_peer * peer __attribute
 		so_value_free(response);
 		return;
 	}
+
+	free(job_key);
 
 	struct so_drive_driver * driver = sodr_drive_get();
 	struct so_drive * drive = driver->device;

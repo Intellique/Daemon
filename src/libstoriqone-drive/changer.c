@@ -85,6 +85,8 @@ static void sodr_changer_process(int fd, short event __attribute__((unused)), vo
 	}
 
 	const unsigned long hash = so_string_compute_hash2(command);
+	free(command);
+
 	unsigned int i;
 	for (i = 0; commands[i].name != NULL; i++)
 		if (hash == commands[i].hash) {

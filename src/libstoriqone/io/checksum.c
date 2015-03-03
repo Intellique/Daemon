@@ -122,8 +122,10 @@ static void so_io_stream_checksum_backend_free(struct so_io_stream_checksum_back
 		struct so_checksum * ck = self->checksums[i];
 		ck->ops->free(ck);
 	}
+	free(self->checksums);
 	so_value_free(self->digests);
 	free(self);
+	free(worker);
 }
 
 struct so_io_stream_checksum_backend * so_io_stream_checksum_backend_new(struct so_value * checksums) {
@@ -143,6 +145,7 @@ struct so_io_stream_checksum_backend * so_io_stream_checksum_backend_new(struct 
 		struct so_checksum_driver * driver = so_checksum_get_driver(so_value_string_get(chcksum));
 		self->checksums[i] = driver->new_checksum();
 	}
+	so_value_iterator_free(iter);
 
 	struct so_io_stream_checksum_backend * backend = malloc(sizeof(struct so_io_stream_checksum_backend));
 	backend->ops = &so_io_stream_checksum_backend_ops;
