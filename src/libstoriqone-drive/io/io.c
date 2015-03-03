@@ -26,8 +26,8 @@
 
 // poll
 #include <poll.h>
-// NULL
-#include <stddef.h>
+// free
+#include <stdlib.h>
 
 #include <libstoriqone/json.h>
 #include <libstoriqone/string.h>
@@ -60,6 +60,8 @@ void sodr_io_process(struct sodr_peer * peer, struct sodr_command commands[]) {
 		}
 
 		const unsigned long hash = so_string_compute_hash2(command);
+		free(command);
+
 		unsigned int i;
 		for (i = 0; commands[i].name != NULL; i++)
 			if (hash == commands[i].hash) {
