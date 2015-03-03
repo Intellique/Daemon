@@ -98,7 +98,7 @@ int so_socket_unix(struct so_value * config) {
 int so_socket_unix_accept_and_close(int fd, struct so_value * config) {
 	struct sockaddr_un new_addr;
 	bzero(&new_addr, sizeof(new_addr));
-	socklen_t length;
+	socklen_t length = 0;
 	int new_fd = accept(fd, (struct sockaddr *) &new_addr, &length);
 
 	so_socket_unix_close(fd, config);
