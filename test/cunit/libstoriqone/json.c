@@ -41,6 +41,7 @@
 static void test_libstoriqone_json_encode_to_string_0(void);
 static void test_libstoriqone_json_encode_to_string_1(void);
 static void test_libstoriqone_json_encode_to_string_2(void);
+static void test_libstoriqone_json_encode_to_string_3(void);
 static void test_libstoriqone_json_parse_string_0(void);
 
 static struct {
@@ -50,8 +51,9 @@ static struct {
 	{ test_libstoriqone_json_encode_to_string_0, "libstoriqone: json encode string: #0" },
 	{ test_libstoriqone_json_encode_to_string_1, "libstoriqone: json encode string: #1" },
 	{ test_libstoriqone_json_encode_to_string_2, "libstoriqone: json encode string: #2" },
+	{ test_libstoriqone_json_encode_to_string_3, "libstoriqone: json encode string: #3" },
 
-    { test_libstoriqone_json_parse_string_0, "libstoriqone: json parse string: #0" },
+	{ test_libstoriqone_json_parse_string_0, "libstoriqone: json parse string: #0" },
 
 	{ 0, 0 },
 };
@@ -80,7 +82,7 @@ static void test_libstoriqone_json_encode_to_string_0() {
 	CU_ASSERT_EQUAL(boolean->shared, 1);
 
 	char * string = so_json_encode_to_string(boolean);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(string);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(string);
 	CU_ASSERT_EQUAL(boolean->shared, 1);
 
 	free(string);
@@ -93,7 +95,7 @@ static void test_libstoriqone_json_encode_to_string_1() {
 	CU_ASSERT_EQUAL(list->shared, 1);
 
 	char * string = so_json_encode_to_string(list);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(string);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(string);
 	CU_ASSERT_EQUAL(list->shared, 1);
 
 	free(string);
@@ -106,7 +108,25 @@ static void test_libstoriqone_json_encode_to_string_2() {
 	CU_ASSERT_EQUAL(object->shared, 1);
 
 	char * string = so_json_encode_to_string(object);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(string);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(string);
+	CU_ASSERT_EQUAL(object->shared, 1);
+
+	free(string);
+
+	so_value_free(object);
+}
+
+static void test_libstoriqone_json_encode_to_string_3() {
+	struct so_value * object = so_value_pack("{sisisisi}",
+		"returned", 1024L,
+		"last errno", 0L,
+		"position", 0L,
+		"available size", 1024L
+	);
+	CU_ASSERT_EQUAL(object->shared, 1);
+
+	char * string = so_json_encode_to_string(object);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(string);
 	CU_ASSERT_EQUAL(object->shared, 1);
 
 	free(string);
@@ -117,7 +137,7 @@ static void test_libstoriqone_json_encode_to_string_2() {
 static void test_libstoriqone_json_parse_string_0() {
 	static const char * json = "{\"density code\":1,\"foo\":\"bar\"}";
 	struct so_value * value = so_json_parse_string(json);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(value);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(value);
 	so_value_free(value);
 }
 

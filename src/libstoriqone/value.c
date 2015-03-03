@@ -739,7 +739,7 @@ struct so_value * so_value_new_hashtable2() {
 static struct so_value * so_value_new_hashtable3(so_value_hashtable_compupte_hash_f compute_hash, bool weak_ref) {
 	struct so_value * val = so_value_new(so_value_hashtable, sizeof(struct so_value_hashtable));
 	struct so_value_hashtable * hashtable = so_value_get(val);
-	hashtable->nodes = calloc(16, sizeof(struct so_value_hashtable_node));
+	hashtable->nodes = calloc(16, sizeof(struct so_value_hashtable_node *));
 	hashtable->nb_elements = 0;
 	hashtable->size_node = 16;
 	hashtable->allow_rehash = true;
@@ -1216,8 +1216,8 @@ static struct so_value_iterator * so_value_hashtable_get_iterator2(struct so_val
 	iter_hash->node = NULL;
 	iter_hash->i_elements = 0;
 
-	while (iter_hash->i_elements <= value_hash->size_node && iter_hash->node == NULL)
-		iter_hash->node = value_hash->nodes[iter_hash->i_elements++];
+	for (; iter_hash->i_elements < value_hash->size_node && iter_hash->node == NULL; iter_hash->i_elements++)
+		iter_hash->node = value_hash->nodes[iter_hash->i_elements];
 
 	return iter;
 }
@@ -1357,6 +1357,8 @@ static void so_value_hashtable_rehash(struct so_value_hashtable * hashtable) {
 			so_value_hashtable_put_inner(hashtable, h, current_node);
 		}
 	}
+
+	free(old_nodes);
 }
 
 static void so_value_hashtable_release_node(struct so_value_hashtable_node * node, bool weak_ref) {
@@ -1969,8 +1971,8 @@ struct so_value * so_value_iterator_get_value(struct so_value_iterator * iter, b
 				if (iter_hash->node != NULL)
 					break;
 
-				while (iter_hash->i_elements <= hash->size_node && iter_hash->node == NULL)
-					iter_hash->node = hash->nodes[iter_hash->i_elements++];
+				for (; iter_hash->i_elements < hash->size_node && iter_hash->node == NULL; iter_hash->i_elements++)
+					iter_hash->node = hash->nodes[iter_hash->i_elements];
 			}
 			break;
 
