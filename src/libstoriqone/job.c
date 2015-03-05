@@ -97,10 +97,11 @@ int so_job_add_record(struct so_job * job, struct so_database_connection * db_co
 }
 
 struct so_value * so_job_convert(struct so_job * job) {
-	return so_value_pack("{sssssssisisisisfsssisb}",
+	return so_value_pack("{sssssssssisisisisfsssisb}",
 		"id", job->key,
 		"name", job->name,
 		"type", job->type,
+		"user", job->user,
 
 		"next start", job->next_start,
 		"interval", job->interval,
@@ -122,6 +123,7 @@ void so_job_free(struct so_job * job) {
 	free(job->key);
 	free(job->name);
 	free(job->type);
+	free(job->user);
 	so_value_free(job->meta);
 	so_value_free(job->option);
 	so_value_free(job->db_data);
@@ -206,16 +208,18 @@ void so_job_sync(struct so_job * job, struct so_value * new_job) {
 	free(job->key);
 	free(job->name);
 	free(job->type);
+	free(job->user);
 	job->key = job->name = job->type = NULL;
 
 	char * status = NULL;
 	double done = 0;
 	long int exit_code = 0;
 
-	so_value_unpack(new_job, "{sssssssisisisisfsssisb}",
+	so_value_unpack(new_job, "{sssssssssisisisisfsssisb}",
 		"id", &job->key,
 		"name", &job->name,
 		"type", &job->type,
+		"user", &job->user,
 
 		"next start", &job->next_start,
 		"interval", &job->interval,

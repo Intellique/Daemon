@@ -67,6 +67,9 @@ struct so_archive {
 	struct so_archive_volume * volumes;
 	unsigned int nb_volumes;
 
+	char * creator;
+	char * owner;
+
 	struct so_value * db_data;
 };
 
@@ -126,6 +129,7 @@ struct so_archive_volume * so_archive_add_volume(struct so_archive * archive);
 void so_archive_free(struct so_archive * archive);
 struct so_archive * so_archive_new(void);
 
+enum so_archive_file_type so_archive_file_mode_to_type(mode_t mode);
 enum so_archive_file_type so_archive_file_string_to_type(const char * type, bool translate);
 const char * so_archive_file_type_to_string(enum so_archive_file_type type, bool translate);
 

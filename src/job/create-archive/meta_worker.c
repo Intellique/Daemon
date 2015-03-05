@@ -46,6 +46,7 @@
 #include <unistd.h>
 
 #include <libstoriqone/archive.h>
+#include <libstoriqone/file.h>
 #include <libstoriqone/io.h>
 #include <libstoriqone/thread_pool.h>
 #include <libstoriqone/value.h>
@@ -136,12 +137,12 @@ static void soj_create_archive_meta_worker_do2(const char * filename, struct so_
 	bzero(file, sizeof(struct so_archive_file));
 
 	file->name = strdup(filename);
-	file->perm = st.st_mode;
-	// file->type
+	file->perm = st.st_mode & 07777;
+	file->type = so_archive_file_mode_to_type(st.st_mode);
 	file->ownerid = st.st_uid;
-	// file->owner
+	file->owner = so_file_uid2name(st.st_uid);
 	file->groupid = st.st_gid;
-	// file->group
+	file->group = so_file_gid2name(st.st_gid);
 
 	file->create_time = st.st_ctime;
 	file->modify_time = st.st_mtime;
@@ -176,7 +177,8 @@ static void soj_create_archive_meta_worker_do2(const char * filename, struct so_
 		file->digests = so_io_checksum_writer_get_checksums(writer);
 
 		writer->ops->free(writer);
-	}
+	} else
+		file->digests = NULL;
 
 	so_value_hashtable_put2(files, filename, so_value_new_custom(file, NULL), true);
 }

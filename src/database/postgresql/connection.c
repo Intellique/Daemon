@@ -41,6 +41,7 @@
 // uname
 #include <sys/utsname.h>
 
+#include <libstoriqone/archive.h>
 #include <libstoriqone/backup.h>
 #include <libstoriqone/changer.h>
 #include <libstoriqone/checksum.h>
@@ -110,6 +111,10 @@ static bool so_database_postgresql_find_plugin_checksum(struct so_database_conne
 static int so_database_postgresql_sync_plugin_checksum(struct so_database_connection * connect, struct so_checksum_driver * driver);
 static int so_database_postgresql_sync_plugin_job(struct so_database_connection * connect, const char * job);
 
+static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive);
+static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, struct so_archive_file * file, char ** file_id);
+static int so_database_postgresql_sync_archive_volume(struct so_database_connection * connect, char * archive_id, struct so_archive_volume * volume);
+
 static int so_database_postgresql_backup_add(struct so_database_connection * connect, struct so_backup * backup);
 static struct so_backup * so_database_postgresql_get_backup(struct so_database_connection * connect, struct so_job * job);
 static int so_database_postgresql_mark_backup_volume_checked(struct so_database_connection * connect, struct so_backup_volume * volume);
@@ -159,6 +164,8 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.find_plugin_checksum = so_database_postgresql_find_plugin_checksum,
 	.sync_plugin_checksum = so_database_postgresql_sync_plugin_checksum,
 	.sync_plugin_job      = so_database_postgresql_sync_plugin_job,
+
+	.sync_archive = so_database_postgresql_sync_archive,
 
 	.backup_add                 = so_database_postgresql_backup_add,
 	.get_backup                 = so_database_postgresql_get_backup,
@@ -2282,7 +2289,7 @@ static int so_database_postgresql_sync_jobs(struct so_database_connection * conn
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_scheduled_jobs";
-	so_database_postgresql_prepare(self, query, "SELECT j.id, j.name, jt.name, nextstart, interval, repetition, metadata, options, COALESCE(MAX(jr.numrun) + 1, 1) FROM job j INNER JOIN jobtype jt ON j.type = jt.id LEFT JOIN jobrun jr ON j.id = jr.job WHERE j.status = 'scheduled' AND host = $1 GROUP BY j.id, j.name, jt.name, nextstart, interval, repetition, metadata::TEXT, options::TEXT");
+	so_database_postgresql_prepare(self, query, "SELECT j.id, j.name, jt.name, nextstart, interval, repetition, u.login, metadata, options, COALESCE(MAX(jr.numrun) + 1, 1) FROM job j INNER JOIN jobtype jt ON j.type = jt.id LEFT JOIN jobrun jr ON j.id = jr.job LEFT JOIN users u ON j.login = u.id WHERE j.status = 'scheduled' AND host = $1 GROUP BY j.id, j.name, jt.name, nextstart, interval, repetition, u.login, metadata::TEXT, options::TEXT");
 
 	const char * param[] = { host_id };
 
@@ -2310,15 +2317,16 @@ static int so_database_postgresql_sync_jobs(struct so_database_connection * conn
 				so_database_postgresql_get_string_dup(result, i, 0, &job->key);
 				so_database_postgresql_get_string_dup(result, i, 1, &job->name);
 				so_database_postgresql_get_string_dup(result, i, 2, &job->type);
-				job->meta = so_json_parse_string(PQgetvalue(result, i, 6));
-				job->option = so_json_parse_string(PQgetvalue(result, i, 7));
+				so_database_postgresql_get_string_dup(result, i, 6, &job->user);
+				job->meta = so_json_parse_string(PQgetvalue(result, i, 7));
+				job->option = so_json_parse_string(PQgetvalue(result, i, 8));
 			}
 
 			so_database_postgresql_get_time(result, i, 3, &job->next_start);
 			so_database_postgresql_get_long(result, i, 4, &job->interval);
 			so_database_postgresql_get_long(result, i, 5, &job->repetition);
 			job->status = so_job_status_scheduled;
-			so_database_postgresql_get_long(result, i, 8, &job->num_runs);
+			so_database_postgresql_get_long(result, i, 9, &job->num_runs);
 
 			if (!has_job) {
 				job->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
@@ -2479,6 +2487,187 @@ static int so_database_postgresql_sync_plugin_job(struct so_database_connection 
 	PQclear(result);
 
 	return status == PGRES_FATAL_ERROR;
+}
+
+
+static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive) {
+	if (connect == NULL || archive == NULL)
+		return -1;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = NULL;
+
+	char * archive_id = NULL;
+	if (archive->db_data != NULL) {
+		db = so_value_hashtable_get(archive->db_data, key, false, false);
+		so_value_unpack(db, "{ss}", "id", &archive_id);
+	} else {
+		archive->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
+
+		db = so_value_new_hashtable2();
+		so_value_hashtable_put(archive->db_data, key, true, db, true);
+	}
+
+	if (archive == NULL) {
+		const char * query = "insert_archive";
+		so_database_postgresql_prepare(self, query, "INSERT INTO archive(uuid, name, creator, owner) VALUES ($1, $2, $3, $3) RETURNING id");
+
+		const char * param[] = { archive->uuid, archive->name, archive->creator };
+		PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			so_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK) {
+			so_database_postgresql_get_string_dup(result, 0, 0, &archive_id);
+			so_value_hashtable_put2(db, "id", so_value_new_string(archive_id), true);
+		}
+
+		PQclear(result);
+	}
+
+	if (archive_id == NULL) {
+		free(archive_id);
+		return 1;
+	}
+
+	int failed = 0;
+	unsigned int i;
+	for (i = 0; failed == 0 && i < archive->nb_volumes; i++)
+		failed = so_database_postgresql_sync_archive_volume(connect, archive_id, archive->volumes + i);
+
+	free(archive_id);
+
+	return failed;
+}
+
+static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, struct so_archive_file * file, char ** file_id) {
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = NULL;
+
+	if (file->db_data != NULL) {
+		db = so_value_hashtable_get(file->db_data, key, false, false);
+		so_value_unpack(db, "{ss}", "id", file_id);
+		so_value_free(key);
+		return 0;
+	} else {
+		file->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
+
+		db = so_value_new_hashtable2();
+		so_value_hashtable_put(file->db_data, key, true, db, true);
+	}
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+}
+
+static int so_database_postgresql_sync_archive_volume(struct so_database_connection * connect, char * archive_id, struct so_archive_volume * volume) {
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = NULL;
+
+	char * volume_id = NULL;
+	if (volume->db_data != NULL) {
+		db = so_value_hashtable_get(volume->db_data, key, false, false);
+		so_value_unpack(db, "{ss}", "id", &volume_id);
+	} else {
+		volume->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
+
+		db = so_value_new_hashtable2();
+		so_value_hashtable_put(volume->db_data, key, true, db, true);
+	}
+
+	if (volume_id == NULL) {
+		char * sequence = NULL;
+		asprintf(&sequence, "%u", volume->sequence);
+
+		const char * query = "select_archive_volume_by_archive";
+		so_database_postgresql_prepare(self, query, "SELECT id FROM archivevolume WHERE archive = $1 AND sequence = $2");
+
+		const char * param[] = { archive_id, sequence };
+		PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			so_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK) {
+			so_database_postgresql_get_string_dup(result, 0, 0, &volume_id);
+			so_value_hashtable_put2(db, "id", so_value_new_string(volume_id), true);
+			so_value_hashtable_put2(db, "archive id", so_value_new_string(archive_id), true);
+		}
+
+		PQclear(result);
+		free(sequence);
+	}
+
+	if (volume_id == NULL) {
+		so_database_postgresql_sync_media(connect, volume->media, so_database_sync_id_only);
+		struct so_value * db_media = so_value_hashtable_get(volume->media->db_data, key, false, false);
+		struct so_value * db_job = so_value_hashtable_get(volume->job->db_data, key, false, false);
+
+		char * sequence = NULL, * size = NULL, starttime[32] = "", endtime[32] = "", * media_id = NULL, * media_position = NULL, * job_run = NULL;
+		asprintf(&sequence, "%u", volume->sequence);
+		asprintf(&size, "%zd", volume->size);
+		so_time_convert(&volume->start_time, "%F %T", starttime, 32);
+		so_time_convert(&volume->end_time, "%F %T", endtime, 32);
+		so_value_unpack(db_media, "{ss}", "id", &media_id);
+		asprintf(&media_position, "%u", volume->media_position);
+		so_value_unpack(db_job, "{ss}", "jobrun id", &job_run);
+
+		const char * query = "insert_archive_volume";
+		so_database_postgresql_prepare(self, query, "INSERT INTO archivevolume(sequence, size, starttime, endtime, archive, media, mediaposition, jobrun) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id");
+
+		const char * param[] = { sequence, size, starttime, endtime, archive_id, media_id, media_position, job_run };
+		PGresult * result = PQexecPrepared(self->connect, query, 8, param, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			so_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK) {
+			so_database_postgresql_get_string_dup(result, 0, 0, &volume_id);
+			so_value_hashtable_put2(db, "id", so_value_new_string(volume_id), true);
+		}
+
+		PQclear(result);
+	}
+
+	if (volume_id != NULL) {
+		if (volume->digests != NULL) {
+			const char * query = "insert_archive_volume_to_checksum";
+			so_database_postgresql_prepare(self, query, "INSERT INTO archivevolumetochecksumresult VALUES ($1, $2)");
+
+			struct so_value_iterator * iter = so_value_hashtable_get_iterator(volume->digests);
+			while (so_value_iterator_has_next(iter)) {
+				struct so_value * key = so_value_iterator_get_key(iter, false, false);
+				struct so_value * value = so_value_iterator_get_value(iter, false);
+
+				const char * checksum = so_value_string_get(key);
+				const char * digest = so_value_string_get(value);
+
+				char * digest_id = NULL;
+				if (so_database_postgresql_checksumresult_add(connect, checksum, digest, &digest_id) == 0) {
+					const char * param[] = { volume_id, digest_id };
+					PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+					ExecStatusType status = PQresultStatus(result);
+
+					if (status == PGRES_FATAL_ERROR)
+						so_database_postgresql_get_error(result, query);
+
+					PQclear(result);
+				}
+
+				free(digest_id);
+			}
+			so_value_iterator_free(iter);
+		}
+
+		const char * query = "insert_archivefiletoarchivevolume";
+		so_database_postgresql_prepare(self, query, "INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile, blocknumber, archivetime) VALUES ($1, $2, $3, $4)");
+	}
+
+	return 0;
 }
 
 

@@ -34,6 +34,8 @@
 #include <sys/types.h>
 // time
 #include <time.h>
+// uuid
+#include <uuid/uuid.h>
 
 #include <libstoriqone/archive.h>
 #include <libstoriqone/database.h>
@@ -78,9 +80,10 @@ struct soj_create_archive_worker {
 static enum so_format_writer_status soj_create_archive_worker_add_file2(struct soj_create_archive_worker * worker, struct so_format_file * file);
 static int soj_create_archive_worker_change_volume(struct soj_create_archive_worker * worker);
 static int soj_create_archive_worker_close2(struct soj_create_archive_worker * worker);
+static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_create_archive_worker * worker, struct so_archive_file * file);
 static void soj_create_archive_worker_exit(void) __attribute__((destructor));
 static void soj_create_archive_worker_free(struct soj_create_archive_worker * worker);
-static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_pool * pool);
+static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_job * job, struct so_pool * pool);
 ssize_t soj_create_archive_worker_write2(struct soj_create_archive_worker * worker, struct so_format_file * file, const char * buffer, ssize_t length);
 
 static struct soj_create_archive_worker * primary_worker = NULL;
@@ -176,7 +179,7 @@ static int soj_create_archive_worker_change_volume(struct soj_create_archive_wor
 		struct so_value * vfile = so_value_hashtable_get2(files, ptr_file->path, false, false);
 
 		struct so_archive_files * new_file = last_vol->files + i;
-		new_file->file = so_value_custom_get(vfile);
+		new_file->file = soj_create_archive_worker_copy_file(worker, so_value_custom_get(vfile));
 		new_file->position = ptr_file->position;
 		new_file->archived_time = ptr_file->archived_time;
 
@@ -247,7 +250,7 @@ static int soj_create_archive_worker_close2(struct soj_create_archive_worker * w
 		struct so_value * vfile = so_value_hashtable_get2(files, ptr_file->path, false, false);
 
 		struct so_archive_files * new_file = last_vol->files + i;
-		new_file->file = so_value_custom_get(vfile);
+		new_file->file = soj_create_archive_worker_copy_file(worker, so_value_custom_get(vfile));
 		new_file->position = ptr_file->position;
 		new_file->archived_time = ptr_file->archived_time;
 
@@ -261,6 +264,49 @@ static int soj_create_archive_worker_close2(struct soj_create_archive_worker * w
 	worker->nb_files = 0;
 
 	return 0;
+}
+
+static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_create_archive_worker * worker, struct so_archive_file * file) {
+	struct so_archive_file * new_file = malloc(sizeof(struct so_archive_file));
+	bzero(new_file, sizeof(struct so_archive_file));
+
+	new_file->name = strdup(file->name);
+	new_file->perm = file->perm;
+	new_file->type = file->type;
+	new_file->ownerid = file->ownerid;
+	new_file->owner = strdup(file->owner);
+	new_file->groupid = file->groupid;
+	new_file->group = strdup(file->group);
+
+	new_file->create_time = file->create_time;
+	new_file->modify_time = file->modify_time;
+
+	new_file->check_ok = false;
+	new_file->check_time = 0;
+
+	new_file->size = file->size;
+	new_file->mime_type = strdup(file->mime_type);
+
+	if (file->digests != NULL) {
+		new_file->digests = so_value_new_hashtable2();
+
+		struct so_value_iterator * iter = so_value_list_get_iterator(worker->checksums);
+		while (so_value_iterator_has_next(iter)) {
+			struct so_value * key = so_value_iterator_get_value(iter, false);
+
+			if (!so_value_hashtable_has_key(file->digests, key))
+				continue;
+
+			struct so_value * val = so_value_hashtable_get(file->digests, key, false, false);
+			so_value_hashtable_put(new_file->digests, key, false, val, false);
+		}
+		so_value_iterator_free(iter);
+	} else
+		new_file->digests = NULL;
+
+	new_file->db_data = NULL;
+
+	return new_file;
 }
 
 ssize_t soj_create_archive_worker_end_of_file() {
@@ -290,8 +336,8 @@ static void soj_create_archive_worker_free(struct soj_create_archive_worker * wo
 	free(worker);
 }
 
-void soj_create_archive_worker_init(struct so_pool * primary_pool, struct so_value * pool_mirrors) {
-	primary_worker = soj_create_archive_worker_new(primary_pool); 
+void soj_create_archive_worker_init(struct so_job * job, struct so_pool * primary_pool, struct so_value * pool_mirrors) {
+	primary_worker = soj_create_archive_worker_new(job, primary_pool); 
 
 	unsigned int i;
 	nb_mirror_workers = so_value_list_get_length(pool_mirrors);
@@ -300,16 +346,22 @@ void soj_create_archive_worker_init(struct so_pool * primary_pool, struct so_val
 	for (i = 0; so_value_iterator_has_next(iter); i++) {
 		struct so_value * vpool = so_value_iterator_get_value(iter, false);
 		struct so_pool * pool = so_value_custom_get(vpool);
-		mirror_workers[i] = soj_create_archive_worker_new(pool);
+		mirror_workers[i] = soj_create_archive_worker_new(job, pool);
 	}
 	so_value_iterator_free(iter);
 }
 
-static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_pool * pool) {
+static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_job * job, struct so_pool * pool) {
 	struct soj_create_archive_worker * worker = malloc(sizeof(struct soj_create_archive_worker));
 	bzero(worker, sizeof(struct soj_create_archive_worker));
 
 	worker->archive = so_archive_new();
+	uuid_t uuid;
+	uuid_generate(uuid);
+	uuid_unparse_lower(uuid, worker->archive->uuid);
+	worker->archive->creator = strdup(job->user);
+	worker->archive->owner = strdup(job->user);
+
 	worker->pool = pool;
 
 	worker->total_done = 0;
@@ -428,6 +480,11 @@ void soj_create_archive_worker_reserve_medias(ssize_t archive_size, struct so_da
 			soj_media_release_all_medias(worker->pool);
 		}
 	}
+}
+
+int soj_create_archive_worker_sync_archives(struct so_database_connection * db_connect) {
+
+	return 0;
 }
 
 ssize_t soj_create_archive_worker_write(struct so_format_file * file, const char * buffer, ssize_t length) {

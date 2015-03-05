@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-02-28 22:53+0100\n"
+        "POT-Creation-Date: 2015-03-04 19:30+0100\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -16,35 +16,35 @@ msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/libstoriqone/archive.c:50
+#: src/libstoriqone/archive.c:52
 msgid   "block device"
 msgstr  "fichier spécial de type bloc"
 
-#: src/libstoriqone/archive.c:51
+#: src/libstoriqone/archive.c:53
 msgid   "character device"
 msgstr  "fichier spécial de type caractère"
 
-#: src/libstoriqone/archive.c:52
+#: src/libstoriqone/archive.c:54
 msgid   "directory"
 msgstr  "répertoire"
 
-#: src/libstoriqone/archive.c:53
+#: src/libstoriqone/archive.c:55
 msgid   "fifo"
 msgstr  "tube nommé"
 
-#: src/libstoriqone/archive.c:54
+#: src/libstoriqone/archive.c:56
 msgid   "regular file"
 msgstr  "fichier"
 
-#: src/libstoriqone/archive.c:55
+#: src/libstoriqone/archive.c:57
 msgid   "socket"
 msgstr  "socket"
 
-#: src/libstoriqone/archive.c:56
+#: src/libstoriqone/archive.c:58
 msgid   "symbolic link"
 msgstr  "lien symbolique"
 
-#: src/libstoriqone/archive.c:58
+#: src/libstoriqone/archive.c:60
 msgid   "unknown file type"
 msgstr  "type de fichier inconnu"
 

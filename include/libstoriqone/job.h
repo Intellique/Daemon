@@ -72,6 +72,8 @@ struct so_job {
 	int exit_code;
 	volatile bool stopped_by_user;
 
+	// login
+	char * user;
 	struct so_value * meta;
 	struct so_value * option;
 

@@ -100,7 +100,7 @@ static void soj_create_archive_init() {
 }
 
 static int soj_create_archive_run(struct so_job * job, struct so_database_connection * db_connect) {
-	soj_create_archive_worker_init(primary_pool, pool_mirrors);
+	soj_create_archive_worker_init(job, primary_pool, pool_mirrors);
 	soj_create_archive_worker_reserve_medias(archive_size, db_connect);
 	soj_create_archive_worker_prepare_medias(db_connect);
 
@@ -143,6 +143,8 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 	}
 
 	soj_create_archive_worker_close();
+
+	soj_create_archive_worker_sync_archives(db_connect);
 
 	return failed;
 }

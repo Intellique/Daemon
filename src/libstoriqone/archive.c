@@ -30,6 +30,8 @@
 #include <stdlib.h>
 // bzero
 #include <strings.h>
+// S_*
+#include <sys/stat.h>
 // time
 #include <time.h>
 
@@ -105,6 +107,9 @@ void so_archive_free(struct so_archive * archive) {
 	}
 	free(archive->volumes);
 
+	free(archive->creator);
+	free(archive->owner);
+
 	so_value_free(archive->db_data);
 	free(archive);
 }
@@ -116,6 +121,25 @@ struct so_archive * so_archive_new() {
 	return archive;
 }
 
+
+enum so_archive_file_type so_archive_file_mode_to_type(mode_t mode) {
+	if (S_ISBLK(mode))
+		return so_archive_file_type_block_device;
+	if (S_ISCHR(mode))
+		return so_archive_file_type_character_device;
+	if (S_ISDIR(mode))
+		return so_archive_file_type_directory;
+	if (S_ISFIFO(mode))
+		return so_archive_file_type_fifo;
+	if (S_ISREG(mode))
+		return so_archive_file_type_regular_file;
+	if (S_ISSOCK(mode))
+		return so_archive_file_type_socket;
+	if (S_ISLNK(mode))
+		return so_archive_file_type_symbolic_link;
+
+	return so_archive_file_type_unknown;
+}
 
 enum so_archive_file_type so_archive_file_string_to_type(const char * type, bool translate) {
 	if (type == NULL)
