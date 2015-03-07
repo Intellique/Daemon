@@ -121,6 +121,8 @@ static int so_database_postgresql_mark_backup_volume_checked(struct so_database_
 
 static int so_database_postgresql_checksumresult_add(struct so_database_connection * connect, const char * checksum, const char * digest, char ** digest_id);
 
+static char * so_database_postgresql_find_selected_path(struct so_database_connection * connect, const char * selected_path);
+
 static void so_database_postgresql_prepare(struct so_database_postgresql_connection_private * self, const char * statement_name, const char * query);
 
 static struct so_database_connection_ops so_database_postgresql_connection_ops = {
@@ -2560,6 +2562,39 @@ static int so_database_postgresql_sync_archive_file(struct so_database_connectio
 	}
 
 	struct so_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "insert_archive_file";
+	so_database_postgresql_prepare(self, query, "INSERT INTO archivefile(name, type, mimetype, ownerid, owner, groupid, groups, perm, ctime, mtime, size, parent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id");
+
+	char * perm = NULL, * ownerid = NULL, * groupid = NULL, create_time[32] = "", modify_time[32] = "", * size = NULL;
+	char * selected_path_id = so_database_postgresql_find_selected_path(connect, file->selected_path);
+
+	asprintf(&ownerid, "%d", file->ownerid);
+	asprintf(&groupid, "%d", file->groupid);
+	asprintf(&perm, "%d", file->perm);
+	so_time_convert(&file->create_time, "%F %T", create_time, 32);
+	so_time_convert(&file->modify_time, "%F %T", modify_time, 32);
+	asprintf(&size, "%zd", file->size);
+
+	const char * param[] = { file->name, so_archive_file_type_to_string(file->type, false), file->mime_type, ownerid, file->owner, groupid, file->group, perm, create_time, modify_time, size };
+	PGresult * result = PQexecPrepared(self->connect, query, 12, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK) {
+		so_database_postgresql_get_string_dup(result, 0, 0, file_id);
+		so_value_hashtable_put2(db, "id", so_value_new_string(*file_id), true);
+	}
+
+	PQclear(result);
+	free(selected_path_id);
+	free(size);
+	free(groupid);
+	free(ownerid);
+	free(perm);
+
+	return status != PGRES_TUPLES_OK;
 }
 
 static int so_database_postgresql_sync_archive_volume(struct so_database_connection * connect, char * archive_id, struct so_archive_volume * volume) {
@@ -2631,6 +2666,11 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 		}
 
 		PQclear(result);
+		free(job_run);
+		free(media_position);
+		free(media_id);
+		free(size);
+		free(sequence);
 	}
 
 	if (volume_id != NULL) {
@@ -2663,9 +2703,61 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 			so_value_iterator_free(iter);
 		}
 
-		const char * query = "insert_archivefiletoarchivevolume";
-		so_database_postgresql_prepare(self, query, "INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile, blocknumber, archivetime) VALUES ($1, $2, $3, $4)");
+		const char * queryA = "insert_archivefiletoarchivevolume";
+		so_database_postgresql_prepare(self, queryA, "INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile, blocknumber, archivetime) VALUES ($1, $2, $3, $4)");
+		const char * queryB = "insert_archivefile_to_checksum";
+
+		unsigned int i;
+		for (i = 0; i < volume->nb_files; i++) {
+			struct so_archive_files * ptr_file = volume->files + i;
+			struct so_archive_file * file = ptr_file->file;
+
+			char * file_id = NULL;
+			so_database_postgresql_sync_archive_file(connect, file, &file_id);
+
+			char * block_number = NULL, archive_time[32] = "";
+			asprintf(&block_number, "%zd", ptr_file->position);
+			so_time_convert(&ptr_file->archived_time, "%F %T", archive_time, 32);
+
+			const char * paramA[] = { volume_id, file_id, block_number, archive_time };
+			PGresult * resultA = PQexecPrepared(self->connect, queryA, 4, paramA, NULL, NULL, 0);
+			ExecStatusType statusA = PQresultStatus(resultA);
+
+			if (statusA == PGRES_FATAL_ERROR)
+				so_database_postgresql_get_error(resultA, queryA);
+
+			PQclear(resultA);
+			free(block_number);
+
+			struct so_value_iterator * iter = so_value_hashtable_get_iterator(file->digests);
+			while (so_value_iterator_has_next(iter)) {
+				struct so_value * key = so_value_iterator_get_key(iter, false, false);
+				struct so_value * value = so_value_iterator_get_value(iter, false);
+
+				const char * checksum = so_value_string_get(key);
+				const char * digest = so_value_string_get(value);
+
+				char * digest_id = NULL;
+				if (so_database_postgresql_checksumresult_add(connect, checksum, digest, &digest_id) == 0) {
+					const char * param[] = { file_id, digest_id };
+					PGresult * result = PQexecPrepared(self->connect, queryB, 2, param, NULL, NULL, 0);
+					ExecStatusType status = PQresultStatus(result);
+
+					if (status == PGRES_FATAL_ERROR)
+						so_database_postgresql_get_error(result, queryB);
+
+					PQclear(result);
+				}
+
+				free(digest_id);
+			}
+			so_value_iterator_free(iter);
+
+			free(file_id);
+		}
 	}
+
+	free(volume_id);
 
 	return 0;
 }
@@ -3022,6 +3114,29 @@ static int so_database_postgresql_checksumresult_add(struct so_database_connecti
 		PQclear(result);
 		return 2;
 	}
+}
+
+
+static char * so_database_postgresql_find_selected_path(struct so_database_connection * connect, const char * selected_path) {
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	char * query = "select_selectedfile_by_name";
+	so_database_postgresql_prepare(self, query, "SELECT id FROM selectedfile WHERE path = $1 LIMIT 1");
+
+	const char * param[] = { selected_path };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	char * selected_path_id = NULL;
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		so_database_postgresql_get_string_dup(result, 0, 0, &selected_path_id);
+
+	PQclear(result);
+
+	return selected_path_id;
 }
 
 

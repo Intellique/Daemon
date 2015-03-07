@@ -26,7 +26,7 @@
 
 // calloc, free, malloc
 #include <stdlib.h>
-// strdup
+// strdup, strlen
 #include <string.h>
 // bzero
 #include <strings.h>
@@ -40,6 +40,8 @@
 #include <libstoriqone/archive.h>
 #include <libstoriqone/database.h>
 #include <libstoriqone/format.h>
+#include <libstoriqone/io.h>
+#include <libstoriqone/json.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/drive.h>
 #include <libstoriqone-job/job.h>
@@ -85,6 +87,7 @@ static void soj_create_archive_worker_exit(void) __attribute__((destructor));
 static void soj_create_archive_worker_free(struct soj_create_archive_worker * worker);
 static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_job * job, struct so_pool * pool);
 ssize_t soj_create_archive_worker_write2(struct soj_create_archive_worker * worker, struct so_format_file * file, const char * buffer, ssize_t length);
+static bool soj_create_archive_worker_write_meta(struct soj_create_archive_worker * worker);
 
 static struct soj_create_archive_worker * primary_worker = NULL;
 static unsigned int nb_mirror_workers = 0;
@@ -226,6 +229,11 @@ int soj_create_archive_worker_close() {
 		failed = soj_create_archive_worker_close2(worker);
 		if (failed != 0)
 			return failed;
+	}
+
+	for (i = 0; i < nb_mirror_workers; i++) {
+		struct soj_create_archive_worker * worker = mirror_workers[i];
+		soj_create_archive_worker_write_meta(worker);
 	}
 
 	return 0;
@@ -483,8 +491,15 @@ void soj_create_archive_worker_reserve_medias(ssize_t archive_size, struct so_da
 }
 
 int soj_create_archive_worker_sync_archives(struct so_database_connection * db_connect) {
+	int failed = db_connect->ops->sync_archive(db_connect, primary_worker->archive);
 
-	return 0;
+	unsigned int i;
+	for (i = 0; i < nb_mirror_workers && failed == 0; i++) {
+		struct soj_create_archive_worker * worker = mirror_workers[i];
+		failed = db_connect->ops->sync_archive(db_connect, worker->archive);
+	}
+
+	return failed;
 }
 
 ssize_t soj_create_archive_worker_write(struct so_format_file * file, const char * buffer, ssize_t length) {
@@ -530,5 +545,21 @@ ssize_t soj_create_archive_worker_write2(struct soj_create_archive_worker * work
 	}
 
 	return nb_total_write;
+}
+
+static bool soj_create_archive_worker_write_meta(struct soj_create_archive_worker * worker) {
+	struct so_value * archive = so_archive_convert(worker->archive);
+	char * json_archive = so_json_encode_to_string(archive);
+	ssize_t length = strlen(json_archive);
+
+	struct so_stream_writer * writer = worker->drive->ops->get_raw_writer(worker->drive);
+	writer->ops->write(writer, json_archive, length);
+	writer->ops->close(writer);
+	writer->ops->free(writer);
+
+	free(json_archive);
+	so_value_free(archive);
+
+	return true;
 }
 

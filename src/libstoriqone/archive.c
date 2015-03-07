@@ -38,6 +38,7 @@
 #define gettext_noop(String) String
 
 #include <libstoriqone/archive.h>
+#include <libstoriqone/media.h>
 #include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
 
@@ -78,6 +79,89 @@ struct so_archive_volume * so_archive_add_volume(struct so_archive * archive) {
 	archive->nb_volumes++;
 
 	return vol;
+}
+
+struct so_value * so_archive_convert(struct so_archive * archive) {
+	unsigned int i;
+	struct so_value * volumes = so_value_new_array(archive->nb_volumes);
+	for (i = 0; i < archive->nb_volumes; i++) {
+		struct so_archive_volume * vol = archive->volumes + i;
+
+		unsigned int j;
+		struct so_value * files = so_value_new_array(vol->nb_files);
+		for (j = 0; j < vol->nb_files; j++) {
+			struct so_archive_files * ptr_file = vol->files + j;
+			struct so_archive_file * file = ptr_file->file;
+
+			struct so_value * vfile = so_value_pack("{sisis{sssisssisssisssisisbsisiss}}",
+				"position", ptr_file->position,
+				"archived time", ptr_file->archived_time,
+				"file",
+					"name", file->name,
+					"permission", (long) file->perm,
+					"type", so_archive_file_type_to_string(file->type, false),
+					"owner id", file->ownerid,
+					"owner", file->owner,
+					"group id", file->groupid,
+					"group", file->group,
+
+					"create time", file->create_time,
+					"modify time", file->modify_time,
+
+					"checksum ok", file->check_ok,
+					"checksum time", file->check_time,
+
+					"size", file->size,
+
+					"mime type", file->mime_type
+			);
+
+			if (file->digests == NULL)
+				so_value_hashtable_put2(vfile, "checksums", so_value_new_hashtable2(), true);
+			else
+				so_value_hashtable_put2(vfile, "checksums", file->digests, false);
+
+			so_value_list_push(volumes, vfile, true);
+		}
+
+		struct so_value * vvol = so_value_pack("{sisisisisbsisosiso}",
+			"sequence", (long) vol->sequence,
+			"size", vol->size,
+
+			"start time", vol->start_time,
+			"end time", vol->end_time,
+
+			"checksum ok", vol->check_ok,
+			"checksum time", vol->check_time,
+
+			"media", so_media_convert(vol->media),
+			"media position", (long) vol->media_position,
+
+			"files", files
+		);
+
+		if (vol->digests == NULL)
+			so_value_hashtable_put2(vvol, "checksums", so_value_new_hashtable2(), true);
+		else
+			so_value_hashtable_put2(vvol, "checksums", vol->digests, false);
+
+		so_value_list_push(volumes, vvol, true);
+	}
+
+	return so_value_pack("{sssssisisisossss}",
+		"uuid", archive->uuid,
+		"name", archive->name,
+
+		"size", archive->size,
+
+		"start time", archive->start_time,
+		"end time", archive->end_time,
+
+		"volumes", volumes,
+
+		"creator", archive->creator,
+		"owner", archive->owner
+	);
 }
 
 void so_archive_free(struct so_archive * archive) {

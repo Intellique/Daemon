@@ -61,9 +61,6 @@ struct so_archive {
 	time_t start_time;
 	time_t end_time;
 
-	bool check_ok;
-	time_t check_time;
-
 	struct so_archive_volume * volumes;
 	unsigned int nb_volumes;
 
@@ -118,14 +115,15 @@ struct so_archive_file {
 	ssize_t size;
 
 	char * mime_type;
+	char * selected_path;
 
 	struct so_value * digests;
-	// struct st_job_selected_path * selected_path;
 
 	struct so_value * db_data;
 };
 
 struct so_archive_volume * so_archive_add_volume(struct so_archive * archive);
+struct so_value * so_archive_convert(struct so_archive * archive);
 void so_archive_free(struct so_archive * archive);
 struct so_archive * so_archive_new(void);
 

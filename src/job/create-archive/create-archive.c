@@ -144,7 +144,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 
 	soj_create_archive_worker_close();
 
-	soj_create_archive_worker_sync_archives(db_connect);
+	failed = soj_create_archive_worker_sync_archives(db_connect);
 
 	return failed;
 }
