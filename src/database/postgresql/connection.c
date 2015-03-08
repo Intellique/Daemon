@@ -2512,9 +2512,9 @@ static int so_database_postgresql_sync_archive(struct so_database_connection * c
 		so_value_hashtable_put(archive->db_data, key, true, db, true);
 	}
 
-	if (archive == NULL) {
+	if (archive_id == NULL) {
 		const char * query = "insert_archive";
-		so_database_postgresql_prepare(self, query, "INSERT INTO archive(uuid, name, creator, owner) VALUES ($1, $2, $3, $3) RETURNING id");
+		so_database_postgresql_prepare(self, query, "WITH u AS (SELECT $1::UUID, $2::TEXT, id, id FROM users WHERE login = $3 LIMIT 1) INSERT INTO archive(uuid, name, owner, creator) SELECT * FROM u RETURNING id");
 
 		const char * param[] = { archive->uuid, archive->name, archive->creator };
 		PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
@@ -2576,7 +2576,7 @@ static int so_database_postgresql_sync_archive_file(struct so_database_connectio
 	so_time_convert(&file->modify_time, "%F %T", modify_time, 32);
 	asprintf(&size, "%zd", file->size);
 
-	const char * param[] = { file->name, so_archive_file_type_to_string(file->type, false), file->mime_type, ownerid, file->owner, groupid, file->group, perm, create_time, modify_time, size };
+	const char * param[] = { file->name, so_archive_file_type_to_string(file->type, false), file->mime_type, ownerid, file->owner, groupid, file->group, perm, create_time, modify_time, size, selected_path_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 12, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
@@ -2627,7 +2627,7 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 
 		if (status == PGRES_FATAL_ERROR)
 			so_database_postgresql_get_error(result, query);
-		else if (status == PGRES_TUPLES_OK) {
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 			so_database_postgresql_get_string_dup(result, 0, 0, &volume_id);
 			so_value_hashtable_put2(db, "id", so_value_new_string(volume_id), true);
 			so_value_hashtable_put2(db, "archive id", so_value_new_string(archive_id), true);
@@ -2706,6 +2706,7 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 		const char * queryA = "insert_archivefiletoarchivevolume";
 		so_database_postgresql_prepare(self, queryA, "INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile, blocknumber, archivetime) VALUES ($1, $2, $3, $4)");
 		const char * queryB = "insert_archivefile_to_checksum";
+		so_database_postgresql_prepare(self, queryB, "INSERT INTO archivefiletochecksumresult VALUES ($1, $2)");
 
 		unsigned int i;
 		for (i = 0; i < volume->nb_files; i++) {

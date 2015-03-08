@@ -107,12 +107,14 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 	unsigned int i;
 	int failed = 0;
 	for (i = 0; i < nb_src_files; i++) {
+		char * root = src_files[i]->ops->get_root(src_files[i]);
+
 		struct so_format_file file;
 		enum so_format_reader_header_status status;
 		while (status = src_files[i]->ops->get_header(src_files[i], &file), status == so_format_reader_header_ok) {
 			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-create-archive", "Adding %s to archive"), file.filename);
 
-			soj_create_archive_meta_worker_add_file(file.filename);
+			soj_create_archive_meta_worker_add_file(file.filename, root);
 
 			enum so_format_writer_status write_status = soj_create_archive_worker_add_file(job, &file, db_connect);
 			if (write_status != so_format_writer_ok) {
@@ -145,6 +147,8 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 
 			so_format_file_free(&file);
 		}
+
+		free(root);
 	}
 
 	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-create-archive", "Closing archive"));

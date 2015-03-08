@@ -240,6 +240,8 @@ int soj_create_archive_worker_close() {
 			return failed;
 	}
 
+	soj_create_archive_worker_write_meta(primary_worker);
+
 	for (i = 0; i < nb_mirror_workers; i++) {
 		struct soj_create_archive_worker * worker = mirror_workers[i];
 		soj_create_archive_worker_write_meta(worker);
@@ -303,6 +305,7 @@ static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_c
 
 	new_file->size = file->size;
 	new_file->mime_type = strdup(file->mime_type);
+	new_file->selected_path = strdup(file->selected_path);
 
 	if (file->digests != NULL) {
 		new_file->digests = so_value_new_hashtable2();
@@ -376,6 +379,7 @@ static struct soj_create_archive_worker * soj_create_archive_worker_new(struct s
 	uuid_t uuid;
 	uuid_generate(uuid);
 	uuid_unparse_lower(uuid, worker->archive->uuid);
+	worker->archive->name = strdup(job->name);
 	worker->archive->creator = strdup(job->user);
 	worker->archive->owner = strdup(job->user);
 

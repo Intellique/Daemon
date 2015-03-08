@@ -45,6 +45,7 @@
 static void sodr_io_format_reader_close(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_reader_end_of_file(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_reader_get_header(struct sodr_peer * peer, struct so_value * request);
+static void sodr_io_format_reader_get_root(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_reader_init(void) __attribute__((constructor));
 static void sodr_io_format_reader_read(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_reader_read_to_end_of_data(struct sodr_peer * peer, struct so_value * request);
@@ -54,6 +55,7 @@ static struct sodr_command commands[] = {
 	{ 0, "close",               sodr_io_format_reader_close },
 	{ 0, "end of file",         sodr_io_format_reader_end_of_file },
 	{ 0, "get header",          sodr_io_format_reader_get_header },
+	{ 0, "get root",            sodr_io_format_reader_get_root },
 	{ 0, "read",                sodr_io_format_reader_read },
 	{ 0, "read to end of data", sodr_io_format_reader_read_to_end_of_data },
 	{ 0, "skip file",           sodr_io_format_reader_skip_file },
@@ -108,6 +110,16 @@ static void sodr_io_format_reader_get_header(struct sodr_peer * peer, struct so_
 	so_value_free(response);
 
 	so_format_file_free(&file);
+}
+
+static void sodr_io_format_reader_get_root(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
+	char * root = peer->format_reader->ops->get_root(peer->format_reader);
+
+	struct so_value * response = so_value_pack("{ss}", "returned", root);
+	so_json_encode_to_fd(response, peer->fd_cmd, true);
+	so_value_free(response);
+
+	free(root);
 }
 
 static void sodr_io_format_reader_read(struct sodr_peer * peer, struct so_value * request) {

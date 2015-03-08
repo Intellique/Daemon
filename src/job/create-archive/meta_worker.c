@@ -55,11 +55,12 @@
 
 struct meta_worker_list {
 	char * filename;
+	char * selected_file;
 	struct meta_worker_list * next;
 };
 
 static void soj_create_archive_meta_worker_do(void * arg);
-static void soj_create_archive_meta_worker_do2(const char * filename, struct so_value * checksums);
+static void soj_create_archive_meta_worker_do2(const char * filename, struct so_value * checksums, const char * selected_file);
 
 static volatile bool meta_worker_do = false;
 static volatile bool meta_worker_stop = false;
@@ -71,9 +72,10 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t wait = PTHREAD_COND_INITIALIZER;
 
 
-void soj_create_archive_meta_worker_add_file(const char * filename) {
+void soj_create_archive_meta_worker_add_file(const char * filename, const char * selected_file) {
 	struct meta_worker_list * file = malloc(sizeof(struct meta_worker_list));
 	file->filename = strdup(filename);
+	file->selected_file = strdup(selected_file);
 	file->next = NULL;
 
 	pthread_mutex_lock(&lock);
@@ -112,7 +114,7 @@ static void soj_create_archive_meta_worker_do(void * arg) {
 		pthread_mutex_unlock(&lock);
 
 		while (files != NULL) {
-			soj_create_archive_meta_worker_do2(files->filename, checksums);
+			soj_create_archive_meta_worker_do2(files->filename, checksums, files->selected_file);
 
 			struct meta_worker_list * next = files->next;
 			free(files->filename);
@@ -128,7 +130,7 @@ static void soj_create_archive_meta_worker_do(void * arg) {
 	so_value_free(checksums);
 }
 
-static void soj_create_archive_meta_worker_do2(const char * filename, struct so_value * checksums) {
+static void soj_create_archive_meta_worker_do2(const char * filename, struct so_value * checksums, const char * selected_file) {
 	struct stat st;
 	if (lstat(filename, &st) != 0)
 		return;
@@ -151,6 +153,7 @@ static void soj_create_archive_meta_worker_do2(const char * filename, struct so_
 	file->check_time = 0;
 
 	file->size = st.st_size;
+	file->selected_path = strdup(selected_file);
 
 	const char * mime_type = magic_file(magicFile, filename);
 	if (mime_type == NULL) {

@@ -69,6 +69,7 @@ static void so_format_tar_reader_free(struct so_format_reader * fr);
 static ssize_t so_format_tar_reader_get_block_size(struct so_format_reader * fr);
 static struct so_value * so_format_tar_reader_get_digests(struct so_format_reader * fr);
 static enum so_format_reader_header_status so_format_tar_reader_get_header(struct so_format_reader * fr, struct so_format_file * file);
+static char * so_format_tar_reader_get_root(struct so_format_reader * fr);
 static int so_format_tar_reader_last_errno(struct so_format_reader * fr);
 static ssize_t so_format_tar_reader_position(struct so_format_reader * fr);
 static ssize_t so_format_tar_reader_read(struct so_format_reader * fr, void * buffer, ssize_t length);
@@ -83,6 +84,7 @@ static struct so_format_reader_ops so_format_tar_reader_ops = {
 	.get_block_size      = so_format_tar_reader_get_block_size,
 	.get_digests         = so_format_tar_reader_get_digests,
 	.get_header          = so_format_tar_reader_get_header,
+	.get_root            = so_format_tar_reader_get_root,
 	.last_errno          = so_format_tar_reader_last_errno,
 	.position            = so_format_tar_reader_position,
 	.read                = so_format_tar_reader_read,
@@ -230,6 +232,10 @@ static struct so_value * so_format_tar_reader_get_digests(struct so_format_reade
 		return so_io_checksum_reader_get_checksums(self->io);
 	else
 		return so_value_new_linked_list();
+}
+
+static char * so_format_tar_reader_get_root(struct so_format_reader * fr __attribute__((unused))) {
+	return strdup("/");
 }
 
 static enum so_format_reader_header_status so_format_tar_reader_get_header(struct so_format_reader * fr, struct so_format_file * file) {

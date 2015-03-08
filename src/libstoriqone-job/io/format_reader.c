@@ -65,6 +65,7 @@ static void soj_format_reader_free(struct so_format_reader * fr);
 static ssize_t soj_format_reader_get_block_size(struct so_format_reader * fr);
 static struct so_value * soj_format_reader_get_digests(struct so_format_reader * fr);
 static enum so_format_reader_header_status soj_format_reader_get_header(struct so_format_reader * fr, struct so_format_file * file);
+static char * soj_format_reader_get_root(struct so_format_reader * fr);
 static int soj_format_reader_last_errno(struct so_format_reader * fr);
 static ssize_t soj_format_reader_position(struct so_format_reader * fr);
 static ssize_t soj_format_reader_read(struct so_format_reader * fr, void * buffer, ssize_t length);
@@ -79,6 +80,7 @@ static struct so_format_reader_ops soj_format_reader_ops = {
 	.get_block_size      = soj_format_reader_get_block_size,
 	.get_digests         = soj_format_reader_get_digests,
 	.get_header          = soj_format_reader_get_header,
+	.get_root            = soj_format_reader_get_root,
 	.last_errno          = soj_format_reader_last_errno,
 	.position            = soj_format_reader_position,
 	.read                = soj_format_reader_read,
@@ -229,6 +231,24 @@ static enum so_format_reader_header_status soj_format_reader_get_header(struct s
 	so_value_free(response);
 
 	return status;
+}
+
+static char * soj_format_reader_get_root(struct so_format_reader * fr) {
+	struct soj_format_reader_private * self = fr->data;
+
+	struct so_value * request = so_value_pack("{ss}", "command", "get root");
+	so_json_encode_to_fd(request, self->command_fd, true);
+	so_value_free(request);
+
+	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	if (response == NULL)
+		return NULL;
+
+	char * root = NULL;
+	so_value_unpack(response, "{sb}", "returned", &root);
+	so_value_free(response);
+
+	return root;
 }
 
 static int soj_format_reader_last_errno(struct so_format_reader * fr) {

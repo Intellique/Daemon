@@ -32,7 +32,7 @@
 
 struct so_value;
 
-void soj_create_archive_meta_worker_add_file(const char * filename);
+void soj_create_archive_meta_worker_add_file(const char * filename, const char * selected_file);
 struct so_value * soj_create_archive_meta_worker_get_files(void);
 void soj_create_archive_meta_worker_start(struct so_value * checksums);
 void soj_create_archive_meta_worker_wait(bool stop);
