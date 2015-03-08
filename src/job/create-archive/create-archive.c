@@ -70,7 +70,7 @@ static void soj_create_archive_script_post_run(struct so_job * job, struct so_da
 static bool soj_create_archive_script_pre_run(struct so_job * job, struct so_database_connection * db_connect);
 
 static struct so_job_driver create_archive = {
-	.name = "backup-db",
+	.name = "create-archive",
 
 	.exit            = soj_create_archive_exit,
 	.run             = soj_create_archive_run,
@@ -110,17 +110,21 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 		struct so_format_file file;
 		enum so_format_reader_header_status status;
 		while (status = src_files[i]->ops->get_header(src_files[i], &file), status == so_format_reader_header_ok) {
+			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-create-archive", "Adding %s to archive"), file.filename);
+
 			soj_create_archive_meta_worker_add_file(file.filename);
 
-			enum so_format_writer_status write_status = soj_create_archive_worker_add_file(&file);
-			if (write_status != so_format_writer_ok)
+			enum so_format_writer_status write_status = soj_create_archive_worker_add_file(job, &file, db_connect);
+			if (write_status != so_format_writer_ok) {
+				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-create-archive", "Error while adding %s to archive"), file.filename);
 				break;
+			}
 
 			if (S_ISREG(file.mode)) {
 				static char buffer[16384];
 				ssize_t nb_read;
 				while (nb_read = src_files[i]->ops->read(src_files[i], buffer, 16384), nb_read > 0) {
-					ssize_t nb_write = soj_create_archive_worker_write(&file, buffer, nb_read);
+					ssize_t nb_write = soj_create_archive_worker_write(job, &file, buffer, nb_read, db_connect);
 					if (nb_write < 0) {
 						failed = -2;
 						break;
@@ -131,6 +135,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 				}
 
 				if (nb_read < 0) {
+					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-create-archive", "Error while reading from %s"), file.filename);
 					failed = -1;
 				} else {
 					failed = soj_create_archive_worker_end_of_file();
@@ -142,9 +147,13 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 		}
 	}
 
+	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-create-archive", "Closing archive"));
 	soj_create_archive_worker_close();
 
+	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-create-archive", "Synchronizing archive with database"));
 	failed = soj_create_archive_worker_sync_archives(db_connect);
+	if (failed != 0)
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-create-archive", "Error while synchronize archive into database"));
 
 	return failed;
 }
@@ -178,6 +187,10 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 	}
 	so_value_iterator_free(iter);
 
+	char sarchive_size[12];
+	so_file_convert_size_to_string(archive_size, sarchive_size, 12);
+	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-create-archive", "Size require (%s) for creating new archive or adding to archive"), sarchive_size);
+
 
 	primary_pool = db_connect->ops->get_pool(db_connect, NULL, job);
 	// TODO: primary_pool IS NULL -> adding file to archive
@@ -194,8 +207,10 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 			reserved += soj_media_prepare_unformatted(primary_pool, false, db_connect);
 	}
 
-	if (reserved < archive_size)
+	if (reserved < archive_size) {
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-create-archive", "Error: not enought space available into pool (%s)"), primary_pool->name);
 		return 1;
+	}
 
 
 	pool_mirrors = db_connect->ops->get_pool_by_pool_mirror(db_connect, primary_pool);

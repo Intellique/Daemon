@@ -1,0 +1,72 @@
+# French translations for job-create-archive package.
+# Copyright (C) 2014-2015
+# This file is distributed under the same license as the storiqone package.
+# Guillaume Clercin <gclercin@intellique.com>, 2014
+#
+msgid   ""
+msgstr  "Project-Id-Version: job-create-archive v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-03-08 13:09+0100\n"
+        "PO-Revision-Date: 2014-11-13 09:03+0100\n"
+        "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
+        "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
+        "Language: fr\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/job/create-archive/create-archive.c:113
+#, c-format
+msgid   "Adding %s to archive"
+msgstr  "Ajout %s dans l’archive"
+
+#: src/job/create-archive/create-archive.c:119
+#, c-format
+msgid   "Error while adding %s to archive"
+msgstr  "Erreur pendant l’ajout de %s dans l’archive"
+
+#: src/job/create-archive/create-archive.c:138
+#, c-format
+msgid   "Error while reading from %s"
+msgstr  "Erreur en lisant depuis %s"
+
+#: src/job/create-archive/create-archive.c:150
+msgid   "Closing archive"
+msgstr  "Fermeture de l’archive"
+
+#: src/job/create-archive/create-archive.c:153
+msgid   "Synchronizing archive with database"
+msgstr  "Synchronisation de l’archive avec la base de données"
+
+#: src/job/create-archive/create-archive.c:156
+msgid   "Error while synchronize archive into database"
+msgstr  "Erreur en synchronisant l’archive dans la base de données"
+
+#: src/job/create-archive/create-archive.c:169
+msgid   "There is no select files to create new archive or to add into an archive"
+msgstr  "Il n’y a pas de fichiers sélectionnés pour créer une nouvelle archive ou ajouter des fichiers dans une archive"
+
+#: src/job/create-archive/create-archive.c:192
+#, c-format
+msgid   "Size require (%s) for creating new archive or adding to archive"
+msgstr  "Taille requis (%s) pour créer une nouvelle archive ou pour ajouter à une archive"
+
+#: src/job/create-archive/create-archive.c:198
+msgid   "Try to create an archive into a pool which is deleted"
+msgstr  "Tentative de créer une archive dans un pool qui est supprimé"
+
+#: src/job/create-archive/create-archive.c:211
+#, c-format
+msgid   "Error: not enought space available into pool (%s)"
+msgstr  "Erreur : espace insuffisant dans le pool (%s)"
+
+#: src/job/create-archive/worker.c:103 src/job/create-archive/worker.c:116
+#, c-format
+msgid   "Error while adding file (%s) to pool %s"
+msgstr  "Erreur en ajoutant un fichier (%s) dans le pool %s"
+
+#: src/job/create-archive/worker.c:210
+#, c-format
+msgid   "Archive continue to media (%s)"
+msgstr  "L’archive continue sur le média (%s)"
