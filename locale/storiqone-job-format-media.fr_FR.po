@@ -1,5 +1,5 @@
 # French translations for job-format-media package.
-# Copyright (C) 2014
+# Copyright (C) 2014-2015
 # This file is distributed under the same license as the storiqone package.
 # Guillaume Clercin <gclercin@intellique.com>, 2014
 #
@@ -36,15 +36,15 @@ msgstr  "Échec du formatge du média"
 
 #: src/job/format-media/format-media.c:179
 msgid   "Checking media header in progress"
-msgstr  "Vérification de l'entête du média en cours"
+msgstr  "Vérification de l’entête du média en cours"
 
 #: src/job/format-media/format-media.c:181
 msgid   "Checking media header: success"
-msgstr  "La vérification de l'entête du média a réussi"
+msgstr  "La vérification de l’entête du média a réussi"
 
 #: src/job/format-media/format-media.c:187
 msgid   "Checking media header: failed"
-msgstr  "La vérification de l'entête du média a échoué"
+msgstr  "La vérification de l’entête du média a échoué"
 
 #: src/job/format-media/format-media.c:198
 msgid   "Pool not found"
@@ -72,7 +72,7 @@ msgstr  "Tentative de formater un média dont le format ne correspond pas au for
 
 #: src/job/format-media/format-media.c:224
 msgid   "Failed to find suitable drive to format media"
-msgstr  "Échec lors de la recherche d'un lecteur pour formater le média"
+msgstr  "Échec lors de la recherche d’un lecteur pour formater le média"
 
 #: src/job/format-media/format-media.c:292
 msgid   "Invalid uuid provide by script, ignoring it"

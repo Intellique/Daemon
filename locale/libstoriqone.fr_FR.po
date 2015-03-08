@@ -1,5 +1,5 @@
 # French translations for libstoriqone package.
-# Copyright (C) 2014
+# Copyright (C) 2014-2015
 # This file is distributed under the same license as the stone package.
 # Guillaume Clercin <gclercin@intellique.com>, 2014
 #
@@ -127,7 +127,7 @@ msgstr  "so_checksum_gen_salt : longueur du paramater « length » doit être
 #: src/libstoriqone/checksum.c:108
 #, c-format
 msgid   "so_checksum_gen_salt: failed to open \"/dev/urandom\" to generate salt parce %m"
-msgstr  "so_checksum_gen_salt : erreur lors de l'ouverture de « /dev/urandom » pour générer un sel parce %m"
+msgstr  "so_checksum_gen_salt : erreur lors de l’ouverture de « /dev/urandom » pour générer un sel parce %m"
 
 #: src/libstoriqone/checksum.c:118
 #, c-format
@@ -142,7 +142,7 @@ msgstr  "so_checksum_gen_salt : erreur lors de la lecture depuis « /dev/urand
 #: src/libstoriqone/checksum.c:128
 #, c-format
 msgid   "so_checksum_gen_salt: read less than expected from \"/dev/urandom\" (nb read: %zd, read expected: %zd)"
-msgstr  "so_checksum_gen_salt : a lu moins qu'attendu depuis « /dev/urandom » (nb read : %zd, read expected : %zd)"
+msgstr  "so_checksum_gen_salt : a lu moins qu’attendu depuis « /dev/urandom » (nb read : %zd, read expected : %zd)"
 
 #: src/libstoriqone/checksum.c:146
 msgid   "so_checksum_get_driver: invalide parameter, 'driver' should not be NULL"
@@ -151,26 +151,26 @@ msgstr  "so_checksum_get_driver : paramètre invalide, « driver » ne doit p
 #: src/libstoriqone/checksum.c:158
 #, c-format
 msgid   "so_checksum_get_driver: failed to load checksum driver '%s'"
-msgstr  "so_checksum_get_driver : échec de chargement du module de calcul d'empreinte « %s »"
+msgstr  "so_checksum_get_driver : échec de chargement du module de calcul d’empreinte « %s »"
 
 #: src/libstoriqone/checksum.c:164
 #, c-format
 msgid   "so_checksum_get_driver: driver '%s' did not call 'so_checksum_register_driver'"
-msgstr  "so_checksum_get_driver : le pilote « %s » n'a pas appelé « so_checksum_register_driver »"
+msgstr  "so_checksum_get_driver : le pilote « %s » n’a pas appelé « so_checksum_register_driver »"
 
 #: src/libstoriqone/checksum.c:186
 msgid   "so_checksum_register_driver: try to register with NULL driver"
-msgstr  "so_checksum_register_driver : tentative d'enregistrer un pilote null"
+msgstr  "so_checksum_register_driver : tentative d’enregistrer un pilote null"
 
 #: src/libstoriqone/checksum.c:194
 #, c-format
 msgid   "so_checksum_register_driver: checksum driver '%s' is already registred"
-msgstr  "so_checksum_register_driver : le pilote de calcul d'empreinte « %s » est déjà chargé"
+msgstr  "so_checksum_register_driver : le pilote de calcul d’empreinte « %s » est déjà chargé"
 
 #: src/libstoriqone/checksum.c:203
 #, c-format
 msgid   "so_checksum_register_driver: checksum driver '%s' is now registred"
-msgstr  "so_checksum_register_driver : le pilote de calcul d'empreinte « %s » est maintenant chargé"
+msgstr  "so_checksum_register_driver : le pilote de calcul d’empreinte « %s » est maintenant chargé"
 
 #: src/libstoriqone/checksum.c:208
 #, c-format
@@ -189,7 +189,7 @@ msgstr  "so_database_get_driver : échec de chargement du module de base de don
 #: src/libstoriqone/database.c:78
 #, c-format
 msgid   "so_database_get_driver: driver '%s' did not call 'so_database_register_driver'"
-msgstr  "so_database_get_driver : le pilote « %s » n'a pas appelé « so_database_register_driver »"
+msgstr  "so_database_get_driver : le pilote « %s » n’a pas appelé « so_database_register_driver »"
 
 #: src/libstoriqone/database.c:100
 #, c-format
@@ -198,7 +198,7 @@ msgstr  "so_database_load_config : paramètre invalide (config : %p)"
 
 #: src/libstoriqone/database.c:123
 msgid   "so_database_register_driver: try to register with NULL driver"
-msgstr  "so_database_register_driver : tentative d'enregistrer un pilote NULL"
+msgstr  "so_database_register_driver : tentative d’enregistrer un pilote NULL"
 
 #: src/libstoriqone/database.c:131
 #, c-format
@@ -282,7 +282,7 @@ msgstr  "%.*f To"
 #: src/libstoriqone/file.c:241 src/libstoriqone/file.c:255 src/libstoriqone/file.c:278
 #, c-format
 msgid   "so_file_cp: can't get information of '%s' because %m"
-msgstr  "so_file_cp : n'a pas réussi à obtenir les informations de « %s » parce que %m"
+msgstr  "so_file_cp : n’a pas réussi à obtenir les informations de « %s » parce que %m"
 
 #: src/libstoriqone/file.c:246
 #, c-format
@@ -302,17 +302,17 @@ msgstr  "so_file_cp : erreur lors du parcours du répertoire « %s » parce q
 #: src/libstoriqone/file.c:325
 #, c-format
 msgid   "so_file_cp: can't open file '%s' for reading because %m"
-msgstr  "so_file_cp : n'a pas réussi à ouvrir le fichier « %s » en lecture parce que %m"
+msgstr  "so_file_cp : n’a pas réussi à ouvrir le fichier « %s » en lecture parce que %m"
 
 #: src/libstoriqone/file.c:334
 #, c-format
 msgid   "so_file_cp: can't open file '%s' for writing because %m"
-msgstr  "so_file_cp : n'a pas réussi à ouvrir le fichier « %s » en écriture parce que %m"
+msgstr  "so_file_cp : n’a pas réussi à ouvrir le fichier « %s » en écriture parce que %m"
 
 #: src/libstoriqone/file.c:345
 #, c-format
 msgid   "so_file_cp: error while writing into '%s' because %m"
-msgstr  "so_file_cp : erreur lors de l'écriture dans « %s » parce que %m"
+msgstr  "so_file_cp : erreur lors de l’écriture dans « %s » parce que %m"
 
 #: src/libstoriqone/file.c:352
 #, c-format
@@ -322,7 +322,7 @@ msgstr  "so_file_cp : erreur lors de la lecture depuis « %s » parce que %m"
 #: src/libstoriqone/file.c:365
 #, c-format
 msgid   "so_file_cp: can't read link of '%s' because %m"
-msgstr  "so_file_cp : n'a pas réussi à lire le lien symbolique « %s » parce que %m"
+msgstr  "so_file_cp : n’a pas réussi à lire le lien symbolique « %s » parce que %m"
 
 #: src/libstoriqone/file.c:372
 #, c-format
@@ -347,7 +347,7 @@ msgstr  "so_file_mkdir : erreur lors de la création du répertoire « %s » 
 #: src/libstoriqone/file.c:463 src/libstoriqone/file.c:473
 #, c-format
 msgid   "so_file_mv: can't get information of '%s' because %m"
-msgstr  "so_file_mv : n'a pas réussi à obtenir les informations de « %s » parce que %m"
+msgstr  "so_file_mv : n’a pas réussi à obtenir les informations de « %s » parce que %m"
 
 #: src/libstoriqone/file.c:481
 #, c-format
@@ -357,7 +357,7 @@ msgstr  "so_file_mv : échec lors du renommage du fichier « %s » en « %s�
 #: src/libstoriqone/file.c:492
 #, c-format
 msgid   "so_file_read_all_from: failed to open '%s' because %m"
-msgstr  "so_file_read_all_from : échec lors de l'ouverture du fichier « %s » parce que %m"
+msgstr  "so_file_read_all_from : échec lors de l’ouverture du fichier « %s » parce que %m"
 
 #: src/libstoriqone/file.c:513
 #, c-format
@@ -372,7 +372,7 @@ msgstr  "so_file_rm : échec lors de obtention des informations de « %s » p
 #: src/libstoriqone/io/tmp.c:106
 #, c-format
 msgid   "so_io_tmp_writer: Can't create temporary file into directory '%s' because %m"
-msgstr  "so_io_tmp_writer: n'a pas pu créé de fichier temporaire dans le répertoire « %s » parece que %m"
+msgstr  "so_io_tmp_writer: n’a pas pu créé de fichier temporaire dans le répertoire « %s » parece que %m"
 
 #: src/libstoriqone/job.c:51
 msgid   "disable"
@@ -421,7 +421,7 @@ msgstr  "notification inconnue"
 #: src/libstoriqone/loader.c:73
 #, c-format
 msgid   "libstoriqone: loader: failed to access to file '%s' because %m"
-msgstr  "libstoriqone : loader : échec lors de l'accès au fichier « %s » parce que %m"
+msgstr  "libstoriqone : loader : échec lors de l’accès au fichier « %s » parce que %m"
 
 #: src/libstoriqone/loader.c:85
 #, c-format
@@ -494,7 +494,7 @@ msgstr  "Greffon de la base de données"
 
 #: src/libstoriqone/log.c:111
 msgid   "Plugin Log"
-msgstr  "Greffon d'enregistrement"
+msgstr  "Greffon d’enregistrement"
 
 #: src/libstoriqone/log.c:112
 msgid   "Scheduler"
@@ -595,7 +595,7 @@ msgstr  "fichier"
 
 #: src/libstoriqone/script.c:45
 msgid   "on error"
-msgstr  "d'erreur"
+msgstr  "d’erreur"
 
 #: src/libstoriqone/script.c:46
 msgid   "post job"
@@ -607,25 +607,25 @@ msgstr  "pré tâche"
 
 #: src/libstoriqone/thread_pool.c:170
 msgid   "so_thread_pool_run2: error, not enought memory to start new thread"
-msgstr  "so_thread_pool_run2 : pas assez de mémoire pour démarrer un nouveau fil d'exécution"
+msgstr  "so_thread_pool_run2 : pas assez de mémoire pour démarrer un nouveau fil d’exécution"
 
 #: src/libstoriqone/thread_pool.c:230
 #, c-format
 msgid   "so_thread_pool_work: starting new thread #%ld (pid: %d) to function: %p with parameter: %p"
-msgstr  "so_thread_pool_work : démarrage d'un nouveau fil d'exécution #%ld (pid : %d) vers la fonction : %p avec comme "
+msgstr  "so_thread_pool_work : démarrage d’un nouveau fil d’exécution #%ld (pid : %d) vers la fonction : %p avec comme "
         "paramètre : %p"
 
 #: src/libstoriqone/thread_pool.c:250
 #, c-format
 msgid   "so_thread_pool_work: thread #%ld (pid: %d) is going to sleep"
-msgstr  "so_thread_pool_work : fil d'exécution #%ld (pid : %d) est mis en attente"
+msgstr  "so_thread_pool_work : fil d’exécution #%ld (pid : %d) est mis en attente"
 
 #: src/libstoriqone/thread_pool.c:272
 #, c-format
 msgid   "so_thread_pool_work: restarting thread #%ld (pid: %d) to function: %p with parameter: %p"
-msgstr  "so_thread_pool_work : redémarrage du fil d'exécution #%ld (pid : %d) vers la fonction : %p avec comme paramètre : %p"
+msgstr  "so_thread_pool_work : redémarrage du fil d’exécution #%ld (pid : %d) vers la fonction : %p avec comme paramètre : %p"
 
 #: src/libstoriqone/thread_pool.c:276
 #, c-format
 msgid   "so_thread_pool_work: thread #%ld is dead"
-msgstr  "so_thread_pool_work : fil d'exécution #%ld terminé"
+msgstr  "so_thread_pool_work : fil d’exécution #%ld terminé"

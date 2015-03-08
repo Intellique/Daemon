@@ -1,5 +1,5 @@
 # French translations for libstoriqone-drive package.
-# Copyright (C) 2014
+# Copyright (C) 2014-2015
 # This file is distributed under the same license as the storiqone package.
 # Guillaume Clercin <gclercin@intellique.com>, 2014
 #
@@ -74,7 +74,7 @@ msgstr  "Initialisation du lecteur (type : %s)"
 #: src/libstoriqone-drive/main.c:119
 #, c-format
 msgid   "Drive (type: %s) will stop"
-msgstr  "Le lecteur (type : %s) va s'arrêter"
+msgstr  "Le lecteur (type : %s) va s’arrêter"
 
 #: src/libstoriqone-drive/media.c:142 src/libstoriqone-drive/media.c:229 src/libstoriqone-drive/media.c:316
 #, c-format

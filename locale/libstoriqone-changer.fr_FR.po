@@ -1,5 +1,5 @@
 # French translations for libstoriqone-changer package.
-# Copyright (C) 2014
+# Copyright (C) 2014-2015
 # This file is distributed under the same license as the storiqone package.
 # Guillaume Clercin <gclercin@intellique.com>, 2014
 #
@@ -39,17 +39,17 @@ msgstr  ""
 #: src/libstoriqone-changer/listen.c:280
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%d"
-msgstr  "[%s | %s] : chargement du média « %s » depuis l'emplacement #%u vers le lecteur #%d"
+msgstr  "[%s | %s] : chargement du média « %s » depuis l’emplacement #%u vers le lecteur #%d"
 
 #: src/libstoriqone-changer/listen.c:284
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = %d"
-msgstr  "[%s | %s] : chargement du média « %s » depuis l'emplacement #%u vers le lecteur #%d terminé avec le code = %d"
+msgstr  "[%s | %s] : chargement du média « %s » depuis l’emplacement #%u vers le lecteur #%d terminé avec le code = %d"
 
 #: src/libstoriqone-changer/listen.c:292
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = OK"
-msgstr  "[%s | %s] : chargement du média « %s » depuis l'emplacement #%u vers le lecteur #%d terminé avec le code = OK"
+msgstr  "[%s | %s] : chargement du média « %s » depuis l’emplacement #%u vers le lecteur #%d terminé avec le code = OK"
 
 #: src/libstoriqone-changer/main.c:56
 msgid   "Stoned has hang up"
@@ -63,7 +63,7 @@ msgstr  "Démarrage de l’échangeur (type : %s)"
 #: src/libstoriqone-changer/main.c:119
 #, c-format
 msgid   "Initialize changer (type: %s)"
-msgstr  "Initialisation de l'échangeur (type : %s)"
+msgstr  "Initialisation de l’échangeur (type : %s)"
 
 #: src/libstoriqone-changer/main.c:133
 #, c-format
@@ -98,4 +98,4 @@ msgstr  "[%s | %s] : échec de la remise en-ligne de l’échangeur"
 #: src/libstoriqone-changer/main.c:160
 #, c-format
 msgid   "Changer (type: %s) will stop"
-msgstr  "Échanger (type : %s) va s'arrêter"
+msgstr  "Échanger (type : %s) va s’arrêter"

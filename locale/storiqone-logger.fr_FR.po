@@ -1,5 +1,5 @@
 # French translations for storiqone-logger package.
-# Copyright (C) 2014
+# Copyright (C) 2014-2015
 # This file is distributed under the same license as the storiqone package.
 # Guillaume Clercin <gclercin@intellique.com>, 2014
 msgid   ""
@@ -30,7 +30,7 @@ msgstr  "Connexion fermé"
 #: src/logger/loader.c:72
 #, c-format
 msgid   "Loader: access to file '%s' failed because %m"
-msgstr  "Loader : l'accès au fichier « %s » a échoué parce que %m"
+msgstr  "Loader : l’accès au fichier « %s » a échoué parce que %m"
 
 #: src/logger/loader.c:84
 #, c-format

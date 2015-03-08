@@ -1,5 +1,5 @@
 # French translations for database-postgresql package.
-# Copyright (C) 2014
+# Copyright (C) 2014-2015
 # This file is distributed under the same license as the stone package.
 # Guillaume Clercin <gclercin@intellique.com>, 2014
 #
@@ -23,11 +23,11 @@ msgstr  "PSQL : erreur lors de l’annulation du point de sauvegarde => %s"
 
 #: src/database/postgresql/connection.c:284
 msgid   "PSQL: Can't create checkpoint because there is an error into current transaction"
-msgstr  "PSQL : Ne peut pas créer un point de sauvegarde parce qu'il y a une erreur dans la transaction courante"
+msgstr  "PSQL : Ne peut pas créer un point de sauvegarde parce qu’il y a une erreur dans la transaction courante"
 
 #: src/database/postgresql/connection.c:287
 msgid   "PSQL: Can't create checkpoint because there is no active transaction"
-msgstr  "PSQL : Ne peut pas créer un point de sauvegarde parce qu’il n'y a pas de transaction"
+msgstr  "PSQL : Ne peut pas créer un point de sauvegarde parce qu’il n’y a pas de transaction"
 
 #: src/database/postgresql/connection.c:301
 #, c-format
@@ -49,7 +49,7 @@ msgstr  "PSQL : erreur lors de la synchronisation d’un lecteur avec la base d
 
 #: src/database/postgresql/connection.c:1431 src/database/postgresql/connection.c:1444
 msgid   "PSQL: error while synchronizing changer slots with database"
-msgstr  "PSQL : erreur lors de la synchronisation des emplacements d'une librairie de bande avec la base de données"
+msgstr  "PSQL : erreur lors de la synchronisation des emplacements d’une librairie de bande avec la base de données"
 
 #: src/database/postgresql/connection.c:3149
 #, c-format

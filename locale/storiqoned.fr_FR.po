@@ -1,5 +1,5 @@
 # French translations for storiqoned package.
-# Copyright (C) 2014
+# Copyright (C) 2014-2015
 # This file is distributed under the same license as the storiqone package.
 # Guillaume Clercin <gclercin@intellique.com>, 2014
 msgid   ""
@@ -17,16 +17,16 @@ msgstr  "Project-Id-Version: storiqoned v1.2\n"
 
 #: src/storiqoned/admin.c:122
 msgid   "New connection 'admin'"
-msgstr  "Nouvelle connexion 'admin'"
+msgstr  "Nouvelle connexion « admin »"
 
 #: src/storiqoned/device.c:205
 #, c-format
 msgid   "Restart changer: %s"
-msgstr  "Redémarrage de l'échangeur : %s"
+msgstr  "Redémarrage de l’échangeur : %s"
 
 #: src/storiqoned/logger.c:74
 msgid   "Restart logger"
-msgstr  "Redémarrage de l'enregistreur"
+msgstr  "Redémarrage de l’enregistreur"
 
 #: src/storiqoned/main.c:64
 #, c-format
@@ -46,7 +46,7 @@ msgstr  "Empreinte : %s, dernier commit : %s"
 #: src/storiqoned/main.c:98
 #, c-format
 msgid   "Using configuration file: '%s' instead of '%s'"
-msgstr  "Utilisation du fichier de configuration : '%s' au lieu de '%s'"
+msgstr  "Utilisation du fichier de configuration : « %s » au lieu de « %s »"
 
 #: src/storiqoned/main.c:112 src/storiqoned/main.c:196
 #, c-format
@@ -60,15 +60,15 @@ msgstr  "Empreinte : %s, dernier commit : %s\n"
 
 #: src/storiqoned/main.c:121
 msgid   "Parsing option: ok"
-msgstr  "L'analyse des options : ok"
+msgstr  "L’analyse des options : ok"
 
 #: src/storiqoned/main.c:145
 msgid   "No administration configured"
-msgstr  "Pas d'administration configuré"
+msgstr  "Pas d’administration configuré"
 
 #: src/storiqoned/main.c:185
 msgid   "Daemon will shut down"
-msgstr  "Le démon va s'arrêter"
+msgstr  "Le démon va s’arrêter"
 
 #: src/storiqoned/main.c:197
 #, c-format

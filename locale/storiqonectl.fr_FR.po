@@ -1,5 +1,5 @@
 # French translations for storiqonectl package.
-# Copyright (C) 2014
+# Copyright (C) 2014-2015
 # This file is distributed under the same license as the storiqone package.
 # Guillaume Clercin <gclercin@intellique.com>, 2014
 #
@@ -34,7 +34,7 @@ msgstr  "storiqonectl start : démarre le démon\n"
 #: src/storiqonectl/daemon.c:180
 #, c-format
 msgid   "storiqonectl status : get status of storiqoned\n"
-msgstr  "storiqonectl status : récupère l'état du démon\n"
+msgstr  "storiqonectl status : récupère l’état du démon\n"
 
 #: src/storiqonectl/daemon.c:211
 #, c-format

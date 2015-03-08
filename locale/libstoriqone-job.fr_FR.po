@@ -1,5 +1,5 @@
 # French translations for libstoriqone-job package.
-# Copyright (C) 2014
+# Copyright (C) 2014-2015
 # This file is distributed under the same license as the storiqone package.
 # Guillaume Clercin <gclercin@intellique.com>, 2014
 #
@@ -60,7 +60,7 @@ msgstr[1]       "Exécution de scripte : %d scriptes trouvés, type : %s"
 #: src/libstoriqone-job/script.c:54
 #, c-format
 msgid   "script has not found into database, %s, %d/%d"
-msgstr  "le scripte n'a pas été trouvé dans la base de données, %s, %d/%d"
+msgstr  "le scripte n’a pas été trouvé dans la base de données, %s, %d/%d"
 
 #: src/libstoriqone-job/script.c:59
 #, c-format
