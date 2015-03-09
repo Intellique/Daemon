@@ -97,6 +97,22 @@ static unsigned int nb_mirror_workers = 0;
 static struct soj_create_archive_worker ** mirror_workers = NULL;
 
 
+struct so_value * soj_create_archive_worker_archives() {
+	struct so_value * archive_mirrors = so_value_new_linked_list();
+
+	unsigned int i;
+	for (i = 0; i < nb_mirror_workers; i++) {
+		struct soj_create_archive_worker * worker = mirror_workers[i];
+
+		if (worker->state != soj_worker_status_ready)
+			continue;
+
+		so_value_list_push(archive_mirrors, so_archive_convert(worker->archive), true);
+	}
+
+	return so_value_pack("{soso}", "main", so_archive_convert(primary_worker->archive), "mirrors", archive_mirrors);
+}
+
 enum so_format_writer_status soj_create_archive_worker_add_file(struct so_job * job, struct so_format_file * file, struct so_database_connection * db_connect) {
 	enum so_format_writer_status status = soj_create_archive_worker_add_file2(job, primary_worker, file, db_connect);
 	if (status != so_format_writer_ok) {

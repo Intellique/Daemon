@@ -264,12 +264,13 @@ static void soj_create_archive_script_post_run(struct so_job * job, struct so_da
 	}
 	so_value_iterator_free(iter);
 
-	struct so_value * json = so_value_pack("{sosos{soso}sO}",
+	struct so_value * json = so_value_pack("{sosos{soso}sosO}",
 		"job", so_job_convert(job),
 		"host", so_host_get_info2(),
 		"pool",
 			"primary", so_pool_convert(primary_pool),
 			"mirrors", vpool_mirrors,
+		"archive", soj_create_archive_worker_archives(),
 		"selected paths", selected_path
 	);
 
