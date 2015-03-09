@@ -24,20 +24,10 @@
 *  Copyright (C) 2015, Guillaume Clercin <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#include "checksum.h"
-#include "job.h"
-#include "json.h"
-#include "log.h"
-#include "process.h"
-#include "test.h"
-#include "value.h"
+#ifndef __TEST_LIBSTORIQONE_JOB_H__
+#define __TEST_LIBSTORIQONE_JOB_H__
 
-void test_libstoriqone_add_suite() {
-	test_libstoriqone_job_add_suite();
-	test_libstoriqone_json_add_suite();
-	test_libstoriqone_log_add_suite();
-	test_libstoriqone_process_add_suite();
-	test_libstoriqone_value_add_suite();
-    test_libstoriqone_checksum_add_suite();
-}
+void test_libstoriqone_job_add_suite(void);
+
+#endif
 

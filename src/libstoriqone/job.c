@@ -192,11 +192,11 @@ enum so_job_status so_job_string_to_status(const char * status, bool translate) 
 	const unsigned long long hash = so_string_compute_hash2(status);
 
 	if (translate) {
-		for (i = 0; so_job_status[i].status != so_job_status_unknown; i++)
+		for (i = 0; i < so_job_nb_status; i++)
 			if (so_job_status[i].hash_translated == hash)
 				return so_job_status[i].status;
 	} else {
-		for (i = 0; so_job_status[i].status != so_job_status_unknown; i++)
+		for (i = 0; i < so_job_nb_status; i++)
 			if (so_job_status[i].hash == hash)
 				return so_job_status[i].status;
 	}

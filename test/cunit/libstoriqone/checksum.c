@@ -53,17 +53,17 @@ static struct {
 	void (*function)(void);
 	char * name;
 } test_functions[] = {
-    { test_libstoriqone_checksum_compute_0, "libstoriqone: checksum compute: md5 #0" },
-    { test_libstoriqone_checksum_compute_1, "libstoriqone: checksum compute: sha1 #0" },
-    { test_libstoriqone_checksum_compute_2, "libstoriqone: checksum compute: data is null" },
-    { test_libstoriqone_checksum_compute_3, "libstoriqone: checksum compute: length is null" },
-    { test_libstoriqone_checksum_compute_4, "libstoriqone: checksum compute: length is lower than 0" },
+	{ test_libstoriqone_checksum_compute_0, "libstoriqone: checksum compute: md5 #0" },
+	{ test_libstoriqone_checksum_compute_1, "libstoriqone: checksum compute: sha1 #0" },
+	{ test_libstoriqone_checksum_compute_2, "libstoriqone: checksum compute: data is null" },
+	{ test_libstoriqone_checksum_compute_3, "libstoriqone: checksum compute: length is null" },
+	{ test_libstoriqone_checksum_compute_4, "libstoriqone: checksum compute: length is lower than 0" },
 
-    { test_libstoriqone_checksum_convert_0, "libstoriqone: checksum convert #0" },
-    { test_libstoriqone_checksum_convert_1, "libstoriqone: checksum convert #2" },
+	{ test_libstoriqone_checksum_convert_0, "libstoriqone: checksum convert #0" },
+	{ test_libstoriqone_checksum_convert_1, "libstoriqone: checksum convert #2" },
 
-    { test_libstoriqone_checksum_get_driver_0, "libstoriqone: checksum get driver #0" },
-    { test_libstoriqone_checksum_get_driver_1, "libstoriqone: checksum get driver #1" },
+	{ test_libstoriqone_checksum_get_driver_0, "libstoriqone: checksum get driver #0" },
+	{ test_libstoriqone_checksum_get_driver_1, "libstoriqone: checksum get driver #1" },
 
 	{ 0, 0 },
 };
@@ -89,61 +89,61 @@ void test_libstoriqone_checksum_add_suite() {
 
 
 void test_libstoriqone_checksum_compute_0() {
-    char * digest = so_checksum_compute("md5", "Hello, world!!!", 15);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(digest);
-    CU_ASSERT_STRING_EQUAL(digest, "9fe77772b085e3533101d59d33a51f19");
-    free(digest);
+	char * digest = so_checksum_compute("md5", "Hello, world!!!", 15);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(digest);
+	CU_ASSERT_STRING_EQUAL(digest, "9fe77772b085e3533101d59d33a51f19");
+	free(digest);
 }
 
 void test_libstoriqone_checksum_compute_1() {
-    char * digest = so_checksum_compute("sha1", "Hello, world!!!", 15);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(digest);
-    CU_ASSERT_STRING_EQUAL(digest, "91a93333a234aa14b2386dee4f644579c64c29a1");
-    free(digest);
+	char * digest = so_checksum_compute("sha1", "Hello, world!!!", 15);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(digest);
+	CU_ASSERT_STRING_EQUAL(digest, "91a93333a234aa14b2386dee4f644579c64c29a1");
+	free(digest);
 }
 
 void test_libstoriqone_checksum_compute_2() {
-    char * digest = so_checksum_compute("sha256", 0, 15);
-    CU_ASSERT_PTR_NULL(digest);
-    free(digest);
+	char * digest = so_checksum_compute("sha256", 0, 15);
+	CU_ASSERT_PTR_NULL(digest);
+	free(digest);
 }
 
 void test_libstoriqone_checksum_compute_3() {
-    char * digest = so_checksum_compute("sha256", "", 0);
-    CU_ASSERT_PTR_NOT_NULL_FATAL(digest);
-    CU_ASSERT_STRING_EQUAL(digest, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
-    free(digest);
+	char * digest = so_checksum_compute("sha256", "", 0);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(digest);
+	CU_ASSERT_STRING_EQUAL(digest, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+	free(digest);
 }
 
 void test_libstoriqone_checksum_compute_4() {
-    char * digest = so_checksum_compute("sha256", 0, 15);
-    CU_ASSERT_PTR_NULL(digest);
-    free(digest);
+	char * digest = so_checksum_compute("sha256", 0, 15);
+	CU_ASSERT_PTR_NULL(digest);
+	free(digest);
 }
 
 void test_libstoriqone_checksum_convert_0() {
-    unsigned char digest[] = "abc";
-    char hex_digest[7];
+	unsigned char digest[] = "abc";
+	char hex_digest[7];
 
-    so_checksum_convert_to_hex(digest, 3, hex_digest);
-    CU_ASSERT_STRING_EQUAL(hex_digest, "616263");
+	so_checksum_convert_to_hex(digest, 3, hex_digest);
+	CU_ASSERT_STRING_EQUAL(hex_digest, "616263");
 }
 
 void test_libstoriqone_checksum_convert_1() {
-    unsigned char digest[] = "abc";
-    char hex_digest[7] = "";
+	unsigned char digest[] = "abc";
+	char hex_digest[7] = "";
 
-    so_checksum_convert_to_hex(digest, 0, hex_digest);
-    CU_ASSERT_STRING_EQUAL(hex_digest, "");
+	so_checksum_convert_to_hex(digest, 0, hex_digest);
+	CU_ASSERT_STRING_EQUAL(hex_digest, "");
 }
 
 void test_libstoriqone_checksum_get_driver_0() {
-    struct so_checksum_driver * driver = so_checksum_get_driver("sha1");
-    CU_ASSERT_PTR_NOT_NULL(driver);
+	struct so_checksum_driver * driver = so_checksum_get_driver("sha1");
+	CU_ASSERT_PTR_NOT_NULL(driver);
 }
 
 void test_libstoriqone_checksum_get_driver_1() {
-    struct so_checksum_driver * driver = so_checksum_get_driver("foo");
-    CU_ASSERT_PTR_NULL(driver);
+	struct so_checksum_driver * driver = so_checksum_get_driver("foo");
+	CU_ASSERT_PTR_NULL(driver);
 }
 

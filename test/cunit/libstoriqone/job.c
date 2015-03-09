@@ -24,20 +24,55 @@
 *  Copyright (C) 2015, Guillaume Clercin <gclercin@intellique.com>           *
 \****************************************************************************/
 
-#include "checksum.h"
 #include "job.h"
-#include "json.h"
-#include "log.h"
-#include "process.h"
-#include "test.h"
-#include "value.h"
 
-void test_libstoriqone_add_suite() {
-	test_libstoriqone_job_add_suite();
-	test_libstoriqone_json_add_suite();
-	test_libstoriqone_log_add_suite();
-	test_libstoriqone_process_add_suite();
-	test_libstoriqone_value_add_suite();
-    test_libstoriqone_checksum_add_suite();
+// CU_add_suite, CU_cleanup_registry, CU_cleanup_registry
+#include <CUnit/CUnit.h>
+// printf
+#include <stdio.h>
+// free
+#include <stdlib.h>
+// _exit
+#include <unistd.h>
+
+#include <libstoriqone/job.h>
+
+static void test_libstoriqone_job_status_0(void);
+
+static struct {
+	void (*function)(void);
+	char * name;
+} test_functions[] = {
+	{ test_libstoriqone_job_status_0, "libstoriqone: job status convert #0" },
+
+	{ 0, 0 },
+};
+
+
+void test_libstoriqone_job_add_suite() {
+	CU_pSuite suite = CU_add_suite("libstoriqone: job", 0, 0);
+	if (!suite) {
+		CU_cleanup_registry();
+		printf("Error while adding suite libstoriqone because %s\n", CU_get_error_msg());
+		_exit(3);
+	}
+
+	int i;
+	for (i = 0; test_functions[i].name; i++) {
+		if (!CU_add_test(suite, test_functions[i].name, test_functions[i].function)) {
+			CU_cleanup_registry();
+			printf("Error while adding test function '%s' libstoriqone because %s\n", test_functions[i].name, CU_get_error_msg());
+			_exit(3);
+		}
+	}
+}
+
+
+static void test_libstoriqone_job_status_0() {
+	const char * string = so_job_status_to_string(so_job_status_finished, false);
+	CU_ASSERT_STRING_EQUAL(string, "finished");
+
+	enum so_job_status status = so_job_string_to_status(string, false);
+	CU_ASSERT_EQUAL(status, so_job_status_finished);
 }
 
