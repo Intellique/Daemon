@@ -2245,10 +2245,13 @@ static int so_database_postgresql_sync_job(struct so_database_connection * conne
 
 	// update job
 	query = "update_job";
-	so_database_postgresql_prepare(self, query, "UPDATE job SET status = $1, update = NOW() WHERE id = $2");
+	so_database_postgresql_prepare(self, query, "UPDATE job SET status = $1, repetition = $2, update = NOW() WHERE id = $3");
 
-	const char * param2[] = { so_job_status_to_string(job->status, false), job_id };
-	result = PQexecPrepared(self->connect, query, 2, param2, NULL, NULL, 0);
+	char * repetition = NULL;
+	asprintf(&repetition, "%ld", job->repetition);
+
+	const char * param2[] = { so_job_status_to_string(job->status, false), repetition, job_id };
+	result = PQexecPrepared(self->connect, query, 3, param2, NULL, NULL, 0);
 	status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)
@@ -2256,6 +2259,7 @@ static int so_database_postgresql_sync_job(struct so_database_connection * conne
 
 	PQclear(result);
 	free(job_id);
+	free(repetition);
 
 	if (jobrun_id == NULL)
 		return status != PGRES_COMMAND_OK;

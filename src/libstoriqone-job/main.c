@@ -183,6 +183,8 @@ int main() {
 		return 5;
 
 	job->status = so_job_status_running;
+	if (job->repetition > 0)
+		job->repetition--;
 	so_log_write(so_log_level_info, dgettext("libstoriqone-job", "Initialize job (type: %s)"), job_dr->name);
 
 	db_connect->ops->sync_job(db_connect, job);

@@ -79,8 +79,14 @@ static void sod_job_exited(int fd, short event, void * data) {
 			return;
 		}
 
-		if (strcmp("finished", command) == 0)
+		if (strcmp("finished", command) == 0) {
 			self->finished = true;
+
+			struct so_value * new_job = NULL;
+			so_value_unpack(request, "{so}", "job", &new_job);
+			if (new_job != NULL)
+				so_job_sync(job, new_job);
+		}
 
 		so_value_free(request);
 		free(command);
