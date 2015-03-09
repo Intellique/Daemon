@@ -58,9 +58,6 @@ struct so_archive {
 
 	ssize_t size;
 
-	time_t start_time;
-	time_t end_time;
-
 	struct so_archive_volume * volumes;
 	unsigned int nb_volumes;
 

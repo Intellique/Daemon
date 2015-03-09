@@ -190,7 +190,7 @@ static int soj_format_writer_close(struct so_format_writer * fw) {
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	else if (so_value_hashtable_has_key2(response, "digests")) {
 		so_value_free(self->digest);
-		so_value_unpack(response, "digests", &self->digest);
+		so_value_unpack(response, "{sO}", "digests", &self->digest);
 	}
 	so_value_free(response);
 
@@ -250,7 +250,7 @@ static ssize_t soj_format_writer_get_block_size(struct so_format_writer * fw) {
 
 static struct so_value * soj_format_writer_get_digests(struct so_format_writer * fw) {
 	struct soj_format_writer_private * self = fw->data;
-	return self->digest;
+	return so_value_share(self->digest);
 }
 
 static int soj_format_writer_last_errno(struct so_format_writer * fw) {

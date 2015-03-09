@@ -82,10 +82,14 @@ struct so_archive_volume * so_archive_add_volume(struct so_archive * archive) {
 }
 
 struct so_value * so_archive_convert(struct so_archive * archive) {
+	archive->size = 0;
+
 	unsigned int i;
 	struct so_value * volumes = so_value_new_array(archive->nb_volumes);
 	for (i = 0; i < archive->nb_volumes; i++) {
 		struct so_archive_volume * vol = archive->volumes + i;
+
+		archive->size += vol->size;
 
 		unsigned int j;
 		struct so_value * files = so_value_new_array(vol->nb_files);
@@ -93,7 +97,13 @@ struct so_value * so_archive_convert(struct so_archive * archive) {
 			struct so_archive_files * ptr_file = vol->files + j;
 			struct so_archive_file * file = ptr_file->file;
 
-			struct so_value * vfile = so_value_pack("{sisis{sssisssisssisssisisbsisiss}}",
+			struct so_value * checksums;
+			if (file->digests == NULL)
+				checksums = so_value_new_hashtable2();
+			else
+				checksums = so_value_share(file->digests);
+
+			so_value_list_push(files, so_value_pack("{sisis{sssisssisssisssisisbsisosiss}}",
 				"position", ptr_file->position,
 				"archived time", ptr_file->archived_time,
 				"file",
@@ -110,21 +120,21 @@ struct so_value * so_archive_convert(struct so_archive * archive) {
 
 					"checksum ok", file->check_ok,
 					"checksum time", file->check_time,
+					"checksums", checksums,
 
 					"size", file->size,
 
 					"mime type", file->mime_type
-			);
-
-			if (file->digests == NULL)
-				so_value_hashtable_put2(vfile, "checksums", so_value_new_hashtable2(), true);
-			else
-				so_value_hashtable_put2(vfile, "checksums", file->digests, false);
-
-			so_value_list_push(volumes, vfile, true);
+			), true);
 		}
 
-		struct so_value * vvol = so_value_pack("{sisisisisbsisosiso}",
+		struct so_value * checksums;
+		if (vol->digests == NULL)
+			checksums = so_value_new_hashtable2();
+		else
+			checksums = so_value_share(vol->digests);
+
+		so_value_list_push(volumes, so_value_pack("{sisisisisbsisososiso}",
 			"sequence", (long) vol->sequence,
 			"size", vol->size,
 
@@ -133,29 +143,20 @@ struct so_value * so_archive_convert(struct so_archive * archive) {
 
 			"checksum ok", vol->check_ok,
 			"checksum time", vol->check_time,
+			"checksums", checksums,
 
 			"media", so_media_convert(vol->media),
 			"media position", (long) vol->media_position,
 
 			"files", files
-		);
-
-		if (vol->digests == NULL)
-			so_value_hashtable_put2(vvol, "checksums", so_value_new_hashtable2(), true);
-		else
-			so_value_hashtable_put2(vvol, "checksums", vol->digests, false);
-
-		so_value_list_push(volumes, vvol, true);
+		), true);
 	}
 
-	return so_value_pack("{sssssisisisossss}",
+	return so_value_pack("{sssssisossss}",
 		"uuid", archive->uuid,
 		"name", archive->name,
 
 		"size", archive->size,
-
-		"start time", archive->start_time,
-		"end time", archive->end_time,
 
 		"volumes", volumes,
 

@@ -155,6 +155,14 @@ void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, str
 			char * process_name;
 			asprintf(&process_name, "job_%s", job->type);
 
+			/**
+			 * valgrind
+			 * valgrind -v --log-file=valgrind.log --num-callers=24 --leak-check=full --show-reachable=yes --track-origins=yes ./bin/stoned
+			 *
+			 * const char * params[] = { "-v", "--log-file=valgrind.log", "--track-fds=yes", "--time-stamp=yes", "--num-callers=24", "--leak-check=full", "--show-reachable=yes", "--track-origins=yes", "--fullpath-after=/home/guillaume/prog/StoriqOne/", process_name };
+			 * so_process_new(&self->process, "valgrind", params, 10);
+			 */
+
 			const char * params[] = { job->key, job->name };
 			so_process_new(&self->process, process_name, params, 2);
 

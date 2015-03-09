@@ -199,7 +199,7 @@ static ssize_t soj_format_writer_filesystem_get_block_size(struct so_format_writ
 }
 
 static struct so_value * soj_format_writer_filesystem_get_digests(struct so_format_writer * fw __attribute__((unused))) {
-	return so_value_new_linked_list();
+	return so_value_new_hashtable2();
 }
 
 static int soj_format_writer_filesystem_last_errno(struct so_format_writer * fw) {
