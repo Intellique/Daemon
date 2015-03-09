@@ -70,7 +70,23 @@ static void sod_job_exited(int fd, short event, void * data) {
 	struct so_job * job = data;
 	struct so_job_private * self = job->data;
 
-	if ((event & POLLHUP) && !(event & POLLIN)) {
+	if (event & POLLIN) {
+		struct so_value * request = so_json_parse_fd(fd, 1000);
+		char * command;
+		if (request == NULL || so_value_unpack(request, "{ss}", "command", &command) < 0) {
+			if (request != NULL)
+				so_value_free(request);
+			return;
+		}
+
+		if (strcmp("finished", command) == 0)
+			self->finished = true;
+
+		so_value_free(request);
+		free(command);
+	}
+
+	if (event & POLLHUP) {
 		so_poll_unregister(fd, POLLHUP | POLLIN);
 
 		if (!self->finished) {
@@ -87,24 +103,7 @@ static void sod_job_exited(int fd, short event, void * data) {
 		so_process_free(&self->process, 1);
 		free(self->key);
 		free(self);
-
-		return;
 	}
-
-	struct so_value * request = so_json_parse_fd(fd, 1000);
-	char * command;
-	if (request == NULL || so_value_unpack(request, "{ss}", "command", &command) < 0) {
-		if (request != NULL)
-			so_value_free(request);
-		return;
-	}
-
-	if (!strcmp("finished", command)) {
-		self->finished = true;
-	}
-
-	so_value_free(request);
-	free(command);
 }
 
 void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, struct so_database_connection * db_connection) {
@@ -129,7 +128,8 @@ void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, str
 		so_value_free(command);
 
 		struct so_value * response = so_json_parse_fd(self->fd_out, -1);
-		so_job_sync(job, response);
+		if (response != NULL)
+			so_job_sync(job, response);
 		so_value_free(response);
 	}
 	so_value_iterator_free(iter);

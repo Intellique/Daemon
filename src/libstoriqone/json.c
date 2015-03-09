@@ -453,7 +453,7 @@ struct so_value * so_json_parse_fd(int fd, int timeout) {
 	if (poll(&pfd, 1, timeout) == 0)
 		return NULL;
 
-	if (pfd.revents & POLLHUP)
+	if (pfd.revents == POLLHUP)
 		return NULL;
 
 	ssize_t buffer_size = 4096, nb_total_read = 0, size;
