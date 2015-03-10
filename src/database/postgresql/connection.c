@@ -111,6 +111,7 @@ static bool so_database_postgresql_find_plugin_checksum(struct so_database_conne
 static int so_database_postgresql_sync_plugin_checksum(struct so_database_connection * connect, struct so_checksum_driver * driver);
 static int so_database_postgresql_sync_plugin_job(struct so_database_connection * connect, const char * job);
 
+static struct so_archive * so_database_postgresql_get_archive(struct so_database_connection * connect, struct so_job * job);
 static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive);
 static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, struct so_archive_file * file, char ** file_id);
 static int so_database_postgresql_sync_archive_volume(struct so_database_connection * connect, char * archive_id, struct so_archive_volume * volume);
@@ -167,6 +168,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.sync_plugin_checksum = so_database_postgresql_sync_plugin_checksum,
 	.sync_plugin_job      = so_database_postgresql_sync_plugin_job,
 
+	.get_archive  = so_database_postgresql_get_archive,
 	.sync_archive = so_database_postgresql_sync_archive,
 
 	.backup_add                 = so_database_postgresql_backup_add,
@@ -2495,6 +2497,190 @@ static int so_database_postgresql_sync_plugin_job(struct so_database_connection 
 	return status == PGRES_FATAL_ERROR;
 }
 
+
+static struct so_archive * so_database_postgresql_get_archive(struct so_database_connection * connect, struct so_job * job) {
+	if (connect == NULL || job == NULL)
+		return NULL;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	char * job_id = NULL;
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
+	so_value_unpack(db, "{ss}", "id", &job_id);
+
+	struct so_archive * archive = NULL;
+	char * archive_id = NULL;
+
+	const char * query = "select_archive_by_job";
+	so_database_postgresql_prepare(self, query, "SELECT a.id, a.uuid, a.name, uc.login, uo.login, a.deleted FROM job j INNER JOIN archive a ON j.id = $1 AND j.archive = a.id INNER JOIN users uc ON a.creator = uc.id INNER JOIN users uo ON a.owner = uo.id LIMIT 1");
+
+	const char * param[] = { job_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		archive = so_archive_new();
+
+		so_database_postgresql_get_string(result, 0, 1, archive->uuid, 37);
+		so_database_postgresql_get_string_dup(result, 0, 2, &archive->name);
+		so_database_postgresql_get_string_dup(result, 0, 3, &archive->creator);
+		so_database_postgresql_get_string_dup(result, 0, 4, &archive->owner);
+		so_database_postgresql_get_bool(result, 0, 5, &archive->deleted);
+
+		so_database_postgresql_get_string_dup(result, 0, 0, &archive_id);
+
+		archive->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
+		struct so_value * db = so_value_new_hashtable2();
+		so_value_hashtable_put(archive->db_data, key, false, db, true);
+		so_value_hashtable_put2(db, "id", so_value_new_string(archive_id), true);
+	}
+
+	PQclear(result);
+	free(job_id);
+
+	if (archive == NULL) {
+		so_value_free(key);
+		return NULL;
+	}
+
+	query = "select_archivevolume_by_archive";
+	so_database_postgresql_prepare(self, query, "SELECT av.id, av.sequence, av.size, av.starttime, av.endtime, av.checksumok, av.checktime, m.mediumserialnumber, av.mediaposition FROM archivevolume av INNER JOIN media m ON av.media = m.id WHERE archive = $1 ORDER BY sequence");
+
+	const char * param2[] = { archive_id };
+	result = PQexecPrepared(self->connect, query, 1, param2, NULL, NULL, 0);
+	status = PQresultStatus(result);
+	int nb_result = PQntuples(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && nb_result > 0) {
+		archive->nb_volumes = nb_result;
+		archive->volumes = calloc(nb_result, sizeof(struct so_archive_volume));
+
+		unsigned int i;
+		for (i = 0; i < archive->nb_volumes; i++) {
+			struct so_archive_volume * vol = archive->volumes + i;
+
+			char * archive_volume_id = PQgetvalue(result, i, 0);
+			so_database_postgresql_get_uint(result, i, 1, &vol->sequence);
+			so_database_postgresql_get_ssize(result, i, 2, &vol->size);
+			so_database_postgresql_get_time(result, i, 3, &vol->start_time);
+			so_database_postgresql_get_time(result, i, 4, &vol->end_time);
+			so_database_postgresql_get_bool(result, i, 5, &vol->check_ok);
+			so_database_postgresql_get_time(result, i, 6, &vol->check_time);
+
+			char * media_id = PQgetvalue(result, i, 7);
+			vol->media = so_database_postgresql_get_media(connect, media_id, NULL, NULL);
+			so_database_postgresql_get_uint(result, i, 8, &vol->media_position);
+
+			vol->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
+			struct so_value * db = so_value_new_hashtable2();
+			so_value_hashtable_put(vol->db_data, key, false, db, true);
+			so_value_hashtable_put2(db, "id", so_value_new_string(archive_volume_id), true);
+			so_value_hashtable_put2(db, "archive id", so_value_new_string(archive_id), true);
+
+			vol->digests = so_value_new_hashtable2();
+			vol->archive = archive;
+			archive->size += vol->size;
+
+
+			const char * query3 = "select_checksum_from_archivevolume";
+			so_database_postgresql_prepare(self, query3, "SELECT c.name, cr.result FROM archivevolumetochecksumresult av2cr INNER JOIN checksumresult cr ON av2cr.archivevolume = $1 AND av2cr.checksumresult = cr.id LEFT JOIN checksum c ON cr.checksum = c.id");
+
+			const char * param3[] = { archive_volume_id };
+			PGresult * result3 = PQexecPrepared(self->connect, query3, 1, param3, NULL, NULL, 0);
+			ExecStatusType status3 = PQresultStatus(result);
+			int nb_result3 = PQntuples(result3);
+
+			if (status == PGRES_FATAL_ERROR)
+				so_database_postgresql_get_error(result3, query3);
+			else if (status3 == PGRES_TUPLES_OK && nb_result3 > 0) {
+				int j;
+				for (j = 0; j < nb_result3; j++)
+					so_value_hashtable_put2(vol->digests, PQgetvalue(result3, j, 0), so_value_new_string(PQgetvalue(result3, j, 1)), true);
+			}
+
+			PQclear(result3);
+
+			const char * query4 = "select_files_from_archivevolume";
+			so_database_postgresql_prepare(self, query4, "SELECT af.id, afv.blocknumber, afv.archivetime, afv.checktime, afv.checksumok, af.name, af.type, af.mimetype, af.ownerid, af.owner, af.groupid, af.groups, af.perm, af.ctime, af.mtime, af.size FROM archivefiletoarchivevolume afv INNER JOIN archivefile af ON afv.archivevolume = $1 AND afv.archivefile = af.id ORDER BY af.id");
+
+			result3 = PQexecPrepared(self->connect, query4, 1, param3, NULL, NULL, 0);
+			status3 = PQresultStatus(result3);
+			nb_result3 = PQntuples(result3);
+
+			if (status == PGRES_FATAL_ERROR)
+				so_database_postgresql_get_error(result3, query3);
+			else if (status3 == PGRES_TUPLES_OK && nb_result3 > 0) {
+				vol->nb_files = nb_result3;
+				vol->files = calloc(nb_result3, sizeof(struct so_archive_files));
+
+				unsigned int j;
+				for (j = 0; j < vol->nb_files; j++) {
+					struct so_archive_files * ptr_file = vol->files + j;
+					struct so_archive_file * file = ptr_file->file = malloc(sizeof(struct so_archive_file));
+					bzero(ptr_file->file, sizeof(struct so_archive_file));
+
+					char * file_id = PQgetvalue(result3, j, 0);
+					so_database_postgresql_get_ssize(result3, j, 1, &ptr_file->position);
+					so_database_postgresql_get_time(result3, j, 2, &ptr_file->archived_time);
+
+					so_database_postgresql_get_string_dup(result3, j, 5, &file->name);
+					file->type = so_archive_file_string_to_type(PQgetvalue(result3, j, 6), false);
+					so_database_postgresql_get_string_dup(result3, j, 7, &file->mime_type);
+					so_database_postgresql_get_uint(result3, j, 8, &file->ownerid);
+					so_database_postgresql_get_string_dup(result3, j, 9, &file->owner);
+					so_database_postgresql_get_uint(result3, j, 10, &file->groupid);
+					so_database_postgresql_get_string_dup(result3, j, 11, &file->group);
+					so_database_postgresql_get_uint(result3, j, 12, &file->perm);
+
+					so_database_postgresql_get_time(result3, j, 13, &file->create_time);
+					so_database_postgresql_get_time(result3, j, 14, &file->modify_time);
+
+					so_database_postgresql_get_time(result3, j, 3, &file->check_time);
+					so_database_postgresql_get_bool(result3, j, 4, &file->check_ok);
+
+					so_database_postgresql_get_ssize(result3, j, 15, &file->size);
+					file->digests = so_value_new_hashtable2();
+
+					file->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
+					struct so_value * db = so_value_new_hashtable2();
+					so_value_hashtable_put(file->db_data, key, false, db, true);
+					so_value_hashtable_put2(db, "id", so_value_new_string(file_id), true);
+
+					const char * query4 = "select_checksum_from_archivefile";
+					so_database_postgresql_prepare(self, query4, "SELECT c.name, cr.result FROM archivefiletochecksumresult af2cr INNER JOIN checksumresult cr ON af2cr.archivefile = $1 AND af2cr.checksumresult = cr.id LEFT JOIN checksum c ON cr.checksum = c.id");
+
+					const char * param4[] = { file_id };
+					PGresult * result4 = PQexecPrepared(self->connect, query4, 1, param4, NULL, NULL, 0);
+					ExecStatusType status4 = PQresultStatus(result);
+					int nb_result4 = PQntuples(result4);
+
+					if (status4 == PGRES_FATAL_ERROR)
+						so_database_postgresql_get_error(result4, query4);
+					else if (status4 == PGRES_TUPLES_OK && nb_result4 > 0) {
+						int k;
+						for (k = 0; k < nb_result4; k++)
+							so_value_hashtable_put2(file->digests, PQgetvalue(result4, k, 0), so_value_new_string(PQgetvalue(result4, k, 1)), true);
+					}
+
+					PQclear(result4);
+				}
+			}
+
+			PQclear(result3);
+		}
+	}
+
+	PQclear(result);
+
+	so_value_free(key);
+
+	return archive;
+}
 
 static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive) {
 	if (connect == NULL || archive == NULL)

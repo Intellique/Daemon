@@ -62,6 +62,8 @@ static struct so_archive_file_type2 {
 };
 static const unsigned int so_archive_file_nb_data_types = sizeof(so_archive_file_types) / sizeof(*so_archive_file_types);
 
+static void so_archive_init(void) __attribute__((constructor));
+
 
 struct so_archive_volume * so_archive_add_volume(struct so_archive * archive) {
 	void * new_addr = realloc(archive->volumes, (archive->nb_volumes + 1) * sizeof(struct so_archive_volume));
@@ -152,7 +154,7 @@ struct so_value * so_archive_convert(struct so_archive * archive) {
 		), true);
 	}
 
-	return so_value_pack("{sssssisossss}",
+	return so_value_pack("{sssssisosssssb}",
 		"uuid", archive->uuid,
 		"name", archive->name,
 
@@ -161,7 +163,9 @@ struct so_value * so_archive_convert(struct so_archive * archive) {
 		"volumes", volumes,
 
 		"creator", archive->creator,
-		"owner", archive->owner
+		"owner", archive->owner,
+
+		"deleted", archive->deleted
 	);
 }
 
@@ -197,6 +201,15 @@ void so_archive_free(struct so_archive * archive) {
 
 	so_value_free(archive->db_data);
 	free(archive);
+}
+
+static void so_archive_init() {
+	unsigned int i;
+	for (i = 0; i < so_archive_file_nb_data_types; i++) {
+		so_archive_file_types[i].hash = so_string_compute_hash2(so_archive_file_types[i].name);
+		so_archive_file_types[i].translation = dgettext("libstoriqone", so_archive_file_types[i].name);
+		so_archive_file_types[i].hash_translated = so_string_compute_hash2(dgettext("libstoriqone", so_archive_file_types[i].name));
+	}
 }
 
 struct so_archive * so_archive_new() {

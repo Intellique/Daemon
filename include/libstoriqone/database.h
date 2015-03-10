@@ -163,6 +163,7 @@ struct so_database_connection {
 		int (*sync_plugin_checksum)(struct so_database_connection * connect, struct so_checksum_driver * driver) __attribute__((nonnull));
 		int (*sync_plugin_job)(struct so_database_connection * connect, const char * job) __attribute__((nonnull));
 
+		struct so_archive * (*get_archive)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull));
 		int (*sync_archive)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((nonnull));
 
 		int (*backup_add)(struct so_database_connection * connect, struct so_backup * backup) __attribute__((nonnull));

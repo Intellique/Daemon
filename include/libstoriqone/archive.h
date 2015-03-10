@@ -64,6 +64,8 @@ struct so_archive {
 	char * creator;
 	char * owner;
 
+	bool deleted;
+
 	struct so_value * db_data;
 };
 
