@@ -36,6 +36,7 @@
 #include <libstoriqone/archive.h>
 #include <libstoriqone/database.h>
 #include <libstoriqone/format.h>
+#include <libstoriqone/io.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
@@ -47,8 +48,12 @@
 #include "common.h"
 
 int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * archive, struct so_database_connection * db_connect) {
+	job->done = 0.01;
+
 	unsigned i;
 	bool ok = true;
+	ssize_t total_read = 0;
+	struct so_stream_writer * chcksum_writer = NULL;
 	for (i = 0; ok && i < archive->nb_volumes; i++) {
 		struct so_archive_volume * vol = archive->volumes + i;
 
@@ -123,16 +128,60 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 
 		enum so_format_reader_header_status status;
 		struct so_format_file file;
+		unsigned int j = 0;
+		static time_t last_update = 0;
+		last_update = time(NULL);
+
 		while (status = reader->ops->get_header(reader, &file), status == so_format_reader_header_ok) {
 			if (S_ISREG(file.mode)) {
+				struct so_archive_files * ptr_file = vol->files + j;
+				struct so_archive_file * file = ptr_file->file;
+
+				struct so_value * checksums = so_value_hashtable_keys(file->digests);
+				if (so_value_list_get_length(checksums) > 0)
+					chcksum_writer = so_io_checksum_writer_new(NULL, checksums, true);
+				so_value_free(checksums);
+
 				static char buffer[16384];
 				ssize_t nb_read;
 				while (nb_read = reader->ops->read(reader, buffer, 16384), nb_read > 0) {
+					if (chcksum_writer != NULL)
+						chcksum_writer->ops->write(chcksum_writer, buffer, nb_read);
+
+					time_t now = time(NULL);
+					if (now > last_update + 5) {
+						last_update = now;
+
+						float done = reader->ops->position(reader) + total_read;
+						done *= 0.98;
+						job->done = 0.01 + done / archive->size;
+					}
 				}
 
 				if (nb_read < 0) {
 					ok = false;
 					// TODO: error while reading
+				}
+
+				if (chcksum_writer != NULL) {
+					chcksum_writer->ops->close(chcksum_writer);
+
+					struct so_value * digests = so_io_checksum_writer_get_checksums(chcksum_writer);
+					file->check_ok = so_value_equals(file->digests, digests);
+					file->check_time = time(NULL);
+					so_value_free(digests);
+
+					chcksum_writer->ops->free(chcksum_writer);
+					chcksum_writer = NULL;
+				}
+
+				time_t now = time(NULL);
+				if (now > last_update + 5) {
+					last_update = now;
+
+					float done = reader->ops->position(reader) + total_read;
+					done *= 0.98;
+					job->done = 0.01 + done / archive->size;
 				}
 			}
 
@@ -140,6 +189,8 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 
 			if (!ok)
 				break;
+
+			j++;
 		}
 
 		if (ok)
@@ -153,9 +204,12 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 
 		vol->check_ok = ok;
 		vol->check_time = time(NULL);
+		total_read += vol->size;
 	}
 
-	db_connect->ops->sync_archive(db_connect, archive);
+	// db_connect->ops->sync_archive(db_connect, archive);
+
+	job->done = 1;
 
 	return ok ? 0 : 1;
 }

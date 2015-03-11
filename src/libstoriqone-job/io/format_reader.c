@@ -289,11 +289,9 @@ static ssize_t soj_format_reader_read(struct so_format_reader * fr, void * buffe
 
 		if (fds[0].revents & POLLIN) {
 			struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+			so_value_unpack(response, "{si}", "position", &self->position);
 			if (nb_read < 0)
-				so_value_unpack(response, "{sisi}",
-					"position", &self->position,
-					"last errno", &self->last_errno
-				);
+				so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 			so_value_free(response);
 
 			return nb_total_read;
