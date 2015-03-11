@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-03-03 20:07+0100\n"
+        "POT-Creation-Date: 2015-03-11 18:26+0100\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -56,7 +56,7 @@ msgstr  "[%s %s #%u] : échec du formatage du média (%s)"
 msgid   "[%s %s #%u]: open media (%s) for reading at position #%ld"
 msgstr  "[%s %s #%u] : ouverture du média (%s) en lecture à la position #%ld"
 
-#: src/libstoriqone-drive/listen.c:396 src/libstoriqone-drive/listen.c:531
+#: src/libstoriqone-drive/listen.c:396 src/libstoriqone-drive/listen.c:532
 #, c-format
 msgid   "[%s %s #%u]: open media (%s) for writing"
 msgstr  "[%s %s #%u] : ouverture du média (%s) en écriture"

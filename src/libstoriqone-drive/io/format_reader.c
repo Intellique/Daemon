@@ -78,8 +78,28 @@ static void sodr_io_format_reader_close(struct sodr_peer * peer, struct so_value
 	long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
 
 	struct so_value * response = so_value_pack("{sisi}", "returned", failed, "last errno", last_errno);
+
+	if (failed == 0) {
+		if (peer->has_checksums) {
+			struct so_value * digests = peer->format_reader->ops->get_digests(peer->format_reader);
+			so_value_hashtable_put2(response, "digests", digests, true);
+		}
+
+		peer->format_reader->ops->free(peer->format_reader);
+		peer->format_reader = NULL;
+		close(peer->fd_data);
+		peer->fd_data = -1;
+		free(peer->buffer);
+		peer->buffer = NULL;
+		peer->buffer_length = 0;
+		peer->has_checksums = false;
+	}
+
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
+
+	close(peer->fd_cmd);
+	peer->fd_cmd = -1;
 }
 
 static void sodr_io_format_reader_end_of_file(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {

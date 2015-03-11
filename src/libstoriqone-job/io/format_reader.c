@@ -107,7 +107,7 @@ struct so_format_reader * soj_format_new_reader2(struct so_drive * drive, int fd
 	self->block_size = block_size;
 	self->position = 0;
 	self->last_errno = 0;
-	self->digest = so_value_new_linked_list();
+	self->digest = so_value_new_hashtable2();
 
 	struct so_format_reader * reader = malloc(sizeof(struct so_format_reader));
 	reader->ops = &soj_format_reader_ops;
@@ -137,7 +137,7 @@ static int soj_format_reader_close(struct so_format_reader * fr) {
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	else if (so_value_hashtable_has_key2(response, "digests")) {
 		so_value_free(self->digest);
-		so_value_unpack(response, "digests", &self->digest);
+		so_value_unpack(response, "{sO}", "digests", &self->digest);
 	}
 	so_value_free(response);
 
@@ -200,7 +200,7 @@ static ssize_t soj_format_reader_get_block_size(struct so_format_reader * fr) {
 
 static struct so_value * soj_format_reader_get_digests(struct so_format_reader * fr) {
 	struct soj_format_reader_private * self = fr->data;
-	return self->digest;
+	return so_value_share(self->digest);
 }
 
 static enum so_format_reader_header_status soj_format_reader_get_header(struct so_format_reader * fr, struct so_format_file * file) {
@@ -306,7 +306,7 @@ static ssize_t soj_format_reader_read(struct so_format_reader * fr, void * buffe
 static ssize_t soj_format_reader_read_to_end_of_data(struct so_format_reader * fr) {
 	struct soj_format_reader_private * self = fr->data;
 
-	struct so_value * request = so_value_pack("{ss}", "command", "end of data");
+	struct so_value * request = so_value_pack("{ss}", "command", "read to end of data");
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 

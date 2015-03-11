@@ -31,10 +31,15 @@
 
 #include <libstoriqone/archive.h>
 #include <libstoriqone/database.h>
+#include <libstoriqone/host.h>
+#include <libstoriqone/media.h>
+#include <libstoriqone/value.h>
 #include <libstoriqone-job/job.h>
+#include <libstoriqone-job/script.h>
 
 #include <job_check-archive.chcksum>
 
+#include "common.h"
 #include "config.h"
 
 static struct so_archive * archive = NULL;
@@ -59,7 +64,9 @@ static struct so_job_driver soj_checkarchive = {
 };
 
 
-static void soj_checkarchive_exit(struct so_job * job, struct so_database_connection * db_connect) {
+static void soj_checkarchive_exit(struct so_job * job __attribute__((unused)), struct so_database_connection * db_connect __attribute__((unused))) {
+	if (archive != NULL)
+		so_archive_free(archive);
 }
 
 static void soj_checkarchive_init() {
@@ -69,7 +76,7 @@ static void soj_checkarchive_init() {
 }
 
 static int soj_checkarchive_run(struct so_job * job, struct so_database_connection * db_connect) {
-	return 0;
+	return soj_checkarchive_thorough_mode(job, archive, db_connect);
 }
 
 static int soj_checkarchive_simulate(struct so_job * job, struct so_database_connection * db_connect) {
@@ -77,15 +84,64 @@ static int soj_checkarchive_simulate(struct so_job * job, struct so_database_con
 	if (archive == NULL) {
 		return 1;
 	}
+
+	return 0;
 }
 
 static void soj_checkarchive_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
+	struct so_pool * pool = archive->volumes->media->pool;
+
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, pool) < 1)
+		return;
+
+	struct so_value * json = so_value_pack("{sososo}",
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"archive", so_archive_convert(archive)
+	);
+
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_on_error, pool, json);
+	so_value_free(json);
+	so_value_free(returned);
 }
 
 static void soj_checkarchive_script_post_run(struct so_job * job, struct so_database_connection * db_connect) {
+	struct so_pool * pool = archive->volumes->media->pool;
+
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_post_job, pool) < 1)
+		return;
+
+	struct so_value * json = so_value_pack("{sososo}",
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"archive", so_archive_convert(archive)
+	);
+
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_post_job, pool, json);
+	so_value_free(json);
+	so_value_free(returned);
 }
 
 static bool soj_checkarchive_script_pre_run(struct so_job * job, struct so_database_connection * db_connect) {
-	return true;
+	struct so_pool * pool = archive->volumes->media->pool;
+
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_pre_job, pool) < 1)
+		return true;
+
+	struct so_value * json = so_value_pack("{sososo}",
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"archive", so_archive_convert(archive)
+	);
+
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_pre_job, pool, json);
+	so_value_free(json);
+
+	bool should_run = false;
+	so_value_unpack(returned, "{sb}", "should run", &should_run);
+
+	so_value_free(returned);
+
+	return should_run;
 }
 

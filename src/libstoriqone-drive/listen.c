@@ -468,6 +468,7 @@ static void sodr_socket_command_get_reader(struct sodr_peer * peer, struct so_va
 
 	peer->buffer_length = 16384;
 	peer->buffer = malloc(peer->buffer_length);
+	peer->has_checksums = so_value_list_get_length(checksums) > 0;
 
 	struct so_value * socket_cmd_config = so_value_copy(sodr_config, true);
 	struct so_value * socket_data_config = so_value_copy(sodr_config, true);
