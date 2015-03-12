@@ -32,6 +32,7 @@
 #include <libstoriqone/archive.h>
 #include <libstoriqone/database.h>
 #include <libstoriqone/host.h>
+#include <libstoriqone/log.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/job.h>
@@ -76,12 +77,19 @@ static void soj_checkarchive_init() {
 }
 
 static int soj_checkarchive_run(struct so_job * job, struct so_database_connection * db_connect) {
-	return soj_checkarchive_quick_mode(job, archive, db_connect);
+	bool quick_mode = false;
+	so_value_unpack(job->option, "{sb}", "quick_mode", &quick_mode);
+
+	if (quick_mode)
+		return soj_checkarchive_quick_mode(job, archive, db_connect);
+	else
+		return soj_checkarchive_thorough_mode(job, archive, db_connect);
 }
 
 static int soj_checkarchive_simulate(struct so_job * job, struct so_database_connection * db_connect) {
 	archive = db_connect->ops->get_archive(db_connect, job);
 	if (archive == NULL) {
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Archive not found"));
 		return 1;
 	}
 

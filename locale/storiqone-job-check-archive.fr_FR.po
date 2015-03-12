@@ -1,0 +1,36 @@
+# French translations for job-check-archive package.
+# Copyright (C) 2015
+# This file is distributed under the same license as the storiqone package.
+# Guillaume Clercin <gclercin@intellique.com>, 2014
+#
+msgid   ""
+msgstr  "Project-Id-Version: job-check-archive v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-03-12 20:14+0100\n"
+        "PO-Revision-Date: 2014-11-13 09:03+0100\n"
+        "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
+        "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
+        "Language: fr\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/job/check-archive/check-archive.c:92
+msgid   "Archive not found"
+msgstr  "Archive non trouvée"
+
+#: src/job/check-archive/quick_mode.c:180 src/job/check-archive/thorough_mode.c:76
+#, c-format
+msgid   "Media not found (named: %s)"
+msgstr  "Média non trouvé (nom: %s)"
+
+#: src/job/check-archive/quick_mode.c:191
+#, c-format
+msgid   "Getting media (%s)"
+msgstr  "Accession au média (%s)"
+
+#: src/job/check-archive/quick_mode.c:206
+#, c-format
+msgid   "Looking for media (%s)"
+msgstr  "Recherche du média (%s)"

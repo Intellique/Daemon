@@ -43,7 +43,9 @@
 #include <unistd.h>
 
 #include <libstoriqone/archive.h>
+#include <libstoriqone/database.h>
 #include <libstoriqone/io.h>
+#include <libstoriqone/log.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
@@ -55,6 +57,9 @@
 #include "common.h"
 
 struct soj_checkarchive_worker {
+	struct so_job * job;
+	struct so_database_connection * db_connect;
+
 	struct so_archive * archive;
 	struct so_media * media;
 
@@ -98,6 +103,7 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		bzero(new_worker, sizeof(struct soj_checkarchive_worker));
 		new_worker->archive = archive;
 		new_worker->media = vol->media;
+		new_worker->db_connect = db_connect->config->ops->connect(db_connect->config);
 		new_worker->nb_total_read = 0;
 		new_worker->status = so_job_status_running;
 		new_worker->stop_request = false;
@@ -170,8 +176,8 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 		switch (state) {
 			case alert_user:
 				worker->status = so_job_status_waiting;
-				// if (!has_alert_user)
-				// 	so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Media not found (named: %s)"), soj_formatmedia_media->name);
+				if (!has_alert_user)
+					so_job_add_record(worker->job, worker->db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Media not found (named: %s)"), worker->media->name);
 				has_alert_user = true;
 
 				sleep(15);
@@ -182,6 +188,7 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 				break;
 
 			case get_media:
+				so_job_add_record(worker->job, worker->db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Getting media (%s)"), worker->media->name);
 				drive = slot->changer->ops->get_media(slot->changer, slot, false);
 				if (drive == NULL) {
 					worker->status = so_job_status_waiting;
@@ -196,6 +203,7 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 				break;
 
 			case look_for_media:
+				so_job_add_record(worker->job, worker->db_connect, so_log_level_debug, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Looking for media (%s)"), worker->media->name);
 				slot = soj_changer_find_slot(worker->media);
 				state = slot != NULL ? reserve_media : alert_user;
 				break;
@@ -216,13 +224,8 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 		}
 	}
 
-	if (worker->stop_request) {
-		worker->status = so_job_status_stopped;
-		return;
-	}
-
 	unsigned int i;
-	for (i = 0; i < worker->archive->nb_volumes; i++) {
+	for (i = 0; i < worker->archive->nb_volumes && !worker->stop_request; i++) {
 		struct so_archive_volume * vol = worker->archive->volumes + i;
 
 		if (strcmp(vol->media->medium_serial_number, worker->media->medium_serial_number) != 0)
@@ -240,10 +243,22 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 
 		static char buffer[16384];
 		ssize_t nb_read;
-		while (nb_read = reader->ops->read(reader, buffer, 16384), nb_read > 0)
+		while (nb_read = reader->ops->read(reader, buffer, 16384), nb_read > 0 && !worker->stop_request)
 			worker->nb_total_read += nb_read;
 
 		reader->ops->close(reader);
+
+		if (nb_read < 0) {
+			reader->ops->free(reader);
+			worker->status = so_job_status_error;
+			return;
+		}
+
+		if (worker->stop_request) {
+			reader->ops->free(reader);
+			worker->status = so_job_status_stopped;
+			return;
+		}
 
 		struct so_value * digests = so_io_checksum_reader_get_checksums(reader);
 		vol->check_ok = so_value_equals(vol->digests, digests);
@@ -253,6 +268,6 @@ static void soj_checkarchive_quick_mode_do(void * arg) {
 		reader->ops->free(reader);
 	}
 
-	worker->status = so_job_status_finished;
+	worker->status = worker->stop_request ? so_job_status_stopped : so_job_status_finished;
 }
 

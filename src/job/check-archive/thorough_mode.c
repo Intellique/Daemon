@@ -118,6 +118,14 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 			}
 		}
 
+		if (job->stopped_by_user) {
+			if (chcksum_writer != NULL)
+				chcksum_writer->ops->free(chcksum_writer);
+
+			job->status = so_job_status_stopped;
+			return 1;
+		}
+
 		job->status = so_job_status_running;
 
 		drive->ops->sync(drive);
@@ -144,7 +152,7 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 
 				static char buffer[16384];
 				ssize_t nb_read;
-				while (nb_read = reader->ops->read(reader, buffer, 16384), nb_read > 0) {
+				while (nb_read = reader->ops->read(reader, buffer, 16384), nb_read > 0 && !job->stopped_by_user) {
 					if (chcksum_writer != NULL)
 						chcksum_writer->ops->write(chcksum_writer, buffer, nb_read);
 
@@ -156,6 +164,14 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 						done *= 0.98;
 						job->done = 0.01 + done / archive->size;
 					}
+				}
+
+				if (job->stopped_by_user) {
+					reader->ops->free(reader);
+					chcksum_writer->ops->free(chcksum_writer);
+
+					job->status = so_job_status_stopped;
+					return 1;
 				}
 
 				if (nb_read < 0) {
@@ -206,8 +222,6 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 		vol->check_time = time(NULL);
 		total_read += vol->size;
 	}
-
-	// db_connect->ops->sync_archive(db_connect, archive);
 
 	job->done = 1;
 
