@@ -28,8 +28,10 @@
 #define __STORIQONE_JOB_CHECK_ARCHIVE_H__
 
 struct so_archive;
+struct so_database_connection;
 struct so_job;
 
+int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive, struct so_database_connection * db_connect);
 int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * archive, struct so_database_connection * db_connect);
 
 #endif

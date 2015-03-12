@@ -76,7 +76,7 @@ static void soj_checkarchive_init() {
 }
 
 static int soj_checkarchive_run(struct so_job * job, struct so_database_connection * db_connect) {
-	return soj_checkarchive_thorough_mode(job, archive, db_connect);
+	return soj_checkarchive_quick_mode(job, archive, db_connect);
 }
 
 static int soj_checkarchive_simulate(struct so_job * job, struct so_database_connection * db_connect) {
