@@ -151,6 +151,7 @@ struct so_database_connection {
 		int (*sync_media)(struct so_database_connection * connnect, struct so_media * media, enum so_database_sync_method method) __attribute__((nonnull));
 
 		int (*add_job_record)(struct so_database_connection * connect, struct so_job * job, enum so_log_level level, enum so_job_record_notif notif, const char * message);
+		int (*add_report)(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, const char * data) __attribute__((nonnull));
 		int (*start_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull));
 		int (*stop_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull));
 		int (*sync_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull));

@@ -26,12 +26,13 @@
 
 // bindtextdomain, dgettext
 #include <libintl.h>
-// NULL
-#include <stddef.h>
+// free
+#include <stdlib.h>
 
 #include <libstoriqone/archive.h>
 #include <libstoriqone/database.h>
 #include <libstoriqone/host.h>
+#include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/value.h>
@@ -80,10 +81,22 @@ static int soj_checkarchive_run(struct so_job * job, struct so_database_connecti
 	bool quick_mode = false;
 	so_value_unpack(job->option, "{sb}", "quick_mode", &quick_mode);
 
+	int failed;
 	if (quick_mode)
-		return soj_checkarchive_quick_mode(job, archive, db_connect);
+		failed = soj_checkarchive_quick_mode(job, archive, db_connect);
 	else
-		return soj_checkarchive_thorough_mode(job, archive, db_connect);
+		failed = soj_checkarchive_thorough_mode(job, archive, db_connect);
+
+	struct so_value * report = so_value_pack("{sososo}",
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"archive", so_archive_convert(archive)
+	);
+	char * json = so_json_encode_to_string(report);
+	db_connect->ops->add_report(db_connect, job, archive, json);
+	free(json);
+
+	return failed;
 }
 
 static int soj_checkarchive_simulate(struct so_job * job, struct so_database_connection * db_connect) {

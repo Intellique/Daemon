@@ -99,6 +99,7 @@ static int so_database_postgresql_sync_pool(struct so_database_connection * conn
 static int so_database_postgresql_sync_slots(struct so_database_connection * connect, struct so_slot * slot, enum so_database_sync_method method);
 
 static int so_database_postgresql_add_job_record(struct so_database_connection * connect, struct so_job * job, enum so_log_level level, enum so_job_record_notif notif, const char * message);
+static int so_database_postgresql_add_report(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, const char * data);
 static int so_database_postgresql_start_job(struct so_database_connection * connect, struct so_job * job);
 static int so_database_postgresql_stop_job(struct so_database_connection * connect, struct so_job * job);
 static int so_database_postgresql_sync_job(struct so_database_connection * connect, struct so_job * job);
@@ -156,6 +157,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.sync_media                = so_database_postgresql_sync_media,
 
 	.add_job_record = so_database_postgresql_add_job_record,
+	.add_report     = so_database_postgresql_add_report,
 	.start_job      = so_database_postgresql_start_job,
 	.stop_job       = so_database_postgresql_stop_job,
 	.sync_job       = so_database_postgresql_sync_job,
@@ -2117,6 +2119,38 @@ static int so_database_postgresql_add_job_record(struct so_database_connection *
 	free(jobrun_id);
 
 	return status != PGRES_TUPLES_OK;
+}
+
+static int so_database_postgresql_add_report(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, const char * data) {
+	if (connect == NULL || job == NULL || archive == NULL || data == NULL)
+		return -1;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db_job = so_value_hashtable_get(job->db_data, key, false, false);
+	struct so_value * db_archive = so_value_hashtable_get(job->db_data, key, false, false);
+	so_value_free(key);
+
+	char * jobrun_id = NULL, * archive_id = NULL;
+	so_value_unpack(db_job, "{ss}", "jobrun id", &jobrun_id);
+	so_value_unpack(db_archive, "{ss}", "id", &archive_id);
+
+	const char * query = "insert_new_report";
+	so_database_postgresql_prepare(self, query, "INSERT INTO report(jobrun, archive, data) VALUES ($1, $2, $3)");
+
+	const char * param[] = { jobrun_id, archive_id, data };
+	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+	free(jobrun_id);
+	free(archive_id);
+
+	return status != PGRES_COMMAND_OK;
 }
 
 static int so_database_postgresql_start_job(struct so_database_connection * connect, struct so_job * job) {
