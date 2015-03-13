@@ -42,6 +42,7 @@ static void test_libstoriqone_json_encode_to_string_0(void);
 static void test_libstoriqone_json_encode_to_string_1(void);
 static void test_libstoriqone_json_encode_to_string_2(void);
 static void test_libstoriqone_json_encode_to_string_3(void);
+static void test_libstoriqone_json_encode_to_string_4(void);
 static void test_libstoriqone_json_parse_string_0(void);
 
 static struct {
@@ -52,6 +53,7 @@ static struct {
 	{ test_libstoriqone_json_encode_to_string_1, "libstoriqone: json encode string: #1" },
 	{ test_libstoriqone_json_encode_to_string_2, "libstoriqone: json encode string: #2" },
 	{ test_libstoriqone_json_encode_to_string_3, "libstoriqone: json encode string: #3" },
+	{ test_libstoriqone_json_encode_to_string_4, "libstoriqone: json encode string: #4" },
 
 	{ test_libstoriqone_json_parse_string_0, "libstoriqone: json parse string: #0" },
 
@@ -130,6 +132,26 @@ static void test_libstoriqone_json_encode_to_string_3() {
 	CU_ASSERT_EQUAL(object->shared, 1);
 
 	free(string);
+
+	so_value_free(object);
+}
+
+static void test_libstoriqone_json_encode_to_string_4() {
+	struct so_value * object = so_value_pack("{sf}", "float", 0.25);
+	CU_ASSERT_EQUAL(object->shared, 1);
+
+	char * string = so_json_encode_to_string(object);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(string);
+	CU_ASSERT_EQUAL(object->shared, 1);
+	so_value_free(object);
+
+	object = so_json_parse_string(string);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(object);
+	CU_ASSERT_NOT_EQUAL(object->type, so_value_null);
+
+	double val = 0;
+	so_value_unpack(object, "{sf}", "float", &val);
+	CU_ASSERT_EQUAL(val, 0.25);
 
 	so_value_free(object);
 }

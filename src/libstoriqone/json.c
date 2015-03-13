@@ -28,13 +28,15 @@
 #include <stdbool.h>
 // open
 #include <fcntl.h>
+// localeconv
+#include <locale.h>
 // poll
 #include <poll.h>
 // dprintf, snprintf, sscanf
 #include <stdio.h>
 // free, malloc
 #include <stdlib.h>
-// strspn, strncmp, strlen
+// memmove, strlen, strncmp, strspn, strstr
 #include <string.h>
 // fstat, open
 #include <sys/stat.h>
@@ -82,10 +84,11 @@ static size_t so_json_compute_length(struct so_value * val) {
 			break;
 
 		case so_value_float: {
+				struct lconv * locale_info = localeconv();
 				char tmp[24];
 				int length;
 				snprintf(tmp, 24, "%g%n", so_value_float_get(val), &length);
-				nb_write = length;
+				nb_write = length - strlen(locale_info->decimal_point) + 1;
 			}
 			break;
 
@@ -205,8 +208,20 @@ ssize_t so_json_encode_to_fd(struct so_value * val, int fd, bool use_buffer) {
 					nb_write = dprintf(fd, "false");
 				break;
 
-			case so_value_float:
-				nb_write = dprintf(fd, "%g", so_value_float_get(val));
+			case so_value_float: {
+					struct lconv * locale_info = localeconv();
+					char buf[24];
+					snprintf(buf, 24, "%g", so_value_float_get(val));
+
+					char * ptr = strstr(buf, locale_info->decimal_point);
+					if (ptr != NULL) {
+						if (strlen(locale_info->decimal_point) > 1)
+							memmove(ptr + 1, ptr + 2, strlen(ptr + 2));
+						*ptr = '.';
+					}
+
+					nb_write = dprintf(fd, "%s", buf);
+				}
 				break;
 
 			case so_value_hashtable: {
@@ -303,7 +318,7 @@ ssize_t so_json_encode_to_file(struct so_value * value, const char * filename) {
 	if (filename == NULL)
 		return -1;
 
-	int fd = open(filename, O_WRONLY | O_TRUNC | O_CREAT, 0744);
+	int fd = open(filename, O_WRONLY | O_TRUNC | O_CREAT, 0644);
 	size_t nb_write = so_json_encode_to_fd(value, fd, false);
 	close(fd);
 
@@ -338,8 +353,20 @@ static ssize_t so_json_encode_to_string_inner(struct so_value * val, char * buff
 				nb_write = snprintf(buffer, length, "false");
 			break;
 
-		case so_value_float:
-			nb_write = snprintf(buffer, length, "%g", so_value_float_get(val));
+		case so_value_float: {
+				struct lconv * locale_info = localeconv();
+				char buf[24];
+				snprintf(buf, 24, "%g", so_value_float_get(val));
+
+				char * ptr = strstr(buf, locale_info->decimal_point);
+				if (ptr != NULL) {
+					if (strlen(locale_info->decimal_point) > 1)
+						memmove(ptr + 1, ptr + 2, strlen(ptr + 2));
+					*ptr = '.';
+				}
+
+				nb_write = snprintf(buffer, length, "%s", buf);
+			}
 			break;
 
 		case so_value_hashtable: {
@@ -720,19 +747,34 @@ static struct so_value * so_json_parse_string_inner(const char ** json) {
 		case '7':
 		case '8':
 		case '9': {
-				double val_d;
-				long long int val_i;
-				int nb_parsed_d, nb_parsed_i;
+				ssize_t length_integer = strspn(*json, "0123456789");
+				ssize_t length_float = strspn(*json, "0123456789.+-eE");
 
-				sscanf(*json, "%le%n", &val_d, &nb_parsed_d);
-				sscanf(*json, "%Ld%n", &val_i, &nb_parsed_i);
+				if (length_integer < length_float) {
+					struct lconv * locale_info = localeconv();
 
-				if (nb_parsed_d == nb_parsed_i || val_d == val_i) {
-					ret_val = so_value_new_integer(val_i);
-					(*json) += nb_parsed_i;
+					ssize_t length_dec_point = strlen(locale_info->decimal_point);
+					char * buffer = malloc(length_float + length_dec_point);
+					strncpy(buffer, *json, length_float);
+					buffer[length_float] = '\0';
+
+					char * ptr = strchr(buffer, '.');
+					if (length_dec_point > 1)
+						memmove(ptr + length_dec_point, ptr + 1, strlen(ptr + 1));
+					strncpy(ptr, locale_info->decimal_point, length_dec_point);
+
+					double val;
+					sscanf(buffer, "%le", &val);
+					free(buffer);
+
+					ret_val = so_value_new_float(val);
+					(*json) += length_float;
 				} else {
-					ret_val = so_value_new_float(val_d);
-					(*json) += nb_parsed_d;
+					long long int val;
+					sscanf(*json, "%Ld", &val);
+
+					ret_val = so_value_new_integer(val);
+					(*json) += length_integer;
 				}
 
 				return ret_val;
