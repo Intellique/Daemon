@@ -182,7 +182,7 @@ void so_archive_free(struct so_archive * archive) {
 
 		unsigned int j;
 		for (j = 0; j < vol->nb_files; j++) {
-			struct so_archive_file * file = vol->files[i].file;
+			struct so_archive_file * file = vol->files[j].file;
 			free(file->name);
 			free(file->owner);
 			free(file->group);
