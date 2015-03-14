@@ -2129,7 +2129,7 @@ static int so_database_postgresql_add_report(struct so_database_connection * con
 
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 	struct so_value * db_job = so_value_hashtable_get(job->db_data, key, false, false);
-	struct so_value * db_archive = so_value_hashtable_get(job->db_data, key, false, false);
+	struct so_value * db_archive = so_value_hashtable_get(archive->db_data, key, false, false);
 	so_value_free(key);
 
 	char * jobrun_id = NULL, * archive_id = NULL;
