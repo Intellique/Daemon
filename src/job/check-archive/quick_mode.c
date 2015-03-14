@@ -77,6 +77,7 @@ static void soj_checkarchive_quick_mode_do(void * arg);
 
 
 int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive, struct so_database_connection * db_connect) {
+	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Starting check archive (%s) in quick mode"), archive->name);
 	job->done = 0.01;
 
 	struct soj_checkarchive_worker * workers = NULL;
@@ -121,6 +122,8 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		char * name;
 		asprintf(&name, "worker #%u", i);
 
+		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-check-archive", "Starting worker #%u"), i);
+
 		so_thread_pool_run(name, soj_checkarchive_quick_mode_do, ptr_worker);
 		free(name);
 	}
@@ -147,6 +150,8 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		done /= archive->size;
 		job->done = 0.01 + done * 0.98;
 	}
+
+	so_job_add_record(job, db_connect, so_log_level_debug, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Waiting for workers"));
 
 	ptr_worker = workers;
 	while (ptr_worker != NULL) {

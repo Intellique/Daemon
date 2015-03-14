@@ -48,6 +48,8 @@
 #include "common.h"
 
 int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * archive, struct so_database_connection * db_connect) {
+	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Starting check archive (%s) in thorough mode"), archive->name);
+
 	job->done = 0.01;
 
 	unsigned i;
