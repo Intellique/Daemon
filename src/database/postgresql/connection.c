@@ -100,6 +100,7 @@ static int so_database_postgresql_sync_slots(struct so_database_connection * con
 
 static int so_database_postgresql_add_job_record(struct so_database_connection * connect, struct so_job * job, enum so_log_level level, enum so_job_record_notif notif, const char * message);
 static int so_database_postgresql_add_report(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, const char * data);
+static char * so_database_postgresql_get_restore_path(struct so_database_connection * connect, struct so_job * job);
 static int so_database_postgresql_start_job(struct so_database_connection * connect, struct so_job * job);
 static int so_database_postgresql_stop_job(struct so_database_connection * connect, struct so_job * job);
 static int so_database_postgresql_sync_job(struct so_database_connection * connect, struct so_job * job);
@@ -156,12 +157,13 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.sync_drive                = so_database_postgresql_sync_drive,
 	.sync_media                = so_database_postgresql_sync_media,
 
-	.add_job_record = so_database_postgresql_add_job_record,
-	.add_report     = so_database_postgresql_add_report,
-	.start_job      = so_database_postgresql_start_job,
-	.stop_job       = so_database_postgresql_stop_job,
-	.sync_job       = so_database_postgresql_sync_job,
-	.sync_jobs      = so_database_postgresql_sync_jobs,
+	.add_job_record   = so_database_postgresql_add_job_record,
+	.add_report       = so_database_postgresql_add_report,
+	.get_restore_path = so_database_postgresql_get_restore_path,
+	.start_job        = so_database_postgresql_start_job,
+	.stop_job         = so_database_postgresql_stop_job,
+	.sync_job         = so_database_postgresql_sync_job,
+	.sync_jobs        = so_database_postgresql_sync_jobs,
 
 	.get_nb_scripts = so_database_postgresql_get_nb_scripts,
 	.get_script     = so_database_postgresql_get_script,
@@ -2153,6 +2155,38 @@ static int so_database_postgresql_add_report(struct so_database_connection * con
 	return status != PGRES_COMMAND_OK;
 }
 
+static char * so_database_postgresql_get_restore_path(struct so_database_connection * connect, struct so_job * job) {
+	if (connect == NULL || job == NULL)
+		return NULL;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
+	so_value_free(key);
+
+	char * job_id = NULL;
+	so_value_unpack(db, "{ss}", "id", &job_id);
+
+	const char * query = "select_restore_path";
+	so_database_postgresql_prepare(self, query, "SELECT path FROM restoreto WHERE job = $1 LIMIT 1");
+
+	const char * param[] = { job_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	char * path = NULL;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		so_database_postgresql_get_string_dup(result, 0, 0, &path);
+
+	PQclear(result);
+	free(job_id);
+
+	return path;
+}
+
 static int so_database_postgresql_start_job(struct so_database_connection * connect, struct so_job * job) {
 	if (connect == NULL || job == NULL)
 		return 1;
@@ -2640,7 +2674,7 @@ static struct so_archive * so_database_postgresql_get_archive(struct so_database
 			PQclear(result3);
 
 			const char * query4 = "select_files_from_archivevolume";
-			so_database_postgresql_prepare(self, query4, "SELECT af.id, afv.blocknumber, afv.archivetime, afv.checktime, afv.checksumok, af.name, af.type, af.mimetype, af.ownerid, af.owner, af.groupid, af.groups, af.perm, af.ctime, af.mtime, af.size FROM archivefiletoarchivevolume afv INNER JOIN archivefile af ON afv.archivevolume = $1 AND afv.archivefile = af.id ORDER BY af.id");
+			so_database_postgresql_prepare(self, query4, "SELECT af.id, afv.blocknumber, afv.archivetime, afv.checktime, afv.checksumok, af.name, af.type, af.mimetype, af.ownerid, af.owner, af.groupid, af.groups, af.perm, af.ctime, af.mtime, af.size, sf.path FROM archivefiletoarchivevolume afv INNER JOIN archivefile af ON afv.archivevolume = $1 AND afv.archivefile = af.id INNER JOIN selectedfile sf ON af.parent = sf.id ORDER BY af.id");
 
 			result3 = PQexecPrepared(self->connect, query4, 1, param3, NULL, NULL, 0);
 			status3 = PQresultStatus(result3);
@@ -2678,6 +2712,7 @@ static struct so_archive * so_database_postgresql_get_archive(struct so_database
 					so_database_postgresql_get_bool(result3, j, 4, &file->check_ok);
 
 					so_database_postgresql_get_ssize(result3, j, 15, &file->size);
+					so_database_postgresql_get_string_dup(result3, j, 16, &file->selected_path);
 					file->digests = so_value_new_hashtable2();
 
 					file->db_data = so_value_new_hashtable(so_value_custom_compute_hash);

@@ -187,6 +187,7 @@ void so_archive_free(struct so_archive * archive) {
 			free(file->owner);
 			free(file->group);
 			free(file->mime_type);
+			free(file->selected_path);
 			so_value_free(file->digests);
 			so_value_free(file->db_data);
 			free(file);

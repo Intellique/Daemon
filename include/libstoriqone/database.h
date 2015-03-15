@@ -152,6 +152,7 @@ struct so_database_connection {
 
 		int (*add_job_record)(struct so_database_connection * connect, struct so_job * job, enum so_log_level level, enum so_job_record_notif notif, const char * message);
 		int (*add_report)(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, const char * data) __attribute__((nonnull));
+		char * (*get_restore_path)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull,warn_unused_result));
 		int (*start_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull));
 		int (*stop_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull));
 		int (*sync_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull));
