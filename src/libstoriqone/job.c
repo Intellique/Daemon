@@ -184,7 +184,7 @@ enum so_job_record_notif so_job_string_to_record_notif(const char * notif, bool 
 				return so_job_record_notifs[i].notif;
 	}
 
-	return so_job_record_notifs[i].notif;
+	return so_job_record_notif_unknown;
 }
 
 enum so_job_status so_job_string_to_status(const char * status, bool translate) {
@@ -204,7 +204,7 @@ enum so_job_status so_job_string_to_status(const char * status, bool translate) 
 				return so_job_status[i].status;
 	}
 
-	return so_job_status[i].status;
+	return so_job_status_unknown;
 }
 
 void so_job_sync(struct so_job * job, struct so_value * new_job) {

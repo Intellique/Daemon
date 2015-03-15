@@ -140,7 +140,7 @@ enum so_drive_status so_drive_string_to_status(const char * status, bool transla
 				return so_drive_status[i].status;
 	}
 
-	return so_drive_status[i].status;
+	return so_drive_status_unknown;
 }
 
 void so_drive_sync(struct so_drive * drive, struct so_value * new_drive, bool with_slot) {

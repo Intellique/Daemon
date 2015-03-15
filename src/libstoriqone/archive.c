@@ -256,7 +256,7 @@ enum so_archive_file_type so_archive_file_string_to_type(const char * type, bool
 				return so_archive_file_types[i].type;
 	}
 
-	return so_archive_file_types[i].type;
+	return so_archive_file_type_unknown;
 }
 
 const char * so_archive_file_type_to_string(enum so_archive_file_type type, bool translate) {

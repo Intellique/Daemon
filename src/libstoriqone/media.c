@@ -535,7 +535,7 @@ enum so_media_format_data_type so_media_string_to_format_data_type(const char * 
 				return so_media_format_data_types[i].type;
 	}
 
-	return so_media_format_data_types[i].type;
+	return so_media_format_data_unknown;
 }
 
 
@@ -563,7 +563,7 @@ enum so_media_format_mode so_media_string_to_format_mode(const char * mode, bool
 				return so_media_format_modes[i].mode;
 	}
 
-	return so_media_format_modes[i].mode;
+	return so_media_format_mode_unknown;
 }
 
 
@@ -591,7 +591,7 @@ enum so_media_status so_media_string_to_status(const char * status, bool transla
 				return so_media_status[i].status;
 	}
 
-	return so_media_status[i].status;
+	return so_media_status_unknown;
 }
 
 
@@ -612,7 +612,7 @@ enum so_media_type so_media_string_to_type(const char * type, bool translate) {
 				return so_media_types[i].type;
 	}
 
-	return so_media_types[i].type;
+	return so_media_type_unknown;
 }
 
 const char * so_media_type_to_string(enum so_media_type type, bool translate) {
@@ -647,7 +647,7 @@ enum so_pool_autocheck_mode so_pool_string_to_autocheck_mode(const char * mode, 
 				return so_pool_autocheck_modes[i].mode;
 	}
 
-	return so_pool_autocheck_modes[i].mode;
+	return so_pool_autocheck_mode_unknown;
 }
 
 
@@ -668,7 +668,7 @@ enum so_pool_unbreakable_level so_pool_string_to_unbreakable_level(const char * 
 				return so_pool_unbreakable_levels[i].level;
 	}
 
-	return so_pool_unbreakable_levels[i].level;
+	return so_pool_unbreakable_level_unknown;
 }
 
 const char * so_pool_unbreakable_level_to_string(enum so_pool_unbreakable_level level, bool translate) {

@@ -171,7 +171,7 @@ enum so_changer_action so_changer_string_to_action(const char * action, bool tra
 				return so_changer_actions[i].action;
 	}
 
-	return so_changer_actions[i].action;
+	return so_changer_action_unknown;
 }
 
 const char * so_changer_status_to_string(enum so_changer_status status, bool translate) {
@@ -198,7 +198,7 @@ enum so_changer_status so_changer_string_to_status(const char * status, bool tra
 				return so_changer_status[i].status;
 	}
 
-	return so_changer_status[i].status;
+	return so_changer_status_unknown;
 }
 
 void so_changer_sync(struct so_changer * changer, struct so_value * new_changer) {

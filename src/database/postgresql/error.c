@@ -52,7 +52,7 @@ void so_database_postgresql_get_error(PGresult * result, const char * prepared_q
 	error = PQresultErrorField(result, PG_DIAG_MESSAGE_DETAIL);
 	if (error != NULL) {
 		error = strdup(error);
-		char * ptr;
+		char * ptr = NULL;
 		char * line = strtok_r(error, "\n", &ptr);
 		while (line != NULL) {
 			so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: detail => %s"), line);
@@ -64,7 +64,7 @@ void so_database_postgresql_get_error(PGresult * result, const char * prepared_q
 	error = PQresultErrorField(result, PG_DIAG_MESSAGE_HINT);
 	if (error != NULL) {
 		error = strdup(error);
-		char * ptr;
+		char * ptr = NULL;
 		char * line = strtok_r(error, "\n", &ptr);
 		while (line != NULL) {
 			so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: hint => %s"), line);
