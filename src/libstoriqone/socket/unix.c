@@ -85,7 +85,7 @@ int so_socket_unix(struct so_value * config) {
 	struct sockaddr_un addr;
 	bzero(&addr, sizeof(addr));
 	addr.sun_family = AF_UNIX;
-	snprintf(addr.sun_path, sizeof(addr.sun_path), so_value_string_get(vpath));
+	snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", so_value_string_get(vpath));
 
 	if (connect(fd, (struct sockaddr *) &addr, sizeof(addr)) != 0) {
 		close(fd);
@@ -141,7 +141,7 @@ bool so_socket_unix_server(struct so_value * config, so_socket_accept_f accept_c
 	struct sockaddr_un addr;
 	bzero(&addr, sizeof(addr));
 	addr.sun_family = AF_UNIX;
-	snprintf(addr.sun_path, sizeof(addr.sun_path), so_value_string_get(vpath));
+	snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", so_value_string_get(vpath));
 
 	int failed = bind(fd, (struct sockaddr *) &addr, sizeof(addr));
 	if (failed != 0) {

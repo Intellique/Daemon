@@ -88,7 +88,7 @@ int so_job_add_record(struct so_job * job, struct so_database_connection * db_co
 	vasprintf(&message, format, va);
 	va_end(va);
 
-	so_log_write(level, message);
+	so_log_write(level, "%s", message);
 	int failed = db_connect->ops->add_job_record(db_connect, job, level, notif, message);
 
 	free(message);
