@@ -27,8 +27,35 @@
 #ifndef __STORIQONE_JOB_RESTORE_ARCHIVE_H__
 #define __STORIQONE_JOB_RESTORE_ARCHIVE_H__
 
-const char * soj_restore_archive_path_get(const char * path, const char * parent);
-void soj_restore_archive_path_init(const char * root);
+// bool
+#include <stdbool.h>
+
+#include <libstoriqone/job.h>
+
+struct so_archive;
+struct so_media;
+
+struct so_restorearchive_worker {
+	struct so_archive * archive;
+	struct so_media * media;
+
+	struct so_database_config * db_config;
+
+	volatile ssize_t total_restored;
+	enum so_job_status status;
+	volatile bool stop_request;
+
+	unsigned int nb_warnings;
+	unsigned int nb_errors;
+
+	struct so_restorearchive_worker * next;
+};
+
+const char * soj_restorearchive_path_get(const char * path, const char * parent, bool is_regular_file);
+void soj_restorearchive_path_init(const char * root);
+
+struct so_restorearchive_worker * so_restorearchive_worker_new(struct so_archive * archive, struct so_media * media, struct so_database_config * db_config, struct so_restorearchive_worker * previous_worker);
+void so_restorearchive_worker_start(struct so_restorearchive_worker * first_worker, struct so_job * job, struct so_database_connection * db_connect);
 
 #endif
 

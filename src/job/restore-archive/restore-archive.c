@@ -26,8 +26,8 @@
 
 // bindtextdomain, dgettext
 #include <libintl.h>
-// NULL
-#include <stddef.h>
+// strcmp
+#include <string.h>
 
 #include <libstoriqone/archive.h>
 #include <libstoriqone/database.h>
@@ -37,6 +37,8 @@
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/job.h>
 #include <libstoriqone-job/script.h>
+
+#include "common.h"
 
 #include <job_restore-archive.chcksum>
 
@@ -75,6 +77,28 @@ static void soj_restorearchive_init() {
 }
 
 static int soj_restorearchive_run(struct so_job * job, struct so_database_connection * db_connect) {
+	struct so_restorearchive_worker * workers = NULL, * last_worker = NULL;
+	unsigned int i;
+	for (i = 0; i < archive->nb_volumes; i++) {
+		struct so_archive_volume * vol = archive->volumes + i;
+		bool found = false;
+
+		struct so_restorearchive_worker * ptr;
+		for (ptr = workers; !found && ptr != NULL; ptr = ptr->next)
+			if (strcmp(ptr->media->medium_serial_number, vol->media->medium_serial_number) == 0)
+				found = true;
+
+		if (!found) {
+			last_worker = so_restorearchive_worker_new(archive, vol->media, db_connect->config, last_worker);
+
+			if (workers == NULL)
+				workers = last_worker;
+		}
+	}
+
+	so_restorearchive_worker_start(workers, job, db_connect);
+
+	return 0;
 }
 
 static int soj_restorearchive_simulate(struct so_job * job, struct so_database_connection * db_connect) {
@@ -85,6 +109,7 @@ static int soj_restorearchive_simulate(struct so_job * job, struct so_database_c
 	}
 
 	restore_path = db_connect->ops->get_restore_path(db_connect, job);
+	soj_restorearchive_path_init(restore_path);
 
 	return 0;
 }
