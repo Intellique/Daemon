@@ -105,11 +105,13 @@ struct so_value * so_archive_convert(struct so_archive * archive) {
 			else
 				checksums = so_value_share(file->digests);
 
-			so_value_list_push(files, so_value_pack("{sisis{sssisssisssisssisisbsisosiss}}",
+			so_value_list_push(files, so_value_pack("{sisis{sssssisssisssisssisisbsisosiss}}",
 				"position", ptr_file->position,
 				"archived time", ptr_file->archived_time,
 				"file",
-					"name", file->name,
+					"path", file->path,
+					"restored to", file->restored_to,
+
 					"permission", (long) file->perm,
 					"type", so_archive_file_type_to_string(file->type, false),
 					"owner id", file->ownerid,
@@ -183,7 +185,8 @@ void so_archive_free(struct so_archive * archive) {
 		unsigned int j;
 		for (j = 0; j < vol->nb_files; j++) {
 			struct so_archive_file * file = vol->files[j].file;
-			free(file->name);
+			free(file->path);
+			free(file->restored_to);
 			free(file->owner);
 			free(file->group);
 			free(file->mime_type);

@@ -29,33 +29,41 @@
 
 // bool
 #include <stdbool.h>
+// ssize_t
+#include <sys/types.h>
 
 #include <libstoriqone/job.h>
 
 struct so_archive;
+struct so_archive_file;
+struct so_database_config;
 struct so_media;
 
-struct so_restorearchive_worker {
+struct soj_restorearchive_data_worker {
 	struct so_archive * archive;
 	struct so_media * media;
 
 	struct so_database_config * db_config;
 
 	volatile ssize_t total_restored;
-	enum so_job_status status;
+	volatile enum so_job_status status;
 	volatile bool stop_request;
 
 	unsigned int nb_warnings;
 	unsigned int nb_errors;
 
-	struct so_restorearchive_worker * next;
+	struct soj_restorearchive_data_worker * next;
 };
+
+void soj_restorearchive_check_worker_add(struct so_archive * archive, struct so_archive_file * file);
+void soj_restorearchive_check_worker_start(struct so_database_config * db_config);
+void soj_restorearchive_check_worker_stop(void);
+
+struct soj_restorearchive_data_worker * soj_restorearchive_data_worker_new(struct so_archive * archive, struct so_media * media, struct so_database_config * db_config, struct soj_restorearchive_data_worker * previous_worker);
+void soj_restorearchive_data_worker_start(struct soj_restorearchive_data_worker * first_worker, struct so_job * job, struct so_database_connection * db_connect);
 
 const char * soj_restorearchive_path_get(const char * path, const char * parent, bool is_regular_file);
 void soj_restorearchive_path_init(const char * root);
-
-struct so_restorearchive_worker * so_restorearchive_worker_new(struct so_archive * archive, struct so_media * media, struct so_database_config * db_config, struct so_restorearchive_worker * previous_worker);
-void so_restorearchive_worker_start(struct so_restorearchive_worker * first_worker, struct so_job * job, struct so_database_connection * db_connect);
 
 #endif
 

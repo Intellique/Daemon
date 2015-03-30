@@ -138,7 +138,7 @@ static void soj_create_archive_meta_worker_do2(const char * filename, struct so_
 	struct so_archive_file * file = malloc(sizeof(struct so_archive_file));
 	bzero(file, sizeof(struct so_archive_file));
 
-	file->name = strdup(filename);
+	file->path = strdup(filename);
 	file->perm = st.st_mode & 07777;
 	file->type = so_archive_file_mode_to_type(st.st_mode);
 	file->ownerid = st.st_uid;

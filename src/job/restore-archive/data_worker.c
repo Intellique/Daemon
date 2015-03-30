@@ -41,7 +41,7 @@
 #include <sys/stat.h>
 // S_*, lseek, mknod, open
 #include <sys/types.h>
-// chmod, close, fchmod, fchown, futimes, lseek, mknod, sleep, symlink
+// chmod, chown, close, fchmod, futimes, lseek, mknod, sleep, symlink
 #include <unistd.h>
 
 #include <libstoriqone/archive.h>
@@ -59,12 +59,12 @@
 
 #include "common.h"
 
-static void so_restorearchive_worker_do(void * arg);
+static void so_restorearchive_data_worker_do(void * arg);
 
 
-struct so_restorearchive_worker * so_restorearchive_worker_new(struct so_archive * archive, struct so_media * media, struct so_database_config * db_config, struct so_restorearchive_worker * previous_worker) {
-	struct so_restorearchive_worker * worker = malloc(sizeof(struct so_restorearchive_worker));
-	bzero(worker, sizeof(struct so_restorearchive_worker));
+struct soj_restorearchive_data_worker * soj_restorearchive_data_worker_new(struct so_archive * archive, struct so_media * media, struct so_database_config * db_config, struct soj_restorearchive_data_worker * previous_worker) {
+	struct soj_restorearchive_data_worker * worker = malloc(sizeof(struct soj_restorearchive_data_worker));
+	bzero(worker, sizeof(struct soj_restorearchive_data_worker));
 
 	worker->archive = archive;
 	worker->media = media;
@@ -77,8 +77,8 @@ struct so_restorearchive_worker * so_restorearchive_worker_new(struct so_archive
 	return worker;
 }
 
-static void so_restorearchive_worker_do(void * arg) {
-	struct so_restorearchive_worker * worker = arg;
+static void soj_restorearchive_data_worker_do(void * arg) {
+	struct soj_restorearchive_data_worker * worker = arg;
 
 	struct so_job * job = soj_job_get();
 	struct so_database_connection * db_connect = worker->db_config->ops->connect(worker->db_config);
@@ -159,7 +159,7 @@ static void so_restorearchive_worker_do(void * arg) {
 		struct so_format_reader * reader = drive->ops->get_reader(drive, vol->media_position, NULL);
 
 		unsigned int j = 0;
-		for (j = 0; j < vol->nb_files; j++) {
+		for (j = 0; j < vol->nb_files && !worker->stop_request; j++) {
 			struct so_archive_files * ptr_file = vol->files + j;
 			struct so_archive_file * file = ptr_file->file;
 
@@ -170,6 +170,9 @@ static void so_restorearchive_worker_do(void * arg) {
 			so_string_trim(header.filename, '/');
 
 			const char * restore_to = soj_restorearchive_path_get(header.filename, file->selected_path, file->type == so_archive_file_type_regular_file);
+			if (restore_to != NULL)
+				file->restored_to = strdup(restore_to);
+
 			char * ptr = strrchr(restore_to, '/');
 			if (ptr != NULL) {
 				*ptr = '\0';
@@ -203,7 +206,7 @@ static void so_restorearchive_worker_do(void * arg) {
 
 				ssize_t nb_read, nb_write = 0;
 				char buffer[16384];
-				while (nb_read = reader->ops->read(reader, buffer, 16384), nb_read > 0) {
+				while (nb_read = reader->ops->read(reader, buffer, 16384), nb_read > 0 && !worker->stop_request) {
 					nb_write = write(fd, buffer, nb_read);
 
 					if (nb_write > 0)
@@ -255,21 +258,26 @@ static void so_restorearchive_worker_do(void * arg) {
 					worker->nb_warnings++;
 				}
 			} else if (S_ISFIFO(header.mode)) {
-				if (mknod(file->name, S_IFIFO, 0) != 0) {
+				if (mknod(file->path, S_IFIFO, 0) != 0) {
 					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Failed to create fifo '%s' because %m"), restore_to);
 					worker->nb_errors++;
 				}
 			} else if (S_ISCHR(header.mode)) {
-				if (mknod(file->name, S_IFCHR, header.dev) != 0) {
+				if (mknod(file->path, S_IFCHR, header.dev) != 0) {
 					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Failed to create character device '%s' because %m"), restore_to);
 					worker->nb_errors++;
 				}
 			} else if (S_ISBLK(header.mode)) {
-				int failed = mknod(file->name, S_IFBLK, header.dev);
+				int failed = mknod(file->path, S_IFBLK, header.dev);
 				if (failed != 0) {
 					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Failed to create block device '%s' because %m"), restore_to);
 					worker->nb_errors++;
 				}
+			}
+
+			if (chown(restore_to, file->ownerid, file->groupid) != 0) {
+				so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Failed to change owner and group of '%s' because %m"), restore_to);
+				worker->nb_warnings++;
 			}
 		}
 
@@ -280,7 +288,7 @@ stop_worker:
 	worker->status = worker->stop_request ? so_job_status_stopped : so_job_status_finished;
 }
 
-void so_restorearchive_worker_start(struct so_restorearchive_worker * first_worker, struct so_job * job, struct so_database_connection * db_connect) {
+void soj_restorearchive_data_worker_start(struct soj_restorearchive_data_worker * first_worker, struct so_job * job, struct so_database_connection * db_connect) {
 	unsigned int i;
 	for (i = 0; first_worker != NULL; i++, first_worker = first_worker->next) {
 		char * name;
@@ -288,8 +296,8 @@ void so_restorearchive_worker_start(struct so_restorearchive_worker * first_work
 
 		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Starting worker #%u"), i);
 
-		// so_thread_pool_run(name, so_restorearchive_worker_do, first_worker);
-		so_restorearchive_worker_do(first_worker);
+		// so_thread_pool_run(name, soj_restorearchive_data_worker_do, first_worker);
+		soj_restorearchive_data_worker_do(first_worker);
 		free(name);
 	}
 }

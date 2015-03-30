@@ -305,7 +305,7 @@ static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_c
 	struct so_archive_file * new_file = malloc(sizeof(struct so_archive_file));
 	bzero(new_file, sizeof(struct so_archive_file));
 
-	new_file->name = strdup(file->name);
+	new_file->path = strdup(file->path);
 	new_file->perm = file->perm;
 	new_file->type = file->type;
 	new_file->ownerid = file->ownerid;

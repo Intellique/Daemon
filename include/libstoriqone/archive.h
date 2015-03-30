@@ -97,7 +97,9 @@ struct so_archive_volume {
 };
 
 struct so_archive_file {
-	char * name;
+	char * path;
+	char * restored_to;
+
 	mode_t perm;
 	enum so_archive_file_type type;
 	uid_t ownerid;
