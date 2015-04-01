@@ -59,7 +59,7 @@
 
 #include "common.h"
 
-static void so_restorearchive_data_worker_do(void * arg);
+static void soj_restorearchive_data_worker_do(void * arg);
 
 
 struct soj_restorearchive_data_worker * soj_restorearchive_data_worker_new(struct so_archive * archive, struct so_media * media, struct so_database_config * db_config, struct soj_restorearchive_data_worker * previous_worker) {
@@ -165,6 +165,11 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 
 			struct so_format_file header;
 			enum so_format_reader_header_status status = reader->ops->get_header(reader, &header);
+			if (status != so_format_reader_header_ok) {
+				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while seeking to file '%s'"), file->path);
+				worker->nb_errors++;
+				break;
+			}
 
 			so_string_delete_double_char(header.filename, '/');
 			so_string_trim(header.filename, '/');
@@ -246,7 +251,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 
 				close(fd);
 
-				// st_job_restore_archive_checks_worker_add_file(self->jp->checks, file);
+				soj_restorearchive_check_worker_add(worker->archive, file);
 			} else if (S_ISDIR(header.mode)) {
 				// do nothing because directory is already created
 			} else if (S_ISLNK(header.mode)) {
@@ -296,8 +301,8 @@ void soj_restorearchive_data_worker_start(struct soj_restorearchive_data_worker 
 
 		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Starting worker #%u"), i);
 
-		// so_thread_pool_run(name, soj_restorearchive_data_worker_do, first_worker);
-		soj_restorearchive_data_worker_do(first_worker);
+		so_thread_pool_run(name, soj_restorearchive_data_worker_do, first_worker);
+
 		free(name);
 	}
 }

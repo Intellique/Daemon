@@ -74,6 +74,7 @@ static void soj_restorearchive_check_worker_do(void * arg);
 static struct so_database_config * check_worker_db_config = NULL;
 static struct soj_restorearchive_check_worker_private * first_file = NULL, * last_file = NULL;
 static pthread_mutex_t check_worker_lock = PTHREAD_MUTEX_INITIALIZER;
+static volatile unsigned int check_worker_nb_remain_files = 0;
 static volatile bool check_worker_running = false;
 static volatile bool check_worker_stop = false;
 static pthread_cond_t check_worker_wait = PTHREAD_COND_INITIALIZER;
@@ -107,6 +108,8 @@ void soj_restorearchive_check_worker_add(struct so_archive * archive, struct so_
 		else
 			last_file = last_file->next = ptr;
 
+		check_worker_nb_remain_files++;
+
 		pthread_cond_signal(&check_worker_wait);
 	} else
 		ptr->nb_volumes_done++;
@@ -124,12 +127,12 @@ static void soj_restorearchive_check_worker_do(void * arg __attribute__((unused)
 	pthread_cond_signal(&check_worker_wait);
 
 	for (;;) {
-		if (check_worker_stop && first_file == NULL)
+		if (check_worker_stop && check_worker_nb_remain_files == 0)
 			break;
 
 		struct soj_restorearchive_check_worker_private * ptr;
 		bool has_check_file = false;
-		for (ptr = first_file; ptr == NULL; ptr = ptr->next) {
+		for (ptr = first_file; ptr != NULL; ptr = ptr->next) {
 			pthread_mutex_unlock(&check_worker_lock);
 
 			if (ptr->nb_total_volumes == 0)
@@ -139,10 +142,12 @@ static void soj_restorearchive_check_worker_do(void * arg __attribute__((unused)
 				has_check_file = true;
 
 				struct so_value * checksums = so_value_hashtable_keys(ptr->file->digests);
-				if (so_value_list_get_length(checksums) > 0) {
+				if (so_value_list_get_length(checksums) == 0) {
 					so_value_free(checksums);
 
 					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Skip verify '%s' because there is no checksums availables"), ptr->file->restored_to);
+
+					ptr->checked = time(NULL);
 					continue;
 				}
 
@@ -177,6 +182,8 @@ static void soj_restorearchive_check_worker_do(void * arg __attribute__((unused)
 				checksum_writer->ops->free(checksum_writer);
 
 				db_connect->ops->check_archive_file(db_connect, ptr->archive, ptr->file);
+
+				check_worker_nb_remain_files--;
 			}
 
 			pthread_mutex_lock(&check_worker_lock);

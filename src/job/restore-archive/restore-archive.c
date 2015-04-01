@@ -26,6 +26,8 @@
 
 // bindtextdomain, dgettext
 #include <libintl.h>
+// free
+#include <stdlib.h>
 // strcmp
 #include <string.h>
 // sleep
@@ -69,7 +71,10 @@ static struct so_job_driver soj_restorearchive = {
 };
 
 
-static void soj_restorearchive_exit(struct so_job * job, struct so_database_connection * db_connect) {
+static void soj_restorearchive_exit(struct so_job * job __attribute__((unused)), struct so_database_connection * db_connect __attribute__((unused))) {
+	if (archive != NULL)
+		so_archive_free(archive);
+	free(restore_path);
 }
 
 static void soj_restorearchive_init() {
@@ -152,9 +157,39 @@ static int soj_restorearchive_simulate(struct so_job * job, struct so_database_c
 }
 
 static void soj_restorearchive_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
+	struct so_pool * pool = archive->volumes->media->pool;
+
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, pool) < 1)
+		return;
+
+	struct so_value * json = so_value_pack("{sosososs}",
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"archive", so_archive_convert(archive),
+		"restore path", restore_path
+	);
+
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_on_error, pool, json);
+	so_value_free(json);
+	so_value_free(returned);
 }
 
 static void soj_restorearchive_script_post_run(struct so_job * job, struct so_database_connection * db_connect) {
+	struct so_pool * pool = archive->volumes->media->pool;
+
+	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_post_job, pool) < 1)
+		return;
+
+	struct so_value * json = so_value_pack("{sosososs}",
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"archive", so_archive_convert(archive),
+		"restore path", restore_path
+	);
+
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_post_job, pool, json);
+	so_value_free(json);
+	so_value_free(returned);
 }
 
 static bool soj_restorearchive_script_pre_run(struct so_job * job, struct so_database_connection * db_connect) {
