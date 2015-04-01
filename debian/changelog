@@ -1,3 +1,9 @@
+stone (1.1.27.3+wheezy) polisher; urgency=low
+
+  * Correctif scriptes sql et config
+
+ -- guillaume clercin <gclercin@intellique.com>  Wed, 01 Apr 2015 17:35:45 +0200
+
 stone (1.1.27.2+wheezy) polisher; urgency=low
 
   * Bug fix: correctif
