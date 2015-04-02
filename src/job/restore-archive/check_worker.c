@@ -63,18 +63,15 @@ struct soj_restorearchive_check_worker_private {
 	unsigned int nb_volumes_done;
 	unsigned int nb_total_volumes;
 
-	bool ok;
-	time_t checked;
-
 	struct soj_restorearchive_check_worker_private * next;
 };
 
+static void soj_restorearchive_check_worker_check(struct so_job * job, struct soj_restorearchive_check_worker_private * ptr, struct so_database_connection * db_connect);
 static void soj_restorearchive_check_worker_do(void * arg);
 
 static struct so_database_config * check_worker_db_config = NULL;
 static struct soj_restorearchive_check_worker_private * first_file = NULL, * last_file = NULL;
 static pthread_mutex_t check_worker_lock = PTHREAD_MUTEX_INITIALIZER;
-static volatile unsigned int check_worker_nb_remain_files = 0;
 static volatile bool check_worker_running = false;
 static volatile bool check_worker_stop = false;
 static pthread_cond_t check_worker_wait = PTHREAD_COND_INITIALIZER;
@@ -99,8 +96,6 @@ void soj_restorearchive_check_worker_add(struct so_archive * archive, struct so_
 		ptr->file = file;
 		ptr->nb_volumes_done = 1;
 		ptr->nb_total_volumes = 0;
-		ptr->ok = false;
-		ptr->checked = 0;
 		ptr->next = NULL;
 
 		if (last_file == NULL)
@@ -108,13 +103,50 @@ void soj_restorearchive_check_worker_add(struct so_archive * archive, struct so_
 		else
 			last_file = last_file->next = ptr;
 
-		check_worker_nb_remain_files++;
-
 		pthread_cond_signal(&check_worker_wait);
 	} else
 		ptr->nb_volumes_done++;
 
 	pthread_mutex_unlock(&check_worker_lock);
+}
+
+static void soj_restorearchive_check_worker_check(struct so_job * job, struct soj_restorearchive_check_worker_private * ptr, struct so_database_connection * db_connect) {
+	struct so_value * checksums = so_value_hashtable_keys(ptr->file->digests);
+	if (so_value_list_get_length(checksums) == 0) {
+		so_value_free(checksums);
+
+		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Skip verify '%s' because there is no checksums availables"), ptr->file->restored_to);
+		return;
+	}
+
+	int fd_in = open(ptr->file->restored_to, O_RDONLY);
+	if (fd_in < 0) {
+		so_value_free(checksums);
+
+		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Failed to open '%s' because %m"), ptr->file->restored_to);
+
+		return;
+	}
+
+	struct so_stream_writer * checksum_writer = so_io_checksum_writer_new(NULL, checksums, false);
+
+	static char buffer[65536];
+	ssize_t nb_read;
+	while (nb_read = read(fd_in, buffer, 65536), nb_read > 0)
+		checksum_writer->ops->write(checksum_writer, buffer, nb_read);
+
+	close(fd_in);
+
+	checksum_writer->ops->close(checksum_writer);
+
+	struct so_value * digests = so_io_checksum_writer_get_checksums(checksum_writer);
+	ptr->file->check_ok = so_value_equals(ptr->file->digests, digests);
+	ptr->file->check_time = time(NULL);
+	so_value_free(digests);
+
+	checksum_writer->ops->free(checksum_writer);
+
+	db_connect->ops->check_archive_file(db_connect, ptr->archive, ptr->file);
 }
 
 static void soj_restorearchive_check_worker_do(void * arg __attribute__((unused))) {
@@ -127,70 +159,39 @@ static void soj_restorearchive_check_worker_do(void * arg __attribute__((unused)
 	pthread_cond_signal(&check_worker_wait);
 
 	for (;;) {
-		if (check_worker_stop && check_worker_nb_remain_files == 0)
+		if (check_worker_stop && first_file == NULL)
 			break;
 
-		struct soj_restorearchive_check_worker_private * ptr;
-		bool has_check_file = false;
-		for (ptr = first_file; ptr != NULL; ptr = ptr->next) {
+		if (first_file == NULL)
+			pthread_cond_wait(&check_worker_wait, &check_worker_lock);
+
+		struct soj_restorearchive_check_worker_private * ptr, * last;
+		for (ptr = first_file, last = NULL; ptr != NULL; last = ptr, ptr = ptr->next) {
 			pthread_mutex_unlock(&check_worker_lock);
 
 			if (ptr->nb_total_volumes == 0)
 				ptr->nb_total_volumes = db_connect->ops->get_nb_volumes_of_file(db_connect, ptr->archive, ptr->file);
 
-			if (ptr->nb_volumes_done == ptr->nb_total_volumes && ptr->checked == 0) {
-				has_check_file = true;
+			if (ptr->nb_volumes_done >= ptr->nb_total_volumes) {
+				pthread_mutex_lock(&check_worker_lock);
 
-				struct so_value * checksums = so_value_hashtable_keys(ptr->file->digests);
-				if (so_value_list_get_length(checksums) == 0) {
-					so_value_free(checksums);
+				if (last != NULL)
+					last->next = ptr->next;
+				else
+					first_file = ptr->next;
 
-					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Skip verify '%s' because there is no checksums availables"), ptr->file->restored_to);
+				if (first_file == NULL)
+					last_file = NULL;
 
-					ptr->checked = time(NULL);
-					continue;
-				}
+				pthread_mutex_unlock(&check_worker_lock);
 
-				int fd_in = open(ptr->file->restored_to, O_RDONLY);
-				if (fd_in < 0) {
-					so_value_free(checksums);
+				soj_restorearchive_check_worker_check(job, ptr, db_connect);
+				free(ptr);
 
-					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Failed to open '%s' because %m"), ptr->file->restored_to);
-
-					ptr->ok = false;
-					ptr->checked = time(NULL);
-
-					continue;
-				}
-
-				struct so_stream_writer * checksum_writer = so_io_checksum_writer_new(NULL, checksums, false);
-
-				static char buffer[65536];
-				ssize_t nb_read;
-				while (nb_read = read(fd_in, buffer, 65536), nb_read > 0)
-					checksum_writer->ops->write(checksum_writer, buffer, nb_read);
-
-				close(fd_in);
-
-				checksum_writer->ops->close(checksum_writer);
-
-				struct so_value * digests = so_io_checksum_writer_get_checksums(checksum_writer);
-				ptr->file->check_ok = so_value_equals(ptr->file->digests, digests);
-				ptr->file->check_time = time(NULL);
-				so_value_free(digests);
-
-				checksum_writer->ops->free(checksum_writer);
-
-				db_connect->ops->check_archive_file(db_connect, ptr->archive, ptr->file);
-
-				check_worker_nb_remain_files--;
+				pthread_mutex_lock(&check_worker_lock);
+				break;
 			}
-
-			pthread_mutex_lock(&check_worker_lock);
 		}
-
-		if (!has_check_file)
-			pthread_cond_wait(&check_worker_wait, &check_worker_lock);
 	}
 
 	pthread_cond_signal(&check_worker_wait);
