@@ -218,6 +218,7 @@ void soj_restorearchive_check_worker_start(struct so_database_config * db_config
 void soj_restorearchive_check_worker_stop() {
 	pthread_mutex_lock(&check_worker_lock);
 	check_worker_stop = true;
+	pthread_cond_signal(&check_worker_wait);
 	if (check_worker_running)
 		pthread_cond_wait(&check_worker_wait, &check_worker_lock);
 	pthread_mutex_unlock(&check_worker_lock);
