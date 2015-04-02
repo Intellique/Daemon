@@ -40,10 +40,32 @@
 
 #include "common.h"
 
+static void soj_restorearchive_path_exit(void) __attribute__((destructor));
+
 static struct so_value * path_files = NULL;
 static pthread_mutex_t path_lock = PTHREAD_MUTEX_INITIALIZER;
 static const char * path_root = "";
 static size_t path_root_length = 0;
+static struct so_value * path_selected = NULL;
+
+
+static void soj_restorearchive_path_exit() {
+	so_value_free(path_files);
+}
+
+bool soj_restorearchive_path_filter(const char * path) {
+	bool found = false;
+	struct so_value_iterator * iter = so_value_list_get_iterator(path_selected);
+	while (!found && so_value_iterator_has_next(iter)) {
+		struct so_value * val = so_value_iterator_get_value(iter, false);
+		const char * filter = so_value_string_get(val);
+
+		size_t length = strlen(filter);
+		found = strncmp(path, filter, length) == 0;
+	}
+	so_value_iterator_free(iter);
+	return found;
+}
 
 const char * soj_restorearchive_path_get(const char * path, const char * parent, bool is_regular_file) {
 	pthread_mutex_lock(&path_lock);
@@ -87,12 +109,14 @@ const char * soj_restorearchive_path_get(const char * path, const char * parent,
 	return so_value_string_get(file);
 }
 
-void soj_restorearchive_path_init(const char * root) {
+void soj_restorearchive_path_init(const char * root, struct so_value * selected_path) {
 	if (root != NULL) {
 		path_root = root;
 		path_root_length = strlen(path_root);
 	}
 
 	path_files = so_value_new_hashtable2();
+
+	path_selected = selected_path;
 }
 

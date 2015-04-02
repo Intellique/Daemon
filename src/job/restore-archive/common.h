@@ -38,6 +38,7 @@ struct so_archive;
 struct so_archive_file;
 struct so_database_config;
 struct so_media;
+struct so_value;
 
 struct soj_restorearchive_data_worker {
 	struct so_archive * archive;
@@ -62,8 +63,9 @@ void soj_restorearchive_check_worker_stop(void);
 struct soj_restorearchive_data_worker * soj_restorearchive_data_worker_new(struct so_archive * archive, struct so_media * media, struct so_database_config * db_config, struct soj_restorearchive_data_worker * previous_worker);
 void soj_restorearchive_data_worker_start(struct soj_restorearchive_data_worker * first_worker, struct so_job * job, struct so_database_connection * db_connect);
 
+bool soj_restorearchive_path_filter(const char * path);
 const char * soj_restorearchive_path_get(const char * path, const char * parent, bool is_regular_file);
-void soj_restorearchive_path_init(const char * root);
+void soj_restorearchive_path_init(const char * root, struct so_value * selected_path);
 
 #endif
 

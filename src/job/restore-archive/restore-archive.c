@@ -50,6 +50,7 @@
 
 static struct so_archive * archive = NULL;
 static char * restore_path = NULL;
+static struct so_value * selected_path = NULL;
 
 static void soj_restorearchive_exit(struct so_job * job, struct so_database_connection * db_connect);
 static void soj_restorearchive_init(void) __attribute__((constructor));
@@ -75,6 +76,7 @@ static void soj_restorearchive_exit(struct so_job * job __attribute__((unused)),
 	if (archive != NULL)
 		so_archive_free(archive);
 	free(restore_path);
+	so_value_free(selected_path);
 }
 
 static void soj_restorearchive_init() {
@@ -151,7 +153,12 @@ static int soj_restorearchive_simulate(struct so_job * job, struct so_database_c
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-storiqone-job-restore-archive", "Restore path should be absolute (starts with '/')"));
 		return 2;
 	}
-	soj_restorearchive_path_init(restore_path);
+
+	selected_path = db_connect->ops->get_selected_files_by_job(db_connect, job);
+	if (selected_path == NULL)
+		selected_path = so_value_new_linked_list();
+
+	soj_restorearchive_path_init(restore_path, selected_path);
 
 	return 0;
 }
@@ -162,11 +169,12 @@ static void soj_restorearchive_script_on_error(struct so_job * job, struct so_da
 	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, pool) < 1)
 		return;
 
-	struct so_value * json = so_value_pack("{sosososs}",
+	struct so_value * json = so_value_pack("{sosososssO}",
 		"job", so_job_convert(job),
 		"host", so_host_get_info2(),
 		"archive", so_archive_convert(archive),
-		"restore path", restore_path
+		"restore path", restore_path,
+		"selected path", selected_path
 	);
 
 	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_on_error, pool, json);
@@ -180,11 +188,12 @@ static void soj_restorearchive_script_post_run(struct so_job * job, struct so_da
 	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_post_job, pool) < 1)
 		return;
 
-	struct so_value * json = so_value_pack("{sosososs}",
+	struct so_value * json = so_value_pack("{sosososssO}",
 		"job", so_job_convert(job),
 		"host", so_host_get_info2(),
 		"archive", so_archive_convert(archive),
-		"restore path", restore_path
+		"restore path", restore_path,
+		"selected path", selected_path
 	);
 
 	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_post_job, pool, json);
@@ -198,11 +207,12 @@ static bool soj_restorearchive_script_pre_run(struct so_job * job, struct so_dat
 	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_pre_job, pool) < 1)
 		return true;
 
-	struct so_value * json = so_value_pack("{sosososs}",
+	struct so_value * json = so_value_pack("{sosososssO}",
 		"job", so_job_convert(job),
 		"host", so_host_get_info2(),
 		"archive", so_archive_convert(archive),
-		"restore path", restore_path
+		"restore path", restore_path,
+		"selected path", selected_path
 	);
 
 	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_pre_job, pool, json);

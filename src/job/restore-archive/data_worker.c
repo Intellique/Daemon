@@ -174,6 +174,16 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 			so_string_delete_double_char(header.filename, '/');
 			so_string_trim(header.filename, '/');
 
+			if (!soj_restorearchive_path_filter(file->path)) {
+				status = reader->ops->skip_file(reader);
+				if (status != so_format_reader_header_ok) {
+					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while skipping file '%s'"), file->path);
+					worker->nb_errors++;
+					break;
+				}
+				continue;
+			}
+
 			const char * restore_to = soj_restorearchive_path_get(header.filename, file->selected_path, file->type == so_archive_file_type_regular_file);
 			if (restore_to != NULL)
 				file->restored_to = strdup(restore_to);
