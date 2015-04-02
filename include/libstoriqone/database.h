@@ -32,6 +32,7 @@
 
 struct so_archive;
 struct so_archive_file;
+struct so_archive_volume;
 struct so_backup;
 struct so_backup_volume;
 struct so_changer;
@@ -167,6 +168,7 @@ struct so_database_connection {
 		int (*sync_plugin_job)(struct so_database_connection * connect, const char * job) __attribute__((nonnull));
 
 		int (*check_archive_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file) __attribute__((nonnull));
+		int (*check_archive_volume)(struct so_database_connection * connect, struct so_archive_volume * volume) __attribute__((nonnull));
 		struct so_archive * (*get_archive)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull));
 		unsigned int (*get_nb_volumes_of_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file) __attribute__((nonnull));
 		int (*sync_archive)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((nonnull));

@@ -189,6 +189,8 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 					file->check_time = time(NULL);
 					so_value_free(digests);
 
+					db_connect->ops->check_archive_file(db_connect, archive, file);
+
 					chcksum_writer->ops->free(chcksum_writer);
 					chcksum_writer = NULL;
 				}
@@ -218,6 +220,8 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 		if (ok) {
 			struct so_value * digests = reader->ops->get_digests(reader);
 			ok = so_value_equals(vol->digests, digests);
+
+			db_connect->ops->check_archive_volume(db_connect, vol);
 		}
 
 		vol->check_ok = ok;

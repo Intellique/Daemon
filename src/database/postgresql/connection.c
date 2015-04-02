@@ -114,6 +114,7 @@ static int so_database_postgresql_sync_plugin_checksum(struct so_database_connec
 static int so_database_postgresql_sync_plugin_job(struct so_database_connection * connect, const char * job);
 
 static int so_database_postgresql_check_archive_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
+static int so_database_postgresql_check_archive_volume(struct so_database_connection * connect, struct so_archive_volume * volume);
 static struct so_archive * so_database_postgresql_get_archive(struct so_database_connection * connect, struct so_job * job);
 static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
 static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive);
@@ -175,6 +176,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.sync_plugin_job      = so_database_postgresql_sync_plugin_job,
 
 	.check_archive_file     = so_database_postgresql_check_archive_file,
+	.check_archive_volume   = so_database_postgresql_check_archive_volume,
 	.get_archive            = so_database_postgresql_get_archive,
 	.get_nb_volumes_of_file = so_database_postgresql_get_nb_volumes_of_file,
 	.sync_archive           = so_database_postgresql_sync_archive,
@@ -2585,10 +2587,42 @@ static int so_database_postgresql_check_archive_file(struct so_database_connecti
 	so_value_unpack(db, "{ss}", "id", &file_id);
 
 	const char * query = "update_check_archive_file";
-	so_database_postgresql_prepare(self, query, "UPDATE archivefiletoarchivevolume SET checktime = NOW(), checksumok = TRUE WHERE archivefile = $2 AND archivevolume IN (SELECT id FROM archivevolume WHERE archive = $1)");
+	so_database_postgresql_prepare(self, query, "UPDATE archivefiletoarchivevolume SET checktime = $1, checksumok = $2 WHERE archivefile = $3 AND archivevolume IN (SELECT id FROM archivevolume WHERE archive = $4)");
 
-	const char * param[] = { archive_id, file_id };
-	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	char checktime[32];
+	so_time_convert(&file->check_time, "%F %T", checktime, 32);
+
+	const char * param[] = { checktime, so_database_postgresql_bool_to_string(file->check_ok), file_id, archive_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+
+	return status != PGRES_COMMAND_OK;
+}
+
+static int so_database_postgresql_check_archive_volume(struct so_database_connection * connect, struct so_archive_volume * volume) {
+	if (connect == NULL || volume == NULL)
+		return -1;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+
+	char * volume_id = NULL;
+	struct so_value * db = so_value_hashtable_get(volume->db_data, key, false, false);
+	so_value_unpack(db, "{ss}", "id", &volume_id);
+
+	const char * query = "update_check_archive_volume";
+	so_database_postgresql_prepare(self, query, "UPDATE archivevolume SET checktime = $1, checksumok = $2 WHERE id = $3");
+
+	char checktime[32];
+	so_time_convert(&volume->check_time, "%F %T", checktime, 32);
+
+	const char * param[] = { checktime, so_database_postgresql_bool_to_string(volume->check_ok), volume_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)

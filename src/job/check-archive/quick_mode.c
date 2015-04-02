@@ -151,7 +151,8 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 		job->done = 0.01 + done * 0.98;
 	}
 
-	so_job_add_record(job, db_connect, so_log_level_debug, so_job_record_notif_important, dgettext("storiqone-job-check-archive", "Waiting for workers"));
+	for (i = 0; i < archive->nb_volumes; i++)
+		db_connect->ops->check_archive_volume(db_connect, archive->volumes + i);
 
 	ptr_worker = workers;
 	while (ptr_worker != NULL) {
