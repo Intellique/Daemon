@@ -154,7 +154,7 @@ static off_t sodr_vtl_drive_reader_forward(struct so_stream_reader * sr, off_t o
 			return -1;
 		}
 
-		self->buffer_used += offset;
+		self->buffer_used = offset;
 		self->position += offset;
 		self->media->last_read = time(NULL);
 		self->media->nb_total_read++;
