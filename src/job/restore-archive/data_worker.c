@@ -182,7 +182,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 			if (ptr != NULL) {
 				*ptr = '\0';
 				if (access(restore_to, R_OK | W_OK | X_OK) != 0) {
-					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Create missing directory '%s' with permission 0777"), restore_to);
+					so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Create missing directories '%s' with permission 0777"), restore_to);
 					so_file_mkdir(restore_to, 0777);
 				}
 				*ptr = '/';
@@ -193,7 +193,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 			if (S_ISREG(header.mode)) {
 				int fd = open(restore_to, O_CREAT | O_WRONLY, header.mode & 07777);
 				if (fd < 0) {
-					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while opening file (%s) for writing because %m"), restore_to);
+					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while opening file '%s' for writing because %m"), restore_to);
 					worker->nb_errors++;
 
 					break;
@@ -201,7 +201,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 
 				if (header.position > 0) {
 					if (lseek(fd, header.position, SEEK_SET) != header.position) {
-						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while seeking into file (%s) because %m"), restore_to);
+						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while seeking into file '%s' because %m"), restore_to);
 						worker->nb_errors++;
 						close(fd);
 
@@ -217,14 +217,14 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 					if (nb_write > 0)
 						worker->total_restored += nb_write;
 					else {
-						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while writing to file (%s) because %m"), restore_to);
+						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while writing to file '%s' because %m"), restore_to);
 						worker->nb_errors++;
 						break;
 					}
 				}
 
 				if (nb_read < 0) {
-					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while reading from media (%s) because %m"), vol->media->name);
+					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while reading from media '%s' because %m"), vol->media->name);
 					worker->nb_errors++;
 
 					break;
@@ -235,7 +235,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 					}
 
 					if (fchmod(fd, file->perm)) {
-						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while restoring permission of file (%s) because %m"), restore_to);
+						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while restoring permission of file '%s' because %m"), restore_to);
 						worker->nb_warnings++;
 					}
 
@@ -244,7 +244,7 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 						{ file->modify_time, 0 },
 					};
 					if (futimes(fd, tv)) {
-						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while motification time of file (%s) because %m"), restore_to);
+						so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-restore-archive", "Error while modification time of file '%s' because %m"), restore_to);
 						worker->nb_warnings++;
 					}
 				}

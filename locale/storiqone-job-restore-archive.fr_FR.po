@@ -1,0 +1,135 @@
+# French translations for job-restore-archive package.
+# Copyright (C) 2015
+# This file is distributed under the same license as the storiqone package.
+# Guillaume Clercin <gclercin@intellique.com>, 2015
+#
+msgid   ""
+msgstr  "Project-Id-Version: job-restore-archive v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-04-02 13:43+0200\n"
+        "PO-Revision-Date: 2014-11-13 09:03+0100\n"
+        "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
+        "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
+        "Language: fr\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/job/restore-archive/check_worker.c:118
+#, c-format
+msgid   "Skip verify '%s' because there is no checksums availables"
+msgstr  "Pas de vérification de « %s » parce qu’il n’a pas d’empreinte disponible"
+
+#: src/job/restore-archive/check_worker.c:126
+#, c-format
+msgid   "Failed to open '%s' because %m"
+msgstr  "Échec à l’ouverture de « %s » parce que %m"
+
+#: src/job/restore-archive/data_worker.c:102
+#, c-format
+msgid   "Media not found (named: %s)"
+msgstr  "Média non trouvé (nommé : %s)"
+
+#: src/job/restore-archive/data_worker.c:113
+#, c-format
+msgid   "Getting media (%s)"
+msgstr  "Acquisition du média « %s »"
+
+#: src/job/restore-archive/data_worker.c:128
+#, c-format
+msgid   "Looking for media (%s)"
+msgstr  "Recherche du média « %s »"
+
+#: src/job/restore-archive/data_worker.c:169
+#, c-format
+msgid   "Error while seeking to file '%s'"
+msgstr  "Erreur en se positionnant dans le fichier « %s »"
+
+#: src/job/restore-archive/data_worker.c:185
+#, c-format
+msgid   "Create missing directories '%s' with permission 0777"
+msgstr  "Création des répertoires manquants « %s » avec la permission 0777"
+
+#: src/job/restore-archive/data_worker.c:191
+#, c-format
+msgid   "Start restoring file '%s'"
+msgstr  "Démarrage de la restitution du fichier « %s »"
+
+#: src/job/restore-archive/data_worker.c:196
+#, c-format
+msgid   "Error while opening file '%s' for writing because %m"
+msgstr  "Erreur à l’ouverture du fichier « %s » en écriture parce que %m"
+
+#: src/job/restore-archive/data_worker.c:204
+#, c-format
+msgid   "Error while seeking into file '%s' because %m"
+msgstr  "Erreur en se déplaçant dans le fichier « %s » parce que %m"
+
+#: src/job/restore-archive/data_worker.c:220
+#, c-format
+msgid   "Error while writing to file '%s' because %m"
+msgstr  "Erreur en écrivant dans le fichier « %s » parce que %m"
+
+#: src/job/restore-archive/data_worker.c:227
+#, c-format
+msgid   "Error while reading from media '%s' because %m"
+msgstr  "Erreur en lisant depuis le média « %s » parce que %m"
+
+#: src/job/restore-archive/data_worker.c:233
+#, c-format
+msgid   "Error while restoring user of file (%s) because %m"
+msgstr  "Erreur en restorant l’utilisateur du fichier « %s » parce que %m"
+
+#: src/job/restore-archive/data_worker.c:238
+#, c-format
+msgid   "Error while restoring permission of file '%s' because %m"
+msgstr  "Erreur en restorant les permissions du fichier « %s » parce que %m"
+
+#: src/job/restore-archive/data_worker.c:247
+#, c-format
+msgid   "Error while modification time of file '%s' because %m"
+msgstr  "Erreur en restorant l’horodatage du fichier « %s » parce que %m"
+
+#: src/job/restore-archive/data_worker.c:259
+#, c-format
+msgid   "Failed to create symbolic link '%s' to '%s' because %m"
+msgstr  "Échec lors de la création du lien symbolique « %s » vers « %s » parce que %m"
+
+#: src/job/restore-archive/data_worker.c:262
+#, c-format
+msgid   "Failed to change permission of '%s' to '%03o' because %m"
+msgstr  "Échec lors du changement de permission de « %s » vers « %03o » parce que %m"
+
+#: src/job/restore-archive/data_worker.c:267
+#, c-format
+msgid   "Failed to create fifo '%s' because %m"
+msgstr  "Échec lors de la création du tube nommé « %s » parce que %m"
+
+#: src/job/restore-archive/data_worker.c:272
+#, c-format
+msgid   "Failed to create character device '%s' because %m"
+msgstr  "Échec lors de la création du périphérique characteère « %s » parce que %m"
+
+#: src/job/restore-archive/data_worker.c:278
+#, c-format
+msgid   "Failed to create block device '%s' because %m"
+msgstr  "Échec lors de la création du périphérique bloc « %s » parce que %m"
+
+#: src/job/restore-archive/data_worker.c:284
+#, c-format
+msgid   "Failed to change owner and group of '%s' because %m"
+msgstr  "Échec lors du changement du propriétaire et du groupe de « %s » parce que %m"
+
+#: src/job/restore-archive/data_worker.c:302
+#, c-format
+msgid   "Starting worker #%u"
+msgstr  "Démarrage du travailleur n°%u"
+
+#: src/job/restore-archive/restore-archive.c:145
+msgid   "Archive not found"
+msgstr  "Archive non trouvée"
+
+#: src/job/restore-archive/restore-archive.c:151
+msgid   "Restore path should be absolute (starts with '/')"
+msgstr  "Le chemin de restitution doit être absolu (commence par '/')"
