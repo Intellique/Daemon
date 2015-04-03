@@ -220,13 +220,13 @@ int soj_checkarchive_thorough_mode(struct so_job * job, struct so_archive * arch
 		if (ok) {
 			struct so_value * digests = reader->ops->get_digests(reader);
 			ok = so_value_equals(vol->digests, digests);
-
-			db_connect->ops->check_archive_volume(db_connect, vol);
 		}
 
 		vol->check_ok = ok;
 		vol->check_time = time(NULL);
 		total_read += vol->size;
+
+		db_connect->ops->check_archive_volume(db_connect, vol);
 	}
 
 	job->done = 1;
