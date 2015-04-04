@@ -1,0 +1,92 @@
+# French translations for vtl-drive package.
+# Copyright (C) 2015
+# This file is distributed under the same license as the storiqone package.
+# Guillaume Clercin <gclercin@intellique.com>, 2015
+#
+msgid   ""
+msgstr  "Project-Id-Version: vtl-drive v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-04-04 13:13+0200\n"
+        "PO-Revision-Date: 2014-11-13 09:03+0100\n"
+        "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
+        "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
+        "Language: fr\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/drive/vtl_drive/device.c:158
+#, c-format
+msgid   "[%s %s %d] Failed to erase file '%s' because %m"
+msgstr  "[ %s %s %d ] Échec lors de l’écrasement du fichier « %s » parce que %m"
+
+#: src/drive/vtl_drive/device.c:176 src/drive/vtl_drive/device.c:247 src/drive/vtl_drive/device.c:354
+#, c-format
+msgid   "[%s %s %d] Failed to list files from media '%s'"
+msgstr  "[ %s %s %d ] Échec de l’énumération des fichiers du média « %s »"
+
+#: src/drive/vtl_drive/device.c:178 src/drive/vtl_drive/device.c:249 src/drive/vtl_drive/device.c:356
+msgid   "NULL"
+msgstr  "VIDE"
+
+#: src/drive/vtl_drive/device.c:207
+#, c-format
+msgid   "[%s %s %d] Command 'shred' finished with code '%d' while removing file '%s'"
+msgstr  "[ %s %s %d ] Commande « shred » a quitté avec le code « %d » lors de la suppression du fichier « %s »"
+
+#: src/drive/vtl_drive/device.c:213
+#, c-format
+msgid   "[%s %s %d] Failed to start 'shred' command to remove file '%s'"
+msgstr  "[ %s %s %d ] Échec du lancement de la commande « shred » pour supprimer le fichier « %s »"
+
+#: src/drive/vtl_drive/device.c:278
+#, c-format
+msgid   "[%s %s %d] Failed to write header of media '%s'"
+msgstr  "[ %s %s %d ] Échec lors de l’écriture de l’en-tête du média « %s »"
+
+#: src/drive/vtl_drive/device.c:337
+#, c-format
+msgid   "[%s %s %d] Failed to open file from media '%s' at position '%d' because %m"
+msgstr  "[ %s %s %d ] Échec lors de l’ouverture du fichier du média « %s » à la position « %d » parce que %m"
+
+#: src/drive/vtl_drive/device.c:434
+#, c-format
+msgid   "[%s %s %d] Failed to find media with uuid '%s' from database"
+msgstr  "[ %s %s %d ] Échec lors de la recherche du média avec l’uuid « %s » depuis la base de données"
+
+#: src/drive/vtl_drive/reader.c:86 src/drive/vtl_drive/writer.c:173
+#, c-format
+msgid   "[%s %s %d] Error while closing media '%s' at position '%d' because %s"
+msgstr  "[ %s %s %d ] Erreur en fermant le média « %s » à la position « %d » parce que %s"
+
+#: src/drive/vtl_drive/reader.c:105 src/drive/vtl_drive/reader.c:125
+#, c-format
+msgid   "[%s %s %d] Error while getting information of file from media '%s' at position '%d' because %m"
+msgstr  "[ %s %s %d ] Erreur en récupérant les informations du fichier du média « %s » à la position « %d » parce que %m"
+
+#: src/drive/vtl_drive/reader.c:158
+#, c-format
+msgid   "[%s %s %d] Error while forwarding into file from media '%s' at position '%d' because %m"
+msgstr  "[ %s %s %d ] Erreur en avançant dans le fichier du média « %s » à la position « %d » parce que %m"
+
+#: src/drive/vtl_drive/reader.c:180 src/drive/vtl_drive/reader.c:283 src/drive/vtl_drive/reader.c:310
+#, c-format
+msgid   "[%s %s %d] Error while reading file from media '%s' at position '%d' because %m"
+msgstr  "[ %s %s %d ] Erreur en lisant le fichier depuis le média « %s » à la position « %d » parce que %m"
+
+#: src/drive/vtl_drive/writer.c:112 src/drive/vtl_drive/writer.c:154 src/drive/vtl_drive/writer.c:282
+#: src/drive/vtl_drive/writer.c:340 src/drive/vtl_drive/writer.c:365
+#, c-format
+msgid   "[%s %s %d] Error while writing file from media '%s' at position '%d' because %m"
+msgstr  "[ %s %s %d ] Erreur en écrivant le fichier du média « %s » à la position « %d » parce que %m"
+
+#: src/drive/vtl_drive/writer.c:223
+#, c-format
+msgid   "[%s %s %d] Error while opening file '%s' because %m"
+msgstr  "[ %s %s %d ] Erreur en ouvrant le fichier « %s » parce que %m"
+
+#: src/drive/vtl_drive/writer.c:298
+#, c-format
+msgid   "[%s %s %d] Error while repositioning at beginning of file from media '%s' at position '%d' because %m"
+msgstr  "[ %s %s %d ] Erreur en repositionnant en début de fichier depuis le média « %s » à la position « %d » parce que %m"

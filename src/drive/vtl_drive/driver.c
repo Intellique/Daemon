@@ -24,11 +24,16 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+// bindtextdomain, dgettext
+#include <libintl.h>
+
 #include <libstoriqone-drive/drive.h>
 
 #include "device.h"
 
 #include <drive-vtldrive.chcksum>
+
+#include "config.h"
 
 static struct so_drive_driver sodr_vtl_drive_driver = {
 	.name = "vtl drive",
@@ -40,6 +45,8 @@ static void sodr_vtl_driver_init(void) __attribute__((constructor));
 
 
 static void sodr_vtl_driver_init() {
+	bindtextdomain("storiqone-drive-vtl", LOCALE_DIR);
+
 	sodr_vtl_drive_driver.device = sodr_vtl_drive_get_device();
 	sodr_drive_register(&sodr_vtl_drive_driver);
 }

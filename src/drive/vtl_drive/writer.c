@@ -28,9 +28,11 @@
 #include <errno.h>
 // open
 #include <fcntl.h>
+// dgettext
+#include <libintl.h>
 // free, malloc
 #include <stdlib.h>
-// memcpy
+// memcpy, strerror
 #include <string.h>
 // strings
 #include <strings.h>
@@ -104,6 +106,12 @@ static ssize_t sodr_vtl_drive_writer_before_close(struct so_stream_writer * sw, 
 			if (nb_write < 0) {
 				self->last_errno = errno;
 				self->media->nb_write_errors++;
+
+				struct so_drive * drive = sodr_vtl_drive_get_device();
+				so_log_write(so_log_level_error,
+					dgettext("storiqone-drive-vtl", "[%s %s %d] Error while writing file from media '%s' at position '%d' because %m"),
+					drive->vendor, drive->model, drive->index, self->media->name, self->file_position);
+
 				return -1;
 			}
 
@@ -141,6 +149,11 @@ static int sodr_vtl_drive_writer_close(struct so_stream_writer * sw) {
 		if (nb_write < 0) {
 			self->last_errno = errno;
 			self->media->nb_write_errors++;
+
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-drive-vtl", "[%s %s %d] Error while writing file from media '%s' at position '%d' because %m"),
+				dr->vendor, dr->model, dr->index, self->media->name, self->file_position);
+
 			return -1;
 		}
 
@@ -153,9 +166,13 @@ static int sodr_vtl_drive_writer_close(struct so_stream_writer * sw) {
 	if (self->fd > -1) {
 		int failed = sodr_vtl_drive_io_close(self);
 
-		if (failed != 0)
+		if (failed != 0) {
 			self->media->nb_write_errors++;
-		else
+
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-drive-vtl", "[%s %s %d] Error while closing media '%s' at position '%d' because %s"),
+				dr->vendor, dr->model, dr->index, self->media->name, self->file_position, strerror(self->last_errno));
+		} else
 			self->media->last_write = time(NULL);
 
 		return failed;
@@ -200,9 +217,11 @@ static ssize_t sodr_vtl_drive_writer_get_block_size(struct so_stream_writer * sw
 struct so_stream_writer * sodr_vtl_drive_writer_get_raw_writer(const char * filename, int file_position) {
 	struct so_drive * drive = sodr_vtl_drive_get_device();
 
-	int fd = open(filename, O_RDWR | O_CREAT | O_TRUNC, 0644);
+	int fd = open(filename, O_RDWR | O_CREAT | O_TRUNC, 0640);
 	if (fd < 0) {
-		so_log_write(so_log_level_error, "[%s %s %d] Error while opening file (%s) because %m", drive->vendor, drive->model, drive->index, filename);
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-vtl", "[%s %s %d] Error while opening file '%s' because %m"),
+			drive->vendor, drive->model, drive->index, filename);
 		return NULL;
 	}
 
@@ -258,6 +277,11 @@ static struct so_stream_reader * sodr_vtl_drive_writer_reopen(struct so_stream_w
 		if (nb_write < 0) {
 			self->last_errno = errno;
 			self->media->nb_write_errors++;
+
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-drive-vtl", "[%s %s %d] Error while writing file from media '%s' at position '%d' because %m"),
+				dr->vendor, dr->model, dr->index, self->media->name, self->file_position);
+
 			return NULL;
 		}
 
@@ -270,7 +294,9 @@ static struct so_stream_reader * sodr_vtl_drive_writer_reopen(struct so_stream_w
 
 	off_t new_position = lseek(self->fd, 0, SEEK_SET);
 	if (new_position == (off_t) -1) {
-		// error
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-vtl", "[%s %s %d] Error while repositioning at beginning of file from media '%s' at position '%d' because %m"),
+			dr->vendor, dr->model, dr->index, self->media->name, self->file_position);
 		return NULL;
 	}
 
@@ -309,6 +335,11 @@ static ssize_t sodr_vtl_drive_writer_write(struct so_stream_writer * sw, const v
 	if (nb_write < 0) {
 		self->last_errno = errno;
 		self->media->nb_write_errors++;
+
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-vtl", "[%s %s %d] Error while writing file from media '%s' at position '%d' because %m"),
+			dr->vendor, dr->model, dr->index, self->media->name, self->file_position);
+
 		return -1;
 	}
 
@@ -329,6 +360,11 @@ static ssize_t sodr_vtl_drive_writer_write(struct so_stream_writer * sw, const v
 		if (nb_write < 0) {
 			self->last_errno = errno;
 			self->media->nb_write_errors++;
+
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-drive-vtl", "[%s %s %d] Error while writing file from media '%s' at position '%d' because %m"),
+				dr->vendor, dr->model, dr->index, self->media->name, self->file_position);
+
 			return -1;
 		}
 
