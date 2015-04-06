@@ -68,6 +68,7 @@ static void sodr_socket_message(int fd, short event, void * data);
 
 static void sodr_socket_command_check_header(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_check_support(struct sodr_peer * peer, struct so_value * request, int fd);
+static void sodr_socket_command_erase_media(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_find_best_block_size(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct so_value * request, int fd);
@@ -83,6 +84,7 @@ static struct sodr_socket_command {
 } commands[] = {
 	{ 0, "check header",         sodr_socket_command_check_header },
 	{ 0, "check support",        sodr_socket_command_check_support },
+	{ 0, "erase media",          sodr_socket_command_erase_media },
 	{ 0, "find best block size", sodr_socket_command_find_best_block_size },
 	{ 0, "format media",         sodr_socket_command_format_media },
 	{ 0, "get raw reader",       sodr_socket_command_get_raw_reader },
@@ -192,7 +194,9 @@ static void sodr_socket_command_check_header(struct sodr_peer * peer __attribute
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice, dgettext("libstoriqone-drive", "[%s %s #%u]: checking header of media (%s)"), drive->vendor, drive->model, drive->index, media_name);
+	so_log_write(so_log_level_notice,
+		dgettext("libstoriqone-drive", "[%s %s #%u]: checking header of media '%s'"),
+		drive->vendor, drive->model, drive->index, media_name);
 
 	bool ok = drive->ops->check_header(sodr_db);
 	struct so_value * response = so_value_pack("{sb}", "returned", ok);
@@ -222,6 +226,51 @@ static void sodr_socket_command_check_support(struct sodr_peer * peer __attribut
 	so_value_free(returned);
 }
 
+static void sodr_socket_command_erase_media(struct sodr_peer * peer __attribute__((unused)), struct so_value * request, int fd) {
+	char * job_key = NULL;
+	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
+
+	if (strcmp(sodr_current_key, job_key) != 0) {
+		struct so_value * response = so_value_pack("{si}", "returned", -1L);
+		so_json_encode_to_fd(response, fd, true);
+		so_value_free(response);
+		free(job_key);
+		return;
+	}
+
+	free(job_key);
+
+	struct so_drive_driver * driver = sodr_drive_get();
+	struct so_drive * drive = driver->device;
+	struct so_media * media = drive->slot->media;
+
+	bool quick_mode = false;
+	so_value_unpack(request, "{s{ss}}", "params", "quick mode", &quick_mode);
+
+	const char * media_name = NULL;
+	if (media != NULL)
+		media_name = media->name;
+
+	so_log_write(so_log_level_notice,
+		dgettext("libstoriqone-drive", "[%s %s #%u]: Erase media '%s' (mode: %s)"),
+		drive->vendor, drive->model, drive->index, media_name,
+		quick_mode ? dgettext("libstoriqone-drive", "quick") : dgettext("libstoriqone-drive", "long"));
+
+	int failed = drive->ops->erase_media(quick_mode, sodr_db);
+	struct so_value * response = so_value_pack("{si}", "returned", (long long) failed);
+	so_json_encode_to_fd(response, fd, true);
+	so_value_free(response);
+
+	if (failed == 0)
+		so_log_write(so_log_level_notice,
+			dgettext("libstoriqone-drive", "[%s %s #%u]: media '%s' erased with success"),
+			drive->vendor, drive->model, drive->index, media_name);
+	else
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone-drive", "[%s %s #%u]: failed to erase media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+}
+
 static void sodr_socket_command_find_best_block_size(struct sodr_peer * peer __attribute__((unused)), struct so_value * request, int fd) {
 	char * job_key = NULL;
 	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
@@ -244,7 +293,9 @@ static void sodr_socket_command_find_best_block_size(struct sodr_peer * peer __a
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice, dgettext("libstoriqone-drive", "[%s %s #%u]: looking for best block size for media (%s)"), drive->vendor, drive->model, drive->index, media_name);
+	so_log_write(so_log_level_notice,
+		dgettext("libstoriqone-drive", "[%s %s #%u]: looking for best block size for media '%s'"),
+		drive->vendor, drive->model, drive->index, media_name);
 
 	ssize_t block_size = drive->ops->find_best_block_size(sodr_db);
 	struct so_value * response = so_value_pack("{si}", "returned", block_size);
@@ -255,50 +306,61 @@ static void sodr_socket_command_find_best_block_size(struct sodr_peer * peer __a
 		char buf[8];
 		so_file_convert_size_to_string(block_size, buf, 8);
 
-		so_log_write(so_log_level_notice, dgettext("libstoriqone-drive", "[%s %s #%u]: block size found for media (%s): %s"), drive->vendor, drive->model, drive->index, media_name, buf);
+		so_log_write(so_log_level_notice,
+			dgettext("libstoriqone-drive", "[%s %s #%u]: block size found for media '%s': %s"),
+			drive->vendor, drive->model, drive->index, media_name, buf);
 	} else
-		so_log_write(so_log_level_error, dgettext("libstoriqone-drive", "[%s %s #%u]: failed to find best block size (%s)"), drive->vendor, drive->model, drive->index, media_name);
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone-drive", "[%s %s #%u]: failed to find best block size '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
 }
 
 static void sodr_socket_command_format_media(struct sodr_peer * peer __attribute__((unused)), struct so_value * request, int fd) {
 	char * job_key = NULL;
 	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
 
-	if (!strcmp(sodr_current_key, job_key)) {
-		struct so_value * vpool = NULL;
-		so_value_unpack(request, "{s{so}}", "params", "pool", &vpool);
-
-		struct so_pool * pool = malloc(sizeof(struct so_pool));
-		bzero(pool, sizeof(struct so_pool));
-		so_pool_sync(pool, vpool);
-
-		struct so_drive_driver * driver = sodr_drive_get();
-		struct so_drive * drive = driver->device;
-		struct so_media * media = drive->slot->media;
-
-		char * media_name = NULL;
-		if (media != NULL)
-			media_name = strdup(media->name);
-
-		so_log_write(so_log_level_notice, dgettext("libstoriqone-drive", "[%s %s #%u]: formatting media (%s)"), drive->vendor, drive->model, drive->index, media_name);
-
-		long int failed = drive->ops->format_media(pool, sodr_db);
-		struct so_value * response = so_value_pack("{si}", "returned", failed);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-
-		if (failed == 0)
-			so_log_write(so_log_level_notice, dgettext("libstoriqone-drive", "[%s %s #%u]: media (%s) formatted with success"), drive->vendor, drive->model, drive->index, media_name);
-		else
-			so_log_write(so_log_level_error, dgettext("libstoriqone-drive", "[%s %s #%u]: failed to format media (%s)"), drive->vendor, drive->model, drive->index, media_name);
-
-		free(media_name);
-	} else {
+	if (strcmp(sodr_current_key, job_key) != 0) {
 		struct so_value * response = so_value_pack("{si}", "returned", -1L);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
+		free(job_key);
+		return;
 	}
 
+	struct so_value * vpool = NULL;
+	so_value_unpack(request, "{s{so}}", "params", "pool", &vpool);
+
+	struct so_pool * pool = malloc(sizeof(struct so_pool));
+	bzero(pool, sizeof(struct so_pool));
+	so_pool_sync(pool, vpool);
+
+	struct so_drive_driver * driver = sodr_drive_get();
+	struct so_drive * drive = driver->device;
+	struct so_media * media = drive->slot->media;
+
+	char * media_name = NULL;
+	if (media != NULL)
+		media_name = strdup(media->name);
+
+	so_log_write(so_log_level_notice,
+		dgettext("libstoriqone-drive", "[%s %s #%u]: formatting media '%s'"),
+		drive->vendor, drive->model, drive->index, media_name);
+
+	long int failed = drive->ops->format_media(pool, sodr_db);
+	struct so_value * response = so_value_pack("{si}", "returned", failed);
+	so_json_encode_to_fd(response, fd, true);
+	so_value_free(response);
+
+	if (failed == 0)
+		so_log_write(so_log_level_notice,
+			dgettext("libstoriqone-drive", "[%s %s #%u]: media '%s' formatted with success"),
+			drive->vendor, drive->model, drive->index, media_name);
+	else
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone-drive", "[%s %s #%u]: failed to format media '%s'"),
+			drive->vendor, drive->model, drive->index, media_name);
+
+	free(media_name);
 	free(job_key);
 }
 
@@ -332,7 +394,9 @@ static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct s
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice, dgettext("libstoriqone-drive", "[%s %s #%u]: open media (%s) for reading at position #%ld"), drive->vendor, drive->model, drive->index, media_name, position);
+	so_log_write(so_log_level_notice,
+		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for reading at position #%ld"),
+		drive->vendor, drive->model, drive->index, media_name, position);
 
 	peer->stream_reader = drive->ops->get_raw_reader(position, sodr_db);
 
@@ -393,7 +457,9 @@ static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct s
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice, dgettext("libstoriqone-drive", "[%s %s #%u]: open media (%s) for writing"), drive->vendor, drive->model, drive->index, media_name);
+	so_log_write(so_log_level_notice,
+		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for writing"),
+		drive->vendor, drive->model, drive->index, media_name);
 
 	peer->stream_writer = drive->ops->get_raw_writer(sodr_db);
 
@@ -462,7 +528,9 @@ static void sodr_socket_command_get_reader(struct sodr_peer * peer, struct so_va
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice, dgettext("libstoriqone-drive", "[%s %s #%u]: open media (%s) for reading at position #%ld"), drive->vendor, drive->model, drive->index, media_name, position);
+	so_log_write(so_log_level_notice,
+		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for reading at position #%ld"),
+		drive->vendor, drive->model, drive->index, media_name, position);
 
 	peer->format_reader = drive->ops->get_reader(position, checksums, sodr_db);
 
@@ -529,7 +597,9 @@ static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_va
 	if (media != NULL)
 		media_name = media->name;
 
-	so_log_write(so_log_level_notice, dgettext("libstoriqone-drive", "[%s %s #%u]: open media (%s) for writing"), drive->vendor, drive->model, drive->index, media_name);
+	so_log_write(so_log_level_notice,
+		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for writing"),
+		drive->vendor, drive->model, drive->index, media_name);
 
 	peer->format_writer = drive->ops->get_writer(checksums, sodr_db);
 

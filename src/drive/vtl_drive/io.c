@@ -46,9 +46,9 @@ int sodr_vtl_drive_io_close(struct sodr_vtl_drive_io * io) {
 	int failed = close(io->fd);
 	sodr_time_stop(dr);
 
-	if (failed != 0) {
+	if (failed != 0)
 		io->last_errno = errno;
-	} else
+	else
 		io->fd = -1;
 
 	return failed;

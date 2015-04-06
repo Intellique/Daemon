@@ -44,6 +44,7 @@ struct soj_drive {
 
 static bool soj_drive_check_header(struct so_drive * drive);
 static bool soj_drive_check_support(struct so_drive * drive, struct so_media_format * format, bool for_writing);
+static int soj_drive_erase_media(struct so_drive * drive, bool quick_mode);
 static ssize_t soj_drive_find_best_block_size(struct so_drive * drive);
 static int soj_drive_format_media(struct so_drive * drive, struct so_pool * pool);
 static struct so_stream_reader * soj_drive_get_raw_reader(struct so_drive * drive, int file_position);
@@ -55,6 +56,7 @@ static int soj_drive_sync(struct so_drive * drive);
 static struct so_drive_ops soj_drive_ops = {
 	.check_header         = soj_drive_check_header,
 	.check_support        = soj_drive_check_support,
+	.erase_media          = soj_drive_erase_media,
 	.find_best_block_size = soj_drive_find_best_block_size,
 	.format_media         = soj_drive_format_media,
 	.get_raw_reader       = soj_drive_get_raw_reader,
@@ -107,6 +109,30 @@ static bool soj_drive_check_support(struct so_drive * drive, struct so_media_for
 	so_value_free(returned);
 
 	return ok;
+}
+
+static int soj_drive_erase_media(struct so_drive * drive, bool quick_mode) {
+	struct soj_drive * self = drive->data;
+	struct so_job * job = soj_job_get();
+
+	struct so_value * request = so_value_pack("{sss{sssb}}",
+		"command", "erase media",
+		"params",
+			"job key", job->key,
+			"quick mode", quick_mode
+	);
+	so_json_encode_to_fd(request, self->fd, true);
+	so_value_free(request);
+
+	struct so_value * response = so_json_parse_fd(self->fd, -1);
+	if (response == NULL)
+		return -1;
+
+	long int failed = false;
+	so_value_unpack(response, "{si}", "returned", &failed);
+	so_value_free(response);
+
+	return failed;
 }
 
 static ssize_t soj_drive_find_best_block_size(struct so_drive * drive) {

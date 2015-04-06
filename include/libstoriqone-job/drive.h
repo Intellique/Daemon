@@ -36,6 +36,7 @@ struct so_value;
 struct so_drive_ops {
 	bool (*check_header)(struct so_drive * drive);
 	bool (*check_support)(struct so_drive * drive, struct so_media_format * format, bool for_writing);
+	int (*erase_media)(struct so_drive * drive, bool quick_mode);
 	ssize_t (*find_best_block_size)(struct so_drive * drive);
 	int (*format_media)(struct so_drive * drive, struct so_pool * pool);
 	struct so_stream_reader * (*get_raw_reader)(struct so_drive * drive, int file_position);
