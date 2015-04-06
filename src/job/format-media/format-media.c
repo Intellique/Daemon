@@ -204,6 +204,10 @@ static int soj_formatmedia_simulate(struct so_job * job, struct so_database_conn
 	}
 
 	soj_formatmedia_media = db_connect->ops->get_media(db_connect, NULL, NULL, job);
+	if (soj_formatmedia_media == NULL) {
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Critic error, no media linked to the current job"));
+		return 1;
+	}
 	if (soj_formatmedia_media->type == so_media_type_cleaning) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Try to format a cleaning media"));
 		return 1;
