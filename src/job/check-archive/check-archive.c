@@ -93,7 +93,7 @@ static int soj_checkarchive_run(struct so_job * job, struct so_database_connecti
 		"archive", so_archive_convert(archive)
 	);
 	char * json = so_json_encode_to_string(report);
-	db_connect->ops->add_report(db_connect, job, archive, json);
+	db_connect->ops->add_report(db_connect, job, archive, NULL, json);
 	free(json);
 
 	return failed;

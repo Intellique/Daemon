@@ -99,7 +99,7 @@ static int so_database_postgresql_sync_pool(struct so_database_connection * conn
 static int so_database_postgresql_sync_slots(struct so_database_connection * connect, struct so_slot * slot, enum so_database_sync_method method);
 
 static int so_database_postgresql_add_job_record(struct so_database_connection * connect, struct so_job * job, enum so_log_level level, enum so_job_record_notif notif, const char * message);
-static int so_database_postgresql_add_report(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, const char * data);
+static int so_database_postgresql_add_report(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, struct so_media * media, const char * data);
 static char * so_database_postgresql_get_restore_path(struct so_database_connection * connect, struct so_job * job);
 static int so_database_postgresql_start_job(struct so_database_connection * connect, struct so_job * job);
 static int so_database_postgresql_stop_job(struct so_database_connection * connect, struct so_job * job);
@@ -118,6 +118,7 @@ static int so_database_postgresql_check_archive_volume(struct so_database_connec
 static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_database_connection * connect, const char * archive_id);
 static struct so_archive * so_database_postgresql_get_archive_by_job(struct so_database_connection * connect, struct so_job * job);
 static struct so_value * so_database_postgresql_get_archive_by_media(struct so_database_connection * connect, struct so_media * media);
+static int so_database_postgresql_mark_archive_as_purged(struct so_database_connection * connect, struct so_media * media, struct so_job * job);
 static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
 static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive);
 static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, struct so_archive_file * file, char ** file_id);
@@ -182,6 +183,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.get_archive_by_job     = so_database_postgresql_get_archive_by_job,
 	.get_archive_by_media   = so_database_postgresql_get_archive_by_media,
 	.get_nb_volumes_of_file = so_database_postgresql_get_nb_volumes_of_file,
+	.mark_archive_as_purged = so_database_postgresql_mark_archive_as_purged,
 	.sync_archive           = so_database_postgresql_sync_archive,
 
 	.backup_add                 = so_database_postgresql_backup_add,
@@ -2132,26 +2134,33 @@ static int so_database_postgresql_add_job_record(struct so_database_connection *
 	return status != PGRES_TUPLES_OK;
 }
 
-static int so_database_postgresql_add_report(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, const char * data) {
-	if (connect == NULL || job == NULL || archive == NULL || data == NULL)
+static int so_database_postgresql_add_report(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, struct so_media * media, const char * data) {
+	if (connect == NULL || job == NULL || (archive == NULL && media == NULL) || data == NULL)
 		return -1;
 
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 	struct so_value * db_job = so_value_hashtable_get(job->db_data, key, false, false);
-	struct so_value * db_archive = so_value_hashtable_get(archive->db_data, key, false, false);
+	struct so_value * db_archive = NULL, * db_media = NULL;
+	if (archive != NULL)
+		db_archive = so_value_hashtable_get(archive->db_data, key, false, false);
+	if (media != NULL)
+		db_media = so_value_hashtable_get(media->db_data, key, false, false);
 	so_value_free(key);
 
-	char * jobrun_id = NULL, * archive_id = NULL;
+	char * jobrun_id = NULL, * archive_id = NULL, * media_id = NULL;
 	so_value_unpack(db_job, "{ss}", "jobrun id", &jobrun_id);
-	so_value_unpack(db_archive, "{ss}", "id", &archive_id);
+	if (db_archive != NULL)
+		so_value_unpack(db_archive, "{ss}", "id", &archive_id);
+	if (db_media != NULL)
+		so_value_unpack(db_media, "{ss}", "id", &media_id);
 
 	const char * query = "insert_new_report";
-	so_database_postgresql_prepare(self, query, "INSERT INTO report(jobrun, archive, data) VALUES ($1, $2, $3)");
+	so_database_postgresql_prepare(self, query, "INSERT INTO report(jobrun, archive, media, data) VALUES ($1, $2, $3, $4)");
 
-	const char * param[] = { jobrun_id, archive_id, data };
-	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
+	const char * param[] = { jobrun_id, archive_id, media_id, data };
+	PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)
@@ -2160,6 +2169,7 @@ static int so_database_postgresql_add_report(struct so_database_connection * con
 	PQclear(result);
 	free(jobrun_id);
 	free(archive_id);
+	free(media_id);
 
 	return status != PGRES_COMMAND_OK;
 }
@@ -2904,6 +2914,38 @@ static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_data
 	PQclear(result);
 
 	return nb_volumes;
+}
+
+static int so_database_postgresql_mark_archive_as_purged(struct so_database_connection * connect, struct so_media * media, struct so_job * job) {
+	if (connect == NULL || media == NULL || job == NULL)
+		return 0;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	char * jobrun_id = NULL, * media_id = NULL;
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(media->db_data, key, false, false);
+	so_value_unpack(db, "{ss}", "id", &media_id);
+
+	db = so_value_hashtable_get(job->db_data, key, false, false);
+	so_value_unpack(db, "{ss}", "jobrun id", &jobrun_id);
+
+
+	const char * query = "mark_archive_as_purged";
+	so_database_postgresql_prepare(self, query, "UPDATE archivevolume SET purged = $2 WHERE media = $1");
+
+	const char * param[] = { media_id, jobrun_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+	free(jobrun_id);
+	free(media_id);
+
+	return status != PGRES_COMMAND_OK;
 }
 
 static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive) {
