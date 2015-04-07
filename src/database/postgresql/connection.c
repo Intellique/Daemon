@@ -115,7 +115,9 @@ static int so_database_postgresql_sync_plugin_job(struct so_database_connection 
 
 static int so_database_postgresql_check_archive_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
 static int so_database_postgresql_check_archive_volume(struct so_database_connection * connect, struct so_archive_volume * volume);
-static struct so_archive * so_database_postgresql_get_archive(struct so_database_connection * connect, struct so_job * job);
+static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_database_connection * connect, const char * archive_id);
+static struct so_archive * so_database_postgresql_get_archive_by_job(struct so_database_connection * connect, struct so_job * job);
+static struct so_value * so_database_postgresql_get_archive_by_media(struct so_database_connection * connect, struct so_media * media);
 static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
 static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive);
 static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, struct so_archive_file * file, char ** file_id);
@@ -177,7 +179,8 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 
 	.check_archive_file     = so_database_postgresql_check_archive_file,
 	.check_archive_volume   = so_database_postgresql_check_archive_volume,
-	.get_archive            = so_database_postgresql_get_archive,
+	.get_archive_by_job     = so_database_postgresql_get_archive_by_job,
+	.get_archive_by_media   = so_database_postgresql_get_archive_by_media,
 	.get_nb_volumes_of_file = so_database_postgresql_get_nb_volumes_of_file,
 	.sync_archive           = so_database_postgresql_sync_archive,
 
@@ -2633,24 +2636,16 @@ static int so_database_postgresql_check_archive_volume(struct so_database_connec
 	return status != PGRES_COMMAND_OK;
 }
 
-static struct so_archive * so_database_postgresql_get_archive(struct so_database_connection * connect, struct so_job * job) {
-	if (connect == NULL || job == NULL)
-		return NULL;
-
+static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_database_connection * connect, const char * archive_id) {
 	struct so_database_postgresql_connection_private * self = connect->data;
 
-	char * job_id = NULL;
-	struct so_value * key = so_value_new_custom(connect->config, NULL);
-	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
-	so_value_unpack(db, "{ss}", "id", &job_id);
-
 	struct so_archive * archive = NULL;
-	char * archive_id = NULL;
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
 
-	const char * query = "select_archive_by_job";
-	so_database_postgresql_prepare(self, query, "SELECT a.id, a.uuid, a.name, uc.login, uo.login, a.deleted FROM job j INNER JOIN archive a ON j.id = $1 AND j.archive = a.id INNER JOIN users uc ON a.creator = uc.id INNER JOIN users uo ON a.owner = uo.id LIMIT 1");
+	const char * query = "select_archive_by_id";
+	so_database_postgresql_prepare(self, query, "SELECT a.uuid, a.name, uc.login, uo.login, a.deleted FROM archive a INNER JOIN users uc ON a.creator = uc.id INNER JOIN users uo ON a.owner = uo.id WHERE a.id = $1 LIMIT 1");
 
-	const char * param[] = { job_id };
+	const char * param[] = { archive_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
@@ -2659,13 +2654,11 @@ static struct so_archive * so_database_postgresql_get_archive(struct so_database
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
 		archive = so_archive_new();
 
-		so_database_postgresql_get_string(result, 0, 1, archive->uuid, 37);
-		so_database_postgresql_get_string_dup(result, 0, 2, &archive->name);
-		so_database_postgresql_get_string_dup(result, 0, 3, &archive->creator);
-		so_database_postgresql_get_string_dup(result, 0, 4, &archive->owner);
-		so_database_postgresql_get_bool(result, 0, 5, &archive->deleted);
-
-		so_database_postgresql_get_string_dup(result, 0, 0, &archive_id);
+		so_database_postgresql_get_string(result, 0, 0, archive->uuid, 37);
+		so_database_postgresql_get_string_dup(result, 0, 1, &archive->name);
+		so_database_postgresql_get_string_dup(result, 0, 2, &archive->creator);
+		so_database_postgresql_get_string_dup(result, 0, 3, &archive->owner);
+		so_database_postgresql_get_bool(result, 0, 4, &archive->deleted);
 
 		archive->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
 		struct so_value * db = so_value_new_hashtable2();
@@ -2674,7 +2667,6 @@ static struct so_archive * so_database_postgresql_get_archive(struct so_database
 	}
 
 	PQclear(result);
-	free(job_id);
 
 	if (archive == NULL)
 		return NULL;
@@ -2812,6 +2804,73 @@ static struct so_archive * so_database_postgresql_get_archive(struct so_database
 	PQclear(result);
 
 	return archive;
+}
+
+static struct so_archive * so_database_postgresql_get_archive_by_job(struct so_database_connection * connect, struct so_job * job) {
+	if (connect == NULL || job == NULL)
+		return NULL;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	char * job_id = NULL;
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
+	so_value_unpack(db, "{ss}", "id", &job_id);
+
+	struct so_archive * archive = NULL;
+
+	const char * query = "select_archive_by_job";
+	so_database_postgresql_prepare(self, query, "SELECT archive FROM job j WHERE j.id = $1 LIMIT 1");
+
+	const char * param[] = { job_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		archive = so_database_postgresql_get_archive_by_id(connect, PQgetvalue(result, 0, 0));
+
+	PQclear(result);
+	free(job_id);
+
+	return archive;
+}
+
+static struct so_value * so_database_postgresql_get_archive_by_media(struct so_database_connection * connect, struct so_media * media) {
+	if (connect == NULL || media == NULL)
+		return NULL;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	char * media_id = NULL;
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(media->db_data, key, false, false);
+	so_value_unpack(db, "{ss}", "id", &media_id);
+
+	const char * query = "select_archive_by_media";
+	so_database_postgresql_prepare(self, query, "SELECT DISTINCT archive FROM archivevolume WHERE media = $1");
+
+	const char * param[] = { media_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+	int nb_result = PQntuples(result);
+
+	struct so_value * archives = so_value_new_array(nb_result);
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && nb_result > 0) {
+		int i;
+		for (i = 0; i < nb_result; i++) {
+			struct so_archive * archive = so_database_postgresql_get_archive_by_id(connect, PQgetvalue(result, i, 0));
+			so_value_list_push(archives, so_value_new_custom(archive, so_archive_free2), true);
+		}
+	}
+
+	PQclear(result);
+	free(media_id);
+
+	return archives;
 }
 
 static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file) {

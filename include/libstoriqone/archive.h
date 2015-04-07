@@ -126,6 +126,7 @@ struct so_archive_file {
 struct so_archive_volume * so_archive_add_volume(struct so_archive * archive);
 struct so_value * so_archive_convert(struct so_archive * archive);
 void so_archive_free(struct so_archive * archive);
+void so_archive_free2(void * archive);
 struct so_archive * so_archive_new(void);
 
 enum so_archive_file_type so_archive_file_mode_to_type(mode_t mode);

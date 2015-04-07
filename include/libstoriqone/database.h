@@ -169,7 +169,8 @@ struct so_database_connection {
 
 		int (*check_archive_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file) __attribute__((nonnull));
 		int (*check_archive_volume)(struct so_database_connection * connect, struct so_archive_volume * volume) __attribute__((nonnull));
-		struct so_archive * (*get_archive)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull));
+		struct so_archive * (*get_archive_by_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull));
+		struct so_value * (*get_archive_by_media)(struct so_database_connection * connect, struct so_media * media) __attribute__((nonnull));
 		unsigned int (*get_nb_volumes_of_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file) __attribute__((nonnull));
 		int (*sync_archive)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((nonnull));
 

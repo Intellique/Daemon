@@ -207,6 +207,10 @@ void so_archive_free(struct so_archive * archive) {
 	free(archive);
 }
 
+void so_archive_free2(void * archive) {
+	so_archive_free(archive);
+}
+
 static void so_archive_init() {
 	unsigned int i;
 	for (i = 0; i < so_archive_file_nb_data_types; i++) {
