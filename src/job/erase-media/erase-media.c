@@ -181,7 +181,7 @@ static int soj_erasemedia_run(struct so_job * job, struct so_database_connection
 	// check for write lock
 	if (drive->slot->media->write_lock) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-erase-media", "Try to format a write protected media"));
+			dgettext("storiqone-job-erase-media", "Try to erase a media with a write protected media"));
 		return 3;
 	}
 

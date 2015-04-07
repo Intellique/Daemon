@@ -1,0 +1,67 @@
+# French translations for job-erase-media package.
+# Copyright (C) 2014-2015
+# This file is distributed under the same license as the storiqone package.
+# Guillaume Clercin <gclercin@intellique.com>, 2015
+#
+msgid   ""
+msgstr  "Project-Id-Version: job-erase-media v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-04-07 23:47+0200\n"
+        "PO-Revision-Date: 2014-11-13 09:03+0100\n"
+        "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
+        "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
+        "Language: fr\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/job/erase-media/erase-media.c:131
+#, c-format
+msgid   "Media not found (named: %s)"
+msgstr  "Média non trouvé (nommé : %s)"
+
+#: src/job/erase-media/erase-media.c:184
+msgid   "Try to erase a media with a write protected media"
+msgstr  "Tentative d’effacement un média avec la protection contre l’écriture"
+
+#: src/job/erase-media/erase-media.c:195
+#, c-format
+msgid   "Erasing media in progress (mode: %s)"
+msgstr  "L’effacement du média en cours (mode : %s)"
+
+#: src/job/erase-media/erase-media.c:196
+msgid   "long"
+msgstr  "long"
+
+#: src/job/erase-media/erase-media.c:196
+msgid   "quick"
+msgstr  "rapide"
+
+#: src/job/erase-media/erase-media.c:204
+msgid   "Erase media finished with sucess"
+msgstr  "L’effacement de média terminé avec succès"
+
+#: src/job/erase-media/erase-media.c:207
+msgid   "Failed to erase media"
+msgstr  "Échec lors de l’effacement du média"
+
+#: src/job/erase-media/erase-media.c:216
+msgid   "Critic error, no media linked to the current job"
+msgstr  "Erreur critique, pas de média lié à la tâche actuelle"
+
+#: src/job/erase-media/erase-media.c:221
+msgid   "Try to erase a cleaning media"
+msgstr  "Tentative d’effacement d’une média de netoyage"
+
+#: src/job/erase-media/erase-media.c:226
+msgid   "Try to erase a worm media"
+msgstr  "Tentative d’effacement d’un média non réinscriptible"
+
+#: src/job/erase-media/erase-media.c:231
+msgid   "Try to erase a media with error status"
+msgstr  "Tentative d’effacement d’un média qui a un status en erreur"
+
+#: src/job/erase-media/erase-media.c:240
+msgid   "Try to erase a media witch contains archives not deleted"
+msgstr  "Tentative d’effacement d'un média qui contient des archives non supprimées"
