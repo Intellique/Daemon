@@ -181,30 +181,39 @@ static int soj_erasemedia_run(struct so_job * job, struct so_database_connection
 	// check for write lock
 	if (drive->slot->media->write_lock) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-erase-media", "Try to erase a media with a write protected media"));
+			dgettext("storiqone-job-erase-media", "Try to erase a media '%s' with a write protected media"),
+			soj_erasemedia_media->name);
 		return 3;
 	}
 
 	if (job->stopped_by_user)
 		return 1;
 
-	bool quick_mode = true;
+	bool quick_mode = false;
 	so_value_unpack(job->option, "{sb}", "quick mode", &quick_mode);
 
 	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
-		dgettext("storiqone-job-erase-media", "Erasing media in progress (mode: %s)"),
+		dgettext("storiqone-job-erase-media", "Erasing media '%s' in progress (mode: %s)"),
+		soj_erasemedia_media->name,
 		quick_mode ? dgettext("storiqone-job-erase-media", "quick") : dgettext("storiqone-job-erase-media", "long"));
 
+	job->done = 0.8;
+
 	int failed = drive->ops->erase_media(drive, true);
+
+	job->done = 1;
+
 	if (failed == 0) {
 		db_connect->ops->mark_archive_as_purged(db_connect, soj_erasemedia_media, job);
 		soj_erasemedia_make_report(job, db_connect);
 
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-erase-media", "Erase media finished with sucess"));
+			dgettext("storiqone-job-erase-media", "Erase media '%s' finished with sucess"),
+			soj_erasemedia_media->name);
 	} else
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-erase-media", "Failed to erase media"));
+			dgettext("storiqone-job-erase-media", "Failed to erase media '%s'"),
+			soj_erasemedia_media->name);
 
 	return failed != 0 ? 2 : 0;
 }
@@ -237,7 +246,8 @@ static int soj_erasemedia_simulate(struct so_job * job, struct so_database_conne
 		struct so_archive * archive = so_value_custom_get(so_value_iterator_get_value(iter, false));
 		if (!archive->deleted)
 			so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
-				dgettext("storiqone-job-erase-media", "Try to erase a media witch contains archives not deleted"));
+				dgettext("storiqone-job-erase-media", "Try to erase a media witch contains an archive not deleted (named: %s)"),
+				archive->name);
 	}
 	so_value_iterator_free(iter);
 

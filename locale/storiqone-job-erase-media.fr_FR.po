@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-erase-media v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-04-07 23:47+0200\n"
+        "POT-Creation-Date: 2015-04-08 09:20+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -22,46 +22,50 @@ msgid   "Media not found (named: %s)"
 msgstr  "Média non trouvé (nommé : %s)"
 
 #: src/job/erase-media/erase-media.c:184
-msgid   "Try to erase a media with a write protected media"
-msgstr  "Tentative d’effacement un média avec la protection contre l’écriture"
-
-#: src/job/erase-media/erase-media.c:195
 #, c-format
-msgid   "Erasing media in progress (mode: %s)"
-msgstr  "L’effacement du média en cours (mode : %s)"
+msgid   "Try to erase a media '%s' with a write protected media"
+msgstr  "Tentative d’effacement un média « %s » avec la protection contre l’écriture"
 
 #: src/job/erase-media/erase-media.c:196
+#, c-format
+msgid   "Erasing media '%s' in progress (mode: %s)"
+msgstr  "L’effacement du média « %s » en cours (mode : %s)"
+
+#: src/job/erase-media/erase-media.c:198
 msgid   "long"
 msgstr  "long"
 
-#: src/job/erase-media/erase-media.c:196
+#: src/job/erase-media/erase-media.c:198
 msgid   "quick"
 msgstr  "rapide"
 
-#: src/job/erase-media/erase-media.c:204
-msgid   "Erase media finished with sucess"
-msgstr  "L’effacement de média terminé avec succès"
+#: src/job/erase-media/erase-media.c:211
+#, c-format
+msgid   "Erase media '%s' finished with sucess"
+msgstr  "L’effacement de média « %s » terminé avec succès"
 
-#: src/job/erase-media/erase-media.c:207
-msgid   "Failed to erase media"
-msgstr  "Échec lors de l’effacement du média"
+#: src/job/erase-media/erase-media.c:215
+#, c-format
+msgid   "Failed to erase media '%s'"
+msgstr  "Échec lors de l’effacement du média « %s »"
 
-#: src/job/erase-media/erase-media.c:216
+#: src/job/erase-media/erase-media.c:225
 msgid   "Critic error, no media linked to the current job"
 msgstr  "Erreur critique, pas de média lié à la tâche actuelle"
 
-#: src/job/erase-media/erase-media.c:221
+#: src/job/erase-media/erase-media.c:230
 msgid   "Try to erase a cleaning media"
-msgstr  "Tentative d’effacement d’une média de netoyage"
+msgstr  "Tentative d’effacement d’un média de netoyage"
 
-#: src/job/erase-media/erase-media.c:226
+#: src/job/erase-media/erase-media.c:235
 msgid   "Try to erase a worm media"
 msgstr  "Tentative d’effacement d’un média non réinscriptible"
 
-#: src/job/erase-media/erase-media.c:231
+#: src/job/erase-media/erase-media.c:240
 msgid   "Try to erase a media with error status"
 msgstr  "Tentative d’effacement d’un média qui a un status en erreur"
 
-#: src/job/erase-media/erase-media.c:240
-msgid   "Try to erase a media witch contains archives not deleted"
-msgstr  "Tentative d’effacement d'un média qui contient des archives non supprimées"
+#: src/job/erase-media/erase-media.c:249
+#, c-format
+msgid   "Try to erase a media witch contains an archive not deleted (named: %s)"
+msgstr  "Tentative d’effacement d'un média qui contient une archive non supprimées (nommé : %s)"
