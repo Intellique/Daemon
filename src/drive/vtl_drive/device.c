@@ -165,7 +165,7 @@ static int sodr_vtl_drive_erase_media(bool quick_mode, struct so_database_connec
 	char * files;
 	asprintf(&files, "%s/file_*", sodr_vtl_media_dir);
 
-	sodr_vtl_drive.status = so_drive_status_writing;
+	sodr_vtl_drive.status = so_drive_status_erasing;
 	db->ops->sync_drive(db, &sodr_vtl_drive, true, so_database_sync_default);
 
 	glob_t gl;
@@ -219,6 +219,22 @@ static int sodr_vtl_drive_erase_media(bool quick_mode, struct so_database_connec
 
 	globfree(&gl);
 	free(files);
+
+	sodr_vtl_drive.status = so_drive_status_loaded_idle;
+	db->ops->sync_drive(db, &sodr_vtl_drive, true, so_database_sync_default);
+
+	struct so_media * media = sodr_vtl_drive.slot->media;
+	media->write_count++;
+	media->operation_count++;
+	media->last_write = time(NULL);
+	media->nb_volumes = 0;
+	media->free_block = media->total_block;
+	media->status = ok ? so_media_status_new : so_media_status_error;
+	media->append = true;
+	media->uuid[0] = '\0';
+
+	so_pool_free(media->pool);
+	media->pool = NULL;
 
 	return ok ? 0 : 1;
 }
