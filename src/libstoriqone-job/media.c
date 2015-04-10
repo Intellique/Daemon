@@ -24,15 +24,19 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+// dgettext
+#include <libintl.h>
 // sleep
 #include <unistd.h>
 
 #include <libstoriqone/database.h>
 #include <libstoriqone/drive.h>
+#include <libstoriqone/log.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/changer.h>
+#include <libstoriqone-job/job.h>
 #include <libstoriqone-job/media.h>
 
 struct so_value * soj_medias = NULL;
@@ -40,6 +44,76 @@ struct so_value * soj_medias = NULL;
 static void soj_media_exit(void) __attribute__((destructor));
 static void soj_media_init(void) __attribute__((constructor));
 
+
+struct so_drive * soj_media_find_and_load(struct so_media * media, bool no_wait, size_t size_need, struct so_database_connection * db_connect) {
+	struct so_job * job = soj_job_get();
+
+	enum {
+		alert_user,
+		get_media,
+		look_for_media,
+		reserve_media,
+	} state = look_for_media;
+	bool stop = false, has_alert_user = false;
+	struct so_slot * slot = NULL;
+	ssize_t reserved_size = 0;
+	struct so_drive * drive = NULL;
+
+	while (!stop && !job->stopped_by_user) {
+		switch (state) {
+			case alert_user:
+				job->status = so_job_status_waiting;
+				if (!has_alert_user)
+					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+						dgettext("libstoriqone-job", "Media not found (named: %s)"), media->name);
+				has_alert_user = true;
+
+				sleep(15);
+
+				state = look_for_media;
+				job->status = so_job_status_running;
+				soj_changer_sync_all();
+				break;
+
+			case get_media:
+				drive = slot->changer->ops->get_media(slot->changer, slot, no_wait);
+				if (drive == NULL) {
+					job->status = so_job_status_waiting;
+
+					sleep(15);
+
+					state = look_for_media;
+					job->status = so_job_status_running;
+					soj_changer_sync_all();
+				} else
+					stop = true;
+				break;
+
+			case look_for_media:
+				slot = soj_changer_find_media_by_job(job, db_connect);
+				state = slot != NULL ? reserve_media : alert_user;
+				break;
+
+			case reserve_media:
+				reserved_size = slot->changer->ops->reserve_media(slot->changer, slot, size_need, so_pool_unbreakable_level_none);
+				if (reserved_size < 0) {
+					job->status = so_job_status_waiting;
+
+					sleep(15);
+
+					state = look_for_media;
+					job->status = so_job_status_running;
+					soj_changer_sync_all();
+				} else
+					state = get_media;
+				break;
+		}
+	}
+
+	job->status = so_job_status_running;
+
+	return drive;
+}
 
 static void soj_media_exit() {
 	so_value_free(soj_medias);
