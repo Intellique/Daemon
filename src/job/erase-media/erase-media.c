@@ -42,6 +42,7 @@
 #include <libstoriqone-job/changer.h>
 #include <libstoriqone-job/drive.h>
 #include <libstoriqone-job/job.h>
+#include <libstoriqone-job/media.h>
 #include <libstoriqone-job/script.h>
 
 #include <job_erase-media.chcksum>
@@ -112,69 +113,18 @@ static void soj_erasemedia_make_report(struct so_job * job, struct so_database_c
 }
 
 static int soj_erasemedia_run(struct so_job * job, struct so_database_connection * db_connect) {
-	enum {
-		alert_user,
-		get_media,
-		look_for_media,
-		reserve_media,
-	} state = look_for_media;
-	bool stop = false, has_alert_user = false;
-	struct so_slot * slot = NULL;
-	ssize_t reserved_size = 0;
-	struct so_drive * drive = NULL;
+	job->done = 0.25;
 
-	while (!stop && !job->stopped_by_user) {
-		switch (state) {
-			case alert_user:
-				job->status = so_job_status_waiting;
-				if (!has_alert_user)
-					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-erase-media", "Media not found (named: %s)"), soj_erasemedia_media->name);
-				has_alert_user = true;
-
-				sleep(15);
-
-				state = look_for_media;
-				job->status = so_job_status_running;
-				soj_changer_sync_all();
-				break;
-
-			case get_media:
-				drive = slot->changer->ops->get_media(slot->changer, slot, false);
-				if (drive == NULL) {
-					job->status = so_job_status_waiting;
-
-					sleep(15);
-
-					state = look_for_media;
-					job->status = so_job_status_running;
-					soj_changer_sync_all();
-				} else
-					stop = true;
-				break;
-
-			case look_for_media:
-				slot = soj_changer_find_media_by_job(job, db_connect);
-				state = slot != NULL ? reserve_media : alert_user;
-				break;
-
-			case reserve_media:
-				reserved_size = slot->changer->ops->reserve_media(slot->changer, slot, soj_erasemedia_media->format->block_size, so_pool_unbreakable_level_none);
-				if (reserved_size < 0) {
-					job->status = so_job_status_waiting;
-
-					sleep(15);
-
-					state = look_for_media;
-					job->status = so_job_status_running;
-					soj_changer_sync_all();
-				} else
-					state = get_media;
-				break;
-		}
+	struct so_drive * drive = soj_media_find_and_load(soj_erasemedia_media, false, 0, db_connect);
+	if (drive == NULL) {
+		so_job_add_record(job, db_connect, so_log_level_error,
+			so_job_record_notif_important, dgettext("storiqone-job-erase-media", "Failed to load media '%s'"),
+			soj_erasemedia_media->name);
+		return 2;
 	}
 
 	job->status = so_job_status_running;
-	job->done = 0.6;
+	job->done = 0.5;
 
 	drive->ops->sync(drive);
 
@@ -197,7 +147,7 @@ static int soj_erasemedia_run(struct so_job * job, struct so_database_connection
 		soj_erasemedia_media->name,
 		quick_mode ? dgettext("storiqone-job-erase-media", "quick") : dgettext("storiqone-job-erase-media", "long"));
 
-	job->done = 0.8;
+	job->done = 0.75;
 
 	int failed = drive->ops->erase_media(drive, true);
 
