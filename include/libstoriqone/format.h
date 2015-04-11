@@ -111,6 +111,7 @@ struct so_format_writer {
 		int (*file_position)(struct so_format_writer * fw);
 		int (*last_errno)(struct so_format_writer * fw);
 		ssize_t (*position)(struct so_format_writer * fw);
+		struct so_format_reader * (*reopen)(struct so_format_writer * fw);
 		enum so_format_writer_status (*restart_file)(struct so_format_writer * fw, const struct so_format_file * file, ssize_t position);
 		ssize_t (*write)(struct so_format_writer * fw, const void * buffer, ssize_t length);
 	} * ops;

@@ -49,5 +49,7 @@ struct so_format_tar {
 	char padding2[131];
 };
 
+struct so_format_reader * so_format_tar_new_reader2(struct so_stream_reader * reader, bool has_checksums);
+
 #endif
 

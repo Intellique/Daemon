@@ -26,6 +26,8 @@
 
 // errno
 #include <errno.h>
+// dgettext
+#include <libintl.h>
 // free
 #include <stdlib.h>
 // recv
@@ -37,9 +39,13 @@
 
 #include <libstoriqone/format.h>
 #include <libstoriqone/json.h>
+#include <libstoriqone/log.h>
+#include <libstoriqone/slot.h>
+#include <libstoriqone/thread_pool.h>
 #include <libstoriqone/value.h>
 
 #include "io.h"
+#include "../drive.h"
 #include "../peer.h"
 
 static void sodr_io_format_writer_add_file(struct sodr_peer * peer, struct so_value * request);
@@ -47,6 +53,7 @@ static void sodr_io_format_writer_add_label(struct sodr_peer * peer, struct so_v
 static void sodr_io_format_writer_close(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_writer_end_of_file(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_writer_init(void) __attribute__((constructor));
+static void sodr_io_format_writer_reopen(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_writer_restart_file(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_writer_write(struct sodr_peer * peer, struct so_value * request);
 
@@ -55,6 +62,7 @@ static struct sodr_command commands[] = {
 	{ 0, "add label",    sodr_io_format_writer_add_label },
 	{ 0, "close",        sodr_io_format_writer_close },
 	{ 0, "end of file",  sodr_io_format_writer_end_of_file },
+	{ 0, "reopen",       sodr_io_format_writer_reopen },
 	{ 0, "restart file", sodr_io_format_writer_restart_file },
 	{ 0, "write",        sodr_io_format_writer_write },
 
@@ -153,6 +161,42 @@ static void sodr_io_format_writer_end_of_file(struct sodr_peer * peer, struct so
 	struct so_value * response = so_value_pack("{sbsi}", "returned", eof, "last errno", last_errno);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
+}
+
+static void sodr_io_format_writer_reopen(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
+	struct so_drive_driver * driver = sodr_drive_get();
+	struct so_drive * drive = driver->device;
+
+	struct so_media * media = drive->slot->media;
+
+	const char * media_name = NULL;
+	if (media != NULL)
+		media_name = media->name;
+
+	int position = peer->format_writer->ops->file_position(peer->format_writer);
+
+	so_log_write(so_log_level_notice,
+		dgettext("libstoriqone-drive", "[%s %s #%u]: reopen media '%s' for reading at position #%d"),
+		drive->vendor, drive->model, drive->index, media_name, position);
+
+	peer->format_reader = peer->format_writer->ops->reopen(peer->format_writer);
+
+	bool ok = peer->format_reader != NULL;
+	struct so_value * response = so_value_pack("{sb}", "status", ok);
+	if (ok && peer->has_checksums) {
+		struct so_value * digests = peer->format_writer->ops->get_digests(peer->format_writer);
+		so_value_hashtable_put2(response, "digests", digests, true);
+	}
+	so_json_encode_to_fd(response, peer->fd_cmd, true);
+	so_value_free(response);
+
+	if (ok) {
+		so_thread_pool_set_name("format reader");
+		sodr_io_format_reader(peer);
+
+		peer->format_writer->ops->free(peer->format_writer);
+		peer->format_writer = NULL;
+	}
 }
 
 static void sodr_io_format_writer_restart_file(struct sodr_peer * peer, struct so_value * request) {

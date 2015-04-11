@@ -28,6 +28,8 @@
 #include <poll.h>
 // free
 #include <stdlib.h>
+// close
+#include <unistd.h>
 
 #include <libstoriqone/json.h>
 #include <libstoriqone/string.h>
@@ -80,6 +82,15 @@ void sodr_io_process(struct sodr_peer * peer, struct sodr_command commands[]) {
 			break;
 
 		fd_cmd.revents = 0;
+	}
+
+	if (peer->fd_cmd > -1) {
+		close(peer->fd_cmd);
+		peer->fd_cmd = -1;
+	}
+	if (peer->fd_data > -1) {
+		close(peer->fd_data);
+		peer->fd_data = -1;
 	}
 }
 

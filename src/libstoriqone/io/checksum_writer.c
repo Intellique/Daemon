@@ -194,8 +194,12 @@ static struct so_stream_reader * so_io_checksum_writer_reopen(struct so_stream_w
 			return NULL;
 
 		struct so_stream_reader * new_in = self->out->ops->reopen(self->out);
-		if (new_in != NULL)
+		if (new_in != NULL) {
+			self->closed = true;
+			self->worker->ops->finish(self->worker);
+
 			return so_io_checksum_reader_new(new_in, self->checksums, self->thread_helper);
+		}
 	}
 
 	return NULL;

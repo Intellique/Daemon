@@ -87,6 +87,7 @@ static int so_format_tar_writer_file_position(struct so_format_writer * fw);
 static int so_format_tar_writer_last_errno(struct so_format_writer * fw);
 static ssize_t so_format_tar_writer_position(struct so_format_writer * fw);
 static const char * so_format_tar_writer_skip_leading_slash(const char * str);
+static struct so_format_reader * so_format_tar_writer_reopen(struct so_format_writer * fw);
 static enum so_format_writer_status so_format_tar_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file, ssize_t position);
 static void so_format_tar_writer_uid2name(char * name, ssize_t length, uid_t uid);
 static ssize_t so_format_tar_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
@@ -105,6 +106,7 @@ static struct so_format_writer_ops so_format_tar_writer_ops = {
 	.file_position        = so_format_tar_writer_file_position,
 	.last_errno           = so_format_tar_writer_last_errno,
 	.position             = so_format_tar_writer_position,
+	.reopen               = so_format_tar_writer_reopen,
 	.restart_file         = so_format_tar_writer_restart_file,
 	.write                = so_format_tar_writer_write,
 };
@@ -472,6 +474,16 @@ static const char * so_format_tar_writer_skip_leading_slash(const char * str) {
 	for (ptr = str; *ptr == '/' && i < length; i++, ptr++);
 
 	return ptr;
+}
+
+static struct so_format_reader * so_format_tar_writer_reopen(struct so_format_writer * fw) {
+	struct so_format_tar_writer_private * format = fw->data;
+
+	struct so_stream_reader * reader = format->io->ops->reopen(format->io);
+	if (reader == NULL)
+		return NULL;
+
+	return so_format_tar_new_reader2(reader, format->has_cheksum);
 }
 
 static enum so_format_writer_status so_format_tar_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file, ssize_t position) {

@@ -68,6 +68,7 @@ static struct so_value * soj_format_writer_get_digests(struct so_format_writer *
 static int soj_format_writer_file_position(struct so_format_writer * fw);
 static int soj_format_writer_last_errno(struct so_format_writer * fw);
 static ssize_t soj_format_writer_position(struct so_format_writer * fw);
+static struct so_format_reader * soj_format_writer_reopen(struct so_format_writer * fw);
 static enum so_format_writer_status soj_format_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file, ssize_t position);
 static ssize_t soj_format_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
 static ssize_t soj_format_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
@@ -84,6 +85,7 @@ static struct so_format_writer_ops soj_format_writer_ops = {
 	.get_digests        = soj_format_writer_get_digests,
 	.last_errno         = soj_format_writer_last_errno,
 	.position           = soj_format_writer_position,
+	.reopen             = soj_format_writer_reopen,
 	.restart_file       = soj_format_writer_restart_file,
 	.write              = soj_format_writer_write,
 };
@@ -261,6 +263,33 @@ static int soj_format_writer_last_errno(struct so_format_writer * fw) {
 static ssize_t soj_format_writer_position(struct so_format_writer * fw) {
 	struct soj_format_writer_private * self = fw->data;
 	return self->position;
+}
+
+static struct so_format_reader * soj_format_writer_reopen(struct so_format_writer * fw) {
+	struct soj_format_writer_private * self = fw->data;
+
+	struct so_value * request = so_value_pack("{ss}", "command", "reopen");
+	so_json_encode_to_fd(request, self->command_fd, true);
+	so_value_free(request);
+
+	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	if (response == NULL)
+		return NULL;
+
+	bool ok = false;
+	so_value_unpack(response, "{sb}", "status", &ok);
+	if (ok && so_value_hashtable_has_key2(response, "digests")) {
+		so_value_free(self->digest);
+		so_value_unpack(response, "{sO}", "digests", &self->digest);
+	}
+	so_value_free(response);
+
+	if (!ok)
+		return NULL;
+
+	struct so_format_reader * reader = soj_format_new_reader2(self->drive, self->command_fd, self->data_fd, self->block_size);
+	self->data_fd = -1;
+	return reader;
 }
 
 static enum so_format_writer_status soj_format_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file, ssize_t position) {

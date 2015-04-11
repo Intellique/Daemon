@@ -53,7 +53,7 @@ struct so_format_tar_reader_private {
 	ssize_t file_size;
 	ssize_t skip_size;
 
-	bool has_cheksum;
+	bool has_checksum;
 };
 
 static int so_format_tar_reader_check_header(struct so_format_tar * header);
@@ -94,14 +94,22 @@ static struct so_format_reader_ops so_format_tar_reader_ops = {
 
 
 struct so_format_reader * so_format_tar_new_reader(struct so_stream_reader * reader, struct so_value * checksums) {
+	bool has_checksums = checksums != NULL && so_value_list_get_length(checksums) > 0;
+	if (has_checksums)
+		reader = so_io_checksum_reader_new(reader, checksums, true);
+
+	if (reader == NULL)
+		return NULL;
+
+	return so_format_tar_new_reader2(reader, has_checksums);
+}
+
+struct so_format_reader * so_format_tar_new_reader2(struct so_stream_reader * reader, bool has_checksums) {
 	struct so_format_tar_reader_private * self = malloc(sizeof(struct so_format_tar_reader_private));
 	bzero(self, sizeof(struct so_format_tar_reader_private));
 
-	self->has_cheksum = checksums != NULL && so_value_list_get_length(checksums) > 0;
-	if (self->has_cheksum)
-		self->io = so_io_checksum_reader_new(reader, checksums, true);
-	else
-		self->io = reader;
+	self->io = reader;
+	self->has_checksum = has_checksums;
 	self->position = 0;
 	self->buffer = malloc(512);
 	self->buffer_size = 512;
@@ -228,7 +236,7 @@ static ssize_t so_format_tar_reader_get_block_size(struct so_format_reader * fr)
 
 static struct so_value * so_format_tar_reader_get_digests(struct so_format_reader * fr) {
 	struct so_format_tar_reader_private * self = fr->data;
-	if (self->has_cheksum)
+	if (self->has_checksum)
 		return so_io_checksum_reader_get_checksums(self->io);
 	else
 		return so_value_new_linked_list();
