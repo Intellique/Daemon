@@ -179,6 +179,7 @@ static int soj_formatmedia_simulate(struct so_job * job, struct so_database_conn
 		so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 			dgettext("storiqone-job-format-media", "Try to format a media '%s' which is a member of pool '%s'"),
 			soj_formatmedia_media->name, soj_formatmedia_media->pool->name);
+		return 1;
 	}
 	if (soj_formatmedia_media->status == so_media_status_error)
 		so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
