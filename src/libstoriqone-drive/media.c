@@ -303,7 +303,9 @@ static bool sodr_media_read_header_v3(struct so_media * media, const char * buff
 		ok = digest != NULL && !strcmp(checksum_value, digest);
 		free(digest);
 
+		so_pool_free(media->pool);
 		media->pool = db_connection->ops->get_pool(db_connection, pool_id, NULL);
+
 		// TODO: create pool
 		// if (media->pool == NULL)
 		//	media->pool = so_pool_create(pool_id, pool_name, media->format);

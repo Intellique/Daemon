@@ -1960,7 +1960,7 @@ static int so_database_postgresql_sync_pool(struct so_database_connection * conn
 	}
 
 	if (method == so_database_sync_id_only) {
-		const char * query = "select_pool_by_uuid";
+		const char * query = "select_pool_id_by_uuid";
 		so_database_postgresql_prepare(self, query, "SELECT id FROM pool WHERE uuid = $1 LIMIT 1");
 
 		const char * param[] = { pool->uuid };
