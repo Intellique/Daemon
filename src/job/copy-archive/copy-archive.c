@@ -111,6 +111,7 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 	if (data.dest_drive == NULL) {
 	} else {
 		// TODO: direct copy
+		soj_copyarchive_indirect_copy(job, db_connect, &data);
 	}
 
 	return 0;

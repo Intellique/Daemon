@@ -90,7 +90,7 @@ struct so_drive * soj_media_find_and_load(struct so_media * media, bool no_wait,
 				break;
 
 			case look_for_media:
-				slot = soj_changer_find_media_by_job(job, db_connect);
+				slot = soj_changer_find_slot(media);
 				state = slot != NULL ? reserve_media : alert_user;
 				break;
 
