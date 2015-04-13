@@ -143,6 +143,9 @@ struct so_drive * soj_media_load(struct so_media * media, bool no_wait) {
 
 		dr = sl->changer->ops->get_media(sl->changer, sl, no_wait);
 
+		if (no_wait)
+			break;
+
 		if (dr == NULL) {
 			sleep(5);
 			soj_changer_sync_all();

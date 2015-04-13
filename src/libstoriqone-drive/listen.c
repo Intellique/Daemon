@@ -61,6 +61,7 @@ static struct so_database_connection * sodr_db = NULL;
 static struct so_value * sodr_config = NULL;
 static unsigned int sodr_nb_clients = 0;
 static struct sodr_peer * sodr_current_peer = NULL;
+static struct sodr_peer * first_peer = NULL, * last_peer = NULL;
 static char * sodr_current_key = NULL;
 
 static void sodr_socket_accept(int fd_server, int fd_client, struct so_value * client);
@@ -75,6 +76,7 @@ static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct s
 static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_get_reader(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_value * request, int fd);
+static void sodr_socket_command_init_peer(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_sync(struct sodr_peer * peer, struct so_value * request, int fd);
 
 static struct sodr_socket_command {
@@ -91,6 +93,7 @@ static struct sodr_socket_command {
 	{ 0, "get raw writer",       sodr_socket_command_get_raw_writer },
 	{ 0, "get reader",           sodr_socket_command_get_reader },
 	{ 0, "get writer",           sodr_socket_command_get_writer },
+	{ 0, "init peer",            sodr_socket_command_init_peer },
 	{ 0, "sync",                 sodr_socket_command_sync },
 
 	{ 0, NULL, NULL }
@@ -124,11 +127,22 @@ void sodr_listen_set_db_connection(struct so_database_connection * db) {
 void sodr_listen_set_peer_key(const char * key) {
 	free(sodr_current_key);
 	sodr_current_key = strdup(key);
+
+	struct sodr_peer * peer;
+	for (peer = first_peer; peer != NULL; peer = peer->next)
+		if (strcmp(key, peer->job_key) == 0) {
+			sodr_current_peer = peer;
+			break;
+		}
 }
 
 
 static void sodr_socket_accept(int fd_server __attribute__((unused)), int fd_client, struct so_value * client __attribute__((unused))) {
-	struct sodr_peer * peer = sodr_peer_new(fd_client);
+	struct sodr_peer * peer = sodr_peer_new(fd_client, last_peer);
+	if (first_peer == NULL)
+		first_peer = last_peer = peer;
+	else
+		last_peer = peer;
 
 	so_poll_register(fd_client, POLLIN | POLLHUP, sodr_socket_message, peer, NULL);
 	sodr_nb_clients++;
@@ -142,6 +156,18 @@ static void sodr_socket_message(int fd, short event, void * data) {
 
 		if (peer == sodr_current_peer)
 			sodr_current_peer = NULL;
+
+		struct sodr_peer * previous = peer->previous;
+		struct sodr_peer * next = peer->next;
+		if (peer == first_peer)
+			first_peer = next;
+		if (peer == last_peer)
+			last_peer = previous;
+		if (next != NULL)
+			next->previous = previous;
+		if (previous != NULL)
+			previous->next = next;
+
 		sodr_peer_free(peer);
 		return;
 	}
@@ -633,6 +659,17 @@ static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_va
 	so_value_free(socket_data_config);
 
 	so_thread_pool_run("format writer", sodr_io_format_writer, peer);
+}
+
+static void sodr_socket_command_init_peer(struct sodr_peer * peer, struct so_value * request, int fd) {
+	so_value_unpack(request, "{s{ss}}",
+		"params",
+			"job key", &peer->job_key
+	);
+
+	struct so_value * response = so_value_pack("{sb}", "returned", true);
+	so_json_encode_to_fd(response, fd, true);
+	so_value_free(response);
 }
 
 static void sodr_socket_command_sync(struct sodr_peer * peer __attribute__((unused)), struct so_value * request __attribute__((unused)), int fd) {

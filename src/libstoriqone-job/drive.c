@@ -325,6 +325,19 @@ void soj_drive_init(struct so_drive * drive, struct so_value * config) {
 	self->config = socket;
 
 	drive->ops = &soj_drive_ops;
+
+
+	struct so_job * job = soj_job_get();
+	struct so_value * request = so_value_pack("{sss{ss}}",
+		"command", "init peer",
+		"params",
+			"job key", job->key
+	);
+	so_json_encode_to_fd(request, self->fd, true);
+	so_value_free(request);
+
+	struct so_value * response = so_json_parse_fd(self->fd, -1);
+	so_value_free(response);
 }
 
 static int soj_drive_sync(struct so_drive * drive) {

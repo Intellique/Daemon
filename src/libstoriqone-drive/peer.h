@@ -34,6 +34,7 @@
 
 struct sodr_peer {
 	int fd;
+	char * job_key;
 
 	struct so_stream_reader * stream_reader;
 	struct so_stream_writer * stream_writer;
@@ -46,10 +47,13 @@ struct sodr_peer {
 	char * buffer;
 	ssize_t buffer_length;
 	bool has_checksums;
+
+	struct sodr_peer * next;
+	struct sodr_peer * previous;
 };
 
 void sodr_peer_free(struct sodr_peer * peer);
-struct sodr_peer * sodr_peer_new(int fd);
+struct sodr_peer * sodr_peer_new(int fd, struct sodr_peer * previous);
 
 #endif
 

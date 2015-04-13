@@ -161,14 +161,14 @@ int main() {
 
 	so_poll_register(0, POLLIN | POLLHUP, daemon_request, NULL, NULL);
 
-	so_log_configure(log_config, so_log_type_job);
-	so_database_load_config(db_config);
-	soj_changer_set_config(devices);
-
 	job = malloc(sizeof(struct so_job));
 	bzero(job, sizeof(struct so_job));
 	so_job_sync(job, vjob);
 	soj_job_set(job);
+
+	so_log_configure(log_config, so_log_type_job);
+	so_database_load_config(db_config);
+	soj_changer_set_config(devices);
 
 	struct so_database * db_driver = so_database_get_default_driver();
 	if (db_driver == NULL)

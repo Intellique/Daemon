@@ -228,8 +228,14 @@ static void sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait
 		so_value_free(response);
 	}
 
-	if (nb_free_drives == 0)
+	if (nb_free_drives == 0) {
+		if (no_wait) {
+			struct so_value * response = so_value_pack("{sb}", "error", true);
+			so_json_encode_to_fd(response, current_peer->fd, true);
+			so_value_free(response);
+		}
 		return;
+	}
 
 	struct sochgr_peer * peer;
 	for (peer = first_peer; peer != NULL && nb_free_drives > 0; peer = peer->next) {
