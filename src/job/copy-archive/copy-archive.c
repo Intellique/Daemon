@@ -109,9 +109,9 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 	data.dest_drive = soj_media_load(data.media, true);
 
 	if (data.dest_drive == NULL) {
+		soj_copyarchive_indirect_copy(job, db_connect, &data);
 	} else {
 		// TODO: direct copy
-		soj_copyarchive_indirect_copy(job, db_connect, &data);
 	}
 
 	return 0;

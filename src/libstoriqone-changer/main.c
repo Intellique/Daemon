@@ -125,6 +125,7 @@ int main() {
 	sochgr_listen_set_db_connection(db_connect);
 	sochgr_media_init(changer);
 
+	unsigned int nb_free_drives = changer->nb_drives;
 	while (!stop) {
 		db_connect->ops->sync_changer(db_connect, changer, so_database_sync_default);
 
@@ -150,11 +151,18 @@ int main() {
 				break;
 		}
 
-		unsigned int i;
+		unsigned int i, nb_new_free_drives = 0;
 		for (i = 0; i < changer->nb_drives; i++) {
 			struct so_drive * dr = changer->drives + i;
 			dr->ops->update_status(dr);
+
+			if (dr->ops->is_free(dr))
+				nb_new_free_drives++;
 		}
+
+		if (nb_free_drives < nb_new_free_drives)
+			sochgr_socket_unlock(NULL, false);
+		nb_free_drives = nb_new_free_drives;
 	}
 
 	so_log_write(so_log_level_info, dgettext("libstoriqone-changer", "Changer (type: %s) will stop"), driver->name);

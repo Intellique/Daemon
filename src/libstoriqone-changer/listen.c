@@ -54,7 +54,6 @@ static unsigned int sochgr_nb_clients = 0;
 static void sochgr_socket_accept(int fd_server, int fd_client, struct so_value * client);
 static void sochgr_socket_message(int fd, short event, void * data);
 static void sochgr_socket_remove_peer(struct sochgr_peer * peer);
-static void sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait);
 
 static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so_value * request, int fd);
 static void sochgr_socket_command_release_media(struct sochgr_peer * peer, struct so_value * request, int fd);
@@ -168,7 +167,7 @@ static void sochgr_socket_remove_peer(struct sochgr_peer * peer) {
 	}
 }
 
-static void sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
+bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 	struct so_changer_driver * driver = sochgr_changer_get();
 	struct so_changer * changer = driver->device;
 
@@ -226,15 +225,17 @@ static void sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait
 		struct so_value * response = so_value_pack("{sbsi}", "error", false, "index", (long int) drive->index);
 		so_json_encode_to_fd(response, peer->fd, true);
 		so_value_free(response);
+
+		return true;
 	}
 
 	if (nb_free_drives == 0) {
-		if (no_wait) {
+		if (current_peer != NULL && no_wait) {
 			struct so_value * response = so_value_pack("{sb}", "error", true);
 			so_json_encode_to_fd(response, current_peer->fd, true);
 			so_value_free(response);
 		}
-		return;
+		return false;
 	}
 
 	struct sochgr_peer * peer;
@@ -278,7 +279,7 @@ static void sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait
 					so_json_encode_to_fd(response, peer->fd, true);
 					so_value_free(response);
 
-					return;
+					return false;
 				} else
 					so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d finished with code = OK"), changer->vendor, changer->model, volume_name, drive->index);
 			}
@@ -293,7 +294,7 @@ static void sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait
 				so_json_encode_to_fd(response, peer->fd, true);
 				so_value_free(response);
 
-				return;
+				return false;
 			} else
 				so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = OK"), changer->vendor, changer->model, drive->slot->volume_name, sl->index, drive->index);
 
@@ -306,14 +307,18 @@ static void sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait
 			lp->peer->waiting = false;
 			sochgr_socket_remove_peer(lp->peer);
 			nb_free_drives--;
+
+			return true;
 		}
 	}
 
-	if (no_wait) {
+	if (current_peer != NULL && no_wait) {
 		struct so_value * response = so_value_pack("{sb}", "error", true);
 		so_json_encode_to_fd(response, current_peer->fd, true);
 		so_value_free(response);
 	}
+
+	return false;
 }
 
 
@@ -353,7 +358,10 @@ static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so
 	else
 		last_peer = last_peer->next = peer;
 
-	sochgr_socket_unlock(peer, no_wait);
+	if (!sochgr_socket_unlock(peer, no_wait) && no_wait) {
+		peer->waiting = false;
+		sochgr_socket_remove_peer(peer);
+	}
 	return;
 
 	struct so_value * response;

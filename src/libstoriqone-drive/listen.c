@@ -120,6 +120,12 @@ unsigned int sodr_listen_nb_clients() {
 	return sodr_nb_clients;
 }
 
+void sodr_listen_reset_peer() {
+	free(sodr_current_key);
+	sodr_current_key = NULL;
+	sodr_current_peer = NULL;
+}
+
 void sodr_listen_set_db_connection(struct so_database_connection * db) {
 	sodr_db = db;
 }

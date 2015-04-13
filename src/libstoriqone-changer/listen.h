@@ -27,11 +27,13 @@
 #ifndef __LIBSTORIQONE_CHANGER_LISTEN_H__
 #define __LIBSTORIQONE_CHANGER_LISTEN_H__
 
+struct sochgr_peer;
 struct so_value;
 
 void sochgr_listen_configure(struct so_value * config);
 unsigned int sochgr_listen_nb_clients(void);
 void sochgr_listen_set_db_connection(struct so_database_connection * db);
+bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait);
 
 #endif
 
