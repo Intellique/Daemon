@@ -2932,7 +2932,7 @@ static int so_database_postgresql_mark_archive_as_purged(struct so_database_conn
 
 
 	const char * query = "mark_archive_as_purged";
-	so_database_postgresql_prepare(self, query, "UPDATE archivevolume SET purged = $2 WHERE media = $1");
+	so_database_postgresql_prepare(self, query, "UPDATE archivevolume SET purged = $2 WHERE media = $1 AND purged IS NULL");
 
 	const char * param[] = { media_id, jobrun_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
