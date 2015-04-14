@@ -36,7 +36,6 @@
 #include <libstoriqone/value.h>
 
 #include "io.h"
-#include "../listen.h"
 #include "../peer.h"
 
 
@@ -93,7 +92,5 @@ void sodr_io_process(struct sodr_peer * peer, struct sodr_command commands[]) {
 		close(peer->fd_data);
 		peer->fd_data = -1;
 	}
-
-	sodr_listen_reset_peer();
 }
 

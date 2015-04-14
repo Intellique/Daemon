@@ -219,7 +219,7 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 		drive->ops->lock(drive, peer->key);
 
-		lp->peer->waiting = false;
+		lp->waiting = lp->peer->waiting = false;
 		sochgr_socket_remove_peer(lp->peer);
 
 		struct so_value * response = so_value_pack("{sbsi}", "error", false, "index", (long int) drive->index);
@@ -304,7 +304,7 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 			so_json_encode_to_fd(response, peer->fd, true);
 			so_value_free(response);
 
-			lp->peer->waiting = false;
+			lp->waiting = lp->peer->waiting = false;
 			sochgr_socket_remove_peer(lp->peer);
 			nb_free_drives--;
 
@@ -359,7 +359,7 @@ static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so
 		last_peer = last_peer->next = peer;
 
 	if (!sochgr_socket_unlock(peer, no_wait) && no_wait) {
-		peer->waiting = false;
+		peer->waiting = lp->waiting = false;
 		sochgr_socket_remove_peer(peer);
 	}
 	return;

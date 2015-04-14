@@ -40,6 +40,7 @@
 #include <libstoriqone/value.h>
 
 #include "io.h"
+#include "../listen.h"
 #include "../peer.h"
 
 static void sodr_io_format_reader_close(struct sodr_peer * peer, struct so_value * request);
@@ -100,6 +101,8 @@ static void sodr_io_format_reader_close(struct sodr_peer * peer, struct so_value
 
 	close(peer->fd_cmd);
 	peer->fd_cmd = -1;
+
+	sodr_listen_reset_peer();
 }
 
 static void sodr_io_format_reader_end_of_file(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
