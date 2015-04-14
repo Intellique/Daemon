@@ -102,7 +102,7 @@ struct so_format_writer {
 		enum so_format_writer_status (*add_file)(struct so_format_writer * fw, const struct so_format_file * file);
 		enum so_format_writer_status (*add_label)(struct so_format_writer * fw, const char * label);
 		int (*close)(struct so_format_writer * fw);
-		ssize_t (*compute_size_of_file)(struct so_format_writer * fw, const char * file, bool recursive);
+		ssize_t (*compute_size_of_file)(struct so_format_writer * fw, const struct so_format_file * file);
 		ssize_t (*end_of_file)(struct so_format_writer * fw);
 		void (*free)(struct so_format_writer * fw);
 		ssize_t (*get_available_size)(struct so_format_writer * fw);

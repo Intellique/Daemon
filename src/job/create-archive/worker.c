@@ -142,7 +142,7 @@ static enum so_format_writer_status soj_create_archive_worker_add_file2(struct s
 
 	if (worker->pool->unbreakable_level == so_pool_unbreakable_level_file) {
 		ssize_t available_size = worker->writer->ops->get_available_size(worker->writer);
-		ssize_t file_size = worker->writer->ops->compute_size_of_file(worker->writer, file->filename, false);
+		ssize_t file_size = worker->writer->ops->compute_size_of_file(worker->writer, file);
 
 		if (available_size < file_size && soj_create_archive_worker_change_volume(job, worker, db_connect) != 0)
 			return so_format_writer_error;

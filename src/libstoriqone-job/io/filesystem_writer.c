@@ -39,6 +39,8 @@
 #include <strings.h>
 // open, stat
 #include <sys/stat.h>
+// statfs
+#include <sys/statfs.h>
 // lseek, open, stat
 #include <sys/types.h>
 // statfs
@@ -61,6 +63,7 @@ struct soj_format_writer_filesystem_private {
 static enum so_format_writer_status soj_format_writer_filesystem_add_file(struct so_format_writer * fw, const struct so_format_file * file);
 static enum so_format_writer_status soj_format_writer_filesystem_add_label(struct so_format_writer * fw, const char * label);
 static int soj_format_writer_filesystem_close(struct so_format_writer * fw);
+static ssize_t soj_format_writer_filesystem_compute_size_of_file(struct so_format_writer * fw, const struct so_format_file * file);
 static ssize_t soj_format_writer_filesystem_end_of_file(struct so_format_writer * fw);
 static int soj_format_writer_filesystem_file_position(struct so_format_writer * fw);
 static void soj_format_writer_filesystem_free(struct so_format_writer * fw);
@@ -73,19 +76,20 @@ static enum so_format_writer_status soj_format_writer_filesystem_restart_file(st
 static ssize_t soj_format_writer_filesystem_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
 
 static struct so_format_writer_ops soj_format_writer_filesystem_ops = {
-	.add_file           = soj_format_writer_filesystem_add_file,
-	.add_label          = soj_format_writer_filesystem_add_label,
-	.close              = soj_format_writer_filesystem_close,
-	.end_of_file        = soj_format_writer_filesystem_end_of_file,
-	.file_position      = soj_format_writer_filesystem_file_position,
-	.free               = soj_format_writer_filesystem_free,
-	.get_available_size = soj_format_writer_filesystem_get_available_size,
-	.get_block_size     = soj_format_writer_filesystem_get_block_size,
-	.get_digests        = soj_format_writer_filesystem_get_digests,
-	.last_errno         = soj_format_writer_filesystem_last_errno,
-	.position           = soj_format_writer_filesystem_position,
-	.restart_file       = soj_format_writer_filesystem_restart_file,
-	.write              = soj_format_writer_filesystem_write,
+	.add_file             = soj_format_writer_filesystem_add_file,
+	.add_label            = soj_format_writer_filesystem_add_label,
+	.close                = soj_format_writer_filesystem_close,
+	.compute_size_of_file = soj_format_writer_filesystem_compute_size_of_file,
+	.end_of_file          = soj_format_writer_filesystem_end_of_file,
+	.file_position        = soj_format_writer_filesystem_file_position,
+	.free                 = soj_format_writer_filesystem_free,
+	.get_available_size   = soj_format_writer_filesystem_get_available_size,
+	.get_block_size       = soj_format_writer_filesystem_get_block_size,
+	.get_digests          = soj_format_writer_filesystem_get_digests,
+	.last_errno           = soj_format_writer_filesystem_last_errno,
+	.position             = soj_format_writer_filesystem_position,
+	.restart_file         = soj_format_writer_filesystem_restart_file,
+	.write                = soj_format_writer_filesystem_write,
 };
 
 
@@ -138,6 +142,17 @@ static int soj_format_writer_filesystem_close(struct so_format_writer * fw) {
 	self->fd = -1;
 
 	return 0;
+}
+
+static ssize_t soj_format_writer_filesystem_compute_size_of_file(struct so_format_writer * fw, const struct so_format_file * file) {
+	struct soj_format_writer_filesystem_private * self = fw->data;
+
+	struct statfs st;
+	int failed = statfs(self->base_dir, &st);
+	if (failed != 0)
+		return file->size;
+	else
+		return st.f_bsize + file->size - file->size % st.f_bsize;
 }
 
 static ssize_t soj_format_writer_filesystem_end_of_file(struct so_format_writer * fw) {

@@ -51,6 +51,7 @@
 static void sodr_io_format_writer_add_file(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_writer_add_label(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_writer_close(struct sodr_peer * peer, struct so_value * request);
+static void sodr_io_format_writer_compute_size_of_file(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_writer_end_of_file(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_writer_init(void) __attribute__((constructor));
 static void sodr_io_format_writer_reopen(struct sodr_peer * peer, struct so_value * request);
@@ -58,13 +59,14 @@ static void sodr_io_format_writer_restart_file(struct sodr_peer * peer, struct s
 static void sodr_io_format_writer_write(struct sodr_peer * peer, struct so_value * request);
 
 static struct sodr_command commands[] = {
-	{ 0, "add file",     sodr_io_format_writer_add_file },
-	{ 0, "add label",    sodr_io_format_writer_add_label },
-	{ 0, "close",        sodr_io_format_writer_close },
-	{ 0, "end of file",  sodr_io_format_writer_end_of_file },
-	{ 0, "reopen",       sodr_io_format_writer_reopen },
-	{ 0, "restart file", sodr_io_format_writer_restart_file },
-	{ 0, "write",        sodr_io_format_writer_write },
+	{ 0, "add file",             sodr_io_format_writer_add_file },
+	{ 0, "add label",            sodr_io_format_writer_add_label },
+	{ 0, "close",                sodr_io_format_writer_close },
+	{ 0, "compute size of file", sodr_io_format_writer_compute_size_of_file },
+	{ 0, "end of file",          sodr_io_format_writer_end_of_file },
+	{ 0, "reopen",               sodr_io_format_writer_reopen },
+	{ 0, "restart file",         sodr_io_format_writer_restart_file },
+	{ 0, "write",                sodr_io_format_writer_write },
 
 	{ 0, NULL, NULL },
 };
@@ -152,6 +154,27 @@ static void sodr_io_format_writer_close(struct sodr_peer * peer, struct so_value
 
 	close(peer->fd_cmd);
 	peer->fd_cmd = -1;
+}
+
+static void sodr_io_format_writer_compute_size_of_file(struct sodr_peer * peer, struct so_value * request) {
+	struct so_value * vfile = NULL;
+	so_value_unpack(request, "{s{so}}", "params", "file", &vfile);
+
+	struct so_format_file file;
+	so_format_file_init(&file);
+	so_format_file_sync(&file, vfile);
+
+	ssize_t size = peer->format_writer->ops->compute_size_of_file(peer->format_writer, &file);
+	long int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
+
+	so_format_file_free(&file);
+
+	struct so_value * response = so_value_pack("{sisi}",
+		"returned", size,
+		"last errno", last_errno
+	);
+	so_json_encode_to_fd(response, peer->fd_cmd, true);
+	so_value_free(response);
 }
 
 static void sodr_io_format_writer_end_of_file(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {

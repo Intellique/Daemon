@@ -76,7 +76,7 @@ static int so_format_tar_writer_close(struct so_format_writer * fw);
 static void so_format_tar_writer_compute_checksum(const void * header, char * checksum);
 static void so_format_tar_writer_compute_link(struct so_format_tar * header, char * link, const char * filename, ssize_t filename_length, char flag, struct stat * sfile, const struct so_format_file * file);
 static void so_format_tar_writer_compute_size(char * csize, long long size);
-static ssize_t so_format_tar_writer_compute_size_of_file(struct so_format_writer * fw, const char * file, bool recursive);
+static ssize_t so_format_tar_writer_compute_size_of_file(struct so_format_writer * fw, const struct so_format_file * file);
 static ssize_t so_format_tar_writer_end_of_file(struct so_format_writer * fw);
 static void so_format_tar_writer_free(struct so_format_writer * fw);
 static ssize_t so_format_tar_writer_get_available_size(struct so_format_writer * fw);
@@ -336,19 +336,13 @@ static void so_format_tar_writer_compute_size(char * csize, long long size) {
 	}
 }
 
-static ssize_t so_format_tar_writer_compute_size_of_file(struct so_format_writer * fw __attribute__((unused)), const char * file, bool recursive) {
-	struct stat sfile;
-	if (lstat(file, &sfile))
-		return -1;
-
-	const char * path2 = so_format_tar_writer_skip_leading_slash(file);
+static ssize_t so_format_tar_writer_compute_size_of_file(struct so_format_writer * fw __attribute__((unused)), const struct so_format_file * file) {
+	const char * path2 = so_format_tar_writer_skip_leading_slash(file->filename);
 	int path_length = strlen(path2);
 
 	ssize_t file_size = 512;
-	if (S_ISLNK(sfile.st_mode)) {
-		char link[257];
-		ssize_t link_length = readlink(file, link, 256);
-		link[link_length] = '\0';
+	if (S_ISLNK(file->mode)) {
+		ssize_t link_length = strlen(file->link);
 
 		if (path_length > 100 && link_length > 100) {
 			file_size += 2048 + path_length - path_length % 512 + link_length - link_length % 512;
@@ -361,26 +355,8 @@ static ssize_t so_format_tar_writer_compute_size_of_file(struct so_format_writer
 		file_size += 512 + path_length - path_length % 512;
 	}
 
-	if (S_ISREG(sfile.st_mode))
-		file_size += 512 + sfile.st_size - sfile.st_size % 512;
-	else if (S_ISDIR(sfile.st_mode) && recursive) {
-		struct dirent ** dl = NULL;
-		int nb_paths = scandir(file, &dl, so_file_basic_scandir_filter, NULL);
-		int i;
-		for (i = 0; i < nb_paths; i++) {
-			char * subpath = NULL;
-			asprintf(&subpath, "%s/%s", file, dl[i]->d_name);
-
-			ssize_t size = so_format_tar_compute_size(subpath);
-			if (size > 0)
-				file_size += size;
-
-			free(subpath);
-			free(dl[i]);
-		}
-
-		free(dl);
-	}
+	if (S_ISREG(file->mode))
+		file_size += 512 + file->size - file->size % 512;
 
 	return file_size;
 }

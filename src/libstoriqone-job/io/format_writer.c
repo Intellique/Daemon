@@ -60,6 +60,7 @@ struct soj_format_writer_private {
 static enum so_format_writer_status soj_format_writer_add_file(struct so_format_writer * fw, const struct so_format_file * file);
 static enum so_format_writer_status soj_format_writer_add_label(struct so_format_writer * fw, const char * label);
 static int soj_format_writer_close(struct so_format_writer * fw);
+static ssize_t soj_format_writer_compute_size_of_file(struct so_format_writer * fw, const struct so_format_file * file);
 static ssize_t soj_format_writer_end_of_file(struct so_format_writer * fw);
 static void soj_format_writer_free(struct so_format_writer * fw);
 static ssize_t soj_format_writer_get_available_size(struct so_format_writer * fw);
@@ -74,20 +75,21 @@ static ssize_t soj_format_writer_write(struct so_format_writer * fw, const void 
 static ssize_t soj_format_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length);
 
 static struct so_format_writer_ops soj_format_writer_ops = {
-	.add_file           = soj_format_writer_add_file,
-	.add_label          = soj_format_writer_add_label,
-	.close              = soj_format_writer_close,
-	.end_of_file        = soj_format_writer_end_of_file,
-	.file_position      = soj_format_writer_file_position,
-	.free               = soj_format_writer_free,
-	.get_available_size = soj_format_writer_get_available_size,
-	.get_block_size     = soj_format_writer_get_block_size,
-	.get_digests        = soj_format_writer_get_digests,
-	.last_errno         = soj_format_writer_last_errno,
-	.position           = soj_format_writer_position,
-	.reopen             = soj_format_writer_reopen,
-	.restart_file       = soj_format_writer_restart_file,
-	.write              = soj_format_writer_write,
+	.add_file             = soj_format_writer_add_file,
+	.add_label            = soj_format_writer_add_label,
+	.close                = soj_format_writer_close,
+	.compute_size_of_file = soj_format_writer_compute_size_of_file,
+	.end_of_file          = soj_format_writer_end_of_file,
+	.file_position        = soj_format_writer_file_position,
+	.free                 = soj_format_writer_free,
+	.get_available_size =   soj_format_writer_get_available_size,
+	.get_block_size       = soj_format_writer_get_block_size,
+	.get_digests          = soj_format_writer_get_digests,
+	.last_errno           = soj_format_writer_last_errno,
+	.position             = soj_format_writer_position,
+	.reopen               = soj_format_writer_reopen,
+	.restart_file         = soj_format_writer_restart_file,
+	.write                = soj_format_writer_write,
 };
 
 
@@ -197,6 +199,25 @@ static int soj_format_writer_close(struct so_format_writer * fw) {
 	so_value_free(response);
 
 	return failed ? 1 : 0;
+}
+
+static ssize_t soj_format_writer_compute_size_of_file(struct so_format_writer * fw, const struct so_format_file * file) {
+	struct soj_format_writer_private * self = fw->data;
+
+	struct so_value * request = so_value_pack("{sss{so}}",
+		"command", "compute size of file",
+		"params",
+			"file", so_format_file_convert(file)
+	);
+	so_json_encode_to_fd(request, self->command_fd, true);
+	so_value_free(request);
+
+	ssize_t size = 0;
+	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	so_value_unpack(response, "{si}", "returned", &size);
+	so_value_free(response);
+
+	return size;
 }
 
 static ssize_t soj_format_writer_end_of_file(struct so_format_writer * fw) {
