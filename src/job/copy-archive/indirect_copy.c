@@ -259,6 +259,8 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 					dgettext("storiqone-job-copy-archive", "Error while reading from temporary file"));
 				break;
 			}
+
+			self->writer->ops->end_of_file(self->writer);
 		}
 
 		so_format_file_free(&file);
