@@ -5,6 +5,7 @@ use warnings;
 
 use Digest::MD5 q/md5_hex/;
 use JSON::PP;
+use Mediainfo;
 use POSIX q/nice/;
 use Sys::CPU q/cpu_count/;
 
@@ -75,7 +76,6 @@ sub process {
     }
 
     $nb_processes++;
-
     if ( $nb_processes >= $nb_cpu ) {
         wait();
         $nb_processes--;
@@ -87,7 +87,11 @@ foreach my $vol ( @{ $archive->{volumes} } ) {
         next if defined $file_done{ $file->{path} };
         $file_done{ $file->{path} } = $file;
 
-        next unless $file->{'mime type'} =~ m{^video/};
+        next if $file->{type} eq 'directory';
+
+        my $foo_info = new Mediainfo("filename" => $file->{path});
+
+        next unless defined $foo_info->{video_format};
 
         process( $file->{path}, 'mp4' );
         process( $file->{path}, 'ogv' );
