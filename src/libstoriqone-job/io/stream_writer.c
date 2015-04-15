@@ -84,7 +84,15 @@ struct so_stream_writer * soj_stream_new_writer(struct so_drive * drive, struct 
 	struct so_value * socket_cmd = NULL, * socket_data = NULL;
 	long int block_size = 0;
 	long int file_position = -1;
-	if (so_value_unpack(config, "{s{soso}sisi}", "socket", "command", &socket_cmd, "data", &socket_data, "block size", &block_size, "file position", &file_position) < 2)
+	ssize_t available_size = -1;
+	if (so_value_unpack(config, "{s{soso}sisisi}",
+		"socket",
+			"command", &socket_cmd,
+			"data", &socket_data,
+		"block size", &block_size,
+		"file position", &file_position,
+		"available size", &available_size
+	) < 5)
 		return NULL;
 
 	struct soj_stream_writer * self = malloc(sizeof(struct soj_stream_writer));
@@ -95,6 +103,7 @@ struct so_stream_writer * soj_stream_new_writer(struct so_drive * drive, struct 
 	self->position = 0;
 	self->file_position = file_position;
 	self->block_size = block_size;
+	self->available_size = available_size;
 	self->last_errno = 0;
 
 	struct so_stream_writer * writer = malloc(sizeof(struct so_stream_writer));
@@ -115,7 +124,7 @@ static ssize_t soj_stream_writer_before_close(struct so_stream_writer * sw, void
 
 	ssize_t nb_read = 0;
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
-	so_value_unpack(response, "{si}", "returned", &nb_read);
+	so_value_unpack(response, "{sisi}", "returned", &nb_read, "available size", &self->available_size);
 	if (nb_read < 0)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 
@@ -224,7 +233,7 @@ static ssize_t soj_stream_writer_write(struct so_stream_writer * sw, const void 
 
 	ssize_t nb_write = 0;
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
-	so_value_unpack(response, "{si}", "returned", &nb_write);
+	so_value_unpack(response, "{sisi}", "returned", &nb_write, "available size", &self->available_size);
 	if (nb_write < 0)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	so_value_free(response);

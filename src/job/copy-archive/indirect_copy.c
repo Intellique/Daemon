@@ -182,8 +182,14 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 
 	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->pool);
 
+	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
+	vol->media = self->media;
+	vol->job = job;
+
 	self->dest_drive = soj_media_load(self->media, false);
 	self->writer = self->dest_drive->ops->get_writer(self->dest_drive, checksums);
+
+	vol->media_position = self->writer->ops->file_position(self->writer);
 
 	while (rdr_status = tmp_frmt_reader->ops->get_header(tmp_frmt_reader, &file), rdr_status == so_format_reader_header_ok) {
 		available_size = self->writer->ops->get_available_size(self->writer);

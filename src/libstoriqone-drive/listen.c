@@ -504,13 +504,14 @@ static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct s
 	int cmd_socket = so_socket_server_temp(socket_cmd_config);
 	int data_socket = so_socket_server_temp(socket_data_config);
 
-	struct so_value * response = so_value_pack("{sbs{sOsO}sisi}",
+	struct so_value * response = so_value_pack("{sbs{sOsO}sisisi}",
 		"status", true,
 		"socket",
 			"command", socket_cmd_config,
 			"data", socket_data_config,
 		"block size", peer->stream_writer->ops->get_block_size(peer->stream_writer),
-		"file position", peer->stream_writer->ops->file_position(peer->stream_writer)
+		"file position", peer->stream_writer->ops->file_position(peer->stream_writer),
+		"available size", peer->stream_writer->ops->get_available_size(peer->stream_writer)
 	);
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);
@@ -639,21 +640,20 @@ static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_va
 	peer->buffer = malloc(peer->buffer_length);
 	peer->has_checksums = so_value_list_get_length(checksums) > 0;
 
-	long file_position = peer->format_writer->ops->file_position(peer->format_writer);
-
 	struct so_value * socket_cmd_config = so_value_copy(sodr_config, true);
 	struct so_value * socket_data_config = so_value_copy(sodr_config, true);
 
 	int cmd_socket = so_socket_server_temp(socket_cmd_config);
 	int data_socket = so_socket_server_temp(socket_data_config);
 
-	struct so_value * response = so_value_pack("{sbs{sOsO}sisi}",
+	struct so_value * response = so_value_pack("{sbs{sOsO}sisisi}",
 		"status", true,
 		"socket",
 			"command", socket_cmd_config,
 			"data", socket_data_config,
 		"block size", peer->format_writer->ops->get_block_size(peer->format_writer),
-		"file position", file_position
+		"file position", peer->format_writer->ops->file_position(peer->format_writer),
+		"available size", peer->format_writer->ops->get_available_size(peer->format_writer)
 	);
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);

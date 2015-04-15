@@ -32,10 +32,12 @@
 #include <time.h>
 
 #include <libstoriqone/archive.h>
+#include <libstoriqone/database.h>
 #include <libstoriqone/format.h>
 #include <libstoriqone/job.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/value.h>
+#include <libstoriqone-job/drive.h>
 #include <libstoriqone-job/media.h>
 
 #include "common.h"
@@ -55,6 +57,17 @@ int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_co
 	self->dest_drive = soj_media_load(self->media, false);
 	if (self->dest_drive == NULL)
 		return 3;
+
+	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->pool);
+
+	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
+	vol->media = self->media;
+	vol->job = job;
+
+	self->dest_drive = soj_media_load(self->media, false);
+	self->writer = self->dest_drive->ops->get_writer(self->dest_drive, checksums);
+
+	vol->media_position = self->writer->ops->file_position(self->writer);
 
 	return 0;
 }

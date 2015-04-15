@@ -97,7 +97,15 @@ struct so_format_writer * soj_format_new_writer(struct so_drive * drive, struct 
 	struct so_value * socket_cmd = NULL, * socket_data = NULL;
 	long int block_size = 0;
 	long int file_position = -1;
-	if (so_value_unpack(config, "{s{soso}sisi}", "socket", "command", &socket_cmd, "data", &socket_data, "block size", &block_size, "file position", &file_position) < 4)
+	ssize_t available_size = -1;
+	if (so_value_unpack(config, "{s{soso}sisisi}",
+			"socket",
+				"command", &socket_cmd,
+				"data", &socket_data,
+			"block size", &block_size,
+			"file position", &file_position,
+			"available size", &available_size
+	) < 5)
 		return NULL;
 
 	struct soj_format_writer_private * self = malloc(sizeof(struct soj_format_writer_private));
@@ -109,7 +117,7 @@ struct so_format_writer * soj_format_new_writer(struct so_drive * drive, struct 
 	self->last_errno = 0;
 	self->file_position = file_position;
 	self->position = 0;
-	self->available_size = 0;
+	self->available_size = available_size;
 	self->digest = so_value_new_linked_list();
 
 	struct so_format_writer * writer = malloc(sizeof(struct so_format_writer));
