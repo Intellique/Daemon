@@ -129,6 +129,8 @@ void so_archive_free(struct so_archive * archive);
 void so_archive_free2(void * archive);
 struct so_archive * so_archive_new(void);
 
+struct so_archive_file * so_archive_file_copy(struct so_archive_file * file);
+
 enum so_archive_file_type so_archive_file_mode_to_type(mode_t mode);
 enum so_archive_file_type so_archive_file_string_to_type(const char * type, bool translate);
 const char * so_archive_file_type_to_string(enum so_archive_file_type type, bool translate);

@@ -26,8 +26,12 @@
 
 // bindtextdomain, dgettext
 #include <libintl.h>
+// strdup
+#include <string.h>
 // sleep
 #include <unistd.h>
+// uuid
+#include <uuid/uuid.h>
 
 #include <libstoriqone/archive.h>
 #include <libstoriqone/database.h>
@@ -55,6 +59,11 @@ static struct soj_copyarchive_private data = {
 	.media_iterator = NULL,
 	.media          = NULL,
 	.dest_drive     = NULL,
+	.writer         = NULL,
+
+	.first_files = NULL,
+	.last_files  = NULL,
+	.nb_files    = 0,
 };
 
 static void soj_copyarchive_exit(struct so_job * job, struct so_database_connection * db_connect);
@@ -103,18 +112,31 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 		return 2;
 	}
 
+
+	data.copy_archive = so_archive_new();
+	data.copy_archive->name = strdup(data.src_archive->name);
+
+	uuid_t uuid;
+	uuid_generate(uuid);
+	uuid_unparse_lower(uuid, data.copy_archive->uuid);
+
+	data.copy_archive->creator = strdup(job->user);
+	data.copy_archive->owner = strdup(job->user);
+
+
 	data.media_iterator = soj_media_get_iterator(data.pool);
 	struct so_value * vmedia = so_value_iterator_get_value(data.media_iterator, false);
 	data.media = so_value_custom_get(vmedia);
 	data.dest_drive = soj_media_load(data.media, true);
 
+	int failed = 0;
 	if (data.dest_drive == NULL) {
-		soj_copyarchive_indirect_copy(job, db_connect, &data);
+		failed = soj_copyarchive_indirect_copy(job, db_connect, &data);
 	} else {
 		// TODO: direct copy
 	}
 
-	return 0;
+	return failed;
 }
 
 static int soj_copyarchive_simulate(struct so_job * job, struct so_database_connection * db_connect) {

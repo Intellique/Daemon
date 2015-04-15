@@ -27,6 +27,11 @@
 #ifndef __STORIQONE_JOB_COPY_ARCHIVE_H__
 #define __STORIQONE_JOB_COPY_ARCHIVE_H__
 
+// ssize_t
+#include <sys/types.h>
+// time_t
+#include <sys/time.h>
+
 struct soj_copyarchive_private {
 	struct so_archive * src_archive;
 	struct so_drive * src_drive;
@@ -36,12 +41,24 @@ struct soj_copyarchive_private {
 	struct so_value_iterator * media_iterator;
 	struct so_media * media;
 	struct so_drive * dest_drive;
+	struct so_format_writer * writer;
+
+	struct soj_copyarchive_files {
+		char * path;
+		ssize_t position;
+		time_t archived_time;
+		struct soj_copyarchive_files * next;
+	} * first_files, * last_files;
+	unsigned int nb_files;
 };
 
 struct so_database_connection;
 struct so_job;
 
 int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self);
+int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self);
+int soj_copyarchive_util_close_media(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self);
+void soj_copyarchive_util_init(struct so_archive * archive);
 
 #endif
 

@@ -28,6 +28,8 @@
 #include <libintl.h>
 // free, malloc
 #include <stdlib.h>
+// strdup
+#include <string.h>
 // bzero
 #include <strings.h>
 // S_*
@@ -225,6 +227,39 @@ struct so_archive * so_archive_new() {
 	bzero(archive, sizeof(struct so_archive));
 
 	return archive;
+}
+
+
+struct so_archive_file * so_archive_file_copy(struct so_archive_file * file) {
+	struct so_archive_file * copy = malloc(sizeof(struct so_archive_file));
+	bzero(copy, sizeof(struct so_archive_file));
+
+	copy->path = strdup(file->path);
+	if (file->restored_to != NULL)
+		copy->restored_to = strdup(file->restored_to);
+
+	copy->perm = file->perm;
+	copy->type = file->type;
+	copy->ownerid = file->ownerid;
+	copy->owner = strdup(file->owner);
+	copy->groupid = file->groupid;
+	copy->group = strdup(file->group);
+
+	copy->create_time = file->create_time;
+	copy->modify_time = file->modify_time;
+
+	copy->check_ok = file->check_ok;
+	copy->check_time = file->check_time;
+
+	copy->size = file->size;
+
+	copy->mime_type = strdup(file->mime_type);
+	if (file->selected_path != NULL)
+		copy->selected_path = strdup(file->selected_path);
+
+	copy->digests = so_value_copy(file->digests, true);
+
+	return copy;
 }
 
 
