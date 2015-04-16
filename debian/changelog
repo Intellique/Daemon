@@ -1,3 +1,10 @@
+stone (1.1.27.4+squeeze) polisher; urgency=low
+
+  * Désactivation de ccache
+  * Amélioration du scripte de création de proxy
+
+ -- guillaume clercin <gclercin@intellique.com>  Thu, 16 Apr 2015 16:44:27 +0200
+
 stone (1.1.27.2+squeeze) polisher; urgency=low
 
   * Correctif divers
