@@ -42,7 +42,7 @@ msgstr  "rapide"
 #: src/job/erase-media/erase-media.c:161
 #, c-format
 msgid   "Erase media '%s' finished with sucess"
-msgstr  "L’effacement de média « %s » terminé avec succès"
+msgstr  "L’effacement du média « %s » terminé avec succès"
 
 #: src/job/erase-media/erase-media.c:165
 #, c-format

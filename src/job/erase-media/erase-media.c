@@ -157,7 +157,7 @@ static int soj_erasemedia_run(struct so_job * job, struct so_database_connection
 		db_connect->ops->mark_archive_as_purged(db_connect, soj_erasemedia_media, job);
 		soj_erasemedia_make_report(job, db_connect);
 
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 			dgettext("storiqone-job-erase-media", "Erase media '%s' finished with sucess"),
 			soj_erasemedia_media->name);
 	} else
