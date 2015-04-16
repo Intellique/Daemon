@@ -747,7 +747,7 @@ static struct so_value * so_json_parse_string_inner(const char ** json) {
 		case '7':
 		case '8':
 		case '9': {
-				ssize_t length_integer = strspn(*json, "0123456789");
+				ssize_t length_integer = strspn(*json, "0123456789-");
 				ssize_t length_float = strspn(*json, "0123456789.+-eE");
 
 				if (length_integer < length_float) {
