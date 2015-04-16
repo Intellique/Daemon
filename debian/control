@@ -55,6 +55,6 @@ Description: STone (log-plugin)
 Package: stone-scripts
 Section: utils
 Architecture: all
-Depends: ${perl:Depends}, ${misc:Depends}, libsys-cpu-perl
+Depends: ${perl:Depends}, ${misc:Depends}, libsys-cpu-perl, libmediainfo-perl, mediainfo
 Description: STone (log-plugin)
  Contains scripts that the daemon will run
