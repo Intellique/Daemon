@@ -127,15 +127,21 @@ static int soj_formatmedia_run(struct so_job * job, struct so_database_connectio
 	job->done = 0.75;
 
 	// check header
-	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Checking media header in progress"));
+	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+		dgettext("storiqone-job-format-media", "Checking media header '%s' in progress"),
+		soj_formatmedia_media->name);
 	if (drive->ops->check_header(drive)) {
-		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Checking media header: success"));
+		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+			dgettext("storiqone-job-format-media", "Checking media header '%s': success"),
+			soj_formatmedia_media->name);
 
 		job->status = so_job_status_running;
 		job->done = 1;
 		return 0;
 	} else {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Checking media header: failed"));
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-format-media", "Checking media header '%s': failed"),
+			soj_formatmedia_media->name);
 
 		job->status = so_job_status_error;
 		return 5;
