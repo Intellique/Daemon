@@ -347,12 +347,8 @@ static int sochgr_vtl_changer_load(struct so_slot * from, struct so_drive * to, 
 	if (failed == 0) {
 		vtl_to->origin = from;
 
-		struct so_media * media = to->slot->media = from->media;
-		from->media = NULL;
-		to->slot->volume_name = from->volume_name;
-		from->volume_name = NULL;
-		from->full = false;
-		to->slot->full = true;
+		struct so_media * media = from->media;
+		so_slot_swap(from, to->slot);
 
 		media->load_count++;
 
@@ -455,13 +451,7 @@ static int sochgr_vtl_changer_unload(struct so_drive * from, struct so_database_
 	free(sto);
 
 	if (failed == 0) {
-		struct so_slot * sl = vtl_from->origin;
-		sl->media = from->slot->media;
-		from->slot->media = NULL;
-		sl->volume_name = from->slot->volume_name;
-		from->slot->volume_name = NULL;
-		from->slot->full = false;
-		sl->full = true;
+		so_slot_swap(from->slot, vtl_from->origin);
 
 		vtl_from->origin = NULL;
 
