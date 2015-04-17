@@ -93,3 +93,17 @@ void so_slot_sync(struct so_slot * slot, struct so_value * new_slot) {
 	}
 }
 
+void so_slot_swap(struct so_slot * sa, struct so_slot * sb) {
+	struct so_media * media = sa->media;
+	sa->media = sb->media;
+	sb->media = media;
+
+	char * volume_name = sa->volume_name;
+	sa->volume_name = sb->volume_name;
+	sb->volume_name = volume_name;
+
+	bool full = sa->full;
+	sa->full = sb->full;
+	sb->full = full;
+}
+

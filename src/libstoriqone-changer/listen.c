@@ -222,7 +222,11 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 		lp->waiting = lp->peer->waiting = false;
 		sochgr_socket_remove_peer(lp->peer);
 
-		struct so_value * response = so_value_pack("{sbsi}", "error", false, "index", (long int) drive->index);
+		struct so_value * response = so_value_pack("{sbsiso}",
+			"error", false,
+			"index", (long int) drive->index,
+			"changer", so_changer_convert(changer)
+		);
 		so_json_encode_to_fd(response, peer->fd, true);
 		so_value_free(response);
 
@@ -231,7 +235,10 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 	if (nb_free_drives == 0) {
 		if (current_peer != NULL && no_wait) {
-			struct so_value * response = so_value_pack("{sb}", "error", true);
+			struct so_value * response = so_value_pack("{sbso}",
+				"error", true,
+				"changer", so_changer_convert(changer)
+			);
 			so_json_encode_to_fd(response, current_peer->fd, true);
 			so_value_free(response);
 		}
@@ -275,7 +282,10 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 				if (failed != 0) {
 					so_log_write(so_log_level_error, dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d finished with code = %d"), changer->vendor, changer->model, volume_name, drive->index, failed);
 
-					struct so_value * response = so_value_pack("{sb}", "error", true);
+					struct so_value * response = so_value_pack("{sbso}",
+						"error", true,
+						"changer", so_changer_convert(changer)
+					);
 					so_json_encode_to_fd(response, peer->fd, true);
 					so_value_free(response);
 
@@ -290,7 +300,10 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 			if (failed != 0) {
 				so_log_write(so_log_level_error, dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = %d"), changer->vendor, changer->model, sl->volume_name, sl->index, drive->index, failed);
 
-				struct so_value * response = so_value_pack("{sb}", "error", true);
+				struct so_value * response = so_value_pack("{sbso}",
+					"error", true,
+					"changer", so_changer_convert(changer)
+				);
 				so_json_encode_to_fd(response, peer->fd, true);
 				so_value_free(response);
 
@@ -300,7 +313,11 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 			drive->ops->lock(drive, peer->key);
 
-			struct so_value * response = so_value_pack("{sbsi}", "error", false, "index", (long int) drive->index);
+			struct so_value * response = so_value_pack("{sbsiso}",
+				"error", false,
+				"index", (long int) drive->index,
+				"changer", so_changer_convert(changer)
+			);
 			so_json_encode_to_fd(response, peer->fd, true);
 			so_value_free(response);
 
@@ -313,7 +330,10 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 	}
 
 	if (current_peer != NULL && no_wait) {
-		struct so_value * response = so_value_pack("{sb}", "error", true);
+		struct so_value * response = so_value_pack("{sbso}",
+			"error", true,
+			"changer", so_changer_convert(changer)
+		);
 		so_json_encode_to_fd(response, current_peer->fd, true);
 		so_value_free(response);
 	}

@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-changer v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-04-13 21:36+0200\n"
+        "POT-Creation-Date: 2015-04-16 22:48+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -16,17 +16,17 @@ msgstr  "Project-Id-Version: libstoriqone-changer v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/libstoriqone-changer/listen.c:208 src/libstoriqone-changer/listen.c:272
+#: src/libstoriqone-changer/listen.c:208 src/libstoriqone-changer/listen.c:279
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%d"
 msgstr  "[%s | %s] : déchargement du média « %s » depuis le lecteur #%d"
 
-#: src/libstoriqone-changer/listen.c:212 src/libstoriqone-changer/listen.c:276
+#: src/libstoriqone-changer/listen.c:212 src/libstoriqone-changer/listen.c:283
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%d finished with code = %d"
 msgstr  "[%s | %s] : déchargement du média « %s » depuis le lecteur #%d terminé avec le code = %d"
 
-#: src/libstoriqone-changer/listen.c:214 src/libstoriqone-changer/listen.c:284
+#: src/libstoriqone-changer/listen.c:214 src/libstoriqone-changer/listen.c:294
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%d finished with code = OK"
 msgstr  "[%s | %s] : déchargement du média « %s » depuis le lecteur #%d terminé avec le code = OK"
@@ -36,17 +36,17 @@ msgstr  "[%s | %s] : déchargement du média « %s » depuis le lecteur #%d t
 msgid   "[%s | %s]: you should change drive because drive (%s#%u) has no support for format (%s)"
 msgstr  ""
 
-#: src/libstoriqone-changer/listen.c:287
+#: src/libstoriqone-changer/listen.c:297
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%d"
 msgstr  "[%s | %s] : chargement du média « %s » depuis l’emplacement #%u vers le lecteur #%d"
 
-#: src/libstoriqone-changer/listen.c:291
+#: src/libstoriqone-changer/listen.c:301
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = %d"
 msgstr  "[%s | %s] : chargement du média « %s » depuis l’emplacement #%u vers le lecteur #%d terminé avec le code = %d"
 
-#: src/libstoriqone-changer/listen.c:299
+#: src/libstoriqone-changer/listen.c:312
 #, c-format
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = OK"
 msgstr  "[%s | %s] : chargement du média « %s » depuis l’emplacement #%u vers le lecteur #%d terminé avec le code = OK"

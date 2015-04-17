@@ -58,6 +58,7 @@ struct so_value * so_slot_convert(struct so_slot * slot) __attribute__((nonnull,
 void so_slot_free(struct so_slot * slot) __attribute__((nonnull));
 void so_slot_free2(void * slot) __attribute__((nonnull));
 void so_slot_sync(struct so_slot * slot, struct so_value * new_slot) __attribute__((nonnull));
+void so_slot_swap(struct so_slot * sa, struct so_slot * sb);
 
 #endif
 

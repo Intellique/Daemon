@@ -134,7 +134,15 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 			continue;
 
 		long int index = -1;
-		so_value_unpack(response, "{sbsi}", "error", &error, "index", &index);
+		struct so_value * vch = NULL;
+		so_value_unpack(response, "{sbsosi}",
+			"error", &error,
+			"changer", &vch,
+			"index", &index
+		);
+		if (index > -1 && slot->index != index)
+			so_slot_swap(slot, changer->drives[index].slot);
+		so_changer_sync(changer, vch);
 		so_value_free(response);
 
 		if (!error) {
