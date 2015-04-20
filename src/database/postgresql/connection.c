@@ -118,6 +118,7 @@ static int so_database_postgresql_check_archive_volume(struct so_database_connec
 static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_database_connection * connect, const char * archive_id);
 static struct so_archive * so_database_postgresql_get_archive_by_job(struct so_database_connection * connect, struct so_job * job);
 static struct so_value * so_database_postgresql_get_archive_by_media(struct so_database_connection * connect, struct so_media * media);
+static int so_database_postgresql_link_archives(struct so_database_connection * connect, struct so_archive * source, struct so_archive * copy);
 static int so_database_postgresql_mark_archive_as_purged(struct so_database_connection * connect, struct so_media * media, struct so_job * job);
 static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
 static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive);
@@ -183,6 +184,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.get_archive_by_job     = so_database_postgresql_get_archive_by_job,
 	.get_archive_by_media   = so_database_postgresql_get_archive_by_media,
 	.get_nb_volumes_of_file = so_database_postgresql_get_nb_volumes_of_file,
+	.link_archives          = so_database_postgresql_link_archives,
 	.mark_archive_as_purged = so_database_postgresql_mark_archive_as_purged,
 	.sync_archive           = so_database_postgresql_sync_archive,
 
@@ -2916,9 +2918,129 @@ static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_data
 	return nb_volumes;
 }
 
+static int so_database_postgresql_link_archives(struct so_database_connection * connect, struct so_archive * source, struct so_archive * copy) {
+	if (connect == NULL || source == NULL || copy == NULL)
+		return -1;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	char * src_archive_id = NULL, * copy_archive_id = NULL, * copy_poolmirror_id = NULL, * archivemirror_id = NULL, * last_update = NULL;
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+
+	struct so_value * db = so_value_hashtable_get(source->db_data, key, false, false);
+	so_value_unpack(db, "{ss}", "id", &src_archive_id);
+
+	db = so_value_hashtable_get(copy->db_data, key, false, false);
+	so_value_unpack(db, "{ss}", "id", &copy_archive_id);
+
+	so_value_free(key);
+
+
+	const char * query = "select_poolmirror_by_archive";
+	so_database_postgresql_prepare(self, query, "SELECT p.poolmirror FROM archivevolume av INNER JOIN media m ON av.archive = $1 AND av.sequence = 0 AND av.media = m.id INNERT JOIN pool p ON m.pool = p.id LIMIT 1");
+
+	const char * param_1[] = { copy_archive_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param_1, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		so_database_postgresql_get_string_dup(result, 0, 0, &copy_poolmirror_id);
+
+	PQclear(result);
+
+	if (status == PGRES_FATAL_ERROR) {
+		free(src_archive_id);
+		free(copy_archive_id);
+		return 1;
+	}
+
+	if (copy_poolmirror_id != NULL) {
+		query = "select_archivemirror_by_archive_and_poolmirror";
+		so_database_postgresql_prepare(self, query, "SELECT am.id, aam.lastupdate FROM archivetoarchivemirror aam INNER JOIN archivemirror am ON aam.archive = $1 AND aam.archivemirror = am.id AND am.poolmirror = $2 LIMIT 1");
+
+		const char * param_2[] = { src_archive_id, copy_poolmirror_id };
+		result = PQexecPrepared(self->connect, query, 2, param_2, NULL, NULL, 0);
+		status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			so_database_postgresql_get_error(result, query);
+		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+			so_database_postgresql_get_string_dup(result, 0, 0, &archivemirror_id);
+			so_database_postgresql_get_string_dup(result, 0, 1, &last_update);
+		}
+
+		if (status == PGRES_FATAL_ERROR) {
+			free(src_archive_id);
+			free(copy_archive_id);
+			free(copy_poolmirror_id);
+			return 2;
+		}
+
+		PQclear(result);
+
+		if (archivemirror_id != NULL) {
+			query = "insert_archive_mirror";
+			so_database_postgresql_prepare(self, query, "INSERT INTO archivetoarchivemirror(archive, archivemirror, lastupdate) VALUES ($1, $2, $3)");
+
+			const char * param_3[] = { copy_archive_id, archivemirror_id, last_update };
+			result = PQexecPrepared(self->connect, query, 3, param_3, NULL, NULL, 0);
+			status = PQresultStatus(result);
+
+			if (status == PGRES_FATAL_ERROR)
+				so_database_postgresql_get_error(result, query);
+
+			PQclear(result);
+
+			free(src_archive_id);
+			free(copy_archive_id);
+			free(archivemirror_id);
+			free(last_update);
+
+			return status != PGRES_COMMAND_OK;
+		}
+	}
+
+	query = "insert_archive_mirror2";
+	so_database_postgresql_prepare(self, query, "INSERT INTO archivemirror(id, poolmirror) VALUES (DEFAULT, NULL) RETURNING id");
+
+	result = PQexecPrepared(self->connect, query, 0, NULL, NULL, NULL, 0);
+	status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		so_database_postgresql_get_string_dup(result, 0, 0, &archivemirror_id);
+
+	PQclear(result);
+
+	if (archivemirror_id != NULL) {
+		query = "insert_archive_mirror3";
+		so_database_postgresql_prepare(self, query, "INSERT INTO archivetoarchivemirror(archive, archivemirror) VALUES ($1, $3), ($2, $3)");
+
+		const char * param_3[] = { src_archive_id, copy_poolmirror_id, archivemirror_id };
+
+		result = PQexecPrepared(self->connect, query, 3, param_3, NULL, NULL, 0);
+		status = PQresultStatus(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			so_database_postgresql_get_error(result, query);
+
+		PQclear(result);
+
+		free(archivemirror_id);
+	}
+
+	free(src_archive_id);
+	free(copy_archive_id);
+
+	return status != PGRES_COMMAND_OK;
+}
+
 static int so_database_postgresql_mark_archive_as_purged(struct so_database_connection * connect, struct so_media * media, struct so_job * job) {
 	if (connect == NULL || media == NULL || job == NULL)
-		return 0;
+		return -1;
 
 	struct so_database_postgresql_connection_private * self = connect->data;
 

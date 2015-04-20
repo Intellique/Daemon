@@ -89,8 +89,13 @@ static struct so_job_driver soj_copyarchive = {
 static void soj_copyarchive_exit(struct so_job * job __attribute__((unused)), struct so_database_connection * db_connect __attribute__((unused))) {
 	if (data.src_archive != NULL)
 		so_archive_free(data.src_archive);
+
+	if (data.copy_archive != NULL)
+		so_archive_free(data.copy_archive);
 	if (data.pool != NULL)
 		so_pool_free(data.pool);
+	if (data.media_iterator != NULL)
+		so_value_iterator_free(data.media_iterator);
 }
 
 static void soj_copyarchive_init() {
@@ -130,10 +135,57 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 	data.dest_drive = soj_media_load(data.media, true);
 
 	int failed = 0;
-	if (data.dest_drive == NULL) {
+	if (data.dest_drive == NULL)
 		failed = soj_copyarchive_indirect_copy(job, db_connect, &data);
-	} else {
-		// TODO: direct copy
+
+	if (failed == 0) {
+		job->done = 0.99;
+
+		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+			dgettext("storiqone-job-copy-archive", "Writing metadata of copy archive '%s'"),
+			data.src_archive->name);
+
+		failed = soj_copyarchive_util_write_meta(&data);
+
+		if (failed != 0)
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-copy-archive", "Error while writing metadata of copy archive '%s'"),
+				data.src_archive->name);
+		else
+			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+				dgettext("storiqone-job-copy-archive", "Wrote sucessfully metadata of copy archive '%s'"),
+				data.src_archive->name);
+
+		if (failed == 0) {
+			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+				dgettext("storiqone-job-copy-archive", "Synchronizing archive '%s' into database"),
+				data.src_archive->name);
+
+			failed = db_connect->ops->start_transaction(db_connect);
+			if (failed != 0) {
+				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+					dgettext("storiqone-job-copy-archive", "Failed to start transaction info database"));
+			} else {
+				failed = db_connect->ops->sync_archive(db_connect, data.copy_archive);
+				if (failed == 0)
+					failed = db_connect->ops->link_archives(db_connect, data.src_archive, data.copy_archive);
+
+				if (failed != 0)
+					db_connect->ops->cancel_transaction(db_connect);
+				else
+					db_connect->ops->finish_transaction(db_connect);
+			}
+
+			if (failed != 0)
+				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+					dgettext("storiqone-job-copy-archive", "Failed to synchronize database"));
+			else {
+				so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+					dgettext("storiqone-job-copy-archive", "Synchronized archive '%s' into database"),
+					data.src_archive->name);
+				job->done = 1;
+			}
+		}
 	}
 
 	return failed;
@@ -195,10 +247,11 @@ static void soj_copyarchive_script_on_error(struct so_job * job, struct so_datab
 	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, data.pool) < 1)
 		return;
 
-	struct so_value * json = so_value_pack("{sosososo}",
+	struct so_value * json = so_value_pack("{sosos{so}so}",
 		"job", so_job_convert(job),
 		"host", so_host_get_info2(),
-		"archive", so_archive_convert(data.src_archive),
+		"archive",
+			"source", so_archive_convert(data.src_archive),
 		"pool", so_pool_convert(data.pool)
 	);
 
@@ -211,10 +264,12 @@ static void soj_copyarchive_script_post_run(struct so_job * job, struct so_datab
 	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_post_job, data.pool) < 1)
 		return;
 
-	struct so_value * json = so_value_pack("{sosososo}",
+	struct so_value * json = so_value_pack("{sosos{soso}so}",
 		"job", so_job_convert(job),
 		"host", so_host_get_info2(),
-		"archive", so_archive_convert(data.src_archive),
+		"archive",
+			"source", so_archive_convert(data.src_archive),
+			"copy", so_archive_convert(data.copy_archive),
 		"pool", so_pool_convert(data.pool)
 	);
 
@@ -227,10 +282,11 @@ static bool soj_copyarchive_script_pre_run(struct so_job * job, struct so_databa
 	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_pre_job, data.pool) < 1)
 		return true;
 
-	struct so_value * json = so_value_pack("{sosososo}",
+	struct so_value * json = so_value_pack("{sosos{so}so}",
 		"job", so_job_convert(job),
 		"host", so_host_get_info2(),
-		"archive", so_archive_convert(data.src_archive),
+		"archive",
+			"source", so_archive_convert(data.src_archive),
 		"pool", so_pool_convert(data.pool)
 	);
 

@@ -191,16 +191,24 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 
 	vol->media_position = self->writer->ops->file_position(self->writer);
 
-	while (rdr_status = tmp_frmt_reader->ops->get_header(tmp_frmt_reader, &file), rdr_status == so_format_reader_header_ok) {
+	bool ok = true;
+	int failed = 0;
+	while (rdr_status = tmp_frmt_reader->ops->get_header(tmp_frmt_reader, &file), rdr_status == so_format_reader_header_ok && ok) {
 		available_size = self->writer->ops->get_available_size(self->writer);
-		if (available_size == 0 || (S_ISREG(file.mode) && self->writer->ops->compute_size_of_file(self->writer, &file) > available_size && self->pool->unbreakable_level == so_pool_unbreakable_level_file))
-			soj_copyarchive_util_change_media(job, db_connect, self);
+		if (available_size == 0 || (S_ISREG(file.mode) && self->writer->ops->compute_size_of_file(self->writer, &file) > available_size && self->pool->unbreakable_level == so_pool_unbreakable_level_file)) {
+			failed = soj_copyarchive_util_change_media(job, db_connect, self);
+			if (failed != 0) {
+				ok = false;
+				break;
+			}
+		}
 
 		enum so_format_writer_status wrtr_status = self->writer->ops->add_file(self->writer, &file);
 		if (wrtr_status != so_format_writer_ok) {
 			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-copy-archive", "Error while writing header '%s' into media '%s'"),
 				file.filename, self->media->name);
+			ok = false;
 			break;
 		}
 
@@ -218,17 +226,27 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 
 		if (S_ISREG(file.mode)) {
 			available_size = self->writer->ops->get_available_size(self->writer);
-			if (available_size == 0)
+			if (available_size == 0) {
 				soj_copyarchive_util_change_media(job, db_connect, self);
+				if (failed != 0) {
+					ok = false;
+					break;
+				}
+			}
 
 			ssize_t nb_read, nb_total_read = 0;
 			static char buffer[65535];
 
 			ssize_t will_read = available_size < 65535 ? available_size : 65535;
-			while (nb_read = tmp_frmt_reader->ops->read(tmp_frmt_reader, buffer, will_read), nb_read > 0) {
+			while (nb_read = tmp_frmt_reader->ops->read(tmp_frmt_reader, buffer, will_read), nb_read > 0 && ok) {
 				available_size = self->writer->ops->get_available_size(self->writer);
-				if (available_size == 0)
-					soj_copyarchive_util_change_media(job, db_connect, self);
+				if (available_size == 0) {
+					failed = soj_copyarchive_util_change_media(job, db_connect, self);
+					if (failed != 0) {
+						ok = false;
+						break;
+					}
+				}
 
 				ssize_t nb_total_write = 0;
 				while (nb_total_write < nb_read) {
@@ -240,7 +258,8 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 							dgettext("storiqone-job-copy-archive", "Error while writing data of file '%s' into temporary file"),
 							file.filename);
 
-						return 1;
+						ok = false;
+						break;
 					}
 				}
 
@@ -257,6 +276,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 			if (nb_read < 0) {
 				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 					dgettext("storiqone-job-copy-archive", "Error while reading from temporary file"));
+				ok = false;
 				break;
 			}
 
@@ -271,8 +291,25 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 	self->writer->ops->free(self->writer);
 	tmp_frmt_reader->ops->free(tmp_frmt_reader);
 
-	job->done = 1;
+	if (ok) {
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-copy-archive", "Write metadata of copy archive '%s'"),
+			self->src_archive->name);
 
-	return 0;
+		failed = soj_copyarchive_util_write_meta(self);
+		if (failed != 0)
+			ok = false;
+	} else
+		failed = 1;
+
+	if (ok) {
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-copy-archive", "Write metadata of copy archive '%s'"),
+			self->src_archive->name);
+
+		job->done = 1;
+	}
+
+	return failed;
 }
 

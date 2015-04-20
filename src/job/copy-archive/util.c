@@ -26,15 +26,19 @@
 
 // dgettext
 #include <libintl.h>
-// calloc
+// free, calloc
 #include <stdlib.h>
+// strlen
+#include <string.h>
 // time
 #include <time.h>
 
 #include <libstoriqone/archive.h>
 #include <libstoriqone/database.h>
 #include <libstoriqone/format.h>
+#include <libstoriqone/io.h>
 #include <libstoriqone/job.h>
+#include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/drive.h>
@@ -128,5 +132,28 @@ void soj_copyarchive_util_init(struct so_archive * archive) {
 				so_value_hashtable_put2(files, file->path, so_value_new_custom(file, NULL), true);
 		}
 	}
+}
+
+int soj_copyarchive_util_write_meta(struct soj_copyarchive_private * self) {
+	struct so_value * archive = so_archive_convert(self->copy_archive);
+	char * json_archive = so_json_encode_to_string(archive);
+	ssize_t length = strlen(json_archive);
+
+	int failed = 0;
+	struct so_stream_writer * writer = self->dest_drive->ops->get_raw_writer(self->dest_drive);
+	if (writer != NULL) {
+		ssize_t nb_write = writer->ops->write(writer, json_archive, length);
+		writer->ops->close(writer);
+		writer->ops->free(writer);
+
+		if (nb_write < 0)
+			failed = 1;
+	} else
+		failed = 2;
+
+	free(json_archive);
+	so_value_free(archive);
+
+	return failed;
 }
 
