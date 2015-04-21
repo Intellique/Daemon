@@ -103,6 +103,7 @@ int soj_copyarchive_util_close_media(struct so_job * job, struct so_database_con
 		struct so_archive_file * file = so_value_custom_get(vfile);
 
 		ptr_copy_file->file = so_archive_file_copy(file);
+		ptr_copy_file->file->db_data = so_value_share(file->db_data);
 
 		struct soj_copyarchive_files * old = ptr_file;
 		ptr_file = ptr_file->next;

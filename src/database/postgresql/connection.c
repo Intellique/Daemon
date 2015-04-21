@@ -2937,7 +2937,7 @@ static int so_database_postgresql_link_archives(struct so_database_connection * 
 
 
 	const char * query = "select_poolmirror_by_archive";
-	so_database_postgresql_prepare(self, query, "SELECT p.poolmirror FROM archivevolume av INNER JOIN media m ON av.archive = $1 AND av.sequence = 0 AND av.media = m.id INNERT JOIN pool p ON m.pool = p.id LIMIT 1");
+	so_database_postgresql_prepare(self, query, "SELECT p.poolmirror FROM archivevolume av INNER JOIN media m ON av.archive = $1 AND av.sequence = 0 AND av.media = m.id INNER JOIN pool p ON m.pool = p.id LIMIT 1");
 
 	const char * param_1[] = { copy_archive_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param_1, NULL, NULL, 0);
@@ -3172,6 +3172,36 @@ static int so_database_postgresql_sync_archive_file(struct so_database_connectio
 	free(ownerid);
 	free(perm);
 
+	if (status != PGRES_TUPLES_OK)
+		return 1;
+
+	const char * queryB = "insert_archivefile_to_checksum";
+	so_database_postgresql_prepare(self, queryB, "INSERT INTO archivefiletochecksumresult VALUES ($1, $2)");
+
+	struct so_value_iterator * iter = so_value_hashtable_get_iterator(file->digests);
+	while (so_value_iterator_has_next(iter)) {
+		struct so_value * key = so_value_iterator_get_key(iter, false, false);
+		struct so_value * value = so_value_iterator_get_value(iter, false);
+
+		const char * checksum = so_value_string_get(key);
+		const char * digest = so_value_string_get(value);
+
+		char * digest_id = NULL;
+		if (so_database_postgresql_checksumresult_add(connect, checksum, digest, &digest_id) == 0) {
+			const char * param[] = { *file_id, digest_id };
+			PGresult * result = PQexecPrepared(self->connect, queryB, 2, param, NULL, NULL, 0);
+			ExecStatusType status = PQresultStatus(result);
+
+			if (status == PGRES_FATAL_ERROR)
+				so_database_postgresql_get_error(result, queryB);
+
+			PQclear(result);
+		}
+
+		free(digest_id);
+	}
+	so_value_iterator_free(iter);
+
 	return status != PGRES_TUPLES_OK;
 }
 
@@ -3283,8 +3313,6 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 
 		const char * queryA = "insert_archivefiletoarchivevolume";
 		so_database_postgresql_prepare(self, queryA, "INSERT INTO archivefiletoarchivevolume(archivevolume, archivefile, blocknumber, archivetime) VALUES ($1, $2, $3, $4)");
-		const char * queryB = "insert_archivefile_to_checksum";
-		so_database_postgresql_prepare(self, queryB, "INSERT INTO archivefiletochecksumresult VALUES ($1, $2)");
 
 		unsigned int i;
 		for (i = 0; i < volume->nb_files; i++) {
@@ -3307,31 +3335,6 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 
 			PQclear(resultA);
 			free(block_number);
-
-			struct so_value_iterator * iter = so_value_hashtable_get_iterator(file->digests);
-			while (so_value_iterator_has_next(iter)) {
-				struct so_value * key = so_value_iterator_get_key(iter, false, false);
-				struct so_value * value = so_value_iterator_get_value(iter, false);
-
-				const char * checksum = so_value_string_get(key);
-				const char * digest = so_value_string_get(value);
-
-				char * digest_id = NULL;
-				if (so_database_postgresql_checksumresult_add(connect, checksum, digest, &digest_id) == 0) {
-					const char * param[] = { file_id, digest_id };
-					PGresult * result = PQexecPrepared(self->connect, queryB, 2, param, NULL, NULL, 0);
-					ExecStatusType status = PQresultStatus(result);
-
-					if (status == PGRES_FATAL_ERROR)
-						so_database_postgresql_get_error(result, queryB);
-
-					PQclear(result);
-				}
-
-				free(digest_id);
-			}
-			so_value_iterator_free(iter);
-
 			free(file_id);
 		}
 	}

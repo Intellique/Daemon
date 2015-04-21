@@ -291,25 +291,6 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 	self->writer->ops->free(self->writer);
 	tmp_frmt_reader->ops->free(tmp_frmt_reader);
 
-	if (ok) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-copy-archive", "Write metadata of copy archive '%s'"),
-			self->src_archive->name);
-
-		failed = soj_copyarchive_util_write_meta(self);
-		if (failed != 0)
-			ok = false;
-	} else
-		failed = 1;
-
-	if (ok) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-copy-archive", "Write metadata of copy archive '%s'"),
-			self->src_archive->name);
-
-		job->done = 1;
-	}
-
 	return failed;
 }
 
