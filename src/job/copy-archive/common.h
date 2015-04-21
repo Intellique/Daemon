@@ -55,6 +55,7 @@ struct soj_copyarchive_private {
 struct so_database_connection;
 struct so_job;
 
+int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self);
 int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self);
 int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self);
 int soj_copyarchive_util_close_media(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self);

@@ -27,6 +27,8 @@
 #ifndef __LIBSTORIQONE_JOB_MEDIA_H__
 #define __LIBSTORIQONE_JOB_MEDIA_H__
 
+#include <libstoriqone/media.h>
+
 // bool
 #include <stdbool.h>
 // ssize_t
