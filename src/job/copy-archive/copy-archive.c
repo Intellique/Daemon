@@ -178,10 +178,11 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 
 			if (failed != 0)
 				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-					dgettext("storiqone-job-copy-archive", "Failed to synchronize database"));
+					dgettext("storiqone-job-copy-archive", "Failed to synchronize archive '%s' into database"),
+					data.copy_archive->name);
 			else {
 				so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
-					dgettext("storiqone-job-copy-archive", "Synchronized archive '%s' into database"),
+					dgettext("storiqone-job-copy-archive", "Archive '%s' synchronized into database"),
 					data.src_archive->name);
 				job->done = 1;
 			}

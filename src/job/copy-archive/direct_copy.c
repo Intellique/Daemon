@@ -99,7 +99,7 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 			enum so_format_writer_status wrtr_status = self->writer->ops->add_file(self->writer, &file);
 			if (wrtr_status != so_format_writer_ok) {
 				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-					dgettext("storiqone-job-copy-archive", "Error while writing header '%s' into media '%s'"),
+					dgettext("storiqone-job-copy-archive", "Error while writing header of file '%s' into media '%s'"),
 					file.filename, self->media->name);
 				ok = false;
 				break;
@@ -148,8 +148,8 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 							nb_total_write += nb_write;
 						else {
 							so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-								dgettext("storiqone-job-copy-archive", "Error while writing data of file '%s' into temporary file"),
-								file.filename);
+								dgettext("storiqone-job-copy-archive", "Error while writing data of file '%s' into media '%s'"),
+								file.filename, self->media->name);
 
 							ok = false;
 							return 1;
