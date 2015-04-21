@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -39,15 +39,15 @@
 // time
 #include <time.h>
 
-#include <libstone/drive.h>
-#include <libstone/log.h>
-#include <libstone/media.h>
-#include <libstone/slot.h>
-#include <libstone-drive/time.h>
+#include <libstoriqone/drive.h>
+#include <libstoriqone/log.h>
+#include <libstoriqone/media.h>
+#include <libstoriqone/slot.h>
+#include <libstoriqone-drive/time.h>
 
 #include "io.h"
 
-struct tape_drive_reader {
+struct sodr_tape_drive_reader {
 	int fd;
 
 	char * buffer;
@@ -59,33 +59,33 @@ struct tape_drive_reader {
 
 	int last_errno;
 
-	struct st_drive * drive;
-	struct st_media * media;
+	struct so_drive * drive;
+	struct so_media * media;
 };
 
-static int tape_drive_reader_close(struct st_stream_reader * io);
-static bool tape_drive_reader_end_of_file(struct st_stream_reader * io);
-static off_t tape_drive_reader_forward(struct st_stream_reader * io, off_t offset);
-static void tape_drive_reader_free(struct st_stream_reader * io);
-static ssize_t tape_drive_reader_get_block_size(struct st_stream_reader * io);
-static int tape_drive_reader_last_errno(struct st_stream_reader * io);
-static ssize_t tape_drive_reader_position(struct st_stream_reader * io);
-static ssize_t tape_drive_reader_read(struct st_stream_reader * io, void * buffer, ssize_t length);
+static int sodr_tape_drive_reader_close(struct so_stream_reader * io);
+static bool sodr_tape_drive_reader_end_of_file(struct so_stream_reader * io);
+static off_t sodr_tape_drive_reader_forward(struct so_stream_reader * io, off_t offset);
+static void sodr_tape_drive_reader_free(struct so_stream_reader * io);
+static ssize_t sodr_tape_drive_reader_get_block_size(struct so_stream_reader * io);
+static int sodr_tape_drive_reader_last_errno(struct so_stream_reader * io);
+static ssize_t sodr_tape_drive_reader_position(struct so_stream_reader * io);
+static ssize_t sodr_tape_drive_reader_read(struct so_stream_reader * io, void * buffer, ssize_t length);
 
-static struct st_stream_reader_ops tape_drive_reader_ops = {
-	.close          = tape_drive_reader_close,
-	.end_of_file    = tape_drive_reader_end_of_file,
-	.forward        = tape_drive_reader_forward,
-	.free           = tape_drive_reader_free,
-	.get_block_size = tape_drive_reader_get_block_size,
-	.last_errno     = tape_drive_reader_last_errno,
-	.position       = tape_drive_reader_position,
-	.read           = tape_drive_reader_read,
+static struct so_stream_reader_ops sodr_tape_drive_reader_ops = {
+	.close          = sodr_tape_drive_reader_close,
+	.end_of_file    = sodr_tape_drive_reader_end_of_file,
+	.forward        = sodr_tape_drive_reader_forward,
+	.free           = sodr_tape_drive_reader_free,
+	.get_block_size = sodr_tape_drive_reader_get_block_size,
+	.last_errno     = sodr_tape_drive_reader_last_errno,
+	.position       = sodr_tape_drive_reader_position,
+	.read           = sodr_tape_drive_reader_read,
 };
 
 
-static int tape_drive_reader_close(struct st_stream_reader * io) {
-	struct tape_drive_reader * self = io->data;
+static int sodr_tape_drive_reader_close(struct so_stream_reader * io) {
+	struct sodr_tape_drive_reader * self = io->data;
 
 	if (self->fd > -1) {
 		self->fd = -1;
@@ -96,13 +96,13 @@ static int tape_drive_reader_close(struct st_stream_reader * io) {
 	return 0;
 }
 
-static bool tape_drive_reader_end_of_file(struct st_stream_reader * io) {
-	struct tape_drive_reader * self = io->data;
+static bool sodr_tape_drive_reader_end_of_file(struct so_stream_reader * io) {
+	struct sodr_tape_drive_reader * self = io->data;
 	return self->end_of_file;
 }
 
-static off_t tape_drive_reader_forward(struct st_stream_reader * io, off_t offset) {
-	struct tape_drive_reader * self = io->data;
+static off_t sodr_tape_drive_reader_forward(struct so_stream_reader * io, off_t offset) {
+	struct sodr_tape_drive_reader * self = io->data;
 
 	if (self->fd < 0)
 		return -1;
@@ -130,12 +130,12 @@ static off_t tape_drive_reader_forward(struct st_stream_reader * io, off_t offse
 		while (nb_records > 1000000) {
 			int next_forward = nb_records > 8388607 ? 8388607 : nb_records;
 
-			st_log_write(st_log_level_info, "[%s | %s | #%u]: forward (#record %ld)", self->drive->vendor, self->drive->model, self->drive->index, nb_records);
+			so_log_write(so_log_level_info, "[%s | %s | #%u]: forward (#record %ld)", self->drive->vendor, self->drive->model, self->drive->index, nb_records);
 
 			struct mtop forward = { MTFSR, next_forward };
-			stdr_time_start();
+			sodr_time_start();
 			int failed = ioctl(self->fd, MTIOCTOP, &forward);
-			stdr_time_stop(self->drive);
+			sodr_time_stop(self->drive);
 
 			if (failed != 0) {
 				self->last_errno = errno;
@@ -148,9 +148,9 @@ static off_t tape_drive_reader_forward(struct st_stream_reader * io, off_t offse
 		}
 
 		while (nb_records > 0) {
-			stdr_time_start();
+			sodr_time_start();
 			ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
-			stdr_time_stop(self->drive);
+			sodr_time_stop(self->drive);
 
 			if (nb_read < 0) {
 				self->last_errno = errno;
@@ -166,9 +166,9 @@ static off_t tape_drive_reader_forward(struct st_stream_reader * io, off_t offse
 	if (nb_total_read == offset)
 		return self->position;
 
-	stdr_time_start();
+	sodr_time_start();
 	ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
-	stdr_time_stop(self->drive);
+	sodr_time_stop(self->drive);
 
 	if (nb_read < 0) {
 		self->last_errno = errno;
@@ -184,8 +184,8 @@ static off_t tape_drive_reader_forward(struct st_stream_reader * io, off_t offse
 	return self->position;
 }
 
-static void tape_drive_reader_free(struct st_stream_reader * io) {
-	struct tape_drive_reader * self = io->data;
+static void sodr_tape_drive_reader_free(struct so_stream_reader * io) {
+	struct sodr_tape_drive_reader * self = io->data;
 	if (self != NULL) {
 		self->fd = -1;
 		free(self->buffer);
@@ -196,17 +196,17 @@ static void tape_drive_reader_free(struct st_stream_reader * io) {
 	free(io);
 }
 
-static ssize_t tape_drive_reader_get_block_size(struct st_stream_reader * io) {
-	struct tape_drive_reader * self = io->data;
+static ssize_t sodr_tape_drive_reader_get_block_size(struct so_stream_reader * io) {
+	struct sodr_tape_drive_reader * self = io->data;
 	return self->block_size;
 }
 
-struct st_stream_reader * tape_drive_reader_get_raw_reader(struct st_drive * drive, int fd) {
-	ssize_t block_size = tape_drive_get_block_size();
+struct so_stream_reader * sodr_tape_drive_reader_get_raw_reader(struct so_drive * drive, int fd) {
+	ssize_t block_size = sodr_tape_drive_get_block_size();
 	if (block_size < 0)
 		return NULL;
 
-	struct tape_drive_reader * self = malloc(sizeof(struct tape_drive_reader));
+	struct sodr_tape_drive_reader * self = malloc(sizeof(struct sodr_tape_drive_reader));
 	self->fd = fd;
 
 	self->buffer = malloc(block_size);
@@ -220,8 +220,8 @@ struct st_stream_reader * tape_drive_reader_get_raw_reader(struct st_drive * dri
 	self->drive = drive;
 	self->media = drive->slot->media;
 
-	struct st_stream_reader * reader = malloc(sizeof(struct st_stream_reader));
-	reader->ops = &tape_drive_reader_ops;
+	struct so_stream_reader * reader = malloc(sizeof(struct so_stream_reader));
+	reader->ops = &sodr_tape_drive_reader_ops;
 	reader->data = self;
 
 	self->media->read_count++;
@@ -230,18 +230,18 @@ struct st_stream_reader * tape_drive_reader_get_raw_reader(struct st_drive * dri
 	return reader;
 }
 
-static int tape_drive_reader_last_errno(struct st_stream_reader * io) {
-	struct tape_drive_reader * self = io->data;
+static int sodr_tape_drive_reader_last_errno(struct so_stream_reader * io) {
+	struct sodr_tape_drive_reader * self = io->data;
 	return self->last_errno;
 }
 
-static ssize_t tape_drive_reader_position(struct st_stream_reader * io) {
-	struct tape_drive_reader * self = io->data;
+static ssize_t sodr_tape_drive_reader_position(struct so_stream_reader * io) {
+	struct sodr_tape_drive_reader * self = io->data;
 	return self->position;
 }
 
-static ssize_t tape_drive_reader_read(struct st_stream_reader * io, void * buffer, ssize_t length) {
-	struct tape_drive_reader * self = io->data;
+static ssize_t sodr_tape_drive_reader_read(struct so_stream_reader * io, void * buffer, ssize_t length) {
+	struct sodr_tape_drive_reader * self = io->data;
 	if (self->fd < 0)
 		return -1;
 
@@ -264,9 +264,9 @@ static ssize_t tape_drive_reader_read(struct st_stream_reader * io, void * buffe
 
 	char * c_buffer = buffer;
 	while (length - nb_total_read >= self->block_size) {
-		stdr_time_start();
+		sodr_time_start();
 		ssize_t nb_read = read(self->fd, c_buffer + nb_total_read, self->block_size);
-		stdr_time_stop(self->drive);
+		sodr_time_stop(self->drive);
 
 		if (nb_read < 0) {
 			self->last_errno = errno;
@@ -285,9 +285,9 @@ static ssize_t tape_drive_reader_read(struct st_stream_reader * io, void * buffe
 	if (nb_total_read == length)
 		return length;
 
-	stdr_time_start();
+	sodr_time_start();
 	ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
-	stdr_time_stop(self->drive);
+	sodr_time_stop(self->drive);
 
 	if (nb_read < 0) {
 		self->last_errno = errno;

@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,24 +24,23 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#include <libstone-drive/drive.h>
+#include <libstoriqone-drive/drive.h>
 
 #include "device.h"
 
 #include <drive-tapedrive.chcksum>
 
-static struct st_drive_driver tape_drive_driver = {
+static struct so_drive_driver sodr_tape_drive_driver = {
 	.name = "tape drive",
 
-	.api_level    = 0,
-	.src_checksum = STONE_DRIVE_TAPEDRIVE_SRCSUM,
+	.src_checksum = STORIQONE_DRIVE_TAPEDRIVE_SRCSUM,
 };
 
 static void tape_driver_init(void) __attribute__((constructor));
 
 
 static void tape_driver_init() {
-	tape_drive_driver.device = tape_drive_get_device();
-	stdr_drive_register(&tape_drive_driver);
+	sodr_tape_drive_driver.device = sodr_tape_drive_get_device();
+	sodr_drive_register(&sodr_tape_drive_driver);
 }
 

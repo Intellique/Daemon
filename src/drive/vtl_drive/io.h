@@ -24,8 +24,8 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __ST_VTLDRIVE_IO_H__
-#define __ST_VTLDRIVE_IO_H__
+#ifndef __SO_VTLDRIVE_IO_H__
+#define __SO_VTLDRIVE_IO_H__
 
 #include <libstoriqone/io.h>
 

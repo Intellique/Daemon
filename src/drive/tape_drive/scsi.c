@@ -46,9 +46,9 @@
 // close
 #include <unistd.h>
 
-#include <libstone/drive.h>
-#include <libstone/log.h>
-#include <libstone/string.h>
+#include <libstoriqone/drive.h>
+#include <libstoriqone/log.h>
+#include <libstoriqone/string.h>
 
 #include "scsi.h"
 
@@ -143,7 +143,7 @@ enum scsi_mam_attribute {
 };
 
 
-bool tape_drive_scsi_check_drive(struct st_drive * drive, const char * path) {
+bool sodr_tape_drive_scsi_check_drive(struct so_drive * drive, const char * path) {
 	int fd = open(path, O_RDWR);
 	if (fd < 0)
 		return false;
@@ -220,9 +220,9 @@ bool tape_drive_scsi_check_drive(struct st_drive * drive, const char * path) {
 	}
 
 	char * vendor = strndup(result_inquiry.vendor_identification, 7);
-	st_string_rtrim(vendor, ' ');
+	so_string_rtrim(vendor, ' ');
 	char * model = strndup(result_inquiry.product_identification, 15);
-	st_string_rtrim(model, ' ');
+	so_string_rtrim(model, ' ');
 
 	bool ok = !strcmp(drive->vendor, vendor);
 	if (ok)
@@ -274,7 +274,7 @@ bool tape_drive_scsi_check_drive(struct st_drive * drive, const char * path) {
 		return false;
 
 	result_serial_number.unit_serial_number[11] = '\0';
-	st_string_rtrim(result_serial_number.unit_serial_number, ' ');
+	so_string_rtrim(result_serial_number.unit_serial_number, ' ');
 	char * serial_number = strdup(result_serial_number.unit_serial_number);
 
 	ok = !strcmp(drive->serial_number, serial_number);
@@ -285,13 +285,13 @@ bool tape_drive_scsi_check_drive(struct st_drive * drive, const char * path) {
 		drive->revision = malloc(5);
 		strncpy(drive->revision, result_inquiry.product_revision_level, 4);
 		drive->revision[4] = '\0';
-		st_string_rtrim(drive->revision, ' ');
+		so_string_rtrim(drive->revision, ' ');
 	}
 
 	return ok;
 }
 
-bool tape_drive_scsi_check_support(struct st_media_format * format, bool for_writing, const char * path) {
+bool sodr_tape_drive_scsi_check_support(struct so_media_format * format, bool for_writing, const char * path) {
 	int fd = open(path, O_RDWR);
 	if (fd < 0)
 		return false;
@@ -344,7 +344,7 @@ bool tape_drive_scsi_check_support(struct st_media_format * format, bool for_wri
 	return false;
 }
 
-int tape_drive_scsi_read_density(struct st_drive * drive, const char * path) {
+int sodr_tape_drive_scsi_read_density(struct so_drive * drive, const char * path) {
 	int fd = open(path, O_RDWR);
 	if (fd < 0)
 		return 1;
@@ -397,7 +397,7 @@ int tape_drive_scsi_read_density(struct st_drive * drive, const char * path) {
 	return 0;
 }
 
-int tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_number, size_t length) {
+int sodr_tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_number, size_t length) {
 	struct {
 		unsigned char operation_code;
 		enum {
@@ -491,7 +491,7 @@ int tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_numbe
 	return 0;
 }
 
-int tape_drive_scsi_read_mam(int fd, struct st_media * media) {
+int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 	struct {
 		unsigned char operation_code;
 		enum {
@@ -556,7 +556,7 @@ int tape_drive_scsi_read_mam(int fd, struct st_media * media) {
 	} __attribute__((packed));
 
 	static unsigned long last_hash = 0;
-	const unsigned long hash = st_string_compute_hash2(media->name);
+	const unsigned long hash = so_string_compute_hash2(media->name);
 
 	unsigned int data_available = be32toh(*(unsigned int *) buffer);
 	unsigned char * ptr = buffer + 4;
@@ -598,8 +598,8 @@ int tape_drive_scsi_read_mam(int fd, struct st_media * media) {
 				if (last_hash != hash) {
 					strncpy(buf, attr->attribute_value.text, 8);
 					buf[8] = '\0';
-					st_string_rtrim(buf, ' ');
-					st_log_write(st_log_level_debug, "Media information of %s, Medium manufacturer: %s", media->name, buf);
+					so_string_rtrim(buf, ' ');
+					so_log_write(so_log_level_debug, "Media information of %s, Medium manufacturer: %s", media->name, buf);
 				}
 				break;
 
@@ -614,24 +614,24 @@ int tape_drive_scsi_read_mam(int fd, struct st_media * media) {
 				if (last_hash != hash) {
 					strncpy(buf, attr->attribute_value.text, 8);
 					buf[8] = '\0';
-					st_string_rtrim(buf, ' ');
-					st_log_write(st_log_level_debug, "Media information of %s, Medium date: %s", media->name, buf);
+					so_string_rtrim(buf, ' ');
+					so_log_write(so_log_level_debug, "Media information of %s, Medium date: %s", media->name, buf);
 				}
 				break;
 
 			case scsi_mam_medium_type:
 				switch (attr->attribute_value.int8) {
 					case 0x01:
-						media->type = st_media_type_cleaning;
+						media->type = so_media_type_cleaning;
 						break;
 
 					case 0x80:
-						media->type = st_media_type_worm;
+						media->type = so_media_type_worm;
 						break;
 
 					case 0x00:
 					default:
-						media->type = st_media_type_rewritable;
+						media->type = so_media_type_rewritable;
 						break;
 				}
 
@@ -645,7 +645,7 @@ int tape_drive_scsi_read_mam(int fd, struct st_media * media) {
 	return 0;
 }
 
-int tape_drive_scsi_size_available(int fd, struct st_media * media) {
+int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
 	struct {
 		unsigned char page_code:6;
 		unsigned char reserved0:2;

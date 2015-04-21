@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,21 +24,21 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __TAPEDRIVE_SCSI_H__
-#define __TAPEDRIVE_SCSI_H__
+#ifndef __SO_TAPEDRIVE_SCSI_H__
+#define __SO_TAPEDRIVE_SCSI_H__
 
 // bool
 #include <stdbool.h>
 
-struct st_drive;
-struct st_media_format;
+struct so_drive;
+struct so_media_format;
 
-bool tape_drive_scsi_check_drive(struct st_drive * drive, const char * path);
-bool tape_drive_scsi_check_support(struct st_media_format * format, bool for_writing, const char * path);
-int tape_drive_scsi_read_density(struct st_drive * drive, const char * path);
-int tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_number, size_t length);
-int tape_drive_scsi_read_mam(int fd, struct st_media * media);
-int tape_drive_scsi_size_available(int fd, struct st_media * media);
+bool sodr_tape_drive_scsi_check_drive(struct so_drive * drive, const char * path);
+bool sodr_tape_drive_scsi_check_support(struct so_media_format * format, bool for_writing, const char * path);
+int sodr_tape_drive_scsi_read_density(struct so_drive * drive, const char * path);
+int sodr_tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_number, size_t length);
+int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media);
+int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media);
 
 #endif
 

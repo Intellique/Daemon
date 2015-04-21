@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,16 +24,16 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __ST_TAPEDRIVE_IO_H__
-#define __ST_TAPEDRIVE_IO_H__
+#ifndef __SO_TAPEDRIVE_IO_H__
+#define __SO_TAPEDRIVE_IO_H__
 
-#include <libstone/io.h>
+#include <libstoriqone/io.h>
 
-struct st_drive;
+struct so_drive;
 
-ssize_t tape_drive_get_block_size(void);
-struct st_stream_reader * tape_drive_reader_get_raw_reader(struct st_drive * drive, int fd);
-struct st_stream_writer * tape_drive_writer_get_raw_writer(struct st_drive * drive, int fd);
+ssize_t sodr_tape_drive_get_block_size(void);
+struct so_stream_reader * sodr_tape_drive_reader_get_raw_reader(struct so_drive * drive, int fd);
+struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive * drive, int fd);
 
 #endif
 
