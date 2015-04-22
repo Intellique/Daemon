@@ -37,6 +37,7 @@
 // mktime, strptime
 #include <time.h>
 
+#include <libstoriqone/changer.h>
 #include <libstoriqone/drive.h>
 #include <libstoriqone/string.h>
 
@@ -44,6 +45,38 @@
 
 static void so_database_postgresql_util_init(void) __attribute__((constructor));
 
+
+static struct so_database_postgresql_changer_action2 {
+	unsigned long long hash;
+	const char * name;
+	const enum so_changer_action action;
+} so_database_postgresql_changer_actions[] = {
+	[so_changer_action_none]        = { 0, "none",        so_changer_action_none },
+	[so_changer_action_put_offline] = { 0, "put offline", so_changer_action_put_offline },
+	[so_changer_action_put_online]  = { 0, "put online",  so_changer_action_put_online },
+
+	[so_changer_action_unknown] = { 0, "unknown action", so_changer_action_unknown },
+};
+static const unsigned int so_database_postgresql_changer_nb_actions = sizeof(so_database_postgresql_changer_actions) / sizeof(*so_database_postgresql_changer_actions);
+
+static struct so_database_postgresql_changer_status2 {
+	unsigned long long hash;
+	const char * name;
+	const enum so_changer_status status;
+} so_database_postgresql_changer_status[] = {
+	[so_changer_status_error]      = { 0, "error",      so_changer_status_error },
+	[so_changer_status_exporting]  = { 0, "exporting",  so_changer_status_exporting },
+	[so_changer_status_go_offline] = { 0, "go offline", so_changer_status_go_offline },
+	[so_changer_status_go_online]  = { 0, "go online",  so_changer_status_go_online },
+	[so_changer_status_idle]       = { 0, "idle",       so_changer_status_idle },
+	[so_changer_status_importing]  = { 0, "importing",  so_changer_status_importing },
+	[so_changer_status_loading]    = { 0, "loading",    so_changer_status_loading },
+	[so_changer_status_offline]    = { 0, "offline",    so_changer_status_offline },
+	[so_changer_status_unloading]  = { 0, "unloading",  so_changer_status_unloading },
+
+	[so_changer_status_unknown] = { 0, "unknown", so_changer_status_unknown },
+};
+static const unsigned int so_database_postgresql_changer_nb_status = sizeof(so_database_postgresql_changer_status) / sizeof(*so_database_postgresql_changer_status);
 
 static struct so_database_postgresql_drive_status2 {
 	unsigned long long hash;
@@ -87,6 +120,12 @@ static const unsigned int so_database_postgresql_log_nb_level = sizeof(so_databa
 
 static void so_database_postgresql_util_init() {
 	unsigned int i;
+	for (i = 0; i < so_database_postgresql_changer_nb_actions; i++)
+		so_database_postgresql_changer_actions[i].hash = so_string_compute_hash2(so_database_postgresql_changer_actions[i].name);
+
+	for (i = 0; i < so_database_postgresql_changer_nb_status; i++)
+		so_database_postgresql_changer_status[i].hash = so_string_compute_hash2(so_database_postgresql_changer_status[i].name);
+
 	for (i = 0; i < so_database_postgresql_drive_nb_status; i++)
 		so_database_postgresql_drive_status[i].hash = so_string_compute_hash2(so_database_postgresql_drive_status[i].name);
 
@@ -312,6 +351,42 @@ char * so_database_postgresql_set_float(double fl) {
 	return str_float;
 }
 
+
+const char * so_database_postgresql_changer_action_to_string(enum so_changer_action action) {
+	return so_database_postgresql_changer_actions[action].name;
+}
+
+const char * so_database_postgresql_changer_status_to_string(enum so_changer_status status) {
+	return so_database_postgresql_changer_status[status].name;
+}
+
+enum so_changer_action so_database_postgresql_string_to_action(const char * action) {
+	if (action == NULL)
+		return so_changer_action_unknown;
+
+	unsigned int i;
+	const unsigned long long hash = so_string_compute_hash2(action);
+
+	for (i = 0; i < so_database_postgresql_changer_nb_actions; i++)
+		if (hash == so_database_postgresql_changer_actions[i].hash)
+			return so_database_postgresql_changer_actions[i].action;
+
+	return so_changer_action_unknown;
+}
+
+enum so_changer_status so_database_postgresql_string_to_status(const char * status) {
+	if (status == NULL)
+		return so_changer_status_unknown;
+
+	unsigned int i;
+	const unsigned long long hash = so_string_compute_hash2(status);
+
+	for (i = 0; i < so_database_postgresql_changer_nb_status; i++)
+		if (hash == so_database_postgresql_changer_status[i].hash)
+			return so_database_postgresql_changer_status[i].status;
+
+	return so_changer_status_unknown;
+}
 
 const char * so_database_postgresql_drive_status_to_string(enum so_drive_status status) {
 	return so_database_postgresql_drive_status[status].name;

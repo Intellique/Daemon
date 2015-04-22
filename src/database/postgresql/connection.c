@@ -523,6 +523,8 @@ static struct so_value * so_database_postgresql_get_changers(struct so_database_
 			so_database_postgresql_get_bool(result, i, 6, &barcode);
 			so_database_postgresql_get_bool(result, i, 8, &isonline);
 			so_database_postgresql_get_bool(result, i, 10, &enabled);
+			enum so_changer_status changer_status = so_database_postgresql_string_to_status(PQgetvalue(result, i, 7));
+			enum so_changer_action changer_action = so_database_postgresql_string_to_action(PQgetvalue(result, i, 9));
 
 			struct so_value * changer = so_value_pack("{sssssssssssbsosssbsssb}",
 					"model", PQgetvalue(result, i, 1),
@@ -532,9 +534,9 @@ static struct so_value * so_database_postgresql_get_changers(struct so_database_
 					"wwn", PQgetvalue(result, i, 5),
 					"barcode", barcode,
 					"drives", so_database_postgresql_get_drives_by_changer(connect, changer_id),
-					"status", PQgetvalue(result, i, 7),
+					"status", so_changer_status_to_string(changer_status, false),
 					"is online", isonline,
-					"action", PQgetvalue(result, i, 9),
+					"action", so_changer_action_to_string(changer_action, false),
 					"enable", enabled
 			);
 
@@ -1288,7 +1290,7 @@ static int so_database_postgresql_sync_changer(struct so_database_connection * c
 		if (status == PGRES_FATAL_ERROR)
 			so_database_postgresql_get_error(result, query);
 		else if (status == PGRES_TUPLES_OK && nb_result == 1 && method != so_database_sync_id_only) {
-			enum so_changer_action new_action = so_changer_string_to_action(PQgetvalue(result, 0, 0), false);
+			enum so_changer_action new_action = so_database_postgresql_string_to_action(PQgetvalue(result, 0, 0));
 			if (changer->status == so_changer_status_idle) {
 				if (changer->is_online && new_action == so_changer_action_put_offline)
 					changer->next_action = new_action;
@@ -1359,8 +1361,8 @@ static int so_database_postgresql_sync_changer(struct so_database_connection * c
 			so_database_postgresql_prepare(self, query, "UPDATE changer SET status = $1, firmwarerev = $2, isonline = $3, action = $4 WHERE id = $5");
 
 			const char * params[] = {
-				so_changer_status_to_string(changer->status, false), changer->revision, so_database_postgresql_bool_to_string(changer->is_online),
-				so_changer_action_to_string(changer->next_action, false), changer_id
+				so_database_postgresql_changer_status_to_string(changer->status), changer->revision, so_database_postgresql_bool_to_string(changer->is_online),
+				so_database_postgresql_changer_action_to_string(changer->next_action), changer_id
 			};
 			PGresult * result = PQexecPrepared(self->connect, query, 5, params, NULL, NULL, 0);
 			ExecStatusType status = PQresultStatus(result);
@@ -1382,7 +1384,7 @@ static int so_database_postgresql_sync_changer(struct so_database_connection * c
 			so_database_postgresql_prepare(self, query, "INSERT INTO changer(status, barcode, model, vendor, firmwarerev, serialnumber, wwn, host) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id");
 
 			const char * param[] = {
-				so_changer_status_to_string(changer->status, false), changer->barcode ? "true" : "false",
+				so_database_postgresql_changer_status_to_string(changer->status), changer->barcode ? "true" : "false",
 				changer->model, changer->vendor, changer->revision, changer->serial_number, changer->wwn, hostid,
 			};
 

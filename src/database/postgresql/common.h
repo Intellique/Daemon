@@ -35,6 +35,8 @@
 #include <libstoriqone/database.h>
 #include <libstoriqone/log.h>
 
+enum so_changer_action;
+enum so_changer_status;
 enum so_drive_status;
 
 typedef struct pg_conn PGconn;
@@ -83,6 +85,10 @@ int so_database_postgresql_get_uint_add(PGresult * result, int row, int column, 
 
 char * so_database_postgresql_set_float(double fl);
 
+const char * so_database_postgresql_changer_action_to_string(enum so_changer_action action);
+const char * so_database_postgresql_changer_status_to_string(enum so_changer_status status);
+enum so_changer_action so_database_postgresql_string_to_action(const char * action);
+enum so_changer_status so_database_postgresql_string_to_status(const char * status);
 const char * so_database_postgresql_drive_status_to_string(enum so_drive_status status);
 const char * so_database_postgresql_log_level_to_string(enum so_log_level level);
 
