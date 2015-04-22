@@ -14,9 +14,12 @@ CREATE TYPE ChangerAction AS ENUM (
 CREATE TYPE ChangerStatus AS ENUM (
     'error',
     'exporting',
+    'go offline',
+    'go online',
     'idle',
     'importing',
     'loading',
+    'offline',
     'unknown',
     'unloading'
 );
