@@ -58,6 +58,7 @@ struct sodr_tape_drive_writer {
 	ssize_t buffer_used;
 	ssize_t block_size;
 	ssize_t position;
+	int file_position;
 
 	bool eof_reached;
 
@@ -69,6 +70,7 @@ struct sodr_tape_drive_writer {
 
 static ssize_t sodr_tape_drive_writer_before_close(struct so_stream_writer * sw, void * buffer, ssize_t length);
 static int sodr_tape_drive_writer_close(struct so_stream_writer * sw);
+static int sodr_tape_drive_file_position(struct so_stream_writer * sw);
 static void sodr_tape_drive_writer_free(struct so_stream_writer * sw);
 static ssize_t sodr_tape_drive_writer_get_available_size(struct so_stream_writer * sw);
 static ssize_t sodr_tape_drive_writer_get_block_size(struct so_stream_writer * sw);
@@ -80,6 +82,7 @@ static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const 
 static struct so_stream_writer_ops sodr_tape_drive_writer_ops = {
 	.before_close       = sodr_tape_drive_writer_before_close,
 	.close              = sodr_tape_drive_writer_close,
+	.file_position      = sodr_tape_drive_file_position,
 	.free               = sodr_tape_drive_writer_free,
 	.get_available_size = sodr_tape_drive_writer_get_available_size,
 	.get_block_size     = sodr_tape_drive_writer_get_block_size,
@@ -199,6 +202,11 @@ static int sodr_tape_drive_writer_close(struct so_stream_writer * sw) {
 	return 0;
 }
 
+static int sodr_tape_drive_file_position(struct so_stream_writer * sw) {
+	struct sodr_tape_drive_writer * self = sw->data;
+	return self->file_position;
+}
+
 static void sodr_tape_drive_writer_free(struct so_stream_writer * sw) {
 	if (sw == NULL)
 		return;
@@ -234,7 +242,7 @@ static int sodr_tape_drive_writer_last_errno(struct so_stream_writer * sw) {
 	return self->last_errno;
 }
 
-struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive * drive, int fd) {
+struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive * drive, int fd, int file_position) {
 	ssize_t block_size = sodr_tape_drive_get_block_size();
 
 	struct sodr_tape_drive_writer * self = malloc(sizeof(struct sodr_tape_drive_writer));
@@ -243,6 +251,7 @@ struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive 
 	self->buffer_used = 0;
 	self->block_size = block_size;
 	self->position = 0;
+	self->file_position = file_position;
 	self->eof_reached = false;
 	self->last_errno = 0;
 
@@ -271,14 +280,12 @@ static struct so_stream_reader * sodr_tape_drive_writer_reopen(struct so_stream_
 	if (sw == NULL || sw->data == NULL)
 		return NULL;
 
-	// struct sodr_tape_drive_writer * self = sw->data;
-	// so_scsi_sodr_tape_drive_update_media_info(self->drive);
-	// int position = self->drive_private->status.mt_fileno;
+	int failed = sodr_tape_drive_writer_close(sw);
+	if (failed != 0)
+		return NULL;
 
-	sodr_tape_drive_writer_close(sw);
-
-	// return so_scsi_tape_drive_get_raw_reader(self->drive, position);
-	return NULL;
+	struct sodr_tape_drive_writer * self = sw->data;
+	return sodr_tape_drive_reader_get_raw_reader(self->drive, self->fd, self->file_position);
 }
 
 static ssize_t sodr_tape_drive_writer_write(struct so_stream_writer * sw, const void * buffer, ssize_t length) {

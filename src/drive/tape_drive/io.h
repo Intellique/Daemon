@@ -33,7 +33,7 @@ struct so_drive;
 
 ssize_t sodr_tape_drive_get_block_size(void);
 struct so_stream_reader * sodr_tape_drive_reader_get_raw_reader(struct so_drive * drive, int fd, int file_position);
-struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive * drive, int fd);
+struct so_stream_writer * sodr_tape_drive_writer_get_raw_writer(struct so_drive * drive, int fd, int file_position);
 
 #endif
 

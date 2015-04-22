@@ -73,8 +73,8 @@ static bool sodr_tape_drive_check_header(struct so_database_connection * db);
 static bool sodr_tape_drive_check_support(struct so_media_format * format, bool for_writing, struct so_database_connection * db);
 static void sodr_tape_drive_create_media(struct so_database_connection * db);
 static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_connection * db);
-static int sodr_tape_drive_format_media(struct so_pool * pool, struct so_database_connection * db);
 static ssize_t sodr_tape_drive_find_best_block_size(struct so_database_connection * db);
+static int sodr_tape_drive_format_media(struct so_pool * pool, struct so_database_connection * db);
 static struct so_stream_reader * sodr_tape_drive_get_raw_reader(int file_position, struct so_database_connection * db);
 static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct so_database_connection * db);
 static struct so_format_reader * sodr_tape_drive_get_reader(int file_position, struct so_value * checksums, struct so_database_connection * db);
@@ -472,7 +472,7 @@ static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct so_databa
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: drive is open for writing"),
 		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 
-	return sodr_tape_drive_writer_get_raw_writer(&sodr_tape_drive, fd_nst);
+	return sodr_tape_drive_writer_get_raw_writer(&sodr_tape_drive, fd_nst, status.mt_fileno);
 }
 
 static struct so_format_reader * sodr_tape_drive_get_reader(int file_position, struct so_value * checksums, struct so_database_connection * db) {
