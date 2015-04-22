@@ -24,7 +24,7 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-// bindtextdomain, dgettext
+// bindtextdomain
 #include <libintl.h>
 
 #include <libstoriqone-drive/drive.h>

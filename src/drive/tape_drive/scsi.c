@@ -31,6 +31,8 @@
 #include <endian.h>
 // open
 #include <fcntl.h>
+// dgettext
+#include <libintl.h>
 // sg_io_hdr_t
 #include <scsi/scsi.h>
 // sg_io_hdr_t
@@ -599,7 +601,9 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 					strncpy(buf, attr->attribute_value.text, 8);
 					buf[8] = '\0';
 					so_string_rtrim(buf, ' ');
-					so_log_write(so_log_level_debug, "Media information of %s, Medium manufacturer: %s", media->name, buf);
+					so_log_write(so_log_level_debug,
+						dgettext("storiqone-drive-tape", "Media information of %s, Medium manufacturer: %s"),
+						media->name, buf);
 				}
 				break;
 
@@ -615,7 +619,9 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 					strncpy(buf, attr->attribute_value.text, 8);
 					buf[8] = '\0';
 					so_string_rtrim(buf, ' ');
-					so_log_write(so_log_level_debug, "Media information of %s, Medium date: %s", media->name, buf);
+					so_log_write(so_log_level_debug,
+						dgettext("storiqone-drive-tape", "Media information of %s, Medium date: %s"),
+						media->name, buf);
 				}
 				break;
 

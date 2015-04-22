@@ -26,6 +26,8 @@
 
 // errno
 #include <errno.h>
+// dgettext
+#include <libintl.h>
 // free, malloc
 #include <stdlib.h>
 // memcpy
@@ -189,7 +191,9 @@ static int sodr_tape_drive_writer_close(struct so_stream_writer * sw) {
 		}
 
 		self->fd = -1;
-		so_log_write(so_log_level_debug, "[%s | %s | #%u]: drive is close", self->drive->vendor, self->drive->model, self->drive->index);
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: drive is close"),
+			self->drive->vendor, self->drive->model, self->drive->index);
 	}
 
 	return 0;

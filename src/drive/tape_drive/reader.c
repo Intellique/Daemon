@@ -26,6 +26,8 @@
 
 // errno
 #include <errno.h>
+// dgettext
+#include <libintl.h>
 // free, malloc
 #include <stdlib.h>
 // memcpy, memmove
@@ -55,6 +57,7 @@ struct sodr_tape_drive_reader {
 	char * buffer_pos;
 
 	ssize_t position;
+	int file_position;
 	bool end_of_file;
 
 	int last_errno;
@@ -130,7 +133,9 @@ static off_t sodr_tape_drive_reader_forward(struct so_stream_reader * io, off_t 
 		while (nb_records > 1000000) {
 			int next_forward = nb_records > 8388607 ? 8388607 : nb_records;
 
-			so_log_write(so_log_level_info, "[%s | %s | #%u]: forward (#record %ld)", self->drive->vendor, self->drive->model, self->drive->index, nb_records);
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: forward from media '%s' at file position #%u and #record %ld"),
+				self->drive->vendor, self->drive->model, self->drive->index, self->media->name, self->file_position, nb_records);
 
 			struct mtop forward = { MTFSR, next_forward };
 			sodr_time_start();
@@ -201,7 +206,7 @@ static ssize_t sodr_tape_drive_reader_get_block_size(struct so_stream_reader * i
 	return self->block_size;
 }
 
-struct so_stream_reader * sodr_tape_drive_reader_get_raw_reader(struct so_drive * drive, int fd) {
+struct so_stream_reader * sodr_tape_drive_reader_get_raw_reader(struct so_drive * drive, int fd, int file_position) {
 	ssize_t block_size = sodr_tape_drive_get_block_size();
 	if (block_size < 0)
 		return NULL;
@@ -214,6 +219,7 @@ struct so_stream_reader * sodr_tape_drive_reader_get_raw_reader(struct so_drive 
 	self->buffer_pos = self->buffer + block_size;
 
 	self->position = 0;
+	self->file_position = file_position;
 	self->last_errno = 0;
 	self->end_of_file = false;
 

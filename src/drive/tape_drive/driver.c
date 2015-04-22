@@ -24,11 +24,16 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+// bindtextdomain
+#include <libintl.h>
+
 #include <libstoriqone-drive/drive.h>
 
 #include "device.h"
 
 #include <drive-tapedrive.chcksum>
+
+#include "config.h"
 
 static struct so_drive_driver sodr_tape_drive_driver = {
 	.name = "tape drive",
@@ -40,6 +45,8 @@ static void tape_driver_init(void) __attribute__((constructor));
 
 
 static void tape_driver_init() {
+	bindtextdomain("storiqone-drive-tape", LOCALE_DIR);
+
 	sodr_tape_drive_driver.device = sodr_tape_drive_get_device();
 	sodr_drive_register(&sodr_tape_drive_driver);
 }

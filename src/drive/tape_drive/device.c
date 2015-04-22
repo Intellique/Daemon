@@ -187,7 +187,9 @@ static void sodr_tape_drive_create_media(struct so_database_connection * db) {
 		close(fd);
 
 		if (failed != 0)
-			so_log_write(so_log_level_warning, "[%s | %s | #%u]: failed to read medium axilary memory", sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+			so_log_write(so_log_level_warning,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: failed to read medium axilary memory"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 	}
 
 	sodr_tape_drive_check_header(db);
@@ -373,7 +375,9 @@ ssize_t sodr_tape_drive_get_block_size() {
 		}
 
 		if (nb_read > 0) {
-			so_log_write(so_log_level_notice, "[%s | %s | #%u]: found block size: %zd", sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, nb_read);
+			so_log_write(so_log_level_notice,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: found block size: %zd"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, nb_read);
 
 			free(buffer);
 			return nb_read;
@@ -417,9 +421,11 @@ static struct so_stream_reader * sodr_tape_drive_get_raw_reader(int file_positio
 		return NULL;
 
 	sodr_tape_drive.slot->media->read_count++;
-	so_log_write(so_log_level_debug, "[%s | %s | #%u]: drive is open for reading", sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: drive is open for reading"),
+		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 
-	return sodr_tape_drive_reader_get_raw_reader(&sodr_tape_drive, fd_nst);
+	return sodr_tape_drive_reader_get_raw_reader(&sodr_tape_drive, fd_nst, file_position);
 }
 
 static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct so_database_connection * db) {
@@ -430,7 +436,9 @@ static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct so_databa
 		return NULL;
 
 	sodr_tape_drive.slot->media->write_count++;
-	so_log_write(so_log_level_debug, "[%s | %s | #%u]: drive is open for writing", sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: drive is open for writing"),
+		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 
 	return sodr_tape_drive_writer_get_raw_writer(&sodr_tape_drive, fd_nst);
 }
@@ -511,7 +519,9 @@ static int sodr_tape_drive_init(struct so_value * config) {
 
 static void sodr_tape_drive_on_failed(bool verbose, unsigned int sleep_time) {
 	if (verbose)
-		so_log_write(so_log_level_debug, "[%s | %s | #%u]: Try to recover an error", sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Try to recover an error"),
+			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 
 	close(fd_nst);
 	sleep(sleep_time);
@@ -526,7 +536,9 @@ static int sodr_tape_drive_reset(struct so_database_connection * db) {
 static int sodr_tape_drive_set_file_position(int file_position, struct so_database_connection * db) {
 	int failed;
 	if (file_position < 0) {
-		so_log_write(so_log_level_info, "[%s | %s | #%u]: Fast forwarding to end of media", sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+		so_log_write(so_log_level_info,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end of media '%s'"),
+			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name);
 		sodr_tape_drive.status = so_drive_status_positioning;
 		db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
 
@@ -536,14 +548,20 @@ static int sodr_tape_drive_set_file_position(int file_position, struct so_databa
 		sodr_time_stop(&sodr_tape_drive);
 
 		if (failed != 0)
-			so_log_write(so_log_level_error, "[%s | %s | #%u]: Fast forwarding to end of media finished with error (%m)", sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end of media '%s' finished with error '%m'"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name);
 		else
-			so_log_write(so_log_level_info, "[%s | %s | #%u]: Fast forwarding to end of media finished with status = OK", sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Fast forwarding to end of media '%s' finished with status = OK"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name);
 
 		sodr_tape_drive.status = failed ? so_drive_status_error : so_drive_status_positioning;
 		db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
 	} else {
-		so_log_write(so_log_level_info, "[%s | %s | #%u]: Positioning media to position #%d", sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, file_position);
+		so_log_write(so_log_level_info,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' to position #%d"),
+			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name, file_position);
 		sodr_tape_drive.status = so_drive_status_rewinding;
 		db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
 
@@ -554,7 +572,9 @@ static int sodr_tape_drive_set_file_position(int file_position, struct so_databa
 
 		if (failed != 0) {
 			sodr_tape_drive.status = so_drive_status_error;
-			so_log_write(so_log_level_error, "[%s | %s | #%u]: Positioning media to position #%d finished with error (%m)", sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, file_position);
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' to position #%d finished with error '%m'"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name, file_position);
 			db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
 			return failed;
 		}
@@ -569,14 +589,20 @@ static int sodr_tape_drive_set_file_position(int file_position, struct so_databa
 			sodr_time_stop(&sodr_tape_drive);
 
 			if (failed != 0)
-				so_log_write(so_log_level_error, "[%s | %s | #%u]: Positioning media to position #%d finished with error (%m)", sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, file_position);
+				so_log_write(so_log_level_error,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' to position #%d finished with error '%m'"),
+					sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name, file_position);
 			else
-				so_log_write(so_log_level_info, "[%s | %s | #%u]: Positioning media to position #%d finished with status = OK", sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, file_position);
+				so_log_write(so_log_level_info,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' to position #%d finished with status = OK"),
+					sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name, file_position);
 
 			sodr_tape_drive.status = failed != 0 ? so_drive_status_error : so_drive_status_positioning;
 			db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
 		} else
-			so_log_write(so_log_level_info, "[%s | %s | #%u]: Positioning media to position #%d finished with status = OK", sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, file_position);
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' to position #%d finished with status = OK"),
+				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name, file_position);
 	}
 
 	if (failed != 0)
@@ -661,7 +687,9 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 			media->write_lock = GMT_WR_PROT(status.mt_gstat);
 
 			if (is_empty && media->status == so_media_status_in_use) {
-				so_log_write(so_log_level_info, gettext("[%s | %s | #%u]: Checking media header"), sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
+				so_log_write(so_log_level_info,
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Checking media header '%s'"),
+					sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name);
 				/*
 				if (!so_media_check_header(drive)) {
 					media->status = so_media_status_error;
