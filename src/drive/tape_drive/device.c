@@ -72,6 +72,7 @@
 static bool sodr_tape_drive_check_header(struct so_database_connection * db);
 static bool sodr_tape_drive_check_support(struct so_media_format * format, bool for_writing, struct so_database_connection * db);
 static void sodr_tape_drive_create_media(struct so_database_connection * db);
+static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_connection * db);
 static int sodr_tape_drive_format_media(struct so_pool * pool, struct so_database_connection * db);
 static ssize_t sodr_tape_drive_find_best_block_size(struct so_database_connection * db);
 static struct so_stream_reader * sodr_tape_drive_get_raw_reader(int file_position, struct so_database_connection * db);
@@ -93,6 +94,7 @@ static struct mtget status;
 static struct so_drive_ops sodr_tape_drive_ops = {
 	.check_header         = sodr_tape_drive_check_header,
 	.check_support        = sodr_tape_drive_check_support,
+	.erase_media          = sodr_tape_drive_erase_media,
 	.find_best_block_size = sodr_tape_drive_find_best_block_size,
 	.format_media         = sodr_tape_drive_format_media,
 	.get_raw_reader       = sodr_tape_drive_get_raw_reader,
@@ -198,6 +200,31 @@ static void sodr_tape_drive_create_media(struct so_database_connection * db) {
 	}
 
 	sodr_tape_drive_check_header(db);
+}
+
+static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_connection * db) {
+	int failed = sodr_tape_drive_set_file_position(0, db);
+	if (failed != 0)
+		return failed;
+
+	so_log_write(so_log_level_info,
+		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"),
+		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name,
+		quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
+	failed = sodr_tape_drive_scsi_erase_media(scsi_device, quick_mode);
+
+	if (failed != 0)
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"),
+			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name,
+			quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
+	else
+		so_log_write(so_log_level_error,
+			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: media '%s' has been erased with success (mode: %s)"),
+			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name,
+			quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
+
+	return failed;
 }
 
 static ssize_t sodr_tape_drive_find_best_block_size(struct so_database_connection * db) {

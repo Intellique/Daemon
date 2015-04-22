@@ -346,6 +346,46 @@ bool sodr_tape_drive_scsi_check_support(struct so_media_format * format, bool fo
 	return false;
 }
 
+int sodr_tape_drive_scsi_erase_media(const char * path, bool quick_mode) {
+	int fd = open(path, O_RDWR);
+	if (fd < 0)
+		return 1;
+
+	struct {
+		unsigned char op_code;
+		bool long_mode:1;
+		bool immed:1;
+		unsigned char reserved0:3;
+		unsigned char obsolete:3;
+		unsigned char reserved1[3];
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.op_code = 0x19, // ERASE
+		.long_mode = !quick_mode,
+		.immed = true,
+	};
+
+	struct scsi_request_sense sense;
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = 0;
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = NULL;
+	header.timeout = 15300000; // 255 minutes
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	close(fd);
+
+	return status;
+}
+
 int sodr_tape_drive_scsi_read_density(struct so_drive * drive, const char * path) {
 	int fd = open(path, O_RDWR);
 	if (fd < 0)
