@@ -49,14 +49,14 @@ struct so_drive_driver {
 struct so_drive_ops {
 	bool (*check_header)(struct so_database_connection * db);
 	bool (*check_support)(struct so_media_format * format, bool for_writing, struct so_database_connection * db);
-	ssize_t (*find_best_block_size)(struct so_database_connection * db);
 	int (*erase_media)(bool quick_mode, struct so_database_connection * db);
+	ssize_t (*find_best_block_size)(struct so_database_connection * db);
 	int (*format_media)(struct so_pool * pool, struct so_database_connection * db);
-	int (*init)(struct so_value * config);
 	struct so_stream_reader * (*get_raw_reader)(int file_position, struct so_database_connection * db);
 	struct so_stream_writer * (*get_raw_writer)(struct so_database_connection * db);
 	struct so_format_reader * (*get_reader)(int file_position, struct so_value * checksums, struct so_database_connection * db);
 	struct so_format_writer * (*get_writer)(struct so_value * checksums, struct so_database_connection * db);
+	int (*init)(struct so_value * config);
 	int (*reset)(struct so_database_connection * db);
 	int (*update_status)(struct so_database_connection * db);
 };

@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-04-22 11:10+0200\n"
+        "POT-Creation-Date: 2015-04-22 11:49+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -16,62 +16,62 @@ msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/drive/tape_drive/device.c:191
+#: src/drive/tape_drive/device.c:196
 #, c-format
 msgid   "[%s | %s | #%u]: failed to read medium axilary memory"
 msgstr  "[ %s | %s | #%u ] : échec lors de la lecture de la mémoire auxiliaire du média"
 
-#: src/drive/tape_drive/device.c:379
+#: src/drive/tape_drive/device.c:384
 #, c-format
 msgid   "[%s | %s | #%u]: found block size: %zd"
 msgstr  "[ %s | %s | #%u ] : taille de bloc trouvé : %zd"
 
-#: src/drive/tape_drive/device.c:425
+#: src/drive/tape_drive/device.c:430
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for reading"
 msgstr  "[ %s | %s | #%u ] : ouverture du lecteur en lecture"
 
-#: src/drive/tape_drive/device.c:440
+#: src/drive/tape_drive/device.c:445
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for writing"
 msgstr  "[ %s | %s | #%u ] : ouverture du lecture en écriture"
 
-#: src/drive/tape_drive/device.c:523
+#: src/drive/tape_drive/device.c:544
 #, c-format
 msgid   "[%s | %s | #%u]: Try to recover an error"
 msgstr  "[ %s | %s | #%u ] : Tentative de récupérer une erreur"
 
-#: src/drive/tape_drive/device.c:540
+#: src/drive/tape_drive/device.c:561
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s'"
 msgstr  "[ %s | %s | #%u ] : Avance rapide vers la fin du média « %s »"
 
-#: src/drive/tape_drive/device.c:552
+#: src/drive/tape_drive/device.c:573
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' finished with error '%m'"
 msgstr  "[ %s | %s | #%u ] : Avance rapide vers la fin du média « %s » terminé avec une erreur « %m »"
 
-#: src/drive/tape_drive/device.c:556
+#: src/drive/tape_drive/device.c:577
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' finished with status = OK"
 msgstr  "[ %s | %s | #%u ] : Avance rapide vers la fin du média « %s » terminé avec succès"
 
-#: src/drive/tape_drive/device.c:563
+#: src/drive/tape_drive/device.c:584
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d"
 msgstr  "[ %s | %s | #%u ] : Positionnement du média « %s » vers la position #%d"
 
-#: src/drive/tape_drive/device.c:576 src/drive/tape_drive/device.c:593
+#: src/drive/tape_drive/device.c:597 src/drive/tape_drive/device.c:614
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d finished with error '%m'"
 msgstr  "[ %s | %s | #%u ] : Positionnement du média « %s » vers la position #%d terminé avec une erreur « %m »"
 
-#: src/drive/tape_drive/device.c:597 src/drive/tape_drive/device.c:604
+#: src/drive/tape_drive/device.c:618 src/drive/tape_drive/device.c:625
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d finished with status = OK"
 msgstr  "[ %s | %s | #%u ] : Positionnement du média « %s » vers la position #%d terminé avec succés"
 
-#: src/drive/tape_drive/device.c:691
+#: src/drive/tape_drive/device.c:712
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  "[ %s | %s | #%u ] : Vérification de l'entête du média « %s »"

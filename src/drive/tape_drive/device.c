@@ -56,6 +56,7 @@
 
 #include <libstoriqone/checksum.h>
 #include <libstoriqone/database.h>
+#include <libstoriqone/format.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/time.h>
@@ -75,6 +76,8 @@ static int sodr_tape_drive_format_media(struct so_pool * pool, struct so_databas
 static ssize_t sodr_tape_drive_find_best_block_size(struct so_database_connection * db);
 static struct so_stream_reader * sodr_tape_drive_get_raw_reader(int file_position, struct so_database_connection * db);
 static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct so_database_connection * db);
+static struct so_format_reader * sodr_tape_drive_get_reader(int file_position, struct so_value * checksums, struct so_database_connection * db);
+static struct so_format_writer * sodr_tape_drive_get_writer(struct so_value * checksums, struct so_database_connection * db);
 static int sodr_tape_drive_init(struct so_value * config);
 static void sodr_tape_drive_on_failed(bool verbose, unsigned int sleep_time);
 static int sodr_tape_drive_reset(struct so_database_connection * db);
@@ -94,6 +97,8 @@ static struct so_drive_ops sodr_tape_drive_ops = {
 	.format_media         = sodr_tape_drive_format_media,
 	.get_raw_reader       = sodr_tape_drive_get_raw_reader,
 	.get_raw_writer       = sodr_tape_drive_get_raw_writer,
+	.get_reader           = sodr_tape_drive_get_reader,
+	.get_writer           = sodr_tape_drive_get_writer,
 	.init                 = sodr_tape_drive_init,
 	.reset                = sodr_tape_drive_reset,
 	.update_status        = sodr_tape_drive_update_status,
@@ -441,6 +446,22 @@ static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct so_databa
 		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index);
 
 	return sodr_tape_drive_writer_get_raw_writer(&sodr_tape_drive, fd_nst);
+}
+
+static struct so_format_reader * sodr_tape_drive_get_reader(int file_position, struct so_value * checksums, struct so_database_connection * db) {
+	struct so_stream_reader * reader = sodr_tape_drive_get_raw_reader(file_position, db);
+	if (reader == NULL)
+		return NULL;
+
+	return so_format_tar_new_reader(reader, checksums);
+}
+
+static struct so_format_writer * sodr_tape_drive_get_writer(struct so_value * checksums, struct so_database_connection * db) {
+	struct so_stream_writer * writer = sodr_tape_drive_get_raw_writer(db);
+	if (writer == NULL)
+		return NULL;
+
+	return so_format_tar_new_writer(writer, checksums);
 }
 
 static int sodr_tape_drive_init(struct so_value * config) {
