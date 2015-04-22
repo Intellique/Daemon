@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -42,44 +42,44 @@
 // readlink, sleep, stat
 #include <unistd.h>
 
-#include <libstone/database.h>
-#include <libstone/drive.h>
-#include <libstone/file.h>
-#include <libstone/log.h>
-#include <libstone/media.h>
-#include <libstone/slot.h>
-#include <libstone/thread_pool.h>
-#include <libstone/value.h>
-#include <libstone-changer/changer.h>
-#include <libstone-changer/drive.h>
+#include <libstoriqone/database.h>
+#include <libstoriqone/drive.h>
+#include <libstoriqone/file.h>
+#include <libstoriqone/log.h>
+#include <libstoriqone/media.h>
+#include <libstoriqone/slot.h>
+#include <libstoriqone/thread_pool.h>
+#include <libstoriqone/value.h>
+#include <libstoriqone-changer/changer.h>
+#include <libstoriqone-changer/drive.h>
 
 #include "device.h"
 #include "scsi.h"
 
-static int scsi_changer_init(struct st_value * config, struct st_database_connection * db_connection);
-static void scsi_changer_init_worker(void * arg);
-static int scsi_changer_load(struct st_slot * from, struct st_drive * to, struct st_database_connection * db_connection);
-static int scsi_changer_put_offline(struct st_database_connection * db_connection);
-static int scsi_changer_put_online(struct st_database_connection * db_connection);
-static int scsi_changer_shut_down(struct st_database_connection * db_connection);
-static int scsi_changer_unload(struct st_drive * from, struct st_database_connection * db_connection);
-static void scsi_changer_wait(void);
+static int sochgr_scsi_changer_init(struct so_value * config, struct so_database_connection * db_connection);
+static void sochgr_scsi_changer_init_worker(void * arg);
+static int sochgr_scsi_changer_load(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
+static int sochgr_scsi_changer_put_offline(struct so_database_connection * db_connection);
+static int sochgr_scsi_changer_put_online(struct so_database_connection * db_connection);
+static int sochgr_scsi_changer_shut_down(struct so_database_connection * db_connection);
+static int sochgr_scsi_changer_unload(struct so_drive * from, struct so_database_connection * db_connection);
+static void sochgr_scsi_changer_wait(void);
 
-static char * scsi_changer_device = NULL;
-static int scsi_changer_transport_address = -1;
-static pthread_mutex_t scsi_changer_lock = PTHREAD_MUTEX_INITIALIZER;
-static volatile unsigned int scsi_changer_nb_worker = 0;
+static char * sochgr_scsi_changer_device = NULL;
+static int sochgr_scsi_changer_transport_address = -1;
+static pthread_mutex_t sochgr_scsi_changer_lock = PTHREAD_MUTEX_INITIALIZER;
+static volatile unsigned int sochgr_scsi_changer_nb_worker = 0;
 
-struct st_changer_ops scsi_changer_ops = {
-	.init        = scsi_changer_init,
-	.load        = scsi_changer_load,
-	.put_offline = scsi_changer_put_offline,
-	.put_online  = scsi_changer_put_online,
-	.shut_down   = scsi_changer_shut_down,
-	.unload      = scsi_changer_unload,
+struct so_changer_ops sochgr_scsi_changer_ops = {
+	.init        = sochgr_scsi_changer_init,
+	.load        = sochgr_scsi_changer_load,
+	.put_offline = sochgr_scsi_changer_put_offline,
+	.put_online  = sochgr_scsi_changer_put_online,
+	.shut_down   = sochgr_scsi_changer_shut_down,
+	.unload      = sochgr_scsi_changer_unload,
 };
 
-static struct st_changer scsi_changer = {
+static struct so_changer sochgr_scsi_changer = {
 	.model         = NULL,
 	.vendor        = NULL,
 	.revision      = NULL,
@@ -87,8 +87,8 @@ static struct st_changer scsi_changer = {
 	.wwn           = NULL,
 	.barcode       = false,
 
-	.status      = st_changer_status_unknown,
-	.next_action = st_changer_action_none,
+	.status      = so_changer_status_unknown,
+	.next_action = so_changer_action_none,
 	.is_online   = true,
 	.enable      = true,
 
@@ -98,25 +98,25 @@ static struct st_changer scsi_changer = {
 	.slots    = NULL,
 	.nb_slots = 0,
 
-	.ops = &scsi_changer_ops,
+	.ops = &sochgr_scsi_changer_ops,
 
 	.data = NULL,
 	.db_data = NULL,
 };
 
 
-struct st_changer * scsi_changer_get_device() {
-	return &scsi_changer;
+struct so_changer * sochgr_scsi_changer_get_device() {
+	return &sochgr_scsi_changer;
 }
 
-static int scsi_changer_init(struct st_value * config, struct st_database_connection * db_connection) {
-	st_value_unpack(config, "{sssssssbsbsbss}", "model", &scsi_changer.model, "vendor", &scsi_changer.vendor, "serial number", &scsi_changer.serial_number, "barcode", &scsi_changer.barcode, "enable", &scsi_changer.enable, "is online", &scsi_changer.is_online, "wwn", &scsi_changer.wwn);
+static int sochgr_scsi_changer_init(struct so_value * config, struct so_database_connection * db_connection) {
+	so_value_unpack(config, "{sssssssbsbsbss}", "model", &sochgr_scsi_changer.model, "vendor", &sochgr_scsi_changer.vendor, "serial number", &sochgr_scsi_changer.serial_number, "barcode", &sochgr_scsi_changer.barcode, "enable", &sochgr_scsi_changer.enable, "is online", &sochgr_scsi_changer.is_online, "wwn", &sochgr_scsi_changer.wwn);
 
 	glob_t gl;
 	glob("/sys/class/scsi_changer/*/device", 0, NULL, &gl);
 
 	unsigned int i;
-	bool found = false, has_wwn = scsi_changer.wwn != NULL;
+	bool found = false, has_wwn = sochgr_scsi_changer.wwn != NULL;
 	for (i = 0; i < gl.gl_pathc && !found; i++) {
 		char link[256];
 		ssize_t length = readlink(gl.gl_pathv[i], link, 256);
@@ -150,7 +150,7 @@ static int scsi_changer_init(struct st_value * config, struct st_database_connec
 				free(path);
 				asprintf(&path, "/sys/class/sas_device/%s/sas_address", ptr);
 
-				char * data = st_file_read_all_from(path);
+				char * data = so_file_read_all_from(path);
 				cp = strchr(data, '\n');
 				if (cp != NULL)
 					*cp = '\0';
@@ -158,11 +158,11 @@ static int scsi_changer_init(struct st_value * config, struct st_database_connec
 				char * wwn;
 				asprintf(&wwn, "sas:%s", data);
 
-				if (has_wwn && !strcmp(wwn, scsi_changer.wwn))
+				if (has_wwn && !strcmp(wwn, sochgr_scsi_changer.wwn))
 					found = true;
 				else if (!has_wwn) {
-					free(scsi_changer.wwn);
-					scsi_changer.wwn = wwn;
+					free(sochgr_scsi_changer.wwn);
+					sochgr_scsi_changer.wwn = wwn;
 				}
 
 				if (has_wwn)
@@ -173,30 +173,30 @@ static int scsi_changer_init(struct st_value * config, struct st_database_connec
 		free(path);
 
 		if (found)
-			scsi_changer_scsi_check_changer(&scsi_changer, device);
+			sochgr_scsi_changer_scsi_check_changer(&sochgr_scsi_changer, device);
 		else
-			found = scsi_changer_scsi_check_changer(&scsi_changer, device);
+			found = sochgr_scsi_changer_scsi_check_changer(&sochgr_scsi_changer, device);
 
 		if (found) {
-			scsi_changer_device = device;
-			st_log_write(st_log_level_info, "Found scsi changer %s %s, serial: %s", scsi_changer.vendor, scsi_changer.model, scsi_changer.serial_number);
+			sochgr_scsi_changer_device = device;
+			so_log_write(so_log_level_info, "Found scsi changer %s %s, serial: %s", sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, sochgr_scsi_changer.serial_number);
 		} else {
 			free(device);
 		}
 	}
 	globfree(&gl);
 
-	struct st_value * available_drives = st_value_new_hashtable2();
-	struct st_value * drives = NULL;
-	st_value_unpack(config, "{so}", "drives", &drives);
+	struct so_value * available_drives = so_value_new_hashtable2();
+	struct so_value * drives = NULL;
+	so_value_unpack(config, "{so}", "drives", &drives);
 
 	if (drives != NULL) {
-		struct st_value_iterator * iter = st_value_list_get_iterator(drives);
-		while (st_value_iterator_has_next(iter)) {
-			struct st_value * dr = st_value_iterator_get_value(iter, true);
+		struct so_value_iterator * iter = so_value_list_get_iterator(drives);
+		while (so_value_iterator_has_next(iter)) {
+			struct so_value * dr = so_value_iterator_get_value(iter, true);
 
 			char * vendor = NULL, * model = NULL, * serial_number = NULL;
-			st_value_unpack(dr, "{ssssss}", "vendor", &vendor, "model", &model, "serial number", &serial_number);
+			so_value_unpack(dr, "{ssssss}", "vendor", &vendor, "model", &model, "serial number", &serial_number);
 
 			char dev[35];
 			memset(dev, ' ', 34);
@@ -208,36 +208,36 @@ static int scsi_changer_init(struct st_value * config, struct st_database_connec
 			dev[23] = ' ';
 			strcpy(dev + 24, serial_number);
 
-			st_value_hashtable_put2(available_drives, dev, dr, false);
+			so_value_hashtable_put2(available_drives, dev, dr, false);
 
 			free(vendor);
 			free(model);
 			free(serial_number);
 		}
-		st_value_iterator_free(iter);
+		so_value_iterator_free(iter);
 	}
 
-	if (found && scsi_changer.enable && scsi_changer.is_online) {
-		scsi_changer_scsi_medium_removal(scsi_changer_device, false);
-		scsi_changer_scsi_new_status(&scsi_changer, scsi_changer_device, available_drives, &scsi_changer_transport_address);
+	if (found && sochgr_scsi_changer.enable && sochgr_scsi_changer.is_online) {
+		sochgr_scsi_changer_scsi_medium_removal(sochgr_scsi_changer_device, false);
+		sochgr_scsi_changer_scsi_new_status(&sochgr_scsi_changer, sochgr_scsi_changer_device, available_drives, &sochgr_scsi_changer_transport_address);
 	}
 
-	st_value_free(available_drives);
+	so_value_free(available_drives);
 
 	if (found) {
-		scsi_changer.status = st_changer_status_idle;
+		sochgr_scsi_changer.status = so_changer_status_idle;
 
-		db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_id_only);
+		db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_id_only);
 
 		unsigned int need_init = 0, nb_drive_enabled = 0;
-		for (i = 0; i < scsi_changer.nb_drives; i++) {
-			struct st_slot * sl = scsi_changer.slots + i;
+		for (i = 0; i < sochgr_scsi_changer.nb_drives; i++) {
+			struct so_slot * sl = sochgr_scsi_changer.slots + i;
 			if (sl->drive != NULL && sl->drive->enable)
 				nb_drive_enabled++;
 		}
 
-		for (i = scsi_changer.nb_drives; i < scsi_changer.nb_slots; i++) {
-			struct st_slot * sl = scsi_changer.slots + i;
+		for (i = sochgr_scsi_changer.nb_drives; i < sochgr_scsi_changer.nb_slots; i++) {
+			struct so_slot * sl = sochgr_scsi_changer.slots + i;
 
 			if (!sl->enable || !sl->full)
 				continue;
@@ -248,33 +248,33 @@ static int scsi_changer_init(struct st_value * config, struct st_database_connec
 		}
 
 		if (need_init > 0)
-			st_log_write(st_log_level_notice, "Found %u unknown media(s), #%u drive enabled", need_init, nb_drive_enabled);
+			so_log_write(so_log_level_notice, "Found %u unknown media(s), #%u drive enabled", need_init, nb_drive_enabled);
 
 		if (need_init > 1 && nb_drive_enabled > 1) {
-			for (i = 0; i < scsi_changer.nb_drives; i++) {
-				if (scsi_changer.drives[i].enable)
-					st_thread_pool_run("changer init", scsi_changer_init_worker, scsi_changer.drives + i);
+			for (i = 0; i < sochgr_scsi_changer.nb_drives; i++) {
+				if (sochgr_scsi_changer.drives[i].enable)
+					so_thread_pool_run("changer init", sochgr_scsi_changer_init_worker, sochgr_scsi_changer.drives + i);
 			}
 
 			sleep(5);
 
-			pthread_mutex_lock(&scsi_changer_lock);
-			while (scsi_changer_nb_worker > 0) {
-				pthread_mutex_unlock(&scsi_changer_lock);
+			pthread_mutex_lock(&sochgr_scsi_changer_lock);
+			while (sochgr_scsi_changer_nb_worker > 0) {
+				pthread_mutex_unlock(&sochgr_scsi_changer_lock);
 				sleep(1);
-				pthread_mutex_lock(&scsi_changer_lock);
+				pthread_mutex_lock(&sochgr_scsi_changer_lock);
 			}
-			pthread_mutex_unlock(&scsi_changer_lock);
+			pthread_mutex_unlock(&sochgr_scsi_changer_lock);
 		} else if (need_init > 0) {
-			struct st_drive * dr = NULL;
-			for (i = 0; i < scsi_changer.nb_drives && dr == NULL; i++)
-				if (scsi_changer.drives[i].enable)
-					dr = scsi_changer.drives + i;
+			struct so_drive * dr = NULL;
+			for (i = 0; i < sochgr_scsi_changer.nb_drives && dr == NULL; i++)
+				if (sochgr_scsi_changer.drives[i].enable)
+					dr = sochgr_scsi_changer.drives + i;
 
 			if (dr != NULL) {
-				scsi_changer_init_worker(dr);
+				sochgr_scsi_changer_init_worker(dr);
 			} else {
-				st_log_write(st_log_level_critical, "This changer (%s %s %s) seems to be misconfigured, will exited now", scsi_changer.vendor, scsi_changer.model, scsi_changer.serial_number);
+				so_log_write(so_log_level_critical, "This changer (%s %s %s) seems to be misconfigured, will exited now", sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, sochgr_scsi_changer.serial_number);
 				return 1;
 			}
 		}
@@ -283,81 +283,81 @@ static int scsi_changer_init(struct st_value * config, struct st_database_connec
 	return found ? 0 : 1;
 }
 
-static void scsi_changer_init_worker(void * arg) {
-	struct st_drive * dr = arg;
+static void sochgr_scsi_changer_init_worker(void * arg) {
+	struct so_drive * dr = arg;
 
-	pthread_mutex_lock(&scsi_changer_lock);
-	scsi_changer_nb_worker++;
-	pthread_mutex_unlock(&scsi_changer_lock);
+	pthread_mutex_lock(&sochgr_scsi_changer_lock);
+	sochgr_scsi_changer_nb_worker++;
+	pthread_mutex_unlock(&sochgr_scsi_changer_lock);
 
 	// check if drive has media
 	int failed = dr->ops->update_status(dr);
 	if (failed != 0) {
-		st_log_write(st_log_level_critical, "[%s | %s]: failed to get status from drive #%td %s %s", scsi_changer.vendor, scsi_changer.model, dr - scsi_changer.drives, dr->vendor, dr->model);
+		so_log_write(so_log_level_critical, "[%s | %s]: failed to get status from drive #%td %s %s", sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr - sochgr_scsi_changer.drives, dr->vendor, dr->model);
 
-		pthread_mutex_lock(&scsi_changer_lock);
-		scsi_changer_nb_worker--;
-		pthread_mutex_unlock(&scsi_changer_lock);
+		pthread_mutex_lock(&sochgr_scsi_changer_lock);
+		sochgr_scsi_changer_nb_worker--;
+		pthread_mutex_unlock(&sochgr_scsi_changer_lock);
 		return;
 	}
 
-	pthread_mutex_lock(&scsi_changer_lock);
+	pthread_mutex_lock(&sochgr_scsi_changer_lock);
 	if (dr->slot->media != NULL)
-		failed = scsi_changer_unload(dr, NULL);
+		failed = sochgr_scsi_changer_unload(dr, NULL);
 
 	unsigned int i;
-	for (i = scsi_changer.nb_drives; i < scsi_changer.nb_slots; i++) {
-		struct st_slot * sl = scsi_changer.slots + i;
+	for (i = sochgr_scsi_changer.nb_drives; i < sochgr_scsi_changer.nb_slots; i++) {
+		struct so_slot * sl = sochgr_scsi_changer.slots + i;
 
 		if (!sl->enable || !sl->full || sl->media != NULL)
 			continue;
 
-		failed = scsi_changer_load(sl, dr, NULL);
+		failed = sochgr_scsi_changer_load(sl, dr, NULL);
 
-		pthread_mutex_unlock(&scsi_changer_lock);
+		pthread_mutex_unlock(&sochgr_scsi_changer_lock);
 
 		// get drive status
 		failed = dr->ops->update_status(dr);
 		if (failed != 0) {
-			st_log_write(st_log_level_critical, "[%s | %s]: failed to get status from drive #%td %s %s", scsi_changer.vendor, scsi_changer.model, dr - scsi_changer.drives, dr->vendor, dr->model);
+			so_log_write(so_log_level_critical, "[%s | %s]: failed to get status from drive #%td %s %s", sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr - sochgr_scsi_changer.drives, dr->vendor, dr->model);
 
-			pthread_mutex_lock(&scsi_changer_lock);
-			scsi_changer_nb_worker--;
-			pthread_mutex_unlock(&scsi_changer_lock);
+			pthread_mutex_lock(&sochgr_scsi_changer_lock);
+			sochgr_scsi_changer_nb_worker--;
+			pthread_mutex_unlock(&sochgr_scsi_changer_lock);
 			return;
 		}
 
-		pthread_mutex_lock(&scsi_changer_lock);
+		pthread_mutex_lock(&sochgr_scsi_changer_lock);
 
-		failed = scsi_changer_unload(dr, NULL);
+		failed = sochgr_scsi_changer_unload(dr, NULL);
 	}
 
-	scsi_changer_nb_worker--;
-	pthread_mutex_unlock(&scsi_changer_lock);
+	sochgr_scsi_changer_nb_worker--;
+	pthread_mutex_unlock(&sochgr_scsi_changer_lock);
 }
 
-static int scsi_changer_load(struct st_slot * from, struct st_drive * to, struct st_database_connection * db_connection) {
-	scsi_changer_wait();
+static int sochgr_scsi_changer_load(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection) {
+	sochgr_scsi_changer_wait();
 
-	scsi_changer.status = st_changer_status_loading;
-	db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_default);
+	sochgr_scsi_changer.status = so_changer_status_loading;
+	db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_default);
 
-	int failed = scsi_changer_scsi_move(scsi_changer_device, scsi_changer_transport_address, from, to->slot);
+	int failed = sochgr_scsi_changer_scsi_move(sochgr_scsi_changer_device, sochgr_scsi_changer_transport_address, from, to->slot);
 
 	if (failed) {
-		scsi_changer_wait();
+		sochgr_scsi_changer_wait();
 
-		struct st_slot tmp_from = *from;
-		scsi_changer_scsi_loader_check_slot(&scsi_changer, scsi_changer_device, &tmp_from);
+		struct so_slot tmp_from = *from;
+		sochgr_scsi_changer_scsi_loader_check_slot(&sochgr_scsi_changer, sochgr_scsi_changer_device, &tmp_from);
 
-		struct st_slot tmp_to = *to->slot;
-		scsi_changer_scsi_loader_check_slot(&scsi_changer, scsi_changer_device, &tmp_to);
+		struct so_slot tmp_to = *to->slot;
+		sochgr_scsi_changer_scsi_loader_check_slot(&sochgr_scsi_changer, sochgr_scsi_changer_device, &tmp_to);
 
 		failed = tmp_from.full || !tmp_to.full;
 	}
 
 	if (failed == 0) {
-		struct st_media * media = to->slot->media = from->media;
+		struct so_media * media = to->slot->media = from->media;
 		from->media = NULL;
 
 		to->slot->volume_name = from->volume_name;
@@ -369,46 +369,48 @@ static int scsi_changer_load(struct st_slot * from, struct st_drive * to, struct
 		if (media != NULL)
 			media->load_count++;
 
-		struct scsi_changer_slot * sfrom = from->data;
-		struct scsi_changer_slot * sto = to->slot->data;
+		struct sochgr_scsi_changer_slot * sfrom = from->data;
+		struct sochgr_scsi_changer_slot * sto = to->slot->data;
 		sto->src_address = sfrom->address;
 		sto->src_slot = from;
 	}
 
 	to->ops->reset(to);
 
-	scsi_changer.status = st_changer_status_idle;
-	db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_default);
+	sochgr_scsi_changer.status = so_changer_status_idle;
+	db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_default);
 
 	return failed;
 }
 
-static int scsi_changer_put_offline(struct st_database_connection * db_connection) {
+static int sochgr_scsi_changer_put_offline(struct so_database_connection * db_connection) {
 	// TODO
-}
-
-static int scsi_changer_put_online(struct st_database_connection * db_connection) {
-	// TODO
-}
-
-static int scsi_changer_shut_down(struct st_database_connection * db_connection __attribute__((unused))) {
-	scsi_changer_scsi_medium_removal(scsi_changer_device, true);
 	return 0;
 }
 
-static int scsi_changer_unload(struct st_drive * from, struct st_database_connection * db_connection) {
+static int sochgr_scsi_changer_put_online(struct so_database_connection * db_connection) {
+	// TODO
+	return 0;
+}
+
+static int sochgr_scsi_changer_shut_down(struct so_database_connection * db_connection __attribute__((unused))) {
+	sochgr_scsi_changer_scsi_medium_removal(sochgr_scsi_changer_device, true);
+	return 0;
+}
+
+static int sochgr_scsi_changer_unload(struct so_drive * from, struct so_database_connection * db_connection) {
 	int failed = from->ops->update_status(from);
 	if (failed != 0) {
-		st_log_write(st_log_level_critical, "[%s | %s]: failed to get status from drive #%td %s %s", scsi_changer.vendor, scsi_changer.model, from - scsi_changer.drives, from->vendor, from->model);
+		so_log_write(so_log_level_critical, "[%s | %s]: failed to get status from drive #%td %s %s", sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, from - sochgr_scsi_changer.drives, from->vendor, from->model);
 
-		pthread_mutex_lock(&scsi_changer_lock);
-		scsi_changer_nb_worker--;
-		pthread_mutex_unlock(&scsi_changer_lock);
+		pthread_mutex_lock(&sochgr_scsi_changer_lock);
+		sochgr_scsi_changer_nb_worker--;
+		pthread_mutex_unlock(&sochgr_scsi_changer_lock);
 		return 1;
 	}
 
-	struct scsi_changer_slot * sfrom = from->slot->data;
-	struct st_slot * to = sfrom->src_slot;
+	struct sochgr_scsi_changer_slot * sfrom = from->slot->data;
+	struct so_slot * to = sfrom->src_slot;
 
 	if (to != NULL && (!to->enable || to->full)) {
 		// TODO: oops, can't reuse original slot
@@ -416,8 +418,8 @@ static int scsi_changer_unload(struct st_drive * from, struct st_database_connec
 	}
 
 	unsigned int i;
-	for (i = scsi_changer.nb_drives; i < scsi_changer.nb_slots && to == NULL; i++) {
-		to = scsi_changer.slots + i;
+	for (i = sochgr_scsi_changer.nb_drives; i < sochgr_scsi_changer.nb_slots && to == NULL; i++) {
+		to = sochgr_scsi_changer.slots + i;
 
 		if (!to->enable || to->media != NULL) {
 			to = NULL;
@@ -430,21 +432,21 @@ static int scsi_changer_unload(struct st_drive * from, struct st_database_connec
 		return 1;
 	}
 
-	scsi_changer_wait();
+	sochgr_scsi_changer_wait();
 
-	scsi_changer.status = st_changer_status_unloading;
-	db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_default);
+	sochgr_scsi_changer.status = so_changer_status_unloading;
+	db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_default);
 
-	failed = scsi_changer_scsi_move(scsi_changer_device, scsi_changer_transport_address, from->slot, to);
+	failed = sochgr_scsi_changer_scsi_move(sochgr_scsi_changer_device, sochgr_scsi_changer_transport_address, from->slot, to);
 
 	if (failed != 0) {
-		scsi_changer_wait();
+		sochgr_scsi_changer_wait();
 
-		struct st_slot tmp_from = *from->slot;
-		scsi_changer_scsi_loader_check_slot(&scsi_changer, scsi_changer_device, &tmp_from);
+		struct so_slot tmp_from = *from->slot;
+		sochgr_scsi_changer_scsi_loader_check_slot(&sochgr_scsi_changer, sochgr_scsi_changer_device, &tmp_from);
 
-		struct st_slot tmp_to = *to;
-		scsi_changer_scsi_loader_check_slot(&scsi_changer, scsi_changer_device, &tmp_to);
+		struct so_slot tmp_to = *to;
+		sochgr_scsi_changer_scsi_loader_check_slot(&sochgr_scsi_changer, sochgr_scsi_changer_device, &tmp_to);
 
 		failed = tmp_from.full || !tmp_to.full;
 	}
@@ -459,23 +461,23 @@ static int scsi_changer_unload(struct st_drive * from, struct st_database_connec
 		to->full = true;
 		from->slot->full = false;
 
-		struct scsi_changer_slot * sfrom = from->slot->data;
+		struct sochgr_scsi_changer_slot * sfrom = from->slot->data;
 		sfrom->src_address = 0;
 	}
 
 	from->ops->reset(from);
 
-	scsi_changer.status = st_changer_status_idle;
-	db_connection->ops->sync_changer(db_connection, &scsi_changer, st_database_sync_default);
+	sochgr_scsi_changer.status = so_changer_status_idle;
+	db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_default);
 
 	return failed;
 }
 
-static void scsi_changer_wait() {
+static void sochgr_scsi_changer_wait() {
 	bool is_ready = true;
-	while (scsi_changer_scsi_loader_ready(scsi_changer_device)) {
+	while (sochgr_scsi_changer_scsi_loader_ready(sochgr_scsi_changer_device)) {
 		if (is_ready) {
-			st_log_write(st_log_level_warning, "[%s | %s]: waiting for device ready", scsi_changer.vendor, scsi_changer.model);
+			so_log_write(so_log_level_warning, "[%s | %s]: waiting for device ready", sochgr_scsi_changer.vendor, sochgr_scsi_changer.model);
 			is_ready = false;
 		}
 

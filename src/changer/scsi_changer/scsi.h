@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -30,23 +30,23 @@
 // bool
 #include <stdbool.h>
 
-struct st_changer;
-struct st_value;
+struct so_changer;
+struct so_value;
 
-struct scsi_changer_slot {
+struct sochgr_scsi_changer_slot {
 	int address;
 	int src_address;
 
-	struct st_slot * src_slot;
+	struct so_slot * src_slot;
 };
 
-void scsi_changer_scsi_loader_check_slot(struct st_changer * changer, const char * device, struct st_slot * slot);
-bool scsi_changer_scsi_check_changer(struct st_changer * changer, const char * path);
-bool scsi_changer_scsi_check_drive(struct st_drive * drive, const char * path);
-int scsi_changer_scsi_loader_ready(const char * device);
-int scsi_changer_scsi_medium_removal(const char * device, bool allow);
-int scsi_changer_scsi_move(const char * device, int transport_address, struct st_slot * from, struct st_slot * to);
-void scsi_changer_scsi_new_status(struct st_changer * changer, const char * device, struct st_value * available_drives, int * transport_address);
+void sochgr_scsi_changer_scsi_loader_check_slot(struct so_changer * changer, const char * device, struct so_slot * slot);
+bool sochgr_scsi_changer_scsi_check_changer(struct so_changer * changer, const char * path);
+bool sochgr_scsi_changer_scsi_check_drive(struct so_drive * drive, const char * path);
+int sochgr_scsi_changer_scsi_loader_ready(const char * device);
+int sochgr_scsi_changer_scsi_medium_removal(const char * device, bool allow);
+int sochgr_scsi_changer_scsi_move(const char * device, int transport_address, struct so_slot * from, struct so_slot * to);
+void sochgr_scsi_changer_scsi_new_status(struct so_changer * changer, const char * device, struct so_value * available_drives, int * transport_address);
 
 #endif
 

@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -24,24 +24,23 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#include <libstone-changer/changer.h>
+#include <libstoriqone-changer/changer.h>
 
 #include "device.h"
 
 #include <changer-scsichanger.chcksum>
 
-static struct st_changer_driver scsi_changer_driver = {
+static struct so_changer_driver sochgr_scsi_changer_driver = {
 	.name = "scsi changer",
 
-	.api_level    = 0,
-	.src_checksum = STONE_CHANGER_SCSICHANGER_SRCSUM,
+	.src_checksum = STORIQONE_CHANGER_SCSICHANGER_SRCSUM,
 };
 
-static void scsi_changer_driver_init(void) __attribute__((constructor));
+static void sochgr_scsi_changer_driver_init(void) __attribute__((constructor));
 
 
-static void scsi_changer_driver_init() {
-	scsi_changer_driver.device = scsi_changer_get_device();
-	stchgr_changer_register(&scsi_changer_driver);
+static void sochgr_scsi_changer_driver_init() {
+	sochgr_scsi_changer_driver.device = sochgr_scsi_changer_get_device();
+	sochgr_changer_register(&sochgr_scsi_changer_driver);
 }
 

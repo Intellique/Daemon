@@ -1,13 +1,13 @@
 /****************************************************************************\
-*                             __________                                     *
-*                            / __/_  __/__  ___  ___                         *
-*                           _\ \  / / / _ \/ _ \/ -_)                        *
-*                          /___/ /_/  \___/_//_/\__/                         *
-*                                                                            *
+*                    ______           _      ____                            *
+*                   / __/ /____  ____(_)__ _/ __ \___  ___                   *
+*                  _\ \/ __/ _ \/ __/ / _ `/ /_/ / _ \/ -_)                  *
+*                 /___/\__/\___/_/ /_/\_, /\____/_//_/\__/                   *
+*                                      /_/                                   *
 *  ------------------------------------------------------------------------  *
-*  This file is a part of STone                                              *
+*  This file is a part of Storiq One                                         *
 *                                                                            *
-*  STone is free software; you can redistribute it and/or modify             *
+*  Storiq One is free software; you can redistribute it and/or modify        *
 *  it under the terms of the GNU Affero General Public License               *
 *  as published by the Free Software Foundation; either version 3            *
 *  of the License, or (at your option) any later version.                    *
@@ -51,11 +51,11 @@
 // close
 #include <unistd.h>
 
-#include <libstone/changer.h>
-#include <libstone/slot.h>
-#include <libstone/string.h>
-#include <libstone/value.h>
-#include <libstone-changer/drive.h>
+#include <libstoriqone/changer.h>
+#include <libstoriqone/slot.h>
+#include <libstoriqone/string.h>
+#include <libstoriqone/value.h>
+#include <libstoriqone-changer/drive.h>
 
 #include "scsi.h"
 
@@ -209,11 +209,11 @@ struct scsi_request_sense {
 };
 
 
-static void scsi_changer_scsi_setup_drive(struct st_drive * drive, struct st_value * config);
-static void scsi_changer_scsi_update_status(int fd, struct st_changer * changer, const char * device, struct st_slot * slots, int start_element, unsigned int nb_elements, enum scsi_loader_element_type type, struct st_value * available_drives);
+static void sochgr_scsi_changer_scsi_setup_drive(struct so_drive * drive, struct so_value * config);
+static void sochgr_scsi_changer_scsi_update_status(int fd, struct so_changer * changer, const char * device, struct so_slot * slots, int start_element, unsigned int nb_elements, enum scsi_loader_element_type type, struct so_value * available_drives);
 
 
-void scsi_changer_scsi_loader_check_slot(struct st_changer * changer, const char * device, struct st_slot * slot) {
+void sochgr_scsi_changer_scsi_loader_check_slot(struct so_changer * changer, const char * device, struct so_slot * slot) {
 	int fd = open(device, O_RDWR);
 	if (fd < 0)
 		return;
@@ -224,13 +224,13 @@ void scsi_changer_scsi_loader_check_slot(struct st_changer * changer, const char
 	else if (slot->is_ie_port)
 		type = scsi_loader_element_type_import_export_element;
 
-	struct scsi_changer_slot * sp = slot->data;
-	scsi_changer_scsi_update_status(fd, changer, device, slot, sp->address, 1, type, NULL);
+	struct sochgr_scsi_changer_slot * sp = slot->data;
+	sochgr_scsi_changer_scsi_update_status(fd, changer, device, slot, sp->address, 1, type, NULL);
 
 	close(fd);
 }
 
-bool scsi_changer_scsi_check_changer(struct st_changer * changer, const char * path) {
+bool sochgr_scsi_changer_scsi_check_changer(struct so_changer * changer, const char * path) {
 	int fd = open(path, O_RDWR);
 	if (fd < 0)
 		return false;
@@ -311,13 +311,13 @@ bool scsi_changer_scsi_check_changer(struct st_changer * changer, const char * p
 	}
 
 	char * model = strndup(result_inquiry.product_identification, 16);
-	st_string_rtrim(model, ' ');
+	so_string_rtrim(model, ' ');
 
 	char * vendor = strndup(result_inquiry.vendor_identification, 8);
-	st_string_rtrim(vendor, ' ');
+	so_string_rtrim(vendor, ' ');
 
 	char * revision = strndup(result_inquiry.product_revision_level, 4);
-	st_string_rtrim(revision, ' ');
+	so_string_rtrim(revision, ' ');
 
 	bool barcode = result_inquiry.bar_code;
 
@@ -363,7 +363,7 @@ bool scsi_changer_scsi_check_changer(struct st_changer * changer, const char * p
 		return false;
 	}
 
-	st_string_rtrim(result_serial_number.unit_serial_number, ' ');
+	so_string_rtrim(result_serial_number.unit_serial_number, ' ');
 	char * serial_number = strdup(result_serial_number.unit_serial_number);
 
 	bool found = !strcmp(vendor, changer->vendor) && !strcmp(model, changer->model) && !strcmp(serial_number, changer->serial_number);
@@ -383,7 +383,7 @@ bool scsi_changer_scsi_check_changer(struct st_changer * changer, const char * p
 	return found;
 }
 
-bool scsi_changer_scsi_check_drive(struct st_drive * drive, const char * path) {
+bool sochgr_scsi_changer_scsi_check_drive(struct so_drive * drive, const char * path) {
 	int fd = open(path, O_RDWR);
 	if (fd < 0)
 		return false;
@@ -460,11 +460,11 @@ bool scsi_changer_scsi_check_drive(struct st_drive * drive, const char * path) {
 	}
 
 	char * vendor = strndup(result_inquiry.vendor_identification, 7);
-	st_string_rtrim(vendor, ' ');
+	so_string_rtrim(vendor, ' ');
 	char * model = strndup(result_inquiry.product_identification, 15);
-	st_string_rtrim(model, ' ');
+	so_string_rtrim(model, ' ');
 	char * revision = strndup(result_inquiry.product_revision_level, 4);
-	st_string_rtrim(revision, ' ');
+	so_string_rtrim(revision, ' ');
 
 	bool ok = !strcmp(drive->vendor, vendor);
 	if (ok)
@@ -517,7 +517,7 @@ bool scsi_changer_scsi_check_drive(struct st_drive * drive, const char * path) {
 		return false;
 
 	result_serial_number.unit_serial_number[11] = '\0';
-	st_string_rtrim(result_serial_number.unit_serial_number, ' ');
+	so_string_rtrim(result_serial_number.unit_serial_number, ' ');
 	char * serial_number = strdup(result_serial_number.unit_serial_number);
 
 	ok = !strcmp(drive->serial_number, serial_number);
@@ -527,7 +527,7 @@ bool scsi_changer_scsi_check_drive(struct st_drive * drive, const char * path) {
 	return ok;
 }
 
-int scsi_changer_scsi_loader_ready(const char * device) {
+int sochgr_scsi_changer_scsi_loader_ready(const char * device) {
 	int fd = open(device, O_RDWR);
 	if (fd < 0)
 		return 1;
@@ -561,7 +561,7 @@ int scsi_changer_scsi_loader_ready(const char * device) {
 	return sense.sense_key;
 }
 
-void scsi_changer_scsi_new_status(struct st_changer * changer, const char * device, struct st_value * available_drives, int * transport_address) {
+void sochgr_scsi_changer_scsi_new_status(struct so_changer * changer, const char * device, struct so_value * available_drives, int * transport_address) {
 	int fd = open(device, O_RDWR);
 	if (fd < 0)
 		return;
@@ -653,7 +653,7 @@ void scsi_changer_scsi_new_status(struct st_changer * changer, const char * devi
 		*transport_address = result.medium_transport_element_address;
 
 	changer->nb_drives = result.number_of_data_transfer_elements;
-	changer->drives = calloc(sizeof(struct st_drive), changer->nb_drives);
+	changer->drives = calloc(sizeof(struct so_drive), changer->nb_drives);
 
 	changer->nb_slots = result.number_of_storage_elements;
 	unsigned short nb_io_slots = result.number_of_import_export_elements;
@@ -662,11 +662,11 @@ void scsi_changer_scsi_new_status(struct st_changer * changer, const char * devi
 	changer->nb_slots += changer->nb_drives;
 
 	if (changer->nb_slots > 0)
-		changer->slots = calloc(sizeof(struct st_slot), changer->nb_slots);
+		changer->slots = calloc(sizeof(struct so_slot), changer->nb_slots);
 
 	unsigned int i;
 	for (i = 0; i < changer->nb_slots; i++) {
-		struct st_slot * slot = changer->slots + i;
+		struct so_slot * slot = changer->slots + i;
 
 		slot->changer = changer;
 		slot->drive = NULL;
@@ -676,33 +676,33 @@ void scsi_changer_scsi_new_status(struct st_changer * changer, const char * devi
 		slot->volume_name = NULL;
 		slot->full = false;
 
-		struct scsi_changer_slot * sp = slot->data = malloc(sizeof(struct scsi_changer_slot));
+		struct sochgr_scsi_changer_slot * sp = slot->data = malloc(sizeof(struct sochgr_scsi_changer_slot));
 		sp->address = sp->src_address = 0;
 		sp->src_slot = NULL;
 	}
 
-	scsi_changer_scsi_update_status(fd, changer, device, changer->slots, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer, available_drives);
-	scsi_changer_scsi_update_status(fd, changer, device, changer->slots + result.number_of_data_transfer_elements, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element, NULL);
+	sochgr_scsi_changer_scsi_update_status(fd, changer, device, changer->slots, result.first_data_transfer_element_address, result.number_of_data_transfer_elements, scsi_loader_element_type_data_transfer, available_drives);
+	sochgr_scsi_changer_scsi_update_status(fd, changer, device, changer->slots + result.number_of_data_transfer_elements, result.first_storage_element_address, result.number_of_storage_elements, scsi_loader_element_type_storage_element, NULL);
 	if (result.number_of_import_export_elements > 0)
-		scsi_changer_scsi_update_status(fd, changer, device, changer->slots + (result.number_of_data_transfer_elements + result.number_of_storage_elements), result.first_import_export_element_address, result.number_of_import_export_elements, scsi_loader_element_type_import_export_element, NULL);
+		sochgr_scsi_changer_scsi_update_status(fd, changer, device, changer->slots + (result.number_of_data_transfer_elements + result.number_of_storage_elements), result.first_import_export_element_address, result.number_of_import_export_elements, scsi_loader_element_type_import_export_element, NULL);
 
 	for (i = 0; i < changer->nb_drives; i++) {
-		struct st_drive * drive = changer->drives + i;
+		struct so_drive * drive = changer->drives + i;
 		if (!drive->enable)
 			continue;
 
 		drive->ops->update_status(drive);
 
-		struct st_slot * sl = changer->slots + i;
-		struct scsi_changer_slot * sp = sl->data;
+		struct so_slot * sl = changer->slots + i;
+		struct sochgr_scsi_changer_slot * sp = sl->data;
 
 		if (sp->src_address == 0)
 			continue;
 
 		unsigned int j;
 		for (j = changer->nb_drives; j < changer->nb_slots; j++) {
-			struct st_slot * sl2 = changer->slots + j;
-			struct scsi_changer_slot * sp2 = sl2->data;
+			struct so_slot * sl2 = changer->slots + j;
+			struct sochgr_scsi_changer_slot * sp2 = sl2->data;
 
 			if (sp->src_address == sp2->address) {
 				sp->src_slot = sl2;
@@ -714,7 +714,7 @@ void scsi_changer_scsi_new_status(struct st_changer * changer, const char * devi
 	close(fd);
 }
 
-int scsi_changer_scsi_medium_removal(const char * device, bool allow) {
+int sochgr_scsi_changer_scsi_medium_removal(const char * device, bool allow) {
 	int fd = open(device, O_RDWR);
 	if (fd < 0)
 		return -1;
@@ -757,13 +757,13 @@ int scsi_changer_scsi_medium_removal(const char * device, bool allow) {
 	return failed;
 }
 
-int scsi_changer_scsi_move(const char * device, int transport_address, struct st_slot * from, struct st_slot * to) {
+int sochgr_scsi_changer_scsi_move(const char * device, int transport_address, struct so_slot * from, struct so_slot * to) {
 	int fd = open(device, O_RDWR);
 	if (fd < 0)
 		return -1;
 
-	struct scsi_changer_slot * sf = from->data;
-	struct scsi_changer_slot * st = to->data;
+	struct sochgr_scsi_changer_slot * sf = from->data;
+	struct sochgr_scsi_changer_slot * st = to->data;
 
 	struct scsi_request_sense sense;
 	struct {
@@ -809,7 +809,7 @@ int scsi_changer_scsi_move(const char * device, int transport_address, struct st
 	return sense.sense_key;
 }
 
-static void scsi_changer_scsi_setup_drive(struct st_drive * drive, struct st_value * config) {
+static void sochgr_scsi_changer_scsi_setup_drive(struct so_drive * drive, struct so_value * config) {
 	glob_t gl;
 	glob("/sys/class/scsi_device/*/device/scsi_tape", 0, NULL, &gl);
 
@@ -913,11 +913,11 @@ static void scsi_changer_scsi_setup_drive(struct st_drive * drive, struct st_val
 		}
 
 		char * vendor = strndup(result_inquiry.vendor_identification, 7);
-		st_string_rtrim(vendor, ' ');
+		so_string_rtrim(vendor, ' ');
 		bool ok = !strcmp(vendor, drive->vendor);
 
 		char * model = strndup(result_inquiry.product_identification, 15);
-		st_string_rtrim(model, ' ');
+		so_string_rtrim(model, ' ');
 		if (ok)
 			ok = !strcmp(model, drive->model);
 
@@ -961,7 +961,7 @@ static void scsi_changer_scsi_setup_drive(struct st_drive * drive, struct st_val
 		status = ioctl(fd, SG_IO, &header);
 
 		result_serial_number.unit_serial_number[11] = '\0';
-		st_string_rtrim(result_serial_number.unit_serial_number, ' ');
+		so_string_rtrim(result_serial_number.unit_serial_number, ' ');
 		char * serial_number = strdup(result_serial_number.unit_serial_number);
 
 		ok = !strcmp(serial_number, drive->serial_number);
@@ -970,7 +970,7 @@ static void scsi_changer_scsi_setup_drive(struct st_drive * drive, struct st_val
 		close(fd);
 
 		if (ok) {
-			stchgr_drive_register(drive, config, "tape_drive");
+			sochgr_drive_register(drive, config, "tape_drive");
 			break;
 		}
 	}
@@ -978,7 +978,7 @@ static void scsi_changer_scsi_setup_drive(struct st_drive * drive, struct st_val
 	globfree(&gl);
 }
 
-static void scsi_changer_scsi_update_status(int fd, struct st_changer * changer, const char * device, struct st_slot * slots, int start_element, unsigned int nb_elements, enum scsi_loader_element_type type, struct st_value * available_drives) {
+static void sochgr_scsi_changer_scsi_update_status(int fd, struct so_changer * changer, const char * device, struct so_slot * slots, int start_element, unsigned int nb_elements, enum scsi_loader_element_type type, struct so_value * available_drives) {
 	size_t size_needed = 16;
 	switch (type) {
 		case scsi_loader_element_type_all_elements:
@@ -1064,13 +1064,13 @@ static void scsi_changer_scsi_update_status(int fd, struct st_changer * changer,
 
 		if (element_header->type != type) {
 			sleep(1);
-			scsi_changer_scsi_loader_ready(device);
+			sochgr_scsi_changer_scsi_loader_ready(device);
 		}
 	} while (element_header->type != type);
 
 	unsigned short i;
 	for (i = 0; i < result->number_of_elements; i++) {
-		struct st_slot * slot;
+		struct so_slot * slot;
 		switch (element_header->type) {
 			case scsi_loader_element_type_all_elements:
 				break;
@@ -1087,14 +1087,14 @@ static void scsi_changer_scsi_update_status(int fd, struct st_changer * changer,
 						strncpy(volume_name, data_transfer_element->primary_volume_tag_information, 36);
 						volume_name[36] = '\0';
 
-						st_string_rtrim(volume_name, ' ');
+						so_string_rtrim(volume_name, ' ');
 
 						slot->volume_name = strdup(volume_name);
 					}
 
 					slot->is_ie_port = false;
 
-					struct scsi_changer_slot * sl = slot->data;
+					struct sochgr_scsi_changer_slot * sl = slot->data;
 					sl->address = be16toh(data_transfer_element->element_address);
 					sl->src_address = be16toh(data_transfer_element->source_storage_element_address);
 
@@ -1102,29 +1102,29 @@ static void scsi_changer_scsi_update_status(int fd, struct st_changer * changer,
 					strncpy(dev_name, data_transfer_element->device_identifier_1, 34);
 					dev_name[34] = '\0';
 
-					if (available_drives != NULL && st_value_hashtable_has_key2(available_drives, dev_name)) {
-						struct st_value * drive = st_value_hashtable_get2(available_drives, dev_name, false, false);
-						struct st_drive * dr = changer->drives + i;
+					if (available_drives != NULL && so_value_hashtable_has_key2(available_drives, dev_name)) {
+						struct so_value * drive = so_value_hashtable_get2(available_drives, dev_name, false, false);
+						struct so_drive * dr = changer->drives + i;
 
-						dr->status = st_drive_status_unknown;
+						dr->status = so_drive_status_unknown;
 						dr->changer = changer;
 						dr->slot = slot;
 						slot->drive = dr;
 
-						struct st_value * vslot = NULL;
-						st_value_unpack(drive, "{sssssssssbso}", "model", &dr->model, "vendor", &dr->vendor, "firmware revision", &dr->revision, "serial number", &dr->serial_number, "enable", &dr->enable, "slot", &vslot);
+						struct so_value * vslot = NULL;
+						so_value_unpack(drive, "{sssssssssbso}", "model", &dr->model, "vendor", &dr->vendor, "firmware revision", &dr->revision, "serial number", &dr->serial_number, "enable", &dr->enable, "slot", &vslot);
 
 						if (vslot != NULL) {
 							if (slot->volume_name != NULL)
-								st_value_hashtable_put2(vslot, "volume name", st_value_new_string(slot->volume_name), true);
+								so_value_hashtable_put2(vslot, "volume name", so_value_new_string(slot->volume_name), true);
 							else
-								st_value_hashtable_put2(vslot, "volume name", st_value_new_null(), true);
-							st_value_hashtable_put2(vslot, "ie port", st_value_new_boolean(slot->is_ie_port), true);
+								so_value_hashtable_put2(vslot, "volume name", so_value_new_null(), true);
+							so_value_hashtable_put2(vslot, "ie port", so_value_new_boolean(slot->is_ie_port), true);
 						}
 
-						scsi_changer_scsi_setup_drive(dr, drive);
+						sochgr_scsi_changer_scsi_setup_drive(dr, drive);
 					} else {
-						struct st_drive * dr = changer->drives + i;
+						struct so_drive * dr = changer->drives + i;
 						dr->enable = false;
 					}
 
@@ -1143,14 +1143,14 @@ static void scsi_changer_scsi_update_status(int fd, struct st_changer * changer,
 						strncpy(volume_name, import_export_element->primary_volume_tag_information, 36);
 						volume_name[36] = '\0';
 
-						st_string_rtrim(volume_name, ' ');
+						so_string_rtrim(volume_name, ' ');
 
 						slot->volume_name = strdup(volume_name);
 					}
 
 					slot->is_ie_port = true;
 
-					struct scsi_changer_slot * sl = slot->data;
+					struct sochgr_scsi_changer_slot * sl = slot->data;
 					sl->address = be16toh(import_export_element->element_address);
 
 					break;
@@ -1168,14 +1168,14 @@ static void scsi_changer_scsi_update_status(int fd, struct st_changer * changer,
 						strncpy(volume_name, storage_element->primary_volume_tag_information, 36);
 						volume_name[36] = '\0';
 
-						st_string_rtrim(volume_name, ' ');
+						so_string_rtrim(volume_name, ' ');
 
 						slot->volume_name = strdup(volume_name);
 					}
 
 					slot->is_ie_port = false;
 
-					struct scsi_changer_slot * sl = slot->data;
+					struct sochgr_scsi_changer_slot * sl = slot->data;
 					sl->address = be16toh(storage_element->element_address);
 
 					break;
