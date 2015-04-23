@@ -6,6 +6,7 @@ lib/libjob-backup-db.so usr/lib/stone
 lib/libjob-check-archive.so usr/lib/stone
 lib/libjob-copy-archive.so usr/lib/stone
 lib/libjob-create-archive.so usr/lib/stone
+lib/libjob-erase-media.so usr/lib/stone
 lib/libjob-format-media.so usr/lib/stone
 lib/libjob-restore-archive.so usr/lib/stone
 lib/liblog-file.so usr/lib/stone
