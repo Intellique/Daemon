@@ -24,21 +24,17 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_DRIVE_MEDIA_H__
-#define __LIBSTORIQONE_DRIVE_MEDIA_H__
+#ifndef __SO_TAPEDRIVE_XML_H__
+#define __SO_TAPEDRIVE_XML_H__
 
 // bool
 #include <stdbool.h>
-// size_t
-#include <sys/types.h>
 
 #include <libstoriqone/media.h>
 
-struct so_database_connection;
 struct so_media;
 
-bool sodr_media_check_header(struct so_media * media, const char * buffer, struct so_database_connection * db_connection);
-bool sodr_media_write_header(struct so_media * media, struct so_pool * pool, char * buffer, size_t length);
+bool sodr_tape_drive_media_check_header(struct so_media * media, const char * buffer);
 
 #endif
 

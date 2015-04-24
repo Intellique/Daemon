@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-04-24 12:44+0200\n"
+        "POT-Creation-Date: 2015-04-24 17:32+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -16,88 +16,93 @@ msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/drive/tape_drive/device.c:200
+#: src/drive/tape_drive/device.c:203
 #, c-format
 msgid   "[%s | %s | #%u]: failed to read medium axilary memory"
 msgstr  "[ %s | %s | #%u ] : échec lors de la lecture de la mémoire auxiliaire du média"
 
-#: src/drive/tape_drive/device.c:213
+#: src/drive/tape_drive/device.c:216
 #, c-format
 msgid   "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"
 msgstr  "[ %s | %s | #%u ] : Effacement du média '%s' (mode: %s)"
 
-#: src/drive/tape_drive/device.c:215 src/drive/tape_drive/device.c:222 src/drive/tape_drive/device.c:227
+#: src/drive/tape_drive/device.c:218 src/drive/tape_drive/device.c:225 src/drive/tape_drive/device.c:230
 msgid   "long"
 msgstr  "long"
 
-#: src/drive/tape_drive/device.c:215 src/drive/tape_drive/device.c:222 src/drive/tape_drive/device.c:227
+#: src/drive/tape_drive/device.c:218 src/drive/tape_drive/device.c:225 src/drive/tape_drive/device.c:230
 msgid   "quick"
 msgstr  "rapide"
 
-#: src/drive/tape_drive/device.c:220
+#: src/drive/tape_drive/device.c:223
 #, c-format
 msgid   "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"
 msgstr  "[ %s | %s | #%u ] : Échec lors de l’effacement du média '%s' (mode: %s)"
 
-#: src/drive/tape_drive/device.c:225
+#: src/drive/tape_drive/device.c:228
 #, c-format
 msgid   "[%s | %s | #%u]: media '%s' has been erased with success (mode: %s)"
 msgstr  "[ %s | %s | #%u ] : le média '%s' a été effacé avec succès (mode: %s)"
 
-#: src/drive/tape_drive/device.c:413
+#: src/drive/tape_drive/device.c:416
 #, c-format
 msgid   "[%s | %s | #%u]: found block size: %zd"
 msgstr  "[ %s | %s | #%u ] : taille de bloc trouvé : %zd"
 
-#: src/drive/tape_drive/device.c:459
+#: src/drive/tape_drive/device.c:462
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for reading"
 msgstr  "[ %s | %s | #%u ] : ouverture du lecteur en lecture"
 
-#: src/drive/tape_drive/device.c:474
+#: src/drive/tape_drive/device.c:477
 #, c-format
 msgid   "[%s | %s | #%u]: drive is open for writing"
 msgstr  "[ %s | %s | #%u ] : ouverture du lecture en écriture"
 
-#: src/drive/tape_drive/device.c:573
+#: src/drive/tape_drive/device.c:576
 #, c-format
 msgid   "[%s | %s | #%u]: Try to recover an error"
 msgstr  "[ %s | %s | #%u ] : Tentative de récupérer une erreur"
 
-#: src/drive/tape_drive/device.c:590
+#: src/drive/tape_drive/device.c:593
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s'"
 msgstr  "[ %s | %s | #%u ] : Avance rapide vers la fin du média « %s »"
 
-#: src/drive/tape_drive/device.c:602
+#: src/drive/tape_drive/device.c:605
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' finished with error '%m'"
 msgstr  "[ %s | %s | #%u ] : Avance rapide vers la fin du média « %s » terminé avec une erreur « %m »"
 
-#: src/drive/tape_drive/device.c:606
+#: src/drive/tape_drive/device.c:609
 #, c-format
 msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' finished with status = OK"
 msgstr  "[ %s | %s | #%u ] : Avance rapide vers la fin du média « %s » terminé avec succès"
 
-#: src/drive/tape_drive/device.c:613
+#: src/drive/tape_drive/device.c:616
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d"
 msgstr  "[ %s | %s | #%u ] : Positionnement du média « %s » vers la position #%d"
 
-#: src/drive/tape_drive/device.c:626 src/drive/tape_drive/device.c:643
+#: src/drive/tape_drive/device.c:629 src/drive/tape_drive/device.c:646
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d finished with error '%m'"
 msgstr  "[ %s | %s | #%u ] : Positionnement du média « %s » vers la position #%d terminé avec une erreur « %m »"
 
-#: src/drive/tape_drive/device.c:647 src/drive/tape_drive/device.c:654
+#: src/drive/tape_drive/device.c:650 src/drive/tape_drive/device.c:657
 #, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d finished with status = OK"
 msgstr  "[ %s | %s | #%u ] : Positionnement du média « %s » vers la position #%d terminé avec succés"
 
-#: src/drive/tape_drive/device.c:741
+#: src/drive/tape_drive/device.c:744
 #, c-format
 msgid   "[%s | %s | #%u]: Checking media header '%s'"
 msgstr  "[ %s | %s | #%u ] : Vérification de l'entête du média « %s »"
+
+#: src/drive/tape_drive/media.c:49
+#, c-format
+msgid   "Found LTFS header in media with (volume id: %s)"
+msgstr  "Entête de bande LTFS trouvé (id du volume : %s)"
 
 #: src/drive/tape_drive/reader.c:137
 #, c-format

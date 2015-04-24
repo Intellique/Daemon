@@ -26,7 +26,7 @@
 
 // dgettext
 #include <libintl.h>
-// snprintf
+// sscanf, snprintf
 #include <stdio.h>
 // free
 #include <stdlib.h>

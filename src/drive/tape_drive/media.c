@@ -24,21 +24,33 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_DRIVE_MEDIA_H__
-#define __LIBSTORIQONE_DRIVE_MEDIA_H__
+// dgettext
+#include <libintl.h>
+// sscanf
+#include <stdio.h>
 
-// bool
-#include <stdbool.h>
-// size_t
-#include <sys/types.h>
+#include <libstoriqone/log.h>
 
-#include <libstoriqone/media.h>
+#include "media.h"
 
-struct so_database_connection;
-struct so_media;
+static bool sodr_tape_drive_media_check_ltfs_header(struct so_media * media, const char * buffer);
 
-bool sodr_media_check_header(struct so_media * media, const char * buffer, struct so_database_connection * db_connection);
-bool sodr_media_write_header(struct so_media * media, struct so_pool * pool, char * buffer, size_t length);
+bool sodr_tape_drive_media_check_header(struct so_media * media, const char * buffer) {
+	return sodr_tape_drive_media_check_ltfs_header(media, buffer);
+}
 
-#endif
+static bool sodr_tape_drive_media_check_ltfs_header(struct so_media * media, const char * buffer) {
+	char vol_id[7];
+	int nb_params = sscanf(buffer, "VOL1%6sL             LTFS", vol_id);
+	if (nb_params < 1)
+		return false;
+
+	so_log_write(so_log_level_debug,
+		dgettext("storiqone-drive-tape", "Found LTFS header in media with (volume id: %s)"),
+		vol_id);
+
+	// TODO: add media to special LTFS pool
+
+	return true;
+}
 

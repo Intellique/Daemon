@@ -67,6 +67,7 @@
 
 #include "device.h"
 #include "io.h"
+#include "media.h"
 #include "scsi.h"
 
 static bool sodr_tape_drive_check_header(struct so_database_connection * db);
@@ -160,6 +161,8 @@ static bool sodr_tape_drive_check_header(struct so_database_connection * db) {
 
 	// check header
 	bool ok = sodr_media_check_header(sodr_tape_drive.slot->media, buffer, db);
+	if (!ok)
+		ok = sodr_tape_drive_media_check_header(sodr_tape_drive.slot->media, buffer);
 	free(buffer);
 	return ok;
 }
