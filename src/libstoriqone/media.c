@@ -481,7 +481,7 @@ void so_media_free(struct so_media * media) {
 	so_media_format_free(media->format);
 	so_pool_free(media->pool);
 
-	free(media->changer_data);
+	free(media->private_data);
 	so_value_free(media->db_data);
 
 	free(media);

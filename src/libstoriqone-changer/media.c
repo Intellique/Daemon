@@ -78,8 +78,8 @@ void sochgr_media_init(struct so_changer * changer) {
 
 void sochgr_media_init_slot(struct so_slot * slot) {
 	struct so_media * media = slot->media;
-	if (media != NULL && media->changer_data == NULL) {
-		struct sochgr_media * md = media->changer_data = malloc(sizeof(struct sochgr_media));
+	if (media != NULL && media->private_data == NULL) {
+		struct sochgr_media * md = media->private_data = malloc(sizeof(struct sochgr_media));
 		md->first = md->last = NULL;
 		md->size_reserved = 0;
 	}

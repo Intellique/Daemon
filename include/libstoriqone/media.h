@@ -123,7 +123,7 @@ struct so_media {
 	struct so_media_format * format;
 	struct so_pool * pool;
 
-	void * changer_data;
+	void * private_data;
 	struct so_value * db_data;
 };
 

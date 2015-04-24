@@ -112,7 +112,7 @@ static void sochgr_socket_message(int fd, short event, void * data) {
 			if (sl->media == NULL)
 				continue;
 
-			sochgr_media_remove_peer(sl->media->changer_data, peer);
+			sochgr_media_remove_peer(sl->media->private_data, peer);
 		}
 
 		sochgr_socket_remove_peer(peer);
@@ -189,7 +189,7 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 			continue;
 		}
 
-		struct sochgr_media * mp = sl->media->changer_data;
+		struct sochgr_media * mp = sl->media->private_data;
 		struct sochgr_peer_list * lp;
 		struct sochgr_peer * peer = NULL;
 		for (lp = mp->first; lp != NULL; lp = lp->next)
@@ -256,7 +256,7 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 				continue;
 
 			struct so_media * media = sl->media;
-			struct sochgr_media * mp = media->changer_data;
+			struct sochgr_media * mp = media->private_data;
 			struct sochgr_peer_list * lp = sochgr_media_find_peer(mp, peer);
 			if (lp == NULL || !lp->waiting)
 				continue;
@@ -367,7 +367,7 @@ static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so
 		return;
 	}
 
-	struct sochgr_media * mp = media->changer_data;
+	struct sochgr_media * mp = media->private_data;
 	struct sochgr_peer_list * lp = sochgr_media_find_peer(mp, peer);
 	if (lp == NULL)
 		goto error;
@@ -414,7 +414,7 @@ static void sochgr_socket_command_release_media(struct sochgr_peer * peer, struc
 		return;
 	}
 
-	struct sochgr_media * mp = sl->media->changer_data;
+	struct sochgr_media * mp = sl->media->private_data;
 	sochgr_media_remove_peer(mp, peer);
 
 	struct so_value * response = so_value_pack("{sb}", "status", true);
@@ -457,7 +457,7 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 
 	ssize_t result = -1L;
 	struct so_media * media = sl->media;
-	struct sochgr_media * mp = media->changer_data;
+	struct sochgr_media * mp = media->private_data;
 
 	if (size_need == 0) {
 		result = 0;
