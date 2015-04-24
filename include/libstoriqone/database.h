@@ -150,7 +150,8 @@ struct so_database_connection {
 		struct so_value * (*get_vtls)(struct so_database_connection * connect) __attribute__((nonnull));
 		int (*sync_changer)(struct so_database_connection * connect, struct so_changer * changer, enum so_database_sync_method method) __attribute__((nonnull));
 		int (*sync_drive)(struct so_database_connection * connect, struct so_drive * drive, bool sync_media, enum so_database_sync_method method) __attribute__((nonnull));
-		int (*sync_media)(struct so_database_connection * connnect, struct so_media * media, enum so_database_sync_method method) __attribute__((nonnull));
+		int (*sync_media)(struct so_database_connection * connect, struct so_media * media, enum so_database_sync_method method) __attribute__((nonnull));
+		struct so_value * (*update_vtl)(struct so_database_connection * connect, struct so_changer * vtl) __attribute__((nonnull));
 
 		int (*add_job_record)(struct so_database_connection * connect, struct so_job * job, enum so_log_level level, enum so_job_record_notif notif, const char * message);
 		int (*add_report)(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, struct so_media * media, const char * data) __attribute__((nonnull(1,2,5)));

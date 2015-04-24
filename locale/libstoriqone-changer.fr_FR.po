@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-changer v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-04-16 22:48+0200\n"
+        "POT-Creation-Date: 2015-04-23 19:40+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -51,51 +51,51 @@ msgstr  "[%s | %s] : chargement du média « %s » depuis l’emplacement #%u
 msgid   "[%s | %s]: loading media '%s' from slot #%u to drive #%d finished with code = OK"
 msgstr  "[%s | %s] : chargement du média « %s » depuis l’emplacement #%u vers le lecteur #%d terminé avec le code = OK"
 
-#: src/libstoriqone-changer/main.c:56
+#: src/libstoriqone-changer/main.c:58
 msgid   "Stoned has hang up"
 msgstr  "Le démon a inopinément quitté"
 
-#: src/libstoriqone-changer/main.c:88
+#: src/libstoriqone-changer/main.c:90
 #, c-format
 msgid   "Starting changer (type: %s)"
 msgstr  "Démarrage de l’échangeur (type : %s)"
 
-#: src/libstoriqone-changer/main.c:119
+#: src/libstoriqone-changer/main.c:125
 #, c-format
 msgid   "Initialize changer (type: %s)"
 msgstr  "Initialisation de l’échangeur (type : %s)"
 
-#: src/libstoriqone-changer/main.c:134
+#: src/libstoriqone-changer/main.c:140
 #, c-format
 msgid   "[%s | %s]: changer will be offline"
 msgstr  "[%s | %s] : l’échangeur va être mis hors-ligne"
 
-#: src/libstoriqone-changer/main.c:136
+#: src/libstoriqone-changer/main.c:142
 #, c-format
 msgid   "[%s | %s]: changer is now offline"
 msgstr  "[%s | %s] : l’échangeur est maintenant hors-ligne"
 
-#: src/libstoriqone-changer/main.c:138
+#: src/libstoriqone-changer/main.c:144
 #, c-format
 msgid   "[%s | %s]: failed to put changer offline"
 msgstr  "[%s | %s] : échec de la mise hors-ligne de l’échangeur"
 
-#: src/libstoriqone-changer/main.c:142
+#: src/libstoriqone-changer/main.c:148
 #, c-format
 msgid   "[%s | %s]: changer will be online"
 msgstr  "[%s | %s] : l’échangeur va être remis en ligne"
 
-#: src/libstoriqone-changer/main.c:144
+#: src/libstoriqone-changer/main.c:150
 #, c-format
 msgid   "[%s | %s]: changer is now online"
 msgstr  "[%s | %s] : l’échangeur est maintenant en ligne"
 
-#: src/libstoriqone-changer/main.c:146
+#: src/libstoriqone-changer/main.c:152
 #, c-format
 msgid   "[%s | %s]: failed to put changer online"
 msgstr  "[%s | %s] : échec de la remise en-ligne de l’échangeur"
 
-#: src/libstoriqone-changer/main.c:168
+#: src/libstoriqone-changer/main.c:178
 #, c-format
 msgid   "Changer (type: %s) will stop"
 msgstr  "Échanger (type : %s) va s’arrêter"

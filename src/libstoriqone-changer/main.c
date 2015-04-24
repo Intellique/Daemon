@@ -33,6 +33,8 @@
 // strcmp
 #include <string.h>
 
+#include <unistd.h>
+
 #include <libstoriqone/database.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
@@ -116,6 +118,10 @@ int main() {
 	if (db_connect == NULL)
 		return 4;
 
+	int c = 1;
+	while (c)
+		sleep(1);
+
 	so_log_write(so_log_level_info, dgettext("libstoriqone-changer", "Initialize changer (type: %s)"), driver->name);
 	struct so_changer * changer = driver->device;
 	int failed = changer->ops->init(changer_config, db_connect);
@@ -160,9 +166,13 @@ int main() {
 				nb_new_free_drives++;
 		}
 
-		if (nb_free_drives < nb_new_free_drives)
+		unsigned int nb_clients = sochgr_listen_nb_clients();
+		if (nb_free_drives < nb_new_free_drives && nb_clients > 1)
 			sochgr_socket_unlock(NULL, false);
 		nb_free_drives = nb_new_free_drives;
+
+		if (nb_clients == 0)
+			changer->ops->check(db_connect);
 	}
 
 	so_log_write(so_log_level_info, dgettext("libstoriqone-changer", "Changer (type: %s) will stop"), driver->name);

@@ -24,36 +24,57 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_CHANGER_CHANGER_H__
-#define __LIBSTORIQONE_CHANGER_CHANGER_H__
+#define _GNU_SOURCE
+// asprintf
+#include <stdio.h>
+// free, malloc
+#include <stdlib.h>
+// strdup
+#include <string.h>
+// bzero
+#include <strings.h>
+// time
+#include <time.h>
 
-#include <libstoriqone/changer.h>
+#include <libstoriqone/database.h>
+#include <libstoriqone/file.h>
+#include <libstoriqone/media.h>
 
-struct so_database_connection;
-struct so_media;
-struct so_value;
+#include "device.h"
+#include "util.h"
 
-struct so_changer_driver {
-	const char * name;
+struct so_media * sochgr_vtl_media_create(const char * root_directory, const char * prefix, long long index, struct so_media_format * format, struct so_database_connection * db_connection) {
+	char * media_dir;
+	asprintf(&media_dir, "%s/medias/%s%03Ld", root_directory, prefix, index);
+	so_file_mkdir(media_dir, 0700);
 
-	struct so_changer * device;
-	int (*configure_device)(struct so_value * config);
+	char * serial_file;
+	asprintf(&serial_file, "%s/medias/%s%03Ld/serial_number", root_directory, prefix, index);
 
-	unsigned int api_level;
-	const char * src_checksum;
-};
+	char * serial_number = sochgr_vtl_util_get_serial(serial_file);
+	struct so_media * media = db_connection->ops->get_media(db_connection, serial_number, NULL, NULL);
 
-struct so_changer_ops {
-	int (*check)(struct so_database_connection * db_connection);
-	int (*init)(struct so_value * config, struct so_database_connection * db_connection);
-	int (*load)(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
-	int (*put_offline)(struct so_database_connection * db_connection);
-	int (*put_online)(struct so_database_connection * db_connection);
-	int (*shut_down)(struct so_database_connection * db_connection);
-	int (*unload)(struct so_drive * from, struct so_database_connection * db_connection);
-};
+	if (media != NULL)
+		free(serial_number);
+	else {
+		media = malloc(sizeof(struct so_media));
+		bzero(media, sizeof(struct so_media));
+		asprintf(&media->label, "%s%03Ld", prefix, index);
+		media->medium_serial_number = serial_number;
+		media->name = strdup(media->label);
+		media->status = so_media_status_new;
+		media->first_used = time(NULL);
+		media->use_before = media->first_used + format->life_span;
+		media->block_size = format->block_size;
+		media->free_block = media->total_block = format->capacity / format->block_size;
+		media->append = true;
+		media->type = so_media_type_rewritable;
+		media->format = format;
+	}
 
-void sochgr_changer_register(struct so_changer_driver * chngr);
+	free(media_dir);
+	free(serial_file);
 
-#endif
+	return media;
+}
 

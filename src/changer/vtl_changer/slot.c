@@ -24,36 +24,36 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_CHANGER_CHANGER_H__
-#define __LIBSTORIQONE_CHANGER_CHANGER_H__
+#define _GNU_SOURCE
+// asprintf
+#include <stdio.h>
+// malloc
+#include <stdlib.h>
+// bzero
+#include <strings.h>
+// symlink
+#include <unistd.h>
 
-#include <libstoriqone/changer.h>
+#include <libstoriqone/file.h>
+#include <libstoriqone/slot.h>
 
-struct so_database_connection;
-struct so_media;
-struct so_value;
+#include "device.h"
 
-struct so_changer_driver {
-	const char * name;
+void sochgr_vtl_slot_create(struct so_slot * slot, const char * root_directory, const char * prefix, long long index) {
+	asprintf(&slot->volume_name, "%s%03Ld", prefix, index);
+	slot->full = true;
 
-	struct so_changer * device;
-	int (*configure_device)(struct so_value * config);
+	struct sochgr_vtl_changer_slot * vtl_sl = slot->data = malloc(sizeof(struct sochgr_vtl_changer_slot));
+	bzero(vtl_sl, sizeof(struct sochgr_vtl_changer_slot));
+	asprintf(&vtl_sl->path, "%s/slots/%Ld", root_directory, index);
+	so_file_mkdir(vtl_sl->path, 0700);
 
-	unsigned int api_level;
-	const char * src_checksum;
-};
+	char * media_link, * link;
+	asprintf(&media_link, "../../medias/%s%03Ld", prefix, index);
+	asprintf(&link, "%s/slots/%Ld/media", root_directory, index);
+	symlink(media_link, link);
 
-struct so_changer_ops {
-	int (*check)(struct so_database_connection * db_connection);
-	int (*init)(struct so_value * config, struct so_database_connection * db_connection);
-	int (*load)(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
-	int (*put_offline)(struct so_database_connection * db_connection);
-	int (*put_online)(struct so_database_connection * db_connection);
-	int (*shut_down)(struct so_database_connection * db_connection);
-	int (*unload)(struct so_drive * from, struct so_database_connection * db_connection);
-};
-
-void sochgr_changer_register(struct so_changer_driver * chngr);
-
-#endif
+	free(link);
+	free(media_link);
+}
 

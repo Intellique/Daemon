@@ -24,36 +24,33 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_CHANGER_CHANGER_H__
-#define __LIBSTORIQONE_CHANGER_CHANGER_H__
+#define _GNU_SOURCE
+// asprintf
+#include <stdio.h>
+// free
+#include <stdlib.h>
+// strdup
+#include <string.h>
 
-#include <libstoriqone/changer.h>
+#include <libstoriqone/drive.h>
 
-struct so_database_connection;
-struct so_media;
-struct so_value;
+#include "device.h"
+#include "util.h"
 
-struct so_changer_driver {
-	const char * name;
+void sochgr_vtl_drive_create(struct so_drive * drive, const char * root_directory, long long index) {
+	char * serial_file;
+	asprintf(&serial_file, "%s/drives/%Ld/serial_number", root_directory, index);
 
-	struct so_changer * device;
-	int (*configure_device)(struct so_value * config);
+	drive->model = strdup("Storiq one vtl drive");
+	drive->vendor = strdup("Intellique");
+	drive->revision = strdup("B01");
+	drive->serial_number = sochgr_vtl_util_get_serial(serial_file);
 
-	unsigned int api_level;
-	const char * src_checksum;
-};
+	drive->status = so_drive_status_unknown;
+	drive->enable = true;
+	drive->mode = so_media_format_mode_disk;
+	drive->index = index;
 
-struct so_changer_ops {
-	int (*check)(struct so_database_connection * db_connection);
-	int (*init)(struct so_value * config, struct so_database_connection * db_connection);
-	int (*load)(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
-	int (*put_offline)(struct so_database_connection * db_connection);
-	int (*put_online)(struct so_database_connection * db_connection);
-	int (*shut_down)(struct so_database_connection * db_connection);
-	int (*unload)(struct so_drive * from, struct so_database_connection * db_connection);
-};
-
-void sochgr_changer_register(struct so_changer_driver * chngr);
-
-#endif
+	free(serial_file);
+}
 

@@ -97,6 +97,7 @@ static int so_database_postgresql_sync_drive(struct so_database_connection * con
 static int so_database_postgresql_sync_media(struct so_database_connection * connect, struct so_media * media, enum so_database_sync_method method);
 static int so_database_postgresql_sync_pool(struct so_database_connection * connect, struct so_pool * pool, enum so_database_sync_method method);
 static int so_database_postgresql_sync_slots(struct so_database_connection * connect, struct so_slot * slot, enum so_database_sync_method method);
+static struct so_value * so_database_postgresql_update_vtl(struct so_database_connection * connect, struct so_changer * vtl);
 
 static int so_database_postgresql_add_job_record(struct so_database_connection * connect, struct so_job * job, enum so_log_level level, enum so_job_record_notif notif, const char * message);
 static int so_database_postgresql_add_report(struct so_database_connection * connect, struct so_job * job, struct so_archive * archive, struct so_media * media, const char * data);
@@ -163,6 +164,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.sync_changer              = so_database_postgresql_sync_changer,
 	.sync_drive                = so_database_postgresql_sync_drive,
 	.sync_media                = so_database_postgresql_sync_media,
+	.update_vtl                = so_database_postgresql_update_vtl,
 
 	.add_job_record   = so_database_postgresql_add_job_record,
 	.add_report       = so_database_postgresql_add_report,
@@ -2106,6 +2108,48 @@ static int so_database_postgresql_sync_slots(struct so_database_connection * con
 	free(media_id);
 
 	return failed;
+}
+
+static struct so_value * so_database_postgresql_update_vtl(struct so_database_connection * connect, struct so_changer * vtl) {
+	if (connect == NULL || vtl == NULL)
+		return NULL;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(vtl->db_data, key, false, false);
+	so_value_free(key);
+
+	char * changer_id = NULL;
+	so_value_unpack(db, "{ss}", "id", &changer_id);
+
+	const char * query = "select_vtl_by_uuid";
+	so_database_postgresql_prepare(self, query, "SELECT nbslots, nbdrives, deleted FROM vtl WHERE uuid = $1 LIMIT 1");
+
+	const char * param[] = { vtl->serial_number };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	struct so_value * vtl_updated = NULL;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+		unsigned int nb_slots = 0, nb_drives = 0;
+		bool deleted = false;
+
+		so_database_postgresql_get_uint(result, 0, 0, &nb_slots);
+		so_database_postgresql_get_uint(result, 0, 1, &nb_drives);
+		so_database_postgresql_get_bool(result, 0, 2, &deleted);
+
+		vtl_updated = so_value_pack("{sisisb}",
+			"nb slots", (long) nb_slots,
+			"nb drives", (long) nb_drives,
+			"deleted", deleted
+		);
+	}
+
+	PQclear(result);
+
+	return vtl_updated;
 }
 
 
