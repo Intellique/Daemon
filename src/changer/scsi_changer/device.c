@@ -41,6 +41,8 @@
 #include <sys/types.h>
 // readlink, sleep, stat
 #include <unistd.h>
+// clock_gettime
+#include <time.h>
 
 #include <libstoriqone/database.h>
 #include <libstoriqone/drive.h>
@@ -56,6 +58,7 @@
 #include "device.h"
 #include "scsi.h"
 
+static int sochgr_scsi_changer_check(struct so_database_connection * db_connection);
 static int sochgr_scsi_changer_init(struct so_value * config, struct so_database_connection * db_connection);
 static void sochgr_scsi_changer_init_worker(void * arg);
 static int sochgr_scsi_changer_load(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
@@ -71,6 +74,7 @@ static pthread_mutex_t sochgr_scsi_changer_lock = PTHREAD_MUTEX_INITIALIZER;
 static volatile unsigned int sochgr_scsi_changer_nb_worker = 0;
 
 struct so_changer_ops sochgr_scsi_changer_ops = {
+	.check       = sochgr_scsi_changer_check,
 	.init        = sochgr_scsi_changer_init,
 	.load        = sochgr_scsi_changer_load,
 	.put_offline = sochgr_scsi_changer_put_offline,
@@ -104,6 +108,23 @@ static struct so_changer sochgr_scsi_changer = {
 	.db_data = NULL,
 };
 
+
+static int sochgr_scsi_changer_check(struct so_database_connection * db_connection) {
+	static struct timespec last_check = { 0, 0 };
+
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+
+	if (last_check.tv_sec == 0)
+		last_check = now;
+	else if (last_check.tv_sec + 1800 < now.tv_sec) {
+		// TODO: unload tape
+
+		last_check = now;
+	}
+
+	return 0;
+}
 
 struct so_changer * sochgr_scsi_changer_get_device() {
 	return &sochgr_scsi_changer;
@@ -340,7 +361,8 @@ static int sochgr_scsi_changer_load(struct so_slot * from, struct so_drive * to,
 	sochgr_scsi_changer_wait();
 
 	sochgr_scsi_changer.status = so_changer_status_loading;
-	db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_default);
+	if (db_connection != NULL)
+		db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_default);
 
 	int failed = sochgr_scsi_changer_scsi_move(sochgr_scsi_changer_device, sochgr_scsi_changer_transport_address, from, to->slot);
 
@@ -378,7 +400,8 @@ static int sochgr_scsi_changer_load(struct so_slot * from, struct so_drive * to,
 	to->ops->reset(to);
 
 	sochgr_scsi_changer.status = so_changer_status_idle;
-	db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_default);
+	if (db_connection != NULL)
+		db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_default);
 
 	return failed;
 }
@@ -435,7 +458,8 @@ static int sochgr_scsi_changer_unload(struct so_drive * from, struct so_database
 	sochgr_scsi_changer_wait();
 
 	sochgr_scsi_changer.status = so_changer_status_unloading;
-	db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_default);
+	if (db_connection != NULL)
+		db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_default);
 
 	failed = sochgr_scsi_changer_scsi_move(sochgr_scsi_changer_device, sochgr_scsi_changer_transport_address, from->slot, to);
 
@@ -468,7 +492,8 @@ static int sochgr_scsi_changer_unload(struct so_drive * from, struct so_database
 	from->ops->reset(from);
 
 	sochgr_scsi_changer.status = so_changer_status_idle;
-	db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_default);
+	if (db_connection != NULL)
+		db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_default);
 
 	return failed;
 }

@@ -154,6 +154,9 @@ int main() {
 		unsigned int i, nb_new_free_drives = 0;
 		for (i = 0; i < changer->nb_drives; i++) {
 			struct so_drive * dr = changer->drives + i;
+			if (!dr->enable)
+				continue;
+
 			dr->ops->update_status(dr);
 
 			if (dr->ops->is_free(dr))
