@@ -33,8 +33,6 @@
 // strcmp
 #include <string.h>
 
-#include <unistd.h>
-
 #include <libstoriqone/database.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
@@ -117,10 +115,6 @@ int main() {
 	struct so_database_connection * db_connect = db_conf->ops->connect(db_conf);
 	if (db_connect == NULL)
 		return 4;
-
-	int c = 1;
-	while (c)
-		sleep(1);
 
 	so_log_write(so_log_level_info, dgettext("libstoriqone-changer", "Initialize changer (type: %s)"), driver->name);
 	struct so_changer * changer = driver->device;
