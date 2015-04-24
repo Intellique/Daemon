@@ -774,6 +774,14 @@ struct so_value * so_value_new_string(const char * value) {
 	return val;
 }
 
+struct so_value * so_value_new_string2(const char * value, ssize_t length) {
+	struct so_value * val = so_value_new(so_value_string, length + 1);
+	char * string = so_value_get(val);
+	strncpy(string, value, length);
+	string[length] = '\0';
+	return val;
+}
+
 static struct so_value * so_value_pack_inner(const char ** format, va_list params) {
 	switch (**format) {
 		case 'b':

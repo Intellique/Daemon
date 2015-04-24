@@ -31,6 +31,8 @@
 #include <stdarg.h>
 // bool
 #include <stdbool.h>
+// ssize_t
+#include <sys/types.h>
 
 /**
  * \brief Wrapper of value
@@ -224,6 +226,7 @@ struct so_value * so_value_new_null(void) __attribute__((warn_unused_result));
  * \returns new string value
  */
 struct so_value * so_value_new_string(const char * value) __attribute__((nonnull,warn_unused_result));
+struct so_value * so_value_new_string2(const char * value, ssize_t length) __attribute__((nonnull,warn_unused_result));
 struct so_value * so_value_pack(const char * format, ...) __attribute__((nonnull(1),warn_unused_result));
 /**
  * \brief Share this value

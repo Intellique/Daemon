@@ -146,7 +146,9 @@ static bool sodr_tape_drive_check_header(struct so_database_connection * db) {
 	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
 
 	char * buffer = malloc(block_size);
+	sodr_time_start();
 	ssize_t nb_read = read(fd_nst, buffer, block_size);
+	sodr_time_stop(&sodr_tape_drive);
 
 	sodr_tape_drive.status = nb_read < 0 ? so_drive_status_error : so_drive_status_loaded_idle;
 	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
