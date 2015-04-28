@@ -1,3 +1,9 @@
+stone (1.1.27.5+wheezy) polisher; urgency=low
+
+  * Oubli de la tâche d’effacement de média
+
+ -- guillaume clercin <gclercin@intellique.com>  Tue, 28 Apr 2015 11:55:41 +0200
+
 stone (1.1.27.4+wheezy) polisher; urgency=low
 
   * Amélioration du script de création de proxy
