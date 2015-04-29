@@ -32,7 +32,7 @@
 // strdup
 #include <string.h>
 
-#include <libstoriqone/drive.h>
+#include <libstoriqone-changer/drive.h>
 
 #include "device.h"
 #include "util.h"
@@ -59,5 +59,7 @@ void sochgr_vtl_drive_delete(struct so_drive * drive) {
 	free(drive->vendor);
 	free(drive->revision);
 	free(drive->serial_number);
+
+	drive->ops->free(drive);
 }
 

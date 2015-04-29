@@ -57,3 +57,15 @@ void sochgr_vtl_slot_create(struct so_slot * slot, const char * root_directory, 
 	free(media_link);
 }
 
+void sochgr_vtl_slot_delete(struct so_slot * slot) {
+	free(slot->volume_name);
+
+	struct sochgr_vtl_changer_slot * vtl_sl = slot->data;
+	so_file_rm(vtl_sl->path);
+
+	free(vtl_sl->path);
+	free(vtl_sl);
+
+	slot->data = NULL;
+}
+
