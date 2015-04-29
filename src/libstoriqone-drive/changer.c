@@ -211,6 +211,10 @@ static void sodr_changer_process_reset(struct so_value * request, struct so_data
 
 static void sodr_changer_process_stop(struct so_value * request __attribute__((unused)), struct so_database_connection * db __attribute__((unused))) {
 	stop = true;
+
+	struct so_value * returned = so_value_pack("{si}", "status", 0L);
+	so_json_encode_to_fd(returned, 1, true);
+	so_value_free(returned);
 }
 
 static void sodr_changer_process_update_status(struct so_value * request __attribute__((unused)), struct so_database_connection * db) {

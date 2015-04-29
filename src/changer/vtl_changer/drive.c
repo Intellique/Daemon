@@ -54,3 +54,10 @@ void sochgr_vtl_drive_create(struct so_drive * drive, const char * root_director
 	free(serial_file);
 }
 
+void sochgr_vtl_drive_delete(struct so_drive * drive) {
+	free(drive->model);
+	free(drive->vendor);
+	free(drive->revision);
+	free(drive->serial_number);
+}
+

@@ -24,10 +24,12 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-// malloc
+// free, malloc
 #include <stdlib.h>
 // bzero
 #include <strings.h>
+// close
+#include <unistd.h>
 
 #include <libstoriqone/json.h>
 #include <libstoriqone/poll.h>
@@ -38,19 +40,23 @@
 
 static bool sochgr_drive_check_cookie(struct so_drive * dr, const char * cookie);
 static bool sochgr_drive_check_support(struct so_drive * drive, struct so_media_format * format, bool for_writing);
+static void sochgr_drive_free(struct so_drive * drive);
 static bool sochgr_drive_is_free(struct so_drive * drive);
 static int sochgr_drive_load_media(struct so_drive * drive, struct so_media * media);
 static int sochgr_drive_lock(struct so_drive * drive, const char * job_key);
 static int sochgr_drive_reset(struct so_drive * drive);
+static int sochgr_drive_stop(struct so_drive * drive);
 static int sochgr_drive_update_status(struct so_drive * drive);
 
 static struct so_drive_ops drive_ops = {
 	.check_cookie  = sochgr_drive_check_cookie,
 	.check_support = sochgr_drive_check_support,
+	.free          = sochgr_drive_free,
 	.is_free       = sochgr_drive_is_free,
 	.load_media    = sochgr_drive_load_media,
 	.lock          = sochgr_drive_lock,
 	.reset         = sochgr_drive_reset,
+	.stop          = sochgr_drive_stop,
 	.update_status = sochgr_drive_update_status,
 };
 
@@ -93,6 +99,22 @@ static bool sochgr_drive_check_support(struct so_drive * drive, struct so_media_
 	so_value_free(returned);
 
 	return ok;
+}
+
+static void sochgr_drive_free(struct so_drive * drive) {
+	if (drive == NULL)
+		return;
+
+	struct sochgr_drive * self = drive->data;
+	if (!self->process.has_exited)
+		so_process_wait(&self->process, 1);
+	so_process_free(&self->process, 1);
+
+	close(self->fd_in);
+	close(self->fd_out);
+	so_value_free(self->config);
+
+	free(self);
 }
 
 static bool sochgr_drive_is_free(struct so_drive * drive) {
@@ -196,6 +218,27 @@ static int sochgr_drive_reset(struct so_drive * drive) {
 void sochgr_drive_set_config(struct so_value * logger, struct so_value * db) {
 	log_config = logger;
 	db_config = db;
+}
+
+static int sochgr_drive_stop(struct so_drive * drive) {
+	struct sochgr_drive * self = drive->data;
+
+	struct so_value * command = so_value_pack("{ss}", "command", "stop");
+	so_json_encode_to_fd(command, self->fd_in, true);
+	so_value_free(command);
+
+	struct so_value * returned = so_json_parse_fd(self->fd_out, -1);
+	long int val = 1;
+
+	so_value_unpack(returned, "{si}", "status", &val);
+	so_value_free(returned);
+
+	if (val == 0) {
+		struct sochgr_drive * self = drive->data;
+		so_process_wait(&self->process, 1);
+	}
+
+	return (int) val;
 }
 
 static int sochgr_drive_update_status(struct so_drive * drive) {

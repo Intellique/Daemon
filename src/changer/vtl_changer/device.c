@@ -27,9 +27,9 @@
 #define _GNU_SOURCE
 // asprintf, rename
 #include <stdio.h>
-// calloc, free, malloc
+// calloc, free, malloc, realloc
 #include <stdlib.h>
-// strdup
+// memmove, strdup
 #include <string.h>
 // bzero
 #include <strings.h>
@@ -113,13 +113,54 @@ static int sochgr_vtl_changer_check(struct so_database_connection * db_connectio
 	if (nb_parsed < 3)
 		return 2;
 
-	if (nb_drives > nb_slots)
+	if (nb_drives > nb_slots || nb_drives < 1 || nb_slots - nb_drives < 1)
 		return 3;
 
-	if (nb_drives != sochgr_vtl_changer.nb_drives || nb_slots != sochgr_vtl_changer.nb_slots || deleted) {
+	if (nb_drives != sochgr_vtl_changer.nb_drives || nb_slots != sochgr_vtl_changer.nb_slots - sochgr_vtl_changer.nb_drives || deleted) {
 		int failed = sochgr_vtl_changer_put_offline(db_connection);
 		if (failed != 0)
 			return failed;
+
+		if (nb_drives < sochgr_vtl_changer.nb_drives) {
+			unsigned int i;
+			for (i = nb_drives; i < sochgr_vtl_changer.nb_drives; i++) {
+				struct so_drive * dr = sochgr_vtl_changer.drives + i;
+				// TODO: check returned value
+				dr->ops->stop(dr);
+
+				db_connection->ops->delete_drive(db_connection, dr);
+
+				sochgr_vtl_drive_delete(dr);
+
+				dr->ops->free(dr);
+			}
+
+			void * addr = realloc(sochgr_vtl_changer.drives, nb_drives * sizeof(struct so_drive));
+			if (addr != NULL) {
+				sochgr_vtl_changer.drives = addr;
+
+				for (i = 0; i < nb_drives; i++) {
+					struct so_drive * dr = sochgr_vtl_changer.drives + i;
+					dr->slot->drive = dr;
+				}
+			}
+
+			memmove(sochgr_vtl_changer.slots + nb_drives, sochgr_vtl_changer.slots + sochgr_vtl_changer.nb_drives, (sochgr_vtl_changer.nb_slots - sochgr_vtl_changer.nb_drives) * sizeof(struct so_slot));
+
+			sochgr_vtl_changer.nb_drives = nb_drives;
+
+			addr = realloc(sochgr_vtl_changer.slots, (nb_drives + nb_slots) * sizeof(struct so_slot));
+			if (addr != NULL) {
+				sochgr_vtl_changer.slots = addr;
+
+				for (i = 0; i < nb_drives; i++) {
+					struct so_drive * dr = sochgr_vtl_changer.drives + i;
+					dr->slot = sochgr_vtl_changer.slots + i;
+				}
+			}
+
+			sochgr_vtl_changer.nb_slots = nb_slots;
+		}
 	}
 
 	return 0;

@@ -103,9 +103,9 @@ static struct so_drive sodr_vtl_drive = {
 	.operation_duration = 0,
 	.is_empty           = true,
 
-	.model         = "Stone vtl drive",
+	.model         = "Storiq one vtl drive",
 	.vendor        = "Intellique",
-	.revision      = "A01",
+	.revision      = "B01",
 	.serial_number = NULL,
 
 	.changer = NULL,

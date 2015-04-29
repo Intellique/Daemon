@@ -79,6 +79,7 @@ static char * so_database_postgresql_get_host(struct so_database_connection * co
 static int so_database_postgresql_get_host_by_name(struct so_database_connection * connect, struct so_host * host, const char * name);
 static int so_database_postgresql_update_host(struct so_database_connection * connect, const char * uuid);
 
+static int so_database_postgresql_delete_drive(struct so_database_connection * connect, struct so_drive * drive);
 static struct so_value * so_database_postgresql_get_changers(struct so_database_connection * connect);
 static struct so_value * so_database_postgresql_get_checksums_from_pool(struct so_database_connection * connect, struct so_pool * pool);
 static struct so_value * so_database_postgresql_get_drives_by_changer(struct so_database_connection * connect, const char * changer_id);
@@ -150,6 +151,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.get_host_by_name = so_database_postgresql_get_host_by_name,
 	.update_host      = so_database_postgresql_update_host,
 
+	.delete_drive              = so_database_postgresql_delete_drive,
 	.get_changers              = so_database_postgresql_get_changers,
 	.get_checksums_from_pool   = so_database_postgresql_get_checksums_from_pool,
 	.get_free_medias           = so_database_postgresql_get_free_medias,
@@ -495,6 +497,35 @@ static int so_database_postgresql_update_host(struct so_database_connection * co
 	return status != PGRES_COMMAND_OK;
 }
 
+
+static int so_database_postgresql_delete_drive(struct so_database_connection * connect, struct so_drive * drive) {
+	if (connect == NULL || drive == NULL)
+		return -1;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(drive->db_data, key, false, false);
+	so_value_free(key);
+
+	char * drive_id = NULL;
+	so_value_unpack(db, "{ss}", "id", &drive_id);
+
+	const char * query = "delete_drive_by_id";
+	so_database_postgresql_prepare(self, query, "DELETE FROM drive WHERE id = $1");
+
+	const char * param[] = { drive_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+	free(drive_id);
+
+	return status != PGRES_COMMAND_OK;
+}
 
 static struct so_value * so_database_postgresql_get_changers(struct so_database_connection * connect) {
 	struct so_value * changers = so_value_new_linked_list();

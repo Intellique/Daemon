@@ -40,7 +40,7 @@ struct sochgr_vtl_changer_slot {
 struct so_changer * sochgr_vtl_changer_get_device(void);
 
 void sochgr_vtl_drive_create(struct so_drive * drive, const char * root_directory, long long index);
-void sochgr_vtl_drive_delete(void);
+void sochgr_vtl_drive_delete(struct so_drive * drive);
 
 struct so_media * sochgr_vtl_media_create(const char * root_directory, const char * prefix, long long index, struct so_media_format * format, struct so_database_connection * db_connection);
 

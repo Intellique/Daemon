@@ -34,10 +34,12 @@ struct so_value;
 struct so_drive_ops {
 	bool (*check_cookie)(struct so_drive * drive, const char * cookie);
 	bool (*check_support)(struct so_drive * drive, struct so_media_format * format, bool for_writing);
+	void (*free)(struct so_drive * drive);
 	bool (*is_free)(struct so_drive * drive);
 	int (*load_media)(struct so_drive * drive, struct so_media * media);
 	int (*lock)(struct so_drive * drive, const char * job_key);
 	int (*reset)(struct so_drive * drive);
+	int (*stop)(struct so_drive * drive);
 	int (*update_status)(struct so_drive * drive);
 };
 

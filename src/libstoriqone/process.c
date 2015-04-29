@@ -147,6 +147,7 @@ void so_process_new(struct so_process * process, const char * process_name, cons
 		process->fds[j].type = so_process_fd_type_default;
 	}
 	process->exited_code = 0;
+	process->has_exited = true;
 }
 
 void so_process_pipe(struct so_process * process_out, enum so_process_std out, struct so_process * process_in) {
@@ -276,6 +277,7 @@ void so_process_start(struct so_process * process, unsigned int nb_process) {
 			for (j = 0; j < 3; j++)
 				if (process[i].fds[j].type == so_process_fd_type_set)
 					close(process[i].fds[j].fd);
+			process[i].has_exited = false;
 		} else if (process[i].pid == 0) {
 			int j;
 			for (j = 0; j < 3; j++) {
@@ -337,6 +339,7 @@ void so_process_wait(struct so_process * process, unsigned int nb_process) {
 		int err = waitpid(process[i].pid, &status, 0);
 		if (err > 0)
 			process[i].exited_code = WEXITSTATUS(status);
+		process[i].has_exited = true;
 	}
 }
 

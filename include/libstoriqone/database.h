@@ -137,6 +137,7 @@ struct so_database_connection {
 		int (*get_host_by_name)(struct so_database_connection * connect, struct so_host * host, const char * name) __attribute__((nonnull));
 		int (*update_host)(struct so_database_connection * connect, const char * uuid) __attribute__((nonnull));
 
+		int (*delete_drive)(struct so_database_connection * connect, struct so_drive * drive) __attribute__((nonnull));
 		struct so_value * (*get_changers)(struct so_database_connection * connect) __attribute__((nonnull));
 		struct so_value * (*get_checksums_from_pool)(struct so_database_connection * connect, struct so_pool * pool) __attribute__((nonnull,warn_unused_result));
 		struct so_value * (*get_free_medias)(struct so_database_connection * connect, struct so_media_format * media_format, bool online) __attribute__((nonnull,warn_unused_result));

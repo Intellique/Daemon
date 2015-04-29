@@ -27,6 +27,9 @@
 #ifndef __LIBSTONE_PROCESS_H__
 #define __LIBSTONE_PROCESS_H__
 
+// bool
+#include <stdbool.h>
+
 typedef int (*so_process_sub_callback)(void * arg);
 
 struct so_value;
@@ -75,6 +78,7 @@ struct so_process {
 	 * \brief code that process has returned
 	 */
 	int exited_code;
+	bool has_exited;
 };
 
 void so_process_close(struct so_process * process, enum so_process_std std);
