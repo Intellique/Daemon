@@ -175,6 +175,7 @@ struct so_value * so_pool_convert(struct so_pool * pool) __attribute__((nonnull,
 void so_pool_sync(struct so_pool * pool, struct so_value * new_pool) __attribute__((nonnull));
 
 int so_media_format_cmp(struct so_media_format * f1, struct so_media_format * f2) __attribute__((nonnull));
+struct so_media_format * so_media_format_dup(const struct so_media_format * format) __attribute__((nonnull));
 
 void so_media_free(struct so_media * media) __attribute__((nonnull));
 void so_media_free2(void * media) __attribute__((nonnull));

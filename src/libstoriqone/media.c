@@ -469,6 +469,33 @@ int so_media_format_cmp(struct so_media_format * f1, struct so_media_format * f2
 	return f1->density_code - f2->density_code;
 }
 
+struct so_media_format * so_media_format_dup(const struct so_media_format * format) {
+	struct so_media_format * new_format = malloc(sizeof(struct so_media_format));
+	bzero(new_format, sizeof(struct so_media_format));
+
+	strncpy(new_format->name, format->name, 64);
+	new_format->density_code = format->density_code;
+	new_format->type = format->type;
+	new_format->mode = format->mode;
+
+	new_format->max_load_count = format->max_load_count;
+	new_format->max_read_count = format->max_read_count;
+	new_format->max_write_count = format->max_write_count;
+	new_format->max_operation_count = format->max_operation_count;
+
+	new_format->life_span = format->life_span;
+
+	new_format->capacity = format->capacity;
+	new_format->block_size = format->block_size;
+
+	new_format->support_partition = format->support_partition;
+	new_format->support_mam = format->support_mam;
+
+	new_format->db_data = so_value_share(format->db_data);
+
+	return new_format;
+}
+
 
 void so_media_free(struct so_media * media) {
 	if (media == NULL)

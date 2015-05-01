@@ -24,35 +24,12 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_CHANGER_MEDIA_P_H__
-#define __LIBSTORIQONE_CHANGER_MEDIA_P_H__
+#ifndef __LIBSTORIQONE_CHANGER_MEDIA_H__
+#define __LIBSTORIQONE_CHANGER_MEDIA_H__
 
-// bool
-#include <stdbool.h>
-// size_t
-#include <sys/types.h>
+#include <libstoriqone/media.h>
 
-#include <libstoriqone-changer/media.h>
-
-struct so_changer;
-struct so_slot;
-struct sochgr_peer;
-
-struct sochgr_media {
-	struct sochgr_peer_list {
-		struct sochgr_peer * peer;
-		size_t size_need;
-		bool waiting;
-		struct sochgr_peer_list * next;
-	} * first, * last;
-	size_t size_reserved;
-};
-
-void sochgr_media_add_reader(struct sochgr_media * media, struct sochgr_peer * peer);
-void sochgr_media_add_writer(struct sochgr_media * media, struct sochgr_peer * peer, size_t size_need);
-struct sochgr_peer_list * sochgr_media_find_peer(struct sochgr_media * media, struct sochgr_peer * peer);
-void sochgr_media_init(struct so_changer * changer);
-void sochgr_media_remove_peer(struct sochgr_media * media, struct sochgr_peer * peer);
+void sochgr_media_init_slot(struct so_slot * slot);
 
 #endif
 

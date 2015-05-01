@@ -44,10 +44,12 @@
 #include <libstoriqone/value.h>
 #include <libstoriqone-changer/changer.h>
 #include <libstoriqone-changer/drive.h>
+#include <libstoriqone-changer/media.h>
 
 #include "device.h"
 #include "util.h"
 
+static struct so_media_format * vtl_format = NULL;
 static char * vtl_prefix = NULL;
 static char * vtl_root_dir = NULL;
 
@@ -188,9 +190,36 @@ static int sochgr_vtl_changer_check(struct so_database_connection * db_connectio
 			sochgr_vtl_changer.nb_slots = sochgr_vtl_changer.nb_drives + nb_slots;
 		}
 
+		if (nb_slots > sochgr_vtl_changer.nb_slots - sochgr_vtl_changer.nb_drives) {
+			void * addr = realloc(sochgr_vtl_changer.slots, (sochgr_vtl_changer.nb_drives + nb_slots) * sizeof(struct so_slot));
+			if (addr != NULL) {
+				sochgr_vtl_changer.slots = addr;
+
+				unsigned int i;
+				for (i = 0; i < sochgr_vtl_changer.nb_drives; i++) {
+					struct so_drive * dr = sochgr_vtl_changer.drives + i;
+					dr->slot = sochgr_vtl_changer.slots + i;
+				}
+
+				for (i = sochgr_vtl_changer.nb_slots - sochgr_vtl_changer.nb_drives; i < nb_slots; i++) {
+					struct so_slot * sl = sochgr_vtl_changer.slots + i;
+
+					sochgr_vtl_slot_create(sl, vtl_root_dir, vtl_prefix, i);
+					sl->changer = &sochgr_vtl_changer;
+					sl->index = nb_drives + i;
+
+					sl->media = sochgr_vtl_media_create(vtl_root_dir, vtl_prefix, i, vtl_format, db_connection);
+
+					sochgr_media_init_slot(sl);
+				}
+			}
+		}
+
 		failed = sochgr_vtl_changer_put_online(db_connection);
 		if (failed != 0)
 			return failed;
+
+		db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_init);
 	}
 
 	return 0;
@@ -213,9 +242,9 @@ static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_
 		"uuid", &sochgr_vtl_changer.serial_number
 	);
 
-	struct so_media_format * format = malloc(sizeof(struct so_media_format));
-	bzero(format, sizeof(struct so_media_format));
-	so_media_format_sync(format, vformat);
+	vtl_format = malloc(sizeof(struct so_media_format));
+	bzero(vtl_format, sizeof(struct so_media_format));
+	so_media_format_sync(vtl_format, vformat);
 
 	sochgr_vtl_changer.drives = calloc(nb_drives, sizeof(struct so_drive));
 	sochgr_vtl_changer.nb_drives = nb_drives;
@@ -235,7 +264,7 @@ static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_
 		struct so_drive * drive = sochgr_vtl_changer.drives + i;
 		sochgr_vtl_drive_create(drive, vtl_root_dir, i);
 
-		drive->density_code = format->density_code;
+		drive->density_code = vtl_format->density_code;
 		drive->changer = &sochgr_vtl_changer;
 
 		struct so_slot * sl = sochgr_vtl_changer.slots + i;
@@ -263,7 +292,7 @@ static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_
 		sl->changer = &sochgr_vtl_changer;
 		sl->index = nb_drives + i;
 
-		sl->media = sochgr_vtl_media_create(vtl_root_dir, vtl_prefix, i, format, db_connection);
+		sl->media = sochgr_vtl_media_create(vtl_root_dir, vtl_prefix, i, vtl_format, db_connection);
 	}
 
 	db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_init);
