@@ -35,6 +35,7 @@ struct so_slot;
 struct sochgr_vtl_changer_slot {
 	char * path;
 	struct so_slot * origin;
+	char * media_dir;
 };
 
 struct so_changer * sochgr_vtl_changer_get_device(void);

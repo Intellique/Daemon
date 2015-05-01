@@ -39,6 +39,7 @@
 #include <libstoriqone/database.h>
 #include <libstoriqone/file.h>
 #include <libstoriqone/media.h>
+#include <libstoriqone/value.h>
 
 #include "device.h"
 #include "util.h"
@@ -72,8 +73,8 @@ struct so_media * sochgr_vtl_media_create(const char * root_directory, const cha
 		media->format = format;
 	}
 
-	free(media_dir);
 	free(serial_file);
+	free(media_dir);
 
 	return media;
 }

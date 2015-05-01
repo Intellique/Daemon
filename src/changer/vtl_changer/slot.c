@@ -36,6 +36,7 @@
 
 #include <libstoriqone/file.h>
 #include <libstoriqone/slot.h>
+#include <libstoriqone/value.h>
 
 #include "device.h"
 
@@ -46,6 +47,7 @@ void sochgr_vtl_slot_create(struct so_slot * slot, const char * root_directory, 
 	struct sochgr_vtl_changer_slot * vtl_sl = slot->data = malloc(sizeof(struct sochgr_vtl_changer_slot));
 	bzero(vtl_sl, sizeof(struct sochgr_vtl_changer_slot));
 	asprintf(&vtl_sl->path, "%s/slots/%Ld", root_directory, index);
+	asprintf(&vtl_sl->media_dir, "%s/medias/%s%03Ld", root_directory, prefix, index);
 	so_file_mkdir(vtl_sl->path, 0700);
 
 	char * media_link, * link;
@@ -62,10 +64,13 @@ void sochgr_vtl_slot_delete(struct so_slot * slot) {
 
 	struct sochgr_vtl_changer_slot * vtl_sl = slot->data;
 	so_file_rm(vtl_sl->path);
+	so_file_rm(vtl_sl->media_dir);
 
 	free(vtl_sl->path);
+	free(vtl_sl->media_dir);
 	free(vtl_sl);
 
 	slot->data = NULL;
+	so_value_free(slot->db_data);
 }
 
