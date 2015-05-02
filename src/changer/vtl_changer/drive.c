@@ -32,24 +32,31 @@
 // strdup
 #include <string.h>
 
+#include <libstoriqone/file.h>
+#include <libstoriqone/value.h>
 #include <libstoriqone-changer/drive.h>
 
 #include "device.h"
 #include "util.h"
 
-void sochgr_vtl_drive_create(struct so_drive * drive, const char * root_directory, long long index) {
+void sochgr_vtl_drive_create(struct sochgr_vtl_drive * dr_p, struct so_drive * dr, const char * root_directory, long long index) {
+	asprintf(&dr_p->drive_dir, "%s/drives/%Ld", root_directory, index);
+	so_file_mkdir(dr_p->drive_dir, 0700);
+
 	char * serial_file;
 	asprintf(&serial_file, "%s/drives/%Ld/serial_number", root_directory, index);
 
-	drive->model = strdup("Storiq one vtl drive");
-	drive->vendor = strdup("Intellique");
-	drive->revision = strdup("B01");
-	drive->serial_number = sochgr_vtl_util_get_serial(serial_file);
+	dr->model = strdup("Storiq one vtl drive");
+	dr->vendor = strdup("Intellique");
+	dr->revision = strdup("B01");
+	dr->serial_number = sochgr_vtl_util_get_serial(serial_file);
 
-	drive->status = so_drive_status_unknown;
-	drive->enable = true;
-	drive->mode = so_media_format_mode_disk;
-	drive->index = index;
+	dr->status = so_drive_status_unknown;
+	dr->enable = true;
+	dr->mode = so_media_format_mode_disk;
+	dr->index = index;
+
+	so_value_hashtable_put2(dr_p->params, "device", so_value_new_string(dr_p->drive_dir), true);
 
 	free(serial_file);
 }

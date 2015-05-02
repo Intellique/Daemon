@@ -34,6 +34,7 @@
 // symlink
 #include <unistd.h>
 
+#include <libstoriqone/drive.h>
 #include <libstoriqone/file.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
@@ -72,5 +73,19 @@ void sochgr_vtl_slot_delete(struct so_slot * slot) {
 
 	slot->data = NULL;
 	so_value_free(slot->db_data);
+}
+
+
+void sochgr_vtl_drive_slot_create(struct so_drive * dr, struct so_slot * sl, const char * root_directory, long long index) {
+	sl->index = index;
+	sl->drive = dr;
+	dr->slot = sl;
+
+	sl->full = false;
+	sl->enable = true;
+
+	struct sochgr_vtl_changer_slot * vtl_sl = sl->data = malloc(sizeof(struct sochgr_vtl_changer_slot));
+	bzero(vtl_sl, sizeof(struct sochgr_vtl_changer_slot));
+	asprintf(&vtl_sl->path, "%s/drives/%Ld", root_directory, index);
 }
 
