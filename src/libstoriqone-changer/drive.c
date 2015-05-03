@@ -24,6 +24,8 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+// snprintf
+#include <stdio.h>
 // free, malloc
 #include <stdlib.h>
 // bzero
@@ -60,6 +62,8 @@ static struct so_drive_ops drive_ops = {
 	.update_status = sochgr_drive_update_status,
 };
 
+static struct so_value * changer_socket = NULL;
+static struct so_value * drives_config = NULL;
 static struct so_value * log_config = NULL;
 static struct so_value * db_config = NULL;
 
@@ -117,6 +121,10 @@ static void sochgr_drive_free(struct so_drive * drive) {
 	free(self);
 }
 
+struct so_value * sochgr_drive_get_configs() {
+	return drives_config;
+}
+
 static bool sochgr_drive_is_free(struct so_drive * drive) {
 	struct sochgr_drive * self = drive->data;
 
@@ -171,7 +179,7 @@ static int sochgr_drive_lock(struct so_drive * drive, const char * job_key) {
 	return ok ? 0 : -1;
 }
 
-void sochgr_drive_register(struct so_drive * drive, struct so_value * config, const char * process_name) {
+void sochgr_drive_register(struct so_drive * drive, struct so_value * config, const char * process_name, unsigned int index) {
 	if (!drive->enable)
 		return;
 
@@ -186,17 +194,30 @@ void sochgr_drive_register(struct so_drive * drive, struct so_value * config, co
 	 * so_process_new(&self->process, "valgrind", params, 10);
 	 */
 
-	so_process_new(&self->process, process_name, NULL, 0);
+	char buffer_index[12];
+	snprintf(buffer_index, 12, "#%u", index);
+
+	const char * params[] = { buffer_index };
+	so_process_new(&self->process, process_name, params, 1);
+
 	self->fd_in = so_process_pipe_to(&self->process);
 	self->fd_out = so_process_pipe_from(&self->process, so_process_stdout);
 	so_process_set_null(&self->process, so_process_stderr);
-	self->config = so_value_pack("{sOsOsO}", "logger", log_config, "drive", config, "database", db_config);
+	self->config = so_value_pack("{sOsOsOsO}", "logger", log_config, "drive", config, "database", db_config, "socket", changer_socket);
 
 	drive->ops = &drive_ops;
 	drive->data = self;
 
 	so_process_start(&self->process, 1);
 	so_json_encode_to_fd(self->config, self->fd_in, true);
+
+	struct so_value * dr_config = so_json_parse_fd(self->fd_out, -1);
+
+	if (drives_config == NULL)
+		drives_config = so_value_new_linked_list();
+
+	if (so_value_list_get_length(drives_config) <= index)
+		so_value_list_push(drives_config, dr_config, true);
 }
 
 static int sochgr_drive_reset(struct so_drive * drive) {
@@ -215,9 +236,10 @@ static int sochgr_drive_reset(struct so_drive * drive) {
 	return (int) val;
 }
 
-void sochgr_drive_set_config(struct so_value * logger, struct so_value * db) {
+void sochgr_drive_set_config(struct so_value * logger, struct so_value * db, struct so_value * socket_template) {
 	log_config = logger;
 	db_config = db;
+	changer_socket = socket_template;
 }
 
 static int sochgr_drive_stop(struct so_drive * drive) {

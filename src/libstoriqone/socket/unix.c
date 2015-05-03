@@ -161,6 +161,60 @@ bool so_socket_unix_server(struct so_value * config, so_socket_accept_f accept_c
 	return true;
 }
 
+bool so_socket_unix_from_template(struct so_value * socket_template, so_socket_accept_f accept_callback) {
+	int type = SOCK_STREAM;
+
+	struct so_value * vtype = so_value_hashtable_get2(socket_template, "type", false, false);
+	if (vtype->type == so_value_string && !strcmp(so_value_string_get(vtype), "datagram"))
+		type = SOCK_DGRAM;
+
+	struct so_value * vpath = so_value_hashtable_get2(socket_template, "path", false, false);
+	if (vpath->type != so_value_string)
+		return false;
+
+	int fd = -1;
+	while (fd < 0) {
+		fd = socket(AF_UNIX, type, 0);
+		if (fd < 0)
+			return false;
+
+		// close this socket on exec
+		so_file_close_fd_on_exec(fd, true);
+
+		struct sockaddr_un addr;
+		bzero(&addr, sizeof(addr));
+		addr.sun_family = AF_UNIX;
+		char * new_path = so_file_rename(so_value_string_get(vpath));
+		snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", new_path);
+
+		int failed = bind(fd, (struct sockaddr *) &addr, sizeof(addr));
+		if (failed != 0) {
+			if (errno != EADDRINUSE) {
+				close(fd);
+
+				free(new_path);
+				return false;
+			}
+
+			close(fd);
+			fd = -1;
+		} else
+			so_value_hashtable_put2(socket_template, "path", so_value_new_string(new_path), true);
+
+		free(new_path);
+	}
+
+	listen(fd, 16);
+
+	struct so_unix_socket_server * self = malloc(sizeof(struct so_unix_socket_server));
+	self->fd = fd;
+	self->callback = accept_callback;
+
+	so_poll_register(fd, POLLIN | POLLPRI, so_socket_unix_server_callback, self, free);
+
+	return true;
+}
+
 static void so_socket_unix_server_callback(int fd, short event __attribute__((unused)), void * data) {
 	struct so_unix_socket_server * self = data;
 

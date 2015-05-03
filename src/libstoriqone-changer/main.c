@@ -100,7 +100,7 @@ int main() {
 
 	so_log_configure(log_config, so_log_type_changer);
 	so_database_load_config(db_config);
-	sochgr_drive_set_config(log_config, db_config);
+	sochgr_drive_set_config(log_config, db_config, socket);
 	sochgr_listen_configure(socket);
 
 	so_poll_register(0, POLLHUP, sochgr_daemon_hungup, NULL, NULL);

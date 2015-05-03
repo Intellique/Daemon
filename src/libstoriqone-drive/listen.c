@@ -107,9 +107,13 @@ void sodr_listen_configure(struct so_value * config) {
 
 	if (sodr_config != NULL)
 		so_value_free(sodr_config);
-	sodr_config = so_value_share(config);
+	sodr_config = so_value_copy(config, true);
 
-	so_socket_server(config, sodr_socket_accept);
+	so_socket_from_template(sodr_config, sodr_socket_accept);
+}
+
+struct so_value * sodr_listen_get_socket_config() {
+	return sodr_config;
 }
 
 bool sodr_listen_is_locked() {

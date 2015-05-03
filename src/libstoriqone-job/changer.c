@@ -211,11 +211,8 @@ void soj_changer_set_config(struct so_value * config) {
 		struct so_changer * ch = soj_changers + i;
 		struct so_value * vch = so_value_iterator_get_value(iter, false);
 
-		struct so_value * drives = NULL, * socket = NULL;
-		so_value_unpack(vch, "{sosO}", "drives", &drives, "socket", &socket);
-
-		ch->nb_drives = so_value_list_get_length(drives);
-		ch->drives = calloc(ch->nb_drives, sizeof(struct so_drive));
+		struct so_value * socket = NULL;
+		so_value_unpack(vch, "{sO}", "socket", &socket);
 
 		struct soj_changer * self = ch->data = malloc(sizeof(struct soj_changer));
 		bzero(self, sizeof(struct soj_changer));
@@ -224,15 +221,26 @@ void soj_changer_set_config(struct so_value * config) {
 
 		ch->ops = &soj_changer_ops;
 
+		struct so_value * command = so_value_pack("{ss}", "command", "get drives config");
+		so_json_encode_to_fd(command, self->fd, true);
+		so_value_free(command);
+
+		struct so_value * response = so_json_parse_fd(self->fd, -1);
+
+		ch->nb_drives = so_value_list_get_length(response);
+		ch->drives = calloc(ch->nb_drives, sizeof(struct so_drive));
+
 		soj_changer_sync(ch);
 
 		unsigned int j;
-		struct so_value_iterator * iter = so_value_list_get_iterator(drives);
+		struct so_value_iterator * iter = so_value_list_get_iterator(response);
 		for (j = 0; j < ch->nb_drives; j++) {
 			struct so_value * dr_config = so_value_iterator_get_value(iter, false);
 			soj_drive_init(ch->drives + j, dr_config);
 		}
 		so_value_iterator_free(iter);
+
+		so_value_free(response);
 	}
 
 	so_value_iterator_free(iter);

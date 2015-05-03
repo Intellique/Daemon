@@ -55,6 +55,7 @@ static void sochgr_socket_accept(int fd_server, int fd_client, struct so_value *
 static void sochgr_socket_message(int fd, short event, void * data);
 static void sochgr_socket_remove_peer(struct sochgr_peer * peer);
 
+static void sochgr_socket_command_get_drives_config(struct sochgr_peer * peer, struct so_value * request, int fd);
 static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so_value * request, int fd);
 static void sochgr_socket_command_release_media(struct sochgr_peer * peer, struct so_value * request, int fd);
 static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struct so_value * request, int fd);
@@ -65,10 +66,11 @@ struct sochgr_socket_command {
 	char * name;
 	void (*function)(struct sochgr_peer * peer, struct so_value * request, int fd);
 } commands[] = {
-	{ 0, "get media",     sochgr_socket_command_get_media },
-	{ 0, "release media", sochgr_socket_command_release_media },
-	{ 0, "reserve media", sochgr_socket_command_reserve_media },
-	{ 0, "sync",          sochgr_socket_command_sync },
+	{ 0, "get drives config", sochgr_socket_command_get_drives_config },
+	{ 0, "get media",         sochgr_socket_command_get_media },
+	{ 0, "release media",     sochgr_socket_command_release_media },
+	{ 0, "reserve media",     sochgr_socket_command_reserve_media },
+	{ 0, "sync",              sochgr_socket_command_sync },
 
 	{ 0, NULL, NULL }
 };
@@ -341,6 +343,10 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 	return false;
 }
 
+
+static void sochgr_socket_command_get_drives_config(struct sochgr_peer * peer __attribute__((unused)), struct so_value * request __attribute__((unused)), int fd) {
+	so_json_encode_to_fd(sochgr_drive_get_configs(), fd, true);
+}
 
 static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so_value * request, int fd) {
 	long int slot = -1;

@@ -315,14 +315,11 @@ static struct so_format_writer * soj_drive_get_writer(struct so_drive * drive, s
 }
 
 void soj_drive_init(struct so_drive * drive, struct so_value * config) {
-	struct so_value * socket = NULL;
-	so_value_unpack(config, "{sO}", "socket", &socket);
-
 	struct soj_drive * self = drive->data = malloc(sizeof(struct soj_drive));
 	bzero(self, sizeof(struct soj_drive));
 
-	self->fd = so_socket(socket);
-	self->config = socket;
+	self->fd = so_socket(config);
+	self->config = so_value_share(config);
 
 	drive->ops = &soj_drive_ops;
 

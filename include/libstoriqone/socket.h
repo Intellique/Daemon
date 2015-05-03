@@ -37,6 +37,7 @@ int so_socket(struct so_value * config) __attribute__((nonnull,warn_unused_resul
 int so_socket_accept_and_close(int fd, struct so_value * config) __attribute__((nonnull,warn_unused_result));
 int so_socket_close(int fd, struct so_value * config) __attribute__((nonnull));
 bool so_socket_server(struct so_value * config, so_socket_accept_f accept_callback) __attribute__((nonnull));
+bool so_socket_from_template(struct so_value * socket_template, so_socket_accept_f accept_callback) __attribute__((nonnull));
 int so_socket_server_temp(struct so_value * config) __attribute__((nonnull));
 
 #endif

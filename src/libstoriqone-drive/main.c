@@ -63,19 +63,21 @@ int main() {
 	if (driver == NULL)
 		return 1;
 
-	struct so_value * config = so_json_parse_fd(0, 5000);
+	struct so_value * config = so_json_parse_fd(0, -1);
 	if (config == NULL)
 		return 2;
 
 	so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Starting drive (type: %s)"), driver->name);
 
-	struct so_value * log_config = NULL, * drive_config = NULL, * db_config = NULL;
-	so_value_unpack(config, "{sososo}", "logger", &log_config, "drive", &drive_config, "database", &db_config);
+	struct so_value * log_config = NULL, * drive_config = NULL, * db_config = NULL, * socket_config = NULL;
+	so_value_unpack(config, "{sosososo}",
+		"logger", &log_config,
+		"drive", &drive_config,
+		"database", &db_config,
+		"socket", &socket_config
+	);
 
-	struct so_value * listen = NULL;
-	so_value_unpack(drive_config, "{so}", "socket", &listen);
-
-	if (log_config == NULL || drive_config == NULL || db_config == NULL)
+	if (log_config == NULL || drive_config == NULL || db_config == NULL || socket_config == NULL)
 		return 3;
 
 	so_log_configure(log_config, so_log_type_drive);
@@ -97,14 +99,16 @@ int main() {
 	so_poll_register(0, POLLHUP, changer_request, NULL, NULL);
 
 	sodr_changer_setup(db_connect);
-	sodr_listen_configure(listen);
+	sodr_listen_configure(socket_config);
 	sodr_listen_set_db_connection(db_connect);
+
+	so_json_encode_to_fd(sodr_listen_get_socket_config(), 1, true);
 
 	struct so_drive * drive = driver->device;
 	so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Initialize drive (type: %s)"), driver->name);
 	int failed = drive->ops->init(drive_config);
 	if (failed != 0)
-		return 4;
+		return 6;
 
 	so_log_write(so_log_level_info, "Starting drive (type: %s, vendor: %s, model: %s, serial number: %s)", driver->name, drive->vendor, drive->model, drive->serial_number);
 

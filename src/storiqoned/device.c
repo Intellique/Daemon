@@ -70,7 +70,7 @@ void sod_device_configure(struct so_value * logger, struct so_value * db_config,
 		devices_json = so_value_new_linked_list();
 	}
 
-	static int i_changer = 0, i_drives = 0;
+	static int i_changer = 0;
 
 	// get scsi changers
 	struct so_value * real_changers = connection->ops->get_changers(connection);
@@ -95,21 +95,6 @@ void sod_device_configure(struct so_value * logger, struct so_value * db_config,
 
 		free(path);
 
-		struct so_value * drives;
-		so_value_unpack(changer, "{so}", "drives", &drives);
-		struct so_value_iterator * iter = so_value_list_get_iterator(drives);
-		while (so_value_iterator_has_next(iter)) {
-			struct so_value * drive = so_value_iterator_get_value(iter, false);
-
-			asprintf(&path, "run/changer_%d_drive_%d.socket", i_changer, i_drives);
-			i_drives++;
-
-			so_value_hashtable_put2(drive, "socket", so_value_pack("{ssss}", "domain", "unix", "path", path), true);
-
-			free(path);
-		}
-		so_value_iterator_free(iter);
-
 		so_value_list_push(devices, so_value_new_custom(dev, sod_device_free), true);
 		so_value_list_push(devices_json, changer, false);
 
@@ -128,21 +113,6 @@ void sod_device_configure(struct so_value * logger, struct so_value * db_config,
 	iter = so_value_list_get_iterator(vtl_changers);
 	while (so_value_iterator_has_next(iter)) {
 		struct so_value * changer = so_value_iterator_get_value(iter, true);
-
-		struct so_value * drives = NULL;
-		long long nb_drives = 0;
-		so_value_unpack(changer, "{sosi}", "drives", &drives, "nb drives", &nb_drives);
-
-		long long int i;
-		for (i = 0; i < nb_drives; i++) {
-			char * path;
-			asprintf(&path, "run/changer_%d_drive_%d.socket", i_changer, i_drives);
-			i_drives++;
-
-			so_value_list_push(drives, so_value_pack("{s{ssss}}", "socket", "domain", "unix", "path", path), true);
-
-			free(path);
-		}
 
 		struct sod_device * dev = malloc(sizeof(struct sod_device));
 		dev->process_name = "vtl_changer";

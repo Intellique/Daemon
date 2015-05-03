@@ -386,6 +386,228 @@ bool so_socket_tcp6_server(struct so_value * config, so_socket_accept_f accept_c
 	return true;
 }
 
+bool so_socket_tcp_from_template(struct so_value * socket_template, so_socket_accept_f accept_callback) {
+	int stype = SOCK_STREAM;
+
+	char * type = NULL;
+	char * saddr = NULL;
+	long long int port;
+
+	if (so_value_unpack(socket_template, "{siss}", "port", &port, "address", &saddr) < 1)
+		return -1;
+
+	if (so_value_unpack(socket_template, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+		stype = SOCK_DGRAM;
+	free(type);
+
+	int fd = -1, failed;
+	if (saddr != NULL) {
+		struct addrinfo * addr = NULL;
+		struct addrinfo hint = {
+			.ai_family    = AF_INET,
+			.ai_socktype  = stype,
+			.ai_protocol  = 0,
+			.ai_addrlen   = 0,
+			.ai_addr      = NULL,
+			.ai_canonname = NULL,
+			.ai_next      = NULL,
+		};
+		failed = getaddrinfo(saddr, NULL, &hint, &addr);
+		if (failed != 0)
+			return -1;
+
+		struct addrinfo * ptr = addr;
+		while (fd < 0 && ptr != NULL) {
+			fd = socket(AF_INET, stype, 0);
+			if (fd < 0) {
+				ptr = ptr->ai_next;
+				continue;
+			}
+
+			// close this socket on exec
+			so_file_close_fd_on_exec(fd, true);
+
+			struct sockaddr_in * addr_v4 = (struct sockaddr_in *) ptr->ai_addr;
+			addr_v4->sin_port = htons(port);
+
+			int failed = bind(fd, ptr->ai_addr, ptr->ai_addrlen);
+			if (failed != 0) {
+				switch (errno) {
+					case EACCES:
+					case EADDRNOTAVAIL:
+						close(fd);
+						fd = -1;
+						ptr = ptr->ai_next;
+						continue;
+
+					case EADDRINUSE:
+						close(fd);
+						fd = -1;
+						port++;
+						continue;
+
+					default:
+						close(fd);
+						ptr = NULL;
+						fd = -1;
+						break;
+				}
+			} else
+				so_value_hashtable_put2(socket_template, "port", so_value_new_integer(port), true);
+		}
+
+		freeaddrinfo(addr);
+		free(saddr);
+	} else
+		while (fd < 0) {
+			fd = socket(AF_INET, stype, 0);
+			if (fd < 0)
+				return false;
+
+			// close this socket on exec
+			so_file_close_fd_on_exec(fd, true);
+
+			struct sockaddr_in addr_v4;
+			bzero(&addr_v4, sizeof(addr_v4));
+			addr_v4.sin_port = htons(port);
+
+			int failed = bind(fd, (struct sockaddr *) &addr_v4, sizeof(addr_v4));
+			if (failed != 0) {
+				if (errno != EADDRINUSE) {
+					close(fd);
+					return false;
+				}
+
+				close(fd);
+				fd = -1;
+				port++;
+			} else
+				so_value_hashtable_put2(socket_template, "port", so_value_new_integer(port), true);
+		}
+
+	failed = listen(fd, 16);
+
+	struct so_tcp_socket_server * self = malloc(sizeof(struct so_tcp_socket_server));
+	self->fd = fd;
+	self->callback = accept_callback;
+	self->af = AF_INET;
+
+	so_poll_register(fd, POLLIN | POLLPRI, so_socket_tcp_server_callback, self, free);
+
+	return true;
+}
+
+bool so_socket_tcp6_from_template(struct so_value * socket_template, so_socket_accept_f accept_callback) {
+	int stype = SOCK_STREAM;
+
+	char * type = NULL;
+	char * saddr = NULL;
+	long long int port;
+
+	if (so_value_unpack(socket_template, "{siss}", "port", &port, "address", &saddr) < 1)
+		return -1;
+
+	if (so_value_unpack(socket_template, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
+		stype = SOCK_DGRAM;
+	free(type);
+
+	int fd = -1, failed;
+	if (saddr != NULL) {
+		struct addrinfo * addr = NULL;
+		struct addrinfo hint = {
+			.ai_family    = AF_INET6,
+			.ai_socktype  = stype,
+			.ai_protocol  = 0,
+			.ai_addrlen   = 0,
+			.ai_addr      = NULL,
+			.ai_canonname = NULL,
+			.ai_next      = NULL,
+		};
+		failed = getaddrinfo(saddr, NULL, &hint, &addr);
+		if (failed != 0)
+			return -1;
+
+		struct addrinfo * ptr = addr;
+		while (fd < 0 && ptr != NULL) {
+			fd = socket(AF_INET6, stype, 0);
+			if (fd < 0) {
+				ptr = ptr->ai_next;
+				continue;
+			}
+
+			// close this socket on exec
+			so_file_close_fd_on_exec(fd, true);
+
+			struct sockaddr_in6 * addr_v6 = (struct sockaddr_in6 *) ptr->ai_addr;
+			addr_v6->sin6_port = htons(port);
+
+			int failed = bind(fd, ptr->ai_addr, ptr->ai_addrlen);
+			if (failed != 0) {
+				switch (errno) {
+					case EACCES:
+					case EADDRNOTAVAIL:
+						close(fd);
+						fd = -1;
+						ptr = ptr->ai_next;
+						continue;
+
+					case EADDRINUSE:
+						close(fd);
+						fd = -1;
+						port++;
+						continue;
+
+					default:
+						close(fd);
+						ptr = NULL;
+						fd = -1;
+						break;
+				}
+			} else
+				so_value_hashtable_put2(socket_template, "port", so_value_new_integer(port), true);
+		}
+
+		freeaddrinfo(addr);
+		free(saddr);
+	} else
+		while (fd < 0) {
+			fd = socket(AF_INET6, stype, 0);
+			if (fd < 0)
+				return false;
+
+			// close this socket on exec
+			so_file_close_fd_on_exec(fd, true);
+
+			struct sockaddr_in6 addr_v6;
+			bzero(&addr_v6, sizeof(addr_v6));
+			addr_v6.sin6_port = htons(port);
+
+			int failed = bind(fd, (struct sockaddr *) &addr_v6, sizeof(addr_v6));
+			if (failed != 0) {
+				if (errno != EADDRINUSE) {
+					close(fd);
+					return false;
+				}
+
+				close(fd);
+				fd = -1;
+				port++;
+			} else
+				so_value_hashtable_put2(socket_template, "port", so_value_new_integer(port), true);
+		}
+
+	failed = listen(fd, 16);
+
+	struct so_tcp_socket_server * self = malloc(sizeof(struct so_tcp_socket_server));
+	self->fd = fd;
+	self->callback = accept_callback;
+	self->af = AF_INET6;
+
+	so_poll_register(fd, POLLIN | POLLPRI, so_socket_tcp_server_callback, self, free);
+
+	return true;
+}
+
 static void so_socket_tcp_server_callback(int fd, short event __attribute__((unused)), void * data) {
 	struct so_tcp_socket_server * self = data;
 

@@ -34,6 +34,7 @@ struct so_database_connection;
 struct so_value;
 
 void sodr_listen_configure(struct so_value * config);
+struct so_value * sodr_listen_get_socket_config(void);
 bool sodr_listen_is_locked(void);
 unsigned int sodr_listen_nb_clients(void);
 void sodr_listen_reset_peer(void);

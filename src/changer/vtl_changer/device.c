@@ -276,12 +276,11 @@ struct so_changer * sochgr_vtl_changer_get_device() {
 
 static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_connection * db_connection) {
 	long long nb_drives, nb_slots;
-	struct so_value * drives = NULL, * vformat = NULL;
-	so_value_unpack(config, "{sssisisosossss}",
+	struct so_value * vformat = NULL;
+	so_value_unpack(config, "{sssisisossss}",
 		"path", &sochgr_vtl_root_dir,
 		"nb drives", &nb_drives,
 		"nb slots", &nb_slots,
-		"drives", &drives,
 		"format", &vformat,
 		"prefix", &sochgr_vtl_prefix,
 		"uuid", &sochgr_vtl_changer.serial_number
@@ -305,7 +304,7 @@ static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_
 	for (i = 0; i < nb_drives; i++) {
 		struct sochgr_vtl_drive * dr_p = sochgr_vtl_drives + i;
 		struct so_drive * dr = sochgr_vtl_changer.drives + i;
-		dr_p->params = so_value_list_get(drives, i, true);
+		dr_p->params = so_value_new_hashtable2();
 
 		sochgr_vtl_drive_create(dr_p, dr, sochgr_vtl_root_dir, i);
 
@@ -334,8 +333,9 @@ static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_
 
 	for (i = 0; i < sochgr_vtl_changer.nb_drives; i++) {
 		struct so_drive * drive = sochgr_vtl_changer.drives + i;
-		struct so_value * vdrive = so_value_list_get(drives, i, false);
-		sochgr_drive_register(drive, vdrive, "vtl_drive");
+		struct sochgr_vtl_drive * dr_p = sochgr_vtl_drives + i;
+
+		sochgr_drive_register(drive, dr_p->params, "vtl_drive", i);
 	}
 
 	return 0;

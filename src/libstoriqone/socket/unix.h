@@ -31,6 +31,7 @@ int so_socket_unix(struct so_value * config);
 int so_socket_unix_accept_and_close(int fd, struct so_value * config);
 int so_socket_unix_close(int fd, struct so_value * config);
 bool so_socket_unix_server(struct so_value * config, so_socket_accept_f accept_callback);
+bool so_socket_unix_from_template(struct so_value * socket_template, so_socket_accept_f accept_callback) __attribute__((nonnull));
 int so_socket_server_temp_unix(struct so_value * config);
 
 #endif

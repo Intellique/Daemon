@@ -37,7 +37,8 @@ struct sochgr_drive {
 	struct so_value * config;
 };
 
-void sochgr_drive_set_config(struct so_value * logger, struct so_value * db_config);
+struct so_value * sochgr_drive_get_configs(void);
+void sochgr_drive_set_config(struct so_value * logger, struct so_value * db_config, struct so_value * socket_template);
 
 #endif
 

@@ -107,6 +107,24 @@ bool so_socket_server(struct so_value * config, so_socket_accept_f accept_callba
 	return ok;
 }
 
+bool so_socket_from_template(struct so_value * socket_template, so_socket_accept_f accept_callback) {
+	char * domain = NULL;
+	if (so_value_unpack(socket_template, "{ss}", "domain", &domain) < 1)
+		return false;
+
+	bool ok = false;
+	if (!strcmp(domain, "inet"))
+		ok = so_socket_tcp_from_template(socket_template, accept_callback);
+	else if (!strcmp(domain, "inet6"))
+		ok = so_socket_tcp6_from_template(socket_template, accept_callback);
+	else if (!strcmp(domain, "unix"))
+		ok = so_socket_unix_from_template(socket_template, accept_callback);
+
+	free(domain);
+
+	return ok;
+}
+
 int so_socket_server_temp(struct so_value * config) {
 	char * domain = NULL;
 	if (so_value_unpack(config, "{ss}", "domain", &domain) < 1)
