@@ -149,7 +149,6 @@ static int sochgr_vtl_changer_check(struct so_database_connection * db_connectio
 
 			memmove(sochgr_vtl_changer.slots + nb_drives, sochgr_vtl_changer.slots + sochgr_vtl_changer.nb_drives, (sochgr_vtl_changer.nb_slots - sochgr_vtl_changer.nb_drives) * sizeof(struct so_slot));
 
-			sochgr_vtl_changer.nb_drives = nb_drives;
 
 			addr = realloc(sochgr_vtl_changer.slots, (nb_drives + nb_slots) * sizeof(struct so_slot));
 			if (addr != NULL) {
@@ -166,7 +165,8 @@ static int sochgr_vtl_changer_check(struct so_database_connection * db_connectio
 				}
 			}
 
-			sochgr_vtl_changer.nb_slots = nb_slots;
+			sochgr_vtl_changer.nb_drives = nb_drives;
+			sochgr_vtl_changer.nb_slots = nb_slots + nb_drives;
 		}
 
 		if (nb_slots < sochgr_vtl_changer.nb_slots - sochgr_vtl_changer.nb_drives) {
@@ -203,17 +203,16 @@ static int sochgr_vtl_changer_check(struct so_database_connection * db_connectio
 				}
 
 				for (i = sochgr_vtl_changer.nb_slots - sochgr_vtl_changer.nb_drives; i < nb_slots; i++) {
-					struct so_slot * sl = sochgr_vtl_changer.slots + i;
-
+					struct so_slot * sl = sochgr_vtl_changer.slots + nb_drives + i;
 					sochgr_vtl_slot_create(sl, sochgr_vtl_root_dir, sochgr_vtl_prefix, i);
 					sl->changer = &sochgr_vtl_changer;
 					sl->index = nb_drives + i;
 
 					sl->media = sochgr_vtl_media_create(sochgr_vtl_root_dir, sochgr_vtl_prefix, i, sochgr_vtl_format, db_connection);
-
-					sochgr_media_init_slot(sl);
 				}
 			}
+
+			sochgr_vtl_changer.nb_slots = sochgr_vtl_changer.nb_drives + nb_slots;
 		}
 
 		if (nb_drives > sochgr_vtl_changer.nb_drives) {
