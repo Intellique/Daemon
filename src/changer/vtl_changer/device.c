@@ -61,6 +61,7 @@ static int sochgr_vtl_changer_put_offline(struct so_database_connection * db_con
 static int sochgr_vtl_changer_put_online(struct so_database_connection * db_connection);
 static int sochgr_vtl_changer_shut_down(struct so_database_connection * db_connection);
 static int sochgr_vtl_changer_unload(struct so_drive * from, struct so_database_connection * db_connection);
+static int sochgr_vtl_changer_unload_all_drives(struct so_database_connection * db_connection);
 
 struct so_changer_ops sochgr_vtl_changer_ops = {
 	.check       = sochgr_vtl_changer_check,
@@ -120,9 +121,7 @@ static int sochgr_vtl_changer_check(struct so_database_connection * db_connectio
 		return 3;
 
 	if (nb_drives != sochgr_vtl_changer.nb_drives || nb_slots != sochgr_vtl_changer.nb_slots - sochgr_vtl_changer.nb_drives || deleted) {
-		int failed = sochgr_vtl_changer_put_offline(db_connection);
-		if (failed != 0)
-			return failed;
+		sochgr_vtl_changer_unload_all_drives(db_connection);
 
 		if (nb_drives < sochgr_vtl_changer.nb_drives) {
 			unsigned int i;
@@ -202,13 +201,15 @@ static int sochgr_vtl_changer_check(struct so_database_connection * db_connectio
 					dr->slot = sochgr_vtl_changer.slots + i;
 				}
 
-				for (i = sochgr_vtl_changer.nb_slots - sochgr_vtl_changer.nb_drives; i < nb_slots; i++) {
-					struct so_slot * sl = sochgr_vtl_changer.slots + nb_drives + i;
-					sochgr_vtl_slot_create(sl, sochgr_vtl_root_dir, sochgr_vtl_prefix, i);
-					sl->changer = &sochgr_vtl_changer;
-					sl->index = nb_drives + i;
+				for (i = sochgr_vtl_changer.nb_slots; i < nb_slots + sochgr_vtl_changer.nb_drives; i++) {
+					struct so_slot * sl = sochgr_vtl_changer.slots + i;
+					bzero(sl, sizeof(struct so_slot));
 
-					sl->media = sochgr_vtl_media_create(sochgr_vtl_root_dir, sochgr_vtl_prefix, i, sochgr_vtl_format, db_connection);
+					sochgr_vtl_slot_create(sl, sochgr_vtl_root_dir, sochgr_vtl_prefix, i - sochgr_vtl_changer.nb_drives);
+					sl->changer = &sochgr_vtl_changer;
+					sl->index = i;
+
+					sl->media = sochgr_vtl_media_create(sochgr_vtl_root_dir, sochgr_vtl_prefix, i - sochgr_vtl_changer.nb_drives, sochgr_vtl_format, db_connection);
 				}
 			}
 
@@ -258,10 +259,6 @@ static int sochgr_vtl_changer_check(struct so_database_connection * db_connectio
 				}
 			}
 		}
-
-		failed = sochgr_vtl_changer_put_online(db_connection);
-		if (failed != 0)
-			return failed;
 
 		db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_init);
 	}
@@ -383,17 +380,9 @@ static int sochgr_vtl_changer_load(struct so_slot * from, struct so_drive * to, 
 }
 
 static int sochgr_vtl_changer_put_offline(struct so_database_connection * db_connection) {
+	sochgr_vtl_changer_unload_all_drives(db_connection);
+
 	unsigned int i;
-	for (i = 0; i < sochgr_vtl_changer.nb_drives; i++) {
-		struct so_drive * dr = sochgr_vtl_changer.drives + i;
-
-		while (!dr->ops->is_free(dr))
-			sleep(5);
-
-		if (dr->slot->full)
-			sochgr_vtl_changer_unload(dr, db_connection);
-	}
-
 	for (i = sochgr_vtl_changer.nb_drives; i < sochgr_vtl_changer.nb_slots; i++) {
 		struct so_slot * sl = sochgr_vtl_changer.slots + i;
 		so_media_free(sl->media);
@@ -481,5 +470,23 @@ static int sochgr_vtl_changer_unload(struct so_drive * from, struct so_database_
 	db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_default);
 
 	return failed;
+}
+
+static int sochgr_vtl_changer_unload_all_drives(struct so_database_connection * db_connection) {
+	unsigned int i;
+	for (i = 0; i < sochgr_vtl_changer.nb_drives; i++) {
+		struct so_drive * dr = sochgr_vtl_changer.drives + i;
+
+		while (!dr->ops->is_free(dr))
+			sleep(5);
+
+		if (dr->slot->full) {
+			int failed = sochgr_vtl_changer_unload(dr, db_connection);
+			if (failed != 0)
+				return failed;
+		}
+	}
+
+	return 0;
 }
 

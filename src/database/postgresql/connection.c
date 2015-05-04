@@ -1915,6 +1915,8 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 		free(write);
 		free(nbfiles);
 		free(blocksize);
+		free(freeblock);
+		free(totalblock);
 		free(mediaformat_id);
 		free(pool_id);
 		free(totalblockread);
@@ -2146,12 +2148,6 @@ static struct so_value * so_database_postgresql_update_vtl(struct so_database_co
 		return NULL;
 
 	struct so_database_postgresql_connection_private * self = connect->data;
-	struct so_value * key = so_value_new_custom(connect->config, NULL);
-	struct so_value * db = so_value_hashtable_get(vtl->db_data, key, false, false);
-	so_value_free(key);
-
-	char * changer_id = NULL;
-	so_value_unpack(db, "{ss}", "id", &changer_id);
 
 	const char * query = "select_vtl_by_uuid";
 	so_database_postgresql_prepare(self, query, "SELECT nbslots, nbdrives, deleted FROM vtl WHERE uuid = $1 LIMIT 1");
