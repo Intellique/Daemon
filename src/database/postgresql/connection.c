@@ -93,7 +93,7 @@ static struct so_value * so_database_postgresql_get_pool_by_pool_mirror(struct s
 static struct so_value * so_database_postgresql_get_selected_files_by_job(struct so_database_connection * connect, struct so_job * job);
 static struct so_value * so_database_postgresql_get_slot_by_drive(struct so_database_connection * connect, const char * drive_id);
 static struct so_value * so_database_postgresql_get_standalone_drives(struct so_database_connection * connect);
-static struct so_value * so_database_postgresql_get_vtls(struct so_database_connection * connect);
+static struct so_value * so_database_postgresql_get_vtls(struct so_database_connection * connect, bool new_vtl);
 static int so_database_postgresql_sync_changer(struct so_database_connection * connect, struct so_changer * changer, enum so_database_sync_method method);
 static int so_database_postgresql_sync_drive(struct so_database_connection * connect, struct so_drive * drive, bool sync_media, enum so_database_sync_method method);
 static int so_database_postgresql_sync_media(struct so_database_connection * connect, struct so_media * media, enum so_database_sync_method method);
@@ -1251,7 +1251,7 @@ static struct so_value * so_database_postgresql_get_slot_by_drive(struct so_data
 	return slot;
 }
 
-static struct so_value * so_database_postgresql_get_vtls(struct so_database_connection * connect) {
+static struct so_value * so_database_postgresql_get_vtls(struct so_database_connection * connect, bool new_vtl) {
 	struct so_value * changers = so_value_new_linked_list();
 
 	char * host_id = so_database_postgresql_get_host(connect);
@@ -1261,7 +1261,13 @@ static struct so_value * so_database_postgresql_get_vtls(struct so_database_conn
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_vtls";
-	so_database_postgresql_prepare(self, query, "SELECT v.uuid, v.path, v.prefix, v.nbslots, v.nbdrives, v.deleted, mf.name, mf.densitycode, mf.mode, c.id FROM vtl v INNER JOIN mediaformat mf ON v.mediaformat = mf.id LEFT JOIN changer c ON v.uuid::TEXT = c.serialnumber WHERE v.host = $1 AND NOT v.deleted");
+	if (new_vtl) {
+		query = "select_new_vtls";
+		so_database_postgresql_prepare(self, query, "SELECT v.uuid, v.path, v.prefix, v.nbslots, v.nbdrives, v.deleted, mf.name, mf.densitycode, mf.mode, NULL FROM vtl v INNER JOIN mediaformat mf ON v.mediaformat = mf.id WHERE v.host = $1 AND NOT v.deleted AND v.uuid::TEXT NOT IN (SELECT serialnumber FROM changer)");
+	} else {
+		query = "select_vtls";
+		so_database_postgresql_prepare(self, query, "SELECT v.uuid, v.path, v.prefix, v.nbslots, v.nbdrives, v.deleted, mf.name, mf.densitycode, mf.mode, c.id FROM vtl v INNER JOIN mediaformat mf ON v.mediaformat = mf.id LEFT JOIN changer c ON v.uuid::TEXT = c.serialnumber WHERE v.host = $1 AND NOT v.deleted");
+	}
 
 	const char * params[] = { host_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, params, NULL, NULL, 0);

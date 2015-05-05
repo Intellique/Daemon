@@ -168,12 +168,13 @@ int main(int argc, char ** argv) {
 	sod_plugin_sync_job(connection);
 
 	if (logger_config != NULL && db_configs != NULL)
-		sod_device_configure(log_file, db_configs, connection);
+		sod_device_configure(log_file, db_configs, connection, false);
 
 	sod_scheduler_init();
 
 	while (sod_daemon_run) {
 		connection->ops->update_host(connection, host_info->uuid);
+		sod_device_configure(log_file, db_configs, connection, true);
 
 		sod_scheduler_do(log_file, db_configs, connection);
 

@@ -65,7 +65,7 @@ static void sod_device_exited(int fd, short event, void * data);
 static void sod_device_pong(int fd, short event, void * data);
 
 
-void sod_device_configure(struct so_value * logger, struct so_value * db_config, struct so_database_connection * connection) {
+void sod_device_configure(struct so_value * logger, struct so_value * db_config, struct so_database_connection * connection, bool append) {
 	if (connection == NULL)
 		return;
 
@@ -74,50 +74,57 @@ void sod_device_configure(struct so_value * logger, struct so_value * db_config,
 		devices_json = so_value_new_linked_list();
 	}
 
-	static int i_changer = 0;
+	int i_changer = so_value_list_get_length(devices);
+	bool has_new = false;
 
-	// get scsi changers
-	struct so_value * real_changers = connection->ops->get_changers(connection);
-	struct so_value_iterator * iter = so_value_list_get_iterator(real_changers);
-	while (so_value_iterator_has_next(iter)) {
-		struct so_value * changer = so_value_iterator_get_value(iter, true);
+	if (!append) {
+		// get scsi changers
+		struct so_value * real_changers = connection->ops->get_changers(connection);
+		struct so_value_iterator * iter = so_value_list_get_iterator(real_changers);
+		while (so_value_iterator_has_next(iter)) {
+			has_new = true;
 
-		struct sod_device * dev = malloc(sizeof(struct sod_device));
-		dev->index = i_changer;
-		dev->process_name = "scsi_changer";
-		so_process_new(&dev->process, dev->process_name, NULL, 0);
-		dev->fd_in = so_process_pipe_to(&dev->process);
-		dev->fd_out = so_process_pipe_from(&dev->process, so_process_stdout);
-		so_process_set_null(&dev->process, so_process_stderr);
+			struct so_value * changer = so_value_iterator_get_value(iter, true);
 
-		so_poll_register(dev->fd_out, POLLIN, sod_device_pong, dev, NULL);
-		so_poll_register(dev->fd_in, POLLHUP, sod_device_exited, dev, NULL);
+			struct sod_device * dev = malloc(sizeof(struct sod_device));
+			dev->index = i_changer;
+			dev->process_name = "scsi_changer";
+			so_process_new(&dev->process, dev->process_name, NULL, 0);
+			dev->fd_in = so_process_pipe_to(&dev->process);
+			dev->fd_out = so_process_pipe_from(&dev->process, so_process_stdout);
+			so_process_set_null(&dev->process, so_process_stderr);
 
-		char * path;
-		asprintf(&path, DAEMON_SOCKET_DIR "/changer_%d.socket", i_changer);
+			so_poll_register(dev->fd_out, POLLIN, sod_device_pong, dev, NULL);
+			so_poll_register(dev->fd_in, POLLHUP, sod_device_exited, dev, NULL);
 
-		so_value_hashtable_put2(changer, "socket", so_value_pack("{ssss}", "domain", "unix", "path", path), true);
-		dev->config = so_value_pack("{sOsOsO}", "changer", changer, "logger", logger, "database", db_config);
+			char * path;
+			asprintf(&path, DAEMON_SOCKET_DIR "/changer_%d.socket", i_changer);
 
-		free(path);
+			so_value_hashtable_put2(changer, "socket", so_value_pack("{ssss}", "domain", "unix", "path", path), true);
+			dev->config = so_value_pack("{sOsOsO}", "changer", changer, "logger", logger, "database", db_config);
 
-		so_value_list_push(devices, so_value_new_custom(dev, sod_device_free), true);
-		so_value_list_push(devices_json, changer, false);
+			free(path);
 
-		so_process_start(&dev->process, 1);
-		so_json_encode_to_fd(dev->config, dev->fd_in, true);
+			so_value_list_push(devices, so_value_new_custom(dev, sod_device_free), true);
+			so_value_list_push(devices_json, changer, false);
 
-		i_changer++;
+			so_process_start(&dev->process, 1);
+			so_json_encode_to_fd(dev->config, dev->fd_in, true);
+
+			i_changer++;
+		}
+		so_value_iterator_free(iter);
+		so_value_free(real_changers);
+
+		// get standalone drives
 	}
-	so_value_iterator_free(iter);
-	so_value_free(real_changers);
-
-	// get standalone drives
 
 	// get virtual tape libraries
-	struct so_value * vtl_changers = connection->ops->get_vtls(connection);
-	iter = so_value_list_get_iterator(vtl_changers);
+	struct so_value * vtl_changers = connection->ops->get_vtls(connection, append);
+	struct so_value_iterator * iter = so_value_list_get_iterator(vtl_changers);
 	while (so_value_iterator_has_next(iter)) {
+		has_new = true;
+
 		struct so_value * changer = so_value_iterator_get_value(iter, true);
 
 		/**
@@ -157,6 +164,9 @@ void sod_device_configure(struct so_value * logger, struct so_value * db_config,
 	}
 	so_value_iterator_free(iter);
 	so_value_free(vtl_changers);
+
+	if (!has_new)
+		return;
 
 	sleep(5);
 
