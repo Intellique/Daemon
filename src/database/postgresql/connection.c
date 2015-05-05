@@ -79,6 +79,7 @@ static char * so_database_postgresql_get_host(struct so_database_connection * co
 static int so_database_postgresql_get_host_by_name(struct so_database_connection * connect, struct so_host * host, const char * name);
 static int so_database_postgresql_update_host(struct so_database_connection * connect, const char * uuid);
 
+static int so_database_postgresql_delete_changer(struct so_database_connection * connect, struct so_changer * changer);
 static int so_database_postgresql_delete_drive(struct so_database_connection * connect, struct so_drive * drive);
 static struct so_value * so_database_postgresql_get_changers(struct so_database_connection * connect);
 static struct so_value * so_database_postgresql_get_checksums_from_pool(struct so_database_connection * connect, struct so_pool * pool);
@@ -151,6 +152,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.get_host_by_name = so_database_postgresql_get_host_by_name,
 	.update_host      = so_database_postgresql_update_host,
 
+	.delete_changer            = so_database_postgresql_delete_changer,
 	.delete_drive              = so_database_postgresql_delete_drive,
 	.get_changers              = so_database_postgresql_get_changers,
 	.get_checksums_from_pool   = so_database_postgresql_get_checksums_from_pool,
@@ -497,6 +499,35 @@ static int so_database_postgresql_update_host(struct so_database_connection * co
 	return status != PGRES_COMMAND_OK;
 }
 
+
+static int so_database_postgresql_delete_changer(struct so_database_connection * connect, struct so_changer * changer) {
+	if (connect == NULL || changer == NULL)
+		return -1;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	struct so_value * key = so_value_new_custom(connect->config, NULL);
+	struct so_value * db = so_value_hashtable_get(changer->db_data, key, false, false);
+	so_value_free(key);
+
+	char * changer_id = NULL;
+	so_value_unpack(db, "{ss}", "id", &changer_id);
+
+	const char * query = "delete_changer_by_id";
+	so_database_postgresql_prepare(self, query, "DELETE FROM changer WHERE id = $1");
+
+	const char * param[] = { changer_id };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+
+	PQclear(result);
+	free(changer_id);
+
+	return status != PGRES_COMMAND_OK;
+}
 
 static int so_database_postgresql_delete_drive(struct so_database_connection * connect, struct so_drive * drive) {
 	if (connect == NULL || drive == NULL)
@@ -1230,7 +1261,7 @@ static struct so_value * so_database_postgresql_get_vtls(struct so_database_conn
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_vtls";
-	so_database_postgresql_prepare(self, query, "SELECT v.uuid, v.path, v.prefix, v.nbslots, v.nbdrives, v.deleted, mf.name, mf.densitycode, mf.mode, c.id FROM vtl v INNER JOIN mediaformat mf ON v.mediaformat = mf.id LEFT JOIN changer c ON v.uuid::TEXT = c.serialnumber WHERE v.host = $1");
+	so_database_postgresql_prepare(self, query, "SELECT v.uuid, v.path, v.prefix, v.nbslots, v.nbdrives, v.deleted, mf.name, mf.densitycode, mf.mode, c.id FROM vtl v INNER JOIN mediaformat mf ON v.mediaformat = mf.id LEFT JOIN changer c ON v.uuid::TEXT = c.serialnumber WHERE v.host = $1 AND NOT v.deleted");
 
 	const char * params[] = { host_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, params, NULL, NULL, 0);

@@ -1666,6 +1666,51 @@ bool so_value_list_push(struct so_value * list, struct so_value * val, bool new_
 	}
 }
 
+bool so_value_list_remove(struct so_value * list, unsigned int index) {
+	if (list == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
+		return false;
+
+	if (list->type == so_value_array) {
+		struct so_value_array * array = so_value_get(list);
+		if (index < array->nb_vals) {
+			so_value_free(array->values[index]);
+			array->nb_vals--;
+			memmove(array->values + index, array->values + index + 1, (array->nb_vals - index) * sizeof(struct so_value *));
+			array->values[array->nb_vals] = NULL;
+			return true;
+		}
+	} else {
+		struct so_value_linked_list * linked = so_value_get(list);
+		if (index >= linked->nb_vals)
+			return false;
+
+		struct so_value_linked_list_node * node = linked->first;
+		unsigned int i;
+		for (i = 0; i < index && node != NULL; i++, node = node->next);
+
+		if (node != NULL) {
+			if (node->previous != NULL)
+				node->previous->next = node->next;
+			else
+				linked->first = node->next;
+
+			if (node->next != NULL)
+				node->next->previous = node->previous;
+			else
+				linked->last = node->previous;
+
+			so_value_free(node->value);
+			linked->nb_vals--;
+
+			free(node);
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
 bool so_value_list_shift(struct so_value * list, struct so_value * val, bool new_val) {
 	if (list == NULL || val == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
 		return false;

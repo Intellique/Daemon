@@ -325,6 +325,7 @@ unsigned int so_value_list_get_length(struct so_value * list) __attribute__((non
 int so_value_list_index_of(struct so_value * list, struct so_value * elt) __attribute__((nonnull));
 struct so_value * so_value_list_pop(struct so_value * list) __attribute__((nonnull,warn_unused_result));
 bool so_value_list_push(struct so_value * list, struct so_value * val, bool new_val) __attribute__((nonnull));
+bool so_value_list_remove(struct so_value * list, unsigned int index) __attribute__((nonnull));
 bool so_value_list_shift(struct so_value * list, struct so_value * val, bool new_val) __attribute__((nonnull));
 struct so_value * so_value_list_slice(struct so_value * list, int index) __attribute__((nonnull,warn_unused_result));
 struct so_value * so_value_list_slice2(struct so_value * list, int index, int end) __attribute__((nonnull,warn_unused_result));

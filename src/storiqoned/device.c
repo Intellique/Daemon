@@ -31,6 +31,8 @@
 #include <stdio.h>
 // free, malloc
 #include <stdlib.h>
+// strcmp
+#include <string.h>
 // close, sleep
 #include <unistd.h>
 
@@ -47,6 +49,7 @@
 #include "config.h"
 
 struct sod_device {
+	unsigned int index;
 	char * process_name;
 	struct so_process process;
 	int fd_in;
@@ -59,6 +62,7 @@ static struct so_value * devices_json = NULL;
 
 static void sod_device_free(void * d);
 static void sod_device_exited(int fd, short event, void * data);
+static void sod_device_pong(int fd, short event, void * data);
 
 
 void sod_device_configure(struct so_value * logger, struct so_value * db_config, struct so_database_connection * connection) {
@@ -79,12 +83,14 @@ void sod_device_configure(struct so_value * logger, struct so_value * db_config,
 		struct so_value * changer = so_value_iterator_get_value(iter, true);
 
 		struct sod_device * dev = malloc(sizeof(struct sod_device));
+		dev->index = i_changer;
 		dev->process_name = "scsi_changer";
 		so_process_new(&dev->process, dev->process_name, NULL, 0);
 		dev->fd_in = so_process_pipe_to(&dev->process);
 		dev->fd_out = so_process_pipe_from(&dev->process, so_process_stdout);
 		so_process_set_null(&dev->process, so_process_stderr);
 
+		so_poll_register(dev->fd_out, POLLIN, sod_device_pong, dev, NULL);
 		so_poll_register(dev->fd_in, POLLHUP, sod_device_exited, dev, NULL);
 
 		char * path;
@@ -123,12 +129,14 @@ void sod_device_configure(struct so_value * logger, struct so_value * db_config,
 		 */
 
 		struct sod_device * dev = malloc(sizeof(struct sod_device));
+		dev->index = i_changer;
 		dev->process_name = "vtl_changer";
 		so_process_new(&dev->process, dev->process_name, NULL, 0);
 		dev->fd_in = so_process_pipe_to(&dev->process);
 		dev->fd_out = so_process_pipe_from(&dev->process, so_process_stdout);
 		so_process_set_null(&dev->process, so_process_stderr);
 
+		so_poll_register(dev->fd_out, POLLIN, sod_device_pong, dev, NULL);
 		so_poll_register(dev->fd_in, POLLHUP, sod_device_exited, dev, NULL);
 
 		char * path;
@@ -197,6 +205,7 @@ static void sod_device_free(void * d) {
 	struct sod_device * dev = d;
 	so_process_free(&dev->process, 1);
 	close(dev->fd_in);
+	close(dev->fd_out);
 	so_value_free(dev->config);
 	free(dev);
 }
@@ -207,6 +216,40 @@ struct so_value * sod_device_get(bool shared) {
 	return devices_json;
 }
 
+static void sod_device_pong(int fd, short event __attribute__((unused)), void * data) {
+	struct so_value * command = so_json_parse_fd(fd, -1);
+	if (command == NULL)
+		return;
+
+	char * com = NULL;
+	so_value_unpack(command, "{ss}", "command", &com);
+	so_value_free(command);
+
+	if (com == NULL || strcmp(com, "exit") != 0) {
+		free(com);
+		return;
+	}
+
+	struct sod_device * dev = data;
+	so_poll_unregister(dev->fd_out, POLLIN);
+	so_poll_unregister(dev->fd_in, POLLHUP);
+	so_process_wait(&dev->process, 1);
+
+	unsigned int index = dev->index;
+	so_value_list_remove(devices, index);
+	so_value_list_remove(devices_json, index);
+
+	struct so_value_iterator * iter = so_value_list_get_iterator(devices);
+	while (so_value_iterator_has_next(iter)) {
+		struct so_value * val = so_value_iterator_get_value(iter, false);
+		dev = so_value_custom_get(val);
+
+		if (dev->index > index)
+			dev->index--;
+	}
+	so_value_iterator_free(iter);
+}
+
 void sod_device_stop() {
 	struct so_value * stop = so_value_pack("{ss}", "command", "stop");
 
@@ -215,8 +258,8 @@ void sod_device_stop() {
 		struct so_value * elt = so_value_iterator_get_value(iter, false);
 		struct sod_device * dev = so_value_custom_get(elt);
 
-		so_json_encode_to_fd(stop, dev->fd_in, true);
 		so_poll_unregister(dev->fd_in, POLLHUP);
+		so_json_encode_to_fd(stop, dev->fd_in, true);
 	}
 	so_value_iterator_free(iter);
 

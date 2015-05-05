@@ -5,7 +5,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqoned v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-05-04 21:01+0200\n"
+        "POT-Creation-Date: 2015-05-05 22:54+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -19,7 +19,7 @@ msgstr  "Project-Id-Version: storiqoned v1.2\n"
 msgid   "New connection 'admin'"
 msgstr  "Nouvelle connexion « admin »"
 
-#: src/storiqoned/device.c:183
+#: src/storiqoned/device.c:191
 #, c-format
 msgid   "Restart changer: %s"
 msgstr  "Redémarrage de l’échangeur : %s"

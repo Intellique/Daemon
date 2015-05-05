@@ -33,13 +33,14 @@
 #include <string.h>
 // bzero
 #include <strings.h>
-// access, sleep, symlink
+// access, _exit, sleep, symlink
 #include <unistd.h>
 // time
 #include <time.h>
 
 #include <libstoriqone/database.h>
 #include <libstoriqone/file.h>
+#include <libstoriqone/json.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-changer/changer.h>
@@ -275,7 +276,36 @@ static int sochgr_vtl_changer_check(struct so_database_connection * db_connectio
 			sochgr_vtl_changer.nb_slots = nb_slots + nb_drives;
 		}
 
-		db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_init);
+		if (deleted) {
+			for (i = 0; i < sochgr_vtl_changer.nb_drives; i++) {
+				struct so_drive * dr = sochgr_vtl_changer.drives + i;
+
+				dr->ops->stop(dr);
+
+				db_connection->ops->delete_drive(db_connection, dr);
+
+				sochgr_vtl_slot_delete(dr->slot);
+				sochgr_vtl_drive_delete(dr);
+			}
+
+			for (i = sochgr_vtl_changer.nb_drives; i < sochgr_vtl_changer.nb_slots; i++) {
+				struct so_slot * sl = sochgr_vtl_changer.slots + i;
+
+				so_media_free(sl->media);
+				sochgr_vtl_slot_delete(sl);
+			}
+
+			db_connection->ops->delete_changer(db_connection, &sochgr_vtl_changer);
+
+			so_file_rm(sochgr_vtl_root_dir);
+
+			struct so_value * command = so_value_pack("{ss}", "command", "exit");
+			so_json_encode_to_fd(command, 1, true);
+			so_value_free(command);
+
+			_exit(0);
+		} else
+			db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_init);
 	}
 
 	return 0;
