@@ -67,6 +67,8 @@ void sochgr_vtl_drive_delete(struct so_drive * drive) {
 	free(drive->revision);
 	free(drive->serial_number);
 
+	so_value_free(drive->db_data);
+
 	drive->ops->free(drive);
 }
 

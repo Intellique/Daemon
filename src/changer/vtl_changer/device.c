@@ -245,6 +245,7 @@ static int sochgr_vtl_changer_check(struct so_database_connection * db_connectio
 					struct so_drive * dr = sochgr_vtl_changer.drives + i;
 					bzero(dr_p, sizeof(struct sochgr_vtl_drive));
 					bzero(dr, sizeof(struct so_drive));
+					dr_p->params = so_value_new_hashtable2();
 
 					sochgr_vtl_drive_create(dr_p, dr, sochgr_vtl_root_dir, i);
 
