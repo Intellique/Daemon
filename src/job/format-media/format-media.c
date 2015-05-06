@@ -90,8 +90,8 @@ static int soj_formatmedia_run(struct so_job * job, struct so_database_connectio
 
 	struct so_drive * drive = soj_media_find_and_load(soj_formatmedia_media, false, soj_formatmedia_media->format->block_size, db_connect);
 	if (drive == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error,
-			so_job_record_notif_important, dgettext("storiqone-job-format-media", "Failed to load media '%s'"),
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-format-media", "Failed to load media '%s'"),
 			soj_formatmedia_media->name);
 		return 2;
 	}
@@ -103,8 +103,9 @@ static int soj_formatmedia_run(struct so_job * job, struct so_database_connectio
 
 	// check for write lock
 	if (drive->slot->media->write_lock) {
-		so_job_add_record(job, db_connect, so_log_level_error,
-			so_job_record_notif_important, dgettext("storiqone-job-format-media", "Try to format a write protected media"));
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-format-media", "Try to format a write protected media '%s'"),
+			drive->slot->media->name);
 		return 3;
 	}
 
@@ -114,12 +115,15 @@ static int soj_formatmedia_run(struct so_job * job, struct so_database_connectio
 	if (job->stopped_by_user)
 		return 1;
 
-	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Formatting media in progress (block size used: %zd)"), block_size);
+	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+		dgettext("storiqone-job-format-media", "Formatting media in progress (block size used: %zd)"),
+		block_size);
 
 	// write header
 	int failed = drive->ops->format_media(drive, soj_formatmedia_pool);
 	if (failed != 0) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-format-media", "Failed to format media"));
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-format-media", "Failed to format media"));
 		return 4;
 	}
 
@@ -130,6 +134,7 @@ static int soj_formatmedia_run(struct so_job * job, struct so_database_connectio
 	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 		dgettext("storiqone-job-format-media", "Checking media header '%s' in progress"),
 		soj_formatmedia_media->name);
+
 	if (drive->ops->check_header(drive)) {
 		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 			dgettext("storiqone-job-format-media", "Checking media header '%s': success"),
