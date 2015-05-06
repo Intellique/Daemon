@@ -48,13 +48,6 @@ struct so_changer_ops {
 	int (*release_media)(struct so_changer * changer, struct so_slot * slot);
 	ssize_t (*reserve_media)(struct so_changer * changer, struct so_slot * slot, size_t size_need, enum so_pool_unbreakable_level unbreakable_level);
 	int (*sync)(struct so_changer * changer);
-
-	int (*release_all_media)(struct so_changer * changer);
-	int (*reserve_medias)(struct so_changer * changer, struct so_value * medias, bool for_writing);
-
-	struct so_drive * (*find_free_drive)(struct so_changer * changer, struct so_media_format * format, bool for_writing);
-	int (*load)(struct so_changer * changer, struct so_slot * from, struct so_drive * to);
-	int (*unload)(struct so_changer * changer, struct so_drive * from);
 };
 
 struct so_slot * soj_changer_find_media_by_job(struct so_job * job, struct so_database_connection * db_connection) __attribute__((nonnull));
