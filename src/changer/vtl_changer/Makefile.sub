@@ -8,4 +8,6 @@ STORIQONE_CHANGER_VTLCHANGER_DEPEND_LIB		:= lib/libstoriqone-changer.so
 
 STORIQONE_CHANGER_VTLCHANGER_CHCKSUM_FILE	:= changer-vtlchanger.chcksum
 
+STORIQONE_CHANGER_VTLCHANGER_LOCALE			:= locale/storiqone-changer-vtl
+
 BIN_SYMS									+= STORIQONE_CHANGER_VTLCHANGER

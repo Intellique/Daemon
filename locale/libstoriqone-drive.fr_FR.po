@@ -1,10 +1,10 @@
-# French translations for libstoriqone-drive package.
+# French translations for storiqone-drive-vtl package.
 # Copyright (C) 2014-2015
 # This file is distributed under the same license as the storiqone package.
 # Guillaume Clercin <gclercin@intellique.com>, 2014
 #
 msgid   ""
-msgstr  "Project-Id-Version: libstoriqone-drive v1.2\n"
+msgstr  "Project-Id-Version: storiqone-drive-vtl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
         "POT-Creation-Date: 2015-05-05 20:47+0200\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
