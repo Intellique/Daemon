@@ -24,15 +24,8 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#include <libstoriqone/backup.h>
-#include <libstoriqone/io.h>
-#include <libstoriqone/media.h>
-#include <libstoriqone/slot.h>
-#include <libstoriqone/value.h>
-#include <libstoriqone-job/changer.h>
-#include <libstoriqone-job/drive.h>
-#include <libstoriqone-job/job.h>
-
+// dgettext
+#include <libintl.h>
 // free, malloc
 #include <stdlib.h>
 // bzero
@@ -41,6 +34,17 @@
 #include <time.h>
 // sleep
 #include <unistd.h>
+
+#include <libstoriqone/backup.h>
+#include <libstoriqone/database.h>
+#include <libstoriqone/io.h>
+#include <libstoriqone/log.h>
+#include <libstoriqone/media.h>
+#include <libstoriqone/slot.h>
+#include <libstoriqone/value.h>
+#include <libstoriqone-job/changer.h>
+#include <libstoriqone-job/drive.h>
+#include <libstoriqone-job/job.h>
 
 #include "common.h"
 
@@ -62,19 +66,33 @@ void soj_checkbackupdb_worker_do(void * arg) {
 	struct so_stream_reader * sr_dr = NULL;
 
 	bool stop = false;
+	bool has_alert_user = false;
 	while (!stop) {
 		switch (state) {
 			case check_media:
+				// TODO:
 				state = open_file;
 				break;
 
 			case find_media:
 				slot = soj_changer_find_slot(worker->volume->media);
 				if (slot == NULL) {
-					// TODO: add message
+					if (!has_alert_user)
+						so_job_add_record(job, worker->db_connect, so_log_level_info, so_job_record_notif_important,
+							dgettext("storiqone-job-check-backup-db", "Warning, media '%s' not found"),
+							worker->volume->media->name);
+					has_alert_user = true;
+					worker->status = so_job_status_pause;
+
 					sleep(5);
-				} else
+
+					// state = look_for_media;
+					worker->status = so_job_status_running;
+					soj_changer_sync_all();
+				} else {
 					state = reserve_media;
+					has_alert_user = false;
+				}
 				break;
 
 			case get_media:
@@ -90,8 +108,11 @@ void soj_checkbackupdb_worker_do(void * arg) {
 			case open_file:
 				sr_dr = dr->ops->get_raw_reader(dr, worker->volume->position);
 				if (sr_dr == NULL) {
+					so_job_add_record(job, worker->db_connect, so_log_level_info, so_job_record_notif_important,
+						dgettext("storiqone-job-check-backup-db", "Error, failed to open backup from media '%s'"),
+						worker->volume->media->name);
+
 					sleep(5);
-					// TODO:
 				} else
 					stop = true;
 				break;
@@ -128,6 +149,9 @@ void soj_checkbackupdb_worker_do(void * arg) {
 	slot->changer->ops->release_media(slot->changer, slot);
 
 	worker->working = false;
+
+	worker->db_connect->ops->free(worker->db_connect);
+	worker->db_connect = NULL;
 }
 
 void soj_checkbackupdb_worker_free(struct soj_checkbackupdb_worker * worker) {
@@ -138,7 +162,7 @@ void soj_checkbackupdb_worker_free(struct soj_checkbackupdb_worker * worker) {
 	}
 }
 
-struct soj_checkbackupdb_worker * soj_checkbackupdb_worker_new(struct so_backup * backup, struct so_backup_volume * volume, size_t size, struct soj_checkbackupdb_worker * previous_worker) {
+struct soj_checkbackupdb_worker * soj_checkbackupdb_worker_new(struct so_backup * backup, struct so_backup_volume * volume, size_t size, struct so_database_config * db_config, struct soj_checkbackupdb_worker * previous_worker) {
 	struct soj_checkbackupdb_worker * worker = malloc(sizeof(struct soj_checkbackupdb_worker));
 	bzero(worker, sizeof(struct soj_checkbackupdb_worker));
 
@@ -149,6 +173,8 @@ struct soj_checkbackupdb_worker * soj_checkbackupdb_worker_new(struct so_backup 
 	worker->size = size;
 
 	worker->working = true;
+
+	worker->db_connect = db_config->ops->connect(db_config);
 
 	if (previous_worker != NULL)
 		previous_worker = worker;

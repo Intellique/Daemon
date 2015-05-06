@@ -32,6 +32,8 @@
 // size_t
 #include <sys/types.h>
 
+struct so_database_config;
+
 struct soj_checkbackupdb_worker {
 	struct so_backup * backup;
 	struct so_backup_volume * volume;
@@ -39,14 +41,17 @@ struct soj_checkbackupdb_worker {
 	size_t position;
 	size_t size;
 
+	volatile enum so_job_status status;
 	volatile bool working;
+
+	struct so_database_connection * db_connect;
 
 	struct soj_checkbackupdb_worker * next;
 };
 
 void soj_checkbackupdb_worker_do(void * arg);
 void soj_checkbackupdb_worker_free(struct soj_checkbackupdb_worker * worker);
-struct soj_checkbackupdb_worker * soj_checkbackupdb_worker_new(struct so_backup * backup, struct so_backup_volume * volume, size_t size, struct soj_checkbackupdb_worker * previous_worker);
+struct soj_checkbackupdb_worker * soj_checkbackupdb_worker_new(struct so_backup * backup, struct so_backup_volume * volume, size_t size, struct so_database_config * db_config, struct soj_checkbackupdb_worker * previous_worker);
 
 #endif
 

@@ -37,10 +37,12 @@
 #include <unistd.h>
 
 #include <libstoriqone/database.h>
+#include <libstoriqone/host.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/thread_pool.h>
+#include <libstoriqone/value.h>
 #include <libstoriqone-job/backup.h>
 #include <libstoriqone-job/changer.h>
 #include <libstoriqone-job/job.h>
@@ -91,7 +93,7 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 	for (i = 0; i < soj_checkbackupdb_backup->nb_volumes; i++) {
 		struct so_backup_volume * vol = soj_checkbackupdb_backup->volumes + i;
 
-		ptr = soj_checkbackupdb_worker_new(soj_checkbackupdb_backup, vol, soj_checkbackupdb_backup_size, ptr);
+		ptr = soj_checkbackupdb_worker_new(soj_checkbackupdb_backup, vol, soj_checkbackupdb_backup_size, db_connect->config, ptr);
 		if (worker == NULL)
 			worker = ptr;
 	}
@@ -133,9 +135,11 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 		bool checksum_ok = true;
 		for (ptr = worker, i = 0; ptr != NULL; ptr = ptr->next, i++) {
 			if (ptr->volume->checksum_ok)
-				so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-check-backup-db", "Checking backup volume #%u: success"), i);
+				so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+					dgettext("storiqone-job-check-backup-db", "Checking backup volume #%u: success"), i);
 			else {
-				so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-check-backup-db", "Checking backup volume #%u: failed"), i);
+				so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+					dgettext("storiqone-job-check-backup-db", "Checking backup volume #%u: failed"), i);
 				checksum_ok = false;
 			}
 
@@ -143,9 +147,11 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 		}
 
 		if (checksum_ok)
-			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-check-backup-db", "Checking backup: success"));
+			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+				dgettext("storiqone-job-check-backup-db", "Checking backup: success"));
 		else
-			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important, dgettext("storiqone-job-check-backup-db", "Checking backup: failed"));
+			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+				dgettext("storiqone-job-check-backup-db", "Checking backup: failed"));
 	}
 
 	soj_checkbackupdb_worker_free(worker);
@@ -158,7 +164,8 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 static int soj_checkbackupdb_simulate(struct so_job * job, struct so_database_connection * db_connect) {
 	soj_checkbackupdb_backup = db_connect->ops->get_backup(db_connect, job);
 	if (soj_checkbackupdb_backup == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-check-backup-db", "Backup not found"));
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-check-backup-db", "Backup not found"));
 		return 1;
 	}
 
@@ -171,11 +178,13 @@ static int soj_checkbackupdb_simulate(struct so_job * job, struct so_database_co
 			soj_checkbackupdb_pool = vol->media->pool;
 
 		if (vol->media == NULL) {
-			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-check-backup-db", "BUG: media should not be empty"));
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-check-backup-db", "BUG: media should not be empty"));
 			return 1;
 		}
 		if (vol->media->status == so_media_status_error)
-			so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("storiqone-job-check-backup-db", "Try to read a media with error status"));
+			so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+				dgettext("storiqone-job-check-backup-db", "Try to read a media with error status"));
 	}
 
 	return 0;
@@ -184,16 +193,52 @@ static int soj_checkbackupdb_simulate(struct so_job * job, struct so_database_co
 static void soj_checkbackupdb_script_on_error(struct so_job * job, struct so_database_connection * db_connect) {
 	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, soj_checkbackupdb_pool) < 1)
 		return;
+
+	struct so_value * json = so_value_pack("{sosososo}",
+		"backup", soj_backup_convert(soj_checkbackupdb_backup),
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"pool", so_pool_convert(soj_checkbackupdb_pool)
+	);
+
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_on_error, soj_checkbackupdb_pool, json);
+	so_value_free(json);
+	so_value_free(returned);
 }
 
 static void soj_checkbackupdb_script_post_run(struct so_job * job, struct so_database_connection * db_connect) {
 	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_on_error, soj_checkbackupdb_pool) < 1)
 		return;
+
+	struct so_value * json = so_value_pack("{sosososo}",
+		"backup", soj_backup_convert(soj_checkbackupdb_backup),
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"pool", so_pool_convert(soj_checkbackupdb_pool)
+	);
+
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_post_job, soj_checkbackupdb_pool, json);
+	so_value_free(json);
+	so_value_free(returned);
 }
 
 static bool soj_checkbackupdb_script_pre_run(struct so_job * job, struct so_database_connection * db_connect) {
 	if (db_connect->ops->get_nb_scripts(db_connect, job->type, so_script_type_pre_job, soj_checkbackupdb_pool) < 1)
 		return true;
+
+	struct so_value * json = so_value_pack("{sosososo}",
+		"backup", soj_backup_convert(soj_checkbackupdb_backup),
+		"job", so_job_convert(job),
+		"host", so_host_get_info2(),
+		"pool", so_pool_convert(soj_checkbackupdb_pool)
+	);
+
+	struct so_value * returned = soj_script_run(db_connect, job, so_script_type_pre_job, soj_checkbackupdb_pool, json);
+	so_value_free(json);
+
+	bool should_run = false;
+	so_value_unpack(returned, "{sb}", "should run", &should_run);
+	so_value_free(returned);
 
 	return true;
 }
