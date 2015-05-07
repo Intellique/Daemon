@@ -24,17 +24,41 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __SO_TAPEDRIVE_XML_H__
-#define __SO_TAPEDRIVE_XML_H__
+#ifndef __SO_TAPEDRIVE_MEDIA_H__
+#define __SO_TAPEDRIVE_MEDIA_H__
 
 // bool
 #include <stdbool.h>
 
 #include <libstoriqone/media.h>
 
+struct so_database_connection;
+struct so_drive;
 struct so_media;
 
+struct sodr_tape_drive_media {
+	enum sodr_tape_drive_media_format {
+		sodr_tape_drive_media_storiq_one,
+		sodr_tape_drive_media_ltfs,
+		sodr_tape_drive_media_unknown,
+	} format;
+
+	union {
+		struct {
+		} storiq_one;
+
+		struct {
+			struct so_value * index;
+		} ltfs;
+	} data;
+};
+
 bool sodr_tape_drive_media_check_header(struct so_media * media, const char * buffer);
+void sodr_tape_drive_media_free(struct sodr_tape_drive_media * media_data);
+struct sodr_tape_drive_media * sodr_tape_drive_media_new(enum sodr_tape_drive_media_format format);
+enum sodr_tape_drive_media_format sodr_tape_drive_parse_label(const char * buffer);
+int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_database_connection * db_connect);
+int sodr_tape_drive_media_parse_ltfs_label(struct so_drive * drive, struct so_database_connection * db_connect);
 
 #endif
 

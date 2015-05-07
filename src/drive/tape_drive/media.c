@@ -28,18 +28,33 @@
 #include <libintl.h>
 // sscanf
 #include <stdio.h>
+// free
+#include <stdlib.h>
+// strcmp, strncpy
+#include <string.h>
+// bzero
+#include <strings.h>
+// free, malloc, realloc
+#include <stdlib.h>
 
+#include <libstoriqone/io.h>
 #include <libstoriqone/log.h>
+#include <libstoriqone/slot.h>
+#include <libstoriqone/value.h>
+#include <libstoriqone-drive/drive.h>
 
+#include "format/ltfs.h"
 #include "media.h"
+#include "xml.h"
 
 static bool sodr_tape_drive_media_check_ltfs_header(struct so_media * media, const char * buffer);
+
 
 bool sodr_tape_drive_media_check_header(struct so_media * media, const char * buffer) {
 	return sodr_tape_drive_media_check_ltfs_header(media, buffer);
 }
 
-static bool sodr_tape_drive_media_check_ltfs_header(struct so_media * media, const char * buffer) {
+static bool sodr_tape_drive_media_check_ltfs_header(struct so_media * media __attribute__((unused)), const char * buffer) {
 	char vol_id[7];
 	int nb_params = sscanf(buffer, "VOL1%6sL             LTFS", vol_id);
 	if (nb_params < 1)
@@ -52,5 +67,205 @@ static bool sodr_tape_drive_media_check_ltfs_header(struct so_media * media, con
 	// TODO: add media to special LTFS pool
 
 	return true;
+}
+
+void sodr_tape_drive_media_free(struct sodr_tape_drive_media * media_data) {
+	switch (media_data->format) {
+		case sodr_tape_drive_media_ltfs:
+			so_value_free(media_data->data.ltfs.index);
+			break;
+
+		default:
+			break;
+	}
+
+	free(media_data);
+}
+
+struct sodr_tape_drive_media * sodr_tape_drive_media_new(enum sodr_tape_drive_media_format format) {
+	struct sodr_tape_drive_media * mp = malloc(sizeof(struct sodr_tape_drive_media));
+	bzero(mp, sizeof(struct sodr_tape_drive_media)); 
+	mp->format = format;
+
+	return mp;
+}
+
+enum sodr_tape_drive_media_format sodr_tape_drive_parse_label(const char * buffer) {
+	char storiqone_version[65];
+	int media_format_version = 0;
+
+	int nb_params = sscanf(buffer, "Storiq One (%64[^)])\nMedia format: version=%d\n", storiqone_version, &media_format_version);
+	if (nb_params < 2)
+		nb_params = sscanf(buffer, "STone (%64[^)])\nTape format: version=%d\n", storiqone_version, &media_format_version);
+
+	if (nb_params == 2)
+		return media_format_version > 0 && media_format_version < 4 ? sodr_tape_drive_media_storiq_one : sodr_tape_drive_media_unknown;
+
+
+	char vol_id[7];
+	nb_params = sscanf(buffer, "VOL1%6sL             LTFS", vol_id);
+	return nb_params == 1 ? sodr_tape_drive_media_ltfs : sodr_tape_drive_media_unknown;
+}
+
+int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_database_connection * db_connect) {
+	struct so_media * media = drive->slot->media;
+	struct sodr_tape_drive_media * mp = media->private_data;
+
+	struct so_stream_reader * reader = drive->ops->get_raw_reader(3, db_connect);
+	if (reader == NULL) {
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "Failed to read ltfs index from media '%s'"),
+			media->name);
+		return 1;
+	}
+
+	ssize_t buffer_size = 65536, nb_total_read = 0;
+	char * buffer = malloc(buffer_size);
+	for (;;) {
+		ssize_t nb_read = reader->ops->read(reader, buffer + nb_total_read, buffer_size - nb_total_read);
+		if (nb_read < 0) {
+			so_log_write(so_log_level_debug,
+				dgettext("storiqone-drive-tape", "Error while reading ltfs index from media '%s'"),
+				media->name);
+
+			free(buffer);
+			reader->ops->free(reader);
+
+			return 2;
+		}
+
+		if (nb_read == 0) {
+			so_log_write(so_log_level_debug,
+				dgettext("storiqone-drive-tape", "Found ltfs index corrupted from media '%s'"),
+				media->name);
+
+			free(buffer);
+			reader->ops->free(reader);
+
+			return 3;
+		}
+
+		nb_total_read += nb_read;
+		buffer[nb_total_read] = '\0';
+
+		mp->data.ltfs.index = sodr_tape_drive_xml_parse_string(buffer);
+		if (mp->data.ltfs.index != NULL)
+			break;
+
+		buffer_size += 65536;
+		void * addr = realloc(buffer, buffer_size);
+		if (addr == NULL) {
+			so_log_write(so_log_level_debug,
+				dgettext("storiqone-drive-tape", "Error, no more memory to read ltfs index from media '%s'"),
+				media->name);
+
+			free(buffer);
+			reader->ops->free(reader);
+
+			return 3;
+		}
+
+		buffer = addr;
+	}
+
+	reader->ops->close(reader);
+	reader->ops->free(reader);
+	free(buffer);
+
+	return 0;
+}
+
+int sodr_tape_drive_media_parse_ltfs_label(struct so_drive * drive, struct so_database_connection * db_connect) {
+	struct so_media * media = drive->slot->media;
+
+	struct so_stream_reader * reader = drive->ops->get_raw_reader(1, db_connect);
+	if (reader == NULL) {
+		so_log_write(so_log_level_debug,
+			dgettext("storiqone-drive-tape", "Failed to read ltfs label from media '%s'"),
+			media->name);
+		return 1;
+	}
+
+	struct so_value * label = NULL;
+	ssize_t buffer_size = 65536, nb_total_read = 0;
+	char * buffer = malloc(buffer_size);
+	for (;;) {
+		ssize_t nb_read = reader->ops->read(reader, buffer + nb_total_read, buffer_size - nb_total_read);
+		if (nb_read < 0) {
+			so_log_write(so_log_level_debug,
+				dgettext("storiqone-drive-tape", "Error while reading ltfs label from media '%s'"),
+				media->name);
+
+			free(buffer);
+			reader->ops->free(reader);
+
+			return 2;
+		}
+
+		if (nb_read == 0) {
+			so_log_write(so_log_level_debug,
+				dgettext("storiqone-drive-tape", "Found ltfs label corrupted from media '%s'"),
+				media->name);
+
+			free(buffer);
+			reader->ops->free(reader);
+
+			return 3;
+		}
+
+		nb_total_read += nb_read;
+		buffer[nb_total_read] = '\0';
+
+		label = sodr_tape_drive_xml_parse_string(buffer);
+		if (label != NULL)
+			break;
+
+		buffer_size += 65536;
+		void * addr = realloc(buffer, buffer_size);
+		if (addr == NULL) {
+			so_log_write(so_log_level_debug,
+				dgettext("storiqone-drive-tape", "Error, no more memory to read ltfs label from media '%s'"),
+				media->name);
+
+			free(buffer);
+			reader->ops->free(reader);
+
+			return 3;
+		}
+
+		buffer = addr;
+	}
+
+	reader->ops->close(reader);
+	reader->ops->free(reader);
+	free(buffer);
+
+	struct so_value * children = NULL;
+	so_value_unpack(label, "{so}", "children", &children);
+
+	struct so_value_iterator * iter = so_value_list_get_iterator(children);
+	while (so_value_iterator_has_next(iter)) {
+		struct so_value * node = so_value_iterator_get_value(iter, false);
+
+		char * name = NULL, * value = NULL;
+		so_value_unpack(node, "{ssss}", "name", &name, "value", &value);
+
+		if (name == NULL)
+			continue;
+
+		if (!strcmp(name, "formattime")) {
+			media->first_used = sodr_tape_drive_format_ltfs_parse_time(value);
+			media->use_before = media->first_used + media->format->life_span;
+		} else if (!strcmp(name, "volumeuuid"))
+			strncpy(media->uuid, value, 37);
+		else if (!strcmp(name, "blocksize"))
+			sscanf(value, "%zd", &media->block_size);
+
+		free(name);
+		free(value);
+	}
+	so_value_iterator_free(iter);
+
+	return 0;
 }
 
