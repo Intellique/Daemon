@@ -106,13 +106,13 @@ static void job_worker(void * arg) {
 		so_job_add_record(j, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("libstoriqone-job", "Simulation of job (type: %s, key: %s, name: %s) failed with code: %d"), j->type, j->key, j->name, failed);
 		job->exit_code = failed;
 		job->status = so_job_status_error;
-		goto error_job;
+		goto error;
 	}
 
 	if (!job_dr->script_pre_run(j, db_connect)) {
 		job->exit_code = failed;
 		job->status = so_job_status_error;
-		goto error_job;
+		goto error;
 	}
 
 	so_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important, dgettext("libstoriqone-job", "Starting job (type: %s, key: %s, name: %s)"), j->type, j->key, j->name);
@@ -120,15 +120,12 @@ static void job_worker(void * arg) {
 	so_job_add_record(j, db_connect, so_log_level_notice, so_job_record_notif_important, dgettext("libstoriqone-job", "Job exit (type: %s, key: %s, name: %s), exit code: %d"), j->type, j->key, j->name, failed);
 
 	if (failed != 0 && job->stopped_by_user)
-		goto error_job;
+		goto error;
 
 	if (failed == 0)
 		job_dr->script_post_run(j, db_connect);
 	else
 		job_dr->script_on_error(j, db_connect);
-
-error_job:
-	job_dr->exit(j, db_connect);
 
 error:
 	if (db_connect != NULL) {
@@ -213,9 +210,12 @@ int main() {
 	so_json_encode_to_fd(status, 1, true);
 	so_value_free(status);
 
+	job_dr->exit(job, db_connect);
+
 	so_log_stop_logger();
 
 	so_value_free(config);
+	db_connect->ops->free(db_connect);
 
 	return 0;
 }
