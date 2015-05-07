@@ -30,6 +30,8 @@
 #include <locale.h>
 // PQgetvalue
 #include <postgresql/libpq-fe.h>
+// asprintf
+#include <stdio.h>
 // memmove, strcmp, strdup, strlen, strncpy, strstr
 #include <string.h>
 // bzero
@@ -275,16 +277,17 @@ int so_database_postgresql_get_time(PGresult * result, int row, int column, time
 	char * value = PQgetvalue(result, row, column);
 	struct tm tv;
 	bzero(&tv, sizeof(struct tm));
-	int failed = strptime(value, "%F %T", &tv) ? 0 : 1;
 
-	if (!failed) {
-		*val = mktime(&tv);
+	char * not_parsed = strptime(value, "%F %T%z", &tv);
 
-		if (tv.tm_isdst)
-			*val -= 3600 * tv.tm_isdst;
+	if (not_parsed != NULL) {
+		tv.tm_sec -= tv.tm_gmtoff;
+		tv.tm_gmtoff = 0;
+
+		*val = mktime(&tv) - timezone;
 	}
 
-	return failed;
+	return not_parsed != NULL;
 }
 
 int so_database_postgresql_get_time_max(PGresult * result, int row, int column, time_t * val) {
