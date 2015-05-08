@@ -31,6 +31,7 @@
 // S_*
 #include <sys/stat.h>
 
+#include <libstoriqone/archive.h>
 #include <libstoriqone/database.h>
 #include <libstoriqone/file.h>
 #include <libstoriqone/host.h>
@@ -56,6 +57,7 @@ static struct so_value * selected_path = NULL;
 static struct so_format_reader ** src_files = NULL;
 static unsigned int nb_src_files = 0;
 
+static struct so_archive * primary_archive = NULL;
 static struct so_pool * primary_pool = NULL;
 static struct so_value * pool_mirrors = NULL;
 
@@ -89,6 +91,10 @@ static void soj_create_archive_exit(struct so_job * job __attribute__((unused)),
 	for (i = 0; i < nb_src_files; i++)
 		src_files[i]->ops->free(src_files[i]);
 	free(src_files);
+
+	if (primary_archive != NULL)
+		so_archive_free(primary_archive);
+
 	if (primary_pool != NULL)
 		so_pool_free(primary_pool);
 }
@@ -112,13 +118,17 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 		struct so_format_file file;
 		enum so_format_reader_header_status status;
 		while (status = src_files[i]->ops->get_header(src_files[i], &file), status == so_format_reader_header_ok) {
-			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-create-archive", "Adding %s to archive"), file.filename);
+			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+				dgettext("storiqone-job-create-archive", "Adding %s to archive"),
+				file.filename);
 
 			soj_create_archive_meta_worker_add_file(file.filename, root);
 
 			enum so_format_writer_status write_status = soj_create_archive_worker_add_file(job, &file, db_connect);
 			if (write_status != so_format_writer_ok) {
-				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-create-archive", "Error while adding %s to archive"), file.filename);
+				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+					dgettext("storiqone-job-create-archive", "Error while adding %s to archive"),
+					file.filename);
 				break;
 			}
 
@@ -137,7 +147,9 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 				}
 
 				if (nb_read < 0) {
-					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-create-archive", "Error while reading from %s"), file.filename);
+					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+						dgettext("storiqone-job-create-archive", "Error while reading from %s"),
+						file.filename);
 					failed = -1;
 				} else {
 					failed = soj_create_archive_worker_end_of_file();
@@ -151,13 +163,16 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 		free(root);
 	}
 
-	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-create-archive", "Closing archive"));
+	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+		dgettext("storiqone-job-create-archive", "Closing archive"));
 	soj_create_archive_worker_close();
 
-	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-create-archive", "Synchronizing archive with database"));
+	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+		dgettext("storiqone-job-create-archive", "Synchronizing archive with database"));
 	failed = soj_create_archive_worker_sync_archives(db_connect);
 	if (failed != 0)
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-create-archive", "Error while synchronize archive into database"));
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-create-archive", "Error while synchronize archive into database"));
 
 	return failed;
 }
@@ -170,7 +185,8 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 
 	selected_path = db_connect->ops->get_selected_files_by_job(db_connect, job);
 	if (selected_path == NULL || so_value_list_get_length(selected_path) == 0) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-create-archive", "There is no select files to create new archive or to add into an archive"));
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-create-archive", "There is no select files to create new archive or to add into an archive"));
 		return 1;
 	}
 
@@ -193,13 +209,53 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 
 	char sarchive_size[12];
 	so_file_convert_size_to_string(archive_size, sarchive_size, 12);
-	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-create-archive", "Size require (%s) for creating new archive or adding to archive"), sarchive_size);
+	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+		dgettext("storiqone-job-create-archive", "Size require (%s) for creating new archive or adding to archive"),
+		sarchive_size);
 
 
+	primary_archive = db_connect->ops->get_archive_by_job(db_connect, job);
 	primary_pool = db_connect->ops->get_pool(db_connect, NULL, job);
+
+	if (primary_archive == NULL && primary_pool == NULL) {
+		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+			dgettext("storiqone-job-create-archive", "Error, Can't create new archive or add into an archive"));
+		return 1;
+	}
+
+	if (primary_archive != NULL && primary_pool != NULL) {
+		// TODO: job with an archive and a pool
+	}
+
+	if (primary_archive != NULL) {
+		if (!primary_archive->can_append) {
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-create-archive", "Error, can't add file into an archive '%s' which forbid to add them"),
+				primary_archive->name);
+			return 1;
+		}
+
+		if (primary_archive->nb_volumes < 1) {
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-create-archive", "Bug: archive '%s' do not contain files"),
+				primary_archive->name);
+			return 1;
+		}
+
+		if (primary_archive->volumes->media->pool->deleted) {
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-create-archive", "Try to create an archive '%s' into a pool '%s' which is deleted"),
+				primary_archive->name, primary_archive->volumes->media->pool->name);
+			return 1;
+		}
+	}
+
+
 	// TODO: primary_pool IS NULL -> adding file to archive
 	if (primary_pool->deleted) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-create-archive", "Try to create an archive into a pool which is deleted"));
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-create-archive", "Try to create an archive into a pool '%s' which is deleted"),
+			primary_pool->name);
 		return 1;
 	}
 
@@ -212,7 +268,9 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 	}
 
 	if (reserved < archive_size) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-create-archive", "Error: not enought space available into pool (%s)"), primary_pool->name);
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-create-archive", "Error: not enought space available into pool (%s)"),
+			primary_pool->name);
 		return 1;
 	}
 

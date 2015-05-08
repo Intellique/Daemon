@@ -78,6 +78,7 @@ struct soj_create_archive_worker {
 	enum {
 		soj_worker_status_not_ready,
 		soj_worker_status_ready,
+		soj_worker_status_error,
 		soj_worker_status_finished
 	} state;
 };
@@ -110,13 +111,18 @@ struct so_value * soj_create_archive_worker_archives() {
 		so_value_list_push(archive_mirrors, so_archive_convert(worker->archive), true);
 	}
 
-	return so_value_pack("{soso}", "main", so_archive_convert(primary_worker->archive), "mirrors", archive_mirrors);
+	return so_value_pack("{soso}",
+		"main", so_archive_convert(primary_worker->archive),
+		"mirrors", archive_mirrors
+	);
 }
 
 enum so_format_writer_status soj_create_archive_worker_add_file(struct so_job * job, struct so_format_file * file, struct so_database_connection * db_connect) {
 	enum so_format_writer_status status = soj_create_archive_worker_add_file2(job, primary_worker, file, db_connect);
 	if (status != so_format_writer_ok) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-create-archive", "Error while adding file (%s) to pool %s"), file->filename, primary_worker->pool->name);
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-create-archive", "Error while adding file (%s) to pool %s"),
+			file->filename, primary_worker->pool->name);
 		return status;
 	}
 
@@ -129,7 +135,9 @@ enum so_format_writer_status soj_create_archive_worker_add_file(struct so_job * 
 
 		status = soj_create_archive_worker_add_file2(job, worker, file, db_connect);
 		if (status != so_format_writer_ok) {
-			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("storiqone-job-create-archive", "Error while adding file (%s) to pool %s"), file->filename, worker->pool->name);
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-create-archive", "Error while adding file (%s) to pool %s"),
+				file->filename, worker->pool->name);
 			return status;
 		}
 	}
