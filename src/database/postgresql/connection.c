@@ -2765,7 +2765,7 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 
 	const char * query = "select_archive_by_id";
-	so_database_postgresql_prepare(self, query, "SELECT a.uuid, a.name, uc.login, uo.login, a.deleted FROM archive a INNER JOIN users uc ON a.creator = uc.id INNER JOIN users uo ON a.owner = uo.id WHERE a.id = $1 LIMIT 1");
+	so_database_postgresql_prepare(self, query, "SELECT a.uuid, a.name, uc.login, uo.login, a.canappend, a.deleted FROM archive a INNER JOIN users uc ON a.creator = uc.id INNER JOIN users uo ON a.owner = uo.id WHERE a.id = $1 LIMIT 1");
 
 	const char * param[] = { archive_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -2780,7 +2780,8 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 		so_database_postgresql_get_string_dup(result, 0, 1, &archive->name);
 		so_database_postgresql_get_string_dup(result, 0, 2, &archive->creator);
 		so_database_postgresql_get_string_dup(result, 0, 3, &archive->owner);
-		so_database_postgresql_get_bool(result, 0, 4, &archive->deleted);
+		so_database_postgresql_get_bool(result, 0, 4, &archive->can_append);
+		so_database_postgresql_get_bool(result, 0, 5, &archive->deleted);
 
 		archive->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
 		struct so_value * db = so_value_new_hashtable2();

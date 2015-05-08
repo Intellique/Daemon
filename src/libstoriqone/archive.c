@@ -158,7 +158,7 @@ struct so_value * so_archive_convert(struct so_archive * archive) {
 		), true);
 	}
 
-	return so_value_pack("{sssssisosssssb}",
+	return so_value_pack("{sssssisosssssbsb}",
 		"uuid", archive->uuid,
 		"name", archive->name,
 
@@ -169,6 +169,7 @@ struct so_value * so_archive_convert(struct so_archive * archive) {
 		"creator", archive->creator,
 		"owner", archive->owner,
 
+		"can append", archive->can_append,
 		"deleted", archive->deleted
 	);
 }
