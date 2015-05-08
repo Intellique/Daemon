@@ -32,7 +32,7 @@
 #include <postgresql/libpq-fe.h>
 // asprintf
 #include <stdio.h>
-// memmove, strcmp, strdup, strlen, strncpy, strstr
+// memmove, strcmp, strcspn, strdup, strlen, strncpy, strstr
 #include <string.h>
 // bzero
 #include <strings.h>
@@ -278,7 +278,11 @@ int so_database_postgresql_get_time(PGresult * result, int row, int column, time
 	struct tm tv;
 	bzero(&tv, sizeof(struct tm));
 
-	char * not_parsed = strptime(value, "%F %T%z", &tv);
+	char * not_parsed = strptime(value, "%F %T", &tv);
+	if (not_parsed != NULL && strlen(not_parsed) > 0) {
+		size_t skip = strcspn(not_parsed, "+-");
+		not_parsed = strptime(not_parsed + skip, "%z", &tv);
+	}
 
 	if (not_parsed != NULL) {
 		tv.tm_sec -= tv.tm_gmtoff;
