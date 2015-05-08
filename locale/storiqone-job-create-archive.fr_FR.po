@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-create-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-05-08 18:20+0200\n"
+        "POT-Creation-Date: 2015-05-08 19:39+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -71,12 +71,17 @@ msgstr  "Bogue : l’archive « %s » ne contient pas de fichier"
 msgid   "Try to create an archive '%s' into a pool '%s' which is deleted"
 msgstr  "Tentative de créer une archive « %s » dans un pool « %s » qui est supprimé"
 
-#: src/job/create-archive/create-archive.c:257
+#: src/job/create-archive/create-archive.c:254
+#, c-format
+msgid   "Error, can't add file to the archive '%s' because this archive should be synchronized"
+msgstr  "Erreur, ne peut pas ajouter de fichier dans l’archive « %s » parce qu’elle n’est pas synchronisée"
+
+#: src/job/create-archive/create-archive.c:264
 #, c-format
 msgid   "Try to create an archive into a pool '%s' which is deleted"
 msgstr  "Tentative de créer une archive dans un pool « %s » qui est supprimé"
 
-#: src/job/create-archive/create-archive.c:272
+#: src/job/create-archive/create-archive.c:279
 #, c-format
 msgid   "Error: not enought space available into pool (%s)"
 msgstr  "Erreur : espace insuffisant dans le pool (%s)"

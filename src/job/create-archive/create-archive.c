@@ -248,6 +248,13 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 				primary_archive->name, primary_archive->volumes->media->pool->name);
 			return 1;
 		}
+
+		if (!db_connect->ops->is_archive_synchronized(db_connect, primary_archive)) {
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-create-archive", "Error, can't add file to the archive '%s' because this archive should be synchronized"),
+				primary_archive->name);
+			return 1;
+		}
 	}
 
 
