@@ -189,7 +189,7 @@ static int soj_erasemedia_simulate(struct so_job * job, struct so_database_conne
 		so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
 			dgettext("storiqone-job-erase-media", "Try to erase a media with error status"));
 
-	soj_erasemedia_archives = db_connect->ops->get_archive_by_media(db_connect, soj_erasemedia_media);
+	soj_erasemedia_archives = db_connect->ops->get_archives_by_media(db_connect, soj_erasemedia_media);
 
 	struct so_value_iterator * iter = so_value_list_get_iterator(soj_erasemedia_archives);
 	while (so_value_iterator_has_next(iter)) {

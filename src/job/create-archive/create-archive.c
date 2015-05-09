@@ -58,6 +58,7 @@ static struct so_format_reader ** src_files = NULL;
 static unsigned int nb_src_files = 0;
 
 static struct so_archive * primary_archive = NULL;
+static struct so_value * archives_mirrors = NULL;
 static struct so_pool * primary_pool = NULL;
 static struct so_value * pool_mirrors = NULL;
 
@@ -95,8 +96,14 @@ static void soj_create_archive_exit(struct so_job * job __attribute__((unused)),
 	if (primary_archive != NULL)
 		so_archive_free(primary_archive);
 
+	if (archives_mirrors != NULL)
+		so_value_free(archives_mirrors);
+
 	if (primary_pool != NULL)
 		so_pool_free(primary_pool);
+
+	if (pool_mirrors != NULL)
+		so_value_free(pool_mirrors);
 }
 
 static void soj_create_archive_init() {
@@ -255,15 +262,13 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 				primary_archive->name);
 			return 1;
 		}
-	}
-
-
-	// TODO: primary_pool IS NULL -> adding file to archive
-	if (primary_pool->deleted) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-create-archive", "Try to create an archive into a pool '%s' which is deleted"),
-			primary_pool->name);
-		return 1;
+	} else {
+		if (primary_pool->deleted) {
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-create-archive", "Try to create an archive into a pool '%s' which is deleted"),
+				primary_pool->name);
+			return 1;
+		}
 	}
 
 	ssize_t reserved = soj_media_prepare(primary_pool, archive_size, db_connect);

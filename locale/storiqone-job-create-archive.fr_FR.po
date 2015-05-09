@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-create-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-05-08 19:39+0200\n"
+        "POT-Creation-Date: 2015-05-08 23:40+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -16,72 +16,72 @@ msgstr  "Project-Id-Version: job-create-archive v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/job/create-archive/create-archive.c:122
+#: src/job/create-archive/create-archive.c:129
 #, c-format
 msgid   "Adding %s to archive"
 msgstr  "Ajout %s dans l’archive"
 
-#: src/job/create-archive/create-archive.c:130
+#: src/job/create-archive/create-archive.c:137
 #, c-format
 msgid   "Error while adding %s to archive"
 msgstr  "Erreur pendant l’ajout de %s dans l’archive"
 
-#: src/job/create-archive/create-archive.c:151
+#: src/job/create-archive/create-archive.c:158
 #, c-format
 msgid   "Error while reading from %s"
 msgstr  "Erreur en lisant depuis %s"
 
-#: src/job/create-archive/create-archive.c:167
+#: src/job/create-archive/create-archive.c:174
 msgid   "Closing archive"
 msgstr  "Fermeture de l’archive"
 
-#: src/job/create-archive/create-archive.c:171
+#: src/job/create-archive/create-archive.c:178
 msgid   "Synchronizing archive with database"
 msgstr  "Synchronisation de l’archive avec la base de données"
 
-#: src/job/create-archive/create-archive.c:175
+#: src/job/create-archive/create-archive.c:182
 msgid   "Error while synchronize archive into database"
 msgstr  "Erreur en synchronisant l’archive dans la base de données"
 
-#: src/job/create-archive/create-archive.c:189
+#: src/job/create-archive/create-archive.c:196
 msgid   "There is no select files to create new archive or to add into an archive"
 msgstr  "Il n’y a pas de fichiers sélectionnés pour créer une nouvelle archive ou ajouter des fichiers dans une archive"
 
-#: src/job/create-archive/create-archive.c:213
+#: src/job/create-archive/create-archive.c:220
 #, c-format
 msgid   "Size require (%s) for creating new archive or adding to archive"
 msgstr  "Taille requis (%s) pour créer une nouvelle archive ou pour ajouter à une archive"
 
-#: src/job/create-archive/create-archive.c:222
+#: src/job/create-archive/create-archive.c:229
 msgid   "Error, Can't create new archive or add into an archive"
 msgstr  "Erreur, ne peut pas créer de nouvelle archive ou d’ajouter dans une archive"
 
-#: src/job/create-archive/create-archive.c:233
+#: src/job/create-archive/create-archive.c:240
 #, c-format
 msgid   "Error, can't add file into an archive '%s' which forbid to add them"
 msgstr  "Erreur, ne peut pas ajouter de fichier dans l’archive « %s » qui l'interdit de le faire"
 
-#: src/job/create-archive/create-archive.c:240
+#: src/job/create-archive/create-archive.c:247
 #, c-format
 msgid   "Bug: archive '%s' do not contain files"
 msgstr  "Bogue : l’archive « %s » ne contient pas de fichier"
 
-#: src/job/create-archive/create-archive.c:247
+#: src/job/create-archive/create-archive.c:254
 #, c-format
 msgid   "Try to create an archive '%s' into a pool '%s' which is deleted"
 msgstr  "Tentative de créer une archive « %s » dans un pool « %s » qui est supprimé"
 
-#: src/job/create-archive/create-archive.c:254
+#: src/job/create-archive/create-archive.c:261
 #, c-format
 msgid   "Error, can't add file to the archive '%s' because this archive should be synchronized"
 msgstr  "Erreur, ne peut pas ajouter de fichier dans l’archive « %s » parce qu’elle n’est pas synchronisée"
 
-#: src/job/create-archive/create-archive.c:264
+#: src/job/create-archive/create-archive.c:269
 #, c-format
 msgid   "Try to create an archive into a pool '%s' which is deleted"
 msgstr  "Tentative de créer une archive dans un pool « %s » qui est supprimé"
 
-#: src/job/create-archive/create-archive.c:279
+#: src/job/create-archive/create-archive.c:285
 #, c-format
 msgid   "Error: not enought space available into pool (%s)"
 msgstr  "Erreur : espace insuffisant dans le pool (%s)"
