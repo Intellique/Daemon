@@ -30,6 +30,8 @@
 #include <stdlib.h>
 // S_*
 #include <sys/stat.h>
+// access
+#include <unistd.h>
 
 #include <libstoriqone/archive.h>
 #include <libstoriqone/database.h>
@@ -90,7 +92,8 @@ static void soj_create_archive_exit(struct so_job * job __attribute__((unused)),
 	so_value_free(selected_path);
 	unsigned int i;
 	for (i = 0; i < nb_src_files; i++)
-		src_files[i]->ops->free(src_files[i]);
+		if (src_files[i] != NULL)
+			src_files[i]->ops->free(src_files[i]);
 	free(src_files);
 
 	if (primary_archive != NULL)
@@ -113,7 +116,10 @@ static void soj_create_archive_init() {
 }
 
 static int soj_create_archive_run(struct so_job * job, struct so_database_connection * db_connect) {
-	soj_create_archive_worker_init(job, primary_pool, pool_mirrors);
+	if (primary_archive != NULL)
+		soj_create_archive_worker_init_archive(job, primary_archive, archives_mirrors);
+	else
+		soj_create_archive_worker_init_pool(job, primary_pool, pool_mirrors);
 	soj_create_archive_worker_reserve_medias(archive_size, db_connect);
 	soj_create_archive_worker_prepare_medias(db_connect);
 
@@ -205,6 +211,14 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 		struct so_value * elt = so_value_iterator_get_value(iter, false);
 		const char * path = so_value_string_get(elt);
 
+		if (access(path, F_OK) != 0) {
+			so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+				dgettext("storiqone-job-create-archive", "Error, path '%s' do not exist"),
+				path);
+			so_value_iterator_free(iter);
+			return 1;
+		}
+
 		struct so_format_reader * reader = soj_io_filesystem_reader(path);
 		ssize_t sub_total = soj_format_compute_tar_size(reader);
 		archive_size += sub_total;
@@ -249,10 +263,11 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 			return 1;
 		}
 
-		if (primary_archive->volumes->media->pool->deleted) {
+		struct so_pool * pool = primary_archive->volumes->media->pool;
+		if (pool->deleted) {
 			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-create-archive", "Try to create an archive '%s' into a pool '%s' which is deleted"),
-				primary_archive->name, primary_archive->volumes->media->pool->name);
+				primary_archive->name, pool->name);
 			return 1;
 		}
 
@@ -262,6 +277,23 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 				primary_archive->name);
 			return 1;
 		}
+
+		ssize_t reserved = soj_media_prepare(pool, archive_size, db_connect);
+		if (reserved < archive_size) {
+			reserved += soj_media_prepare_unformatted(pool, true, db_connect);
+
+			if (reserved < archive_size)
+				reserved += soj_media_prepare_unformatted(pool, false, db_connect);
+		}
+
+		if (reserved < archive_size) {
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-create-archive", "Error: not enought space available into pool (%s)"),
+				pool->name);
+			return 1;
+		}
+
+		archives_mirrors = db_connect->ops->get_archives_by_archive_mirror(db_connect, primary_archive);
 	} else {
 		if (primary_pool->deleted) {
 			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
@@ -269,25 +301,24 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 				primary_pool->name);
 			return 1;
 		}
+
+		ssize_t reserved = soj_media_prepare(primary_pool, archive_size, db_connect);
+		if (reserved < archive_size) {
+			reserved += soj_media_prepare_unformatted(primary_pool, true, db_connect);
+
+			if (reserved < archive_size)
+				reserved += soj_media_prepare_unformatted(primary_pool, false, db_connect);
+		}
+
+		if (reserved < archive_size) {
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+				dgettext("storiqone-job-create-archive", "Error: not enought space available into pool (%s)"),
+				primary_pool->name);
+			return 1;
+		}
+
+		pool_mirrors = db_connect->ops->get_pool_by_pool_mirror(db_connect, primary_pool);
 	}
-
-	ssize_t reserved = soj_media_prepare(primary_pool, archive_size, db_connect);
-	if (reserved < archive_size) {
-		reserved += soj_media_prepare_unformatted(primary_pool, true, db_connect);
-
-		if (reserved < archive_size)
-			reserved += soj_media_prepare_unformatted(primary_pool, false, db_connect);
-	}
-
-	if (reserved < archive_size) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-create-archive", "Error: not enought space available into pool (%s)"),
-			primary_pool->name);
-		return 1;
-	}
-
-
-	pool_mirrors = db_connect->ops->get_pool_by_pool_mirror(db_connect, primary_pool);
 
 	return 0;
 }

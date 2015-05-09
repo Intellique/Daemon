@@ -2993,7 +2993,7 @@ static struct so_archive * so_database_postgresql_get_archive_by_job(struct so_d
 
 	if (status == PGRES_FATAL_ERROR)
 		so_database_postgresql_get_error(result, query);
-	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1 && !PQgetisnull(result, 0, 0))
 		archive = so_database_postgresql_get_archive_by_id(connect, PQgetvalue(result, 0, 0));
 
 	PQclear(result);
@@ -3095,7 +3095,7 @@ static bool so_database_postgresql_is_archive_synchronized(struct so_database_co
 
 	if (status == PGRES_FATAL_ERROR)
 		so_database_postgresql_get_error(result, query);
-	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1 && !PQgetisnull(result, 0, 0))
 		so_database_postgresql_get_bool(result, 0, 0, &synchronized_archive);
 
 	PQclear(result);
@@ -3409,29 +3409,6 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 	}
 
 	if (volume_id == NULL) {
-		char * sequence = NULL;
-		asprintf(&sequence, "%u", volume->sequence);
-
-		const char * query = "select_archive_volume_by_archive";
-		so_database_postgresql_prepare(self, query, "SELECT id FROM archivevolume WHERE archive = $1 AND sequence = $2");
-
-		const char * param[] = { archive_id, sequence };
-		PGresult * result = PQexecPrepared(self->connect, query, 2, param, NULL, NULL, 0);
-		ExecStatusType status = PQresultStatus(result);
-
-		if (status == PGRES_FATAL_ERROR)
-			so_database_postgresql_get_error(result, query);
-		else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
-			so_database_postgresql_get_string_dup(result, 0, 0, &volume_id);
-			so_value_hashtable_put2(db, "id", so_value_new_string(volume_id), true);
-			so_value_hashtable_put2(db, "archive id", so_value_new_string(archive_id), true);
-		}
-
-		PQclear(result);
-		free(sequence);
-	}
-
-	if (volume_id == NULL) {
 		so_database_postgresql_sync_media(connect, volume->media, so_database_sync_id_only);
 		struct so_value * db_media = so_value_hashtable_get(volume->media->db_data, key, false, false);
 		struct so_value * db_job = so_value_hashtable_get(volume->job->db_data, key, false, false);
@@ -3465,9 +3442,7 @@ static int so_database_postgresql_sync_archive_volume(struct so_database_connect
 		free(media_id);
 		free(size);
 		free(sequence);
-	}
 
-	if (volume_id != NULL) {
 		if (volume->digests != NULL) {
 			const char * query = "insert_archive_volume_to_checksum";
 			so_database_postgresql_prepare(self, query, "INSERT INTO archivevolumetochecksumresult VALUES ($1, $2)");

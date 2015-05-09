@@ -46,7 +46,6 @@ static const struct so_string_character so_string_unknow_character = {
  * \param[in] string : a string which contains one or more UTF8 characters
  * \returns size of first character or \b -1
  */
-static int so_string_valid_utf8_char(const char * string);
 static int so_string_valid_utf8_char2(const unsigned char * ptr, unsigned short length);
 
 
@@ -326,18 +325,18 @@ size_t so_string_utf8_length(const char * str) {
 	return length;
 }
 
-static int so_string_valid_utf8_char(const char * string) {
+int so_string_valid_utf8_char(const char * string) {
 	const unsigned char * ptr = (const unsigned char *) string;
 	if ((*ptr & 0x7F) == *ptr)
 		return 1;
 	else if ((*ptr & 0xBF) == *ptr)
-	  return 0;
+		return 0;
 	else if ((*ptr & 0xDF) == *ptr)
-	  return ((ptr[1] & 0xBF) != ptr[1] || ((ptr[1] & 0x80) != 0x80)) ? 0 : 2;
+		return ((ptr[1] & 0xBF) != ptr[1] || ((ptr[1] & 0x80) != 0x80)) ? 0 : 2;
 	else if ((*ptr & 0xEF) == *ptr)
-	  return so_string_valid_utf8_char2(ptr, 2) ? 0 : 3;
+		return so_string_valid_utf8_char2(ptr, 2) ? 0 : 3;
 	else if ((*ptr & 0xF7) == *ptr)
-	  return so_string_valid_utf8_char2(ptr, 3) ? 0 : 4;
+		return so_string_valid_utf8_char2(ptr, 3) ? 0 : 4;
 	else
 		return 0;
 }

@@ -89,7 +89,7 @@ static int soj_create_archive_worker_close2(struct soj_create_archive_worker * w
 static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_create_archive_worker * worker, struct so_archive_file * file);
 static void soj_create_archive_worker_exit(void) __attribute__((destructor));
 static void soj_create_archive_worker_free(struct soj_create_archive_worker * worker);
-static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_job * job, struct so_pool * pool);
+static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_job * job, struct so_archive * archive, struct so_pool * pool);
 ssize_t soj_create_archive_worker_write2(struct so_job * job, struct soj_create_archive_worker * worker, struct so_format_file * file, const char * buffer, ssize_t length, struct so_database_connection * db_connect);
 static bool soj_create_archive_worker_write_meta(struct soj_create_archive_worker * worker);
 
@@ -380,8 +380,25 @@ static void soj_create_archive_worker_free(struct soj_create_archive_worker * wo
 	free(worker);
 }
 
-void soj_create_archive_worker_init(struct so_job * job, struct so_pool * primary_pool, struct so_value * pool_mirrors) {
-	primary_worker = soj_create_archive_worker_new(job, primary_pool); 
+void soj_create_archive_worker_init_archive(struct so_job * job, struct so_archive * primary_archive, struct so_value * archive_mirrors) {
+	struct so_pool * pool = primary_archive->volumes->media->pool;
+	primary_worker = soj_create_archive_worker_new(job, primary_archive, pool);
+
+	unsigned int i;
+	nb_mirror_workers = so_value_list_get_length(archive_mirrors);
+	mirror_workers = calloc(nb_mirror_workers, sizeof(struct soj_create_archive_worker *));
+	struct so_value_iterator * iter = so_value_list_get_iterator(archive_mirrors);
+	for (i = 0; so_value_iterator_has_next(iter); i++) {
+		struct so_value * varchive = so_value_iterator_get_value(iter, false);
+		struct so_archive * archive = so_value_custom_get(varchive);
+		pool = archive->volumes->media->pool;
+		mirror_workers[i] = soj_create_archive_worker_new(job, archive, pool);
+	}
+	so_value_iterator_free(iter);
+}
+
+void soj_create_archive_worker_init_pool(struct so_job * job, struct so_pool * primary_pool, struct so_value * pool_mirrors) {
+	primary_worker = soj_create_archive_worker_new(job, NULL, primary_pool); 
 
 	unsigned int i;
 	nb_mirror_workers = so_value_list_get_length(pool_mirrors);
@@ -390,22 +407,25 @@ void soj_create_archive_worker_init(struct so_job * job, struct so_pool * primar
 	for (i = 0; so_value_iterator_has_next(iter); i++) {
 		struct so_value * vpool = so_value_iterator_get_value(iter, false);
 		struct so_pool * pool = so_value_custom_get(vpool);
-		mirror_workers[i] = soj_create_archive_worker_new(job, pool);
+		mirror_workers[i] = soj_create_archive_worker_new(job, NULL, pool);
 	}
 	so_value_iterator_free(iter);
 }
 
-static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_job * job, struct so_pool * pool) {
+static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_job * job, struct so_archive * archive, struct so_pool * pool) {
 	struct soj_create_archive_worker * worker = malloc(sizeof(struct soj_create_archive_worker));
 	bzero(worker, sizeof(struct soj_create_archive_worker));
 
-	worker->archive = so_archive_new();
-	uuid_t uuid;
-	uuid_generate(uuid);
-	uuid_unparse_lower(uuid, worker->archive->uuid);
-	worker->archive->name = strdup(job->name);
-	worker->archive->creator = strdup(job->user);
-	worker->archive->owner = strdup(job->user);
+	if (archive == NULL) {
+		worker->archive = so_archive_new();
+		uuid_t uuid;
+		uuid_generate(uuid);
+		uuid_unparse_lower(uuid, worker->archive->uuid);
+		worker->archive->name = strdup(job->name);
+		worker->archive->creator = strdup(job->user);
+		worker->archive->owner = strdup(job->user);
+	} else
+		worker->archive = archive;
 
 	worker->pool = pool;
 

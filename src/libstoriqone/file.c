@@ -226,8 +226,13 @@ void so_file_convert_size_to_string(size_t size, char * str, ssize_t str_len) {
 		char * ptrBegin = ptrEnd - 1;
 		while (*ptrBegin == '0')
 			ptrBegin--;
-		if (*ptrBegin == '.')
-			ptrBegin--;
+
+		char * ptrTmp = ptrBegin;
+		while (so_string_valid_utf8_char(ptrTmp) == 0)
+			ptrTmp--;
+
+		if (strncmp(ptrTmp, locale_info->decimal_point, strlen(locale_info->decimal_point)) == 0)
+			ptrBegin = ptrTmp - 1;
 
 		if (ptrBegin + 1 < ptrEnd)
 			memmove(ptrBegin + 1, ptrEnd, strlen(ptrEnd) + 1);

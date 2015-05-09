@@ -174,5 +174,7 @@ size_t so_string_unicode_length(unsigned int unicode);
 
 size_t so_string_utf8_length(const char * str);
 
+int so_string_valid_utf8_char(const char * string);
+
 #endif
 
