@@ -631,8 +631,10 @@ int soj_create_archive_worker_sync_archives(struct so_job * job, struct so_datab
 	if (failed != 0) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-create-archive", "Failed to start transaction info database"));
+		primary_worker->state = soj_worker_status_error;
 		return failed;
-	}
+	} else
+		primary_worker->state = soj_worker_status_finished;
 
 	failed = db_connect->ops->sync_archive(db_connect, primary_worker->archive);
 
@@ -643,6 +645,8 @@ int soj_create_archive_worker_sync_archives(struct so_job * job, struct so_datab
 
 		if (failed == 0)
 			failed = db_connect->ops->link_archives(db_connect, primary_worker->archive, worker->archive);
+
+		worker->state = failed == 0 ? soj_worker_status_finished : soj_worker_status_error;
 	}
 
 	if (failed != 0)
