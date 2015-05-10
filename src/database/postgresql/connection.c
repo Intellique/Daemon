@@ -3085,7 +3085,7 @@ static bool so_database_postgresql_is_archive_synchronized(struct so_database_co
 	so_value_free(key);
 
 	const char * query = "select_check_synchronized_archive";
-	so_database_postgresql_prepare(self, query, "SELECT BOOL_AND(a.lastupdate = b.last) FROM (SELECT * FROM archivetoarchivemirror WHERE archive = $1) AS a LEFT JOIN (SELECT archivemirror, MAX(lastupdate) AS last FROM archivetoarchivemirror GROUP BY archivemirror) AS b ON a.archivemirror = b.archivemirror");
+	so_database_postgresql_prepare(self, query, "SELECT BOOL_AND(sub.check) AS syn FROM (SELECT lastupdate = MAX(lastupdate) OVER (PARTITION BY archivemirror) AS check FROM archivetoarchivemirror WHERE archive = $1) AS sub");
 
 	const char * param[] = { archive_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
