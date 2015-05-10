@@ -208,6 +208,7 @@ static int soj_erasemedia_simulate(struct so_job * job, struct so_database_conne
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-erase-media", "Abort job because media '%s' contains undeleted archive"),
 			soj_erasemedia_media->name);
+		return 1;
 	}
 
 	return 0;
