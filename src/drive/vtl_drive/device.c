@@ -413,7 +413,16 @@ static int sodr_vtl_drive_init(struct so_value * config) {
 
 	char * root_dir = NULL;
 	struct so_value * format = NULL;
-	so_value_unpack(config, "{ssssso}", "serial number", &sodr_vtl_drive.serial_number, "device", &root_dir, "format", &format);
+	long long index = 0;
+	so_value_unpack(config, "{sssssosi}",
+		"serial number", &sodr_vtl_drive.serial_number,
+		"device", &root_dir,
+		"format", &format,
+		"index", &index
+	);
+
+	if (index > 0)
+		sodr_vtl_drive.index = sodr_vtl_drive.slot->index = index;
 
 	if (access(root_dir, R_OK | W_OK | X_OK) != 0)
 		return 1;

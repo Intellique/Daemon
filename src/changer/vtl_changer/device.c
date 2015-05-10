@@ -384,6 +384,7 @@ static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_
 
 		sochgr_vtl_drive_slot_create(dr, sl, sochgr_vtl_root_dir, i);
 
+		so_value_hashtable_put2(dr_p->params, "index", so_value_new_integer(i), true);
 		so_value_hashtable_put2(dr_p->params, "format", vformat, false);
 		so_value_hashtable_put2(dr_p->params, "serial number", so_value_new_string(dr->serial_number), true);
 	}

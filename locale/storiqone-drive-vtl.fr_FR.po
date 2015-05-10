@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: vtl-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-04-09 09:11+0200\n"
+        "POT-Creation-Date: 2015-05-10 17:11+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -50,7 +50,7 @@ msgstr  "[ %s %s %d ] Échec lors de l’écriture de l’en-tête du média �
 msgid   "[%s %s %d] Failed to open file from media '%s' at position '%d' because %m"
 msgstr  "[ %s %s %d ] Échec lors de l’ouverture du fichier du média « %s » à la position « %d » parce que %m"
 
-#: src/drive/vtl_drive/device.c:450
+#: src/drive/vtl_drive/device.c:459
 #, c-format
 msgid   "[%s %s %d] Failed to find media with uuid '%s' from database"
 msgstr  "[ %s %s %d ] Échec lors de la recherche du média avec l’uuid « %s » depuis la base de données"

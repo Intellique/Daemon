@@ -516,7 +516,17 @@ static int sodr_tape_drive_init(struct so_value * config) {
 	bzero(sodr_tape_drive.slot, sizeof(struct so_slot));
 	sl->drive = &sodr_tape_drive;
 
-	so_value_unpack(config, "{sssssssbs{sisbsbss}}", "model", &sodr_tape_drive.model, "vendor", &sodr_tape_drive.vendor, "serial number", &sodr_tape_drive.serial_number, "enable", &sodr_tape_drive.enable, "slot", "index", &sl->index, "enable", &sl->enable, "ie port", &sl->is_ie_port, "volume name", &sl->volume_name);
+	so_value_unpack(config, "{sssssssbs{sisbsbss}}",
+		"model", &sodr_tape_drive.model,
+		"vendor", &sodr_tape_drive.vendor,
+		"serial number", &sodr_tape_drive.serial_number,
+		"enable", &sodr_tape_drive.enable,
+		"slot",
+			"index", &sl->index,
+			"enable", &sl->enable,
+			"ie port", &sl->is_ie_port,
+			"volume name", &sl->volume_name
+	);
 	sodr_tape_drive.index = sl->index;
 
 	glob_t gl;
