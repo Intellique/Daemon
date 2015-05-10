@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-erase-media v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-04-10 17:02+0200\n"
+        "POT-Creation-Date: 2015-05-10 15:54+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -65,7 +65,12 @@ msgstr  "Tentative d’effacement d’un média non réinscriptible"
 msgid   "Try to erase a media with error status"
 msgstr  "Tentative d’effacement d’un média qui a un status en erreur"
 
-#: src/job/erase-media/erase-media.c:199
+#: src/job/erase-media/erase-media.c:200
 #, c-format
 msgid   "Try to erase a media witch contains an archive not deleted (named: %s)"
 msgstr  "Tentative d’effacement d'un média qui contient une archive non supprimées (nommé : %s)"
+
+#: src/job/erase-media/erase-media.c:209
+#, c-format
+msgid   "Abort job because media '%s' contains undeleted archive"
+msgstr  "Abandon de la tâche parce que le média « %s » contient des archives qui ne sont pas supprimées"
