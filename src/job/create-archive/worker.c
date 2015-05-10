@@ -515,8 +515,8 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 			worker->state = soj_worker_status_ready;
 
 			struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
-			vol->media = primary_worker->media;
-			vol->media_position = primary_worker->writer->ops->file_position(primary_worker->writer);
+			vol->media = worker->media;
+			vol->media_position = primary_worker->writer->ops->file_position(worker->writer);
 			vol->job = soj_job_get();
 		}
 

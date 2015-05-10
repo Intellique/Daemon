@@ -188,7 +188,6 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 		soj_create_archive_worker_sync_archives(job, db_connect);
 
 		stop = soj_create_archive_worker_finished();
-
 		if (!stop) {
 			soj_create_archive_worker_prepare_medias2();
 		}
