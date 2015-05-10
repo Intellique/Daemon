@@ -3189,9 +3189,10 @@ static int so_database_postgresql_link_archives(struct so_database_connection * 
 	}
 
 	query = "insert_archive_mirror2";
-	so_database_postgresql_prepare(self, query, "INSERT INTO archivemirror(id, poolmirror) VALUES (DEFAULT, NULL) RETURNING id");
+	so_database_postgresql_prepare(self, query, "INSERT INTO archivemirror(id, poolmirror) VALUES (DEFAULT, $1) RETURNING id");
 
-	result = PQexecPrepared(self->connect, query, 0, NULL, NULL, NULL, 0);
+	const char * param_2[] = { copy_poolmirror_id };
+	result = PQexecPrepared(self->connect, query, 1, param_2, NULL, NULL, 0);
 	status = PQresultStatus(result);
 
 	if (status == PGRES_FATAL_ERROR)
@@ -3205,7 +3206,7 @@ static int so_database_postgresql_link_archives(struct so_database_connection * 
 		query = "insert_archive_mirror3";
 		so_database_postgresql_prepare(self, query, "INSERT INTO archivetoarchivemirror(archive, archivemirror) VALUES ($1, $3), ($2, $3)");
 
-		const char * param_3[] = { src_archive_id, copy_poolmirror_id, archivemirror_id };
+		const char * param_3[] = { src_archive_id, copy_archive_id, archivemirror_id };
 
 		result = PQexecPrepared(self->connect, query, 3, param_3, NULL, NULL, 0);
 		status = PQresultStatus(result);

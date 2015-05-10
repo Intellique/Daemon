@@ -185,7 +185,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 
 		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-job-create-archive", "Synchronizing archive with database"));
-		soj_create_archive_worker_sync_archives(db_connect);
+		soj_create_archive_worker_sync_archives(job, db_connect);
 
 		stop = soj_create_archive_worker_finished();
 

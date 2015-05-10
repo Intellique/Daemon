@@ -48,7 +48,7 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 void soj_create_archive_worker_prepare_medias2(void);
 float soj_create_archive_progress(void);
 void soj_create_archive_worker_reserve_medias(struct so_job * job, ssize_t archive_size, struct so_database_connection * db_connect);
-int soj_create_archive_worker_sync_archives(struct so_database_connection * db_connect);
+int soj_create_archive_worker_sync_archives(struct so_job * job, struct so_database_connection * db_connect);
 ssize_t soj_create_archive_worker_write(struct so_job * job, struct so_format_file * file, const char * buffer, ssize_t length, struct so_database_connection * db_connect);
 
 #endif
