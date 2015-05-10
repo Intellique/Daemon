@@ -32,7 +32,7 @@
 #include <sys/stat.h>
 // open
 #include <sys/types.h>
-// close
+// access, close
 #include <unistd.h>
 // uuid_generate, uuid_unparse_lower
 #include <uuid/uuid.h>
@@ -42,7 +42,11 @@
 #include "util.h"
 
 char * sochgr_vtl_util_get_serial(const char * filename) {
-	char * serial = so_file_read_all_from(filename);
+	char * serial = NULL;
+
+	if (access(filename, R_OK) == 0)
+		serial = so_file_read_all_from(filename);
+
 	if (serial == NULL) {
 		uuid_t id;
 		uuid_generate(id);
