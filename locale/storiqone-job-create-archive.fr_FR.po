@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-create-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-05-10 14:39+0200\n"
+        "POT-Creation-Date: 2015-05-10 18:03+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -101,7 +101,7 @@ msgstr  "Erreur en ajoutant un fichier (%s) dans le pool %s"
 msgid   "Archive continue to media (%s)"
 msgstr  "L’archive continue sur le média (%s)"
 
-#: src/job/create-archive/worker.c:618
+#: src/job/create-archive/worker.c:623
 #, c-format
 msgid   "Warning, we will not archive into pool '%s' because we can not reserve enough space on it (space reserved: %s, space "
         "require: %s)"

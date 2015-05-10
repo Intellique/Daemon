@@ -140,9 +140,13 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 			"changer", &vch,
 			"index", &index
 		);
-		if (index > -1 && slot->index != index)
-			so_slot_swap(slot, changer->drives[index].slot);
-		so_changer_sync(changer, vch);
+
+		if (!error) {
+			if (index > -1 && slot->index != index)
+				so_slot_swap(slot, changer->drives[index].slot);
+
+			so_changer_sync(changer, vch);
+		}
 		so_value_free(response);
 
 		if (!error) {
@@ -155,6 +159,7 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 		job->status = so_job_status_running;
 	else
 		job->status = so_job_status_error;
+
 	return NULL;
 }
 
