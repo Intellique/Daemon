@@ -241,9 +241,6 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 
 	char sarchive_size[12];
 	so_file_convert_size_to_string(archive_size, sarchive_size, 12);
-	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
-		dgettext("storiqone-job-create-archive", "Size require (%s) for creating new archive or adding to archive"),
-		sarchive_size);
 
 
 	primary_archive = db_connect->ops->get_archive_by_job(db_connect, job);
@@ -305,6 +302,10 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 		}
 
 		archives_mirrors = db_connect->ops->get_archives_by_archive_mirror(db_connect, primary_archive);
+
+		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+			dgettext("storiqone-job-create-archive", "Size require (%s) for creating new archive '%s'"),
+			sarchive_size, job->name);
 	} else {
 		if (primary_pool->deleted) {
 			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
@@ -329,6 +330,10 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 		}
 
 		pool_mirrors = db_connect->ops->get_pool_by_pool_mirror(db_connect, primary_pool);
+
+		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+			dgettext("storiqone-job-create-archive", "Size require (%s) for adding to the archive '%s'"),
+			sarchive_size, job->name);
 	}
 
 	return 0;
