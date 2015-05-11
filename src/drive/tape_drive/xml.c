@@ -26,6 +26,8 @@
 
 // expat
 #include <expat.h>
+// free, malloc
+#include <stdlib.h>
 // strlen
 #include <string.h>
 
@@ -47,7 +49,24 @@ static void sodr_tape_drive_xml_start_element(void * userData, const char * name
 
 static void sodr_tape_drive_xml_character_data(void * userData, const XML_Char *s, int len) {
 	struct sodr_tape_drive_xml_state * state = userData;
-	so_value_hashtable_put2(state->current, "value", so_value_new_string2(s, len), true);
+
+	char * content = NULL;
+	so_value_unpack(state->current, "{ss}", "value", &content);
+
+	if (content != NULL) {
+		size_t content_length = strlen(content);
+		size_t new_length = content_length + len;
+		char * new_content = malloc(new_length + 1);
+		strcpy(new_content, content);
+		strncpy(new_content + content_length, s, len);
+		new_content[new_length] = '\0';
+
+		so_value_hashtable_put2(state->current, "value", so_value_new_string(new_content), true);
+
+		free(content);
+		free(new_content);
+	} else
+		so_value_hashtable_put2(state->current, "value", so_value_new_string2(s, len), true);
 }
 
 static void sodr_tape_drive_xml_end_element(void * userData, const char * name __attribute__((unused))) {

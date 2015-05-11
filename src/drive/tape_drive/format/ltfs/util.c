@@ -27,17 +27,11 @@
 #define _XOPEN_SOURCE
 // bzero
 #include <strings.h>
-// mktime, strptime, tzset
+// mktime, strptime
 #include <time.h>
 
-#include "../ltfs.h"
+#include "ltfs.h"
 
-static void sodr_tape_drive_format_ltfs_init(void) __attribute__((constructor));
-
-
-static void sodr_tape_drive_format_ltfs_init() {
-	tzset();
-}
 
 time_t sodr_tape_drive_format_ltfs_parse_time(const char * date) {
 	struct tm tm;

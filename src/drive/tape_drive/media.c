@@ -43,7 +43,7 @@
 #include <libstoriqone/value.h>
 #include <libstoriqone-drive/drive.h>
 
-#include "format/ltfs.h"
+#include "format/ltfs/ltfs.h"
 #include "media.h"
 #include "xml.h"
 

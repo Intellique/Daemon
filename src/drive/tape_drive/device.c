@@ -770,10 +770,12 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 		}
 
 		if (sodr_tape_drive.slot->media != NULL) {
-			if (sodr_tape_drive.is_empty) {
-			} else {
-				struct so_media * media = sodr_tape_drive.slot->media;
+			struct so_media * media = sodr_tape_drive.slot->media;
 
+			if (sodr_tape_drive.is_empty) {
+				sodr_tape_drive_media_free(media->private_data);
+				media->private_data = NULL;
+			} else {
 				int fd = open(scsi_device, O_RDWR);
 				sodr_tape_drive_scsi_size_available(fd, media);
 				if (media != NULL && media->format != NULL && media->format->support_mam)
@@ -799,9 +801,11 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 				if (media->private_data != NULL) {
 					struct sodr_tape_drive_media * mp = media->private_data;
 					if (mp->format == sodr_tape_drive_media_ltfs) {
-						int failed = sodr_tape_drive_media_parse_ltfs_index(&sodr_tape_drive, db);
-						if (failed != 0)
-							media->status = so_media_status_error;
+						if (mp->data.ltfs.index == NULL) {
+							int failed = sodr_tape_drive_media_parse_ltfs_index(&sodr_tape_drive, db);
+							if (failed != 0)
+								media->status = so_media_status_error;
+						}
 					}
 				}
 			}
