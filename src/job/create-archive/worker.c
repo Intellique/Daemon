@@ -631,30 +631,42 @@ int soj_create_archive_worker_sync_archives(struct so_job * job, struct so_datab
 	if (failed != 0) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-create-archive", "Failed to start transaction info database"));
-		primary_worker->state = soj_worker_status_error;
-		return failed;
-	} else
-		primary_worker->state = soj_worker_status_finished;
+		return 1;
+	}
 
-	failed = db_connect->ops->sync_archive(db_connect, primary_worker->archive);
+	if (primary_worker->state == soj_worker_status_ready) {
+		failed = db_connect->ops->sync_archive(db_connect, primary_worker->archive);
+
+		if (failed != 0) {
+			db_connect->ops->cancel_transaction(db_connect);
+			primary_worker->state = soj_worker_status_error;
+			return failed;
+		} else
+			primary_worker->state = soj_worker_status_finished;
+	}
 
 	unsigned int i;
 	for (i = 0; i < nb_mirror_workers && failed == 0; i++) {
 		struct soj_create_archive_worker * worker = mirror_workers[i];
-		failed = db_connect->ops->sync_archive(db_connect, worker->archive);
 
-		if (failed == 0)
-			failed = db_connect->ops->link_archives(db_connect, primary_worker->archive, worker->archive);
+		if (worker->state == soj_worker_status_ready) {
+			failed = db_connect->ops->sync_archive(db_connect, worker->archive);
 
-		worker->state = failed == 0 ? soj_worker_status_finished : soj_worker_status_error;
+			if (failed == 0)
+				failed = db_connect->ops->link_archives(db_connect, primary_worker->archive, worker->archive);
+
+			if (failed != 0) {
+				db_connect->ops->cancel_transaction(db_connect);
+				worker->state = soj_worker_status_error;
+				return failed;
+			} else
+				worker->state = soj_worker_status_finished;
+		}
 	}
 
-	if (failed != 0)
-		db_connect->ops->cancel_transaction(db_connect);
-	else
-		db_connect->ops->finish_transaction(db_connect);
+	db_connect->ops->finish_transaction(db_connect);
 
-	return failed;
+	return 0;
 }
 
 ssize_t soj_create_archive_worker_write(struct so_job * job, struct so_format_file * file, const char * buffer, ssize_t length, struct so_database_connection * db_connect) {
