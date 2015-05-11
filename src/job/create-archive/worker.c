@@ -92,6 +92,7 @@ static int soj_create_archive_worker_close2(struct soj_create_archive_worker * w
 static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_create_archive_worker * worker, struct so_archive_file * file);
 static void soj_create_archive_worker_free(struct soj_create_archive_worker * worker);
 static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_job * job, struct so_archive * archive, struct so_pool * pool);
+static void soj_create_archive_worker_prepare_medias3(bool no_wait);
 ssize_t soj_create_archive_worker_write2(struct so_job * job, struct soj_create_archive_worker * worker, struct so_format_file * file, const char * buffer, ssize_t length, struct so_database_connection * db_connect);
 static bool soj_create_archive_worker_write_meta(struct soj_create_archive_worker * worker);
 
@@ -268,6 +269,8 @@ int soj_create_archive_worker_close(int round) {
 			primary_worker->state = soj_worker_status_error;
 		else
 			soj_create_archive_worker_write_meta(primary_worker);
+
+		primary_worker->drive->ops->release(primary_worker->drive);
 	}
 
 	unsigned int i;
@@ -282,6 +285,8 @@ int soj_create_archive_worker_close(int round) {
 			worker->state = soj_worker_status_error;
 		else
 			soj_create_archive_worker_write_meta(worker);
+
+		worker->drive->ops->release(worker->drive);
 	}
 
 	return 0;
@@ -296,6 +301,7 @@ static int soj_create_archive_worker_close2(struct soj_create_archive_worker * w
 
 	last_vol->digests = worker->writer->ops->get_digests(worker->writer);
 	worker->writer->ops->free(worker->writer);
+	worker->writer = NULL;
 
 	unsigned int i;
 	struct soj_create_archive_files * ptr_file = worker->first_files;
@@ -536,7 +542,11 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 }
 
 void soj_create_archive_worker_prepare_medias2() {
-	bool found = false;
+	soj_create_archive_worker_prepare_medias3(true);
+	soj_create_archive_worker_prepare_medias3(false);
+}
+
+static void soj_create_archive_worker_prepare_medias3(bool no_wait) {
 	unsigned int i;
 	for (i = 0; i < nb_mirror_workers; i++) {
 		struct soj_create_archive_worker * worker = mirror_workers[i];
@@ -544,30 +554,16 @@ void soj_create_archive_worker_prepare_medias2() {
 		if (worker->state != soj_worker_status_reserved)
 			continue;
 
-		worker->drive = soj_media_load(worker->media, true);
+		worker->drive = soj_media_load(worker->media, no_wait);
 
 		if (worker->drive != NULL) {
 			worker->writer = worker->drive->ops->get_writer(worker->drive, worker->checksums);
 			worker->state = soj_worker_status_ready;
-			found = true;
-		}
-	}
 
-	if (found)
-		return;
-
-	for (i = 0; i < nb_mirror_workers; i++) {
-		struct soj_create_archive_worker * worker = mirror_workers[i];
-
-		if (worker->state != soj_worker_status_reserved)
-			continue;
-
-		worker->drive = soj_media_load(worker->media, false);
-
-		if (worker->drive != NULL) {
-			worker->writer = worker->drive->ops->get_writer(worker->drive, worker->checksums);
-			worker->state = soj_worker_status_ready;
-			found = true;
+			struct so_archive_volume * vol = so_archive_add_volume(worker->archive);
+			vol->media = worker->media;
+			vol->media_position = worker->writer->ops->file_position(worker->writer);
+			vol->job = soj_job_get();
 		}
 	}
 }

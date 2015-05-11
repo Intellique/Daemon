@@ -51,6 +51,7 @@ static struct so_stream_reader * soj_drive_get_raw_reader(struct so_drive * driv
 static struct so_stream_writer * soj_drive_get_raw_writer(struct so_drive * drive);
 static struct so_format_reader * soj_drive_get_reader(struct so_drive * drive, int file_position, struct so_value * checksums);
 static struct so_format_writer * soj_drive_get_writer(struct so_drive * drive, struct so_value * checksums);
+static void soj_drive_release(struct so_drive * drive);
 static int soj_drive_sync(struct so_drive * drive);
 
 static struct so_drive_ops soj_drive_ops = {
@@ -63,6 +64,7 @@ static struct so_drive_ops soj_drive_ops = {
 	.get_raw_writer       = soj_drive_get_raw_writer,
 	.get_reader           = soj_drive_get_reader,
 	.get_writer           = soj_drive_get_writer,
+	.release              = soj_drive_release,
 	.sync                 = soj_drive_sync,
 };
 
@@ -335,6 +337,19 @@ void soj_drive_init(struct so_drive * drive, struct so_value * config) {
 
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
 	so_value_free(response);
+}
+
+static void soj_drive_release(struct so_drive * drive) {
+	struct soj_drive * self = drive->data;
+
+	struct so_value * request = so_value_pack("{ss}", "command", "release");
+	so_json_encode_to_fd(request, self->fd, true);
+	so_value_free(request);
+
+	struct so_value * response = so_json_parse_fd(self->fd, -1);
+	so_value_free(response);
+
+	return;
 }
 
 static int soj_drive_sync(struct so_drive * drive) {
