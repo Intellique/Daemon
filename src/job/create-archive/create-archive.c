@@ -190,6 +190,9 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 		stop = soj_create_archive_worker_finished();
 		if (!stop) {
 			soj_create_archive_worker_prepare_medias2();
+
+			for (i = 0; i < nb_src_files; i++)
+				src_files[i]->ops->rewind(src_files[i]);
 		}
 	}
 
@@ -229,12 +232,10 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 			return 1;
 		}
 
-		struct so_format_reader * reader = soj_io_filesystem_reader(path);
-		ssize_t sub_total = soj_format_compute_tar_size(reader);
-		archive_size += sub_total;
-		reader->ops->free(reader);
-
 		src_files[i] = soj_io_filesystem_reader(path);
+		ssize_t sub_total = soj_format_compute_tar_size(src_files[i]);
+		archive_size += sub_total;
+		src_files[i]->ops->rewind(src_files[i]);
 	}
 	so_value_iterator_free(iter);
 

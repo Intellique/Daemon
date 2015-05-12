@@ -54,6 +54,7 @@
 #include <libstoriqone-job/io.h>
 
 struct soj_format_reader_filesystem_private {
+	char * path;
 	int last_errno;
 
 	struct soj_format_reader_filesystem_node {
@@ -113,6 +114,7 @@ struct so_format_reader * soj_io_filesystem_reader(const char * path) {
 
 	struct soj_format_reader_filesystem_private * self = malloc(sizeof(struct soj_format_reader_filesystem_private));
 	bzero(self, sizeof(struct soj_format_reader_filesystem_private));
+	self->path = strdup(path);
 	self->last_errno = 0;
 
 	self->current = self->root = soj_format_reader_filesystem_node_new(strdup(path));
@@ -155,6 +157,8 @@ static enum so_format_reader_header_status soj_format_reader_filesystem_forward(
 
 static void soj_format_reader_filesystem_free(struct so_format_reader * fr) {
 	struct soj_format_reader_filesystem_private * self = fr->data;
+
+	free(self->path);
 
 	struct soj_format_reader_filesystem_node * ptr = self->root;
 	while (ptr != NULL) {
@@ -216,7 +220,7 @@ static enum so_format_reader_header_status soj_format_reader_filesystem_get_head
 
 static char * soj_format_reader_filesystem_get_root(struct so_format_reader * fr) {
 	struct soj_format_reader_filesystem_private * self = fr->data;
-	return strdup(self->root->path);
+	return strdup(self->path);
 }
 
 static int soj_format_reader_filesystem_last_errno(struct so_format_reader * fr) {
@@ -250,8 +254,6 @@ static ssize_t soj_format_reader_filesystem_read_to_end_of_data(struct so_format
 static int soj_format_reader_filesystem_rewind(struct so_format_reader * fr) {
 	struct soj_format_reader_filesystem_private * self = fr->data;
 
-	char * root = soj_format_reader_filesystem_get_root(fr);
-
 	struct soj_format_reader_filesystem_node * ptr = self->root;
 	while (ptr != NULL) {
 		if (ptr->fd > -1)
@@ -268,7 +270,7 @@ static int soj_format_reader_filesystem_rewind(struct so_format_reader * fr) {
 		ptr = next;
 	}
 
-	self->current = self->root = soj_format_reader_filesystem_node_new(root);
+	self->current = self->root = soj_format_reader_filesystem_node_new(strdup(self->path));
 	self->fetch = false;
 
 	return 0;

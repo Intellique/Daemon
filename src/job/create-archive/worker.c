@@ -373,9 +373,11 @@ static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_c
 }
 
 ssize_t soj_create_archive_worker_end_of_file() {
-	ssize_t nb_write = primary_worker->writer->ops->end_of_file(primary_worker->writer);
-	if (nb_write != 0)
-		return nb_write;
+	if (primary_worker->state == soj_worker_status_ready) {
+		ssize_t nb_write = primary_worker->writer->ops->end_of_file(primary_worker->writer);
+		if (nb_write != 0)
+			primary_worker->state = soj_worker_status_error;
+	}
 
 	unsigned int i;
 	for (i = 0; i < nb_mirror_workers; i++) {
@@ -384,12 +386,12 @@ ssize_t soj_create_archive_worker_end_of_file() {
 		if (worker->state != soj_worker_status_ready)
 			continue;
 
-		nb_write = worker->writer->ops->end_of_file(worker->writer);
+		ssize_t nb_write = worker->writer->ops->end_of_file(worker->writer);
 		if (nb_write != 0)
-			return nb_write;
+			worker->state = soj_worker_status_error;
 	}
 
-	return nb_write;
+	return 0;
 }
 
 bool soj_create_archive_worker_finished() {
