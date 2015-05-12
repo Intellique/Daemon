@@ -2,7 +2,7 @@ STORIQONE_CHECKSUM_RIPEMD_SRC_DIR		:= src/checksum/ripemd
 
 STORIQONE_CHECKSUM_RIPEMD_BIN			:= lib/libchecksum-ripemd.so
 STORIQONE_CHECKSUM_RIPEMD_CFLAG			:= -pthread -fPIC -fvisibility=hidden
-STORIQONE_CHECKSUM_RIPEMD_LD			:= -pthread -shared -Llib -lcrypto
+STORIQONE_CHECKSUM_RIPEMD_LD			:= -pthread -shared -Llib -lnettle
 
 STORIQONE_CHECKSUM_RIPEMD_DEPEND_LIB	:=
 

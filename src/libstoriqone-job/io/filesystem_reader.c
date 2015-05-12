@@ -81,6 +81,7 @@ static int soj_format_reader_filesystem_last_errno(struct so_format_reader * fr)
 static ssize_t soj_format_reader_filesystem_position(struct so_format_reader * fr);
 static ssize_t soj_format_reader_filesystem_read(struct so_format_reader * fr, void * buffer, ssize_t length);
 static ssize_t soj_format_reader_filesystem_read_to_end_of_data(struct so_format_reader * fr);
+static int soj_format_reader_filesystem_rewind(struct so_format_reader * fr);
 static enum so_format_reader_header_status soj_format_reader_filesystem_skip_file(struct so_format_reader * fr);
 
 static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_node_add(struct soj_format_reader_filesystem_node * node);
@@ -101,6 +102,7 @@ static struct so_format_reader_ops soj_format_reader_filesystem_ops = {
 		.position            = soj_format_reader_filesystem_position,
 		.read                = soj_format_reader_filesystem_read,
 		.read_to_end_of_data = soj_format_reader_filesystem_read_to_end_of_data,
+		.rewind              = soj_format_reader_filesystem_rewind,
 		.skip_file           = soj_format_reader_filesystem_skip_file,
 };
 
@@ -242,6 +244,33 @@ static ssize_t soj_format_reader_filesystem_read(struct so_format_reader * fr, v
 static ssize_t soj_format_reader_filesystem_read_to_end_of_data(struct so_format_reader * fr) {
 	struct soj_format_reader_filesystem_private * self = fr->data;
 	self->current = NULL;
+	return 0;
+}
+
+static int soj_format_reader_filesystem_rewind(struct so_format_reader * fr) {
+	struct soj_format_reader_filesystem_private * self = fr->data;
+
+	char * root = soj_format_reader_filesystem_get_root(fr);
+
+	struct soj_format_reader_filesystem_node * ptr = self->root;
+	while (ptr != NULL) {
+		if (ptr->fd > -1)
+			close(ptr->fd);
+		free(ptr->path);
+
+		int i;
+		for (i = ptr->i_file; i < ptr->nb_files; i++)
+			free(ptr->files[i]);
+		free(ptr->files);
+
+		struct soj_format_reader_filesystem_node * next = ptr->child;
+		free(ptr);
+		ptr = next;
+	}
+
+	self->current = self->root = soj_format_reader_filesystem_node_new(root);
+	self->fetch = false;
+
 	return 0;
 }
 

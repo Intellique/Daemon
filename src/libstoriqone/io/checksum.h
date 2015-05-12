@@ -32,6 +32,7 @@ struct so_io_stream_checksum_backend {
 		struct so_value * (*digest)(struct so_io_stream_checksum_backend * worker);
 		void (*finish)(struct so_io_stream_checksum_backend * worker);
 		void (*free)(struct so_io_stream_checksum_backend * worker);
+		void (*reset)(struct so_io_stream_checksum_backend * worker);
 		void (*update)(struct so_io_stream_checksum_backend * worker, const void * buffer, ssize_t length);
 	} * ops;
 	void * data;

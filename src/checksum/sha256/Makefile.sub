@@ -2,7 +2,7 @@ STORIQONE_CHECKSUM_SHA256_SRC_DIR		:= src/checksum/sha256
 
 STORIQONE_CHECKSUM_SHA256_BIN			:= lib/libchecksum-sha256.so
 STORIQONE_CHECKSUM_SHA256_CFLAG			:= -pthread -fPIC -fvisibility=hidden
-STORIQONE_CHECKSUM_SHA256_LD			:= -pthread -shared -Llib -lcrypto
+STORIQONE_CHECKSUM_SHA256_LD			:= -pthread -shared -Llib -lnettle
 
 STORIQONE_CHECKSUM_SHA256_DEPEND_LIB	:=
 

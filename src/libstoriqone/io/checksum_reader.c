@@ -46,6 +46,7 @@ static ssize_t so_io_checksum_reader_get_block_size(struct so_stream_reader * sr
 static int so_io_checksum_reader_last_errno(struct so_stream_reader * sr);
 static ssize_t so_io_checksum_reader_position(struct so_stream_reader * sr);
 static ssize_t so_io_checksum_reader_read(struct so_stream_reader * sr, void * buffer, ssize_t length);
+static int so_io_checksum_reader_rewind(struct so_stream_reader * sr);
 
 static struct so_stream_reader_ops so_io_checksum_reader_ops = {
 	.close          = so_io_checksum_reader_close,
@@ -56,6 +57,7 @@ static struct so_stream_reader_ops so_io_checksum_reader_ops = {
 	.last_errno     = so_io_checksum_reader_last_errno,
 	.position       = so_io_checksum_reader_position,
 	.read           = so_io_checksum_reader_read,
+	.rewind         = so_io_checksum_reader_rewind,
 };
 
 
@@ -168,5 +170,18 @@ static ssize_t so_io_checksum_reader_read(struct so_stream_reader * sr, void * b
 		self->worker->ops->update(self->worker, buffer, nb_read);
 
 	return nb_read;
+}
+
+static int so_io_checksum_reader_rewind(struct so_stream_reader * sr) {
+	struct so_io_stream_checksum_reader_private * self = sr->data;
+
+	if (self->closed)
+		return 0;
+
+	int failed = self->in->ops->rewind(self->in);
+	if (failed == 0)
+		self->worker->ops->reset(self->worker);
+
+	return failed;
 }
 

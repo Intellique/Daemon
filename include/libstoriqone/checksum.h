@@ -223,6 +223,7 @@ struct so_checksum {
 		 * \param[in] checksum a checksum handler
 		 */
 		void (*free)(struct so_checksum * checksum) __attribute__((nonnull));
+		void (*reset)(struct so_checksum * checksum) __attribute__((nonnull));
 		/**
 		 * \brief This function reads some data
 		 *

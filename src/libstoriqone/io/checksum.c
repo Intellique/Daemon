@@ -60,6 +60,8 @@ struct so_io_stream_checksum_threaded_backend_private {
 	volatile unsigned long used;
 	volatile unsigned long limit;
 
+	volatile bool should_reset;
+
 	volatile bool stop;
 
 	pthread_mutex_t lock;
@@ -72,18 +74,21 @@ struct so_io_stream_checksum_threaded_backend_private {
 static struct so_value * so_io_stream_checksum_backend_digest(struct so_io_stream_checksum_backend * worker);
 static void so_io_stream_checksum_backend_finish(struct so_io_stream_checksum_backend * worker);
 static void so_io_stream_checksum_backend_free(struct so_io_stream_checksum_backend * worker);
+static void so_io_stream_checksum_backend_reset(struct so_io_stream_checksum_backend * worker);
 static void so_io_stream_checksum_backend_update(struct so_io_stream_checksum_backend * worker, const void * buffer, ssize_t length);
 
 static struct so_value * so_io_stream_checksum_threaded_backend_digest(struct so_io_stream_checksum_backend * worker);
 static void so_io_stream_checksum_threaded_backend_finish(struct so_io_stream_checksum_backend * worker);
 static void so_io_stream_checksum_threaded_backend_free(struct so_io_stream_checksum_backend * worker);
 static void so_io_stream_checksum_threaded_backend_update(struct so_io_stream_checksum_backend * worker, const void * buffer, ssize_t length);
+static void so_io_stream_checksum_threaded_backend_reset(struct so_io_stream_checksum_backend * worker);
 static void so_io_stream_checksum_threaded_backend_work(void * arg);
 
 static struct so_io_stream_checksum_backend_ops so_io_stream_checksum_backend_ops = {
 	.digest = so_io_stream_checksum_backend_digest,
 	.finish = so_io_stream_checksum_backend_finish,
 	.free   = so_io_stream_checksum_backend_free,
+	.reset  = so_io_stream_checksum_backend_reset,
 	.update = so_io_stream_checksum_backend_update,
 };
 
@@ -91,6 +96,7 @@ static struct so_io_stream_checksum_backend_ops so_io_stream_checksum_threaded_b
 	.digest = so_io_stream_checksum_threaded_backend_digest,
 	.finish = so_io_stream_checksum_threaded_backend_finish,
 	.free   = so_io_stream_checksum_threaded_backend_free,
+	.reset  = so_io_stream_checksum_threaded_backend_reset,
 	.update = so_io_stream_checksum_threaded_backend_update,
 };
 
@@ -154,6 +160,16 @@ struct so_io_stream_checksum_backend * so_io_stream_checksum_backend_new(struct 
 	return backend;
 }
 
+static void so_io_stream_checksum_backend_reset(struct so_io_stream_checksum_backend * worker) {
+	struct so_io_stream_checksum_backend_private * self = worker->data;
+
+	unsigned int i;
+	for (i = 0; i < self->nb_checksums; i++) {
+		struct so_checksum * ck = self->checksums[i];
+		ck->ops->reset(ck);
+	}
+}
+
 static void so_io_stream_checksum_backend_update(struct so_io_stream_checksum_backend * worker, const void * buffer, ssize_t length) {
 	struct so_io_stream_checksum_backend_private * self = worker->data;
 
@@ -201,6 +217,8 @@ struct so_io_stream_checksum_backend * so_io_stream_checksum_threaded_backend_ne
 	self->used = 0;
 	self->limit = info.totalram >> 5;
 
+	self->should_reset = false;
+
 	self->stop = false;
 
 	pthread_mutex_init(&self->lock, NULL);
@@ -215,6 +233,15 @@ struct so_io_stream_checksum_backend * so_io_stream_checksum_threaded_backend_ne
 	backend->data = self;
 
 	return backend;
+}
+
+static void so_io_stream_checksum_threaded_backend_reset(struct so_io_stream_checksum_backend * worker) {
+	struct so_io_stream_checksum_threaded_backend_private * self = worker->data;
+
+	pthread_mutex_lock(&self->lock);
+	self->should_reset = true;
+	pthread_cond_signal(&self->wait);
+	pthread_mutex_unlock(&self->lock);
 }
 
 static void so_io_stream_checksum_threaded_backend_update(struct so_io_stream_checksum_backend * worker, const void * buffer, ssize_t length) {
@@ -251,6 +278,11 @@ static void so_io_stream_checksum_threaded_backend_work(void * arg) {
 			break;
 
 		pthread_cond_signal(&self->wait);
+
+		if (self->first_block == NULL && self->should_reset) {
+			self->backend->ops->reset(self->backend);
+			self->should_reset = false;
+		}
 
 		if (self->first_block == NULL)
 			pthread_cond_wait(&self->wait, &self->lock);

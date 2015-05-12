@@ -57,6 +57,7 @@ static ssize_t sodr_vtl_drive_reader_get_block_size(struct so_stream_reader * sr
 static int sodr_vtl_drive_reader_last_errno(struct so_stream_reader * sr);
 static ssize_t sodr_vtl_drive_reader_position(struct so_stream_reader * sr);
 static ssize_t sodr_vtl_drive_reader_read(struct so_stream_reader * sr, void * buffer, ssize_t length);
+static int sodr_vtl_drive_reader_rewind(struct so_stream_reader * sr);
 
 static struct so_stream_reader_ops sodr_vtl_drive_reader_ops = {
 	.close          = sodr_vtl_drive_reader_close,
@@ -67,6 +68,7 @@ static struct so_stream_reader_ops sodr_vtl_drive_reader_ops = {
 	.last_errno     = sodr_vtl_drive_reader_last_errno,
 	.position       = sodr_vtl_drive_reader_position,
 	.read           = sodr_vtl_drive_reader_read,
+	.rewind         = sodr_vtl_drive_reader_rewind,
 };
 
 
@@ -323,5 +325,26 @@ static ssize_t sodr_vtl_drive_reader_read(struct so_stream_reader * sr, void * b
 	self->media->nb_total_read++;
 
 	return length;
+}
+
+static int sodr_vtl_drive_reader_rewind(struct so_stream_reader * sr) {
+	struct sodr_vtl_drive_io * self = sr->data;
+	struct so_drive * dr = sodr_vtl_drive_get_device();
+
+	sodr_time_start();
+	off_t new_pos = lseek(self->fd, 0, SEEK_SET);
+	sodr_time_stop(dr);
+
+	if (new_pos == (off_t) -1) {
+		self->last_errno = errno;
+		self->media->nb_read_errors++;
+
+		return 1;
+	} else {
+		self->position = 0;
+		self->buffer_used = self->buffer_length;
+
+		return 0;
+	}
 }
 

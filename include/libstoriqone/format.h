@@ -93,6 +93,7 @@ struct so_format_reader {
 		ssize_t (*read)(struct so_format_reader * fr, void * buffer, ssize_t length);
 		ssize_t (*read_to_end_of_data)(struct so_format_reader * fr);
 		enum so_format_reader_header_status (*skip_file)(struct so_format_reader * fr);
+		int (*rewind)(struct so_format_reader * fr);
 	} * ops;
 	void * data;
 };

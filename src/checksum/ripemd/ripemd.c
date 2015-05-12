@@ -26,8 +26,8 @@
 
 // free, malloc
 #include <stdlib.h>
-// RIPEMD_Final, RIPEMD_Init, RIPEMD_Update
-#include <openssl/ripemd.h>
+// ripemd160_digest, ripemd160_init, ripemd160_update
+#include <nettle/ripemd160.h>
 // strdup
 #include <string.h>
 
@@ -36,14 +36,15 @@
 #include <libchecksum-ripemd.chcksum>
 
 struct so_checksum_ripemd_private {
-	RIPEMD160_CTX ripemd;
-	char digest[RIPEMD160_DIGEST_LENGTH * 2 + 1];
+	struct ripemd160_ctx ripemd;
+	char digest[RIPEMD160_DIGEST_SIZE * 2 + 1];
 };
 
 static char * so_checksum_ripemd_digest(struct so_checksum * checksum);
 static void so_checksum_ripemd_free(struct so_checksum * checksum);
 static struct so_checksum * so_checksum_ripemd_new_checksum(void);
 static void so_checksum_ripemd_init(void) __attribute__((constructor));
+static void so_checksum_ripemd_reset(struct so_checksum * checksum);
 static ssize_t so_checksum_ripemd_update(struct so_checksum * checksum, const void * data, ssize_t length);
 
 static struct so_checksum_driver so_checksum_ripemd_driver = {
@@ -57,6 +58,7 @@ static struct so_checksum_driver so_checksum_ripemd_driver = {
 static struct so_checksum_ops so_checksum_ripemd_ops = {
 	.digest	= so_checksum_ripemd_digest,
 	.free	= so_checksum_ripemd_free,
+	.reset  = so_checksum_ripemd_reset,
 	.update	= so_checksum_ripemd_update,
 };
 
@@ -69,12 +71,11 @@ static char * so_checksum_ripemd_digest(struct so_checksum * checksum) {
 	if (self->digest[0] != '\0')
 		return strdup(self->digest);
 
-	RIPEMD160_CTX ripemd = self->ripemd;
-	unsigned char digest[RIPEMD160_DIGEST_LENGTH];
-	if (!RIPEMD160_Final(digest, &ripemd))
-		return NULL;
+	struct ripemd160_ctx ripemd = self->ripemd;
+	unsigned char digest[RIPEMD160_DIGEST_SIZE];
+	ripemd160_digest(&ripemd, RIPEMD160_DIGEST_SIZE, digest);
 
-	so_checksum_convert_to_hex(digest, RIPEMD160_DIGEST_LENGTH, self->digest);
+	so_checksum_convert_to_hex(digest, RIPEMD160_DIGEST_SIZE, self->digest);
 
 	return strdup(self->digest);
 }
@@ -85,8 +86,8 @@ static void so_checksum_ripemd_free(struct so_checksum * checksum) {
 
 	struct so_checksum_ripemd_private * self = checksum->data;
 
-	unsigned char digest[RIPEMD160_DIGEST_LENGTH];
-	RIPEMD160_Final(digest, &self->ripemd);
+	unsigned char digest[RIPEMD160_DIGEST_SIZE];
+	ripemd160_digest(&self->ripemd, RIPEMD160_DIGEST_SIZE, digest);
 
 	free(self);
 
@@ -107,11 +108,20 @@ static struct so_checksum * so_checksum_ripemd_new_checksum(void) {
 	checksum->driver = &so_checksum_ripemd_driver;
 
 	struct so_checksum_ripemd_private * self = malloc(sizeof(struct so_checksum_ripemd_private));
-	RIPEMD160_Init(&self->ripemd);
+	ripemd160_init(&self->ripemd);
 	*self->digest = '\0';
 
 	checksum->data = self;
 	return checksum;
+}
+
+static void so_checksum_ripemd_reset(struct so_checksum * checksum) {
+	if (checksum == NULL)
+		return;
+
+	struct so_checksum_ripemd_private * self = checksum->data;
+	ripemd160_init(&self->ripemd);
+	*self->digest = '\0';
 }
 
 static ssize_t so_checksum_ripemd_update(struct so_checksum * checksum, const void * data, ssize_t length) {
@@ -119,11 +129,7 @@ static ssize_t so_checksum_ripemd_update(struct so_checksum * checksum, const vo
 		return -1;
 
 	struct so_checksum_ripemd_private * self = checksum->data;
-	if (RIPEMD160_Update(&self->ripemd, data, length)) {
-		*self->digest = '\0';
-		return length;
-	}
-
-	return -1;
+	ripemd160_update(&self->ripemd, length, data);
+	return length;
 }
 

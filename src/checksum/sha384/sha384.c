@@ -26,8 +26,8 @@
 
 // free, malloc
 #include <stdlib.h>
-// SHA384_Final, SHA384_Init, SHA384_Update
-#include <openssl/sha.h>
+// sha384_digest, sha384_init, sha384_update
+#include <nettle/sha2.h>
 // strdup
 #include <string.h>
 
@@ -36,14 +36,15 @@
 #include <libchecksum-sha384.chcksum>
 
 struct so_checksum_sha384_private {
-	SHA512_CTX sha384;
-	char digest[SHA384_DIGEST_LENGTH * 2 + 1];
+	struct sha512_ctx sha384;
+	char digest[SHA384_DIGEST_SIZE * 2 + 1];
 };
 
 static char * so_checksum_sha384_digest(struct so_checksum * checksum);
 static void so_checksum_sha384_free(struct so_checksum * checksum);
 static struct so_checksum * so_checksum_sha384_new_checksum(void);
 static void so_checksum_sha384_init(void) __attribute__((constructor));
+static void so_checksum_sha384_reset(struct so_checksum * checksum);
 static ssize_t so_checksum_sha384_update(struct so_checksum * checksum, const void * data, ssize_t length);
 
 static struct so_checksum_driver so_checksum_sha384_driver = {
@@ -57,6 +58,7 @@ static struct so_checksum_driver so_checksum_sha384_driver = {
 static struct so_checksum_ops so_checksum_sha384_ops = {
 	.digest	= so_checksum_sha384_digest,
 	.free	= so_checksum_sha384_free,
+	.reset  = so_checksum_sha384_reset,
 	.update	= so_checksum_sha384_update,
 };
 
@@ -69,12 +71,11 @@ static char * so_checksum_sha384_digest(struct so_checksum * checksum) {
 	if (self->digest[0] != '\0')
 		return strdup(self->digest);
 
-	SHA512_CTX sha384 = self->sha384;
-	unsigned char digest[SHA384_DIGEST_LENGTH];
-	if (!SHA384_Final(digest, &sha384))
-		return NULL;
+	struct sha512_ctx sha384 = self->sha384;
+	unsigned char digest[SHA384_DIGEST_SIZE];
+	sha384_digest(&sha384, SHA384_DIGEST_SIZE, digest);
 
-	so_checksum_convert_to_hex(digest, SHA384_DIGEST_LENGTH, self->digest);
+	so_checksum_convert_to_hex(digest, SHA384_DIGEST_SIZE, self->digest);
 
 	return strdup(self->digest);
 }
@@ -85,8 +86,8 @@ static void so_checksum_sha384_free(struct so_checksum * checksum) {
 
 	struct so_checksum_sha384_private * self = checksum->data;
 
-	unsigned char digest[SHA384_DIGEST_LENGTH];
-	SHA384_Final(digest, &self->sha384);
+	unsigned char digest[SHA384_DIGEST_SIZE];
+	sha384_digest(&self->sha384, SHA384_DIGEST_SIZE, digest);
 
 	free(self);
 
@@ -107,11 +108,20 @@ static struct so_checksum * so_checksum_sha384_new_checksum(void) {
 	checksum->driver = &so_checksum_sha384_driver;
 
 	struct so_checksum_sha384_private * self = malloc(sizeof(struct so_checksum_sha384_private));
-	SHA384_Init(&self->sha384);
+	sha384_init(&self->sha384);
 	*self->digest = '\0';
 
 	checksum->data = self;
 	return checksum;
+}
+
+static void so_checksum_sha384_reset(struct so_checksum * checksum) {
+	if (checksum == NULL)
+		return;
+
+	struct so_checksum_sha384_private * self = checksum->data;
+	sha384_init(&self->sha384);
+	*self->digest = '\0';
 }
 
 static ssize_t so_checksum_sha384_update(struct so_checksum * checksum, const void * data, ssize_t length) {
@@ -119,11 +129,7 @@ static ssize_t so_checksum_sha384_update(struct so_checksum * checksum, const vo
 		return -1;
 
 	struct so_checksum_sha384_private * self = checksum->data;
-	if (SHA384_Update(&self->sha384, data, length)) {
-		*self->digest = '\0';
-		return length;
-	}
-
-	return -1;
+	sha384_update(&self->sha384, length, data);
+	return length;
 }
 

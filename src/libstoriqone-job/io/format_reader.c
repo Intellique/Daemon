@@ -70,6 +70,7 @@ static int soj_format_reader_last_errno(struct so_format_reader * fr);
 static ssize_t soj_format_reader_position(struct so_format_reader * fr);
 static ssize_t soj_format_reader_read(struct so_format_reader * fr, void * buffer, ssize_t length);
 static ssize_t soj_format_reader_read_to_end_of_data(struct so_format_reader * fr);
+static int soj_format_reader_rewind(struct so_format_reader * fr);
 static enum so_format_reader_header_status soj_format_reader_skip_file(struct so_format_reader * fr);
 
 static struct so_format_reader_ops soj_format_reader_ops = {
@@ -85,6 +86,7 @@ static struct so_format_reader_ops soj_format_reader_ops = {
 	.position            = soj_format_reader_position,
 	.read                = soj_format_reader_read,
 	.read_to_end_of_data = soj_format_reader_read_to_end_of_data,
+	.rewind              = soj_format_reader_rewind,
 	.skip_file           = soj_format_reader_skip_file,
 };
 
@@ -318,6 +320,26 @@ static ssize_t soj_format_reader_read_to_end_of_data(struct so_format_reader * f
 	so_value_free(response);
 
 	return self->position;
+}
+
+static int soj_format_reader_rewind(struct so_format_reader * fr) {
+	struct soj_format_reader_private * self = fr->data;
+
+	struct so_value * request = so_value_pack("{ss}", "command", "rewind");
+	so_json_encode_to_fd(request, self->command_fd, true);
+	so_value_free(request);
+
+	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	if (response == NULL)
+		return -1;
+
+	long int failed = 0;
+	so_value_unpack(response, "{sb}", "returned", &failed);
+	if (failed != 0)
+		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+	so_value_free(response);
+
+	return failed;
 }
 
 static enum so_format_reader_header_status soj_format_reader_skip_file(struct so_format_reader * fr) {

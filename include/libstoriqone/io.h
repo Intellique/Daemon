@@ -94,6 +94,7 @@ struct so_stream_reader {
 		 * \returns length read or -1 if error
 		 */
 		ssize_t (*read)(struct so_stream_reader * sr, void * buffer, ssize_t length);
+		int (*rewind)(struct so_stream_reader * sr);
 	} * ops;
 	/**
 	 * \brief private data

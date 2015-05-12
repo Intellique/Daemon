@@ -50,6 +50,7 @@ static void sodr_io_format_reader_get_root(struct sodr_peer * peer, struct so_va
 static void sodr_io_format_reader_init(void) __attribute__((constructor));
 static void sodr_io_format_reader_read(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_reader_read_to_end_of_data(struct sodr_peer * peer, struct so_value * request);
+static void sodr_io_format_reader_rewind(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_reader_skip_file(struct sodr_peer * peer, struct so_value * request);
 
 static struct sodr_command commands[] = {
@@ -59,6 +60,7 @@ static struct sodr_command commands[] = {
 	{ 0, "get root",            sodr_io_format_reader_get_root },
 	{ 0, "read",                sodr_io_format_reader_read },
 	{ 0, "read to end of data", sodr_io_format_reader_read_to_end_of_data },
+	{ 0, "rewind",              sodr_io_format_reader_rewind },
 	{ 0, "skip file",           sodr_io_format_reader_skip_file },
 
 	{ 0, NULL, NULL },
@@ -190,6 +192,15 @@ static void sodr_io_format_reader_read_to_end_of_data(struct sodr_peer * peer, s
 		"returned", new_position,
 		"last errno", last_errno
 	);
+	so_json_encode_to_fd(response, peer->fd_cmd, true);
+	so_value_free(response);
+}
+
+static void sodr_io_format_reader_rewind(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
+	long long int failed = peer->format_reader->ops->rewind(peer->format_reader);
+	long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
+
+	struct so_value * response = so_value_pack("{sisi}", "returned", failed, "last errno", last_errno);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
 }

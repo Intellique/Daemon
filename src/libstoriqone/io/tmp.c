@@ -61,6 +61,7 @@ static ssize_t so_io_tmp_reader_get_block_size(struct so_stream_reader * sr);
 static int so_io_tmp_reader_last_errno(struct so_stream_reader * sr);
 static ssize_t so_io_tmp_reader_position(struct so_stream_reader * sr);
 static ssize_t so_io_tmp_reader_read(struct so_stream_reader * sr, void * buffer, ssize_t length);
+static int so_io_tmp_reader_rewind(struct so_stream_reader * sr);
 
 static ssize_t so_io_tmp_writer_before_close(struct so_stream_writer * sw, void * buffer, ssize_t length);
 static int so_io_tmp_writer_close(struct so_stream_writer * sw);
@@ -82,6 +83,7 @@ static struct so_stream_reader_ops so_io_tmp_reader_ops = {
 	.last_errno     = so_io_tmp_reader_last_errno,
 	.position       = so_io_tmp_reader_position,
 	.read           = so_io_tmp_reader_read,
+	.rewind         = so_io_tmp_reader_rewind,
 };
 
 static struct so_stream_writer_ops so_io_tmp_writer_ops = {
@@ -226,6 +228,14 @@ static ssize_t so_io_tmp_reader_read(struct so_stream_reader * sr, void * buffer
 		self->last_errno = errno;
 
 	return nb_read;
+}
+
+static int so_io_tmp_reader_rewind(struct so_stream_reader * sr) {
+	struct so_io_tmp_private * self = sr->data;
+
+	off_t new_pos = lseek(self->fd, 0, SEEK_SET);
+
+	return new_pos == (off_t) -1;
 }
 
 

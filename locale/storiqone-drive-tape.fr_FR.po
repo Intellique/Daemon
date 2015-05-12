@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-05-11 11:00+0200\n"
+        "POT-Creation-Date: 2015-05-12 21:01+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -154,7 +154,7 @@ msgstr  ""
 msgid   "Error, no more memory to read ltfs label from media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/reader.c:137
+#: src/drive/tape_drive/reader.c:139
 #, c-format
 msgid   "[%s | %s | #%u]: forward from media '%s' at file position #%u and #record %ld"
 msgstr  "[ %s | %s | #%u ] : avance dans le média « %s » à la position #%u et le numéro d’enregistrement %ld"

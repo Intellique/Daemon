@@ -44,6 +44,7 @@ static char * so_checksum_whirlpool_digest(struct so_checksum * checksum);
 static void so_checksum_whirlpool_free(struct so_checksum * checksum);
 static struct so_checksum * so_checksum_whirlpool_new_checksum(void);
 static void so_checksum_whirlpool_init(void) __attribute__((constructor));
+static void so_checksum_whirlpool_reset(struct so_checksum * checksum);
 static ssize_t so_checksum_whirlpool_update(struct so_checksum * checksum, const void * data, ssize_t length);
 
 static struct so_checksum_driver so_checksum_whirlpool_driver = {
@@ -57,6 +58,7 @@ static struct so_checksum_driver so_checksum_whirlpool_driver = {
 static struct so_checksum_ops so_checksum_whirlpool_ops = {
 	.digest	= so_checksum_whirlpool_digest,
 	.free	= so_checksum_whirlpool_free,
+	.reset  = so_checksum_whirlpool_reset,
 	.update	= so_checksum_whirlpool_update,
 };
 
@@ -112,6 +114,15 @@ struct so_checksum * so_checksum_whirlpool_new_checksum(void) {
 
 	checksum->data = self;
 	return checksum;
+}
+
+static void so_checksum_whirlpool_reset(struct so_checksum * checksum) {
+	if (checksum == NULL)
+		return;
+
+	struct so_checksum_whirlpool_private * self = checksum->data;
+	WHIRLPOOL_Init(&self->whirlpool);
+	*self->digest = '\0';
 }
 
 ssize_t so_checksum_whirlpool_update(struct so_checksum * checksum, const void * data, ssize_t length) {

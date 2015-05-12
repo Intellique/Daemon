@@ -48,7 +48,6 @@ struct so_format_tar_reader_private {
 	char * buffer;
 	ssize_t buffer_size;
 	ssize_t buffer_used;
-	off_t position;
 
 	ssize_t file_size;
 	ssize_t skip_size;
@@ -74,6 +73,7 @@ static int so_format_tar_reader_last_errno(struct so_format_reader * fr);
 static ssize_t so_format_tar_reader_position(struct so_format_reader * fr);
 static ssize_t so_format_tar_reader_read(struct so_format_reader * fr, void * buffer, ssize_t length);
 static ssize_t so_format_tar_reader_read_to_end_of_data(struct so_format_reader * fr);
+static int so_format_tar_reader_rewind(struct so_format_reader * fr);
 static enum so_format_reader_header_status so_format_tar_reader_skip_file(struct so_format_reader * fr);
 
 static struct so_format_reader_ops so_format_tar_reader_ops = {
@@ -89,6 +89,7 @@ static struct so_format_reader_ops so_format_tar_reader_ops = {
 	.position            = so_format_tar_reader_position,
 	.read                = so_format_tar_reader_read,
 	.read_to_end_of_data = so_format_tar_reader_read_to_end_of_data,
+	.rewind              = so_format_tar_reader_rewind,
 	.skip_file           = so_format_tar_reader_skip_file,
 };
 
@@ -110,7 +111,6 @@ struct so_format_reader * so_format_tar_new_reader2(struct so_stream_reader * re
 
 	self->io = reader;
 	self->has_checksum = has_checksums;
-	self->position = 0;
 	self->buffer = malloc(512);
 	self->buffer_size = 512;
 	self->buffer_used = 0;
@@ -444,6 +444,22 @@ static ssize_t so_format_tar_reader_read_to_end_of_data(struct so_format_reader 
 	return nb_total_read;
 }
 
+static int so_format_tar_reader_rewind(struct so_format_reader * fr) {
+	if (fr == NULL)
+		return -1;
+
+	struct so_format_tar_reader_private * self = fr->data;
+	int failed = self->io->ops->rewind(self->io);
+
+	if (failed == 0) {
+		self->buffer_used = 0;
+		self->file_size = 0;
+		self->skip_size = 0;
+	}
+
+	return failed;
+}
+
 static enum so_format_reader_header_status so_format_tar_reader_skip_file(struct so_format_reader * fr) {
 	struct so_format_tar_reader_private * self = fr->data;
 
@@ -456,7 +472,6 @@ static enum so_format_reader_header_status so_format_tar_reader_skip_file(struct
 		if (new_pos == (off_t) -1)
 			return so_format_reader_header_not_found;
 
-		self->position += self->skip_size;
 		self->file_size = self->skip_size = 0;
 		return new_pos == next_pos ? so_format_reader_header_ok : so_format_reader_header_not_found;
 	}

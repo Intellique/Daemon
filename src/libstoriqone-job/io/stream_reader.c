@@ -63,6 +63,7 @@ static ssize_t soj_stream_reader_get_block_size(struct so_stream_reader * sr);
 static int soj_stream_reader_last_errno(struct so_stream_reader * sr);
 static ssize_t soj_stream_reader_position(struct so_stream_reader * sr);
 static ssize_t soj_stream_reader_read(struct so_stream_reader * sr, void * buffer, ssize_t length);
+static int soj_stream_reader_rewind(struct so_stream_reader * sr);
 
 static struct so_stream_reader_ops soj_reader_ops = {
 	.close          = soj_stream_reader_close,
@@ -73,6 +74,7 @@ static struct so_stream_reader_ops soj_reader_ops = {
 	.last_errno     = soj_stream_reader_last_errno,
 	.position       = soj_stream_reader_position,
 	.read           = soj_stream_reader_read,
+	.rewind         = soj_stream_reader_rewind,
 };
 
 
@@ -239,5 +241,24 @@ static ssize_t soj_stream_reader_read(struct so_stream_reader * sr, void * buffe
 	}
 
 	return -1;
+}
+
+static int soj_stream_reader_rewind(struct so_stream_reader * sr) {
+	struct soj_stream_reader_private * self = sr->data;
+
+	struct so_value * request = so_value_pack("{sss{si}}", "command", "rewind");
+	so_json_encode_to_fd(request, self->command_fd, true);
+	so_value_free(request);
+
+	long long failed = false;
+	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	so_value_unpack(response, "{si}", "returned", &failed);
+	if (failed != 0)
+		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+	else
+		self->position = 0;
+	so_value_free(response);
+
+	return failed;
 }
 

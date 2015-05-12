@@ -74,6 +74,7 @@ static ssize_t sodr_tape_drive_reader_get_block_size(struct so_stream_reader * i
 static int sodr_tape_drive_reader_last_errno(struct so_stream_reader * io);
 static ssize_t sodr_tape_drive_reader_position(struct so_stream_reader * io);
 static ssize_t sodr_tape_drive_reader_read(struct so_stream_reader * io, void * buffer, ssize_t length);
+static int sodr_tape_drive_reader_rewind(struct so_stream_reader * io);
 
 static struct so_stream_reader_ops sodr_tape_drive_reader_ops = {
 	.close          = sodr_tape_drive_reader_close,
@@ -84,6 +85,7 @@ static struct so_stream_reader_ops sodr_tape_drive_reader_ops = {
 	.last_errno     = sodr_tape_drive_reader_last_errno,
 	.position       = sodr_tape_drive_reader_position,
 	.read           = sodr_tape_drive_reader_read,
+	.rewind         = sodr_tape_drive_reader_rewind,
 };
 
 
@@ -310,5 +312,38 @@ static ssize_t sodr_tape_drive_reader_read(struct so_stream_reader * io, void * 
 		self->end_of_file = true;
 		return nb_total_read;
 	}
+}
+
+static int sodr_tape_drive_reader_rewind(struct so_stream_reader * io) {
+	struct sodr_tape_drive_reader * self = io->data;
+	if (self->fd < 0)
+		return -1;
+
+	self->last_errno = 0;
+
+	sodr_time_start();
+	struct mtget status;
+	int failed = ioctl(self->fd, MTIOCGET, &status);
+	sodr_time_stop(self->drive);
+
+	if (failed != 0) {
+		self->last_errno = errno;
+		return failed;
+	}
+
+	struct mtop bsr = { MTBSR, status.mt_blkno };
+	sodr_time_start();
+	failed = ioctl(self->fd, MTIOCTOP, &bsr);
+	sodr_time_stop(self->drive);
+
+	if (failed != 0)
+		self->last_errno = errno;
+	else {
+		self->position = 0;
+		self->buffer_pos = self->buffer + self->block_size;
+		self->end_of_file = false;
+	}
+
+	return failed;
 }
 

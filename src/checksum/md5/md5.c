@@ -26,8 +26,8 @@
 
 // free, malloc
 #include <stdlib.h>
-// MD5_Final, MD5_Init, MD5_Update
-#include <openssl/md5.h>
+// md5_digest, md5_init, md5_update
+#include <nettle/md5.h>
 // strdup
 #include <string.h>
 
@@ -36,14 +36,15 @@
 #include <libchecksum-md5.chcksum>
 
 struct so_checksum_md5_private {
-	MD5_CTX md5;
-	char digest[MD5_DIGEST_LENGTH * 2 + 1];
+	struct md5_ctx md5;
+	char digest[MD5_DIGEST_SIZE * 2 + 1];
 };
 
 static char * so_checksum_md5_digest(struct so_checksum * checksum);
 static void so_checksum_md5_free(struct so_checksum * checksum);
 static struct so_checksum * so_checksum_md5_new_checksum(void);
 static void so_checksum_md5_init(void) __attribute__((constructor));
+static void so_checksum_md5_reset(struct so_checksum * checksum);
 static ssize_t so_checksum_md5_update(struct so_checksum * checksum, const void * data, ssize_t length);
 
 static struct so_checksum_driver so_checksum_md5_driver = {
@@ -57,6 +58,7 @@ static struct so_checksum_driver so_checksum_md5_driver = {
 static struct so_checksum_ops so_checksum_md5_ops = {
 	.digest	= so_checksum_md5_digest,
 	.free	= so_checksum_md5_free,
+	.reset  = so_checksum_md5_reset,
 	.update	= so_checksum_md5_update,
 };
 
@@ -69,12 +71,11 @@ static char * so_checksum_md5_digest(struct so_checksum * checksum) {
 	if (self->digest[0] != '\0')
 		return strdup(self->digest);
 
-	MD5_CTX md5 = self->md5;
-	unsigned char digest[MD5_DIGEST_LENGTH];
-	if (!MD5_Final(digest, &md5))
-		return NULL;
+	struct md5_ctx md5 = self->md5;
+	unsigned char digest[MD5_DIGEST_SIZE];
+	md5_digest(&md5, MD5_DIGEST_SIZE, digest);
 
-	so_checksum_convert_to_hex(digest, MD5_DIGEST_LENGTH, self->digest);
+	so_checksum_convert_to_hex(digest, MD5_DIGEST_SIZE, self->digest);
 
 	return strdup(self->digest);
 }
@@ -85,8 +86,8 @@ static void so_checksum_md5_free(struct so_checksum * checksum) {
 
 	struct so_checksum_md5_private * self = checksum->data;
 
-	unsigned char digest[MD5_DIGEST_LENGTH];
-	MD5_Final(digest, &self->md5);
+	unsigned char digest[MD5_DIGEST_SIZE];
+	md5_digest(&self->md5, MD5_DIGEST_SIZE, digest);
 
 	free(self);
 
@@ -107,11 +108,20 @@ static struct so_checksum * so_checksum_md5_new_checksum(void) {
 	checksum->driver = &so_checksum_md5_driver;
 
 	struct so_checksum_md5_private * self = malloc(sizeof(struct so_checksum_md5_private));
-	MD5_Init(&self->md5);
+	md5_init(&self->md5);
 	*self->digest = '\0';
 
 	checksum->data = self;
 	return checksum;
+}
+
+static void so_checksum_md5_reset(struct so_checksum * checksum) {
+	if (checksum == NULL)
+		return;
+
+	struct so_checksum_md5_private * self = checksum->data;
+	md5_init(&self->md5);
+	*self->digest = '\0';
 }
 
 static ssize_t so_checksum_md5_update(struct so_checksum * checksum, const void * data, ssize_t length) {
@@ -119,11 +129,7 @@ static ssize_t so_checksum_md5_update(struct so_checksum * checksum, const void 
 		return -1;
 
 	struct so_checksum_md5_private * self = checksum->data;
-	if (MD5_Update(&self->md5, data, length)) {
-		*self->digest = '\0';
-		return length;
-	}
-
-	return -1;
+	md5_update(&self->md5, length, data);
+	return length;
 }
 

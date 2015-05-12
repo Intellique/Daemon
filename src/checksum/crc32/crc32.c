@@ -44,6 +44,7 @@ static char * so_checksum_crc32_digest(struct so_checksum * checksum);
 static void so_checksum_crc32_free(struct so_checksum * checksum);
 static struct so_checksum * so_checksum_crc32_new_checksum(void);
 static void so_checksum_crc32_init(void) __attribute__((constructor));
+static void so_checksum_crc32_reset(struct so_checksum * checksum);
 static ssize_t so_checksum_crc32_update(struct so_checksum * checksum, const void * data, ssize_t length);
 
 static struct so_checksum_driver so_checksum_crc32_driver = {
@@ -57,6 +58,7 @@ static struct so_checksum_driver so_checksum_crc32_driver = {
 static struct so_checksum_ops so_checksum_crc32_ops = {
 	.digest	= so_checksum_crc32_digest,
 	.free	= so_checksum_crc32_free,
+	.reset  = so_checksum_crc32_reset,
 	.update	= so_checksum_crc32_update,
 };
 
@@ -109,6 +111,15 @@ static struct so_checksum * so_checksum_crc32_new_checksum(void) {
 
 	checksum->data = self;
 	return checksum;
+}
+
+static void so_checksum_crc32_reset(struct so_checksum * checksum) {
+	if (checksum == NULL)
+		return;
+
+	struct so_checksum_crc32_private * self = checksum->data;
+	self->crc32 = crc32(0L, Z_NULL, 0);
+	*self->digest = '\0';
 }
 
 static ssize_t so_checksum_crc32_update(struct so_checksum * checksum, const void * data, ssize_t length) {

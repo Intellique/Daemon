@@ -2,7 +2,7 @@ STORIQONE_CHECKSUM_SHA512_SRC_DIR		:= src/checksum/sha512
 
 STORIQONE_CHECKSUM_SHA512_BIN			:= lib/libchecksum-sha512.so
 STORIQONE_CHECKSUM_SHA512_CFLAG			:= -pthread -fPIC -fvisibility=hidden
-STORIQONE_CHECKSUM_SHA512_LD			:= -pthread -shared -Llib -lcrypto
+STORIQONE_CHECKSUM_SHA512_LD			:= -pthread -shared -Llib -lnettle
 
 STORIQONE_CHECKSUM_SHA512_DEPEND_LIB	:=
 

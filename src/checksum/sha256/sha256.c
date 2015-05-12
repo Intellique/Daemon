@@ -26,8 +26,8 @@
 
 // free, malloc
 #include <stdlib.h>
-// SHA256_Final, SHA256_Init, SHA256_Update
-#include <openssl/sha.h>
+// sha256_digest, sha256_init, sha256_update
+#include <nettle/sha2.h>
 // strdup
 #include <string.h>
 
@@ -36,14 +36,15 @@
 #include <libchecksum-sha256.chcksum>
 
 struct so_checksum_sha256_private {
-	SHA256_CTX sha256;
-	char digest[SHA256_DIGEST_LENGTH * 2 + 1];
+	struct sha256_ctx sha256;
+	char digest[SHA256_DIGEST_SIZE * 2 + 1];
 };
 
 static char * so_checksum_sha256_digest(struct so_checksum * checksum);
 static void so_checksum_sha256_free(struct so_checksum * checksum);
 static struct so_checksum * so_checksum_sha256_new_checksum(void);
 static void so_checksum_sha256_init(void) __attribute__((constructor));
+static void so_checksum_sha256_reset(struct so_checksum * checksum);
 static ssize_t so_checksum_sha256_update(struct so_checksum * checksum, const void * data, ssize_t length);
 
 static struct so_checksum_driver so_checksum_sha256_driver = {
@@ -57,6 +58,7 @@ static struct so_checksum_driver so_checksum_sha256_driver = {
 static struct so_checksum_ops so_checksum_sha256_ops = {
 	.digest	= so_checksum_sha256_digest,
 	.free	= so_checksum_sha256_free,
+	.reset  = so_checksum_sha256_reset,
 	.update	= so_checksum_sha256_update,
 };
 
@@ -69,12 +71,11 @@ static char * so_checksum_sha256_digest(struct so_checksum * checksum) {
 	if (self->digest[0] != '\0')
 		return strdup(self->digest);
 
-	SHA256_CTX sha256 = self->sha256;
-	unsigned char digest[SHA256_DIGEST_LENGTH];
-	if (!SHA256_Final(digest, &sha256))
-		return NULL;
+	struct sha256_ctx sha256 = self->sha256;
+	unsigned char digest[SHA256_DIGEST_SIZE];
+	sha256_digest(&sha256, SHA256_DIGEST_SIZE, digest);
 
-	so_checksum_convert_to_hex(digest, SHA256_DIGEST_LENGTH, self->digest);
+	so_checksum_convert_to_hex(digest, SHA256_DIGEST_SIZE, self->digest);
 
 	return strdup(self->digest);
 }
@@ -85,8 +86,8 @@ static void so_checksum_sha256_free(struct so_checksum * checksum) {
 
 	struct so_checksum_sha256_private * self = checksum->data;
 
-	unsigned char digest[SHA256_DIGEST_LENGTH];
-	SHA256_Final(digest, &self->sha256);
+	unsigned char digest[SHA256_DIGEST_SIZE];
+	sha256_digest(&self->sha256, SHA256_DIGEST_SIZE, digest);
 
 	free(self);
 
@@ -107,11 +108,20 @@ static struct so_checksum * so_checksum_sha256_new_checksum(void) {
 	checksum->driver = &so_checksum_sha256_driver;
 
 	struct so_checksum_sha256_private * self = malloc(sizeof(struct so_checksum_sha256_private));
-	SHA256_Init(&self->sha256);
+	sha256_init(&self->sha256);
 	*self->digest = '\0';
 
 	checksum->data = self;
 	return checksum;
+}
+
+static void so_checksum_sha256_reset(struct so_checksum * checksum) {
+	if (checksum == NULL)
+		return;
+
+	struct so_checksum_sha256_private * self = checksum->data;
+	sha256_init(&self->sha256);
+	*self->digest = '\0';
 }
 
 static ssize_t so_checksum_sha256_update(struct so_checksum * checksum, const void * data, ssize_t length) {
@@ -119,11 +129,7 @@ static ssize_t so_checksum_sha256_update(struct so_checksum * checksum, const vo
 		return -1;
 
 	struct so_checksum_sha256_private * self = checksum->data;
-	if (SHA256_Update(&self->sha256, data, length)) {
-		*self->digest = '\0';
-		return length;
-	}
-
-	return -1;
+	sha256_update(&self->sha256, length, data);
+	return length;
 }
 

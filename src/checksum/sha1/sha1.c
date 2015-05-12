@@ -26,8 +26,8 @@
 
 // free, malloc
 #include <stdlib.h>
-// SHA1_Final, SHA1_Init, SHA1_Update
-#include <openssl/sha.h>
+// sha1_digest, sha1_init, sha1_update
+#include <nettle/sha1.h>
 // strdup
 #include <string.h>
 
@@ -36,14 +36,15 @@
 #include <libchecksum-sha1.chcksum>
 
 struct so_checksum_sha1_private {
-	SHA_CTX sha1;
-	char digest[SHA_DIGEST_LENGTH * 2 + 1];
+	struct sha1_ctx sha1;
+	char digest[SHA1_DIGEST_SIZE * 2 + 1];
 };
 
 static char * so_checksum_sha1_digest(struct so_checksum * checksum);
 static void so_checksum_sha1_free(struct so_checksum * checksum);
 static struct so_checksum * so_checksum_sha1_new_checksum(void);
 static void so_checksum_sha1_init(void) __attribute__((constructor));
+static void so_checksum_sha1_reset(struct so_checksum * checksum);
 static ssize_t so_checksum_sha1_update(struct so_checksum * checksum, const void * data, ssize_t length);
 
 static struct so_checksum_driver so_checksum_sha1_driver = {
@@ -57,6 +58,7 @@ static struct so_checksum_driver so_checksum_sha1_driver = {
 static struct so_checksum_ops so_checksum_sha1_ops = {
 	.digest	= so_checksum_sha1_digest,
 	.free	= so_checksum_sha1_free,
+	.reset  = so_checksum_sha1_reset,
 	.update	= so_checksum_sha1_update,
 };
 
@@ -69,12 +71,11 @@ static char * so_checksum_sha1_digest(struct so_checksum * checksum) {
 	if (self->digest[0] != '\0')
 		return strdup(self->digest);
 
-	SHA_CTX sha1 = self->sha1;
-	unsigned char digest[SHA_DIGEST_LENGTH];
-	if (!SHA1_Final(digest, &sha1))
-		return NULL;
+	struct sha1_ctx sha1 = self->sha1;
+	unsigned char digest[SHA1_DIGEST_SIZE];
+	sha1_digest(&sha1, SHA1_DIGEST_SIZE, digest);
 
-	so_checksum_convert_to_hex(digest, SHA_DIGEST_LENGTH, self->digest);
+	so_checksum_convert_to_hex(digest, SHA1_DIGEST_SIZE, self->digest);
 
 	return strdup(self->digest);
 }
@@ -85,8 +86,8 @@ static void so_checksum_sha1_free(struct so_checksum * checksum) {
 
 	struct so_checksum_sha1_private * self = checksum->data;
 
-	unsigned char digest[SHA_DIGEST_LENGTH];
-	SHA1_Final(digest, &self->sha1);
+	unsigned char digest[SHA1_DIGEST_SIZE];
+	sha1_digest(&self->sha1, SHA1_DIGEST_SIZE, digest);
 
 	free(self);
 
@@ -107,11 +108,20 @@ static struct so_checksum * so_checksum_sha1_new_checksum(void) {
 	checksum->driver = &so_checksum_sha1_driver;
 
 	struct so_checksum_sha1_private * self = malloc(sizeof(struct so_checksum_sha1_private));
-	SHA1_Init(&self->sha1);
+	sha1_init(&self->sha1);
 	*self->digest = '\0';
 
 	checksum->data = self;
 	return checksum;
+}
+
+static void so_checksum_sha1_reset(struct so_checksum * checksum) {
+	if (checksum == NULL)
+		return;
+
+	struct so_checksum_sha1_private * self = checksum->data;
+	sha1_init(&self->sha1);
+	*self->digest = '\0';
 }
 
 static ssize_t so_checksum_sha1_update(struct so_checksum * checksum, const void * data, ssize_t length) {
@@ -119,11 +129,7 @@ static ssize_t so_checksum_sha1_update(struct so_checksum * checksum, const void
 		return -1;
 
 	struct so_checksum_sha1_private * self = checksum->data;
-	if (SHA1_Update(&self->sha1, data, length)) {
-		*self->digest = '\0';
-		return length;
-	}
-
-	return -1;
+	sha1_update(&self->sha1, length, data);
+	return length;
 }
 
