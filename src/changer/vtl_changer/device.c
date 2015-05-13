@@ -387,6 +387,11 @@ static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_
 		so_value_hashtable_put2(dr_p->params, "index", so_value_new_integer(i), true);
 		so_value_hashtable_put2(dr_p->params, "format", vformat, false);
 		so_value_hashtable_put2(dr_p->params, "serial number", so_value_new_string(dr->serial_number), true);
+
+		char * media;
+		asprintf(&media, "%s/drives/%Ld/media", sochgr_vtl_root_dir, i);
+		so_file_rm(media);
+		free(media);
 	}
 
 	for (i = 0; i < nb_slots; i++) {

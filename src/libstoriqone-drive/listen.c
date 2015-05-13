@@ -167,7 +167,7 @@ static void sodr_socket_message(int fd, short event, void * data) {
 		sodr_nb_clients--;
 
 		if (peer == sodr_current_peer)
-			sodr_current_peer = NULL;
+			sodr_listen_reset_peer();
 
 		struct sodr_peer * previous = peer->previous;
 		struct sodr_peer * next = peer->next;

@@ -28,6 +28,8 @@
 #include <libintl.h>
 // free, malloc
 #include <stdlib.h>
+// strcmp
+#include <string.h>
 // bzero
 #include <strings.h>
 // sleep
@@ -349,23 +351,37 @@ static void sochgr_socket_command_get_drives_config(struct sochgr_peer * peer __
 }
 
 static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so_value * request, int fd) {
-	long int slot = -1;
+	char * medium_serial_number = NULL;
 	bool no_wait = false;
 	free(peer->key);
 	peer->key = NULL;
 
-	so_value_unpack(request, "{s{sssisb}}",
+	so_value_unpack(request, "{s{sssssb}}",
 		"params",
 			"job key", &peer->key,
-			"slot", &slot,
+			"medium serial number", &medium_serial_number,
 			"no wait", &no_wait
 	);
 
 	struct so_changer_driver * driver = sochgr_changer_get();
 	struct so_changer * changer = driver->device;
-	struct so_slot * sl = changer->slots + slot;
 
-	struct so_media * media = sl->media;
+	unsigned int i;
+	struct so_slot * sl = NULL;
+	if (medium_serial_number != NULL) {
+		for (i = 0; i < changer->nb_slots; i++) {
+			struct so_slot * sl2 = changer->slots + i;
+
+			if (sl2->full && strcmp(medium_serial_number, sl2->media->medium_serial_number) == 0) {
+				sl = sl2;
+				break;
+			}
+		}
+
+		free(medium_serial_number);
+	}
+
+	struct so_media * media = sl != NULL ? sl->media : NULL;
 	if (media == NULL) {
 		struct so_value * response = so_value_pack("{sbsi}", "found", false, "index", -1L);
 		so_json_encode_to_fd(response, fd, true);

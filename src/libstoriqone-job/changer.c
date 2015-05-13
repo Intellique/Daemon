@@ -115,11 +115,11 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 	struct soj_changer * self = changer->data;
 	struct so_job * job = soj_job_get();
 
-	struct so_value * request = so_value_pack("{sss{sssisb}}",
+	struct so_value * request = so_value_pack("{sss{sssssb}}",
 		"command", "get media",
 		"params",
 			"job key", job->key,
-			"slot", slot->index,
+			"medium serial number", slot->media->medium_serial_number,
 			"no wait", no_wait
 	);
 	so_json_encode_to_fd(request, self->fd, true);
