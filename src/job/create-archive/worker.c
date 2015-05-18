@@ -87,7 +87,8 @@ struct soj_create_archive_worker {
 };
 
 static enum so_format_writer_status soj_create_archive_worker_add_file2(struct so_job * job, struct soj_create_archive_worker * worker, struct so_format_file * file, bool first_round, struct so_database_connection * db_connect);
-static int soj_create_archive_worker_change_volume(struct so_job * job, struct soj_create_archive_worker * worker, bool first_round, struct so_database_connection * db_connect);
+static void soj_create_archive_add_file3(struct soj_create_archive_worker * worker, struct so_format_file * file, ssize_t position);
+static int soj_create_archive_worker_change_volume(struct so_job * job, struct soj_create_archive_worker * worker, struct so_format_file * file, bool first_round, struct so_database_connection * db_connect);
 static int soj_create_archive_worker_close2(struct soj_create_archive_worker * worker, bool first_round);
 static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_create_archive_worker * worker, struct so_archive_file * file);
 static void soj_create_archive_worker_free(struct soj_create_archive_worker * worker);
@@ -165,7 +166,7 @@ static enum so_format_writer_status soj_create_archive_worker_add_file2(struct s
 		ssize_t available_size = worker->writer->ops->get_available_size(worker->writer);
 		ssize_t file_size = worker->writer->ops->compute_size_of_file(worker->writer, file);
 
-		if (available_size < file_size && soj_create_archive_worker_change_volume(job, worker, first_round, db_connect) != 0)
+		if (available_size < file_size && soj_create_archive_worker_change_volume(job, worker, file, first_round, db_connect) != 0)
 			return so_format_writer_error;
 
 		position = 0;
@@ -175,7 +176,7 @@ static enum so_format_writer_status soj_create_archive_worker_add_file2(struct s
 	enum so_format_writer_status status = worker->writer->ops->add_file(worker->writer, file);
 	switch (status) {
 		case so_format_writer_end_of_volume:
-			failed = soj_create_archive_worker_change_volume(job, worker, first_round, db_connect);
+			failed = soj_create_archive_worker_change_volume(job, worker, file, first_round, db_connect);
 			if (failed != 0)
 				return so_format_writer_error;
 			position = 0;
@@ -189,6 +190,12 @@ static enum so_format_writer_status soj_create_archive_worker_add_file2(struct s
 			break;
 	}
 
+	soj_create_archive_add_file3(worker, file, position);
+
+	return status;
+}
+
+static void soj_create_archive_add_file3(struct soj_create_archive_worker * worker, struct so_format_file * file, ssize_t position) {
 	struct soj_create_archive_files * new_file = malloc(sizeof(struct soj_create_archive_files));
 	new_file->path = strdup(file->filename);
 	new_file->position = position;
@@ -201,11 +208,9 @@ static enum so_format_writer_status soj_create_archive_worker_add_file2(struct s
 		worker->first_files = worker->last_files = new_file;
 	worker->nb_files++;
 	worker->position = 0;
-
-	return status;
 }
 
-static int soj_create_archive_worker_change_volume(struct so_job * job, struct soj_create_archive_worker * worker, bool first_round, struct so_database_connection * db_connect) {
+static int soj_create_archive_worker_change_volume(struct so_job * job, struct soj_create_archive_worker * worker, struct so_format_file * file, bool first_round, struct so_database_connection * db_connect) {
 	soj_create_archive_worker_close2(worker, first_round);
 
 	worker->drive->ops->release(worker->drive);
@@ -226,6 +231,8 @@ static int soj_create_archive_worker_change_volume(struct so_job * job, struct s
 			vol->media = worker->media;
 			vol->media_position = worker->writer->ops->file_position(worker->writer);
 			vol->job = soj_job_get();
+
+			soj_create_archive_add_file3(worker, file, 0);
 		}
 	}
 
@@ -671,7 +678,7 @@ ssize_t soj_create_archive_worker_write2(struct so_job * job, struct soj_create_
 	ssize_t nb_total_write = 0;
 	while (nb_total_write < length) {
 		if (available <= 0) {
-			int failed = soj_create_archive_worker_change_volume(job, worker, first_round, db_connect);
+			int failed = soj_create_archive_worker_change_volume(job, worker, file, first_round, db_connect);
 			if (failed)
 				return -1;
 
