@@ -191,6 +191,9 @@ ssize_t soj_media_prepare(struct so_pool * pool, ssize_t size_needed, struct so_
 }
 
 ssize_t soj_media_prepare_unformatted(struct so_pool * pool, bool online, struct so_database_connection * db_connect) {
+	if (!pool->growable)
+		return 0;
+
 	struct so_value * medias = so_value_hashtable_get2(soj_medias, pool->uuid, false, false);
 	if (medias == NULL)
 		return 0;

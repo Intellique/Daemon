@@ -486,8 +486,8 @@ static enum so_format_writer_status so_format_tar_writer_restart_file(struct so_
 
 	so_format_tar_writer_compute_checksum(current_header, current_header->checksum);
 
-	format->position = 0;
-	format->size = position;
+	format->position = position;
+	format->size = file->size;
 
 	if (block_size > format->io->ops->get_available_size(format->io)) {
 		format->last_errno = ENOSPC;

@@ -140,7 +140,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 				if (round == 1)
 					soj_create_archive_meta_worker_add_file(file.filename, root);
 
-				enum so_format_writer_status write_status = soj_create_archive_worker_add_file(job, &file, db_connect);
+				enum so_format_writer_status write_status = soj_create_archive_worker_add_file(job, &file, round == 1, db_connect);
 				if (write_status != so_format_writer_ok) {
 					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 							dgettext("storiqone-job-create-archive", "Error while adding %s to archive"),
@@ -152,7 +152,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 					static char buffer[16384];
 					ssize_t nb_read;
 					while (nb_read = src_files[i]->ops->read(src_files[i], buffer, 16384), nb_read > 0) {
-						ssize_t nb_write = soj_create_archive_worker_write(job, &file, buffer, nb_read, db_connect);
+						ssize_t nb_write = soj_create_archive_worker_write(job, &file, buffer, nb_read, round == 1, db_connect);
 						if (nb_write < 0) {
 							failed = -2;
 							break;
@@ -181,7 +181,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 
 		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-job-create-archive", "Closing archive"));
-		soj_create_archive_worker_close(round);
+		soj_create_archive_worker_close(round == 1);
 
 		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-job-create-archive", "Synchronizing archive with database"));
@@ -301,7 +301,21 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 			return 1;
 		}
 
-		archives_mirrors = db_connect->ops->get_archives_by_archive_mirror(db_connect, primary_archive);
+		archives_mirrors = so_value_new_linked_list();
+		struct so_value * archives = db_connect->ops->get_archives_by_archive_mirror(db_connect, primary_archive);
+		struct so_value_iterator * iter = so_value_list_get_iterator(archives);
+		while (so_value_iterator_has_next(iter)) {
+			struct so_value * varchive = so_value_iterator_get_value(iter, false);
+			struct so_archive * archive = so_value_custom_get(varchive);
+
+			if (db_connect->ops->is_archive_synchronized(db_connect, archive))
+				so_value_list_push(archives_mirrors, varchive, false);
+			else
+				so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+					dgettext("storiqone-job-create-archive", "Warning, ignoring archive '%s' from pool '%s' because this archive is not synchronized"),
+					archive->name, archive->volumes->media->pool->name);
+		}
+		so_value_iterator_free(iter);
 
 		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 			dgettext("storiqone-job-create-archive", "Size require (%s) for creating new archive '%s'"),

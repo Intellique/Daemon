@@ -249,7 +249,7 @@ static bool sodr_media_read_header_v2(struct so_media * media, const char * buff
 }
 
 static bool sodr_media_read_header_v3(struct so_media * media, const char * buffer, int nb_parsed2, bool check, struct so_database_connection * db_connection) {
-	// M | STone (v1.2)
+	// M | Storiq One (v1.2)
 	// M | Media format: version=3
 	// M | Host: name="kazoo", uuid="40e576d7-cb14-42c2-95c5-edd14fbb638d"
 	// O | Label: "A0000002"
