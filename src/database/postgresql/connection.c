@@ -123,7 +123,7 @@ static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_da
 static struct so_archive * so_database_postgresql_get_archive_by_job(struct so_database_connection * connect, struct so_job * job);
 static struct so_value * so_database_postgresql_get_archives_by_media(struct so_database_connection * connect, struct so_media * media);
 static bool so_database_postgresql_is_archive_synchronized(struct so_database_connection * connect, struct so_archive * archive);
-static int so_database_postgresql_link_archives(struct so_database_connection * connect, struct so_archive * source, struct so_archive * copy);
+static int so_database_postgresql_link_archives(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy);
 static int so_database_postgresql_mark_archive_as_purged(struct so_database_connection * connect, struct so_media * media, struct so_job * job);
 static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
 static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive);
@@ -3104,16 +3104,19 @@ static bool so_database_postgresql_is_archive_synchronized(struct so_database_co
 	return synchronized_archive;
 }
 
-static int so_database_postgresql_link_archives(struct so_database_connection * connect, struct so_archive * source, struct so_archive * copy) {
+static int so_database_postgresql_link_archives(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy) {
 	if (connect == NULL || source == NULL || copy == NULL)
 		return -1;
 
 	struct so_database_postgresql_connection_private * self = connect->data;
 
-	char * src_archive_id = NULL, * copy_archive_id = NULL, * copy_poolmirror_id = NULL, * archivemirror_id = NULL, * last_update = NULL;
+	char * jobrun_id = NULL, * src_archive_id = NULL, * copy_archive_id = NULL, * copy_poolmirror_id = NULL, * archivemirror_id = NULL, * last_update = NULL;
 	struct so_value * key = so_value_new_custom(connect->config, NULL);
 
-	struct so_value * db = so_value_hashtable_get(source->db_data, key, false, false);
+	struct so_value * db = so_value_hashtable_get(job->db_data, key, false, false);
+	so_value_unpack(db, "{ss}", "jobrun id", &jobrun_id);
+
+	db = so_value_hashtable_get(source->db_data, key, false, false);
 	so_value_unpack(db, "{ss}", "id", &src_archive_id);
 
 	db = so_value_hashtable_get(copy->db_data, key, false, false);
@@ -3137,6 +3140,7 @@ static int so_database_postgresql_link_archives(struct so_database_connection * 
 	PQclear(result);
 
 	if (status == PGRES_FATAL_ERROR) {
+		free(jobrun_id);
 		free(src_archive_id);
 		free(copy_archive_id);
 		return 1;
@@ -3158,6 +3162,7 @@ static int so_database_postgresql_link_archives(struct so_database_connection * 
 		}
 
 		if (status == PGRES_FATAL_ERROR) {
+			free(jobrun_id);
 			free(src_archive_id);
 			free(copy_archive_id);
 			free(copy_poolmirror_id);
@@ -3168,10 +3173,10 @@ static int so_database_postgresql_link_archives(struct so_database_connection * 
 
 		if (archivemirror_id != NULL) {
 			query = "insert_archive_mirror";
-			so_database_postgresql_prepare(self, query, "INSERT INTO archivetoarchivemirror(archive, archivemirror, lastupdate) VALUES ($1, $2, $3)");
+			so_database_postgresql_prepare(self, query, "INSERT INTO archivetoarchivemirror(archive, archivemirror, lastupdate, jobrun) VALUES ($1, $2, $3, $4)");
 
-			const char * param_3[] = { copy_archive_id, archivemirror_id, last_update };
-			result = PQexecPrepared(self->connect, query, 3, param_3, NULL, NULL, 0);
+			const char * param_3[] = { copy_archive_id, archivemirror_id, last_update, jobrun_id };
+			result = PQexecPrepared(self->connect, query, 4, param_3, NULL, NULL, 0);
 			status = PQresultStatus(result);
 
 			if (status == PGRES_FATAL_ERROR)
@@ -3179,6 +3184,7 @@ static int so_database_postgresql_link_archives(struct so_database_connection * 
 
 			PQclear(result);
 
+			free(jobrun_id);
 			free(src_archive_id);
 			free(copy_archive_id);
 			free(archivemirror_id);
@@ -3204,11 +3210,11 @@ static int so_database_postgresql_link_archives(struct so_database_connection * 
 
 	if (archivemirror_id != NULL) {
 		query = "insert_archive_mirror3";
-		so_database_postgresql_prepare(self, query, "INSERT INTO archivetoarchivemirror(archive, archivemirror) VALUES ($1, $3), ($2, $3)");
+		so_database_postgresql_prepare(self, query, "INSERT INTO archivetoarchivemirror(archive, archivemirror, jobrun) VALUES ($1, $3, $4), ($2, $3, $4)");
 
-		const char * param_3[] = { src_archive_id, copy_archive_id, archivemirror_id };
+		const char * param_3[] = { src_archive_id, copy_archive_id, archivemirror_id, jobrun_id };
 
-		result = PQexecPrepared(self->connect, query, 3, param_3, NULL, NULL, 0);
+		result = PQexecPrepared(self->connect, query, 4, param_3, NULL, NULL, 0);
 		status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -3219,6 +3225,7 @@ static int so_database_postgresql_link_archives(struct so_database_connection * 
 		free(archivemirror_id);
 	}
 
+	free(jobrun_id);
 	free(src_archive_id);
 	free(copy_archive_id);
 

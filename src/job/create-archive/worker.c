@@ -634,7 +634,7 @@ int soj_create_archive_worker_sync_archives(struct so_job * job, struct so_datab
 			failed = db_connect->ops->sync_archive(db_connect, worker->archive);
 
 			if (failed == 0)
-				failed = db_connect->ops->link_archives(db_connect, primary_worker->archive, worker->archive);
+				failed = db_connect->ops->link_archives(db_connect, job, primary_worker->archive, worker->archive);
 
 			if (failed != 0) {
 				db_connect->ops->cancel_transaction(db_connect);
