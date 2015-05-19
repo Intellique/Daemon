@@ -179,7 +179,7 @@ struct so_database_connection {
 		bool (*is_archive_synchronized)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((nonnull));
 		int (*link_archives)(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy) __attribute__((nonnull));
 		int (*mark_archive_as_purged)(struct so_database_connection * connect, struct so_media * media, struct so_job * job) __attribute__((nonnull));
-		int (*sync_archive)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((nonnull));
+		int (*sync_archive)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original) __attribute__((nonnull(1,2)));
 
 		int (*backup_add)(struct so_database_connection * connect, struct so_backup * backup) __attribute__((nonnull));
 		struct so_backup * (*get_backup)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull,warn_unused_result));

@@ -126,7 +126,7 @@ static bool so_database_postgresql_is_archive_synchronized(struct so_database_co
 static int so_database_postgresql_link_archives(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy);
 static int so_database_postgresql_mark_archive_as_purged(struct so_database_connection * connect, struct so_media * media, struct so_job * job);
 static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
-static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive);
+static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original);
 static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, struct so_archive_file * file, char ** file_id);
 static int so_database_postgresql_sync_archive_volume(struct so_database_connection * connect, char * archive_id, struct so_archive_volume * volume, struct so_value * files);
 
@@ -3271,7 +3271,7 @@ static int so_database_postgresql_mark_archive_as_purged(struct so_database_conn
 	return status != PGRES_COMMAND_OK;
 }
 
-static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive) {
+static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original) {
 	if (connect == NULL || archive == NULL)
 		return -1;
 
@@ -3281,18 +3281,29 @@ static int so_database_postgresql_sync_archive(struct so_database_connection * c
 	struct so_value * db = NULL;
 	struct so_value * files = NULL;
 
+	if (original != NULL) {
+		db = so_value_hashtable_get(original->db_data, key, false, false);
+		so_value_unpack(db, "{so}", "files", &files);
+	}
+
 	char * archive_id = NULL;
 	if (archive->db_data != NULL) {
 		db = so_value_hashtable_get(archive->db_data, key, false, false);
-		so_value_unpack(db, "{ssso}", "id", &archive_id, "files", &files);
+		so_value_unpack(db, "{ss}", "id", &archive_id);
+
+		if (files == NULL)
+			so_value_unpack(db, "{so}", "files", &files);
 	} else {
 		archive->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
 
 		db = so_value_new_hashtable2();
 		so_value_hashtable_put(archive->db_data, key, true, db, true);
 
-		files = so_value_new_hashtable2();
-		so_value_hashtable_put2(db, "files", files, true);
+		if (files == NULL) {
+			files = so_value_new_hashtable2();
+			so_value_hashtable_put2(db, "files", files, true);
+		} else
+			so_value_hashtable_put2(db, "files", files, false);
 	}
 
 	if (archive_id == NULL) {
