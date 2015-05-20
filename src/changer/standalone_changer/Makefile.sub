@@ -1,0 +1,11 @@
+STORIQONE_CHANGER_STANDALONECHANGER_SRC_DIR			:= src/changer/standalone_changer
+
+STORIQONE_CHANGER_STANDALONECHANGER_BIN				:= bin/standalone_changer
+STORIQONE_CHANGER_STANDALONECHANGER_CFLAG			:= -pthread
+STORIQONE_CHANGER_STANDALONECHANGER_LD				:= -pthread -lstoriqone -lstoriqone-changer -Llib -Wl,-rpath,lib
+
+STORIQONE_CHANGER_STANDALONECHANGER_DEPEND_LIB		:= lib/libstoriqone-changer.so
+
+STORIQONE_CHANGER_STANDALONECHANGER_CHCKSUM_FILE	:= changer-standalonechanger.chcksum
+
+BIN_SYMS											+= STORIQONE_CHANGER_STANDALONECHANGER

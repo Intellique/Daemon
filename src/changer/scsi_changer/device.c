@@ -131,7 +131,15 @@ struct so_changer * sochgr_scsi_changer_get_device() {
 }
 
 static int sochgr_scsi_changer_init(struct so_value * config, struct so_database_connection * db_connection) {
-	so_value_unpack(config, "{sssssssbsbsbss}", "model", &sochgr_scsi_changer.model, "vendor", &sochgr_scsi_changer.vendor, "serial number", &sochgr_scsi_changer.serial_number, "barcode", &sochgr_scsi_changer.barcode, "enable", &sochgr_scsi_changer.enable, "is online", &sochgr_scsi_changer.is_online, "wwn", &sochgr_scsi_changer.wwn);
+	so_value_unpack(config, "{sssssssbsbsbss}",
+		"model", &sochgr_scsi_changer.model,
+		"vendor", &sochgr_scsi_changer.vendor,
+		"serial number", &sochgr_scsi_changer.serial_number,
+		"barcode", &sochgr_scsi_changer.barcode,
+		"enable", &sochgr_scsi_changer.enable,
+		"is online", &sochgr_scsi_changer.is_online,
+		"wwn", &sochgr_scsi_changer.wwn
+	);
 
 	glob_t gl;
 	glob("/sys/class/scsi_changer/*/device", 0, NULL, &gl);

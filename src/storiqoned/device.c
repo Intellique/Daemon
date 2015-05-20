@@ -117,6 +117,42 @@ void sod_device_configure(struct so_value * logger, struct so_value * db_config,
 		so_value_free(real_changers);
 
 		// get standalone drives
+		struct so_value * standalone_changers = connection->ops->get_standalone_drives(connection);
+		iter = so_value_list_get_iterator(standalone_changers);
+		while (so_value_iterator_has_next(iter)) {
+			has_new = true;
+
+			struct so_value * changer = so_value_iterator_get_value(iter, true);
+
+			struct sod_device * dev = malloc(sizeof(struct sod_device));
+			dev->index = i_changer;
+			dev->process_name = "standalone_changer";
+			so_process_new(&dev->process, dev->process_name, NULL, 0);
+			dev->fd_in = so_process_pipe_to(&dev->process);
+			dev->fd_out = so_process_pipe_from(&dev->process, so_process_stdout);
+			so_process_set_null(&dev->process, so_process_stderr);
+
+			so_poll_register(dev->fd_out, POLLIN, sod_device_pong, dev, NULL);
+			so_poll_register(dev->fd_in, POLLHUP, sod_device_exited, dev, NULL);
+
+			char * path;
+			asprintf(&path, DAEMON_SOCKET_DIR "/changer_%d.socket", i_changer);
+
+			so_value_hashtable_put2(changer, "socket", so_value_pack("{ssss}", "domain", "unix", "path", path), true);
+			dev->config = so_value_pack("{sOsOsO}", "changer", changer, "logger", logger, "database", db_config);
+
+			free(path);
+
+			so_value_list_push(devices, so_value_new_custom(dev, sod_device_free), true);
+			so_value_list_push(devices_json, changer, false);
+
+			so_process_start(&dev->process, 1);
+			so_json_encode_to_fd(dev->config, dev->fd_in, true);
+
+			i_changer++;
+		}
+		so_value_iterator_free(iter);
+		so_value_free(standalone_changers);
 	}
 
 	// get virtual tape libraries
