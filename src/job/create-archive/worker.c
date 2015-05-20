@@ -97,6 +97,7 @@ static void soj_create_archive_worker_prepare_medias3(bool no_wait);
 ssize_t soj_create_archive_worker_write2(struct so_job * job, struct soj_create_archive_worker * worker, struct so_format_file * file, const char * buffer, ssize_t length, bool first_round, struct so_database_connection * db_connect);
 static bool soj_create_archive_worker_write_meta(struct soj_create_archive_worker * worker);
 
+static bool soj_create_archive_adding_file = false;
 static struct soj_create_archive_worker * primary_worker = NULL;
 static unsigned int nb_mirror_workers = 0;
 static struct soj_create_archive_worker ** mirror_workers = NULL;
@@ -411,6 +412,8 @@ void soj_create_archive_worker_init_archive(struct so_job * job, struct so_archi
 		mirror_workers[i] = soj_create_archive_worker_new(job, archive, pool);
 	}
 	so_value_iterator_free(iter);
+
+	soj_create_archive_adding_file = true;
 }
 
 void soj_create_archive_worker_init_pool(struct so_job * job, struct so_pool * primary_pool, struct so_value * pool_mirrors) {
@@ -618,6 +621,9 @@ int soj_create_archive_worker_sync_archives(struct so_job * job, struct so_datab
 	if (primary_worker->state == soj_worker_status_ready) {
 		failed = db_connect->ops->sync_archive(db_connect, primary_worker->archive, NULL);
 
+		if (failed == 0 && soj_create_archive_adding_file)
+			failed = db_connect->ops->update_link_archive(db_connect, primary_worker->archive, job);
+
 		if (failed != 0) {
 			db_connect->ops->cancel_transaction(db_connect);
 			primary_worker->state = soj_worker_status_error;
@@ -633,8 +639,12 @@ int soj_create_archive_worker_sync_archives(struct so_job * job, struct so_datab
 		if (worker->state == soj_worker_status_ready) {
 			failed = db_connect->ops->sync_archive(db_connect, worker->archive, primary_worker->archive);
 
-			if (failed == 0)
-				failed = db_connect->ops->link_archives(db_connect, job, primary_worker->archive, worker->archive);
+			if (failed == 0) {
+				if (soj_create_archive_adding_file)
+					failed = db_connect->ops->update_link_archive(db_connect, worker->archive, job);
+				else
+					failed = db_connect->ops->link_archives(db_connect, job, primary_worker->archive, worker->archive);
+			}
 
 			if (failed != 0) {
 				db_connect->ops->cancel_transaction(db_connect);
