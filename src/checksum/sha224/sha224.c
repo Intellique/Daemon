@@ -27,7 +27,7 @@
 // free, malloc
 #include <stdlib.h>
 // sha224_digest, sha224_init, sha224_update
-#include <nettle/sha2.h>
+#include <nettle/sha.h>
 // strdup
 #include <string.h>
 
