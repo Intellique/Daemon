@@ -172,10 +172,11 @@ struct so_database_connection {
 
 		int (*check_archive_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file) __attribute__((nonnull));
 		int (*check_archive_volume)(struct so_database_connection * connect, struct so_archive_volume * volume) __attribute__((nonnull));
-		struct so_value * (*get_archives_by_archive_mirror)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((nonnull));
-		struct so_archive * (*get_archive_by_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull));
-		struct so_value * (*get_archives_by_media)(struct so_database_connection * connect, struct so_media * media) __attribute__((nonnull));
+		struct so_value * (*get_archives_by_archive_mirror)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((nonnull,warn_unused_result));
+		struct so_archive * (*get_archive_by_job)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull,warn_unused_result));
+		struct so_value * (*get_archives_by_media)(struct so_database_connection * connect, struct so_media * media) __attribute__((nonnull,warn_unused_result));
 		unsigned int (*get_nb_volumes_of_file)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file) __attribute__((nonnull));
+		struct so_value * (*get_synchronized_archive)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((nonnull,warn_unused_result));
 		bool (*is_archive_synchronized)(struct so_database_connection * connect, struct so_archive * archive) __attribute__((nonnull));
 		int (*link_archives)(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy) __attribute__((nonnull));
 		int (*mark_archive_as_purged)(struct so_database_connection * connect, struct so_media * media, struct so_job * job) __attribute__((nonnull));

@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-05-20 11:15+0200\n"
+        "POT-Creation-Date: 2015-05-21 11:43+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -16,42 +16,42 @@ msgstr  "Project-Id-Version: libstone v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/database/postgresql/connection.c:275
+#: src/database/postgresql/connection.c:277
 #, c-format
 msgid   "PSQL: error while rolling back a savepoint => %s"
 msgstr  "PSQL : erreur lors de l’annulation du point de sauvegarde => %s"
 
-#: src/database/postgresql/connection.c:315
+#: src/database/postgresql/connection.c:317
 msgid   "PSQL: Can't create checkpoint because there is an error into current transaction"
 msgstr  "PSQL : Ne peut pas créer un point de sauvegarde parce qu’il y a une erreur dans la transaction courante"
 
-#: src/database/postgresql/connection.c:318
+#: src/database/postgresql/connection.c:320
 msgid   "PSQL: Can't create checkpoint because there is no active transaction"
 msgstr  "PSQL : Ne peut pas créer un point de sauvegarde parce qu’il n’y a pas de transaction"
 
-#: src/database/postgresql/connection.c:332
+#: src/database/postgresql/connection.c:334
 #, c-format
 msgid   "PSQL: error while creating a savepoint => %s"
 msgstr  "PSQL : erreur lors de la création d’un point de sauvegarde => %s"
 
-#: src/database/postgresql/connection.c:349
+#: src/database/postgresql/connection.c:351
 msgid   "PSQL: Rolling back transaction because current transaction is in error"
 msgstr  "PSQL : Annulation de la transcation parce qu’elle est en erreur"
 
-#: src/database/postgresql/connection.c:458
+#: src/database/postgresql/connection.c:460
 #, c-format
 msgid   "PSQL: Host not found into database (%s)"
 msgstr  "PSQL : Hôte non trouvé dans la base de données (%s)"
 
-#: src/database/postgresql/connection.c:1507
+#: src/database/postgresql/connection.c:1509
 msgid   "PSQL: error while synchronizing drive with database"
 msgstr  "PSQL : erreur lors de la synchronisation d’un lecteur avec la base de données"
 
-#: src/database/postgresql/connection.c:1528 src/database/postgresql/connection.c:1541
+#: src/database/postgresql/connection.c:1530 src/database/postgresql/connection.c:1543
 msgid   "PSQL: error while synchronizing changer slots with database"
 msgstr  "PSQL : erreur lors de la synchronisation des emplacements d’une librairie de bande avec la base de données"
 
-#: src/database/postgresql/connection.c:3965
+#: src/database/postgresql/connection.c:4007
 #, c-format
 msgid   "PSQL: new query prepared (%s) => {%s}, status: %s"
 msgstr  "PSQL : nouvelle requête préparée (%s) => {%s}, status : %s"
