@@ -33,6 +33,8 @@
 // strcmp
 #include <string.h>
 
+#include <unistd.h>
+
 #include <libstoriqone/database.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
@@ -85,7 +87,9 @@ int main() {
 	if (driver == NULL)
 		return 1;
 
-	so_log_write(so_log_level_info, dgettext("libstoriqone-changer", "Starting changer (type: %s)"), driver->name);
+	so_log_write(so_log_level_info,
+		dgettext("libstoriqone-changer", "Starting changer (type: %s)"),
+		driver->name);
 
 	struct so_value * config = so_json_parse_fd(0, 5000);
 	if (config == NULL)
@@ -116,7 +120,14 @@ int main() {
 	if (db_connect == NULL)
 		return 4;
 
-	so_log_write(so_log_level_info, dgettext("libstoriqone-changer", "Initialize changer (type: %s)"), driver->name);
+	int c = 1;
+	while (c)
+		sleep(1);
+
+	so_log_write(so_log_level_info,
+		dgettext("libstoriqone-changer", "Initialize changer (type: %s)"),
+		driver->name);
+
 	struct so_changer * changer = driver->device;
 	int failed = changer->ops->init(changer_config, db_connect);
 	if (failed != 0)
@@ -131,19 +142,35 @@ int main() {
 
 		switch (changer->next_action) {
 			case so_changer_action_put_offline:
-				so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: changer will be offline"), changer->vendor, changer->model);
+				so_log_write(so_log_level_notice,
+					dgettext("libstoriqone-changer", "[%s | %s]: changer will be offline"),
+					changer->vendor, changer->model);
+
 				if (changer->ops->put_offline(db_connect) == 0)
-					so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: changer is now offline"), changer->vendor, changer->model);
+					so_log_write(so_log_level_notice,
+						dgettext("libstoriqone-changer", "[%s | %s]: changer is now offline"),
+						changer->vendor, changer->model);
 				else
-					so_log_write(so_log_level_warning, dgettext("libstoriqone-changer", "[%s | %s]: failed to put changer offline"), changer->vendor, changer->model);
+					so_log_write(so_log_level_warning,
+						dgettext("libstoriqone-changer", "[%s | %s]: failed to put changer offline"),
+						changer->vendor, changer->model);
 				break;
 
 			case so_changer_action_put_online:
-				so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: changer will be online"), changer->vendor, changer->model);
-				if (changer->ops->put_online(db_connect) == 0)
-					so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: changer is now online"), changer->vendor, changer->model);
-				else
-					so_log_write(so_log_level_warning, dgettext("libstoriqone-changer", "[%s | %s]: failed to put changer online"), changer->vendor, changer->model);
+				so_log_write(so_log_level_notice,
+					dgettext("libstoriqone-changer", "[%s | %s]: changer will be online"),
+					changer->vendor, changer->model);
+
+				if (changer->ops->put_online(db_connect) == 0) {
+					so_log_write(so_log_level_notice,
+						dgettext("libstoriqone-changer", "[%s | %s]: changer is now online"),
+						changer->vendor, changer->model);
+
+					sochgr_listen_online();
+				} else
+					so_log_write(so_log_level_warning,
+						dgettext("libstoriqone-changer", "[%s | %s]: failed to put changer online"),
+						changer->vendor, changer->model);
 				break;
 
 			default:

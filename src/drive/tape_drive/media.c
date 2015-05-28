@@ -37,6 +37,7 @@
 // free, malloc, realloc
 #include <stdlib.h>
 
+#include <libstoriqone/format.h>
 #include <libstoriqone/io.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/slot.h>
@@ -70,9 +71,12 @@ static bool sodr_tape_drive_media_check_ltfs_header(struct so_media * media __at
 }
 
 void sodr_tape_drive_media_free(struct sodr_tape_drive_media * media_data) {
+	unsigned int i;
 	switch (media_data->format) {
 		case sodr_tape_drive_media_ltfs:
-			so_value_free(media_data->data.ltfs.index);
+			for (i = 0; i < media_data->data.ltfs.nb_files; i++)
+				so_format_file_free(media_data->data.ltfs.files + i);
+			free(media_data->data.ltfs.files);
 			break;
 
 		default:
@@ -109,7 +113,6 @@ enum sodr_tape_drive_media_format sodr_tape_drive_parse_label(const char * buffe
 
 int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_database_connection * db_connect) {
 	struct so_media * media = drive->slot->media;
-	struct sodr_tape_drive_media * mp = media->private_data;
 
 	struct so_stream_reader * reader = drive->ops->get_raw_reader(3, db_connect);
 	if (reader == NULL) {
@@ -121,6 +124,7 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 
 	ssize_t buffer_size = 65536, nb_total_read = 0;
 	char * buffer = malloc(buffer_size);
+	struct so_value * index = NULL;
 	for (;;) {
 		ssize_t nb_read = reader->ops->read(reader, buffer + nb_total_read, buffer_size - nb_total_read);
 		if (nb_read < 0) {
@@ -148,8 +152,8 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 		nb_total_read += nb_read;
 		buffer[nb_total_read] = '\0';
 
-		mp->data.ltfs.index = sodr_tape_drive_xml_parse_string(buffer);
-		if (mp->data.ltfs.index != NULL)
+		index = sodr_tape_drive_xml_parse_string(buffer);
+		if (index != NULL)
 			break;
 
 		buffer_size += 65536;
@@ -171,6 +175,10 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 	reader->ops->close(reader);
 	reader->ops->free(reader);
 	free(buffer);
+
+	if (index != NULL) {
+		struct sodr_tape_drive_media * mp = media->private_data;
+	}
 
 	return 0;
 }

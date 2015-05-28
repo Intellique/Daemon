@@ -34,11 +34,16 @@ struct sochgr_peer {
 	int fd;
 	char * key;
 	bool waiting;
+
+	bool defer;
+	struct so_value * request;
+	void (*command)(struct sochgr_peer * peer, struct so_value * request, int fd);
+
 	struct sochgr_peer * next;
 };
 
 void sochgr_peer_free(struct sochgr_peer * peer);
-struct sochgr_peer * sochgr_peer_new(int fd);
+struct sochgr_peer * sochgr_peer_new(int fd, bool defer);
 
 #endif
 

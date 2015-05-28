@@ -48,7 +48,8 @@ struct sodr_tape_drive_media {
 		} storiq_one;
 
 		struct {
-			struct so_value * index;
+			struct so_format_file * files;
+			unsigned int nb_files;
 		} ltfs;
 	} data;
 };

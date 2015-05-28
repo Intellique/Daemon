@@ -96,7 +96,10 @@ void sochgr_listen_set_db_connection(struct so_database_connection * db) {
 
 
 static void sochgr_socket_accept(int fd_server __attribute__((unused)), int fd_client, struct so_value * client __attribute__((unused))) {
-	struct sochgr_peer * peer = sochgr_peer_new(fd_client);
+	struct so_changer_driver * driver = sochgr_changer_get();
+	struct so_changer * changer = driver->device;
+
+	struct sochgr_peer * peer = sochgr_peer_new(fd_client, changer->next_action == so_changer_action_put_offline);
 
 	so_poll_register(fd_client, POLLIN | POLLHUP, sochgr_socket_message, peer, NULL);
 	sochgr_nb_clients++;
@@ -142,16 +145,36 @@ static void sochgr_socket_message(int fd, short event, void * data) {
 	unsigned int i;
 	for (i = 0; commands[i].name != NULL; i++)
 		if (hash == commands[i].hash) {
-			commands[i].function(peer, request, fd);
+			if (peer->defer) {
+				peer->command = commands[i].function;
+				peer->request = request;
+			} else {
+				commands[i].function(peer, request, fd);
+				so_value_free(request);
+			}
 			break;
 		}
-	so_value_free(request);
 
-	if (commands[i].name == NULL) {
+	if (commands[i].name == NULL && !peer->defer) {
 		struct so_value * response = so_value_new_boolean(true);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 	}
+}
+
+void sochgr_listen_online() {
+	struct sochgr_peer * peer;
+	for (peer = first_peer; peer != NULL; peer = peer->next)
+		if (peer->defer) {
+			peer->defer = false;
+
+			if (peer->command != NULL)
+				peer->command(peer, peer->request, peer->fd);
+
+			peer->command = NULL;
+			so_value_free(peer->request);
+			peer->request = NULL;
+		}
 }
 
 static void sochgr_socket_remove_peer(struct sochgr_peer * peer) {

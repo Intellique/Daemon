@@ -49,6 +49,7 @@
 #include <libstoriqone/file.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/media.h>
+#include <libstoriqone/poll.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/thread_pool.h>
 #include <libstoriqone/value.h>
@@ -414,8 +415,33 @@ static int sochgr_scsi_changer_load(struct so_slot * from, struct so_drive * to,
 	return failed;
 }
 
-static int sochgr_scsi_changer_put_offline(struct so_database_connection * db_connection) {
-	// TODO
+static int sochgr_scsi_changer_put_offline(struct so_database_connection * db_connect) {
+	unsigned int i;
+
+retry:
+	for (i = 0; i < sochgr_scsi_changer.nb_drives; i++) {
+		struct so_drive * dr = sochgr_scsi_changer.drives + i;
+
+		if (!dr->ops->is_free(dr)) {
+			so_poll(-1);
+			db_connect->ops->sync_changer(db_connect, &sochgr_scsi_changer, so_database_sync_default);
+			goto retry;
+		}
+	}
+
+	for (i = 0; i < sochgr_scsi_changer.nb_drives; i++) {
+		struct so_drive * dr = sochgr_scsi_changer.drives + i;
+
+		dr->ops->update_status(dr);
+
+		if (!dr->is_empty)
+			sochgr_scsi_changer_unload(dr, db_connect);
+	}
+
+	// TODO: removes private data on all medias
+
+	sochgr_scsi_changer_scsi_medium_removal(sochgr_scsi_changer_device, true);
+
 	return 0;
 }
 

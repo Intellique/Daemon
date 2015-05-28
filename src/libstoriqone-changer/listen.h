@@ -31,6 +31,7 @@ struct sochgr_peer;
 struct so_value;
 
 void sochgr_listen_configure(struct so_value * config);
+void sochgr_listen_online(void);
 unsigned int sochgr_listen_nb_clients(void);
 void sochgr_listen_set_db_connection(struct so_database_connection * db);
 bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait);

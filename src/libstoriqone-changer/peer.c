@@ -29,20 +29,31 @@
 // free, malloc
 #include <stdlib.h>
 
+#include <libstoriqone/value.h>
+
 #include "peer.h"
 
 void sochgr_peer_free(struct sochgr_peer * peer) {
 	free(peer->key);
+
+	if (peer->request != NULL)
+		so_value_free(peer->request);
+
 	free(peer);
 }
 
-struct sochgr_peer * sochgr_peer_new(int fd) {
+struct sochgr_peer * sochgr_peer_new(int fd, bool defer) {
 	struct sochgr_peer * peer = malloc(sizeof(struct sochgr_peer));
 	bzero(peer, sizeof(struct sochgr_peer));
 
 	peer->fd = fd;
 	peer->key = NULL;
 	peer->waiting = false;
+
+	peer->defer = defer;
+	peer->request = NULL;
+	peer->command = NULL;
+
 	peer->next = NULL;
 
 	return peer;
