@@ -30,6 +30,7 @@
 #include <libstoriqone/media.h>
 
 void sochgr_media_init_slot(struct so_slot * slot);
+void sochgr_media_release(struct so_changer * changer);
 
 #endif
 

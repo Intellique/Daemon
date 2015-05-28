@@ -85,6 +85,25 @@ void sochgr_media_init_slot(struct so_slot * slot) {
 	}
 }
 
+void sochgr_media_release(struct so_changer * changer) {
+	unsigned int i;
+	for (i = 0; i < changer->nb_slots; i++) {
+		struct so_slot * sl = changer->slots + i;
+
+		if (sl->media == NULL)
+			continue;
+
+		struct sochgr_media * md = sl->media->private_data;
+
+		struct sochgr_peer_list * peer, * next;
+		for (peer = md->first; peer != NULL; peer = next) {
+			next = peer->next;
+			free(peer);
+		}
+		free(md);
+	}
+}
+
 void sochgr_media_remove_peer(struct sochgr_media * media, struct sochgr_peer * peer) {
 	if (media->first == NULL)
 		return;

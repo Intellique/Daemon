@@ -55,6 +55,7 @@
 #include <libstoriqone/value.h>
 #include <libstoriqone-changer/changer.h>
 #include <libstoriqone-changer/drive.h>
+#include <libstoriqone-changer/media.h>
 
 #include "device.h"
 #include "scsi.h"
@@ -438,7 +439,20 @@ retry:
 			sochgr_scsi_changer_unload(dr, db_connect);
 	}
 
-	// TODO: removes private data on all medias
+	sochgr_media_release(&sochgr_scsi_changer);
+
+	for (i = sochgr_scsi_changer.nb_drives; i < sochgr_scsi_changer.nb_slots; i++) {
+		struct so_slot * sl = sochgr_scsi_changer.slots + i;
+
+		if (!sl->full)
+			continue;
+
+		so_media_free(sl->media);
+		sl->media = NULL;
+		free(sl->volume_name);
+		sl->volume_name = NULL;
+		sl->full = false;
+	}
 
 	sochgr_scsi_changer_scsi_medium_removal(sochgr_scsi_changer_device, true);
 
