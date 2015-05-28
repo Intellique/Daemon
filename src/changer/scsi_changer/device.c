@@ -112,18 +112,29 @@ static struct so_changer sochgr_scsi_changer = {
 
 
 static int sochgr_scsi_changer_check(struct so_database_connection * db_connection) {
+	static struct timespec last_call = { 0, 0 };
 	static struct timespec last_check = { 0, 0 };
 
 	struct timespec now;
-	clock_gettime(CLOCK_MONOTONIC, &now);
+	clock_gettime(CLOCK_MONOTONIC_COARSE, &now);
 
-	if (last_check.tv_sec == 0)
+	if (last_check.tv_sec == 0 || last_call.tv_sec + 120 < now.tv_sec)
 		last_check = now;
 	else if (last_check.tv_sec + 1800 < now.tv_sec) {
-		// TODO: unload tape
+		unsigned int i;
+		for (i = 0; i < sochgr_scsi_changer.nb_drives; i++) {
+			struct so_drive * dr = sochgr_scsi_changer.drives + i;
+
+			dr->ops->update_status(dr);
+
+			if (!dr->is_empty)
+				sochgr_scsi_changer_unload(dr, db_connection);
+		}
 
 		last_check = now;
 	}
+
+	last_call = now;
 
 	return 0;
 }
@@ -419,6 +430,9 @@ static int sochgr_scsi_changer_load(struct so_slot * from, struct so_drive * to,
 static int sochgr_scsi_changer_put_offline(struct so_database_connection * db_connect) {
 	unsigned int i;
 
+	sochgr_scsi_changer.status = so_changer_status_go_offline;
+	db_connect->ops->sync_changer(db_connect, &sochgr_scsi_changer, so_database_sync_default);
+
 retry:
 	for (i = 0; i < sochgr_scsi_changer.nb_drives; i++) {
 		struct so_drive * dr = sochgr_scsi_changer.drives + i;
@@ -429,6 +443,9 @@ retry:
 			goto retry;
 		}
 	}
+
+	sochgr_scsi_changer.status = so_changer_status_go_offline;
+	db_connect->ops->sync_changer(db_connect, &sochgr_scsi_changer, so_database_sync_default);
 
 	for (i = 0; i < sochgr_scsi_changer.nb_drives; i++) {
 		struct so_drive * dr = sochgr_scsi_changer.drives + i;
@@ -455,6 +472,10 @@ retry:
 	}
 
 	sochgr_scsi_changer_scsi_medium_removal(sochgr_scsi_changer_device, true);
+
+	sochgr_scsi_changer.status = so_changer_status_offline;
+	sochgr_scsi_changer.next_action = so_changer_action_none;
+	db_connect->ops->sync_changer(db_connect, &sochgr_scsi_changer, so_database_sync_default);
 
 	return 0;
 }
