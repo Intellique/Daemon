@@ -44,6 +44,7 @@
 #include <libstoriqone/file.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
+#include <libstoriqone/poll.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-changer/changer.h>
@@ -457,10 +458,28 @@ static int sochgr_vtl_changer_load(struct so_slot * from, struct so_drive * to, 
 	return failed;
 }
 
-static int sochgr_vtl_changer_put_offline(struct so_database_connection * db_connection) {
-	sochgr_vtl_changer_unload_all_drives(db_connection);
-
+static int sochgr_vtl_changer_put_offline(struct so_database_connection * db_connect) {
 	unsigned int i;
+
+	sochgr_vtl_changer.status = so_changer_status_go_offline;
+	db_connect->ops->sync_changer(db_connect, &sochgr_vtl_changer, so_database_sync_default);
+
+retry:
+	for (i = 0; i < sochgr_vtl_changer.nb_drives; i++) {
+		struct so_drive * dr = sochgr_vtl_changer.drives + i;
+
+		if (!dr->ops->is_free(dr)) {
+			so_poll(12000);
+			db_connect->ops->sync_changer(db_connect, &sochgr_vtl_changer, so_database_sync_default);
+			goto retry;
+		}
+	}
+
+	sochgr_vtl_changer_unload_all_drives(db_connect);
+
+	sochgr_vtl_changer.status = so_changer_status_go_offline;
+	db_connect->ops->sync_changer(db_connect, &sochgr_vtl_changer, so_database_sync_default);
+
 	for (i = sochgr_vtl_changer.nb_drives; i < sochgr_vtl_changer.nb_slots; i++) {
 		struct so_slot * sl = sochgr_vtl_changer.slots + i;
 		so_media_free(sl->media);
@@ -470,14 +489,18 @@ static int sochgr_vtl_changer_put_offline(struct so_database_connection * db_con
 		sl->full = false;
 	}
 
+	sochgr_vtl_changer.status = so_changer_status_idle;
 	sochgr_vtl_changer.is_online = false;
 	sochgr_vtl_changer.next_action = so_changer_action_none;
-	db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_default);
+	db_connect->ops->sync_changer(db_connect, &sochgr_vtl_changer, so_database_sync_default);
 
 	return 0;
 }
 
 static int sochgr_vtl_changer_put_online(struct so_database_connection * db_connection) {
+	sochgr_vtl_changer.status = so_changer_status_go_online;
+	db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_default);
+
 	unsigned int i, j;
 	for (i = 0, j = sochgr_vtl_changer.nb_drives; j < sochgr_vtl_changer.nb_slots; i++, j++) {
 		char * serial_file;
@@ -494,6 +517,7 @@ static int sochgr_vtl_changer_put_online(struct so_database_connection * db_conn
 		free(serial_file);
 	}
 
+	sochgr_vtl_changer.status = so_changer_status_idle;
 	sochgr_vtl_changer.is_online = true;
 	sochgr_vtl_changer.next_action = so_changer_action_none;
 	db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_default);
