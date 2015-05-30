@@ -599,17 +599,17 @@ static struct so_value * so_database_postgresql_get_changers(struct so_database_
 			enum so_changer_action changer_action = so_database_postgresql_string_to_action(PQgetvalue(result, i, 9));
 
 			struct so_value * changer = so_value_pack("{sssssssssssbsosssbsssb}",
-					"model", PQgetvalue(result, i, 1),
-					"vendor", PQgetvalue(result, i, 2),
-					"firmwarerev", PQgetvalue(result, i, 3),
-					"serial number", PQgetvalue(result, i, 4),
-					"wwn", PQgetvalue(result, i, 5),
-					"barcode", barcode,
-					"drives", so_database_postgresql_get_drives_by_changer(connect, changer_id),
-					"status", so_changer_status_to_string(changer_status, false),
-					"is online", isonline,
-					"action", so_changer_action_to_string(changer_action, false),
-					"enable", enabled
+				"model", PQgetvalue(result, i, 1),
+				"vendor", PQgetvalue(result, i, 2),
+				"firmwarerev", PQgetvalue(result, i, 3),
+				"serial number", PQgetvalue(result, i, 4),
+				"wwn", PQgetvalue(result, i, 5),
+				"barcode", barcode,
+				"drives", so_database_postgresql_get_drives_by_changer(connect, changer_id),
+				"status", so_changer_status_to_string(changer_status, false),
+				"is online", isonline,
+				"action", so_changer_action_to_string(changer_action, false),
+				"enable", enabled
 			);
 
 			so_value_list_push(changers, changer, true);
@@ -1186,8 +1186,8 @@ static struct so_value * so_database_postgresql_get_standalone_drives(struct so_
 
 	struct so_database_postgresql_connection_private * self = connect->data;
 
-	const char * query = "select_real_changer_by_host";
-	so_database_postgresql_prepare(self, query, "SELECT c.device, c.model, c.vendor, c.firmwarerev, c.serialnumber, c.status, c.isonline, c.action, c.enable FROM changer c LEFT JOIN drive d ON c.id = d.changer AND c.serialnumber = d.serialnumber WHERE c.host = $1 AND c.serialnumber NOT IN (SELECT uuid::TEXT FROM vtl WHERE host = $1)");
+	const char * query = "select_standalone_drives_by_host";
+	so_database_postgresql_prepare(self, query, "SELECT DISTINCT c.id, c.model, c.vendor, c.firmwarerev, c.serialnumber, c.status, c.isonline, c.action, c.enable FROM changer c LEFT JOIN drive d ON c.id = d.changer AND c.serialnumber = d.serialnumber WHERE c.host = $1 AND c.serialnumber IN (SELECT uuid::TEXT FROM vtl WHERE host = $1)");
 
 	const char * param[] = { host_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -1199,21 +1199,24 @@ static struct so_value * so_database_postgresql_get_standalone_drives(struct so_
 	else if (status == PGRES_TUPLES_OK && nb_result > 0) {
 		int i;
 		for (i = 0; i < nb_result; i++) {
-			bool enabled = false;
-			so_database_postgresql_get_bool(result, i, 11, &enabled);
+			char * changer_id;
+			so_database_postgresql_get_string_dup(result, i, 0, &changer_id);
 
-			struct so_value * changer = so_value_pack("{sssssssssssnsbsssbsssb}",
-					"device", PQgetvalue(result, i, 0),
-					"model", PQgetvalue(result, i, 1),
-					"vendor", PQgetvalue(result, i, 2),
-					"firmwarerev", PQgetvalue(result, i, 3),
-					"serialnumber", PQgetvalue(result, i, 4),
-					"wwn",
-					"barcode", false,
-					"status", PQgetvalue(result, i, 5),
-					"is online", true,
-					"action", "none",
-					"enable", enabled
+			bool enabled = false, is_online = false;
+			so_database_postgresql_get_bool(result, i, 6, &enabled);
+			so_database_postgresql_get_bool(result, i, 8, &enabled);
+			enum so_changer_action changer_action = so_database_postgresql_string_to_action(PQgetvalue(result, i, 7));
+
+			struct so_value * changer = so_value_pack("{sssssssssssosbsssb}",
+				"model", PQgetvalue(result, i, 1),
+				"vendor", PQgetvalue(result, i, 2),
+				"firmwarerev", PQgetvalue(result, i, 3),
+				"serialnumber", PQgetvalue(result, i, 4),
+				"status", PQgetvalue(result, i, 5),
+				"drives", so_database_postgresql_get_drives_by_changer(connect, changer_id),
+				"is online", is_online,
+				"action", so_changer_action_to_string(changer_action, false),
+				"enable", enabled
 			);
 
 			so_value_list_push(changers, changer, true);

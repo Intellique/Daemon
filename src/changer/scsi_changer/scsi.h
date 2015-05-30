@@ -47,6 +47,7 @@ int sochgr_scsi_changer_scsi_loader_ready(const char * device);
 int sochgr_scsi_changer_scsi_medium_removal(const char * device, bool allow);
 int sochgr_scsi_changer_scsi_move(const char * device, int transport_address, struct so_slot * from, struct so_slot * to);
 void sochgr_scsi_changer_scsi_new_status(struct so_changer * changer, const char * device, struct so_value * available_drives, int * transport_address);
+void sochgr_scsi_changer_scsi_update_status(struct so_changer * changer, const char * device);
 
 #endif
 
