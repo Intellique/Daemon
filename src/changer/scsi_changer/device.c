@@ -126,6 +126,9 @@ static int sochgr_scsi_changer_check(struct so_database_connection * db_connecti
 		for (i = 0; i < sochgr_scsi_changer.nb_drives; i++) {
 			struct so_drive * dr = sochgr_scsi_changer.drives + i;
 
+			if (!dr->enable)
+				continue;
+
 			dr->ops->update_status(dr);
 
 			if (!dr->is_empty)
