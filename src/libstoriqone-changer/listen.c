@@ -303,11 +303,15 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 			if (drive->slot->full) {
 				const char * volume_name = drive->slot->volume_name;
-				so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d"), changer->vendor, changer->model, volume_name, drive->index);
+				so_log_write(so_log_level_notice,
+					dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d"),
+					changer->vendor, changer->model, volume_name, drive->index);
 
 				int failed = changer->ops->unload(drive, sochgr_db);
 				if (failed != 0) {
-					so_log_write(so_log_level_error, dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d finished with code = %d"), changer->vendor, changer->model, volume_name, drive->index, failed);
+					so_log_write(so_log_level_error,
+						dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d finished with code = %d"),
+						changer->vendor, changer->model, volume_name, drive->index, failed);
 
 					struct so_value * response = so_value_pack("{sbso}",
 						"error", true,
@@ -318,7 +322,9 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 					return false;
 				} else
-					so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d finished with code = OK"), changer->vendor, changer->model, volume_name, drive->index);
+					so_log_write(so_log_level_notice,
+						dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d finished with code = OK"),
+						changer->vendor, changer->model, volume_name, drive->index);
 			}
 
 			so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d"), changer->vendor, changer->model, sl->volume_name, sl->index, drive->index);

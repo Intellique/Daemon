@@ -25,6 +25,8 @@
 \****************************************************************************/
 
 #define _GNU_SOURCE
+// dngettext
+#include <libintl.h>
 // glob, globfree
 #include <glob.h>
 // pthread_mutex_t
@@ -131,8 +133,23 @@ static int sochgr_scsi_changer_check(struct so_database_connection * db_connecti
 
 			dr->ops->update_status(dr);
 
-			if (!dr->is_empty)
-				sochgr_scsi_changer_unload(dr, db_connection);
+			if (!dr->is_empty) {
+				const char * volume_name = dr->slot->volume_name;
+
+				so_log_write(so_log_level_notice,
+					dngettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%d because media is not use since %d minute", "[%s | %s]: unloading media '%s' from drive #%d because media is not use since %d minutes", 30),
+					sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, dr->index, 30);
+
+				int failed = sochgr_scsi_changer_unload(dr, db_connection);
+				if (failed == 0)
+					so_log_write(so_log_level_notice,
+						dgettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%d finished with code = OK"),
+						sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, dr->index);
+				else
+					so_log_write(so_log_level_error,
+						dgettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%d finished with code = %d"),
+						sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, dr->index, failed);
+			}
 		}
 
 		last_check = now;
@@ -225,10 +242,11 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 
 		if (found) {
 			sochgr_scsi_changer_device = device;
-			so_log_write(so_log_level_info, "Found scsi changer %s %s, serial: %s", sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, sochgr_scsi_changer.serial_number);
-		} else {
+			so_log_write(so_log_level_info,
+				dgettext("storiqone-changer-scsi", "Found scsi changer %s %s, serial: %s"),
+				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, sochgr_scsi_changer.serial_number);
+		} else
 			free(device);
-		}
 	}
 	globfree(&gl);
 
@@ -293,7 +311,9 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 	// check if drive has media
 	int failed = dr->ops->update_status(dr);
 	if (failed != 0) {
-		so_log_write(so_log_level_critical, "[%s | %s]: failed to get status from drive #%td %s %s", sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr - sochgr_scsi_changer.drives, dr->vendor, dr->model);
+		so_log_write(so_log_level_critical,
+			dgettext("storiqone-changer-scsi", "[%s | %s]: failed to get status from drive #%td %s %s"),
+			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr - sochgr_scsi_changer.drives, dr->vendor, dr->model);
 
 		pthread_mutex_lock(&sochgr_scsi_changer_lock);
 		sochgr_scsi_changer_nb_worker--;
@@ -319,7 +339,9 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 		// get drive status
 		failed = dr->ops->update_status(dr);
 		if (failed != 0) {
-			so_log_write(so_log_level_critical, "[%s | %s]: failed to get status from drive #%td %s %s", sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr - sochgr_scsi_changer.drives, dr->vendor, dr->model);
+			so_log_write(so_log_level_critical,
+				dgettext("storiqone-changer-scsi", "[%s | %s]: failed to get status from drive #%td %s %s"),
+				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr - sochgr_scsi_changer.drives, dr->vendor, dr->model);
 
 			pthread_mutex_lock(&sochgr_scsi_changer_lock);
 			sochgr_scsi_changer_nb_worker--;
@@ -405,13 +427,17 @@ static int sochgr_scsi_changer_parse_media(struct so_database_connection * db_co
 	}
 
 	if (need_init > 0)
-		so_log_write(so_log_level_notice, "Found %u unknown media(s), #%u drive enabled", need_init, nb_drive_enabled);
+		so_log_write(so_log_level_notice,
+			dngettext("storiqone-changer-scsi", "Found %u unknown media", "Found %u unknown medias", need_init),
+			need_init);
+		so_log_write(so_log_level_notice,
+			dngettext("storiqone-changer-scsi", "Found #%u enabled drive", "Found #%u enabled drives", nb_drive_enabled),
+			nb_drive_enabled);
 
 	if (need_init > 1 && nb_drive_enabled > 1) {
-		for (i = 0; i < sochgr_scsi_changer.nb_drives; i++) {
+		for (i = 0; i < sochgr_scsi_changer.nb_drives; i++)
 			if (sochgr_scsi_changer.drives[i].enable)
 				so_thread_pool_run("changer init", sochgr_scsi_changer_init_worker, sochgr_scsi_changer.drives + i);
-		}
 
 		sleep(5);
 
@@ -428,10 +454,12 @@ static int sochgr_scsi_changer_parse_media(struct so_database_connection * db_co
 			if (sochgr_scsi_changer.drives[i].enable)
 				dr = sochgr_scsi_changer.drives + i;
 
-		if (dr != NULL) {
+		if (dr != NULL)
 			sochgr_scsi_changer_init_worker(dr);
-		} else {
-			so_log_write(so_log_level_critical, "This changer (%s %s %s) seems to be misconfigured, will exited now", sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, sochgr_scsi_changer.serial_number);
+		else {
+			so_log_write(so_log_level_critical,
+				dgettext("storiqone-changer-scsi", "This changer (%s %s %s) seems to be misconfigured, will exited now"),
+				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, sochgr_scsi_changer.serial_number);
 			return 1;
 		}
 	}
@@ -527,7 +555,9 @@ static int sochgr_scsi_changer_shut_down(struct so_database_connection * db_conn
 static int sochgr_scsi_changer_unload(struct so_drive * from, struct so_database_connection * db_connection) {
 	int failed = from->ops->update_status(from);
 	if (failed != 0) {
-		so_log_write(so_log_level_critical, "[%s | %s]: failed to get status from drive #%td %s %s", sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, from - sochgr_scsi_changer.drives, from->vendor, from->model);
+		so_log_write(so_log_level_critical,
+			dgettext("storiqone-changer-scsi", "[%s | %s]: failed to get status from drive #%td %s %s"),
+			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, from - sochgr_scsi_changer.drives, from->vendor, from->model);
 
 		pthread_mutex_lock(&sochgr_scsi_changer_lock);
 		sochgr_scsi_changer_nb_worker--;
@@ -605,7 +635,9 @@ static void sochgr_scsi_changer_wait() {
 	bool is_ready = true;
 	while (sochgr_scsi_changer_scsi_loader_ready(sochgr_scsi_changer_device)) {
 		if (is_ready) {
-			so_log_write(so_log_level_warning, "[%s | %s]: waiting for device ready", sochgr_scsi_changer.vendor, sochgr_scsi_changer.model);
+			so_log_write(so_log_level_warning,
+				dgettext("storiqone-changer-scsi", "[%s | %s]: waiting for device ready"),
+				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model);
 			is_ready = false;
 		}
 

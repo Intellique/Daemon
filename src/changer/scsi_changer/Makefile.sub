@@ -8,4 +8,6 @@ STORIQONE_CHANGER_SCSICHANGER_DEPEND_LIB	:= lib/libstoriqone-changer.so
 
 STORIQONE_CHANGER_SCSICHANGER_CHCKSUM_FILE	:= changer-scsichanger.chcksum
 
+STORIQONE_CHANGER_SCSICHANGER_LOCALE		:= locale/storiqone-changer-scsi
+
 BIN_SYMS									+= STORIQONE_CHANGER_SCSICHANGER

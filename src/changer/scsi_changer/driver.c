@@ -24,9 +24,14 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+// bindtextdomain
+#include <libintl.h>
+
 #include <libstoriqone-changer/changer.h>
 
 #include "device.h"
+
+#include "config.h"
 
 #include <changer-scsichanger.chcksum>
 
@@ -40,6 +45,8 @@ static void sochgr_scsi_changer_driver_init(void) __attribute__((constructor));
 
 
 static void sochgr_scsi_changer_driver_init() {
+	bindtextdomain("storiqone-changer-scsi", LOCALE_DIR);
+
 	sochgr_scsi_changer_driver.device = sochgr_scsi_changer_get_device();
 	sochgr_changer_register(&sochgr_scsi_changer_driver);
 }
