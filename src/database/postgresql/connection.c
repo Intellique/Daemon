@@ -1624,7 +1624,7 @@ static int so_database_postgresql_sync_drive(struct so_database_connection * con
 		}
 	} else {
 		const char * query = "select_drive_by_model_vendor_serialnumber";
-		so_database_postgresql_prepare(self, query, "SELECT id, to_char(operationduration, '0D'), lastclean, driveformat, enable FROM drive WHERE model = $1 AND vendor = $2 AND serialnumber = $3 FOR UPDATE");
+		so_database_postgresql_prepare(self, query, "SELECT id, to_char(operationduration, '0D000000'), lastclean, driveformat, enable FROM drive WHERE model = $1 AND vendor = $2 AND serialnumber = $3 FOR UPDATE");
 
 		const char * param[] = { drive->model, drive->vendor, drive->serial_number };
 		PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
@@ -1636,7 +1636,7 @@ static int so_database_postgresql_sync_drive(struct so_database_connection * con
 			so_database_postgresql_get_string_dup(result, 0, 0, &drive_id);
 			so_value_hashtable_put2(db, "id", so_value_new_string(drive_id), true);
 
-			if (method != so_database_sync_id_only) {
+			if (method == so_database_sync_id_only) {
 				double old_operation_duration = 0;
 				so_database_postgresql_get_double(result, 0, 1, &old_operation_duration);
 				drive->operation_duration += old_operation_duration;
