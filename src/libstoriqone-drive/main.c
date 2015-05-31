@@ -67,7 +67,9 @@ int main() {
 	if (config == NULL)
 		return 2;
 
-	so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Starting drive (type: %s)"), driver->name);
+	so_log_write(so_log_level_info,
+		dgettext("libstoriqone-drive", "Starting drive (type: %s)"),
+		driver->name);
 
 	struct so_value * log_config = NULL, * drive_config = NULL, * db_config = NULL, * socket_config = NULL;
 	so_value_unpack(config, "{sosososo}",
@@ -105,12 +107,16 @@ int main() {
 	so_json_encode_to_fd(sodr_listen_get_socket_config(), 1, true);
 
 	struct so_drive * drive = driver->device;
-	so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Initialize drive (type: %s)"), driver->name);
+	so_log_write(so_log_level_info,
+		dgettext("libstoriqone-drive", "Initialize drive (type: %s)"),
+		driver->name);
 	int failed = drive->ops->init(drive_config);
 	if (failed != 0)
 		return 6;
 
-	so_log_write(so_log_level_info, "Starting drive (type: %s, vendor: %s, model: %s, serial number: %s)", driver->name, drive->vendor, drive->model, drive->serial_number);
+	so_log_write(so_log_level_info,
+		dgettext("libstoriqone-drive", "Starting drive (type: %s, vendor: %s, model: %s, serial number: %s)"),
+		driver->name, drive->vendor, drive->model, drive->serial_number);
 
 	drive->ops->update_status(db_connect);
 
@@ -122,7 +128,9 @@ int main() {
 		so_poll(-1);
 	}
 
-	so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Drive (type: %s) will stop"), driver->name);
+	so_log_write(so_log_level_info,
+		dgettext("libstoriqone-drive", "Drive (type: %s) will stop"),
+		driver->name);
 
 	so_log_stop_logger();
 

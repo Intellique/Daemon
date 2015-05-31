@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-vtl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-05-11 23:02+0200\n"
+        "POT-Creation-Date: 2015-05-31 16:27+0200\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -89,17 +89,22 @@ msgstr  "[ %s %s #%u ] : ouverture du média « %s » en lecture à la posi
 msgid   "[%s %s #%u]: open media '%s' for writing"
 msgstr  "[ %s %s #%u ] : ouverture du média « %s » en écriture"
 
-#: src/libstoriqone-drive/main.c:70
+#: src/libstoriqone-drive/main.c:71
 #, c-format
 msgid   "Starting drive (type: %s)"
 msgstr  "Démarrage du lecteur (type : %s)"
 
-#: src/libstoriqone-drive/main.c:108
+#: src/libstoriqone-drive/main.c:111
 #, c-format
 msgid   "Initialize drive (type: %s)"
 msgstr  "Initialisation du lecteur (type : %s)"
 
-#: src/libstoriqone-drive/main.c:125
+#: src/libstoriqone-drive/main.c:118
+#, c-format
+msgid   "Starting drive (type: %s, vendor: %s, model: %s, serial number: %s)"
+msgstr  "Démarrage du lecteur (type : %s, fabriquant : %s, modèle : %s, numéro de série : %s)"
+
+#: src/libstoriqone-drive/main.c:132
 #, c-format
 msgid   "Drive (type: %s) will stop"
 msgstr  "Le lecteur (type : %s) va s’arrêter"
