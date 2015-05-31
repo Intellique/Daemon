@@ -94,6 +94,7 @@ void sochgr_media_release(struct so_changer * changer) {
 			continue;
 
 		struct sochgr_media * md = sl->media->private_data;
+		sl->media->private_data = NULL;
 
 		struct sochgr_peer_list * peer, * next;
 		for (peer = md->first; peer != NULL; peer = next) {

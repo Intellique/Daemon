@@ -86,6 +86,14 @@ void sod_device_configure(struct so_value * logger, struct so_value * db_config,
 
 			struct so_value * changer = so_value_iterator_get_value(iter, true);
 
+			/**
+			 * valgrind
+			 * valgrind -v --log-file=valgrind.log --num-callers=24 --leak-check=full --show-reachable=yes --track-origins=yes ./bin/stoned
+			 *
+			 * const char * params[] = { "-v", "--log-file=valgrind/scsi_changer.log", "--track-fds=yes", "--time-stamp=yes", "--num-callers=24", "--leak-check=full", "--show-reachable=yes", "--track-origins=yes", "--fullpath-after=/home/guillaume/prog/StoriqOne/", "scsi_changer" };
+			 * so_process_new(&dev->process, "valgrind", params, 10);
+			 */
+
 			struct sod_device * dev = malloc(sizeof(struct sod_device));
 			dev->index = i_changer;
 			dev->process_name = "scsi_changer";

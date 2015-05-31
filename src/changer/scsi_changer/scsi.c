@@ -835,10 +835,10 @@ static void sochgr_scsi_changer_scsi_setup_drive(struct so_drive * drive, struct
 		asprintf(&scsi_device, "/dev%s", ptr);
 
 		int fd = open(scsi_device, O_RDWR);
-		if (fd < 0) {
-			free(scsi_device);
+		free(scsi_device);
+
+		if (fd < 0)
 			continue;
-		}
 
 		struct {
 			unsigned char peripheral_device_type:5;
@@ -908,7 +908,6 @@ static void sochgr_scsi_changer_scsi_setup_drive(struct so_drive * drive, struct
 
 		if (status) {
 			close(fd);
-			free(scsi_device);
 			continue;
 		}
 
@@ -921,10 +920,11 @@ static void sochgr_scsi_changer_scsi_setup_drive(struct so_drive * drive, struct
 		if (ok)
 			ok = !strcmp(model, drive->model);
 
+		free(vendor);
+		free(model);
+
 		if (!ok) {
 			close(fd);
-			free(vendor);
-			free(model);
 			continue;
 		}
 
