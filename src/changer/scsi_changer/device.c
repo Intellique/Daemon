@@ -506,7 +506,14 @@ static int sochgr_scsi_changer_put_online(struct so_database_connection * db_con
 
 	sochgr_scsi_changer_scsi_update_status(&sochgr_scsi_changer, sochgr_scsi_changer_device);
 
-	return sochgr_scsi_changer_parse_media(db_connection);
+	int failed = sochgr_scsi_changer_parse_media(db_connection);
+
+	sochgr_scsi_changer.status = failed == 0 ? so_changer_status_idle : so_changer_status_error;
+	sochgr_scsi_changer.is_online = failed == 0;
+	sochgr_scsi_changer.next_action = so_changer_action_none;
+	db_connection->ops->sync_changer(db_connection, &sochgr_scsi_changer, so_database_sync_default);
+
+	return failed;
 }
 
 static int sochgr_scsi_changer_shut_down(struct so_database_connection * db_connection __attribute__((unused))) {

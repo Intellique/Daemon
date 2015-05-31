@@ -489,7 +489,7 @@ retry:
 		sl->full = false;
 	}
 
-	sochgr_vtl_changer.status = so_changer_status_idle;
+	sochgr_vtl_changer.status = so_changer_status_offline;
 	sochgr_vtl_changer.is_online = false;
 	sochgr_vtl_changer.next_action = so_changer_action_none;
 	db_connect->ops->sync_changer(db_connect, &sochgr_vtl_changer, so_database_sync_default);

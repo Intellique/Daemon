@@ -1372,7 +1372,7 @@ static int so_database_postgresql_sync_changer(struct so_database_connection * c
 			so_database_postgresql_get_error(result, query);
 		else if (status == PGRES_TUPLES_OK && nb_result == 1 && method != so_database_sync_id_only) {
 			enum so_changer_action new_action = so_database_postgresql_string_to_action(PQgetvalue(result, 0, 0));
-			if (changer->status == so_changer_status_idle) {
+			if (changer->status == so_changer_status_idle || changer->status == so_changer_status_offline) {
 				if (changer->is_online && new_action == so_changer_action_put_offline)
 					changer->next_action = new_action;
 				else if (!changer->is_online && new_action == so_changer_action_put_online)
