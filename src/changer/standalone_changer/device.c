@@ -82,7 +82,7 @@ static struct so_changer sochgr_standalone_changer = {
 };
 
 
-static int sochgr_standalone_changer_check(struct so_database_connection * db_connection) {
+static int sochgr_standalone_changer_check(struct so_database_connection * db_connection __attribute__((unused))) {
 	return 0;
 }
 
@@ -91,10 +91,13 @@ struct so_changer * sochgr_standalone_changer_get_device() {
 }
 
 static int sochgr_standalone_changer_init(struct so_value * config, struct so_database_connection * db_connection) {
-	so_value_unpack(config, "{sssssssbsbsb}",
+	struct so_value * drive = NULL;
+
+	so_value_unpack(config, "{sssssss[o]sbsbsb}",
 		"model", &sochgr_standalone_changer.model,
 		"vendor", &sochgr_standalone_changer.vendor,
 		"serial number", &sochgr_standalone_changer.serial_number,
+		"drives", &drive,
 		"barcode", &sochgr_standalone_changer.barcode,
 		"enable", &sochgr_standalone_changer.enable,
 		"is online", &sochgr_standalone_changer.is_online
@@ -112,7 +115,17 @@ static int sochgr_standalone_changer_init(struct so_value * config, struct so_da
 	sl->index = 0;
 	sl->drive = dr;
 
-	sochgr_drive_register(dr, config, "tape_drive", 0);
+	struct so_value * vslot = NULL;
+	so_value_unpack(drive, "{sssssssssbso}",
+		"model", &dr->model,
+		"vendor", &dr->vendor,
+		"firmware revision", &dr->revision,
+		"serial number", &dr->serial_number,
+		"enable", &dr->enable,
+		"slot", &vslot
+	);
+
+	sochgr_drive_register(dr, drive, "tape_drive", 0);
 
 	return 0;
 }

@@ -576,7 +576,7 @@ static struct so_value * so_database_postgresql_get_changers(struct so_database_
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_real_changer_by_host";
-	so_database_postgresql_prepare(self, query, "SELECT DISTINCT c.id, c.model, c.vendor, c.firmwarerev, c.serialnumber, c.wwn, c.barcode, c.status, c.isonline, c.action, c.enable FROM changer c LEFT JOIN drive d ON c.id = d.changer AND c.serialnumber != d.serialnumber WHERE c.host = $1 AND c.serialnumber NOT IN (SELECT uuid::TEXT FROM vtl WHERE host = $1)");
+	so_database_postgresql_prepare(self, query, "SELECT DISTINCT c.id, c.model, c.vendor, c.firmwarerev, c.serialnumber, c.wwn, c.barcode, c.status, c.isonline, c.action, c.enable FROM changer c INNER JOIN drive d ON c.id = d.changer AND c.serialnumber != d.serialnumber WHERE c.host = $1 AND c.serialnumber NOT IN (SELECT uuid::TEXT FROM vtl WHERE host = $1)");
 
 	const char * param[] = { host_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -1187,7 +1187,7 @@ static struct so_value * so_database_postgresql_get_standalone_drives(struct so_
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_standalone_drives_by_host";
-	so_database_postgresql_prepare(self, query, "SELECT DISTINCT c.id, c.model, c.vendor, c.firmwarerev, c.serialnumber, c.status, c.isonline, c.action, c.enable FROM changer c LEFT JOIN drive d ON c.id = d.changer AND c.serialnumber = d.serialnumber WHERE c.host = $1 AND c.serialnumber IN (SELECT uuid::TEXT FROM vtl WHERE host = $1)");
+	so_database_postgresql_prepare(self, query, "SELECT DISTINCT c.id, c.model, c.vendor, c.firmwarerev, c.serialnumber, c.status, c.isonline, c.action, c.enable FROM changer c INNER JOIN drive d ON c.id = d.changer AND c.serialnumber = d.serialnumber WHERE c.host = $1 AND c.serialnumber NOT IN (SELECT uuid::TEXT FROM vtl WHERE host = $1)");
 
 	const char * param[] = { host_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
@@ -1204,14 +1204,14 @@ static struct so_value * so_database_postgresql_get_standalone_drives(struct so_
 
 			bool enabled = false, is_online = false;
 			so_database_postgresql_get_bool(result, i, 6, &enabled);
-			so_database_postgresql_get_bool(result, i, 8, &enabled);
+			so_database_postgresql_get_bool(result, i, 8, &is_online);
 			enum so_changer_action changer_action = so_database_postgresql_string_to_action(PQgetvalue(result, i, 7));
 
 			struct so_value * changer = so_value_pack("{sssssssssssosbsssb}",
 				"model", PQgetvalue(result, i, 1),
 				"vendor", PQgetvalue(result, i, 2),
 				"firmwarerev", PQgetvalue(result, i, 3),
-				"serialnumber", PQgetvalue(result, i, 4),
+				"serial number", PQgetvalue(result, i, 4),
 				"status", PQgetvalue(result, i, 5),
 				"drives", so_database_postgresql_get_drives_by_changer(connect, changer_id),
 				"is online", is_online,
@@ -1238,11 +1238,12 @@ static struct so_value * so_database_postgresql_get_slot_by_drive(struct so_data
 	const char * param[] = { drive_id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
+	int nb_result = PQntuples(result);
 
 	struct so_value * slot = so_value_new_null();
 	if (status == PGRES_FATAL_ERROR)
 		so_database_postgresql_get_error(result, query);
-	else if (status == PGRES_TUPLES_OK) {
+	else if (status == PGRES_TUPLES_OK && nb_result > 0) {
 		int index = -1;
 		bool enable = false;
 		bool ie_port = false;
