@@ -31,6 +31,7 @@
 
 #include <libstoriqone/database.h>
 #include <libstoriqone/drive.h>
+#include <libstoriqone/poll.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-changer/changer.h>
@@ -127,6 +128,9 @@ static int sochgr_standalone_changer_init(struct so_value * config, struct so_da
 
 	sochgr_drive_register(dr, drive, "tape_drive", 0);
 
+	sochgr_standalone_changer.status = so_changer_status_idle;
+	db_connection->ops->sync_changer(db_connection, &sochgr_standalone_changer, so_database_sync_id_only);
+
 	return 0;
 }
 
@@ -134,13 +138,30 @@ static int sochgr_standalone_changer_load(struct so_slot * from __attribute__((u
 	return 1;
 }
 
-static int sochgr_standalone_changer_put_offline(struct so_database_connection * db_connection) {
-	// TODO
+static int sochgr_standalone_changer_put_offline(struct so_database_connection * db_connect) {
+	sochgr_standalone_changer.status = so_changer_status_go_offline;
+	db_connect->ops->sync_changer(db_connect, &sochgr_standalone_changer, so_database_sync_default);
+
+	struct so_drive * dr = sochgr_standalone_changer.drives;
+	while (dr->ops->is_free(dr)) {
+		so_poll(-1);
+		db_connect->ops->sync_changer(db_connect, &sochgr_standalone_changer, so_database_sync_default);
+	}
+
+	sochgr_standalone_changer.status = so_changer_status_offline;
+	sochgr_standalone_changer.is_online = false;
+	sochgr_standalone_changer.next_action = so_changer_action_none;
+	db_connect->ops->sync_changer(db_connect, &sochgr_standalone_changer, so_database_sync_default);
+
 	return 0;
 }
 
 static int sochgr_standalone_changer_put_online(struct so_database_connection * db_connection) {
-	// TODO
+	sochgr_standalone_changer.status = so_changer_status_idle;
+	sochgr_standalone_changer.is_online = true;
+	sochgr_standalone_changer.next_action = so_changer_action_none;
+	db_connection->ops->sync_changer(db_connection, &sochgr_standalone_changer, so_database_sync_default);
+
 	return 0;
 }
 
@@ -148,7 +169,7 @@ static int sochgr_standalone_changer_shut_down(struct so_database_connection * d
 	return 0;
 }
 
-static int sochgr_standalone_changer_unload(struct so_drive * from, struct so_database_connection * db_connection) {
+static int sochgr_standalone_changer_unload(struct so_drive * from __attribute__((unused)), struct so_database_connection * db_connection __attribute__((unused))) {
 	return 0;
 }
 
