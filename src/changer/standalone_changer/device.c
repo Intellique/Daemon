@@ -94,9 +94,10 @@ struct so_changer * sochgr_standalone_changer_get_device() {
 static int sochgr_standalone_changer_init(struct so_value * config, struct so_database_connection * db_connection) {
 	struct so_value * drive = NULL;
 
-	so_value_unpack(config, "{sssssss[o]sbsbsb}",
+	so_value_unpack(config, "{sssssssss[o]sbsbsb}",
 		"model", &sochgr_standalone_changer.model,
 		"vendor", &sochgr_standalone_changer.vendor,
+		"firmwarerev", &sochgr_standalone_changer.revision,
 		"serial number", &sochgr_standalone_changer.serial_number,
 		"drives", &drive,
 		"barcode", &sochgr_standalone_changer.barcode,
