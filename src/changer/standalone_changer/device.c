@@ -84,6 +84,13 @@ static struct so_changer sochgr_standalone_changer = {
 
 
 static int sochgr_standalone_changer_check(struct so_database_connection * db_connection __attribute__((unused))) {
+	struct so_drive * dr = sochgr_standalone_changer.drives;
+
+	if (!dr->enable)
+		return 0;
+
+	dr->ops->reset(dr);
+
 	return 0;
 }
 

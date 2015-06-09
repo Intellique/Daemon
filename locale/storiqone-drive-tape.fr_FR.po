@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: tape-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-05-11 11:00+0200\n"
+        "POT-Creation-Date: 2015-06-08 16:26+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -114,42 +114,42 @@ msgstr  "[ %s | %s | #%u ] : Erreur en vérifiant l'entête de la bande « %
 msgid   "Found LTFS header in media with (volume id: %s)"
 msgstr  "Entête de bande LTFS trouvé (id du volume : %s)"
 
-#: src/drive/tape_drive/media.c:120
+#: src/drive/tape_drive/media.c:122
 #, c-format
 msgid   "Failed to read ltfs index from media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/media.c:132
+#: src/drive/tape_drive/media.c:134
 #, c-format
 msgid   "Error while reading ltfs index from media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/media.c:143
+#: src/drive/tape_drive/media.c:145
 #, c-format
 msgid   "Found ltfs index corrupted from media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/media.c:163
+#: src/drive/tape_drive/media.c:165
 #, c-format
 msgid   "Error, no more memory to read ltfs index from media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/media.c:192
+#: src/drive/tape_drive/media.c:193
 #, c-format
 msgid   "Failed to read ltfs label from media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/media.c:204
+#: src/drive/tape_drive/media.c:205
 #, c-format
 msgid   "Error while reading ltfs label from media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/media.c:215
+#: src/drive/tape_drive/media.c:216
 #, c-format
 msgid   "Found ltfs label corrupted from media '%s'"
 msgstr  ""
 
-#: src/drive/tape_drive/media.c:235
+#: src/drive/tape_drive/media.c:236
 #, c-format
 msgid   "Error, no more memory to read ltfs label from media '%s'"
 msgstr  ""

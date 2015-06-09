@@ -74,8 +74,10 @@ void sodr_tape_drive_media_free(struct sodr_tape_drive_media * media_data) {
 	unsigned int i;
 	switch (media_data->format) {
 		case sodr_tape_drive_media_ltfs:
-			for (i = 0; i < media_data->data.ltfs.nb_files; i++)
-				so_format_file_free(media_data->data.ltfs.files + i);
+			for (i = 0; i < media_data->data.ltfs.nb_files; i++) {
+				struct sodr_tape_drive_format_ltfs_file * file = media_data->data.ltfs.files + i;
+				so_format_file_free(&file->file);
+			}
 			free(media_data->data.ltfs.files);
 			break;
 
@@ -176,9 +178,8 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 	reader->ops->free(reader);
 	free(buffer);
 
-	if (index != NULL) {
-		struct sodr_tape_drive_media * mp = media->private_data;
-	}
+	if (index != NULL)
+		sodr_tape_drive_format_ltfs_parse_index(media->private_data, index);
 
 	return 0;
 }

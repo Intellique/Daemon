@@ -29,7 +29,10 @@
 
 // bool
 #include <stdbool.h>
+// off_t
+#include <sys/types.h>
 
+#include <libstoriqone/format.h>
 #include <libstoriqone/media.h>
 
 struct so_database_connection;
@@ -38,17 +41,48 @@ struct so_media;
 
 struct sodr_tape_drive_media {
 	enum sodr_tape_drive_media_format {
-		sodr_tape_drive_media_storiq_one,
-		sodr_tape_drive_media_ltfs,
-		sodr_tape_drive_media_unknown,
+		sodr_tape_drive_media_storiq_one = 0x1,
+		sodr_tape_drive_media_ltfs       = 0x2,
+
+		sodr_tape_drive_media_unknown = 0x0,
 	} format;
 
 	union {
 		struct {
 		} storiq_one;
 
-		struct {
-			struct so_format_file * files;
+		struct sodr_tape_drive_format_ltfs {
+			struct sodr_tape_drive_format_ltfs_file {
+				struct so_format_file file;
+				struct sodr_tape_drive_format_ltfs_extent {
+					/**
+					 * \brief Partition that contains the data extent comprising this extent.
+					 */
+					unsigned int partition;
+					/**
+					 * \brief Start block number
+					 *
+					 * Block number within the data extent where the content for this extent begins.
+					 */
+					off_t start_block;
+					/**
+					 * \brief Offset to first valid byte
+					 *
+					 * Number of bytes from the beginning of the start block to the beginning of file data for this extent.
+					 * This value shall be strictly less than the size of the start block.
+					 */
+					off_t byte_offset;
+					/**
+					 * \brief Number of bytes of file content in this data extent.
+					 */
+					size_t byte_count;
+					/**
+					 * \brief Number of bytes from the beginning of the file to the beginning of the file data recorded in this extent.
+					 */
+					off_t file_offset;
+				} * extents;
+				unsigned int nb_extents;
+			} * files;
 			unsigned int nb_files;
 		} ltfs;
 	} data;
