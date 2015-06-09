@@ -274,7 +274,8 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 				so_value_iterator_free(iter_extent_info);
 			}
 			so_value_iterator_free(iter);
-		}
+		} else if (strcmp(elt_name, "symlink") == 0)
+			so_value_unpack(elt, "{ss}", "value", &file->file.link);
 
 		free(elt_name);
 	}
