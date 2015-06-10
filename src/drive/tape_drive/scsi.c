@@ -192,7 +192,7 @@ bool sodr_tape_drive_scsi_check_drive(struct so_drive * drive, const char * path
 	} __attribute__((packed)) result_inquiry;
 
 	struct scsi_inquiry command_inquiry = {
-		.operation_code = 0x12,
+		.operation_code = 0x12, // Inquiry (6)
 		.enable_vital_product_data = false,
 		.page_code = 0,
 		.allocation_length = sizeof(result_inquiry),
@@ -211,7 +211,7 @@ bool sodr_tape_drive_scsi_check_drive(struct so_drive * drive, const char * path
 	header.cmdp = (unsigned char *) &command_inquiry;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = (unsigned char *) &result_inquiry;
-	header.timeout = 60000;
+	header.timeout = 60000; // 1 minute
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);
@@ -309,7 +309,7 @@ bool sodr_tape_drive_scsi_check_support(struct so_media_format * format, bool fo
 		unsigned short allocation_length;
 		unsigned char control;
 	} __attribute__((packed)) command = {
-		.operation_code = 0x44,
+		.operation_code = 0x44, // Report Density Support (10)
 		.media = false,
 		.allocation_length = htobe16(sizeof(result)),
 		.control = 0,
@@ -360,7 +360,7 @@ int sodr_tape_drive_scsi_erase_media(const char * path, bool quick_mode) {
 		unsigned char reserved1[3];
 		unsigned char control;
 	} __attribute__((packed)) command = {
-		.op_code = 0x19, // ERASE
+		.op_code = 0x19, // ERASE (6)
 		.long_mode = !quick_mode,
 		.immed = true,
 	};
@@ -377,13 +377,61 @@ int sodr_tape_drive_scsi_erase_media(const char * path, bool quick_mode) {
 	header.cmdp = (unsigned char *) &command;
 	header.sbp = (unsigned char *) &sense;
 	header.dxferp = NULL;
-	header.timeout = 15300000; // 255 minutes
+	header.timeout = 10240000; // 204 minutes
 	header.dxfer_direction = SG_DXFER_FROM_DEV;
 
 	int status = ioctl(fd, SG_IO, &header);
 	close(fd);
 
 	return status;
+}
+
+int sodr_tape_drive_scsi_locate16(int fd, struct sodr_tape_drive_scsi_position * position) {
+	struct {
+		unsigned char op_code;
+		bool immed:1;
+		bool change_partition:1;
+		bool block_type:1;
+		enum {
+			block_address = 0x0,
+			logical_file_identified = 0x1,
+			end_of_data = 0x3
+		} dest_type:2;
+		unsigned char reserved0:3;
+		bool bam:1;
+		unsigned char reserved1:7;
+		unsigned char partition;
+		unsigned long long int block_address;
+		unsigned char reserved2[2];
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.op_code = 0x92, // LOCATE (16)
+		.immed = false,
+		.dest_type = position->end_of_partition ? end_of_data : block_address,
+		.bam = false,
+		.partition = position->partition,
+		.block_address = htobe64(position->block_position),
+		.change_partition = true,
+	};
+
+	struct scsi_request_sense sense;
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = 0;
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = NULL;
+	header.timeout = 10380000; // 173 minutes
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+
+	return status != 0 || sense.sense_key;
 }
 
 int sodr_tape_drive_scsi_read_density(struct so_drive * drive, const char * path) {
@@ -402,7 +450,7 @@ int sodr_tape_drive_scsi_read_density(struct so_drive * drive, const char * path
 		unsigned short allocation_length;
 		unsigned char control;
 	} __attribute__((packed)) command = {
-		.operation_code = 0x44,
+		.operation_code = 0x44, // Report Density Support (10)
 		.media = false,
 		.allocation_length = htobe16(sizeof(result)),
 		.control = 0,
@@ -439,6 +487,73 @@ int sodr_tape_drive_scsi_read_density(struct so_drive * drive, const char * path
 	return 0;
 }
 
+int sodr_tape_drive_scsi_read_position(int fd, struct sodr_tape_drive_scsi_position * position) {
+	struct {
+		bool reserved0:1;
+		bool perr:1;
+		bool block_position_unknown:1;
+		bool reserved1:1;
+		bool byte_count_unknown:1;     // BYCU
+		bool block_count_unknown:1;    // BCU
+		bool end_of_partition:1;       // EOP
+		bool beginning_of_partition:1; // BOP
+		unsigned char partition_number;
+		unsigned char reserved2[2];
+		unsigned int first_block_location;
+		unsigned int last_block_location;
+		unsigned char reserved3;
+		unsigned int number_of_blocks_in_buffer[3];
+		unsigned int number_of_blocks_in_buffer2[3];
+	} __attribute__((packed)) result;
+
+	struct {
+		unsigned char operation_code;
+		enum {
+			scsi_read_attribute_service_action_attributes_values = 0x00,
+			scsi_read_attribute_service_action_attribute_list = 0x01,
+			scsi_read_attribute_service_action_volume_list = 0x02,
+			scsi_read_attribute_service_action_parition_list = 0x03,
+		} service_action:5;
+		unsigned char obsolete:3;
+		unsigned char reserved[5];
+		unsigned short parameter_length;
+		unsigned char control;
+	} __attribute__((packed)) command = {
+		.operation_code = 0x34, // READ ATTRIBUTE (16)
+		.service_action = scsi_read_attribute_service_action_attributes_values,
+		.parameter_length = 0,
+		.control = 0,
+	};
+
+	struct scsi_request_sense sense;
+	sg_io_hdr_t header;
+	memset(&header, 0, sizeof(header));
+	memset(&sense, 0, sizeof(sense));
+	memset(&result, 0, sizeof(result));
+
+	header.interface_id = 'S';
+	header.cmd_len = sizeof(command);
+	header.mx_sb_len = sizeof(sense);
+	header.dxfer_len = sizeof(result);
+	header.cmdp = (unsigned char *) &command;
+	header.sbp = (unsigned char *) &sense;
+	header.dxferp = (unsigned char *) &result;
+	header.timeout = 60000; // 1 minute
+	header.dxfer_direction = SG_DXFER_FROM_DEV;
+
+	int status = ioctl(fd, SG_IO, &header);
+	if (status)
+		return status;
+
+	bzero(position, sizeof(struct sodr_tape_drive_scsi_position));
+
+	position->partition = result.partition_number;
+	position->block_position = be32toh(result.first_block_location);
+	position->end_of_partition = result.end_of_partition;
+
+	return 0;
+}
+
 int sodr_tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_number, size_t length) {
 	struct {
 		unsigned char operation_code;
@@ -458,7 +573,7 @@ int sodr_tape_drive_scsi_read_medium_serial_number(int fd, char * medium_serial_
 		unsigned char reserved2;
 		unsigned char control;
 	} __attribute__((packed)) command = {
-		.operation_code = 0x8C, // READ ATTRIBUTE
+		.operation_code = 0x8C, // READ ATTRIBUTE (16)
 		.service_action = scsi_read_attribute_service_action_attributes_values,
 		.volume_number = 0,
 		.partition_number = 0,
@@ -552,7 +667,7 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 		unsigned char reserved2;
 		unsigned char control;
 	} __attribute__((packed)) command = {
-		.operation_code = 0x8C, // READ ATTRIBUTE
+		.operation_code = 0x8C, // READ ATTRIBUTE (16)
 		.service_action = scsi_read_attribute_service_action_attributes_values,
 		.volume_number = 0,
 		.partition_number = 0,
@@ -729,7 +844,7 @@ int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
 		unsigned short allocation_length; // must be a bigger endian integer
 		unsigned char control;
 	} __attribute__((packed)) command = {
-		.operation_code = 0x4D,
+		.operation_code = 0x4D, // Log Sense (10)
 		.saved_paged = false,
 		.parameter_pointer_control = false,
 		.page_code = 0x31,
