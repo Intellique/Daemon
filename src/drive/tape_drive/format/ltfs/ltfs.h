@@ -30,10 +30,12 @@
 // time_t
 #include <time.h>
 
-struct sodr_tape_drive_media;
+struct so_drive;
 struct so_value;
+struct sodr_tape_drive_media;
 
 unsigned int sodr_tape_drive_format_ltfs_count_files(struct so_value * index);
+struct so_format_reader * sodr_tape_drive_format_ltfs_new_reader(struct so_drive * drive, int fd, int scsi_fd);
 void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, struct so_value * index);
 time_t sodr_tape_drive_format_ltfs_parse_time(const char * date);
 

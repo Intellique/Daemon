@@ -26,6 +26,8 @@
 
 // free
 #include <stdlib.h>
+// strdup
+#include <string.h>
 // bzero
 #include <strings.h>
 
@@ -58,6 +60,31 @@ struct so_value * so_format_file_convert(const struct so_format_file * file) {
 
 		"is label", file->is_label
 	);
+}
+
+void so_format_file_copy(struct so_format_file * dest, const struct so_format_file * src) {
+	if (src->filename != NULL)
+		dest->filename = strdup(src->filename);
+	if (src->link != NULL)
+		dest->link = strdup(src->link);
+
+	dest->position = src->position;
+	dest->size = src->size;
+
+	dest->dev = src->dev;
+	dest->rdev = src->rdev;
+	dest->mode = src->mode;
+	dest->uid = src->uid;
+	if (src->user != NULL)
+		dest->user = strdup(src->user);
+	dest->gid = src->gid;
+	if (src->group != NULL)
+		dest->group = strdup(src->group);
+
+	dest->ctime = src->ctime;
+	dest->mtime = src->mtime;
+
+	dest->is_label = src->is_label;
 }
 
 void so_format_file_free(struct so_format_file * file) {

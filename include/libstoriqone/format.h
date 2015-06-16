@@ -122,6 +122,7 @@ struct so_format_writer {
 struct so_archive_format * so_archive_format_get_default(void);
 
 struct so_value * so_format_file_convert(const struct so_format_file * file);
+void so_format_file_copy(struct so_format_file * dest, const struct so_format_file * src);
 void so_format_file_free(struct so_format_file * file);
 void so_format_file_init(struct so_format_file * file);
 void so_format_file_sync(struct so_format_file * file, struct so_value * new_file);

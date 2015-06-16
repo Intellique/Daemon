@@ -242,10 +242,6 @@ static struct so_value * so_format_tar_reader_get_digests(struct so_format_reade
 		return so_value_new_linked_list();
 }
 
-static char * so_format_tar_reader_get_root(struct so_format_reader * fr __attribute__((unused))) {
-	return strdup("/");
-}
-
 static enum so_format_reader_header_status so_format_tar_reader_get_header(struct so_format_reader * fr, struct so_format_file * file) {
 	struct so_format_tar_reader_private * self = fr->data;
 
@@ -393,6 +389,10 @@ static enum so_format_reader_header_status so_format_tar_reader_get_header(struc
 		self->skip_size = 512 + file->size - file->size % 512;
 
 	return so_format_reader_header_ok;
+}
+
+static char * so_format_tar_reader_get_root(struct so_format_reader * fr __attribute__((unused))) {
+	return strdup("/");
 }
 
 static int so_format_tar_reader_last_errno(struct so_format_reader * fr) {
