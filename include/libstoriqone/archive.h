@@ -124,6 +124,13 @@ struct so_archive_file {
 	struct so_value * db_data;
 };
 
+struct so_archive_format {
+	char name[33];
+
+	bool readable;
+	bool writable;
+};
+
 struct so_archive_volume * so_archive_add_volume(struct so_archive * archive);
 struct so_value * so_archive_convert(struct so_archive * archive);
 void so_archive_free(struct so_archive * archive);

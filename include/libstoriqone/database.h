@@ -32,6 +32,7 @@
 
 struct so_archive;
 struct so_archive_file;
+struct so_archive_format;
 struct so_archive_volume;
 struct so_backup;
 struct so_backup_volume;
@@ -181,6 +182,7 @@ struct so_database_connection {
 		int (*link_archives)(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy) __attribute__((nonnull));
 		int (*mark_archive_as_purged)(struct so_database_connection * connect, struct so_media * media, struct so_job * job) __attribute__((nonnull));
 		int (*sync_archive)(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original) __attribute__((nonnull(1,2)));
+		int (*sync_archive_format)(struct so_database_connection * connect, struct so_archive_format * formats, unsigned int nb_formats) __attribute__((nonnull));
 		int (*update_link_archive)(struct so_database_connection * connect, struct so_archive * archive, struct so_job * job) __attribute__((nonnull));
 
 		int (*backup_add)(struct so_database_connection * connect, struct so_backup * backup) __attribute__((nonnull));

@@ -24,18 +24,23 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#include <libstoriqone/format.h>
+#include <libstoriqone/database.h>
+#include <libstoriqone-drive/archive_format.h>
 
-static struct so_archive_format so_archive_format_tar = {
-	.name = "tar",
-
-	.selectable = true,
-	.readable   = true,
-	.writable   = true,
+static struct so_archive_format sodr_format_storiq_one = {
+	.name     = "Storiq One",
+	.readable = true,
+	.writable = true,
 };
 
+int sodr_archive_format_sync(struct so_archive_format * formats, unsigned int nb_formats, struct so_database_connection * db_connect) {
+	int failed = db_connect->ops->sync_archive_format(db_connect, &sodr_format_storiq_one, 1);
+	if (failed != 0)
+		return failed;
 
-struct so_archive_format * so_archive_format_get_default() {
-	return &so_archive_format_tar;
+	if (nb_formats > 0)
+		return db_connect->ops->sync_archive_format(db_connect, formats, nb_formats);
+
+	return 0;
 }
 

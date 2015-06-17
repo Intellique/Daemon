@@ -70,14 +70,6 @@ enum so_format_writer_status {
 	so_format_writer_unsupported,
 };
 
-struct so_archive_format {
-	char * name;
-
-	bool selectable;
-	bool readable;
-	bool writable;
-};
-
 struct so_format_reader {
 	struct so_format_reader_ops {
 		int (*close)(struct so_format_reader * fr);
@@ -118,8 +110,6 @@ struct so_format_writer {
 	} * ops;
 	void * data;
 };
-
-struct so_archive_format * so_archive_format_get_default(void);
 
 struct so_value * so_format_file_convert(const struct so_format_file * file);
 void so_format_file_copy(struct so_format_file * dest, const struct so_format_file * src);

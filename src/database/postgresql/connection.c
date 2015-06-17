@@ -128,6 +128,7 @@ static int so_database_postgresql_mark_archive_as_purged(struct so_database_conn
 static unsigned int so_database_postgresql_get_nb_volumes_of_file(struct so_database_connection * connect, struct so_archive * archive, struct so_archive_file * file);
 static struct so_value * so_database_postgresql_get_synchronized_archive(struct so_database_connection * connect, struct so_archive * archive);
 static int so_database_postgresql_sync_archive(struct so_database_connection * connect, struct so_archive * archive, struct so_archive * original);
+static int so_database_postgresql_sync_archive_format(struct so_database_connection * connect, struct so_archive_format * formats, unsigned int nb_formats);
 static int so_database_postgresql_sync_archive_file(struct so_database_connection * connect, struct so_archive_file * file, char ** file_id);
 static int so_database_postgresql_sync_archive_volume(struct so_database_connection * connect, char * archive_id, struct so_archive_volume * volume, struct so_value * files);
 static int so_database_postgresql_update_link_archive(struct so_database_connection * connect, struct so_archive * archive, struct so_job * job);
@@ -200,6 +201,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.link_archives                  = so_database_postgresql_link_archives,
 	.mark_archive_as_purged         = so_database_postgresql_mark_archive_as_purged,
 	.sync_archive                   = so_database_postgresql_sync_archive,
+	.sync_archive_format            = so_database_postgresql_sync_archive_format,
 	.update_link_archive            = so_database_postgresql_update_link_archive,
 
 	.backup_add                 = so_database_postgresql_backup_add,
@@ -3467,6 +3469,61 @@ static int so_database_postgresql_sync_archive_file(struct so_database_connectio
 	so_value_iterator_free(iter);
 
 	return status != PGRES_TUPLES_OK;
+}
+
+static int so_database_postgresql_sync_archive_format(struct so_database_connection * connect, struct so_archive_format * formats, unsigned int nb_formats) {
+	if (connect == NULL || (formats == NULL && nb_formats > 0))
+		return -1;
+
+	if (nb_formats == 0)
+		return 0;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	const char * query_select = "select_archive_format_by_name";
+	so_database_postgresql_prepare(self, query_select, "SELECT id FROM archiveformat WHERE name = $1 LIMIT 1");
+
+	const char * query_insert = "insert_archive_format";
+	so_database_postgresql_prepare(self, query_insert, "INSERT INTO archiveformat(name, readable, writable) VALUES ($1, $2, $3)");
+
+	const char * query_update = "update_archive_format";
+	so_database_postgresql_prepare(self, query_update, "UPDATE archiveformat SET readable = $2, writable = $3 WHERE name = $1");
+
+	unsigned int i;
+	for (i = 0; i < nb_formats; i++) {
+		struct so_archive_format * format = formats + i;
+
+		const char * params[] = { format->name, so_database_postgresql_bool_to_string(format->readable), so_database_postgresql_bool_to_string(format->writable) };
+
+		PGresult * result = PQexecPrepared(self->connect, query_select, 1, params, NULL, NULL, 0);
+		ExecStatusType status = PQresultStatus(result);
+		int nb_result = PQntuples(result);
+
+		if (status == PGRES_FATAL_ERROR)
+			so_database_postgresql_get_error(result, query_select);
+
+		PQclear(result);
+
+		if (nb_result == 0) {
+			PGresult * result = PQexecPrepared(self->connect, query_insert, 3, params, NULL, NULL, 0);
+			status = PQresultStatus(result);
+
+			if (status == PGRES_FATAL_ERROR)
+				so_database_postgresql_get_error(result, query_insert);
+
+			PQclear(result);
+		} else {
+			PGresult * result = PQexecPrepared(self->connect, query_update, 3, params, NULL, NULL, 0);
+			ExecStatusType status = PQresultStatus(result);
+
+			if (status == PGRES_FATAL_ERROR)
+				so_database_postgresql_get_error(result, query_update);
+
+			PQclear(result);
+		}
+	}
+
+	return 0;
 }
 
 static int so_database_postgresql_sync_archive_volume(struct so_database_connection * connect, char * archive_id, struct so_archive_volume * volume, struct so_value * files) {

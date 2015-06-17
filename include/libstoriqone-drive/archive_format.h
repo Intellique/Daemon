@@ -24,44 +24,17 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#ifndef __LIBSTORIQONE_DRIVE_DRIVE_H__
-#define __LIBSTORIQONE_DRIVE_DRIVE_H__
+#ifndef __LIBSTORIQONE_ARCHIVEFORMAT_MEDIA_H__
+#define __LIBSTORIQONE_ARCHIVEFORMAT_MEDIA_H__
 
-#include <libstoriqone/drive.h>
+// bool
+#include <stdbool.h>
+
+#include <libstoriqone/archive.h>
 
 struct so_database_connection;
-struct so_format_reader;
-struct so_format_writer;
-struct so_pool;
-struct so_stream_reader;
-struct so_stream_writer;
-struct so_value;
 
-struct so_drive_driver {
-	const char * name;
-
-	struct so_drive * device;
-	int (*configure_device)(struct so_value * config);
-
-	const char * src_checksum;
-};
-
-struct so_drive_ops {
-	bool (*check_header)(struct so_database_connection * db);
-	bool (*check_support)(struct so_media_format * format, bool for_writing, struct so_database_connection * db);
-	int (*erase_media)(bool quick_mode, struct so_database_connection * db);
-	ssize_t (*find_best_block_size)(struct so_database_connection * db);
-	int (*format_media)(struct so_pool * pool, struct so_database_connection * db);
-	struct so_stream_reader * (*get_raw_reader)(int file_position, struct so_database_connection * db);
-	struct so_stream_writer * (*get_raw_writer)(struct so_database_connection * db);
-	struct so_format_reader * (*get_reader)(int file_position, struct so_value * checksums, struct so_database_connection * db);
-	struct so_format_writer * (*get_writer)(struct so_value * checksums, struct so_database_connection * db);
-	int (*init)(struct so_value * config, struct so_database_connection * db_connect);
-	int (*reset)(struct so_database_connection * db);
-	int (*update_status)(struct so_database_connection * db);
-};
-
-void sodr_drive_register(struct so_drive_driver * dr);
+int sodr_archive_format_sync(struct so_archive_format * formats, unsigned int nb_formats, struct so_database_connection * db_connect);
 
 #endif
 

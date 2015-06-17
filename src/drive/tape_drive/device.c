@@ -61,11 +61,13 @@
 #include <libstoriqone/slot.h>
 #include <libstoriqone/time.h>
 #include <libstoriqone/value.h>
+#include <libstoriqone-drive/archive_format.h>
 #include <libstoriqone-drive/drive.h>
 #include <libstoriqone-drive/media.h>
 #include <libstoriqone-drive/time.h>
 
 #include "device.h"
+#include "format/ltfs/ltfs.h"
 #include "io.h"
 #include "media.h"
 #include "scsi.h"
@@ -80,7 +82,7 @@ static struct so_stream_reader * sodr_tape_drive_get_raw_reader(int file_positio
 static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct so_database_connection * db);
 static struct so_format_reader * sodr_tape_drive_get_reader(int file_position, struct so_value * checksums, struct so_database_connection * db);
 static struct so_format_writer * sodr_tape_drive_get_writer(struct so_value * checksums, struct so_database_connection * db);
-static int sodr_tape_drive_init(struct so_value * config);
+static int sodr_tape_drive_init(struct so_value * config, struct so_database_connection * db_connect);
 static void sodr_tape_drive_on_failed(bool verbose, unsigned int sleep_time);
 static int sodr_tape_drive_reset(struct so_database_connection * db);
 static int sodr_tape_drive_set_file_position(int file_position, struct so_database_connection * db);
@@ -500,7 +502,27 @@ static struct so_format_reader * sodr_tape_drive_get_reader(int file_position, s
 	if (reader == NULL)
 		return NULL;
 
-	return so_format_tar_new_reader(reader, checksums);
+	struct so_media * media = sodr_tape_drive.slot->media;
+	if (media == NULL)
+		return NULL;
+
+	struct sodr_tape_drive_media * mp = media->private_data;
+
+	switch (mp->format) {
+		case sodr_tape_drive_media_storiq_one:
+			return so_format_tar_new_reader(reader, checksums);
+
+		case sodr_tape_drive_media_ltfs: {
+			int scsi_fd = open(scsi_device, O_RDWR);
+			if (scsi_fd < 0)
+				return NULL;
+
+			return sodr_tape_drive_format_ltfs_new_reader(&sodr_tape_drive, fd_nst, scsi_fd);
+		}
+
+		default:
+			return NULL;
+	}
 }
 
 static struct so_format_writer * sodr_tape_drive_get_writer(struct so_value * checksums, struct so_database_connection * db) {
@@ -511,7 +533,7 @@ static struct so_format_writer * sodr_tape_drive_get_writer(struct so_value * ch
 	return so_format_tar_new_writer(writer, checksums);
 }
 
-static int sodr_tape_drive_init(struct so_value * config) {
+static int sodr_tape_drive_init(struct so_value * config, struct so_database_connection * db_connect) {
 	struct so_slot * sl = sodr_tape_drive.slot = malloc(sizeof(struct so_slot));
 	bzero(sodr_tape_drive.slot, sizeof(struct so_slot));
 	sl->drive = &sodr_tape_drive;
@@ -590,6 +612,11 @@ static int sodr_tape_drive_init(struct so_value * config) {
 				sodr_tape_drive.is_empty = true;
 			}
 		}
+
+		static struct so_archive_format formats[] = {
+			{ "LTFS", true, false },
+		};
+		sodr_archive_format_sync(formats, 1, db_connect);
 	}
 
 	return found ? 0 : 1;

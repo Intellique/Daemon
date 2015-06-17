@@ -55,6 +55,7 @@
 #include <libstoriqone/process.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
+#include <libstoriqone-drive/archive_format.h>
 #include <libstoriqone-drive/drive.h>
 #include <libstoriqone-drive/media.h>
 #include <libstoriqone-drive/time.h>
@@ -72,7 +73,7 @@ static struct so_stream_reader * sodr_vtl_drive_get_raw_reader(int file_position
 static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct so_database_connection * db);
 static struct so_format_reader * sodr_vtl_drive_get_reader(int file_position, struct so_value * checksums, struct so_database_connection * db);
 static struct so_format_writer * sodr_vtl_drive_get_writer(struct so_value * checksums, struct so_database_connection * db);
-static int sodr_vtl_drive_init(struct so_value * config);
+static int sodr_vtl_drive_init(struct so_value * config, struct so_database_connection * db_connect);
 static int sodr_vtl_drive_reset(struct so_database_connection * db);
 static int sodr_vtl_drive_update_status(struct so_database_connection * db);
 
@@ -406,7 +407,7 @@ static struct so_format_writer * sodr_vtl_drive_get_writer(struct so_value * che
 	return so_format_tar_new_writer(raw_writer, checksums);
 }
 
-static int sodr_vtl_drive_init(struct so_value * config) {
+static int sodr_vtl_drive_init(struct so_value * config, struct so_database_connection * db_connect) {
 	struct so_slot * sl = sodr_vtl_drive.slot = malloc(sizeof(struct so_slot));
 	bzero(sodr_vtl_drive.slot, sizeof(struct so_slot));
 	sl->drive = &sodr_vtl_drive;
@@ -433,6 +434,8 @@ static int sodr_vtl_drive_init(struct so_value * config) {
 	sodr_vtl_media_format = malloc(sizeof(struct so_media_format));
 	bzero(sodr_vtl_media_format, sizeof(struct so_media_format));
 	so_media_format_sync(sodr_vtl_media_format, format);
+
+	sodr_archive_format_sync(NULL, 0, db_connect);
 
 	return 0;
 }
