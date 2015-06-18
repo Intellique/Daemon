@@ -219,7 +219,7 @@ static int soj_copyarchive_simulate(struct so_job * job, struct so_database_conn
 		return 1;
 	}
 
-	if (!soj_changer_has_apt_drive(data.pool->format, true)) {
+	if (!soj_changer_has_apt_drive(data.pool->media_format, true)) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Failed to find suitable drive to copy archive '%s'"),
 			data.src_archive->name);

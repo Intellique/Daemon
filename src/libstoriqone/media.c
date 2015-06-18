@@ -35,6 +35,7 @@
 
 #define gettext_noop(String) String
 
+#include <libstoriqone/archive.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
@@ -189,7 +190,7 @@ struct so_value * so_media_convert(struct so_media * media) {
 	if (media->pool != NULL)
 		pool = so_pool_convert(media->pool);
 
-	struct so_value * md = so_value_pack("{sssssssssssisisisisisisisisisisisisisisbsssbsoso}",
+	struct so_value * md = so_value_pack("{sssssssssssisisisisisisisisisisisisisisbsssbsososo}",
 		"uuid", media->uuid[0] != '\0' ? media->uuid : NULL,
 		"label", media->label,
 		"medium serial number", media->medium_serial_number,
@@ -220,7 +221,8 @@ struct so_value * so_media_convert(struct so_media * media) {
 		"type", so_media_type_to_string(media->type, false),
 		"write lock", media->write_lock,
 
-		"format", so_media_format_convert(media->format),
+		"archive format", so_archive_format_convert(media->archive_format),
+		"media format", so_media_format_convert(media->media_format),
 		"pool", pool
 	);
 
@@ -319,7 +321,8 @@ void so_media_sync(struct so_media * media, struct so_value * new_media) {
 	media->label = media->medium_serial_number = media->name = NULL;
 
 	struct so_value * uuid = NULL;
-	struct so_value * format = NULL;
+	struct so_value * archive_format = NULL;
+	struct so_value * media_format = NULL;
 	struct so_value * pool = NULL;
 	struct so_value * last_read = NULL;
 	struct so_value * last_write = NULL;
@@ -328,7 +331,7 @@ void so_media_sync(struct so_media * media, struct so_value * new_media) {
 	long int nb_read_errors = 0, nb_write_errors = 0;
 	long int nb_volumes = 0;
 
-	so_value_unpack(new_media, "{sosssssssssisisososisisisisisisisisisisisisbsssbsoso}",
+	so_value_unpack(new_media, "{sosssssssssisisososisisisisisisisisisisisisbsssbsososo}",
 		"uuid", &uuid,
 		"label", &media->label,
 		"medium serial number", &media->medium_serial_number,
@@ -361,7 +364,8 @@ void so_media_sync(struct so_media * media, struct so_value * new_media) {
 		"type", &type,
 		"write lock", &media->write_lock,
 
-		"format", &format,
+		"archive format", &archive_format,
+		"media format", &media_format,
 		"pool", &pool
 	);
 
@@ -391,11 +395,17 @@ void so_media_sync(struct so_media * media, struct so_value * new_media) {
 	media->type = so_media_string_to_type(type, false);
 	free(type);
 
-	if (media->format == NULL) {
-		media->format = malloc(sizeof(struct so_media_format));
-		bzero(media->format, sizeof(struct so_media_format));
+	if (media->archive_format == NULL) {
+		media->archive_format = malloc(sizeof(struct so_archive_format));
+		bzero(media->archive_format, sizeof(struct so_archive_format));
 	}
-	so_media_format_sync(media->format, format);
+	so_archive_format_sync(media->archive_format, archive_format);
+
+	if (media->media_format == NULL) {
+		media->media_format = malloc(sizeof(struct so_media_format));
+		bzero(media->media_format, sizeof(struct so_media_format));
+	}
+	so_media_format_sync(media->media_format, media_format);
 
 	if (media->pool != NULL && pool->type == so_value_hashtable) {
 		so_pool_sync(media->pool, pool);
@@ -410,7 +420,7 @@ void so_media_sync(struct so_media * media, struct so_value * new_media) {
 }
 
 struct so_value * so_pool_convert(struct so_pool * pool) {
-	return so_value_pack("{sssssssbsssbsbso}",
+	return so_value_pack("{sssssssbsssbsbsoso}",
 		"uuid", pool->uuid,
 		"name", pool->name,
 
@@ -420,7 +430,8 @@ struct so_value * so_pool_convert(struct so_pool * pool) {
 		"rewritable", pool->rewritable,
 		"deleted", pool->deleted,
 
-		"format", so_media_format_convert(pool->format)
+		"archive format", so_archive_format_convert(pool->archive_format),
+		"media format", so_media_format_convert(pool->media_format)
 	);
 }
 
@@ -431,9 +442,10 @@ void so_pool_sync(struct so_pool * pool, struct so_value * new_pool) {
 
 	char * auto_check = NULL, * unbreakable_level = NULL;
 
-	struct so_value * format = NULL;
+	struct so_value * archive_format = NULL;
+	struct so_value * media_format = NULL;
 
-	so_value_unpack(new_pool, "{sssssssbsssbso}",
+	so_value_unpack(new_pool, "{sssssssbsssbsoso}",
 		"uuid", &uuid,
 		"name", &pool->name,
 
@@ -442,7 +454,8 @@ void so_pool_sync(struct so_pool * pool, struct so_value * new_pool) {
 		"unbreakable level", &unbreakable_level,
 		"deleted", &pool->deleted,
 
-		"format", &format
+		"archive format", &archive_format,
+		"media format", &media_format
 	);
 
 	if (uuid != NULL)
@@ -454,11 +467,17 @@ void so_pool_sync(struct so_pool * pool, struct so_value * new_pool) {
 	pool->unbreakable_level = so_pool_string_to_unbreakable_level(unbreakable_level, false);
 	free(unbreakable_level);
 
-	if (pool->format == NULL) {
-		pool->format = malloc(sizeof(struct so_media_format));
-		bzero(pool->format, sizeof(struct so_media_format));
+	if (pool->archive_format == NULL) {
+		pool->archive_format = malloc(sizeof(struct so_archive_format));
+		bzero(pool->archive_format, sizeof(struct so_archive_format));
 	}
-	so_media_format_sync(pool->format, format);
+	so_archive_format_sync(pool->archive_format, archive_format);
+
+	if (pool->media_format == NULL) {
+		pool->media_format = malloc(sizeof(struct so_media_format));
+		bzero(pool->media_format, sizeof(struct so_media_format));
+	}
+	so_media_format_sync(pool->media_format, media_format);
 }
 
 
@@ -505,7 +524,8 @@ void so_media_free(struct so_media * media) {
 	free(media->medium_serial_number);
 	free(media->name);
 
-	so_media_format_free(media->format);
+	so_archive_format_free(media->archive_format);
+	so_media_format_free(media->media_format);
 	so_pool_free(media->pool);
 
 	free(media->private_data);
@@ -528,7 +548,8 @@ void so_pool_free(struct so_pool * pool) {
 		return;
 
 	free(pool->name);
-	so_media_format_free(pool->format);
+	so_archive_format_free(pool->archive_format);
+	so_media_format_free(pool->media_format);
 	so_value_free(pool->db_data);
 	free(pool);
 }

@@ -120,7 +120,8 @@ struct so_media {
 	enum so_media_type type;
 	bool write_lock;
 
-	struct so_media_format * format;
+	struct so_archive_format * archive_format;
+	struct so_media_format * media_format;
 	struct so_pool * pool;
 
 	void * private_data;
@@ -160,7 +161,8 @@ struct so_pool {
 	bool rewritable;
 	bool deleted;
 
-	struct so_media_format * format;
+	struct so_archive_format * archive_format;
+	struct so_media_format * media_format;
 
 	struct so_value * db_data;
 };

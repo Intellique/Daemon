@@ -197,11 +197,11 @@ static void sodr_tape_drive_create_media(struct so_database_connection * db) {
 	}
 
 	unsigned int density_code = ((status.mt_dsreg & MT_ST_DENSITY_MASK) >> MT_ST_DENSITY_SHIFT) & 0xFF;
-	media->format = db->ops->get_media_format(db, (unsigned char) density_code, so_media_format_mode_linear);
+	media->media_format = db->ops->get_media_format(db, (unsigned char) density_code, so_media_format_mode_linear);
 
 	media->status = so_media_status_foreign;
 	media->first_used = time(NULL);
-	media->use_before = media->first_used + media->format->life_span;
+	media->use_before = media->first_used + media->media_format->life_span;
 	media->append = false;
 
 	media->load_count = 1;
@@ -210,7 +210,7 @@ static void sodr_tape_drive_create_media(struct so_database_connection * db) {
 	if (media->block_size < 1024)
 		media->block_size = 1024;
 
-	if (media->format != NULL && media->format->support_mam) {
+	if (media->media_format != NULL && media->media_format->support_mam) {
 		int fd = open(scsi_device, O_RDWR);
 		int failed = sodr_tape_drive_scsi_read_mam(fd, media);
 		close(fd);
@@ -259,7 +259,7 @@ static ssize_t sodr_tape_drive_find_best_block_size(struct so_database_connectio
 	double last_speed = 0;
 
 	ssize_t current_block_size;
-	for (current_block_size = media->format->block_size; current_block_size < 1048576; current_block_size <<= 1) {
+	for (current_block_size = media->media_format->block_size; current_block_size < 1048576; current_block_size <<= 1) {
 		sodr_tape_drive.status = so_drive_status_rewinding;
 		db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
 
@@ -457,8 +457,8 @@ ssize_t sodr_tape_drive_get_block_size() {
 
 	free(buffer);
 
-	if (media != NULL && media->format != NULL)
-		return media->format->block_size;
+	if (media != NULL && media->media_format != NULL)
+		return media->media_format->block_size;
 
 	return -1;
 }
@@ -805,7 +805,7 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 			} else {
 				int fd = open(scsi_device, O_RDWR);
 				sodr_tape_drive_scsi_size_available(fd, media);
-				if (media != NULL && media->format != NULL && media->format->support_mam)
+				if (media != NULL && media->media_format != NULL && media->media_format->support_mam)
 					sodr_tape_drive_scsi_read_mam(fd, media);
 				close(fd);
 

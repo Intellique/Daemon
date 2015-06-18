@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-create-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-05-20 11:32+0200\n"
+        "POT-Creation-Date: 2015-06-17 23:36+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -101,23 +101,23 @@ msgstr  "Tentative de créer une archive dans un pool « %s » qui est supprim
 msgid   "Size require (%s) for adding to the archive '%s'"
 msgstr  "Taille requis (%s) pour ajouter à the archive « %s »"
 
-#: src/job/create-archive/worker.c:130 src/job/create-archive/worker.c:147
+#: src/job/create-archive/worker.c:129 src/job/create-archive/worker.c:146
 #, c-format
 msgid   "Error while adding file (%s) to pool %s"
 msgstr  "Erreur en ajoutant un fichier (%s) dans le pool %s"
 
-#: src/job/create-archive/worker.c:225
+#: src/job/create-archive/worker.c:224
 #, c-format
 msgid   "Archive continue to media (%s)"
 msgstr  "L’archive continue sur le média (%s)"
 
-#: src/job/create-archive/worker.c:607
+#: src/job/create-archive/worker.c:601
 #, c-format
 msgid   "Warning, we will not archive into pool '%s' because we can not reserve enough space on it (space reserved: %s, space "
         "require: %s)"
 msgstr  "Attention, on n’archivera pas dans le pool « %s » parce que l’on ne peut pas réserver assez d’espace dans celui-ce "
         "(espace réservé : %s, espace requis : %s)"
 
-#: src/job/create-archive/worker.c:617
+#: src/job/create-archive/worker.c:611
 msgid   "Failed to start transaction info database"
 msgstr  "Échec lors du démarrage d’une nouvelle transaction dans la base de données"

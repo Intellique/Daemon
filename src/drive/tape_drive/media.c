@@ -264,7 +264,7 @@ int sodr_tape_drive_media_parse_ltfs_label(struct so_drive * drive, struct so_da
 
 		if (!strcmp(name, "formattime")) {
 			media->first_used = sodr_tape_drive_format_ltfs_parse_time(value);
-			media->use_before = media->first_used + media->format->life_span;
+			media->use_before = media->first_used + media->media_format->life_span;
 		} else if (!strcmp(name, "volumeuuid"))
 			strncpy(media->uuid, value, 37);
 		else if (!strcmp(name, "blocksize"))

@@ -310,3 +310,35 @@ const char * so_archive_file_type_to_string(enum so_archive_file_type type, bool
 		return so_archive_file_types[type].name;
 }
 
+
+struct so_value * so_archive_format_convert(struct so_archive_format * archive_format) {
+	return so_value_pack("{sssbsb}",
+		"name", archive_format->name,
+		"readable", archive_format->readable,
+		"writable", archive_format->writable
+	);
+}
+
+void so_archive_format_free(struct so_archive_format * archive_format) {
+	if (archive_format != NULL) {
+		so_value_free(archive_format->db_data);
+		free(archive_format);
+	}
+}
+
+void so_archive_format_sync(struct so_archive_format * archive_format, struct so_value * new_archive_format) {
+	char * name = NULL;
+	so_value_unpack(new_archive_format, "{sssbsb}",
+		"name", name,
+		"readable", &archive_format->readable,
+		"writable", &archive_format->writable
+	);
+
+	if (name == NULL)
+		archive_format->name[0] = '\0';
+	else
+		strncpy(archive_format->name, name, 32);
+
+	free(name);
+}
+

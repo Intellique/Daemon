@@ -129,6 +129,8 @@ struct so_archive_format {
 
 	bool readable;
 	bool writable;
+
+	struct so_value * db_data;
 };
 
 struct so_archive_volume * so_archive_add_volume(struct so_archive * archive);
@@ -142,6 +144,10 @@ struct so_archive_file * so_archive_file_copy(struct so_archive_file * file);
 enum so_archive_file_type so_archive_file_mode_to_type(mode_t mode);
 enum so_archive_file_type so_archive_file_string_to_type(const char * type, bool translate);
 const char * so_archive_file_type_to_string(enum so_archive_file_type type, bool translate);
+
+struct so_value * so_archive_format_convert(struct so_archive_format * archive_format);
+void so_archive_format_free(struct so_archive_format * archive_format);
+void so_archive_format_sync(struct so_archive_format * archive_format, struct so_value * new_archive_format);
 
 #endif
 

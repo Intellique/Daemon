@@ -198,7 +198,7 @@ ssize_t soj_media_prepare_unformatted(struct so_pool * pool, bool online, struct
 	if (medias == NULL)
 		return 0;
 
-	struct so_value * free_medias = db_connect->ops->get_free_medias(db_connect, pool->format, online);
+	struct so_value * free_medias = db_connect->ops->get_free_medias(db_connect, pool->media_format, online);
 	ssize_t total_size_available = 0;
 
 	struct so_value_iterator * iter = so_value_list_get_iterator(free_medias);

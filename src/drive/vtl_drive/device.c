@@ -285,7 +285,7 @@ static int sodr_vtl_drive_format_media(struct so_pool * pool, struct so_database
 	media->status = so_media_status_new;
 	media->operation_count++;
 	media->block_size = block_size;
-	media->total_block = media->format->capacity / block_size;
+	media->total_block = media->media_format->capacity / block_size;
 	media->free_block = media->total_block;
 	media->nb_volumes = 0;
 	media->append = true;

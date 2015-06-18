@@ -230,7 +230,7 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 			continue;
 		}
 
-		if (!drive->ops->check_support(drive, sl->media->format, lp->size_need > 0)) {
+		if (!drive->ops->check_support(drive, sl->media->media_format, lp->size_need > 0)) {
 			if (changer->nb_drives < changer->nb_slots) {
 				so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d"), changer->vendor, changer->model, sl->volume_name, drive->index);
 
@@ -240,7 +240,7 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 				} else
 					so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d finished with code = OK"), changer->vendor, changer->model, sl->volume_name, drive->index);
 			} else {
-				so_log_write(so_log_level_error, dgettext("libstoriqone-changer", "[%s | %s]: you should change drive because drive (%s#%u) has no support for format (%s)"), changer->vendor, changer->model, drive->model, drive->index, sl->media->format->name);
+				so_log_write(so_log_level_error, dgettext("libstoriqone-changer", "[%s | %s]: you should change drive because drive (%s#%u) has no support for format (%s)"), changer->vendor, changer->model, drive->model, drive->index, sl->media->media_format->name);
 			}
 		}
 
@@ -292,7 +292,7 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 			struct so_drive * drive = NULL;
 			for (j = 0; j < changer->nb_drives && drive == NULL; j++) {
 				struct so_drive * dr = changer->drives + j;
-				if (!dr->enable || !dr->ops->check_support(dr, media->format, lp->size_need > 0))
+				if (!dr->enable || !dr->ops->check_support(dr, media->media_format, lp->size_need > 0))
 					continue;
 
 				if (dr->ops->is_free(dr))

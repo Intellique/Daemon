@@ -88,7 +88,7 @@ static void soj_formatmedia_init() {
 static int soj_formatmedia_run(struct so_job * job, struct so_database_connection * db_connect) {
 	job->done = 0.25;
 
-	struct so_drive * drive = soj_media_find_and_load(soj_formatmedia_media, false, soj_formatmedia_media->format->block_size, db_connect);
+	struct so_drive * drive = soj_media_find_and_load(soj_formatmedia_media, false, soj_formatmedia_media->media_format->block_size, db_connect);
 	if (drive == NULL) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-format-media", "Failed to load media '%s'"),
@@ -197,14 +197,14 @@ static int soj_formatmedia_simulate(struct so_job * job, struct so_database_conn
 			dgettext("storiqone-job-format-media", "Try to format a media '%s' with error status"),
 			soj_formatmedia_media->name);
 
-	if (so_media_format_cmp(soj_formatmedia_media->format, soj_formatmedia_pool->format) != 0) {
+	if (so_media_format_cmp(soj_formatmedia_media->media_format, soj_formatmedia_pool->media_format) != 0) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-format-media", "Try to format a media '%s' (media format: %s) whose type does not match the format of pool '%s' (fomat: %s)"),
-			soj_formatmedia_media->name, soj_formatmedia_media->format->name, soj_formatmedia_pool->name, soj_formatmedia_pool->format->name);
+			soj_formatmedia_media->name, soj_formatmedia_media->media_format->name, soj_formatmedia_pool->name, soj_formatmedia_pool->media_format->name);
 		return 1;
 	}
 
-	if (!soj_changer_has_apt_drive(soj_formatmedia_media->format, true)) {
+	if (!soj_changer_has_apt_drive(soj_formatmedia_media->media_format, true)) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-format-media", "Failed to find suitable drive to format media '%s'"),
 			soj_formatmedia_media->name);

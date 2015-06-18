@@ -91,7 +91,6 @@ static void soj_create_archive_add_file3(struct soj_create_archive_worker * work
 static int soj_create_archive_worker_change_volume(struct so_job * job, struct soj_create_archive_worker * worker, struct so_format_file * file, bool first_round, struct so_database_connection * db_connect);
 static int soj_create_archive_worker_close2(struct soj_create_archive_worker * worker, bool first_round);
 static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_create_archive_worker * worker, struct so_archive_file * file);
-static void soj_create_archive_worker_free(struct soj_create_archive_worker * worker);
 static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_job * job, struct so_archive * archive, struct so_pool * pool);
 static void soj_create_archive_worker_prepare_medias3(bool no_wait);
 ssize_t soj_create_archive_worker_write2(struct so_job * job, struct soj_create_archive_worker * worker, struct so_format_file * file, const char * buffer, ssize_t length, bool first_round, struct so_database_connection * db_connect);
@@ -390,11 +389,6 @@ bool soj_create_archive_worker_finished() {
 	}
 
 	return true;
-}
-
-static void soj_create_archive_worker_free(struct soj_create_archive_worker * worker) {
-	so_archive_free(worker->archive);
-	free(worker);
 }
 
 void soj_create_archive_worker_init_archive(struct so_job * job, struct so_archive * primary_archive, struct so_value * archive_mirrors) {
