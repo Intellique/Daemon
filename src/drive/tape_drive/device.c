@@ -174,8 +174,26 @@ static bool sodr_tape_drive_check_header(struct so_database_connection * db) {
 			so_log_write(so_log_level_error,
 				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to parse media header '%s'"),
 				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name);
-		} else
+		} else {
 			media->private_data = sodr_tape_drive_media_new(format);
+
+			if (media->archive_format != NULL)
+				so_archive_format_free(media->archive_format);
+
+			switch (format) {
+				case sodr_tape_drive_media_storiq_one:
+					media->archive_format = db->ops->get_archive_format_by_name(db, "Storiq One");
+					break;
+
+				case sodr_tape_drive_media_ltfs:
+					media->archive_format = db->ops->get_archive_format_by_name(db, "LTFS");
+					break;
+
+				default:
+					media->archive_format = NULL;
+					break;
+			}
+		}
 	}
 
 	free(buffer);
@@ -614,7 +632,7 @@ static int sodr_tape_drive_init(struct so_value * config, struct so_database_con
 		}
 
 		static struct so_archive_format formats[] = {
-			{ "LTFS", true, false },
+			{ "LTFS", true, false, NULL },
 		};
 		sodr_archive_format_sync(formats, 1, db_connect);
 	}

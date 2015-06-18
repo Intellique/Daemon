@@ -70,6 +70,7 @@ struct so_media * sochgr_vtl_media_create(const char * root_directory, const cha
 		media->free_block = media->total_block = format->capacity / format->block_size;
 		media->append = true;
 		media->type = so_media_type_rewritable;
+		media->archive_format = db_connection->ops->get_archive_format_by_name(db_connection, "Storiq One");
 		media->media_format = so_media_format_dup(format);
 	}
 

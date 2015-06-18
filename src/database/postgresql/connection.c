@@ -124,6 +124,7 @@ static struct so_value * so_database_postgresql_get_archives_by_archive_mirror(s
 static struct so_archive * so_database_postgresql_get_archive_by_id(struct so_database_connection * connect, const char * archive_id);
 static struct so_archive * so_database_postgresql_get_archive_by_job(struct so_database_connection * connect, struct so_job * job);
 static struct so_archive_format * so_database_postgresql_get_archive_format_by_id(struct so_database_connection * connect, const char * id);
+static struct so_archive_format * so_database_postgresql_get_archive_format_by_name(struct so_database_connection * connect, const char * name);
 static struct so_value * so_database_postgresql_get_archives_by_media(struct so_database_connection * connect, struct so_media * media);
 static bool so_database_postgresql_is_archive_synchronized(struct so_database_connection * connect, struct so_archive * archive);
 static int so_database_postgresql_link_archives(struct so_database_connection * connect, struct so_job * job, struct so_archive * source, struct so_archive * copy);
@@ -197,6 +198,7 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.check_archive_volume           = so_database_postgresql_check_archive_volume,
 	.get_archives_by_archive_mirror = so_database_postgresql_get_archives_by_archive_mirror,
 	.get_archive_by_job             = so_database_postgresql_get_archive_by_job,
+	.get_archive_format_by_name     = so_database_postgresql_get_archive_format_by_name,
 	.get_archives_by_media          = so_database_postgresql_get_archives_by_media,
 	.get_nb_volumes_of_file         = so_database_postgresql_get_nb_volumes_of_file,
 	.get_synchronized_archive       = so_database_postgresql_get_synchronized_archive,
@@ -3071,6 +3073,31 @@ static struct so_archive_format * so_database_postgresql_get_archive_format_by_i
 		so_database_postgresql_get_bool(result, 0, 1, &archive_format->readable);
 		so_database_postgresql_get_bool(result, 0, 2, &archive_format->writable);
 	}
+
+	PQclear(result);
+
+	return archive_format;
+}
+
+static struct so_archive_format * so_database_postgresql_get_archive_format_by_name(struct so_database_connection * connect, const char * name) {
+	if (connect == NULL || name == NULL)
+		return NULL;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	const char * query = "select_archive_format_by_name";
+	so_database_postgresql_prepare(self, query, "SELECT id FROM archiveformat WHERE name = $1 LIMIT 1");
+
+	const char * param[] = { name };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+
+	struct so_archive_format * archive_format = NULL;
+
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1)
+		archive_format = so_database_postgresql_get_archive_format_by_id(connect, PQgetvalue(result, 0, 0));
 
 	PQclear(result);
 

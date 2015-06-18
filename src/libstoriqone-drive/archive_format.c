@@ -24,6 +24,9 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+// NULL
+#include <stddef.h>
+
 #include <libstoriqone/database.h>
 #include <libstoriqone-drive/archive_format.h>
 
@@ -31,6 +34,7 @@ static struct so_archive_format sodr_format_storiq_one = {
 	.name     = "Storiq One",
 	.readable = true,
 	.writable = true,
+	.db_data  = NULL,
 };
 
 int sodr_archive_format_sync(struct so_archive_format * formats, unsigned int nb_formats, struct so_database_connection * db_connect) {
