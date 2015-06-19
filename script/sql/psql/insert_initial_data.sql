@@ -31,9 +31,12 @@ INSERT INTO DriveFormatSupport(driveFormat, mediaFormat, read, write) VALUES
 	(4, 5, TRUE, TRUE),
 	(5, 5, TRUE, TRUE);
 
-INSERT INTO Pool(uuid, name, mediaFormat) VALUES
-	('b9650cc3-12ec-4a0f-88db-d70f0b269a6b', 'storiq', 1),
-	('d9f976d4-e087-4d0a-ab79-96267f6613f0', 'Stone_Db_Backup', 1);
+INSERT INTO ArchiveFormat(name, readable, writable) VALUES
+    ('Storiq One', TRUE, TRUE);
+
+INSERT INTO Pool(uuid, name, archiveFormat, mediaFormat) VALUES
+	('b9650cc3-12ec-4a0f-88db-d70f0b269a6b', 'storiq', 1, 1),
+	('d9f976d4-e087-4d0a-ab79-96267f6613f0', 'Stone_Db_Backup', 1, 1);
 
 INSERT INTO PoolGroup(uuid, name) VALUES
     ('bbaaf022-2e1b-4a5e-a49f-aa1e219340f3', 'storiq');
@@ -41,8 +44,8 @@ INSERT INTO PoolGroup(uuid, name) VALUES
 INSERT INTO PoolToPoolGroup VALUES
     (1, 1);
 
-INSERT INTO Users(login, password, salt, fullname, email, homedirectory, isAdmin, canArchive, canRestore, pool, meta) VALUES
-	('storiq', '8a6eb1d3b4fecbf8a1d6528a6aecb064e801b1e0', 'cd8c63688e0c2cff', 'storiq', 'storiq@localhost', '/mnt/raid', TRUE, TRUE, TRUE, 1, hstore('step', '0') || hstore('showHelp', '1'));
+INSERT INTO Users(login, password, salt, fullname, email, homedirectory, isAdmin, canArchive, canRestore, poolgroup, meta) VALUES
+	('storiq', '8a6eb1d3b4fecbf8a1d6528a6aecb064e801b1e0', 'cd8c63688e0c2cff', 'storiq', 'storiq@localhost', '/mnt/raid', TRUE, TRUE, TRUE, 1, '{"step":5,"showHelp":true}');
 
 INSERT INTO UserEvent(event) VALUES
 	('connection'),
