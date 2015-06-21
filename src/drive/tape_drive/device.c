@@ -176,6 +176,7 @@ static bool sodr_tape_drive_check_header(struct so_database_connection * db) {
 				sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name);
 		} else {
 			media->private_data = sodr_tape_drive_media_new(format);
+			media->free_private_data = sodr_tape_drive_media_free2;
 
 			if (media->archive_format != NULL)
 				so_archive_format_free(media->archive_format);

@@ -125,6 +125,7 @@ struct so_media {
 	struct so_pool * pool;
 
 	void * private_data;
+	void (*free_private_data)(void * data);
 	struct so_value * db_data;
 };
 

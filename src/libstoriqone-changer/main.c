@@ -89,7 +89,7 @@ int main() {
 		dgettext("libstoriqone-changer", "Starting changer (type: %s)"),
 		driver->name);
 
-	struct so_value * config = so_json_parse_fd(0, 5000);
+	struct so_value * config = so_json_parse_fd(0, 60000);
 	if (config == NULL)
 		return 2;
 

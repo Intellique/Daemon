@@ -312,6 +312,9 @@ const char * so_archive_file_type_to_string(enum so_archive_file_type type, bool
 
 
 struct so_value * so_archive_format_convert(struct so_archive_format * archive_format) {
+	if (archive_format == NULL)
+		return so_value_new_null();
+
 	return so_value_pack("{sssbsb}",
 		"name", archive_format->name,
 		"readable", archive_format->readable,

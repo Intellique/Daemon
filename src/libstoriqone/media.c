@@ -395,11 +395,17 @@ void so_media_sync(struct so_media * media, struct so_value * new_media) {
 	media->type = so_media_string_to_type(type, false);
 	free(type);
 
-	if (media->archive_format == NULL) {
-		media->archive_format = malloc(sizeof(struct so_archive_format));
-		bzero(media->archive_format, sizeof(struct so_archive_format));
+	if (archive_format->type != so_value_null) {
+		if (media->archive_format == NULL) {
+			media->archive_format = malloc(sizeof(struct so_archive_format));
+			bzero(media->archive_format, sizeof(struct so_archive_format));
+		}
+
+		so_archive_format_sync(media->archive_format, archive_format);
+	} else if (media->archive_format != NULL) {
+		so_archive_format_free(media->archive_format);
+		media->archive_format = NULL;
 	}
-	so_archive_format_sync(media->archive_format, archive_format);
 
 	if (media->media_format == NULL) {
 		media->media_format = malloc(sizeof(struct so_media_format));
@@ -528,7 +534,10 @@ void so_media_free(struct so_media * media) {
 	so_media_format_free(media->media_format);
 	so_pool_free(media->pool);
 
-	free(media->private_data);
+	if (media->free_private_data != NULL)
+		media->free_private_data(media->private_data);
+	else if (media->private_data != NULL)
+		free(media->private_data);
 	so_value_free(media->db_data);
 
 	free(media);

@@ -1884,31 +1884,33 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 		}
 	}
 
-	if (media_id == NULL) {
-		if (archiveformat_id == NULL) {
-			if (media->archive_format->db_data != NULL) {
-				struct so_value * format_db = so_value_hashtable_get(media->archive_format->db_data, key, false, false);
-				so_value_unpack(format_db, "{ss}", "id", &archiveformat_id);
+	if (media->archive_format != NULL && archiveformat_id == NULL) {
+		if (media->archive_format->db_data != NULL) {
+			key = so_value_new_custom(connect->config, NULL);
+			struct so_value * format_db = so_value_hashtable_get(media->archive_format->db_data, key, false, false);
+			so_value_unpack(format_db, "{ss}", "id", &archiveformat_id);
+			so_value_hashtable_put2(db, "archive format id", so_value_new_string(archiveformat_id), true);
+			so_value_free(key);
+		} else {
+			const char * query = "select_archive_format_by_name";
+			so_database_postgresql_prepare(self, query, "SELECT id FROM archiveformat WHERE name = $1 LIMIT 1");
+
+			const char * param[] = { media->archive_format->name };
+			PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
+			ExecStatusType status = PQresultStatus(result);
+
+			if (status == PGRES_FATAL_ERROR)
+				so_database_postgresql_get_error(result, query);
+			else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
+				so_database_postgresql_get_string_dup(result, 0, 0, &archiveformat_id);
 				so_value_hashtable_put2(db, "archive format id", so_value_new_string(archiveformat_id), true);
-			} else {
-				const char * query = "select_archive_format_by_name";
-				so_database_postgresql_prepare(self, query, "SELECT id FROM archiveformat WHERE name = $1 LIMIT 1");
-
-				const char * param[] = { media->archive_format->name };
-				PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
-				ExecStatusType status = PQresultStatus(result);
-
-				if (status == PGRES_FATAL_ERROR)
-					so_database_postgresql_get_error(result, query);
-				else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
-					so_database_postgresql_get_string_dup(result, 0, 0, &archiveformat_id);
-					so_value_hashtable_put2(db, "archive format id", so_value_new_string(archiveformat_id), true);
-				}
-
-				PQclear(result);
 			}
-		}
 
+			PQclear(result);
+		}
+	}
+
+	if (media_id == NULL) {
 		if (mediaformat_id == NULL) {
 			if (media->media_format->db_data != NULL) {
 				struct so_value * format_db = so_value_hashtable_get(media->media_format->db_data, key, false, false);

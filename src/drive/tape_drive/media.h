@@ -90,6 +90,7 @@ struct sodr_tape_drive_media {
 
 bool sodr_tape_drive_media_check_header(struct so_media * media, const char * buffer);
 void sodr_tape_drive_media_free(struct sodr_tape_drive_media * media_data);
+void sodr_tape_drive_media_free2(void * private_data);
 struct sodr_tape_drive_media * sodr_tape_drive_media_new(enum sodr_tape_drive_media_format format);
 enum sodr_tape_drive_media_format sodr_tape_drive_parse_label(const char * buffer);
 int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_database_connection * db_connect);

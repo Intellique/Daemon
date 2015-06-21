@@ -88,6 +88,11 @@ void sodr_tape_drive_media_free(struct sodr_tape_drive_media * media_data) {
 	free(media_data);
 }
 
+void sodr_tape_drive_media_free2(void * private_data) {
+	if (private_data != NULL)
+		sodr_tape_drive_media_free(private_data);
+}
+
 struct sodr_tape_drive_media * sodr_tape_drive_media_new(enum sodr_tape_drive_media_format format) {
 	struct sodr_tape_drive_media * mp = malloc(sizeof(struct sodr_tape_drive_media));
 	bzero(mp, sizeof(struct sodr_tape_drive_media)); 
