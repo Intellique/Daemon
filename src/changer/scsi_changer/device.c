@@ -332,9 +332,23 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 		if (!sl->enable || !sl->full || sl->media != NULL)
 			continue;
 
+		const char * volume_name = sl->volume_name;
+		so_log_write(so_log_level_notice,
+			dgettext("storiqone-changer-scsi", "[%s | %s]: loading media '%s' from slot #%u to drive #%u"),
+			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, sl->index, dr->index);
+
 		failed = sochgr_scsi_changer_load(sl, dr, NULL);
 
 		pthread_mutex_unlock(&sochgr_scsi_changer_lock);
+
+		if (failed == 0)
+			so_log_write(so_log_level_notice,
+				dgettext("storiqone-changer-scsi", "[%s | %s]: loading media '%s' from slot #%u to drive #%u finished with code = OK"),
+				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, sl->index, dr->index);
+		else
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-changer-scsi", "[%s | %s]: loading media '%s' from slot #%u to drive #%u finished with code = %d"),
+				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, sl->index, failed, dr->index);
 
 		// get drive status
 		failed = dr->ops->update_status(dr);
@@ -349,9 +363,22 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 			return;
 		}
 
+		so_log_write(so_log_level_notice,
+			dgettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%u to slot #%u"),
+			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, dr->index, sl->index);
+
 		pthread_mutex_lock(&sochgr_scsi_changer_lock);
 
 		failed = sochgr_scsi_changer_unload(dr, NULL);
+
+		if (failed == 0)
+			so_log_write(so_log_level_notice,
+				dgettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%u to slot #%u finished with code = OK"),
+				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, dr->index, sl->index);
+		else
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%u to slot #%u finished with code = %d"),
+				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, dr->index, sl->index, failed);
 	}
 
 	sochgr_scsi_changer_nb_worker--;
