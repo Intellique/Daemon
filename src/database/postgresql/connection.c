@@ -1020,7 +1020,7 @@ static int so_database_postgresql_get_pool_by_id(struct so_database_connection *
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_pool_by_id";
-	so_database_postgresql_prepare(self, query, "SELECT p.id, uuid, p.name, autocheck, growable, unbreakablelevel, rewritable, deleted, archiveformat, densitycode, mode FROM pool p LEFT JOIN mediaformat mf ON p.mediaformat = mf.id WHERE id = $1 LIMIT 1");
+	so_database_postgresql_prepare(self, query, "SELECT p.id, uuid, p.name, p.autocheck, p.growable, p.unbreakablelevel, p.rewritable, p.deleted, p.archiveformat, mf.densitycode, mf.mode FROM pool p LEFT JOIN mediaformat mf ON p.mediaformat = mf.id WHERE p.id = $1 LIMIT 1");
 
 	const char * param[] = { id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
