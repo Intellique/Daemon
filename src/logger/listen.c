@@ -61,11 +61,14 @@ static void solgr_socket_message(int fd, short event, void * data __attribute__(
 		return;
 	}
 
-	struct so_value * message = so_json_parse_fd(fd, -1);
-	solgr_log_write(message);
-	so_value_free(message);
+	struct so_value * message = so_json_parse_fd(fd, 10000);
+	if (message != NULL) {
+		solgr_log_write(message);
+		so_value_free(message);
+	} else
+		solgr_log_write2(so_log_level_debug, so_log_type_logger, gettext("Received incorrect message"));
 
-	struct so_value * response = so_value_new_boolean(true);
+	struct so_value * response = so_value_new_boolean(message != NULL);
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);
 }

@@ -35,7 +35,7 @@
 #include <stdio.h>
 // free, malloc
 #include <stdlib.h>
-// memset, strcat, strchr, strcpy, strdup, strncpy, strstr
+// memset, strcat, strdup, strchr, strcpy, strdup, strncpy, strstr
 #include <string.h>
 // stat
 #include <sys/stat.h>
@@ -332,7 +332,7 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 		if (!sl->enable || !sl->full || sl->media != NULL)
 			continue;
 
-		const char * volume_name = sl->volume_name;
+		char * volume_name = strdup(sl->volume_name);
 		so_log_write(so_log_level_notice,
 			dgettext("storiqone-changer-scsi", "[%s | %s]: loading media '%s' from slot #%u to drive #%u"),
 			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, sl->index, dr->index);
@@ -360,6 +360,8 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 			pthread_mutex_lock(&sochgr_scsi_changer_lock);
 			sochgr_scsi_changer_nb_worker--;
 			pthread_mutex_unlock(&sochgr_scsi_changer_lock);
+
+			free(volume_name);
 			return;
 		}
 
@@ -379,6 +381,8 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 			so_log_write(so_log_level_error,
 				dgettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%u to slot #%u finished with code = %d"),
 				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, dr->index, sl->index, failed);
+
+		free(volume_name);
 	}
 
 	sochgr_scsi_changer_nb_worker--;

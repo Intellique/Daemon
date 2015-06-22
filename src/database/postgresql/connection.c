@@ -707,10 +707,10 @@ static struct so_value * so_database_postgresql_get_free_medias(struct so_databa
 
 	if (online) {
 		query = "select_online_medias";
-		so_database_postgresql_prepare(self, query, "SELECT m.id, mf.id, m.uuid, m.label, m.mediumserialnumber, m.name, m.status, firstused, usebefore, lastread, lastwrite, loadcount, readcount, writecount, operationcount, nbtotalblockread, nbtotalblockwrite, nbreaderror, nbwriteerror, m.blocksize, freeblock, totalblock, append, m.type, writelock, nbfiles, densitycode, mode, p.uuid FROM media m INNER JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE m.id IN (SELECT media FROM changerslot) AND mf.densitycode = $1 AND mf.mode = $2 ORDER BY m.label");
+		so_database_postgresql_prepare(self, query, "SELECT m.id FROM media m INNER JOIN mediaformat mf ON m.mediaformat = mf.id WHERE m.id IN (SELECT media FROM changerslot) AND mf.densitycode = $1 AND mf.mode = $2 ORDER BY m.label");
 	} else {
 		query = "select_offline_medias";
-		so_database_postgresql_prepare(self, query, "SELECT m.id, mf.id, m.uuid, m.label, m.mediumserialnumber, m.name, m.status, firstused, usebefore, lastread, lastwrite, loadcount, readcount, writecount, operationcount, nbtotalblockread, nbtotalblockwrite, nbreaderror, nbwriteerror, m.blocksize, freeblock, totalblock, append, m.type, writelock, nbfiles, densitycode, mode, p.uuid FROM media m INNER JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE m.id NOT IN (SELECT media FROM changerslot) AND mf.densitycode = $1 AND mf.mode = $2 ORDER BY m.label");
+		so_database_postgresql_prepare(self, query, "SELECT m.id FROM media m INNER JOIN mediaformat mf ON m.mediaformat = mf.id WHERE m.id NOT IN (SELECT media FROM changerslot) AND mf.densitycode = $1 AND mf.mode = $2 ORDER BY m.label");
 	}
 
 	char * density_code;
@@ -733,55 +733,7 @@ static struct so_value * so_database_postgresql_get_free_medias(struct so_databa
 			struct so_media * media = malloc(sizeof(struct so_media));
 			bzero(media, sizeof(struct so_media));
 
-			media->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
-			struct so_value * key = so_value_new_custom(connect->config, NULL);
-			struct so_value * db = so_value_new_hashtable2();
-			so_value_hashtable_put(media->db_data, key, true, db, true);
-
-			so_value_hashtable_put2(db, "id", so_value_new_string(PQgetvalue(result, i, 0)), true);
-			so_value_hashtable_put2(db, "media format id", so_value_new_string(PQgetvalue(result, i, 1)), true);
-
-			so_database_postgresql_get_string(result, i, 2, media->uuid, 37);
-			so_database_postgresql_get_string_dup(result, i, 3, &media->label);
-			so_database_postgresql_get_string_dup(result, i, 4, &media->medium_serial_number);
-			so_database_postgresql_get_string_dup(result, i, 5, &media->name);
-
-			media->status = so_media_string_to_status(PQgetvalue(result, i, 6), false);
-
-			so_database_postgresql_get_time(result, i, 7, &media->first_used);
-			so_database_postgresql_get_time(result, i, 8, &media->use_before);
-			if (!PQgetisnull(result, i, 9))
-				so_database_postgresql_get_time(result, i, 9, &media->last_read);
-			if (!PQgetisnull(result, i, 10))
-				so_database_postgresql_get_time(result, i, 10, &media->last_write);
-
-			so_database_postgresql_get_long(result, i, 11, &media->load_count);
-			so_database_postgresql_get_long(result, i, 12, &media->read_count);
-			so_database_postgresql_get_long(result, i, 13, &media->write_count);
-			so_database_postgresql_get_long(result, i, 14, &media->operation_count);
-
-			so_database_postgresql_get_long(result, i, 15, &media->nb_total_read);
-			so_database_postgresql_get_long(result, i, 16, &media->nb_total_write);
-
-			so_database_postgresql_get_uint(result, i, 17, &media->nb_read_errors);
-			so_database_postgresql_get_uint(result, i, 18, &media->nb_write_errors);
-
-			so_database_postgresql_get_size(result, i, 19, &media->block_size);
-			so_database_postgresql_get_size(result, i, 20, &media->free_block);
-			so_database_postgresql_get_size(result, i, 21, &media->total_block);
-
-			so_database_postgresql_get_bool(result, i, 22, &media->append);
-			media->type = so_media_string_to_type(PQgetvalue(result, i, 23), false);
-			so_database_postgresql_get_bool(result, i, 24, &media->write_lock);
-			so_database_postgresql_get_uint(result, i, 25, &media->nb_volumes);
-
-			unsigned char density_code;
-			so_database_postgresql_get_uchar(result, i, 26, &density_code);
-			enum so_media_format_mode mode = so_media_string_to_format_mode(PQgetvalue(result, i, 27), false);
-			media->media_format = so_database_postgresql_get_media_format(connect, density_code, mode);
-
-			if (!PQgetisnull(result, i, 28))
-				media->pool = so_database_postgresql_get_pool(connect, PQgetvalue(result, i, 28), NULL);
+			so_database_get_media_by_id(connect, media, PQgetvalue(result, i, 0));
 
 			so_value_list_push(medias, so_value_new_custom(media, so_media_free2), true);
 		}
@@ -850,7 +802,7 @@ static int so_database_get_media_by_id(struct so_database_connection * connect, 
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_media_by_id";
-	so_database_postgresql_prepare(self, query, "SELECT m.id, mf.id, m.uuid, label, mediumserialnumber, m.name, m.status, firstused, usebefore, lastread, lastwrite, loadcount, readcount, writecount, operationcount, nbtotalblockread, nbtotalblockwrite, nbreaderror, nbwriteerror, m.blocksize, freeblock, totalblock, append, m.type, writelock, nbfiles, archiveformat, densitycode, mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE id = $1 LIMIT 1");
+	so_database_postgresql_prepare(self, query, "SELECT m.id, mf.id, m.uuid, m.label, m.mediumserialnumber, m.name, m.status, m.firstused, m.usebefore, m.lastread, m.lastwrite, m.loadcount, m.readcount, m.writecount, m.operationcount, m.nbtotalblockread, m.nbtotalblockwrite, m.nbreaderror, m.nbwriteerror, m.blocksize, m.freeblock, m.totalblock, m.append, m.type, m.writelock, m.nbfiles, m.archiveformat, mf.densitycode, mf.mode, p.uuid FROM media m LEFT JOIN mediaformat mf ON m.mediaformat = mf.id LEFT JOIN pool p ON m.pool = p.id WHERE m.id = $1 LIMIT 1");
 
 	const char * param[] = { id };
 	PGresult * result = PQexecPrepared(self->connect, query, 1, param, NULL, NULL, 0);
