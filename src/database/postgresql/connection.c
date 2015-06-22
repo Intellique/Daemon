@@ -811,9 +811,6 @@ static int so_database_get_media_by_id(struct so_database_connection * connect, 
 	if (status == PGRES_FATAL_ERROR)
 		so_database_postgresql_get_error(result, query);
 	else if (status == PGRES_TUPLES_OK && PQntuples(result) == 1) {
-		media = malloc(sizeof(struct so_media));
-		bzero(media, sizeof(struct so_media));
-
 		media->db_data = so_value_new_hashtable(so_value_custom_compute_hash);
 		struct so_value * key = so_value_new_custom(connect->config, NULL);
 		struct so_value * db = so_value_new_hashtable2();
