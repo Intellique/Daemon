@@ -44,7 +44,7 @@ void so_database_postgresql_get_error(PGresult * result, const char * prepared_q
 		return;
 
 	char * error = PQresultErrorField(result, PG_DIAG_MESSAGE_PRIMARY);
-	if (prepared_query == NULL)
+	if (prepared_query != NULL)
 		so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: error {%s} => %s"), prepared_query, error);
 	else
 		so_log_write2(so_log_level_error, so_log_type_plugin_db, gettext("PSQL: error => %s"), error);
