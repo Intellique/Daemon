@@ -66,6 +66,7 @@ static int sochgr_scsi_changer_check(struct so_database_connection * db_connecti
 static int sochgr_scsi_changer_init(struct so_value * config, struct so_database_connection * db_connection);
 static void sochgr_scsi_changer_init_worker(void * arg);
 static int sochgr_scsi_changer_load(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
+static int sochgr_scsi_changer_load_inner(struct so_slot * from, struct so_drive * to, bool reset_drive, struct so_database_connection * db_connection);
 static int sochgr_scsi_changer_parse_media(struct so_database_connection * db_connection);
 static int sochgr_scsi_changer_put_offline(struct so_database_connection * db_connection);
 static int sochgr_scsi_changer_put_online(struct so_database_connection * db_connection);
@@ -304,6 +305,10 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 static void sochgr_scsi_changer_init_worker(void * arg) {
 	struct so_drive * dr = arg;
 
+	so_log_write(so_log_level_info,
+		dgettext("storiqone-changer-scsi", "[%s | %s]: starting check media with drive #%u"),
+		sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr->index);
+
 	pthread_mutex_lock(&sochgr_scsi_changer_lock);
 	sochgr_scsi_changer_nb_worker++;
 	pthread_mutex_unlock(&sochgr_scsi_changer_lock);
@@ -318,6 +323,11 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 		pthread_mutex_lock(&sochgr_scsi_changer_lock);
 		sochgr_scsi_changer_nb_worker--;
 		pthread_mutex_unlock(&sochgr_scsi_changer_lock);
+
+		so_log_write(so_log_level_warning,
+			dgettext("storiqone-changer-scsi", "[%s | %s]: checking media with drive #%u finished"),
+			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr->index);
+
 		return;
 	}
 
@@ -337,7 +347,7 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 			dgettext("storiqone-changer-scsi", "[%s | %s]: loading media '%s' from slot #%u to drive #%u"),
 			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, sl->index, dr->index);
 
-		failed = sochgr_scsi_changer_load(sl, dr, NULL);
+		failed = sochgr_scsi_changer_load_inner(sl, dr, false, NULL);
 
 		pthread_mutex_unlock(&sochgr_scsi_changer_lock);
 
@@ -350,6 +360,25 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 				dgettext("storiqone-changer-scsi", "[%s | %s]: loading media '%s' from slot #%u to drive #%u finished with code = %d"),
 				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, sl->index, failed, dr->index);
 
+		// reset drive
+		failed = dr->ops->reset(dr);
+		if (failed != 0) {
+			so_log_write(so_log_level_critical,
+				dgettext("storiqone-changer-scsi", "[%s | %s]: failed to reset drive #%td %s %s"),
+				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr - sochgr_scsi_changer.drives, dr->vendor, dr->model);
+
+			pthread_mutex_lock(&sochgr_scsi_changer_lock);
+			sochgr_scsi_changer_nb_worker--;
+			pthread_mutex_unlock(&sochgr_scsi_changer_lock);
+
+			so_log_write(so_log_level_warning,
+				dgettext("storiqone-changer-scsi", "[%s | %s]: checking media with drive #%u finished"),
+				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr->index);
+
+			free(volume_name);
+			return;
+		}
+
 		// get drive status
 		failed = dr->ops->update_status(dr);
 		if (failed != 0) {
@@ -360,6 +389,10 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 			pthread_mutex_lock(&sochgr_scsi_changer_lock);
 			sochgr_scsi_changer_nb_worker--;
 			pthread_mutex_unlock(&sochgr_scsi_changer_lock);
+
+			so_log_write(so_log_level_warning,
+				dgettext("storiqone-changer-scsi", "[%s | %s]: checking media with drive #%u finished"),
+				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr->index);
 
 			free(volume_name);
 			return;
@@ -387,9 +420,17 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 
 	sochgr_scsi_changer_nb_worker--;
 	pthread_mutex_unlock(&sochgr_scsi_changer_lock);
+
+	so_log_write(so_log_level_info,
+		dgettext("storiqone-changer-scsi", "[%s | %s]: checking media with drive #%u finished"),
+		sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr->index);
 }
 
 static int sochgr_scsi_changer_load(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection) {
+	return sochgr_scsi_changer_load_inner(from, to, true, db_connection);
+}
+
+static int sochgr_scsi_changer_load_inner(struct so_slot * from, struct so_drive * to, bool reset_drive, struct so_database_connection * db_connection) {
 	sochgr_scsi_changer_wait();
 
 	sochgr_scsi_changer.status = so_changer_status_loading;
@@ -429,7 +470,8 @@ static int sochgr_scsi_changer_load(struct so_slot * from, struct so_drive * to,
 		sto->src_slot = from;
 	}
 
-	to->ops->reset(to);
+	if (reset_drive)
+		to->ops->reset(to);
 
 	sochgr_scsi_changer.status = so_changer_status_idle;
 	if (db_connection != NULL)

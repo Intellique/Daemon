@@ -204,7 +204,7 @@ static void sodr_changer_process_reset(struct so_value * request, struct so_data
 
 	int failed = drive->ops->reset(db);
 
-	struct so_value * returned = so_value_pack("{sb}", "status", failed != 0 ? false : true);
+	struct so_value * returned = so_value_pack("{si}", "status", (long long) failed);
 	so_json_encode_to_fd(returned, 1, true);
 	so_value_free(returned);
 }
