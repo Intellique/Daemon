@@ -41,10 +41,13 @@
 
 #include "drive.h"
 #include "job.h"
+#include "media.h"
 
 struct soj_changer {
 	int fd;
 	struct so_value * config;
+
+	bool is_online;
 };
 
 static struct so_changer * soj_changers = NULL;
@@ -163,6 +166,25 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 	return NULL;
 }
 
+bool soj_changer_has_apt_drive(struct so_media_format * format, bool for_writing) {
+	if (format == NULL)
+		return false;
+
+	unsigned int i;
+	for (i = 0; i < soj_nb_changers; i++) {
+		struct so_changer * ch = soj_changers + i;
+
+		unsigned int j;
+		for (j = 0; j < ch->nb_drives; j++) {
+			struct so_drive * dr = ch->drives + i;
+			if (dr->ops->check_support(dr, format, for_writing))
+				return true;
+		}
+	}
+
+	return false;
+}
+
 static int soj_changer_release_media(struct so_changer * changer, struct so_slot * slot) {
 	struct soj_changer * self = changer->data;
 
@@ -223,6 +245,7 @@ void soj_changer_set_config(struct so_value * config) {
 		bzero(self, sizeof(struct soj_changer));
 		self->config = socket;
 		self->fd = so_socket(socket);
+		self->is_online = true;
 
 		ch->ops = &soj_changer_ops;
 
@@ -269,6 +292,13 @@ static int soj_changer_sync(struct so_changer * changer) {
 
 	so_value_free(response);
 
+
+	if (changer->is_online && !self->is_online)
+		soj_media_check_reserved();
+	else if (!changer->is_online && self->is_online)
+		soj_media_reserve_new_media();
+	self->is_online = changer->is_online;
+
 	return 0;
 }
 
@@ -280,25 +310,5 @@ int soj_changer_sync_all() {
 		failed = ch->ops->sync(ch);
 	}
 	return failed;
-}
-
-
-bool soj_changer_has_apt_drive(struct so_media_format * format, bool for_writing) {
-	if (format == NULL)
-		return false;
-
-	unsigned int i;
-	for (i = 0; i < soj_nb_changers; i++) {
-		struct so_changer * ch = soj_changers + i;
-
-		unsigned int j;
-		for (j = 0; j < ch->nb_drives; j++) {
-			struct so_drive * dr = ch->drives + i;
-			if (dr->ops->check_support(dr, format, for_writing))
-				return true;
-		}
-	}
-
-	return false;
 }
 

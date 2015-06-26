@@ -326,14 +326,15 @@ int so_value_list_index_of(struct so_value * list, struct so_value * elt) __attr
 struct so_value * so_value_list_pop(struct so_value * list) __attribute__((nonnull,warn_unused_result));
 bool so_value_list_push(struct so_value * list, struct so_value * val, bool new_val) __attribute__((nonnull));
 bool so_value_list_remove(struct so_value * list, unsigned int index) __attribute__((nonnull));
-bool so_value_list_shift(struct so_value * list, struct so_value * val, bool new_val) __attribute__((nonnull));
+struct so_value * so_value_list_shift(struct so_value * list) __attribute__((nonnull,warn_unused_result));
 struct so_value * so_value_list_slice(struct so_value * list, int index) __attribute__((nonnull,warn_unused_result));
 struct so_value * so_value_list_slice2(struct so_value * list, int index, int end) __attribute__((nonnull,warn_unused_result));
 struct so_value * so_value_list_splice(struct so_value * list, int index, int how_many, ...) __attribute__((nonnull(1),warn_unused_result));
-struct so_value * so_value_list_unshift(struct so_value * list) __attribute__((nonnull,warn_unused_result));
+bool so_value_list_unshift(struct so_value * list, struct so_value * val, bool new_val) __attribute__((nonnull));
 
 const char * so_value_string_get(const struct so_value * value) __attribute__((nonnull));
 
+bool so_value_iterator_detach_previous(struct so_value_iterator * iter) __attribute__((nonnull));
 void so_value_iterator_free(struct so_value_iterator * iter) __attribute__((nonnull));
 struct so_value * so_value_iterator_get_key(struct so_value_iterator * iter, bool move_to_next, bool shared) __attribute__((nonnull,warn_unused_result));
 struct so_value * so_value_iterator_get_value(struct so_value_iterator * iter, bool shared) __attribute__((nonnull));

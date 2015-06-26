@@ -189,7 +189,7 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 
 		stop = soj_create_archive_worker_finished();
 		if (!stop) {
-			soj_create_archive_worker_prepare_medias2();
+			soj_create_archive_worker_prepare_medias2(db_connect);
 
 			for (i = 0; i < nb_src_files; i++)
 				src_files[i]->ops->rewind(src_files[i]);

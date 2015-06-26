@@ -232,7 +232,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 				vmedia = so_value_iterator_get_value(iter, false);
 				media = so_value_custom_get(vmedia);
 
-				drive = soj_media_load(media, false);
+				drive = soj_media_load(media, false, db_connect);
 
 				if (drive != NULL)
 					state = check_media;

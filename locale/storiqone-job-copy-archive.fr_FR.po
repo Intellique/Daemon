@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-copy-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-04-21 20:24+0200\n"
+        "POT-Creation-Date: 2015-06-11 20:12+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -78,7 +78,7 @@ msgstr  "Tentative de copier une archive « %s » dans un pool « %s » qui 
 msgid   "Failed to find suitable drive to copy archive '%s'"
 msgstr  "Échec lors de la recherche d’un lecteur valable pour copier l’archive « %s »"
 
-#: src/job/copy-archive/copy-archive.c:239
+#: src/job/copy-archive/copy-archive.c:242
 #, c-format
 msgid   "Error: not enought space available into pool '%s'"
 msgstr  "Erreur : pas assez d’espace disponible dans le pool « %s »"

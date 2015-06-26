@@ -32,7 +32,6 @@
 
 struct so_archive;
 struct so_archive_file;
-struct so_archive_format;
 struct so_archive_volume;
 struct so_backup;
 struct so_backup_volume;
@@ -97,6 +96,7 @@ struct so_database_connection {
 		/**
 		 * \brief check if the connection to database is closed
 		 *
+		 * \param[in] db a database connection
 		 * \param[in] db a database connection
 		 * \return 0 if the connection is not closed
 		 */
@@ -329,9 +329,6 @@ void so_database_load_config(struct so_value * config) __attribute__((nonnull));
  * \note Each database driver should call this function only one time
  * \code
  * static void database_myDb_init() __attribute__((constructor)) {
- *    so_database_register_driver(&database_myDb_module);
- * }
- * \endcode
  */
 void so_database_register_driver(struct so_database * driver) __attribute__((nonnull));
 

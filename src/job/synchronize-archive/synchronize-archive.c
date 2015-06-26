@@ -45,7 +45,8 @@
 
 #include "config.h"
 
-static struct so_archive * soj_synchronizearchive_archive = NULL;
+static struct so_archive * soj_synchronizearchive_src_archive = NULL;
+static struct so_archive * soj_synchronizearchive_dest_archive = NULL;
 static struct so_pool * soj_synchronizearchive_pool = NULL;
 static struct so_value * soj_synchronizearchive_synchronized_archives = NULL;
 
@@ -70,7 +71,8 @@ static struct so_job_driver soj_synchronizearchive = {
 
 
 static void soj_synchronizearchive_exit(struct so_job * job __attribute__((unused)), struct so_database_connection * db_connect __attribute__((unused))) {
-	so_archive_free(soj_synchronizearchive_archive);
+	so_archive_free(soj_synchronizearchive_src_archive);
+	so_archive_free(soj_synchronizearchive_dest_archive);
 	so_value_free(soj_synchronizearchive_synchronized_archives);
 }
 
@@ -85,52 +87,52 @@ static int soj_synchronizearchive_run(struct so_job * job, struct so_database_co
 }
 
 static int soj_synchronizearchive_simulate(struct so_job * job, struct so_database_connection * db_connect) {
-	soj_synchronizearchive_archive = db_connect->ops->get_archive_by_job(db_connect, job);
+	soj_synchronizearchive_dest_archive = db_connect->ops->get_archive_by_job(db_connect, job);
 
-	if (soj_synchronizearchive_archive->nb_volumes == 0) {
+	if (soj_synchronizearchive_dest_archive->nb_volumes == 0) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-synchronize-archive", "Bug: archive '%s' do not contain files"),
-			soj_synchronizearchive_archive->name);
+			soj_synchronizearchive_dest_archive->name);
 
 		return 1;
 	}
 
-	if (!soj_synchronizearchive_archive->can_append) {
+	if (!soj_synchronizearchive_dest_archive->can_append) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-synchronize-archive", "Error, can't add file into an archive '%s' which forbid to add them"),
-			soj_synchronizearchive_archive->name);
+			soj_synchronizearchive_dest_archive->name);
 		return 1;
 	}
 
-	if (db_connect->ops->is_archive_synchronized(db_connect, soj_synchronizearchive_archive)) {
+	if (db_connect->ops->is_archive_synchronized(db_connect, soj_synchronizearchive_dest_archive)) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-synchronize-archive", "Error, archive '%s' is already synchronized"),
-			soj_synchronizearchive_archive->name);
+			soj_synchronizearchive_dest_archive->name);
 		return 1;
 	}
 
-	struct so_pool * pool = soj_synchronizearchive_pool = soj_synchronizearchive_archive->volumes->media->pool;
+	struct so_pool * pool = soj_synchronizearchive_pool = soj_synchronizearchive_dest_archive->volumes->media->pool;
 	if (pool->deleted) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-synchronize-archive", "Try to create an archive '%s' into a pool '%s' which is deleted"),
-			soj_synchronizearchive_archive->name, pool->name);
+			soj_synchronizearchive_dest_archive->name, pool->name);
 		return 1;
 	}
 
-	soj_synchronizearchive_synchronized_archives = db_connect->ops->get_synchronized_archive(db_connect, soj_synchronizearchive_archive);
+	soj_synchronizearchive_synchronized_archives = db_connect->ops->get_synchronized_archive(db_connect, soj_synchronizearchive_dest_archive);
 
-	struct so_archive_volume * last_vol = soj_synchronizearchive_archive->volumes + (soj_synchronizearchive_archive->nb_volumes - 1);
+	struct so_archive_volume * last_vol = soj_synchronizearchive_dest_archive->volumes + (soj_synchronizearchive_dest_archive->nb_volumes - 1);
 	ssize_t new_volume_size = 0;
 
 	struct so_value_iterator * iter = so_value_list_get_iterator(soj_synchronizearchive_synchronized_archives);
 	while (so_value_iterator_has_next(iter)) {
 		struct so_value * varchive = so_value_iterator_get_value(iter, false);
-		struct so_archive * archive = so_value_custom_get(varchive);
+		soj_synchronizearchive_src_archive = so_value_custom_get(varchive);
 
 		struct so_archive_volume * first_vol;
 		unsigned int i;
-		for (i = 0; i < archive->nb_volumes; i++) {
-			first_vol = archive->volumes + i;
+		for (i = 0; i < soj_synchronizearchive_src_archive->nb_volumes; i++) {
+			first_vol = soj_synchronizearchive_src_archive->volumes + i;
 
 			if (first_vol->start_time > last_vol->end_time)
 				break;
@@ -142,8 +144,8 @@ static int soj_synchronizearchive_simulate(struct so_job * job, struct so_databa
 		bool ok = true;
 		unsigned int j = i;
 		new_volume_size = 0;
-		for (; i < archive->nb_volumes; i++) {
-			struct so_archive_volume * vol = archive->volumes + i;
+		for (; i < soj_synchronizearchive_src_archive->nb_volumes; i++) {
+			struct so_archive_volume * vol = soj_synchronizearchive_src_archive->volumes + i;
 			new_volume_size += vol->size;
 
 			struct so_slot * sl = soj_changer_find_slot(vol->media);
@@ -157,10 +159,11 @@ static int soj_synchronizearchive_simulate(struct so_job * job, struct so_databa
 
 		if (!ok) {
 			for (; j < i; j++) {
-				struct so_archive_volume * vol = archive->volumes + i;
+				struct so_archive_volume * vol = soj_synchronizearchive_src_archive->volumes + i;
 				struct so_slot * sl = soj_changer_find_slot(vol->media);
 				sl->changer->ops->release_media(sl->changer, sl);
 			}
+			soj_synchronizearchive_src_archive = NULL;
 			continue;
 		}
 	}
@@ -176,7 +179,7 @@ static void soj_synchronizearchive_script_on_error(struct so_job * job, struct s
 	struct so_value * json = so_value_pack("{sosososO}",
 		"job", so_job_convert(job),
 		"host", so_host_get_info2(),
-		"archive", so_archive_convert(soj_synchronizearchive_archive),
+		"archive", so_archive_convert(soj_synchronizearchive_dest_archive),
 		"candidate archives", soj_synchronizearchive_synchronized_archives
 	);
 
@@ -192,7 +195,7 @@ static void soj_synchronizearchive_script_post_run(struct so_job * job, struct s
 	struct so_value * json = so_value_pack("{sosososO}",
 		"job", so_job_convert(job),
 		"host", so_host_get_info2(),
-		"archive", so_archive_convert(soj_synchronizearchive_archive),
+		"archive", so_archive_convert(soj_synchronizearchive_dest_archive),
 		"candidate archives", soj_synchronizearchive_synchronized_archives
 	);
 
@@ -208,7 +211,7 @@ static bool soj_synchronizearchive_script_pre_run(struct so_job * job, struct so
 	struct so_value * json = so_value_pack("{sosososO}",
 		"job", so_job_convert(job),
 		"host", so_host_get_info2(),
-		"archive", so_archive_convert(soj_synchronizearchive_archive),
+		"archive", so_archive_convert(soj_synchronizearchive_dest_archive),
 		"candidate archives", soj_synchronizearchive_synchronized_archives
 	);
 

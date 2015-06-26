@@ -58,7 +58,7 @@ int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_co
 
 	struct so_value * vmedia = so_value_iterator_get_value(self->media_iterator, false);
 	self->media = so_value_custom_get(vmedia);
-	self->dest_drive = soj_media_load(self->media, false);
+	self->dest_drive = soj_media_load(self->media, false, db_connect);
 	if (self->dest_drive == NULL)
 		return 3;
 
@@ -68,7 +68,7 @@ int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_co
 	vol->media = self->media;
 	vol->job = job;
 
-	self->dest_drive = soj_media_load(self->media, false);
+	self->dest_drive = soj_media_load(self->media, false, db_connect);
 	self->writer = self->dest_drive->ops->get_writer(self->dest_drive, checksums);
 
 	vol->media_position = self->writer->ops->file_position(self->writer);

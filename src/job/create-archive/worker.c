@@ -92,7 +92,7 @@ static int soj_create_archive_worker_change_volume(struct so_job * job, struct s
 static int soj_create_archive_worker_close2(struct soj_create_archive_worker * worker, bool first_round);
 static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_create_archive_worker * worker, struct so_archive_file * file);
 static struct soj_create_archive_worker * soj_create_archive_worker_new(struct so_job * job, struct so_archive * archive, struct so_pool * pool);
-static void soj_create_archive_worker_prepare_medias3(bool no_wait);
+static void soj_create_archive_worker_prepare_medias3(bool no_wait, struct so_database_connection * db_connect);
 ssize_t soj_create_archive_worker_write2(struct so_job * job, struct soj_create_archive_worker * worker, struct so_format_file * file, const char * buffer, ssize_t length, bool first_round, struct so_database_connection * db_connect);
 static bool soj_create_archive_worker_write_meta(struct soj_create_archive_worker * worker);
 
@@ -218,7 +218,7 @@ static int soj_create_archive_worker_change_volume(struct so_job * job, struct s
 	if (so_value_iterator_has_next(worker->media_iterator)) {
 		struct so_value * vmedia = so_value_iterator_get_value(worker->media_iterator, false);
 		worker->media = so_value_custom_get(vmedia);
-		worker->drive = soj_media_load(worker->media, false);
+		worker->drive = soj_media_load(worker->media, false, db_connect);
 
 		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
 			dgettext("storiqone-job-create-archive", "Archive continue to media (%s)"),
@@ -464,7 +464,7 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 	primary_worker->media_iterator = soj_media_get_iterator(primary_worker->pool);
 	struct so_value * vmedia = so_value_iterator_get_value(primary_worker->media_iterator, false);
 	primary_worker->media = so_value_custom_get(vmedia);
-	primary_worker->drive = soj_media_load(primary_worker->media, false);
+	primary_worker->drive = soj_media_load(primary_worker->media, false, db_connect);
 
 	if (primary_worker->drive != NULL) {
 		primary_worker->checksums = db_connect->ops->get_checksums_from_pool(db_connect, primary_worker->pool);
@@ -495,7 +495,7 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 		worker->media_iterator = soj_media_get_iterator(worker->pool);
 		vmedia = so_value_iterator_get_value(worker->media_iterator, false);
 		worker->media = so_value_custom_get(vmedia);
-		worker->drive = soj_media_load(worker->media, true);
+		worker->drive = soj_media_load(worker->media, true, db_connect);
 		worker->checksums = db_connect->ops->get_checksums_from_pool(db_connect, worker->pool);
 
 		if (worker->drive != NULL) {
@@ -523,12 +523,12 @@ void soj_create_archive_worker_prepare_medias(struct so_database_connection * db
 	so_value_free(unique_checksums);
 }
 
-void soj_create_archive_worker_prepare_medias2() {
-	soj_create_archive_worker_prepare_medias3(true);
-	soj_create_archive_worker_prepare_medias3(false);
+void soj_create_archive_worker_prepare_medias2(struct so_database_connection * db_connect) {
+	soj_create_archive_worker_prepare_medias3(true, db_connect);
+	soj_create_archive_worker_prepare_medias3(false, db_connect);
 }
 
-static void soj_create_archive_worker_prepare_medias3(bool no_wait) {
+static void soj_create_archive_worker_prepare_medias3(bool no_wait, struct so_database_connection * db_connect) {
 	unsigned int i;
 	for (i = 0; i < nb_mirror_workers; i++) {
 		struct soj_create_archive_worker * worker = mirror_workers[i];
@@ -536,7 +536,7 @@ static void soj_create_archive_worker_prepare_medias3(bool no_wait) {
 		if (worker->state != soj_worker_status_reserved)
 			continue;
 
-		worker->drive = soj_media_load(worker->media, no_wait);
+		worker->drive = soj_media_load(worker->media, no_wait, db_connect);
 
 		if (worker->drive != NULL) {
 			worker->writer = worker->drive->ops->get_writer(worker->drive, worker->checksums);

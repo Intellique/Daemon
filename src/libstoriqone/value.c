@@ -81,9 +81,14 @@ struct so_value_iterator_array {
 struct so_value_iterator_hashtable {
 	struct so_value_hashtable_node * node;
 	unsigned int i_elements;
+
+	struct so_value_hashtable_node * previous;
+	unsigned int i_elements_previous;
 };
 
 struct so_value_iterator_linked_list {
+	struct so_value_linked_list * linked_list;
+	struct so_value_linked_list_node * previous;
 	struct so_value_linked_list_node * current;
 	struct so_value_linked_list_node * next;
 };
@@ -1243,6 +1248,8 @@ static struct so_value_iterator * so_value_hashtable_get_iterator2(struct so_val
 	iter->weak_ref = weak_ref;
 	iter_hash->node = NULL;
 	iter_hash->i_elements = 0;
+	iter_hash->previous = NULL;
+	iter_hash->i_elements_previous = 0;
 
 	for (; iter_hash->i_elements < value_hash->size_node && iter_hash->node == NULL; iter_hash->i_elements++)
 		iter_hash->node = value_hash->nodes[iter_hash->i_elements];
@@ -1549,6 +1556,7 @@ static struct so_value_iterator * so_value_list_get_iterator2(struct so_value * 
 		iter = malloc(sizeof(struct so_value_iterator) + sizeof(struct so_value_iterator_linked_list));
 		struct so_value_iterator_linked_list * iter_linked_list = (struct so_value_iterator_linked_list *) (iter + 1);
 
+		iter_linked_list->previous = NULL;
 		iter_linked_list->current = NULL;
 		iter_linked_list->next = value_linked_list->first;
 	}
@@ -1711,51 +1719,36 @@ bool so_value_list_remove(struct so_value * list, unsigned int index) {
 	return false;
 }
 
-bool so_value_list_shift(struct so_value * list, struct so_value * val, bool new_val) {
-	if (list == NULL || val == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
-		return false;
+struct so_value * so_value_list_shift(struct so_value * list) {
+	if (list == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
+		return NULL;
+
+	struct so_value * ret = NULL;
 
 	if (list->type == so_value_array) {
 		struct so_value_array * array = so_value_get(list);
-		if (array->nb_vals == array->nb_preallocated) {
-			void * new_addr = realloc(array->values, (array->nb_vals + 16) * sizeof(struct so_value *));
-			if (new_addr == NULL)
-				return false;
-
-			array->values = new_addr;
-			array->nb_preallocated += 16;
+		if (array->nb_vals > 0) {
+			ret = array->values[0];
+			array->nb_vals--;
+			memmove(array->values, array->values + 1, array->nb_vals * sizeof(struct so_value *));
+			array->values[array->nb_vals] = NULL;
 		}
-
-		if (!new_val)
-			val = so_value_share(val);
-
-		memmove(array->values + 1, array->values, array->nb_vals * sizeof(struct so_value *));
-		array->values[0] = val;
-		array->nb_vals++;
-
-		return true;
 	} else {
-		struct so_value_linked_list_node * node = malloc(sizeof(struct so_value_linked_list_node));
-		if (node == NULL)
-			return false;
-
-		if (!new_val)
-			val = so_value_share(val);
-
 		struct so_value_linked_list * linked = so_value_get(list);
-		node->value = val;
-		node->next = linked->first;
-		node->previous = NULL;
+		struct so_value_linked_list_node * node = linked->last;
+		if (node != NULL) {
+			linked->last = node->previous;
+			if (linked->last == NULL)
+				linked->first = NULL;
 
-		if (linked->first == NULL)
-			linked->first = linked->last = node;
-		else
-			linked->first = linked->first->previous = node;
+			ret = node->value;
+			linked->nb_vals--;
 
-		linked->nb_vals++;
-
-		return true;
+			free(node);
+		}
 	}
+
+	return ret;
 }
 
 struct so_value * so_value_list_slice(struct so_value * list, int index) {
@@ -1940,36 +1933,51 @@ struct so_value * so_value_list_splice(struct so_value * list, int index, int ho
 	return ret;
 }
 
-struct so_value * so_value_list_unshift(struct so_value * list) {
-	if (list == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
-		return NULL;
-
-	struct so_value * ret = NULL;
+bool so_value_list_unshift(struct so_value * list, struct so_value * val, bool new_val) {
+	if (list == NULL || val == NULL || (list->type != so_value_array && list->type != so_value_linked_list))
+		return false;
 
 	if (list->type == so_value_array) {
 		struct so_value_array * array = so_value_get(list);
-		if (array->nb_vals > 0) {
-			ret = array->values[0];
-			array->nb_vals--;
-			memmove(array->values, array->values + 1, array->nb_vals * sizeof(struct so_value *));
-			array->values[array->nb_vals] = NULL;
+		if (array->nb_vals == array->nb_preallocated) {
+			void * new_addr = realloc(array->values, (array->nb_vals + 16) * sizeof(struct so_value *));
+			if (new_addr == NULL)
+				return false;
+
+			array->values = new_addr;
+			array->nb_preallocated += 16;
 		}
+
+		if (!new_val)
+			val = so_value_share(val);
+
+		memmove(array->values + 1, array->values, array->nb_vals * sizeof(struct so_value *));
+		array->values[0] = val;
+		array->nb_vals++;
+
+		return true;
 	} else {
+		struct so_value_linked_list_node * node = malloc(sizeof(struct so_value_linked_list_node));
+		if (node == NULL)
+			return false;
+
+		if (!new_val)
+			val = so_value_share(val);
+
 		struct so_value_linked_list * linked = so_value_get(list);
-		struct so_value_linked_list_node * node = linked->last;
-		if (node != NULL) {
-			linked->last = node->previous;
-			if (linked->last == NULL)
-				linked->first = NULL;
+		node->value = val;
+		node->next = linked->first;
+		node->previous = NULL;
 
-			ret = node->value;
-			linked->nb_vals--;
+		if (linked->first == NULL)
+			linked->first = linked->last = node;
+		else
+			linked->first = linked->first->previous = node;
 
-			free(node);
-		}
+		linked->nb_vals++;
+
+		return true;
 	}
-
-	return ret;
 }
 
 
@@ -1977,6 +1985,96 @@ const char * so_value_string_get(const struct so_value * value) {
 	return so_value_get(value);
 }
 
+
+bool so_value_iterator_detach_previous(struct so_value_iterator * iter) {
+	if (iter == NULL)
+		return false;
+
+	switch (iter->value->type) {
+		case so_value_array: {
+				struct so_value_array * array = so_value_get(iter->value);
+				struct so_value_iterator_array * iter_array = (struct so_value_iterator_array *) (iter + 1);
+
+				if (iter_array->index < 1)
+					return false;
+
+				array->nb_vals--;
+				iter_array->index--;
+				memmove(array->values + iter_array->index, array->values + iter_array->index + 1, (array->nb_vals - iter_array->index) * sizeof(struct so_value *));
+				array->values[array->nb_vals] = NULL;
+
+				return true;
+			}
+
+		case so_value_hashtable: {
+				struct so_value_iterator_hashtable * iter_hash = (struct so_value_iterator_hashtable *) (iter + 1);
+
+				if (iter_hash->node == NULL)
+					return false;
+
+				struct so_value_hashtable * hash = so_value_get(iter->value);
+
+				if (iter_hash->previous == NULL)
+					return false;
+
+				struct so_value_hashtable_node * node = hash->nodes[iter_hash->i_elements_previous];
+				if (node->hash == iter_hash->previous->hash) {
+					hash->nodes[iter_hash->i_elements_previous] = node->next;
+
+					so_value_free(node->key);
+					free(node);
+					hash->nb_elements--;
+
+					return true;
+				}
+
+				while (node->next != NULL && node->next->hash != iter_hash->previous->hash)
+					node = node->next;
+
+				if (node->next->hash == iter_hash->previous->hash) {
+					struct so_value_hashtable_node * tmp = node->next;
+					node->next = tmp->next;
+
+					so_value_free(tmp->key);
+					free(tmp);
+					hash->nb_elements--;
+
+					return true;
+				}
+
+				return false;
+			}
+			break;
+
+		case so_value_linked_list: {
+				struct so_value_iterator_linked_list * iter_list = (struct so_value_iterator_linked_list *) (iter + 1);
+
+				struct so_value_linked_list_node * old = iter_list->previous;
+				if (old == NULL)
+					return false;
+
+				if (old->previous != NULL)
+					old->previous->next = old->next;
+				else
+					iter_list->linked_list->first = old->next;
+
+				if (old->next != NULL)
+					old->next->previous = old->previous;
+				else
+					iter_list->linked_list->last = old->previous;
+
+				free(old);
+
+				iter_list->linked_list->nb_vals--;
+
+				return true;
+			}
+			break;
+
+		default:
+			return false;
+	}
+}
 
 void so_value_iterator_free(struct so_value_iterator * iter) {
 	if (iter == NULL)
@@ -2002,6 +2100,10 @@ struct so_value * so_value_iterator_get_key(struct so_value_iterator * iter, boo
 
 	if (move_to_next) {
 		struct so_value_hashtable * hash = so_value_get(iter->value);
+
+		iter_hash->previous = node;
+		iter_hash->i_elements_previous = iter_hash->i_elements;
+
 		iter_hash->node = node->next;
 
 		if (iter_hash->node == NULL)
@@ -2040,6 +2142,9 @@ struct so_value * so_value_iterator_get_value(struct so_value_iterator * iter, b
 				struct so_value_hashtable_node * node = iter_hash->node;
 				ret = node->value;
 
+				iter_hash->previous = node;
+				iter_hash->i_elements_previous = iter_hash->i_elements;
+
 				iter_hash->node = node->next;
 				if (iter_hash->node != NULL)
 					break;
@@ -2051,6 +2156,7 @@ struct so_value * so_value_iterator_get_value(struct so_value_iterator * iter, b
 
 		case so_value_linked_list: {
 				struct so_value_iterator_linked_list * iter_list = (struct so_value_iterator_linked_list *) (iter + 1);
+				iter_list->previous = iter_list->current;
 				iter_list->current = iter_list->next;
 				if (iter_list->current != NULL) {
 					ret = iter_list->current->value;

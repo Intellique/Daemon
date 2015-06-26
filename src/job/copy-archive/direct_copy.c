@@ -62,7 +62,7 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 	vol->media = self->media;
 	vol->job = job;
 
-	self->dest_drive = soj_media_load(self->media, false);
+	self->dest_drive = soj_media_load(self->media, false, db_connect);
 	self->writer = self->dest_drive->ops->get_writer(self->dest_drive, checksums);
 
 	unsigned int i;

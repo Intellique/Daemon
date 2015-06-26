@@ -132,7 +132,7 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 	data.media_iterator = soj_media_get_iterator(data.pool);
 	struct so_value * vmedia = so_value_iterator_get_value(data.media_iterator, false);
 	data.media = so_value_custom_get(vmedia);
-	data.dest_drive = soj_media_load(data.media, true);
+	data.dest_drive = soj_media_load(data.media, true, db_connect);
 
 	int failed = 0;
 	if (data.dest_drive == NULL)
@@ -232,6 +232,9 @@ static int soj_copyarchive_simulate(struct so_job * job, struct so_database_conn
 
 		if (reserved < data.src_archive->size)
 			reserved += soj_media_prepare_unformatted(data.pool, false, db_connect);
+
+		if (reserved < data.src_archive->size)
+			reserved += soj_media_prepare_offline(data.pool, data.src_archive->size, db_connect);
 	}
 
 	if (reserved < data.src_archive->size) {
