@@ -74,6 +74,7 @@
 
 static bool sodr_tape_drive_check_header(struct so_database_connection * db);
 static bool sodr_tape_drive_check_support(struct so_media_format * format, bool for_writing, struct so_database_connection * db);
+static unsigned int sodr_tape_drive_count_archives(const bool * const disconnected, struct so_database_connection * db);
 static void sodr_tape_drive_create_media(struct so_database_connection * db);
 static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_connection * db);
 static ssize_t sodr_tape_drive_find_best_block_size(struct so_database_connection * db);
@@ -97,6 +98,7 @@ static struct mtget status;
 static struct so_drive_ops sodr_tape_drive_ops = {
 	.check_header         = sodr_tape_drive_check_header,
 	.check_support        = sodr_tape_drive_check_support,
+	.count_archives       = sodr_tape_drive_count_archives,
 	.erase_media          = sodr_tape_drive_erase_media,
 	.find_best_block_size = sodr_tape_drive_find_best_block_size,
 	.format_media         = sodr_tape_drive_format_media,
@@ -203,6 +205,24 @@ static bool sodr_tape_drive_check_header(struct so_database_connection * db) {
 
 static bool sodr_tape_drive_check_support(struct so_media_format * format, bool for_writing, struct so_database_connection * db __attribute__((unused))) {
 	return sodr_tape_drive_scsi_check_support(format, for_writing, scsi_device);
+}
+
+static unsigned int sodr_tape_drive_count_archives(const bool * const disconnected, struct so_database_connection * db) {
+	struct so_media * media = sodr_tape_drive.slot->media;
+	if (media == NULL)
+		return 0;
+
+	struct sodr_tape_drive_media * mp = media->private_data;
+	switch (mp->format) {
+		case sodr_tape_drive_media_storiq_one:
+			return sodr_media_storiqone_count_files(&sodr_tape_drive, disconnected, db);
+
+		case sodr_tape_drive_media_ltfs:
+			return sodr_tape_drive_format_ltfs_count_archives(media);
+
+		default:
+			return 0;
+	}
 }
 
 static void sodr_tape_drive_create_media(struct so_database_connection * db) {

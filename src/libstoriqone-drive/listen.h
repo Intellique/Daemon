@@ -31,12 +31,14 @@
 #include <stdbool.h>
 
 struct so_database_connection;
+struct sodr_peer;
 struct so_value;
 
 void sodr_listen_configure(struct so_value * config);
 struct so_value * sodr_listen_get_socket_config(void);
 bool sodr_listen_is_locked(void);
 unsigned int sodr_listen_nb_clients(void);
+void sodr_listen_remove_peer(struct sodr_peer * peer);
 void sodr_listen_reset_peer(void);
 void sodr_listen_set_db_connection(struct so_database_connection * db);
 void sodr_listen_set_peer_key(const char * key);

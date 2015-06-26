@@ -45,6 +45,7 @@
 // access, close, fstat, read, write
 #include <unistd.h>
 
+#include <libstoriqone/io.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
@@ -543,6 +544,35 @@ struct so_value * so_json_parse_file(const char * file) {
 	free(buffer);
 
 	return ret_value;
+}
+
+struct so_value * so_json_parse_stream(struct so_stream_reader * reader) {
+	ssize_t buffer_size = 4096, nb_total_read = 0, size;
+	char * buffer = malloc(buffer_size + 1);
+	buffer[0] = '\0';
+
+	struct so_value * ret_val = NULL;
+
+	while (size = reader->ops->read(reader, buffer + nb_total_read, buffer_size - nb_total_read), size > 0) {
+		nb_total_read += size;
+		buffer[nb_total_read] = '\0';
+
+		ret_val = so_json_parse_string(buffer);
+		if (ret_val != NULL)
+			break;
+
+		buffer_size += 4096;
+		void * addr = realloc(buffer, buffer_size + 1);
+		if (addr == NULL) {
+			free(buffer);
+			return NULL;
+		}
+
+		buffer = addr;
+	}
+
+	free(buffer);
+	return ret_val;
 }
 
 struct so_value * so_json_parse_string(const char * json) {

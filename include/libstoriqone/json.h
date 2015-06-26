@@ -32,6 +32,7 @@
 // ssize_t
 #include <sys/types.h>
 
+struct so_stream_reader;
 struct so_value;
 
 ssize_t so_json_encode_to_fd(struct so_value * value, int fd, bool use_buffer);
@@ -39,6 +40,7 @@ ssize_t so_json_encode_to_file(struct so_value * value, const char * filename);
 char * so_json_encode_to_string(struct so_value * value);
 struct so_value * so_json_parse_fd(int fd, int timeout);
 struct so_value * so_json_parse_file(const char * file);
+struct so_value * so_json_parse_stream(struct so_stream_reader * reader);
 struct so_value * so_json_parse_string(const char * json);
 
 #endif

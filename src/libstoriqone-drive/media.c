@@ -28,7 +28,7 @@
 #include <libintl.h>
 // sscanf, snprintf
 #include <stdio.h>
-// free
+// free, malloc
 #include <stdlib.h>
 // strcmp
 #include <string.h>
@@ -39,8 +39,13 @@
 
 #include <libstoriqone/checksum.h>
 #include <libstoriqone/database.h>
+#include <libstoriqone/format.h>
 #include <libstoriqone/host.h>
+#include <libstoriqone/io.h>
+#include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
+#include <libstoriqone/value.h>
+#include <libstoriqone-drive/drive.h>
 
 #include "media.h"
 
@@ -384,5 +389,49 @@ bool sodr_media_write_header(struct so_media * media, struct so_pool * pool, cha
 	free(digest);
 
 	return true;
+}
+
+
+unsigned int sodr_media_storiqone_count_files(struct so_drive * drive, const bool * const disconnected, struct so_database_connection * db_connection) {
+	unsigned int nb_archives = 0;
+	unsigned int i_file = 1;
+
+	while (!*disconnected) {
+		struct so_format_reader * tar = drive->ops->get_reader(i_file, NULL, db_connection);
+		if (tar == NULL)
+			break;
+
+		if (*disconnected) {
+			tar->ops->free(tar);
+			break;
+		}
+
+		struct so_format_file file;
+		so_format_file_init(&file);
+		enum so_format_reader_header_status status = tar->ops->get_header(tar, &file);
+		tar->ops->free(tar);
+
+		if (status != so_format_reader_header_ok || *disconnected)
+			break;
+
+		struct so_stream_reader * reader = drive->ops->get_raw_reader(i_file, db_connection);
+		if (reader == NULL)
+			break;
+
+		if (*disconnected) {
+			reader->ops->free(reader);
+			break;
+		}
+
+		struct so_value * index = so_json_parse_stream(reader);
+		if (index != NULL) {
+			i_file++;
+			so_value_free(index);
+		}
+
+		reader->ops->free(reader);
+	}
+
+	return nb_archives;
 }
 

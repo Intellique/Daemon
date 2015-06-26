@@ -27,6 +27,9 @@
 #ifndef __LIBSTORIQONE_DRIVE_DRIVE_H__
 #define __LIBSTORIQONE_DRIVE_DRIVE_H__
 
+// bool
+#include <stdbool.h>
+
 #include <libstoriqone/drive.h>
 
 struct so_database_connection;
@@ -49,6 +52,7 @@ struct so_drive_driver {
 struct so_drive_ops {
 	bool (*check_header)(struct so_database_connection * db);
 	bool (*check_support)(struct so_media_format * format, bool for_writing, struct so_database_connection * db);
+	unsigned int (*count_archives)(const bool * const disconnected, struct so_database_connection * db);
 	int (*erase_media)(bool quick_mode, struct so_database_connection * db);
 	ssize_t (*find_best_block_size)(struct so_database_connection * db);
 	int (*format_media)(struct so_pool * pool, struct so_database_connection * db);

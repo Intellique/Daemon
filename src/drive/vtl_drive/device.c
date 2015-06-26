@@ -65,6 +65,7 @@
 
 static bool sodr_vtl_drive_check_header(struct so_database_connection * db);
 static bool sodr_vtl_drive_check_support(struct so_media_format * format, bool for_writing, struct so_database_connection * db);
+static unsigned int sodr_vtl_drive_count_archives(const bool * const disconnected, struct so_database_connection * db);
 static bool sodr_vtl_drive_erase_file(const char * path);
 static int sodr_vtl_drive_erase_media(bool quick_mode, struct so_database_connection * db);
 static ssize_t sodr_vtl_drive_find_best_block_size(struct so_database_connection * db);
@@ -83,6 +84,7 @@ static struct so_media_format * sodr_vtl_media_format = NULL;
 static struct so_drive_ops sodr_vtl_drive_ops = {
 	.check_header         = sodr_vtl_drive_check_header,
 	.check_support        = sodr_vtl_drive_check_support,
+	.count_archives       = sodr_vtl_drive_count_archives,
 	.erase_media          = sodr_vtl_drive_erase_media,
 	.find_best_block_size = sodr_vtl_drive_find_best_block_size,
 	.format_media         = sodr_vtl_drive_format_media,
@@ -150,6 +152,14 @@ static bool sodr_vtl_drive_check_header(struct so_database_connection * db) {
 
 static bool sodr_vtl_drive_check_support(struct so_media_format * format, bool for_writing __attribute__((unused)), struct so_database_connection * db __attribute__((unused))) {
 	return so_media_format_cmp(format, sodr_vtl_media_format) == 0;
+}
+
+static unsigned int sodr_vtl_drive_count_archives(const bool * const disconnected, struct so_database_connection * db) {
+	struct so_media * media = sodr_vtl_drive.slot->media;
+	if (media == NULL)
+		return 0;
+
+	return sodr_media_storiqone_count_files(&sodr_vtl_drive, disconnected, db);
 }
 
 static bool sodr_vtl_drive_erase_file(const char * path) {

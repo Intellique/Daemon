@@ -48,6 +48,9 @@ struct sodr_peer {
 	ssize_t buffer_length;
 	bool has_checksums;
 
+	volatile bool disconnected;
+	volatile bool owned;
+
 	struct sodr_peer * next;
 	struct sodr_peer * previous;
 };

@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: vtl-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-06-17 19:46+0200\n"
+        "POT-Creation-Date: 2015-06-26 15:20+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -16,41 +16,41 @@ msgstr  "Project-Id-Version: vtl-drive v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/drive/vtl_drive/device.c:159
+#: src/drive/vtl_drive/device.c:169
 #, c-format
 msgid   "[%s %s %d] Failed to erase file '%s' because %m"
 msgstr  "[ %s %s %d ] Échec lors de l’écrasement du fichier « %s » parce que %m"
 
-#: src/drive/vtl_drive/device.c:177 src/drive/vtl_drive/device.c:264 src/drive/vtl_drive/device.c:371
+#: src/drive/vtl_drive/device.c:187 src/drive/vtl_drive/device.c:274 src/drive/vtl_drive/device.c:381
 #, c-format
 msgid   "[%s %s %d] Failed to list files from media '%s'"
 msgstr  "[ %s %s %d ] Échec de l’énumération des fichiers du média « %s »"
 
-#: src/drive/vtl_drive/device.c:179 src/drive/vtl_drive/device.c:266 src/drive/vtl_drive/device.c:373
+#: src/drive/vtl_drive/device.c:189 src/drive/vtl_drive/device.c:276 src/drive/vtl_drive/device.c:383
 msgid   "NULL"
 msgstr  "VIDE"
 
-#: src/drive/vtl_drive/device.c:208
+#: src/drive/vtl_drive/device.c:218
 #, c-format
 msgid   "[%s %s %d] Command 'shred' finished with code '%d' while removing file '%s'"
 msgstr  "[ %s %s %d ] Commande « shred » a quitté avec le code « %d » lors de la suppression du fichier « %s »"
 
-#: src/drive/vtl_drive/device.c:214
+#: src/drive/vtl_drive/device.c:224
 #, c-format
 msgid   "[%s %s %d] Failed to start 'shred' command to remove file '%s'"
 msgstr  "[ %s %s %d ] Échec du lancement de la commande « shred » pour supprimer le fichier « %s »"
 
-#: src/drive/vtl_drive/device.c:295
+#: src/drive/vtl_drive/device.c:305
 #, c-format
 msgid   "[%s %s %d] Failed to write header of media '%s'"
 msgstr  "[ %s %s %d ] Échec lors de l’écriture de l’en-tête du média « %s »"
 
-#: src/drive/vtl_drive/device.c:354
+#: src/drive/vtl_drive/device.c:364
 #, c-format
 msgid   "[%s %s %d] Failed to open file from media '%s' at position '%d' because %m"
 msgstr  "[ %s %s %d ] Échec lors de l’ouverture du fichier du média « %s » à la position « %d » parce que %m"
 
-#: src/drive/vtl_drive/device.c:462
+#: src/drive/vtl_drive/device.c:472
 #, c-format
 msgid   "[%s %s %d] Failed to find media with uuid '%s' from database"
 msgstr  "[ %s %s %d ] Échec lors de la recherche du média avec l’uuid « %s » depuis la base de données"

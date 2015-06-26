@@ -29,6 +29,7 @@
 // bzero
 #include <strings.h>
 
+#include <libstoriqone/archive.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/socket.h>
 #include <libstoriqone/value.h>
@@ -44,6 +45,7 @@ struct soj_drive {
 
 static bool soj_drive_check_header(struct so_drive * drive);
 static bool soj_drive_check_support(struct so_drive * drive, struct so_media_format * format, bool for_writing);
+static unsigned int soj_drive_count_archives(struct so_drive * drive);
 static int soj_drive_erase_media(struct so_drive * drive, bool quick_mode);
 static ssize_t soj_drive_find_best_block_size(struct so_drive * drive);
 static int soj_drive_format_media(struct so_drive * drive, struct so_pool * pool);
@@ -57,6 +59,7 @@ static int soj_drive_sync(struct so_drive * drive);
 static struct so_drive_ops soj_drive_ops = {
 	.check_header         = soj_drive_check_header,
 	.check_support        = soj_drive_check_support,
+	.count_archives       = soj_drive_count_archives,
 	.erase_media          = soj_drive_erase_media,
 	.find_best_block_size = soj_drive_find_best_block_size,
 	.format_media         = soj_drive_format_media,
@@ -111,6 +114,35 @@ static bool soj_drive_check_support(struct so_drive * drive, struct so_media_for
 	so_value_free(returned);
 
 	return ok;
+}
+
+static unsigned int soj_drive_count_archives(struct so_drive * drive) {
+	struct soj_drive * self = drive->data;
+	struct so_job * job = soj_job_get();
+
+	struct so_value * request = so_value_pack("{sss{ss}}",
+		"command", "count archives",
+		"params",
+			"job key", job->key
+	);
+	so_json_encode_to_fd(request, self->fd, true);
+	so_value_free(request);
+
+	struct so_value * response = so_json_parse_fd(self->fd, 5000);
+	while (response == NULL && !job->stopped_by_user)
+		response = so_json_parse_fd(self->fd, 5000);
+
+	if (job->stopped_by_user && response != NULL)
+		so_value_free(response);
+	else if (response != NULL) {
+		unsigned int nb_archives = 0;
+		so_value_unpack(response, "{si}", "returned", &nb_archives);
+		so_value_free(response);
+
+		return nb_archives;
+	}
+
+	return 0;
 }
 
 static int soj_drive_erase_media(struct so_drive * drive, bool quick_mode) {

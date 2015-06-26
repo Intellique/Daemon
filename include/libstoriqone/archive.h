@@ -138,6 +138,7 @@ struct so_value * so_archive_convert(struct so_archive * archive);
 void so_archive_free(struct so_archive * archive);
 void so_archive_free2(void * archive);
 struct so_archive * so_archive_new(void);
+void so_archive_sync(struct so_archive * archive, struct so_value * new_archive);
 
 struct so_archive_file * so_archive_file_copy(struct so_archive_file * file);
 

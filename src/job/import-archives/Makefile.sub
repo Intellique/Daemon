@@ -1,0 +1,13 @@
+STORIQONE_JOB_IMPORTARCHIVES_SRC_DIR		:= src/job/import-archives
+
+STORIQONE_JOB_IMPORTARCHIVES_BIN			:= bin/job_import-archives
+STORIQONE_JOB_IMPORTARCHIVES_CFLAG			:= -pthread
+STORIQONE_JOB_IMPORTARCHIVES_LD				:= -pthread -lstoriqone -lstoriqone-job -Llib
+
+STORIQONE_JOB_IMPORTARCHIVES_DEPEND_LIB		:= lib/libstoriqone-job.so
+
+STORIQONE_JOB_IMPORTARCHIVES_CHCKSUM_FILE	:= job_import-archives.chcksum
+
+STORIQONE_JOB_IMPORTARCHIVES_LOCALE			:= locale/storiqone-job-import-archives
+
+BIN_SYMS									+= STORIQONE_JOB_IMPORTARCHIVES

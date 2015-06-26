@@ -64,7 +64,13 @@ static struct so_archive_file_type2 {
 };
 static const unsigned int so_archive_file_nb_data_types = sizeof(so_archive_file_types) / sizeof(*so_archive_file_types);
 
+static struct so_value * so_archive_file_convert(struct so_archive_files * file);
+static void so_archive_file_free(struct so_archive_files * file);
+static void so_archive_file_sync(struct so_archive_files * file, struct so_value * new_file);
 static void so_archive_init(void) __attribute__((constructor));
+static struct so_value * so_archive_volume_convert(struct so_archive_volume * volume);
+static void so_archive_volume_free(struct so_archive_volume * volume);
+static void so_archive_volume_sync(struct so_archive_volume * volume, struct so_value * new_volume);
 
 
 struct so_archive_volume * so_archive_add_volume(struct so_archive * archive) {
@@ -92,70 +98,8 @@ struct so_value * so_archive_convert(struct so_archive * archive) {
 	struct so_value * volumes = so_value_new_array(archive->nb_volumes);
 	for (i = 0; i < archive->nb_volumes; i++) {
 		struct so_archive_volume * vol = archive->volumes + i;
-
 		archive->size += vol->size;
-
-		unsigned int j;
-		struct so_value * files = so_value_new_array(vol->nb_files);
-		for (j = 0; j < vol->nb_files; j++) {
-			struct so_archive_files * ptr_file = vol->files + j;
-			struct so_archive_file * file = ptr_file->file;
-
-			struct so_value * checksums;
-			if (file->digests == NULL)
-				checksums = so_value_new_hashtable2();
-			else
-				checksums = so_value_share(file->digests);
-
-			so_value_list_push(files, so_value_pack("{sisis{sssssisssisssisssisisbsisosiss}}",
-				"position", ptr_file->position,
-				"archived time", ptr_file->archived_time,
-				"file",
-					"path", file->path,
-					"restored to", file->restored_to,
-
-					"permission", (long) file->perm,
-					"type", so_archive_file_type_to_string(file->type, false),
-					"owner id", file->ownerid,
-					"owner", file->owner,
-					"group id", file->groupid,
-					"group", file->group,
-
-					"create time", file->create_time,
-					"modify time", file->modify_time,
-
-					"checksum ok", file->check_ok,
-					"checksum time", file->check_time,
-					"checksums", checksums,
-
-					"size", file->size,
-
-					"mime type", file->mime_type
-			), true);
-		}
-
-		struct so_value * checksums;
-		if (vol->digests == NULL)
-			checksums = so_value_new_hashtable2();
-		else
-			checksums = so_value_share(vol->digests);
-
-		so_value_list_push(volumes, so_value_pack("{sisisisisbsisososiso}",
-			"sequence", (long) vol->sequence,
-			"size", vol->size,
-
-			"start time", vol->start_time,
-			"end time", vol->end_time,
-
-			"checksum ok", vol->check_ok,
-			"checksum time", vol->check_time,
-			"checksums", checksums,
-
-			"media", so_media_convert(vol->media),
-			"media position", (long) vol->media_position,
-
-			"files", files
-		), true);
+		so_value_list_push(volumes, so_archive_volume_convert(vol), true);
 	}
 
 	return so_value_pack("{sssssisosssssbsb}",
@@ -181,26 +125,8 @@ void so_archive_free(struct so_archive * archive) {
 	free(archive->name);
 
 	unsigned int i;
-	for (i = 0; i < archive->nb_volumes; i++) {
-		struct so_archive_volume * vol = archive->volumes + i;
-		so_value_free(vol->digests);
-
-		unsigned int j;
-		for (j = 0; j < vol->nb_files; j++) {
-			struct so_archive_file * file = vol->files[j].file;
-			free(file->path);
-			free(file->restored_to);
-			free(file->owner);
-			free(file->group);
-			free(file->mime_type);
-			free(file->selected_path);
-			so_value_free(file->digests);
-			so_value_free(file->db_data);
-			free(file);
-		}
-		free(vol->files);
-		so_value_free(vol->db_data);
-	}
+	for (i = 0; i < archive->nb_volumes; i++)
+		so_archive_volume_free(archive->volumes + i);
 	free(archive->volumes);
 
 	free(archive->creator);
@@ -230,6 +156,112 @@ struct so_archive * so_archive_new() {
 	return archive;
 }
 
+void so_archive_sync(struct so_archive * archive, struct so_value * new_archive) {
+	free(archive->name);
+	free(archive->creator);
+	free(archive->owner);
+
+	struct so_value * uuid = NULL;
+	struct so_value * volumes = NULL;
+
+	so_value_unpack(new_archive, "{sosssisosssssbsb}",
+		"uuid", &uuid,
+		"name", &archive->name,
+
+		"size", &archive->size,
+
+		"volumes", &volumes,
+
+		"creator", &archive->creator,
+		"owner", &archive->owner,
+
+		"can append", &archive->can_append,
+		"deleted", &archive->deleted
+	);
+
+	if (uuid->type == so_value_string) {
+		const char * suuid = so_value_string_get(uuid);
+		strncpy(archive->uuid, suuid, 36);
+		archive->uuid[36] = '\0';
+	} else
+		archive->uuid[0] = '\0';
+
+	unsigned int nb_volumes = so_value_list_get_length(volumes);
+	if (archive->nb_volumes != nb_volumes) {
+		if (archive->nb_volumes == 0)
+			archive->volumes = calloc(nb_volumes, sizeof(struct so_archive_volume));
+		else if (archive->nb_volumes < nb_volumes) {
+			void * new_volumes = realloc(archive->volumes, nb_volumes * sizeof(struct so_archive_volume));
+			if (new_volumes != NULL) {
+				archive->volumes = new_volumes;
+				bzero(archive->volumes + archive->nb_volumes, (nb_volumes - archive->nb_volumes) * sizeof(struct so_archive_volume));
+			}
+		} else if (archive->nb_volumes > nb_volumes) {
+			unsigned int i;
+			for (i = nb_volumes; i < archive->nb_volumes; i++)
+				so_archive_volume_free(archive->volumes + i);
+
+			if (nb_volumes > 0) {
+				void * new_volumes = realloc(archive->volumes, nb_volumes * sizeof(struct so_archive_volume));
+				if (new_volumes != NULL) {
+					archive->volumes = new_volumes;
+					bzero(archive->volumes + archive->nb_volumes, (nb_volumes - archive->nb_volumes) * sizeof(struct so_archive_volume));
+				}
+			} else {
+				free(volumes);
+				archive->volumes = NULL;
+			}
+		}
+
+		unsigned int i;
+		for (i = archive->nb_volumes; i < nb_volumes; i++) {
+			struct so_value * vvolume = so_value_list_get(volumes, i, false);
+			struct so_archive_volume * vol = archive->volumes + i;
+
+			vol->archive = archive;
+			so_archive_volume_sync(vol, vvolume);
+		} 
+
+		archive->nb_volumes = nb_volumes;
+	}
+}
+
+
+static struct so_value * so_archive_file_convert(struct so_archive_files * ptr_file) {
+	struct so_archive_file * file = ptr_file->file;
+
+	struct so_value * checksums;
+	if (file->digests == NULL)
+		checksums = so_value_new_hashtable2();
+	else
+		checksums = so_value_share(file->digests);
+
+	return so_value_pack("{sisis{sssssisssisssisssisisbsisosiss}}",
+		"position", ptr_file->position,
+		"archived time", ptr_file->archived_time,
+		"file",
+		"path", file->path,
+		"restored to", file->restored_to,
+
+		"permission", (long) file->perm,
+		"type", so_archive_file_type_to_string(file->type, false),
+		"owner id", file->ownerid,
+		"owner", file->owner,
+		"group id", file->groupid,
+		"group", file->group,
+
+		"create time", file->create_time,
+		"modify time", file->modify_time,
+
+		"checksum ok", file->check_ok,
+		"checksum time", file->check_time,
+		"checksums", checksums,
+
+		"size", file->size,
+
+		"mime type", file->mime_type
+	);
+}
 
 struct so_archive_file * so_archive_file_copy(struct so_archive_file * file) {
 	struct so_archive_file * copy = malloc(sizeof(struct so_archive_file));
@@ -261,6 +293,81 @@ struct so_archive_file * so_archive_file_copy(struct so_archive_file * file) {
 	copy->digests = so_value_copy(file->digests, true);
 
 	return copy;
+}
+
+static void so_archive_file_free(struct so_archive_files * files) {
+	struct so_archive_file * file = files->file;
+	free(file->path);
+	free(file->restored_to);
+	free(file->owner);
+	free(file->group);
+	free(file->mime_type);
+	free(file->selected_path);
+	so_value_free(file->digests);
+	so_value_free(file->db_data);
+	free(file);
+}
+
+static void so_archive_file_sync(struct so_archive_files * files, struct so_value * new_file) {
+	long int archived_time = 0;
+	long int permission = 0;
+	char * file_type = NULL;
+	long int owner_id = 0;
+	long int group_id = 0;
+	long int create_time = 0;
+	long int modify_time = 0;
+	long int check_time = 0;
+
+	if (files->file == NULL) {
+		files->file = malloc(sizeof(struct so_archive_file));
+		bzero(files->file, sizeof(struct so_archive_file));
+	} else {
+		free(files->file->owner);
+		free(files->file->group);
+		so_value_free(files->file->digests);
+		files->file->digests = NULL;
+		free(files->file->mime_type);
+	}
+
+	struct so_archive_file * file = files->file;
+
+	so_value_unpack(new_file, "{sisis{sssssisssisssisssisisbsisOsiss}}",
+		"position", &files->position,
+		"archived time", &archived_time,
+		"file",
+			"path", &file->path,
+			"restored to", &file->restored_to,
+
+			"permission", &permission,
+			"type", &file_type,
+			"owner id", &owner_id,
+			"owner", &file->owner,
+			"group id", &group_id,
+			"group", &file->group,
+
+			"create time", &create_time,
+			"modify time", &modify_time,
+
+			"checksum ok", &file->check_ok,
+			"checksum time", &check_time,
+			"checksums", &file->digests,
+
+			"size", &file->size,
+
+			"mime type", &file->mime_type
+	);
+
+	files->archived_time = archived_time;
+
+	file->perm = permission;
+	file->type = so_archive_file_string_to_type(file_type, false);
+	file->ownerid = owner_id;
+	file->groupid = group_id;
+	file->create_time = create_time;
+	file->modify_time = modify_time;
+	file->check_time = check_time;
+
+	free(file_type);
 }
 
 
@@ -343,5 +450,117 @@ void so_archive_format_sync(struct so_archive_format * archive_format, struct so
 		strncpy(archive_format->name, name, 32);
 
 	free(name);
+}
+
+
+static struct so_value * so_archive_volume_convert(struct so_archive_volume * vol) {
+	unsigned int i;
+	struct so_value * files = so_value_new_array(vol->nb_files);
+	for (i = 0; i < vol->nb_files; i++)
+		so_value_list_push(files, so_archive_file_convert(vol->files + i), true);
+
+	struct so_value * checksums;
+	if (vol->digests == NULL)
+		checksums = so_value_new_hashtable2();
+	else
+		checksums = so_value_share(vol->digests);
+
+	return so_value_pack("{sisisisisbsisososiso}",
+		"sequence", (long) vol->sequence,
+		"size", vol->size,
+
+		"start time", vol->start_time,
+		"end time", vol->end_time,
+
+		"checksum ok", vol->check_ok,
+		"checksum time", vol->check_time,
+		"checksums", checksums,
+
+		"media", so_media_convert(vol->media),
+		"media position", (long) vol->media_position,
+
+		"files", files
+	);
+}
+
+static void so_archive_volume_free(struct so_archive_volume * vol) {
+	so_value_free(vol->digests);
+
+	unsigned int i;
+	for (i = 0; i < vol->nb_files; i++)
+		so_archive_file_free(vol->files + i);
+	free(vol->files);
+	so_value_free(vol->db_data);
+}
+
+static void so_archive_volume_sync(struct so_archive_volume * volume, struct so_value * new_volume) {
+	struct so_value * media = NULL;
+	struct so_value * files = NULL;
+
+	if (volume->digests != NULL)
+		so_value_free(volume->digests);
+
+	long int sequence = 0;
+	long int start_time = 0;
+	long int end_time = 0;
+	long int check_time = 0;
+	long int media_position = 0;
+
+	so_value_unpack(new_volume, "{sisisisisbsisososiso}",
+		"sequence", &sequence,
+		"size", &volume->size,
+
+		"start time", &start_time,
+		"end time", &end_time,
+
+		"checksum ok", &volume->check_ok,
+		"checksum time", &check_time,
+		"checksums", &volume->digests,
+
+		"media", &media,
+		"media position", &media_position,
+
+		"files", files
+	);
+
+	volume->sequence = sequence;
+	volume->start_time = start_time;
+	volume->end_time = end_time;
+	volume->check_time = check_time;
+
+	if (volume->media != NULL && media->type == so_value_null) {
+		so_media_free(volume->media);
+		volume->media = NULL;
+	} else if (media->type != so_value_null) {
+		if (volume->media == NULL) {
+			volume->media = malloc(sizeof(struct so_media));
+			bzero(volume->media, sizeof(struct so_media));
+		}
+
+		so_media_sync(volume->media, media);
+	}
+	volume->media_position = media_position;
+
+	if (volume->files != NULL && files->type == so_value_null) {
+		unsigned int i;
+		for (i = 0; i < volume->nb_files; i++)
+			so_archive_file_free(volume->files + i);
+		free(volume->files);
+		volume->files = NULL;
+		volume->nb_files = 0;
+	} else if (files->type != so_value_null) {
+		unsigned int nb_files = so_value_list_get_length(files);
+		if (volume->files == NULL)
+			volume->files = calloc(nb_files, sizeof(struct so_archive_files));
+		volume->nb_files = nb_files;
+
+		unsigned int i;
+		struct so_value_iterator * iter = so_value_list_get_iterator(files);
+		for (i = 0; i < volume->nb_files && so_value_iterator_has_next(iter); i++) {
+			struct so_value * vfile = so_value_iterator_get_value(iter, false);
+			so_archive_file_sync(volume->files + i, vfile);
+		}
+		so_value_iterator_free(iter);
+	}
 }
 

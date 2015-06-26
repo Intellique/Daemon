@@ -32,8 +32,6 @@
 #include <string.h>
 // uuid_generate, uuid_unparse_lower
 #include <uuid/uuid.h>
-// sleep
-#include <unistd.h>
 
 #include <libstoriqone/database.h>
 #include <libstoriqone/host.h>

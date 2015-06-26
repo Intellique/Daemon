@@ -89,6 +89,9 @@ struct sodr_peer * sodr_peer_new(int fd, struct sodr_peer * previous) {
 	peer->buffer_length = 0;
 	peer->has_checksums = false;
 
+	peer->disconnected = false;
+	peer->owned = false;
+
 	peer->next = NULL;
 	peer->previous = previous;
 	if (previous != NULL)

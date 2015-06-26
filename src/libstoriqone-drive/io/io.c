@@ -31,11 +31,14 @@
 // close
 #include <unistd.h>
 
+#include <libstoriqone/format.h>
+#include <libstoriqone/io.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
 
 #include "io.h"
+#include "../listen.h"
 #include "../peer.h"
 
 
@@ -84,6 +87,23 @@ void sodr_io_process(struct sodr_peer * peer, struct sodr_command commands[]) {
 		fd_cmd.revents = 0;
 	}
 
+	if (peer->stream_reader != NULL) {
+		peer->stream_reader->ops->free(peer->stream_reader);
+		peer->stream_reader = NULL;
+	}
+	if (peer->stream_writer != NULL) {
+		peer->stream_writer->ops->free(peer->stream_writer);
+		peer->stream_writer = NULL;
+	}
+	if (peer->format_reader != NULL) {
+		peer->format_reader->ops->free(peer->format_reader);
+		peer->format_reader = NULL;
+	}
+	if (peer->format_writer != NULL) {
+		peer->format_writer->ops->free(peer->format_writer);
+		peer->format_writer = NULL;
+	}
+
 	if (peer->fd_cmd > -1) {
 		close(peer->fd_cmd);
 		peer->fd_cmd = -1;
@@ -92,5 +112,8 @@ void sodr_io_process(struct sodr_peer * peer, struct sodr_command commands[]) {
 		close(peer->fd_data);
 		peer->fd_data = -1;
 	}
+
+	peer->owned = false;
+	sodr_listen_remove_peer(peer);
 }
 

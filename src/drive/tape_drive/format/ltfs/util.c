@@ -50,6 +50,11 @@ static struct so_value * sodr_tape_drive_format_ltfs_find(struct so_value * inde
 static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive_format_ltfs * self, struct so_value * index, const char * path, unsigned int * position);
 
 
+unsigned int sodr_tape_drive_format_ltfs_count_archives(struct so_media * media) {
+	struct sodr_tape_drive_media * mp = media->private_data;
+	return mp->data.ltfs.nb_files > 0 ? 1 : 0;
+}
+
 static unsigned int sodr_tape_drive_format_ltfs_count_extent(struct so_value * extents) {
 	struct so_value * children = NULL;
 	so_value_unpack(extents, "{so}", "children", &children);
