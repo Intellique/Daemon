@@ -59,7 +59,7 @@ static struct so_media_format * sochgr_vtl_format = NULL;
 static char * sochgr_vtl_prefix = NULL;
 static char * sochgr_vtl_root_dir = NULL;
 
-static int sochgr_vtl_changer_check(struct so_database_connection * db_connection);
+static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_connection * db_connection);
 static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_connection * db_connection);
 static int sochgr_vtl_changer_load(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
 static int sochgr_vtl_changer_put_offline(struct so_database_connection * db_connection);
@@ -104,7 +104,10 @@ static struct so_changer sochgr_vtl_changer = {
 };
 
 
-static int sochgr_vtl_changer_check(struct so_database_connection * db_connection) {
+static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_connection * db_connection) {
+	if (nb_clients > 0)
+		return 0;
+
 	struct so_value * vtl_update = db_connection->ops->update_vtl(db_connection, &sochgr_vtl_changer);
 	if (vtl_update == NULL)
 		return 1;

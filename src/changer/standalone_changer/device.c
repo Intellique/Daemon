@@ -39,11 +39,10 @@
 
 #include "device.h"
 
-static int sochgr_standalone_changer_check(struct so_database_connection * db_connection);
+static int sochgr_standalone_changer_check(unsigned int nb_clients, struct so_database_connection * db_connection);
 static int sochgr_standalone_changer_init(struct so_value * config, struct so_database_connection * db_connection);
 static int sochgr_standalone_changer_load(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
-static int sochgr_standalone_changer_put_offline(struct so_database_connection * db_connection);
-static int sochgr_standalone_changer_put_online(struct so_database_connection * db_connection);
+static int sochgr_standalone_changer_remain_online(struct so_database_connection * db_connection);
 static int sochgr_standalone_changer_shut_down(struct so_database_connection * db_connection);
 static int sochgr_standalone_changer_unload(struct so_drive * from, struct so_database_connection * db_connection);
 
@@ -51,8 +50,8 @@ struct so_changer_ops sochgr_standalone_changer_ops = {
 	.check       = sochgr_standalone_changer_check,
 	.init        = sochgr_standalone_changer_init,
 	.load        = sochgr_standalone_changer_load,
-	.put_offline = sochgr_standalone_changer_put_offline,
-	.put_online  = sochgr_standalone_changer_put_online,
+	.put_offline = sochgr_standalone_changer_remain_online,
+	.put_online  = sochgr_standalone_changer_remain_online,
 	.shut_down   = sochgr_standalone_changer_shut_down,
 	.unload      = sochgr_standalone_changer_unload,
 };
@@ -83,13 +82,16 @@ static struct so_changer sochgr_standalone_changer = {
 };
 
 
-static int sochgr_standalone_changer_check(struct so_database_connection * db_connection __attribute__((unused))) {
+static int sochgr_standalone_changer_check(unsigned int nb_clients __attribute__((unused)), struct so_database_connection * db_connect) {
 	struct so_drive * dr = sochgr_standalone_changer.drives;
 
-	if (!dr->enable)
+	if (!dr->enable || !dr->ops->is_free(dr))
 		return 0;
 
 	dr->ops->reset(dr);
+
+	sochgr_standalone_changer.status = dr->is_empty ? so_changer_status_offline : so_changer_status_idle;
+	db_connect->ops->sync_changer(db_connect, &sochgr_standalone_changer, so_database_sync_default);
 
 	return 0;
 }
@@ -146,29 +148,10 @@ static int sochgr_standalone_changer_load(struct so_slot * from __attribute__((u
 	return 1;
 }
 
-static int sochgr_standalone_changer_put_offline(struct so_database_connection * db_connect) {
-	sochgr_standalone_changer.status = so_changer_status_go_offline;
-	db_connect->ops->sync_changer(db_connect, &sochgr_standalone_changer, so_database_sync_default);
-
-	struct so_drive * dr = sochgr_standalone_changer.drives;
-	while (dr->ops->is_free(dr)) {
-		so_poll(-1);
-		db_connect->ops->sync_changer(db_connect, &sochgr_standalone_changer, so_database_sync_default);
-	}
-
-	sochgr_standalone_changer.status = so_changer_status_offline;
-	sochgr_standalone_changer.is_online = false;
-	sochgr_standalone_changer.next_action = so_changer_action_none;
-	db_connect->ops->sync_changer(db_connect, &sochgr_standalone_changer, so_database_sync_default);
-
-	return 0;
-}
-
-static int sochgr_standalone_changer_put_online(struct so_database_connection * db_connection) {
+static int sochgr_standalone_changer_remain_online(struct so_database_connection * db_connect) {
 	sochgr_standalone_changer.status = so_changer_status_idle;
-	sochgr_standalone_changer.is_online = true;
 	sochgr_standalone_changer.next_action = so_changer_action_none;
-	db_connection->ops->sync_changer(db_connection, &sochgr_standalone_changer, so_database_sync_default);
+	db_connect->ops->sync_changer(db_connect, &sochgr_standalone_changer, so_database_sync_default);
 
 	return 0;
 }

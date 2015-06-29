@@ -44,7 +44,7 @@ struct so_changer_driver {
 };
 
 struct so_changer_ops {
-	int (*check)(struct so_database_connection * db_connection);
+	int (*check)(unsigned int nb_clients, struct so_database_connection * db_connection);
 	int (*init)(struct so_value * config, struct so_database_connection * db_connection);
 	int (*load)(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
 	int (*put_offline)(struct so_database_connection * db_connection);

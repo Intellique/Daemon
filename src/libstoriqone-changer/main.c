@@ -189,8 +189,7 @@ int main() {
 			sochgr_socket_unlock(NULL, false);
 		nb_free_drives = nb_new_free_drives;
 
-		if (nb_clients == 0)
-			changer->ops->check(db_connect);
+		changer->ops->check(nb_clients, db_connect);
 	}
 
 	so_log_write(so_log_level_info, dgettext("libstoriqone-changer", "Changer (type: %s) will stop"), driver->name);

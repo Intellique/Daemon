@@ -62,7 +62,7 @@
 #include "device.h"
 #include "scsi.h"
 
-static int sochgr_scsi_changer_check(struct so_database_connection * db_connection);
+static int sochgr_scsi_changer_check(unsigned int nb_clients, struct so_database_connection * db_connection);
 static int sochgr_scsi_changer_init(struct so_value * config, struct so_database_connection * db_connection);
 static void sochgr_scsi_changer_init_worker(void * arg);
 static int sochgr_scsi_changer_load(struct so_slot * from, struct so_drive * to, struct so_database_connection * db_connection);
@@ -115,7 +115,10 @@ static struct so_changer sochgr_scsi_changer = {
 };
 
 
-static int sochgr_scsi_changer_check(struct so_database_connection * db_connection) {
+static int sochgr_scsi_changer_check(unsigned int nb_clients, struct so_database_connection * db_connection) {
+	if (nb_clients > 0)
+		return 0;
+
 	static struct timespec last_call = { 0, 0 };
 	static struct timespec last_check = { 0, 0 };
 
