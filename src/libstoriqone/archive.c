@@ -224,7 +224,7 @@ void so_archive_sync(struct so_archive * archive, struct so_value * new_archive)
 
 			vol->archive = archive;
 			so_archive_volume_sync(vol, vvolume);
-		} 
+		}
 
 		archive->nb_volumes = nb_volumes;
 	}
@@ -463,19 +463,17 @@ void so_archive_format_free(struct so_archive_format * archive_format) {
 }
 
 void so_archive_format_sync(struct so_archive_format * archive_format, struct so_value * new_archive_format) {
-	char * name = NULL;
-	so_value_unpack(new_archive_format, "{sssbsb}",
-		"name", name,
+	struct so_value * name = NULL;
+	so_value_unpack(new_archive_format, "{sosbsb}",
+		"name", &name,
 		"readable", &archive_format->readable,
 		"writable", &archive_format->writable
 	);
 
-	if (name == NULL)
-		archive_format->name[0] = '\0';
+	if (name->type == so_value_string)
+		strncpy(archive_format->name, so_value_string_get(name), 32);
 	else
-		strncpy(archive_format->name, name, 32);
-
-	free(name);
+		archive_format->name[0] = '\0';
 }
 
 
