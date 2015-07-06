@@ -42,6 +42,7 @@ bool sodr_media_check_header(struct so_media * media, const char * buffer, struc
 bool sodr_media_write_header(struct so_media * media, struct so_pool * pool, char * buffer, size_t length);
 
 unsigned int sodr_media_storiqone_count_files(struct so_drive * drive, const bool * const disconnected, struct so_database_connection * db_connection);
+struct so_archive * sodr_media_storiqone_parse_archive(struct so_drive * drive, const bool * const disconnected, unsigned int archive_position, struct so_database_connection * db_connection);
 
 #endif
 

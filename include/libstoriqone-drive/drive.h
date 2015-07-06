@@ -61,6 +61,7 @@ struct so_drive_ops {
 	struct so_format_reader * (*get_reader)(int file_position, struct so_value * checksums, struct so_database_connection * db);
 	struct so_format_writer * (*get_writer)(struct so_value * checksums, struct so_database_connection * db);
 	int (*init)(struct so_value * config, struct so_database_connection * db_connect);
+	struct so_archive * (*parse_archive)(const bool * const disconnected, unsigned int archive_position, struct so_value * checksums, struct so_database_connection * db);
 	int (*reset)(struct so_database_connection * db);
 	int (*update_status)(struct so_database_connection * db);
 };

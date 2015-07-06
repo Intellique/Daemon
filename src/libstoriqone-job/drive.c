@@ -53,6 +53,7 @@ static struct so_stream_reader * soj_drive_get_raw_reader(struct so_drive * driv
 static struct so_stream_writer * soj_drive_get_raw_writer(struct so_drive * drive);
 static struct so_format_reader * soj_drive_get_reader(struct so_drive * drive, int file_position, struct so_value * checksums);
 static struct so_format_writer * soj_drive_get_writer(struct so_drive * drive, struct so_value * checksums);
+static struct so_archive * soj_drive_parse_archive(struct so_drive * drive, int archive_position, struct so_value * checksums);
 static void soj_drive_release(struct so_drive * drive);
 static int soj_drive_sync(struct so_drive * drive);
 
@@ -67,6 +68,7 @@ static struct so_drive_ops soj_drive_ops = {
 	.get_raw_writer       = soj_drive_get_raw_writer,
 	.get_reader           = soj_drive_get_reader,
 	.get_writer           = soj_drive_get_writer,
+	.parse_archive        = soj_drive_parse_archive,
 	.release              = soj_drive_release,
 	.sync                 = soj_drive_sync,
 };
@@ -369,6 +371,45 @@ void soj_drive_init(struct so_drive * drive, struct so_value * config) {
 
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
 	so_value_free(response);
+}
+
+static struct so_archive * soj_drive_parse_archive(struct so_drive * drive, int archive_position, struct so_value * checksums) {
+	struct soj_drive * self = drive->data;
+	struct so_job * job = soj_job_get();
+
+	struct so_value * request = so_value_pack("{sss{sssisO}}",
+		"command", "parse archive",
+		"params",
+			"job key", job->key,
+			"archive position", (long long) archive_position,
+			"checksums", checksums
+	);
+	so_json_encode_to_fd(request, self->fd, true);
+	so_value_free(request);
+
+	struct so_value * response = so_json_parse_fd(self->fd, 5000);
+	while (response == NULL && !job->stopped_by_user)
+		response = so_json_parse_fd(self->fd, 5000);
+
+	if (job->stopped_by_user && response != NULL)
+		so_value_free(response);
+	else if (response != NULL) {
+		struct so_value * new_archive = NULL;
+		so_value_unpack(response, "{so}", "returned", &new_archive);
+
+		struct so_archive * archive = NULL;
+		if (new_archive != NULL) {
+			archive = malloc(sizeof(struct so_archive));
+			bzero(archive, sizeof(struct so_archive));
+			so_archive_sync(archive, new_archive);
+		}
+
+		so_value_free(response);
+
+		return archive;
+	}
+
+	return NULL;
 }
 
 static void soj_drive_release(struct so_drive * drive) {

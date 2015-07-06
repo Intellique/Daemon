@@ -37,6 +37,7 @@
 // uuid_generate, uuid_unparse_lower
 #include <uuid/uuid.h>
 
+#include <libstoriqone/archive.h>
 #include <libstoriqone/checksum.h>
 #include <libstoriqone/database.h>
 #include <libstoriqone/format.h>
@@ -393,27 +394,31 @@ bool sodr_media_write_header(struct so_media * media, struct so_pool * pool, cha
 
 
 unsigned int sodr_media_storiqone_count_files(struct so_drive * drive, const bool * const disconnected, struct so_database_connection * db_connection) {
+	struct so_format_reader * tar = drive->ops->get_reader(1, NULL, db_connection);
+	if (tar == NULL)
+		return 0;
+
+	if (*disconnected) {
+		tar->ops->free(tar);
+		return 0;
+	}
+
+	struct so_format_file file;
+	so_format_file_init(&file);
+	enum so_format_reader_header_status status = tar->ops->get_header(tar, &file);
+
+	if (status == so_format_reader_header_ok)
+		so_format_file_free(&file);
+
+	tar->ops->free(tar);
+
+	if (status != so_format_reader_header_ok || *disconnected)
+		return status != so_format_reader_header_ok ? 0 : 1;
+
 	unsigned int nb_archives = 0;
-	unsigned int i_file = 1;
+	unsigned int i_file = 2;
 
 	while (!*disconnected) {
-		struct so_format_reader * tar = drive->ops->get_reader(i_file, NULL, db_connection);
-		if (tar == NULL)
-			break;
-
-		if (*disconnected) {
-			tar->ops->free(tar);
-			break;
-		}
-
-		struct so_format_file file;
-		so_format_file_init(&file);
-		enum so_format_reader_header_status status = tar->ops->get_header(tar, &file);
-		tar->ops->free(tar);
-
-		if (status != so_format_reader_header_ok || *disconnected)
-			break;
-
 		struct so_stream_reader * reader = drive->ops->get_raw_reader(i_file, db_connection);
 		if (reader == NULL)
 			break;
@@ -426,12 +431,124 @@ unsigned int sodr_media_storiqone_count_files(struct so_drive * drive, const boo
 		struct so_value * index = so_json_parse_stream(reader);
 		if (index != NULL) {
 			i_file++;
+			nb_archives++;
 			so_value_free(index);
 		}
 
 		reader->ops->free(reader);
+
+		if (*disconnected)
+			break;
+
+		tar = drive->ops->get_reader(i_file, NULL, db_connection);
+		if (tar == NULL)
+			break;
+
+		if (*disconnected) {
+			tar->ops->free(tar);
+			break;
+		}
+
+		so_format_file_init(&file);
+		status = tar->ops->get_header(tar, &file);
+
+		if (status == so_format_reader_header_ok) {
+			so_format_file_free(&file);
+			i_file++;
+		}
+
+		tar->ops->free(tar);
+
+		if (status != so_format_reader_header_ok || *disconnected)
+			break;
 	}
 
 	return nb_archives;
+}
+
+struct so_archive * sodr_media_storiqone_parse_archive(struct so_drive * drive, const bool * const disconnected, unsigned int archive_position, struct so_database_connection * db_connection) {
+	struct so_format_reader * tar = drive->ops->get_reader(1, NULL, db_connection);
+	if (tar == NULL)
+		return NULL;
+
+	if (*disconnected) {
+		tar->ops->free(tar);
+		return NULL;
+	}
+
+	struct so_format_file file;
+	so_format_file_init(&file);
+	enum so_format_reader_header_status status = tar->ops->get_header(tar, &file);
+
+	if (status == so_format_reader_header_ok)
+		so_format_file_free(&file);
+
+	tar->ops->free(tar);
+
+	if (status != so_format_reader_header_ok || *disconnected)
+		return NULL;
+
+	unsigned int nb_archives = 0;
+	unsigned int i_file = 2;
+
+	while (!*disconnected && nb_archives <= archive_position) {
+		struct so_stream_reader * reader = drive->ops->get_raw_reader(i_file, db_connection);
+		if (reader == NULL)
+			break;
+
+		if (*disconnected) {
+			reader->ops->free(reader);
+			break;
+		}
+
+		struct so_value * index = so_json_parse_stream(reader);
+		if (index != NULL) {
+			i_file++;
+			nb_archives++;
+
+			if (nb_archives == archive_position) {
+				struct so_archive * archive = malloc(sizeof(struct so_archive));
+				bzero(archive, sizeof(struct so_archive));
+
+				so_archive_sync(archive, index);
+
+				so_value_free(index);
+				reader->ops->free(reader);
+
+				return archive;
+			}
+
+			so_value_free(index);
+		}
+
+		reader->ops->free(reader);
+
+		if (*disconnected)
+			break;
+
+		tar = drive->ops->get_reader(i_file, NULL, db_connection);
+		if (tar == NULL)
+			break;
+
+		if (*disconnected) {
+			tar->ops->free(tar);
+			break;
+		}
+
+		so_format_file_init(&file);
+		status = tar->ops->get_header(tar, &file);
+
+		if (status == so_format_reader_header_ok) {
+			so_format_file_free(&file);
+			i_file++;
+		}
+
+		tar->ops->free(tar);
+
+		if (status != so_format_reader_header_ok || *disconnected)
+			break;
+	}
+
+	return NULL;
 }
 

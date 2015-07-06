@@ -52,6 +52,8 @@ struct sodr_tape_drive_media {
 		} storiq_one;
 
 		struct sodr_tape_drive_format_ltfs {
+			char owner_identifier[15];
+
 			struct sodr_tape_drive_format_ltfs_file {
 				struct so_format_file file;
 				struct sodr_tape_drive_format_ltfs_extent {

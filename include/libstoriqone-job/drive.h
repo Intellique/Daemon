@@ -44,6 +44,7 @@ struct so_drive_ops {
 	struct so_stream_writer * (*get_raw_writer)(struct so_drive * drive);
 	struct so_format_reader * (*get_reader)(struct so_drive * drive, int file_position, struct so_value * checksums);
 	struct so_format_writer * (*get_writer)(struct so_drive * drive, struct so_value * checksums);
+	struct so_archive * (*parse_archive)(struct so_drive * drive, int archive_position, struct so_value * checksums);
 	void (*release)(struct so_drive * drive);
 	int (*sync)(struct so_drive * drive);
 };

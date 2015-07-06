@@ -41,6 +41,7 @@
 #include <libstoriqone/io.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/slot.h>
+#include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-drive/drive.h>
 
@@ -64,8 +65,6 @@ static bool sodr_tape_drive_media_check_ltfs_header(struct so_media * media __at
 	so_log_write(so_log_level_debug,
 		dgettext("storiqone-drive-tape", "Found LTFS header in media with (volume id: %s)"),
 		vol_id);
-
-	// TODO: add media to special LTFS pool
 
 	return true;
 }
@@ -120,8 +119,25 @@ enum sodr_tape_drive_media_format sodr_tape_drive_parse_label(const char * buffe
 
 int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_database_connection * db_connect) {
 	struct so_media * media = drive->slot->media;
+	struct sodr_tape_drive_media * mp = media->private_data;
 
-	struct so_stream_reader * reader = drive->ops->get_raw_reader(3, db_connect);
+	struct so_stream_reader * reader = drive->ops->get_raw_reader(0, db_connect);
+
+	char buffer_label[82];
+	ssize_t nb_read = reader->ops->read(reader, buffer_label, 82);
+
+	reader->ops->close(reader);
+	reader->ops->free(reader);
+
+	strncpy(mp->data.ltfs.owner_identifier, buffer_label + 37, 14);
+	mp->data.ltfs.owner_identifier[14] = '\0';
+	if (mp->data.ltfs.owner_identifier[0] == ' ')
+		mp->data.ltfs.owner_identifier[0] = '\0';
+	else
+		so_string_rtrim(mp->data.ltfs.owner_identifier, ' ');
+
+
+	reader = drive->ops->get_raw_reader(3, db_connect);
 	if (reader == NULL) {
 		so_log_write(so_log_level_debug,
 			dgettext("storiqone-drive-tape", "Failed to read ltfs index from media '%s'"),
@@ -133,7 +149,7 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 	char * buffer = malloc(buffer_size);
 	struct so_value * index = NULL;
 	for (;;) {
-		ssize_t nb_read = reader->ops->read(reader, buffer + nb_total_read, buffer_size - nb_total_read);
+		nb_read = reader->ops->read(reader, buffer + nb_total_read, buffer_size - nb_total_read);
 		if (nb_read < 0) {
 			so_log_write(so_log_level_debug,
 				dgettext("storiqone-drive-tape", "Error while reading ltfs index from media '%s'"),

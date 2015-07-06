@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-vtl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-06-26 16:51+0200\n"
+        "POT-Creation-Date: 2015-07-01 17:40+0200\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -21,77 +21,82 @@ msgstr  "Project-Id-Version: storiqone-drive-vtl v1.2\n"
 msgid   "[%s %s #%u]: reopen media '%s' for reading at position #%d"
 msgstr  "[ %s %s #%u ] : réouverture du média « %s » en lecture à la position n°%d"
 
-#: src/libstoriqone-drive/listen.c:251
+#: src/libstoriqone-drive/listen.c:265
 #, c-format
 msgid   "[%s %s #%u]: checking header of media '%s'"
 msgstr  "[ %s %s #%u ] : vérification de l’entête du média « %s »"
 
-#: src/libstoriqone-drive/listen.c:326
+#: src/libstoriqone-drive/listen.c:340
 #, c-format
 msgid   "[%s %s #%u]: Erase media '%s' (mode: %s)"
 msgstr  "[ %s %s #%u ]: Effacement du média « %s » (mode : %s)"
 
-#: src/libstoriqone-drive/listen.c:328
+#: src/libstoriqone-drive/listen.c:342
 msgid   "long"
 msgstr  "long"
 
-#: src/libstoriqone-drive/listen.c:328
+#: src/libstoriqone-drive/listen.c:342
 msgid   "quick"
 msgstr  "rapide"
 
-#: src/libstoriqone-drive/listen.c:337
+#: src/libstoriqone-drive/listen.c:351
 #, c-format
 msgid   "[%s %s #%u]: media '%s' erased with success"
 msgstr  "[ %s %s #%u ] : média « %s » effacé avec succès"
 
-#: src/libstoriqone-drive/listen.c:341
+#: src/libstoriqone-drive/listen.c:355
 #, c-format
 msgid   "[%s %s #%u]: failed to erase media '%s'"
 msgstr  "[ %s %s #%u ] : échec lors de l’effacement du média « %s »"
 
-#: src/libstoriqone-drive/listen.c:368
+#: src/libstoriqone-drive/listen.c:382
 #, c-format
 msgid   "[%s %s #%u]: looking for best block size for media '%s'"
 msgstr  "[ %s %s #%u ] : recherche de la meilleur taille de bloc pour le média « %s »"
 
-#: src/libstoriqone-drive/listen.c:381
+#: src/libstoriqone-drive/listen.c:395
 #, c-format
 msgid   "[%s %s #%u]: block size found for media '%s': %s"
 msgstr  "[ %s %s #%u ] : taille de bloc trouvée pour le média « %s » : %s"
 
-#: src/libstoriqone-drive/listen.c:385
+#: src/libstoriqone-drive/listen.c:399
 #, c-format
 msgid   "[%s %s #%u]: failed to find best block size '%s'"
 msgstr  "[ %s %s #%u ] : échec lors de la recherche de la meilleur taille de bloc « %s »"
 
-#: src/libstoriqone-drive/listen.c:417
+#: src/libstoriqone-drive/listen.c:431
 #, c-format
 msgid   "[%s %s #%u]: formatting media '%s'"
 msgstr  "[ %s %s #%u ] : formatage du média « %s »"
 
-#: src/libstoriqone-drive/listen.c:427
+#: src/libstoriqone-drive/listen.c:441
 #, c-format
 msgid   "[%s %s #%u]: media '%s' formatted with success"
 msgstr  "[ %s %s #%u ] : formatage du média « %s » avec succès"
 
-#: src/libstoriqone-drive/listen.c:431
+#: src/libstoriqone-drive/listen.c:445
 #, c-format
 msgid   "[%s %s #%u]: failed to format media '%s'"
 msgstr  "[ %s %s #%u ] : échec du formatage du média « %s »"
 
-#: src/libstoriqone-drive/listen.c:469 src/libstoriqone-drive/listen.c:606
+#: src/libstoriqone-drive/listen.c:483 src/libstoriqone-drive/listen.c:620
 #, c-format
 msgid   "[%s %s #%u]: open media '%s' for reading at position #%ld"
 msgstr  "[ %s %s #%u ] : ouverture du média « %s » en lecture à la position #%ld"
 
-#: src/libstoriqone-drive/listen.c:533 src/libstoriqone-drive/listen.c:676
+#: src/libstoriqone-drive/listen.c:547 src/libstoriqone-drive/listen.c:690
 #, c-format
 msgid   "[%s %s #%u]: open media '%s' for writing"
 msgstr  "[ %s %s #%u ] : ouverture du média « %s » en écriture"
 
-#: src/libstoriqone-drive/listen.c:754
+#: src/libstoriqone-drive/listen.c:813
 #, c-format
 msgid   "[%s %s #%u]: Count archives from media '%s'"
+msgstr  ""
+
+#: src/libstoriqone-drive/listen.c:842
+#, c-format
+msgid   "[%s %s #%u]: Parse archive from media '%s' at position #%u"
 msgstr  ""
 
 #: src/libstoriqone-drive/main.c:71
@@ -114,20 +119,20 @@ msgstr  "Démarrage du lecteur (type : %s, fabriquant : %s, modèle : %s, num
 msgid   "Drive (type: %s) will stop"
 msgstr  "Le lecteur (type : %s) va s’arrêter"
 
-#: src/libstoriqone-drive/media.c:147 src/libstoriqone-drive/media.c:234 src/libstoriqone-drive/media.c:323
+#: src/libstoriqone-drive/media.c:148 src/libstoriqone-drive/media.c:235 src/libstoriqone-drive/media.c:324
 #, c-format
 msgid   "Checking Storiq One header in media: %s"
 msgstr  "Vérification de l’entête Storiq One dans le média : %s"
 
-#: src/libstoriqone-drive/media.c:149 src/libstoriqone-drive/media.c:236 src/libstoriqone-drive/media.c:325
+#: src/libstoriqone-drive/media.c:150 src/libstoriqone-drive/media.c:237 src/libstoriqone-drive/media.c:326
 #, c-format
 msgid   "Found Storiq One header in media with (uuid: %s, label: %s, blocksize: %zd)"
 msgstr  "Une entête Storiq One a été trouvé sur le média avec (uuid : %s, étiquette : %s, taille de bloc : %zd)"
 
-#: src/libstoriqone-drive/media.c:162 src/libstoriqone-drive/media.c:249 src/libstoriqone-drive/media.c:338
+#: src/libstoriqone-drive/media.c:163 src/libstoriqone-drive/media.c:250 src/libstoriqone-drive/media.c:339
 msgid   "Checking Storiq One header in media: Failed"
 msgstr  "Vérification de l’entête Storiq One sur le média : échec"
 
-#: src/libstoriqone-drive/media.c:383
+#: src/libstoriqone-drive/media.c:384
 msgid   "Failed to compute digest before write media header"
 msgstr  "Échec du calcul de l’empreinte avant d’écrire l’entête du média"

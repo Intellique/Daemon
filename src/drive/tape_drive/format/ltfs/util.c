@@ -26,6 +26,8 @@
 
 #define _GNU_SOURCE
 #define _XOPEN_SOURCE
+// magic_buffer, magic_close, magic_open
+#include <magic.h>
 // bool
 #include <stdbool.h>
 // calloc, free
@@ -36,10 +38,19 @@
 #include <string.h>
 // bzero
 #include <strings.h>
-// mktime, strptime
+// S_ISREG
+#include <sys/stat.h>
+// localtime_r, mktime, strptime, time
 #include <time.h>
 
+#include <libstoriqone/archive.h>
+#include <libstoriqone/drive.h>
+#include <libstoriqone/format.h>
+#include <libstoriqone/io.h>
+#include <libstoriqone/media.h>
+#include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
+#include <libstoriqone-drive/drive.h>
 
 #include "ltfs.h"
 #include "../../media.h"
@@ -141,6 +152,126 @@ static struct so_value * sodr_tape_drive_format_ltfs_find(struct so_value * inde
 	so_value_iterator_free(iter);
 
 	return elt;
+}
+
+struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * drive, const bool * const disconnected, struct so_value * checksums, struct so_database_connection * db) {
+	struct so_media * media = drive->slot->media;
+	struct sodr_tape_drive_media * mp = media->private_data;
+
+	struct so_format_reader * reader = drive->ops->get_reader(0, NULL, db);
+	if (reader == NULL)
+		return NULL;
+
+	if (*disconnected) {
+		reader->ops->close(reader);
+		reader->ops->free(reader);
+		return NULL;
+	}
+
+	struct so_archive * archive = so_archive_new();
+	strncpy(archive->uuid, media->uuid, 36);
+	archive->uuid[36] = '\0';
+
+	if (mp->data.ltfs.owner_identifier[0] != '\0')
+		archive->name = strdup(mp->data.ltfs.owner_identifier);
+	else {
+		struct tm tm_now;
+		time_t now = time(NULL);
+		localtime_r(&now, &tm_now);
+
+		archive->name = malloc(41);
+		strftime(archive->name, 40, "Imported LTFS %F %T:%z", &tm_now);
+	}
+
+	archive->can_append = false;
+	struct so_archive_volume * vol = so_archive_add_volume(archive);
+	vol->media = media;
+	vol->media_position = 0;
+
+	struct so_format_file file;
+	enum so_format_reader_header_status status;
+
+	struct sodr_files {
+		struct so_format_file info;
+		ssize_t position;
+		time_t archived_time;
+		char * mime_type;
+		struct so_value * digests;
+
+		struct sodr_files * next;
+	} * first = NULL, * last = NULL;
+
+	bool has_checksum = so_value_list_get_length(checksums) > 0;
+
+	magic_t magicFile = magic_open(MAGIC_MIME_TYPE);
+	magic_load(magicFile, NULL);
+
+	while (status = reader->ops->get_header(reader, &file), !*disconnected && status == so_format_reader_header_ok) {
+		struct sodr_files * new_file = malloc(sizeof(struct sodr_files));
+		so_format_file_copy(&new_file->info, &file);
+		new_file->position = reader->ops->position(reader);
+		vol->nb_files++;
+
+		if (has_checksum && S_ISREG(file.mode)) {
+			struct so_stream_writer * writer = so_io_checksum_writer_new(NULL, checksums, true);
+
+			char buffer[32768];
+			ssize_t nb_read;
+			while (nb_read = reader->ops->read(reader, buffer, 32768), nb_read < 0) {
+				writer->ops->write(writer, buffer, nb_read);
+
+				if (new_file->mime_type == NULL) {
+					const char * mt = magic_buffer(magicFile, buffer, nb_read);
+					if (mt != NULL)
+						new_file->mime_type = strdup(mt);
+					else
+						new_file->mime_type = strdup("");
+				}
+			}
+
+			writer->ops->close(writer);
+			new_file->digests = so_io_checksum_writer_get_checksums(writer);
+			writer->ops->free(writer);
+		} else
+			new_file->digests = NULL;
+
+		new_file->archived_time = time(NULL);
+		new_file->next = NULL;
+
+		if (first == NULL)
+			first = last = new_file;
+		else
+			last = last->next = new_file;
+	}
+
+	reader->ops->close(reader);
+	reader->ops->free(reader);
+
+	magic_close(magicFile);
+
+	vol->files = calloc(vol->nb_files, sizeof(struct so_archive_files));
+
+	unsigned int i;
+	struct sodr_files * a_file = first;
+	for (i = 0; i < vol->nb_files; i++) {
+		struct so_archive_files * ptr_file = vol->files + i;
+		ptr_file->position = a_file->position;
+		ptr_file->archived_time = a_file->archived_time;
+
+		struct so_archive_file * new_file = ptr_file->file = so_archive_file_import(&a_file->info);
+
+		new_file->mime_type = a_file->mime_type;
+		new_file->selected_path = strdup("/");
+
+		new_file->digests = a_file->digests;
+
+		struct sodr_files * tmp_file = a_file;
+		a_file = tmp_file->next;
+
+		free(tmp_file);
+	}
+
+	return archive;
 }
 
 void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, struct so_value * index) {

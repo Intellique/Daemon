@@ -37,6 +37,7 @@
 struct so_archive_file;
 enum st_archive_file_type;
 struct so_archive_volume;
+struct so_format_file;
 struct so_media;
 struct so_value;
 
@@ -141,6 +142,7 @@ struct so_archive * so_archive_new(void);
 void so_archive_sync(struct so_archive * archive, struct so_value * new_archive);
 
 struct so_archive_file * so_archive_file_copy(struct so_archive_file * file);
+struct so_archive_file * so_archive_file_import(struct so_format_file * file);
 
 enum so_archive_file_type so_archive_file_mode_to_type(mode_t mode);
 enum so_archive_file_type so_archive_file_string_to_type(const char * type, bool translate);

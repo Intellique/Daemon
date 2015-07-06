@@ -40,6 +40,7 @@
 #define gettext_noop(String) String
 
 #include <libstoriqone/archive.h>
+#include <libstoriqone/format.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/string.h>
 #include <libstoriqone/value.h>
@@ -92,6 +93,9 @@ struct so_archive_volume * so_archive_add_volume(struct so_archive * archive) {
 }
 
 struct so_value * so_archive_convert(struct so_archive * archive) {
+	if (archive == NULL)
+		return so_value_new_null();
+
 	archive->size = 0;
 
 	unsigned int i;
@@ -227,6 +231,60 @@ void so_archive_sync(struct so_archive * archive, struct so_value * new_archive)
 }
 
 
+struct so_archive_file * so_archive_file_copy(struct so_archive_file * file) {
+	struct so_archive_file * copy = malloc(sizeof(struct so_archive_file));
+	bzero(copy, sizeof(struct so_archive_file));
+
+	copy->path = strdup(file->path);
+	if (file->restored_to != NULL)
+		copy->restored_to = strdup(file->restored_to);
+
+	copy->perm = file->perm;
+	copy->type = file->type;
+	copy->ownerid = file->ownerid;
+	copy->owner = strdup(file->owner);
+	copy->groupid = file->groupid;
+	copy->group = strdup(file->group);
+
+	copy->create_time = file->create_time;
+	copy->modify_time = file->modify_time;
+
+	copy->check_ok = file->check_ok;
+	copy->check_time = file->check_time;
+
+	copy->size = file->size;
+
+	copy->mime_type = strdup(file->mime_type);
+	if (file->selected_path != NULL)
+		copy->selected_path = strdup(file->selected_path);
+
+	copy->digests = so_value_copy(file->digests, true);
+
+	return copy;
+}
+
+struct so_archive_file * so_archive_file_import(struct so_format_file * file) {
+	struct so_archive_file * new_file = malloc(sizeof(struct so_archive_file));
+	bzero(new_file, sizeof(struct so_archive_file));
+
+	new_file->path = strdup(file->filename);
+
+	new_file->perm = file->mode & 07777;
+	new_file->type = so_archive_file_mode_to_type(file->mode);
+	new_file->ownerid = file->uid;
+	new_file->owner = strdup(file->user);
+	new_file->groupid = file->gid;
+	new_file->group = strdup(file->group);
+
+	new_file->create_time = file->ctime;
+	new_file->modify_time = file->mtime;
+
+	new_file->size = file->size;
+
+	return new_file;
+}
+
+
 static struct so_value * so_archive_file_convert(struct so_archive_files * ptr_file) {
 	struct so_archive_file * file = ptr_file->file;
 
@@ -261,38 +319,6 @@ static struct so_value * so_archive_file_convert(struct so_archive_files * ptr_f
 
 		"mime type", file->mime_type
 	);
-}
-
-struct so_archive_file * so_archive_file_copy(struct so_archive_file * file) {
-	struct so_archive_file * copy = malloc(sizeof(struct so_archive_file));
-	bzero(copy, sizeof(struct so_archive_file));
-
-	copy->path = strdup(file->path);
-	if (file->restored_to != NULL)
-		copy->restored_to = strdup(file->restored_to);
-
-	copy->perm = file->perm;
-	copy->type = file->type;
-	copy->ownerid = file->ownerid;
-	copy->owner = strdup(file->owner);
-	copy->groupid = file->groupid;
-	copy->group = strdup(file->group);
-
-	copy->create_time = file->create_time;
-	copy->modify_time = file->modify_time;
-
-	copy->check_ok = file->check_ok;
-	copy->check_time = file->check_time;
-
-	copy->size = file->size;
-
-	copy->mime_type = strdup(file->mime_type);
-	if (file->selected_path != NULL)
-		copy->selected_path = strdup(file->selected_path);
-
-	copy->digests = so_value_copy(file->digests, true);
-
-	return copy;
 }
 
 static void so_archive_file_free(struct so_archive_files * files) {

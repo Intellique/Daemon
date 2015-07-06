@@ -26,7 +26,7 @@
 
 // open
 #include <fcntl.h>
-// magic_file, magic_open
+// magic_file, magic_load, magic_open
 #include <magic.h>
 // pthread_mutex_*
 #include <pthread.h>

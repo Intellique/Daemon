@@ -46,6 +46,7 @@
 #include "config.h"
 
 static struct so_value * soj_importarchives_archives = NULL;
+static struct so_value * soj_importarchives_checksums = NULL;
 static struct so_media * soj_importarchives_media = NULL;
 static struct so_pool * soj_importarchives_pool = NULL;
 
@@ -73,6 +74,10 @@ static void soj_importarchives_exit(struct so_job * job __attribute__((unused)),
 	if (soj_importarchives_archives != NULL)
 		so_value_free(soj_importarchives_archives);
 	soj_importarchives_archives = NULL;
+
+	if (soj_importarchives_checksums != NULL)
+		so_value_free(soj_importarchives_checksums);
+	soj_importarchives_checksums = NULL;
 
 	if (soj_importarchives_media != NULL)
 		so_media_free(soj_importarchives_media);
@@ -113,34 +118,32 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 
 	soj_importarchives_archives = so_value_new_linked_list();
 
-	/*
-	struct so_archive * archive = drive->ops->find_first_archive(drive);
-	while (archive != NULL) {
-		so_value_list_push(soj_importarchives_archives, so_value_new_custom(archive, so_archive_free2), true);
-
-		if (job->stopped_by_user)
+	unsigned int i, nb_archives = drive->ops->count_archives(drive);
+	for (i = 0; i < nb_archives && !job->stopped_by_user; i++) {
+		struct so_archive * archive = drive->ops->parse_archive(drive, i, soj_importarchives_checksums);
+		if (archive == NULL)
 			break;
 
-		archive = drive->ops->find_next_archive(drive);
+		so_value_list_push(soj_importarchives_archives, so_value_new_custom(archive, so_archive_free2), true);
 
-		unsigned int i;
-		for (i = 0; i < archive->nb_volumes; i++) {
-			struct so_archive_volume * vol = archive->volumes + i;
-			vol->media->pool = soj_importarchives_pool;
-		}
+		float done = i;
+		done /= nb_archives;
+		job->done = done * 0.33 + 0.33;
 	}
-	*/
+	nb_archives = i;
 
-	job->done = 0.5;
-	if (job->stopped_by_user)
-		return 1;
+	job->done = 0.66;
 
 	struct so_value_iterator * iter = so_value_list_get_iterator(soj_importarchives_archives);
-	while (so_value_iterator_has_next(iter)) {
+	for (i = 0; so_value_iterator_has_next(iter); i++) {
 		struct so_value * varchive = so_value_iterator_get_value(iter, false);
 		struct so_archive * archive = so_value_custom_get(varchive);
 
 		db_connect->ops->sync_archive(db_connect, archive, NULL);
+
+		float done = i;
+		done /= nb_archives;
+		job->done = done * 0.33 + 0.66;
 	}
 	so_value_iterator_free(iter);
 
@@ -185,6 +188,8 @@ static int soj_importarchives_simulate(struct so_job * job, struct so_database_c
 			soj_importarchives_pool->name);
 		return 1;
 	}
+
+	soj_importarchives_checksums = db_connect->ops->get_checksums_from_pool(db_connect, soj_importarchives_pool);
 
 	if (so_media_format_cmp(soj_importarchives_media->media_format, soj_importarchives_pool->media_format) != 0) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,

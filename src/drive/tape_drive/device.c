@@ -85,6 +85,7 @@ static struct so_format_reader * sodr_tape_drive_get_reader(int file_position, s
 static struct so_format_writer * sodr_tape_drive_get_writer(struct so_value * checksums, struct so_database_connection * db);
 static int sodr_tape_drive_init(struct so_value * config, struct so_database_connection * db_connect);
 static void sodr_tape_drive_on_failed(bool verbose, unsigned int sleep_time);
+static struct so_archive * sodr_tape_drive_parse_archive(const bool * const disconnected, unsigned int archive_position, struct so_value * checksums, struct so_database_connection * db);
 static int sodr_tape_drive_reset(struct so_database_connection * db);
 static int sodr_tape_drive_set_file_position(int file_position, struct so_database_connection * db);
 static int sodr_tape_drive_update_status(struct so_database_connection * db);
@@ -107,6 +108,7 @@ static struct so_drive_ops sodr_tape_drive_ops = {
 	.get_reader           = sodr_tape_drive_get_reader,
 	.get_writer           = sodr_tape_drive_get_writer,
 	.init                 = sodr_tape_drive_init,
+	.parse_archive        = sodr_tape_drive_parse_archive,
 	.reset                = sodr_tape_drive_reset,
 	.update_status        = sodr_tape_drive_update_status,
 };
@@ -670,6 +672,26 @@ static void sodr_tape_drive_on_failed(bool verbose, unsigned int sleep_time) {
 	close(fd_nst);
 	sleep(sleep_time);
 	fd_nst = open(so_device, O_RDWR | O_NONBLOCK);
+}
+
+static struct so_archive * sodr_tape_drive_parse_archive(const bool * const disconnected, unsigned int archive_position, struct so_value * checksums, struct so_database_connection * db) {
+	struct so_media * media = sodr_tape_drive.slot->media;
+	if (media == NULL)
+		return NULL;
+
+	struct sodr_tape_drive_media * mp = media->private_data;
+	switch (mp->format) {
+		case sodr_tape_drive_media_storiq_one:
+			return sodr_media_storiqone_parse_archive(&sodr_tape_drive, disconnected, archive_position, db);
+
+		case sodr_tape_drive_media_ltfs:
+			if (archive_position > 0)
+				return NULL;
+			return sodr_tape_drive_format_ltfs_parse_archive(&sodr_tape_drive, disconnected, checksums, db);
+
+		default:
+			return NULL;
+	}
 }
 
 static int sodr_tape_drive_reset(struct so_database_connection * db) {

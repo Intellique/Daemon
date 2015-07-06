@@ -75,6 +75,7 @@ static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct so_databas
 static struct so_format_reader * sodr_vtl_drive_get_reader(int file_position, struct so_value * checksums, struct so_database_connection * db);
 static struct so_format_writer * sodr_vtl_drive_get_writer(struct so_value * checksums, struct so_database_connection * db);
 static int sodr_vtl_drive_init(struct so_value * config, struct so_database_connection * db_connect);
+static struct so_archive * sodr_vtl_drive_parse_archive(const bool * const disconnected, unsigned int archive_position, struct so_value * checksums, struct so_database_connection * db);
 static int sodr_vtl_drive_reset(struct so_database_connection * db);
 static int sodr_vtl_drive_update_status(struct so_database_connection * db);
 
@@ -93,6 +94,7 @@ static struct so_drive_ops sodr_vtl_drive_ops = {
 	.get_reader           = sodr_vtl_drive_get_reader,
 	.get_writer           = sodr_vtl_drive_get_writer,
 	.init                 = sodr_vtl_drive_init,
+	.parse_archive        = sodr_vtl_drive_parse_archive,
 	.reset                = sodr_vtl_drive_reset,
 	.update_status        = sodr_vtl_drive_update_status,
 };
@@ -448,6 +450,14 @@ static int sodr_vtl_drive_init(struct so_value * config, struct so_database_conn
 	sodr_archive_format_sync(NULL, 0, db_connect);
 
 	return 0;
+}
+
+static struct so_archive * sodr_vtl_drive_parse_archive(const bool * const disconnected, unsigned int archive_position, struct so_value * checksums __attribute__((unused)), struct so_database_connection * db) {
+	struct so_media * media = sodr_vtl_drive.slot->media;
+	if (media == NULL)
+		return NULL;
+
+	return sodr_media_storiqone_parse_archive(&sodr_vtl_drive, disconnected, archive_position, db);
 }
 
 static int sodr_vtl_drive_reset(struct so_database_connection * db) {
