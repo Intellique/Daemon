@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-backupdb v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-05-06 20:07+0200\n"
+        "POT-Creation-Date: 2015-06-30 08:46+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -34,28 +34,31 @@ msgstr  "Erreur lors de l’écriture dans le fichier temporaire parce que %m"
 msgid   "Error while reading from database because %m"
 msgstr  "Erreur lors de la lecture depuis la base de donées parce que %m"
 
-#: src/job/backup-db/backup-db.c:189
+#: src/job/backup-db/backup-db.c:181
 #, c-format
 msgid   "Error while writting into drive because %m"
 msgstr  "Erreur lors de l’écriture dans le lecteur parce que %m"
 
-#: src/job/backup-db/backup-db.c:204
+#: src/job/backup-db/backup-db.c:196
 #, c-format
 msgid   "Error while reading from temporary file because %m"
 msgstr  "Erreur lors de la lecture depuis le fichier temporaire parce que %m"
 
-#: src/job/backup-db/backup-db.c:228
-msgid   "Error, no more media available"
-msgstr  "Erreur, plus de média disponible"
+#: src/job/backup-db/backup-db.c:234
+msgid   "Will require more space to complete backup"
+msgstr  ""
 
-#: src/job/backup-db/backup-db.c:324
+#: src/job/backup-db/backup-db.c:267
 msgid   "Pool (Storiq one database backup) not found"
 msgstr  "Pool (Storiq one database backup) non trouvé"
 
-#: src/job/backup-db/backup-db.c:329
+#: src/job/backup-db/backup-db.c:272
 msgid   "Try to back up database into a pool which is deleted"
 msgstr  "Tentation de sauvegarder dans un pool qui est supprimé"
 
-#: src/job/backup-db/backup-db.c:336
+#: src/job/backup-db/backup-db.c:279
 msgid   "Try to back up database into a pool whose is not growable and without any medias"
 msgstr  "Tentation de sauvegarder dans un pool qui n’est pas extensible et qui ne contient pas de médias"
+
+#~ msgid        "Error, no more media available"
+#~ msgstr       "Erreur, plus de média disponible"

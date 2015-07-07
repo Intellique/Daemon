@@ -391,8 +391,9 @@ static int sodr_tape_drive_format_media(struct so_pool * pool, struct so_databas
 	if (failed != 0)
 		return failed;
 
+	struct so_media * media = sodr_tape_drive.slot->media;
 	char * header = malloc(block_size);
-	if (!sodr_media_write_header(sodr_tape_drive.slot->media, pool, header, block_size)) {
+	if (!sodr_media_write_header(media, pool, header, block_size)) {
 		free(header);
 		return 1;
 	}
@@ -419,6 +420,9 @@ static int sodr_tape_drive_format_media(struct so_pool * pool, struct so_databas
 
 	sodr_tape_drive.status = failed != 0 ? so_drive_status_error : so_drive_status_loaded_idle;
 	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);
+
+	if (failed == 0)
+		media->archive_format = db->ops->get_archive_format_by_name(db, pool->archive_format->name);
 
 	free(header);
 
