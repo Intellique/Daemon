@@ -99,6 +99,9 @@ static int soj_formatmedia_run(struct so_job * job, struct so_database_connectio
 
 	drive->ops->sync(drive);
 
+	if (job->stopped_by_user)
+		return 1;
+
 	// check for write lock
 	if (drive->slot->media->write_lock) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
