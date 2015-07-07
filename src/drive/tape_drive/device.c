@@ -876,7 +876,7 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 
 				media->write_lock = GMT_WR_PROT(status.mt_gstat);
 
-				if (is_empty && media->status == so_media_status_in_use) {
+				if (is_empty) {
 					so_log_write(so_log_level_info,
 						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Checking media header '%s'"),
 						sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name);

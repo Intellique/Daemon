@@ -180,7 +180,7 @@ struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * 
 		localtime_r(&now, &tm_now);
 
 		archive->name = malloc(41);
-		strftime(archive->name, 40, "Imported LTFS %F %T:%z", &tm_now);
+		strftime(archive->name, 40, "Imported LTFS %F %T%z", &tm_now);
 	}
 
 	archive->can_append = false;
@@ -192,7 +192,7 @@ struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * 
 	enum so_format_reader_header_status status;
 
 	struct sodr_files {
-		struct so_format_file info;
+		struct so_archive_file * file;
 		ssize_t position;
 		time_t archived_time;
 		char * mime_type;
@@ -206,9 +206,10 @@ struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * 
 	magic_t magicFile = magic_open(MAGIC_MIME_TYPE);
 	magic_load(magicFile, NULL);
 
+	so_format_file_init(&file);
 	while (status = reader->ops->get_header(reader, &file), !*disconnected && status == so_format_reader_header_ok) {
 		struct sodr_files * new_file = malloc(sizeof(struct sodr_files));
-		so_format_file_copy(&new_file->info, &file);
+		new_file->file = so_archive_file_import(&file);
 		new_file->position = reader->ops->position(reader);
 		vol->nb_files++;
 
@@ -242,10 +243,15 @@ struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * 
 			first = last = new_file;
 		else
 			last = last->next = new_file;
+
+		so_format_file_free(&file);
+		so_format_file_init(&file);
 	}
 
 	reader->ops->close(reader);
 	reader->ops->free(reader);
+
+	so_format_file_free(&file);
 
 	magic_close(magicFile);
 
@@ -258,7 +264,7 @@ struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * 
 		ptr_file->position = a_file->position;
 		ptr_file->archived_time = a_file->archived_time;
 
-		struct so_archive_file * new_file = ptr_file->file = so_archive_file_import(&a_file->info);
+		struct so_archive_file * new_file = ptr_file->file = a_file->file;
 
 		new_file->mime_type = a_file->mime_type;
 		new_file->selected_path = strdup("/");
