@@ -1,8 +1,3 @@
-INSERT INTO Host(uuid, name, domaine, description) VALUES
-	('d47b4884-01b6-4593-9097-186dce77d4ff', 'taiko', 'intellique.com', '5U court'),
-	('40e576d7-cb14-42c2-95c5-edd14fbb638d', 'kazoo', 'intellique.com', 'shuttle'),
-	('23c10e70-ee6e-4ea5-a185-3ffcd6e10172', 'storiq-stone', 'intellique.com', '2U Test stone');
-
 INSERT INTO MediaFormat(name, dataType, mode, maxLoadCount, maxReadCount, maxWriteCount, maxOpCount, lifespan, capacity, blockSize, densityCode, supportPartition, supportMAM) VALUES
 	('LTO-6', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P10Y', 2620446998528, 32768, 90, TRUE, TRUE),
 	('LTO-5', 'data', 'linear', 4096, 40960, 40960, 40960, INTERVAL 'P10Y', 1529931104256, 32768, 88, TRUE, TRUE),
@@ -34,9 +29,9 @@ INSERT INTO DriveFormatSupport(driveFormat, mediaFormat, read, write) VALUES
 INSERT INTO ArchiveFormat(name, readable, writable) VALUES
     ('Storiq One', TRUE, TRUE);
 
-INSERT INTO Pool(uuid, name, archiveFormat, mediaFormat) VALUES
-	('b9650cc3-12ec-4a0f-88db-d70f0b269a6b', 'storiq', 1, 1),
-	('d9f976d4-e087-4d0a-ab79-96267f6613f0', 'Stone_Db_Backup', 1, 1);
+INSERT INTO Pool(uuid, name, archiveFormat, mediaFormat, backupPool) VALUES
+	('b9650cc3-12ec-4a0f-88db-d70f0b269a6b', 'storiq', 1, 1, FALSE),
+	('d9f976d4-e087-4d0a-ab79-96267f6613f0', 'Stone_Db_Backup', 1, 1, TRUE);
 
 INSERT INTO PoolGroup(uuid, name) VALUES
     ('bbaaf022-2e1b-4a5e-a49f-aa1e219340f3', 'storiq');

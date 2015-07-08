@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-vtl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-07-07 18:45+0200\n"
+        "POT-Creation-Date: 2015-07-08 21:40+0200\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -21,80 +21,80 @@ msgstr  "Project-Id-Version: storiqone-drive-vtl v1.2\n"
 msgid   "[%s %s #%u]: reopen media '%s' for reading at position #%d"
 msgstr  "[ %s %s #%u ] : réouverture du média « %s » en lecture à la position n°%d"
 
-#: src/libstoriqone-drive/listen.c:265
+#: src/libstoriqone-drive/listen.c:278
 #, c-format
 msgid   "[%s %s #%u]: checking header of media '%s'"
 msgstr  "[ %s %s #%u ] : vérification de l’entête du média « %s »"
 
-#: src/libstoriqone-drive/listen.c:340
-#, c-format
-msgid   "[%s %s #%u]: Erase media '%s' (mode: %s)"
-msgstr  "[ %s %s #%u ]: Effacement du média « %s » (mode : %s)"
-
-#: src/libstoriqone-drive/listen.c:342
-msgid   "long"
-msgstr  "long"
-
-#: src/libstoriqone-drive/listen.c:342
-msgid   "quick"
-msgstr  "rapide"
-
-#: src/libstoriqone-drive/listen.c:351
-#, c-format
-msgid   "[%s %s #%u]: media '%s' erased with success"
-msgstr  "[ %s %s #%u ] : média « %s » effacé avec succès"
-
-#: src/libstoriqone-drive/listen.c:355
-#, c-format
-msgid   "[%s %s #%u]: failed to erase media '%s'"
-msgstr  "[ %s %s #%u ] : échec lors de l’effacement du média « %s »"
-
-#: src/libstoriqone-drive/listen.c:382
-#, c-format
-msgid   "[%s %s #%u]: looking for best block size for media '%s'"
-msgstr  "[ %s %s #%u ] : recherche de la meilleur taille de bloc pour le média « %s »"
-
-#: src/libstoriqone-drive/listen.c:395
-#, c-format
-msgid   "[%s %s #%u]: block size found for media '%s': %s"
-msgstr  "[ %s %s #%u ] : taille de bloc trouvée pour le média « %s » : %s"
-
-#: src/libstoriqone-drive/listen.c:399
-#, c-format
-msgid   "[%s %s #%u]: failed to find best block size '%s'"
-msgstr  "[ %s %s #%u ] : échec lors de la recherche de la meilleur taille de bloc « %s »"
-
-#: src/libstoriqone-drive/listen.c:431
-#, c-format
-msgid   "[%s %s #%u]: formatting media '%s'"
-msgstr  "[ %s %s #%u ] : formatage du média « %s »"
-
-#: src/libstoriqone-drive/listen.c:441
-#, c-format
-msgid   "[%s %s #%u]: media '%s' formatted with success"
-msgstr  "[ %s %s #%u ] : formatage du média « %s » avec succès"
-
-#: src/libstoriqone-drive/listen.c:445
-#, c-format
-msgid   "[%s %s #%u]: failed to format media '%s'"
-msgstr  "[ %s %s #%u ] : échec du formatage du média « %s »"
-
-#: src/libstoriqone-drive/listen.c:483 src/libstoriqone-drive/listen.c:620
+#: src/libstoriqone-drive/listen.c:428 src/libstoriqone-drive/listen.c:565
 #, c-format
 msgid   "[%s %s #%u]: open media '%s' for reading at position #%ld"
 msgstr  "[ %s %s #%u ] : ouverture du média « %s » en lecture à la position #%ld"
 
-#: src/libstoriqone-drive/listen.c:547 src/libstoriqone-drive/listen.c:690
+#: src/libstoriqone-drive/listen.c:492 src/libstoriqone-drive/listen.c:635
 #, c-format
 msgid   "[%s %s #%u]: open media '%s' for writing"
 msgstr  "[ %s %s #%u ] : ouverture du média « %s » en écriture"
 
-#: src/libstoriqone-drive/listen.c:813
+#: src/libstoriqone-drive/listen.c:758
 #, c-format
 msgid   "[%s %s #%u]: Count archives from media '%s'"
 msgstr  ""
 
-#: src/libstoriqone-drive/listen.c:842
+#: src/libstoriqone-drive/listen.c:787
+#, c-format
+msgid   "[%s %s #%u]: Erase media '%s' (mode: %s)"
+msgstr  "[ %s %s #%u ]: Effacement du média « %s » (mode : %s)"
+
+#: src/libstoriqone-drive/listen.c:789
+msgid   "long"
+msgstr  "long"
+
+#: src/libstoriqone-drive/listen.c:789
+msgid   "quick"
+msgstr  "rapide"
+
+#: src/libstoriqone-drive/listen.c:800
+#, c-format
+msgid   "[%s %s #%u]: media '%s' erased with success"
+msgstr  "[ %s %s #%u ] : média « %s » effacé avec succès"
+
+#: src/libstoriqone-drive/listen.c:804
+#, c-format
+msgid   "[%s %s #%u]: failed to erase media '%s'"
+msgstr  "[ %s %s #%u ] : échec lors de l’effacement du média « %s »"
+
+#: src/libstoriqone-drive/listen.c:826
+#, c-format
+msgid   "[%s %s #%u]: looking for best block size for media '%s'"
+msgstr  "[ %s %s #%u ] : recherche de la meilleur taille de bloc pour le média « %s »"
+
+#: src/libstoriqone-drive/listen.c:841
+#, c-format
+msgid   "[%s %s #%u]: block size found for media '%s': %s"
+msgstr  "[ %s %s #%u ] : taille de bloc trouvée pour le média « %s » : %s"
+
+#: src/libstoriqone-drive/listen.c:845
+#, c-format
+msgid   "[%s %s #%u]: failed to find best block size '%s'"
+msgstr  "[ %s %s #%u ] : échec lors de la recherche de la meilleur taille de bloc « %s »"
+
+#: src/libstoriqone-drive/listen.c:866
+#, c-format
+msgid   "[%s %s #%u]: formatting media '%s'"
+msgstr  "[ %s %s #%u ] : formatage du média « %s »"
+
+#: src/libstoriqone-drive/listen.c:878
+#, c-format
+msgid   "[%s %s #%u]: media '%s' formatted with success"
+msgstr  "[ %s %s #%u ] : formatage du média « %s » avec succès"
+
+#: src/libstoriqone-drive/listen.c:882
+#, c-format
+msgid   "[%s %s #%u]: failed to format media '%s'"
+msgstr  "[ %s %s #%u ] : échec du formatage du média « %s »"
+
+#: src/libstoriqone-drive/listen.c:905
 #, c-format
 msgid   "[%s %s #%u]: Parse archive from media '%s' at position #%u"
 msgstr  ""

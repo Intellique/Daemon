@@ -159,12 +159,12 @@ static int soj_formatmedia_simulate(struct so_job * job, struct so_database_conn
 
 	if (soj_formatmedia_pool == NULL) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-format-media", "Pool not found"));
+			dgettext("storiqone-job-format-media", "No pool related to this job"));
 		return 1;
 	}
 	if (soj_formatmedia_pool->deleted) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-format-media", "Try to format to a pool '%s' which is deleted"),
+			dgettext("storiqone-job-format-media", "Try to format a media to a pool '%s' which is deleted"),
 			soj_formatmedia_pool->name);
 		return 1;
 	}
