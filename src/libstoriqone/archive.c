@@ -303,9 +303,9 @@ static struct so_value * so_archive_file_convert(struct so_archive_files * ptr_f
 
 		"permission", (long) file->perm,
 		"type", so_archive_file_type_to_string(file->type, false),
-		"owner id", file->ownerid,
+		"owner id", (long) file->ownerid,
 		"owner", file->owner,
-		"group id", file->groupid,
+		"group id", (long) file->groupid,
 		"group", file->group,
 
 		"create time", file->create_time,
