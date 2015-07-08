@@ -881,7 +881,12 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Checking media header '%s'"),
 						sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name);
 
-					if (!sodr_tape_drive_check_header(db)) {
+					// rewind tape
+					int fd = open(scsi_device, O_RDWR);
+					failed = sodr_tape_drive_scsi_rewind(fd);
+					close(fd);
+
+					if (failed == 0 && !sodr_tape_drive_check_header(db)) {
 						media->status = so_media_status_error;
 						so_log_write(so_log_level_error,
 							dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Error while checking media header '%s'"),

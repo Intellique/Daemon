@@ -806,6 +806,16 @@ int sodr_tape_drive_scsi_read_mam(int fd, struct so_media * media) {
 	return 0;
 }
 
+int sodr_tape_drive_scsi_rewind(int fd) {
+	struct sodr_tape_drive_scsi_position position = {
+		.partition = 0,
+		.block_position = 0,
+		.end_of_partition = false,
+	};
+
+	return sodr_tape_drive_scsi_locate16(fd, &position);
+}
+
 int sodr_tape_drive_scsi_size_available(int fd, struct so_media * media) {
 	struct {
 		unsigned char page_code:6;

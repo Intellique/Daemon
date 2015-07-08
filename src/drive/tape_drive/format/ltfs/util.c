@@ -338,7 +338,7 @@ void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, 
 	struct so_value_iterator * iter = so_value_list_get_iterator(files);
 	while (so_value_iterator_has_next(iter)) {
 		struct so_value * file = so_value_iterator_get_value(iter, false);
-		sodr_tape_drive_format_ltfs_parse_index_inner(self, file, "/", &position, &default_value);
+		sodr_tape_drive_format_ltfs_parse_index_inner(self, file, NULL, &position, &default_value);
 	}
 	so_value_iterator_free(iter);
 
@@ -370,12 +370,11 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 			char * file_name = NULL;
 			so_value_unpack(elt, "{ss}", "value", &file_name);
 
-			if (strcmp(path, "/") == 0)
-				path++;
-
-			asprintf(&file->file.filename, "%s/%s", path, file_name);
-
-			free(file_name);
+			if (path != NULL) {
+				asprintf(&file->file.filename, "%s/%s", path, file_name);
+				free(file_name);
+			} else
+				file->file.filename = file_name;
 		} else if (strcmp(elt_name, "creationtime") == 0) {
 			char * ctime = NULL;
 			so_value_unpack(elt, "{ss}", "value", &ctime);
