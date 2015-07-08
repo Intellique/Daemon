@@ -33,6 +33,7 @@
 // strcmp
 #include <string.h>
 
+#include <libstoriqone/config.h>
 #include <libstoriqone/database.h>
 #include <libstoriqone/host.h>
 #include <libstoriqone/json.h>
@@ -71,13 +72,16 @@ int main() {
 		dgettext("libstoriqone-drive", "Starting drive (type: %s)"),
 		driver->name);
 
-	struct so_value * log_config = NULL, * drive_config = NULL, * db_config = NULL, * socket_config = NULL;
-	so_value_unpack(config, "{sosososo}",
+	struct so_value * log_config = NULL, * drive_config = NULL, * db_config = NULL, * socket_config = NULL, * default_values = NULL;
+	so_value_unpack(config, "{sososososo}",
 		"logger", &log_config,
 		"drive", &drive_config,
 		"database", &db_config,
-		"socket", &socket_config
+		"socket", &socket_config,
+		"default values", &default_values
 	);
+
+	so_config_set(default_values);
 
 	if (log_config == NULL || drive_config == NULL || db_config == NULL || socket_config == NULL)
 		return 3;

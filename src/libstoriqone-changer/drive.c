@@ -33,6 +33,7 @@
 // close
 #include <unistd.h>
 
+#include <libstoriqone/config.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/poll.h>
 #include <libstoriqone/slot.h>
@@ -203,7 +204,13 @@ void sochgr_drive_register(struct so_drive * drive, struct so_value * config, co
 	self->fd_in = so_process_pipe_to(&self->process);
 	self->fd_out = so_process_pipe_from(&self->process, so_process_stdout);
 	so_process_set_null(&self->process, so_process_stderr);
-	self->config = so_value_pack("{sOsOsOsO}", "logger", log_config, "drive", config, "database", db_config, "socket", changer_socket);
+	self->config = so_value_pack("{sOsOsOsOsO}",
+		"logger", log_config,
+		"drive", config,
+		"database", db_config,
+		"socket", changer_socket,
+		"default values", so_config_get()
+	);
 
 	drive->ops = &drive_ops;
 	drive->data = self;

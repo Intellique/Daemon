@@ -133,18 +133,21 @@ int main(int argc, char ** argv) {
 		return 2;
 	sod_logger_start(logger_config);
 
-	struct so_value * log_file = so_value_hashtable_get2(logger_config, "socket", false, false);
+	struct so_value * log_file = NULL;
+	so_value_unpack(logger_config, "{so}", "socket", &log_file);
 	if (log_file == NULL || log_file->type != so_value_hashtable)
 		return 2;
 	so_log_configure(log_file, so_log_type_daemon);
 
-	struct so_value * admin_config = so_value_hashtable_get2(config, "admin", false, false);
+	struct so_value * admin_config = NULL;
+	so_value_unpack(config, "{so}", "admin", &admin_config);
 	if (admin_config != NULL && admin_config->type == so_value_hashtable)
 		sod_admin_config(admin_config);
 	else
 		so_log_write2(so_log_level_warning, so_log_type_daemon, gettext("No administration configured"));
 
-	struct so_value * db_configs = so_value_hashtable_get2(config, "database", false, false);
+	struct so_value * db_configs = NULL;
+	so_value_unpack(config, "{so}", "database", &db_configs);
 	if (db_configs != NULL)
 		so_database_load_config(db_configs);
 
@@ -162,19 +165,22 @@ int main(int argc, char ** argv) {
 	if (connection == NULL)
 		return 3;
 
+	struct so_value * default_values = so_value_new_null();
+	so_value_unpack(config, "{so}", "default values", &default_values);
+
 	so_host_init(connection);
 	struct so_host * host_info = so_host_get_info();
 
 	sod_plugin_sync_job(connection);
 
 	if (logger_config != NULL && db_configs != NULL)
-		sod_device_configure(log_file, db_configs, connection, false);
+		sod_device_configure(log_file, db_configs, default_values, connection, false);
 
 	sod_scheduler_init();
 
 	while (sod_daemon_run) {
 		connection->ops->update_host(connection, host_info->uuid);
-		sod_device_configure(log_file, db_configs, connection, true);
+		sod_device_configure(log_file, db_configs, default_values, connection, true);
 
 		sod_scheduler_do(log_file, db_configs, connection);
 

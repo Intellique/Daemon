@@ -24,80 +24,13 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-// scandir
-#include <dirent.h>
-// fnmatch
-#include <fnmatch.h>
-// glob, globfree
-#include <glob.h>
-// sscanf
-#include <stdio.h>
-// free
-#include <stdlib.h>
-// strrchr
-#include <string.h>
+#ifndef __LIBSTORIQONE_CONFIG_H__
+#define __LIBSTORIQONE_CONFIG_H__
 
-#include <libstoriqone/checksum.h>
-#include <libstoriqone/database.h>
-#include <libstoriqone/process.h>
+struct so_value;
 
-#include "plugin.h"
+struct so_value * so_config_get(void);
+void so_config_set(struct so_value * config);
 
-#include "config.h"
-
-static int sod_plugin_job_filter(const struct dirent * dirent);
-static int sod_plugin_sync_checksum_inner(void * arg);
-
-
-static int sod_plugin_job_filter(const struct dirent * file) {
-	return !fnmatch("job_*", file->d_name, 0);
-}
-
-void sod_plugin_sync_checksum(struct so_database_config * config) {
-	so_process_fork_and_do(sod_plugin_sync_checksum_inner, config);
-}
-
-int sod_plugin_sync_checksum_inner(void * arg) {
-	struct so_database_config * config = arg;
-	struct so_database_connection * connection = config->ops->connect(config);
-
-	if (connection == NULL)
-		return 1;
-
-	glob_t gl;
-	glob(MODULE_PATH "/libchecksum-*.so", 0, NULL, &gl);
-
-	unsigned int i;
-	for (i = 0; i < gl.gl_pathc; i++) {
-		char * ptr = strrchr(gl.gl_pathv[i], '/') + 1;
-
-		char plugin[64];
-		sscanf(ptr, "libchecksum-%63[^.].so", plugin);
-
-		if (connection->ops->find_plugin_checksum(connection, plugin))
-			continue;
-
-		struct so_checksum_driver * driver = so_checksum_get_driver(plugin);
-		if (driver != NULL)
-			connection->ops->sync_plugin_checksum(connection, driver);
-	}
-
-	globfree(&gl);
-
-	connection->ops->close(connection);
-	connection->ops->free(connection);
-
-	return 0;
-}
-
-void sod_plugin_sync_job(struct so_database_connection * connection) {
-	struct dirent ** files = NULL;
-	int nb_files = scandir(DAEMON_BIN_DIR, &files, sod_plugin_job_filter, alphasort);
-	int i;
-	for (i = 0; i < nb_files; i++) {
-		connection->ops->sync_plugin_job(connection, files[i]->d_name + 4);
-		free(files[i]);
-	}
-	free(files);
-}
+#endif
 

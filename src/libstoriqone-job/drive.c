@@ -137,7 +137,7 @@ static unsigned int soj_drive_count_archives(struct so_drive * drive) {
 	if (job->stopped_by_user && response != NULL)
 		so_value_free(response);
 	else if (response != NULL) {
-		unsigned int nb_archives = 0;
+		long long nb_archives = 0;
 		so_value_unpack(response, "{si}", "returned", &nb_archives);
 		so_value_free(response);
 

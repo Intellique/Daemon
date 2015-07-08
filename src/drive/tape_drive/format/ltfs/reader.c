@@ -467,6 +467,23 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 
 		self->buffer_used = self->extent->byte_offset;
 		self->buffer_size = nb_read;
+
+		available_size = self->buffer_size - self->buffer_used;
+		if (available_size > 0) {
+			ssize_t will_copy = available_size;
+			if (length - nb_total_read < available_size)
+				will_copy = length - nb_total_read;
+
+			memcpy(buffer + nb_total_read, self->buffer + self->buffer_used, will_copy);
+
+			self->buffer_used += will_copy;
+			self->total_read += will_copy;
+			self->file_position += will_copy;
+			nb_total_read += will_copy;
+
+			if (nb_total_read == length || self->file_position >= self->file_info->file.size)
+				return nb_total_read;
+		}
 	}
 
 	return nb_total_read;

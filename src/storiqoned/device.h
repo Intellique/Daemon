@@ -33,7 +33,7 @@
 struct so_value;
 
 struct so_value * sod_device_get(bool shared) __attribute__((warn_unused_result));
-void sod_device_configure(struct so_value * logger, struct so_value * db_config, struct so_database_connection * connection, bool append) __attribute__((nonnull));
+void sod_device_configure(struct so_value * logger, struct so_value * db_config, struct so_value * default_values, struct so_database_connection * connection, bool append) __attribute__((nonnull));
 void sod_device_stop(void);
 
 #endif

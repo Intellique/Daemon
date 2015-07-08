@@ -65,7 +65,7 @@ static void sod_device_exited(int fd, short event, void * data);
 static void sod_device_pong(int fd, short event, void * data);
 
 
-void sod_device_configure(struct so_value * logger, struct so_value * db_config, struct so_database_connection * connection, bool append) {
+void sod_device_configure(struct so_value * logger, struct so_value * db_config, struct so_value * default_values, struct so_database_connection * connection, bool append) {
 	if (connection == NULL)
 		return;
 
@@ -109,7 +109,7 @@ void sod_device_configure(struct so_value * logger, struct so_value * db_config,
 			asprintf(&path, DAEMON_SOCKET_DIR "/changer_%d.socket", i_changer);
 
 			so_value_hashtable_put2(changer, "socket", so_value_pack("{ssss}", "domain", "unix", "path", path), true);
-			dev->config = so_value_pack("{sOsOsO}", "changer", changer, "logger", logger, "database", db_config);
+			dev->config = so_value_pack("{sOsOsOsO}", "changer", changer, "logger", logger, "database", db_config, "default values", default_values);
 
 			free(path);
 
@@ -147,7 +147,7 @@ void sod_device_configure(struct so_value * logger, struct so_value * db_config,
 			asprintf(&path, DAEMON_SOCKET_DIR "/changer_%d.socket", i_changer);
 
 			so_value_hashtable_put2(changer, "socket", so_value_pack("{ssss}", "domain", "unix", "path", path), true);
-			dev->config = so_value_pack("{sOsOsO}", "changer", changer, "logger", logger, "database", db_config);
+			dev->config = so_value_pack("{sOsOsOsO}", "changer", changer, "logger", logger, "database", db_config, "default values", default_values);
 
 			free(path);
 
@@ -194,7 +194,7 @@ void sod_device_configure(struct so_value * logger, struct so_value * db_config,
 		asprintf(&path, DAEMON_SOCKET_DIR "/changer_%d.socket", i_changer);
 
 		so_value_hashtable_put2(changer, "socket", so_value_pack("{ssss}", "domain", "unix", "path", path), true);
-		dev->config = so_value_pack("{sOsOsO}", "changer", changer, "logger", logger, "database", db_config);
+		dev->config = so_value_pack("{sOsOsOsO}", "changer", changer, "logger", logger, "database", db_config, "default values", default_values);
 
 		free(path);
 

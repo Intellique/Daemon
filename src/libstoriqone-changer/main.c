@@ -33,6 +33,7 @@
 // strcmp
 #include <string.h>
 
+#include <libstoriqone/config.h>
 #include <libstoriqone/database.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
@@ -93,9 +94,13 @@ int main() {
 	if (config == NULL)
 		return 2;
 
-	struct so_value * log_config = NULL, * changer_config = NULL, * db_config = NULL, * socket = NULL;
+	struct so_value * log_config = NULL, * changer_config = NULL, * db_config = NULL, * socket = NULL, * default_values = NULL;
 	so_value_unpack(config, "{sososo}", "logger", &log_config, "changer", &changer_config, "database", &db_config);
 	so_value_unpack(changer_config, "{so}", "socket", &socket);
+	so_value_unpack(config, "{so}", "default values", &default_values);
+
+	if (default_values != NULL)
+		so_config_set(default_values);
 
 	if (log_config == NULL || changer_config == NULL || db_config == NULL || socket == NULL)
 		return 3;
