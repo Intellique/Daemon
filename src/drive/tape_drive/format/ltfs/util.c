@@ -247,6 +247,9 @@ struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * 
 			writer->ops->close(writer);
 			new_file->digests = so_io_checksum_writer_get_checksums(writer);
 			writer->ops->free(writer);
+		} else if (S_ISDIR(file.mode)) {
+			new_file->mime_type = strdup("inode/directory");
+			new_file->digests = NULL;
 		} else
 			new_file->digests = NULL;
 
