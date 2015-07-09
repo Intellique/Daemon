@@ -966,6 +966,12 @@ static int so_value_unpack_inner(struct so_value * value, const char ** format, 
 					*val = strdup(so_value_string_get(value));
 					return 1;
 				}
+			} else if (value->type == so_value_null) {
+				char ** val = va_arg(params, char **);
+				if (val != NULL) {
+					*val = NULL;
+					return 1;
+				}
 			}
 			break;
 

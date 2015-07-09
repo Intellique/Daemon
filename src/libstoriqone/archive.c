@@ -544,7 +544,7 @@ static void so_archive_volume_sync(struct so_archive_volume * volume, struct so_
 		"media", &media,
 		"media position", &media_position,
 
-		"files", files
+		"files", &files
 	);
 
 	volume->sequence = sequence;
