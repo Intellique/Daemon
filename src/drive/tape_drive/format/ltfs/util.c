@@ -250,6 +250,8 @@ struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * 
 		} else
 			new_file->digests = NULL;
 
+		vol->size += file.size;
+
 		new_file->archived_time = time(NULL);
 		new_file->next = NULL;
 
@@ -264,6 +266,9 @@ struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * 
 
 	reader->ops->close(reader);
 	reader->ops->free(reader);
+
+	vol->end_time = time(NULL);
+	archive->size = vol->size;
 
 	so_format_file_free(&file);
 
@@ -401,8 +406,8 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 			so_value_unpack(elt, "{so}", "children", &children);
 
 			struct so_value_iterator * iter = so_value_list_get_iterator(children);
-			unsigned int i = 0;
-			while (so_value_iterator_has_next(iter)) {
+			unsigned int i;
+			for (i = 0; so_value_iterator_has_next(iter); i++) {
 				struct so_value * vextent = so_value_iterator_get_value(iter, false);
 
 				char * child_name = NULL;
