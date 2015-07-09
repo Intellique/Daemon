@@ -189,6 +189,8 @@ struct so_database_connection {
 		int (*backup_add)(struct so_database_connection * connect, struct so_backup * backup) __attribute__((nonnull));
 		struct so_backup * (*get_backup)(struct so_database_connection * connect, struct so_job * job) __attribute__((nonnull,warn_unused_result));
 		int (*mark_backup_volume_checked)(struct so_database_connection * connect, struct so_backup_volume * volume);
+
+		bool (*find_user_by_login)(struct so_database_connection * connect, const char * login) __attribute__((nonnull));
 	} * ops;
 
 	/**

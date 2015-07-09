@@ -26,8 +26,10 @@
 
 // bindtextdomain, dgettext
 #include <libintl.h>
-// NULL
-#include <stddef.h>
+// free
+#include <stdlib.h>
+// strdup
+#include <string.h>
 
 #include <libstoriqone/archive.h>
 #include <libstoriqone/database.h>
@@ -114,15 +116,50 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 		return 1;
 
 	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
-		dgettext("storiqone-job-import-archives", "Find first archive"));
+		dgettext("storiqone-job-import-archives", "Count the number of archives"));
 
 	soj_importarchives_archives = so_value_new_linked_list();
 
 	unsigned int i, nb_archives = drive->ops->count_archives(drive);
 	for (i = 0; i < nb_archives && !job->stopped_by_user; i++) {
+		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+			dgettext("storiqone-job-import-archives", "Parse archive #%u"),
+			i);
+
 		struct so_archive * archive = drive->ops->parse_archive(drive, i, soj_importarchives_checksums);
 		if (archive == NULL)
 			break;
+
+		if (archive->creator != NULL) {
+			// find creator
+			if (!db_connect->ops->find_user_by_login(db_connect, archive->creator)) {
+				free(archive->creator);
+				archive->creator = strdup(job->user);
+			}
+		} else
+			archive->creator = strdup(job->user);
+
+		if (archive->owner != NULL) {
+			// find owner
+			if (!db_connect->ops->find_user_by_login(db_connect, archive->owner)) {
+				free(archive->owner);
+				archive->owner = strdup(job->user);
+			}
+		} else
+			archive->owner = strdup(job->user);
+
+		unsigned int j;
+		for (j = 0; j < archive->nb_volumes; j++) {
+			struct so_archive_volume * vol = archive->volumes + j;
+			vol->job = job;
+
+			struct so_media * media = vol->media;
+			media->status = so_media_status_in_use;
+
+			if (media->pool != NULL)
+				so_pool_free(media->pool);
+			media->pool = db_connect->ops->get_pool(db_connect, NULL, job);
+		}
 
 		so_value_list_push(soj_importarchives_archives, so_value_new_custom(archive, so_archive_free2), true);
 

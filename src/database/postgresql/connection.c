@@ -141,6 +141,8 @@ static int so_database_postgresql_backup_add(struct so_database_connection * con
 static struct so_backup * so_database_postgresql_get_backup(struct so_database_connection * connect, struct so_job * job);
 static int so_database_postgresql_mark_backup_volume_checked(struct so_database_connection * connect, struct so_backup_volume * volume);
 
+static bool so_database_postgresql_find_user_by_login(struct so_database_connection * connect, const char * login);
+
 static int so_database_postgresql_checksumresult_add(struct so_database_connection * connect, const char * checksum, const char * digest, char ** digest_id);
 
 static char * so_database_postgresql_find_selected_path(struct so_database_connection * connect, const char * selected_path);
@@ -212,6 +214,8 @@ static struct so_database_connection_ops so_database_postgresql_connection_ops =
 	.backup_add                 = so_database_postgresql_backup_add,
 	.get_backup                 = so_database_postgresql_get_backup,
 	.mark_backup_volume_checked = so_database_postgresql_mark_backup_volume_checked,
+
+	.find_user_by_login = so_database_postgresql_find_user_by_login,
 };
 
 
@@ -3999,6 +4003,32 @@ static int so_database_postgresql_mark_backup_volume_checked(struct so_database_
 	free(backup_volume_id);
 
 	return status == PGRES_FATAL_ERROR ? 1 : 0;
+}
+
+
+static bool so_database_postgresql_find_user_by_login(struct so_database_connection * connect, const char * login) {
+	if (connect == NULL || login == NULL)
+		return false;
+
+	struct so_database_postgresql_connection_private * self = connect->data;
+
+	char * query = "select_user_by_login";
+	so_database_postgresql_prepare(self, query, "SELECT id FROM users WHERE login = $1 LIMIT 1");
+
+	const char * param1[] = { login };
+	PGresult * result = PQexecPrepared(self->connect, query, 1, param1, NULL, NULL, 0);
+	ExecStatusType status = PQresultStatus(result);
+	int nb_result = PQntuples(result);
+
+	bool found = false;
+	if (status == PGRES_FATAL_ERROR)
+		so_database_postgresql_get_error(result, query);
+	else if (status == PGRES_TUPLES_OK && nb_result == 1)
+		found = true;
+
+	PQclear(result);
+
+	return found;
 }
 
 
