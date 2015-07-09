@@ -779,9 +779,9 @@ static void sodr_worker_command_erase_media(void * arg) {
 	struct so_drive * drive = driver->device;
 	struct so_media * media = drive->slot->media;
 
-	const char * media_name = NULL;
+	char * media_name = NULL;
 	if (media != NULL)
-		media_name = media->name;
+		media_name = strdup(media->name);
 
 	so_log_write(so_log_level_notice,
 		dgettext("libstoriqone-drive", "[%s %s #%u]: Erase media '%s' (mode: %s)"),
@@ -807,6 +807,7 @@ static void sodr_worker_command_erase_media(void * arg) {
 	params->peer->owned = false;
 	sodr_listen_remove_peer(params->peer);
 
+	free(media_name);
 	free(params);
 	db_connect->ops->free(db_connect);
 }
