@@ -245,14 +245,27 @@ struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * 
 				}
 			}
 
+			if (new_file->mime_type == NULL) {
+				const char * mt = magic_buffer(magicFile, NULL, 0);
+				if (mt != NULL)
+					new_file->mime_type = strdup(mt);
+				else
+					new_file->mime_type = strdup("");
+			}
+
 			writer->ops->close(writer);
 			new_file->digests = so_io_checksum_writer_get_checksums(writer);
 			writer->ops->free(writer);
 		} else if (S_ISDIR(file.mode)) {
 			new_file->mime_type = strdup("inode/directory");
 			new_file->digests = NULL;
-		} else
+		} else if (S_ISLNK(file.mode)) {
+			new_file->mime_type = strdup("inode/symlink");
 			new_file->digests = NULL;
+		} else {
+			new_file->mime_type = strdup("application/octet-stream");
+			new_file->digests = NULL;
+		}
 
 		vol->size += file.size;
 

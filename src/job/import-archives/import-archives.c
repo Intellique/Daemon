@@ -171,12 +171,28 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 
 	job->done = 0.66;
 
+	int failed = 0;
+	db_connect->ops->start_transaction(db_connect);
+
 	struct so_value_iterator * iter = so_value_list_get_iterator(soj_importarchives_archives);
-	for (i = 0; so_value_iterator_has_next(iter); i++) {
+	for (i = 0; failed == 0 && so_value_iterator_has_next(iter); i++) {
 		struct so_value * varchive = so_value_iterator_get_value(iter, false);
 		struct so_archive * archive = so_value_custom_get(varchive);
 
-		db_connect->ops->sync_archive(db_connect, archive, NULL);
+		unsigned int j;
+		for (j = 0; failed == 0 && j < archive->nb_volumes; j++) {
+			struct so_archive_volume * vol = archive->volumes + j;
+
+			unsigned int k;
+			for (k = 0; failed == 0 && k < vol->nb_files; k++) {
+				struct so_archive_files * ptr_file = vol->files + k;
+				struct so_archive_file * file = ptr_file->file;
+
+				failed = db_connect->ops->create_selected_file_if_missing(db_connect, file->selected_path);
+			}
+		}
+
+		failed = db_connect->ops->sync_archive(db_connect, archive, NULL);
 
 		float done = i;
 		done /= nb_archives;
@@ -184,7 +200,13 @@ static int soj_importarchives_run(struct so_job * job, struct so_database_connec
 	}
 	so_value_iterator_free(iter);
 
-	job->done = 1;
+	if (failed == 0) {
+		db_connect->ops->finish_transaction(db_connect);
+		job->done = 1;
+	} else {
+		db_connect->ops->cancel_transaction(db_connect);
+		job->status = so_job_status_error;
+	}
 
 	return 0;
 }
