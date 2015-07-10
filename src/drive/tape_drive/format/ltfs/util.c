@@ -290,8 +290,6 @@ struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * 
 		struct so_archive_file * new_file = ptr_file->file = a_file->file;
 
 		new_file->mime_type = a_file->mime_type;
-		new_file->selected_path = strdup("/");
-
 		new_file->digests = a_file->digests;
 
 		struct sodr_files * tmp_file = a_file;
