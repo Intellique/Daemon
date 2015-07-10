@@ -224,6 +224,7 @@ struct so_archive * sodr_tape_drive_format_ltfs_parse_archive(struct so_drive * 
 		bzero(new_file, sizeof(struct sodr_files));
 
 		new_file->file = so_archive_file_import(&file);
+		new_file->file->selected_path = reader->ops->get_root(reader);
 		new_file->position = reader->ops->position(reader);
 		vol->nb_files++;
 
@@ -323,14 +324,16 @@ void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, 
 
 	struct so_value * config = so_config_get();
 	long long uid = 0, gid = 0, file_mask = 0644, directory_mask = 0755;
+	char * base_directory;
 
-	so_value_unpack(config, "{s{s{sisisisi}}}",
+	so_value_unpack(config, "{s{s{sisisisiss}}}",
 		"format",
 			"ltfs",
 				"user id", &uid,
 				"group id", &gid,
 				"file mask", &file_mask,
-				"directory mask", &directory_mask
+				"directory mask", &directory_mask,
+				"base directory", &base_directory
 	);
 
 	struct sodr_tape_drive_format_ltfs_default_value default_value = {
@@ -346,12 +349,13 @@ void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, 
 	struct so_value_iterator * iter = so_value_list_get_iterator(files);
 	while (so_value_iterator_has_next(iter)) {
 		struct so_value * file = so_value_iterator_get_value(iter, false);
-		sodr_tape_drive_format_ltfs_parse_index_inner(self, file, NULL, &position, &default_value);
+		sodr_tape_drive_format_ltfs_parse_index_inner(self, file, base_directory, &position, &default_value);
 	}
 	so_value_iterator_free(iter);
 
 	free(default_value.user);
 	free(default_value.group);
+	free(base_directory);
 }
 
 static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive_format_ltfs * self, struct so_value * index, const char * path, unsigned int * position, struct sodr_tape_drive_format_ltfs_default_value * default_value) {
@@ -377,12 +381,8 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 		if (strcmp(elt_name, "name") == 0) {
 			char * file_name = NULL;
 			so_value_unpack(elt, "{ss}", "value", &file_name);
-
-			if (path != NULL) {
-				asprintf(&file->file.filename, "%s/%s", path, file_name);
-				free(file_name);
-			} else
-				file->file.filename = file_name;
+			asprintf(&file->file.filename, "%s/%s", path, file_name);
+			free(file_name);
 		} else if (strcmp(elt_name, "creationtime") == 0) {
 			char * ctime = NULL;
 			so_value_unpack(elt, "{ss}", "value", &ctime);

@@ -349,8 +349,8 @@ char * so_database_postgresql_set_float(double fl) {
 		char * decimal = strstr(str_float, info_locale->decimal_point);
 		if (decimal != NULL) {
 			size_t length = strlen(info_locale->decimal_point);
-			if (length > 0)
-				memmove(decimal + 1, decimal + 2, strlen(decimal + 1));
+			if (length > 1)
+				memmove(decimal + 1, decimal + length, strlen(decimal + length) + 1);
 			*decimal = '.';
 		}
 	}

@@ -33,11 +33,13 @@
 // read
 #include <unistd.h>
 
+#include <libstoriqone/config.h>
 #include <libstoriqone/drive.h>
 #include <libstoriqone/format.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
+#include <libstoriqone-drive/time.h>
 
 #include "ltfs.h"
 #include "../../media.h"
@@ -54,6 +56,8 @@ struct sodr_tape_drive_format_ltfs_reader_private {
 
 	off_t file_position;
 	ssize_t total_read;
+
+	char * base_directory;
 
 	struct sodr_tape_drive_format_ltfs_file * file_info;
 	unsigned int i_files;
@@ -121,6 +125,13 @@ struct so_format_reader * sodr_tape_drive_format_ltfs_new_reader(struct so_drive
 	self->extent = NULL;
 	self->i_extent = 0;
 	self->last_errno = 0;
+
+	struct so_value * config = so_config_get();
+	so_value_unpack(config, "{s{s{ss}}}",
+		"format",
+			"ltfs",
+				"base directory", &self->base_directory
+	);
 
 	self->drive = drive;
 	self->media = media;
@@ -239,12 +250,18 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_fo
 			.end_of_partition = false,
 		};
 
+		sodr_time_start();
 		int failed = sodr_tape_drive_scsi_locate16(self->scsi_fd, &position);
+		sodr_time_stop(self->drive);
+
 		if (failed != 0)
 			return so_format_reader_header_not_found;
 
 		if ((self->extent->byte_offset > 0 && nb_blocks == 0) || offset > nb_total_skip) {
+			sodr_time_start();
 			ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
+			sodr_time_stop(self->drive);
+
 			if (nb_read < 0)
 				return so_format_reader_header_not_found;
 
@@ -309,8 +326,9 @@ static enum so_format_reader_header_status sodr_tape_drive_format_ltfs_reader_ge
 	return so_format_reader_header_ok;
 }
 
-static char * sodr_tape_drive_format_ltfs_reader_get_root(struct so_format_reader * fr __attribute__((unused))) {
-	return strdup("/");
+static char * sodr_tape_drive_format_ltfs_reader_get_root(struct so_format_reader * fr) {
+	struct sodr_tape_drive_format_ltfs_reader_private * self = fr->data;
+	return strdup(self->base_directory);
 }
 
 static int sodr_tape_drive_format_ltfs_reader_last_errno(struct so_format_reader * fr) {
@@ -368,12 +386,18 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 				.end_of_partition = false,
 			};
 
+			sodr_time_start();
 			int failed = sodr_tape_drive_scsi_locate16(self->scsi_fd, &position);
+			sodr_time_stop(self->drive);
+
 			if (failed != 0)
 				return -1;
 
 			if (self->extent->byte_offset > 0) {
+				sodr_time_start();
 				ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
+				sodr_time_stop(self->drive);
+
 				if (nb_read < 0)
 					return nb_read;
 
@@ -415,12 +439,18 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 					.end_of_partition = false,
 				};
 
+				sodr_time_start();
 				int failed = sodr_tape_drive_scsi_locate16(self->scsi_fd, &position);
+				sodr_time_stop(self->drive);
+
 				if (failed != 0)
 					return -1;
 
 				if (self->extent->byte_offset > 0) {
+					sodr_time_start();
 					ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
+					sodr_time_stop(self->drive);
+
 					if (nb_read < 0)
 						return nb_read;
 
@@ -439,7 +469,9 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 		}
 
 		while (length - nb_total_read > (ssize_t) self->block_size && (ssize_t) (self->file_position + self->block_size) < self->file_info->file.size) {
+			sodr_time_start();
 			ssize_t nb_read = read(self->fd, buffer + nb_total_read, self->block_size);
+			sodr_time_stop(self->drive);
 
 			if (nb_read < 0)
 				return nb_read;
@@ -458,7 +490,10 @@ static ssize_t sodr_tape_drive_format_ltfs_reader_read(struct so_format_reader *
 		if (self->file_position == (off_t) (self->extent->file_offset + self->extent->byte_count))
 			continue;
 
+		sodr_time_start();
 		ssize_t nb_read = read(self->fd, self->buffer, self->block_size);
+		sodr_time_stop(self->drive);
+
 		if (nb_read < 0)
 			return nb_read;
 
