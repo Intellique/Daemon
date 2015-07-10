@@ -32,7 +32,9 @@
 #include <postgresql/libpq-fe.h>
 // asprintf
 #include <stdio.h>
-// memmove, strcmp, strcspn, strdup, strlen, strncpy, strstr
+// malloc
+#include <stdlib.h>
+// memmove, strchr, strcmp, strcspn, strdup, strlen, strncpy, strstr
 #include <string.h>
 // bzero
 #include <strings.h>
@@ -160,7 +162,36 @@ int so_database_postgresql_get_double(PGresult * result, int row, int column, do
 		return -1;
 
 	char * value = PQgetvalue(result, row, column);
-	if (value != NULL && sscanf(value, "%lg", val) == 1)
+	if (value == NULL)
+		return 0;
+
+	const char * decimal = strchr(value, '.');
+	if (decimal != NULL) {
+		size_t offset = decimal - value;
+
+		struct lconv * info_locale = localeconv();
+		ssize_t decimal_length = strlen(info_locale->decimal_point);
+		size_t length = strlen(value) + decimal_length;
+
+		char * new_value = malloc(length);
+
+		if (offset > 0)
+			strncpy(new_value, value, offset);
+		char * ptr_new_value = new_value + offset;
+
+		strncpy(ptr_new_value, info_locale->decimal_point, decimal_length);
+		ptr_new_value += decimal_length;
+
+		size_t remain = strlen(decimal + 1);
+		strncpy(ptr_new_value, decimal + 1, remain);
+		ptr_new_value[remain] = '\0';
+
+		int nb_parsed = sscanf(new_value, "%lg", val);
+
+		free(new_value);
+
+		return nb_parsed != 0;
+	} else if (value != NULL && sscanf(value, "%lg", val) == 1)
 		return 0;
 
 	return value != NULL;
@@ -171,7 +202,36 @@ int so_database_postgresql_get_float(PGresult * result, int row, int column, flo
 		return -1;
 
 	char * value = PQgetvalue(result, row, column);
-	if (value != NULL && sscanf(value, "%g", val) == 1)
+	if (value == NULL)
+		return 0;
+
+	const char * decimal = strchr(value, '.');
+	if (decimal != NULL) {
+		size_t offset = decimal - value;
+
+		struct lconv * info_locale = localeconv();
+		ssize_t decimal_length = strlen(info_locale->decimal_point);
+		size_t length = strlen(value) + decimal_length;
+
+		char * new_value = malloc(length);
+
+		if (offset > 0)
+			strncpy(new_value, value, offset);
+		char * ptr_new_value = new_value + offset;
+
+		strncpy(ptr_new_value, info_locale->decimal_point, decimal_length);
+		ptr_new_value += decimal_length;
+
+		size_t remain = strlen(decimal + 1);
+		strncpy(ptr_new_value, decimal + 1, remain);
+		ptr_new_value[remain] = '\0';
+
+		int nb_parsed = sscanf(new_value, "%g", val);
+
+		free(new_value);
+
+		return nb_parsed != 0;
+	} else if (value != NULL && sscanf(value, "%g", val) == 1)
 		return 0;
 
 	return value != NULL;

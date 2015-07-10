@@ -122,9 +122,9 @@ int main() {
 		dgettext("libstoriqone-drive", "Starting drive (type: %s, vendor: %s, model: %s, serial number: %s)"),
 		driver->name, drive->vendor, drive->model, drive->serial_number);
 
-	drive->ops->update_status(db_connect);
-
 	db_connect->ops->sync_drive(db_connect, drive, true, so_database_sync_id_only);
+
+	drive->ops->update_status(db_connect);
 
 	while (!sodr_changer_is_stopped()) {
 		db_connect->ops->sync_drive(db_connect, drive, true, so_database_sync_default);

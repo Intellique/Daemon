@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: vtl-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-07-10 12:33+0200\n"
+        "POT-Creation-Date: 2015-07-10 12:55+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -16,46 +16,46 @@ msgstr  "Project-Id-Version: vtl-drive v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/drive/vtl_drive/device.c:172
+#: src/drive/vtl_drive/device.c:171
 #, c-format
 msgid   "[%s %s %d]: Failed to erase file '%s' because %m"
 msgstr  "[ %s %s %d ] : Échec lors de l’écrasement du fichier « %s » parce que %m"
 
-#: src/drive/vtl_drive/device.c:190 src/drive/vtl_drive/device.c:287 src/drive/vtl_drive/device.c:395
+#: src/drive/vtl_drive/device.c:189 src/drive/vtl_drive/device.c:286 src/drive/vtl_drive/device.c:394
 #, c-format
 msgid   "[%s %s %d]: Failed to list files from media '%s'"
 msgstr  "[ %s %s %d ] : Échec de l’énumération des fichiers du média « %s »"
 
-#: src/drive/vtl_drive/device.c:192 src/drive/vtl_drive/device.c:289 src/drive/vtl_drive/device.c:397
+#: src/drive/vtl_drive/device.c:191 src/drive/vtl_drive/device.c:288 src/drive/vtl_drive/device.c:396
 msgid   "NULL"
 msgstr  "VIDE"
 
-#: src/drive/vtl_drive/device.c:221
+#: src/drive/vtl_drive/device.c:220
 #, c-format
 msgid   "[%s %s %d]: Command 'shred' finished with code '%d' while removing file '%s'"
 msgstr  "[ %s %s %d ] : Commande « shred » a quitté avec le code « %d » lors de la suppression du fichier « %s »"
 
-#: src/drive/vtl_drive/device.c:227
+#: src/drive/vtl_drive/device.c:226
 #, c-format
 msgid   "[%s %s %d]: Failed to start 'shred' command to remove file '%s'"
 msgstr  "[ %s %s %d ] : Échec du lancement de la commande « shred » pour supprimer le fichier « %s »"
 
-#: src/drive/vtl_drive/device.c:271
+#: src/drive/vtl_drive/device.c:270
 #, c-format
 msgid   "[%s %s %d]: VTL does not support only Storiq One format"
 msgstr  "[ %s %s %d ] : VTL ne supporte que le format « Storiq One »"
 
-#: src/drive/vtl_drive/device.c:318
+#: src/drive/vtl_drive/device.c:317
 #, c-format
 msgid   "[%s %s %d]: Failed to write header of media '%s'"
 msgstr  "[ %s %s %d ] : Échec lors de l’écriture de l’en-tête du média « %s »"
 
-#: src/drive/vtl_drive/device.c:378
+#: src/drive/vtl_drive/device.c:377
 #, c-format
 msgid   "[%s %s %d]: Failed to open file from media '%s' at position '%d' because %m"
 msgstr  "[ %s %s %d ] : Échec lors de l’ouverture du fichier du média « %s » à la position « %d » parce que %m"
 
-#: src/drive/vtl_drive/device.c:494
+#: src/drive/vtl_drive/device.c:493
 #, c-format
 msgid   "[%s %s %d]: Failed to find media with uuid '%s' from database"
 msgstr  "[ %s %s %d ] : Échec lors de la recherche du média avec l’uuid « %s » depuis la base de données"

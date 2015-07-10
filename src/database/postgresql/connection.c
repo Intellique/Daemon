@@ -1573,7 +1573,7 @@ static int so_database_postgresql_sync_drive(struct so_database_connection * con
 		}
 	} else {
 		const char * query = "select_drive_by_model_vendor_serialnumber";
-		so_database_postgresql_prepare(self, query, "SELECT id, to_char(operationduration, '0D000000'), lastclean, driveformat, enable FROM drive WHERE model = $1 AND vendor = $2 AND serialnumber = $3 FOR UPDATE");
+		so_database_postgresql_prepare(self, query, "SELECT id, operationduration, lastclean, driveformat, enable FROM drive WHERE model = $1 AND vendor = $2 AND serialnumber = $3 FOR UPDATE");
 
 		const char * param[] = { drive->model, drive->vendor, drive->serial_number };
 		PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);

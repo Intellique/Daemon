@@ -662,6 +662,8 @@ static int sodr_tape_drive_init(struct so_value * config, struct so_database_con
 	}
 	globfree(&gl);
 
+	db_connect->ops->sync_drive(db_connect, &sodr_tape_drive, false, so_database_sync_id_only);
+
 	if (found) {
 		sodr_tape_drive_scsi_read_density(&sodr_tape_drive, scsi_device);
 
