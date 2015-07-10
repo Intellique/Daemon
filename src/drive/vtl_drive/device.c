@@ -246,6 +246,9 @@ static int sodr_vtl_drive_erase_media(bool quick_mode, struct so_database_connec
 	media->append = true;
 	media->uuid[0] = '\0';
 
+	so_archive_format_free(media->archive_format);
+	media->archive_format = NULL;
+
 	so_pool_free(media->pool);
 	media->pool = NULL;
 

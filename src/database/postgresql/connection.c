@@ -1585,7 +1585,7 @@ static int so_database_postgresql_sync_drive(struct so_database_connection * con
 			so_database_postgresql_get_string_dup(result, 0, 0, &drive_id);
 			so_value_hashtable_put2(db, "id", so_value_new_string(drive_id), true);
 
-			if (method == so_database_sync_id_only) {
+			if (method == so_database_sync_id_only || method == so_database_sync_init) {
 				double old_operation_duration = 0;
 				so_database_postgresql_get_double(result, 0, 1, &old_operation_duration);
 				drive->operation_duration += old_operation_duration;

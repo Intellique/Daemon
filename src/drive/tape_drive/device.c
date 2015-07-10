@@ -266,26 +266,48 @@ static void sodr_tape_drive_create_media(struct so_database_connection * db) {
 }
 
 static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_connection * db) {
+	struct so_media * media = sodr_tape_drive.slot->media;
+	if (media == NULL)
+		return -1;
+
 	int failed = sodr_tape_drive_set_file_position(0, db);
 	if (failed != 0)
 		return failed;
 
 	so_log_write(so_log_level_info,
 		dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"),
-		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name,
+		sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
 		quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
 	failed = sodr_tape_drive_scsi_erase_media(scsi_device, quick_mode);
 
 	if (failed != 0)
 		so_log_write(so_log_level_error,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"),
-			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name,
+			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
 			quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
-	else
+	else {
+		media->uuid[0] = '\0';
+		media->status = so_media_status_new;
+		media->last_write = time(NULL);
+
+		media->free_block = media->total_block;
+
+		media->nb_volumes = 0;
+		media->append = true;
+
+		if (media->archive_format != NULL)
+			so_archive_format_free(media->archive_format);
+		media->archive_format = NULL;
+
+		if (media->pool != NULL)
+			so_pool_free(media->pool);
+		media->pool = NULL;
+
 		so_log_write(so_log_level_error,
 			dgettext("storiqone-drive-tape", "[%s | %s | #%u]: media '%s' has been erased with success (mode: %s)"),
-			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name,
+			sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name,
 			quick_mode ? dgettext("storiqone-drive-tape", "quick") : dgettext("storiqone-drive-tape", "long"));
+	}
 
 	return failed;
 }
