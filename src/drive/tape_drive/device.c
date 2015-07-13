@@ -906,9 +906,9 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 						sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name);
 
 					/**
-					 * check header only if media status is in use
+					 * check header only if archive format of media is known
 					 */
-					if (media->status == so_media_status_in_use && !sodr_tape_drive_check_header(db)) {
+					if (media->archive_format != NULL && !sodr_tape_drive_check_header(db)) {
 						media->status = so_media_status_error;
 						so_log_write(so_log_level_error,
 							dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Error while checking media header '%s'"),
