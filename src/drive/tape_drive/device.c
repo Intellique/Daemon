@@ -877,7 +877,7 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 							media->status = so_media_status_error;
 						else {
 							int fd = open(scsi_device, O_RDWR);
-							failed = sodr_tape_drive_scsi_size_available(fd, media);
+							sodr_tape_drive_scsi_rewind(fd);
 							close(fd);
 						}
 					}
@@ -905,12 +905,10 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 						dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Checking media header '%s'"),
 						sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, media->name);
 
-					// rewind tape
-					int fd = open(scsi_device, O_RDWR);
-					failed = sodr_tape_drive_scsi_rewind(fd);
-					close(fd);
-
-					if (failed == 0 && !sodr_tape_drive_check_header(db)) {
+					/**
+					 * check header only if media status is in use
+					 */
+					if (media->status == so_media_status_in_use && !sodr_tape_drive_check_header(db)) {
 						media->status = so_media_status_error;
 						so_log_write(so_log_level_error,
 							dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Error while checking media header '%s'"),
@@ -931,9 +929,8 @@ static int sodr_tape_drive_update_status(struct so_database_connection * db) {
 				}
 			}
 		}
-	} else {
+	} else
 		sodr_tape_drive.status = so_drive_status_error;
-	}
 
 	return failed;
 }

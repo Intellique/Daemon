@@ -138,7 +138,7 @@ static int sochgr_scsi_changer_check(unsigned int nb_clients, struct so_database
 			dr->ops->update_status(dr);
 
 			if (!dr->is_empty) {
-				const char * volume_name = dr->slot->volume_name;
+				char * volume_name = strdup(dr->slot->media->name);
 
 				so_log_write(so_log_level_notice,
 					dngettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%d because media is not use since %d minute", "[%s | %s]: unloading media '%s' from drive #%d because media is not use since %d minutes", 30),
@@ -153,6 +153,8 @@ static int sochgr_scsi_changer_check(unsigned int nb_clients, struct so_database
 					so_log_write(so_log_level_error,
 						dgettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%d finished with code = %d"),
 						sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, dr->index, failed);
+
+				free(volume_name);
 			}
 		}
 
