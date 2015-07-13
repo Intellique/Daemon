@@ -221,7 +221,9 @@ static void sodr_changer_process_update_status(struct so_value * request __attri
 	struct so_drive_driver * driver = sodr_drive_get();
 	struct so_drive * drive = driver->device;
 
-	int failed = drive->ops->update_status(db);
+	int failed = 0;
+	if (!sodr_listen_is_locked())
+		failed = drive->ops->update_status(db);
 
 	struct so_value * returned = so_value_pack("{siso}", "status", (long long int) failed, "drive", so_drive_convert(drive, true));
 	so_json_encode_to_fd(returned, 1, true);

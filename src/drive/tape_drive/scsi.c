@@ -362,7 +362,7 @@ int sodr_tape_drive_scsi_erase_media(const char * path, bool quick_mode) {
 	} __attribute__((packed)) command = {
 		.op_code = 0x19, // ERASE (6)
 		.long_mode = !quick_mode,
-		.immed = true,
+		.immed = false,
 	};
 
 	struct scsi_request_sense sense;
