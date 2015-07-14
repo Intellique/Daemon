@@ -288,13 +288,6 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 
 		ssize_t reserved = soj_media_prepare(pool, archive_size, db_connect);
 		if (reserved < archive_size) {
-			reserved += soj_media_prepare_unformatted(pool, true, db_connect);
-
-			if (reserved < archive_size)
-				reserved += soj_media_prepare_unformatted(pool, false, db_connect);
-		}
-
-		if (reserved < archive_size) {
 			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-create-archive", "Error: not enought space available into pool (%s)"),
 				pool->name);
@@ -329,13 +322,6 @@ static int soj_create_archive_simulate(struct so_job * job, struct so_database_c
 		}
 
 		ssize_t reserved = soj_media_prepare(primary_pool, archive_size, db_connect);
-		if (reserved < archive_size) {
-			reserved += soj_media_prepare_unformatted(primary_pool, true, db_connect);
-
-			if (reserved < archive_size)
-				reserved += soj_media_prepare_unformatted(primary_pool, false, db_connect);
-		}
-
 		if (reserved < archive_size) {
 			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-create-archive", "Error: not enought space available into pool (%s)"),
