@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-erase-media v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-05-10 15:54+0200\n"
+        "POT-Creation-Date: 2015-07-15 11:50+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -67,7 +67,7 @@ msgstr  "Tentative d’effacement d’un média qui a un status en erreur"
 
 #: src/job/erase-media/erase-media.c:200
 #, c-format
-msgid   "Try to erase a media witch contains an archive not deleted (named: %s)"
+msgid   "Try to erase a media witch contains an undeleted archive (named: %s)"
 msgstr  "Tentative d’effacement d'un média qui contient une archive non supprimées (nommé : %s)"
 
 #: src/job/erase-media/erase-media.c:209

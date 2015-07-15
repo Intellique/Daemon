@@ -341,7 +341,10 @@ static void sodr_socket_command_erase_media(struct sodr_peer * peer, struct so_v
 	struct sodr_socket_params_erase_media * params = malloc(sizeof(struct sodr_socket_params_erase_media));
 	bzero(params, sizeof(struct sodr_socket_params_erase_media));
 	params->peer = peer;
-	so_value_unpack(request, "{s{ss}}", "params", "quick mode", &params->quick_mode);
+	so_value_unpack(request, "{s{sb}}",
+		"params",
+			"quick mode", &params->quick_mode
+	);
 
 	peer->owned = true;
 	so_thread_pool_run("erase media", sodr_worker_command_erase_media, params);

@@ -1758,7 +1758,7 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 			so_database_postgresql_get_string_dup(result, 0, 1, &media->label);
 			so_database_postgresql_get_string_dup(result, 0, 2, &media->name);
 
-			so_database_postgresql_get_string_dup(result, 0, 2, &mediaformat_id);
+			so_database_postgresql_get_string_dup(result, 0, 3, &mediaformat_id);
 			so_value_hashtable_put2(db, "media format id", so_value_new_string(mediaformat_id), true);
 
 			if (!PQgetisnull(result, 0, 4)) {
@@ -1861,7 +1861,7 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 		}
 
 		const char * query = "insert_into_media";
-		so_database_postgresql_prepare(self, query, "INSERT INTO media(uuid, label, mediumserialnumber, name, status, firstused, usebefore, lastread, lastwrite, loadcount, readcount, writecount, nbtotalblockread, nbtotalblockwrite, nbreaderror, nbwriteerror, type, nbfiles, blocksize, freeblock, totalblock, archiveformat, mediaformat, pool) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24) RETURNING id");
+		so_database_postgresql_prepare(self, query, "INSERT INTO media(uuid, label, mediumserialnumber, name, status, firstused, usebefore, lastread, lastwrite, loadcount, readcount, writecount, nbtotalblockread, nbtotalblockwrite, nbreaderror, nbwriteerror, type, nbfiles, blocksize, freeblock, writelock, totalblock, archiveformat, mediaformat, pool) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25) RETURNING id");
 
 		char buffer_first_used[32];
 		char buffer_use_before[32];
@@ -1891,9 +1891,9 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 			*media->uuid ? media->uuid : NULL, media->label, media->medium_serial_number, media->name, so_media_status_to_string(media->status, false),
 			buffer_first_used, buffer_use_before, media->last_read > 0 ? buffer_last_read : NULL, media->last_write > 0 ? buffer_last_write : NULL,
 			load, read, write, totalblockread, totalblockwrite, totalreaderror, totalwriteerror, so_media_type_to_string(media->type, false), nbfiles,
-			blocksize, freeblock, totalblock, archiveformat_id, mediaformat_id, pool_id
+			blocksize, freeblock, totalblock, so_database_postgresql_bool_to_string(media->write_lock), archiveformat_id, mediaformat_id, pool_id
 		};
-		PGresult * result = PQexecPrepared(self->connect, query, 24, param, NULL, NULL, 0);
+		PGresult * result = PQexecPrepared(self->connect, query, 25, param, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)
@@ -1920,7 +1920,7 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 		return status == PGRES_FATAL_ERROR;
 	} else if (method != so_database_sync_id_only) {
 		const char * query = "update_media";
-		so_database_postgresql_prepare(self, query, "UPDATE media SET uuid = $1, name = $2, status = $3, lastread = $4, lastwrite = $5, loadcount = $6, readcount = $7, writecount = $8, nbtotalblockread = $9, nbtotalblockwrite = $10, nbreaderror = $11, nbwriteerror = $12, nbfiles = $13, blocksize = $14, freeblock = $15, totalblock = $16, archiveformat = $17, pool = $18, type = $19 WHERE id = $20");
+		so_database_postgresql_prepare(self, query, "UPDATE media SET uuid = $1, name = $2, status = $3, lastread = $4, lastwrite = $5, loadcount = $6, readcount = $7, writecount = $8, nbtotalblockread = $9, nbtotalblockwrite = $10, nbreaderror = $11, nbwriteerror = $12, nbfiles = $13, blocksize = $14, freeblock = $15, totalblock = $16, archiveformat = $17, pool = $18, type = $19, writelock = $20 WHERE id = $21");
 
 		char buffer_last_read[32] = "";
 		char buffer_last_write[32] = "";
@@ -1946,9 +1946,10 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 			*media->uuid ? media->uuid : NULL, media->name, so_media_status_to_string(media->status, false),
 			media->last_read > 0 ? buffer_last_read : NULL, media->last_write > 0 ? buffer_last_write : NULL,
 			load, read, write, totalblockread, totalblockwrite, totalreaderror, totalwriteerror, nbfiles,
-			blocksize, freeblock, totalblock, archiveformat_id, pool_id, so_media_type_to_string(media->type, false), media_id
+			blocksize, freeblock, totalblock, archiveformat_id, pool_id, so_media_type_to_string(media->type, false),
+			so_database_postgresql_bool_to_string(media->write_lock), media_id
 		};
-		PGresult * result = PQexecPrepared(self->connect, query, 20, param2, NULL, NULL, 0);
+		PGresult * result = PQexecPrepared(self->connect, query, 21, param2, NULL, NULL, 0);
 		ExecStatusType status = PQresultStatus(result);
 
 		if (status == PGRES_FATAL_ERROR)

@@ -232,19 +232,21 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 		if (!drive->ops->check_support(drive, sl->media->media_format, lp->size_need > 0)) {
 			if (changer->nb_drives < changer->nb_slots) {
+				const char * volume_name = sl->volume_name;
+
 				so_log_write(so_log_level_notice,
 					dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d"),
-					changer->vendor, changer->model, sl->volume_name, drive->index);
+					changer->vendor, changer->model, volume_name, drive->index);
 
 				int failed = changer->ops->unload(drive, sochgr_db);
 				if (failed != 0) {
 					so_log_write(so_log_level_error,
 						dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d finished with code = %d"),
-						changer->vendor, changer->model, sl->volume_name, drive->index, failed);
+						changer->vendor, changer->model, volume_name, drive->index, failed);
 				} else
 					so_log_write(so_log_level_notice,
 						dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d finished with code = OK"),
-						changer->vendor, changer->model, sl->volume_name, drive->index);
+						changer->vendor, changer->model, volume_name, drive->index);
 			} else {
 				so_log_write(so_log_level_error,
 					dgettext("libstoriqone-changer", "[%s | %s]: you should change drive because drive (%s#%u) has no support for format (%s)"),
@@ -310,7 +312,8 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 				break;
 
 			if (drive->slot->full) {
-				const char * volume_name = drive->slot->volume_name;
+				char * volume_name = strdup(drive->slot->volume_name);
+
 				so_log_write(so_log_level_notice,
 					dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d"),
 					changer->vendor, changer->model, volume_name, drive->index);
@@ -328,11 +331,15 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 					so_json_encode_to_fd(response, peer->fd, true);
 					so_value_free(response);
 
+					free(volume_name);
+
 					return false;
 				} else
 					so_log_write(so_log_level_notice,
 						dgettext("libstoriqone-changer", "[%s | %s]: unloading media '%s' from drive #%d finished with code = OK"),
 						changer->vendor, changer->model, volume_name, drive->index);
+
+				free(volume_name);
 			}
 
 			so_log_write(so_log_level_notice, dgettext("libstoriqone-changer", "[%s | %s]: loading media '%s' from slot #%u to drive #%d"), changer->vendor, changer->model, sl->volume_name, sl->index, drive->index);

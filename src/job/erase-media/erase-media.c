@@ -149,7 +149,7 @@ static int soj_erasemedia_run(struct so_job * job, struct so_database_connection
 
 	job->done = 0.75;
 
-	int failed = drive->ops->erase_media(drive, true);
+	int failed = drive->ops->erase_media(drive, quick_mode);
 
 	job->done = 1;
 
@@ -197,7 +197,7 @@ static int soj_erasemedia_simulate(struct so_job * job, struct so_database_conne
 		struct so_archive * archive = so_value_custom_get(so_value_iterator_get_value(iter, false));
 		if (!archive->deleted) {
 			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-				dgettext("storiqone-job-erase-media", "Try to erase a media witch contains an archive not deleted (named: %s)"),
+				dgettext("storiqone-job-erase-media", "Try to erase a media witch contains an undeleted archive (named: %s)"),
 				archive->name);
 			undeleted_archive = true;
 		}
