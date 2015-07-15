@@ -52,12 +52,12 @@
 
 #include "storiqone.version"
 
-static bool sodr_media_read_header_v1(struct so_media * media, const char * buffer, int nb_parsed, bool check, struct so_database_connection * db_connection);
-static bool sodr_media_read_header_v2(struct so_media * media, const char * buffer, int nb_parsed, bool check, struct so_database_connection * db_connection);
-static bool sodr_media_read_header_v3(struct so_media * media, const char * buffer, int nb_parsed, bool check, struct so_database_connection * db_connection);
+static bool sodr_media_read_header_v1(struct so_media * media, const char * buffer, int nb_parsed, bool check);
+static bool sodr_media_read_header_v2(struct so_media * media, const char * buffer, int nb_parsed, bool check);
+static bool sodr_media_read_header_v3(struct so_media * media, const char * buffer, int nb_parsed, bool check);
 
 
-bool sodr_media_check_header(struct so_media * media, const char * buffer, struct so_database_connection * db_connection) {
+bool sodr_media_check_header(struct so_media * media, const char * buffer) {
 	char storiqone_version[65];
 	int media_format_version = 0;
 	int nb_parsed = 0;
@@ -70,15 +70,15 @@ bool sodr_media_check_header(struct so_media * media, const char * buffer, struc
 	if (nb_params == 2) {
 		switch (media_format_version) {
 			case 1:
-				ok = sodr_media_read_header_v1(media, buffer, nb_parsed, true, db_connection);
+				ok = sodr_media_read_header_v1(media, buffer, nb_parsed, true);
 				break;
 
 			case 2:
-				ok = sodr_media_read_header_v2(media, buffer, nb_parsed, true, db_connection);
+				ok = sodr_media_read_header_v2(media, buffer, nb_parsed, true);
 				break;
 
 			case 3:
-				ok = sodr_media_read_header_v3(media, buffer, nb_parsed, true, db_connection);
+				ok = sodr_media_read_header_v3(media, buffer, nb_parsed, true);
 				break;
 		}
 	}
@@ -86,7 +86,7 @@ bool sodr_media_check_header(struct so_media * media, const char * buffer, struc
 	return ok;
 }
 
-static bool sodr_media_read_header_v1(struct so_media * media, const char * buffer, int nb_parsed2, bool check, struct so_database_connection * db_connection __attribute__((unused))) {
+static bool sodr_media_read_header_v1(struct so_media * media, const char * buffer, int nb_parsed2, bool check) {
 	// M | STone (v0.1)
 	// M | Tape format: version=1
 	// O | Label: A0000002
@@ -134,11 +134,6 @@ static bool sodr_media_read_header_v1(struct so_media * media, const char * buff
 		char * digest = so_checksum_compute(checksum_name, buffer, nb_parsed);
 		ok = digest != NULL && !strcmp(checksum_value, digest);
 		free(digest);
-
-		media->pool = db_connection->ops->get_pool(db_connection, pool_id, NULL);
-		// TODO: create pool
-		// if (media->pool == NULL)
-		//	media->pool = so_pool_create(pool_id, pool_name, media->format);
 	}
 
 	if (ok) {
@@ -167,7 +162,7 @@ static bool sodr_media_read_header_v1(struct so_media * media, const char * buff
 	return ok;
 }
 
-static bool sodr_media_read_header_v2(struct so_media * media, const char * buffer, int nb_parsed2, bool check, struct so_database_connection * db_connection) {
+static bool sodr_media_read_header_v2(struct so_media * media, const char * buffer, int nb_parsed2, bool check) {
 	// M | STone (v0.2)
 	// M | Tape format: version=2
 	// M | Host: name=kazoo, uuid=40e576d7-cb14-42c2-95c5-edd14fbb638d
@@ -221,11 +216,6 @@ static bool sodr_media_read_header_v2(struct so_media * media, const char * buff
 		char * digest = so_checksum_compute(checksum_name, buffer, nb_parsed);
 		ok = digest != NULL && !strcmp(checksum_value, digest);
 		free(digest);
-
-		media->pool = db_connection->ops->get_pool(db_connection, pool_id, NULL);
-		// TODO: create pool
-		// if (media->pool == NULL)
-		//	media->pool = so_pool_create(pool_id, pool_name, media->format);
 	}
 
 	if (ok) {
@@ -254,7 +244,7 @@ static bool sodr_media_read_header_v2(struct so_media * media, const char * buff
 	return ok;
 }
 
-static bool sodr_media_read_header_v3(struct so_media * media, const char * buffer, int nb_parsed2, bool check, struct so_database_connection * db_connection) {
+static bool sodr_media_read_header_v3(struct so_media * media, const char * buffer, int nb_parsed2, bool check) {
 	// M | Storiq One (v1.2)
 	// M | Media format: version=3
 	// M | Host: name="kazoo", uuid="40e576d7-cb14-42c2-95c5-edd14fbb638d"
@@ -308,13 +298,6 @@ static bool sodr_media_read_header_v3(struct so_media * media, const char * buff
 		char * digest = so_checksum_compute(checksum_name, buffer, nb_parsed);
 		ok = digest != NULL && !strcmp(checksum_value, digest);
 		free(digest);
-
-		so_pool_free(media->pool);
-		media->pool = db_connection->ops->get_pool(db_connection, pool_id, NULL);
-
-		// TODO: create pool
-		// if (media->pool == NULL)
-		//	media->pool = so_pool_create(pool_id, pool_name, media->format);
 	}
 
 	if (ok) {

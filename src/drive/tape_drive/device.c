@@ -167,7 +167,7 @@ static bool sodr_tape_drive_check_header(struct so_database_connection * db) {
 
 	struct so_media * media = sodr_tape_drive.slot->media;
 	// check header
-	bool ok = sodr_media_check_header(media, buffer, db);
+	bool ok = sodr_media_check_header(media, buffer);
 	if (!ok)
 		ok = sodr_tape_drive_media_check_header(media, buffer);
 

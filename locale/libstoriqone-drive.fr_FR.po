@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-vtl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-07-15 11:58+0200\n"
+        "POT-Creation-Date: 2015-07-15 17:41+0200\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -119,20 +119,20 @@ msgstr  "Démarrage du lecteur (type : %s, fabriquant : %s, modèle : %s, num
 msgid   "Drive (type: %s) will stop"
 msgstr  "Le lecteur (type : %s) va s’arrêter"
 
-#: src/libstoriqone-drive/media.c:148 src/libstoriqone-drive/media.c:235 src/libstoriqone-drive/media.c:324
+#: src/libstoriqone-drive/media.c:143 src/libstoriqone-drive/media.c:225 src/libstoriqone-drive/media.c:307
 #, c-format
 msgid   "Checking Storiq One header in media: %s"
 msgstr  "Vérification de l’entête Storiq One dans le média : %s"
 
-#: src/libstoriqone-drive/media.c:150 src/libstoriqone-drive/media.c:237 src/libstoriqone-drive/media.c:326
+#: src/libstoriqone-drive/media.c:145 src/libstoriqone-drive/media.c:227 src/libstoriqone-drive/media.c:309
 #, c-format
 msgid   "Found Storiq One header in media with (uuid: %s, label: %s, blocksize: %zd)"
 msgstr  "Une entête Storiq One a été trouvé sur le média avec (uuid : %s, étiquette : %s, taille de bloc : %zd)"
 
-#: src/libstoriqone-drive/media.c:163 src/libstoriqone-drive/media.c:250 src/libstoriqone-drive/media.c:339
+#: src/libstoriqone-drive/media.c:158 src/libstoriqone-drive/media.c:240 src/libstoriqone-drive/media.c:322
 msgid   "Checking Storiq One header in media: Failed"
 msgstr  "Vérification de l’entête Storiq One sur le média : échec"
 
-#: src/libstoriqone-drive/media.c:384
+#: src/libstoriqone-drive/media.c:367
 msgid   "Failed to compute digest before write media header"
 msgstr  "Échec du calcul de l’empreinte avant d’écrire l’entête du média"
