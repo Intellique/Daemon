@@ -24,8 +24,7 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-#define _GNU_SOURCE
-// asprintf, sscanf, snprintf
+// sscanf, snprintf
 #include <stdio.h>
 // free, malloc
 #include <stdlib.h>
@@ -339,7 +338,7 @@ static enum so_format_reader_header_status so_format_tar_reader_get_header(struc
 		}
 
 		if (file->filename == NULL)
-			asprintf(&file->filename, "/%s", raw_header->filename);
+			file->filename = strdup(raw_header->filename);
 
 		file->size = so_format_tar_reader_convert_size(raw_header->size);
 		sscanf(raw_header->filemode, "%o", &file->mode);
