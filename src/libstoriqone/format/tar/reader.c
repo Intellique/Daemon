@@ -24,7 +24,8 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
-// sscanf, snprintf
+#define _GNU_SOURCE
+// asprintf, sscanf, snprintf
 #include <stdio.h>
 // free, malloc
 #include <stdlib.h>
@@ -266,11 +267,13 @@ static enum so_format_reader_header_status so_format_tar_reader_get_header(struc
 		switch (raw_header->flag) {
 			case 'L':
 				next_read = 512 + so_format_tar_reader_convert_size(raw_header->size);
-				if (next_read % 512)
+				if (next_read % 512 != 0)
 					next_read -= next_read % 512;
 
-				if (next_read > self->buffer_size)
+				if (next_read > self->buffer_size) {
 					self->buffer = realloc(self->buffer, next_read);
+					self->buffer_size = next_read;
+				}
 
 				nb_read = self->io->ops->read(self->io, self->buffer, next_read);
 				if (nb_read < next_read) {
@@ -335,15 +338,9 @@ static enum so_format_reader_header_status so_format_tar_reader_get_header(struc
 				break;
 		}
 
-		if (file->filename == NULL) {
-			if (strlen(raw_header->filename) > 100) {
-				file->filename = malloc(101);
-				strncpy(file->filename, raw_header->filename, 100);
-				file->filename[100] = '\0';
-			} else {
-				file->filename = strdup(raw_header->filename);
-			}
-		}
+		if (file->filename == NULL)
+			asprintf(&file->filename, "/%s", raw_header->filename);
+
 		file->size = so_format_tar_reader_convert_size(raw_header->size);
 		sscanf(raw_header->filemode, "%o", &file->mode);
 		file->mtime = so_format_tar_reader_convert_time(raw_header);
