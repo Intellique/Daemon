@@ -86,7 +86,6 @@ static void so_format_tar_writer_gid2name(char * name, ssize_t length, gid_t uid
 static int so_format_tar_writer_file_position(struct so_format_writer * fw);
 static int so_format_tar_writer_last_errno(struct so_format_writer * fw);
 static ssize_t so_format_tar_writer_position(struct so_format_writer * fw);
-static const char * so_format_tar_writer_skip_leading_slash(const char * str);
 static struct so_format_reader * so_format_tar_writer_reopen(struct so_format_writer * fw);
 static enum so_format_writer_status so_format_tar_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file, ssize_t position);
 static void so_format_tar_writer_uid2name(char * name, ssize_t length, uid_t uid);
@@ -141,8 +140,7 @@ ssize_t so_format_tar_compute_size(const char * path) {
 	if (lstat(path, &sfile))
 		return -1;
 
-	const char * path2 = so_format_tar_writer_skip_leading_slash(path);
-	int path_length = strlen(path2);
+	int path_length = strlen(path);
 
 	ssize_t file_size = 512;
 	if (S_ISLNK(sfile.st_mode)) {
@@ -347,8 +345,7 @@ static void so_format_tar_writer_compute_size(char * csize, long long size) {
 }
 
 static ssize_t so_format_tar_writer_compute_size_of_file(struct so_format_writer * fw __attribute__((unused)), const struct so_format_file * file) {
-	const char * path2 = so_format_tar_writer_skip_leading_slash(file->filename);
-	int path_length = strlen(path2);
+	int path_length = strlen(file->filename);
 
 	ssize_t file_size = 512;
 	if (S_ISLNK(file->mode)) {
@@ -451,17 +448,6 @@ static ssize_t so_format_tar_writer_position(struct so_format_writer * fw) {
 	return format->io->ops->position(format->io);
 }
 
-static const char * so_format_tar_writer_skip_leading_slash(const char * str) {
-	if (str == NULL)
-		return NULL;
-
-	const char * ptr;
-	size_t i = 0, length = strlen(str);
-	for (ptr = str; *ptr == '/' && i < length; i++, ptr++);
-
-	return ptr;
-}
-
 static struct so_format_reader * so_format_tar_writer_reopen(struct so_format_writer * fw) {
 	struct so_format_tar_writer_private * format = fw->data;
 
@@ -479,7 +465,7 @@ static enum so_format_writer_status so_format_tar_writer_restart_file(struct so_
 
 	struct so_format_tar_writer_private * format = fw->data;
 	bzero(current_header, 512);
-	strncpy(current_header->filename, so_format_tar_writer_skip_leading_slash(file->filename), 100);
+	strncpy(current_header->filename, file->filename, 100);
 	so_format_tar_writer_compute_size(current_header->size, file->size - position);
 	current_header->flag = 'M';
 	so_format_tar_writer_uid2name(header->uname, 32, file->uid);
