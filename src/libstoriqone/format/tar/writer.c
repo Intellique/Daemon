@@ -191,8 +191,7 @@ static enum so_format_writer_status so_format_tar_writer_add_file(struct so_form
 	struct so_format_tar * header = malloc(block_size);
 	struct so_format_tar * current_header = header;
 
-	const char * filename = so_format_tar_writer_skip_leading_slash(file->filename);
-	int filename_length = strlen(filename);
+	int filename_length = strlen(file->filename);
 	if (S_ISLNK(file->mode)) {
 		int link_length = strlen(file->link);
 		if (filename_length > 100 && link_length > 100) {
@@ -201,38 +200,40 @@ static enum so_format_writer_status so_format_tar_writer_add_file(struct so_form
 
 			bzero(current_header, block_size - 512);
 			so_format_tar_writer_compute_link(current_header, (char *) (current_header + 1), file->link, link_length, 'K', NULL, file);
-			so_format_tar_writer_compute_link(current_header + 2, (char *) (current_header + 3), filename, filename_length, 'L', NULL, file);
 
-			current_header += 4;
+			current_header += 2 + link_length / 512;
+			so_format_tar_writer_compute_link(current_header, (char *) (current_header + 1), file->filename, filename_length, 'L', NULL, file);
+
+			current_header += 2 + filename_length / 512;
 		} else if (filename_length > 100) {
 			block_size += 1024 + filename_length - filename_length % 512;
 			current_header = header = realloc(header, block_size);
 
 			bzero(current_header, block_size - 512);
-			so_format_tar_writer_compute_link(current_header, (char *) (current_header + 1), filename, filename_length, 'L', NULL, file);
+			so_format_tar_writer_compute_link(current_header, (char *) (current_header + 1), file->filename, filename_length, 'L', NULL, file);
 
-			current_header += 2;
+			current_header += 2 + filename_length / 512;
 		} else if (link_length > 100) {
 			block_size += 1024 + link_length - link_length % 512;
 			current_header = header = realloc(header, block_size);
 			bzero(current_header, block_size - 512);
 			so_format_tar_writer_compute_link(current_header, (char *) (current_header + 1), file->link, link_length, 'K', NULL, file);
 
-			current_header += 2;
+			current_header += 2 + link_length / 512;
 		}
 	} else if (filename_length > 100) {
 		block_size += 1024 + filename_length - filename_length % 512;
 		current_header = header = realloc(header, block_size);
 
 		bzero(current_header, block_size - 512);
-		so_format_tar_writer_compute_link(current_header, (char *) (current_header + 1), filename, filename_length, 'L', NULL, file);
+		so_format_tar_writer_compute_link(current_header, (char *) (current_header + 1), file->filename, filename_length, 'L', NULL, file);
 
-		current_header += 2;
+		current_header += 2 + filename_length / 512;
 	}
 
 	struct so_format_tar_writer_private * format = fw->data;
 	bzero(current_header, 512);
-	strncpy(current_header->filename, filename, 100);
+	strncpy(current_header->filename, file->filename, 100);
 	snprintf(current_header->filemode, 8, "%07o", file->mode & 07777);
 	snprintf(current_header->uid, 8, "%07o", file->uid);
 	snprintf(current_header->gid, 8, "%07o", file->gid);
