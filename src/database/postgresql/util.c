@@ -26,10 +26,12 @@
 
 #define _GNU_SOURCE
 #define _XOPEN_SOURCE 500
-// localeconv
+// freelocale, newlocale, uselocale
 #include <locale.h>
 // PQgetvalue
 #include <postgresql/libpq-fe.h>
+// va_end, va_start
+#include <stdarg.h>
 // asprintf
 #include <stdio.h>
 // malloc
@@ -46,6 +48,8 @@
 #include <libstoriqone/string.h>
 
 #include "common.h"
+
+static int so_database_postgresql_get(const char * string, const char * format, ...) __attribute__((format (scanf, 2, 3)));
 
 static void so_database_postgresql_util_init(void) __attribute__((constructor));
 
@@ -146,6 +150,23 @@ const char * so_database_postgresql_bool_to_string(bool value) {
 }
 
 
+static int so_database_postgresql_get(const char * string, const char * format, ...) {
+	locale_t c_locale = newlocale(LC_ALL, "C", NULL);
+	locale_t current_locale = uselocale(c_locale);
+
+	va_list va;
+	va_start(va, format);
+
+	int nb_parsed = vsscanf(string, format, va);
+
+	va_end(va);
+
+	freelocale(c_locale);
+	uselocale(current_locale);
+
+	return nb_parsed;
+}
+
 int so_database_postgresql_get_bool(PGresult * result, int row, int column, bool * val) {
 	if (column < 0)
 		return -1;
@@ -162,36 +183,7 @@ int so_database_postgresql_get_double(PGresult * result, int row, int column, do
 		return -1;
 
 	char * value = PQgetvalue(result, row, column);
-	if (value == NULL)
-		return 0;
-
-	const char * decimal = strchr(value, '.');
-	if (decimal != NULL) {
-		size_t offset = decimal - value;
-
-		struct lconv * info_locale = localeconv();
-		ssize_t decimal_length = strlen(info_locale->decimal_point);
-		size_t length = strlen(value) + decimal_length;
-
-		char * new_value = malloc(length);
-
-		if (offset > 0)
-			strncpy(new_value, value, offset);
-		char * ptr_new_value = new_value + offset;
-
-		strncpy(ptr_new_value, info_locale->decimal_point, decimal_length);
-		ptr_new_value += decimal_length;
-
-		size_t remain = strlen(decimal + 1);
-		strncpy(ptr_new_value, decimal + 1, remain);
-		ptr_new_value[remain] = '\0';
-
-		int nb_parsed = sscanf(new_value, "%lg", val);
-
-		free(new_value);
-
-		return nb_parsed != 0;
-	} else if (value != NULL && sscanf(value, "%lg", val) == 1)
+	if (value != NULL && so_database_postgresql_get(value, "%lg", val) == 1)
 		return 0;
 
 	return value != NULL;
@@ -202,36 +194,7 @@ int so_database_postgresql_get_float(PGresult * result, int row, int column, flo
 		return -1;
 
 	char * value = PQgetvalue(result, row, column);
-	if (value == NULL)
-		return 0;
-
-	const char * decimal = strchr(value, '.');
-	if (decimal != NULL) {
-		size_t offset = decimal - value;
-
-		struct lconv * info_locale = localeconv();
-		ssize_t decimal_length = strlen(info_locale->decimal_point);
-		size_t length = strlen(value) + decimal_length;
-
-		char * new_value = malloc(length);
-
-		if (offset > 0)
-			strncpy(new_value, value, offset);
-		char * ptr_new_value = new_value + offset;
-
-		strncpy(ptr_new_value, info_locale->decimal_point, decimal_length);
-		ptr_new_value += decimal_length;
-
-		size_t remain = strlen(decimal + 1);
-		strncpy(ptr_new_value, decimal + 1, remain);
-		ptr_new_value[remain] = '\0';
-
-		int nb_parsed = sscanf(new_value, "%g", val);
-
-		free(new_value);
-
-		return nb_parsed != 0;
-	} else if (value != NULL && sscanf(value, "%g", val) == 1)
+	if (value != NULL && so_database_postgresql_get(value, "%g", val) == 1)
 		return 0;
 
 	return value != NULL;
@@ -401,19 +364,14 @@ int so_database_postgresql_get_uint_add(PGresult * result, int row, int column, 
 
 
 char * so_database_postgresql_set_float(double fl) {
+	locale_t c_locale = newlocale(LC_ALL, "C", NULL);
+	locale_t current_locale = uselocale(c_locale);
+
 	char * str_float;
 	asprintf(&str_float, "%lf", fl);
 
-	struct lconv * info_locale = localeconv();
-	if (strcmp(info_locale->decimal_point, ".") != 0) {
-		char * decimal = strstr(str_float, info_locale->decimal_point);
-		if (decimal != NULL) {
-			size_t length = strlen(info_locale->decimal_point);
-			if (length > 1)
-				memmove(decimal + 1, decimal + length, strlen(decimal + length) + 1);
-			*decimal = '.';
-		}
-	}
+	freelocale(c_locale);
+	uselocale(current_locale);
 
 	return str_float;
 }
