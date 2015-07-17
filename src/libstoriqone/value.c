@@ -787,6 +787,20 @@ struct so_value * so_value_new_string2(const char * value, ssize_t length) {
 	return val;
 }
 
+struct so_value * so_value_pack(const char * format, ...) {
+	if (format == NULL)
+		return NULL;
+
+	va_list va;
+	va_start(va, format);
+
+	struct so_value * new_value = so_value_pack_inner(&format, va);
+
+	va_end(va);
+
+	return new_value;
+}
+
 static struct so_value * so_value_pack_inner(const char ** format, va_list params) {
 	switch (**format) {
 		case 'b':
@@ -796,6 +810,9 @@ static struct so_value * so_value_pack_inner(const char ** format, va_list param
 			return so_value_new_float(va_arg(params, double));
 
 		case 'i':
+			return so_value_new_integer(va_arg(params, int));
+
+		case 'I':
 			return so_value_new_integer(va_arg(params, long long int));
 
 		case 'n':
@@ -821,6 +838,15 @@ static struct so_value * so_value_pack_inner(const char ** format, va_list param
 					return so_value_new_string(str_val);
 				return &null_value;
 			}
+
+		case 'u':
+			return so_value_new_integer(va_arg(params, unsigned int));
+
+		case 'U':
+			return so_value_new_integer(va_arg(params, unsigned long long int));
+
+		case 'z':
+			return so_value_new_integer(va_arg(params, size_t));
 
 		case '[': {
 				struct so_value * array = so_value_new_linked_list();
@@ -866,21 +892,8 @@ static struct so_value * so_value_pack_inner(const char ** format, va_list param
 				return object;
 			}
 	}
+
 	return NULL;
-}
-
-struct so_value * so_value_pack(const char * format, ...) {
-	if (format == NULL)
-		return NULL;
-
-	va_list va;
-	va_start(va, format);
-
-	struct so_value * new_value = so_value_pack_inner(&format, va);
-
-	va_end(va);
-
-	return new_value;
 }
 
 struct so_value * so_value_share(struct so_value * value) {
@@ -930,6 +943,16 @@ static int so_value_unpack_inner(struct so_value * value, const char ** format, 
 
 		case 'i':
 			if (value->type == so_value_integer) {
+				int * val = va_arg(params, int *);
+				if (val != NULL) {
+					*val = so_value_integer_get(value);
+					return 1;
+				}
+			}
+			break;
+
+		case 'I':
+			if (value->type == so_value_integer) {
 				long long int * val = va_arg(params, long long int *);
 				if (val != NULL) {
 					*val = so_value_integer_get(value);
@@ -970,6 +993,36 @@ static int so_value_unpack_inner(struct so_value * value, const char ** format, 
 				char ** val = va_arg(params, char **);
 				if (val != NULL) {
 					*val = NULL;
+					return 1;
+				}
+			}
+			break;
+
+		case 'u':
+			if (value->type == so_value_integer) {
+				unsigned int * val = va_arg(params, unsigned int *);
+				if (val != NULL) {
+					*val = so_value_integer_get(value);
+					return 1;
+				}
+			}
+			break;
+
+		case 'U':
+			if (value->type == so_value_integer) {
+				unsigned long long int * val = va_arg(params, unsigned long long int *);
+				if (val != NULL) {
+					*val = so_value_integer_get(value);
+					return 1;
+				}
+			}
+			break;
+
+		case 'z':
+			if (value->type == so_value_integer) {
+				size_t * val = va_arg(params, size_t *);
+				if (val != NULL) {
+					*val = so_value_integer_get(value);
 					return 1;
 				}
 			}
@@ -1050,6 +1103,10 @@ static bool so_value_valid_inner(struct so_value * value, const char ** format, 
 			return value->type == so_value_float;
 
 		case 'i':
+		case 'I':
+		case 'u':
+		case 'U':
+		case 'z':
 			return value->type == so_value_integer;
 
 		case 'n':

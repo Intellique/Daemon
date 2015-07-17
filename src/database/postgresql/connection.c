@@ -1223,13 +1223,13 @@ static struct so_value * so_database_postgresql_get_vtls(struct so_database_conn
 			enum so_media_format_mode mode = so_media_string_to_format_mode(PQgetvalue(result, i, 8), false);
 			struct so_media_format * format = so_database_postgresql_get_media_format(connect, density_code, mode);
 
-			struct so_value * changer = so_value_pack("{s[]sssssssisisbso}",
+			struct so_value * changer = so_value_pack("{s[]sssssssususbso}",
 				"drives",
 				"uuid", PQgetvalue(result, i, 0),
 				"path", PQgetvalue(result, i, 1),
 				"prefix", PQgetvalue(result, i, 2),
-				"nb slots", (long long) nb_slots,
-				"nb drives", (long long) nb_drives,
+				"nb slots", nb_slots,
+				"nb drives", nb_drives,
 				"deleted", deleted,
 				"format", so_media_format_convert(format)
 			);
@@ -2167,9 +2167,9 @@ static struct so_value * so_database_postgresql_update_vtl(struct so_database_co
 		so_database_postgresql_get_uint(result, 0, 1, &nb_drives);
 		so_database_postgresql_get_bool(result, 0, 2, &deleted);
 
-		vtl_updated = so_value_pack("{sisisb}",
-			"nb slots", (long) nb_slots,
-			"nb drives", (long) nb_drives,
+		vtl_updated = so_value_pack("{sususb}",
+			"nb slots", nb_slots,
+			"nb drives", nb_drives,
 			"deleted", deleted
 		);
 	}

@@ -71,8 +71,8 @@ static void sodr_io_raw_reader_init() {
 
 
 static void sodr_io_raw_reader_close(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
-	long int failed = peer->stream_reader->ops->close(peer->stream_reader);
-	long int last_errno = peer->stream_reader->ops->last_errno(peer->stream_reader);
+	int failed = peer->stream_reader->ops->close(peer->stream_reader);
+	int last_errno = peer->stream_reader->ops->last_errno(peer->stream_reader);
 
 	if (failed == 0) {
 		peer->stream_reader->ops->free(peer->stream_reader);
@@ -96,7 +96,7 @@ static void sodr_io_raw_reader_close(struct sodr_peer * peer, struct so_value * 
 
 static void sodr_io_raw_reader_end_of_file(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
 	bool eof = peer->stream_reader->ops->end_of_file(peer->stream_reader);
-	long int last_errno = peer->stream_reader->ops->last_errno(peer->stream_reader);
+	int last_errno = peer->stream_reader->ops->last_errno(peer->stream_reader);
 
 	struct so_value * response = so_value_pack("{sbsi}", "returned", eof, "last errno", last_errno);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
@@ -108,9 +108,9 @@ static void sodr_io_raw_reader_forward(struct sodr_peer * peer, struct so_value 
 	so_value_unpack(request, "{s{sosb}}", "params", "offset", &next_position);
 
 	off_t new_position = peer->stream_reader->ops->forward(peer->stream_reader, next_position);
-	long int last_errno = peer->stream_reader->ops->last_errno(peer->stream_reader);
+	int last_errno = peer->stream_reader->ops->last_errno(peer->stream_reader);
 
-	struct so_value * response = so_value_pack("{sisi}", "returned", new_position, "last errno", last_errno);
+	struct so_value * response = so_value_pack("{szsi}", "returned", new_position, "last errno", last_errno);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
 }
@@ -127,8 +127,8 @@ static void sodr_io_raw_reader_read(struct sodr_peer * peer, struct so_value * r
 
 		ssize_t nb_read = peer->stream_reader->ops->read(peer->stream_reader, peer->buffer, nb_will_read);
 		if (nb_read < 0) {
-			long int last_errno = peer->stream_reader->ops->last_errno(peer->stream_reader);
-			struct so_value * response = so_value_pack("{sisi}", "returned", -1L, "last errno", (long) last_errno);
+			int last_errno = peer->stream_reader->ops->last_errno(peer->stream_reader);
+			struct so_value * response = so_value_pack("{sisi}", "returned", -1, "last errno", last_errno);
 			so_json_encode_to_fd(response, peer->fd_cmd, true);
 			so_value_free(response);
 			return;
@@ -141,14 +141,14 @@ static void sodr_io_raw_reader_read(struct sodr_peer * peer, struct so_value * r
 		send(peer->fd_data, peer->buffer, nb_read, 0);
 	}
 
-	struct so_value * response = so_value_pack("{sisi}", "returned", nb_total_read, "last errno", 0L);
+	struct so_value * response = so_value_pack("{szsi}", "returned", nb_total_read, "last errno", 0);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
 }
 
 static void sodr_io_raw_reader_rewind(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
-	long int failed = peer->stream_reader->ops->rewind(peer->stream_reader);
-	long int last_errno = peer->stream_reader->ops->last_errno(peer->stream_reader);
+	int failed = peer->stream_reader->ops->rewind(peer->stream_reader);
+	int last_errno = peer->stream_reader->ops->last_errno(peer->stream_reader);
 
 	struct so_value * response = so_value_pack("{sisi}", "returned", failed, "last errno", last_errno);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);

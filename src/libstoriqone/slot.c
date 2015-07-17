@@ -40,8 +40,8 @@ struct so_value * so_slot_convert(struct so_slot * slot) {
 	if (slot->media != NULL)
 		media = so_media_convert(slot->media);
 
-	return so_value_pack("{sisssbsbso}",
-		"index", (long int) slot->index,
+	return so_value_pack("{susssbsbso}",
+		"index", slot->index,
 		"volume name", slot->volume_name,
 		"ie port", slot->is_ie_port,
 		"enable", slot->enable,

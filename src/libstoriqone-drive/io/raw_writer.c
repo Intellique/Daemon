@@ -76,10 +76,10 @@ static void sodr_io_raw_writer_before_close(struct sodr_peer * peer, struct so_v
 		length = peer->buffer_length;
 
 	ssize_t nb_read = peer->stream_writer->ops->before_close(peer->stream_writer, peer->buffer, length);
-	long int last_errno = peer->stream_writer->ops->last_errno(peer->stream_writer);
+	int last_errno = peer->stream_writer->ops->last_errno(peer->stream_writer);
 	ssize_t available_size = peer->stream_writer->ops->get_available_size(peer->stream_writer);
 
-	struct so_value * response = so_value_pack("{sisisi}",
+	struct so_value * response = so_value_pack("{szsisz}",
 		"returned", nb_read,
 		"last errno", last_errno,
 		"available size", available_size
@@ -92,8 +92,8 @@ static void sodr_io_raw_writer_before_close(struct sodr_peer * peer, struct so_v
 }
 
 static void sodr_io_raw_writer_close(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
-	long int failed = peer->stream_writer->ops->close(peer->stream_writer);
-	long int last_errno = peer->stream_writer->ops->last_errno(peer->stream_writer);
+	int failed = peer->stream_writer->ops->close(peer->stream_writer);
+	int last_errno = peer->stream_writer->ops->last_errno(peer->stream_writer);
 
 	if (failed == 0) {
 		peer->stream_writer->ops->free(peer->stream_writer);
@@ -115,7 +115,7 @@ static void sodr_io_raw_writer_close(struct sodr_peer * peer, struct so_value * 
 
 static void sodr_io_raw_writer_reopen(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
 	peer->stream_reader = peer->stream_writer->ops->reopen(peer->stream_writer);
-	long int last_errno = 0;
+	int last_errno = 0;
 	if (peer->stream_reader == NULL)
 		last_errno = peer->stream_writer->ops->last_errno(peer->stream_writer);
 	else {
@@ -144,10 +144,10 @@ static void sodr_io_raw_writer_write(struct sodr_peer * peer, struct so_value * 
 		ssize_t nb_read = recv(peer->fd_data, peer->buffer, nb_will_read, 0);
 		if (nb_read < 0) {
 			ssize_t available_size = peer->stream_writer->ops->get_available_size(peer->stream_writer);
-			struct so_value * response = so_value_pack("{sisisi}",
-				"returned", -1L,
-				"last errno", (long) errno,
-				"available size",available_size
+			struct so_value * response = so_value_pack("{sisisz}",
+				"returned", -1,
+				"last errno", errno,
+				"available size", available_size
 			);
 			so_json_encode_to_fd(response, peer->fd_cmd, true);
 			so_value_free(response);
@@ -156,10 +156,10 @@ static void sodr_io_raw_writer_write(struct sodr_peer * peer, struct so_value * 
 
 		ssize_t nb_write = peer->stream_writer->ops->write(peer->stream_writer, peer->buffer, nb_read);
 		if (nb_write < 0) {
-			long int last_errno = peer->stream_writer->ops->last_errno(peer->stream_writer);
+			int last_errno = peer->stream_writer->ops->last_errno(peer->stream_writer);
 			ssize_t available_size = peer->stream_writer->ops->get_available_size(peer->stream_writer);
-			struct so_value * response = so_value_pack("{sisisi}",
-				"returned", -1L,
+			struct so_value * response = so_value_pack("{sisisz}",
+				"returned", -1,
 				"last errno", last_errno,
 				"available size", available_size
 			);
@@ -172,9 +172,9 @@ static void sodr_io_raw_writer_write(struct sodr_peer * peer, struct so_value * 
 	}
 
 	ssize_t available_size = peer->stream_writer->ops->get_available_size(peer->stream_writer);
-	struct so_value * response = so_value_pack("{sisisi}",
+	struct so_value * response = so_value_pack("{szsisz}",
 		"returned", nb_total_write,
-		"last errno", 0L,
+		"last errno", 0,
 		"available size", available_size
 	);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);

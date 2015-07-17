@@ -143,7 +143,12 @@ void solgr_log_write2(enum so_log_level level, enum so_log_type type, const char
 	vasprintf(&str_message, format, va);
 	va_end(va);
 
-	struct so_value * message = so_value_pack("{sssssiss}", "level", so_log_level_to_string(level, false), "type", so_log_type_to_string(type, false), "timestamp", timestamp, "message", str_message);
+	struct so_value * message = so_value_pack("{sssssIss}",
+		"level", so_log_level_to_string(level, false),
+		"type", so_log_type_to_string(type, false),
+		"timestamp", timestamp,
+		"message", str_message
+	);
 
 	free(str_message);
 

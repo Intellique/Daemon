@@ -190,7 +190,7 @@ struct so_value * so_media_convert(struct so_media * media) {
 	if (media->pool != NULL)
 		pool = so_pool_convert(media->pool);
 
-	struct so_value * md = so_value_pack("{sssssssssssisisisisisisisisisisisisisisbsssbsososo}",
+	struct so_value * md = so_value_pack("{sssssssssssIsIsIsIsIsIszszsususzszszsusbsssbsososo}",
 		"uuid", media->uuid[0] != '\0' ? media->uuid : NULL,
 		"label", media->label,
 		"medium serial number", media->medium_serial_number,
@@ -198,8 +198,8 @@ struct so_value * so_media_convert(struct so_media * media) {
 
 		"status", so_media_status_to_string(media->status, false),
 
-		"first used", media->first_used,
-		"use before", media->use_before,
+		"first used", (long) media->first_used,
+		"use before", (long) media->use_before,
 
 		"load count", media->load_count,
 		"read count", media->read_count,
@@ -209,14 +209,14 @@ struct so_value * so_media_convert(struct so_media * media) {
 		"nb total read", media->nb_total_read,
 		"nb total write", media->nb_total_write,
 
-		"nb read errors", (unsigned long int) media->nb_read_errors,
-		"nb write errors", (unsigned long int) media->nb_write_errors,
+		"nb read errors", media->nb_read_errors,
+		"nb write errors", media->nb_write_errors,
 
 		"block size", media->block_size,
 		"free block", media->free_block,
 		"total block", media->total_block,
 
-		"nb volumes", (unsigned long int) media->nb_volumes,
+		"nb volumes", media->nb_volumes,
 		"append", media->append,
 		"type", so_media_type_to_string(media->type, false),
 		"write lock", media->write_lock,
@@ -245,10 +245,10 @@ struct so_value * so_media_convert(struct so_media * media) {
 }
 
 struct so_value * so_media_format_convert(struct so_media_format * format) {
-	return so_value_pack("{sssisssssisisisisisisisbsb}",
+	return so_value_pack("{sssusssssIsIsIsIsIszszsbsb}",
 		"name", format->name,
 
-		"density code", (long int) format->density_code,
+		"density code", format->density_code,
 		"type", so_media_format_data_type_to_string(format->type, false),
 		"mode", so_media_format_mode_to_string(format->mode, false),
 

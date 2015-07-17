@@ -259,9 +259,9 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 		lp->waiting = lp->peer->waiting = false;
 		sochgr_socket_remove_peer(lp->peer);
 
-		struct so_value * response = so_value_pack("{sbsiso}",
+		struct so_value * response = so_value_pack("{sbsuso}",
 			"error", false,
-			"index", (long int) drive->index,
+			"index", drive->index,
 			"changer", so_changer_convert(changer)
 		);
 		so_json_encode_to_fd(response, peer->fd, true);
@@ -361,9 +361,9 @@ bool sochgr_socket_unlock(struct sochgr_peer * current_peer, bool no_wait) {
 
 			drive->ops->lock(drive, peer->key);
 
-			struct so_value * response = so_value_pack("{sbsiso}",
+			struct so_value * response = so_value_pack("{sbsuso}",
 				"error", false,
-				"index", (long int) drive->index,
+				"index", drive->index,
 				"changer", so_changer_convert(changer)
 			);
 			so_json_encode_to_fd(response, peer->fd, true);
@@ -427,7 +427,7 @@ static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so
 
 	struct so_media * media = sl != NULL ? sl->media : NULL;
 	if (media == NULL) {
-		struct so_value * response = so_value_pack("{sbsi}", "found", false, "index", -1L);
+		struct so_value * response = so_value_pack("{sbsi}", "found", false, "index", -1);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 		return;
@@ -452,7 +452,7 @@ static void sochgr_socket_command_get_media(struct sochgr_peer * peer, struct so
 
 	struct so_value * response;
 error:
-	response = so_value_pack("{sbsi}", "error", true, "index", -1L);
+	response = so_value_pack("{sbsi}", "error", true, "index", -1);
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);
 	return;
@@ -504,7 +504,7 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 	free(str_unbreakable_level);
 
 	if (slot < 0 || unbreakable_level == so_pool_unbreakable_level_unknown) {
-		struct so_value * response = so_value_pack("{si}", "returned", -1L);
+		struct so_value * response = so_value_pack("{si}", "returned", -1);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 		return;
@@ -515,7 +515,7 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 	struct so_slot * sl = changer->slots + slot;
 
 	if (sl->media == NULL) {
-		struct so_value * response = so_value_pack("{si}", "returned", -1L);
+		struct so_value * response = so_value_pack("{si}", "returned", -1);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 		return;
@@ -543,7 +543,7 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 		}
 	}
 
-	struct so_value * response = so_value_pack("{si}", "returned", result);
+	struct so_value * response = so_value_pack("{sz}", "returned", result);
 	so_json_encode_to_fd(response, fd, true);
 	so_value_free(response);
 }

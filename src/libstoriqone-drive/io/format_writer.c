@@ -90,14 +90,14 @@ static void sodr_io_format_writer_add_file(struct sodr_peer * peer, struct so_va
 	so_format_file_sync(&file, vfile);
 
 	enum so_format_writer_status status = peer->format_writer->ops->add_file(peer->format_writer, &file);
-	long int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
+	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 	ssize_t position = peer->format_writer->ops->position(peer->format_writer);
 	ssize_t available_size = peer->format_writer->ops->get_available_size(peer->format_writer);
 
 	so_format_file_free(&file);
 
-	struct so_value * response = so_value_pack("{sisisisi}",
-		"returned", (long) status,
+	struct so_value * response = so_value_pack("{sisiszsz}",
+		"returned", status,
 		"last errno", last_errno,
 		"position", position,
 		"available size", available_size
@@ -111,14 +111,14 @@ static void sodr_io_format_writer_add_label(struct sodr_peer * peer, struct so_v
 	so_value_unpack(request, "{s{so}}", "params", "lable", &label);
 
 	enum so_format_writer_status status = peer->format_writer->ops->add_label(peer->format_writer, label);
-	long int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
+	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 	ssize_t position = peer->format_writer->ops->position(peer->format_writer);
 	ssize_t available_size = peer->format_writer->ops->get_available_size(peer->format_writer);
 
 	free(label);
 
-	struct so_value * response = so_value_pack("{sisisisi}",
-		"returned", (long) status,
+	struct so_value * response = so_value_pack("{sisiszsz}",
+		"returned", status,
 		"last errno", last_errno,
 		"position", position,
 		"available size", available_size
@@ -128,8 +128,8 @@ static void sodr_io_format_writer_add_label(struct sodr_peer * peer, struct so_v
 }
 
 static void sodr_io_format_writer_close(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
-	long int failed = peer->format_writer->ops->close(peer->format_writer);
-	long int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
+	int failed = peer->format_writer->ops->close(peer->format_writer);
+	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 
 	struct so_value * response = so_value_pack("{sisi}", "returned", failed, "last errno", last_errno);
 
@@ -165,11 +165,11 @@ static void sodr_io_format_writer_compute_size_of_file(struct sodr_peer * peer, 
 	so_format_file_sync(&file, vfile);
 
 	ssize_t size = peer->format_writer->ops->compute_size_of_file(peer->format_writer, &file);
-	long int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
+	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 
 	so_format_file_free(&file);
 
-	struct so_value * response = so_value_pack("{sisi}",
+	struct so_value * response = so_value_pack("{szsi}",
 		"returned", size,
 		"last errno", last_errno
 	);
@@ -179,7 +179,7 @@ static void sodr_io_format_writer_compute_size_of_file(struct sodr_peer * peer, 
 
 static void sodr_io_format_writer_end_of_file(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
 	bool eof = peer->format_writer->ops->end_of_file(peer->format_writer);
-	long int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
+	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 
 	struct so_value * response = so_value_pack("{sbsi}", "returned", eof, "last errno", last_errno);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
@@ -232,14 +232,14 @@ static void sodr_io_format_writer_restart_file(struct sodr_peer * peer, struct s
 	so_format_file_sync(&file, vfile);
 
 	enum so_format_writer_status status = peer->format_writer->ops->restart_file(peer->format_writer, &file, position);
-	long int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
+	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 	ssize_t new_position = peer->format_writer->ops->position(peer->format_writer);
 	ssize_t available_size = peer->format_writer->ops->get_available_size(peer->format_writer);
 
 	so_format_file_free(&file);
 
-	struct so_value * response = so_value_pack("{sisisisi}",
-		"returned", (long) status,
+	struct so_value * response = so_value_pack("{sisiszsz}",
+		"returned", status,
 		"last errno", last_errno,
 		"position", new_position,
 		"available size", available_size
@@ -261,7 +261,7 @@ static void sodr_io_format_writer_write(struct sodr_peer * peer, struct so_value
 		ssize_t nb_read = recv(peer->fd_data, peer->buffer, nb_will_read, 0);
 
 		if (nb_read < 0) {
-			struct so_value * response = so_value_pack("{sisi}", "returned", -1L, "last errno", (long) errno);
+			struct so_value * response = so_value_pack("{sisi}", "returned", -1, "last errno", errno);
 			so_json_encode_to_fd(response, peer->fd_cmd, true);
 			so_value_free(response);
 			return;
@@ -269,8 +269,8 @@ static void sodr_io_format_writer_write(struct sodr_peer * peer, struct so_value
 
 		ssize_t nb_write = peer->format_writer->ops->write(peer->format_writer, peer->buffer, nb_read);
 		if (nb_write < 0) {
-			long int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
-			struct so_value * response = so_value_pack("{sisi}", "returned", -1L, "last errno", last_errno);
+			int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
+			struct so_value * response = so_value_pack("{sisi}", "returned", -1, "last errno", last_errno);
 			so_json_encode_to_fd(response, peer->fd_cmd, true);
 			so_value_free(response);
 			return;
@@ -282,9 +282,9 @@ static void sodr_io_format_writer_write(struct sodr_peer * peer, struct so_value
 	ssize_t position = peer->format_writer->ops->position(peer->format_writer);
 	ssize_t available_size = peer->format_writer->ops->get_available_size(peer->format_writer);
 
-	struct so_value * response = so_value_pack("{sisisisi}",
+	struct so_value * response = so_value_pack("{szsiszsz}",
 		"returned", nb_total_write,
-		"last errno", 0L,
+		"last errno", 0,
 		"position", position,
 		"available size", available_size
 	);

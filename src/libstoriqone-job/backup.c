@@ -52,8 +52,8 @@ void soj_backup_add_volume(struct so_backup * backup, struct so_media * media, s
 
 struct so_value * soj_backup_convert(struct so_backup * backup) {
 	struct so_value * volumes = so_value_new_array(backup->nb_volumes);
-	struct so_value * vbackup = so_value_pack("{sisisiso}"
-		"timestamp", backup->timestamp,
+	struct so_value * vbackup = so_value_pack("{sIsIsIso}"
+		"timestamp", (long long) backup->timestamp,
 		"nb archives", backup->nb_medias,
 		"nb medias", backup->nb_medias,
 		"volumes", volumes
@@ -67,9 +67,9 @@ struct so_value * soj_backup_convert(struct so_backup * backup) {
 		if (vol->checktime > 0)
 			checktime = so_value_new_integer(vol->checktime);
 
-		so_value_list_push(volumes, so_value_pack("{sosisisosbsO}",
+		so_value_list_push(volumes, so_value_pack("{sosuszsosbsO}",
 			"media", so_media_convert(vol->media),
-			"position", (long) vol->position,
+			"position", vol->position,
 			"size", vol->size,
 			"checktime", checktime,
 			"checksum ok", vol->checksum_ok,

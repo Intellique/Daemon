@@ -97,13 +97,13 @@ int so_job_add_record(struct so_job * job, struct so_database_connection * db_co
 }
 
 struct so_value * so_job_convert(struct so_job * job) {
-	return so_value_pack("{sssssssssisisisisfsssisbsOsO}",
+	return so_value_pack("{sssssssssIsIsIsIsfsssisbsOsO}",
 		"id", job->key,
 		"name", job->name,
 		"type", job->type,
 		"user", job->user,
 
-		"next start", job->next_start,
+		"next start", (long) job->next_start,
 		"interval", job->interval,
 		"repetition", job->repetition,
 
@@ -111,7 +111,7 @@ struct so_value * so_job_convert(struct so_job * job) {
 		"done", job->done,
 		"status", so_job_status_to_string(job->status, false),
 
-		"exit code", (long int) job->exit_code,
+		"exit code", job->exit_code,
 		"stopped by user", job->stopped_by_user,
 
 		"metadatas", job->meta,

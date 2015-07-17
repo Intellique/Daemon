@@ -623,9 +623,9 @@ static void so_socket_tcp_server_callback(int fd, short event __attribute__((unu
 
 		char str_addr[INET_ADDRSTRLEN];
 		inet_ntop(AF_INET, &addr_v4, str_addr, INET_ADDRSTRLEN);
-		long long int port = ntohs(addr_v4.sin_port);
+		unsigned int port = ntohs(addr_v4.sin_port);
 
-		client_info = so_value_pack("{sssssi}", "type", "inet", "addr", str_addr, "port", port);
+		client_info = so_value_pack("{sssssu}", "type", "inet", "addr", str_addr, "port", port);
 	} else {
 		struct sockaddr_in6 addr_v6;
 		bzero(&addr_v6, sizeof(addr_v6));
@@ -634,9 +634,9 @@ static void so_socket_tcp_server_callback(int fd, short event __attribute__((unu
 
 		char str_addr[INET6_ADDRSTRLEN];
 		inet_ntop(AF_INET6, &addr_v6, str_addr, INET6_ADDRSTRLEN);
-		long long int port = ntohs(addr_v6.sin6_port);
+		unsigned int port = ntohs(addr_v6.sin6_port);
 
-		client_info = so_value_pack("{sssssi}", "type", "inet6", "addr", str_addr, "port", port);
+		client_info = so_value_pack("{sssssu}", "type", "inet6", "addr", str_addr, "port", port);
 	}
 
 	self->callback(fd, new_fd, client_info);

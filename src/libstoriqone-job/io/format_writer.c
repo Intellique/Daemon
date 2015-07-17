@@ -324,7 +324,7 @@ static struct so_format_reader * soj_format_writer_reopen(struct so_format_write
 static enum so_format_writer_status soj_format_writer_restart_file(struct so_format_writer * fw, const struct so_format_file * file, ssize_t position) {
 	struct soj_format_writer_private * self = fw->data;
 
-	struct so_value * request = so_value_pack("{sss{sosi}}",
+	struct so_value * request = so_value_pack("{sss{sosz}}",
 		"command", "restart file",
 		"params",
 			"file", so_format_file_convert(file),
@@ -356,7 +356,7 @@ static enum so_format_writer_status soj_format_writer_restart_file(struct so_for
 static ssize_t soj_format_writer_write(struct so_format_writer * fw, const void * buffer, ssize_t length) {
 	struct soj_format_writer_private * self = fw->data;
 
-	struct so_value * request = so_value_pack("{sss{si}}", "command", "write", "params", "length", length);
+	struct so_value * request = so_value_pack("{sss{sz}}", "command", "write", "params", "length", length);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 

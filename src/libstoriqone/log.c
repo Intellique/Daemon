@@ -342,7 +342,7 @@ static void so_log_write_inner(enum so_log_level level, enum so_log_type type, c
 	char * str_message = NULL;
 	vasprintf(&str_message, format, params);
 
-	struct so_value * message = so_value_pack("{sssssiss}", "level", so_log_level_to_string(level, false), "type", so_log_type_to_string(type, false), "timestamp", timestamp, "message", str_message);
+	struct so_value * message = so_value_pack("{sssssIss}", "level", so_log_level_to_string(level, false), "type", so_log_type_to_string(type, false), "timestamp", timestamp, "message", str_message);
 
 	free(str_message);
 

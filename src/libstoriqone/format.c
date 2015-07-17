@@ -40,23 +40,23 @@ struct so_value * so_format_file_convert(const struct so_format_file * file) {
 	if (file->link)
 		vlink = so_value_new_string(file->link);
 
-	return so_value_pack("{sssosisisisisisisssisssisisb}",
+	return so_value_pack("{sssoszszsususususssusssIsIsb}",
 		"filename", file->filename,
 		"link", vlink,
 
 		"position", file->position,
 		"size", file->size,
 
-		"dev", (long) file->dev,
-		"rdev", (long) file->rdev,
-		"mode", (long) file->mode,
-		"uid", (long) file->uid,
+		"dev", file->dev,
+		"rdev", file->rdev,
+		"mode", file->mode,
+		"uid", file->uid,
 		"user", file->user,
-		"gid", (long) file->gid,
+		"gid", file->gid,
 		"group", file->group,
 
-		"ctime", file->ctime,
-		"mtime", file->mtime,
+		"ctime", (long) file->ctime,
+		"mtime", (long) file->mtime,
 
 		"is label", file->is_label
 	);
@@ -128,5 +128,11 @@ void so_format_file_sync(struct so_format_file * file, struct so_value * new_fil
 	file->mode = mode;
 	file->uid = uid;
 	file->gid = gid;
+
+	free(file->link);
+	if (vlink->type == so_value_string)
+		file->link = strdup(so_value_string_get(vlink));
+	else
+		file->link = NULL;
 }
 

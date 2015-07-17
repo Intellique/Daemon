@@ -188,7 +188,7 @@ bool soj_changer_has_apt_drive(struct so_media_format * format, bool for_writing
 static int soj_changer_release_media(struct so_changer * changer, struct so_slot * slot) {
 	struct soj_changer * self = changer->data;
 
-	struct so_value * request = so_value_pack("{sss{si}}", "command", "release media", "params", "slot", slot->index);
+	struct so_value * request = so_value_pack("{sss{su}}", "command", "release media", "params", "slot", slot->index);
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
@@ -206,7 +206,7 @@ static int soj_changer_release_media(struct so_changer * changer, struct so_slot
 static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_slot * slot, size_t size_need, enum so_pool_unbreakable_level unbreakable_level) {
 	struct soj_changer * self = changer->data;
 
-	struct so_value * request = so_value_pack("{sss{sisiss}}",
+	struct so_value * request = so_value_pack("{sss{suszss}}",
 		"command", "reserve media",
 		"params",
 			"slot", slot->index,

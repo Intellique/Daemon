@@ -226,7 +226,7 @@ static struct so_stream_reader * soj_drive_get_raw_reader(struct so_drive * driv
 		"command", "get raw reader",
 		"params",
 			"job key", job->key,
-			"file position", (long int) file_position
+			"file position", file_position
 	);
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
@@ -291,7 +291,7 @@ static struct so_format_reader * soj_drive_get_reader(struct so_drive * drive, i
 		"command", "get reader",
 		"params",
 			"job key", job->key,
-			"file position", (long int) file_position,
+			"file position", file_position,
 			"checksums", tmp_checksums
 	);
 	so_json_encode_to_fd(request, self->fd, true);
@@ -381,7 +381,7 @@ static struct so_archive * soj_drive_parse_archive(struct so_drive * drive, int 
 		"command", "parse archive",
 		"params",
 			"job key", job->key,
-			"archive position", (long long) archive_position,
+			"archive position", archive_position,
 			"checksums", checksums
 	);
 	so_json_encode_to_fd(request, self->fd, true);

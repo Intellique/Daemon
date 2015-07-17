@@ -69,7 +69,7 @@ struct so_value * so_drive_convert(struct so_drive * drive, bool with_slot) {
 	if (drive->last_clean > 0)
 		last_clean = so_value_new_integer(drive->last_clean);
 
-	struct so_value * dr = so_value_pack("{sssssssssssbsisssfsosb}",
+	struct so_value * dr = so_value_pack("{sssssssssssbsusssfsosb}",
 		"model", drive->model,
 		"vendor", drive->vendor,
 		"revision", drive->revision,
@@ -78,7 +78,7 @@ struct so_value * so_drive_convert(struct so_drive * drive, bool with_slot) {
 		"status", so_drive_status_to_string(drive->status, false),
 		"enable", drive->enable,
 
-		"density code", (long int) drive->density_code,
+		"density code", drive->density_code,
 		"mode", so_media_format_mode_to_string(drive->mode, false),
 		"operation duration", drive->operation_duration,
 		"last clean", last_clean,

@@ -258,7 +258,7 @@ static void sodr_socket_command_check_header(struct sodr_peer * peer __attribute
 	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
 
 	if (strcmp(sodr_current_key, job_key) != 0) {
-		struct so_value * response = so_value_pack("{si}", "returned", -1L);
+		struct so_value * response = so_value_pack("{si}", "returned", -1);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 		return;
@@ -329,7 +329,7 @@ static void sodr_socket_command_erase_media(struct sodr_peer * peer, struct so_v
 	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
 
 	if (strcmp(sodr_current_key, job_key) != 0) {
-		struct so_value * response = so_value_pack("{si}", "returned", -1L);
+		struct so_value * response = so_value_pack("{si}", "returned", -1);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 		free(job_key);
@@ -355,7 +355,7 @@ static void sodr_socket_command_find_best_block_size(struct sodr_peer * peer, st
 	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
 
 	if (strcmp(sodr_current_key, job_key) != 0) {
-		struct so_value * response = so_value_pack("{si}", "returned", -1L);
+		struct so_value * response = so_value_pack("{si}", "returned", -1);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 		free(job_key);
@@ -373,7 +373,7 @@ static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_
 	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
 
 	if (strcmp(sodr_current_key, job_key) != 0) {
-		struct so_value * response = so_value_pack("{si}", "returned", -1L);
+		struct so_value * response = so_value_pack("{si}", "returned", -1);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 		free(job_key);
@@ -442,7 +442,7 @@ static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct s
 	int cmd_socket = so_socket_server_temp(socket_cmd_config);
 	int data_socket = so_socket_server_temp(socket_data_config);
 
-	struct so_value * response = so_value_pack("{sbs{sOsO}si}",
+	struct so_value * response = so_value_pack("{sbs{sOsO}sz}",
 		"status", true,
 		"socket",
 			"command", socket_cmd_config,
@@ -506,7 +506,7 @@ static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct s
 	int cmd_socket = so_socket_server_temp(socket_cmd_config);
 	int data_socket = so_socket_server_temp(socket_data_config);
 
-	struct so_value * response = so_value_pack("{sbs{sOsO}sisisi}",
+	struct so_value * response = so_value_pack("{sbs{sOsO}szsisz}",
 		"status", true,
 		"socket",
 			"command", socket_cmd_config,
@@ -580,7 +580,7 @@ static void sodr_socket_command_get_reader(struct sodr_peer * peer, struct so_va
 	int cmd_socket = so_socket_server_temp(socket_cmd_config);
 	int data_socket = so_socket_server_temp(socket_data_config);
 
-	struct so_value * response = so_value_pack("{sbs{sOsO}si}",
+	struct so_value * response = so_value_pack("{sbs{sOsO}sz}",
 		"status", true,
 		"socket",
 			"command", socket_cmd_config,
@@ -650,7 +650,7 @@ static void sodr_socket_command_get_writer(struct sodr_peer * peer, struct so_va
 	int cmd_socket = so_socket_server_temp(socket_cmd_config);
 	int data_socket = so_socket_server_temp(socket_data_config);
 
-	struct so_value * response = so_value_pack("{sbs{sOsO}sisisi}",
+	struct so_value * response = so_value_pack("{sbs{sOsO}szsisz}",
 		"status", true,
 		"socket",
 			"command", socket_cmd_config,
@@ -765,7 +765,7 @@ static void sodr_worker_command_count_archives(void * arg) {
 
 	unsigned int nb_archives = drive->ops->count_archives(&peer->disconnected, db_connect);
 
-	struct so_value * response = so_value_pack("{si}", "returned", (long long) nb_archives);
+	struct so_value * response = so_value_pack("{su}", "returned", nb_archives);
 	so_json_encode_to_fd(response, peer->fd, true);
 	so_value_free(response);
 
@@ -794,7 +794,7 @@ static void sodr_worker_command_erase_media(void * arg) {
 	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
 
 	int failed = drive->ops->erase_media(params->quick_mode, db_connect);
-	struct so_value * response = so_value_pack("{si}", "returned", (long long) failed);
+	struct so_value * response = so_value_pack("{si}", "returned", failed);
 	so_json_encode_to_fd(response, params->peer->fd, true);
 	so_value_free(response);
 
@@ -833,7 +833,7 @@ static void sodr_worker_command_find_best_block_size(void * arg) {
 	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
 
 	ssize_t block_size = drive->ops->find_best_block_size(db_connect);
-	struct so_value * response = so_value_pack("{si}", "returned", block_size);
+	struct so_value * response = so_value_pack("{sz}", "returned", block_size);
 	so_json_encode_to_fd(response, peer->fd, true);
 	so_value_free(response);
 
@@ -872,7 +872,7 @@ static void sodr_worker_command_format_media(void * data) {
 
 	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
 
-	long int failed = drive->ops->format_media(params->pool, db_connect);
+	int failed = drive->ops->format_media(params->pool, db_connect);
 	struct so_value * response = so_value_pack("{si}", "returned", failed);
 	so_json_encode_to_fd(response, params->peer->fd, true);
 	so_value_free(response);

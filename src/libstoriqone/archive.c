@@ -106,7 +106,7 @@ struct so_value * so_archive_convert(struct so_archive * archive) {
 		so_value_list_push(volumes, so_archive_volume_convert(vol), true);
 	}
 
-	return so_value_pack("{sssssisosssssbsb}",
+	return so_value_pack("{ssssszsosssssbsb}",
 		"uuid", archive->uuid,
 		"name", archive->name,
 
@@ -294,25 +294,25 @@ static struct so_value * so_archive_file_convert(struct so_archive_files * ptr_f
 	else
 		checksums = so_value_share(file->digests);
 
-	return so_value_pack("{sisis{sssssisssisssisssisisbsisosissss}}",
+	return so_value_pack("{szsIs{sssssisssisssisssIsIsbsIsoszssss}}",
 		"position", ptr_file->position,
-		"archived time", ptr_file->archived_time,
+		"archived time", (long long) ptr_file->archived_time,
 		"file",
 		"path", file->path,
 		"restored to", file->restored_to,
 
-		"permission", (long) file->perm,
+		"permission", file->perm,
 		"type", so_archive_file_type_to_string(file->type, false),
-		"owner id", (long) file->ownerid,
+		"owner id", file->ownerid,
 		"owner", file->owner,
-		"group id", (long) file->groupid,
+		"group id", file->groupid,
 		"group", file->group,
 
-		"create time", file->create_time,
-		"modify time", file->modify_time,
+		"create time", (long long) file->create_time,
+		"modify time", (long long) file->modify_time,
 
 		"checksum ok", file->check_ok,
-		"checksum time", file->check_time,
+		"checksum time", (long long) file->check_time,
 		"checksums", checksums,
 
 		"size", file->size,
@@ -492,19 +492,19 @@ static struct so_value * so_archive_volume_convert(struct so_archive_volume * vo
 	else
 		checksums = so_value_share(vol->digests);
 
-	return so_value_pack("{sisisisisbsisososiso}",
-		"sequence", (long) vol->sequence,
+	return so_value_pack("{suszsIsIsbsIsososuso}",
+		"sequence", vol->sequence,
 		"size", vol->size,
 
-		"start time", vol->start_time,
-		"end time", vol->end_time,
+		"start time", (long long) vol->start_time,
+		"end time", (long long) vol->end_time,
 
 		"checksum ok", vol->check_ok,
-		"checksum time", vol->check_time,
+		"checksum time", (long long) vol->check_time,
 		"checksums", checksums,
 
 		"media", so_media_convert(vol->media),
-		"media position", (long) vol->media_position,
+		"media position", vol->media_position,
 
 		"files", files
 	);

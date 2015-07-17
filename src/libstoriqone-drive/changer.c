@@ -204,7 +204,7 @@ static void sodr_changer_process_reset(struct so_value * request, struct so_data
 
 	int failed = drive->ops->reset(db);
 
-	struct so_value * returned = so_value_pack("{si}", "status", (long long) failed);
+	struct so_value * returned = so_value_pack("{si}", "status", failed);
 	so_json_encode_to_fd(returned, 1, true);
 	so_value_free(returned);
 }
@@ -212,7 +212,7 @@ static void sodr_changer_process_reset(struct so_value * request, struct so_data
 static void sodr_changer_process_stop(struct so_value * request __attribute__((unused)), struct so_database_connection * db __attribute__((unused))) {
 	stop = true;
 
-	struct so_value * returned = so_value_pack("{si}", "status", 0L);
+	struct so_value * returned = so_value_pack("{si}", "status", 0);
 	so_json_encode_to_fd(returned, 1, true);
 	so_value_free(returned);
 }
@@ -225,7 +225,7 @@ static void sodr_changer_process_update_status(struct so_value * request __attri
 	if (!sodr_listen_is_locked())
 		failed = drive->ops->update_status(db);
 
-	struct so_value * returned = so_value_pack("{siso}", "status", (long long int) failed, "drive", so_drive_convert(drive, true));
+	struct so_value * returned = so_value_pack("{siso}", "status", failed, "drive", so_drive_convert(drive, true));
 	so_json_encode_to_fd(returned, 1, true);
 	so_value_free(returned);
 }

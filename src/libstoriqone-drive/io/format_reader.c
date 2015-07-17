@@ -77,8 +77,8 @@ static void sodr_io_format_reader_init() {
 
 
 static void sodr_io_format_reader_close(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
-	long int failed = peer->format_reader->ops->close(peer->format_reader);
-	long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
+	int failed = peer->format_reader->ops->close(peer->format_reader);
+	int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
 
 	struct so_value * response = so_value_pack("{sisi}", "returned", failed, "last errno", last_errno);
 
@@ -109,7 +109,7 @@ static void sodr_io_format_reader_close(struct sodr_peer * peer, struct so_value
 
 static void sodr_io_format_reader_end_of_file(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
 	bool eof = peer->format_reader->ops->end_of_file(peer->format_reader);
-	long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
+	int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
 
 	struct so_value * response = so_value_pack("{sbsi}", "returned", eof, "last errno", last_errno);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
@@ -122,11 +122,11 @@ static void sodr_io_format_reader_get_header(struct sodr_peer * peer, struct so_
 
 	enum so_format_reader_header_status status = peer->format_reader->ops->get_header(peer->format_reader, &file);
 	ssize_t new_position = peer->format_reader->ops->position(peer->format_reader);
-	long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
+	int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
 
-	struct so_value * response = so_value_pack("{s{siso}sisi}",
+	struct so_value * response = so_value_pack("{s{siso}szsi}",
 		"returned",
-			"status", (long) status,
+			"status", status,
 			"file", so_format_file_convert(&file),
 		"position", new_position,
 		"last errno", last_errno
@@ -159,8 +159,8 @@ static void sodr_io_format_reader_read(struct sodr_peer * peer, struct so_value 
 
 		ssize_t nb_read = peer->format_reader->ops->read(peer->format_reader, peer->buffer, nb_will_read);
 		if (nb_read < 0) {
-			long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
-			struct so_value * response = so_value_pack("{sisi}", "returned", -1L, "last errno", (long) last_errno);
+			int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
+			struct so_value * response = so_value_pack("{sisi}", "returned", -1, "last errno", last_errno);
 			so_json_encode_to_fd(response, peer->fd_cmd, true);
 			so_value_free(response);
 			return;
@@ -175,10 +175,10 @@ static void sodr_io_format_reader_read(struct sodr_peer * peer, struct so_value 
 
 	ssize_t position = peer->format_reader->ops->position(peer->format_reader);
 
-	struct so_value * response = so_value_pack("{sisisi}",
+	struct so_value * response = so_value_pack("{szszsi}",
 		"returned", nb_total_read,
 		"position", position,
-		"last errno", 0L
+		"last errno", 0
 	);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
@@ -186,9 +186,9 @@ static void sodr_io_format_reader_read(struct sodr_peer * peer, struct so_value 
 
 static void sodr_io_format_reader_read_to_end_of_data(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
 	ssize_t new_position = peer->format_reader->ops->read_to_end_of_data(peer->format_reader);
-	long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
+	int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
 
-	struct so_value * response = so_value_pack("{sisi}",
+	struct so_value * response = so_value_pack("{szsi}",
 		"returned", new_position,
 		"last errno", last_errno
 	);
@@ -197,8 +197,8 @@ static void sodr_io_format_reader_read_to_end_of_data(struct sodr_peer * peer, s
 }
 
 static void sodr_io_format_reader_rewind(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
-	long long int failed = peer->format_reader->ops->rewind(peer->format_reader);
-	long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
+	int failed = peer->format_reader->ops->rewind(peer->format_reader);
+	int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
 
 	struct so_value * response = so_value_pack("{sisi}", "returned", failed, "last errno", last_errno);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
@@ -208,10 +208,10 @@ static void sodr_io_format_reader_rewind(struct sodr_peer * peer, struct so_valu
 static void sodr_io_format_reader_skip_file(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
 	enum so_format_reader_header_status status = peer->format_reader->ops->skip_file(peer->format_reader);
 	ssize_t position = peer->format_reader->ops->position(peer->format_reader);
-	long int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
+	int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
 
-	struct so_value * response = so_value_pack("{sisisi}",
-		"returned", (long) status,
+	struct so_value * response = so_value_pack("{siszsi}",
+		"returned", status,
 		"position", position,
 		"last errno", last_errno
 	);

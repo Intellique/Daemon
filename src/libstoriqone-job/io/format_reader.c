@@ -169,7 +169,7 @@ static bool soj_format_reader_end_of_file(struct so_format_reader * fr) {
 static enum so_format_reader_header_status soj_format_reader_forward(struct so_format_reader * fr, off_t offset) {
 	struct soj_format_reader_private * self = fr->data;
 
-	struct so_value * request = so_value_pack("{sss{si}}", "command", "forward", "params", "offset", offset);
+	struct so_value * request = so_value_pack("{sss{sz}}", "command", "forward", "params", "offset", offset);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
@@ -266,7 +266,7 @@ static ssize_t soj_format_reader_position(struct so_format_reader * fr) {
 static ssize_t soj_format_reader_read(struct so_format_reader * fr, void * buffer, ssize_t length) {
 	struct soj_format_reader_private * self = fr->data;
 
-	struct so_value * request = so_value_pack("{sss{si}}", "command", "read", "params", "length", length);
+	struct so_value * request = so_value_pack("{sss{sz}}", "command", "read", "params", "length", length);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 

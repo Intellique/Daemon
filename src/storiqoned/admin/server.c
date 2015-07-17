@@ -40,7 +40,7 @@ struct so_value * sod_admin_server_shutdown(struct sod_admin_client * client, st
 
 	sod_shutdown();
 
-	long long int pid = getpid();
+	int pid = getpid();
 	return so_value_pack("{sbsssi}", "error", false, "message", "shut down in progress", "pid", pid);
 }
 

@@ -158,7 +158,7 @@ static bool soj_stream_reader_end_of_file(struct so_stream_reader * sr __attribu
 static off_t soj_stream_reader_forward(struct so_stream_reader * sr, off_t offset) {
 	struct soj_stream_reader_private * self = sr->data;
 
-	struct so_value * request = so_value_pack("{sss{si}}", "command", "forward", "params", "offset", offset);
+	struct so_value * request = so_value_pack("{sss{sz}}", "command", "forward", "params", "offset", offset);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
@@ -246,7 +246,7 @@ static ssize_t soj_stream_reader_read(struct so_stream_reader * sr, void * buffe
 static int soj_stream_reader_rewind(struct so_stream_reader * sr) {
 	struct soj_stream_reader_private * self = sr->data;
 
-	struct so_value * request = so_value_pack("{sss{si}}", "command", "rewind");
+	struct so_value * request = so_value_pack("{ss}", "command", "rewind");
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
