@@ -168,7 +168,7 @@ void so_archive_sync(struct so_archive * archive, struct so_value * new_archive)
 	struct so_value * uuid = NULL;
 	struct so_value * volumes = NULL;
 
-	so_value_unpack(new_archive, "{sosssisosssssbsb}",
+	so_value_unpack(new_archive, "{sossszsosssssbsb}",
 		"uuid", &uuid,
 		"name", &archive->name,
 
@@ -294,31 +294,31 @@ static struct so_value * so_archive_file_convert(struct so_archive_files * ptr_f
 	else
 		checksums = so_value_share(file->digests);
 
-	return so_value_pack("{szsIs{sssssisssisssisssIsIsbsIsoszssss}}",
+	return so_value_pack("{szsIs{sssssusssusssusssIsIsbsIsoszssss}}",
 		"position", ptr_file->position,
 		"archived time", (long long) ptr_file->archived_time,
 		"file",
-		"path", file->path,
-		"restored to", file->restored_to,
+			"path", file->path,
+			"restored to", file->restored_to,
 
-		"permission", file->perm,
-		"type", so_archive_file_type_to_string(file->type, false),
-		"owner id", file->ownerid,
-		"owner", file->owner,
-		"group id", file->groupid,
-		"group", file->group,
+			"permission", file->perm,
+			"type", so_archive_file_type_to_string(file->type, false),
+			"owner id", file->ownerid,
+			"owner", file->owner,
+			"group id", file->groupid,
+			"group", file->group,
 
-		"create time", (long long) file->create_time,
-		"modify time", (long long) file->modify_time,
+			"create time", (long long) file->create_time,
+			"modify time", (long long) file->modify_time,
 
-		"checksum ok", file->check_ok,
-		"checksum time", (long long) file->check_time,
-		"checksums", checksums,
+			"checksum ok", file->check_ok,
+			"checksum time", (long long) file->check_time,
+			"checksums", checksums,
 
-		"size", file->size,
+			"size", file->size,
 
-		"mime type", file->mime_type,
-		"selected path", file->selected_path
+			"mime type", file->mime_type,
+			"selected path", file->selected_path
 	);
 }
 
@@ -359,7 +359,7 @@ static void so_archive_file_sync(struct so_archive_files * files, struct so_valu
 
 	struct so_archive_file * file = files->file;
 
-	so_value_unpack(new_file, "{sisis{sssssisssisssisssisisbsisOsissss}}",
+	so_value_unpack(new_file, "{szsis{sssssusssusssusssisisbsisOszssss}}",
 		"position", &files->position,
 		"archived time", &archived_time,
 		"file",
@@ -533,7 +533,7 @@ static void so_archive_volume_sync(struct so_archive_volume * volume, struct so_
 	long int check_time = 0;
 	long int media_position = 0;
 
-	so_value_unpack(new_volume, "{sisisisisbsisososiso}",
+	so_value_unpack(new_volume, "{suszsisisbsisososuso}",
 		"sequence", &sequence,
 		"size", &volume->size,
 

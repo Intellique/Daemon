@@ -104,13 +104,19 @@ static void sodr_io_raw_reader_end_of_file(struct sodr_peer * peer, struct so_va
 }
 
 static void sodr_io_raw_reader_forward(struct sodr_peer * peer, struct so_value * request) {
-	off_t next_position = 0;
-	so_value_unpack(request, "{s{sosb}}", "params", "offset", &next_position);
+	off_t offset = 0;
+	so_value_unpack(request, "{s{sz}}",
+		"params",
+			"offset", &offset
+	);
 
-	off_t new_position = peer->stream_reader->ops->forward(peer->stream_reader, next_position);
+	off_t new_position = peer->stream_reader->ops->forward(peer->stream_reader, offset);
 	int last_errno = peer->stream_reader->ops->last_errno(peer->stream_reader);
 
-	struct so_value * response = so_value_pack("{szsi}", "returned", new_position, "last errno", last_errno);
+	struct so_value * response = so_value_pack("{szsi}",
+		"returned", new_position,
+		"last errno", last_errno
+	);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
 }

@@ -86,13 +86,12 @@ static bool soj_drive_check_header(struct so_drive * drive) {
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
-	struct so_value * response = so_json_parse_fd(self->fd, -1);
-	if (response == NULL)
-		return -1;
-
 	bool ok = false;
-	so_value_unpack(response, "{sb}", "returned", &ok);
-	so_value_free(response);
+	struct so_value * response = so_json_parse_fd(self->fd, -1);
+	if (response != NULL) {
+		so_value_unpack(response, "{sb}", "returned", &ok);
+		so_value_free(response);
+	}
 
 	return ok;
 }
@@ -109,11 +108,12 @@ static bool soj_drive_check_support(struct so_drive * drive, struct so_media_for
 	so_json_encode_to_fd(command, self->fd, true);
 	so_value_free(command);
 
-	struct so_value * returned = so_json_parse_fd(self->fd, -1);
 	bool ok = false;
-
-	so_value_unpack(returned, "{sb}", "returned", &ok);
-	so_value_free(returned);
+	struct so_value * response = so_json_parse_fd(self->fd, -1);
+	if (response != NULL) {
+		so_value_unpack(response, "{sb}", "returned", &ok);
+		so_value_free(response);
+	}
 
 	return ok;
 }
@@ -160,13 +160,12 @@ static int soj_drive_erase_media(struct so_drive * drive, bool quick_mode) {
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
+	int failed = -1;
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
-	if (response == NULL)
-		return -1;
-
-	int failed = false;
-	so_value_unpack(response, "{si}", "returned", &failed);
-	so_value_free(response);
+	if (response != NULL) {
+		so_value_unpack(response, "{si}", "returned", &failed);
+		so_value_free(response);
+	}
 
 	return failed;
 }
@@ -183,13 +182,12 @@ static ssize_t soj_drive_find_best_block_size(struct so_drive * drive) {
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
-	struct so_value * response = so_json_parse_fd(self->fd, -1);
-	if (response == NULL)
-		return -1;
-
 	ssize_t block_size = -1;
-	so_value_unpack(response, "{sz}", "returned", &block_size);
-	so_value_free(response);
+	struct so_value * response = so_json_parse_fd(self->fd, -1);
+	if (response != NULL) {
+		so_value_unpack(response, "{sz}", "returned", &block_size);
+		so_value_free(response);
+	}
 
 	return block_size;
 }
@@ -207,13 +205,12 @@ static int soj_drive_format_media(struct so_drive * drive, struct so_pool * pool
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
+	int failed = -1;
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
-	if (response == NULL)
-		return -1;
-
-	int failed = false;
-	so_value_unpack(response, "{si}", "returned", &failed);
-	so_value_free(response);
+	if (response != NULL) {
+		so_value_unpack(response, "{si}", "returned", &failed);
+		so_value_free(response);
+	}
 
 	return failed;
 }

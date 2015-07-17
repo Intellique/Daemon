@@ -184,7 +184,12 @@ static void solgr_file_module_write(struct solgr_log_module * module, struct so_
 	char * slevel = NULL, * stype = NULL, * smessage = NULL;
 	long long int iTimestamp;
 
-	int ret = so_value_unpack(message, "{sssssiss}", "level", &slevel, "type", &stype, "timestamp", &iTimestamp, "message", &smessage);
+	int ret = so_value_unpack(message, "{sssssIss}",
+		"level", &slevel,
+		"type", &stype,
+		"timestamp", &iTimestamp,
+		"message", &smessage
+	);
 
 	enum so_log_level level = so_log_level_unknown;
 	if (ret == 4)

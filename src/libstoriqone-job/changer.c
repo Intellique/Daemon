@@ -136,17 +136,16 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 		if (response == NULL)
 			continue;
 
-		// TODO: rewrite this code, index should be an unsigned integer
-		long long int index = -1;
+		unsigned int index = 0;
 		struct so_value * vch = NULL;
-		so_value_unpack(response, "{sbsosI}",
+		int nb_parsed = so_value_unpack(response, "{sbsosu}",
 			"error", &error,
 			"changer", &vch,
 			"index", &index
 		);
 
 		if (!error) {
-			if (index > -1 && slot->index != index)
+			if (nb_parsed >= 3 && slot->index != index)
 				so_slot_swap(slot, changer->drives[index].slot);
 
 			so_changer_sync(changer, vch);
@@ -189,17 +188,20 @@ bool soj_changer_has_apt_drive(struct so_media_format * format, bool for_writing
 static int soj_changer_release_media(struct so_changer * changer, struct so_slot * slot) {
 	struct soj_changer * self = changer->data;
 
-	struct so_value * request = so_value_pack("{sss{su}}", "command", "release media", "params", "slot", slot->index);
+	struct so_value * request = so_value_pack("{sss{su}}",
+		"command", "release media",
+		"params",
+			"slot", slot->index
+	);
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
-	struct so_value * response = so_json_parse_fd(self->fd, -1);
-	if (response == NULL)
-		return 1;
-
 	bool ok = false;
-	so_value_unpack(response, "{sb}", "status", &ok);
-	so_value_free(response);
+	struct so_value * response = so_json_parse_fd(self->fd, -1);
+	if (response != NULL) {
+		so_value_unpack(response, "{sb}", "status", &ok);
+		so_value_free(response);
+	}
 
 	return ok ? 0 : 1;
 }
@@ -217,13 +219,12 @@ static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
+	ssize_t returned = 1;
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
-	if (response == NULL)
-		return 1;
-
-	ssize_t returned = 0;
-	so_value_unpack(response, "{sz}", "returned", &returned);
-	so_value_free(response);
+	if (response != NULL) {
+		so_value_unpack(response, "{sz}", "returned", &returned);
+		so_value_free(response);
+	}
 
 	return returned;
 }

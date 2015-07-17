@@ -489,11 +489,11 @@ static void sochgr_socket_command_release_media(struct sochgr_peer * peer, struc
 }
 
 static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struct so_value * request, int fd) {
-	int slot = -1;
+	unsigned int slot;
 	size_t size_need = 0;
 	char * str_unbreakable_level;
 
-	so_value_unpack(request, "{s{siszss}}",
+	int nb_parsed = so_value_unpack(request, "{s{siszss}}",
 		"params",
 			"slot", &slot,
 			"size need", &size_need,
@@ -503,7 +503,7 @@ static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struc
 	enum so_pool_unbreakable_level unbreakable_level = so_pool_string_to_unbreakable_level(str_unbreakable_level, false);
 	free(str_unbreakable_level);
 
-	if (slot < 0 || unbreakable_level == so_pool_unbreakable_level_unknown) {
+	if (nb_parsed < 3 || unbreakable_level == so_pool_unbreakable_level_unknown) {
 		struct so_value * response = so_value_pack("{si}", "returned", -1);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);

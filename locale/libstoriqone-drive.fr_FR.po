@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-vtl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-07-17 18:57+0200\n"
+        "POT-Creation-Date: 2015-07-17 22:36+0200\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -16,7 +16,7 @@ msgstr  "Project-Id-Version: storiqone-drive-vtl v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/libstoriqone-drive/io/format_writer.c:202
+#: src/libstoriqone-drive/io/format_writer.c:198
 #, c-format
 msgid   "[%s %s #%u]: reopen media '%s' for reading at position #%d"
 msgstr  "[ %s %s #%u ] : réouverture du média « %s » en lecture à la position n°%d"
@@ -26,75 +26,75 @@ msgstr  "[ %s %s #%u ] : réouverture du média « %s » en lecture à la p
 msgid   "[%s %s #%u]: checking header of media '%s'"
 msgstr  "[ %s %s #%u ] : vérification de l’entête du média « %s »"
 
-#: src/libstoriqone-drive/listen.c:431 src/libstoriqone-drive/listen.c:568
+#: src/libstoriqone-drive/listen.c:435 src/libstoriqone-drive/listen.c:572
 #, c-format
 msgid   "[%s %s #%u]: open media '%s' for reading at position #%d"
 msgstr  "[ %s %s #%u ] : ouverture du média « %s » en lecture à la position #%d"
 
-#: src/libstoriqone-drive/listen.c:495 src/libstoriqone-drive/listen.c:638
+#: src/libstoriqone-drive/listen.c:499 src/libstoriqone-drive/listen.c:642
 #, c-format
 msgid   "[%s %s #%u]: open media '%s' for writing"
 msgstr  "[ %s %s #%u ] : ouverture du média « %s » en écriture"
 
-#: src/libstoriqone-drive/listen.c:761
+#: src/libstoriqone-drive/listen.c:765
 #, c-format
 msgid   "[%s %s #%u]: Count archives from media '%s'"
 msgstr  ""
 
-#: src/libstoriqone-drive/listen.c:790
+#: src/libstoriqone-drive/listen.c:794
 #, c-format
 msgid   "[%s %s #%u]: Erase media '%s' (mode: %s)"
 msgstr  "[ %s %s #%u ]: Effacement du média « %s » (mode : %s)"
 
-#: src/libstoriqone-drive/listen.c:792
+#: src/libstoriqone-drive/listen.c:796
 msgid   "long"
 msgstr  "long"
 
-#: src/libstoriqone-drive/listen.c:792
+#: src/libstoriqone-drive/listen.c:796
 msgid   "quick"
 msgstr  "rapide"
 
-#: src/libstoriqone-drive/listen.c:803
+#: src/libstoriqone-drive/listen.c:807
 #, c-format
 msgid   "[%s %s #%u]: media '%s' erased with success"
 msgstr  "[ %s %s #%u ] : média « %s » effacé avec succès"
 
-#: src/libstoriqone-drive/listen.c:807
+#: src/libstoriqone-drive/listen.c:811
 #, c-format
 msgid   "[%s %s #%u]: failed to erase media '%s'"
 msgstr  "[ %s %s #%u ] : échec lors de l’effacement du média « %s »"
 
-#: src/libstoriqone-drive/listen.c:830
+#: src/libstoriqone-drive/listen.c:834
 #, c-format
 msgid   "[%s %s #%u]: looking for best block size for media '%s'"
 msgstr  "[ %s %s #%u ] : recherche de la meilleur taille de bloc pour le média « %s »"
 
-#: src/libstoriqone-drive/listen.c:845
+#: src/libstoriqone-drive/listen.c:849
 #, c-format
 msgid   "[%s %s #%u]: block size found for media '%s': %s"
 msgstr  "[ %s %s #%u ] : taille de bloc trouvée pour le média « %s » : %s"
 
-#: src/libstoriqone-drive/listen.c:849
+#: src/libstoriqone-drive/listen.c:853
 #, c-format
 msgid   "[%s %s #%u]: failed to find best block size '%s'"
 msgstr  "[ %s %s #%u ] : échec lors de la recherche de la meilleur taille de bloc « %s »"
 
-#: src/libstoriqone-drive/listen.c:870
+#: src/libstoriqone-drive/listen.c:874
 #, c-format
 msgid   "[%s %s #%u]: formatting media '%s'"
 msgstr  "[ %s %s #%u ] : formatage du média « %s »"
 
-#: src/libstoriqone-drive/listen.c:882
+#: src/libstoriqone-drive/listen.c:886
 #, c-format
 msgid   "[%s %s #%u]: media '%s' formatted with success"
 msgstr  "[ %s %s #%u ] : formatage du média « %s » avec succès"
 
-#: src/libstoriqone-drive/listen.c:886
+#: src/libstoriqone-drive/listen.c:890
 #, c-format
 msgid   "[%s %s #%u]: failed to format media '%s'"
 msgstr  "[ %s %s #%u ] : échec du formatage du média « %s »"
 
-#: src/libstoriqone-drive/listen.c:909
+#: src/libstoriqone-drive/listen.c:913
 #, c-format
 msgid   "[%s %s #%u]: Parse archive from media '%s' at position #%u"
 msgstr  ""

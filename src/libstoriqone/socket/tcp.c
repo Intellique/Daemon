@@ -64,9 +64,9 @@ int so_socket_tcp(struct so_value * config) {
 
 	char * type = NULL;
 	char * saddr = NULL;
-	long long int port;
+	unsigned int port;
 
-	if (so_value_unpack(config, "{sssi}", "address", &saddr, "port", &port) < 2) {
+	if (so_value_unpack(config, "{sssu}", "address", &saddr, "port", &port) < 2) {
 		free(saddr);
 		return -1;
 	}
@@ -124,9 +124,9 @@ int so_socket_tcp6(struct so_value * config) {
 
 	char * type = NULL;
 	char * saddr = NULL;
-	long long int port;
+	unsigned int port;
 
-	if (so_value_unpack(config, "{sssi}", "address", &saddr, "port", &port) < 2) {
+	if (so_value_unpack(config, "{sssu}", "address", &saddr, "port", &port) < 2) {
 		free(saddr);
 		return -1;
 	}
@@ -216,9 +216,9 @@ bool so_socket_tcp_server(struct so_value * config, so_socket_accept_f accept_ca
 
 	char * type = NULL;
 	char * saddr = NULL;
-	long long int port;
+	unsigned int port;
 
-	if (so_value_unpack(config, "{siss}", "port", &port, "address", &saddr) < 1)
+	if (so_value_unpack(config, "{suss}", "port", &port, "address", &saddr) < 1)
 		return -1;
 
 	if (so_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
@@ -304,9 +304,9 @@ bool so_socket_tcp6_server(struct so_value * config, so_socket_accept_f accept_c
 
 	char * type = NULL;
 	char * saddr = NULL;
-	long long int port;
+	unsigned int port;
 
-	if (so_value_unpack(config, "{siss}", "port", &port, "address", &saddr) < 1)
+	if (so_value_unpack(config, "{suss}", "port", &port, "address", &saddr) < 1)
 		return -1;
 
 	if (so_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
@@ -391,9 +391,9 @@ bool so_socket_tcp_from_template(struct so_value * socket_template, so_socket_ac
 
 	char * type = NULL;
 	char * saddr = NULL;
-	long long int port;
+	unsigned int port;
 
-	if (so_value_unpack(socket_template, "{siss}", "port", &port, "address", &saddr) < 1)
+	if (so_value_unpack(socket_template, "{suss}", "port", &port, "address", &saddr) < 1)
 		return -1;
 
 	if (so_value_unpack(socket_template, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
@@ -502,9 +502,9 @@ bool so_socket_tcp6_from_template(struct so_value * socket_template, so_socket_a
 
 	char * type = NULL;
 	char * saddr = NULL;
-	long long int port;
+	unsigned int port;
 
-	if (so_value_unpack(socket_template, "{siss}", "port", &port, "address", &saddr) < 1)
+	if (so_value_unpack(socket_template, "{suss}", "port", &port, "address", &saddr) < 1)
 		return -1;
 
 	if (so_value_unpack(socket_template, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
@@ -649,9 +649,9 @@ int so_socket_server_temp_tcp(struct so_value * config) {
 
 	char * type = NULL;
 	char * saddr = NULL;
-	long long int port;
+	unsigned int port;
 
-	if (so_value_unpack(config, "{siss}", "port", &port, "address", &saddr) < 1)
+	if (so_value_unpack(config, "{suss}", "port", &port, "address", &saddr) < 1)
 		return -1;
 
 	if (so_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))
@@ -746,9 +746,9 @@ int so_socket_server_temp_tcp6(struct so_value * config) {
 
 	char * type = NULL;
 	char * saddr = NULL;
-	long long int port;
+	unsigned int port;
 
-	if (so_value_unpack(config, "{siss}", "port", &port, "address", &saddr) < 1)
+	if (so_value_unpack(config, "{suss}", "port", &port, "address", &saddr) < 1)
 		return -1;
 
 	if (so_value_unpack(config, "{ss}", "type", &type) > 0 && !strcmp(type, "datagram"))

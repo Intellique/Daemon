@@ -67,18 +67,15 @@ void so_slot_sync(struct so_slot * slot, struct so_value * new_slot) {
 
 	struct so_value * vol_name = NULL;
 	struct so_value * media = NULL;
-	long int index = -1;
 
-	so_value_unpack(new_slot, "{sisosbsbso}",
-		"index", &index,
+	so_value_unpack(new_slot, "{susosbsbso}",
+		"index", &slot->index,
 		"volume name", &vol_name,
 		"ie port", &slot->is_ie_port,
 		"enable", &slot->enable,
 		"media", &media
 	);
 	so_value_unpack(vol_name, "s", &slot->volume_name);
-
-	slot->index = index;
 
 	if (slot->media != NULL && (media == NULL || media->type == so_value_null)) {
 		so_media_free(slot->media);

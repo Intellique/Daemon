@@ -115,7 +115,7 @@ static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_
 	unsigned int nb_drives = 0, nb_slots = 0;
 	bool deleted = false;
 
-	int nb_parsed = so_value_unpack(vtl_update, "{susisb}",
+	int nb_parsed = so_value_unpack(vtl_update, "{sususb}",
 		"nb slots", &nb_slots,
 		"nb drives", &nb_drives,
 		"deleted", &deleted
@@ -349,7 +349,7 @@ struct so_changer * sochgr_vtl_changer_get_device() {
 static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_connection * db_connection) {
 	unsigned int nb_drives, nb_slots;
 	struct so_value * vformat = NULL;
-	so_value_unpack(config, "{sssisisossss}",
+	so_value_unpack(config, "{sssususossss}",
 		"path", &sochgr_vtl_root_dir,
 		"nb drives", &nb_drives,
 		"nb slots", &nb_slots,

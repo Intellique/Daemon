@@ -163,7 +163,7 @@ void so_drive_sync(struct so_drive * drive, struct so_value * new_drive, bool wi
 	struct so_value * last_clean = NULL;
 	struct so_value * slot = NULL;
 
-	so_value_unpack(new_drive, "{sssssssssssbsisssfsosbso}",
+	so_value_unpack(new_drive, "{sssssssssssbsusssfsosbso}",
 		"model", &drive->model,
 		"vendor", &drive->vendor,
 		"revision", &drive->revision,

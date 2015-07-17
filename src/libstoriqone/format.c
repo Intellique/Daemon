@@ -102,7 +102,7 @@ void so_format_file_sync(struct so_format_file * file, struct so_value * new_fil
 	struct so_value * vlink = NULL;
 	long dev, rdev, mode, uid, gid;
 
-	so_value_unpack(new_file, "{sssosisisisisisisssisssisisb}",
+	so_value_unpack(new_file, "{sssoszszsususususssusssisisb}",
 		"filename", &file->filename,
 		"link", &vlink,
 

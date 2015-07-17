@@ -273,7 +273,7 @@ void so_media_format_sync(struct so_media_format * format, struct so_value * new
 	long int density_code = 0;
 	char * type = NULL, * mode = NULL;
 
-	so_value_unpack(new_format, "{sssisssssisisisisisisisbsb}",
+	so_value_unpack(new_format, "{sssusssssIsIsIsIsIszszsbsb}",
 		"name", &name,
 
 		"density code", &density_code,
@@ -331,7 +331,7 @@ void so_media_sync(struct so_media * media, struct so_value * new_media) {
 	long int nb_read_errors = 0, nb_write_errors = 0;
 	long int nb_volumes = 0;
 
-	so_value_unpack(new_media, "{sosssssssssisisososisisisisisisisisisisisisbsssbsososo}",
+	so_value_unpack(new_media, "{sosssssssssisisososIsIsIsIszszsususzszszsusbsssbsososo}",
 		"uuid", &uuid,
 		"label", &media->label,
 		"medium serial number", &media->medium_serial_number,

@@ -32,7 +32,6 @@
 struct so_value;
 
 struct so_drive_ops {
-	bool (*check_cookie)(struct so_drive * drive, const char * cookie);
 	bool (*check_support)(struct so_drive * drive, struct so_media_format * format, bool for_writing);
 	void (*free)(struct so_drive * drive);
 	bool (*is_free)(struct so_drive * drive);

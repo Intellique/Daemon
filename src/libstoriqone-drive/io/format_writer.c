@@ -108,7 +108,7 @@ static void sodr_io_format_writer_add_file(struct sodr_peer * peer, struct so_va
 
 static void sodr_io_format_writer_add_label(struct sodr_peer * peer, struct so_value * request) {
 	char * label = NULL;
-	so_value_unpack(request, "{s{so}}", "params", "lable", &label);
+	so_value_unpack(request, "{s{so}}", "params", "label", &label);
 
 	enum so_format_writer_status status = peer->format_writer->ops->add_label(peer->format_writer, label);
 	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
@@ -165,23 +165,19 @@ static void sodr_io_format_writer_compute_size_of_file(struct sodr_peer * peer, 
 	so_format_file_sync(&file, vfile);
 
 	ssize_t size = peer->format_writer->ops->compute_size_of_file(peer->format_writer, &file);
-	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 
 	so_format_file_free(&file);
 
-	struct so_value * response = so_value_pack("{szsi}",
-		"returned", size,
-		"last errno", last_errno
-	);
+	struct so_value * response = so_value_pack("{szsi}", "returned", size);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
 }
 
 static void sodr_io_format_writer_end_of_file(struct sodr_peer * peer, struct so_value * request __attribute__((unused))) {
-	bool eof = peer->format_writer->ops->end_of_file(peer->format_writer);
+	ssize_t eof = peer->format_writer->ops->end_of_file(peer->format_writer);
 	int last_errno = peer->format_writer->ops->last_errno(peer->format_writer);
 
-	struct so_value * response = so_value_pack("{sbsi}", "returned", eof, "last errno", last_errno);
+	struct so_value * response = so_value_pack("{szsi}", "returned", eof, "last errno", last_errno);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
 }

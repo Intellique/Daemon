@@ -258,7 +258,7 @@ static void sodr_socket_command_check_header(struct sodr_peer * peer __attribute
 	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
 
 	if (strcmp(sodr_current_key, job_key) != 0) {
-		struct so_value * response = so_value_pack("{si}", "returned", -1);
+		struct so_value * response = so_value_pack("{sb}", "returned", false);
 		so_json_encode_to_fd(response, fd, true);
 		so_value_free(response);
 		return;
@@ -291,7 +291,11 @@ static void sodr_socket_command_check_support(struct sodr_peer * peer __attribut
 	struct so_value * media_format = NULL;
 	bool for_writing = false;
 
-	so_value_unpack(request, "{s{sosb}}", "params", "format", &media_format, "for writing", &for_writing);
+	so_value_unpack(request, "{s{sosb}}",
+		"params",
+			"format", &media_format,
+			"for writing", &for_writing
+	);
 
 	struct so_media_format * format = malloc(sizeof(struct so_media_format));
 	bzero(format, sizeof(struct so_media_format));

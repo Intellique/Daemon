@@ -123,7 +123,11 @@ static void sodr_changer_process_check_support(struct so_value * request, struct
 	struct so_value * media_format = NULL;
 	bool for_writing = false;
 
-	so_value_unpack(request, "{s{sosb}}", "params", "format", &media_format, "for writing", &for_writing);
+	so_value_unpack(request, "{s{sosb}}",
+		"params",
+			"format", &media_format,
+			"for writing", &for_writing
+	);
 
 	struct so_media_format * format = malloc(sizeof(struct so_media_format));
 	bzero(format, sizeof(struct so_media_format));
@@ -151,8 +155,10 @@ static void sodr_changer_process_load_media(struct so_value * request, struct so
 	struct so_drive * drive = driver->device;
 
 	struct so_value * media = NULL;
-
-	so_value_unpack(request, "{s{sosb}}", "params", "media", &media);
+	so_value_unpack(request, "{s{sosb}}",
+		"params",
+			"media", &media
+	);
 
 	if (media != NULL) {
 		struct so_media * new_media = so_media_new(media);

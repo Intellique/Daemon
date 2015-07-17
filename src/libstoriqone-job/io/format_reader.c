@@ -143,7 +143,7 @@ static int soj_format_reader_close(struct so_format_reader * fr) {
 	}
 	so_value_free(response);
 
-	return failed ? 1 : 0;
+	return failed;
 }
 
 static bool soj_format_reader_end_of_file(struct so_format_reader * fr) {
@@ -153,13 +153,15 @@ static bool soj_format_reader_end_of_file(struct so_format_reader * fr) {
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
-	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
-	if (response == NULL)
-		return true;
-
 	bool eof = true;
-	so_value_unpack(response, "{sbsi}", "returned", &eof, "last errno", &self->last_errno);
-	so_value_free(response);
+	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	if (response != NULL) {
+		so_value_unpack(response, "{sbsi}",
+			"returned", &eof,
+			"last errno", &self->last_errno
+		);
+		so_value_free(response);
+	}
 
 	return eof;
 }
@@ -167,19 +169,27 @@ static bool soj_format_reader_end_of_file(struct so_format_reader * fr) {
 static enum so_format_reader_header_status soj_format_reader_forward(struct so_format_reader * fr, off_t offset) {
 	struct soj_format_reader_private * self = fr->data;
 
-	struct so_value * request = so_value_pack("{sss{sz}}", "command", "forward", "params", "offset", offset);
+	struct so_value * request = so_value_pack("{sss{sz}}",
+		"command", "forward",
+		"params",
+			"offset", offset
+	);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
-	off_t new_position = (off_t) -1;
-
+	enum so_format_reader_header_status status;
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
-	so_value_unpack(response, "{sz}", "returned", &new_position);
-	if (new_position == (off_t) -1)
-		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
-	so_value_free(response);
+	if (response != NULL) {
+		so_value_unpack(response, "{sisz}",
+			"returned", &status,
+			"position", &self->position
+		);
+		if (status != so_format_reader_header_ok)
+			so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+		so_value_free(response);
+	}
 
-	return new_position;
+	return status;
 }
 
 static void soj_format_reader_free(struct so_format_reader * fr) {
@@ -240,13 +250,12 @@ static char * soj_format_reader_get_root(struct so_format_reader * fr) {
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
-	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
-	if (response == NULL)
-		return NULL;
-
 	char * root = NULL;
-	so_value_unpack(response, "{sb}", "returned", &root);
-	so_value_free(response);
+	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
+	if (response != NULL) {
+		so_value_unpack(response, "{ss}", "returned", &root);
+		so_value_free(response);
+	}
 
 	return root;
 }
@@ -264,7 +273,11 @@ static ssize_t soj_format_reader_position(struct so_format_reader * fr) {
 static ssize_t soj_format_reader_read(struct so_format_reader * fr, void * buffer, ssize_t length) {
 	struct soj_format_reader_private * self = fr->data;
 
-	struct so_value * request = so_value_pack("{sss{sz}}", "command", "read", "params", "length", length);
+	struct so_value * request = so_value_pack("{sss{sz}}",
+		"command", "read",
+		"params",
+			"length", length
+	);
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
@@ -309,13 +322,12 @@ static ssize_t soj_format_reader_read_to_end_of_data(struct so_format_reader * f
 	so_value_free(request);
 
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
-	if (response == NULL)
-		return true;
-
-	so_value_unpack(response, "{sz}", "returned", &self->position);
-	if (self->position == -1)
-		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
-	so_value_free(response);
+	if (response != NULL) {
+		so_value_unpack(response, "{sz}", "returned", &self->position);
+		if (self->position == -1)
+			so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+		so_value_free(response);
+	}
 
 	return self->position;
 }
@@ -327,15 +339,14 @@ static int soj_format_reader_rewind(struct so_format_reader * fr) {
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
+	int failed = -1;
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
-	if (response == NULL)
-		return -1;
-
-	int failed = 0;
-	so_value_unpack(response, "{si}", "returned", &failed);
-	if (failed != 0)
-		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
-	so_value_free(response);
+	if (response != NULL) {
+		so_value_unpack(response, "{si}", "returned", &failed);
+		if (failed != 0)
+			so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+		so_value_free(response);
+	}
 
 	return failed;
 }
@@ -347,19 +358,16 @@ static enum so_format_reader_header_status soj_format_reader_skip_file(struct so
 	so_json_encode_to_fd(request, self->command_fd, true);
 	so_value_free(request);
 
+	enum so_format_reader_header_status status = so_format_reader_header_bad_header;
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
-	if (response == NULL)
-		return so_format_reader_header_bad_header;
-
-	int status = 0;
-
-	so_value_unpack(response, "{siszsi}",
-		"returned", &status,
-		"position", &self->position,
-		"last errno", &self->last_errno
-	);
-
-	so_value_free(response);
+	if (response != NULL) {
+		so_value_unpack(response, "{siszsi}",
+			"returned", &status,
+			"position", &self->position,
+			"last errno", &self->last_errno
+		);
+		so_value_free(response);
+	}
 
 	return status;
 }

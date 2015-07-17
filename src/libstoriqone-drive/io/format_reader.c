@@ -45,6 +45,7 @@
 
 static void sodr_io_format_reader_close(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_reader_end_of_file(struct sodr_peer * peer, struct so_value * request);
+static void sodr_io_format_reader_forward(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_reader_get_header(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_reader_get_root(struct sodr_peer * peer, struct so_value * request);
 static void sodr_io_format_reader_init(void) __attribute__((constructor));
@@ -56,6 +57,7 @@ static void sodr_io_format_reader_skip_file(struct sodr_peer * peer, struct so_v
 static struct sodr_command commands[] = {
 	{ 0, "close",               sodr_io_format_reader_close },
 	{ 0, "end of file",         sodr_io_format_reader_end_of_file },
+	{ 0, "forward",             sodr_io_format_reader_forward },
 	{ 0, "get header",          sodr_io_format_reader_get_header },
 	{ 0, "get root",            sodr_io_format_reader_get_root },
 	{ 0, "read",                sodr_io_format_reader_read },
@@ -112,6 +114,27 @@ static void sodr_io_format_reader_end_of_file(struct sodr_peer * peer, struct so
 	int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
 
 	struct so_value * response = so_value_pack("{sbsi}", "returned", eof, "last errno", last_errno);
+	so_json_encode_to_fd(response, peer->fd_cmd, true);
+	so_value_free(response);
+}
+
+static void sodr_io_format_reader_forward(struct sodr_peer * peer, struct so_value * request) {
+	off_t offset = (off_t) -1;
+
+	so_value_unpack(request, "{s{sz}}",
+		"params",
+			"offset", &offset
+	);
+
+	enum so_format_reader_header_status status = peer->format_reader->ops->forward(peer->format_reader, offset);
+	ssize_t new_position = peer->format_reader->ops->position(peer->format_reader);
+	int last_errno = peer->format_reader->ops->last_errno(peer->format_reader);
+
+	struct so_value * response = so_value_pack("{siszsi}",
+		"returned", status,
+		"position", new_position,
+		"last errno", last_errno
+	);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
 }

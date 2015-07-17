@@ -219,9 +219,8 @@ void so_job_sync(struct so_job * job, struct so_value * new_job) {
 
 	char * status = NULL;
 	double done = 0;
-	long int exit_code = 0;
 
-	so_value_unpack(new_job, "{sssssssssisisisisfsssisbsOsO}",
+	so_value_unpack(new_job, "{sssssssssisIsIsIsfsssisbsOsO}",
 		"id", &job->key,
 		"name", &job->name,
 		"type", &job->type,
@@ -235,7 +234,7 @@ void so_job_sync(struct so_job * job, struct so_value * new_job) {
 		"done", &done,
 		"status", &status,
 
-		"exit code", &exit_code,
+		"exit code", &job->exit_code,
 		"stopped by user", &job->stopped_by_user,
 
 		"metadatas", &job->meta,
@@ -245,6 +244,5 @@ void so_job_sync(struct so_job * job, struct so_value * new_job) {
 	job->done = done;
 	job->status = so_job_string_to_status(status, false);
 	free(status);
-	job->exit_code = exit_code;
 }
 
