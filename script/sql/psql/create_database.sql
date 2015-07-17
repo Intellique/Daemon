@@ -68,13 +68,13 @@ CREATE TYPE JobStatus AS ENUM (
 );
 
 CREATE TYPE LogLevel AS ENUM (
-	'alert',
-	'critical',
+    'alert',
+    'critical',
     'debug',
-	'emergency',
+    'emergency',
     'error',
     'info',
-	'notice',
+    'notice',
     'warning'
 );
 
@@ -83,7 +83,7 @@ CREATE TYPE LogType AS ENUM (
     'daemon',
     'drive',
     'job',
-	'logger',
+    'logger',
     'plugin checksum',
     'plugin db',
     'plugin log',
@@ -410,7 +410,7 @@ CREATE TABLE Users (
 
     meta JSON NOT NULL,
 
-    poolgroup INTEGER NOT NULL REFERENCES PoolGroup(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+    poolgroup INTEGER REFERENCES PoolGroup(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
     disabled BOOLEAN NOT NULL DEFAULT FALSE
 );
@@ -566,7 +566,7 @@ CREATE TABLE BackupVolume (
     id BIGSERIAL PRIMARY KEY,
 
     sequence INTEGER NOT NULL DEFAULT 0 CHECK (sequence >= 0),
-	size BIGINT NOT NULL DEFAULT 0 CHECK (size >= 0),
+    size BIGINT NOT NULL DEFAULT 0 CHECK (size >= 0),
 
     media INTEGER NOT NULL REFERENCES Media(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     mediaPosition INTEGER NOT NULL DEFAULT 0 CHECK (mediaPosition >= 0),
@@ -582,7 +582,7 @@ CREATE TABLE Metadata (
     type MetaType NOT NULL,
 
     key TEXT NOT NULL,
-    value TEXT NOT NULL,
+    value JSON NOT NULL,
 
     login INTEGER NOT NULL REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
@@ -594,7 +594,7 @@ CREATE TABLE MetadataLog (
     type MetaType NOT NULL,
 
     key TEXT NOT NULL,
-    value TEXT NOT NULL,
+    value JSON NOT NULL,
 
     login INTEGER NOT NULL REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
@@ -755,8 +755,8 @@ $body$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION log_metadata() RETURNS TRIGGER AS $body$
     BEGIN
-        IF TG_OP = 'UPDATE' AND (OLD.id != NEW.id OR OLD.type != NEW.type) THEN
-            RAISE EXCEPTION 'id or type of metadata should not be modified' USING ERRCODE = '09000';
+        IF TG_OP = 'UPDATE' AND OLD.type != NEW.type THEN
+            RAISE EXCEPTION 'type of metadata should not be modified' USING ERRCODE = '09000';
         END IF;
         IF TG_OP = 'DELETE' OR OLD != NEW THEN
             INSERT INTO MetadataLog(id, type, key, value, login, updated)
