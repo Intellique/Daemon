@@ -398,7 +398,7 @@ static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_
 }
 
 static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct so_value * request, int fd) {
-	long int position = -1;
+	int position = -1;
 	char * job_key = NULL;
 	so_value_unpack(request, "{s{sssi}}", "params", "job key", &job_key, "file position", &position);
 
@@ -428,7 +428,7 @@ static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct s
 		media_name = media->name;
 
 	so_log_write(so_log_level_notice,
-		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for reading at position #%ld"),
+		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for reading at position #%d"),
 		drive->vendor, drive->model, drive->index, media_name, position);
 
 	peer->stream_reader = drive->ops->get_raw_reader(position, sodr_db);
@@ -529,7 +529,7 @@ static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct s
 }
 
 static void sodr_socket_command_get_reader(struct sodr_peer * peer, struct so_value * request, int fd) {
-	long int position = -1;
+	int position = -1;
 	char * job_key = NULL;
 	struct so_value * checksums = NULL;
 	so_value_unpack(request, "{s{sssiso}}",
@@ -565,7 +565,7 @@ static void sodr_socket_command_get_reader(struct sodr_peer * peer, struct so_va
 		media_name = media->name;
 
 	so_log_write(so_log_level_notice,
-		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for reading at position #%ld"),
+		dgettext("libstoriqone-drive", "[%s %s #%u]: open media '%s' for reading at position #%d"),
 		drive->vendor, drive->model, drive->index, media_name, position);
 
 	peer->format_reader = drive->ops->get_reader(position, checksums, sodr_db);
@@ -697,7 +697,7 @@ static void sodr_socket_command_parse_archive(struct sodr_peer * peer, struct so
 
 	free(job_key);
 
-	long long int archive_position = -1;
+	int archive_position = -1;
 	struct so_value * checksums = NULL;
 
 	so_value_unpack(request, "{s{sisO}}",
@@ -720,7 +720,7 @@ static void sodr_socket_command_parse_archive(struct sodr_peer * peer, struct so
 	params->checksums = checksums;
 
 	char * thread_name = NULL;
-	asprintf(&thread_name, "parse archive #%Lu", archive_position);
+	asprintf(&thread_name, "parse archive #%d", archive_position);
 
 	peer->owned = true;
 	so_thread_pool_run(thread_name, sodr_worker_command_parse_archive, params);

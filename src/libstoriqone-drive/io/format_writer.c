@@ -225,7 +225,7 @@ static void sodr_io_format_writer_reopen(struct sodr_peer * peer, struct so_valu
 static void sodr_io_format_writer_restart_file(struct sodr_peer * peer, struct so_value * request) {
 	struct so_value * vfile = NULL;
 	ssize_t position = 0;
-	so_value_unpack(request, "{s{sosi}}", "params", "file", &vfile, "position", &position);
+	so_value_unpack(request, "{s{sosz}}", "params", "file", &vfile, "position", &position);
 
 	struct so_format_file file;
 	so_format_file_init(&file);
@@ -250,7 +250,7 @@ static void sodr_io_format_writer_restart_file(struct sodr_peer * peer, struct s
 
 static void sodr_io_format_writer_write(struct sodr_peer * peer, struct so_value * request) {
 	ssize_t length = 0;
-	so_value_unpack(request, "{s{si}}", "params", "length", &length);
+	so_value_unpack(request, "{s{sz}}", "params", "length", &length);
 
 	ssize_t nb_total_write = 0;
 	while (nb_total_write < length) {

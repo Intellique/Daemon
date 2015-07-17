@@ -235,12 +235,12 @@ static int sochgr_drive_reset(struct so_drive * drive) {
 	so_value_free(command);
 
 	struct so_value * returned = so_json_parse_fd(self->fd_out, -1);
-	long int val = 1;
+	int val = 1;
 
 	so_value_unpack(returned, "{si}", "status", &val);
 	so_value_free(returned);
 
-	return (int) val;
+	return val;
 }
 
 void sochgr_drive_set_config(struct so_value * logger, struct so_value * db, struct so_value * socket_template) {
@@ -257,7 +257,7 @@ static int sochgr_drive_stop(struct so_drive * drive) {
 	so_value_free(command);
 
 	struct so_value * returned = so_json_parse_fd(self->fd_out, -1);
-	long int val = 1;
+	int val = 1;
 
 	so_value_unpack(returned, "{si}", "status", &val);
 	so_value_free(returned);
@@ -267,7 +267,7 @@ static int sochgr_drive_stop(struct so_drive * drive) {
 		so_process_wait(&self->process, 1);
 	}
 
-	return (int) val;
+	return val;
 }
 
 static int sochgr_drive_update_status(struct so_drive * drive) {
@@ -278,7 +278,7 @@ static int sochgr_drive_update_status(struct so_drive * drive) {
 	so_value_free(command);
 
 	struct so_value * returned = so_json_parse_fd(self->fd_out, -1);
-	long int val = 1;
+	int val = 1;
 	struct so_value * new_drive = NULL;
 
 	so_value_unpack(returned, "{siso}", "status", &val, "drive", &new_drive);
@@ -288,6 +288,6 @@ static int sochgr_drive_update_status(struct so_drive * drive) {
 
 	so_value_free(returned);
 
-	return (int) val;
+	return val;
 }
 

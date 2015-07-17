@@ -137,8 +137,8 @@ static unsigned int soj_drive_count_archives(struct so_drive * drive) {
 	if (job->stopped_by_user && response != NULL)
 		so_value_free(response);
 	else if (response != NULL) {
-		long long nb_archives = 0;
-		so_value_unpack(response, "{si}", "returned", &nb_archives);
+		unsigned int nb_archives = 0;
+		so_value_unpack(response, "{su}", "returned", &nb_archives);
 		so_value_free(response);
 
 		return nb_archives;
@@ -164,7 +164,7 @@ static int soj_drive_erase_media(struct so_drive * drive, bool quick_mode) {
 	if (response == NULL)
 		return -1;
 
-	long int failed = false;
+	int failed = false;
 	so_value_unpack(response, "{si}", "returned", &failed);
 	so_value_free(response);
 
@@ -188,7 +188,7 @@ static ssize_t soj_drive_find_best_block_size(struct so_drive * drive) {
 		return -1;
 
 	ssize_t block_size = -1;
-	so_value_unpack(response, "{si}", "returned", &block_size);
+	so_value_unpack(response, "{sz}", "returned", &block_size);
 	so_value_free(response);
 
 	return block_size;
@@ -211,7 +211,7 @@ static int soj_drive_format_media(struct so_drive * drive, struct so_pool * pool
 	if (response == NULL)
 		return -1;
 
-	long int failed = false;
+	int failed = false;
 	so_value_unpack(response, "{si}", "returned", &failed);
 	so_value_free(response);
 

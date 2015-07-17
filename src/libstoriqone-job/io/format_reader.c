@@ -93,8 +93,8 @@ static struct so_format_reader_ops soj_format_reader_ops = {
 
 struct so_format_reader * soj_format_new_reader(struct so_drive * drive, struct so_value * config) {
 	struct so_value * socket_cmd = NULL, * socket_data = NULL;
-	long int block_size = 0;
-	if (so_value_unpack(config, "{s{soso}si}", "socket", "command", &socket_cmd, "data", &socket_data, "block size", &block_size) < 2)
+	ssize_t block_size = 0;
+	if (so_value_unpack(config, "{s{soso}sz}", "socket", "command", &socket_cmd, "data", &socket_data, "block size", &block_size) < 2)
 		return NULL;
 
 	return soj_format_new_reader2(drive, so_socket(socket_cmd), so_socket(socket_data), block_size);
@@ -133,8 +133,8 @@ static int soj_format_reader_close(struct so_format_reader * fr) {
 	if (response == NULL)
 		return 1;
 
-	long int failed = 0;
-	so_value_unpack(response, "{sb}", "returned", &failed);
+	int failed = 0;
+	so_value_unpack(response, "{si}", "returned", &failed);
 	if (failed != 0)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	else if (so_value_hashtable_has_key2(response, "digests")) {
@@ -157,13 +157,11 @@ static bool soj_format_reader_end_of_file(struct so_format_reader * fr) {
 	if (response == NULL)
 		return true;
 
-	long int failed = 0;
-	so_value_unpack(response, "{sb}", "returned", &failed);
-	if (failed != 0)
-		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
+	bool eof = true;
+	so_value_unpack(response, "{sbsi}", "returned", &eof, "last errno", &self->last_errno);
 	so_value_free(response);
 
-	return failed != 0;
+	return eof;
 }
 
 static enum so_format_reader_header_status soj_format_reader_forward(struct so_format_reader * fr, off_t offset) {
@@ -176,7 +174,7 @@ static enum so_format_reader_header_status soj_format_reader_forward(struct so_f
 	off_t new_position = (off_t) -1;
 
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
-	so_value_unpack(response, "{si}", "returned", &new_position);
+	so_value_unpack(response, "{sz}", "returned", &new_position);
 	if (new_position == (off_t) -1)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	so_value_free(response);
@@ -216,10 +214,10 @@ static enum so_format_reader_header_status soj_format_reader_get_header(struct s
 	if (response == NULL)
 		return so_format_reader_header_bad_header;
 
-	long status = 0;
+	int status = 0;
 	struct so_value * vfile = NULL;
 
-	so_value_unpack(response, "{s{siso}sisi}",
+	so_value_unpack(response, "{s{siso}szsi}",
 		"returned",
 			"status", &status,
 			"file", &vfile,
@@ -291,7 +289,7 @@ static ssize_t soj_format_reader_read(struct so_format_reader * fr, void * buffe
 
 		if (fds[0].revents & POLLIN) {
 			struct so_value * response = so_json_parse_fd(self->command_fd, -1);
-			so_value_unpack(response, "{si}", "position", &self->position);
+			so_value_unpack(response, "{sz}", "position", &self->position);
 			if (nb_read < 0)
 				so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 			so_value_free(response);
@@ -314,7 +312,7 @@ static ssize_t soj_format_reader_read_to_end_of_data(struct so_format_reader * f
 	if (response == NULL)
 		return true;
 
-	so_value_unpack(response, "{sb}", "returned", &self->position);
+	so_value_unpack(response, "{sz}", "returned", &self->position);
 	if (self->position == -1)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	so_value_free(response);
@@ -333,8 +331,8 @@ static int soj_format_reader_rewind(struct so_format_reader * fr) {
 	if (response == NULL)
 		return -1;
 
-	long int failed = 0;
-	so_value_unpack(response, "{sb}", "returned", &failed);
+	int failed = 0;
+	so_value_unpack(response, "{si}", "returned", &failed);
 	if (failed != 0)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	so_value_free(response);
@@ -353,9 +351,9 @@ static enum so_format_reader_header_status soj_format_reader_skip_file(struct so
 	if (response == NULL)
 		return so_format_reader_header_bad_header;
 
-	long status = 0;
+	int status = 0;
 
-	so_value_unpack(response, "{sisisi}",
+	so_value_unpack(response, "{siszsi}",
 		"returned", &status,
 		"position", &self->position,
 		"last errno", &self->last_errno

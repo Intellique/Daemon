@@ -334,10 +334,10 @@ void sodr_tape_drive_format_ltfs_parse_index(struct sodr_tape_drive_media * mp, 
 	unsigned int position = 0;
 
 	struct so_value * config = so_config_get();
-	long long uid = 0, gid = 0, file_mask = 0644, directory_mask = 0755;
+	unsigned int uid = 0, gid = 0, file_mask = 0644, directory_mask = 0755;
 	char * base_directory;
 
-	so_value_unpack(config, "{s{s{sisisisiss}}}",
+	so_value_unpack(config, "{s{s{sususususs}}}",
 		"format",
 			"ltfs",
 				"user id", &uid,

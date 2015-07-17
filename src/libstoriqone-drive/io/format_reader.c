@@ -149,7 +149,7 @@ static void sodr_io_format_reader_get_root(struct sodr_peer * peer, struct so_va
 
 static void sodr_io_format_reader_read(struct sodr_peer * peer, struct so_value * request) {
 	ssize_t length = 0;
-	so_value_unpack(request, "{s{si}}", "params", "length", &length);
+	so_value_unpack(request, "{s{sz}}", "params", "length", &length);
 
 	ssize_t nb_total_read = 0;
 	while (nb_total_read < length) {

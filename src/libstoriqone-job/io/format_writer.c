@@ -95,10 +95,10 @@ static struct so_format_writer_ops soj_format_writer_ops = {
 
 struct so_format_writer * soj_format_new_writer(struct so_drive * drive, struct so_value * config) {
 	struct so_value * socket_cmd = NULL, * socket_data = NULL;
-	long int block_size = 0;
-	long int file_position = -1;
+	ssize_t block_size = 0;
+	int file_position = -1;
 	ssize_t available_size = -1;
-	if (so_value_unpack(config, "{s{soso}sisisi}",
+	if (so_value_unpack(config, "{s{soso}szsisz}",
 			"socket",
 				"command", &socket_cmd,
 				"data", &socket_data,
@@ -139,14 +139,14 @@ static enum so_format_writer_status soj_format_writer_add_file(struct so_format_
 	if (response == NULL)
 		return so_format_writer_error;
 
-	long tmp_status = 0;
+	int tmp_status = 0;
 	so_value_unpack(response, "{si}", "returned", &tmp_status);
 
 	enum so_format_writer_status status = tmp_status;
 	if (status == so_format_writer_error)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	else
-		so_value_unpack(response, "{sisi}",
+		so_value_unpack(response, "{szsz}",
 			"position", &self->position,
 			"available size", &self->available_size
 		);
@@ -166,14 +166,14 @@ static enum so_format_writer_status soj_format_writer_add_label(struct so_format
 	if (response == NULL)
 		return so_format_writer_error;
 
-	long tmp_status = 0;
+	int tmp_status = 0;
 	so_value_unpack(response, "{si}", "returned", &tmp_status);
 
 	enum so_format_writer_status status = tmp_status;
 	if (status == so_format_writer_error)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	else
-		so_value_unpack(response, "{sisi}",
+		so_value_unpack(response, "{szsz}",
 			"position", &self->position,
 			"available size", &self->available_size
 		);
@@ -196,8 +196,8 @@ static int soj_format_writer_close(struct so_format_writer * fw) {
 	if (response == NULL)
 		return 1;
 
-	long int failed = 0;
-	so_value_unpack(response, "{sb}", "returned", &failed);
+	int failed = 0;
+	so_value_unpack(response, "{si}", "returned", &failed);
 	if (failed != 0)
 		so_value_unpack(response, "{si}", "last errno", &self->last_errno);
 	else if (so_value_hashtable_has_key2(response, "digests")) {
@@ -206,7 +206,7 @@ static int soj_format_writer_close(struct so_format_writer * fw) {
 	}
 	so_value_free(response);
 
-	return failed ? 1 : 0;
+	return failed;
 }
 
 static ssize_t soj_format_writer_compute_size_of_file(struct so_format_writer * fw, const struct so_format_file * file) {
@@ -222,7 +222,7 @@ static ssize_t soj_format_writer_compute_size_of_file(struct so_format_writer * 
 
 	ssize_t size = 0;
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
-	so_value_unpack(response, "{si}", "returned", &size);
+	so_value_unpack(response, "{sz}", "returned", &size);
 	so_value_free(response);
 
 	return size;

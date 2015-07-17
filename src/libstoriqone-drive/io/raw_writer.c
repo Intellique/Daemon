@@ -70,7 +70,7 @@ static void sodr_io_raw_writer_init() {
 
 static void sodr_io_raw_writer_before_close(struct sodr_peer * peer, struct so_value * request) {
 	ssize_t length = 0;
-	so_value_unpack(request, "{s{si}}", "params", "length", &length);
+	so_value_unpack(request, "{s{sz}}", "params", "length", &length);
 
 	if (length > peer->buffer_length)
 		length = peer->buffer_length;
@@ -133,7 +133,7 @@ static void sodr_io_raw_writer_reopen(struct sodr_peer * peer, struct so_value *
 
 static void sodr_io_raw_writer_write(struct sodr_peer * peer, struct so_value * request) {
 	ssize_t length = 0;
-	so_value_unpack(request, "{s{si}}", "params", "length", &length);
+	so_value_unpack(request, "{s{sz}}", "params", "length", &length);
 
 	ssize_t nb_total_write = 0;
 	while (nb_total_write < length) {

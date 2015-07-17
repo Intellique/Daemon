@@ -136,9 +136,10 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 		if (response == NULL)
 			continue;
 
-		long int index = -1;
+		// TODO: rewrite this code, index should be an unsigned integer
+		long long int index = -1;
 		struct so_value * vch = NULL;
-		so_value_unpack(response, "{sbsosi}",
+		so_value_unpack(response, "{sbsosI}",
 			"error", &error,
 			"changer", &vch,
 			"index", &index
@@ -221,7 +222,7 @@ static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_
 		return 1;
 
 	ssize_t returned = 0;
-	so_value_unpack(response, "{si}", "returned", &returned);
+	so_value_unpack(response, "{sz}", "returned", &returned);
 	so_value_free(response);
 
 	return returned;

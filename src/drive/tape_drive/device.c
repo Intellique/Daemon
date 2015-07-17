@@ -605,7 +605,7 @@ static int sodr_tape_drive_init(struct so_value * config, struct so_database_con
 	bzero(sodr_tape_drive.slot, sizeof(struct so_slot));
 	sl->drive = &sodr_tape_drive;
 
-	so_value_unpack(config, "{sssssssbs{sisbsbss}}",
+	so_value_unpack(config, "{sssssssbs{susbsbss}}",
 		"model", &sodr_tape_drive.model,
 		"vendor", &sodr_tape_drive.vendor,
 		"serial number", &sodr_tape_drive.serial_number,

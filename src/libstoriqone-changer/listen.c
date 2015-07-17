@@ -459,7 +459,7 @@ error:
 }
 
 static void sochgr_socket_command_release_media(struct sochgr_peer * peer, struct so_value * request, int fd) {
-	long int slot = -1;
+	int slot = -1;
 	so_value_unpack(request, "{s{si}}", "params", "slot", &slot);
 
 	if (slot < 0) {
@@ -489,11 +489,11 @@ static void sochgr_socket_command_release_media(struct sochgr_peer * peer, struc
 }
 
 static void sochgr_socket_command_reserve_media(struct sochgr_peer * peer, struct so_value * request, int fd) {
-	long int slot = -1;
+	int slot = -1;
 	size_t size_need = 0;
 	char * str_unbreakable_level;
 
-	so_value_unpack(request, "{s{sisiss}}",
+	so_value_unpack(request, "{s{siszss}}",
 		"params",
 			"slot", &slot,
 			"size need", &size_need,
