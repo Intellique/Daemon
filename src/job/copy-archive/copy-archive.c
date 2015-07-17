@@ -56,8 +56,6 @@ static struct soj_copyarchive_private data = {
 
 	.copy_archive   = NULL,
 	.pool           = NULL,
-	.media_iterator = NULL,
-	.media          = NULL,
 	.dest_drive     = NULL,
 	.writer         = NULL,
 
@@ -94,8 +92,6 @@ static void soj_copyarchive_exit(struct so_job * job __attribute__((unused)), st
 		so_archive_free(data.copy_archive);
 	if (data.pool != NULL)
 		so_pool_free(data.pool);
-	if (data.media_iterator != NULL)
-		so_value_iterator_free(data.media_iterator);
 }
 
 static void soj_copyarchive_init() {
@@ -128,15 +124,13 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 	data.copy_archive->creator = strdup(job->user);
 	data.copy_archive->owner = strdup(job->user);
 
-
-	data.media_iterator = soj_media_get_iterator(data.pool);
-	struct so_value * vmedia = so_value_iterator_get_value(data.media_iterator, false);
-	data.media = so_value_custom_get(vmedia);
-	data.dest_drive = soj_media_load(data.media, true, db_connect);
+	data.dest_drive = soj_media_find_and_load_next(data.pool, true, db_connect);
 
 	int failed = 0;
 	if (data.dest_drive == NULL)
 		failed = soj_copyarchive_indirect_copy(job, db_connect, &data);
+	else {
+	}
 
 	if (failed == 0) {
 		job->done = 0.99;
@@ -227,16 +221,6 @@ static int soj_copyarchive_simulate(struct so_job * job, struct so_database_conn
 	}
 
 	ssize_t reserved = soj_media_prepare(data.pool, data.src_archive->size, db_connect);
-	if (reserved < data.src_archive->size) {
-		reserved += soj_media_prepare_unformatted(data.pool, true, db_connect);
-
-		if (reserved < data.src_archive->size)
-			reserved += soj_media_prepare_unformatted(data.pool, false, db_connect);
-
-		if (reserved < data.src_archive->size)
-			reserved += soj_media_prepare_offline(data.pool, data.src_archive->size, db_connect);
-	}
-
 	if (reserved < data.src_archive->size) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-copy-archive", "Error: not enought space available into pool '%s'"),

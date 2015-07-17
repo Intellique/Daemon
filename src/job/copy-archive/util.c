@@ -40,6 +40,7 @@
 #include <libstoriqone/job.h>
 #include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
+#include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/drive.h>
 #include <libstoriqone-job/media.h>
@@ -53,25 +54,20 @@ int soj_copyarchive_util_change_media(struct so_job * job, struct so_database_co
 	if (failed != 0)
 		return failed;
 
-	if (!so_value_iterator_has_next(self->media_iterator))
-		return 2;
+	self->dest_drive->ops->release(self->dest_drive);
 
-	struct so_value * vmedia = so_value_iterator_get_value(self->media_iterator, false);
-	self->media = so_value_custom_get(vmedia);
-	self->dest_drive = soj_media_load(self->media, false, db_connect);
+	self->dest_drive = soj_media_find_and_load_next(self->pool, false, db_connect);
 	if (self->dest_drive == NULL)
 		return 3;
 
 	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->pool);
 
-	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
-	vol->media = self->media;
-	vol->job = job;
-
-	self->dest_drive = soj_media_load(self->media, false, db_connect);
 	self->writer = self->dest_drive->ops->get_writer(self->dest_drive, checksums);
 
+	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
+	vol->media = self->dest_drive->slot->media;
 	vol->media_position = self->writer->ops->file_position(self->writer);
+	vol->job = job;
 
 	return 0;
 }

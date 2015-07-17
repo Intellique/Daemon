@@ -197,7 +197,10 @@ struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wa
 			}
 		}
 
-		so_value_free(vmedia);
+		if (drive == NULL)
+			so_value_list_unshift(medias, vmedia, false);
+		else
+			so_value_free(vmedia);
 
 		job->status = so_job_status_running;
 

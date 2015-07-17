@@ -38,8 +38,6 @@ struct soj_copyarchive_private {
 
 	struct so_archive * copy_archive;
 	struct so_pool * pool;
-	struct so_value_iterator * media_iterator;
-	struct so_media * media;
 	struct so_drive * dest_drive;
 	struct so_format_writer * writer;
 

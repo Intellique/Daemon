@@ -42,6 +42,7 @@
 #include <libstoriqone/io.h>
 #include <libstoriqone/job.h>
 #include <libstoriqone/log.h>
+#include <libstoriqone/slot.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/drive.h>
 #include <libstoriqone-job/media.h>
@@ -51,6 +52,8 @@
 int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self) {
 	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
 		dgettext("storiqone-job-copy-archive", "Select copy mode: indirect"));
+
+	soj_copyarchive_util_init(self->src_archive);
 
 	struct so_stream_writer * tmp_file_writer = so_io_tmp_writer();
 	if (tmp_file_writer == NULL) {
@@ -80,8 +83,6 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 	struct so_format_file file;
 	static time_t last_update = 0;
 	last_update = time(NULL);
-
-	soj_copyarchive_util_init(self->src_archive);
 
 	unsigned int i;
 	for (i = 0; i < self->src_archive->nb_volumes; i++) {
@@ -182,12 +183,12 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 
 	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->pool);
 
-	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
-	vol->media = self->media;
-	vol->job = job;
-
-	self->dest_drive = soj_media_load(self->media, false, db_connect);
+	self->dest_drive = soj_media_find_and_load_next(self->pool, false, db_connect);
 	self->writer = self->dest_drive->ops->get_writer(self->dest_drive, checksums);
+
+	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
+	struct so_media * media = vol->media = self->dest_drive->slot->media;
+	vol->job = job;
 
 	vol->media_position = self->writer->ops->file_position(self->writer);
 
@@ -207,7 +208,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 		if (wrtr_status != so_format_writer_ok) {
 			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 				dgettext("storiqone-job-copy-archive", "Error while writing header of file '%s' into media '%s'"),
-				file.filename, self->media->name);
+				file.filename, media->name);
 			ok = false;
 			break;
 		}
@@ -256,7 +257,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 					else {
 						so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 							dgettext("storiqone-job-copy-archive", "Error while writing data of file '%s' to media '%s'"),
-							file.filename, self->media->name);
+							file.filename, media->name);
 
 						ok = false;
 						break;

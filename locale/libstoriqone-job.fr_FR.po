@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-06-25 20:25+0200\n"
+        "POT-Creation-Date: 2015-07-15 20:34+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -50,7 +50,7 @@ msgstr  "Démarrage de la tâche (type : %s)"
 msgid   "Initialize job (type: %s)"
 msgstr  "Initialisation de la tâche (type : %s)"
 
-#: src/libstoriqone-job/media.c:91 src/libstoriqone-job/media.c:167 src/libstoriqone-job/media.c:381
+#: src/libstoriqone-job/media.c:91 src/libstoriqone-job/media.c:167 src/libstoriqone-job/media.c:384
 #, c-format
 msgid   "Media not found (named: %s)"
 msgstr  "Média non trouvé (nommé : %s)"

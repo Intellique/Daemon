@@ -40,6 +40,7 @@
 #include <libstoriqone/format.h>
 #include <libstoriqone/job.h>
 #include <libstoriqone/log.h>
+#include <libstoriqone/slot.h>
 #include <libstoriqone-job/drive.h>
 #include <libstoriqone-job/media.h>
 
@@ -59,10 +60,9 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 	struct so_value * checksums = db_connect->ops->get_checksums_from_pool(db_connect, self->pool);
 
 	struct so_archive_volume * vol = so_archive_add_volume(self->copy_archive);
-	vol->media = self->media;
+	struct so_media * media = vol->media = self->dest_drive->slot->media;
 	vol->job = job;
 
-	self->dest_drive = soj_media_load(self->media, false, db_connect);
 	self->writer = self->dest_drive->ops->get_writer(self->dest_drive, checksums);
 
 	unsigned int i;
@@ -100,7 +100,7 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 			if (wrtr_status != so_format_writer_ok) {
 				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 					dgettext("storiqone-job-copy-archive", "Error while writing header of file '%s' into media '%s'"),
-					file.filename, self->media->name);
+					file.filename, media->name);
 				ok = false;
 				break;
 			}
@@ -149,7 +149,7 @@ int soj_copyarchive_direct_copy(struct so_job * job, struct so_database_connecti
 						else {
 							so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 								dgettext("storiqone-job-copy-archive", "Error while writing data of file '%s' into media '%s'"),
-								file.filename, self->media->name);
+								file.filename, media->name);
 
 							ok = false;
 							return 1;
