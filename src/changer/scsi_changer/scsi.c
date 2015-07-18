@@ -1168,9 +1168,6 @@ static void sochgr_scsi_changer_scsi_update_status2(int fd, struct so_changer * 
 	for (i = 0; i < result->number_of_elements; i++) {
 		struct so_slot * slot;
 		switch (element_header->type) {
-			case scsi_loader_element_type_all_elements:
-				break;
-
 			case scsi_loader_element_type_data_transfer: {
 					struct scsi_loader_data_transfer_element * data_transfer_element = (struct scsi_loader_data_transfer_element *) ptr;
 
@@ -1273,6 +1270,9 @@ static void sochgr_scsi_changer_scsi_update_status2(int fd, struct so_changer * 
 
 					break;
 				}
+
+			default:
+				break;
 		}
 
 		ptr += element_header->element_descriptor_length;
