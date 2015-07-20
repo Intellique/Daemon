@@ -1732,7 +1732,11 @@ static int so_database_postgresql_sync_media(struct so_database_connection * con
 
 	char * media_id = NULL, * archiveformat_id = NULL, * mediaformat_id = NULL, * pool_id = NULL;
 	so_value_unpack(db, "{ssss}", "id", &media_id, "media format id", &mediaformat_id);
-	so_value_unpack(db, "{ss}", "archive format id", &archiveformat_id);
+
+	if (media->archive_format != NULL)
+		so_value_unpack(db, "{ss}", "archive format id", &archiveformat_id);
+	else
+		so_value_hashtable_remove2(db, "archive format id");
 
 	int failed = 0;
 
