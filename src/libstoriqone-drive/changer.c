@@ -155,7 +155,7 @@ static void sodr_changer_process_load_media(struct so_value * request, struct so
 	struct so_drive * drive = driver->device;
 
 	struct so_value * media = NULL;
-	so_value_unpack(request, "{s{sosb}}",
+	so_value_unpack(request, "{s{so}}",
 		"params",
 			"media", &media
 	);
