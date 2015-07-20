@@ -100,7 +100,6 @@ void so_format_file_init(struct so_format_file * file) {
 
 void so_format_file_sync(struct so_format_file * file, struct so_value * new_file) {
 	struct so_value * vlink = NULL;
-	long dev, rdev, mode, uid, gid;
 
 	so_value_unpack(new_file, "{sssoszszsususususssusssisisb}",
 		"filename", &file->filename,
@@ -109,12 +108,12 @@ void so_format_file_sync(struct so_format_file * file, struct so_value * new_fil
 		"position", &file->position,
 		"size", &file->size,
 
-		"dev", &dev,
-		"rdev", &rdev,
-		"mode", &mode,
-		"uid", &uid,
+		"dev", &file->dev,
+		"rdev", &file->rdev,
+		"mode", &file->mode,
+		"uid", &file->uid,
 		"user", &file->user,
-		"gid", &gid,
+		"gid", &file->gid,
 		"group", &file->group,
 
 		"ctime", &file->ctime,
@@ -122,12 +121,6 @@ void so_format_file_sync(struct so_format_file * file, struct so_value * new_fil
 
 		"is label", &file->is_label
 	);
-
-	file->dev = dev;
-	file->rdev = rdev;
-	file->mode = mode;
-	file->uid = uid;
-	file->gid = gid;
 
 	free(file->link);
 	if (vlink->type == so_value_string)
