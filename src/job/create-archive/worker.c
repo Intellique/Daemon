@@ -356,7 +356,7 @@ static struct so_archive_file * soj_create_archive_worker_copy_file(struct soj_c
 ssize_t soj_create_archive_worker_end_of_file() {
 	if (primary_worker->state == soj_worker_status_ready) {
 		ssize_t nb_write = primary_worker->writer->ops->end_of_file(primary_worker->writer);
-		if (nb_write != 0)
+		if (nb_write < 0)
 			primary_worker->state = soj_worker_status_error;
 	}
 
@@ -368,7 +368,7 @@ ssize_t soj_create_archive_worker_end_of_file() {
 			continue;
 
 		ssize_t nb_write = worker->writer->ops->end_of_file(worker->writer);
-		if (nb_write != 0)
+		if (nb_write < 0)
 			worker->state = soj_worker_status_error;
 	}
 
