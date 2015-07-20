@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-drive-vtl v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-07-17 22:36+0200\n"
+        "POT-Creation-Date: 2015-07-20 22:43+0200\n"
         "PO-Revision-Date: 2014-11-12 22:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -114,7 +114,7 @@ msgstr  "Initialisation du lecteur (type : %s)"
 msgid   "Starting drive (type: %s, vendor: %s, model: %s, serial number: %s)"
 msgstr  "Démarrage du lecteur (type : %s, fabriquant : %s, modèle : %s, numéro de série : %s)"
 
-#: src/libstoriqone-drive/main.c:136
+#: src/libstoriqone-drive/main.c:137
 #, c-format
 msgid   "Drive (type: %s) will stop"
 msgstr  "Le lecteur (type : %s) va s’arrêter"
