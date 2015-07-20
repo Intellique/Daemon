@@ -742,6 +742,21 @@ CREATE TABLE Vtl (
     CHECK (nbslots >= nbdrives)
 );
 
+-- Functions
+CREATE OR REPLACE FUNCTION "json_object_set_key"("json" json, "key_to_set" TEXT, "value_to_set" anyelement)
+  RETURNS json
+  LANGUAGE sql
+  IMMUTABLE
+  STRICT
+AS $function$
+SELECT CONCAT('{', STRING_AGG(TO_JSON("key") || ':' || "value", ','), '}')::JSON
+  FROM (SELECT *
+          FROM JSON_EACH("json")
+         WHERE "key" <> "key_to_set"
+         UNION ALL
+        SELECT "key_to_set", TO_JSON("value_to_set")) AS "fields"
+$function$;
+
 -- Triggers
 CREATE OR REPLACE FUNCTION check_metadata() RETURNS TRIGGER AS $body$
     BEGIN
