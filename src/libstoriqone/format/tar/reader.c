@@ -270,7 +270,12 @@ static enum so_format_reader_header_status so_format_tar_reader_get_header(struc
 					next_read -= next_read % 512;
 
 				if (next_read > self->buffer_size) {
-					self->buffer = realloc(self->buffer, next_read);
+					void * addr = realloc(self->buffer, next_read);
+					if (addr == NULL)
+						return so_format_reader_header_io_error;
+
+					self->buffer = addr;
+					raw_header = (struct so_format_tar *) self->buffer;
 					self->buffer_size = next_read;
 				}
 
@@ -293,8 +298,15 @@ static enum so_format_reader_header_status so_format_tar_reader_get_header(struc
 				if (next_read % 512)
 					next_read -= next_read % 512;
 
-				if (next_read > self->buffer_size)
-					self->buffer = realloc(self->buffer, next_read);
+				if (next_read > self->buffer_size) {
+					void * addr = realloc(self->buffer, next_read);
+					if (addr == NULL)
+						return so_format_reader_header_io_error;
+
+					self->buffer = addr;
+					raw_header = (struct so_format_tar *) self->buffer;
+					self->buffer_size = next_read;
+				}
 
 				nb_read = self->io->ops->read(self->io, self->buffer, next_read);
 				if (nb_read < next_read) {
