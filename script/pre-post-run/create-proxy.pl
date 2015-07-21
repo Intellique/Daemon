@@ -46,12 +46,28 @@ my $nb_processes = 0;
 
 my %codec = (
     'mp4' => {
-        'audio' => 'libmp3lame',
-        'video' => 'libx264'
+        'audio' => {
+            'codec'   => 'aac',
+            'bitrate' => '500k',
+            'extra'   => ( '-strict', '-2' )
+        },
+        'video' => {
+            'codec'   => 'libx264',
+            'bitrate' => '500k',
+            'extra'   => ()
+        }
     },
     'ogv' => {
-        'audio' => 'libvorbis',
-        'video' => 'libtheora'
+        'audio' => {
+            'codec'   => 'libvorbis',
+            'bitrate' => '96k',
+            'extra'   => ()
+        },
+        'video' => {
+            'codec'   => 'libtheora',
+            'bitrate' => '500k',
+            'extra'   => ()
+        }
     },
 );
 
@@ -65,11 +81,24 @@ sub process {
     if ( $pid == 0 ) {
         nice(10);
 
+        my @params = ( '-v', 'quiet', '-i', $input, '-t', '0:0:30' );
+
+        push @params, '-c:v', $format->{video}->{codec};
+        push @params, '-b:v', $format->{video}->{bitrate};
+        push @params, '-s',   'cif';
+        push @params, @{ $format->{video}->{extra} }
+            if scalar( @{ $format->{video}->{extra} } ) > 0;
+
+        push @params, '-c:a', $format->{audio}->{codec};
+        push @params, '-b:a', $format->{audio}->{bitrate};
+        push @params, '-ac',  '2', '-ar', '44100';
+        push @params, @{ $format->{audio}->{extra} }
+            if scalar( @{ $format->{audio}->{extra} } ) > 0;
+
         my $filename = md5_hex($input) . '.' . $format;
-        exec $encoder, '-v', 'quiet', '-i', $input, '-t', '0:0:30',
-            '-vcodec', $codec{$format}->{video}, '-b',  '500k', '-s',  'cif',
-            '-acodec', $codec{$format}->{audio}, '-ac', '2',    '-ab', '96k',
-            '-ar', '44100', "$output_dir/$filename";
+        push @params, "$output_dir/$filename";
+
+        exec $encoder, @params;
 
         exit 1;
     }
