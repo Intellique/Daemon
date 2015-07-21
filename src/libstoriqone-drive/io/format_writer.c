@@ -168,7 +168,7 @@ static void sodr_io_format_writer_compute_size_of_file(struct sodr_peer * peer, 
 
 	so_format_file_free(&file);
 
-	struct so_value * response = so_value_pack("{szsi}", "returned", size);
+	struct so_value * response = so_value_pack("{sz}", "returned", size);
 	so_json_encode_to_fd(response, peer->fd_cmd, true);
 	so_value_free(response);
 }
