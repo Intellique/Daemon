@@ -92,6 +92,11 @@ void so_format_file_free(struct so_format_file * file) {
 	free(file->link);
 	free(file->user);
 	free(file->group);
+
+	file->filename = NULL;
+	file->link = NULL;
+	file->user = NULL;
+	file->group = NULL;
 }
 
 void so_format_file_init(struct so_format_file * file) {

@@ -361,6 +361,7 @@ static void soj_format_reader_filesystem_node_sync(struct soj_format_reader_file
 		file->size = node->st.st_size;
 		file->link = malloc(file->size + 1);
 		readlink(file->filename, file->link, file->size + 1);
+		file->link[file->size] = '\0';
 	}
 }
 
