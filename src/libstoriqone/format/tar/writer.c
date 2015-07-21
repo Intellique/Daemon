@@ -195,6 +195,7 @@ static enum so_format_writer_status so_format_tar_writer_add_file(struct so_form
 		if (filename_length > 100 && link_length > 100) {
 			block_size += 2048 + filename_length - filename_length % 512 + link_length - link_length % 512;
 			current_header = header = realloc(header, block_size);
+			bzero(header, block_size);
 
 			bzero(current_header, block_size - 512);
 			so_format_tar_writer_compute_link(current_header, (char *) (current_header + 1), file->link, link_length, 'K', NULL, file);
@@ -206,15 +207,16 @@ static enum so_format_writer_status so_format_tar_writer_add_file(struct so_form
 		} else if (filename_length > 100) {
 			block_size += 1024 + filename_length - filename_length % 512;
 			current_header = header = realloc(header, block_size);
+			bzero(header, block_size);
 
-			bzero(current_header, block_size - 512);
 			so_format_tar_writer_compute_link(current_header, (char *) (current_header + 1), file->filename, filename_length, 'L', NULL, file);
 
 			current_header += 2 + filename_length / 512;
 		} else if (link_length > 100) {
 			block_size += 1024 + link_length - link_length % 512;
 			current_header = header = realloc(header, block_size);
-			bzero(current_header, block_size - 512);
+			bzero(current_header, block_size);
+
 			so_format_tar_writer_compute_link(current_header, (char *) (current_header + 1), file->link, link_length, 'K', NULL, file);
 
 			current_header += 2 + link_length / 512;

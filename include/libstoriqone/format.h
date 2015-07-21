@@ -59,6 +59,7 @@ struct so_format_file {
 
 enum so_format_reader_header_status {
 	so_format_reader_header_bad_header,
+	so_format_reader_header_io_error,
 	so_format_reader_header_not_found,
 	so_format_reader_header_ok,
 };
