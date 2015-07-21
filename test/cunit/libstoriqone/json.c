@@ -154,6 +154,7 @@ static void test_libstoriqone_json_encode_to_string_4() {
 	CU_ASSERT_EQUAL(val, 0.25);
 
 	so_value_free(object);
+	free(string);
 }
 
 static void test_libstoriqone_json_parse_string_0() {

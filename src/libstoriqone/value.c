@@ -429,7 +429,7 @@ static bool so_value_count_ref(struct so_value * base) {
 				}
 				so_value_iterator_free(iter);
 
-				long nb_shared = -1;
+				long long nb_shared = -1;
 				struct so_value * vshared = so_value_hashtable_get(found, base, false, false);
 				so_value_unpack(vshared, "I", &nb_shared);
 
@@ -451,7 +451,7 @@ static bool so_value_count_ref(struct so_value * base) {
 				}
 				so_value_iterator_free(iter);
 
-				long nb_shared = -1;
+				long long nb_shared = -1;
 				struct so_value * vshared = so_value_hashtable_get(found, base, false, false);
 				so_value_unpack(vshared, "I", &nb_shared);
 

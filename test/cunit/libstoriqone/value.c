@@ -45,6 +45,7 @@ static void test_libstoriqone_value_pack_0(void);
 static void test_libstoriqone_value_ref_cycle_0(void);
 static void test_libstoriqone_value_ref_cycle_1(void);
 static void test_libstoriqone_value_share_0(void);
+static void test_libstoriqone_value_share_1(void);
 static void test_libstoriqone_value_unpack_0(void);
 static void test_libstoriqone_value_unpack_1(void);
 
@@ -65,6 +66,7 @@ static struct {
 	{ test_libstoriqone_value_ref_cycle_1, "libstoriqone: value ref cycle: #1" },
 
 	{ test_libstoriqone_value_share_0, "libstoriqone: value share: #0" },
+	{ test_libstoriqone_value_share_1, "libstoriqone: value share: #1" },
 
 	{ test_libstoriqone_value_unpack_0, "libstoriqone: value unpack: #0" },
 	{ test_libstoriqone_value_unpack_1, "libstoriqone: value unpack: #1" },
@@ -236,6 +238,20 @@ static void test_libstoriqone_value_share_0() {
 	CU_ASSERT_EQUAL(val->shared, 1);
 
 	so_value_free(val);
+}
+
+static void test_libstoriqone_value_share_1() {
+	struct so_value * val = so_value_pack("[bb]", true, false);
+	CU_ASSERT_EQUAL(val->shared, 1);
+
+	struct so_value * shared = so_value_share(val);
+	CU_ASSERT_EQUAL(val->shared, 2);
+	CU_ASSERT_EQUAL(shared->shared, 2);
+
+	so_value_free(val);
+	CU_ASSERT_EQUAL(shared->shared, 1);
+
+	so_value_free(shared);
 }
 
 void test_libstoriqone_value_unpack_0() {
