@@ -127,8 +127,7 @@ int main() {
 	drive->ops->update_status(db_connect);
 
 	while (!sodr_changer_is_stopped()) {
-		if (!sodr_listen_is_locked())
-			db_connect->ops->sync_drive(db_connect, drive, true, so_database_sync_default);
+		db_connect->ops->sync_drive(db_connect, drive, !sodr_listen_is_locked(), so_database_sync_default);
 
 		so_poll(-1);
 	}

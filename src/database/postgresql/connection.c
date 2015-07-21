@@ -763,7 +763,7 @@ static struct so_media * so_database_postgresql_get_media(struct so_database_con
 	char * job_id = NULL;
 
 	if (medium_serial_number != NULL) {
-		query = "select_media_by_medium_serial_number";
+		query = "select_id_from_media_by_medium_serial_number";
 		so_database_postgresql_prepare(self, query, "SELECT id FROM media WHERE mediumserialnumber = $1 LIMIT 1");
 
 		const char * param[] = { medium_serial_number };
