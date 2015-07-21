@@ -248,7 +248,7 @@ static ssize_t soj_stream_writer_write(struct so_stream_writer * sw, const void 
 	ssize_t nb_write = -1;
 	struct so_value * response = so_json_parse_fd(self->command_fd, -1);
 	if (response != NULL) {
-		so_value_unpack(response, "{szsz}"
+		so_value_unpack(response, "{szsz}",
 			"returned", &nb_write,
 			"available size", &self->available_size
 		);

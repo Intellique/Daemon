@@ -44,6 +44,7 @@ static void test_libstoriqone_json_encode_to_string_2(void);
 static void test_libstoriqone_json_encode_to_string_3(void);
 static void test_libstoriqone_json_encode_to_string_4(void);
 static void test_libstoriqone_json_parse_string_0(void);
+static void test_libstoriqone_json_wtf_0(void);
 
 static struct {
 	void (*function)(void);
@@ -56,6 +57,8 @@ static struct {
 	{ test_libstoriqone_json_encode_to_string_4, "libstoriqone: json encode string: #4" },
 
 	{ test_libstoriqone_json_parse_string_0, "libstoriqone: json parse string: #0" },
+
+	{ test_libstoriqone_json_wtf_0, "libstoriqone: json wtf: #0" },
 
 	{ 0, 0 },
 };
@@ -162,5 +165,38 @@ static void test_libstoriqone_json_parse_string_0() {
 	struct so_value * value = so_json_parse_string(json);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(value);
 	so_value_free(value);
+}
+
+static void test_libstoriqone_json_wtf_0() {
+	ssize_t nb_total_write = 9130;
+	ssize_t available_size = 68205654;
+
+	struct so_value * sent = so_value_pack("{szsisz}",
+		"returned", nb_total_write,
+		"last errno", 0,
+		"available size", available_size
+	);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(sent);
+
+	char * json = so_json_encode_to_string(sent);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(json);
+
+	struct so_value * received = so_json_parse_string(json);
+	CU_ASSERT_PTR_NOT_NULL_FATAL(received);
+
+	ssize_t nb_write = -1;
+	ssize_t as = -1;
+
+	so_value_unpack(received, "{szsz}",
+		"returned", &nb_write,
+		"available size", &as
+	);
+
+	CU_ASSERT_EQUAL(nb_total_write, nb_write);
+	CU_ASSERT_EQUAL(available_size, as);
+
+	so_value_free(sent);
+	so_value_free(received);
+	free(json);
 }
 
