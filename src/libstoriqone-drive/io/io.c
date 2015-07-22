@@ -38,6 +38,7 @@
 #include <libstoriqone/value.h>
 
 #include "io.h"
+#include "../drive.h"
 #include "../listen.h"
 #include "../peer.h"
 
@@ -115,5 +116,9 @@ void sodr_io_process(struct sodr_peer * peer, struct sodr_command commands[]) {
 
 	peer->owned = false;
 	sodr_listen_remove_peer(peer);
+
+	struct so_drive_driver * driver = sodr_drive_get();
+	struct so_drive * drive = driver->device;
+	drive->status = so_drive_status_loaded_idle;
 }
 
