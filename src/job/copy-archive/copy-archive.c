@@ -129,8 +129,8 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 	int failed = 0;
 	if (data.dest_drive == NULL)
 		failed = soj_copyarchive_indirect_copy(job, db_connect, &data);
-	else {
-	}
+	else
+		failed = soj_copyarchive_direct_copy(job, db_connect, &data);
 
 	if (failed == 0) {
 		job->done = 0.99;
