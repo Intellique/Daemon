@@ -35,7 +35,7 @@
 #include <strings.h>
 // time
 #include <time.h>
-// close
+// close, sleep
 #include <unistd.h>
 
 #include <libstoriqone/database.h>
@@ -58,15 +58,17 @@ struct so_job_private {
 
 	struct so_database_connection * db_connection;
 	char * key;
+
+	bool started;
 	bool finished;
 };
 
 static struct so_value * jobs = NULL;
 
-static void sod_job_exited(int fd, short event, void * data);
+static void sod_job_process(int fd, short event, void * data);
 
 
-static void sod_job_exited(int fd, short event, void * data) {
+static void sod_job_process(int fd, short event, void * data) {
 	struct so_job * job = data;
 	struct so_job_private * self = job->data;
 
@@ -129,14 +131,16 @@ void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, str
 		struct so_job * job = so_value_custom_get(vjob);
 		struct so_job_private * self = job->data;
 
-		struct so_value * command = so_value_pack("{ss}", "command", "sync");
-		so_json_encode_to_fd(command, self->fd_in, true);
-		so_value_free(command);
+		if (self->started && !self->finished) {
+			struct so_value * command = so_value_pack("{ss}", "command", "sync");
+			so_json_encode_to_fd(command, self->fd_in, true);
+			so_value_free(command);
 
-		struct so_value * response = so_json_parse_fd(self->fd_out, -1);
-		if (response != NULL)
-			so_job_sync(job, response);
-		so_value_free(response);
+			struct so_value * response = so_json_parse_fd(self->fd_out, -1);
+			if (response != NULL)
+				so_job_sync(job, response);
+			so_value_free(response);
+		}
 	}
 	so_value_iterator_free(iter);
 
@@ -166,8 +170,9 @@ void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, str
 			const char * params[] = { job->key, job->name };
 			so_process_new(&self->process, process_name, params, 2);
 
-			self->fd_in = so_process_pipe_to(&self->process);
-			self->fd_out = so_process_pipe_from(&self->process, so_process_stdout);
+			self->fd_in = -1;
+			self->fd_out = -1;
+
 			self->config = so_value_pack("{sOsOsOso}",
 				"logger", logger,
 				"database", db_config,
@@ -177,6 +182,7 @@ void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, str
 
 			self->db_connection = db_connection;
 			so_value_unpack(kjob, "s", &self->key);
+			self->started = false;
 			self->finished = false;
 
 			free(process_name);
@@ -186,11 +192,16 @@ void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, str
 		if (job->status == so_job_status_scheduled && now > job->next_start && job->repetition != 0) {
 			struct so_job_private * self = job->data;
 
-			so_poll_register(self->fd_out, POLLHUP | POLLIN, sod_job_exited, job, NULL);
+			self->fd_in = so_process_pipe_to(&self->process);
+			self->fd_out = so_process_pipe_from(&self->process, so_process_stdout);
+
+			so_poll_register(self->fd_out, POLLHUP | POLLIN, sod_job_process, job, NULL);
 
 			// start job
 			so_process_start(&self->process, 1);
 			so_json_encode_to_fd(self->config, self->fd_in, true);
+
+			self->started = true;
 		}
 	}
 	so_value_iterator_free(iter);
