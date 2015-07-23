@@ -54,6 +54,9 @@ static void soj_restorearchive_path_exit() {
 }
 
 bool soj_restorearchive_path_filter(const char * path) {
+	if (so_value_list_get_length(path_selected) == 0)
+		return true;
+
 	bool found = false;
 	struct so_value_iterator * iter = so_value_list_get_iterator(path_selected);
 	while (!found && so_value_iterator_has_next(iter)) {

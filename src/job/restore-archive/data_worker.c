@@ -172,7 +172,6 @@ static void soj_restorearchive_data_worker_do(void * arg) {
 			}
 
 			so_string_delete_double_char(header.filename, '/');
-			so_string_trim(header.filename, '/');
 
 			if (!soj_restorearchive_path_filter(file->path)) {
 				status = reader->ops->skip_file(reader);
