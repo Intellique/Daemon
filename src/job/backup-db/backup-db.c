@@ -140,7 +140,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 		goto tmp_writer;
 	}
 
-	ssize_t backup_done = 0, backup_size = db_reader->ops->position(db_reader);
+	ssize_t backup_size = db_reader->ops->position(db_reader);
 
 	db_reader->ops->close(db_reader);
 	db_reader->ops->free(db_reader);
@@ -149,29 +149,21 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 	job->done = 0.02;
 
 	enum {
-		check_media,
 		copy_backup,
 		get_media,
-		get_media_iterator,
-		reopen_tmp_file,
-		release_medias,
 		reserve_media,
 	} state = reserve_media;
 
 	bool stop = false;
-	ssize_t size_available, backup_remain = backup_done;
-	struct so_stream_reader * tmp_reader = NULL;
-	struct so_value_iterator * iter = NULL;
-	struct so_value * vmedia = NULL;
-	struct so_media * media = NULL;
+	ssize_t size_available;
+	struct so_stream_reader * tmp_reader = tmp_writer->ops->reopen(tmp_writer);
 	struct so_drive * drive = NULL;
+
+	tmp_writer->ops->free(tmp_writer);
+	tmp_writer = NULL;
 
 	while (!stop && !job->stopped_by_user) {
 		switch (state) {
-			case check_media:
-				state = copy_backup;
-				break;
-
 			case copy_backup: {
 					struct so_stream_writer * dr_writer = drive->ops->get_raw_writer(drive);
 					struct so_stream_writer * cksum_writer = dr_writer;
@@ -209,6 +201,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 					int file_position = cksum_writer->ops->file_position(cksum_writer);
 					ssize_t size = cksum_writer->ops->position(cksum_writer);
 
+					struct so_media * media = drive->slot->media;
 					if (dr_writer != cksum_writer) {
 						struct so_value * checksums = so_io_checksum_writer_get_checksums(cksum_writer);
 						soj_backup_add_volume(soj_backupdb_backup, media, size, file_position, checksums);
@@ -222,75 +215,25 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 				break;
 
 			case get_media:
-				if (!so_value_iterator_has_next(iter)) {
-					stop = true;
-					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-						dgettext("storiqone-job-backup-db", "Error, no more media available"));
-					goto tmp_writer;
-				}
-
-				vmedia = so_value_iterator_get_value(iter, false);
-				media = so_value_custom_get(vmedia);
-
-				drive = soj_media_load(media, false, db_connect);
+				drive = soj_media_find_and_load_next(soj_backupdb_pool, false, db_connect);
 
 				if (drive != NULL)
-					state = check_media;
-				else
-					state = release_medias;
+					state = copy_backup;
+				else {
+					// TODO: panic
+					stop = true;
+				}
 
-				break;
-
-			case get_media_iterator:
-				iter = soj_media_get_iterator(soj_backupdb_pool);
-				if (iter == NULL)
-					goto tmp_writer;
-				state = get_media;
-				break;
-
-			case reopen_tmp_file:
-				tmp_reader = tmp_writer->ops->reopen(tmp_writer);
-				if (tmp_reader == NULL)
-					goto tmp_writer;
-
-				tmp_writer->ops->free(tmp_writer);
-				tmp_writer = NULL;
-
-				if (iter == NULL)
-					state = get_media_iterator;
-				else
-					state = get_media;
-
-				break;
-
-			case release_medias:
-				so_value_iterator_free(iter);
-				iter = NULL;
-				soj_media_release_all_medias(soj_backupdb_pool);
-				state = reserve_media;
 				break;
 
 			case reserve_media:
 				size_available = soj_media_prepare(soj_backupdb_pool, backup_size, db_connect);
 
-				backup_remain = backup_size - backup_done;
-				if (size_available < backup_remain) {
-					size_available += soj_media_prepare_unformatted(soj_backupdb_pool, true, db_connect);
+				if (size_available < backup_size)
+					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
+						dgettext("storiqone-job-backup-db", "Will require more space to complete backup"));
 
-					if (size_available < backup_remain)
-						size_available += soj_media_prepare_unformatted(soj_backupdb_pool, false, db_connect);
-
-					if (size_available < backup_remain)
-						goto tmp_writer;
-				}
-
-				if (tmp_reader == NULL)
-					state = reopen_tmp_file;
-				else if (iter == NULL)
-					state = get_media_iterator;
-				else
-					state = get_media;
-
+				state = get_media;
 				break;
 		}
 	}
