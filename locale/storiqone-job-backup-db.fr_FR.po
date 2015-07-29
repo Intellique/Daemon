@@ -46,7 +46,7 @@ msgstr  "Erreur lors de la lecture depuis le fichier temporaire parce que %m"
 
 #: src/job/backup-db/backup-db.c:234
 msgid   "Will require more space to complete backup"
-msgstr  ""
+msgstr  "À besoin de plus d’espace pour accomplir la sauvegarde"
 
 #: src/job/backup-db/backup-db.c:267
 msgid   "Pool (Storiq one database backup) not found"
@@ -59,6 +59,3 @@ msgstr  "Tentation de sauvegarder dans un pool qui est supprimé"
 #: src/job/backup-db/backup-db.c:279
 msgid   "Try to back up database into a pool whose is not growable and without any medias"
 msgstr  "Tentation de sauvegarder dans un pool qui n’est pas extensible et qui ne contient pas de médias"
-
-#~ msgid        "Error, no more media available"
-#~ msgstr       "Erreur, plus de média disponible"
