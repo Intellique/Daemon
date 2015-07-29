@@ -42,14 +42,5 @@ struct so_drive * soj_media_find_and_load_next(struct so_pool * pool, bool no_wa
 ssize_t soj_media_prepare(struct so_pool * pool, ssize_t size_needed, struct so_database_connection * db_connection);
 void soj_media_release_all_medias(struct so_pool * pool);
 
-
-enum so_pool_unbreakable_level;
-
-struct so_value_iterator * soj_media_get_iterator(struct so_pool * pool) __attribute__((deprecated));
-struct so_drive * soj_media_load(struct so_media * media, bool no_wait, struct so_database_connection * db_connect) __attribute__((deprecated));
-ssize_t soj_media_prepare_offline(struct so_pool * pool, ssize_t size_needed, struct so_database_connection * db_connection) __attribute__((deprecated));
-ssize_t soj_media_prepare_unformatted(struct so_pool * pool, bool online, struct so_database_connection * db_connection) __attribute__((deprecated));
-struct so_value * soj_media_reserve(struct so_pool * pool, size_t space_need, enum so_pool_unbreakable_level unbreakable_level) __attribute__((deprecated));
-
 #endif
 
