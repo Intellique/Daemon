@@ -220,8 +220,13 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 				if (drive != NULL)
 					state = copy_backup;
 				else {
-					// TODO: panic
 					stop = true;
+					job->status = so_job_status_error;
+
+					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+						dgettext("storiqone-job-backup-db", "No more media found, abording backup database"));
+
+					goto tmp_reader;
 				}
 
 				break;
@@ -255,6 +260,14 @@ tmp_writer:
 	if (db_reader != NULL) {
 		db_reader->ops->close(db_reader);
 		db_reader->ops->free(db_reader);
+	}
+
+	return 1;
+
+tmp_reader:
+	if (tmp_reader != NULL) {
+		tmp_reader->ops->close(tmp_reader);
+		tmp_reader = NULL;
 	}
 
 	return 1;
