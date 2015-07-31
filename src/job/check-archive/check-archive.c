@@ -87,7 +87,8 @@ static int soj_checkarchive_run(struct so_job * job, struct so_database_connecti
 	else
 		failed = soj_checkarchive_thorough_mode(job, archive, db_connect);
 
-	struct so_value * report = so_value_pack("{sososo}",
+	struct so_value * report = so_value_pack("{sisososo}",
+		"report version", 2,
 		"job", so_job_convert(job),
 		"host", so_host_get_info2(),
 		"archive", so_archive_convert(archive)

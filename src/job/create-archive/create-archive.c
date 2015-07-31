@@ -37,6 +37,7 @@
 #include <libstoriqone/database.h>
 #include <libstoriqone/file.h>
 #include <libstoriqone/host.h>
+#include <libstoriqone/json.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/media.h>
 #include <libstoriqone/value.h>
@@ -194,6 +195,44 @@ static int soj_create_archive_run(struct so_job * job, struct so_database_connec
 			for (i = 0; i < nb_src_files; i++)
 				src_files[i]->ops->rewind(src_files[i]);
 		}
+	}
+
+	struct so_value * vpool_mirrors = so_value_new_linked_list();
+	struct so_value_iterator * iter = so_value_list_get_iterator(pool_mirrors);
+	while (so_value_iterator_has_next(iter)) {
+		struct so_value * vpool = so_value_iterator_get_value(iter, false);
+		struct so_pool * pool = so_value_custom_get(vpool);
+
+		so_value_list_push(vpool_mirrors, so_pool_convert(pool), true);
+	}
+	so_value_iterator_free(iter);
+
+	struct so_value * archives = soj_create_archive_worker_archives();
+	iter = so_value_list_get_iterator(archives);
+	while (so_value_iterator_has_next(iter)) {
+		struct so_value * varchive = so_value_iterator_get_value(iter, false);
+		struct so_archive * archive = so_value_custom_get(varchive);
+
+		if (archive->nb_volumes < 1)
+			continue;
+
+		struct so_archive_volume * vol = archive->volumes;
+		struct so_pool * pool = vol->media->pool;
+
+		struct so_value * report = so_value_pack("{sisosososOsO}",
+			"report version", 2,
+			"job", so_job_convert(job),
+			"host", so_host_get_info2(),
+			"pool", so_pool_convert(pool),
+			"archive", varchive,
+			"selected paths", selected_path
+		);
+
+		char * json = so_json_encode_to_string(report);
+		db_connect->ops->add_report(db_connect, job, archive, NULL, json);
+
+		free(json);
+		so_value_free(report);
 	}
 
 	if (failed != 0)
