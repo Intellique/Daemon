@@ -1,0 +1,175 @@
+# French translations for tape-drive package.
+# Copyright (C) 2015
+# This file is distributed under the same license as the storiqone package.
+# Guillaume Clercin <gclercin@intellique.com>, 2015
+#
+msgid   ""
+msgstr  "Project-Id-Version: tape-drive v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-07-13 10:02+0200\n"
+        "PO-Revision-Date: 2014-11-13 09:03+0100\n"
+        "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
+        "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
+        "Language: fr\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/drive/tape_drive/device.c:179
+#, c-format
+msgid   "[%s | %s | #%u]: Failed to parse media header '%s'"
+msgstr  "[ %s | %s | n°%u ] : échec lors de l’analyse de l’entête du média « %s »"
+
+#: src/drive/tape_drive/device.c:261
+#, c-format
+msgid   "[%s | %s | #%u]: failed to read medium axilary memory"
+msgstr  "[ %s | %s | n°%u ] : échec lors de la lecture de la mémoire auxiliaire du média"
+
+#: src/drive/tape_drive/device.c:278
+#, c-format
+msgid   "[%s | %s | #%u]: Erasing media '%s' (mode: %s)"
+msgstr  "[ %s | %s | n°%u ] : Effacement du média '%s' (mode: %s)"
+
+#: src/drive/tape_drive/device.c:280 src/drive/tape_drive/device.c:287 src/drive/tape_drive/device.c:309
+msgid   "long"
+msgstr  "long"
+
+#: src/drive/tape_drive/device.c:280 src/drive/tape_drive/device.c:287 src/drive/tape_drive/device.c:309
+msgid   "quick"
+msgstr  "rapide"
+
+#: src/drive/tape_drive/device.c:285
+#, c-format
+msgid   "[%s | %s | #%u]: Failed to erase media '%s' (mode: %s)"
+msgstr  "[ %s | %s | n°%u ] : Échec lors de l’effacement du média '%s' (mode: %s)"
+
+#: src/drive/tape_drive/device.c:307
+#, c-format
+msgid   "[%s | %s | #%u]: media '%s' has been erased with success (mode: %s)"
+msgstr  "[ %s | %s | n°%u ] : le média '%s' a été effacé avec succès (mode: %s)"
+
+#: src/drive/tape_drive/device.c:500
+#, c-format
+msgid   "[%s | %s | #%u]: found block size: %zd"
+msgstr  "[ %s | %s | n°%u ] : taille de bloc trouvé : %zd"
+
+#: src/drive/tape_drive/device.c:546
+#, c-format
+msgid   "[%s | %s | #%u]: drive is open for reading"
+msgstr  "[ %s | %s | n°%u ] : ouverture du lecteur en lecture"
+
+#: src/drive/tape_drive/device.c:561
+#, c-format
+msgid   "[%s | %s | #%u]: drive is open for writing"
+msgstr  "[ %s | %s | n°%u ] : ouverture du lecture en écriture"
+
+#: src/drive/tape_drive/device.c:697
+#, c-format
+msgid   "[%s | %s | #%u]: Try to recover an error"
+msgstr  "[ %s | %s | n°%u ] : Tentative de récupérer une erreur"
+
+#: src/drive/tape_drive/device.c:734
+#, c-format
+msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s'"
+msgstr  "[ %s | %s | n°%u ] : Avance rapide vers la fin du média « %s »"
+
+#: src/drive/tape_drive/device.c:746
+#, c-format
+msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' finished with error '%m'"
+msgstr  "[ %s | %s | n°%u ] : Avance rapide vers la fin du média « %s » terminé avec une erreur « %m »"
+
+#: src/drive/tape_drive/device.c:750
+#, c-format
+msgid   "[%s | %s | #%u]: Fast forwarding to end of media '%s' finished with status = OK"
+msgstr  "[ %s | %s | n°%u ] : Avance rapide vers la fin du média « %s » terminé avec succès"
+
+#: src/drive/tape_drive/device.c:757
+#, c-format
+msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d"
+msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d"
+
+#: src/drive/tape_drive/device.c:770 src/drive/tape_drive/device.c:787
+#, c-format
+msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d finished with error '%m'"
+msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d terminé avec une erreur « %m »"
+
+#: src/drive/tape_drive/device.c:791 src/drive/tape_drive/device.c:798
+#, c-format
+msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d finished with status = OK"
+msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d terminé avec succés"
+
+#: src/drive/tape_drive/device.c:905
+#, c-format
+msgid   "[%s | %s | #%u]: Checking media header '%s'"
+msgstr  "[ %s | %s | n°%u ] : Vérification de l'entête du média « %s »"
+
+#: src/drive/tape_drive/device.c:914
+#, c-format
+msgid   "[%s | %s | #%u]: Error while checking media header '%s'"
+msgstr  "[ %s | %s | n°%u ] : Erreur en vérifiant l'entête de la bande « %s »"
+
+#: src/drive/tape_drive/media.c:66
+#, c-format
+msgid   "Found LTFS header in media with (volume id: %s)"
+msgstr  "Entête de bande LTFS trouvé (id du volume : %s)"
+
+#: src/drive/tape_drive/media.c:143
+#, c-format
+msgid   "Failed to read ltfs index from media '%s'"
+msgstr  "Échec lors de la lecture de l’index ltfs sur le média « %s »"
+
+#: src/drive/tape_drive/media.c:155
+#, c-format
+msgid   "Error while reading ltfs index from media '%s'"
+msgstr  "Erreur en lisant l’index ltfs sur le média « %s »"
+
+#: src/drive/tape_drive/media.c:166
+#, c-format
+msgid   "Found ltfs index corrupted from media '%s'"
+msgstr  "Trouvé un index ltfs corromptu sur le média « %s »"
+
+#: src/drive/tape_drive/media.c:186
+#, c-format
+msgid   "Error, no more memory to read ltfs index from media '%s'"
+msgstr  "Erreur, pas assez de mémoire pour lire l’index ltfs sur le média « %s »"
+
+#: src/drive/tape_drive/media.c:214
+#, c-format
+msgid   "Failed to read ltfs label from media '%s'"
+msgstr  "Échec lors de la lecture de l’étiquette sur le média « %s »"
+
+#: src/drive/tape_drive/media.c:226
+#, c-format
+msgid   "Error while reading ltfs label from media '%s'"
+msgstr  "Erreur en lisant l’étiquette sur le média « %s »"
+
+#: src/drive/tape_drive/media.c:237
+#, c-format
+msgid   "Found ltfs label corrupted from media '%s'"
+msgstr  "Trouvé une étiquette ltfs corrompue sur le média « %s »"
+
+#: src/drive/tape_drive/media.c:257
+#, c-format
+msgid   "Error, no more memory to read ltfs label from media '%s'"
+msgstr  "Erreur, pas assez de mémoire pour lire l’étiquette ltfs sur le média « %s »"
+
+#: src/drive/tape_drive/reader.c:139
+#, c-format
+msgid   "[%s | %s | #%u]: forward from media '%s' at file position #%u and #record %ld"
+msgstr  "[ %s | %s | n°%u ] : avance dans le média « %s » à la position n°%u et le numéro d’enregistrement %ld"
+
+#: src/drive/tape_drive/scsi.c:760
+#, c-format
+msgid   "Media information of %s, Medium manufacturer: %s"
+msgstr  "Information du média %s, Fabricant du média: %s"
+
+#: src/drive/tape_drive/scsi.c:778
+#, c-format
+msgid   "Media information of %s, Medium date: %s"
+msgstr  "Information du média %s, date du média: %s"
+
+#: src/drive/tape_drive/writer.c:198
+#, c-format
+msgid   "[%s | %s | #%u]: drive is close"
+msgstr  "[ %s | %s | n°%u ] : lecteur est fermé"

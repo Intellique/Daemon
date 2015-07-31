@@ -1,0 +1,13 @@
+STORIQONE_DRIVE_VTLDRIVE_SRC_DIR		:= src/drive/vtl_drive
+
+STORIQONE_DRIVE_VTLDRIVE_BIN			:= bin/vtl_drive
+STORIQONE_DRIVE_VTLDRIVE_CFLAG			:= -pthread
+STORIQONE_DRIVE_VTLDRIVE_LD				:= -pthread -lstoriqone -lstoriqone-drive -Llib -Wl,-rpath,lib
+
+STORIQONE_DRIVE_VTLDRIVE_DEPEND_LIB		:= lib/libstoriqone-drive.so
+
+STORIQONE_DRIVE_VTLDRIVE_CHCKSUM_FILE	:= drive-vtldrive.chcksum
+
+STORIQONE_DRIVE_VTLDRIVE_LOCALE			:= locale/storiqone-drive-vtl
+
+BIN_SYMS								+= STORIQONE_DRIVE_VTLDRIVE

@@ -1,0 +1,13 @@
+STORIQONE_JOB_CHECK_ARCHIVE_SRC_DIR			:= src/job/check-archive
+
+STORIQONE_JOB_CHECK_ARCHIVE_BIN				:= bin/job_check-archive
+STORIQONE_JOB_CHECK_ARCHIVE_CFLAG			:= -pthread
+STORIQONE_JOB_CHECK_ARCHIVE_LD				:= -pthread -lstoriqone -lstoriqone-job -Llib
+
+STORIQONE_JOB_CHECK_ARCHIVE_DEPEND_LIB		:= lib/libstoriqone-job.so
+
+STORIQONE_JOB_CHECK_ARCHIVE_CHCKSUM_FILE	:= job_check-archive.chcksum
+
+STORIQONE_JOB_CHECK_ARCHIVE_LOCALE			:= locale/storiqone-job-check-archive
+
+BIN_SYMS									+= STORIQONE_JOB_CHECK_ARCHIVE

@@ -1,0 +1,13 @@
+STORIQONE_JOB_FORMATMEDIA_SRC_DIR		:= src/job/format-media
+
+STORIQONE_JOB_FORMATMEDIA_BIN			:= bin/job_format-media
+STORIQONE_JOB_FORMATMEDIA_CFLAG			:= -pthread
+STORIQONE_JOB_FORMATMEDIA_LD			:= -pthread -lstoriqone -lstoriqone-job -luuid -Llib
+
+STORIQONE_JOB_FORMATMEDIA_DEPEND_LIB	:= lib/libstoriqone-job.so
+
+STORIQONE_JOB_FORMATMEDIA_CHCKSUM_FILE	:= job_format-media.chcksum
+
+STORIQONE_JOB_FORMATMEDIA_LOCALE		:= locale/storiqone-job-format-media
+
+BIN_SYMS								+= STORIQONE_JOB_FORMATMEDIA

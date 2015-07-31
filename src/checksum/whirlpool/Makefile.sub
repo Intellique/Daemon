@@ -1,0 +1,11 @@
+STORIQONE_CHECKSUM_WHIRLPOOL_SRC_DIR		:= src/checksum/whirlpool
+
+STORIQONE_CHECKSUM_WHIRLPOOL_BIN			:= lib/libchecksum-whirlpool.so
+STORIQONE_CHECKSUM_WHIRLPOOL_CFLAG			:= -pthread -fPIC -fvisibility=hidden
+STORIQONE_CHECKSUM_WHIRLPOOL_LD				:= -pthread -shared -Llib -lcrypto
+
+STORIQONE_CHECKSUM_WHIRLPOOL_DEPEND_LIB		:=
+
+STORIQONE_CHECKSUM_WHIRLPOOL_CHCKSUM_FILE	:= libchecksum-whirlpool.chcksum
+
+BIN_SYMS									+= STORIQONE_CHECKSUM_WHIRLPOOL

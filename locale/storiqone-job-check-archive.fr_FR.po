@@ -1,0 +1,51 @@
+# French translations for job-check-archive package.
+# Copyright (C) 2015
+# This file is distributed under the same license as the storiqone package.
+# Guillaume Clercin <gclercin@intellique.com>, 2014
+#
+msgid   ""
+msgstr  "Project-Id-Version: job-check-archive v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-07-31 20:14+0200\n"
+        "PO-Revision-Date: 2014-11-13 09:03+0100\n"
+        "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
+        "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
+        "Language: fr\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/job/check-archive/check-archive.c:106
+msgid   "Archive not found"
+msgstr  "Archive non trouvée"
+
+#: src/job/check-archive/quick_mode.c:80
+#, c-format
+msgid   "Starting check archive (%s) in quick mode"
+msgstr  "Démarrage de la vérification de l'archive (%s) en mode rapide"
+
+#: src/job/check-archive/quick_mode.c:125
+#, c-format
+msgid   "Starting worker #%u"
+msgstr  "Démarrage du travailleur #%u"
+
+#: src/job/check-archive/quick_mode.c:186 src/job/check-archive/thorough_mode.c:78
+#, c-format
+msgid   "Media not found (named: %s)"
+msgstr  "Média non trouvé (nom: %s)"
+
+#: src/job/check-archive/quick_mode.c:197
+#, c-format
+msgid   "Getting media (%s)"
+msgstr  "Accession au média (%s)"
+
+#: src/job/check-archive/quick_mode.c:212
+#, c-format
+msgid   "Looking for media (%s)"
+msgstr  "Recherche du média (%s)"
+
+#: src/job/check-archive/thorough_mode.c:51
+#, c-format
+msgid   "Starting check archive (%s) in thorough mode"
+msgstr  "Démarrage de la vérification de l'archive (%s) en mode minutieux"

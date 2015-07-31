@@ -1,0 +1,55 @@
+# French translations for storiqone-changer-vtl package.
+# Copyright (C) 2014-2015
+# This file is distributed under the same license as the storiqone package.
+# Guillaume Clercin <gclercin@intellique.com>, 2014
+#
+msgid   ""
+msgstr  "Project-Id-Version: storiqone-changer-vtl v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-07-18 09:55+0200\n"
+        "PO-Revision-Date: 2014-11-12 22:16+0100\n"
+        "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
+        "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
+        "Language: fr\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/changer/vtl_changer/device.c:133
+#, c-format
+msgid   "[%s | %s]: will update vtl"
+msgstr  "[ %s | %s ]: va mettre à jour la vtl"
+
+#: src/changer/vtl_changer/device.c:141
+#, c-format
+msgid   "[%s | %s]: will remove %u drive"
+msgid_plural    "[%s | %s]: will remove %u drives"
+msgstr[0]       "[ %s | %s ] : va supprimer %u lecteur"
+msgstr[1]       "[ %s | %s ] : va supprimer %u lecteurs"
+
+#: src/changer/vtl_changer/device.c:189
+#, c-format
+msgid   "[%s | %s]: will remove %u slot"
+msgid_plural    "[%s | %s]: will remove %u slots"
+msgstr[0]       "[ %s | %s ] : va supprimer %u emplacement"
+msgstr[1]       "[ %s | %s ] : va supprimer %u emplacements"
+
+#: src/changer/vtl_changer/device.c:214
+#, c-format
+msgid   "[%s | %s]: will add %u slot"
+msgid_plural    "[%s | %s]: will add %u slots"
+msgstr[0]       "[ %s | %s ] : va ajouter %u emplacement"
+msgstr[1]       "[ %s | %s ] : va ajouter %u emplacements"
+
+#: src/changer/vtl_changer/device.c:243
+#, c-format
+msgid   "[%s | %s]: will add %u drive"
+msgid_plural    "[%s | %s]: will add %u drives"
+msgstr[0]       "[ %s | %s ] : va ajouter %u lecteur"
+msgstr[1]       "[ %s | %s ] : va ajouter %u lecteurs"
+
+#: src/changer/vtl_changer/device.c:308
+#, c-format
+msgid   "[%s | %s]: will delete vtl"
+msgstr  "[ %s | %s ] : va supprimer la vtl"

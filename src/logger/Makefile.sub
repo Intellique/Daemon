@@ -1,0 +1,13 @@
+LOGGER_SRC_DIR		:= src/logger
+
+LOGGER_BIN			:= bin/logger
+LOGGER_CFLAG		:= -fPIC -pthread
+LOGGER_LD			:= -pthread -rdynamic -lstoriqone -ldl -Llib -Wl,-rpath,lib
+
+LOGGER_DEPEND_LIB	:= lib/libstoriqone.so
+
+LOGGER_CHCKSUM_FILE	:= logger.chcksum
+
+LOGGER_LOCALE		:= locale/storiqone-logger
+
+BIN_SYMS			+= LOGGER

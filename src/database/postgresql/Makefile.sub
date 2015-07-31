@@ -1,0 +1,13 @@
+STORIQONE_DATABASE_POSTGRESQL_SRC_DIR		:= src/database/postgresql
+
+STORIQONE_DATABASE_POSTGRESQL_BIN			:= lib/libdatabase-postgresql.so
+STORIQONE_DATABASE_POSTGRESQL_CFLAG			:= -pthread -fPIC -fvisibility=hidden
+STORIQONE_DATABASE_POSTGRESQL_LD			:= -pthread -shared -Llib -lpq
+
+STORIQONE_DATABASE_POSTGRESQL_DEPEND_LIB	:=
+
+STORIQONE_DATABASE_POSTGRESQL_CHCKSUM_FILE	:= libdatabase-postgresql.chcksum
+
+STORIQONE_DATABASE_POSTGRESQL_LOCALE		:= locale/libstoriqone-database-postgresql
+
+BIN_SYMS									+= STORIQONE_DATABASE_POSTGRESQL

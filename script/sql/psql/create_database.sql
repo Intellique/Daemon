@@ -11,18 +11,15 @@ CREATE TYPE ChangerAction AS ENUM (
     'put offline'
 );
 
-CREATE TYPE ChangerSlotType AS ENUM (
-    'drive',
-    'import / export',
-    'storage'
-);
-
 CREATE TYPE ChangerStatus AS ENUM (
     'error',
     'exporting',
+    'go offline',
+    'go online',
     'idle',
     'importing',
     'loading',
+    'offline',
     'unknown',
     'unloading'
 );
@@ -71,19 +68,22 @@ CREATE TYPE JobStatus AS ENUM (
 );
 
 CREATE TYPE LogLevel AS ENUM (
+    'alert',
+    'critical',
     'debug',
+    'emergency',
+    'error',
     'info',
-    'warning',
-    'error'
+    'notice',
+    'warning'
 );
 
 CREATE TYPE LogType AS ENUM (
     'changer',
-    'checksum',
     'daemon',
-    'database',
     'drive',
     'job',
+    'logger',
     'plugin checksum',
     'plugin db',
     'plugin log',
@@ -105,12 +105,6 @@ CREATE TYPE MediaFormatMode AS ENUM (
     'optical'
 );
 
-CREATE TYPE MediaLocation AS ENUM (
-    'offline',
-    'online',
-    'in drive'
-);
-
 CREATE TYPE MediaStatus AS ENUM (
     'erasable',
     'error',
@@ -125,8 +119,8 @@ CREATE TYPE MediaStatus AS ENUM (
 
 CREATE TYPE MediaType AS ENUM (
     'cleaning',
-    'readonly',
-    'rewritable'
+    'rewritable',
+    'worm'
 );
 
 CREATE TYPE MetaType AS ENUM (
@@ -162,6 +156,15 @@ CREATE TYPE UnbreakableLevel AS ENUM (
 
 
 -- Tables
+CREATE TABLE ArchiveFormat (
+    id SERIAL PRIMARY KEY,
+
+    name VARCHAR(32) NOT NULL UNIQUE,
+
+    readable BOOLEAN NOT NULL,
+    writable BOOLEAN NOT NULL
+);
+
 CREATE TABLE MediaFormat (
     id SERIAL PRIMARY KEY,
 
@@ -203,6 +206,7 @@ CREATE TABLE Pool (
     uuid UUID NOT NULL UNIQUE,
     name VARCHAR(64) NOT NULL,
 
+    archiveFormat INTEGER NOT NULL REFERENCES ArchiveFormat(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     mediaFormat INTEGER NOT NULL REFERENCES MediaFormat(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
     autocheck AutoCheckMode NOT NULL DEFAULT 'none',
@@ -212,8 +216,8 @@ CREATE TABLE Pool (
     unbreakableLevel UnbreakableLevel NOT NULL DEFAULT 'none',
     rewritable BOOLEAN NOT NULL DEFAULT TRUE,
 
-    metadata TEXT NOT NULL DEFAULT '',
-    needproxy BOOLEAN NOT NULL DEFAULT FALSE,
+    metadata JSON NOT NULL DEFAULT '{}',
+    backupPool BOOLEAN NOT NULL DEFAULT FALSE,
 
     poolOriginal INTEGER REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     poolMirror INTEGER REFERENCES PoolMirror(id) ON UPDATE CASCADE ON DELETE RESTRICT,
@@ -248,7 +252,7 @@ CREATE TABLE PoolTemplate (
     unbreakableLevel UnbreakableLevel NOT NULL DEFAULT 'none',
     rewritable BOOLEAN NOT NULL DEFAULT TRUE,
 
-    metadata TEXT NOT NULL DEFAULT '',
+    metadata JSON NOT NULL DEFAULT '{}',
     createProxy BOOLEAN NOT NULL DEFAULT FALSE
 );
 
@@ -261,12 +265,11 @@ CREATE TABLE Media (
     name VARCHAR(255) NULL,
 
     status MediaStatus NOT NULL,
-    location MediaLocation NOT NULL,
 
-    firstUsed TIMESTAMP(0) NOT NULL,
-    useBefore TIMESTAMP(0) NOT NULL,
-    lastRead TIMESTAMP(0),
-    lastWrite TIMESTAMP(0),
+    firstUsed TIMESTAMP(3) WITH TIME ZONE NOT NULL,
+    useBefore TIMESTAMP(3) WITH TIME ZONE NOT NULL,
+    lastRead TIMESTAMP(3) WITH TIME ZONE,
+    lastWrite TIMESTAMP(3) WITH TIME ZONE,
 
     loadCount INTEGER NOT NULL DEFAULT 0 CHECK (loadCount >= 0),
     readCount INTEGER NOT NULL DEFAULT 0 CHECK (readCount >= 0),
@@ -285,9 +288,12 @@ CREATE TABLE Media (
     totalBlock INTEGER NOT NULL CHECK (totalBlock >= 0),
 
     hasPartition BOOLEAN NOT NULL DEFAULT FALSE,
-    locked BOOLEAN NOT NULL DEFAULT FALSE,
+    append BOOLEAN NOT NULL DEFAULT TRUE,
 
     type MediaType NOT NULL DEFAULT 'rewritable',
+    writeLock BOOLEAN NOT NULL DEFAULT FALSE,
+
+    archiveFormat INTEGER REFERENCES ArchiveFormat(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     mediaFormat INTEGER NOT NULL REFERENCES MediaFormat(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     pool INTEGER NULL REFERENCES Pool(id) ON UPDATE CASCADE ON DELETE SET NULL,
 
@@ -316,9 +322,7 @@ CREATE TABLE DriveFormatSupport (
     mediaFormat INTEGER NOT NULL REFERENCES MediaFormat(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
     read BOOLEAN NOT NULL DEFAULT TRUE,
-    write BOOLEAN NOT NULL DEFAULT TRUE,
-
-    PRIMARY KEY (driveFormat, mediaFormat)
+    write BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 CREATE TABLE Host (
@@ -329,15 +333,13 @@ CREATE TABLE Host (
     domaine VARCHAR(255) NULL,
 
     description TEXT,
-    updated TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT NOW(),
 
     UNIQUE (name, domaine)
 );
 
 CREATE TABLE Changer (
     id SERIAL PRIMARY KEY,
-
-    device VARCHAR(64),
 
     model VARCHAR(64) NOT NULL,
     vendor VARCHAR(64) NOT NULL,
@@ -359,9 +361,6 @@ CREATE TABLE Changer (
 CREATE TABLE Drive (
     id SERIAL PRIMARY KEY,
 
-    device VARCHAR(64),
-    scsiDevice VARCHAR(64),
-
     model VARCHAR(64) NOT NULL,
     vendor VARCHAR(64) NOT NULL,
     firmwareRev VARCHAR(64) NOT NULL,
@@ -369,7 +368,7 @@ CREATE TABLE Drive (
 
     status DriveStatus NOT NULL,
     operationDuration FLOAT(3) NOT NULL DEFAULT 0 CHECK (operationDuration >= 0),
-    lastClean TIMESTAMP(0),
+    lastClean TIMESTAMP(3) WITH TIME ZONE,
     enable BOOLEAN NOT NULL DEFAULT TRUE,
 
     changer INTEGER NULL REFERENCES Changer(id) ON UPDATE CASCADE ON DELETE CASCADE,
@@ -377,16 +376,16 @@ CREATE TABLE Drive (
 );
 
 CREATE TABLE ChangerSlot (
-    id SERIAL PRIMARY KEY,
-
-    index INTEGER NOT NULL,
     changer INTEGER NOT NULL REFERENCES Changer(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    index INTEGER NOT NULL,
     drive INTEGER UNIQUE REFERENCES Drive(id) ON UPDATE CASCADE ON DELETE SET NULL,
+
     media INTEGER REFERENCES Media(id) ON UPDATE CASCADE ON DELETE SET NULL,
-    type ChangerSlotType NOT NULL DEFAULT 'storage',
+
+    isieport BOOLEAN NOT NULL DEFAULT FALSE,
     enable BOOLEAN NOT NULL DEFAULT TRUE,
 
-    CONSTRAINT unique_slot UNIQUE (index, changer)
+    PRIMARY KEY (changer, index)
 );
 
 CREATE TABLE SelectedFile (
@@ -409,11 +408,13 @@ CREATE TABLE Users (
     canArchive BOOLEAN NOT NULL DEFAULT FALSE,
     canRestore BOOLEAN NOT NULL DEFAULT FALSE,
 
-    disabled BOOLEAN NOT NULL DEFAULT FALSE,
+    meta JSON NOT NULL,
 
-    poolgroup INTEGER NOT NULL REFERENCES PoolGroup(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-    meta hstore NOT NULL
+    poolgroup INTEGER REFERENCES PoolGroup(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+
+    disabled BOOLEAN NOT NULL DEFAULT FALSE
 );
+CREATE UNIQUE INDEX ON users (LOWER(login));
 
 CREATE TABLE UserEvent (
     id SERIAL PRIMARY KEY,
@@ -424,7 +425,7 @@ CREATE TABLE UserLog (
     id BIGSERIAL PRIMARY KEY,
 
     login INTEGER NOT NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    timestamp TIMESTAMP(0) NOT NULL DEFAULT NOW(),
+    timestamp TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT NOW(),
     event INTEGER NOT NULL REFERENCES UserEvent(id) ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
@@ -437,11 +438,8 @@ CREATE TABLE Archive (
     creator INTEGER NOT NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     owner INTEGER NOT NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
-    copyOf BIGINT REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE RESTRICT,
-
-    deleted BOOLEAN NOT NULL DEFAULT FALSE,
-
-    CONSTRAINT archive_id CHECK (id != copyOf)
+    canAppend BOOLEAN NOT NULL DEFAULT TRUE,
+    deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE ArchiveFile (
@@ -458,17 +456,21 @@ CREATE TABLE ArchiveFile (
 
     perm SMALLINT NOT NULL CHECK (perm >= 0),
 
-    ctime TIMESTAMP(0) NOT NULL,
-    mtime TIMESTAMP(0) NOT NULL,
+    ctime TIMESTAMP(3) WITH TIME ZONE NOT NULL,
+    mtime TIMESTAMP(3) WITH TIME ZONE NOT NULL,
 
     size BIGINT NOT NULL CHECK (size >= 0),
 
     parent BIGINT NOT NULL REFERENCES SelectedFile(id) ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
-CREATE TABLE ArchiveToArchiveMirror (
-    archive BIGINT REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    archivemirror INTEGER REFERENCES ArchiveMirror(id) ON UPDATE CASCADE ON DELETE CASCADE
+CREATE TABLE Backup (
+    id BIGSERIAL PRIMARY KEY,
+
+    timestamp TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT now(),
+
+    nbMedia INTEGER NOT NULL DEFAULT 0 CHECK (nbMedia >= 0),
+    nbArchive INTEGER NOT NULL DEFAULT 0 CHECK (nbArchive >= 0)
 );
 
 CREATE TABLE JobType (
@@ -476,26 +478,17 @@ CREATE TABLE JobType (
     name VARCHAR(255) NOT NULL UNIQUE
 );
 
-CREATE TABLE Backup (
-    id BIGSERIAL PRIMARY KEY,
-
-    timestamp TIMESTAMP(0) NOT NULL DEFAULT now(),
-
-    nbMedia INTEGER NOT NULL DEFAULT 0 CHECK (nbMedia >= 0),
-    nbArchive INTEGER NOT NULL DEFAULT 0 CHECK (nbArchive >= 0)
-);
-
 CREATE TABLE Job (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     type INTEGER NOT NULL REFERENCES JobType(id) ON UPDATE CASCADE ON DELETE RESTRICT,
 
-    nextStart TIMESTAMP(0) NOT NULL DEFAULT NOW(),
+    nextStart TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT NOW(),
     interval INTERVAL DEFAULT NULL,
     repetition INTEGER NOT NULL DEFAULT 1,
 
     status JobStatus NOT NULL DEFAULT 'scheduled',
-    update TIMESTAMP(0) NOT NULL DEFAULT NOW(),
+    update TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT NOW(),
 
     archive BIGINT DEFAULT NULL REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE CASCADE,
     backup BIGINT DEFAULT NULL REFERENCES Backup(id) ON UPDATE CASCADE ON DELETE CASCADE,
@@ -505,17 +498,17 @@ CREATE TABLE Job (
     host INTEGER NOT NULL REFERENCES Host(id) ON UPDATE CASCADE ON DELETE RESTRICT,
     login INTEGER NOT NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
-    metadata TEXT NOT NULL DEFAULT '',
-    options hstore NOT NULL DEFAULT ''
+    metadata JSON NOT NULL DEFAULT '{}',
+    options JSON NOT NULL DEFAULT '{}'
 );
 
 CREATE TABLE JobRun (
     id BIGSERIAL PRIMARY KEY,
-    job BIGSERIAL NOT NULL REFERENCES Job(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    job BIGINT NOT NULL REFERENCES Job(id) ON UPDATE CASCADE ON DELETE CASCADE,
     numRun INTEGER NOT NULL DEFAULT 1 CHECK (numRun > 0),
 
-    starttime TIMESTAMP(0) NOT NULL,
-    endtime TIMESTAMP(0),
+    starttime TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    endtime TIMESTAMP(3) WITH TIME ZONE,
 
     status JobStatus NOT NULL DEFAULT 'running',
     done FLOAT NOT NULL DEFAULT 0,
@@ -525,17 +518,25 @@ CREATE TABLE JobRun (
     CHECK (starttime <= endtime)
 );
 
+CREATE TABLE ArchiveToArchiveMirror (
+    archive BIGINT NOT NULL REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    archivemirror INTEGER NOT NULL REFERENCES ArchiveMirror(id) ON UPDATE CASCADE ON DELETE CASCADE,
+
+    lastUpdate TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    jobrun BIGINT NOT NULL REFERENCES JobRun(id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
 CREATE TABLE ArchiveVolume (
     id BIGSERIAL PRIMARY KEY,
 
     sequence INTEGER NOT NULL DEFAULT 0 CHECK (sequence >= 0),
     size BIGINT NOT NULL DEFAULT 0 CHECK (size >= 0),
 
-    starttime TIMESTAMP(0) NOT NULL,
-    endtime TIMESTAMP(0) NOT NULL,
+    starttime TIMESTAMP(3) WITH TIME ZONE NOT NULL,
+    endtime TIMESTAMP(3) WITH TIME ZONE NOT NULL,
 
+    checktime TIMESTAMP(3) WITH TIME ZONE,
     checksumok BOOLEAN NOT NULL DEFAULT FALSE,
-    checktime TIMESTAMP(0),
 
     archive BIGINT NOT NULL REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE CASCADE,
     media INTEGER NOT NULL REFERENCES Media(id) ON UPDATE CASCADE ON DELETE RESTRICT,
@@ -563,35 +564,56 @@ CREATE TABLE ArchiveFileToArchiveVolume (
     archiveFile BIGINT NOT NULL REFERENCES ArchiveFile(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
     blockNumber BIGINT CHECK (blockNumber >= 0) NOT NULL,
-    archivetime TIMESTAMP(0) NOT NULL,
+    archivetime TIMESTAMP(3) WITH TIME ZONE NOT NULL,
 
-    checktime TIMESTAMP(0),
+    checktime TIMESTAMP(3) WITH TIME ZONE,
     checksumok BOOLEAN NOT NULL DEFAULT FALSE,
 
     PRIMARY KEY (archiveVolume, archiveFile)
 );
 
+ALTER TABLE Backup ADD jobrun BIGINT NOT NULL REFERENCES JobRun(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
 CREATE TABLE BackupVolume (
     id BIGSERIAL PRIMARY KEY,
 
     sequence INTEGER NOT NULL DEFAULT 0 CHECK (sequence >= 0),
-    backup BIGINT NOT NULL REFERENCES Backup(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    size BIGINT NOT NULL DEFAULT 0 CHECK (size >= 0),
 
     media INTEGER NOT NULL REFERENCES Media(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     mediaPosition INTEGER NOT NULL DEFAULT 0 CHECK (mediaPosition >= 0),
 
-    jobrun BIGINT REFERENCES JobRun(id) ON UPDATE CASCADE ON DELETE SET NULL
+    checktime TIMESTAMP(3) WITH TIME ZONE,
+    checksumok BOOLEAN NOT NULL DEFAULT FALSE,
+
+    backup BIGINT NOT NULL REFERENCES Backup(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE Metadata (
-    key TEXT NOT NULL,
-    value TEXT NOT NULL,
-
     id BIGINT NOT NULL,
     type MetaType NOT NULL,
 
+    key TEXT NOT NULL,
+    value JSON NOT NULL,
+
+    login INTEGER NOT NULL REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
+
     PRIMARY KEY (id, type, key)
 );
+
+CREATE TABLE MetadataLog (
+    id BIGINT NOT NULL,
+    type MetaType NOT NULL,
+
+    key TEXT NOT NULL,
+    value JSON NOT NULL,
+
+    login INTEGER NOT NULL REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
+
+    timestamp TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated BOOLEAN NOT NULL
+);
+CREATE INDEX ON MetadataLog (id, type, key);
 
 CREATE TABLE Proxy (
     id BIGSERIAL PRIMARY KEY,
@@ -638,13 +660,22 @@ CREATE TABLE ArchiveVolumeToChecksumResult (
     PRIMARY KEY (archiveVolume, checksumResult)
 );
 
+CREATE TABLE BackupVolumeToChecksumResult (
+    backupVolume BIGINT NOT NULL REFERENCES BackupVolume(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    checksumResult BIGINT NOT NULL REFERENCES ChecksumResult(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    PRIMARY KEY (backupVolume, checksumResult)
+);
+
 CREATE TABLE JobRecord (
     id BIGSERIAL PRIMARY KEY,
-
     jobrun BIGINT NOT NULL REFERENCES Jobrun(id) ON UPDATE CASCADE ON DELETE CASCADE,
+
+    timestamp TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT NOW(),
     status JobStatus NOT NULL CHECK (status != 'disable'),
-    timestamp TIMESTAMP(0) NOT NULL DEFAULT NOW(),
+
+    level LogLevel NOT NULL,
     message TEXT NOT NULL,
+
     notif JobRecordNotif NOT NULL DEFAULT 'normal'
 );
 
@@ -659,10 +690,10 @@ CREATE TABLE Log (
 
     type LogType NOT NULL,
     level LogLevel NOT NULL,
-    time TIMESTAMP(0) NOT NULL,
+    time TIMESTAMP(3) WITH TIME ZONE NOT NULL,
     message TEXT NOT NULL,
     host INTEGER NOT NULL REFERENCES Host(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    login INTEGER NULL REFERENCES Users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    login INTEGER REFERENCES Users(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE RestoreTo (
@@ -674,13 +705,19 @@ CREATE TABLE RestoreTo (
 
 CREATE TABLE Report (
     id BIGSERIAL PRIMARY KEY,
-    timestamp TIMESTAMP(0) NOT NULL DEFAULT NOW(),
+    timestamp TIMESTAMP(3) WITH TIME ZONE NOT NULL DEFAULT NOW(),
 
-    archive BIGINT REFERENCES Archive(id) ON UPDATE CASCADE ON DELETE CASCADE,
-	media BIGINT REFERENCES Media(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    archive BIGINT REFERENCES archive(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    media BIGINT REFERENCES Media(id) ON UPDATE CASCADE ON DELETE CASCADE,
     jobrun BIGINT NOT NULL REFERENCES jobrun(id) ON UPDATE CASCADE ON DELETE CASCADE,
 
-    data TEXT NOT NULL
+    data JSON NOT NULL
+);
+
+CREATE TABLE Reports (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    report BIGINT NOT NULL REFERENCES report(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE Reports (
@@ -723,13 +760,41 @@ CREATE TABLE Vtl (
     CHECK (nbslots >= nbdrives)
 );
 
+-- Functions
+CREATE OR REPLACE FUNCTION "json_object_set_key"("json" json, "key_to_set" TEXT, "value_to_set" anyelement)
+  RETURNS json
+  LANGUAGE sql
+  IMMUTABLE
+  STRICT
+AS $function$
+SELECT CONCAT('{', STRING_AGG(TO_JSON("key") || ':' || "value", ','), '}')::JSON
+  FROM (SELECT *
+          FROM JSON_EACH("json")
+         WHERE "key" <> "key_to_set"
+         UNION ALL
+        SELECT "key_to_set", TO_JSON("value_to_set")) AS "fields"
+$function$;
+
 -- Triggers
-CREATE FUNCTION check_metadata() RETURNS TRIGGER AS $body$
+CREATE OR REPLACE FUNCTION check_metadata() RETURNS TRIGGER AS $body$
     BEGIN
         IF TG_OP = 'UPDATE' AND OLD.id != NEW.id THEN
             UPDATE Metadata SET id = NEW.id WHERE id = OLD.id AND type = TG_TABLE_NAME::MetaType;
         ELSIF TG_OP = 'DELETE' THEN
             DELETE FROM Metadata WHERE id = OLD.id AND type = TG_TABLE_NAME::MetaType;
+        END IF;
+        RETURN NEW;
+    END;
+$body$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION log_metadata() RETURNS TRIGGER AS $body$
+    BEGIN
+        IF TG_OP = 'UPDATE' AND OLD.type != NEW.type THEN
+            RAISE EXCEPTION 'type of metadata should not be modified' USING ERRCODE = '09000';
+        END IF;
+        IF TG_OP = 'DELETE' OR OLD != NEW THEN
+            INSERT INTO MetadataLog(id, type, key, value, login, updated)
+                VALUES (OLD.id, OLD.type, OLD.key, OLD.value, OLD.login, TG_OP != 'UPDATE');
         END IF;
         RETURN NEW;
     END;
@@ -771,6 +836,10 @@ CREATE TRIGGER update_metadata
 AFTER UPDATE OR DELETE ON Vtl
 FOR EACH ROW EXECUTE PROCEDURE check_metadata();
 
+CREATE TRIGGER log_metadata
+BEFORE UPDATE OR DELETE ON Metadata
+FOR EACH ROW EXECUTE PROCEDURE log_metadata();
+
 -- Comments
 COMMENT ON COLUMN ArchiveVolume.starttime IS 'Start time of archive volume creation';
 COMMENT ON COLUMN ArchiveVolume.endtime IS 'End time of archive volume creation';
@@ -783,6 +852,8 @@ COMMENT ON COLUMN DriveFormat.cleaningInterval IS 'Interval between two cleaning
 COMMENT ON TYPE JobStatus IS E'disable => disabled,\nerror => error while running,\nfinished => task finished,\npause => waiting for user action,\nrunning => running,\nscheduled => not yet started or completed,\nstopped => stopped by user,\nwaiting => waiting for a resource';
 
 COMMENT ON COLUMN Media.label IS 'Contains an UUID';
+COMMENT ON COLUMN Media.append IS 'Can add file into this media';
+COMMENT ON COLUMN Media.writeLock IS 'Media is write protected';
 
 COMMENT ON COLUMN MediaFormat.blockSize IS 'Default block size';
 COMMENT ON COLUMN MediaFormat.supportPartition IS 'Is the media can be partitionned';

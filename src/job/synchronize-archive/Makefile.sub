@@ -1,0 +1,13 @@
+STORIQONE_JOB_SYNCHRONIZEARCHIVE_SRC_DIR		:= src/job/synchronize-archive
+
+STORIQONE_JOB_SYNCHRONIZEARCHIVE_BIN			:= bin/job_synchronize-archive
+STORIQONE_JOB_SYNCHRONIZEARCHIVE_CFLAG			:= -pthread
+STORIQONE_JOB_SYNCHRONIZEARCHIVE_LD				:= -pthread -lstoriqone -lstoriqone-job -luuid -Llib
+
+STORIQONE_JOB_SYNCHRONIZEARCHIVE_DEPEND_LIB		:= lib/libstoriqone-job.so
+
+STORIQONE_JOB_SYNCHRONIZEARCHIVE_CHCKSUM_FILE	:= job_synchronize-archive.chcksum
+
+STORIQONE_JOB_SYNCHRONIZEARCHIVE_LOCALE			:= locale/storiqone-job-synchronize-archive
+
+BIN_SYMS										+= STORIQONE_JOB_SYNCHRONIZEARCHIVE

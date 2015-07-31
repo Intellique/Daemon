@@ -1,0 +1,11 @@
+STORIQONE_CHECKSUM_MD5_SRC_DIR		:= src/checksum/md5
+
+STORIQONE_CHECKSUM_MD5_BIN			:= lib/libchecksum-md5.so
+STORIQONE_CHECKSUM_MD5_CFLAG		:= -pthread -fPIC -fvisibility=hidden
+STORIQONE_CHECKSUM_MD5_LD			:= -pthread -shared -Llib -lnettle
+
+STORIQONE_CHECKSUM_MD5_DEPEND_LIB	:=
+
+STORIQONE_CHECKSUM_MD5_CHCKSUM_FILE	:= libchecksum-md5.chcksum
+
+BIN_SYMS							+= STORIQONE_CHECKSUM_MD5

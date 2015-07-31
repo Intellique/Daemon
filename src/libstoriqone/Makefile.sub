@@ -1,0 +1,20 @@
+LIBSTORIQONE_SRC_DIR		:= src/libstoriqone
+
+LIBSTORIQONE_CFLAG			:= -fPIC -pthread
+LIBSTORIQONE_LIB			:= lib/libstoriqone.so
+LIBSTORIQONE_LD				:= -shared -pthread -ldl $(shell ./script/check-link.sh gettime.c -lrt)
+LIBSTORIQONE_SONAME			:= libstoriqone.so.1
+LIBSTORIQONE_LIB_VERSION	:= 1.2
+
+LIBSTORIQONE_DEPEND_LIB		:=
+
+LIBSTORIQONE_CHCKSUM_FILE	:= libstoriqone.chcksum
+
+LIBSTORIQONE_LOCALE			:= locale/libstoriqone
+
+build/libstoriqone/string.o: build/libstoriqone/unicode.h
+build/libstoriqone/unicode.h: util/unicode/UnicodeData.txt
+	@echo " GEN        unicode datas"
+	@./script/gen_unicode_table.pl
+
+BIN_SYMS					+= LIBSTORIQONE

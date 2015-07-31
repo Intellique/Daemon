@@ -5,12 +5,11 @@ use warnings;
 
 use Digest::MD5 q/md5_hex/;
 use JSON::PP;
-use Mediainfo;
 use POSIX q/nice/;
 use Sys::CPU q/cpu_count/;
 
 my $nb_cpu     = cpu_count();
-my $output_dir = '/usr/share/storiqone/cache/movies/proxy';
+my $output_dir = '/var/www/stone/cache/movies/proxy';
 
 my $param = shift;
 
@@ -47,12 +46,28 @@ my $nb_processes = 0;
 
 my %codec = (
     'mp4' => {
-        'audio' => 'libmp3lame',
-        'video' => 'libx264'
+        'audio' => {
+            'codec'   => 'aac',
+            'bitrate' => '500k',
+            'extra'   => ( '-strict', '-2' )
+        },
+        'video' => {
+            'codec'   => 'libx264',
+            'bitrate' => '500k',
+            'extra'   => ()
+        }
     },
     'ogv' => {
-        'audio' => 'libvorbis',
-        'video' => 'libtheora'
+        'audio' => {
+            'codec'   => 'libvorbis',
+            'bitrate' => '96k',
+            'extra'   => ()
+        },
+        'video' => {
+            'codec'   => 'libtheora',
+            'bitrate' => '500k',
+            'extra'   => ()
+        }
     },
 );
 
@@ -66,16 +81,30 @@ sub process {
     if ( $pid == 0 ) {
         nice(10);
 
+        my @params = ( '-v', 'quiet', '-i', $input, '-t', '0:0:30' );
+
+        push @params, '-c:v', $format->{video}->{codec};
+        push @params, '-b:v', $format->{video}->{bitrate};
+        push @params, '-s',   'cif';
+        push @params, @{ $format->{video}->{extra} }
+            if scalar( @{ $format->{video}->{extra} } ) > 0;
+
+        push @params, '-c:a', $format->{audio}->{codec};
+        push @params, '-b:a', $format->{audio}->{bitrate};
+        push @params, '-ac',  '2', '-ar', '44100';
+        push @params, @{ $format->{audio}->{extra} }
+            if scalar( @{ $format->{audio}->{extra} } ) > 0;
+
         my $filename = md5_hex($input) . '.' . $format;
-        exec $encoder, '-v', 'quiet', '-i', $input, '-t', '0:0:30',
-            '-vcodec', $codec{$format}->{video}, '-b',  '500k', '-s',  'cif',
-            '-acodec', $codec{$format}->{audio}, '-ac', '2',    '-ab', '96k',
-            '-ar', '44100', "$output_dir/$filename";
+        push @params, "$output_dir/$filename";
+
+        exec $encoder, @params;
 
         exit 1;
     }
 
     $nb_processes++;
+
     if ( $nb_processes >= $nb_cpu ) {
         wait();
         $nb_processes--;
@@ -88,10 +117,6 @@ foreach my $vol ( @{ $archive->{volumes} } ) {
         $file_done{ $file->{path} } = $file;
 
         next if $file->{type} eq 'directory';
-
-        my $foo_info = new Mediainfo("filename" => $file->{path});
-
-        next unless defined $foo_info->{video_format};
 
         process( $file->{path}, 'mp4' );
         process( $file->{path}, 'ogv' );

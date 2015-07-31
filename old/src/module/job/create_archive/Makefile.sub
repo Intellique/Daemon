@@ -1,0 +1,11 @@
+STONE_JOB_CREATEARCHIVE_SRC_DIR			:= src/module/job/create_archive
+
+STONE_JOB_CREATEARCHIVE_BIN				:= lib/libjob-create-archive.so
+STONE_JOB_CREATEARCHIVE_CFLAG			:= -pthread -fPIC -fvisibility=hidden
+STONE_JOB_CREATEARCHIVE_LD				:= -pthread -shared -ljansson -lmagic
+
+STONE_JOB_CREATEARCHIVE_DEPEND_LIB		:=
+
+STONE_JOB_CREATEARCHIVE_CHCKSUM_FILE	:= libjob-create-archive.chcksum
+
+BIN_SYMS								+= STONE_JOB_CREATEARCHIVE

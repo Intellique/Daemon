@@ -1,0 +1,109 @@
+# French translations for job-format-media package.
+# Copyright (C) 2014-2015
+# This file is distributed under the same license as the storiqone package.
+# Guillaume Clercin <gclercin@intellique.com>, 2014
+#
+msgid   ""
+msgstr  "Project-Id-Version: job-format-media v1.2\n"
+        "Report-Msgid-Bugs-To: \n"
+        "POT-Creation-Date: 2015-07-08 09:09+0200\n"
+        "PO-Revision-Date: 2014-11-13 09:03+0100\n"
+        "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
+        "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
+        "Language: fr\n"
+        "MIME-Version: 1.0\n"
+        "Content-Type: text/plain; charset=UTF-8\n"
+        "Content-Transfer-Encoding: 8bit\n"
+        "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/job/format-media/format-media.c:92
+#, c-format
+msgid   "Failed to load media '%s'"
+msgstr  "Échec lors du chargement du média « %s »"
+
+#: src/job/format-media/format-media.c:108
+#, c-format
+msgid   "Try to format a write protected media '%s'"
+msgstr  "Tentative de formater un média « %s » qui est protégé en écriture"
+
+#: src/job/format-media/format-media.c:120
+#, c-format
+msgid   "Formatting media in progress (block size used: %zd)"
+msgstr  "Formatage du média en cours (taille de bloc utilisée : %zd)"
+
+#: src/job/format-media/format-media.c:127
+msgid   "Failed to format media"
+msgstr  "Échec du formatge du média"
+
+#: src/job/format-media/format-media.c:136
+#, c-format
+msgid   "Checking media header '%s' in progress"
+msgstr  "Vérification de l’entête du média « %s » en cours"
+
+#: src/job/format-media/format-media.c:141
+#, c-format
+msgid   "Checking media header '%s': success"
+msgstr  "La vérification de l’entête du média « %s » a réussi"
+
+#: src/job/format-media/format-media.c:149
+#, c-format
+msgid   "Checking media header '%s': failed"
+msgstr  "Vérification de l’entête du média « %s » : échec"
+
+#: src/job/format-media/format-media.c:162
+msgid   "No pool related to this job"
+msgstr  "Pas de pool lié à cette tâche"
+
+#: src/job/format-media/format-media.c:167
+#, c-format
+msgid   "Try to format a media to a pool '%s' which is deleted"
+msgstr  "Tentative de formater un média dans un pool supprimé « %s »"
+
+#: src/job/format-media/format-media.c:175
+msgid   "Critic error, no media linked to the current job"
+msgstr  "Erreur critique, pas de média lié à la tâche actuelle"
+
+#: src/job/format-media/format-media.c:180
+#, c-format
+msgid   "Try to format a cleaning media '%s'"
+msgstr  "Tentative de formater un média de netoyage « %s »"
+
+#: src/job/format-media/format-media.c:186
+#, c-format
+msgid   "Try to format a worm media '%s' with data"
+msgstr  "Tentative de formater un média non réinscriptible « %s » qui contient des données"
+
+#: src/job/format-media/format-media.c:192
+#, c-format
+msgid   "Try to format a media '%s' which is a member of pool '%s'"
+msgstr  "Tentative de formater un média « %s » qui est membre du pool « %s »"
+
+#: src/job/format-media/format-media.c:198
+#, c-format
+msgid   "Try to format a media '%s' with error status"
+msgstr  "Tentative de formater un média « %s » qui est en erreur"
+
+#: src/job/format-media/format-media.c:203
+#, c-format
+msgid   "Try to format a media '%s' (media format: %s) whose type does not match the format of pool '%s' (fomat: %s)"
+msgstr  "Tentative de formater un média « %s » (format du média : %s) dont le format ne correspond pas au format du pool "
+        "« %s » (format du pool : %s)"
+
+#: src/job/format-media/format-media.c:210
+#, c-format
+msgid   "Failed to find suitable drive to format media '%s'"
+msgstr  "Échec lors de la recherche d’un lecteur pour formater le média « %s »"
+
+#: src/job/format-media/format-media.c:280
+msgid   "Invalid uuid provide by script, ignoring it"
+msgstr  "uuid invalide fourni par le script"
+
+#: src/job/format-media/format-media.c:283
+#, c-format
+msgid   "Script request to format media with this uuid (%s) instead of (%s)"
+msgstr  "Le script demande de formater le média avec cet uuid (%s) au lieur de (%s)"
+
+#: src/job/format-media/format-media.c:294
+#, c-format
+msgid   "Script request to format media with this name (%s) instead of (%s)"
+msgstr  "Le scripte demande de formater le média avec ce nom (%s) au lieur de (%s)"

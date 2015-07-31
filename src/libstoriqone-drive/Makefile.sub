@@ -1,0 +1,15 @@
+LIBSTORIQONEDRIVE_SRC_DIR		:= src/libstoriqone-drive
+
+LIBSTORIQONEDRIVE_CFLAG			:= -fPIC -pthread
+LIBSTORIQONEDRIVE_LIB			:= lib/libstoriqone-drive.so
+LIBSTORIQONEDRIVE_LD			:= -shared -pthread -ldl -luuid -lstoriqone -Llib
+LIBSTORIQONEDRIVE_SONAME		:= libstoriqone-drive.so.1
+LIBSTORIQONEDRIVE_LIB_VERSION	:= 1.2
+
+LIBSTORIQONEDRIVE_DEPEND_LIB	:= lib/libstoriqone.so
+
+LIBSTORIQONEDRIVE_CHCKSUM_FILE	:= libstoriqone-drive.chcksum
+
+LIBSTORIQONEDRIVE_LOCALE		:= locale/libstoriqone-drive
+
+BIN_SYMS						+= LIBSTORIQONEDRIVE

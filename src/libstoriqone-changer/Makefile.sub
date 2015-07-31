@@ -1,0 +1,15 @@
+LIBSTORIQONECHANGER_SRC_DIR			:= src/libstoriqone-changer
+
+LIBSTORIQONECHANGER_CFLAG			:= -fPIC -pthread
+LIBSTORIQONECHANGER_LIB				:= lib/libstoriqone-changer.so
+LIBSTORIQONECHANGER_LD				:= -shared -pthread -ldl -lstoriqone -Llib
+LIBSTORIQONECHANGER_SONAME			:= libstoriqone-changer.so.1
+LIBSTORIQONECHANGER_LIB_VERSION		:= 1.2
+
+LIBSTORIQONECHANGER_DEPEND_LIB		:= lib/libstoriqone.so
+
+LIBSTORIQONECHANGER_CHCKSUM_FILE	:= libstoriqone-changer.chcksum
+
+LIBSTORIQONECHANGER_LOCALE			:= locale/libstoriqone-changer
+
+BIN_SYMS							+= LIBSTORIQONECHANGER
