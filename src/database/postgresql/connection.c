@@ -2555,12 +2555,12 @@ static char * so_database_postgresql_get_script(struct so_database_connection * 
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_script_with_sequence_and_pool";
-	so_database_postgresql_prepare(self, query, "SELECT s.path FROM scripts ss LEFT JOIN jobtype jt ON ss.jobtype = jt.id LEFT JOIN script s ON ss.script = s.id AND jt.name = $1 LEFT JOIN pool p ON ss.pool = p.id AND p.uuid = $2 WHERE scripttype = $3 ORDER BY sequence LIMIT 1 OFFSET $4");
+	so_database_postgresql_prepare(self, query, "SELECT s.path FROM scripts ss INNER JOIN script s ON ss.script = s.id INNER JOIN pool p ON ss.pool = p.id AND p.uuid = $4::UUID WHERE scripttype = $3::scripttype AND ss.jobtype IN (SELECT id FROM jobtype WHERE name = $1) ORDER BY sequence LIMIT 1 OFFSET $2");
 
 	char * seq;
 	asprintf(&seq, "%u", sequence);
 
-	const char * param[] = { job_type, so_script_type_to_string(type, false), pool->uuid, seq };
+	const char * param[] = { job_type, seq, so_script_type_to_string(type, false), pool->uuid };
 	PGresult * result = PQexecPrepared(self->connect, query, 4, param, NULL, NULL, 0);
 	ExecStatusType status = PQresultStatus(result);
 
