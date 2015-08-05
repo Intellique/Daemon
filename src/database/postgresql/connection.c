@@ -2530,7 +2530,7 @@ static int so_database_postgresql_get_nb_scripts(struct so_database_connection *
 	struct so_database_postgresql_connection_private * self = connect->data;
 
 	const char * query = "select_nb_scripts_with_sequence_and_pool";
-	so_database_postgresql_prepare(self, query, "SELECT COUNT(DISTINCT script) FROM scripts ss LEFT JOIN jobtype jt ON ss.jobtype = jt.id AND jt.name = $1 LEFT JOIN pool p ON ss.pool = p.id AND p.uuid = $2 WHERE scripttype = $3");
+	so_database_postgresql_prepare(self, query, "SELECT COUNT(*) FROM scripts WHERE scripttype = $3::scripttype AND jobtype IN (SELECT id FROM jobtype WHERE name = $1) AND pool IN (SELECT id FROM pool WHERE uuid = $2::UUID)");
 
 	const char * param[] = { job_type, pool->uuid, so_script_type_to_string(type, false) };
 	PGresult * result = PQexecPrepared(self->connect, query, 3, param, NULL, NULL, 0);
