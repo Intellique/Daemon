@@ -143,7 +143,7 @@ char * so_checksum_gen_salt(const char * checksum, size_t length) {
 
 struct so_checksum_driver * so_checksum_get_driver(const char * driver) {
 	if (driver == NULL) {
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_get_driver: invalide parameter, 'driver' should not be NULL"));
+		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_get_driver: invalid parameter, 'driver' should not be NULL"));
 		return NULL;
 	}
 
@@ -155,13 +155,17 @@ struct so_checksum_driver * so_checksum_get_driver(const char * driver) {
 
 		if (cookie == NULL) {
 			pthread_mutex_unlock(&so_checksum_lock);
-			so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_get_driver: failed to load checksum driver '%s'"), driver);
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone", "so_checksum_get_driver: failed to load checksum driver '%s'"),
+				driver);
 			return NULL;
 		}
 
 		if (!so_value_hashtable_has_key2(so_checksum_drivers, driver)) {
 			pthread_mutex_unlock(&so_checksum_lock);
-			so_log_write(so_log_level_warning, dgettext("libstoriqone", "so_checksum_get_driver: driver '%s' did not call 'so_checksum_register_driver'"), driver);
+			so_log_write(so_log_level_warning,
+				dgettext("libstoriqone", "so_checksum_get_driver: driver '%s' did not call 'so_checksum_register_driver'"),
+				driver);
 			return NULL;
 		}
 	}
@@ -191,7 +195,9 @@ void so_checksum_register_driver(struct so_checksum_driver * driver) {
 
 	if (so_value_hashtable_has_key2(so_checksum_drivers, driver->name)) {
 		pthread_mutex_unlock(&so_checksum_lock);
-		so_log_write(so_log_level_warning, dgettext("libstoriqone", "so_checksum_register_driver: checksum driver '%s' is already registred"), driver->name);
+		so_log_write(so_log_level_warning,
+			dgettext("libstoriqone", "so_checksum_register_driver: checksum driver '%s' is already registered"),
+			driver->name);
 		return;
 	}
 
@@ -200,7 +206,9 @@ void so_checksum_register_driver(struct so_checksum_driver * driver) {
 
 	pthread_mutex_unlock(&so_checksum_lock);
 
-	so_log_write(so_log_level_info, dgettext("libstoriqone", "so_checksum_register_driver: checksum driver '%s' is now registred"), driver->name);
+	so_log_write(so_log_level_info,
+		dgettext("libstoriqone", "so_checksum_register_driver: checksum driver '%s' is now registered"),
+		driver->name);
 }
 
 char * so_checksum_salt_password(const char * checksum, const char * password, const char * salt) {

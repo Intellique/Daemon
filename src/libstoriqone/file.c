@@ -243,12 +243,16 @@ int so_file_cp(const char * src, const char * dst) {
 	struct stat stsrc;
 	int failed = lstat(src, &stsrc);
 	if (failed != 0) {
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_cp: can't get information of '%s' because %m"), src);
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone", "so_file_cp: can't get information of '%s' because %m"),
+			src);
 		return failed;
 	}
 
 	if (S_ISSOCK(stsrc.st_mode)) {
-		so_log_write(so_log_level_info, dgettext("libstoriqone", "so_file_cp: ignore socket file '%s'"), src);
+		so_log_write(so_log_level_info,
+			dgettext("libstoriqone", "so_file_cp: ignore socket file '%s'"),
+			src);
 		return 0;
 	}
 
@@ -257,12 +261,16 @@ int so_file_cp(const char * src, const char * dst) {
 		struct stat stdst;
 		failed = lstat(dst, &stdst);
 		if (failed != 0) {
-			so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_cp: can't get information of '%s' because %m"), dst);
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone", "so_file_cp: can't get information of '%s' because %m"),
+				dst);
 			return failed;
 		}
 
 		if (!S_ISDIR(stdst.st_mode)) {
-			so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_cp: '%s' should be a directory"), dst);
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone", "so_file_cp: '%s' should be a directory"),
+				dst);
 			return 2;
 		}
 
@@ -280,13 +288,17 @@ int so_file_cp(const char * src, const char * dst) {
 		struct stat stdst;
 		failed = lstat(dirname_dst, &stdst);
 		if (failed != 0) {
-			so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_cp: can't get information of '%s' because %m"), dirname_dst);
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone", "so_file_cp: can't get information of '%s' because %m"),
+				dirname_dst);
 			free(cpdst);
 			return 2;
 		}
 
 		if (!S_ISDIR(stdst.st_mode)) {
-			so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_cp: '%s' should be a directory"), dirname_dst);
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone", "so_file_cp: '%s' should be a directory"),
+				dirname_dst);
 			free(cpdst);
 			return 2;
 		}
@@ -304,7 +316,9 @@ int so_file_cp(const char * src, const char * dst) {
 		if (failed == 0) {
 			nb_files = scandir(src, &files, so_file_basic_scandir_filter, versionsort);
 			if (nb_files < 0) {
-				so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_cp: error while scanning directory '%s' because %m"), src);
+				so_log_write(so_log_level_error,
+					dgettext("libstoriqone", "so_file_cp: error while scanning directory '%s' because %m"),
+					src);
 				failed = 3;
 			}
 		}
@@ -327,7 +341,9 @@ int so_file_cp(const char * src, const char * dst) {
 	} else if (S_ISREG(stsrc.st_mode)) {
 		int fd_in = open(src, O_RDONLY);
 		if (fd_in < 0) {
-			so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_cp: can't open file '%s' for reading because %m"), src);
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone", "so_file_cp: can't open file '%s' for reading because %m"),
+				src);
 			failed = 4;
 		}
 
@@ -336,7 +352,9 @@ int so_file_cp(const char * src, const char * dst) {
 			fd_out = open(dst_file, O_WRONLY | O_CREAT, stsrc.st_mode);
 			if (fd_out < 0) {
 				close(fd_in);
-				so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_cp: can't open file '%s' for writing because %m"), dst_file);
+				so_log_write(so_log_level_error,
+					dgettext("libstoriqone", "so_file_cp: can't open file '%s' for writing because %m"),
+					dst_file);
 				failed = 5;
 			}
 		}
@@ -347,14 +365,18 @@ int so_file_cp(const char * src, const char * dst) {
 			while (nb_read = read(fd_in, buffer, 4096), nb_read > 0) {
 				ssize_t nb_write = write(fd_out, buffer, nb_read);
 				if (nb_write < 0) {
-					so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_cp: error while writing into '%s' because %m"), dst_file);
+					so_log_write(so_log_level_error,
+						dgettext("libstoriqone", "so_file_cp: error while writing into '%s' because %m"),
+						dst_file);
 					failed = 6;
 					break;
 				}
 			}
 
 			if (nb_read < 0) {
-				so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_cp: error while reading from '%s' because %m"), src);
+				so_log_write(so_log_level_error,
+					dgettext("libstoriqone", "so_file_cp: error while reading from '%s' because %m"),
+					src);
 				failed = 7;
 			}
 
@@ -367,27 +389,35 @@ int so_file_cp(const char * src, const char * dst) {
 		if (length > 0)
 			link[length] = '\0';
 		if (length < 0) {
-			so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_cp: can't read link of '%s' because %m"), src);
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone", "so_file_cp: can't read link of '%s' because %m"),
+				src);
 			failed = 8;
 		}
 
 		if (failed == 0) {
 			failed = symlink(link, dst_file);
 			if (failed != 0) {
-				so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_cp: failed to create symlink '%s' -> '%s' because %m"), dst_file, link);
+				so_log_write(so_log_level_error,
+					dgettext("libstoriqone", "so_file_cp: failed to create symlink '%s' -> '%s' because %m"),
+					dst_file, link);
 				failed = 9;
 			}
 		}
 	} else if (S_ISFIFO(stsrc.st_mode)) {
 		failed = mkfifo(dst_file, stsrc.st_mode);
 		if (failed != 0) {
-			so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_cp: failed to create fifo '%s' because %m"), dst_file);
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone", "so_file_cp: failed to create fifo '%s' because %m"),
+				dst_file);
 			failed = 10;
 		}
 	} else if (S_ISBLK(stsrc.st_mode) || S_ISCHR(stsrc.st_mode)) {
 		failed = mknod(dst_file, stsrc.st_mode, stsrc.st_rdev);
 		if (failed != 0) {
-			so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_cp: failed to create device '%s' because %m"), dst_file);
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone", "so_file_cp: failed to create device '%s' because %m"),
+				dst_file);
 			failed = 10;
 		}
 	}
@@ -427,7 +457,9 @@ int so_file_mkdir(const char * dirname, mode_t mode) {
 		failed = mkdir(dirname, mode);
 
 		if (failed != 0)
-			so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_mkdir: error while create directory '%s' because %m"), dirname);
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone", "so_file_mkdir: error while creating directory '%s' because %m"),
+				dirname);
 
 		return failed;
 	}
@@ -443,7 +475,9 @@ int so_file_mkdir(const char * dirname, mode_t mode) {
 		failed = mkdir(dir, mode);
 
 	if (failed != 0)
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_mkdir: error while create directory '%s' because %m"), dirname);
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone", "so_file_mkdir: error while creating directory '%s' because %m"),
+			dirname);
 
 	unsigned short i;
 	for (i = 0; i < nb && !failed; i++) {
@@ -453,7 +487,9 @@ int so_file_mkdir(const char * dirname, mode_t mode) {
 		failed = mkdir(dir, mode);
 
 		if (failed != 0)
-			so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_mkdir: error while create directory '%s' because %m"), dirname);
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone", "so_file_mkdir: error while creating directory '%s' because %m"),
+				dirname);
 	}
 
 	free(dir);
@@ -465,7 +501,9 @@ int so_file_mv(const char * src, const char * dst) {
 	struct stat stsrc;
 	int failed = lstat(src, &stsrc);
 	if (failed != 0) {
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_mv: can't get information of '%s' because %m"), src);
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone", "so_file_mv: can't get information of '%s' because %m"),
+			src);
 		return failed;
 	}
 
@@ -475,7 +513,9 @@ int so_file_mv(const char * src, const char * dst) {
 	struct stat stdst;
 	failed = lstat(dirname_dst, &stdst);
 	if (failed != 0) {
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_mv: can't get information of '%s' because %m"), dst);
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone", "so_file_mv: can't get information of '%s' because %m"),
+			dst);
 	} else if (stsrc.st_dev != stdst.st_dev) {
 		failed = so_file_cp(src, dirname_dst);
 		if (failed == 0)
@@ -483,7 +523,9 @@ int so_file_mv(const char * src, const char * dst) {
 	} else {
 		failed = rename(src, dst);
 		if (failed != 0)
-			so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_mv: failed to rename '%s' to '%s' because %m"), src, dst);
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone", "so_file_mv: failed to rename '%s' to '%s' because %m"),
+				src, dst);
 	}
 
 	free(cpdst);
@@ -494,7 +536,9 @@ int so_file_mv(const char * src, const char * dst) {
 char * so_file_read_all_from(const char * filename) {
 	int fd = open(filename, O_RDONLY);
 	if (fd < 0) {
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_read_all_from: failed to open '%s' because %m"), filename);
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone", "so_file_read_all_from: failed to open '%s' because %m"),
+			filename);
 		return NULL;
 	}
 
@@ -515,7 +559,9 @@ char * so_file_read_all_from(const char * filename) {
 	if (nb_read < 0) {
 		free(data);
 		data = NULL;
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_read_all_from: failed while reading from '%s' because %m"), filename);
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone", "so_file_read_all_from: failed while reading from '%s' because %m"),
+			filename);
 	}
 
 	return data;
@@ -557,7 +603,9 @@ int so_file_rm(const char * path) {
 
 	struct stat st;
 	if (lstat(path, &st)) {
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_file_rm: failed to get information of '%s' because %m"), path);
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone", "so_file_rm: failed to get information of '%s' because %m"),
+			path);
 		return -1;
 	}
 

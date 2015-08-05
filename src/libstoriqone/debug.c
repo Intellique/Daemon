@@ -55,11 +55,15 @@ void so_debug_log_stack(unsigned int nb_stacks) {
 	pthread_attr_getstack(&attr, &stack_addr, &stack_size);
 	pthread_attr_destroy(&attr);
 
-	so_log_write(so_log_level_debug, dngettext("libstoriqone", "Dump %zd stack, stack addr: %p, stack size: %zd", "Dump %zd stacks, stack addr: %p, stack size: %zd", size), size, stack_addr, stack_size);
+	so_log_write(so_log_level_debug,
+		dngettext("libstoriqone", "Dump %zd stack, stack addr: %p, stack size: %zd", "Dump %zd stacks, stack addr: %p, stack size: %zd", size),
+		size, stack_addr, stack_size);
 
 	ssize_t i;
 	for (i = 0; i < size; i++)
-		so_log_write(so_log_level_debug, dgettext("libstoriqone", "#%zd %s"), i, strings[i]);
+		so_log_write(so_log_level_debug,
+			dgettext("libstoriqone", "#%zd %s"),
+			i, strings[i]);
 
 	free(strings);
 	free(array);

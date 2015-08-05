@@ -167,7 +167,8 @@ int so_thread_pool_run2(const char * thread_name, void (*function)(void * arg), 
 
 	void * new_addr = realloc(so_thread_pool_threads, (so_thread_pool_nb_threads + 1) * sizeof(struct so_thread_pool_thread *));
 	if (new_addr == NULL) {
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_thread_pool_run2: error, not enought memory to start new thread"));
+		so_log_write(so_log_level_error,
+			dgettext("libstoriqone", "so_thread_pool_run2: error, not enough memory to start new thread"));
 		return 1;
 	}
 
