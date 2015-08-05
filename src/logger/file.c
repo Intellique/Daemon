@@ -38,8 +38,6 @@
 #include <strings.h>
 // fstat, open, stat
 #include <sys/stat.h>
-// gettimeofday
-#include <sys/time.h>
 // fstat, open, stat
 #include <sys/types.h>
 // close, fstat, sleep, stat

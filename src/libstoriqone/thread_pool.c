@@ -46,7 +46,7 @@
 #include <sys/syscall.h>
 // open
 #include <sys/stat.h>
-// gettimeofday, setpriority
+// clock_gettime, setpriority
 #include <sys/time.h>
 // pid_t, open
 #include <sys/types.h>
@@ -255,11 +255,9 @@ static void * so_thread_pool_work(void * arg) {
 		th->arg = NULL;
 		th->state = so_thread_pool_state_waiting;
 
-		struct timeval now;
 		struct timespec timeout;
-		gettimeofday(&now, NULL);
-		timeout.tv_sec = now.tv_sec + 300;
-		timeout.tv_nsec = now.tv_usec * 1000;
+		clock_gettime(CLOCK_REALTIME, &timeout);
+		timeout.tv_sec +=300;
 
 		pthread_cond_timedwait(&th->wait, &th->lock, &timeout);
 

@@ -5,7 +5,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-logger v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-06-22 11:06+0200\n"
+        "POT-Creation-Date: 2015-08-05 15:18+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -15,7 +15,7 @@ msgstr  "Project-Id-Version: storiqone-logger v1.2\n"
         "Content-Transfer-Encoding: 8bit\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/logger/file.c:149
+#: src/logger/file.c:147
 msgid   "Log: file: logrotate detected"
 msgstr  "Log : file : logrotate détecté"
 
