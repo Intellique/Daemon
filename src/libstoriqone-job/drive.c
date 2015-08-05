@@ -24,6 +24,9 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+// pthread_mutex_init, pthread_mutex_lock, pthread_mutex_unlock
+// pthread_mutexattr_destroy, pthread_mutexattr_init, pthread_mutexattr_settype
+#include <pthread.h>
 // malloc
 #include <stdlib.h>
 // bzero
@@ -41,6 +44,8 @@
 struct soj_drive {
 	int fd;
 	struct so_value * config;
+
+	pthread_mutex_t lock;
 };
 
 static bool soj_drive_check_header(struct so_drive * drive);
@@ -83,11 +88,17 @@ static bool soj_drive_check_header(struct so_drive * drive) {
 		"params",
 			"job key", job->key
 	);
+
+	pthread_mutex_lock(&self->lock);
+
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
 	bool ok = false;
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
+
+	pthread_mutex_unlock(&self->lock);
+
 	if (response != NULL) {
 		so_value_unpack(response, "{sb}", "returned", &ok);
 		so_value_free(response);
@@ -105,11 +116,17 @@ static bool soj_drive_check_support(struct so_drive * drive, struct so_media_for
 			"format", so_media_format_convert(format),
 			"for writing", for_writing
 	);
+
+	pthread_mutex_lock(&self->lock);
+
 	so_json_encode_to_fd(command, self->fd, true);
 	so_value_free(command);
 
 	bool ok = false;
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
+
+	pthread_mutex_unlock(&self->lock);
+
 	if (response != NULL) {
 		so_value_unpack(response, "{sb}", "returned", &ok);
 		so_value_free(response);
@@ -127,12 +144,17 @@ static unsigned int soj_drive_count_archives(struct so_drive * drive) {
 		"params",
 			"job key", job->key
 	);
+
+	pthread_mutex_lock(&self->lock);
+
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
 	struct so_value * response = so_json_parse_fd(self->fd, 5000);
 	while (response == NULL && !job->stopped_by_user)
 		response = so_json_parse_fd(self->fd, 5000);
+
+	pthread_mutex_unlock(&self->lock);
 
 	if (job->stopped_by_user && response != NULL)
 		so_value_free(response);
@@ -157,11 +179,17 @@ static int soj_drive_erase_media(struct so_drive * drive, bool quick_mode) {
 			"job key", job->key,
 			"quick mode", quick_mode
 	);
+
+	pthread_mutex_lock(&self->lock);
+
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
 	int failed = -1;
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
+
+	pthread_mutex_unlock(&self->lock);
+
 	if (response != NULL) {
 		so_value_unpack(response, "{si}", "returned", &failed);
 		so_value_free(response);
@@ -179,11 +207,17 @@ static ssize_t soj_drive_find_best_block_size(struct so_drive * drive) {
 		"params",
 			"job key", job->key
 	);
+
+	pthread_mutex_lock(&self->lock);
+
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
 	ssize_t block_size = -1;
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
+
+	pthread_mutex_unlock(&self->lock);
+
 	if (response != NULL) {
 		so_value_unpack(response, "{sz}", "returned", &block_size);
 		so_value_free(response);
@@ -202,11 +236,17 @@ static int soj_drive_format_media(struct so_drive * drive, struct so_pool * pool
 			"job key", job->key,
 			"pool", so_pool_convert(pool)
 	);
+
+	pthread_mutex_lock(&self->lock);
+
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
 	int failed = -1;
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
+
+	pthread_mutex_unlock(&self->lock);
+
 	if (response != NULL) {
 		so_value_unpack(response, "{si}", "returned", &failed);
 		so_value_free(response);
@@ -225,10 +265,16 @@ static struct so_stream_reader * soj_drive_get_raw_reader(struct so_drive * driv
 			"job key", job->key,
 			"file position", file_position
 	);
+
+	pthread_mutex_lock(&self->lock);
+
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
+
+	pthread_mutex_unlock(&self->lock);
+
 	if (response == NULL)
 		return NULL;
 
@@ -254,10 +300,16 @@ static struct so_stream_writer * soj_drive_get_raw_writer(struct so_drive * driv
 		"params",
 			"job key", job->key
 	);
+
+	pthread_mutex_lock(&self->lock);
+
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
+
+	pthread_mutex_unlock(&self->lock);
+
 	if (response == NULL)
 		return NULL;
 
@@ -291,10 +343,16 @@ static struct so_format_reader * soj_drive_get_reader(struct so_drive * drive, i
 			"file position", file_position,
 			"checksums", tmp_checksums
 	);
+
+	pthread_mutex_lock(&self->lock);
+
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
+
+	pthread_mutex_unlock(&self->lock);
+
 	if (response == NULL)
 		return NULL;
 
@@ -327,10 +385,16 @@ static struct so_format_writer * soj_drive_get_writer(struct so_drive * drive, s
 			"job key", job->key,
 			"checksums", tmp_checksums
 	);
+
+	pthread_mutex_lock(&self->lock);
+
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
+
+	pthread_mutex_unlock(&self->lock);
+
 	if (response == NULL)
 		return NULL;
 
@@ -354,7 +418,15 @@ void soj_drive_init(struct so_drive * drive, struct so_value * config) {
 	self->fd = so_socket(config);
 	self->config = so_value_share(config);
 
+	pthread_mutexattr_t attr;
+	pthread_mutexattr_init(&attr);
+	pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+
+	pthread_mutex_init(&self->lock, &attr);
+
 	drive->ops = &soj_drive_ops;
+
+	pthread_mutexattr_destroy(&attr);
 
 
 	struct so_job * job = soj_job_get();
@@ -381,12 +453,17 @@ static struct so_archive * soj_drive_parse_archive(struct so_drive * drive, int 
 			"archive position", archive_position,
 			"checksums", checksums
 	);
+
+	pthread_mutex_lock(&self->lock);
+
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
 	struct so_value * response = so_json_parse_fd(self->fd, 5000);
 	while (response == NULL && !job->stopped_by_user)
 		response = so_json_parse_fd(self->fd, 5000);
+
+	pthread_mutex_unlock(&self->lock);
 
 	if (job->stopped_by_user && response != NULL)
 		so_value_free(response);
@@ -413,10 +490,16 @@ static void soj_drive_release(struct so_drive * drive) {
 	struct soj_drive * self = drive->data;
 
 	struct so_value * request = so_value_pack("{ss}", "command", "release");
+
+	pthread_mutex_lock(&self->lock);
+
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
+
+	pthread_mutex_unlock(&self->lock);
+
 	so_value_free(response);
 
 	return;
@@ -426,10 +509,16 @@ static int soj_drive_sync(struct so_drive * drive) {
 	struct soj_drive * self = drive->data;
 
 	struct so_value * request = so_value_pack("{ss}", "command", "sync");
+
+	pthread_mutex_lock(&self->lock);
+
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
+
+	pthread_mutex_unlock(&self->lock);
+
 	if (response == NULL)
 		return 1;
 

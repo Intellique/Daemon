@@ -24,6 +24,9 @@
 *  Copyright (C) 2013-2015, Guillaume Clercin <gclercin@intellique.com>      *
 \****************************************************************************/
 
+// pthread_mutex_init, pthread_mutex_lock, pthread_mutex_unlock
+// pthread_mutexattr_destroy, pthread_mutexattr_init, pthread_mutexattr_settype
+#include <pthread.h>
 // calloc, malloc
 #include <stdlib.h>
 // strcmp
@@ -46,6 +49,8 @@
 struct soj_changer {
 	int fd;
 	struct so_value * config;
+
+	pthread_mutex_t lock;
 
 	bool is_online;
 };
@@ -125,19 +130,25 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 			"medium serial number", slot->media->medium_serial_number,
 			"no wait", no_wait
 	);
+
+	pthread_mutex_lock(&self->lock);
+
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
 	job->status = so_job_status_waiting;
 
-	bool error = false;
-	while (!job->stopped_by_user && !error) {
-		struct so_value * response = so_json_parse_fd(self->fd, 5000);
-		if (response == NULL)
-			continue;
+	struct so_value * response = NULL;
+	while (!job->stopped_by_user && response == NULL)
+		response = so_json_parse_fd(self->fd, 5000);
 
+	pthread_mutex_unlock(&self->lock);
+
+	if (response != NULL) {
+		bool error = true;
 		unsigned int index = 0;
 		struct so_value * vch = NULL;
+
 		int nb_parsed = so_value_unpack(response, "{sbsosu}",
 			"error", &error,
 			"changer", &vch,
@@ -150,6 +161,7 @@ static struct so_drive * soj_changer_get_media(struct so_changer * changer, stru
 
 			so_changer_sync(changer, vch);
 		}
+
 		so_value_free(response);
 
 		if (!error) {
@@ -193,11 +205,17 @@ static int soj_changer_release_media(struct so_changer * changer, struct so_slot
 		"params",
 			"slot", slot->index
 	);
+
+	pthread_mutex_lock(&self->lock);
+
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
 	bool ok = false;
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
+
+	pthread_mutex_unlock(&self->lock);
+
 	if (response != NULL) {
 		so_value_unpack(response, "{sb}", "status", &ok);
 		so_value_free(response);
@@ -216,11 +234,17 @@ static ssize_t soj_changer_reserve_media(struct so_changer * changer, struct so_
 			"size need", size_need,
 			"unbreakable level", so_pool_unbreakable_level_to_string(unbreakable_level, false)
 	);
+
+	pthread_mutex_lock(&self->lock);
+
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
 	ssize_t returned = 1;
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
+
+	pthread_mutex_unlock(&self->lock);
+
 	if (response != NULL) {
 		so_value_unpack(response, "{sz}", "returned", &returned);
 		so_value_free(response);
@@ -249,7 +273,15 @@ void soj_changer_set_config(struct so_value * config) {
 		self->fd = so_socket(socket);
 		self->is_online = true;
 
+		pthread_mutexattr_t attr;
+		pthread_mutexattr_init(&attr);
+		pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+
+		pthread_mutex_init(&self->lock, &attr);
+
 		ch->ops = &soj_changer_ops;
+
+		pthread_mutexattr_destroy(&attr);
 
 		struct so_value * command = so_value_pack("{ss}", "command", "get drives config");
 		so_json_encode_to_fd(command, self->fd, true);
@@ -280,10 +312,16 @@ static int soj_changer_sync(struct so_changer * changer) {
 	struct soj_changer * self = changer->data;
 
 	struct so_value * request = so_value_pack("{ss}", "command", "sync");
+
+	pthread_mutex_lock(&self->lock);
+
 	so_json_encode_to_fd(request, self->fd, true);
 	so_value_free(request);
 
 	struct so_value * response = so_json_parse_fd(self->fd, -1);
+
+	pthread_mutex_unlock(&self->lock);
+
 	if (response == NULL)
 		return 1;
 
