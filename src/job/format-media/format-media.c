@@ -245,6 +245,8 @@ static int soj_formatmedia_simulate(struct so_job * job, struct so_database_conn
 					soj_formatmedia_media->name);
 			}
 		}
+
+		free(action);
 	} else if (so_value_valid(job->option, "{sz}", "block size")) {
 		ssize_t block_size = 0;
 		so_value_unpack(job->option, "{sz}", "block size", &block_size);
