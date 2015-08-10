@@ -27,7 +27,7 @@
 // gettext
 #include <libintl.h>
 // PQresultErrorField
-#include <postgresql/libpq-fe.h>
+#include <libpq-fe.h>
 // free
 #include <stdlib.h>
 // strdup, strcmp, strtok_r

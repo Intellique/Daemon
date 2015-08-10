@@ -28,7 +28,7 @@
 #include <malloc.h>
 // PQclear, PQexecParams, PQexecPrepared, PQfinish, PQgetvalue, PQntuples,
 // PQprepare, PQreset, PQresultStatus, PQsetdbLogin, PQstatus
-#include <postgresql/libpq-fe.h>
+#include <libpq-fe.h>
 // strdup
 #include <string.h>
 // uname

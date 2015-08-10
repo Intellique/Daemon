@@ -29,7 +29,7 @@
 #include <libintl.h>
 // PQclear, PQexec, PQexecPrepared, PQfinish, PQresultStatus
 // PQsetErrorVerbosity, PQtransactionStatus
-#include <postgresql/libpq-fe.h>
+#include <libpq-fe.h>
 // asprintf
 #include <stdio.h>
 // malloc

@@ -26,7 +26,7 @@
 
 #define _GNU_SOURCE
 // PQfinish, PQsetdbLogin, PQstatus
-#include <postgresql/libpq-fe.h>
+#include <libpq-fe.h>
 // asprintf
 #include <stdio.h>
 // free, malloc

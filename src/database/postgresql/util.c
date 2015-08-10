@@ -29,7 +29,7 @@
 // freelocale, newlocale, uselocale
 #include <locale.h>
 // PQgetvalue
-#include <postgresql/libpq-fe.h>
+#include <libpq-fe.h>
 // va_end, va_start
 #include <stdarg.h>
 // asprintf
