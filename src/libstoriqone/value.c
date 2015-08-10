@@ -1110,10 +1110,7 @@ static bool so_value_valid_inner(struct so_value * value, const char ** format, 
 	if (value == NULL)
 		return false;
 
-	char f = **format;
-	(*format)++;
-
-	switch (f) {
+	switch (**format) {
 		case 'b':
 			return value->type == so_value_boolean;
 
@@ -1140,6 +1137,8 @@ static bool so_value_valid_inner(struct so_value * value, const char ** format, 
 		case '[': {
 				bool ok = true;
 				struct so_value_iterator * iter = so_value_list_get_iterator(value);
+				(*format)++;
+
 				while (ok && **format != ']') {
 					ok = so_value_iterator_has_next(iter);
 					if (!ok)
@@ -1147,10 +1146,11 @@ static bool so_value_valid_inner(struct so_value * value, const char ** format, 
 
 					struct so_value * elt = so_value_iterator_get_value(iter, false);
 					ok = so_value_valid_inner(elt, format, params);
+
+					(*format)++;
 				}
 				so_value_iterator_free(iter);
 
-				(*format)++;
 				return ok;
 			}
 
@@ -1171,6 +1171,8 @@ static bool so_value_valid_inner(struct so_value * value, const char ** format, 
 					ok = so_value_valid_inner(child, format, params);
 
 					so_value_free(key);
+
+					(*format)++;
 				}
 
 				(*format)++;

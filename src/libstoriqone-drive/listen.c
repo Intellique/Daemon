@@ -378,6 +378,7 @@ static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_
 	bzero(params, sizeof(struct sodr_socket_params_format_media));
 
 	params->peer = peer;
+	params->block_size = block_size;
 	params->pool = malloc(sizeof(struct so_pool));
 	bzero(params->pool, sizeof(struct so_pool));
 	so_pool_sync(params->pool, vpool);
