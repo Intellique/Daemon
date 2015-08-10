@@ -28,12 +28,13 @@
 #include <libintl.h>
 // free
 #include <stdlib.h>
-// strcpy
+// strcmp, strcpy
 #include <string.h>
 // uuid_generate, uuid_unparse_lower
 #include <uuid/uuid.h>
 
 #include <libstoriqone/database.h>
+#include <libstoriqone/file.h>
 #include <libstoriqone/host.h>
 #include <libstoriqone/log.h>
 #include <libstoriqone/media.h>
@@ -49,6 +50,7 @@
 
 #include "config.h"
 
+static ssize_t soj_formatmedia_block_size = 0;
 static struct so_media * soj_formatmedia_media = NULL;
 static struct so_pool * soj_formatmedia_pool = NULL;
 
@@ -110,18 +112,17 @@ static int soj_formatmedia_run(struct so_job * job, struct so_database_connectio
 		return 3;
 	}
 
-	// find best block size
-	ssize_t block_size = drive->ops->find_best_block_size(drive);
-
-	if (job->stopped_by_user)
-		return 1;
-
-	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
-		dgettext("storiqone-job-format-media", "Formatting media in progress (block size used: %zd)"),
-		block_size);
+	if (soj_formatmedia_block_size > 0)
+		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+			dgettext("storiqone-job-format-media", "Formatting media '%s' in progress (block size used: %zd)"),
+			soj_formatmedia_media->name, soj_formatmedia_block_size);
+	else
+		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
+			dgettext("storiqone-job-format-media", "Formatting media '%s' in progress"),
+			soj_formatmedia_media->name);
 
 	// write header
-	int failed = drive->ops->format_media(drive, soj_formatmedia_pool);
+	int failed = drive->ops->format_media(drive, soj_formatmedia_block_size, soj_formatmedia_pool);
 	if (failed != 0) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-format-media", "Failed to format media"));
@@ -156,27 +157,20 @@ static int soj_formatmedia_run(struct so_job * job, struct so_database_connectio
 
 static int soj_formatmedia_simulate(struct so_job * job, struct so_database_connection * db_connect) {
 	soj_formatmedia_pool = db_connect->ops->get_pool(db_connect, NULL, job);
-
 	if (soj_formatmedia_pool == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		so_job_add_record(job, db_connect, so_log_level_critical, so_job_record_notif_important,
 			dgettext("storiqone-job-format-media", "No pool related to this job"));
-		return 1;
-	}
-	if (soj_formatmedia_pool->deleted) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-format-media", "Try to format a media to a pool '%s' which is deleted"),
-			soj_formatmedia_pool->name);
 		return 1;
 	}
 
 	soj_formatmedia_media = db_connect->ops->get_media(db_connect, NULL, NULL, job);
 	if (soj_formatmedia_media == NULL) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-format-media", "Critic error, no media linked to the current job"));
+		so_job_add_record(job, db_connect, so_log_level_critical, so_job_record_notif_important,
+			dgettext("storiqone-job-format-media", "No media linked to the current job"));
 		return 1;
 	}
 	if (soj_formatmedia_media->type == so_media_type_cleaning) {
-		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+		so_job_add_record(job, db_connect, so_log_level_critical, so_job_record_notif_important,
 			dgettext("storiqone-job-format-media", "Try to format a cleaning media '%s'"),
 			soj_formatmedia_media->name);
 		return 1;
@@ -198,6 +192,13 @@ static int soj_formatmedia_simulate(struct so_job * job, struct so_database_conn
 			dgettext("storiqone-job-format-media", "Try to format a media '%s' with error status"),
 			soj_formatmedia_media->name);
 
+	if (soj_formatmedia_pool->deleted) {
+		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
+			dgettext("storiqone-job-format-media", "Try to format a media '%s' to a pool '%s' which is deleted"),
+			soj_formatmedia_media->name, soj_formatmedia_pool->name);
+		return 1;
+	}
+
 	if (so_media_format_cmp(soj_formatmedia_media->media_format, soj_formatmedia_pool->media_format) != 0) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
 			dgettext("storiqone-job-format-media", "Try to format a media '%s' (media format: %s) whose type does not match the format of pool '%s' (fomat: %s)"),
@@ -210,6 +211,53 @@ static int soj_formatmedia_simulate(struct so_job * job, struct so_database_conn
 			dgettext("storiqone-job-format-media", "Failed to find suitable drive to format media '%s'"),
 			soj_formatmedia_media->name);
 		return 1;
+	}
+
+	if (so_value_valid(job->option, "{ss}", "block size")) {
+		char * action = NULL;
+		so_value_unpack(job->option, "{ss}", "block size", &action);
+
+		struct so_media_format * format = soj_formatmedia_media->media_format;
+		char buf_size[16];
+
+		if (strcmp(action, "default") == 0) {
+			soj_formatmedia_block_size = format->block_size;
+
+			so_file_convert_size_to_string(soj_formatmedia_block_size, buf_size, 15);
+
+			so_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_normal,
+				dgettext("storiqone-job-format-media", "Will use default block size '%s' defined by media format '%s'"),
+				buf_size, format->name);
+		} else if (strcmp(action, "auto") == 0) {
+			if (soj_formatmedia_media->type == so_media_type_worm) {
+				soj_formatmedia_block_size = format->block_size;
+
+				so_file_convert_size_to_string(soj_formatmedia_block_size, buf_size, 15);
+
+				so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_normal,
+					dgettext("storiqone-job-format-media", "Will use default block size '%s' defined by media format '%s' because type of media '%s' is worm media"),
+					buf_size, format->name, soj_formatmedia_media->name);
+			} else {
+				soj_formatmedia_block_size = 0;
+
+				so_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_normal,
+					dgettext("storiqone-job-format-media", "Will find the best block size to use with media '%s'"),
+					soj_formatmedia_media->name);
+			}
+		}
+	} else if (so_value_valid(job->option, "{sz}", "block size")) {
+		ssize_t block_size = 0;
+		so_value_unpack(job->option, "{sz}", "block size", &block_size);
+
+		if (block_size < 0) {
+			so_job_add_record(job, db_connect, so_log_level_critical, so_job_record_notif_normal,
+				dgettext("storiqone-job-format-media", "parameter 'block size' should be a positive integer (not %zd)"),
+				block_size);
+
+			return 1;
+		}
+
+		soj_formatmedia_block_size = block_size;
 	}
 
 	return 0;

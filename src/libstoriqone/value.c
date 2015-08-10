@@ -907,6 +907,24 @@ struct so_value * so_value_share(struct so_value * value) {
 	return value;
 }
 
+int so_value_unpack(struct so_value * root, const char * format, ...) {
+	if (root == NULL || format == NULL)
+		return false;
+
+	root->shared++;
+
+	va_list va;
+	va_start(va, format);
+
+	int ret = so_value_unpack_inner(root, &format, va);
+
+	va_end(va);
+
+	so_value_free(root);
+
+	return ret;
+}
+
 static int so_value_unpack_inner(struct so_value * value, const char ** format, va_list params) {
 	if (value == NULL)
 		return 0;
@@ -1070,22 +1088,22 @@ static int so_value_unpack_inner(struct so_value * value, const char ** format, 
 	return 0;
 }
 
-int so_value_unpack(struct so_value * root, const char * format, ...) {
-	if (root == NULL || format == NULL)
-		return false;
+bool so_value_valid(struct so_value * value, const char * format, ...) {
+	if (format == NULL)
+		return NULL;
 
-	root->shared++;
+	value->shared++;
 
 	va_list va;
 	va_start(va, format);
 
-	int ret = so_value_unpack_inner(root, &format, va);
+	bool ok = so_value_valid_inner(value, &format, va);
 
 	va_end(va);
 
-	so_value_free(root);
+	so_value_free(value);
 
-	return ret;
+	return ok;
 }
 
 static bool so_value_valid_inner(struct so_value * value, const char ** format, va_list params) {
@@ -1161,24 +1179,6 @@ static bool so_value_valid_inner(struct so_value * value, const char ** format, 
 			}
 	}
 	return false;
-}
-
-bool so_value_valid(struct so_value * value, const char * format, ...) {
-	if (format == NULL)
-		return NULL;
-
-	value->shared++;
-
-	va_list va;
-	va_start(va, format);
-
-	bool ok = so_value_valid_inner(value, &format, va);
-
-	va_end(va);
-
-	so_value_free(value);
-
-	return ok;
 }
 
 struct so_value * so_value_vpack(const char * format, va_list params) {

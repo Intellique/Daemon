@@ -53,7 +53,7 @@ static bool soj_drive_check_support(struct so_drive * drive, struct so_media_for
 static unsigned int soj_drive_count_archives(struct so_drive * drive);
 static int soj_drive_erase_media(struct so_drive * drive, bool quick_mode);
 static ssize_t soj_drive_find_best_block_size(struct so_drive * drive);
-static int soj_drive_format_media(struct so_drive * drive, struct so_pool * pool);
+static int soj_drive_format_media(struct so_drive * drive, ssize_t block_size, struct so_pool * pool);
 static struct so_stream_reader * soj_drive_get_raw_reader(struct so_drive * drive, int file_position);
 static struct so_stream_writer * soj_drive_get_raw_writer(struct so_drive * drive);
 static struct so_format_reader * soj_drive_get_reader(struct so_drive * drive, int file_position, struct so_value * checksums);
@@ -226,14 +226,15 @@ static ssize_t soj_drive_find_best_block_size(struct so_drive * drive) {
 	return block_size;
 }
 
-static int soj_drive_format_media(struct so_drive * drive, struct so_pool * pool) {
+static int soj_drive_format_media(struct so_drive * drive, ssize_t block_size, struct so_pool * pool) {
 	struct soj_drive * self = drive->data;
 	struct so_job * job = soj_job_get();
 
-	struct so_value * request = so_value_pack("{sss{ssso}}",
+	struct so_value * request = so_value_pack("{sss{ssszso}}",
 		"command", "format media",
 		"params",
 			"job key", job->key,
+			"block size", block_size,
 			"pool", so_pool_convert(pool)
 	);
 
