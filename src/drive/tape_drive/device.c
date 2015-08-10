@@ -78,7 +78,7 @@ static unsigned int sodr_tape_drive_count_archives(const bool * const disconnect
 static void sodr_tape_drive_create_media(struct so_database_connection * db);
 static int sodr_tape_drive_erase_media(bool quick_mode, struct so_database_connection * db);
 static ssize_t sodr_tape_drive_find_best_block_size(struct so_database_connection * db);
-static int sodr_tape_drive_format_media(struct so_pool * pool, struct so_database_connection * db);
+static int sodr_tape_drive_format_media(struct so_pool * pool, ssize_t block_size, struct so_database_connection * db);
 static struct so_stream_reader * sodr_tape_drive_get_raw_reader(int file_position, struct so_database_connection * db);
 static struct so_stream_writer * sodr_tape_drive_get_raw_writer(struct so_database_connection * db);
 static struct so_format_reader * sodr_tape_drive_get_reader(int file_position, struct so_value * checksums, struct so_database_connection * db);
@@ -97,20 +97,19 @@ static struct mtget status;
 
 
 static struct so_drive_ops sodr_tape_drive_ops = {
-	.check_header         = sodr_tape_drive_check_header,
-	.check_support        = sodr_tape_drive_check_support,
-	.count_archives       = sodr_tape_drive_count_archives,
-	.erase_media          = sodr_tape_drive_erase_media,
-	.find_best_block_size = sodr_tape_drive_find_best_block_size,
-	.format_media         = sodr_tape_drive_format_media,
-	.get_raw_reader       = sodr_tape_drive_get_raw_reader,
-	.get_raw_writer       = sodr_tape_drive_get_raw_writer,
-	.get_reader           = sodr_tape_drive_get_reader,
-	.get_writer           = sodr_tape_drive_get_writer,
-	.init                 = sodr_tape_drive_init,
-	.parse_archive        = sodr_tape_drive_parse_archive,
-	.reset                = sodr_tape_drive_reset,
-	.update_status        = sodr_tape_drive_update_status,
+	.check_header   = sodr_tape_drive_check_header,
+	.check_support  = sodr_tape_drive_check_support,
+	.count_archives = sodr_tape_drive_count_archives,
+	.erase_media    = sodr_tape_drive_erase_media,
+	.format_media   = sodr_tape_drive_format_media,
+	.get_raw_reader = sodr_tape_drive_get_raw_reader,
+	.get_raw_writer = sodr_tape_drive_get_raw_writer,
+	.get_reader     = sodr_tape_drive_get_reader,
+	.get_writer     = sodr_tape_drive_get_writer,
+	.init           = sodr_tape_drive_init,
+	.parse_archive  = sodr_tape_drive_parse_archive,
+	.reset          = sodr_tape_drive_reset,
+	.update_status  = sodr_tape_drive_update_status,
 };
 
 static struct so_drive sodr_tape_drive = {
@@ -396,8 +395,12 @@ static ssize_t sodr_tape_drive_find_best_block_size(struct so_database_connectio
 	return current_block_size;
 }
 
-static int sodr_tape_drive_format_media(struct so_pool * pool, struct so_database_connection * db) {
-	size_t block_size = sodr_tape_drive_get_block_size();
+static int sodr_tape_drive_format_media(struct so_pool * pool, ssize_t block_size, struct so_database_connection * db) {
+	if (block_size < 0)
+		return 1;
+
+	if (block_size == 0)
+		block_size = sodr_tape_drive_find_best_block_size(db);
 
 	sodr_tape_drive.status = so_drive_status_rewinding;
 	db->ops->sync_drive(db, &sodr_tape_drive, true, so_database_sync_default);

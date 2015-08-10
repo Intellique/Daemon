@@ -52,7 +52,6 @@ static bool soj_drive_check_header(struct so_drive * drive);
 static bool soj_drive_check_support(struct so_drive * drive, struct so_media_format * format, bool for_writing);
 static unsigned int soj_drive_count_archives(struct so_drive * drive);
 static int soj_drive_erase_media(struct so_drive * drive, bool quick_mode);
-static ssize_t soj_drive_find_best_block_size(struct so_drive * drive);
 static int soj_drive_format_media(struct so_drive * drive, ssize_t block_size, struct so_pool * pool);
 static struct so_stream_reader * soj_drive_get_raw_reader(struct so_drive * drive, int file_position);
 static struct so_stream_writer * soj_drive_get_raw_writer(struct so_drive * drive);
@@ -63,19 +62,18 @@ static void soj_drive_release(struct so_drive * drive);
 static int soj_drive_sync(struct so_drive * drive);
 
 static struct so_drive_ops soj_drive_ops = {
-	.check_header         = soj_drive_check_header,
-	.check_support        = soj_drive_check_support,
-	.count_archives       = soj_drive_count_archives,
-	.erase_media          = soj_drive_erase_media,
-	.find_best_block_size = soj_drive_find_best_block_size,
-	.format_media         = soj_drive_format_media,
-	.get_raw_reader       = soj_drive_get_raw_reader,
-	.get_raw_writer       = soj_drive_get_raw_writer,
-	.get_reader           = soj_drive_get_reader,
-	.get_writer           = soj_drive_get_writer,
-	.parse_archive        = soj_drive_parse_archive,
-	.release              = soj_drive_release,
-	.sync                 = soj_drive_sync,
+	.check_header   = soj_drive_check_header,
+	.check_support  = soj_drive_check_support,
+	.count_archives = soj_drive_count_archives,
+	.erase_media    = soj_drive_erase_media,
+	.format_media   = soj_drive_format_media,
+	.get_raw_reader = soj_drive_get_raw_reader,
+	.get_raw_writer = soj_drive_get_raw_writer,
+	.get_reader     = soj_drive_get_reader,
+	.get_writer     = soj_drive_get_writer,
+	.parse_archive  = soj_drive_parse_archive,
+	.release        = soj_drive_release,
+	.sync           = soj_drive_sync,
 };
 
 
@@ -196,34 +194,6 @@ static int soj_drive_erase_media(struct so_drive * drive, bool quick_mode) {
 	}
 
 	return failed;
-}
-
-static ssize_t soj_drive_find_best_block_size(struct so_drive * drive) {
-	struct soj_drive * self = drive->data;
-	struct so_job * job = soj_job_get();
-
-	struct so_value * request = so_value_pack("{sss{ss}}",
-		"command", "find best block size",
-		"params",
-			"job key", job->key
-	);
-
-	pthread_mutex_lock(&self->lock);
-
-	so_json_encode_to_fd(request, self->fd, true);
-	so_value_free(request);
-
-	ssize_t block_size = -1;
-	struct so_value * response = so_json_parse_fd(self->fd, -1);
-
-	pthread_mutex_unlock(&self->lock);
-
-	if (response != NULL) {
-		so_value_unpack(response, "{sz}", "returned", &block_size);
-		so_value_free(response);
-	}
-
-	return block_size;
 }
 
 static int soj_drive_format_media(struct so_drive * drive, ssize_t block_size, struct so_pool * pool) {

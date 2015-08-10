@@ -68,8 +68,7 @@ static bool sodr_vtl_drive_check_support(struct so_media_format * format, bool f
 static unsigned int sodr_vtl_drive_count_archives(const bool * const disconnected, struct so_database_connection * db);
 static bool sodr_vtl_drive_erase_file(const char * path);
 static int sodr_vtl_drive_erase_media(bool quick_mode, struct so_database_connection * db);
-static ssize_t sodr_vtl_drive_find_best_block_size(struct so_database_connection * db);
-static int sodr_vtl_drive_format_media(struct so_pool * pool, struct so_database_connection * db);
+static int sodr_vtl_drive_format_media(struct so_pool * pool, ssize_t block_size, struct so_database_connection * db);
 static struct so_stream_reader * sodr_vtl_drive_get_raw_reader(int file_position, struct so_database_connection * db);
 static struct so_stream_writer * sodr_vtl_drive_get_raw_writer(struct so_database_connection * db);
 static struct so_format_reader * sodr_vtl_drive_get_reader(int file_position, struct so_value * checksums, struct so_database_connection * db);
@@ -83,20 +82,19 @@ static char * sodr_vtl_media_dir = NULL;
 static struct so_media_format * sodr_vtl_media_format = NULL;
 
 static struct so_drive_ops sodr_vtl_drive_ops = {
-	.check_header         = sodr_vtl_drive_check_header,
-	.check_support        = sodr_vtl_drive_check_support,
-	.count_archives       = sodr_vtl_drive_count_archives,
-	.erase_media          = sodr_vtl_drive_erase_media,
-	.find_best_block_size = sodr_vtl_drive_find_best_block_size,
-	.format_media         = sodr_vtl_drive_format_media,
-	.get_raw_reader       = sodr_vtl_drive_get_raw_reader,
-	.get_raw_writer       = sodr_vtl_drive_get_raw_writer,
-	.get_reader           = sodr_vtl_drive_get_reader,
-	.get_writer           = sodr_vtl_drive_get_writer,
-	.init                 = sodr_vtl_drive_init,
-	.parse_archive        = sodr_vtl_drive_parse_archive,
-	.reset                = sodr_vtl_drive_reset,
-	.update_status        = sodr_vtl_drive_update_status,
+	.check_header   = sodr_vtl_drive_check_header,
+	.check_support  = sodr_vtl_drive_check_support,
+	.count_archives = sodr_vtl_drive_count_archives,
+	.erase_media    = sodr_vtl_drive_erase_media,
+	.format_media   = sodr_vtl_drive_format_media,
+	.get_raw_reader = sodr_vtl_drive_get_raw_reader,
+	.get_raw_writer = sodr_vtl_drive_get_raw_writer,
+	.get_reader     = sodr_vtl_drive_get_reader,
+	.get_writer     = sodr_vtl_drive_get_writer,
+	.init           = sodr_vtl_drive_init,
+	.parse_archive  = sodr_vtl_drive_parse_archive,
+	.reset          = sodr_vtl_drive_reset,
+	.update_status  = sodr_vtl_drive_update_status,
 };
 
 static struct so_drive sodr_vtl_drive = {
@@ -255,16 +253,10 @@ static int sodr_vtl_drive_erase_media(bool quick_mode, struct so_database_connec
 	return ok ? 0 : 1;
 }
 
-static ssize_t sodr_vtl_drive_find_best_block_size(struct so_database_connection * db __attribute__((unused))) {
-	struct stat st;
-	int failed = stat(sodr_vtl_media_dir, &st);
-	if (failed != 0)
-		return -1;
+static int sodr_vtl_drive_format_media(struct so_pool * pool, ssize_t block_size, struct so_database_connection * db) {
+	if (block_size < 0)
+		return 1;
 
-	return st.st_blksize;
-}
-
-static int sodr_vtl_drive_format_media(struct so_pool * pool, struct so_database_connection * db) {
 	if (pool->archive_format == NULL || pool->archive_format->name == NULL || strcmp(pool->archive_format->name, "Storiq One") != 0) {
 		so_log_write(so_log_level_error,
 			dgettext("storiqone-drive-vtl", "[%s %s %d]: VTL does not support only Storiq One format"),
@@ -300,7 +292,21 @@ static int sodr_vtl_drive_format_media(struct so_pool * pool, struct so_database
 	globfree(&gl);
 	free(files);
 
-	ssize_t block_size = sodr_vtl_drive_find_best_block_size(db);
+	if (block_size == 0) {
+		struct stat st;
+		int failed = stat(sodr_vtl_media_dir, &st);
+		if (failed != 0) {
+			struct so_media * media = sodr_vtl_drive.slot->media;
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-drive-vtl", "[%s %s %d]: Failed to find best block size of media '%s'"),
+				sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index,
+				media != NULL ? media->name : dgettext("storiqone-drive-vtl", "NULL"));
+			return 1;
+		}
+
+		block_size = st.st_blksize;
+	}
+
 	char * header = malloc(block_size);
 
 	struct so_media * media = sodr_vtl_drive.slot->media;

@@ -76,7 +76,6 @@ static void sodr_socket_command_check_header(struct sodr_peer * peer, struct so_
 static void sodr_socket_command_check_support(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_count_archives(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_erase_media(struct sodr_peer * peer, struct so_value * request, int fd);
-static void sodr_socket_command_find_best_block_size(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_get_raw_reader(struct sodr_peer * peer, struct so_value * request, int fd);
 static void sodr_socket_command_get_raw_writer(struct sodr_peer * peer, struct so_value * request, int fd);
@@ -89,7 +88,6 @@ static void sodr_socket_command_sync(struct sodr_peer * peer, struct so_value * 
 
 static void sodr_worker_command_count_archives(void * peer);
 static void sodr_worker_command_erase_media(void * peer);
-static void sodr_worker_command_find_best_block_size(void * peer);
 static void sodr_worker_command_format_media(void * params);
 static void sodr_worker_command_parse_archive(void * params);
 
@@ -98,20 +96,19 @@ static struct sodr_socket_command {
 	char * name;
 	void (*function)(struct sodr_peer * peer, struct so_value * request, int fd);
 } commands[] = {
-	{ 0, "check header",         sodr_socket_command_check_header },
-	{ 0, "check support",        sodr_socket_command_check_support },
-	{ 0, "count archives",       sodr_socket_command_count_archives },
-	{ 0, "erase media",          sodr_socket_command_erase_media },
-	{ 0, "find best block size", sodr_socket_command_find_best_block_size },
-	{ 0, "format media",         sodr_socket_command_format_media },
-	{ 0, "get raw reader",       sodr_socket_command_get_raw_reader },
-	{ 0, "get raw writer",       sodr_socket_command_get_raw_writer },
-	{ 0, "get reader",           sodr_socket_command_get_reader },
-	{ 0, "get writer",           sodr_socket_command_get_writer },
-	{ 0, "init peer",            sodr_socket_command_init_peer },
-	{ 0, "parse archive",        sodr_socket_command_parse_archive },
-	{ 0, "release",              sodr_socket_command_release },
-	{ 0, "sync",                 sodr_socket_command_sync },
+	{ 0, "check header",   sodr_socket_command_check_header },
+	{ 0, "check support",  sodr_socket_command_check_support },
+	{ 0, "count archives", sodr_socket_command_count_archives },
+	{ 0, "erase media",    sodr_socket_command_erase_media },
+	{ 0, "format media",   sodr_socket_command_format_media },
+	{ 0, "get raw reader", sodr_socket_command_get_raw_reader },
+	{ 0, "get raw writer", sodr_socket_command_get_raw_writer },
+	{ 0, "get reader",     sodr_socket_command_get_reader },
+	{ 0, "get writer",     sodr_socket_command_get_writer },
+	{ 0, "init peer",      sodr_socket_command_init_peer },
+	{ 0, "parse archive",  sodr_socket_command_parse_archive },
+	{ 0, "release",        sodr_socket_command_release },
+	{ 0, "sync",           sodr_socket_command_sync },
 
 	{ 0, NULL, NULL }
 };
@@ -123,6 +120,7 @@ struct sodr_socket_params_erase_media {
 
 struct sodr_socket_params_format_media {
 	struct sodr_peer * peer;
+	ssize_t block_size;
 	struct so_pool * pool;
 };
 
@@ -354,24 +352,6 @@ static void sodr_socket_command_erase_media(struct sodr_peer * peer, struct so_v
 	so_thread_pool_run("erase media", sodr_worker_command_erase_media, params);
 }
 
-static void sodr_socket_command_find_best_block_size(struct sodr_peer * peer, struct so_value * request, int fd) {
-	char * job_key = NULL;
-	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
-
-	if (strcmp(sodr_current_key, job_key) != 0) {
-		struct so_value * response = so_value_pack("{si}", "returned", -1);
-		so_json_encode_to_fd(response, fd, true);
-		so_value_free(response);
-		free(job_key);
-		return;
-	}
-
-	free(job_key);
-
-	peer->owned = true;
-	so_thread_pool_run("find best block size", sodr_worker_command_find_best_block_size, peer);
-}
-
 static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_value * request, int fd) {
 	char * job_key = NULL;
 	so_value_unpack(request, "{s{ss}}", "params", "job key", &job_key);
@@ -386,8 +366,13 @@ static void sodr_socket_command_format_media(struct sodr_peer * peer, struct so_
 
 	free(job_key);
 
+	ssize_t block_size = -1;
 	struct so_value * vpool = NULL;
-	so_value_unpack(request, "{s{so}}", "params", "pool", &vpool);
+	so_value_unpack(request, "{s{szso}}",
+		"params",
+			"block size", &block_size,
+			"pool", &vpool
+	);
 
 	struct sodr_socket_params_format_media * params = malloc(sizeof(struct sodr_socket_params_format_media));
 	bzero(params, sizeof(struct sodr_socket_params_format_media));
@@ -819,46 +804,6 @@ static void sodr_worker_command_erase_media(void * arg) {
 	db_connect->ops->free(db_connect);
 }
 
-static void sodr_worker_command_find_best_block_size(void * arg) {
-	struct sodr_peer * peer = arg;
-
-	struct so_drive_driver * driver = sodr_drive_get();
-	struct so_drive * drive = driver->device;
-	struct so_media * media = drive->slot->media;
-
-	const char * media_name = NULL;
-	if (media != NULL)
-		media_name = media->name;
-
-	so_log_write(so_log_level_notice,
-		dgettext("libstoriqone-drive", "[%s %s #%u]: looking for best block size for media '%s'"),
-		drive->vendor, drive->model, drive->index, media_name);
-
-	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
-
-	ssize_t block_size = drive->ops->find_best_block_size(db_connect);
-	struct so_value * response = so_value_pack("{sz}", "returned", block_size);
-	so_json_encode_to_fd(response, peer->fd, true);
-	so_value_free(response);
-
-	if (block_size > 0) {
-		char buf[8];
-		so_file_convert_size_to_string(block_size, buf, 8);
-
-		so_log_write(so_log_level_notice,
-			dgettext("libstoriqone-drive", "[%s %s #%u]: block size found for media '%s': %s"),
-			drive->vendor, drive->model, drive->index, media_name, buf);
-	} else
-		so_log_write(so_log_level_error,
-			dgettext("libstoriqone-drive", "[%s %s #%u]: failed to find best block size '%s'"),
-			drive->vendor, drive->model, drive->index, media_name);
-
-	peer->owned = false;
-	sodr_listen_remove_peer(peer);
-
-	db_connect->ops->free(db_connect);
-}
-
 static void sodr_worker_command_format_media(void * data) {
 	struct sodr_socket_params_format_media * params = data;
 
@@ -876,7 +821,7 @@ static void sodr_worker_command_format_media(void * data) {
 
 	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
 
-	int failed = drive->ops->format_media(params->pool, db_connect);
+	int failed = drive->ops->format_media(params->pool, params->block_size, db_connect);
 	struct so_value * response = so_value_pack("{si}", "returned", failed);
 	so_json_encode_to_fd(response, params->peer->fd, true);
 	so_value_free(response);
