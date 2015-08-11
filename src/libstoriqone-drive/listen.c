@@ -748,7 +748,7 @@ static void sodr_worker_command_count_archives(void * arg) {
 		media_name = media->name;
 
 	so_log_write(so_log_level_notice,
-		dgettext("libstoriqone-drive", "[%s %s #%u]: Count archives from media '%s'"),
+		dgettext("libstoriqone-drive", "[%s %s #%u]: counting archives from media '%s'"),
 		drive->vendor, drive->model, drive->index, media_name);
 
 	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);
@@ -777,7 +777,7 @@ static void sodr_worker_command_erase_media(void * arg) {
 		media_name = strdup(media->name);
 
 	so_log_write(so_log_level_notice,
-		dgettext("libstoriqone-drive", "[%s %s #%u]: Erase media '%s' (mode: %s)"),
+		dgettext("libstoriqone-drive", "[%s %s #%u]: Erasing media '%s' (mode: %s)"),
 		drive->vendor, drive->model, drive->index, media_name,
 		params->quick_mode ? dgettext("libstoriqone-drive", "quick") : dgettext("libstoriqone-drive", "long"));
 
@@ -790,7 +790,7 @@ static void sodr_worker_command_erase_media(void * arg) {
 
 	if (failed == 0)
 		so_log_write(so_log_level_notice,
-			dgettext("libstoriqone-drive", "[%s %s #%u]: media '%s' erased with success"),
+			dgettext("libstoriqone-drive", "[%s %s #%u]: media '%s' erased successfully"),
 			drive->vendor, drive->model, drive->index, media_name);
 	else
 		so_log_write(so_log_level_error,
@@ -829,7 +829,7 @@ static void sodr_worker_command_format_media(void * data) {
 
 	if (failed == 0)
 		so_log_write(so_log_level_notice,
-			dgettext("libstoriqone-drive", "[%s %s #%u]: media '%s' formatted with success"),
+			dgettext("libstoriqone-drive", "[%s %s #%u]: media '%s' formatted successfully"),
 			drive->vendor, drive->model, drive->index, media_name);
 	else
 		so_log_write(so_log_level_error,
@@ -856,7 +856,7 @@ static void sodr_worker_command_parse_archive(void * data) {
 		media_name = media->name;
 
 	so_log_write(so_log_level_notice,
-		dgettext("libstoriqone-drive", "[%s %s #%u]: Parse archive from media '%s' at position #%u"),
+		dgettext("libstoriqone-drive", "[%s %s #%u]: Parsing archive from media '%s' at position #%u"),
 		drive->vendor, drive->model, drive->index, media_name, params->archive_position);
 
 	struct so_database_connection * db_connect = sodr_db->config->ops->connect(sodr_db->config);

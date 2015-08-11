@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-08-05 16:52+0200\n"
+        "POT-Creation-Date: 2015-08-11 18:59+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -53,11 +53,11 @@ msgid   "none"
 msgstr  "aucun"
 
 #: src/libstoriqone/changer.c:49
-msgid   "put offline"
+msgid   "set offline"
 msgstr  "mettre hors ligne"
 
 #: src/libstoriqone/changer.c:50
-msgid   "put online"
+msgid   "set online"
 msgstr  "mettre en ligne"
 
 #: src/libstoriqone/changer.c:52
@@ -77,11 +77,11 @@ msgid   "idle"
 msgstr  "au repos"
 
 #: src/libstoriqone/changer.c:67
-msgid   "go offline"
+msgid   "going offline"
 msgstr  "en cours de mise hors ligne"
 
 #: src/libstoriqone/changer.c:68
-msgid   "go online"
+msgid   "going online"
 msgstr  "en cours de mise en ligne"
 
 #: src/libstoriqone/changer.c:69
@@ -126,8 +126,8 @@ msgstr  "so_checksum_gen_salt : longueur du paramater « length » doit être
 
 #: src/libstoriqone/checksum.c:108
 #, c-format
-msgid   "so_checksum_gen_salt: failed to open \"/dev/urandom\" to generate salt parce %m"
-msgstr  "so_checksum_gen_salt : erreur lors de l’ouverture de « /dev/urandom » pour générer un sel parce %m"
+msgid   "so_checksum_gen_salt: failed to open \"/dev/urandom\" to generate salt because %m"
+msgstr  "so_checksum_gen_salt : erreur lors de l’ouverture de « /dev/urandom » pour générer un sel parce que %m"
 
 #: src/libstoriqone/checksum.c:118
 #, c-format
@@ -141,7 +141,7 @@ msgstr  "so_checksum_gen_salt : erreur lors de la lecture depuis « /dev/urand
 
 #: src/libstoriqone/checksum.c:128
 #, c-format
-msgid   "so_checksum_gen_salt: read less than expected from \"/dev/urandom\" (nb read: %zd, read expected: %zd)"
+msgid   "so_checksum_gen_salt: read less than expected from \"/dev/urandom\" (nb read: %zd, expected: %zd)"
 msgstr  "so_checksum_gen_salt : a lu moins qu’attendu depuis « /dev/urandom » (nb read : %zd, read expected : %zd)"
 
 #: src/libstoriqone/checksum.c:146
@@ -159,8 +159,8 @@ msgid   "so_checksum_get_driver: driver '%s' did not call 'so_checksum_register_
 msgstr  "so_checksum_get_driver : le pilote « %s » n’a pas appelé « so_checksum_register_driver »"
 
 #: src/libstoriqone/checksum.c:190
-msgid   "so_checksum_register_driver: try to register with NULL driver"
-msgstr  "so_checksum_register_driver : tentative d’enregistrer un pilote null"
+msgid   "so_checksum_register_driver: trying to register a NULL driver"
+msgstr  "so_checksum_register_driver : tentative d’enregistrer un pilote « NULL »"
 
 #: src/libstoriqone/checksum.c:199
 #, c-format
@@ -179,7 +179,7 @@ msgstr  "so_checksum_salt_password : paramètre invalide (password : %p, salt�
 
 #: src/libstoriqone/database.c:61
 msgid   "so_database_get_driver: invalid parameter, 'driver' should not be NULL"
-msgstr  "so_database_get_driver : paramètre invalide, « driver » ne doit pas être null"
+msgstr  "so_database_get_driver : paramètre invalide, « driver » ne doit pas être « NULL »"
 
 #: src/libstoriqone/database.c:73
 #, c-format
@@ -194,11 +194,11 @@ msgstr  "so_database_get_driver : le pilote « %s » n’a pas appelé « so
 #: src/libstoriqone/database.c:101
 #, c-format
 msgid   "so_database_load_config: invalid parameters (config: %p)"
-msgstr  "so_database_load_config : paramètre invalide (config : %p)"
+msgstr  "so_database_load_config : paramètres invalides (config : %p)"
 
 #: src/libstoriqone/database.c:125
-msgid   "so_database_register_driver: try to register with NULL driver"
-msgstr  "so_database_register_driver : tentative d’enregistrer un pilote NULL"
+msgid   "so_database_register_driver: trying to register a NULL driver"
+msgstr  ""
 
 #: src/libstoriqone/database.c:134
 #, c-format
@@ -224,7 +224,7 @@ msgstr  "#%zd %s"
 
 #: src/libstoriqone/drive.c:48 src/libstoriqone/media.c:52 src/libstoriqone/media.c:105
 msgid   "cleaning"
-msgstr  "en netoyage"
+msgstr  "nettoyage en cours"
 
 #: src/libstoriqone/drive.c:49
 msgid   "empty idle"
@@ -232,7 +232,7 @@ msgstr  "vide"
 
 #: src/libstoriqone/drive.c:50
 msgid   "erasing"
-msgstr  "en formatage"
+msgstr  "formatage en cours"
 
 #: src/libstoriqone/drive.c:52
 msgid   "loaded idle"
@@ -240,7 +240,7 @@ msgstr  "chargé"
 
 #: src/libstoriqone/drive.c:54
 msgid   "positioning"
-msgstr  "en positionnement"
+msgstr  "positionnement en cours"
 
 #: src/libstoriqone/drive.c:55
 msgid   "reading"
@@ -286,7 +286,7 @@ msgstr  "so_file_cp : n’a pas réussi à obtenir les informations de « %s 
 
 #: src/libstoriqone/file.c:254
 #, c-format
-msgid   "so_file_cp: ignore socket file '%s'"
+msgid   "so_file_cp: ignoring socket file '%s'"
 msgstr  "so_file_cp : ignore les fichier du type socket « %s »"
 
 #: src/libstoriqone/file.c:272 src/libstoriqone/file.c:300
@@ -375,7 +375,7 @@ msgid   "so_io_tmp_writer: Can't create temporary file into directory '%s' becau
 msgstr  "so_io_tmp_writer: n’a pas pu créé de fichier temporaire dans le répertoire « %s » parece que %m"
 
 #: src/libstoriqone/job.c:51
-msgid   "disable"
+msgid   "disabled"
 msgstr  "désactivé"
 
 #: src/libstoriqone/job.c:53
@@ -383,7 +383,7 @@ msgid   "finished"
 msgstr  "terminée"
 
 #: src/libstoriqone/job.c:54
-msgid   "pause"
+msgid   "paused"
 msgstr  "en pause"
 
 #: src/libstoriqone/job.c:55
@@ -415,12 +415,12 @@ msgid   "read"
 msgstr  "lu"
 
 #: src/libstoriqone/job.c:76
-msgid   "unknown notif"
+msgid   "unknown notification"
 msgstr  "notification inconnue"
 
 #: src/libstoriqone/loader.c:74
 #, c-format
-msgid   "libstoriqone: loader: failed to access to file '%s' because %m"
+msgid   "libstoriqone: loader: failed to access file '%s' because %m"
 msgstr  "libstoriqone : loader : échec lors de l’accès au fichier « %s » parce que %m"
 
 #: src/libstoriqone/loader.c:88
@@ -485,15 +485,15 @@ msgid   "Logger"
 msgstr  "Enregistreur"
 
 #: src/libstoriqone/log.c:109
-msgid   "Plugin Checksum"
+msgid   "Checksum Plugin"
 msgstr  "Greffon de somme de contrôle"
 
 #: src/libstoriqone/log.c:110
-msgid   "Plugin Database"
+msgid   "Database Plugin"
 msgstr  "Greffon de la base de données"
 
 #: src/libstoriqone/log.c:111
-msgid   "Plugin Log"
+msgid   "Log Plugin"
 msgstr  "Greffon d’enregistrement"
 
 #: src/libstoriqone/log.c:112
@@ -527,7 +527,7 @@ msgstr  "vidéo"
 #: src/libstoriqone/media.c:56 src/libstoriqone/media.c:72 src/libstoriqone/media.c:93 src/libstoriqone/media.c:109
 #: src/libstoriqone/media.c:125 src/libstoriqone/media.c:141 src/libstoriqone/script.c:49
 msgid   "unknown"
-msgstr  "inconnus"
+msgstr  "inconnu"
 
 #: src/libstoriqone/media.c:68
 msgid   "disk"
@@ -555,7 +555,7 @@ msgstr  "en usage"
 
 #: src/libstoriqone/media.c:88
 msgid   "locked"
-msgstr  "Verrouillée"
+msgstr  "verrouillée"
 
 #: src/libstoriqone/media.c:89
 msgid   "needs replacement"
@@ -574,8 +574,8 @@ msgid   "rewritable"
 msgstr  "ré-inscriptible"
 
 #: src/libstoriqone/media.c:107
-msgid   "worm"
-msgstr  "worm"
+msgid   "WORM"
+msgstr  "WORM"
 
 #: src/libstoriqone/media.c:121
 msgid   "quick mode"
@@ -595,7 +595,7 @@ msgstr  "fichier"
 
 #: src/libstoriqone/script.c:45
 msgid   "on error"
-msgstr  "d’erreur"
+msgstr  "en cas d’erreur"
 
 #: src/libstoriqone/script.c:46
 msgid   "post job"
@@ -629,3 +629,6 @@ msgstr  "so_thread_pool_work : redémarrage du fil d’exécution #%ld (pid : 
 #, c-format
 msgid   "so_thread_pool_work: thread #%ld is dead"
 msgstr  "so_thread_pool_work : fil d’exécution #%ld terminé"
+
+#~ msgid        "so_database_register_driver: try to register a NULL driver"
+#~ msgstr       "so_database_register_driver : tentative d’enregistrer un pilote « NULL »"

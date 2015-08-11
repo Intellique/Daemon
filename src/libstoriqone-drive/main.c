@@ -112,7 +112,7 @@ int main() {
 
 	struct so_drive * drive = driver->device;
 	so_log_write(so_log_level_info,
-		dgettext("libstoriqone-drive", "Initialize drive (type: %s)"),
+		dgettext("libstoriqone-drive", "Initializing drive (type: %s)"),
 		driver->name);
 	int failed = drive->ops->init(drive_config, db_connect);
 	if (failed != 0)

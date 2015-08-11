@@ -22,8 +22,8 @@ msgid   "PSQL: error while rolling back a savepoint => %s"
 msgstr  "PSQL : erreur lors de l’annulation du point de sauvegarde => %s"
 
 #: src/database/postgresql/connection.c:331
-msgid   "PSQL: Can't create checkpoint because there is an error into current transaction"
-msgstr  "PSQL : Ne peut pas créer un point de sauvegarde parce qu’il y a une erreur dans la transaction courante"
+msgid   "PSQL: Can't create checkpoint because there is an error in current transaction"
+msgstr  "PSQL : Ne peut créer un point de sauvegarde parce qu’il y a une erreur dans la transaction courante"
 
 #: src/database/postgresql/connection.c:334
 msgid   "PSQL: Can't create checkpoint because there is no active transaction"
@@ -35,7 +35,7 @@ msgid   "PSQL: error while creating a savepoint => %s"
 msgstr  "PSQL : erreur lors de la création d’un point de sauvegarde => %s"
 
 #: src/database/postgresql/connection.c:365
-msgid   "PSQL: Rolling back transaction because current transaction is in error"
+msgid   "PSQL: Rolling back transaction because current transaction encountered an error"
 msgstr  "PSQL : Annulation de la transcation parce qu’elle est en erreur"
 
 #: src/database/postgresql/connection.c:474

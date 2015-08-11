@@ -17,7 +17,7 @@ msgstr  "Project-Id-Version: libstoriqone-job v1.2\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: src/libstoriqone-job/main.c:65
-msgid   "Stoned has hang up"
+msgid   "Daemon unexpectedly quit"
 msgstr  "Le démon a inopinément quitté"
 
 #: src/libstoriqone-job/main.c:102
@@ -47,7 +47,7 @@ msgstr  "Démarrage de la tâche (type : %s)"
 
 #: src/libstoriqone-job/main.c:186
 #, c-format
-msgid   "Initialize job (type: %s)"
+msgid   "Initializing job (type: %s)"
 msgstr  "Initialisation de la tâche (type : %s)"
 
 #: src/libstoriqone-job/media.c:91 src/libstoriqone-job/media.c:167
@@ -59,40 +59,40 @@ msgstr  "Média non trouvé (nommé : %s)"
 #, c-format
 msgid   "run script: %d script found, type: %s"
 msgid_plural    "run script: %d scripts found, type: %s"
-msgstr[0]       "Exécution de scripte : %d scripte trouvé, type : %s"
-msgstr[1]       "Exécution de scripte : %d scriptes trouvés, type : %s"
+msgstr[0]       "Exécution de script : %d script trouvé, type : %s"
+msgstr[1]       "Exécution de script : %d scripts trouvés, type : %s"
 
 #: src/libstoriqone-job/script.c:54
 #, c-format
-msgid   "script has not found into database, %s, %d/%d"
-msgstr  "le scripte n’a pas été trouvé dans la base de données, %s, %d/%d"
+msgid   "script not found in database, %s, %d/%d"
+msgstr  "le script n’a pas été trouvé dans la base de données, %s, %d/%d"
 
 #: src/libstoriqone-job/script.c:59
 #, c-format
-msgid   "start script (type: %s, path: %s)"
-msgstr  "démarrage du scripte (type : %s, chemain : %s)"
+msgid   "starting script (type: %s, path: %s)"
+msgstr  "démarrage du script (type : %s, chemin : %s)"
 
 #: src/libstoriqone-job/script.c:79
 #, c-format
-msgid   "script '%s' has exited with code %d"
+msgid   "script '%s' exited with code %d"
 msgstr  "le script « %s » a quitté avec le code %d"
 
 #: src/libstoriqone-job/script.c:81
 #, c-format
-msgid   "script '%s' has exited with code OK"
+msgid   "script '%s' exited with code OK"
 msgstr  "le script « %s » a quitté avec le code ok"
 
 #: src/libstoriqone-job/script.c:84
 #, c-format
-msgid   "script '%s' has not returned data"
-msgstr  "le script « %s » n‘a pas retouné de donnée"
+msgid   "script '%s' has not returned any data"
+msgstr  "le script « %s » n‘a pas retourné de données"
 
 #: src/libstoriqone-job/script.c:94
 #, c-format
 msgid   "script '%s' has not returned data 'should run'"
-msgstr  "le script « %s » n’a pas retouné « should run »"
+msgstr  "le script « %s » n’a pas retourné « should run »"
 
 #: src/libstoriqone-job/script.c:109
 #, c-format
 msgid   "script '%s' return message: %s"
-msgstr  "le script « %s » a retouné le message : %s"
+msgstr  "le script « %s » a retourné le message : %s"

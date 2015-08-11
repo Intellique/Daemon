@@ -46,8 +46,8 @@ static struct so_changer_action2 {
 	const enum so_changer_action action;
 } so_changer_actions[] = {
 	[so_changer_action_none]        = { 0, 0, gettext_noop("none"),        NULL, so_changer_action_none },
-	[so_changer_action_put_offline] = { 0, 0, gettext_noop("put offline"), NULL, so_changer_action_put_offline },
-	[so_changer_action_put_online]  = { 0, 0, gettext_noop("put online"),  NULL, so_changer_action_put_online },
+	[so_changer_action_put_offline] = { 0, 0, gettext_noop("set offline"), NULL, so_changer_action_put_offline },
+	[so_changer_action_put_online]  = { 0, 0, gettext_noop("set online"),  NULL, so_changer_action_put_online },
 
 	[so_changer_action_unknown] = { 0, 0, gettext_noop("unknown action"), NULL, so_changer_action_unknown },
 };
@@ -64,8 +64,8 @@ static struct so_changer_status2 {
 	[so_changer_status_error]      = { 0, 0, gettext_noop("error"),      NULL, so_changer_status_error },
 	[so_changer_status_exporting]  = { 0, 0, gettext_noop("exporting"),  NULL, so_changer_status_exporting },
 	[so_changer_status_idle]       = { 0, 0, gettext_noop("idle"),       NULL, so_changer_status_idle },
-	[so_changer_status_go_offline] = { 0, 0, gettext_noop("go offline"), NULL, so_changer_status_go_offline },
-	[so_changer_status_go_online]  = { 0, 0, gettext_noop("go online"),  NULL, so_changer_status_go_online },
+	[so_changer_status_go_offline] = { 0, 0, gettext_noop("going offline"), NULL, so_changer_status_go_offline },
+	[so_changer_status_go_online]  = { 0, 0, gettext_noop("going online"),  NULL, so_changer_status_go_online },
 	[so_changer_status_importing]  = { 0, 0, gettext_noop("importing"),  NULL, so_changer_status_importing },
 	[so_changer_status_loading]    = { 0, 0, gettext_noop("loading"),    NULL, so_changer_status_loading },
 	[so_changer_status_offline]    = { 0, 0, gettext_noop("offline"),    NULL, so_changer_status_offline },

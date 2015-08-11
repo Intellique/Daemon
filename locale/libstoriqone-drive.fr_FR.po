@@ -38,12 +38,12 @@ msgstr  "[ %s %s #%u ] : ouverture du média « %s » en écriture"
 
 #: src/libstoriqone-drive/listen.c:751
 #, c-format
-msgid   "[%s %s #%u]: Count archives from media '%s'"
+msgid   "[%s %s #%u]: counting archives from media '%s'"
 msgstr  "[ %s %s #%u ] : comptage des archives du média « %s »"
 
 #: src/libstoriqone-drive/listen.c:780
 #, c-format
-msgid   "[%s %s #%u]: Erase media '%s' (mode: %s)"
+msgid   "[%s %s #%u]: Erasing media '%s' (mode: %s)"
 msgstr  "[ %s %s #%u ]: Effacement du média « %s » (mode : %s)"
 
 #: src/libstoriqone-drive/listen.c:782
@@ -56,7 +56,7 @@ msgstr  "rapide"
 
 #: src/libstoriqone-drive/listen.c:793
 #, c-format
-msgid   "[%s %s #%u]: media '%s' erased with success"
+msgid   "[%s %s #%u]: media '%s' erased successfully"
 msgstr  "[ %s %s #%u ] : média « %s » effacé avec succès"
 
 #: src/libstoriqone-drive/listen.c:797
@@ -71,7 +71,7 @@ msgstr  "[ %s %s #%u ] : formatage du média « %s »"
 
 #: src/libstoriqone-drive/listen.c:832
 #, c-format
-msgid   "[%s %s #%u]: media '%s' formatted with success"
+msgid   "[%s %s #%u]: media '%s' formatted successfully"
 msgstr  "[ %s %s #%u ] : formatage du média « %s » avec succès"
 
 #: src/libstoriqone-drive/listen.c:836
@@ -81,7 +81,7 @@ msgstr  "[ %s %s #%u ] : échec du formatage du média « %s »"
 
 #: src/libstoriqone-drive/listen.c:859
 #, c-format
-msgid   "[%s %s #%u]: Parse archive from media '%s' at position #%u"
+msgid   "[%s %s #%u]: Parsing archive from media '%s' at position #%u"
 msgstr  "[ %s %s #%u ] : Analyse de l’archive depuis le média « %s » à la position n°%u"
 
 #: src/libstoriqone-drive/main.c:72
@@ -91,13 +91,13 @@ msgstr  "Démarrage du lecteur (type : %s)"
 
 #: src/libstoriqone-drive/main.c:115
 #, c-format
-msgid   "Initialize drive (type: %s)"
+msgid   "Initializing drive (type: %s)"
 msgstr  "Initialisation du lecteur (type : %s)"
 
 #: src/libstoriqone-drive/main.c:122
 #, c-format
 msgid   "Starting drive (type: %s, vendor: %s, model: %s, serial number: %s)"
-msgstr  "Démarrage du lecteur (type : %s, fabriquant : %s, modèle : %s, numéro de série : %s)"
+msgstr  "Démarrage du lecteur (type : %s, fabricant : %s, modèle : %s, numéro de série : %s)"
 
 #: src/libstoriqone-drive/main.c:136
 #, c-format
@@ -119,5 +119,5 @@ msgid   "Checking Storiq One header in media: Failed"
 msgstr  "Vérification de l’entête Storiq One sur le média : échec"
 
 #: src/libstoriqone-drive/media.c:367
-msgid   "Failed to compute digest before write media header"
-msgstr  "Échec du calcul de l’empreinte avant d’écrire l’entête du média"
+msgid   "Failed to compute digest before writing media header"
+msgstr  "Échec du calcul de l’empreinte avant l'écriture de l’entête du média"

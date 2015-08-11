@@ -122,7 +122,7 @@ void so_database_load_config(struct so_value * config) {
 void so_database_register_driver(struct so_database * driver) {
 	if (driver == NULL) {
 		so_log_write(so_log_level_error,
-			dgettext("libstoriqone", "so_database_register_driver: try to register with NULL driver"));
+			dgettext("libstoriqone", "so_database_register_driver: trying to register a NULL driver"));
 		return;
 	}
 

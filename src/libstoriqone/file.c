@@ -251,7 +251,7 @@ int so_file_cp(const char * src, const char * dst) {
 
 	if (S_ISSOCK(stsrc.st_mode)) {
 		so_log_write(so_log_level_info,
-			dgettext("libstoriqone", "so_file_cp: ignore socket file '%s'"),
+			dgettext("libstoriqone", "so_file_cp: ignoring socket file '%s'"),
 			src);
 		return 0;
 	}

@@ -62,7 +62,7 @@ static void job_worker(void * arg);
 static void daemon_request(int fd, short event, void * data __attribute__((unused))) {
 	switch (event) {
 		case POLLHUP:
-			so_log_write(so_log_level_alert, dgettext("libstoriqone-job", "Stoned has hang up"));
+			so_log_write(so_log_level_alert, dgettext("libstoriqone-job", "Daemon unexpectedly quit"));
 			stop = true;
 			break;
 	}
@@ -183,7 +183,7 @@ int main() {
 	job->status = so_job_status_running;
 	if (job->repetition > 0)
 		job->repetition--;
-	so_log_write(so_log_level_info, dgettext("libstoriqone-job", "Initialize job (type: %s)"), job_dr->name);
+	so_log_write(so_log_level_info, dgettext("libstoriqone-job", "Initializing job (type: %s)"), job_dr->name);
 
 	db_connect->ops->sync_job(db_connect, job);
 	db_connect->ops->start_job(db_connect, job);

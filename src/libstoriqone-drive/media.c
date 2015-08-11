@@ -364,7 +364,7 @@ bool sodr_media_write_header(struct so_media * media, struct so_pool * pool, cha
 	// compute header's checksum
 	char * digest = so_checksum_compute("sha1", buffer, position);
 	if (digest == NULL) {
-		so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Failed to compute digest before write media header"));
+		so_log_write(so_log_level_info, dgettext("libstoriqone-drive", "Failed to compute digest before writing media header"));
 		return false;
 	}
 

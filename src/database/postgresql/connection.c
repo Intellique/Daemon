@@ -328,7 +328,7 @@ static int so_database_postgresql_create_checkpoint(struct so_database_connectio
 	PGTransactionStatusType transStatus = PQtransactionStatus(self->connect);
 
 	if (transStatus == PQTRANS_INERROR) {
-		so_log_write2(so_log_level_error, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: Can't create checkpoint because there is an error into current transaction"));
+		so_log_write2(so_log_level_error, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: Can't create checkpoint because there is an error in current transaction"));
 		return -1;
 	} else if (transStatus == PQTRANS_IDLE) {
 		so_log_write2(so_log_level_error, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: Can't create checkpoint because there is no active transaction"));
@@ -362,7 +362,7 @@ static int so_database_postgresql_finish_transaction(struct so_database_connecti
 	PGTransactionStatusType status = PQtransactionStatus(self->connect);
 	switch (status) {
 		case PQTRANS_INERROR: {
-			so_log_write2(so_log_level_error, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: Rolling back transaction because current transaction is in error"));
+			so_log_write2(so_log_level_error, so_log_type_plugin_db, dgettext("libstoriqone-database-postgresql", "PSQL: Rolling back transaction because current transaction encountered an error"));
 
 			PGresult * result = PQexec(self->connect, "ROLL BACK");
 			PQclear(result);

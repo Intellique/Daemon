@@ -104,7 +104,7 @@ static struct so_media_type2 {
 } so_media_types[] = {
 	[so_media_type_cleaning]   = { 0, 0, gettext_noop("cleaning"),   NULL, so_media_type_cleaning },
 	[so_media_type_rewritable] = { 0, 0, gettext_noop("rewritable"), NULL, so_media_type_rewritable },
-	[so_media_type_worm]       = { 0, 0, gettext_noop("worm"),       NULL, so_media_type_worm },
+	[so_media_type_worm]       = { 0, 0, gettext_noop("WORM"),       NULL, so_media_type_worm },
 
 	[so_media_type_unknown]    = { 0, 0, gettext_noop("unknown"),    NULL, so_media_type_unknown },
 };

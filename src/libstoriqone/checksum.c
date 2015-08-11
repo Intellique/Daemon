@@ -105,7 +105,7 @@ char * so_checksum_gen_salt(const char * checksum, size_t length) {
 
 	int fd = open("/dev/urandom", O_RDONLY);
 	if (fd < 0) {
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_gen_salt: failed to open \"/dev/urandom\" to generate salt parce %m"));
+		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_gen_salt: failed to open \"/dev/urandom\" to generate salt because %m"));
 		return NULL;
 	}
 
@@ -125,7 +125,7 @@ char * so_checksum_gen_salt(const char * checksum, size_t length) {
 
 	if (nb_read < half_len) {
 		free(buffer);
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_gen_salt: read less than expected from \"/dev/urandom\" (nb read: %zd, read expected: %zd)"), nb_read, half_len);
+		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_gen_salt: read less than expected from \"/dev/urandom\" (nb read: %zd, expected: %zd)"), nb_read, half_len);
 		return NULL;
 	}
 
@@ -187,7 +187,7 @@ static void so_checksum_init() {
 
 void so_checksum_register_driver(struct so_checksum_driver * driver) {
 	if (driver == NULL) {
-		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_register_driver: try to register with NULL driver"));
+		so_log_write(so_log_level_error, dgettext("libstoriqone", "so_checksum_register_driver: trying to register a NULL driver"));
 		return;
 	}
 

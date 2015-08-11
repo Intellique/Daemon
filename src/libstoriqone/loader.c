@@ -71,7 +71,7 @@ void * so_loader_load(const char * module, const char * name) {
 static void * so_loader_load_file(const char * filename) {
 	if (access(filename, R_OK | X_OK)) {
 		so_log_write(so_log_level_debug,
-			dgettext("libstoriqone", "libstoriqone: loader: failed to access to file '%s' because %m"),
+			dgettext("libstoriqone", "libstoriqone: loader: failed to access file '%s' because %m"),
 			filename);
 		return NULL;
 	}

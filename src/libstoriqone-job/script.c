@@ -51,12 +51,12 @@ struct so_value * soj_script_run(struct so_database_connection * db_connect, str
 	for (i = 0; i < nb_scripts && status == 0; i++) {
 		char * path = db_connect->ops->get_script(db_connect, job->type, i, type, pool);
 		if (path == NULL) {
-			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("libstoriqone-job", "script has not found into database, %s, %d/%d"), so_script_type_to_string(type, false), i, nb_scripts);
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("libstoriqone-job", "script not found in database, %s, %d/%d"), so_script_type_to_string(type, false), i, nb_scripts);
 			status = 1;
 			break;
 		}
 
-		so_job_add_record(job, db_connect, so_log_level_debug, so_job_record_notif_normal, dgettext("libstoriqone-job", "start script (type: %s, path: %s)"), so_script_type_to_string(type, false), path);
+		so_job_add_record(job, db_connect, so_log_level_debug, so_job_record_notif_normal, dgettext("libstoriqone-job", "starting script (type: %s, path: %s)"), so_script_type_to_string(type, false), path);
 
 		// run command & wait result
 		struct so_process process;
@@ -76,12 +76,12 @@ struct so_value * soj_script_run(struct so_database_connection * db_connect, str
 		so_process_free(&process, 1);
 
 		if (status != 0)
-			so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("libstoriqone-job", "script '%s' has exited with code %d"), path, status);
+			so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important, dgettext("libstoriqone-job", "script '%s' exited with code %d"), path, status);
 		else
-			so_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, dgettext("libstoriqone-job", "script '%s' has exited with code OK"), path);
+			so_job_add_record(job, db_connect, so_log_level_notice, so_job_record_notif_important, dgettext("libstoriqone-job", "script '%s' exited with code OK"), path);
 
 		if (returned == NULL) {
-			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("libstoriqone-job", "script '%s' has not returned data"), path);
+			so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important, dgettext("libstoriqone-job", "script '%s' has not returned any data"), path);
 			status = 1;
 			free(path);
 			break;

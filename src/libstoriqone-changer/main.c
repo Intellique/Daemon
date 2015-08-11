@@ -151,7 +151,7 @@ int main() {
 						changer->vendor, changer->model);
 				else
 					so_log_write(so_log_level_warning,
-						dgettext("libstoriqone-changer", "[%s | %s]: failed to put changer offline"),
+						dgettext("libstoriqone-changer", "[%s | %s]: failed to set changer offline"),
 						changer->vendor, changer->model);
 				break;
 
@@ -168,7 +168,7 @@ int main() {
 					sochgr_listen_online();
 				} else
 					so_log_write(so_log_level_warning,
-						dgettext("libstoriqone-changer", "[%s | %s]: failed to put changer online"),
+						dgettext("libstoriqone-changer", "[%s | %s]: failed to set changer online"),
 						changer->vendor, changer->model);
 				break;
 

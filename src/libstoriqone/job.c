@@ -48,10 +48,10 @@ static struct so_job_status2 {
 	const char * translation;
 	const enum so_job_status status;
 } so_job_status[] = {
-	[so_job_status_disable]   = { 0, 0, gettext_noop("disable"),   NULL, so_job_status_disable },
+	[so_job_status_disable]   = { 0, 0, gettext_noop("disabled"),   NULL, so_job_status_disable },
 	[so_job_status_error]     = { 0, 0, gettext_noop("error"),     NULL, so_job_status_error },
 	[so_job_status_finished]  = { 0, 0, gettext_noop("finished"),  NULL, so_job_status_finished },
-	[so_job_status_pause]     = { 0, 0, gettext_noop("pause"),     NULL, so_job_status_pause },
+	[so_job_status_pause]     = { 0, 0, gettext_noop("paused"),     NULL, so_job_status_pause },
 	[so_job_status_running]   = { 0, 0, gettext_noop("running"),   NULL, so_job_status_running },
 	[so_job_status_scheduled] = { 0, 0, gettext_noop("scheduled"), NULL, so_job_status_scheduled },
 	[so_job_status_stopped]   = { 0, 0, gettext_noop("stopped"),   NULL, so_job_status_stopped },
@@ -73,7 +73,7 @@ static struct so_job_record_notif2 {
 	[so_job_record_notif_important] = { 0, 0, gettext_noop("important"), NULL, so_job_record_notif_important },
 	[so_job_record_notif_read]      = { 0, 0, gettext_noop("read"),      NULL, so_job_record_notif_read },
 
-	[so_job_record_notif_unknown] = { 0, 0, gettext_noop("unknown notif"), NULL, so_job_record_notif_unknown },
+	[so_job_record_notif_unknown] = { 0, 0, gettext_noop("unknown notification"), NULL, so_job_record_notif_unknown },
 };
 static const unsigned int so_job_record_notif2 = sizeof(so_job_record_notifs) / sizeof(*so_job_record_notifs);
 

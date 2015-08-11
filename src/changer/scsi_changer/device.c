@@ -141,17 +141,17 @@ static int sochgr_scsi_changer_check(unsigned int nb_clients, struct so_database
 				char * volume_name = strdup(dr->slot->media->name);
 
 				so_log_write(so_log_level_notice,
-					dngettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%d because media is not use since %d minute", "[%s | %s]: unloading media '%s' from drive #%d because media is not use since %d minutes", 30),
+					dngettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%d because media hasn't been used for %d minute", "[%s | %s]: unloading media '%s' from drive #%d because media is not use since %d minutes", 30),
 					sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, dr->index, 30);
 
 				int failed = sochgr_scsi_changer_unload(dr, db_connection);
 				if (failed == 0)
 					so_log_write(so_log_level_notice,
-						dgettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%d finished with code = OK"),
+						dgettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%d completed with code = OK"),
 						sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, dr->index);
 				else
 					so_log_write(so_log_level_error,
-						dgettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%d finished with code = %d"),
+						dgettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%d completed with code = %d"),
 						sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, dr->index, failed);
 
 				free(volume_name);
@@ -358,11 +358,11 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 
 		if (failed == 0)
 			so_log_write(so_log_level_notice,
-				dgettext("storiqone-changer-scsi", "[%s | %s]: loading media '%s' from slot #%u to drive #%u finished with code = OK"),
+				dgettext("storiqone-changer-scsi", "[%s | %s]: loading media '%s' from slot #%u to drive #%u completed with code = OK"),
 				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, sl->index, dr->index);
 		else
 			so_log_write(so_log_level_error,
-				dgettext("storiqone-changer-scsi", "[%s | %s]: loading media '%s' from slot #%u to drive #%u finished with code = %d"),
+				dgettext("storiqone-changer-scsi", "[%s | %s]: loading media '%s' from slot #%u to drive #%u completed with code = %d"),
 				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, sl->index, failed, dr->index);
 
 		// reset drive
@@ -413,11 +413,11 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 
 		if (failed == 0)
 			so_log_write(so_log_level_notice,
-				dgettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%u to slot #%u finished with code = OK"),
+				dgettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%u to slot #%u completed with code = OK"),
 				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, dr->index, sl->index);
 		else
 			so_log_write(so_log_level_error,
-				dgettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%u to slot #%u finished with code = %d"),
+				dgettext("storiqone-changer-scsi", "[%s | %s]: unloading media '%s' from drive #%u to slot #%u completed with code = %d"),
 				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, volume_name, dr->index, sl->index, failed);
 
 		free(volume_name);
@@ -427,7 +427,7 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 	pthread_mutex_unlock(&sochgr_scsi_changer_lock);
 
 	so_log_write(so_log_level_info,
-		dgettext("storiqone-changer-scsi", "[%s | %s]: checking media with drive #%u finished"),
+		dgettext("storiqone-changer-scsi", "[%s | %s]: checking media with drive #%u completed"),
 		sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr->index);
 }
 
@@ -536,7 +536,7 @@ static int sochgr_scsi_changer_parse_media(struct so_database_connection * db_co
 			sochgr_scsi_changer_init_worker(dr);
 		else {
 			so_log_write(so_log_level_critical,
-				dgettext("storiqone-changer-scsi", "This changer (%s %s %s) seems to be misconfigured, will exited now"),
+				dgettext("storiqone-changer-scsi", "This changer (%s %s %s) seems to be misconfigured, exiting now"),
 				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, sochgr_scsi_changer.serial_number);
 			return 1;
 		}
@@ -714,7 +714,7 @@ static void sochgr_scsi_changer_wait() {
 	while (sochgr_scsi_changer_scsi_loader_ready(sochgr_scsi_changer_device)) {
 		if (is_ready) {
 			so_log_write(so_log_level_warning,
-				dgettext("storiqone-changer-scsi", "[%s | %s]: waiting for device ready"),
+				dgettext("storiqone-changer-scsi", "[%s | %s]: waiting for device to be ready"),
 				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model);
 			is_ready = false;
 		}
