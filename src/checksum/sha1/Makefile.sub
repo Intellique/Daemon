@@ -1,8 +1,8 @@
 STORIQONE_CHECKSUM_SHA1_SRC_DIR			:= src/checksum/sha1
 
 STORIQONE_CHECKSUM_SHA1_BIN				:= lib/libchecksum-sha1.so
-STORIQONE_CHECKSUM_SHA1_CFLAG			:= -pthread -fPIC -fvisibility=hidden
-STORIQONE_CHECKSUM_SHA1_LD				:= -pthread -shared -Llib -lnettle
+STORIQONE_CHECKSUM_SHA1_CFLAG			 = -pthread -fPIC -fvisibility=hidden ${LIB_NETTLE_CFLAGS}
+STORIQONE_CHECKSUM_SHA1_LD				 = -pthread -shared -Llib -lnettle ${LIB_NETTLE_LD}
 
 STORIQONE_CHECKSUM_SHA1_DEPEND_LIB		:=
 

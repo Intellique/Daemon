@@ -1,8 +1,8 @@
 STORIQONE_DATABASE_POSTGRESQL_SRC_DIR		:= src/database/postgresql
 
 STORIQONE_DATABASE_POSTGRESQL_BIN			:= lib/libdatabase-postgresql.so
-STORIQONE_DATABASE_POSTGRESQL_CFLAG			:= -pthread -fPIC -fvisibility=hidden $(shell ./script/check-include.sh libpq.c -I/usr/include/postgresql)
-STORIQONE_DATABASE_POSTGRESQL_LD			:= -pthread -shared -Llib -lpq
+STORIQONE_DATABASE_POSTGRESQL_CFLAG			 = -pthread -fPIC -fvisibility=hidden ${LIB_PQ_CFLAGS}
+STORIQONE_DATABASE_POSTGRESQL_LD			 = -pthread -shared -Llib ${LIB_PQ_LD}
 
 STORIQONE_DATABASE_POSTGRESQL_DEPEND_LIB	:=
 

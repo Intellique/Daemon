@@ -1,6 +1,7 @@
 bin/
 build/
 /checksum/
+configure.vars
 cscope.out
 depend/
 doc/

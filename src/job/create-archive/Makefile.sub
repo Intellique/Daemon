@@ -1,8 +1,8 @@
 STORIQONE_JOB_CREATE_ARCHIVE_SRC_DIR		:= src/job/create-archive
 
 STORIQONE_JOB_CREATE_ARCHIVE_BIN			:= bin/job_create-archive
-STORIQONE_JOB_CREATE_ARCHIVE_CFLAG			:= -pthread
-STORIQONE_JOB_CREATE_ARCHIVE_LD				:= -pthread -lstoriqone -lstoriqone-job -lmagic -luuid -Llib
+STORIQONE_JOB_CREATE_ARCHIVE_CFLAG			 = -pthread ${LIB_MAGIC_CFLAGS} ${LIB_UUID_CFLAGS}
+STORIQONE_JOB_CREATE_ARCHIVE_LD				 = -pthread -lstoriqone -lstoriqone-job -Llib ${LIB_MAGIC_LD} ${LIB_UUID_LD}
 
 STORIQONE_JOB_CREATE_ARCHIVE_DEPEND_LIB		:= lib/libstoriqone-job.so
 

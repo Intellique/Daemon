@@ -1,8 +1,8 @@
 LIBSTORIQONE_SRC_DIR		:= src/libstoriqone
 
 LIBSTORIQONE_CFLAG			:= -fPIC -pthread
-LIBSTORIQONE_LIB			:= lib/libstoriqone.so
-LIBSTORIQONE_LD				:= -shared -pthread -ldl $(shell ./script/check-link.sh gettime.c -lrt)
+LIBSTORIQONE_LIB			 = lib/libstoriqone.so ${LIB_RT_CFLAGS}
+LIBSTORIQONE_LD				 = -shared -pthread -ldl ${LIB_RT_LD}
 LIBSTORIQONE_SONAME			:= libstoriqone.so.1
 LIBSTORIQONE_LIB_VERSION	:= 1.2
 

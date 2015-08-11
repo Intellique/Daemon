@@ -1,8 +1,8 @@
 LIBSTORIQONEDRIVE_SRC_DIR		:= src/libstoriqone-drive
 
 LIBSTORIQONEDRIVE_CFLAG			:= -fPIC -pthread
-LIBSTORIQONEDRIVE_LIB			:= lib/libstoriqone-drive.so
-LIBSTORIQONEDRIVE_LD			:= -shared -pthread -ldl -luuid -lstoriqone -Llib
+LIBSTORIQONEDRIVE_LIB			 = lib/libstoriqone-drive.so ${LIB_UUID_CFLAGS}
+LIBSTORIQONEDRIVE_LD			 = -shared -pthread -ldl -lstoriqone -Llib ${LIB_UUID_LD}
 LIBSTORIQONEDRIVE_SONAME		:= libstoriqone-drive.so.1
 LIBSTORIQONEDRIVE_LIB_VERSION	:= 1.2
 

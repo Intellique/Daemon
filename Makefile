@@ -181,7 +181,7 @@ DEP_DIRS	:= $(patsubst ${BUILD_DIR}/%,${DEPEND_DIR}/%,${OBJ_DIRS})
 
 all: binaries locales
 
-binaries: prepare $(sort ${BINS})
+binaries: prepare $(sort ${BINS}) configure.vars
 
 check:
 	@echo 'Checking source files...'
@@ -205,8 +205,8 @@ debug: binaries
 	${GDB} bin/storiqone
 
 distclean realclean: clean
-	@echo ' RM         -Rf cscope.out doc ${CHCKSUM_DIR} ${DEPEND_DIR} tags ${VERSION_FILE}'
-	@rm -Rf cscope.out doc ${CHCKSUM_DIR} ${DEPEND_DIR} tags ${VERSION_FILE}
+	@echo ' RM         -Rf configure.vars cscope.out doc ${CHCKSUM_DIR} ${DEPEND_DIR} tags ${VERSION_FILE}'
+	@rm -Rf configure.vars cscope.out doc ${CHCKSUM_DIR} ${DEPEND_DIR} tags ${VERSION_FILE}
 
 doc: Doxyfile ${LIBOBJECT_SRC_FILES} ${HEAD_FILES}
 	@echo ' DOXYGEN'
@@ -261,6 +261,11 @@ ${NAME}.tar.bz2:
 ${VERSION_FILE}: ${GIT_HEAD}
 	@echo ' GEN        storiq one version'
 	@./script/version.pl ${VERSION_OPT}
+
+configure.vars:
+	@echo ' CONFIGURE'
+	@./configure.pl
+-include configure.vars
 
 cscope.out: ${SRC_FILES} ${HEAD_FILES}
 	@echo " CSCOPE"
