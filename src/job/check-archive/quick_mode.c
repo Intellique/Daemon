@@ -119,13 +119,23 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 
 	struct soj_checkarchive_worker * ptr_worker = workers;
 	for (ptr_worker = workers, i = 0; ptr_worker != NULL; ptr_worker = ptr_worker->next, i++) {
-		char * name;
-		asprintf(&name, "worker #%u", i);
+		char * name = NULL;
+		int size = asprintf(&name, "worker #%u", i);
 
-		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-check-archive", "Starting worker #%u"), i);
+		if (size < 0) {
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-job-check-archive", "Failed while setting the name of worker thread"));
+			name = "worker";
+		}
+
+		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+			dgettext("storiqone-job-check-archive", "Starting worker #%u"),
+			i);
 
 		so_thread_pool_run(name, soj_checkarchive_quick_mode_do, ptr_worker);
-		free(name);
+
+		if (size >= 0)
+			free(name);
 	}
 
 	bool running = true;
