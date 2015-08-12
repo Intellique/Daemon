@@ -58,8 +58,13 @@ void * so_loader_load(const char * module, const char * name) {
 	if (module == NULL || name == NULL)
 		return NULL;
 
-	char * path;
-	asprintf(&path, MODULE_PATH "/lib%s-%s.so", module, name);
+	char * path = NULL;
+	int size = asprintf(&path, MODULE_PATH "/lib%s-%s.so", module, name);
+
+	if (size < 0) {
+		free(path);
+		return NULL;
+	}
 
 	void * cookie = so_loader_load_file(path);
 

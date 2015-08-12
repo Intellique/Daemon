@@ -217,8 +217,12 @@ char * so_checksum_salt_password(const char * checksum, const char * password, c
 		return NULL;
 	}
 
-	char * pw_salt;
-	asprintf(&pw_salt, "%s%s", password, salt);
+	char * pw_salt = NULL;
+	int size = asprintf(&pw_salt, "%s%s", password, salt);
+	if (size < 0) {
+		free(pw_salt);
+		return NULL;
+	}
 
 	char * result = so_checksum_compute(checksum, pw_salt, strlen(pw_salt));
 	free(pw_salt);

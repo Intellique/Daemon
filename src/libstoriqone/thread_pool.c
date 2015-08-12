@@ -205,8 +205,13 @@ void so_thread_pool_set_name(const char * name) {
 }
 
 static void so_thread_pool_set_name2(pid_t tid, const char * name) {
-	char * path;
-	asprintf(&path, "/proc/%d/task/%d/comm", so_thread_pool_pid, tid);
+	char * path = NULL;
+	int size = asprintf(&path, "/proc/%d/task/%d/comm", so_thread_pool_pid, tid);
+
+	if (size < 0) {
+		free(path);
+		return;
+	}
 
 	int fd = open(path, O_WRONLY);
 	if (fd < 0) {
@@ -217,7 +222,12 @@ static void so_thread_pool_set_name2(pid_t tid, const char * name) {
 	char * th_name = strdup(name);
 	so_string_middle_elipsis(th_name, 15);
 
-	write(fd, th_name, strlen(th_name) + 1);
+	ssize_t nb_write = write(fd, th_name, strlen(th_name) + 1);
+	if (nb_write < 0)
+		so_log_write(so_log_level_warning,
+			dgettext("libstoriqone", "Failed while setting the name of thread '%s' because %m"),
+			th_name);
+
 	close(fd);
 	free(path);
 	free(th_name);
@@ -228,7 +238,9 @@ static void * so_thread_pool_work(void * arg) {
 
 	pid_t tid = syscall(SYS_gettid);
 
-	so_log_write(so_log_level_debug, dgettext("libstoriqone", "so_thread_pool_work: starting new thread #%ld (pid: %d) to function: %p with parameter: %p"), th->thread, tid, th->function, th->arg);
+	so_log_write(so_log_level_debug,
+		dgettext("libstoriqone", "so_thread_pool_work: starting new thread #%ld (pid: %d) to function: %p with parameter: %p"),
+		th->thread, tid, th->function, th->arg);
 
 	do {
 		setpriority(PRIO_PROCESS, tid, th->nice);

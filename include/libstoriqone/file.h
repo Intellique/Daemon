@@ -68,7 +68,7 @@ void so_file_convert_size_to_string(size_t size, char * str, ssize_t str_len) __
 
 int so_file_cp(const char * src, const char * dst) __attribute__((nonnull));
 
-char * so_file_gid2name(gid_t gid);
+char * so_file_gid2name(gid_t gid) __attribute__((warn_unused_result));
 
 /**
  * \brief Create directory recursively
@@ -83,7 +83,7 @@ int so_file_mv(const char * src, const char * dst) __attribute__((nonnull));
 
 char * so_file_read_all_from(const char * filename) __attribute__((nonnull));
 
-char * so_file_rename(const char * filename) __attribute__((nonnull));
+char * so_file_rename(const char * filename) __attribute__((nonnull,warn_unused_result));
 
 /**
  * \brief Remove recursively path
@@ -93,7 +93,7 @@ char * so_file_rename(const char * filename) __attribute__((nonnull));
  */
 int so_file_rm(const char * path) __attribute__((nonnull));
 
-char * so_file_uid2name(uid_t uid);
+char * so_file_uid2name(uid_t uid) __attribute__((warn_unused_result));
 
 #endif
 

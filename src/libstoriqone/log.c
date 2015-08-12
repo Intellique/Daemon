@@ -209,7 +209,7 @@ enum so_log_level so_log_string_to_level(const char * level, bool translate) {
 				return so_log_levels[i].level;
 	}
 
-	return so_log_levels[i].level;
+	return so_log_level_unknown;
 }
 
 enum so_log_type so_log_string_to_type(const char * type, bool translate) {
@@ -229,7 +229,7 @@ enum so_log_type so_log_string_to_type(const char * type, bool translate) {
 				return so_log_types[i].type;
 	}
 
-	return so_log_types[i].type;
+	return so_log_type_unknown;
 }
 
 static void so_log_send_message(void * arg) {
@@ -340,7 +340,12 @@ static void so_log_write_inner(enum so_log_level level, enum so_log_type type, c
 	long long int timestamp = time(NULL);
 
 	char * str_message = NULL;
-	vasprintf(&str_message, format, params);
+	int size = vasprintf(&str_message, format, params);
+
+	if (size < 0) {
+		free(str_message);
+		return;
+	}
 
 	struct so_value * message = so_value_pack("{sssssIss}",
 		"level", so_log_level_to_string(level, false),

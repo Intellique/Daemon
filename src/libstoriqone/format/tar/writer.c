@@ -155,29 +155,45 @@ ssize_t so_format_tar_compute_size(const char * path) {
 		} else if (link_length > 100) {
 			file_size += 1024 + link_length - link_length % 512;
 		}
-	} else if (path_length > 100) {
+	} else if (path_length > 100)
 		file_size += 512 + path_length - path_length % 512;
-	}
 
 	if (S_ISREG(sfile.st_mode))
 		file_size += 512 + sfile.st_size - sfile.st_size % 512;
 	else if (S_ISDIR(sfile.st_mode)) {
 		struct dirent ** dl = NULL;
 		int nb_paths = scandir(path, &dl, so_file_basic_scandir_filter, NULL);
+		if (nb_paths < 0)
+			return -1;
+
 		int i;
+		bool failed = false;
 		for (i = 0; i < nb_paths; i++) {
-			char * subpath = NULL;
-			asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
+			if (!failed) {
+				char * subpath = NULL;
+				int str_size = asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
 
-			ssize_t size = so_format_tar_compute_size(subpath);
-			if (size > 0)
-				file_size += size;
+				ssize_t size = 0;
+				if (str_size > 0) {
+					size += so_format_tar_compute_size(subpath);
 
-			free(subpath);
+					if (size >= 0)
+						file_size += size;
+					else
+						failed = true;
+				} else
+					failed = true;
+
+				free(subpath);
+			}
+
 			free(dl[i]);
 		}
 
 		free(dl);
+
+		if (failed)
+			return -1;
 	}
 
 	return file_size;

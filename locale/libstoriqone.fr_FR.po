@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: libstoriqone v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-08-11 18:59+0200\n"
+        "POT-Creation-Date: 2015-08-12 11:01+0200\n"
         "PO-Revision-Date: 2014-11-12 01:16+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team stone <stone@intellique.com>\n"
@@ -198,7 +198,7 @@ msgstr  "so_database_load_config : paramètres invalides (config : %p)"
 
 #: src/libstoriqone/database.c:125
 msgid   "so_database_register_driver: trying to register a NULL driver"
-msgstr  ""
+msgstr  "so_database_register_driver : tentative d’enregistrer un pilote « NULL »"
 
 #: src/libstoriqone/database.c:134
 #, c-format
@@ -279,7 +279,7 @@ msgstr  "%.*f Go"
 msgid   "%.*f TB"
 msgstr  "%.*f To"
 
-#: src/libstoriqone/file.c:247 src/libstoriqone/file.c:265 src/libstoriqone/file.c:292
+#: src/libstoriqone/file.c:247 src/libstoriqone/file.c:265 src/libstoriqone/file.c:297
 #, c-format
 msgid   "so_file_cp: can't get information of '%s' because %m"
 msgstr  "so_file_cp : n’a pas réussi à obtenir les informations de « %s » parce que %m"
@@ -289,82 +289,82 @@ msgstr  "so_file_cp : n’a pas réussi à obtenir les informations de « %s 
 msgid   "so_file_cp: ignoring socket file '%s'"
 msgstr  "so_file_cp : ignore les fichier du type socket « %s »"
 
-#: src/libstoriqone/file.c:272 src/libstoriqone/file.c:300
+#: src/libstoriqone/file.c:272 src/libstoriqone/file.c:305
 #, c-format
 msgid   "so_file_cp: '%s' should be a directory"
 msgstr  "so_file_cp : « %s » doit être un répertoire"
 
-#: src/libstoriqone/file.c:320
+#: src/libstoriqone/file.c:325
 #, c-format
 msgid   "so_file_cp: error while scanning directory '%s' because %m"
 msgstr  "so_file_cp : erreur lors du parcours du répertoire « %s » parce que %m"
 
-#: src/libstoriqone/file.c:345
+#: src/libstoriqone/file.c:353
 #, c-format
 msgid   "so_file_cp: can't open file '%s' for reading because %m"
 msgstr  "so_file_cp : n’a pas réussi à ouvrir le fichier « %s » en lecture parce que %m"
 
-#: src/libstoriqone/file.c:356
+#: src/libstoriqone/file.c:364
 #, c-format
 msgid   "so_file_cp: can't open file '%s' for writing because %m"
 msgstr  "so_file_cp : n’a pas réussi à ouvrir le fichier « %s » en écriture parce que %m"
 
-#: src/libstoriqone/file.c:369
+#: src/libstoriqone/file.c:377
 #, c-format
 msgid   "so_file_cp: error while writing into '%s' because %m"
 msgstr  "so_file_cp : erreur lors de l’écriture dans « %s » parce que %m"
 
-#: src/libstoriqone/file.c:378
+#: src/libstoriqone/file.c:386
 #, c-format
 msgid   "so_file_cp: error while reading from '%s' because %m"
 msgstr  "so_file_cp : erreur lors de la lecture depuis « %s » parce que %m"
 
-#: src/libstoriqone/file.c:393
+#: src/libstoriqone/file.c:401
 #, c-format
 msgid   "so_file_cp: can't read link of '%s' because %m"
 msgstr  "so_file_cp : n’a pas réussi à lire le lien symbolique « %s » parce que %m"
 
-#: src/libstoriqone/file.c:402
+#: src/libstoriqone/file.c:410
 #, c-format
 msgid   "so_file_cp: failed to create symlink '%s' -> '%s' because %m"
 msgstr  "so_file_cp : échec lors de la création du lien symbolique « %s » -> « %s » parce que %m"
 
-#: src/libstoriqone/file.c:411
+#: src/libstoriqone/file.c:419
 #, c-format
 msgid   "so_file_cp: failed to create fifo '%s' because %m"
 msgstr  "so_file_cp : échec lors de la création du tube nommé « %s » parce que %m"
 
-#: src/libstoriqone/file.c:419
+#: src/libstoriqone/file.c:427
 #, c-format
 msgid   "so_file_cp: failed to create device '%s' because %m"
 msgstr  "so_file_cp : échec lors de la création du périphérique « %s » parce que %m"
 
-#: src/libstoriqone/file.c:461 src/libstoriqone/file.c:479 src/libstoriqone/file.c:491
+#: src/libstoriqone/file.c:474 src/libstoriqone/file.c:492 src/libstoriqone/file.c:504
 #, c-format
 msgid   "so_file_mkdir: error while creating directory '%s' because %m"
 msgstr  "so_file_mkdir : erreur lors de la création du répertoire « %s » parce que %m"
 
-#: src/libstoriqone/file.c:505 src/libstoriqone/file.c:517
+#: src/libstoriqone/file.c:518 src/libstoriqone/file.c:530
 #, c-format
 msgid   "so_file_mv: can't get information of '%s' because %m"
 msgstr  "so_file_mv : n’a pas réussi à obtenir les informations de « %s » parce que %m"
 
-#: src/libstoriqone/file.c:527
+#: src/libstoriqone/file.c:540
 #, c-format
 msgid   "so_file_mv: failed to rename '%s' to '%s' because %m"
 msgstr  "so_file_mv : échec lors du renommage du fichier « %s » en « %s » parce que %m"
 
-#: src/libstoriqone/file.c:540
+#: src/libstoriqone/file.c:553
 #, c-format
 msgid   "so_file_read_all_from: failed to open '%s' because %m"
 msgstr  "so_file_read_all_from : échec lors de l’ouverture du fichier « %s » parce que %m"
 
-#: src/libstoriqone/file.c:563
+#: src/libstoriqone/file.c:576
 #, c-format
 msgid   "so_file_read_all_from: failed while reading from '%s' because %m"
 msgstr  "so_file_read_all_from : échec en lisant depuis « %s » parce que %m"
 
-#: src/libstoriqone/file.c:607
+#: src/libstoriqone/file.c:628
 #, c-format
 msgid   "so_file_rm: failed to get information of '%s' because %m"
 msgstr  "so_file_rm : échec lors de obtention des informations de « %s » parce que %m"
@@ -418,12 +418,12 @@ msgstr  "lu"
 msgid   "unknown notification"
 msgstr  "notification inconnue"
 
-#: src/libstoriqone/loader.c:74
+#: src/libstoriqone/loader.c:79
 #, c-format
 msgid   "libstoriqone: loader: failed to access file '%s' because %m"
 msgstr  "libstoriqone : loader : échec lors de l’accès au fichier « %s » parce que %m"
 
-#: src/libstoriqone/loader.c:88
+#: src/libstoriqone/loader.c:93
 #, c-format
 msgid   "libstoriqone: loader: failed to load '%s' because %s"
 msgstr  "libstoriqone : loader : échec du chargemenet de « %s » parce que %s"
@@ -609,26 +609,28 @@ msgstr  "pré tâche"
 msgid   "so_thread_pool_run2: error, not enough memory to start new thread"
 msgstr  "so_thread_pool_run2 : pas assez de mémoire pour démarrer un nouveau fil d’exécution"
 
-#: src/libstoriqone/thread_pool.c:231
+#: src/libstoriqone/thread_pool.c:228
+#, c-format
+msgid   "Failed while setting the name of thread '%s' because %m"
+msgstr  "Échec lors de la définition du nom du fil d’exécution « %s » parce que %m"
+
+#: src/libstoriqone/thread_pool.c:242
 #, c-format
 msgid   "so_thread_pool_work: starting new thread #%ld (pid: %d) to function: %p with parameter: %p"
 msgstr  "so_thread_pool_work : démarrage d’un nouveau fil d’exécution #%ld (pid : %d) vers la fonction : %p avec comme "
         "paramètre : %p"
 
-#: src/libstoriqone/thread_pool.c:251
+#: src/libstoriqone/thread_pool.c:263
 #, c-format
 msgid   "so_thread_pool_work: thread #%ld (pid: %d) is going to sleep"
 msgstr  "so_thread_pool_work : fil d’exécution #%ld (pid : %d) est mis en attente"
 
-#: src/libstoriqone/thread_pool.c:271
+#: src/libstoriqone/thread_pool.c:283
 #, c-format
 msgid   "so_thread_pool_work: restarting thread #%ld (pid: %d) to function: %p with parameter: %p"
 msgstr  "so_thread_pool_work : redémarrage du fil d’exécution #%ld (pid : %d) vers la fonction : %p avec comme paramètre : %p"
 
-#: src/libstoriqone/thread_pool.c:275
+#: src/libstoriqone/thread_pool.c:287
 #, c-format
 msgid   "so_thread_pool_work: thread #%ld is dead"
 msgstr  "so_thread_pool_work : fil d’exécution #%ld terminé"
-
-#~ msgid        "so_database_register_driver: try to register a NULL driver"
-#~ msgstr       "so_database_register_driver : tentative d’enregistrer un pilote « NULL »"

@@ -250,9 +250,16 @@ int so_socket_server_temp_unix(struct so_value * config) {
 		free(salt);
 
 		salt = so_checksum_gen_salt(NULL, 16);
-		char * new_path;
-		asprintf(&new_path, "%s/%s.socket", dir, salt);
+		char * new_path = NULL;
+		int size = asprintf(&new_path, "%s/%s.socket", dir, salt);
 		free(salt);
+
+		if (size < 0) {
+			free(new_path);
+			free(dir);
+			free(path);
+			return -1;
+		}
 
 		fd = socket(AF_UNIX, type, 0);
 		if (fd < 0) {

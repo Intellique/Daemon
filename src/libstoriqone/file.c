@@ -256,7 +256,7 @@ int so_file_cp(const char * src, const char * dst) {
 		return 0;
 	}
 
-	char * dst_file;
+	char * dst_file = NULL;
 	if (!access(dst, F_OK)) {
 		struct stat stdst;
 		failed = lstat(dst, &stdst);
@@ -277,10 +277,15 @@ int so_file_cp(const char * src, const char * dst) {
 		char * cpsrc = strdup(src);
 		char * basename_src = basename(cpsrc);
 
-		asprintf(&dst_file, "%s/%s", dst, basename_src);
+		int size = asprintf(&dst_file, "%s/%s", dst, basename_src);
 
 		free(cpsrc);
 		cpsrc = basename_src = NULL;
+
+		if (size < 0) {
+			free(dst_file);
+			return 2;
+		}
 	} else {
 		char * cpdst = strdup(dst);
 		char * dirname_dst = dirname(cpdst);
@@ -326,10 +331,13 @@ int so_file_cp(const char * src, const char * dst) {
 		int i;
 		for (i = 0; i < nb_files; i++) {
 			if (failed == 0) {
-				char * new_src;
-				asprintf(&new_src, "%s/%s", src, files[i]->d_name);
+				char * new_src = NULL;
+				int size = asprintf(&new_src, "%s/%s", src, files[i]->d_name);
 
-				failed = so_file_cp(new_src, dst_file);
+				if (size > 0)
+					failed = so_file_cp(new_src, dst_file);
+				else
+					failed = 1;
 
 				free(new_src);
 			}
@@ -436,9 +444,14 @@ char * so_file_gid2name(gid_t gid) {
 	if (!getgrgid_r(gid, &gr, buffer, 512, &tmp_gr))
 		return strdup(buffer);
 	else {
-		char * name;
-		asprintf(&name, "%d", gid);
-		return name;
+		char * name = NULL;
+		int size = asprintf(&name, "%d", gid);
+		if (size > 0)
+			return name;
+		else {
+			free(name);
+			return NULL;
+		}
 	}
 }
 
@@ -570,7 +583,7 @@ char * so_file_read_all_from(const char * filename) {
 char * so_file_rename(const char * filename) {
 	char * path = strdup(filename);
 
-	if (!access(path, F_OK)) {
+	if (access(path, F_OK) == 0) {
 		char * extension = strrchr(path, '.');
 
 		char * old_path = path;
@@ -582,14 +595,22 @@ char * so_file_rename(const char * filename) {
 		unsigned int next = 0;
 		do {
 			free(path);
+			path = NULL;
 
+			int size;
 			if (extension != NULL)
-				asprintf(&path, "%s_%u.%s", old_path, next, extension + 1);
+				size = asprintf(&path, "%s_%u.%s", old_path, next, extension + 1);
 			else
-				asprintf(&path, "%s_%u", old_path, next);
+				size = asprintf(&path, "%s_%u", old_path, next);
+
+			if (size < 0) {
+				free(old_path);
+				free(path);
+				return NULL;
+			}
 
 			next++;
-		} while (!access(path, F_OK));
+		} while (access(path, F_OK) == 0);
 
 		free(old_path);
 	}
@@ -654,9 +675,14 @@ char * so_file_uid2name(uid_t uid) {
 	if (!getpwuid_r(uid, &pw, buffer, 512, &tmp_pw))
 		return strdup(buffer);
 	else {
-		char * name;
-		asprintf(&name, "%d", uid);
-		return name;
+		char * name = NULL;
+		int size = asprintf(&name, "%d", uid);
+		if (size > 0)
+			return name;
+		else {
+			free(name);
+			return NULL;
+		}
 	}
 }
 

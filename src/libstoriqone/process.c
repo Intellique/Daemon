@@ -106,8 +106,14 @@ void so_process_new(struct so_process * process, const char * process_name, cons
 					next++;
 				}
 
-				char * path_com;
-				asprintf(&path_com, "%s/%s", tok, process_name);
+				char * path_com = NULL;
+				int size = asprintf(&path_com, "%s/%s", tok, process_name);
+
+				if (size < 0) {
+					free(path);
+					free(path_com);
+					goto error_asprintf;
+				}
 
 				if (access(path_com, R_OK | X_OK) == 0 && stat(path_com, &file) == 0 && S_ISREG(file.st_mode))
 					process->command = strdup(path_com);
@@ -148,6 +154,11 @@ void so_process_new(struct so_process * process, const char * process_name, cons
 	}
 	process->exited_code = 0;
 	process->has_exited = true;
+
+	return;
+
+error_asprintf:
+	free(process->command);
 }
 
 void so_process_pipe(struct so_process * process_out, enum so_process_std out, struct so_process * process_in) {
@@ -316,8 +327,12 @@ void so_process_start(struct so_process * process, unsigned int nb_process) {
 				so_value_iterator_free(iter);
 			}
 
+			int nice_failed = 0;
 			if (process->nice != 0)
-				nice(process->nice);
+				nice_failed = nice(process->nice);
+
+			if (nice_failed == -1)
+				_exit(2);
 
 			execv(process[i].command, process[i].params);
 
