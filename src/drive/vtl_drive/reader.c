@@ -104,7 +104,7 @@ static bool sodr_vtl_drive_reader_end_of_file(struct so_stream_reader * sr) {
 
 		struct so_drive * drive = sodr_vtl_drive_get_device();
 		so_log_write(so_log_level_error,
-			dgettext("storiqone-drive-vtl", "[%s %s %d] Error while getting information of file from media '%s' at position '%d' because %m"),
+			dgettext("storiqone-drive-vtl", "[%s %s %d] Error while getting file information from media '%s' at position '%d' because %m"),
 			drive->vendor, drive->model, drive->index, self->media->name, self->file_position);
 
 		return true;
@@ -124,7 +124,7 @@ static off_t sodr_vtl_drive_reader_forward(struct so_stream_reader * sr, off_t o
 
 		struct so_drive * drive = sodr_vtl_drive_get_device();
 		so_log_write(so_log_level_error,
-			dgettext("storiqone-drive-vtl", "[%s %s %d] Error while getting information of file from media '%s' at position '%d' because %m"),
+			dgettext("storiqone-drive-vtl", "[%s %s %d] Error while getting file information from media '%s' at position '%d' because %m"),
 			drive->vendor, drive->model, drive->index, self->media->name, self->file_position);
 
 		return -1;
@@ -157,7 +157,7 @@ static off_t sodr_vtl_drive_reader_forward(struct so_stream_reader * sr, off_t o
 			self->media->nb_read_errors++;
 
 			so_log_write(so_log_level_error,
-				dgettext("storiqone-drive-vtl", "[%s %s %d] Error while forwarding into file from media '%s' at position '%d' because %m"),
+				dgettext("storiqone-drive-vtl", "[%s %s %d] Error while forwarding into media file '%s' at position '%d' because %m"),
 				dr->vendor, dr->model, dr->index, self->media->name, self->file_position);
 
 			return -1;

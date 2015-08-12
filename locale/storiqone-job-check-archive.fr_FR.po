@@ -26,13 +26,13 @@ msgid   "Starting check archive (%s) in quick mode"
 msgstr  "Démarrage de la vérification de l'archive (%s) en mode rapide"
 
 #: src/job/check-archive/quick_mode.c:127
-msgid   "Failed while setting the name of worker thread"
+msgid   "Failed to set worker thread name"
 msgstr  "Échec lors de la définition du nom du fil d’exécution"
 
 #: src/job/check-archive/quick_mode.c:134
 #, c-format
 msgid   "Starting worker #%u"
-msgstr  "Démarrage du travailleur #%u"
+msgstr  "Démarrage du fil d'exécution #%u"
 
 #: src/job/check-archive/quick_mode.c:198 src/job/check-archive/thorough_mode.c:78
 #, c-format
@@ -42,7 +42,7 @@ msgstr  "Média non trouvé (nom: %s)"
 #: src/job/check-archive/quick_mode.c:209
 #, c-format
 msgid   "Getting media (%s)"
-msgstr  "Accession au média (%s)"
+msgstr  "Accès au média (%s)"
 
 #: src/job/check-archive/quick_mode.c:224
 #, c-format

@@ -18,8 +18,8 @@ msgstr  "Project-Id-Version: storiqone-changer-vtl v1.2\n"
 
 #: src/changer/vtl_changer/device.c:133
 #, c-format
-msgid   "[%s | %s]: will update vtl"
-msgstr  "[ %s | %s ]: va mettre à jour la vtl"
+msgid   "[%s | %s]: will update VTL"
+msgstr  "[ %s | %s ]: va mettre à jour la VTL"
 
 #: src/changer/vtl_changer/device.c:141
 #, c-format
@@ -51,5 +51,5 @@ msgstr[1]       "[ %s | %s ] : va ajouter %u lecteurs"
 
 #: src/changer/vtl_changer/device.c:308
 #, c-format
-msgid   "[%s | %s]: will delete vtl"
-msgstr  "[ %s | %s ] : va supprimer la vtl"
+msgid   "[%s | %s]: will delete VTL"
+msgstr  "[ %s | %s ] : va supprimer la VTL"

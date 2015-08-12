@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: vtl-drive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-08-10 11:33+0200\n"
+        "POT-Creation-Date: 2015-08-12 18:57+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -19,7 +19,7 @@ msgstr  "Project-Id-Version: vtl-drive v1.2\n"
 #: src/drive/vtl_drive/device.c:169
 #, c-format
 msgid   "[%s %s %d]: Failed to erase file '%s' because %m"
-msgstr  "[ %s %s %d ] : Échec lors de l’écrasement du fichier « %s » parce que %m"
+msgstr  "[ %s %s %d ] : Échec lors de l’effacement du fichier « %s » parce que %m"
 
 #: src/drive/vtl_drive/device.c:187 src/drive/vtl_drive/device.c:278 src/drive/vtl_drive/device.c:400
 #, c-format
@@ -33,7 +33,7 @@ msgstr  "VIDE"
 
 #: src/drive/vtl_drive/device.c:218
 #, c-format
-msgid   "[%s %s %d]: Command 'shred' finished with code '%d' while removing file '%s'"
+msgid   "[%s %s %d]: Command 'shred' ended with code '%d' while removing file '%s'"
 msgstr  "[ %s %s %d ] : Commande « shred » a quitté avec le code « %d » lors de la suppression du fichier « %s »"
 
 #: src/drive/vtl_drive/device.c:224
@@ -43,17 +43,17 @@ msgstr  "[ %s %s %d ] : Échec du lancement de la commande « shred » pour
 
 #: src/drive/vtl_drive/device.c:262
 #, c-format
-msgid   "[%s %s %d]: VTL does not support only Storiq One format"
+msgid   "[%s %s %d]: VTL does only support Storiq One format"
 msgstr  "[ %s %s %d ] : VTL ne supporte que le format « Storiq One »"
 
 #: src/drive/vtl_drive/device.c:301
 #, c-format
-msgid   "[%s %s %d]: Failed to find best block size of media '%s'"
-msgstr  "[ %s %s %d ] : Échec lors de la recherche de la meilleure taille de bloc du média « %s »"
+msgid   "[%s %s %d]: Failed to find optimal block size for media '%s'"
+msgstr  "[ %s %s %d ] : Échec lors de la recherche de la taille de bloc optimale pour le média « %s »"
 
 #: src/drive/vtl_drive/device.c:323
 #, c-format
-msgid   "[%s %s %d]: Failed to write header of media '%s'"
+msgid   "[%s %s %d]: Failed to write media header '%s'"
 msgstr  "[ %s %s %d ] : Échec lors de l’écriture de l’en-tête du média « %s »"
 
 #: src/drive/vtl_drive/device.c:383
@@ -63,8 +63,8 @@ msgstr  "[ %s %s %d ] : Échec lors de l’ouverture du fichier du média «�
 
 #: src/drive/vtl_drive/device.c:497
 #, c-format
-msgid   "[%s %s %d]: Failed to find media with uuid '%s' from database"
-msgstr  "[ %s %s %d ] : Échec lors de la recherche du média avec l’uuid « %s » depuis la base de données"
+msgid   "[%s %s %d]: Failed to find media with UUID '%s' from database"
+msgstr  "[ %s %s %d ] : Échec lors de la recherche du média avec l’UUID « %s » depuis la base de données"
 
 #: src/drive/vtl_drive/reader.c:88 src/drive/vtl_drive/writer.c:173
 #, c-format
@@ -73,12 +73,12 @@ msgstr  "[ %s %s %d ] Erreur en fermant le média « %s » à la position «
 
 #: src/drive/vtl_drive/reader.c:107 src/drive/vtl_drive/reader.c:127
 #, c-format
-msgid   "[%s %s %d] Error while getting information of file from media '%s' at position '%d' because %m"
+msgid   "[%s %s %d] Error while getting file information from media '%s' at position '%d' because %m"
 msgstr  "[ %s %s %d ] Erreur en récupérant les informations du fichier du média « %s » à la position « %d » parce que %m"
 
 #: src/drive/vtl_drive/reader.c:160
 #, c-format
-msgid   "[%s %s %d] Error while forwarding into file from media '%s' at position '%d' because %m"
+msgid   "[%s %s %d] Error while forwarding into media file '%s' at position '%d' because %m"
 msgstr  "[ %s %s %d ] Erreur en avançant dans le fichier du média « %s » à la position « %d » parce que %m"
 
 #: src/drive/vtl_drive/reader.c:182 src/drive/vtl_drive/reader.c:285 src/drive/vtl_drive/reader.c:312
@@ -86,10 +86,14 @@ msgstr  "[ %s %s %d ] Erreur en avançant dans le fichier du média « %s »
 msgid   "[%s %s %d] Error while reading file from media '%s' at position '%d' because %m"
 msgstr  "[ %s %s %d ] Erreur en lisant le fichier depuis le média « %s » à la position « %d » parce que %m"
 
-#: src/drive/vtl_drive/writer.c:112 src/drive/vtl_drive/writer.c:154 src/drive/vtl_drive/writer.c:282
-#: src/drive/vtl_drive/writer.c:340 src/drive/vtl_drive/writer.c:365
+#: src/drive/vtl_drive/writer.c:112 src/drive/vtl_drive/writer.c:365
 #, c-format
 msgid   "[%s %s %d] Error while writing file from media '%s' at position '%d' because %m"
+msgstr  ""
+
+#: src/drive/vtl_drive/writer.c:154 src/drive/vtl_drive/writer.c:282 src/drive/vtl_drive/writer.c:340
+#, c-format
+msgid   "[%s %s %d] Error while writing to media file '%s' at position '%d' because %m"
 msgstr  "[ %s %s %d ] Erreur en écrivant le fichier du média « %s » à la position « %d » parce que %m"
 
 #: src/drive/vtl_drive/writer.c:223

@@ -215,7 +215,7 @@ static int sodr_vtl_drive_erase_media(bool quick_mode, struct so_database_connec
 				if (command.exited_code != 0) {
 					ok = false;
 					so_log_write(so_log_level_error,
-						dgettext("storiqone-drive-vtl", "[%s %s %d]: Command 'shred' finished with code '%d' while removing file '%s'"),
+						dgettext("storiqone-drive-vtl", "[%s %s %d]: Command 'shred' ended with code '%d' while removing file '%s'"),
 						sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index, command.exited_code, gl.gl_pathv[i]);
 				}
 			} else {
@@ -259,7 +259,7 @@ static int sodr_vtl_drive_format_media(struct so_pool * pool, ssize_t block_size
 
 	if (pool->archive_format == NULL || pool->archive_format->name == NULL || strcmp(pool->archive_format->name, "Storiq One") != 0) {
 		so_log_write(so_log_level_error,
-			dgettext("storiqone-drive-vtl", "[%s %s %d]: VTL does not support only Storiq One format"),
+			dgettext("storiqone-drive-vtl", "[%s %s %d]: VTL does only support Storiq One format"),
 			sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index);
 		return 1;
 	}
@@ -298,7 +298,7 @@ static int sodr_vtl_drive_format_media(struct so_pool * pool, ssize_t block_size
 		if (failed != 0) {
 			struct so_media * media = sodr_vtl_drive.slot->media;
 			so_log_write(so_log_level_error,
-				dgettext("storiqone-drive-vtl", "[%s %s %d]: Failed to find best block size of media '%s'"),
+				dgettext("storiqone-drive-vtl", "[%s %s %d]: Failed to find optimal block size for media '%s'"),
 				sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index,
 				media != NULL ? media->name : dgettext("storiqone-drive-vtl", "NULL"));
 			return 1;
@@ -320,7 +320,7 @@ static int sodr_vtl_drive_format_media(struct so_pool * pool, ssize_t block_size
 
 	if (!sodr_media_write_header(media, pool, header, block_size)) {
 		so_log_write(so_log_level_error,
-			dgettext("storiqone-drive-vtl", "[%s %s %d]: Failed to write header of media '%s'"),
+			dgettext("storiqone-drive-vtl", "[%s %s %d]: Failed to write media header '%s'"),
 			sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index, sodr_vtl_drive.slot->media->name);
 
 		free(header);
@@ -494,7 +494,7 @@ static int sodr_vtl_drive_reset(struct so_database_connection * db) {
 		media = sodr_vtl_drive.slot->media = db->ops->get_media(db, uuid, NULL, NULL);
 		if (media == NULL)
 			so_log_write(so_log_level_error,
-				dgettext("storiqone-drive-vtl", "[%s %s %d]: Failed to find media with uuid '%s' from database"),
+				dgettext("storiqone-drive-vtl", "[%s %s %d]: Failed to find media with UUID '%s' from database"),
 				sodr_vtl_drive.vendor, sodr_vtl_drive.model, sodr_vtl_drive.index, uuid);
 		free(uuid);
 

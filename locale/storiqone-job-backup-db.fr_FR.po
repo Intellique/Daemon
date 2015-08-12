@@ -17,8 +17,8 @@ msgstr  "Project-Id-Version: job-backupdb v1.2\n"
         "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: src/job/backup-db/backup-db.c:98
-msgid   "Failed to get database hander"
-msgstr  "Échec de l’optention du gestionnaire de base de données"
+msgid   "Failed to get database handle"
+msgstr  "Échec de connexion à la base de données"
 
 #: src/job/backup-db/backup-db.c:105
 msgid   "Failed to create temporary file"
@@ -36,7 +36,7 @@ msgstr  "Erreur lors de la lecture depuis la base de donées parce que %m"
 
 #: src/job/backup-db/backup-db.c:181
 #, c-format
-msgid   "Error while writting into drive because %m"
+msgid   "Error while writing into drive because %m"
 msgstr  "Erreur lors de l’écriture dans le lecteur parce que %m"
 
 #: src/job/backup-db/backup-db.c:196
@@ -45,11 +45,11 @@ msgid   "Error while reading from temporary file because %m"
 msgstr  "Erreur lors de la lecture depuis le fichier temporaire parce que %m"
 
 #: src/job/backup-db/backup-db.c:227
-msgid   "No more media found, abording backup database"
-msgstr  "Plus de média trouvé, abandon de la sauvegarde de la base de données"
+msgid   "No media found, aborting database backup"
+msgstr  "Aucun média trouvé, abandon de la sauvegarde de la base de données"
 
 #: src/job/backup-db/backup-db.c:239
-msgid   "Will require more space to complete backup"
+msgid   "More space is required to complete backup"
 msgstr  "À besoin de plus d’espace pour accomplir la sauvegarde"
 
 #: src/job/backup-db/backup-db.c:280
@@ -57,9 +57,9 @@ msgid   "Pool (Storiq one database backup) not found"
 msgstr  "Pool (Storiq one database backup) non trouvé"
 
 #: src/job/backup-db/backup-db.c:285
-msgid   "Try to back up database into a pool which is deleted"
-msgstr  "Tentation de sauvegarder dans un pool qui est supprimé"
+msgid   "Trying to back up database to a deleted pool"
+msgstr  "Tentative de sauvegarde dans un pool supprimé"
 
 #: src/job/backup-db/backup-db.c:292
-msgid   "Try to back up database into a pool whose is not growable and without any medias"
-msgstr  "Tentation de sauvegarder dans un pool qui n’est pas extensible et qui ne contient pas de médias"
+msgid   "Trying to back up database to a pool which is not growable and without any media"
+msgstr  "Tentative de sauvegarder dans un pool qui n’est pas extensible et qui ne contient pas de média"

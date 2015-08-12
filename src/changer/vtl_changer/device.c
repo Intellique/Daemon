@@ -130,7 +130,7 @@ static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_
 
 	if (nb_drives != sochgr_vtl_changer.nb_drives || nb_slots != sochgr_vtl_changer.nb_slots - sochgr_vtl_changer.nb_drives || deleted) {
 		so_log_write(so_log_level_warning,
-			dgettext("storiqone-changer-vtl", "[%s | %s]: will update vtl"),
+			dgettext("storiqone-changer-vtl", "[%s | %s]: will update VTL"),
 			sochgr_vtl_changer.vendor, sochgr_vtl_changer.model);
 
 		sochgr_vtl_changer_unload_all_drives(db_connection);
@@ -305,7 +305,7 @@ static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_
 
 		if (deleted) {
 			so_log_write(so_log_level_warning,
-				dgettext("storiqone-changer-vtl", "[%s | %s]: will delete vtl"),
+				dgettext("storiqone-changer-vtl", "[%s | %s]: will delete VTL"),
 				sochgr_vtl_changer.vendor, sochgr_vtl_changer.model);
 
 			for (i = 0; i < sochgr_vtl_changer.nb_drives; i++) {

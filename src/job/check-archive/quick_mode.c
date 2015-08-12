@@ -124,7 +124,7 @@ int soj_checkarchive_quick_mode(struct so_job * job, struct so_archive * archive
 
 		if (size < 0) {
 			so_log_write(so_log_level_error,
-				dgettext("storiqone-job-check-archive", "Failed while setting the name of worker thread"));
+				dgettext("storiqone-job-check-archive", "Failed to set worker thread name"));
 
 			free(name);
 			name = "worker";

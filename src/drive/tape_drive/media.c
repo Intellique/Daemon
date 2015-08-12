@@ -140,7 +140,7 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 	reader = drive->ops->get_raw_reader(3, db_connect);
 	if (reader == NULL) {
 		so_log_write(so_log_level_debug,
-			dgettext("storiqone-drive-tape", "Failed to read ltfs index from media '%s'"),
+			dgettext("storiqone-drive-tape", "Failed to read LTFS index from media '%s'"),
 			media->name);
 		return 1;
 	}
@@ -152,7 +152,7 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 		nb_read = reader->ops->read(reader, buffer + nb_total_read, buffer_size - nb_total_read);
 		if (nb_read < 0) {
 			so_log_write(so_log_level_debug,
-				dgettext("storiqone-drive-tape", "Error while reading ltfs index from media '%s'"),
+				dgettext("storiqone-drive-tape", "Error while reading LTFS index from media '%s'"),
 				media->name);
 
 			free(buffer);
@@ -163,7 +163,7 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 
 		if (nb_read == 0) {
 			so_log_write(so_log_level_debug,
-				dgettext("storiqone-drive-tape", "Found ltfs index corrupted from media '%s'"),
+				dgettext("storiqone-drive-tape", "Found corrupted LTFS index on media '%s'"),
 				media->name);
 
 			free(buffer);
@@ -183,7 +183,7 @@ int sodr_tape_drive_media_parse_ltfs_index(struct so_drive * drive, struct so_da
 		void * addr = realloc(buffer, buffer_size);
 		if (addr == NULL) {
 			so_log_write(so_log_level_debug,
-				dgettext("storiqone-drive-tape", "Error, no more memory to read ltfs index from media '%s'"),
+				dgettext("storiqone-drive-tape", "Error, not enough memory to read LTFS index from media '%s'"),
 				media->name);
 
 			free(buffer);
@@ -211,7 +211,7 @@ int sodr_tape_drive_media_parse_ltfs_label(struct so_drive * drive, struct so_da
 	struct so_stream_reader * reader = drive->ops->get_raw_reader(1, db_connect);
 	if (reader == NULL) {
 		so_log_write(so_log_level_debug,
-			dgettext("storiqone-drive-tape", "Failed to read ltfs label from media '%s'"),
+			dgettext("storiqone-drive-tape", "Failed to read LTFS label from media '%s'"),
 			media->name);
 		return 1;
 	}
@@ -223,7 +223,7 @@ int sodr_tape_drive_media_parse_ltfs_label(struct so_drive * drive, struct so_da
 		ssize_t nb_read = reader->ops->read(reader, buffer + nb_total_read, buffer_size - nb_total_read);
 		if (nb_read < 0) {
 			so_log_write(so_log_level_debug,
-				dgettext("storiqone-drive-tape", "Error while reading ltfs label from media '%s'"),
+				dgettext("storiqone-drive-tape", "Error while reading LTFS label from media '%s'"),
 				media->name);
 
 			free(buffer);
@@ -234,7 +234,7 @@ int sodr_tape_drive_media_parse_ltfs_label(struct so_drive * drive, struct so_da
 
 		if (nb_read == 0) {
 			so_log_write(so_log_level_debug,
-				dgettext("storiqone-drive-tape", "Found ltfs label corrupted from media '%s'"),
+				dgettext("storiqone-drive-tape", "Found corrupted LTFS label on media '%s'"),
 				media->name);
 
 			free(buffer);
@@ -254,7 +254,7 @@ int sodr_tape_drive_media_parse_ltfs_label(struct so_drive * drive, struct so_da
 		void * addr = realloc(buffer, buffer_size);
 		if (addr == NULL) {
 			so_log_write(so_log_level_debug,
-				dgettext("storiqone-drive-tape", "Error, no more memory to read ltfs label from media '%s'"),
+				dgettext("storiqone-drive-tape", "Error, not enough memory to read LTFS label from media '%s'"),
 				media->name);
 
 			free(buffer);

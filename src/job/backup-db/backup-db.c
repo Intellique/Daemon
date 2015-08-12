@@ -95,7 +95,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 	struct so_stream_reader * db_reader = db_connect->config->ops->backup_db(db_connect->config);
 	if (db_reader == NULL) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-backup-db", "Failed to get database hander"));
+			dgettext("storiqone-job-backup-db", "Failed to get database handle"));
 		return 1;
 	}
 
@@ -178,7 +178,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 							ssize_t nb_write = cksum_writer->ops->write(cksum_writer, buffer, nb_read);
 							if (nb_write < 0) {
 								so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-									dgettext("storiqone-job-backup-db", "Error while writting into drive because %m"));
+									dgettext("storiqone-job-backup-db", "Error while writing into drive because %m"));
 							} else {
 								nb_total_write += nb_write;
 								position += nb_write;
@@ -224,7 +224,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 					job->status = so_job_status_error;
 
 					so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-						dgettext("storiqone-job-backup-db", "No more media found, abording backup database"));
+						dgettext("storiqone-job-backup-db", "No media found, aborting database backup"));
 
 					goto tmp_reader;
 				}
@@ -236,7 +236,7 @@ static int soj_backupdb_run(struct so_job * job, struct so_database_connection *
 
 				if (size_available < backup_size)
 					so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
-						dgettext("storiqone-job-backup-db", "Will require more space to complete backup"));
+						dgettext("storiqone-job-backup-db", "More space is required to complete backup"));
 
 				state = get_media;
 				break;
@@ -282,14 +282,14 @@ static int soj_backupdb_simulate(struct so_job * job, struct so_database_connect
 	}
 	if (soj_backupdb_pool->deleted) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-backup-db", "Try to back up database into a pool which is deleted"));
+			dgettext("storiqone-job-backup-db", "Trying to back up database to a deleted pool"));
 		return 1;
 	}
 
 	soj_backupdb_medias = db_connect->ops->get_medias_of_pool(db_connect, soj_backupdb_pool);
 	if (!soj_backupdb_pool->growable && so_value_list_get_length(soj_backupdb_medias) == 0) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-backup-db", "Try to back up database into a pool whose is not growable and without any medias"));
+			dgettext("storiqone-job-backup-db", "Trying to back up database to a pool which is not growable and without any media"));
 		return 1;
 	}
 

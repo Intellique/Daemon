@@ -136,7 +136,7 @@ static off_t sodr_tape_drive_reader_forward(struct so_stream_reader * io, off_t 
 			int next_forward = nb_records > 8388607 ? 8388607 : nb_records;
 
 			so_log_write(so_log_level_info,
-				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: forward from media '%s' at file position #%u and #record %ld"),
+				dgettext("storiqone-drive-tape", "[%s | %s | #%u]: forward media '%s' at file position #%u and record #%ld"),
 				self->drive->vendor, self->drive->model, self->drive->index, self->media->name, self->file_position, nb_records);
 
 			struct mtop forward = { MTFSR, next_forward };
