@@ -99,12 +99,21 @@ static int soj_checkbackupdb_run(struct so_job * job, struct so_database_connect
 	}
 
 	for (ptr = worker, i = 0; ptr != NULL; ptr = ptr->next, i++) {
-		char * name;
-		asprintf(&name, "worker: vol #%u", i);
+		char * name = NULL;
+		int size = asprintf(&name, "worker: vol #%u", i);
+
+		if (size < 0) {
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-job-check-backup-db", "Failed while setting the name of worker thread"));
+
+			free(name);
+			name = "worker";
+		}
 
 		so_thread_pool_run(name, soj_checkbackupdb_worker_do, ptr);
 
-		free(name);
+		if (size >= 0)
+			free(name);
 	}
 
 	job->done = 0.01;
