@@ -110,8 +110,13 @@ struct so_format_writer * soj_io_filesystem_writer(const char * path) {
 static enum so_format_writer_status soj_format_writer_filesystem_add_file(struct so_format_writer * fw, const struct so_format_file * file) {
 	struct soj_format_writer_filesystem_private * self = fw->data;
 
-	char * path;
-	asprintf(&path, "%s/%s", self->base_dir, file->filename);
+	char * path = NULL;
+	ssize_t size = asprintf(&path, "%s/%s", self->base_dir, file->filename);
+
+	if (size < 0) {
+		free(path);
+		return so_format_writer_error;
+	}
 
 	self->fd = open(path, O_WRONLY | O_CREAT, file->mode);
 	if (self->fd < 0) {

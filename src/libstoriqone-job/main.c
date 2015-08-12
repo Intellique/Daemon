@@ -90,12 +90,13 @@ static void job_worker(void * arg) {
 	struct so_job * j = arg;
 
 	struct so_database * db_driver = so_database_get_default_driver();
+	struct so_database_connection * db_connect = NULL;
 	if (db_driver == NULL)
 		goto error;
 	struct so_database_config * db_conf = db_driver->ops->get_default_config();
 	if (db_conf == NULL)
 		goto error;
-	struct so_database_connection * db_connect = db_conf->ops->connect(db_conf);
+	db_connect = db_conf->ops->connect(db_conf);
 	if (db_connect == NULL)
 		goto error;
 

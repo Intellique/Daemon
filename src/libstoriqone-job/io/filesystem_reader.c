@@ -31,6 +31,8 @@
 #include <errno.h>
 // open
 #include <fcntl.h>
+// dgettext
+#include <libintl.h>
 // bool
 #include <stdbool.h>
 // asprintf
@@ -50,8 +52,11 @@
 
 #include <libstoriqone/file.h>
 #include <libstoriqone/format.h>
+#include <libstoriqone/log.h>
 #include <libstoriqone/value.h>
 #include <libstoriqone-job/io.h>
+
+#include "config.h"
 
 struct soj_format_reader_filesystem_private {
 	char * path;
@@ -290,8 +295,13 @@ static enum so_format_reader_header_status soj_format_reader_filesystem_skip_fil
 
 
 static struct soj_format_reader_filesystem_node * soj_format_reader_filesystem_node_add(struct soj_format_reader_filesystem_node * node) {
-	char * path;
-	asprintf(&path, "%s/%s", node->path, node->files[node->i_file]->d_name);
+	char * path = NULL;
+	int size = asprintf(&path, "%s/%s", node->path, node->files[node->i_file]->d_name);
+	if (size < 0) {
+		free(path);
+		return NULL;
+	}
+
 	free(node->files[node->i_file]);
 	node->i_file++;
 
@@ -360,8 +370,17 @@ static void soj_format_reader_filesystem_node_sync(struct soj_format_reader_file
 	} else if (S_ISLNK(node->st.st_mode)) {
 		file->size = node->st.st_size;
 		file->link = malloc(file->size + 1);
-		readlink(file->filename, file->link, file->size + 1);
+
+		ssize_t nb_write = readlink(file->filename, file->link, file->size + 1);
 		file->link[file->size] = '\0';
+
+		if (nb_write < 0) {
+			so_log_write(so_log_level_error,
+				dgettext("libstoriqone-job", "Failed to read link of file '%s' because %m"),
+				file->filename);
+
+			file->link[0] = '\0';
+		}
 	}
 }
 
