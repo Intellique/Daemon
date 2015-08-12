@@ -305,14 +305,24 @@ stop_worker:
 void soj_restorearchive_data_worker_start(struct soj_restorearchive_data_worker * first_worker, struct so_job * job, struct so_database_connection * db_connect) {
 	unsigned int i;
 	for (i = 0; first_worker != NULL; i++, first_worker = first_worker->next) {
-		char * name;
-		asprintf(&name, "worker #%u", i);
+		char * name = NULL;
+		int size = asprintf(&name, "worker #%u", i);
 
-		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal, dgettext("storiqone-job-restore-archive", "Starting worker #%u"), i);
+		if (size < 0) {
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-job-restore-archive", "Failed while setting the name of worker thread"));
+
+			free(name);
+			name = "worker";
+		}
+
+		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
+			dgettext("storiqone-job-restore-archive", "Starting worker #%u"), i);
 
 		so_thread_pool_run(name, soj_restorearchive_data_worker_do, first_worker);
 
-		free(name);
+		if (size >= 0)
+			free(name);
 	}
 }
 

@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-restore-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-07-23 08:41+0200\n"
+        "POT-Creation-Date: 2015-08-12 13:24+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -126,7 +126,11 @@ msgstr  "Échec lors de la création du périphérique bloc « %s » parce que
 msgid   "Failed to change owner and group of '%s' because %m"
 msgstr  "Échec lors du changement du propriétaire et du groupe de « %s » parce que %m"
 
-#: src/job/restore-archive/data_worker.c:311
+#: src/job/restore-archive/data_worker.c:313
+msgid   "Failed while setting the name of worker thread"
+msgstr  "Échec lors de la définition du nom du fil d’exécution"
+
+#: src/job/restore-archive/data_worker.c:320
 #, c-format
 msgid   "Starting worker #%u"
 msgstr  "Démarrage du travailleur n°%u"

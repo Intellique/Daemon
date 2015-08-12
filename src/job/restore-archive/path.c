@@ -36,6 +36,7 @@
 // access
 #include <unistd.h>
 
+#include <libstoriqone/file.h>
 #include <libstoriqone/value.h>
 
 #include "common.h"
@@ -78,32 +79,30 @@ const char * soj_restorearchive_path_get(const char * path, const char * parent,
 		if (path_root_length > 0)
 			ppath += strlen(parent);
 
-		char * restore_path;
-		asprintf(&restore_path, "%s/%s", path_root, ppath);
+		char * restore_path = NULL;
+		int size = asprintf(&restore_path, "%s/%s", path_root, ppath);
 
-		if (is_regular_file && access(restore_path, F_OK) == 0) {
-			int path_length = 0;
-			char * extension = strrchr(path, '.');
-			if (extension != NULL && strchr(extension, '/') == NULL)
-				path_length = strlen(ppath) - strlen(extension);
-			else
-				extension = NULL;
+		if (size < 0) {
+			pthread_mutex_unlock(&path_lock);
 
-			unsigned int i = 0;
-			do {
-				free(restore_path);
+			free(restore_path);
 
-				if (extension == NULL)
-					asprintf(&restore_path, "%s/%s_%u", path_root, ppath, i);
-				else
-					asprintf(&restore_path, "%s/%.*s_%u%s", path_root, path_length, ppath, i, extension);
-
-				i++;
-			} while (access(restore_path, F_OK) == 0);
+			return NULL;
 		}
 
-		so_value_hashtable_put2(path_files, path, so_value_new_string(restore_path), true);
-		free(restore_path);
+		if (is_regular_file && access(restore_path, F_OK) == 0) {
+			char * tmp_restore_path = so_file_rename(restore_path);
+			free(restore_path);
+			restore_path = tmp_restore_path;
+		}
+
+		if (restore_path != NULL) {
+			so_value_hashtable_put2(path_files, path, so_value_new_string(restore_path), true);
+			free(restore_path);
+		} else {
+			pthread_mutex_unlock(&path_lock);
+			return NULL;
+		}
 	}
 
 	struct so_value * file = so_value_hashtable_get2(path_files, path, false, false);
