@@ -282,10 +282,8 @@ int so_file_cp(const char * src, const char * dst) {
 		free(cpsrc);
 		cpsrc = basename_src = NULL;
 
-		if (size < 0) {
-			free(dst_file);
+		if (size < 0)
 			return 2;
-		}
 	} else {
 		char * cpdst = strdup(dst);
 		char * dirname_dst = dirname(cpdst);
@@ -448,10 +446,8 @@ char * so_file_gid2name(gid_t gid) {
 		int size = asprintf(&name, "%d", gid);
 		if (size > 0)
 			return name;
-		else {
-			free(name);
+		else
 			return NULL;
-		}
 	}
 }
 
@@ -604,7 +600,6 @@ char * so_file_rename(const char * filename) {
 				size = asprintf(&path, "%s_%u", old_path, next);
 
 			if (size < 0) {
-				free(old_path);
 				free(path);
 				return NULL;
 			}
@@ -679,10 +674,8 @@ char * so_file_uid2name(uid_t uid) {
 		int size = asprintf(&name, "%d", uid);
 		if (size > 0)
 			return name;
-		else {
-			free(name);
+		else
 			return NULL;
-		}
 	}
 }
 

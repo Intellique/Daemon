@@ -208,10 +208,8 @@ static void so_thread_pool_set_name2(pid_t tid, const char * name) {
 	char * path = NULL;
 	int size = asprintf(&path, "/proc/%d/task/%d/comm", so_thread_pool_pid, tid);
 
-	if (size < 0) {
-		free(path);
+	if (size < 0)
 		return;
-	}
 
 	int fd = open(path, O_WRONLY);
 	if (fd < 0) {

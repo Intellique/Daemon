@@ -111,7 +111,6 @@ void so_process_new(struct so_process * process, const char * process_name, cons
 
 				if (size < 0) {
 					free(path);
-					free(path_com);
 					goto error_asprintf;
 				}
 

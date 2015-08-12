@@ -255,7 +255,6 @@ int so_socket_server_temp_unix(struct so_value * config) {
 		free(salt);
 
 		if (size < 0) {
-			free(new_path);
 			free(dir);
 			free(path);
 			return -1;

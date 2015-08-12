@@ -181,10 +181,10 @@ ssize_t so_format_tar_compute_size(const char * path) {
 						file_size += size;
 					else
 						failed = true;
+
+					free(subpath);
 				} else
 					failed = true;
-
-				free(subpath);
 			}
 
 			free(dl[i]);
