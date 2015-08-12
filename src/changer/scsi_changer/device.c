@@ -195,20 +195,45 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 		int host = 0, target = 0, channel = 0, bus = 0;
 		sscanf(ptr, "%d:%d:%d:%d", &host, &target, &channel, &bus);
 
-		char * path;
-		asprintf(&path, "%s/generic", gl.gl_pathv[i]);
+		char * path = NULL;
+		int size = asprintf(&path, "%s/generic", gl.gl_pathv[i]);
+
+		if (size < 0)
+			continue;
+
 		length = readlink(path, link, 256);
+		if (length < 0) {
+			so_log_write(so_log_level_error,
+				dgettext("storiqone-changer-scsi", "Failed to read link of file '%s' because %m"),
+				path);
+			continue;
+		}
+
 		link[length] = '\0';
 		free(path);
 
 		char * device;
 		ptr = strrchr(link, '/');
-		asprintf(&device, "/dev%s", ptr);
+		size = asprintf(&device, "/dev%s", ptr);
 
-		asprintf(&path, "/sys/class/sas_host/host%d", host);
+		if (size < 0)
+			continue;
+
+		size = asprintf(&path, "/sys/class/sas_host/host%d", host);
+		if (size < 0) {
+			free(device);
+			continue;
+		}
+
 		struct stat st;
 		if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
-			realpath(gl.gl_pathv[i], link);
+			char * resolved_path = realpath(gl.gl_pathv[i], link);
+			if (resolved_path == NULL) {
+				so_log_write(so_log_level_error,
+					dgettext("storiqone-changer-scsi", "Failed while resolving path of file '%s' because %m"),
+					gl.gl_pathv[i]);
+				continue;
+			}
 
 			ptr = strstr(link, "end_device-");
 			if (ptr != NULL) {
@@ -217,7 +242,9 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 					*cp = '\0';
 
 				free(path);
-				asprintf(&path, "/sys/class/sas_device/%s/sas_address", ptr);
+				size = asprintf(&path, "/sys/class/sas_device/%s/sas_address", ptr);
+				if (size < 0)
+					continue;
 
 				char * data = so_file_read_all_from(path);
 				cp = strchr(data, '\n');
@@ -225,7 +252,11 @@ static int sochgr_scsi_changer_init(struct so_value * config, struct so_database
 					*cp = '\0';
 
 				char * wwn;
-				asprintf(&wwn, "sas:%s", data);
+				size = asprintf(&wwn, "sas:%s", data);
+				if (size < 0) {
+					free(data);
+					continue;
+				}
 
 				if (has_wwn && !strcmp(wwn, sochgr_scsi_changer.wwn))
 					found = true;

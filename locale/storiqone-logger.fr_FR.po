@@ -5,7 +5,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: storiqone-logger v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-08-05 15:18+0200\n"
+        "POT-Creation-Date: 2015-08-12 16:42+0200\n"
         "PO-Revision-Date: 2014-10-17 11:18+0200\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -31,12 +31,12 @@ msgstr  "Connexion fermé"
 msgid   "Received incorrect message"
 msgstr  "Message incorrect reçu"
 
-#: src/logger/loader.c:72
+#: src/logger/loader.c:75
 #, c-format
 msgid   "Loader: access to file '%s' failed because %m"
 msgstr  "Loader : l’accès au fichier « %s » a échoué parce que %m"
 
-#: src/logger/loader.c:84
+#: src/logger/loader.c:87
 #, c-format
 msgid   "Loader: failed to load '%s' because %s"
 msgstr  "Loader : échec au chargement de « %s » parce que %s"

@@ -825,14 +825,25 @@ static void sochgr_scsi_changer_scsi_setup_drive(struct so_drive * drive, struct
 		ptr = strrchr(link, '/') + 1;
 
 		char * path;
-		asprintf(&path, "%s/generic", gl.gl_pathv[i]);
+		int size = asprintf(&path, "%s/generic", gl.gl_pathv[i]);
+		if (size < 0)
+			continue;
+
 		length = readlink(path, link, 256);
+		if (length < 0)
+			continue;
+
 		link[length] = '\0';
 		free(path);
 
 		char * scsi_device;
 		ptr = strrchr(link, '/');
-		asprintf(&scsi_device, "/dev%s", ptr);
+		size = asprintf(&scsi_device, "/dev%s", ptr);
+
+		if (size < 0) {
+			free(path);
+			continue;
+		}
 
 		int fd = open(scsi_device, O_RDWR);
 		free(scsi_device);

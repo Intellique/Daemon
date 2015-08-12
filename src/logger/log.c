@@ -140,8 +140,11 @@ void solgr_log_write2(enum so_log_level level, enum so_log_type type, const char
 
 	va_list va;
 	va_start(va, format);
-	vasprintf(&str_message, format, va);
+	int size = vasprintf(&str_message, format, va);
 	va_end(va);
+
+	if (size < 0)
+		return;
 
 	struct so_value * message = so_value_pack("{sssssIss}",
 		"level", so_log_level_to_string(level, false),
