@@ -39,12 +39,16 @@
 #include "device.h"
 #include "util.h"
 
-void sochgr_vtl_drive_create(struct sochgr_vtl_drive * dr_p, struct so_drive * dr, const char * root_directory, long long index) {
-	asprintf(&dr_p->drive_dir, "%s/drives/%Ld", root_directory, index);
+bool sochgr_vtl_drive_create(struct sochgr_vtl_drive * dr_p, struct so_drive * dr, const char * root_directory, long long index) {
+	int size = asprintf(&dr_p->drive_dir, "%s/drives/%Ld", root_directory, index);
 	so_file_mkdir(dr_p->drive_dir, 0700);
+	if (size < 0)
+		return false;
 
 	char * serial_file;
-	asprintf(&serial_file, "%s/drives/%Ld/serial_number", root_directory, index);
+	size = asprintf(&serial_file, "%s/drives/%Ld/serial_number", root_directory, index);
+	if (size < 0)
+		return false;
 
 	dr->model = strdup("Storiq one vtl drive");
 	dr->vendor = strdup("Intellique");
@@ -59,6 +63,8 @@ void sochgr_vtl_drive_create(struct sochgr_vtl_drive * dr_p, struct so_drive * d
 	so_value_hashtable_put2(dr_p->params, "device", so_value_new_string(dr_p->drive_dir), true);
 
 	free(serial_file);
+
+	return true;
 }
 
 void sochgr_vtl_drive_delete(struct so_drive * drive) {

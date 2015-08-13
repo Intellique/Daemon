@@ -45,15 +45,15 @@ struct sochgr_vtl_changer_slot {
 
 struct so_changer * sochgr_vtl_changer_get_device(void);
 
-void sochgr_vtl_drive_create(struct sochgr_vtl_drive * dr_p, struct so_drive * dr, const char * root_directory, long long index);
+bool sochgr_vtl_drive_create(struct sochgr_vtl_drive * dr_p, struct so_drive * dr, const char * root_directory, long long index);
 void sochgr_vtl_drive_delete(struct so_drive * drive);
 
 struct so_media * sochgr_vtl_media_create(const char * root_directory, const char * prefix, long long index, struct so_media_format * format, struct so_database_connection * db_connection);
 
-void sochgr_vtl_slot_create(struct so_slot * slot, const char * root_directory, const char * prefix, long long index);
+bool sochgr_vtl_slot_create(struct so_slot * slot, const char * root_directory, const char * prefix, long long index);
 void sochgr_vtl_slot_delete(struct so_slot * slot);
 
-void sochgr_vtl_drive_slot_create(struct so_drive * dr, struct so_slot * slot, const char * root_directory, long long index);
+bool sochgr_vtl_drive_slot_create(struct so_drive * dr, struct so_slot * slot, const char * root_directory, long long index);
 
 #endif
 

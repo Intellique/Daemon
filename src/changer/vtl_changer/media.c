@@ -46,11 +46,16 @@
 
 struct so_media * sochgr_vtl_media_create(const char * root_directory, const char * prefix, long long index, struct so_media_format * format, struct so_database_connection * db_connection) {
 	char * media_dir;
-	asprintf(&media_dir, "%s/medias/%s%03Ld", root_directory, prefix, index);
+	int size = asprintf(&media_dir, "%s/medias/%s%03Ld", root_directory, prefix, index);
+	if (size < 0)
+		return NULL;
+
 	so_file_mkdir(media_dir, 0700);
 
 	char * serial_file;
-	asprintf(&serial_file, "%s/medias/%s%03Ld/serial_number", root_directory, prefix, index);
+	size = asprintf(&serial_file, "%s/medias/%s%03Ld/serial_number", root_directory, prefix, index);
+	if (size < 0)
+		return NULL;
 
 	char * serial_number = sochgr_vtl_util_get_serial(serial_file);
 	struct so_media * media = db_connection->ops->get_media(db_connection, serial_number, NULL, NULL);
@@ -60,7 +65,10 @@ struct so_media * sochgr_vtl_media_create(const char * root_directory, const cha
 	else {
 		media = malloc(sizeof(struct so_media));
 		bzero(media, sizeof(struct so_media));
-		asprintf(&media->label, "%s%03Ld", prefix, index);
+		size = asprintf(&media->label, "%s%03Ld", prefix, index);
+		if (size < 0)
+			return NULL;
+
 		media->medium_serial_number = serial_number;
 		media->name = strdup(media->label);
 		media->status = so_media_status_new;

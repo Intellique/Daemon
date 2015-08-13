@@ -41,23 +41,42 @@
 
 #include "device.h"
 
-void sochgr_vtl_slot_create(struct so_slot * slot, const char * root_directory, const char * prefix, long long index) {
-	asprintf(&slot->volume_name, "%s%03Ld", prefix, index);
+bool sochgr_vtl_slot_create(struct so_slot * slot, const char * root_directory, const char * prefix, long long index) {
+	int size = asprintf(&slot->volume_name, "%s%03Ld", prefix, index);
+	if (size < 0)
+		return false;
+
 	slot->full = true;
 
 	struct sochgr_vtl_changer_slot * vtl_sl = slot->data = malloc(sizeof(struct sochgr_vtl_changer_slot));
 	bzero(vtl_sl, sizeof(struct sochgr_vtl_changer_slot));
-	asprintf(&vtl_sl->path, "%s/slots/%Ld", root_directory, index);
-	asprintf(&vtl_sl->media_dir, "%s/medias/%s%03Ld", root_directory, prefix, index);
+	size = asprintf(&vtl_sl->path, "%s/slots/%Ld", root_directory, index);
+	if (size < 0)
+		return false;
+
+	size = asprintf(&vtl_sl->media_dir, "%s/medias/%s%03Ld", root_directory, prefix, index);
+	if (size < 0)
+		return false;
+
 	so_file_mkdir(vtl_sl->path, 0700);
 
 	char * media_link, * link;
-	asprintf(&media_link, "../../medias/%s%03Ld", prefix, index);
-	asprintf(&link, "%s/slots/%Ld/media", root_directory, index);
-	symlink(media_link, link);
+	size = asprintf(&media_link, "../../medias/%s%03Ld", prefix, index);
+	if (size < 0)
+		return false;
+
+	size = asprintf(&link, "%s/slots/%Ld/media", root_directory, index);
+	if (size < 0)
+		return false;
+
+	int failed = symlink(media_link, link);
+	if (failed != 0)
+		return false;
 
 	free(link);
 	free(media_link);
+
+	return true;
 }
 
 void sochgr_vtl_slot_delete(struct so_slot * slot) {
@@ -76,7 +95,7 @@ void sochgr_vtl_slot_delete(struct so_slot * slot) {
 }
 
 
-void sochgr_vtl_drive_slot_create(struct so_drive * dr, struct so_slot * sl, const char * root_directory, long long index) {
+bool sochgr_vtl_drive_slot_create(struct so_drive * dr, struct so_slot * sl, const char * root_directory, long long index) {
 	sl->index = index;
 	sl->drive = dr;
 	dr->slot = sl;
@@ -86,6 +105,6 @@ void sochgr_vtl_drive_slot_create(struct so_drive * dr, struct so_slot * sl, con
 
 	struct sochgr_vtl_changer_slot * vtl_sl = sl->data = malloc(sizeof(struct sochgr_vtl_changer_slot));
 	bzero(vtl_sl, sizeof(struct sochgr_vtl_changer_slot));
-	asprintf(&vtl_sl->path, "%s/drives/%Ld", root_directory, index);
+	return asprintf(&vtl_sl->path, "%s/drives/%Ld", root_directory, index) >= 0;
 }
 

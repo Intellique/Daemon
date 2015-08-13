@@ -227,11 +227,15 @@ static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_
 					struct so_slot * sl = sochgr_vtl_changer.slots + i;
 					bzero(sl, sizeof(struct so_slot));
 
-					sochgr_vtl_slot_create(sl, sochgr_vtl_root_dir, sochgr_vtl_prefix, i - sochgr_vtl_changer.nb_drives);
+					if (!sochgr_vtl_slot_create(sl, sochgr_vtl_root_dir, sochgr_vtl_prefix, i - sochgr_vtl_changer.nb_drives))
+						return 1;
+
 					sl->changer = &sochgr_vtl_changer;
 					sl->index = i;
 
 					sl->media = sochgr_vtl_media_create(sochgr_vtl_root_dir, sochgr_vtl_prefix, i - sochgr_vtl_changer.nb_drives, sochgr_vtl_format, db_connection);
+					if (sl->media == NULL)
+						return 1;
 				}
 			}
 
@@ -275,7 +279,10 @@ static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_
 					bzero(dr, sizeof(struct so_drive));
 					dr_p->params = so_value_new_hashtable2();
 
-					sochgr_vtl_drive_create(dr_p, dr, sochgr_vtl_root_dir, i);
+					if (!sochgr_vtl_drive_create(dr_p, dr, sochgr_vtl_root_dir, i)) {
+						sochgr_vtl_changer.status = so_changer_status_error;
+						return 1;
+					}
 
 					dr->density_code = sochgr_vtl_format->density_code;
 					dr->changer = &sochgr_vtl_changer;
@@ -285,7 +292,8 @@ static int sochgr_vtl_changer_check(unsigned int nb_clients, struct so_database_
 					sl->changer = &sochgr_vtl_changer;
 
 					dr->slot = sochgr_vtl_changer.slots + i;
-					sochgr_vtl_drive_slot_create(dr, sl, sochgr_vtl_root_dir, i);
+					if (!sochgr_vtl_drive_slot_create(dr, sl, sochgr_vtl_root_dir, i))
+						return 1;
 
 					so_value_hashtable_put2(dr_p->params, "format", so_media_format_convert(sochgr_vtl_format), false);
 					so_value_hashtable_put2(dr_p->params, "serial number", so_value_new_string(dr->serial_number), true);
@@ -378,7 +386,8 @@ static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_
 		struct so_drive * dr = sochgr_vtl_changer.drives + i;
 		dr_p->params = so_value_new_hashtable2();
 
-		sochgr_vtl_drive_create(dr_p, dr, sochgr_vtl_root_dir, i);
+		if (!sochgr_vtl_drive_create(dr_p, dr, sochgr_vtl_root_dir, i))
+			goto init_error;
 
 		dr->density_code = sochgr_vtl_format->density_code;
 		dr->changer = &sochgr_vtl_changer;
@@ -386,25 +395,33 @@ static int sochgr_vtl_changer_init(struct so_value * config, struct so_database_
 		struct so_slot * sl = sochgr_vtl_changer.slots + i;
 		sl->changer = &sochgr_vtl_changer;
 
-		sochgr_vtl_drive_slot_create(dr, sl, sochgr_vtl_root_dir, i);
+		if (!sochgr_vtl_drive_slot_create(dr, sl, sochgr_vtl_root_dir, i))
+			goto init_error;
 
 		so_value_hashtable_put2(dr_p->params, "index", so_value_new_integer(i), true);
 		so_value_hashtable_put2(dr_p->params, "format", vformat, false);
 		so_value_hashtable_put2(dr_p->params, "serial number", so_value_new_string(dr->serial_number), true);
 
-		char * media;
-		asprintf(&media, "%s/drives/%u/media", sochgr_vtl_root_dir, i);
+		char * media = NULL;
+		int size = asprintf(&media, "%s/drives/%u/media", sochgr_vtl_root_dir, i);
+		if (size < 0)
+			goto init_error;
+
 		so_file_rm(media);
 		free(media);
 	}
 
 	for (i = 0; i < nb_slots; i++) {
 		struct so_slot * sl = sochgr_vtl_changer.slots + nb_drives + i;
-		sochgr_vtl_slot_create(sl, sochgr_vtl_root_dir, sochgr_vtl_prefix, i);
+		if (!sochgr_vtl_slot_create(sl, sochgr_vtl_root_dir, sochgr_vtl_prefix, i))
+			goto init_error;
+
 		sl->changer = &sochgr_vtl_changer;
 		sl->index = nb_drives + i;
 
 		sl->media = sochgr_vtl_media_create(sochgr_vtl_root_dir, sochgr_vtl_prefix, i, sochgr_vtl_format, db_connection);
+		if (sl->media == NULL)
+			goto init_error;
 	}
 
 	db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_init);
@@ -431,9 +448,14 @@ static int sochgr_vtl_changer_load(struct so_slot * from, struct so_drive * to, 
 	struct sochgr_vtl_changer_slot * vtl_from = from->data;
 	struct sochgr_vtl_changer_slot * vtl_to = to->slot->data;
 
-	char * sfrom, * sto;
-	asprintf(&sfrom, "%s/media", vtl_from->path);
-	asprintf(&sto, "%s/media", vtl_to->path);
+	char * sfrom = NULL, * sto = NULL;
+	int size = asprintf(&sfrom, "%s/media", vtl_from->path);
+	if (size < 0)
+		goto move_error;
+
+	size = asprintf(&sto, "%s/media", vtl_to->path);
+	if (size < 0)
+		goto move_error;
 
 	int failed = rename(sfrom, sto);
 
@@ -459,6 +481,12 @@ static int sochgr_vtl_changer_load(struct so_slot * from, struct so_drive * to, 
 	db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_default);
 
 	return failed;
+
+move_error:
+	free(sfrom);
+	free(sto);
+
+	return 1;
 }
 
 static int sochgr_vtl_changer_put_offline(struct so_database_connection * db_connect) {

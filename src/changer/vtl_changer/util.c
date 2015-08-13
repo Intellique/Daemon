@@ -26,6 +26,8 @@
 
 // open
 #include <fcntl.h>
+// free
+#include <stdlib.h>
 // strdup, strlen
 #include <string.h>
 // open
@@ -60,8 +62,13 @@ char * sochgr_vtl_util_get_serial(const char * filename) {
 
 		serial = strdup(uuid);
 
-		write(fd, serial, strlen(serial));
+		ssize_t nb_write = write(fd, serial, strlen(serial));
 		close(fd);
+
+		if (nb_write < 0) {
+			free(serial);
+			return NULL;
+		}
 	}
 
 	return serial;
