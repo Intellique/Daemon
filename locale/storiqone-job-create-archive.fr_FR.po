@@ -6,7 +6,7 @@
 msgid   ""
 msgstr  "Project-Id-Version: job-create-archive v1.2\n"
         "Report-Msgid-Bugs-To: \n"
-        "POT-Creation-Date: 2015-07-31 20:09+0200\n"
+        "POT-Creation-Date: 2015-08-03 09:04+0200\n"
         "PO-Revision-Date: 2014-11-13 09:03+0100\n"
         "Last-Translator: Guillaume Clercin <gclercin@intellique.com>\n"
         "Language-Team: translation team storiqone <storiqone@intellique.com>\n"
@@ -39,64 +39,64 @@ msgstr  "Fermeture de l’archive"
 msgid   "Synchronizing archive with database"
 msgstr  "Synchronisation de l’archive avec la base de données"
 
-#: src/job/create-archive/create-archive.c:240
+#: src/job/create-archive/create-archive.c:231
 msgid   "Error while synchronize archive into database"
 msgstr  "Erreur en synchronisant l’archive dans la base de données"
 
-#: src/job/create-archive/create-archive.c:254
+#: src/job/create-archive/create-archive.c:245
 msgid   "There is no select files to create new archive or to add into an archive"
 msgstr  "Il n’y a pas de fichiers sélectionnés pour créer une nouvelle archive ou ajouter des fichiers dans une archive"
 
-#: src/job/create-archive/create-archive.c:268
+#: src/job/create-archive/create-archive.c:259
 #, c-format
 msgid   "Error, path '%s' do not exist"
 msgstr  "Erreur, le chemin « %s » n’existe pas"
 
-#: src/job/create-archive/create-archive.c:290
+#: src/job/create-archive/create-archive.c:281
 msgid   "Error, Can't create new archive or add into an archive"
 msgstr  "Erreur, ne peut pas créer de nouvelle archive ou d’ajouter dans une archive"
 
-#: src/job/create-archive/create-archive.c:301
+#: src/job/create-archive/create-archive.c:292
 #, c-format
 msgid   "Error, can't add file into an archive '%s' which forbid to add them"
 msgstr  "Erreur, ne peut pas ajouter de fichier dans l’archive « %s » qui l'interdit de le faire"
 
-#: src/job/create-archive/create-archive.c:308
+#: src/job/create-archive/create-archive.c:299
 #, c-format
 msgid   "Bug: archive '%s' do not contain files"
 msgstr  "Bogue : l’archive « %s » ne contient pas de fichier"
 
-#: src/job/create-archive/create-archive.c:316
+#: src/job/create-archive/create-archive.c:307
 #, c-format
 msgid   "Try to create an archive '%s' into a pool '%s' which is deleted"
 msgstr  "Tentative de créer une archive « %s » dans un pool « %s » qui est supprimé"
 
-#: src/job/create-archive/create-archive.c:323
+#: src/job/create-archive/create-archive.c:314
 #, c-format
 msgid   "Error, can't add file to the archive '%s' because this archive should be synchronized"
 msgstr  "Erreur, ne peut pas ajouter de fichier dans l’archive « %s » parce qu’elle n’est pas synchronisée"
 
-#: src/job/create-archive/create-archive.c:331 src/job/create-archive/create-archive.c:366
+#: src/job/create-archive/create-archive.c:322 src/job/create-archive/create-archive.c:357
 #, c-format
 msgid   "Error: not enought space available into pool (%s)"
 msgstr  "Erreur : espace insuffisant dans le pool (%s)"
 
-#: src/job/create-archive/create-archive.c:347
+#: src/job/create-archive/create-archive.c:338
 #, c-format
 msgid   "Warning, ignoring archive '%s' from pool '%s' because this archive is not synchronized"
 msgstr  "Attention, l’archive « %s » du pool « %s » est ignorée parce qu’elle n’est pas synchronisée"
 
-#: src/job/create-archive/create-archive.c:353
+#: src/job/create-archive/create-archive.c:344
 #, c-format
 msgid   "Size require (%s) for creating new archive '%s'"
 msgstr  "Taille requis (%s) pour créer une nouvelle archive « %s »"
 
-#: src/job/create-archive/create-archive.c:358
+#: src/job/create-archive/create-archive.c:349
 #, c-format
 msgid   "Try to create an archive into a pool '%s' which is deleted"
 msgstr  "Tentative de créer une archive dans un pool « %s » qui est supprimé"
 
-#: src/job/create-archive/create-archive.c:374
+#: src/job/create-archive/create-archive.c:365
 #, c-format
 msgid   "Size require (%s) for adding to the archive '%s'"
 msgstr  "Taille requis (%s) pour ajouter à the archive « %s »"

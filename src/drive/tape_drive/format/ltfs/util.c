@@ -392,7 +392,14 @@ static void sodr_tape_drive_format_ltfs_parse_index_inner(struct sodr_tape_drive
 		if (strcmp(elt_name, "name") == 0) {
 			char * file_name = NULL;
 			so_value_unpack(elt, "{ss}", "value", &file_name);
-			asprintf(&file->file.filename, "%s/%s", path, file_name);
+
+			int size = asprintf(&file->file.filename, "%s/%s", path, file_name);
+
+			if (size < 0) {
+				free(file_name);
+				continue;
+			}
+
 			free(file_name);
 		} else if (strcmp(elt_name, "creationtime") == 0) {
 			char * ctime = NULL;

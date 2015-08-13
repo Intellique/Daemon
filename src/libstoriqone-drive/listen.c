@@ -710,12 +710,16 @@ static void sodr_socket_command_parse_archive(struct sodr_peer * peer, struct so
 	params->checksums = checksums;
 
 	char * thread_name = NULL;
-	asprintf(&thread_name, "parse archive #%d", archive_position);
+	int size = asprintf(&thread_name, "parse archive #%d", archive_position);
+
+	if (size < 0)
+		thread_name = "parse archive";
 
 	peer->owned = true;
 	so_thread_pool_run(thread_name, sodr_worker_command_parse_archive, params);
 
-	free(thread_name);
+	if (size >= 0)
+		free(thread_name);
 }
 
 static void sodr_socket_command_release(struct sodr_peer * peer __attribute__((unused)), struct so_value * request __attribute__((unused)), int fd) {

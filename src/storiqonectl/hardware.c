@@ -76,28 +76,54 @@ struct so_value * soctl_detect_hardware() {
 
 		char link[256];
 		ssize_t length = readlink(gl.gl_pathv[i], link, 256);
-		link[length] = '\0';
+		if (length < 0) {
+			printf(gettext("storiqonectl: Failed while reading link of file '%s' because %m\n"), gl.gl_pathv[i]);
+			continue;
+		}
 
+		link[length] = '\0';
 		ptr = strrchr(link, '/') + 1;
 
-		char * path;
-		asprintf(&path, "%s/generic", gl.gl_pathv[i]);
+		char * path = NULL;
+		int size = asprintf(&path, "%s/generic", gl.gl_pathv[i]);
+
 		length = readlink(path, link, 256);
+		if (length < 0) {
+			printf(gettext("storiqonectl: Failed while reading link of file '%s' because %m\n"), path);
+
+			free(path);
+			continue;
+		}
+
 		link[length] = '\0';
 		free(path);
 
 		char * scsi_device;
 		ptr = strrchr(link, '/');
-		asprintf(&scsi_device, "/dev%s", ptr);
+		size = asprintf(&scsi_device, "/dev%s", ptr);
+		if (size < 0)
+			continue;
 
-		asprintf(&path, "%s/tape", gl.gl_pathv[i]);
+		size = asprintf(&path, "%s/tape", gl.gl_pathv[i]);
+		if (size < 0)
+			continue;
+
 		length = readlink(path, link, 256);
+		if (length < 0) {
+			printf(gettext("storiqonectl: Failed while reading link of file '%s' because %m\n"), path);
+
+			free(path);
+			continue;
+		}
+
 		link[length] = '\0';
 		free(path);
 
 		char * device;
 		ptr = strrchr(link, '/') + 1;
-		asprintf(&device, "/dev/n%s", ptr);
+		size = asprintf(&device, "/dev/n%s", ptr);
+		if (size < 0)
+			continue;
 
 		// struct so_value * drive = so_value_pack("{sssssssssbsfsis{}}", "device", device, "scsi device", scsi_device, "status", "unknown", "mode", "linear", "enabled", true, "operation duration", 0.0, "last clean", 0, "db");
 		struct so_drive * drive = malloc(sizeof(struct so_drive));
@@ -134,25 +160,44 @@ struct so_value * soctl_detect_hardware() {
 		int host = 0, target = 0, channel = 0, bus = 0;
 		sscanf(ptr, "%d:%d:%d:%d", &host, &target, &channel, &bus);
 
-		char * path;
-		asprintf(&path, "%s/generic", gl.gl_pathv[i]);
+		char * path = NULL;
+		int size = asprintf(&path, "%s/generic", gl.gl_pathv[i]);
+		if (size < 0)
+			continue;
+
 		length = readlink(path, link, 256);
+		if (length < 0) {
+			printf(gettext("storiqonectl: Failed while reading link of file '%s' because %m\n"), path);
+
+			free(path);
+			continue;
+		}
+
 		link[length] = '\0';
 		free(path);
 
 		char * device;
 		ptr = strrchr(link, '/');
-		asprintf(&device, "/dev%s", ptr);
+		size = asprintf(&device, "/dev%s", ptr);
+		if (size < 0)
+			continue;
 
 		struct so_changer * changer = malloc(sizeof(struct so_changer));
 		bzero(changer, sizeof(struct so_changer));
 		changer->status = so_changer_status_unknown;
 		changer->enable = true;
 
-		asprintf(&path, "/sys/class/sas_host/host%d", host);
+		size = asprintf(&path, "/sys/class/sas_host/host%d", host);
+		if (size < 0)
+			continue;
+
 		struct stat st;
 		if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
-			realpath(gl.gl_pathv[i], link);
+			char * resolved_path = realpath(gl.gl_pathv[i], link);
+			if (resolved_path == NULL) {
+				printf(gettext("storiqonectl: Failed while resolving path of file '%s' because %m\n"), gl.gl_pathv[i]);
+				continue;
+			}
 
 			ptr = strstr(link, "end_device-");
 			if (ptr != NULL) {
@@ -161,14 +206,18 @@ struct so_value * soctl_detect_hardware() {
 					*cp = '\0';
 
 				free(path);
-				asprintf(&path, "/sys/class/sas_device/%s/sas_address", ptr);
+				size = asprintf(&path, "/sys/class/sas_device/%s/sas_address", ptr);
+				if (size < 0)
+					continue;
 
 				char * data = so_file_read_all_from(path);
 				cp = strchr(data, '\n');
 				if (cp != NULL)
 					*cp = '\0';
 
-				asprintf(&changer->wwn, "sas:%s", data);
+				size = asprintf(&changer->wwn, "sas:%s", data);
+				if (size < 0)
+					continue;
 
 				free(data);
 			}

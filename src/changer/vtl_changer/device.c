@@ -507,11 +507,23 @@ static int sochgr_vtl_changer_put_online(struct so_database_connection * db_conn
 	unsigned int i, j;
 	for (i = 0, j = sochgr_vtl_changer.nb_drives; j < sochgr_vtl_changer.nb_slots; i++, j++) {
 		char * serial_file;
-		asprintf(&serial_file, "%s/medias/%s%03u/serial_number", sochgr_vtl_root_dir, sochgr_vtl_prefix, i);
+		int size = asprintf(&serial_file, "%s/medias/%s%03u/serial_number", sochgr_vtl_root_dir, sochgr_vtl_prefix, i);
+
+		if (size < 0) {
+			sochgr_vtl_changer.status = so_changer_status_error;
+			db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_default);
+			return 2;
+		}
 
 		struct so_slot * sl = sochgr_vtl_changer.slots + j;
-		asprintf(&sl->volume_name, "%s%03u", sochgr_vtl_prefix, i);
+		size = asprintf(&sl->volume_name, "%s%03u", sochgr_vtl_prefix, i);
 		sl->full = true;
+
+		if (size < 0) {
+			sochgr_vtl_changer.status = so_changer_status_error;
+			db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_default);
+			return 2;
+		}
 
 		char * serial_number = sochgr_vtl_util_get_serial(serial_file);
 		sl->media = db_connection->ops->get_media(db_connection, serial_number, NULL, NULL);
@@ -552,9 +564,14 @@ static int sochgr_vtl_changer_unload(struct so_drive * from, struct so_database_
 	struct sochgr_vtl_changer_slot * vtl_from = from->slot->data;
 	struct sochgr_vtl_changer_slot * vtl_to = vtl_from->origin->data;
 
-	char * sfrom, * sto;
-	asprintf(&sfrom, "%s/media", vtl_from->path);
-	asprintf(&sto, "%s/media", vtl_to->path);
+	char * sfrom = NULL, * sto = NULL;
+	int size = asprintf(&sfrom, "%s/media", vtl_from->path);
+	if (size < 0)
+		goto move_error;
+
+	size = asprintf(&sto, "%s/media", vtl_to->path);
+	if (size < 0)
+		goto move_error;
 
 	int failed = rename(sfrom, sto);
 
@@ -575,6 +592,12 @@ static int sochgr_vtl_changer_unload(struct so_drive * from, struct so_database_
 	db_connection->ops->sync_changer(db_connection, &sochgr_vtl_changer, so_database_sync_default);
 
 	return failed;
+
+move_error:
+	free(sfrom);
+	free(sto);
+
+	return 1;
 }
 
 static int sochgr_vtl_changer_unload_all_drives(struct so_database_connection * db_connection) {

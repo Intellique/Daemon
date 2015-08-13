@@ -156,8 +156,14 @@ void sod_scheduler_do(struct so_value * logger, struct so_value * db_config, str
 			struct so_job_private * self = job->data = malloc(sizeof(struct so_job_private));
 			bzero(self, sizeof(struct so_job_private));
 
-			char * process_name;
-			asprintf(&process_name, "job_%s", job->type);
+			char * process_name = NULL;
+			int size = asprintf(&process_name, "job_%s", job->type);
+
+			if (size < 0) {
+				free(self);
+				job->data = NULL;
+				continue;
+			}
 
 			/**
 			 * valgrind

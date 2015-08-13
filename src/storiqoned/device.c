@@ -105,8 +105,10 @@ void sod_device_configure(struct so_value * logger, struct so_value * db_config,
 			so_poll_register(dev->fd_out, POLLIN, sod_device_pong, dev, NULL);
 			so_poll_register(dev->fd_in, POLLHUP, sod_device_exited, dev, NULL);
 
-			char * path;
-			asprintf(&path, DAEMON_SOCKET_DIR "/changer_%d.socket", i_changer);
+			char * path = NULL;
+			int size = asprintf(&path, DAEMON_SOCKET_DIR "/changer_%d.socket", i_changer);
+			if (size < 0)
+				continue;
 
 			so_value_hashtable_put2(changer, "socket", so_value_pack("{ssss}", "domain", "unix", "path", path), true);
 			dev->config = so_value_pack("{sOsOsOsO}", "changer", changer, "logger", logger, "database", db_config, "default values", default_values);
@@ -143,8 +145,10 @@ void sod_device_configure(struct so_value * logger, struct so_value * db_config,
 			so_poll_register(dev->fd_out, POLLIN, sod_device_pong, dev, NULL);
 			so_poll_register(dev->fd_in, POLLHUP, sod_device_exited, dev, NULL);
 
-			char * path;
-			asprintf(&path, DAEMON_SOCKET_DIR "/changer_%d.socket", i_changer);
+			char * path = NULL;
+			int size = asprintf(&path, DAEMON_SOCKET_DIR "/changer_%d.socket", i_changer);
+			if (size < 0)
+				continue;
 
 			so_value_hashtable_put2(changer, "socket", so_value_pack("{ssss}", "domain", "unix", "path", path), true);
 			dev->config = so_value_pack("{sOsOsOsO}", "changer", changer, "logger", logger, "database", db_config, "default values", default_values);
@@ -190,8 +194,10 @@ void sod_device_configure(struct so_value * logger, struct so_value * db_config,
 		so_poll_register(dev->fd_out, POLLIN, sod_device_pong, dev, NULL);
 		so_poll_register(dev->fd_in, POLLHUP, sod_device_exited, dev, NULL);
 
-		char * path;
-		asprintf(&path, DAEMON_SOCKET_DIR "/changer_%d.socket", i_changer);
+		char * path = NULL;
+		int size = asprintf(&path, DAEMON_SOCKET_DIR "/changer_%d.socket", i_changer);
+		if (size < 0)
+			continue;
 
 		so_value_hashtable_put2(changer, "socket", so_value_pack("{ssss}", "domain", "unix", "path", path), true);
 		dev->config = so_value_pack("{sOsOsOsO}", "changer", changer, "logger", logger, "database", db_config, "default values", default_values);
