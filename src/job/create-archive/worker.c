@@ -221,7 +221,7 @@ static int soj_create_archive_worker_change_volume(struct so_job * job, struct s
 		worker->media = worker->drive->slot->media;
 
 		so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_important,
-			dgettext("storiqone-job-create-archive", "Archive continue to media (%s)"),
+			dgettext("storiqone-job-create-archive", "Archive continue on media (%s)"),
 			worker->media->name);
 
 		worker->writer = worker->drive->ops->get_writer(worker->drive, worker->checksums);
@@ -583,7 +583,7 @@ void soj_create_archive_worker_reserve_medias(struct so_job * job, ssize_t archi
 			so_file_convert_size_to_string(archive_size, str_archive_size, 12);
 
 			so_job_add_record(job, db_connect, so_log_level_warning, so_job_record_notif_important,
-				dgettext("storiqone-job-create-archive", "Warning, we will not archive into pool '%s' because we can not reserve enough space on it (space reserved: %s, space require: %s)"),
+				dgettext("storiqone-job-create-archive", "Warning, not archiving to pool '%s': not enough space (space reserved: %s, space required: %s)"),
 				worker->pool->name, str_reserved, str_archive_size);
 		}
 	}
@@ -593,7 +593,7 @@ int soj_create_archive_worker_sync_archives(struct so_job * job, struct so_datab
 	int failed = db_connect->ops->start_transaction(db_connect);
 	if (failed != 0) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-create-archive", "Failed to start transaction info database"));
+			dgettext("storiqone-job-create-archive", "Failed to start database transaction"));
 		return 1;
 	}
 

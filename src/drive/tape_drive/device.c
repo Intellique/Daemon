@@ -791,7 +791,7 @@ static int sodr_tape_drive_set_file_position(int file_position, struct so_databa
 					sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name, file_position);
 			else
 				so_log_write(so_log_level_info,
-					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' to position #%d finished with status = OK"),
+					dgettext("storiqone-drive-tape", "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"),
 					sodr_tape_drive.vendor, sodr_tape_drive.model, sodr_tape_drive.index, sodr_tape_drive.slot->media->name, file_position);
 
 			sodr_tape_drive.status = failed != 0 ? so_drive_status_error : so_drive_status_positioning;

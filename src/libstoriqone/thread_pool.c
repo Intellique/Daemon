@@ -282,7 +282,7 @@ static void * so_thread_pool_work(void * arg) {
 
 	} while (th->state == so_thread_pool_state_running);
 
-	so_log_write(so_log_level_debug, dgettext("libstoriqone", "so_thread_pool_work: thread #%ld is dead"), th->thread);
+	so_log_write(so_log_level_debug, dgettext("libstoriqone", "so_thread_pool_work: thread #%ld terminated"), th->thread);
 
 	return NULL;
 }

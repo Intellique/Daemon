@@ -42,8 +42,8 @@ msgid   "Synchronizing archive '%s' into database"
 msgstr  "Synchronisation de l’archive « %s » dans la base de données"
 
 #: src/job/copy-archive/copy-archive.c:161
-msgid   "Failed to start transaction info database"
-msgstr  "Échec lors du démarrage d’une nouvelle transaction dans la base de données"
+msgid   "Failed to start database transaction"
+msgstr  "Échec du démarrage d’une nouvelle transaction de base de données"
 
 #: src/job/copy-archive/copy-archive.c:175
 #, c-format
@@ -53,15 +53,15 @@ msgstr  "Échec de la synchronisation de l’archive « %s » avec la base de 
 #: src/job/copy-archive/copy-archive.c:179
 #, c-format
 msgid   "Archive '%s' synchronized into database"
-msgstr  "L’archive « %s » est synchronisé avec la base de données"
+msgstr  "L’archive « %s » est synchronisée avec la base de données"
 
 #: src/job/copy-archive/copy-archive.c:193
 msgid   "Archive not found"
-msgstr  "Archive non trouvé"
+msgstr  "Archive non trouvée"
 
 #: src/job/copy-archive/copy-archive.c:198
 #, c-format
-msgid   "Try to copy an deleted archive '%s'"
+msgid   "Trying to copy a deleted archive '%s'"
 msgstr  "Tentative de copier une archive supprimée « %s »"
 
 #: src/job/copy-archive/copy-archive.c:206
@@ -70,32 +70,32 @@ msgstr  "Pool non trouvé"
 
 #: src/job/copy-archive/copy-archive.c:211
 #, c-format
-msgid   "Try to copy an archive '%s' into a pool '%s' which is deleted"
-msgstr  "Tentative de copier une archive « %s » dans un pool « %s » qui est supprimé"
+msgid   "Trying to copy an archive '%s' to a deleted pool '%s'"
+msgstr  "Tentative de copier une archive « %s » vers un pool « %s » supprimé"
 
 #: src/job/copy-archive/copy-archive.c:218
 #, c-format
-msgid   "Failed to find suitable drive to copy archive '%s'"
-msgstr  "Échec lors de la recherche d’un lecteur valable pour copier l’archive « %s »"
+msgid   "Failed to find a suitable drive to copy archive '%s'"
+msgstr  "Échec lors de la recherche d’un lecteur convenable pour copier l’archive « %s »"
 
 #: src/job/copy-archive/copy-archive.c:226
 #, c-format
-msgid   "Error: not enought space available into pool '%s'"
+msgid   "Error: not enought space available in pool '%s'"
 msgstr  "Erreur : pas assez d’espace disponible dans le pool « %s »"
 
 #: src/job/copy-archive/direct_copy.c:51
-msgid   "Select copy mode: direct"
+msgid   "Selected copy mode: direct"
 msgstr  "Selection du mode de copie : direct"
 
 #: src/job/copy-archive/direct_copy.c:102 src/job/copy-archive/indirect_copy.c:210
 #, c-format
-msgid   "Error while writing header of file '%s' into media '%s'"
-msgstr  "Erreur en écrivant l’entête du fichier « %s » dans le média « %s »"
+msgid   "Error while writing file header '%s' to media '%s'"
+msgstr  "Erreur en écrivant l’entête du fichier « %s » sur le média « %s »"
 
 #: src/job/copy-archive/direct_copy.c:151
 #, c-format
-msgid   "Error while writing data of file '%s' into media '%s'"
-msgstr  "Erreur en écrivant les données du fichier « %s » dans le média « %s »"
+msgid   "Error while writing file data '%s' to media '%s'"
+msgstr  "Erreur en écrivant les données du fichier « %s » sur le média « %s »"
 
 #: src/job/copy-archive/direct_copy.c:171 src/job/copy-archive/indirect_copy.c:153
 #, c-format
@@ -103,7 +103,7 @@ msgid   "Error while reading from media '%s'"
 msgstr  "Erreur en lisant depuis le média « %s »"
 
 #: src/job/copy-archive/indirect_copy.c:54
-msgid   "Select copy mode: indirect"
+msgid   "Selected copy mode: indirect"
 msgstr  "Selection du mode de copie : indirecte"
 
 #: src/job/copy-archive/indirect_copy.c:61
@@ -112,27 +112,22 @@ msgstr  "Échec lors de la création du fichier temporaire"
 
 #: src/job/copy-archive/indirect_copy.c:72
 #, c-format
-msgid   "Error, disk space is not enough (required: %s, available: %s) to copy archive '%s'"
+msgid   "Error, not enough disk space (required: %s, available: %s) to copy archive '%s'"
 msgstr  "Erreur, espace disque insuffisant (requis : %s, disponible : %s) pour copier l’archive « %s »"
 
 #: src/job/copy-archive/indirect_copy.c:113
 #, c-format
-msgid   "Error while writing header du fichier '%s' into temporary file"
+msgid   "Error while writing file header '%s' to temporary file"
 msgstr  "Erreur en écrivant l’entête du fichier « %s » dans le fichier temporaire"
 
 #: src/job/copy-archive/indirect_copy.c:132
 #, c-format
-msgid   "Error while writing data of file '%s' into temporary file"
+msgid   "Error while writing file data '%s' to temporary file"
 msgstr  "Erreur en écrivant des données du fichier « %s » dans le fichier temporaire"
 
 #: src/job/copy-archive/indirect_copy.c:177 src/job/copy-archive/util.c:79
 msgid   "Failed to reopen temporary file"
 msgstr  "Échec lors de la réouverture du fichier temporaire"
-
-#: src/job/copy-archive/indirect_copy.c:259
-#, c-format
-msgid   "Error while writing data of file '%s' to media '%s'"
-msgstr  "Erreur en écrivant des données du fichier « %s » dans le média « %s »"
 
 #: src/job/copy-archive/indirect_copy.c:279
 msgid   "Error while reading from temporary file"

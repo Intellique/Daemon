@@ -372,7 +372,7 @@ msgstr  "so_file_rm : échec lors de obtention des informations de « %s » p
 #: src/libstoriqone/io/tmp.c:108
 #, c-format
 msgid   "so_io_tmp_writer: Can't create temporary file into directory '%s' because %m"
-msgstr  "so_io_tmp_writer: n’a pas pu créé de fichier temporaire dans le répertoire « %s » parece que %m"
+msgstr  "so_io_tmp_writer: n’a pas pu créé de fichier temporaire dans le répertoire « %s » parce que %m"
 
 #: src/libstoriqone/job.c:51
 msgid   "disabled"
@@ -632,5 +632,5 @@ msgstr  "so_thread_pool_work : redémarrage du fil d’exécution #%ld (pid : 
 
 #: src/libstoriqone/thread_pool.c:285
 #, c-format
-msgid   "so_thread_pool_work: thread #%ld is dead"
+msgid   "so_thread_pool_work: thread #%ld terminated"
 msgstr  "so_thread_pool_work : fil d’exécution #%ld terminé"

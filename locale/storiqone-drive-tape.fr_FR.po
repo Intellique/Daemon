@@ -96,11 +96,6 @@ msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la po
 
 #: src/drive/tape_drive/device.c:794
 #, c-format
-msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d finished with status = OK"
-msgstr  ""
-
-#: src/drive/tape_drive/device.c:801
-#, c-format
 msgid   "[%s | %s | #%u]: Positioning media '%s' to position #%d completed with status = OK"
 msgstr  "[ %s | %s | n°%u ] : Positionnement du média « %s » vers la position n°%d terminé avec succés"
 

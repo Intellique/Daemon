@@ -378,7 +378,7 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 		pthread_mutex_unlock(&sochgr_scsi_changer_lock);
 
 		so_log_write(so_log_level_warning,
-			dgettext("storiqone-changer-scsi", "[%s | %s]: checking media with drive #%u finished"),
+			dgettext("storiqone-changer-scsi", "[%s | %s]: checking media with drive #%u completed"),
 			sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr->index);
 
 		return;
@@ -425,7 +425,7 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 			pthread_mutex_unlock(&sochgr_scsi_changer_lock);
 
 			so_log_write(so_log_level_warning,
-				dgettext("storiqone-changer-scsi", "[%s | %s]: checking media with drive #%u finished"),
+				dgettext("storiqone-changer-scsi", "[%s | %s]: checking media with drive #%u completed"),
 				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr->index);
 
 			free(volume_name);
@@ -444,7 +444,7 @@ static void sochgr_scsi_changer_init_worker(void * arg) {
 			pthread_mutex_unlock(&sochgr_scsi_changer_lock);
 
 			so_log_write(so_log_level_warning,
-				dgettext("storiqone-changer-scsi", "[%s | %s]: checking media with drive #%u finished"),
+				dgettext("storiqone-changer-scsi", "[%s | %s]: checking media with drive #%u completed"),
 				sochgr_scsi_changer.vendor, sochgr_scsi_changer.model, dr->index);
 
 			free(volume_name);

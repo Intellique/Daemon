@@ -51,7 +51,7 @@
 
 int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connection * db_connect, struct soj_copyarchive_private * self) {
 	so_job_add_record(job, db_connect, so_log_level_info, so_job_record_notif_normal,
-		dgettext("storiqone-job-copy-archive", "Select copy mode: indirect"));
+		dgettext("storiqone-job-copy-archive", "Selected copy mode: indirect"));
 
 	soj_copyarchive_util_init(self->src_archive);
 
@@ -110,7 +110,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 
 			if (wrtr_status != so_format_writer_ok) {
 				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-					dgettext("storiqone-job-copy-archive", "Error while writing header du fichier '%s' into temporary file"),
+					dgettext("storiqone-job-copy-archive", "Error while writing file header '%s' to temporary file"),
 					file.filename);
 
 				tmp_frmt_writer->ops->free(tmp_frmt_writer);
@@ -129,7 +129,7 @@ int soj_copyarchive_indirect_copy(struct so_job * job, struct so_database_connec
 							nb_total_write += nb_write;
 						else {
 							so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-								dgettext("storiqone-job-copy-archive", "Error while writing data of file '%s' into temporary file"),
+								dgettext("storiqone-job-copy-archive", "Error while writing file data '%s' to temporary file"),
 								file.filename);
 
 							tmp_frmt_writer->ops->free(tmp_frmt_writer);

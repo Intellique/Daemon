@@ -53,7 +53,7 @@ msgstr  "Trouvé un échangeur scsi %s %s, numéro de série : %s"
 #: src/changer/scsi_changer/device.c:362
 #, c-format
 msgid   "[%s | %s]: starting check media with drive #%u"
-msgstr  "[ %s | %s ] : démarage de la vérification des médias avec le lecteur n°%u"
+msgstr  "[ %s | %s ] : démarrage de la vérification de média avec le lecteur n°%u"
 
 #: src/changer/scsi_changer/device.c:373 src/changer/scsi_changer/device.c:439 src/changer/scsi_changer/device.c:688
 #, c-format
@@ -62,8 +62,8 @@ msgstr  "[ %s | %s ] : échec lors de la réinitialisation du lecteur n°%u %
 
 #: src/changer/scsi_changer/device.c:381 src/changer/scsi_changer/device.c:428 src/changer/scsi_changer/device.c:447
 #, c-format
-msgid   "[%s | %s]: checking media with drive #%u finished"
-msgstr  "[ %s | %s ] : vérification du média avec le lecteur n°%u est terminée"
+msgid   "[%s | %s]: checking media with drive #%u completed"
+msgstr  "[ %s | %s ] : vérification du média avec le lecteur n°%u terminée"
 
 #: src/changer/scsi_changer/device.c:400
 #, c-format
@@ -99,11 +99,6 @@ msgstr  "[ %s | %s ] : déchargement du média « %s » depuis le lecteur n
 #, c-format
 msgid   "[%s | %s]: unloading media '%s' from drive #%u to slot #%u completed with code = %d"
 msgstr  "[ %s | %s ] : déchargement du média « %s » depuis le lecteur n°%u vers l’emplacement n°%u terminé avec le code = %d"
-
-#: src/changer/scsi_changer/device.c:477
-#, c-format
-msgid   "[%s | %s]: checking media with drive #%u completed"
-msgstr  "[ %s | %s ] : la vérification des médias avec le lecteur n°%u est terminé"
 
 #: src/changer/scsi_changer/device.c:560
 #, c-format

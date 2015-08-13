@@ -158,7 +158,7 @@ static int soj_copyarchive_run(struct so_job * job, struct so_database_connectio
 			failed = db_connect->ops->start_transaction(db_connect);
 			if (failed != 0) {
 				so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-					dgettext("storiqone-job-copy-archive", "Failed to start transaction info database"));
+					dgettext("storiqone-job-copy-archive", "Failed to start database transaction"));
 			} else {
 				failed = db_connect->ops->sync_archive(db_connect, data.copy_archive, data.src_archive);
 				if (failed == 0)
@@ -195,7 +195,7 @@ static int soj_copyarchive_simulate(struct so_job * job, struct so_database_conn
 	}
 	if (data.src_archive->deleted) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-copy-archive", "Try to copy an deleted archive '%s'"),
+			dgettext("storiqone-job-copy-archive", "Trying to copy a deleted archive '%s'"),
 			data.src_archive->name);
 		return 1;
 	}
@@ -208,14 +208,14 @@ static int soj_copyarchive_simulate(struct so_job * job, struct so_database_conn
 	}
 	if (data.pool->deleted) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-copy-archive", "Try to copy an archive '%s' into a pool '%s' which is deleted"),
+			dgettext("storiqone-job-copy-archive", "Trying to copy an archive '%s' to a deleted pool '%s'"),
 			data.src_archive->name, data.pool->name);
 		return 1;
 	}
 
 	if (!soj_changer_has_apt_drive(data.pool->media_format, true)) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-copy-archive", "Failed to find suitable drive to copy archive '%s'"),
+			dgettext("storiqone-job-copy-archive", "Failed to find a suitable drive to copy archive '%s'"),
 			data.src_archive->name);
 		return 1;
 	}
@@ -223,7 +223,7 @@ static int soj_copyarchive_simulate(struct so_job * job, struct so_database_conn
 	ssize_t reserved = soj_media_prepare(data.pool, data.src_archive->size, db_connect);
 	if (reserved < data.src_archive->size) {
 		so_job_add_record(job, db_connect, so_log_level_error, so_job_record_notif_important,
-			dgettext("storiqone-job-copy-archive", "Error: not enought space available into pool '%s'"),
+			dgettext("storiqone-job-copy-archive", "Error: not enought space available in pool '%s'"),
 			data.pool->name);
 		return 1;
 	}
